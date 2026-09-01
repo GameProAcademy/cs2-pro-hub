@@ -12,11 +12,11 @@ export function ChartCard({
   showDemoTag = true,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: string | undefined;
   actions?: ReactNode;
   children: ReactNode;
-  className?: string;
-  showDemoTag?: boolean;
+  className?: string | undefined;
+  showDemoTag?: boolean | undefined;
 }) {
   return (
     <section

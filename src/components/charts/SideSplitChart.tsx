@@ -11,7 +11,7 @@ export function SideSplitChart({
   hasEnoughData = true,
 }: {
   data: SideSplit[];
-  hasEnoughData?: boolean;
+  hasEnoughData?: boolean | undefined;
 }) {
   if (!hasEnoughData || data.length === 0) {
     return (

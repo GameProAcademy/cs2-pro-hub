@@ -9,7 +9,7 @@ import { navItems, uploadNavItem } from "@/config/navigation";
 import { demoProfile } from "@/data/demoPlayer";
 import { cn } from "@/lib/utils";
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   return (
     <nav className="space-y-1" aria-label="Navegação principal">
       {navItems.map((item) => (
@@ -31,7 +31,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />

@@ -16,7 +16,7 @@ import type { TimeSeriesPoint } from "@/types";
 export interface SeriesConfig {
   key: string;
   label: string;
-  color?: string;
+  color?: string | undefined;
 }
 
 const PALETTE = [
@@ -59,10 +59,10 @@ export function TrendChart({
 }: {
   data: TimeSeriesPoint[];
   series: SeriesConfig[];
-  variant?: "area" | "line";
-  height?: number;
-  domain?: [number | "auto", number | "auto"];
-  unit?: string;
+  variant?: "area" | "line" | undefined;
+  height?: number | undefined;
+  domain?: [number | "auto", number | "auto"] | undefined;
+  unit?: string | undefined;
 }) {
   const showLegend = series.length > 1;
 
@@ -81,7 +81,7 @@ export function TrendChart({
             </defs>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} unit={unit} width={44} />
+            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} {...(unit ? { unit } : {})} width={44} />
             <Tooltip {...tooltipStyle} />
             {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
             {series.map((s, i) => (
@@ -102,7 +102,7 @@ export function TrendChart({
           <LineChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} unit={unit} width={44} />
+            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} {...(unit ? { unit } : {})} width={44} />
             <Tooltip {...tooltipStyle} />
             {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
             {series.map((s, i) => (

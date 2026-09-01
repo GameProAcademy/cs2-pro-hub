@@ -16,8 +16,8 @@ export function DnaRadarChart({
   showAverage = true,
 }: {
   data: DnaPoint[];
-  height?: number;
-  showAverage?: boolean;
+  height?: number | undefined;
+  showAverage?: boolean | undefined;
 }) {
   return (
     <div style={{ height }} className="w-full">

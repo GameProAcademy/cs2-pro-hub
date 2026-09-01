@@ -19,7 +19,7 @@ export interface SelectedDemo {
 export function UploadBox({
   onFileSelected,
 }: {
-  onFileSelected?: (file: File) => void;
+  onFileSelected?: ((file: File) => void) | undefined;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);

@@ -8,10 +8,10 @@ export function DeltaBadge({
   invert = false,
   suffix,
 }: {
-  delta?: number;
+  delta?: number | undefined;
   /** When true, a negative delta is a good outcome (e.g. First Death Rate). */
-  invert?: boolean;
-  suffix?: string;
+  invert?: boolean | undefined;
+  suffix?: string | undefined;
 }) {
   if (delta === undefined) return null;
   const neutral = delta === 0;
@@ -47,12 +47,12 @@ export function MetricCard({
 }: {
   label: string;
   value: string | number;
-  unit?: string;
-  delta?: number;
-  invertDelta?: boolean;
-  hint?: string;
-  size?: "md" | "lg";
-  showDemoTag?: boolean;
+  unit?: string | undefined;
+  delta?: number | undefined;
+  invertDelta?: boolean | undefined;
+  hint?: string | undefined;
+  size?: "md" | "lg" | undefined;
+  showDemoTag?: boolean | undefined;
 }) {
   return (
     <div className="surface-panel rounded-lg border border-border p-4 transition-colors hover:border-primary/35">

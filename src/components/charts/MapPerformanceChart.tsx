@@ -16,7 +16,7 @@ export function MapPerformanceChart({
   height = 280,
 }: {
   data: MapPerformance[];
-  height?: number;
+  height?: number | undefined;
 }) {
   return (
     <div style={{ height }} className="w-full">

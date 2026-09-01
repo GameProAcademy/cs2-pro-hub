@@ -9,11 +9,11 @@ export function ProgressBar({
   className,
 }: {
   value: number;
-  max?: number;
-  label?: string;
-  showValue?: boolean;
-  tone?: "primary" | "accent" | "success" | "warning" | "destructive";
-  className?: string;
+  max?: number | undefined;
+  label?: string | undefined;
+  showValue?: boolean | undefined;
+  tone?: "primary" | "accent" | "success" | "warning" | "destructive" | undefined;
+  className?: string | undefined;
 }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   const toneClass = {

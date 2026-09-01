@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
 
-export function Brand({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function Brand({ className, compact = false }: { className?: string | undefined; compact?: boolean | undefined }) {
   return (
     <Link
       to="/dashboard"

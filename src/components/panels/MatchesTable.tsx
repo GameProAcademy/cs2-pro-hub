@@ -18,7 +18,7 @@ const resultTone = {
 const resultLabel = { V: "Vitória", D: "Derrota", E: "Empate" } as const;
 
 function formatDate(iso: string) {
-  const [y, m, d] = iso.split("-");
+  const [y = "", m = "", d = ""] = iso.split("-");
   return `${d}/${m}/${y.slice(2)}`;
 }
 

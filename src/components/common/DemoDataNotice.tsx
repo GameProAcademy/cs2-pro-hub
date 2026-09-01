@@ -4,7 +4,7 @@ import { DEMO_DATA } from "@/config/app";
 import { cn } from "@/lib/utils";
 
 /** Inline label attached to any surface rendering mock values. */
-export function DemoTag({ className }: { className?: string }) {
+export function DemoTag({ className }: { className?: string | undefined }) {
   if (!DEMO_DATA) return null;
   return (
     <span
@@ -19,7 +19,7 @@ export function DemoTag({ className }: { className?: string }) {
 }
 
 /** Page-level banner. Explicit: nothing here is real player data. */
-export function DemoDataNotice({ context }: { context?: string }) {
+export function DemoDataNotice({ context }: { context?: string | undefined }) {
   if (!DEMO_DATA) return null;
   return (
     <div className="flex items-start gap-3 rounded-lg border border-warning/25 bg-warning/8 px-4 py-3">
