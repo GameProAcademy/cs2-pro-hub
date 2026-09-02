@@ -85,7 +85,7 @@ function CoachPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{analysis.summary}</p>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{analysis.priority}</p>
           </ChartCard>
         </div>
       </div>
