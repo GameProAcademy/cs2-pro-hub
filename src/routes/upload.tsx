@@ -1,66 +1,166 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Database, Cpu, ShieldCheck } from "lucide-react";
+import { Cpu, Database, FileImage, FileText, Layers, Lightbulb, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
-import { UploadBox } from "@/components/common/UploadBox";
+import { UploadBox, type UploadKind } from "@/components/common/UploadBox";
 import { AppShell } from "@/components/layout/AppShell";
+import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/config/app";
+import { useT } from "@/i18n";
+import type { TranslationKey } from "@/i18n/config";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
     meta: [
-      { title: "Enviar demo — CS2 PRO AI COACH" },
+      { title: "Analisar meu jogo — CS2 PRO AI COACH" },
       {
         name: "description",
-        content: "Envie seus arquivos .dem de CS2 para análise de performance.",
+        content:
+          "Envie sua demo .dem ou seus prints e relatórios de estatísticas de CS2 para análise de performance.",
       },
-      { property: "og:title", content: "Enviar demo — CS2 PRO AI COACH" },
+      { property: "og:title", content: "Analisar meu jogo — CS2 PRO AI COACH" },
       {
         property: "og:description",
-        content: "Área de upload de demos .dem do Counter-Strike 2.",
+        content: "Dois caminhos de entrada: demo .dem ou dados e relatórios de estatísticas.",
       },
     ],
   }),
-  component: UploadPage,
+  component: AnalyzePage,
 });
 
-const pipeline = [
-  { icon: ShieldCheck, label: "Validação do arquivo", status: "Interface pronta" },
-  { icon: Cpu, label: "Parser da demo", status: "Não implementado" },
-  { icon: Database, label: "Persistência e métricas", status: "Não implementado" },
+/** Both paths converge into the same future normalization pipeline. */
+const pipeline: { icon: typeof Cpu; labelKey: TranslationKey; done: boolean }[] = [
+  { icon: ShieldCheck, labelKey: "analyze.pipeline.validation", done: true },
+  { icon: Cpu, labelKey: "analyze.pipeline.parser", done: false },
+  { icon: FileText, labelKey: "analyze.pipeline.extractor", done: false },
+  { icon: Layers, labelKey: "analyze.pipeline.normalizer", done: false },
+  { icon: Database, labelKey: "analyze.pipeline.metrics", done: false },
 ];
 
-function UploadPage() {
+function PathCard({
+  kind,
+  active,
+  onSelect,
+  icon: Icon,
+}: {
+  kind: UploadKind;
+  active: boolean;
+  onSelect: () => void;
+  icon: typeof Cpu;
+}) {
+  const t = useT();
+  const keys =
+    kind === "demo"
+      ? {
+          title: "analyze.demo.title" as TranslationKey,
+          description: "analyze.demo.description" as TranslationKey,
+          cta: "analyze.demo.cta" as TranslationKey,
+        }
+      : {
+          title: "analyze.report.title" as TranslationKey,
+          description: "analyze.report.description" as TranslationKey,
+          cta: "analyze.report.cta" as TranslationKey,
+        };
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-xl border p-5 transition-colors",
+        active ? "border-primary/50 bg-primary/5" : "border-border bg-card/40",
+      )}
+    >
+      <span
+        className={cn(
+          "mb-4 flex size-10 items-center justify-center rounded-lg border",
+          active ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground",
+        )}
+      >
+        <Icon className="size-4" aria-hidden />
+      </span>
+      <h2 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-foreground">
+        {t(keys.title)}
+      </h2>
+      <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+        {t(keys.description)}
+      </p>
+      <Button
+        className="mt-5 w-full"
+        variant={active ? "default" : "outline"}
+        onClick={onSelect}
+        aria-pressed={active}
+      >
+        {t(keys.cta)}
+      </Button>
+    </div>
+  );
+}
+
+function AnalyzePage() {
+  const t = useT();
+  const [kind, setKind] = useState<UploadKind>("demo");
+
   return (
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Upload"
-          title="Enviar nova demo"
-          description="Envie a demo de uma partida de CS2 para gerar métricas, diagnóstico e ajustes no seu plano de treinamento."
+          eyebrow={t("analyze.eyebrow")}
+          title={t("analyze.title")}
+          description={t("analyze.description")}
         />
 
         <div className="grid gap-5 lg:grid-cols-3">
-          <ChartCard title="Arquivo da partida" showDemoTag={false} className="lg:col-span-2">
-            <UploadBox />
-          </ChartCard>
+          <div className="space-y-5 lg:col-span-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <PathCard
+                kind="demo"
+                icon={Cpu}
+                active={kind === "demo"}
+                onSelect={() => setKind("demo")}
+              />
+              <PathCard
+                kind="report"
+                icon={FileImage}
+                active={kind === "report"}
+                onSelect={() => setKind("report")}
+              />
+            </div>
+
+            <p className="flex items-start gap-2.5 rounded-lg border border-border bg-card/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
+              {t("analyze.recommendation")}
+            </p>
+
+            <ChartCard
+              title={kind === "demo" ? t("analyze.demo.title") : t("analyze.report.title")}
+              showDemoTag={false}
+            >
+              <UploadBox kind={kind} />
+            </ChartCard>
+          </div>
 
           <ChartCard
-            title="Status do processamento"
-            subtitle="O que existe hoje nesta etapa do produto"
+            title={t("analyze.pipelineTitle")}
+            subtitle={t("analyze.pipelineSubtitle")}
             showDemoTag={false}
           >
             <ul className="space-y-4">
               {pipeline.map((step) => (
-                <li key={step.label} className="flex items-start gap-3">
+                <li key={step.labelKey} className="flex items-start gap-3">
                   <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
                     <step.icon className="size-4" aria-hidden />
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{step.label}</p>
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                      {step.status}
+                    <p className="text-sm font-medium text-foreground">{t(step.labelKey)}</p>
+                    <p
+                      className={cn(
+                        "font-mono text-[11px] uppercase tracking-wider",
+                        step.done ? "text-success" : "text-muted-foreground",
+                      )}
+                    >
+                      {step.done ? t("common.interfaceReady") : t("common.notImplemented")}
                     </p>
                   </div>
                 </li>
@@ -68,9 +168,8 @@ function UploadPage() {
             </ul>
             {!FEATURES.demoParser ? (
               <p className="mt-5 rounded-md border border-warning/25 bg-warning/8 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                <span className="font-medium text-warning">Sem processamento.</span> O arquivo
-                selecionado permanece apenas no seu navegador: não há upload, storage nem parser
-                nesta etapa.
+                <span className="font-medium text-warning">{t("analyze.noProcessingTitle")}</span>{" "}
+                {t("analyze.noProcessingBody")}
               </p>
             ) : null}
           </ChartCard>
