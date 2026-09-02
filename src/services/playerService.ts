@@ -32,6 +32,8 @@ import {
   demoStrengths,
   demoTrainingPlans,
 } from "@/data/demoPlayer";
+import { demoLessons } from "@/data/lessons";
+import type { SkillArea, TrainingHorizon } from "@/types";
 
 /** True while the UI is rendering demonstration values. */
 export const isDemoSource = () => DEMO_DATA;
@@ -57,3 +59,16 @@ export const getTrends = () => ({
   hs: demoHsTrend,
   opening: demoOpeningTrend,
 });
+
+/**
+ * Lesson catalog access. Today it returns MOCK lessons with placeholder URLs;
+ * later this becomes the CS2 PRO course integration point.
+ */
+export const getLessons = () => demoLessons;
+
+export const getLessonsForHorizon = (horizon: TrainingHorizon) =>
+  demoLessons.filter((lesson) => lesson.recommendedFor.includes(horizon));
+
+/** Future entry point for: detected problem -> skill -> lesson. */
+export const getLessonsForSkills = (skills: SkillArea[]) =>
+  demoLessons.filter((lesson) => lesson.relatedSkills.some((skill) => skills.includes(skill)));
