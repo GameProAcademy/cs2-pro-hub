@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PlayCircle } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { DemoDataNotice } from "@/components/common/DemoDataNotice";
+import { DemoTag } from "@/components/common/DemoDataNotice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { AppShell } from "@/components/layout/AppShell";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getTrainingPlans } from "@/services/playerService";
+import { useT } from "@/i18n";
+import type { TranslationKey } from "@/i18n/config";
+import { getLessonsForHorizon, getTrainingPlans } from "@/services/playerService";
 import type { TrainingPlan } from "@/types";
 
 export const Route = createFileRoute("/training")({
@@ -16,51 +21,118 @@ export const Route = createFileRoute("/training")({
       {
         name: "description",
         content:
-          "Plano adaptativo de 30, 60 e 90 dias para corrigir gargalos e consolidar evolução no CS2.",
+          "Plano adaptativo de 30, 60 e 90 dias com aulas recomendadas do CS2 PRO para corrigir gargalos.",
       },
       { property: "og:title", content: "Meu Treinamento — CS2 PRO AI COACH" },
       {
         property: "og:description",
-        content: "Estrutura de treino em três horizontes: correção, desenvolvimento e consolidação.",
+        content: "Correção, desenvolvimento e consolidação — com conteúdo recomendado por etapa.",
       },
     ],
   }),
   component: TrainingPage,
 });
 
+const horizonKeys: Record<number, TranslationKey> = {
+  30: "training.horizon30",
+  60: "training.horizon60",
+  90: "training.horizon90",
+};
+
 function PlanPanel({ plan }: { plan: TrainingPlan }) {
+  const t = useT();
+  const lessons = getLessonsForHorizon(plan.horizon);
+
   return (
     <div className="grid gap-5 lg:grid-cols-3">
-      <ChartCard title={plan.title} className="lg:col-span-2">
-        <p className="text-sm leading-relaxed text-muted-foreground">{plan.goal}</p>
-        <ul className="mt-5 space-y-3">
-          {plan.tasks.map((task) => (
-            <li key={task.title} className="rounded-lg border border-border bg-card/50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-foreground">{task.title}</h3>
-                <span className="rounded-sm bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {task.frequency}
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{task.detail}</p>
-            </li>
-          ))}
-        </ul>
-      </ChartCard>
+      <div className="space-y-5 lg:col-span-2">
+        <ChartCard title={t(horizonKeys[plan.horizon] ?? "training.horizon30")}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            {t("training.objective")}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{plan.goal}</p>
 
-      <ChartCard title="Resumo do ciclo">
+          <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            {t("training.steps")}
+          </p>
+          <ul className="mt-3 space-y-3">
+            {plan.tasks.map((task) => (
+              <li key={task.title} className="rounded-lg border border-border bg-card/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-foreground">{task.title}</h3>
+                  <span className="rounded-sm bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {task.frequency}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{task.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
+
+        <ChartCard title={t("training.lessons")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {lessons.map((lesson) => (
+              <article
+                key={lesson.lessonId}
+                className="flex flex-col rounded-lg border border-border bg-card/50 p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                    {t("training.lessonModule")}: {lesson.module}
+                  </p>
+                  {lesson.isDemoLink ? <DemoTag /> : null}
+                </div>
+                <h3 className="mt-2 text-sm font-semibold text-foreground">{lesson.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {lesson.description}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {lesson.relatedSkills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  {lesson.duration ? (
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {t("training.lessonDuration")}: {lesson.duration}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <Button asChild size="sm" variant="outline" className="gap-2">
+                    <a href={lesson.lessonUrl} target="_blank" rel="noopener noreferrer">
+                      <PlayCircle className="size-3.5" aria-hidden />
+                      {t("training.watchLesson")}
+                    </a>
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </ChartCard>
+      </div>
+
+      <ChartCard title={t("training.cycleSummary")}>
         <div className="num-display text-5xl font-bold text-foreground">
           {plan.horizon}
-          <span className="ml-2 text-base font-normal text-muted-foreground">dias</span>
+          <span className="ml-2 text-base font-normal text-muted-foreground">
+            {t("training.days")}
+          </span>
         </div>
         <ProgressBar
           className="mt-6"
           value={plan.progress}
-          label="Progresso do plano"
+          label={t("training.progress")}
           showValue
         />
         <p className="mt-6 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          Foco
+          {t("training.focus")}
         </p>
         <div className="flex flex-wrap gap-2">
           {plan.focus.map((f) => (
@@ -72,30 +144,37 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
             </span>
           ))}
         </div>
+        <p className="mt-6 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          {t("training.exercises")}
+        </p>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {t("training.exercisesSoon")}
+        </p>
       </ChartCard>
     </div>
   );
 }
 
 function TrainingPage() {
+  const t = useT();
   const plans = getTrainingPlans();
 
   return (
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Plano adaptativo"
-          title="Meu Treinamento"
-          description="Três horizontes encadeados: corrigir o que custa rounds, desenvolver a habilidade e consolidar em ambiente competitivo."
+          eyebrow={t("training.eyebrow")}
+          title={t("training.title")}
+          description={t("training.description")}
         />
 
-        <DemoDataNotice context="Os planos abaixo são exemplos de estrutura. O algoritmo adaptativo de treinamento ainda não foi implementado." />
+        <DemoDataNotice context={t("training.notice")} />
 
         <Tabs defaultValue="30">
           <TabsList className="w-full sm:w-auto">
             {plans.map((p) => (
               <TabsTrigger key={p.horizon} value={String(p.horizon)} className="flex-1 sm:flex-none">
-                Plano {p.horizon} dias
+                {t("training.plan")} {p.horizon} {t("training.days")}
               </TabsTrigger>
             ))}
           </TabsList>

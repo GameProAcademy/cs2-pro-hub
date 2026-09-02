@@ -119,3 +119,35 @@ export interface PlayerProfile {
   experience: string;
   preferences: { emailReports: boolean; weeklyPlan: boolean; publicProfile: boolean };
 }
+
+/** Skill areas double as the join key between diagnosis and course lessons. */
+export type SkillArea = DnaDimension;
+
+/**
+ * CS2 PRO course lesson. Shape is prepared for the future automatic link
+ * (detected problem -> skill -> lesson -> "Watch lesson").
+ */
+export interface CourseLesson {
+  lessonId: string;
+  title: string;
+  description: string;
+  module: string;
+  lessonUrl: string;
+  /** Locale the lesson is recorded in. */
+  locale: string;
+  relatedSkills: SkillArea[];
+  /** Training horizons the lesson is recommended for. */
+  recommendedFor: TrainingHorizon[];
+  duration?: string;
+  /** True while the URL is a placeholder (DEMO_DATA). */
+  isDemoLink?: boolean;
+}
+
+export type TrainingHorizon = 30 | 60 | 90;
+
+/** Measurable target attached to a training plan. */
+export interface TrainingTarget {
+  metric: string;
+  current: string;
+  target: string;
+}

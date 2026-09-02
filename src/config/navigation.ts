@@ -1,5 +1,4 @@
 import {
-  Activity,
   Bot,
   Dna,
   Gauge,
@@ -11,8 +10,11 @@ import {
   User,
 } from "lucide-react";
 
+import type { TranslationKey } from "@/i18n/config";
+
 export interface NavItem {
-  label: string;
+  /** i18n key — never a literal label. */
+  labelKey: TranslationKey;
   to: string;
   icon: typeof LayoutDashboard;
   /** Shown in the mobile bottom navigation. */
@@ -20,15 +22,14 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, primary: true },
-  { label: "Minhas Partidas", to: "/matches", icon: ListOrdered, primary: true },
-  { label: "Performance", to: "/performance", icon: Gauge },
-  { label: "Player DNA", to: "/player-dna", icon: Dna },
-  { label: "Meu Raio-X", to: "/analysis", icon: Stethoscope, primary: true },
-  { label: "Meu Treinamento", to: "/training", icon: Target },
-  { label: "AI Coach", to: "/coach", icon: Bot, primary: true },
-  { label: "Perfil", to: "/profile", icon: User },
+  { labelKey: "nav.dashboard", to: "/dashboard", icon: LayoutDashboard, primary: true },
+  { labelKey: "nav.matches", to: "/matches", icon: ListOrdered },
+  { labelKey: "nav.performance", to: "/performance", icon: Gauge },
+  { labelKey: "nav.playerDna", to: "/player-dna", icon: Dna },
+  { labelKey: "nav.analysis", to: "/analysis", icon: Stethoscope, primary: true },
+  { labelKey: "nav.training", to: "/training", icon: Target, primary: true },
+  { labelKey: "nav.coach", to: "/coach", icon: Bot, primary: true },
+  { labelKey: "nav.profile", to: "/profile", icon: User },
 ];
 
-export const uploadNavItem: NavItem = { label: "Enviar Demo", to: "/upload", icon: Upload };
-export const brandIcon = Activity;
+export const uploadNavItem: NavItem = { labelKey: "nav.analyze", to: "/upload", icon: Upload };

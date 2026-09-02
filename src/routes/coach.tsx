@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bot, Send, User } from "lucide-react";
-import { useState } from "react";
+import { BarChart3, ClipboardList, Stethoscope, Target } from "lucide-react";
 
+import { CoachChat } from "@/components/coach/CoachChat";
+import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { FEATURES } from "@/config/app";
-import { getCoachHistory } from "@/services/playerService";
-import type { CoachMessage } from "@/types";
-import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
+import type { TranslationKey } from "@/i18n/config";
+import { getAnalysis, getProScore } from "@/services/playerService";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -29,105 +28,66 @@ export const Route = createFileRoute("/coach")({
   component: CoachPage,
 });
 
-const PLACEHOLDER_REPLY =
-  "Exemplo de resposta (demonstrativa). O AI Coach ainda não está conectado a nenhum modelo de linguagem nesta etapa, portanto esta é uma mensagem fixa apenas para demonstrar a interface.";
-
-function Bubble({ message }: { message: CoachMessage }) {
-  const isCoach = message.role === "coach";
-  return (
-    <div className={cn("flex gap-3", isCoach ? "justify-start" : "justify-end")}>
-      {isCoach ? (
-        <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-          <Bot className="size-4" aria-hidden />
-        </span>
-      ) : null}
-      <div
-        className={cn(
-          "max-w-[85%] rounded-lg border px-4 py-3 text-sm leading-relaxed sm:max-w-[70%]",
-          isCoach
-            ? "border-border bg-card text-foreground"
-            : "border-primary/25 bg-primary/10 text-foreground",
-        )}
-      >
-        {isCoach ? (
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-warning">
-            Mensagem de exemplo
-          </p>
-        ) : null}
-        <p>{message.content}</p>
-        <p className="mt-2 font-mono text-[10px] text-muted-foreground">{message.time}</p>
-      </div>
-      {!isCoach ? (
-        <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
-          <User className="size-4" aria-hidden />
-        </span>
-      ) : null}
-    </div>
-  );
-}
+const contextItems: { icon: typeof Target; labelKey: TranslationKey }[] = [
+  { icon: BarChart3, labelKey: "coach.context.performance" },
+  { icon: Stethoscope, labelKey: "coach.context.analysis" },
+  { icon: Target, labelKey: "coach.context.training" },
+  { icon: ClipboardList, labelKey: "coach.context.plan" },
+];
 
 function CoachPage() {
-  const [messages, setMessages] = useState<CoachMessage[]>(getCoachHistory());
-  const [draft, setDraft] = useState("");
-
-  const send = () => {
-    const content = draft.trim();
-    if (!content) return;
-    const time = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    // Nenhuma chamada de API é feita: a resposta abaixo é um texto fixo local.
-    setMessages((prev) => [
-      ...prev,
-      { id: `p-${prev.length}`, role: "player", content, time },
-      { id: `c-${prev.length + 1}`, role: "coach", content: PLACEHOLDER_REPLY, time },
-    ]);
-    setDraft("");
-  };
+  const t = useT();
+  const score = getProScore();
+  const analysis = getAnalysis();
 
   return (
     <AppShell>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Coach"
-          title="AI Coach"
-          description="Pergunte sobre um round, um mapa ou um gargalo específico do seu diagnóstico."
+          eyebrow={t("coach.eyebrow")}
+          title={t("coach.title")}
+          description={t("coach.description")}
         />
 
         {!FEATURES.aiCoachApi ? (
           <p className="rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-            <span className="font-medium text-warning">Coach não conectado.</span> Nenhuma API de IA
-            está integrada nesta etapa. As respostas exibidas são textos fixos de demonstração.
+            <span className="font-medium text-warning">{t("coach.notConnectedTitle")}</span>{" "}
+            {t("coach.notConnectedBody")}
           </p>
         ) : null}
 
-        <section className="surface-panel flex h-[62vh] min-h-[420px] flex-col rounded-lg border border-border">
-          <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-            {messages.map((m) => (
-              <Bubble key={m.id} message={m} />
-            ))}
-          </div>
+        <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
+          <section className="surface-panel flex h-[62vh] min-h-[420px] flex-col rounded-lg border border-border">
+            <header className="border-b border-border px-4 py-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                {t("coach.historyTitle")}
+              </p>
+            </header>
+            <CoachChat className="flex-1" />
+          </section>
 
-          <div className="border-t border-border p-3 sm:p-4">
-            <div className="flex items-end gap-2">
-              <Textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                rows={2}
-                placeholder="Escreva sua pergunta para o coach…"
-                className="min-h-[52px] resize-none"
-              />
-              <Button onClick={send} className="h-[52px] gap-2 px-4" aria-label="Enviar mensagem">
-                <Send className="size-4" aria-hidden />
-                <span className="hidden sm:inline">Enviar</span>
-              </Button>
+          <ChartCard title={t("coach.contextTitle")}>
+            <div className="num-display text-4xl font-bold text-foreground">
+              {score.value}
+              <span className="ml-1 text-base font-normal text-muted-foreground">
+                /{score.max}
+              </span>
             </div>
-          </div>
-        </section>
+            <p className="mt-1 text-xs text-muted-foreground">{score.tier}</p>
+            <ul className="mt-5 space-y-2.5">
+              {contextItems.map((item) => (
+                <li
+                  key={item.labelKey}
+                  className="flex items-center gap-3 rounded-md border border-border bg-card/50 px-3 py-2.5"
+                >
+                  <item.icon className="size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="text-sm font-medium text-foreground">{t(item.labelKey)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{analysis.priority}</p>
+          </ChartCard>
+        </div>
       </div>
     </AppShell>
   );
