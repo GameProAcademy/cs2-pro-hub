@@ -334,6 +334,9 @@ export const ptBR = {
   "dna.description":
     "Cada dimensão é comparada com a média esperada para o seu nível. O objetivo não é ter tudo alto, é conhecer o seu formato.",
   "admin.unauthorized": "Acesso não autorizado",
+  "demo.label": "Dados de demonstração.",
+  "demo.notice":
+    "Nenhuma demo foi processada. Os valores abaixo são fictícios e existem apenas para demonstrar a interface — não há parser, banco de dados ou IA conectados nesta etapa.",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;

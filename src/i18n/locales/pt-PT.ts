@@ -332,4 +332,7 @@ export const ptPT: Dictionary = {
   "dna.description":
     "Cada dimensão é comparada com a média esperada para o teu nível. O objetivo não é ter tudo alto, é conhecer o teu formato.",
   "admin.unauthorized": "Acesso não autorizado",
+  "demo.label": "Dados de demonstração.",
+  "demo.notice":
+    "Nenhuma demo foi processada. Os valores abaixo são fictícios e existem apenas para demonstrar a interface — não há parser, base de dados ou IA ligados nesta etapa.",
 };
