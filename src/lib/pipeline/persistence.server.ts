@@ -8,11 +8,7 @@
 import { ANALYSIS_VERSION, SCHEMA_VERSION } from "@/config/pipeline";
 import { classifyBuyContext } from "@/lib/pipeline/normalizer";
 import { PipelineError } from "@/lib/pipeline/errors";
-import type {
-  CanonicalFeatures,
-  CanonicalMatch,
-  CanonicalMetrics,
-} from "@/lib/pipeline/types";
+import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 
 const EVENT_CHUNK = 500;

@@ -7,7 +7,12 @@
  */
 import { DEMO_BUCKET, MAX_DEMO_SIZE_BYTES, MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
 import { supabase } from "@/integrations/supabase/client";
-import { createDemoUpload, enqueueDemoJob, getDemoJobStatus, type DemoJobView } from "@/lib/pipeline.functions";
+import {
+  createDemoUpload,
+  enqueueDemoJob,
+  getDemoJobStatus,
+  type DemoJobView,
+} from "@/lib/pipeline.functions";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"

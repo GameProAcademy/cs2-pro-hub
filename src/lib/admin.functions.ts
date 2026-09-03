@@ -623,7 +623,6 @@ export const resetAdminUserPassword = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const updateAdminUser = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {

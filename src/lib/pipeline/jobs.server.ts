@@ -28,7 +28,11 @@ import {
   demoExists,
   retainUntil,
 } from "@/lib/pipeline/storage.server";
-import { resolveOwnSteamId, validateCanonicalMatch, validateDemoFile } from "@/lib/pipeline/validator";
+import {
+  resolveOwnSteamId,
+  validateCanonicalMatch,
+  validateDemoFile,
+} from "@/lib/pipeline/validator";
 
 export type JobStage =
   | "queued"
@@ -255,7 +259,8 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     return { jobId, status: "processed", matchId: persisted.matchId };
   } catch (error) {
     const pipelineError = toPipelineError(error);
-    const canRetry = !pipelineError.permanent && job.retry_count < (job.max_retries ?? MAX_JOB_RETRIES);
+    const canRetry =
+      !pipelineError.permanent && job.retry_count < (job.max_retries ?? MAX_JOB_RETRIES);
 
     await db
       .from("demo_jobs")

@@ -25,9 +25,9 @@ describe("parser contract", () => {
   });
 
   it("rejects a payload from a different contract version", () => {
-    expect(() =>
-      assertRawParserOutput({ ...syntheticParserOutput, contract_version: 99 }),
-    ).toThrow(PipelineError);
+    expect(() => assertRawParserOutput({ ...syntheticParserOutput, contract_version: 99 })).toThrow(
+      PipelineError,
+    );
   });
 });
 

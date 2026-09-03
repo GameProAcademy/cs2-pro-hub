@@ -29,7 +29,8 @@ export interface DemoParserAdapter {
 
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
-  if (!value || typeof value !== "object") throw new PipelineError("PARSER_ERROR", "empty response");
+  if (!value || typeof value !== "object")
+    throw new PipelineError("PARSER_ERROR", "empty response");
   const raw = value as Partial<RawParserOutput>;
 
   if (raw.contract_version !== PARSER_CONTRACT_VERSION) {

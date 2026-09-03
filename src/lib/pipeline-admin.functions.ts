@@ -141,14 +141,12 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
       })
       .eq("id", data.jobId);
 
-    const { error: auditError } = await (context as Ctx).supabase
-      .from("admin_audit_logs")
-      .insert({
-        admin_user_id: (context as Ctx).userId,
-        action: "DEMO_JOB_RETRIED",
-        target_user_id: null,
-        metadata: { job_id: data.jobId },
-      });
+    const { error: auditError } = await (context as Ctx).supabase.from("admin_audit_logs").insert({
+      admin_user_id: (context as Ctx).userId,
+      action: "DEMO_JOB_RETRIED",
+      target_user_id: null,
+      metadata: { job_id: data.jobId },
+    });
     if (auditError) throw new Error("AUDIT_FAILED");
 
     // Re-queue only: the worker/cron layer performs the processing.

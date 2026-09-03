@@ -5,11 +5,7 @@
  * and are TEMPORARY: they are deleted after the retention window because only
  * the derived, normalised data is permanent.
  */
-import {
-  DEMO_BUCKET,
-  DEMO_RETENTION_HOURS,
-  FAILED_DEMO_RETENTION_HOURS,
-} from "@/config/pipeline";
+import { DEMO_BUCKET, DEMO_RETENTION_HOURS, FAILED_DEMO_RETENTION_HOURS } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 15;
@@ -66,7 +62,8 @@ export async function deleteDemo(storagePath: string): Promise<void> {
 export async function computeStoredDemoSha256(storagePath: string): Promise<string> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.storage.from(DEMO_BUCKET).download(storagePath);
-  if (error || !data) throw new PipelineError("DEMO_NOT_FOUND", error?.message ?? "download failed");
+  if (error || !data)
+    throw new PipelineError("DEMO_NOT_FOUND", error?.message ?? "download failed");
   const digest = await crypto.subtle.digest("SHA-256", await data.arrayBuffer());
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
