@@ -720,6 +720,7 @@ export type Database = {
       matches: {
         Row: {
           created_at: string
+          data_source: Database["public"]["Enums"]["data_source"]
           demo_metadata: Json | null
           duration_seconds: number | null
           external_match_id: string | null
@@ -733,12 +734,15 @@ export type Database = {
           rounds: number | null
           score_opponent: number | null
           score_player: number | null
+          source_fetched_at: string | null
+          source_version: string | null
           team_opponent: string | null
           team_player: string | null
           upload_id: string | null
         }
         Insert: {
           created_at?: string
+          data_source?: Database["public"]["Enums"]["data_source"]
           demo_metadata?: Json | null
           duration_seconds?: number | null
           external_match_id?: string | null
@@ -752,12 +756,15 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          source_fetched_at?: string | null
+          source_version?: string | null
           team_opponent?: string | null
           team_player?: string | null
           upload_id?: string | null
         }
         Update: {
           created_at?: string
+          data_source?: Database["public"]["Enums"]["data_source"]
           demo_metadata?: Json | null
           duration_seconds?: number | null
           external_match_id?: string | null
@@ -771,6 +778,8 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          source_fetched_at?: string | null
+          source_version?: string | null
           team_opponent?: string | null
           team_player?: string | null
           upload_id?: string | null
@@ -788,6 +797,71 @@ export type Database = {
             columns: ["upload_id"]
             isOneToOne: false
             referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_connections: {
+        Row: {
+          connected_at: string | null
+          connection_type: Database["public"]["Enums"]["connection_type"]
+          created_at: string
+          disconnected_at: string | null
+          external_id: string | null
+          external_username: string | null
+          id: string
+          last_sync_at: string | null
+          last_sync_error: string | null
+          last_sync_status: string | null
+          metadata: Json
+          player_id: string
+          profile_url: string | null
+          source: Database["public"]["Enums"]["data_source"]
+          status: Database["public"]["Enums"]["connection_status"]
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          connection_type: Database["public"]["Enums"]["connection_type"]
+          created_at?: string
+          disconnected_at?: string | null
+          external_id?: string | null
+          external_username?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          metadata?: Json
+          player_id: string
+          profile_url?: string | null
+          source: Database["public"]["Enums"]["data_source"]
+          status?: Database["public"]["Enums"]["connection_status"]
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          connection_type?: Database["public"]["Enums"]["connection_type"]
+          created_at?: string
+          disconnected_at?: string | null
+          external_id?: string | null
+          external_username?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          metadata?: Json
+          player_id?: string
+          profile_url?: string | null
+          source?: Database["public"]["Enums"]["data_source"]
+          status?: Database["public"]["Enums"]["connection_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_connections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1426,6 +1500,19 @@ export type Database = {
       analysis_status: "pending" | "processing" | "completed" | "failed"
       app_role: "admin_master" | "admin" | "player"
       coach_role: "coach" | "player"
+      connection_status:
+        | "pending"
+        | "connected"
+        | "disconnected"
+        | "expired"
+        | "error"
+      connection_type: "oauth" | "public_profile" | "manual"
+      data_source:
+        | "demo"
+        | "faceit"
+        | "gamers_club"
+        | "steam"
+        | "public_profile"
       finding_priority: "critical" | "high" | "medium" | "low"
       finding_type: "bottleneck" | "strength" | "recommendation"
       match_result: "win" | "loss" | "draw"
@@ -1566,6 +1653,15 @@ export const Constants = {
       analysis_status: ["pending", "processing", "completed", "failed"],
       app_role: ["admin_master", "admin", "player"],
       coach_role: ["coach", "player"],
+      connection_status: [
+        "pending",
+        "connected",
+        "disconnected",
+        "expired",
+        "error",
+      ],
+      connection_type: ["oauth", "public_profile", "manual"],
+      data_source: ["demo", "faceit", "gamers_club", "steam", "public_profile"],
       finding_priority: ["critical", "high", "medium", "low"],
       finding_type: ["bottleneck", "strength", "recommendation"],
       match_result: ["win", "loss", "draw"],
