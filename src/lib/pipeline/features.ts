@@ -51,7 +51,11 @@ export function extractFeatures(
     },
     positioning: {
       traded_death_rate: ratio(metrics.tradeDeaths, Math.max(metrics.deaths, 1)),
-      first_death_rate: metrics.deaths > 0 ? clamp01(1 - metrics.firstDeaths / rounds) : null,
+      // Semantically literal: share of played rounds in which the player was
+      // the first death. `first_death_avoidance` is its complement and is kept
+      // as a separate, explicitly named signal.
+      first_death_rate: rounds > 0 ? clamp01(metrics.firstDeaths / rounds) : null,
+      first_death_avoidance: rounds > 0 ? clamp01(1 - metrics.firstDeaths / rounds) : null,
       // Requires positional data; null instead of a fabricated value.
       map_spread: match.quality.flags.includes("missing_positions") ? null : null,
     },
