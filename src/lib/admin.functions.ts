@@ -37,6 +37,7 @@ export interface AdminUserRow {
   locale: string;
   created_at: string;
   last_login_at: string | null;
+  avatar_url: string | null;
 }
 
 export interface AdminProfileDetail {
@@ -83,6 +84,135 @@ export interface AdminIdentity {
   external_id: string | null;
   is_verified: boolean;
   profile_url: string | null;
+  created_at?: string;
+}
+
+export interface AdminUpload {
+  id: string;
+  file_name: string;
+  type: string;
+  source: string;
+  file_size: number | null;
+  mime_type: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+  processed_at: string | null;
+}
+
+export interface AdminMatch {
+  id: string;
+  map: string | null;
+  match_date: string | null;
+  platform: string | null;
+  result: string | null;
+  score_player: number | null;
+  score_opponent: number | null;
+  rounds: number | null;
+  external_match_id: string | null;
+}
+
+export interface AdminMatchMetrics {
+  id: string;
+  match_id: string;
+  kills: number | null;
+  deaths: number | null;
+  assists: number | null;
+  adr: number | null;
+  kast: number | null;
+  hs_percent: number | null;
+  first_kills: number | null;
+  first_deaths: number | null;
+  opening_success: number | null;
+  clutches: number | null;
+  multi_kills: number | null;
+  utility_damage: number | null;
+  flash_assists: number | null;
+  grenade_damage: number | null;
+  ct_rating: number | null;
+  t_rating: number | null;
+  rating: number | null;
+}
+
+export interface AdminAnalysis {
+  id: string;
+  analysis_version: string;
+  status: string;
+  confidence: number | null;
+  summary: string | null;
+  created_at: string;
+  source_upload_id: string | null;
+}
+
+export interface AdminFinding {
+  id: string;
+  analysis_id: string;
+  skill_id: string | null;
+  skill_slug?: string | null;
+  type: string;
+  priority: string | null;
+  impact: string | null;
+  confidence: number | null;
+  title: string;
+  description: string | null;
+  evidence: JsonValue | null;
+}
+
+export interface AdminDna {
+  id: string;
+  aim: number | null;
+  dueling: number | null;
+  survivability: number | null;
+  positioning: number | null;
+  utility: number | null;
+  decision_making: number | null;
+  teamplay: number | null;
+  economy: number | null;
+  clutch: number | null;
+  consistency: number | null;
+  created_at: string;
+}
+
+export interface AdminScore {
+  id: string;
+  score: number;
+  percentile: number | null;
+  tier: string | null;
+  created_at: string;
+}
+
+export interface AdminTrainingItem {
+  id: string;
+  training_plan_id: string;
+  skill_id: string | null;
+  skill_slug?: string | null;
+  lesson_id: string | null;
+  title: string;
+  description: string | null;
+  target_metric: string | null;
+  target_value: string | null;
+  sort_order: number;
+  status: string;
+}
+
+export interface AdminTrainingPlan {
+  id: string;
+  horizon: number;
+  status: string;
+  title: string | null;
+  objective: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  items: AdminTrainingItem[];
+}
+
+export interface AdminConversation {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  messageCount: number;
 }
 
 export interface AuditLogRow {
@@ -217,7 +347,7 @@ export const listAdminUsers = createServerFn({ method: "GET" })
     let query = supabase
       .from("profiles")
       .select(
-        "id, display_name, nickname, email, role, status, country, locale, created_at, last_login_at",
+        "id, display_name, nickname, email, role, status, country, locale, created_at, last_login_at, avatar_url",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
