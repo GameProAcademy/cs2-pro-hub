@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { authErrorKey, fetchAccountStatus, isValidEmail } from "@/lib/auth";
+import { authErrorKey, fetchAccountStatus, isValidEmail, touchLastLogin } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
