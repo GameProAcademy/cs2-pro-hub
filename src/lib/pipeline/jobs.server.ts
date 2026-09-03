@@ -22,6 +22,7 @@ import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { resolveParserAdapter } from "@/lib/pipeline/parser/remoteParser.server";
 import { persistCanonicalMatch } from "@/lib/pipeline/persistence.server";
 import {
+  computeStoredDemoSha256,
   createDemoSignedUrl,
   deleteDemo,
   demoExists,
@@ -101,23 +102,21 @@ export async function cleanupExpiredDemos(limit = 25): Promise<number> {
   return deleted;
 }
 
-/** Picks the next pending job while respecting the concurrency limit. */
+/**
+ * Atomically claims the next pending job.
+ *
+ * The claim is a single transactional SQL function (`claim_next_demo_job`) that
+ * locks the candidate row with FOR UPDATE SKIP LOCKED, honours the concurrency
+ * limit and flips the row to `processing` in the same transaction, so two
+ * concurrent workers can never claim the same job.
+ */
 export async function claimNextJob(): Promise<string | null> {
   const db = await admin();
-  const { count } = await db
-    .from("demo_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "processing");
-  if ((count ?? 0) >= MAX_CONCURRENT_DEMO_JOBS) return null;
-
-  const { data } = await db
-    .from("demo_jobs")
-    .select("id")
-    .eq("status", "pending")
-    .order("queued_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return data?.id ?? null;
+  const { data, error } = await db.rpc("claim_next_demo_job", {
+    _max_concurrent: MAX_CONCURRENT_DEMO_JOBS,
+  });
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  return (data as string | null) ?? null;
 }
 
 /** Runs one job end to end. Safe to call repeatedly; never throws. */
@@ -136,14 +135,18 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
   if (!job) return { jobId, status: "skipped", errorCode: "DEMO_NOT_FOUND" };
   if (job.status === "processed") return { jobId, status: "skipped" };
 
-  // Claim atomically: only a pending job can move to processing.
-  const { data: claimed } = await db
-    .from("demo_jobs")
-    .update({ status: "processing", stage: "validating", started_at: new Date().toISOString() })
-    .eq("id", jobId)
-    .eq("status", "pending")
-    .select("id");
-  if (!claimed || claimed.length === 0) return { jobId, status: "skipped" };
+  // The job may already have been claimed transactionally by
+  // `claim_next_demo_job`. Otherwise claim it here, still atomically: only a
+  // row that is still `pending` can be moved to `processing`.
+  if (job.status !== "processing") {
+    const { data: claimed } = await db
+      .from("demo_jobs")
+      .update({ status: "processing", stage: "validating", started_at: new Date().toISOString() })
+      .eq("id", jobId)
+      .eq("status", "pending")
+      .select("id");
+    if (!claimed || claimed.length === 0) return { jobId, status: "skipped" };
+  }
 
   await db.from("uploads").update({ status: "processing" }).eq("id", job.upload_id);
 
@@ -153,6 +156,15 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const stored = await demoExists(job.storage_path);
     if (!stored) throw new PipelineError("DEMO_NOT_FOUND");
     validateDemoFile(job.storage_path, stored.size || (job.file_size ?? 0));
+
+    // The hash reported by the browser is NOT proof of integrity: the worker
+    // recomputes SHA-256 from the stored bytes and refuses a divergent file.
+    if (job.demo_sha256) {
+      const actual = await computeStoredDemoSha256(job.storage_path);
+      if (actual !== job.demo_sha256) {
+        throw new PipelineError("CORRUPTED_DEMO", "sha256 mismatch");
+      }
+    }
 
     const adapter = resolveParserAdapter();
     if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
