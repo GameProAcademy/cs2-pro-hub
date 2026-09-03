@@ -244,10 +244,10 @@ export function UserDetailDialog({
                   <Field label={t("admin.table.nickname")} value={profile.nickname || dash} />
                   <Field label={t("admin.table.country")} value={profile.country || dash} />
                   <Field label={t("admin.field.locale")} value={profile.locale} />
-                  <Field label={t("admin.table.role")} value={t(`admin.role.${profile.role}`)} />
+                  <Field label={t("admin.table.role")} value={t(`admin.role.${profile.role as AdminRole}`)} />
                   <Field
                     label={t("admin.table.status")}
-                    value={t(`admin.status.${profile.status}`)}
+                    value={t(`admin.status.${profile.status as "active" | "inactive"}`)}
                   />
                   <Field
                     label={t("admin.table.createdAt")}
