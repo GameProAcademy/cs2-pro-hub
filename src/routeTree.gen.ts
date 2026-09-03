@@ -26,7 +26,9 @@ import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
+import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -113,10 +115,21 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminPipelineRoute =
+  AuthenticatedAdminPipelineRouteImport.update({
+    id: '/pipeline',
+    path: '/pipeline',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const ApiPublicPipelineCronRoute = ApiPublicPipelineCronRouteImport.update({
+  id: '/api/public/pipeline-cron',
+  path: '/api/public/pipeline-cron',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -135,7 +148,9 @@ export interface FileRoutesByFullPath {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -153,7 +168,9 @@ export interface FileRoutesByTo {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -174,7 +191,9 @@ export interface FileRoutesById {
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -195,7 +214,9 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/admin/audit'
+    | '/admin/pipeline'
     | '/admin/users'
+    | '/api/public/pipeline-cron'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -213,7 +234,9 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/admin/audit'
+    | '/admin/pipeline'
     | '/admin/users'
+    | '/api/public/pipeline-cron'
     | '/admin'
   id:
     | '__root__'
@@ -233,7 +256,9 @@ export interface FileRouteTypes {
     | '/_authenticated/training'
     | '/_authenticated/upload'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/users'
+    | '/api/public/pipeline-cron'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +268,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -366,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/pipeline': {
+      id: '/_authenticated/admin/pipeline'
+      path: '/pipeline'
+      fullPath: '/admin/pipeline'
+      preLoaderRoute: typeof AuthenticatedAdminPipelineRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/users'
@@ -373,11 +406,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/pipeline-cron': {
+      id: '/api/public/pipeline-cron'
+      path: '/api/public/pipeline-cron'
+      fullPath: '/api/public/pipeline-cron'
+      preLoaderRoute: typeof ApiPublicPipelineCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminPipelineRoute: typeof AuthenticatedAdminPipelineRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -385,6 +426,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+    AuthenticatedAdminPipelineRoute: AuthenticatedAdminPipelineRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
@@ -429,6 +471,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
