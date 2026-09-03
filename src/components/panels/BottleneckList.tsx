@@ -37,7 +37,7 @@ export function BottleneckList({ items }: { items: Bottleneck[] }) {
           <ProgressBar
             className="mt-4"
             value={item.confidence}
-            label="Confiança da análise"
+            label={t("analysis.confidence")}
             showValue
             tone="accent"
           />

@@ -338,7 +338,7 @@ export const fr: Dictionary = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Données insuffisantes par côté",
-  "performance.sidesEmptyDesc": "La comparaison CT vs T apparaît dès qu"il y a assez de rounds de chaque côté.",
+  "performance.sidesEmptyDesc": "La comparaison CT vs T apparaît dès qu'il y a assez de rounds de chaque côté.",
   "common.noData": "Aucune donnée disponible pour le moment.",
   "metric.hint.last20": "20 dernières parties",
   "metric.hint.multiKills": "3K+ sur 20 parties",

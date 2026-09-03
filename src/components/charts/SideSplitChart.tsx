@@ -16,8 +16,8 @@ export function SideSplitChart({
   if (!hasEnoughData || data.length === 0) {
     return (
       <EmptyState
-        title="Dados insuficientes por lado"
-        description="A comparação CT vs T aparece quando houver rounds suficientes de cada lado."
+        title={t("performance.sidesEmptyTitle")}
+        description={t("performance.sidesEmptyDesc")}
       />
     );
   }
