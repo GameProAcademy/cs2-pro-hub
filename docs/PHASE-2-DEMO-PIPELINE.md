@@ -157,3 +157,39 @@ parser, KAST por participação, economia nula, score por time e allowlist de
 redirect. Permanece verdadeiro que nenhum `.dem` real foi parseado: o worker
 externo continua não configurado (`PARSER_UNAVAILABLE`). Fase 3 (motor de
 análise/IA), integrações e pagamentos não foram implementados.
+
+## Fase 2.1.1 — Correções cirúrgicas
+
+1. **Integridade sem carregar o demo na memória.** `sha256FromStream()` faz hash
+   incremental (`node:crypto`) sobre o corpo da resposta do signed URL;
+   `computeStoredDemoSha256()` nunca usa `arrayBuffer()` nem
+   `crypto.subtle.digest`. Divergência entre o hash declarado no upload e os
+   bytes armazenados é `CORRUPTED_DEMO` (permanente), via `assertDemoIntegrity()`.
+2. **Claim realmente atômico.** `claim_next_demo_job()` adquire
+   `pg_advisory_xact_lock` ANTES de contar jobs em `processing`, mantendo
+   `FOR UPDATE SKIP LOCKED`. O limite global (`MAX_CONCURRENT_DEMO_JOBS`) não
+   pode mais ser excedido por chamadas concorrentes. Execução apenas
+   `service_role`.
+3. **`player_survived` com evidência.** `playerSurvivedRound()` retorna `false`
+   só com death event explícito, `true` só com participação comprovada + round
+   encerrado + eventos do round realmente extraídos + parse completo; qualquer
+   coisa mais fraca é `NULL`. Ausência de death event não é sobrevivência.
+4. **Side por round.** `sideInRound()` usa exclusivamente o dado do round; sem
+   informação o valor é `NULL` (nunca o side de outro round ou do perfil), o que
+   respeita a troca de lado no halftime. Persistência e ratings CT/T usam a mesma
+   função.
+5. **`first_death_rate` literal.** Agora é `firstDeaths / rounds`; a métrica
+   complementar existe separada como `first_death_avoidance`.
+6. **Flash assist temporal e trade rigoroso.** Flash assist exige flash anterior
+   ao kill, mesmo alvo, dentro de `FLASH_ASSIST_WINDOW_SECONDS` (3s,
+   configurável), no máximo uma por kill, nunca do próprio killer nem
+   self-flash. Trade exige mesmo round, ordem cronológica, IDs presentes, vingança
+   contra o killer original por companheiro de equipe, dentro de
+   `TRADE_WINDOW_SECONDS`, excluindo team kills e suicídios.
+
+Testes: `src/lib/pipeline/__tests__/hardening.test.ts` (19 testes) + suíte
+existente = 59 testes passando. A concorrência do claim é verificada no nível do
+SQL da migration (ordem do lock, skip-locked, grants); não há teste de carga
+concorrente real porque a suíte roda sem banco. Nenhum `.dem` real foi
+processado: worker/parser real, Fase 2.2, IA, integrações e pagamentos seguem
+fora de escopo.

@@ -86,8 +86,12 @@ describe("2. atomic job claim", () => {
   });
 
   it("is not executable by signed-in or anonymous callers", () => {
-    expect(claimSql).toContain("REVOKE ALL ON FUNCTION public.claim_next_demo_job(integer) FROM authenticated");
-    expect(claimSql).toContain("GRANT EXECUTE ON FUNCTION public.claim_next_demo_job(integer) TO service_role");
+    expect(claimSql).toContain(
+      "REVOKE ALL ON FUNCTION public.claim_next_demo_job(integer) FROM authenticated",
+    );
+    expect(claimSql).toContain(
+      "GRANT EXECUTE ON FUNCTION public.claim_next_demo_job(integer) TO service_role",
+    );
   });
 });
 
@@ -153,7 +157,10 @@ describe("5. first death semantics", () => {
     const metrics = computeMetrics(match, ME);
     const features = extractFeatures(match, metrics);
     const positioning = features.dimensions["positioning"]!;
-    expect(positioning["first_death_rate"]).toBeCloseTo(metrics.firstDeaths / metrics.roundsPlayed, 3);
+    expect(positioning["first_death_rate"]).toBeCloseTo(
+      metrics.firstDeaths / metrics.roundsPlayed,
+      3,
+    );
     expect(positioning["first_death_avoidance"]).toBeCloseTo(
       1 - metrics.firstDeaths / metrics.roundsPlayed,
       3,
@@ -181,7 +188,13 @@ describe("6. flash assists and trades", () => {
     const inside = normalizeParserOutput(
       build([
         { type: "player_blind", round: 1, time_seconds: 10, attacker: MATE, victim: ENEMY_A },
-        { type: "player_death", round: 1, time_seconds: 10 + FLASH_ASSIST_WINDOW_SECONDS, attacker: ME, victim: ENEMY_A },
+        {
+          type: "player_death",
+          round: 1,
+          time_seconds: 10 + FLASH_ASSIST_WINDOW_SECONDS,
+          attacker: ME,
+          victim: ENEMY_A,
+        },
       ]),
     );
     expect(computeMetrics(inside, MATE).flashAssists).toBe(1);
@@ -189,7 +202,13 @@ describe("6. flash assists and trades", () => {
     const outside = normalizeParserOutput(
       build([
         { type: "player_blind", round: 1, time_seconds: 10, attacker: MATE, victim: ENEMY_A },
-        { type: "player_death", round: 1, time_seconds: 10 + FLASH_ASSIST_WINDOW_SECONDS + 1, attacker: ME, victim: ENEMY_A },
+        {
+          type: "player_death",
+          round: 1,
+          time_seconds: 10 + FLASH_ASSIST_WINDOW_SECONDS + 1,
+          attacker: ME,
+          victim: ENEMY_A,
+        },
       ]),
     );
     expect(computeMetrics(outside, MATE).flashAssists).toBe(0);
@@ -217,7 +236,13 @@ describe("6. flash assists and trades", () => {
     const traded = normalizeParserOutput(
       build([
         { type: "player_death", round: 1, time_seconds: 10, attacker: ENEMY_A, victim: MATE },
-        { type: "player_death", round: 1, time_seconds: 10 + TRADE_WINDOW_SECONDS, attacker: ME, victim: ENEMY_A },
+        {
+          type: "player_death",
+          round: 1,
+          time_seconds: 10 + TRADE_WINDOW_SECONDS,
+          attacker: ME,
+          victim: ENEMY_A,
+        },
       ]),
     );
     expect(computeMetrics(traded, MATE).tradeDeaths).toBe(1);
@@ -226,7 +251,13 @@ describe("6. flash assists and trades", () => {
     const late = normalizeParserOutput(
       build([
         { type: "player_death", round: 1, time_seconds: 10, attacker: ENEMY_A, victim: MATE },
-        { type: "player_death", round: 1, time_seconds: 10 + TRADE_WINDOW_SECONDS + 1, attacker: ME, victim: ENEMY_A },
+        {
+          type: "player_death",
+          round: 1,
+          time_seconds: 10 + TRADE_WINDOW_SECONDS + 1,
+          attacker: ME,
+          victim: ENEMY_A,
+        },
       ]),
     );
     expect(computeMetrics(late, MATE).tradeDeaths).toBe(0);

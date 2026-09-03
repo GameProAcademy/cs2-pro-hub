@@ -113,9 +113,7 @@ export function playerSurvivedRound(
 
   const died = match.events.some(
     (event) =>
-      event.type === "kill" &&
-      event.roundNumber === roundNumber &&
-      event.victimSteamId === steamId,
+      event.type === "kill" && event.roundNumber === roundNumber && event.victimSteamId === steamId,
   );
   if (died) return false;
 
@@ -123,7 +121,10 @@ export function playerSurvivedRound(
   if (match.quality.partialParse) return null;
 
   const roundEnded =
-    round.endTick != null || round.durationSeconds != null || round.winnerSide != null || round.winnerTeam != null;
+    round.endTick != null ||
+    round.durationSeconds != null ||
+    round.winnerSide != null ||
+    round.winnerTeam != null;
   if (!roundEnded) return null;
 
   // The round must actually carry extracted combat/round events; otherwise the
