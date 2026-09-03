@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { FEATURES } from "@/config/app";
 import { getProfile } from "@/services/playerService";
 
-export const Route = createFileRoute("/_authenticated/_authenticated/profile")({
+export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
       { title: "Meu Perfil — CS2 PRO AI COACH" },
