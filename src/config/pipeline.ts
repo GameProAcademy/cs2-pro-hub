@@ -47,6 +47,13 @@ export const FAILED_DEMO_RETENTION_HOURS = 72;
 /** Trade detection window. Documented, configurable, never inlined. */
 export const TRADE_WINDOW_SECONDS = 5;
 
+/**
+ * Maximum time between a flash and the kill it may be credited for.
+ * Conservative on purpose: CS2 flash blindness rarely stays decisive beyond
+ * ~3 seconds, so a longer window would invent assists that did not happen.
+ */
+export const FLASH_ASSIST_WINDOW_SECONDS = 3;
+
 /** A death in the first N seconds of a round counts as an early death. */
 export const EARLY_DEATH_SECONDS = 20;
 
