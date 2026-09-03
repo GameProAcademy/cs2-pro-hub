@@ -340,14 +340,16 @@ export const ptBR = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Dados insuficientes por lado",
-  "performance.sidesEmptyDesc": "A comparação CT vs T aparece quando houver rounds suficientes de cada lado.",
+  "performance.sidesEmptyDesc":
+    "A comparação CT vs T aparece quando houver rounds suficientes de cada lado.",
   "common.noData": "Nenhum dado disponível ainda.",
   "metric.hint.last20": "últimos 20 jogos",
   "metric.hint.multiKills": "3K+ em 20 jogos",
   "score.sinceFirst": "desde a primeira análise",
   "score.top": "Top",
   "score.ofYourLevel": "do seu nível",
-  "dashboard.description": "Do dado à evolução: score, DNA competitivo, gargalos e histórico recente em um único painel.",
+  "dashboard.description":
+    "Do dado à evolução: score, DNA competitivo, gargalos e histórico recente em um único painel.",
   "dashboard.viewXray": "Ver Raio-X",
   "dashboard.scoreTrend": "CS2 PRO Score ao longo do tempo",
   "dashboard.scoreTrendSub": "Evolução mensal do score consolidado",
@@ -361,7 +363,8 @@ export const ptBR = {
   "dashboard.lastMatches": "Últimas partidas",
   "dashboard.lastMatchesSub": "Histórico recente consolidado",
   "dashboard.viewAll": "Ver todas",
-  "performance.description": "Indicadores de impacto individual, duelos de abertura e consistência ao longo do tempo.",
+  "performance.description":
+    "Indicadores de impacto individual, duelos de abertura e consistência ao longo do tempo.",
   "performance.kdTrend": "K/D ao longo do tempo",
   "performance.adrTrend": "ADR ao longo do tempo",
   "performance.kastTrend": "KAST ao longo do tempo",
@@ -375,8 +378,10 @@ export const ptBR = {
   "performance.games": "jogos",
   "performance.rating": "rating",
   "performance.winRate": "Win rate",
-  "analysis.description": "A leitura estruturada do seu jogo: onde você ganha rounds, onde perde e o que atacar primeiro.",
-  "analysis.notice": "Este diagnóstico é um exemplo de formato. Nenhuma análise real foi executada — não existe engine de diagnóstico nesta etapa.",
+  "analysis.description":
+    "A leitura estruturada do seu jogo: onde você ganha rounds, onde perde e o que atacar primeiro.",
+  "analysis.notice":
+    "Este diagnóstico é um exemplo de formato. Nenhuma análise real foi executada — não existe engine de diagnóstico nesta etapa.",
   "analysis.overall": "Performance geral",
   "analysis.strengths": "Pontos fortes",
   "analysis.bottlenecks": "Principais gargalos",
@@ -385,10 +390,12 @@ export const ptBR = {
   "analysis.priority": "Prioridade #1",
   "analysis.recommendation": "Recomendação",
   "analysis.confidence": "Confiança da análise",
-  "analysis.confidenceHint": "A confiança cresce conforme mais partidas são enviadas e o volume de rounds por lado e por mapa aumenta.",
+  "analysis.confidenceHint":
+    "A confiança cresce conforme mais partidas são enviadas e o volume de rounds por lado e por mapa aumenta.",
   "matches.description": "Cada partida enviada alimenta o score, o Player DNA e o diagnóstico.",
   "matches.newDemo": "Enviar nova demo",
-  "matches.notice": "As partidas listadas são exemplos de interface. Nenhuma demo foi enviada, lida ou processada.",
+  "matches.notice":
+    "As partidas listadas são exemplos de interface. Nenhuma demo foi enviada, lida ou processada.",
   "matches.total": "Partidas",
   "matches.winRate": "Win rate",
   "matches.avgRating": "Rating médio",
@@ -407,11 +414,13 @@ export const ptBR = {
   "matches.result.win": "Vitória",
   "matches.result.loss": "Derrota",
   "matches.result.draw": "Empate",
-  "profile.description": "Estes dados calibram o comparativo do Player DNA e a intensidade do plano de treinamento.",
+  "profile.description":
+    "Estes dados calibram o comparativo do Player DNA e a intensidade do plano de treinamento.",
   "profile.playerData": "Dados do jogador",
   "profile.preferences": "Preferências",
   "profile.save": "Salvar alterações",
-  "profile.saveDisabled": "Salvar está desativado nesta etapa: a persistência do perfil ainda não foi implementada.",
+  "profile.saveDisabled":
+    "Salvar está desativado nesta etapa: a persistência do perfil ainda não foi implementada.",
   "profile.field.name": "Nome",
   "profile.field.email": "E-mail",
   "profile.field.platform": "Plataforma principal",
@@ -424,7 +433,8 @@ export const ptBR = {
   "profile.pref.weeklyPlan": "Resumo semanal do plano",
   "profile.pref.publicProfile": "Perfil público",
   "admin.error.title": "Erro na administração",
-  "admin.error.unexpected": "Não foi possível carregar a área administrativa por um erro interno. Tente novamente em alguns instantes.",
+  "admin.error.unexpected":
+    "Não foi possível carregar a área administrativa por um erro interno. Tente novamente em alguns instantes.",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;

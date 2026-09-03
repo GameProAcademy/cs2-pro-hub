@@ -109,10 +109,7 @@ function DashboardPage() {
           </ChartCard>
 
           <div className="space-y-5">
-            <ChartCard
-              title={t("dashboard.bottlenecks")}
-              subtitle={t("dashboard.bottlenecksSub")}
-            >
+            <ChartCard title={t("dashboard.bottlenecks")} subtitle={t("dashboard.bottlenecksSub")}>
               <BottleneckList items={getBottlenecks()} />
             </ChartCard>
           </div>

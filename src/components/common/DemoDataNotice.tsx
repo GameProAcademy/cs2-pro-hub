@@ -20,7 +20,6 @@ export function DemoTag({ className }: { className?: string | undefined }) {
   );
 }
 
-
 /** Page-level banner. Explicit: nothing here is real player data. */
 export function DemoDataNotice({ context }: { context?: string | undefined }) {
   const t = useT();

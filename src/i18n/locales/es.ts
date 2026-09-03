@@ -338,14 +338,16 @@ export const es: Dictionary = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Datos insuficientes por lado",
-  "performance.sidesEmptyDesc": "La comparación CT vs T aparece cuando haya suficientes rondas de cada lado.",
+  "performance.sidesEmptyDesc":
+    "La comparación CT vs T aparece cuando haya suficientes rondas de cada lado.",
   "common.noData": "Aún no hay datos disponibles.",
   "metric.hint.last20": "últimas 20 partidas",
   "metric.hint.multiKills": "3K+ en 20 partidas",
   "score.sinceFirst": "desde el primer análisis",
   "score.top": "Top",
   "score.ofYourLevel": "de tu nivel",
-  "dashboard.description": "Del dato a la evolución: score, ADN competitivo, cuellos de botella e historial reciente en un solo panel.",
+  "dashboard.description":
+    "Del dato a la evolución: score, ADN competitivo, cuellos de botella e historial reciente en un solo panel.",
   "dashboard.viewXray": "Ver radiografía",
   "dashboard.scoreTrend": "CS2 PRO Score a lo largo del tiempo",
   "dashboard.scoreTrendSub": "Evolución mensual del score consolidado",
@@ -359,7 +361,8 @@ export const es: Dictionary = {
   "dashboard.lastMatches": "Últimas partidas",
   "dashboard.lastMatchesSub": "Historial reciente consolidado",
   "dashboard.viewAll": "Ver todas",
-  "performance.description": "Indicadores de impacto individual, duelos de apertura y consistencia a lo largo del tiempo.",
+  "performance.description":
+    "Indicadores de impacto individual, duelos de apertura y consistencia a lo largo del tiempo.",
   "performance.kdTrend": "K/D a lo largo del tiempo",
   "performance.adrTrend": "ADR a lo largo del tiempo",
   "performance.kastTrend": "KAST a lo largo del tiempo",
@@ -373,8 +376,10 @@ export const es: Dictionary = {
   "performance.games": "partidas",
   "performance.rating": "rating",
   "performance.winRate": "Win rate",
-  "analysis.description": "La lectura estructurada de tu juego: dónde ganas rondas, dónde las pierdes y qué atacar primero.",
-  "analysis.notice": "Este diagnóstico es un ejemplo de formato. No se ejecutó ningún análisis real: no existe motor de diagnóstico en esta etapa.",
+  "analysis.description":
+    "La lectura estructurada de tu juego: dónde ganas rondas, dónde las pierdes y qué atacar primero.",
+  "analysis.notice":
+    "Este diagnóstico es un ejemplo de formato. No se ejecutó ningún análisis real: no existe motor de diagnóstico en esta etapa.",
   "analysis.overall": "Rendimiento general",
   "analysis.strengths": "Puntos fuertes",
   "analysis.bottlenecks": "Principales cuellos de botella",
@@ -383,10 +388,13 @@ export const es: Dictionary = {
   "analysis.priority": "Prioridad n.º 1",
   "analysis.recommendation": "Recomendación",
   "analysis.confidence": "Confianza del análisis",
-  "analysis.confidenceHint": "La confianza crece a medida que envías más partidas y aumenta el volumen de rondas por lado y por mapa.",
-  "matches.description": "Cada partida que envías alimenta el score, el Player DNA y el diagnóstico.",
+  "analysis.confidenceHint":
+    "La confianza crece a medida que envías más partidas y aumenta el volumen de rondas por lado y por mapa.",
+  "matches.description":
+    "Cada partida que envías alimenta el score, el Player DNA y el diagnóstico.",
   "matches.newDemo": "Enviar nueva demo",
-  "matches.notice": "Las partidas mostradas son ejemplos de interfaz. Ninguna demo fue enviada, leída ni procesada.",
+  "matches.notice":
+    "Las partidas mostradas son ejemplos de interfaz. Ninguna demo fue enviada, leída ni procesada.",
   "matches.total": "Partidas",
   "matches.winRate": "Win rate",
   "matches.avgRating": "Rating medio",
@@ -405,11 +413,13 @@ export const es: Dictionary = {
   "matches.result.win": "Victoria",
   "matches.result.loss": "Derrota",
   "matches.result.draw": "Empate",
-  "profile.description": "Estos datos calibran la comparación del Player DNA y la intensidad de tu plan de entrenamiento.",
+  "profile.description":
+    "Estos datos calibran la comparación del Player DNA y la intensidad de tu plan de entrenamiento.",
   "profile.playerData": "Datos del jugador",
   "profile.preferences": "Preferencias",
   "profile.save": "Guardar cambios",
-  "profile.saveDisabled": "Guardar está desactivado en esta etapa: la persistencia del perfil aún no está implementada.",
+  "profile.saveDisabled":
+    "Guardar está desactivado en esta etapa: la persistencia del perfil aún no está implementada.",
   "profile.field.name": "Nombre",
   "profile.field.email": "Correo electrónico",
   "profile.field.platform": "Plataforma principal",
@@ -422,5 +432,6 @@ export const es: Dictionary = {
   "profile.pref.weeklyPlan": "Resumen semanal del plan",
   "profile.pref.publicProfile": "Perfil público",
   "admin.error.title": "Error en la administración",
-  "admin.error.unexpected": "No se pudo cargar el área de administración por un error interno. Inténtalo de nuevo en unos instantes.",
+  "admin.error.unexpected":
+    "No se pudo cargar el área de administración por un error interno. Inténtalo de nuevo en unos instantes.",
 };

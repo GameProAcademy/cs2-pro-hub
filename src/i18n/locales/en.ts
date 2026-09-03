@@ -334,14 +334,16 @@ export const en: Dictionary = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Not enough data per side",
-  "performance.sidesEmptyDesc": "The CT vs T comparison appears once there are enough rounds on each side.",
+  "performance.sidesEmptyDesc":
+    "The CT vs T comparison appears once there are enough rounds on each side.",
   "common.noData": "No data available yet.",
   "metric.hint.last20": "last 20 games",
   "metric.hint.multiKills": "3K+ in 20 games",
   "score.sinceFirst": "since the first analysis",
   "score.top": "Top",
   "score.ofYourLevel": "of your level",
-  "dashboard.description": "From data to progress: score, competitive DNA, bottlenecks and recent history in a single panel.",
+  "dashboard.description":
+    "From data to progress: score, competitive DNA, bottlenecks and recent history in a single panel.",
   "dashboard.viewXray": "View X-Ray",
   "dashboard.scoreTrend": "CS2 PRO Score over time",
   "dashboard.scoreTrendSub": "Monthly evolution of the consolidated score",
@@ -355,7 +357,8 @@ export const en: Dictionary = {
   "dashboard.lastMatches": "Latest matches",
   "dashboard.lastMatchesSub": "Consolidated recent history",
   "dashboard.viewAll": "View all",
-  "performance.description": "Individual impact, opening duels and consistency indicators over time.",
+  "performance.description":
+    "Individual impact, opening duels and consistency indicators over time.",
   "performance.kdTrend": "K/D over time",
   "performance.adrTrend": "ADR over time",
   "performance.kastTrend": "KAST over time",
@@ -369,8 +372,10 @@ export const en: Dictionary = {
   "performance.games": "games",
   "performance.rating": "rating",
   "performance.winRate": "Win rate",
-  "analysis.description": "A structured read of your game: where you win rounds, where you lose them and what to attack first.",
-  "analysis.notice": "This diagnosis is a format example. No real analysis was run — there is no diagnosis engine at this stage.",
+  "analysis.description":
+    "A structured read of your game: where you win rounds, where you lose them and what to attack first.",
+  "analysis.notice":
+    "This diagnosis is a format example. No real analysis was run — there is no diagnosis engine at this stage.",
   "analysis.overall": "Overall performance",
   "analysis.strengths": "Strengths",
   "analysis.bottlenecks": "Main bottlenecks",
@@ -379,10 +384,12 @@ export const en: Dictionary = {
   "analysis.priority": "Priority #1",
   "analysis.recommendation": "Recommendation",
   "analysis.confidence": "Analysis confidence",
-  "analysis.confidenceHint": "Confidence grows as more matches are sent and the volume of rounds per side and per map increases.",
+  "analysis.confidenceHint":
+    "Confidence grows as more matches are sent and the volume of rounds per side and per map increases.",
   "matches.description": "Every match you send feeds the score, the Player DNA and the diagnosis.",
   "matches.newDemo": "Send new demo",
-  "matches.notice": "The matches listed are interface examples. No demo was uploaded, read or processed.",
+  "matches.notice":
+    "The matches listed are interface examples. No demo was uploaded, read or processed.",
   "matches.total": "Matches",
   "matches.winRate": "Win rate",
   "matches.avgRating": "Average rating",
@@ -401,11 +408,13 @@ export const en: Dictionary = {
   "matches.result.win": "Win",
   "matches.result.loss": "Loss",
   "matches.result.draw": "Draw",
-  "profile.description": "This data calibrates your Player DNA comparison and the intensity of your training plan.",
+  "profile.description":
+    "This data calibrates your Player DNA comparison and the intensity of your training plan.",
   "profile.playerData": "Player data",
   "profile.preferences": "Preferences",
   "profile.save": "Save changes",
-  "profile.saveDisabled": "Saving is disabled at this stage: profile persistence is not implemented yet.",
+  "profile.saveDisabled":
+    "Saving is disabled at this stage: profile persistence is not implemented yet.",
   "profile.field.name": "Name",
   "profile.field.email": "Email",
   "profile.field.platform": "Main platform",
@@ -418,5 +427,6 @@ export const en: Dictionary = {
   "profile.pref.weeklyPlan": "Weekly plan summary",
   "profile.pref.publicProfile": "Public profile",
   "admin.error.title": "Administration error",
-  "admin.error.unexpected": "The administration area could not be loaded because of an internal error. Please try again shortly.",
+  "admin.error.unexpected":
+    "The administration area could not be loaded because of an internal error. Please try again shortly.",
 };

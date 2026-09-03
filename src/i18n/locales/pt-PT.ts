@@ -338,14 +338,16 @@ export const ptPT: Dictionary = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Dados insuficientes por lado",
-  "performance.sidesEmptyDesc": "A comparação CT vs T aparece quando existirem rondas suficientes de cada lado.",
+  "performance.sidesEmptyDesc":
+    "A comparação CT vs T aparece quando existirem rondas suficientes de cada lado.",
   "common.noData": "Ainda não existem dados disponíveis.",
   "metric.hint.last20": "últimos 20 jogos",
   "metric.hint.multiKills": "3K+ em 20 jogos",
   "score.sinceFirst": "desde a primeira análise",
   "score.top": "Top",
   "score.ofYourLevel": "do teu nível",
-  "dashboard.description": "Do dado à evolução: score, ADN competitivo, pontos fracos e histórico recente num único painel.",
+  "dashboard.description":
+    "Do dado à evolução: score, ADN competitivo, pontos fracos e histórico recente num único painel.",
   "dashboard.viewXray": "Ver radiografia",
   "dashboard.scoreTrend": "CS2 PRO Score ao longo do tempo",
   "dashboard.scoreTrendSub": "Evolução mensal do score consolidado",
@@ -359,7 +361,8 @@ export const ptPT: Dictionary = {
   "dashboard.lastMatches": "Últimas partidas",
   "dashboard.lastMatchesSub": "Histórico recente consolidado",
   "dashboard.viewAll": "Ver todas",
-  "performance.description": "Indicadores de impacto individual, duelos de abertura e consistência ao longo do tempo.",
+  "performance.description":
+    "Indicadores de impacto individual, duelos de abertura e consistência ao longo do tempo.",
   "performance.kdTrend": "K/D ao longo do tempo",
   "performance.adrTrend": "ADR ao longo do tempo",
   "performance.kastTrend": "KAST ao longo do tempo",
@@ -373,8 +376,10 @@ export const ptPT: Dictionary = {
   "performance.games": "jogos",
   "performance.rating": "rating",
   "performance.winRate": "Win rate",
-  "analysis.description": "A leitura estruturada do teu jogo: onde ganhas rondas, onde as perdes e o que corrigir primeiro.",
-  "analysis.notice": "Este diagnóstico é um exemplo de formato. Não foi executada qualquer análise real — não existe motor de diagnóstico nesta etapa.",
+  "analysis.description":
+    "A leitura estruturada do teu jogo: onde ganhas rondas, onde as perdes e o que corrigir primeiro.",
+  "analysis.notice":
+    "Este diagnóstico é um exemplo de formato. Não foi executada qualquer análise real — não existe motor de diagnóstico nesta etapa.",
   "analysis.overall": "Desempenho geral",
   "analysis.strengths": "Pontos fortes",
   "analysis.bottlenecks": "Principais pontos fracos",
@@ -383,10 +388,12 @@ export const ptPT: Dictionary = {
   "analysis.priority": "Prioridade n.º 1",
   "analysis.recommendation": "Recomendação",
   "analysis.confidence": "Confiança da análise",
-  "analysis.confidenceHint": "A confiança cresce à medida que envias mais partidas e o volume de rondas por lado e por mapa aumenta.",
+  "analysis.confidenceHint":
+    "A confiança cresce à medida que envias mais partidas e o volume de rondas por lado e por mapa aumenta.",
   "matches.description": "Cada partida enviada alimenta o score, o Player DNA e o diagnóstico.",
   "matches.newDemo": "Enviar nova demo",
-  "matches.notice": "As partidas listadas são exemplos de interface. Nenhuma demo foi enviada, lida ou processada.",
+  "matches.notice":
+    "As partidas listadas são exemplos de interface. Nenhuma demo foi enviada, lida ou processada.",
   "matches.total": "Partidas",
   "matches.winRate": "Win rate",
   "matches.avgRating": "Rating médio",
@@ -405,11 +412,13 @@ export const ptPT: Dictionary = {
   "matches.result.win": "Vitória",
   "matches.result.loss": "Derrota",
   "matches.result.draw": "Empate",
-  "profile.description": "Estes dados calibram a comparação do Player DNA e a intensidade do plano de treino.",
+  "profile.description":
+    "Estes dados calibram a comparação do Player DNA e a intensidade do plano de treino.",
   "profile.playerData": "Dados do jogador",
   "profile.preferences": "Preferências",
   "profile.save": "Guardar alterações",
-  "profile.saveDisabled": "Guardar está desativado nesta etapa: a persistência do perfil ainda não foi implementada.",
+  "profile.saveDisabled":
+    "Guardar está desativado nesta etapa: a persistência do perfil ainda não foi implementada.",
   "profile.field.name": "Nome",
   "profile.field.email": "E-mail",
   "profile.field.platform": "Plataforma principal",
@@ -422,5 +431,6 @@ export const ptPT: Dictionary = {
   "profile.pref.weeklyPlan": "Resumo semanal do plano",
   "profile.pref.publicProfile": "Perfil público",
   "admin.error.title": "Erro na administração",
-  "admin.error.unexpected": "Não foi possível carregar a área administrativa devido a um erro interno. Tenta novamente dentro de alguns instantes.",
+  "admin.error.unexpected":
+    "Não foi possível carregar a área administrativa devido a um erro interno. Tenta novamente dentro de alguns instantes.",
 };

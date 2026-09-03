@@ -51,7 +51,11 @@ function ProfilePage() {
       labelKey: "profile.pref.emailReports",
       value: profile.preferences.emailReports,
     },
-    { id: "weeklyPlan", labelKey: "profile.pref.weeklyPlan", value: profile.preferences.weeklyPlan },
+    {
+      id: "weeklyPlan",
+      labelKey: "profile.pref.weeklyPlan",
+      value: profile.preferences.weeklyPlan,
+    },
     {
       id: "publicProfile",
       labelKey: "profile.pref.publicProfile",

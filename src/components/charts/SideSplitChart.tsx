@@ -17,7 +17,6 @@ export function SideSplitChart({
   const t = useT();
 
   if (!hasEnoughData || data.length === 0) {
-
     return (
       <EmptyState
         title={t("performance.sidesEmptyTitle")}

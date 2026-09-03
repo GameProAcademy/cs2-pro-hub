@@ -338,14 +338,16 @@ export const fr: Dictionary = {
 
   // --- Audit pass: full UI i18n coverage ---
   "performance.sidesEmptyTitle": "Données insuffisantes par côté",
-  "performance.sidesEmptyDesc": "La comparaison CT vs T apparaît dès qu'il y a assez de rounds de chaque côté.",
+  "performance.sidesEmptyDesc":
+    "La comparaison CT vs T apparaît dès qu'il y a assez de rounds de chaque côté.",
   "common.noData": "Aucune donnée disponible pour le moment.",
   "metric.hint.last20": "20 dernières parties",
   "metric.hint.multiKills": "3K+ sur 20 parties",
   "score.sinceFirst": "depuis la première analyse",
   "score.top": "Top",
   "score.ofYourLevel": "de ton niveau",
-  "dashboard.description": "De la donnée à la progression : score, ADN compétitif, points bloquants et historique récent dans un seul tableau.",
+  "dashboard.description":
+    "De la donnée à la progression : score, ADN compétitif, points bloquants et historique récent dans un seul tableau.",
   "dashboard.viewXray": "Voir la radiographie",
   "dashboard.scoreTrend": "CS2 PRO Score dans le temps",
   "dashboard.scoreTrendSub": "Évolution mensuelle du score consolidé",
@@ -359,7 +361,8 @@ export const fr: Dictionary = {
   "dashboard.lastMatches": "Dernières parties",
   "dashboard.lastMatchesSub": "Historique récent consolidé",
   "dashboard.viewAll": "Voir tout",
-  "performance.description": "Indicateurs d'impact individuel, duels d'ouverture et régularité dans le temps.",
+  "performance.description":
+    "Indicateurs d'impact individuel, duels d'ouverture et régularité dans le temps.",
   "performance.kdTrend": "K/D dans le temps",
   "performance.adrTrend": "ADR dans le temps",
   "performance.kastTrend": "KAST dans le temps",
@@ -373,8 +376,10 @@ export const fr: Dictionary = {
   "performance.games": "parties",
   "performance.rating": "rating",
   "performance.winRate": "Win rate",
-  "analysis.description": "La lecture structurée de ton jeu : où tu gagnes des rounds, où tu les perds et quoi corriger en premier.",
-  "analysis.notice": "Ce diagnostic est un exemple de format. Aucune analyse réelle n'a été exécutée — il n'existe pas de moteur de diagnostic à ce stade.",
+  "analysis.description":
+    "La lecture structurée de ton jeu : où tu gagnes des rounds, où tu les perds et quoi corriger en premier.",
+  "analysis.notice":
+    "Ce diagnostic est un exemple de format. Aucune analyse réelle n'a été exécutée — il n'existe pas de moteur de diagnostic à ce stade.",
   "analysis.overall": "Performance globale",
   "analysis.strengths": "Points forts",
   "analysis.bottlenecks": "Principaux points bloquants",
@@ -383,10 +388,12 @@ export const fr: Dictionary = {
   "analysis.priority": "Priorité n°1",
   "analysis.recommendation": "Recommandation",
   "analysis.confidence": "Confiance de l'analyse",
-  "analysis.confidenceHint": "La confiance augmente à mesure que tu envoies des parties et que le volume de rounds par côté et par carte grandit.",
+  "analysis.confidenceHint":
+    "La confiance augmente à mesure que tu envoies des parties et que le volume de rounds par côté et par carte grandit.",
   "matches.description": "Chaque partie envoyée alimente le score, le Player DNA et le diagnostic.",
   "matches.newDemo": "Envoyer une nouvelle démo",
-  "matches.notice": "Les parties affichées sont des exemples d'interface. Aucune démo n'a été envoyée, lue ni traitée.",
+  "matches.notice":
+    "Les parties affichées sont des exemples d'interface. Aucune démo n'a été envoyée, lue ni traitée.",
   "matches.total": "Parties",
   "matches.winRate": "Win rate",
   "matches.avgRating": "Rating moyen",
@@ -405,11 +412,13 @@ export const fr: Dictionary = {
   "matches.result.win": "Victoire",
   "matches.result.loss": "Défaite",
   "matches.result.draw": "Égalité",
-  "profile.description": "Ces données calibrent la comparaison du Player DNA et l'intensité de ton plan d'entraînement.",
+  "profile.description":
+    "Ces données calibrent la comparaison du Player DNA et l'intensité de ton plan d'entraînement.",
   "profile.playerData": "Données du joueur",
   "profile.preferences": "Préférences",
   "profile.save": "Enregistrer les modifications",
-  "profile.saveDisabled": "L'enregistrement est désactivé à ce stade : la persistance du profil n'est pas encore implémentée.",
+  "profile.saveDisabled":
+    "L'enregistrement est désactivé à ce stade : la persistance du profil n'est pas encore implémentée.",
   "profile.field.name": "Nom",
   "profile.field.email": "E-mail",
   "profile.field.platform": "Plateforme principale",
@@ -422,5 +431,6 @@ export const fr: Dictionary = {
   "profile.pref.weeklyPlan": "Résumé hebdomadaire du plan",
   "profile.pref.publicProfile": "Profil public",
   "admin.error.title": "Erreur d'administration",
-  "admin.error.unexpected": "L'espace d'administration n'a pas pu être chargé en raison d'une erreur interne. Réessaie dans quelques instants.",
+  "admin.error.unexpected":
+    "L'espace d'administration n'a pas pu être chargé en raison d'une erreur interne. Réessaie dans quelques instants.",
 };
