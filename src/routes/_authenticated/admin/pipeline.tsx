@@ -39,6 +39,7 @@ function AdminPipelinePage() {
   const t = useT();
   const { intlTag } = useI18n();
   const queryClient = useQueryClient();
+  const { adminSession } = Route.useRouteContext();
   const dateFormat = new Intl.DateTimeFormat(intlTag, { dateStyle: "short", timeStyle: "short" });
 
   const overview = useQuery({
@@ -58,7 +59,7 @@ function AdminPipelinePage() {
   });
 
   return (
-    <AdminShell>
+    <AdminShell session={adminSession}>
       <div className="space-y-6">
         <PageHeader
           eyebrow={t("pipeline.admin.title")}
@@ -105,7 +106,7 @@ function AdminPipelinePage() {
             </div>
 
             {overview.data.jobs.length === 0 ? (
-              <EmptyState description={t("pipeline.admin.empty")} />
+              <EmptyState title={t("pipeline.admin.empty")} />
             ) : (
               <ul className="space-y-2">
                 {overview.data.jobs.map((job) => (

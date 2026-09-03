@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, LayoutDashboard, ScrollText, Users } from "lucide-react";
+import { ArrowLeft, Cpu, LayoutDashboard, ScrollText, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Brand } from "@/components/layout/Brand";
@@ -10,6 +10,7 @@ import type { AdminSession } from "@/lib/admin.functions";
 const adminNav = [
   { to: "/admin", labelKey: "admin.nav.overview", icon: LayoutDashboard },
   { to: "/admin/users", labelKey: "admin.nav.users", icon: Users },
+  { to: "/admin/pipeline", labelKey: "pipeline.admin.title", icon: Cpu },
   { to: "/admin/audit", labelKey: "admin.nav.audit", icon: ScrollText },
 ] as const;
 
