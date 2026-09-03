@@ -1,16 +1,20 @@
 export type Platform = "FACEIT" | "Gamers Club" | "Matchmaking" | "ESEA";
 
+/**
+ * Stable internal Player DNA identifiers. NEVER localise these values — the
+ * user-facing name comes from i18n (`dna.dim.<slug>`).
+ */
 export type DnaDimension =
-  | "Aim"
-  | "Dueling"
-  | "Survivability"
-  | "Positioning"
-  | "Utility"
-  | "Decision Making"
-  | "Teamplay"
-  | "Economy"
-  | "Clutch"
-  | "Consistency";
+  | "aim"
+  | "dueling"
+  | "survivability"
+  | "positioning"
+  | "utility"
+  | "decision_making"
+  | "teamplay"
+  | "economy"
+  | "clutch"
+  | "consistency";
 
 export interface DnaPoint {
   dimension: DnaDimension;

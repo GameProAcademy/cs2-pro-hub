@@ -30,22 +30,22 @@ export const demoProScore: ProScore = {
 };
 
 export const demoPlayerDna: DnaPoint[] = [
-  { dimension: "Aim", value: 84, average: 62 },
-  { dimension: "Dueling", value: 76, average: 60 },
-  { dimension: "Survivability", value: 51, average: 61 },
-  { dimension: "Positioning", value: 63, average: 60 },
-  { dimension: "Utility", value: 44, average: 58 },
-  { dimension: "Decision Making", value: 41, average: 59 },
-  { dimension: "Teamplay", value: 79, average: 61 },
-  { dimension: "Economy", value: 66, average: 60 },
-  { dimension: "Clutch", value: 81, average: 57 },
-  { dimension: "Consistency", value: 58, average: 60 },
+  { dimension: "aim", value: 84, average: 62 },
+  { dimension: "dueling", value: 76, average: 60 },
+  { dimension: "survivability", value: 51, average: 61 },
+  { dimension: "positioning", value: 63, average: 60 },
+  { dimension: "utility", value: 44, average: 58 },
+  { dimension: "decision_making", value: 41, average: 59 },
+  { dimension: "teamplay", value: 79, average: 61 },
+  { dimension: "economy", value: 66, average: 60 },
+  { dimension: "clutch", value: 81, average: 57 },
+  { dimension: "consistency", value: 58, average: 60 },
 ];
 
 export const demoBottlenecks: Bottleneck[] = [
   {
     id: "bn-1",
-    area: "Decision Making",
+    area: "decision_making",
     priority: "Crítica",
     impact: "-9 pts no CS2 PRO Score",
     confidence: 88,
@@ -54,7 +54,7 @@ export const demoBottlenecks: Bottleneck[] = [
   },
   {
     id: "bn-2",
-    area: "Utility",
+    area: "utility",
     priority: "Alta",
     impact: "-6 pts no CS2 PRO Score",
     confidence: 81,
@@ -63,7 +63,7 @@ export const demoBottlenecks: Bottleneck[] = [
   },
   {
     id: "bn-3",
-    area: "Survivability",
+    area: "survivability",
     priority: "Média",
     impact: "-4 pts no CS2 PRO Score",
     confidence: 74,
@@ -75,19 +75,19 @@ export const demoBottlenecks: Bottleneck[] = [
 export const demoStrengths: Strength[] = [
   {
     id: "st-1",
-    area: "Aim",
+    area: "aim",
     summary: "Precisão de primeira bala e controle de spray consistentes em curta e média distância.",
     percentile: 91,
   },
   {
     id: "st-2",
-    area: "Teamplay",
+    area: "teamplay",
     summary: "Alta taxa de trade kills e presença próxima ao núcleo do time nas execuções.",
     percentile: 84,
   },
   {
     id: "st-3",
-    area: "Clutch",
+    area: "clutch",
     summary: "Conversão acima da média em situações 1v1 e 1v2 com tempo suficiente de round.",
     percentile: 88,
   },
@@ -199,7 +199,7 @@ export const demoTrainingPlans: TrainingPlan[] = [
     horizon: 30,
     title: "Plano 30 dias — Correção dos gargalos",
     goal: "Reduzir erros de decisão em rounds pós-plant e elevar o uso de utilitário por round.",
-    focus: ["Decision Making", "Utility"],
+    focus: ["decision_making", "utility"],
     progress: 42,
     tasks: [
       { title: "Revisão de rounds perdidos", detail: "Assistir 3 rounds pós-plant por sessão e anotar a decisão alternativa.", frequency: "4x/semana" },
@@ -211,7 +211,7 @@ export const demoTrainingPlans: TrainingPlan[] = [
     horizon: 60,
     title: "Plano 60 dias — Desenvolvimento de habilidades",
     goal: "Transformar a consistência mecânica em vantagem estável de rounds abertos.",
-    focus: ["Positioning", "Consistency", "Survivability"],
+    focus: ["positioning", "consistency", "survivability"],
     progress: 12,
     tasks: [
       { title: "Mapa fraco em foco", detail: "Ciclo dedicado a Nuke e Overpass com metas de rating por partida.", frequency: "2x/semana" },
@@ -223,7 +223,7 @@ export const demoTrainingPlans: TrainingPlan[] = [
     horizon: 90,
     title: "Plano 90 dias — Consolidação competitiva",
     goal: "Consolidar o novo padrão de jogo em ambiente competitivo contínuo.",
-    focus: ["Decision Making", "Teamplay", "Economy"],
+    focus: ["decision_making", "teamplay", "economy"],
     progress: 0,
     tasks: [
       { title: "Ciclo competitivo", detail: "Séries semanais com revisão de desempenho e metas por mapa.", frequency: "Semanal" },
