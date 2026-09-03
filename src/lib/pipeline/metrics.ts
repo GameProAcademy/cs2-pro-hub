@@ -8,7 +8,8 @@
  * A round counts towards KAST for a player when AT LEAST ONE of:
  *   K - the player got a kill in the round;
  *   A - the player got an assist (including flash assists) in the round;
- *   S - the player survived the round (no death event for the player);
+ *   S - the player provably survived the round (see `playerSurvivedRound`: the
+ *       mere absence of a death event is NOT survival);
  *   T - the player died and the death was traded, i.e. an enemy killed the
  *       player's killer within TRADE_WINDOW_SECONDS of the player's death.
  * KAST = (qualifying rounds / rounds played) * 100, rounded to 1 decimal.
