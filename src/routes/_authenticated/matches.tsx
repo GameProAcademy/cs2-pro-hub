@@ -9,7 +9,7 @@ import { MatchesTable } from "@/components/panels/MatchesTable";
 import { Button } from "@/components/ui/button";
 import { getMatches } from "@/services/playerService";
 
-export const Route = createFileRoute("/matches")({
+export const Route = createFileRoute("/_authenticated/matches")({
   head: () => ({
     meta: [
       { title: "Minhas Partidas — CS2 PRO AI COACH" },

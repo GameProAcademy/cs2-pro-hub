@@ -1,0 +1,11 @@
+REVOKE EXECUTE ON FUNCTION public.touch_updated_at() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.guard_profile_role() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sync_user_roles() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.is_staff(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.is_admin_master(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.owns_player(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.owns_analysis(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.owns_plan(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.owns_conversation(uuid) FROM PUBLIC, anon;

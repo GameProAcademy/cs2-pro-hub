@@ -10,7 +10,7 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { getAnalysis, getProScore } from "@/services/playerService";
 
-export const Route = createFileRoute("/coach")({
+export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
     meta: [
       { title: "AI Coach — CS2 PRO AI COACH" },

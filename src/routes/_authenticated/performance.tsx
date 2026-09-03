@@ -15,7 +15,7 @@ import {
   getTrends,
 } from "@/services/playerService";
 
-export const Route = createFileRoute("/performance")({
+export const Route = createFileRoute("/_authenticated/performance")({
   head: () => ({
     meta: [
       { title: "Performance — CS2 PRO AI COACH" },

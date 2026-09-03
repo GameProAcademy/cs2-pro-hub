@@ -1,0 +1,1158 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_logs_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analyses: {
+        Row: {
+          analysis_version: string
+          confidence: number | null
+          created_at: string
+          id: string
+          player_id: string
+          source_upload_id: string | null
+          status: Database["public"]["Enums"]["analysis_status"]
+          summary: string | null
+        }
+        Insert: {
+          analysis_version?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          player_id: string
+          source_upload_id?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"]
+          summary?: string | null
+        }
+        Update: {
+          analysis_version?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          player_id?: string
+          source_upload_id?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"]
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analyses_source_upload_id_fkey"
+            columns: ["source_upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_findings: {
+        Row: {
+          analysis_id: string
+          confidence: number | null
+          created_at: string
+          description: string | null
+          evidence: Json | null
+          id: string
+          impact: string | null
+          priority: Database["public"]["Enums"]["finding_priority"] | null
+          skill_id: string | null
+          title: string
+          type: Database["public"]["Enums"]["finding_type"]
+        }
+        Insert: {
+          analysis_id: string
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          impact?: string | null
+          priority?: Database["public"]["Enums"]["finding_priority"] | null
+          skill_id?: string | null
+          title: string
+          type: Database["public"]["Enums"]["finding_type"]
+        }
+        Update: {
+          analysis_id?: string
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          impact?: string | null
+          priority?: Database["public"]["Enums"]["finding_priority"] | null
+          skill_id?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["finding_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_findings_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_findings_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_conversations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_messages: {
+        Row: {
+          content: string
+          context_id: string | null
+          context_type: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["coach_role"]
+        }
+        Insert: {
+          content: string
+          context_id?: string | null
+          context_type?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["coach_role"]
+        }
+        Update: {
+          content?: string
+          context_id?: string | null
+          context_type?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["coach_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "coach_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_skills: {
+        Row: {
+          lesson_id: string
+          skill_id: string
+        }
+        Insert: {
+          lesson_id: string
+          skill_id: string
+        }
+        Update: {
+          lesson_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_skills_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_translations: {
+        Row: {
+          description: string | null
+          lesson_id: string
+          locale: string
+          title: string
+        }
+        Insert: {
+          description?: string | null
+          lesson_id: string
+          locale: string
+          title: string
+        }
+        Update: {
+          description?: string | null
+          lesson_id?: string
+          locale?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_translations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          active: boolean
+          duration: string | null
+          id: string
+          lesson_url: string | null
+          module: string | null
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          duration?: string | null
+          id?: string
+          lesson_url?: string | null
+          module?: string | null
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          duration?: string | null
+          id?: string
+          lesson_url?: string | null
+          module?: string | null
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      match_metrics: {
+        Row: {
+          adr: number | null
+          assists: number | null
+          clutches: number | null
+          created_at: string
+          ct_rating: number | null
+          deaths: number | null
+          first_deaths: number | null
+          first_kills: number | null
+          flash_assists: number | null
+          grenade_damage: number | null
+          hs_percent: number | null
+          id: string
+          kast: number | null
+          kills: number | null
+          match_id: string
+          multi_kills: number | null
+          opening_success: number | null
+          player_id: string
+          rating: number | null
+          t_rating: number | null
+          utility_damage: number | null
+        }
+        Insert: {
+          adr?: number | null
+          assists?: number | null
+          clutches?: number | null
+          created_at?: string
+          ct_rating?: number | null
+          deaths?: number | null
+          first_deaths?: number | null
+          first_kills?: number | null
+          flash_assists?: number | null
+          grenade_damage?: number | null
+          hs_percent?: number | null
+          id?: string
+          kast?: number | null
+          kills?: number | null
+          match_id: string
+          multi_kills?: number | null
+          opening_success?: number | null
+          player_id: string
+          rating?: number | null
+          t_rating?: number | null
+          utility_damage?: number | null
+        }
+        Update: {
+          adr?: number | null
+          assists?: number | null
+          clutches?: number | null
+          created_at?: string
+          ct_rating?: number | null
+          deaths?: number | null
+          first_deaths?: number | null
+          first_kills?: number | null
+          flash_assists?: number | null
+          grenade_damage?: number | null
+          hs_percent?: number | null
+          id?: string
+          kast?: number | null
+          kills?: number | null
+          match_id?: string
+          multi_kills?: number | null
+          opening_success?: number | null
+          player_id?: string
+          rating?: number | null
+          t_rating?: number | null
+          utility_damage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_metrics_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_metrics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          external_match_id: string | null
+          id: string
+          map: string | null
+          match_date: string | null
+          platform: string | null
+          player_id: string
+          result: Database["public"]["Enums"]["match_result"] | null
+          rounds: number | null
+          score_opponent: number | null
+          score_player: number | null
+          upload_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_match_id?: string | null
+          id?: string
+          map?: string | null
+          match_date?: string | null
+          platform?: string | null
+          player_id: string
+          result?: Database["public"]["Enums"]["match_result"] | null
+          rounds?: number | null
+          score_opponent?: number | null
+          score_player?: number | null
+          upload_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_match_id?: string | null
+          id?: string
+          map?: string | null
+          match_date?: string | null
+          platform?: string | null
+          player_id?: string
+          result?: Database["public"]["Enums"]["match_result"] | null
+          rounds?: number | null
+          score_opponent?: number | null
+          score_player?: number | null
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_dna_snapshots: {
+        Row: {
+          aim: number | null
+          analysis_id: string | null
+          clutch: number | null
+          consistency: number | null
+          created_at: string
+          decision_making: number | null
+          dueling: number | null
+          economy: number | null
+          id: string
+          player_id: string
+          positioning: number | null
+          survivability: number | null
+          teamplay: number | null
+          utility: number | null
+        }
+        Insert: {
+          aim?: number | null
+          analysis_id?: string | null
+          clutch?: number | null
+          consistency?: number | null
+          created_at?: string
+          decision_making?: number | null
+          dueling?: number | null
+          economy?: number | null
+          id?: string
+          player_id: string
+          positioning?: number | null
+          survivability?: number | null
+          teamplay?: number | null
+          utility?: number | null
+        }
+        Update: {
+          aim?: number | null
+          analysis_id?: string | null
+          clutch?: number | null
+          consistency?: number | null
+          created_at?: string
+          decision_making?: number | null
+          dueling?: number | null
+          economy?: number | null
+          id?: string
+          player_id?: string
+          positioning?: number | null
+          survivability?: number | null
+          teamplay?: number | null
+          utility?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_dna_snapshots_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_dna_snapshots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_identities: {
+        Row: {
+          created_at: string
+          external_id: string | null
+          id: string
+          is_verified: boolean
+          platform: Database["public"]["Enums"]["platform_kind"]
+          player_id: string
+          profile_url: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_verified?: boolean
+          platform: Database["public"]["Enums"]["platform_kind"]
+          player_id: string
+          profile_url?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_verified?: boolean
+          platform?: Database["public"]["Enums"]["platform_kind"]
+          player_id?: string
+          profile_url?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_identities_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_profiles: {
+        Row: {
+          competitive_goal: string | null
+          country: string | null
+          created_at: string
+          current_level: string | null
+          experience: string | null
+          faceit_player_id: string | null
+          faceit_username: string | null
+          gamersclub_player_id: string | null
+          gamersclub_username: string | null
+          id: string
+          main_platform: string | null
+          nickname: string | null
+          role: string | null
+          steam_id: string | null
+          team: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competitive_goal?: string | null
+          country?: string | null
+          created_at?: string
+          current_level?: string | null
+          experience?: string | null
+          faceit_player_id?: string | null
+          faceit_username?: string | null
+          gamersclub_player_id?: string | null
+          gamersclub_username?: string | null
+          id?: string
+          main_platform?: string | null
+          nickname?: string | null
+          role?: string | null
+          steam_id?: string | null
+          team?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competitive_goal?: string | null
+          country?: string | null
+          created_at?: string
+          current_level?: string | null
+          experience?: string | null
+          faceit_player_id?: string | null
+          faceit_username?: string | null
+          gamersclub_player_id?: string | null
+          gamersclub_username?: string | null
+          id?: string
+          main_platform?: string | null
+          nickname?: string | null
+          role?: string | null
+          steam_id?: string | null
+          team?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_score_snapshots: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          id: string
+          percentile: number | null
+          player_id: string
+          score: number
+          tier: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          percentile?: number | null
+          player_id: string
+          score: number
+          tier?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          percentile?: number | null
+          player_id?: string
+          score?: number
+          tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_score_snapshots_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_score_snapshots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          country: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          last_login_at: string | null
+          locale: string
+          nickname: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["user_status"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          last_login_at?: string | null
+          locale?: string
+          nickname?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_status"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_login_at?: string | null
+          locale?: string
+          nickname?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      skill_translations: {
+        Row: {
+          description: string | null
+          locale: string
+          name: string
+          skill_id: string
+        }
+        Insert: {
+          description?: string | null
+          locale: string
+          name: string
+          skill_id: string
+        }
+        Update: {
+          description?: string | null
+          locale?: string
+          name?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_translations_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          active: boolean
+          id: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      training_plan_items: {
+        Row: {
+          description: string | null
+          id: string
+          lesson_id: string | null
+          skill_id: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["plan_item_status"]
+          target_metric: string | null
+          target_value: string | null
+          title: string
+          training_plan_id: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          lesson_id?: string | null
+          skill_id?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["plan_item_status"]
+          target_metric?: string | null
+          target_value?: string | null
+          title: string
+          training_plan_id: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          lesson_id?: string | null
+          skill_id?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["plan_item_status"]
+          target_metric?: string | null
+          target_value?: string | null
+          title?: string
+          training_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_plan_items_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plan_items_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plan_items_training_plan_id_fkey"
+            columns: ["training_plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_plans: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          end_date: string | null
+          horizon: number
+          id: string
+          objective: string | null
+          player_id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["plan_status"]
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          horizon: number
+          id?: string
+          objective?: string | null
+          player_id: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["plan_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          horizon?: number
+          id?: string
+          objective?: string | null
+          player_id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["plan_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_plans_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          processed_at: string | null
+          source: Database["public"]["Enums"]["upload_source"]
+          status: Database["public"]["Enums"]["upload_status"]
+          storage_path: string | null
+          type: Database["public"]["Enums"]["upload_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          processed_at?: string | null
+          source?: Database["public"]["Enums"]["upload_source"]
+          status?: Database["public"]["Enums"]["upload_status"]
+          storage_path?: string | null
+          type: Database["public"]["Enums"]["upload_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          processed_at?: string | null
+          source?: Database["public"]["Enums"]["upload_source"]
+          status?: Database["public"]["Enums"]["upload_status"]
+          storage_path?: string | null
+          type?: Database["public"]["Enums"]["upload_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_master: { Args: { _user_id: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      owns_analysis: { Args: { _analysis_id: string }; Returns: boolean }
+      owns_conversation: {
+        Args: { _conversation_id: string }
+        Returns: boolean
+      }
+      owns_plan: { Args: { _plan_id: string }; Returns: boolean }
+      owns_player: { Args: { _player_id: string }; Returns: boolean }
+    }
+    Enums: {
+      analysis_status: "pending" | "processing" | "completed" | "failed"
+      app_role: "admin_master" | "admin" | "player"
+      coach_role: "coach" | "player"
+      finding_priority: "critical" | "high" | "medium" | "low"
+      finding_type: "bottleneck" | "strength" | "recommendation"
+      match_result: "win" | "loss" | "draw"
+      plan_item_status: "pending" | "in_progress" | "done" | "skipped"
+      plan_status: "draft" | "active" | "completed" | "archived"
+      platform_kind: "FACEIT" | "GAMERS_CLUB" | "STEAM"
+      upload_source: "manual" | "faceit" | "gamers_club" | "steam"
+      upload_status: "pending" | "processing" | "processed" | "failed"
+      upload_type: "demo" | "screenshot" | "report"
+      user_status: "active" | "inactive"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      analysis_status: ["pending", "processing", "completed", "failed"],
+      app_role: ["admin_master", "admin", "player"],
+      coach_role: ["coach", "player"],
+      finding_priority: ["critical", "high", "medium", "low"],
+      finding_type: ["bottleneck", "strength", "recommendation"],
+      match_result: ["win", "loss", "draw"],
+      plan_item_status: ["pending", "in_progress", "done", "skipped"],
+      plan_status: ["draft", "active", "completed", "archived"],
+      platform_kind: ["FACEIT", "GAMERS_CLUB", "STEAM"],
+      upload_source: ["manual", "faceit", "gamers_club", "steam"],
+      upload_status: ["pending", "processing", "processed", "failed"],
+      upload_type: ["demo", "screenshot", "report"],
+      user_status: ["active", "inactive"],
+    },
+  },
+} as const
