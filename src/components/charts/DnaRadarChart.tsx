@@ -8,6 +8,8 @@ import {
   Tooltip,
 } from "recharts";
 
+import { useT } from "@/i18n";
+import { dnaLabelKey } from "@/lib/dna";
 import type { DnaPoint } from "@/types";
 
 export function DnaRadarChart({
@@ -19,19 +21,22 @@ export function DnaRadarChart({
   height?: number | undefined;
   showAverage?: boolean | undefined;
 }) {
+  const t = useT();
+  const localized = data.map((point) => ({ ...point, label: t(dnaLabelKey(point.dimension)) }));
+
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} outerRadius="72%">
+        <RadarChart data={localized} outerRadius="72%">
           <PolarGrid stroke="var(--border)" />
           <PolarAngleAxis
-            dataKey="dimension"
+            dataKey="label"
             tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
           />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
           {showAverage ? (
             <Radar
-              name="Média do nível"
+              name={t("dna.chart.average")}
               dataKey="average"
               stroke="var(--muted-foreground)"
               strokeDasharray="4 4"
@@ -40,7 +45,7 @@ export function DnaRadarChart({
             />
           ) : null}
           <Radar
-            name="Você"
+            name={t("dna.chart.you")}
             dataKey="value"
             stroke="var(--chart-1)"
             strokeWidth={2}

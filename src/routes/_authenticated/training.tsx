@@ -7,6 +7,7 @@ import { DemoTag } from "@/components/common/DemoDataNotice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { AppShell } from "@/components/layout/AppShell";
+import { dnaLabelKey } from "@/lib/dna";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useT } from "@/i18n";
@@ -93,7 +94,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                       key={skill}
                       className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
                     >
-                      {skill}
+                      {t(dnaLabelKey(skill))}
                     </span>
                   ))}
                 </div>
@@ -181,7 +182,11 @@ function TrainingPage() {
         <Tabs defaultValue="30">
           <TabsList className="w-full sm:w-auto">
             {plans.map((p) => (
-              <TabsTrigger key={p.horizon} value={String(p.horizon)} className="flex-1 sm:flex-none">
+              <TabsTrigger
+                key={p.horizon}
+                value={String(p.horizon)}
+                className="flex-1 sm:flex-none"
+              >
                 {t("training.plan")} {p.horizon} {t("training.days")}
               </TabsTrigger>
             ))}

@@ -78,7 +78,8 @@
 
   --primary: oklch(0.9 0.19 131);
   --primary-foreground: oklch(0.22 0.05 133);
-  --primary-hover: oklch(0.74 0.163 60);
+  /* Hover: a deeper, clearly distinct GamePro green (#7ccf3a). */
+  --primary-hover: oklch(0.75 0.185 133);
   --primary-strong: oklch(0.68 0.16 133);
   --secondary: oklch(0.27 0.016 252);
   --secondary-foreground: oklch(0.94 0.004 250);
@@ -180,7 +181,7 @@
   background-size: 44px 44px;
 }
 
-/* GamePro interaction rule: green default, orange hover on primary actions. */
+/* GamePro interaction rule: green default, a deeper green on hover. */
 @layer base {
   button[data-slot="button"].bg-primary:hover,
   a[data-slot="button"].bg-primary:hover {

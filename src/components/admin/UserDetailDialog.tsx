@@ -19,15 +19,12 @@ import { Label } from "@/components/ui/label";
 import { useI18n, useT } from "@/i18n";
 import {
   getAdminUserDetail,
-  setAdminUserRole,
   setAdminUserStatus,
   updateAdminUser,
   type AdminRole,
   type AdminSession,
 } from "@/lib/admin.functions";
 import { LOCALE_OPTIONS } from "@/i18n/config";
-
-const ROLES: AdminRole[] = ["player", "admin", "admin_master"];
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -63,11 +60,10 @@ export function UserDetailDialog({
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<
-    | { kind: "status"; status: "active" | "inactive" }
-    | { kind: "role"; role: AdminRole }
-    | null
-  >(null);
+  const [confirm, setConfirm] = useState<{
+    kind: "status";
+    status: "active" | "inactive";
+  } | null>(null);
 
   const [form, setForm] = useState({
     display_name: "",
@@ -143,21 +139,10 @@ export function UserDetailDialog({
   });
 
   const changeStatus = useMutation({
-    mutationFn: (status: "active" | "inactive") =>
-      setAdminUserStatus({ data: { userId, status } }),
+    mutationFn: (status: "active" | "inactive") => setAdminUserStatus({ data: { userId, status } }),
     onSuccess: () => {
       setError(null);
       setMessage(t("admin.msg.statusUpdated"));
-      refresh();
-    },
-    onError: handleError,
-  });
-
-  const changeRole = useMutation({
-    mutationFn: (role: AdminRole) => setAdminUserRole({ data: { userId, role } }),
-    onSuccess: () => {
-      setError(null);
-      setMessage(t("admin.msg.roleUpdated"));
       refresh();
     },
     onError: handleError,
@@ -167,7 +152,7 @@ export function UserDetailDialog({
   const player = detail.data?.player as any;
   const identities = (detail.data?.identities ?? []) as any[];
   const isSelf = profile?.id === session.userId;
-  const busy = save.isPending || changeStatus.isPending || changeRole.isPending;
+  const busy = save.isPending || changeStatus.isPending;
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? onClose() : undefined)}>
@@ -244,7 +229,10 @@ export function UserDetailDialog({
                   <Field label={t("admin.table.nickname")} value={profile.nickname || dash} />
                   <Field label={t("admin.table.country")} value={profile.country || dash} />
                   <Field label={t("admin.field.locale")} value={profile.locale} />
-                  <Field label={t("admin.table.role")} value={t(`admin.role.${profile.role as AdminRole}`)} />
+                  <Field
+                    label={t("admin.table.role")}
+                    value={t(`admin.role.${profile.role as AdminRole}`)}
+                  />
                   <Field
                     label={t("admin.table.status")}
                     value={t(`admin.status.${profile.status as "active" | "inactive"}`)}
@@ -331,10 +319,7 @@ export function UserDetailDialog({
                       className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-4"
                     >
                       <Field label={t("admin.detail.platform")} value={identity.platform} />
-                      <Field
-                        label={t("admin.detail.username")}
-                        value={identity.username || dash}
-                      />
+                      <Field label={t("admin.detail.username")} value={identity.username || dash} />
                       <Field
                         label={t("admin.detail.externalId")}
                         value={identity.external_id || dash}
@@ -369,7 +354,7 @@ export function UserDetailDialog({
                 </Button>
               )}
 
-              {!isSelf ? (
+              {!isSelf && profile.role === "player" ? (
                 <Button
                   variant="outline"
                   disabled={busy}
@@ -385,53 +370,25 @@ export function UserDetailDialog({
                     : t("admin.action.activate")}
                 </Button>
               ) : null}
-
-              {session.isMaster && !isSelf ? (
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="role-select" className="sr-only">
-                    {t("admin.action.changeRole")}
-                  </Label>
-                  <select
-                    id="role-select"
-                    value={profile.role}
-                    disabled={busy}
-                    onChange={(e) =>
-                      setConfirm({ kind: "role", role: e.target.value as AdminRole })
-                    }
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {t(`admin.role.${role}`)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {t("admin.masterOnly")}
-                </span>
-              )}
             </section>
           </div>
         )}
 
-        <AlertDialog open={confirm !== null} onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}>
+        <AlertDialog
+          open={confirm !== null}
+          onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {confirm?.kind === "role"
-                  ? t("admin.confirm.roleTitle")
-                  : confirm?.status === "inactive"
-                    ? t("admin.confirm.deactivateTitle")
-                    : t("admin.confirm.activateTitle")}
+                {confirm?.status === "inactive"
+                  ? t("admin.confirm.deactivateTitle")
+                  : t("admin.confirm.activateTitle")}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                {confirm?.kind === "role"
-                  ? t("admin.confirm.roleBody")
-                  : confirm?.status === "inactive"
-                    ? t("admin.confirm.deactivateBody")
-                    : t("admin.confirm.activateBody")}
+                {confirm?.status === "inactive"
+                  ? t("admin.confirm.deactivateBody")
+                  : t("admin.confirm.activateBody")}
                 <br />
                 <strong>{t("admin.confirm.affected")}:</strong>{" "}
                 {profile?.display_name || profile?.nickname || profile?.email}
@@ -442,8 +399,7 @@ export function UserDetailDialog({
               <AlertDialogAction
                 onClick={() => {
                   if (!confirm) return;
-                  if (confirm.kind === "status") changeStatus.mutate(confirm.status);
-                  else changeRole.mutate(confirm.role);
+                  changeStatus.mutate(confirm.status);
                   setConfirm(null);
                 }}
               >

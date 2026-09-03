@@ -13,13 +13,7 @@ const adminNav = [
   { to: "/admin/audit", labelKey: "admin.nav.audit", icon: ScrollText },
 ] as const;
 
-export function AdminShell({
-  session,
-  children,
-}: {
-  session: AdminSession;
-  children: ReactNode;
-}) {
+export function AdminShell({ session, children }: { session: AdminSession; children: ReactNode }) {
   const t = useT();
 
   return (
@@ -46,7 +40,8 @@ export function AdminShell({
                   to={item.to}
                   activeOptions={{ exact: item.to === "/admin" }}
                   activeProps={{
-                    className: "border-primary/40 bg-secondary text-foreground [&_svg]:text-primary",
+                    className:
+                      "border-primary/40 bg-secondary text-foreground [&_svg]:text-primary",
                   }}
                   className="flex shrink-0 items-center gap-2 rounded-md border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >

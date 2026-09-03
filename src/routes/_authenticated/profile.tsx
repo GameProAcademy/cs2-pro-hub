@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/profile")({
       { title: "Meu Perfil — CS2 PRO AI COACH" },
       {
         name: "description",
-        content: "Gerencie seus dados de jogador, plataforma principal, role, objetivo e preferências.",
+        content:
+          "Gerencie seus dados de jogador, plataforma principal, role, objetivo e preferências.",
       },
       { property: "og:title", content: "Meu Perfil — CS2 PRO AI COACH" },
       {
@@ -59,10 +60,7 @@ function ProfilePage() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <ChartCard title="Dados do jogador" className="lg:col-span-2" showDemoTag={false}>
-            <form
-              className="grid gap-4 sm:grid-cols-2"
-              onSubmit={(e) => e.preventDefault()}
-            >
+            <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
               {fields.map((f) => (
                 <div key={f.id} className="space-y-2">
                   <Label htmlFor={f.id}>{f.label}</Label>

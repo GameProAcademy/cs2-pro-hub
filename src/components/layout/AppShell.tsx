@@ -149,7 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {t("nav.demoMode")}
             </span>
           ) : null}
-          <LanguageSelector compact className="hidden sm:flex" />
+          <LanguageSelector compact />
           <Button asChild size="sm" variant="outline" className="gap-2">
             <Link to="/upload">
               <Upload className="size-3.5" aria-hidden />
@@ -166,21 +166,23 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation — the Coach stays reachable here. */}
       <nav
         aria-label={t("nav.quickLabel")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
       >
-        {[...navItems.filter((i) => i.primary), uploadNavItem].map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            activeProps={{ className: "text-primary" }}
-            className={cn(
-              "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
-            )}
-          >
-            <item.icon className="size-4" aria-hidden />
-            <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
-          </Link>
-        ))}
+        {navItems
+          .filter((i) => i.primary)
+          .map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeProps={{ className: "text-primary" }}
+              className={cn(
+                "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
+              )}
+            >
+              <item.icon className="size-4" aria-hidden />
+              <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
+            </Link>
+          ))}
       </nav>
 
       {/* Desktop-only floating Coach access */}

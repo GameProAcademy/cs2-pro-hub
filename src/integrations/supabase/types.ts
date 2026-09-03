@@ -990,6 +990,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_master: { Args: { _user_id: string }; Returns: boolean }
+      is_primary_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       owns_analysis: { Args: { _analysis_id: string }; Returns: boolean }
       owns_conversation: {
