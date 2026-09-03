@@ -337,6 +337,8 @@ export const ptPT: Dictionary = {
     "Nenhuma demo foi processada. Os valores abaixo são fictícios e existem apenas para demonstrar a interface — não há parser, base de dados ou IA ligados nesta etapa.",
 
   // --- Audit pass: full UI i18n coverage ---
+  "performance.sidesEmptyTitle": "Dados insuficientes por lado",
+  "performance.sidesEmptyDesc": "A comparação CT vs T aparece quando existirem rondas suficientes de cada lado.",
   "common.noData": "Ainda não existem dados disponíveis.",
   "metric.hint.last20": "últimos 20 jogos",
   "metric.hint.multiKills": "3K+ em 20 jogos",

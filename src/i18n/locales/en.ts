@@ -333,6 +333,8 @@ export const en: Dictionary = {
     "No demo has been processed. The values below are fictional and exist only to showcase the interface — no parser, database or AI is connected at this stage.",
 
   // --- Audit pass: full UI i18n coverage ---
+  "performance.sidesEmptyTitle": "Not enough data per side",
+  "performance.sidesEmptyDesc": "The CT vs T comparison appears once there are enough rounds on each side.",
   "common.noData": "No data available yet.",
   "metric.hint.last20": "last 20 games",
   "metric.hint.multiKills": "3K+ in 20 games",

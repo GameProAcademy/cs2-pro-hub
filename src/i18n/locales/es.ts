@@ -337,6 +337,8 @@ export const es: Dictionary = {
     "No se ha procesado ninguna demo. Los valores siguientes son ficticios y solo sirven para mostrar la interfaz: no hay parser, base de datos ni IA conectados en esta etapa.",
 
   // --- Audit pass: full UI i18n coverage ---
+  "performance.sidesEmptyTitle": "Datos insuficientes por lado",
+  "performance.sidesEmptyDesc": "La comparación CT vs T aparece cuando haya suficientes rondas de cada lado.",
   "common.noData": "Aún no hay datos disponibles.",
   "metric.hint.last20": "últimas 20 partidas",
   "metric.hint.multiKills": "3K+ en 20 partidas",

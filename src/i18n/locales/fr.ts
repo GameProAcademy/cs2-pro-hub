@@ -337,6 +337,8 @@ export const fr: Dictionary = {
     "Aucune démo n'a été traitée. Les valeurs ci-dessous sont fictives et servent uniquement à présenter l'interface — aucun parser, base de données ou IA n'est connecté à ce stade.",
 
   // --- Audit pass: full UI i18n coverage ---
+  "performance.sidesEmptyTitle": "Données insuffisantes par côté",
+  "performance.sidesEmptyDesc": "La comparaison CT vs T apparaît dès qu"il y a assez de rounds de chaque côté.",
   "common.noData": "Aucune donnée disponible pour le moment.",
   "metric.hint.last20": "20 dernières parties",
   "metric.hint.multiKills": "3K+ sur 20 parties",

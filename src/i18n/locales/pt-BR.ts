@@ -339,6 +339,8 @@ export const ptBR = {
     "Nenhuma demo foi processada. Os valores abaixo são fictícios e existem apenas para demonstrar a interface — não há parser, banco de dados ou IA conectados nesta etapa.",
 
   // --- Audit pass: full UI i18n coverage ---
+  "performance.sidesEmptyTitle": "Dados insuficientes por lado",
+  "performance.sidesEmptyDesc": "A comparação CT vs T aparece quando houver rounds suficientes de cada lado.",
   "common.noData": "Nenhum dado disponível ainda.",
   "metric.hint.last20": "últimos 20 jogos",
   "metric.hint.multiKills": "3K+ em 20 jogos",
