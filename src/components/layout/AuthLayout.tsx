@@ -71,7 +71,7 @@ export function AuthLayout({
           <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-primary">
             GamePro
           </p>
-          <p className="mt-3 max-w-2xl font-display text-2xl font-bold uppercase leading-tight tracking-tight text-foreground xl:whitespace-nowrap xl:text-[1.7rem]">
+          <p className="mt-3 max-w-lg text-balance font-display text-2xl font-bold uppercase leading-tight tracking-tight text-foreground">
             {t("brand.tagline")}
           </p>
         </div>
