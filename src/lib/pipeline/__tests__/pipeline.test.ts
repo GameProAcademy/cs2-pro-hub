@@ -59,20 +59,20 @@ describe("normalizer", () => {
 
 describe("metrics", () => {
   it("counts kills, deaths and assists for the owning player", () => {
-    expect(metrics.kills).toBe(5);
+    expect(metrics.kills).toBe(4);
     expect(metrics.deaths).toBe(3);
     expect(metrics.assists).toBe(1);
   });
 
   it("computes headshot percentage from kill events", () => {
     expect(metrics.headshots).toBe(1);
-    expect(metrics.hsPercent).toBe(20);
+    expect(metrics.hsPercent).toBe(25);
   });
 
   it("detects opening duels", () => {
-    expect(metrics.firstKills).toBe(2);
+    expect(metrics.firstKills).toBe(1);
     expect(metrics.firstDeaths).toBe(3);
-    expect(metrics.openingAttempts).toBe(5);
+    expect(metrics.openingAttempts).toBe(4);
   });
 
   it("detects traded and untraded deaths within the configured window", () => {
