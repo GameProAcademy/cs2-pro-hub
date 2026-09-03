@@ -68,6 +68,16 @@ export async function persistCanonicalMatch(args: {
 
   const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
   const ownSide = match.rounds[0]?.sides[steamId] ?? ownPlayer?.side ?? null;
+  const teamPlayer = ownPlayer?.team ?? null;
+  const teamOpponent =
+    teamPlayer == null
+      ? null
+      : teamPlayer === match.teamA
+        ? match.teamB
+        : teamPlayer === match.teamB
+          ? match.teamA
+          : null;
+  const scores = ownScores(match, teamPlayer);
 
   // 1. Match (idempotent by upload_id)
   const { data: matchRow, error: matchError } = await supabaseAdmin
@@ -82,11 +92,11 @@ export async function persistCanonicalMatch(args: {
         game_version: match.gameVersion,
         duration_seconds: match.durationSeconds,
         rounds: match.rounds.length,
-        team_player: ownPlayer?.team ?? match.teamA,
-        team_opponent: ownPlayer?.team === match.teamA ? match.teamB : match.teamA,
-        score_player: ownSide === "T" ? match.scoreB : match.scoreA,
-        score_opponent: ownSide === "T" ? match.scoreA : match.scoreB,
-        result: matchResult(match, ownSide),
+        team_player: teamPlayer,
+        team_opponent: teamOpponent,
+        score_player: scores.player,
+        score_opponent: scores.opponent,
+        result: matchResult(scores),
         demo_metadata: {
           schema_version: match.schemaVersion,
           parser: match.parser,
