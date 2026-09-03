@@ -77,9 +77,14 @@ export function extractFeatures(
       trade_participation: ratio(metrics.tradeKills, Math.max(rounds, 1)),
     },
     economy: {
-      // Economy features need buy data; absent => null, never guessed.
-      buy_discipline: hasEconomy ? scale(metrics.damageGiven / Math.max(rounds, 1), 110) : null,
+      // Economy MUST come from real buy data (money_start / money_end /
+      // equipment_value / buy context). Damage is NOT a proxy for economic
+      // discipline, so nothing is derived from it here: a null with a known
+      // low confidence is better than a fabricated number.
+      buy_discipline: null,
       damage_per_dollar: null,
+      /** Factual signal only: whether the demo carried economy data at all. */
+      economy_data_available: hasEconomy ? 1 : 0,
     },
     clutch: {
       clutch_win_rate: ratio(metrics.clutchWins, Math.max(metrics.clutchAttempts, 1)),

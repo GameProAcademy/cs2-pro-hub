@@ -25,12 +25,27 @@ function fail(message: string | undefined): never {
   throw new PipelineError("PERSISTENCE_ERROR", message);
 }
 
-function matchResult(match: CanonicalMatch, side: Side | null) {
-  if (match.scoreA == null || match.scoreB == null || side == null) return null;
-  const own = side === "CT" ? match.scoreA : match.scoreB;
-  const other = side === "CT" ? match.scoreB : match.scoreA;
-  if (own > other) return "win" as const;
-  if (own < other) return "loss" as const;
+/**
+ * Score ownership is a TEAM question, never a SIDE question: a team plays both
+ * CT and T inside the same match, so CT/T must not decide which score belongs
+ * to the player. `scoreA` belongs to `teamA`, `scoreB` to `teamB`.
+ */
+function ownScores(
+  match: CanonicalMatch,
+  playerTeam: string | null,
+): { player: number | null; opponent: number | null } {
+  if (match.scoreA == null || match.scoreB == null || playerTeam == null) {
+    return { player: null, opponent: null };
+  }
+  if (playerTeam === match.teamA) return { player: match.scoreA, opponent: match.scoreB };
+  if (playerTeam === match.teamB) return { player: match.scoreB, opponent: match.scoreA };
+  return { player: null, opponent: null };
+}
+
+function matchResult(scores: { player: number | null; opponent: number | null }) {
+  if (scores.player == null || scores.opponent == null) return null;
+  if (scores.player > scores.opponent) return "win" as const;
+  if (scores.player < scores.opponent) return "loss" as const;
   return "draw" as const;
 }
 
