@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
+import { MIN_DEMO_SIZE_BYTES, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
+import { ownScores } from "@/lib/pipeline/persistence.server";
+import { safeResetPasswordUrl } from "@/lib/safe-redirect";
 import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
 import {
   resolveOwnSteamId,
@@ -172,5 +174,114 @@ describe("error taxonomy", () => {
   it("marks infrastructure failures as retryable", () => {
     expect(new PipelineError("PARSER_UNAVAILABLE").permanent).toBe(false);
     expect(new PipelineError("PARSER_TIMEOUT").permanent).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2.1 hardening
+// ---------------------------------------------------------------------------
+
+describe("parser identity validation", () => {
+  it("rejects a payload from a different parser implementation", () => {
+    expect(() =>
+      assertRawParserOutput({
+        ...syntheticParserOutput,
+        parser: { name: "other-parser", version: PARSER_VERSION, revision: "x" },
+      }),
+    ).toThrow(PipelineError);
+  });
+
+  it("rejects an incompatible parser version", () => {
+    expect(() =>
+      assertRawParserOutput({
+        ...syntheticParserOutput,
+        parser: { name: PARSER_NAME, version: "9.9.9", revision: "x" },
+      }),
+    ).toThrow(PipelineError);
+  });
+
+  it("accepts a patch release of the pinned version", () => {
+    const [major, minor] = PARSER_VERSION.split(".");
+    expect(
+      assertRawParserOutput({
+        ...syntheticParserOutput,
+        parser: { name: PARSER_NAME, version: `${major}.${minor}.99`, revision: "x" },
+      }).parser.version,
+    ).toBe(`${major}.${minor}.99`);
+  });
+});
+
+describe("KAST denominator", () => {
+  it("only counts rounds the resolved Steam ID actually participated in", () => {
+    // A player absent from every round of the demo has no denominator at all.
+    const ghost = computeMetrics(match, "76561198000000999");
+    expect(ghost.roundsPlayed).toBe(0);
+    expect(ghost.kast).toBeNull();
+  });
+
+  it("excludes rounds without the player from the denominator", () => {
+    const trimmed = {
+      ...match,
+      rounds: match.rounds.map((round, index) =>
+        index >= 8
+          ? { ...round, sides: {}, moneyStart: {}, moneyEnd: {}, equipmentValue: {} }
+          : round,
+      ),
+      events: match.events.filter((event) => event.roundNumber < 9),
+    };
+    const partial = computeMetrics(trimmed, ME);
+    expect(partial.roundsPlayed).toBe(8);
+    expect(partial.kast).not.toBeNull();
+  });
+});
+
+describe("economy features", () => {
+  it("never derives economic discipline from damage", () => {
+    const economy = features.dimensions["economy"]!;
+    expect(economy["buy_discipline"]).toBeNull();
+    expect(economy["damage_per_dollar"]).toBeNull();
+  });
+});
+
+describe("score ownership", () => {
+  const base = { ...match, teamA: "Team Alpha", teamB: "Team Bravo", scoreA: 13, scoreB: 7 };
+
+  it("uses the team, not the starting side, for the player score", () => {
+    expect(ownScores(base, "Team Alpha")).toEqual({ player: 13, opponent: 7 });
+    expect(ownScores(base, "Team Bravo")).toEqual({ player: 7, opponent: 13 });
+  });
+
+  it("returns null scores when the team cannot be determined", () => {
+    expect(ownScores(base, null)).toEqual({ player: null, opponent: null });
+    expect(ownScores(base, "Unknown Team")).toEqual({ player: null, opponent: null });
+  });
+});
+
+describe("password reset redirect allowlist", () => {
+  const allowed = ["https://app.example.com"];
+
+  it("accepts an allowed origin", () => {
+    expect(safeResetPasswordUrl("https://app.example.com", allowed)).toBe(
+      "https://app.example.com/reset-password",
+    );
+  });
+
+  it("normalises any client-supplied path", () => {
+    expect(safeResetPasswordUrl("https://app.example.com/admin?x=1#y", allowed)).toBe(
+      "https://app.example.com/reset-password",
+    );
+  });
+
+  it("rejects an external origin", () => {
+    expect(() => safeResetPasswordUrl("https://evil.example.net", allowed)).toThrow();
+  });
+
+  it("rejects an arbitrary subdomain of an allowed host", () => {
+    expect(() => safeResetPasswordUrl("https://evil.app.example.com", allowed)).toThrow();
+  });
+
+  it("rejects a non-http(s) protocol", () => {
+    expect(() => safeResetPasswordUrl("javascript:alert(1)", allowed)).toThrow();
+    expect(() => safeResetPasswordUrl("http://app.example.com", allowed)).toThrow();
   });
 });
