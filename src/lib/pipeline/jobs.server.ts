@@ -22,6 +22,7 @@ import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { resolveParserAdapter } from "@/lib/pipeline/parser/remoteParser.server";
 import { persistCanonicalMatch } from "@/lib/pipeline/persistence.server";
 import {
+  assertDemoIntegrity,
   computeStoredDemoSha256,
   createDemoSignedUrl,
   deleteDemo,
@@ -163,11 +164,10 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
     // The hash reported by the browser is NOT proof of integrity: the worker
     // recomputes SHA-256 from the stored bytes and refuses a divergent file.
+    // Streamed hashing: the file is never loaded into memory as a whole.
     if (job.demo_sha256) {
       const actual = await computeStoredDemoSha256(job.storage_path);
-      if (actual !== job.demo_sha256) {
-        throw new PipelineError("CORRUPTED_DEMO", "sha256 mismatch");
-      }
+      assertDemoIntegrity(actual, job.demo_sha256);
     }
 
     const adapter = resolveParserAdapter();
