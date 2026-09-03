@@ -9,9 +9,10 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/login" });
 
-    // Deactivated accounts lose application access; the session is ended here.
+    // Fail-closed: a valid session is not enough. The profile must exist and
+    // be confirmed active, otherwise the session is ended.
     const status = await fetchAccountStatus(data.user.id);
-    if (status === "inactive") {
+    if (status !== "active") {
       await supabase.auth.signOut();
       throw redirect({ to: "/login" });
     }
@@ -20,3 +21,4 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: () => <Outlet />,
 });
+
