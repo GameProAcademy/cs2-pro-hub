@@ -70,7 +70,8 @@ export const createDemoUpload = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existing?.id) {
-      const job = (existing.demo_jobs ?? [])[0] ?? null;
+      const related = existing.demo_jobs as { id: string }[] | { id: string } | null;
+      const job = Array.isArray(related) ? (related[0] ?? null) : related;
       const duplicateStatus: DuplicateStatus =
         existing.status === "processed"
           ? "processed"
