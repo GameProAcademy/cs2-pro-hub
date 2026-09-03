@@ -48,32 +48,147 @@ function teamOf(match: CanonicalMatch, steamId: string): string | null {
   return match.players.find((p) => p.steamId === steamId)?.team ?? null;
 }
 
-function sideOf(match: CanonicalMatch, steamId: string, roundNumber: number): Side | null {
+/**
+ * Side of a player IN A SPECIFIC ROUND.
+ *
+ * Only per-round information is trusted: a player changes side at halftime, so
+ * the side of another round (or a match-level default) is NOT evidence for this
+ * round. Without per-round data the answer is null.
+ */
+export function sideInRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): Side | null {
   const round = match.rounds.find((r) => r.roundNumber === roundNumber);
-  return round?.sides[steamId] ?? match.players.find((p) => p.steamId === steamId)?.side ?? null;
+  return round?.sides[steamId] ?? null;
+}
+
+/** True when the resolved player is provably present in the round. */
+export function participatedInRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): boolean {
+  const round = match.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round) return false;
+  if (round.sides[steamId] != null) return true;
+  if (
+    round.moneyStart[steamId] != null ||
+    round.moneyEnd[steamId] != null ||
+    round.equipmentValue[steamId] != null
+  ) {
+    return true;
+  }
+  return match.events.some(
+    (event) =>
+      event.roundNumber === roundNumber &&
+      (event.actorSteamId === steamId ||
+        event.victimSteamId === steamId ||
+        event.assisterSteamId === steamId),
+  );
+}
+
+/**
+ * Survival of a player in a round — the single definition used by metrics,
+ * features and persistence.
+ *
+ * `false` requires an explicit death event. `true` requires positive evidence:
+ * the player participated, the round provably ended and the round's events were
+ * actually extracted (complete parse). Anything weaker is `null`: a missing
+ * death event is NOT proof of survival.
+ */
+export function playerSurvivedRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): boolean | null {
+  const round = match.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round) return null;
+
+  const died = match.events.some(
+    (event) =>
+      event.type === "kill" &&
+      event.roundNumber === roundNumber &&
+      event.victimSteamId === steamId,
+  );
+  if (died) return false;
+
+  if (!participatedInRound(match, steamId, roundNumber)) return null;
+  if (match.quality.partialParse) return null;
+
+  const roundEnded =
+    round.endTick != null || round.durationSeconds != null || round.winnerSide != null || round.winnerTeam != null;
+  if (!roundEnded) return null;
+
+  // The round must actually carry extracted combat/round events; otherwise the
+  // absence of a death event says nothing at all.
+  const hasRoundEvidence = match.events.some(
+    (event) =>
+      event.roundNumber === roundNumber &&
+      (event.type === "kill" || event.type === "damage" || event.type === "round_end"),
+  );
+  if (!hasRoundEvidence) return null;
+
+  return true;
+}
+
+interface FlashRecord {
+  round: number;
+  time: number;
+  flasher: string;
+  victim: string;
 }
 
 function collectKills(match: CanonicalMatch): KillRecord[] {
-  const flashAssists = new Map<string, string>(); // `${round}:${victim}` -> flasher
+  const flashes: FlashRecord[] = [];
   for (const event of match.events) {
-    if (event.type === "flash" && event.actorSteamId && event.victimSteamId) {
-      flashAssists.set(`${event.roundNumber}:${event.victimSteamId}`, event.actorSteamId);
-    }
+    if (event.type !== "flash") continue;
+    if (!event.actorSteamId || !event.victimSteamId) continue;
+    if (event.actorSteamId === event.victimSteamId) continue; // self-flash
+    flashes.push({
+      round: event.roundNumber,
+      time: eventTime(event),
+      flasher: event.actorSteamId,
+      victim: event.victimSteamId,
+    });
   }
+
+  /**
+   * Flash assist attribution: temporal, at most ONE per kill.
+   * The flash must precede the kill, be inside FLASH_ASSIST_WINDOW_SECONDS,
+   * target the same victim, and not come from the killer itself. Among the
+   * eligible flashes only the most recent one is credited.
+   */
+  const flashAssisterFor = (kill: KillRecord): string | null => {
+    if (!kill.victim) return null;
+    let best: FlashRecord | null = null;
+    for (const flash of flashes) {
+      if (flash.round !== kill.round) continue;
+      if (flash.victim !== kill.victim) continue;
+      if (flash.flasher === kill.attacker) continue;
+      if (flash.time > kill.time) continue;
+      if (kill.time - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
+      if (!best || flash.time > best.time) best = flash;
+    }
+    return best?.flasher ?? null;
+  };
 
   return match.events
     .filter((e) => e.type === "kill")
-    .map((e) => ({
-      round: e.roundNumber,
-      time: eventTime(e),
-      attacker: e.actorSteamId,
-      victim: e.victimSteamId,
-      assister: e.assisterSteamId,
-      headshot: e.headshot,
-      flashAssister: e.victimSteamId
-        ? (flashAssists.get(`${e.roundNumber}:${e.victimSteamId}`) ?? null)
-        : null,
-    }))
+    .map((e) => {
+      const kill: KillRecord = {
+        round: e.roundNumber,
+        time: eventTime(e),
+        attacker: e.actorSteamId,
+        victim: e.victimSteamId,
+        assister: e.assisterSteamId,
+        headshot: e.headshot,
+        flashAssister: null,
+      };
+      kill.flashAssister = flashAssisterFor(kill);
+      return kill;
+    })
     .sort((a, b) => a.round - b.round || a.time - b.time);
 }
 
