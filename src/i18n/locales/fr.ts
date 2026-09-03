@@ -433,4 +433,19 @@ export const fr: Dictionary = {
   "admin.error.title": "Erreur d'administration",
   "admin.error.unexpected":
     "L'espace d'administration n'a pas pu être chargé en raison d'une erreur interne. Réessaie dans quelques instants.",
+  "avatar.title": "Photo de profil",
+  "avatar.description":
+    "Importez une image JPEG, PNG ou WebP de 200 Ko maximum. L'image est redimensionnée et compressée automatiquement.",
+  "avatar.upload": "Importer une photo",
+  "avatar.replace": "Remplacer la photo",
+  "avatar.remove": "Supprimer la photo",
+  "avatar.uploading": "Envoi...",
+  "avatar.updated": "Photo de profil mise à jour.",
+  "avatar.removed": "Photo de profil supprimée.",
+  "avatar.error.type": "Format invalide. Utilisez JPEG, PNG ou WebP.",
+  "avatar.error.tooLarge":
+    "Impossible de compresser l'image sous 200 Ko. Importez une image plus petite.",
+  "avatar.error.failed": "La photo de profil n'a pas pu être mise à jour. Veuillez réessayer.",
+  "avatar.fallbackHint": "Sans photo : le symbole GamePro est affiché.",
+  "profile.account": "Compte",
 };

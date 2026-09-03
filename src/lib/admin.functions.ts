@@ -11,7 +11,10 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 /** Single-administrator product model: one `admin_master`, everyone else is a player. */
 export type AdminRole = "admin_master" | "player";
@@ -36,7 +39,53 @@ export interface AdminUserRow {
   last_login_at: string | null;
 }
 
-type Ctx = { supabase: any; userId: string };
+export interface AdminProfileDetail {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  nickname: string | null;
+  avatar_url: string | null;
+  country: string | null;
+  locale: string;
+  role: AdminRole;
+  status: AccountStatus;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface AdminPlayerDetail {
+  id: string;
+  user_id: string;
+  nickname: string | null;
+  country: string | null;
+  main_platform: string | null;
+  current_level: string | null;
+  competitive_goal: string | null;
+  role: string | null;
+  experience: string | null;
+  team: string | null;
+}
+
+export interface AdminIdentity {
+  id: string;
+  platform: string;
+  username: string | null;
+  external_id: string | null;
+  is_verified: boolean;
+  profile_url: string | null;
+}
+
+export interface AuditLogRow {
+  id: string;
+  action: string;
+  admin_user_id: string;
+  target_user_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
 /** Generic, non-revealing error codes surfaced to the client. */
 const FORBIDDEN = "ADMIN_FORBIDDEN";
@@ -91,7 +140,6 @@ async function writeAuditLog(
   });
   if (error) throw new Error(FAILED);
 }
-
 
 /** Returns the caller's administrative session, or throws when unauthorised. */
 export const getAdminSession = createServerFn({ method: "GET" })
@@ -321,8 +369,7 @@ export const setAdminUserStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
-export const createAdminUser = createServerFn({ method: "POST" })
+export const createPlayerUser = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
       email: string;
@@ -391,7 +438,7 @@ export const listAuditLogs = createServerFn({ method: "GET" })
 
     const ids = Array.from(
       new Set(
-        (logs ?? []).flatMap((l: any) => [l.admin_user_id, l.target_user_id]).filter(Boolean),
+        ((logs ?? []) as AuditLogRow[]).flatMap((l) => [l.admin_user_id, l.target_user_id]).filter(Boolean),
       ),
     ) as string[];
 
@@ -406,5 +453,5 @@ export const listAuditLogs = createServerFn({ method: "GET" })
       }
     }
 
-    return { rows: (logs ?? []) as any[], names, total: count ?? 0, page, pageSize };
+    return { rows: (logs ?? []) as AuditLogRow[], names, total: count ?? 0, page, pageSize };
   });
