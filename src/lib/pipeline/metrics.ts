@@ -199,18 +199,36 @@ export function openingDuels(kills: KillRecord[]) {
   return byRound;
 }
 
-/** True when `death` was traded within the configured window. */
+/**
+ * True when `death` was traded within the configured window.
+ *
+ * Required evidence: same round, chronological order, both Steam IDs present,
+ * the avenger kills exactly the original killer, the avenger belongs to the
+ * victim's team and is not the victim itself, and the original death is not a
+ * team kill or a suicide.
+ */
 function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch): boolean {
   if (!death.attacker || !death.victim) return false;
+  if (death.attacker === death.victim) return false; // suicide
   const victimTeam = teamOf(match, death.victim);
-  return kills.some(
-    (k) =>
-      k.round === death.round &&
-      k.time > death.time &&
-      k.time - death.time <= TRADE_WINDOW_SECONDS &&
-      k.victim === death.attacker &&
-      (victimTeam == null || teamOf(match, k.attacker ?? "") === victimTeam),
-  );
+  const killerTeam = teamOf(match, death.attacker);
+  if (victimTeam != null && killerTeam != null && victimTeam === killerTeam) return false;
+
+  return kills.some((k) => {
+    if (!k.attacker || !k.victim) return false;
+    if (k.round !== death.round) return false;
+    if (k.victim !== death.attacker) return false;
+    if (k.attacker === k.victim) return false;
+    if (k.attacker === death.victim) return false;
+    if (k.time <= death.time) return false;
+    if (k.time - death.time > TRADE_WINDOW_SECONDS) return false;
+    const avengerTeam = teamOf(match, k.attacker);
+    // The avenger must be a teammate of the original victim, and must not kill
+    // one of its own (team kills never count as trades).
+    if (victimTeam == null || avengerTeam == null) return false;
+    if (avengerTeam !== victimTeam) return false;
+    return teamOf(match, k.victim) !== avengerTeam;
+  });
 }
 
 /** Clutch detection: player alive alone against N living enemies. */
