@@ -12,7 +12,6 @@ import type {
   CanonicalFeatures,
   CanonicalMatch,
   CanonicalMetrics,
-  Side,
 } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -30,7 +29,7 @@ function fail(message: string | undefined): never {
  * CT and T inside the same match, so CT/T must not decide which score belongs
  * to the player. `scoreA` belongs to `teamA`, `scoreB` to `teamB`.
  */
-function ownScores(
+export function ownScores(
   match: CanonicalMatch,
   playerTeam: string | null,
 ): { player: number | null; opponent: number | null } {
