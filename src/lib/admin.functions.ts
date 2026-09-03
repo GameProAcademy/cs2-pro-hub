@@ -602,11 +602,12 @@ export const resetAdminUserPassword = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!target?.email) throw new Error(FAILED);
 
-    // Only same-origin app URLs are accepted as the recovery destination.
+    // Explicit allowlist of application origins; the client-supplied path is
+    // discarded and always normalised to `/reset-password`.
     let redirectTo: string;
     try {
-      const url = new URL(data.redirectTo);
-      redirectTo = `${url.origin}/reset-password`;
+      const { safeResetPasswordUrl } = await import("@/lib/safe-redirect");
+      redirectTo = safeResetPasswordUrl(data.redirectTo);
     } catch {
       throw new Error(FAILED);
     }
