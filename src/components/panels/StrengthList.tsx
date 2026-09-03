@@ -2,8 +2,11 @@ import { Check } from "lucide-react";
 
 import { ProgressBar } from "@/components/common/ProgressBar";
 import type { Strength } from "@/types";
+import { dnaLabelKey } from "@/lib/dna";
+import { useT } from "@/i18n";
 
 export function StrengthList({ items }: { items: Strength[] }) {
+  const t = useT();
   return (
     <ul className="space-y-4">
       {items.map((item) => (
@@ -13,7 +16,7 @@ export function StrengthList({ items }: { items: Strength[] }) {
               <Check className="size-3.5" aria-hidden />
             </span>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              {item.area}
+              {t(dnaLabelKey(item.area))}
             </h3>
             <span className="ml-auto font-mono text-xs text-success">
               P{item.percentile}

@@ -6,6 +6,8 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { AppShell } from "@/components/layout/AppShell";
+import { useT } from "@/i18n";
+import { dnaLabelKey } from "@/lib/dna";
 import { getPlayerDna } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/player-dna")({
@@ -28,27 +30,28 @@ export const Route = createFileRoute("/_authenticated/player-dna")({
 });
 
 function PlayerDnaPage() {
+  const t = useT();
   const dna = getPlayerDna();
 
   return (
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Perfil competitivo"
-          title="CS2 PRO Player DNA"
-          description="Cada dimensão é comparada com a média esperada para o seu nível. O objetivo não é ter tudo alto, é conhecer o seu formato."
+          eyebrow={t("dna.eyebrow")}
+          title={t("dna.title")}
+          description={t("dna.description")}
         />
 
         <DemoDataNotice />
 
         <div className="grid gap-5 lg:grid-cols-5">
-          <ChartCard title="Radar do Player DNA" className="lg:col-span-3">
+          <ChartCard title={t("dna.radarTitle")} className="lg:col-span-3">
             <DnaRadarChart data={dna} height={420} />
           </ChartCard>
 
           <ChartCard
-            title="Dimensões"
-            subtitle="Valor atual vs média do nível"
+            title={t("dna.dimensions")}
+            subtitle={t("dna.dimensionsSubtitle")}
             className="lg:col-span-2"
           >
             <ul className="space-y-4">
@@ -57,7 +60,9 @@ function PlayerDnaPage() {
                 return (
                   <li key={d.dimension}>
                     <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                      <span className="text-sm font-medium text-foreground">{d.dimension}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {t(dnaLabelKey(d.dimension))}
+                      </span>
                       <span className="num-display text-sm">
                         {d.value}
                         <span

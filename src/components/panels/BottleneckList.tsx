@@ -1,5 +1,7 @@
 import { ProgressBar } from "@/components/common/ProgressBar";
 import type { Bottleneck, Priority } from "@/types";
+import { dnaLabelKey } from "@/lib/dna";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 const priorityTone: Record<Priority, string> = {
@@ -9,6 +11,7 @@ const priorityTone: Record<Priority, string> = {
 };
 
 export function BottleneckList({ items }: { items: Bottleneck[] }) {
+  const t = useT();
   return (
     <ul className="space-y-4">
       {items.map((item, index) => (
@@ -18,7 +21,7 @@ export function BottleneckList({ items }: { items: Bottleneck[] }) {
               #{String(index + 1).padStart(2, "0")}
             </span>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              {item.area}
+              {t(dnaLabelKey(item.area))}
             </h3>
             <span
               className={cn(
