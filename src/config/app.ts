@@ -19,7 +19,8 @@ export const APP_TAGLINE = "Análise de performance e treinamento para Counter-S
 export const FEATURES = {
   realAuth: true,
   profilePersistence: false,
-  demoParser: false,
+  /** Demo ingestion pipeline exists; real parsing depends on the parser worker. */
+  demoParser: true,
   faceitIntegration: false,
   gamersClubIntegration: false,
   steamIntegration: false,

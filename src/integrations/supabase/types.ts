@@ -231,6 +231,155 @@ export type Database = {
           },
         ]
       }
+      demo_jobs: {
+        Row: {
+          analysis_version: string
+          cleanup_error: string | null
+          created_at: string
+          demo_sha256: string | null
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          events_detected: number | null
+          extraction_confidence: number | null
+          file_size: number | null
+          finished_at: string | null
+          id: string
+          identity_status: string
+          match_id: string | null
+          max_retries: number
+          parser_name: string | null
+          parser_revision: string | null
+          parser_version: string | null
+          partial_parse: boolean
+          player_id: string | null
+          players_detected: number | null
+          quality_flags: Json
+          queued_at: string
+          resolved_steam_id: string | null
+          retain_until: string | null
+          retry_count: number
+          rounds_detected: number | null
+          rounds_valid: number | null
+          schema_version: number
+          stage: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["upload_status"]
+          storage_deleted_at: string | null
+          storage_path: string | null
+          updated_at: string
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          analysis_version?: string
+          cleanup_error?: string | null
+          created_at?: string
+          demo_sha256?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          events_detected?: number | null
+          extraction_confidence?: number | null
+          file_size?: number | null
+          finished_at?: string | null
+          id?: string
+          identity_status?: string
+          match_id?: string | null
+          max_retries?: number
+          parser_name?: string | null
+          parser_revision?: string | null
+          parser_version?: string | null
+          partial_parse?: boolean
+          player_id?: string | null
+          players_detected?: number | null
+          quality_flags?: Json
+          queued_at?: string
+          resolved_steam_id?: string | null
+          retain_until?: string | null
+          retry_count?: number
+          rounds_detected?: number | null
+          rounds_valid?: number | null
+          schema_version?: number
+          stage?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["upload_status"]
+          storage_deleted_at?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          analysis_version?: string
+          cleanup_error?: string | null
+          created_at?: string
+          demo_sha256?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          events_detected?: number | null
+          extraction_confidence?: number | null
+          file_size?: number | null
+          finished_at?: string | null
+          id?: string
+          identity_status?: string
+          match_id?: string | null
+          max_retries?: number
+          parser_name?: string | null
+          parser_revision?: string | null
+          parser_version?: string | null
+          partial_parse?: boolean
+          player_id?: string | null
+          players_detected?: number | null
+          quality_flags?: Json
+          queued_at?: string
+          resolved_steam_id?: string | null
+          retain_until?: string | null
+          retry_count?: number
+          rounds_detected?: number | null
+          rounds_valid?: number | null
+          schema_version?: number
+          stage?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["upload_status"]
+          storage_deleted_at?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_jobs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_jobs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_jobs_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: true
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_skills: {
         Row: {
           lesson_id: string
@@ -320,13 +469,80 @@ export type Database = {
         }
         Relationships: []
       }
+      match_features: {
+        Row: {
+          analysis_version: string
+          created_at: string
+          extraction_confidence: number | null
+          features: Json
+          id: string
+          match_id: string
+          partial_parse: boolean
+          player_id: string | null
+          sample_clutches: number
+          sample_opening_duels: number
+          sample_rounds: number
+          schema_version: number
+          steam_id: string | null
+        }
+        Insert: {
+          analysis_version?: string
+          created_at?: string
+          extraction_confidence?: number | null
+          features?: Json
+          id?: string
+          match_id: string
+          partial_parse?: boolean
+          player_id?: string | null
+          sample_clutches?: number
+          sample_opening_duels?: number
+          sample_rounds?: number
+          schema_version?: number
+          steam_id?: string | null
+        }
+        Update: {
+          analysis_version?: string
+          created_at?: string
+          extraction_confidence?: number | null
+          features?: Json
+          id?: string
+          match_id?: string
+          partial_parse?: boolean
+          player_id?: string | null
+          sample_clutches?: number
+          sample_opening_duels?: number
+          sample_rounds?: number
+          schema_version?: number
+          steam_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_features_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_features_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_metrics: {
         Row: {
           adr: number | null
           assists: number | null
+          clutch_attempts: number | null
+          clutch_wins: number | null
           clutches: number | null
           created_at: string
           ct_rating: number | null
+          damage_efficiency: number | null
+          damage_taken: number | null
           deaths: number | null
           first_deaths: number | null
           first_kills: number | null
@@ -338,18 +554,27 @@ export type Database = {
           kills: number | null
           match_id: string
           multi_kills: number | null
+          opening_attempts: number | null
           opening_success: number | null
+          opening_success_rate: number | null
           player_id: string
           rating: number | null
+          rounds_played: number | null
           t_rating: number | null
+          trade_deaths: number | null
+          trade_kills: number | null
           utility_damage: number | null
         }
         Insert: {
           adr?: number | null
           assists?: number | null
+          clutch_attempts?: number | null
+          clutch_wins?: number | null
           clutches?: number | null
           created_at?: string
           ct_rating?: number | null
+          damage_efficiency?: number | null
+          damage_taken?: number | null
           deaths?: number | null
           first_deaths?: number | null
           first_kills?: number | null
@@ -361,18 +586,27 @@ export type Database = {
           kills?: number | null
           match_id: string
           multi_kills?: number | null
+          opening_attempts?: number | null
           opening_success?: number | null
+          opening_success_rate?: number | null
           player_id: string
           rating?: number | null
+          rounds_played?: number | null
           t_rating?: number | null
+          trade_deaths?: number | null
+          trade_kills?: number | null
           utility_damage?: number | null
         }
         Update: {
           adr?: number | null
           assists?: number | null
+          clutch_attempts?: number | null
+          clutch_wins?: number | null
           clutches?: number | null
           created_at?: string
           ct_rating?: number | null
+          damage_efficiency?: number | null
+          damage_taken?: number | null
           deaths?: number | null
           first_deaths?: number | null
           first_kills?: number | null
@@ -384,10 +618,15 @@ export type Database = {
           kills?: number | null
           match_id?: string
           multi_kills?: number | null
+          opening_attempts?: number | null
           opening_success?: number | null
+          opening_success_rate?: number | null
           player_id?: string
           rating?: number | null
+          rounds_played?: number | null
           t_rating?: number | null
+          trade_deaths?: number | null
+          trade_kills?: number | null
           utility_damage?: number | null
         }
         Relationships: [
@@ -407,10 +646,84 @@ export type Database = {
           },
         ]
       }
+      match_rounds: {
+        Row: {
+          bomb_defused: boolean
+          bomb_exploded: boolean
+          bomb_planted: boolean
+          buy_context: string | null
+          created_at: string
+          duration_seconds: number | null
+          end_tick: number | null
+          id: string
+          match_id: string
+          player_equipment_value: number | null
+          player_money_end: number | null
+          player_money_start: number | null
+          player_side: string | null
+          player_survived: boolean | null
+          round_number: number
+          start_tick: number | null
+          winner_side: string | null
+          winner_team: string | null
+        }
+        Insert: {
+          bomb_defused?: boolean
+          bomb_exploded?: boolean
+          bomb_planted?: boolean
+          buy_context?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          end_tick?: number | null
+          id?: string
+          match_id: string
+          player_equipment_value?: number | null
+          player_money_end?: number | null
+          player_money_start?: number | null
+          player_side?: string | null
+          player_survived?: boolean | null
+          round_number: number
+          start_tick?: number | null
+          winner_side?: string | null
+          winner_team?: string | null
+        }
+        Update: {
+          bomb_defused?: boolean
+          bomb_exploded?: boolean
+          bomb_planted?: boolean
+          buy_context?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          end_tick?: number | null
+          id?: string
+          match_id?: string
+          player_equipment_value?: number | null
+          player_money_end?: number | null
+          player_money_start?: number | null
+          player_side?: string | null
+          player_survived?: boolean | null
+          round_number?: number
+          start_tick?: number | null
+          winner_side?: string | null
+          winner_team?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_rounds_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           created_at: string
+          demo_metadata: Json | null
+          duration_seconds: number | null
           external_match_id: string | null
+          game_version: string | null
           id: string
           map: string | null
           match_date: string | null
@@ -420,11 +733,16 @@ export type Database = {
           rounds: number | null
           score_opponent: number | null
           score_player: number | null
+          team_opponent: string | null
+          team_player: string | null
           upload_id: string | null
         }
         Insert: {
           created_at?: string
+          demo_metadata?: Json | null
+          duration_seconds?: number | null
           external_match_id?: string | null
+          game_version?: string | null
           id?: string
           map?: string | null
           match_date?: string | null
@@ -434,11 +752,16 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          team_opponent?: string | null
+          team_player?: string | null
           upload_id?: string | null
         }
         Update: {
           created_at?: string
+          demo_metadata?: Json | null
+          duration_seconds?: number | null
           external_match_id?: string | null
+          game_version?: string | null
           id?: string
           map?: string | null
           match_date?: string | null
@@ -448,6 +771,8 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          team_opponent?: string | null
+          team_player?: string | null
           upload_id?: string | null
         }
         Relationships: [
@@ -735,6 +1060,78 @@ export type Database = {
         }
         Relationships: []
       }
+      round_events: {
+        Row: {
+          actor_steam_id: string | null
+          assister_steam_id: string | null
+          created_at: string
+          damage: number | null
+          data: Json
+          distance: number | null
+          event_type: string
+          headshot: boolean | null
+          id: string
+          match_id: string
+          round_id: string | null
+          round_number: number
+          tick: number | null
+          time_seconds: number | null
+          victim_steam_id: string | null
+          weapon: string | null
+        }
+        Insert: {
+          actor_steam_id?: string | null
+          assister_steam_id?: string | null
+          created_at?: string
+          damage?: number | null
+          data?: Json
+          distance?: number | null
+          event_type: string
+          headshot?: boolean | null
+          id?: string
+          match_id: string
+          round_id?: string | null
+          round_number: number
+          tick?: number | null
+          time_seconds?: number | null
+          victim_steam_id?: string | null
+          weapon?: string | null
+        }
+        Update: {
+          actor_steam_id?: string | null
+          assister_steam_id?: string | null
+          created_at?: string
+          damage?: number | null
+          data?: Json
+          distance?: number | null
+          event_type?: string
+          headshot?: boolean | null
+          id?: string
+          match_id?: string
+          round_id?: string | null
+          round_number?: number
+          tick?: number | null
+          time_seconds?: number | null
+          victim_steam_id?: string | null
+          weapon?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_events_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "match_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_translations: {
         Row: {
           description: string | null
@@ -905,13 +1302,20 @@ export type Database = {
       }
       uploads: {
         Row: {
+          analysis_version: string | null
           created_at: string
+          demo_sha256: string | null
+          error_code: string | null
           error_message: string | null
           file_name: string
           file_size: number | null
           id: string
           mime_type: string | null
+          parser_name: string | null
+          parser_version: string | null
           processed_at: string | null
+          processing_duration_ms: number | null
+          schema_version: number | null
           source: Database["public"]["Enums"]["upload_source"]
           status: Database["public"]["Enums"]["upload_status"]
           storage_path: string | null
@@ -919,13 +1323,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          analysis_version?: string | null
           created_at?: string
+          demo_sha256?: string | null
+          error_code?: string | null
           error_message?: string | null
           file_name: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          parser_name?: string | null
+          parser_version?: string | null
           processed_at?: string | null
+          processing_duration_ms?: number | null
+          schema_version?: number | null
           source?: Database["public"]["Enums"]["upload_source"]
           status?: Database["public"]["Enums"]["upload_status"]
           storage_path?: string | null
@@ -933,13 +1344,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          analysis_version?: string | null
           created_at?: string
+          demo_sha256?: string | null
+          error_code?: string | null
           error_message?: string | null
           file_name?: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          parser_name?: string | null
+          parser_version?: string | null
           processed_at?: string | null
+          processing_duration_ms?: number | null
+          schema_version?: number | null
           source?: Database["public"]["Enums"]["upload_source"]
           status?: Database["public"]["Enums"]["upload_status"]
           storage_path?: string | null

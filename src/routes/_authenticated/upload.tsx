@@ -6,6 +6,7 @@ import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { UploadBox, type UploadKind } from "@/components/common/UploadBox";
 import { AppShell } from "@/components/layout/AppShell";
+import { DemoIngestPanel } from "@/components/pipeline/DemoIngestPanel";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
@@ -34,10 +35,10 @@ export const Route = createFileRoute("/_authenticated/upload")({
 /** Both paths converge into the same future normalization pipeline. */
 const pipeline: { icon: typeof Cpu; labelKey: TranslationKey; done: boolean }[] = [
   { icon: ShieldCheck, labelKey: "analyze.pipeline.validation", done: true },
-  { icon: Cpu, labelKey: "analyze.pipeline.parser", done: false },
+  { icon: Cpu, labelKey: "analyze.pipeline.parser", done: true },
   { icon: FileText, labelKey: "analyze.pipeline.extractor", done: false },
-  { icon: Layers, labelKey: "analyze.pipeline.normalizer", done: false },
-  { icon: Database, labelKey: "analyze.pipeline.metrics", done: false },
+  { icon: Layers, labelKey: "analyze.pipeline.normalizer", done: true },
+  { icon: Database, labelKey: "analyze.pipeline.metrics", done: true },
 ];
 
 function PathCard({
@@ -136,10 +137,13 @@ function AnalyzePage() {
             </p>
 
             <ChartCard
-              title={kind === "demo" ? t("analyze.demo.title") : t("analyze.report.title")}
+              title={kind === "demo" ? t("pipeline.title") : t("analyze.report.title")}
+              subtitle={kind === "demo" ? t("pipeline.subtitle") : undefined}
               showDemoTag={false}
             >
-              <UploadBox kind={kind} />
+              {/* Demos go through the real ingestion pipeline; the report path
+                  is still an interface-only intake surface. */}
+              {kind === "demo" ? <DemoIngestPanel /> : <UploadBox kind="report" />}
             </ChartCard>
           </div>
 
