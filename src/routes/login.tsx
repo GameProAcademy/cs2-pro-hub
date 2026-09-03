@@ -60,18 +60,20 @@ function LoginPage() {
       return;
     }
 
-    // Inactive accounts are blocked at the application flow level; RLS remains
-    // the security layer in the database.
+    // Fail-closed: only a confirmed active profile is allowed through; RLS
+    // remains the security layer in the database.
     const status = await fetchAccountStatus(data.user.id);
-    if (status === "inactive") {
+    if (status !== "active") {
       await supabase.auth.signOut();
       setLoading(false);
       setError(t("login.inactive"));
       return;
     }
 
+    await touchLastLogin(data.user.id);
     setLoading(false);
     navigate({ to: "/dashboard", replace: true });
+
   }
 
   async function handleForgot(event: React.FormEvent) {
