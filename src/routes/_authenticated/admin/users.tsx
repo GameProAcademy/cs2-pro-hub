@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { UserDetailDialog } from "@/components/admin/UserDetailDialog";
 import { PageHeader } from "@/components/common/PageHeader";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +155,7 @@ function AdminUsersPage() {
             <table className="w-full text-sm">
               <thead className="bg-secondary/50">
                 <tr className="text-left font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <th className="px-3 py-2">{t("admin.detail.avatar")}</th>
                   <th className="px-3 py-2">{t("admin.table.name")}</th>
                   <th className="px-3 py-2">{t("admin.table.nickname")}</th>
                   <th className="px-3 py-2">{t("admin.table.email")}</th>
@@ -168,6 +170,13 @@ function AdminUsersPage() {
               <tbody className="divide-y divide-border">
                 {users.data?.rows.map((user) => (
                   <tr key={user.id} className="hover:bg-secondary/30">
+                    <td className="px-3 py-2">
+                      <UserAvatar
+                        source={user.avatar_url}
+                        name={user.display_name ?? user.nickname}
+                        size={32}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-foreground">{user.display_name || dash}</td>
                     <td className="px-3 py-2 text-muted-foreground">{user.nickname || dash}</td>
                     <td className="px-3 py-2 text-muted-foreground">{user.email || dash}</td>
@@ -200,7 +209,12 @@ function AdminUsersPage() {
             {users.data?.rows.map((user) => (
               <li key={user.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <UserAvatar
+                    source={user.avatar_url}
+                    name={user.display_name ?? user.nickname}
+                    size={40}
+                  />
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">
                       {user.display_name || user.nickname || dash}
                     </p>

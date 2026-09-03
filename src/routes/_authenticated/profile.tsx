@@ -73,8 +73,6 @@ function ProfilePage() {
           description={t("profile.description")}
         />
 
-        <AvatarCard />
-
         <div className="grid gap-5 lg:grid-cols-3">
           <ChartCard title={t("profile.playerData")} className="lg:col-span-2" showDemoTag={false}>
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
@@ -98,7 +96,10 @@ function ProfilePage() {
           </ChartCard>
 
           <ChartCard title={t("profile.preferences")} showDemoTag={false}>
-            <ul className="space-y-4">
+            <div className="space-y-5">
+              <AvatarCard embedded />
+              <div className="border-t border-border" />
+              <ul className="space-y-4">
               {preferences.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-4">
                   <Label htmlFor={p.id} className="text-sm font-normal text-muted-foreground">
@@ -107,7 +108,8 @@ function ProfilePage() {
                   <Switch id={p.id} defaultChecked={p.value} />
                 </li>
               ))}
-            </ul>
+              </ul>
+            </div>
           </ChartCard>
         </div>
       </div>
