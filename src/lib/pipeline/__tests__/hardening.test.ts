@@ -93,8 +93,10 @@ describe("2. atomic job claim", () => {
 
 describe("3. survival requires evidence", () => {
   it("is false only with an explicit death event", () => {
-    // Round 1 of the fixture: ME is killed.
-    expect(playerSurvivedRound(match, ME, 1)).toBe(false);
+    // Round 3 of the fixture: ME is killed and not traded.
+    expect(playerSurvivedRound(match, ME, 3)).toBe(false);
+    // Round 1: ME survives with evidence.
+    expect(playerSurvivedRound(match, ME, 1)).toBe(true);
   });
 
   it("is true when the player participated and the round provably ended with events", () => {
