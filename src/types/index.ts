@@ -132,7 +132,7 @@ export interface CourseLesson {
   title: string;
   description: string;
   module: string;
-  lessonUrl: string;
+  lessonUrl: string | null;
   /** Locale the lesson is recorded in. */
   locale: string;
   relatedSkills: SkillArea[];

@@ -70,10 +70,10 @@ function ProfilePage() {
                 </div>
               ))}
               <div className="sm:col-span-2">
-                <Button type="submit" disabled={!FEATURES.realAuth}>
+                <Button type="submit" disabled={!FEATURES.profilePersistence}>
                   Salvar alterações
                 </Button>
-                {!FEATURES.realAuth ? (
+                {!FEATURES.profilePersistence ? (
                   <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                     Salvar está desativado: não há banco de dados conectado nesta etapa.
                   </p>

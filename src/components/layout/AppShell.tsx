@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, Menu, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -10,6 +11,7 @@ import { DEMO_DATA } from "@/config/app";
 import { navItems, uploadNavItem } from "@/config/navigation";
 import { demoProfile } from "@/data/demoPlayer";
 import { useT } from "@/i18n";
+import { signOutEverywhere } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
@@ -37,6 +39,8 @@ function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const t = useT();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />
@@ -60,11 +64,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
             {t("nav.demoSession")}
           </p>
         ) : null}
-        <Button asChild variant="ghost" size="sm" className="mt-2 w-full justify-start gap-2 px-2">
-          <Link to="/login" onClick={onNavigate}>
-            <LogOut className="size-3.5" aria-hidden />
-            {t("nav.logout")}
-          </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 w-full justify-start gap-2 px-2"
+          onClick={async () => {
+            onNavigate?.();
+            await queryClient.cancelQueries();
+            queryClient.clear();
+            await signOutEverywhere();
+            navigate({ to: "/login", replace: true });
+          }}
+        >
+          <LogOut className="size-3.5" aria-hidden />
+          {t("nav.logout")}
         </Button>
       </div>
     </div>

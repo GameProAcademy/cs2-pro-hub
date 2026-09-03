@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { LanguageSelector } from "@/components/common/LanguageSelector";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { authErrorKey, fetchAccountStatus, isValidEmail } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -31,61 +31,149 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const t = useT();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signIn" | "forgot">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function handleSignIn(event: React.FormEvent) {
+    event.preventDefault();
+    if (loading) return;
+    setError(null);
+    setNotice(null);
+
+    if (!email.trim()) return setError(t("login.emailRequired"));
+    if (!isValidEmail(email)) return setError(t("login.emailInvalid"));
+    if (!password) return setError(t("login.passwordRequired"));
+
+    setLoading(true);
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (signInError || !data.user) {
+      setLoading(false);
+      setError(t(authErrorKey(signInError?.message)));
+      return;
+    }
+
+    // Inactive accounts are blocked at the application flow level; RLS remains
+    // the security layer in the database.
+    const status = await fetchAccountStatus(data.user.id);
+    if (status === "inactive") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError(t("login.inactive"));
+      return;
+    }
+
+    setLoading(false);
+    navigate({ to: "/dashboard", replace: true });
+  }
+
+  async function handleForgot(event: React.FormEvent) {
+    event.preventDefault();
+    if (loading) return;
+    setError(null);
+    setNotice(null);
+
+    if (!email.trim()) return setError(t("login.emailRequired"));
+    if (!isValidEmail(email)) return setError(t("login.emailInvalid"));
+
+    setLoading(true);
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    // Generic message: never reveal whether the account exists.
+    setNotice(t("login.forgotSent"));
+  }
+
+  const isForgot = mode === "forgot";
 
   return (
-    <AuthLayout title={t("login.title")} subtitle={t("login.subtitle")}>
-      {/* Language selector, top-right of the auth screen. */}
-      <div className="pointer-events-auto absolute right-4 top-4 z-10">
-        <LanguageSelector />
-      </div>
-
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          // Autenticação real ainda não implementada (FEATURES.realAuth = false).
-          navigate({ to: "/dashboard" });
-        }}
-      >
+    <AuthLayout
+      title={isForgot ? t("login.forgotTitle") : t("login.title")}
+      subtitle={isForgot ? t("login.forgotSubtitle") : t("login.subtitle")}
+    >
+      <form className="space-y-4" onSubmit={isForgot ? handleForgot : handleSignIn} noValidate>
         <div className="space-y-2">
           <Label htmlFor="email">{t("login.email")}</Label>
           <Input
             id="email"
+            name="email"
             type="email"
             autoComplete="email"
             placeholder={t("login.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">{t("login.password")}</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            required
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          {t("login.submit")}
-        </Button>
+        {!isForgot ? (
+          <div className="space-y-2">
+            <Label htmlFor="password">{t("login.password")}</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
+        ) : null}
 
-        <Button type="button" variant="ghost" className="w-full">
-          {t("login.forgot")}
-        </Button>
-
-        {!FEATURES.realAuth ? (
-          <p className="rounded-md border border-warning/25 bg-warning/8 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium text-warning">{t("login.mockTitle")}</span>{" "}
-            {t("login.mockBody")}
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive-foreground"
+          >
+            {error}
           </p>
         ) : null}
+
+        {notice ? (
+          <p
+            role="status"
+            className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs leading-relaxed text-foreground"
+          >
+            {notice}
+          </p>
+        ) : null}
+
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading
+            ? isForgot
+              ? t("login.forgotSending")
+              : t("login.loading")
+            : isForgot
+              ? t("login.forgotSubmit")
+              : t("login.submit")}
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          disabled={loading}
+          onClick={() => {
+            setMode(isForgot ? "signIn" : "forgot");
+            setError(null);
+            setNotice(null);
+            setPassword("");
+          }}
+        >
+          {isForgot ? t("login.backToLogin") : t("login.forgot")}
+        </Button>
       </form>
     </AuthLayout>
   );

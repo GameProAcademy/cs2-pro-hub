@@ -105,12 +105,20 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                   ) : (
                     <span />
                   )}
-                  <Button asChild size="sm" variant="outline" className="gap-2">
-                    <a href={lesson.lessonUrl} target="_blank" rel="noopener noreferrer">
+                  {/* Official lesson links are not published yet: keep disabled until real URLs exist. */}
+                  {lesson.lessonUrl ? (
+                    <Button asChild size="sm" variant="outline" className="gap-2">
+                      <a href={lesson.lessonUrl} target="_blank" rel="noopener noreferrer">
+                        <PlayCircle className="size-3.5" aria-hidden />
+                        {t("training.watchLesson")}
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" className="gap-2" disabled>
                       <PlayCircle className="size-3.5" aria-hidden />
                       {t("training.watchLesson")}
-                    </a>
-                  </Button>
+                    </Button>
+                  )}
                 </div>
               </article>
             ))}
