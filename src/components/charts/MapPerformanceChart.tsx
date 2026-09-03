@@ -9,6 +9,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { useT } from "@/i18n";
 import type { MapPerformance } from "@/types";
 
 export function MapPerformanceChart({
@@ -18,6 +19,8 @@ export function MapPerformanceChart({
   data: MapPerformance[];
   height?: number | undefined;
 }) {
+  const t = useT();
+
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -48,7 +51,7 @@ export function MapPerformanceChart({
               fontSize: 12,
               color: "var(--popover-foreground)",
             }}
-            formatter={(value: number) => [`${value}%`, "Win rate"]}
+            formatter={(value: number) => [`${value}%`, t("performance.winRate")]}
           />
           <Bar dataKey="winRate" radius={[3, 3, 0, 0]} maxBarSize={44}>
             {data.map((entry) => (

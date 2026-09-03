@@ -12,6 +12,7 @@ import { MatchesTable } from "@/components/panels/MatchesTable";
 import { ProScoreCard } from "@/components/panels/ProScoreCard";
 import { StrengthList } from "@/components/panels/StrengthList";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n";
 import {
   getBottlenecks,
   getMatches,
@@ -21,6 +22,7 @@ import {
   getStrengths,
   getTrends,
 } from "@/services/playerService";
+import type { TranslationKey } from "@/i18n";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -42,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
+  const t = useT();
   const score = getProScore();
   const dna = getPlayerDna();
   const metrics = getMetrics().slice(0, 4);
@@ -51,12 +54,12 @@ function DashboardPage() {
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Visão geral"
-          title="Dashboard"
-          description="Do dado à evolução: score, DNA competitivo, gargalos e histórico recente em um único painel."
+          eyebrow={t("dashboard.eyebrow")}
+          title={t("dashboard.title")}
+          description={t("dashboard.description")}
           actions={
             <Button asChild variant="outline">
-              <Link to="/analysis">Ver Raio-X</Link>
+              <Link to="/analysis">{t("dashboard.viewXray")}</Link>
             </Button>
           }
         />
@@ -66,8 +69,8 @@ function DashboardPage() {
         <div className="grid gap-5 lg:grid-cols-3">
           <ProScoreCard score={score} />
           <ChartCard
-            title="CS2 PRO Score ao longo do tempo"
-            subtitle="Evolução mensal do score consolidado"
+            title={t("dashboard.scoreTrend")}
+            subtitle={t("dashboard.scoreTrendSub")}
             className="lg:col-span-2"
           >
             <TrendChart
@@ -87,18 +90,18 @@ function DashboardPage() {
               value={m.value}
               unit={m.unit}
               delta={m.delta}
-              hint={m.hint}
+              hint={m.hint ? t(m.hint as TranslationKey) : undefined}
             />
           ))}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
           <ChartCard
-            title="CS2 PRO Player DNA"
-            subtitle="Dez dimensões comparadas à média do seu nível"
+            title={t("dashboard.dna")}
+            subtitle={t("dashboard.dnaSub")}
             actions={
               <Button asChild size="sm" variant="ghost">
-                <Link to="/player-dna">Detalhar</Link>
+                <Link to="/player-dna">{t("dashboard.detail")}</Link>
               </Button>
             }
           >
@@ -106,24 +109,24 @@ function DashboardPage() {
           </ChartCard>
 
           <div className="space-y-5">
-            <ChartCard title="Seus principais gargalos" subtitle="Ordenados por impacto estimado">
+            <ChartCard title={t("dashboard.bottlenecks")} subtitle={t("dashboard.bottlenecksSub")}>
               <BottleneckList items={getBottlenecks()} />
             </ChartCard>
           </div>
         </div>
 
-        <ChartCard title="Seus pontos fortes" subtitle="Onde você já está acima da média">
+        <ChartCard title={t("dashboard.strengths")} subtitle={t("dashboard.strengthsSub")}>
           <div className="grid gap-4 lg:grid-cols-3">
             <StrengthList items={getStrengths()} />
           </div>
         </ChartCard>
 
         <ChartCard
-          title="Últimas partidas"
-          subtitle="Histórico recente consolidado"
+          title={t("dashboard.lastMatches")}
+          subtitle={t("dashboard.lastMatchesSub")}
           actions={
             <Button asChild size="sm" variant="ghost">
-              <Link to="/matches">Ver todas</Link>
+              <Link to="/matches">{t("dashboard.viewAll")}</Link>
             </Button>
           }
         >

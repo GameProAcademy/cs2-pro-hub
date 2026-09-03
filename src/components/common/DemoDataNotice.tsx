@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 /** Inline label attached to any surface rendering mock values. */
 export function DemoTag({ className }: { className?: string | undefined }) {
+  const t = useT();
   if (!DEMO_DATA) return null;
   return (
     <span
@@ -14,7 +15,7 @@ export function DemoTag({ className }: { className?: string | undefined }) {
         className,
       )}
     >
-      Demo
+      {t("common.demo")}
     </span>
   );
 }

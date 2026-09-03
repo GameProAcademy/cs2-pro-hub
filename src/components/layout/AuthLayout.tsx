@@ -26,7 +26,10 @@ export function AuthLayout({
     <div className="relative min-h-screen overflow-x-hidden bg-background lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       {/* Form side */}
       <div className="relative flex min-h-screen items-center justify-center px-4 py-10 sm:px-8">
-        <div className="grid-backdrop pointer-events-none absolute inset-0 opacity-30" aria-hidden />
+        <div
+          className="grid-backdrop pointer-events-none absolute inset-0 opacity-30"
+          aria-hidden
+        />
         <div
           className="pointer-events-none absolute -top-40 left-1/2 size-[32rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
           aria-hidden
@@ -68,9 +71,7 @@ export function AuthLayout({
           aria-hidden
         />
         <div className="relative flex h-full flex-col justify-end p-10 xl:p-14">
-          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-primary">
-            GamePro
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-primary">GamePro</p>
           <p className="mt-3 max-w-lg text-balance font-display text-2xl font-bold uppercase leading-tight tracking-tight text-foreground">
             {t("brand.tagline")}
           </p>

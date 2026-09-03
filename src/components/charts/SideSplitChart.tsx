@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/common/States";
+import { useT } from "@/i18n";
 import type { SideSplit } from "@/types";
 
 /**
@@ -13,11 +14,13 @@ export function SideSplitChart({
   data: SideSplit[];
   hasEnoughData?: boolean | undefined;
 }) {
+  const t = useT();
+
   if (!hasEnoughData || data.length === 0) {
     return (
       <EmptyState
-        title="Dados insuficientes por lado"
-        description="A comparação CT vs T aparece quando houver rounds suficientes de cada lado."
+        title={t("performance.sidesEmptyTitle")}
+        description={t("performance.sidesEmptyDesc")}
       />
     );
   }

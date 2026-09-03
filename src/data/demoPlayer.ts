@@ -102,8 +102,8 @@ export const demoMetrics: Metric[] = [
   { key: "fkr", label: "First Kill Rate", value: "14.2", unit: "%", delta: 0.6 },
   { key: "fdr", label: "First Death Rate", value: "17.9", unit: "%", delta: -2.3 },
   { key: "opening", label: "Opening Success", value: "44.2", unit: "%", delta: 3.1 },
-  { key: "clutch", label: "Clutches", value: "9", hint: "últimos 20 jogos", delta: 2 },
-  { key: "multi", label: "Multi-kills", value: "37", hint: "3K+ em 20 jogos", delta: 5 },
+  { key: "clutch", label: "Clutches", value: "9", hint: "metric.hint.last20", delta: 2 },
+  { key: "multi", label: "Multi-kills", value: "37", hint: "metric.hint.multiKills", delta: 5 },
 ];
 
 export const demoScoreTrend: TimeSeriesPoint[] = [

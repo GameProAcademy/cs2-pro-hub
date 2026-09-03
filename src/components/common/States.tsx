@@ -36,7 +36,13 @@ export function EmptyState({
   );
 }
 
-export function LoadingState({ label = "Carregando", className }: { label?: string | undefined; className?: string | undefined }) {
+export function LoadingState({
+  label = "Carregando",
+  className,
+}: {
+  label?: string | undefined;
+  className?: string | undefined;
+}) {
   return (
     <div
       role="status"
