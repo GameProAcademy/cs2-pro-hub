@@ -148,7 +148,25 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const flashAssists = kills.filter((k) => k.flashAssister === steamId && k.attacker !== steamId)
     .length;
 
-  const roundNumbers = new Set(match.rounds.map((r) => r.roundNumber));
+  // Rounds the player ACTUALLY participated in. The denominator is never the
+  // raw round count of the demo: a round only counts when the resolved Steam ID
+  // is present in that round (side assignment, economy entry or an event).
+  const roundNumbers = new Set<number>();
+  for (const round of match.rounds) {
+    const hasSide = round.sides[steamId] != null;
+    const hasEconomy =
+      round.moneyStart[steamId] != null ||
+      round.moneyEnd[steamId] != null ||
+      round.equipmentValue[steamId] != null;
+    const inEvents = match.events.some(
+      (event) =>
+        event.roundNumber === round.roundNumber &&
+        (event.actorSteamId === steamId ||
+          event.victimSteamId === steamId ||
+          event.assisterSteamId === steamId),
+    );
+    if (hasSide || hasEconomy || inEvents) roundNumbers.add(round.roundNumber);
+  }
   const roundsPlayed = roundNumbers.size;
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
