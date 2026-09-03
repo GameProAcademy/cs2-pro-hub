@@ -360,10 +360,8 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
       if (k.attacker === k.victim) return false;
       if (k.time >= kill.time) return false;
       if (kill.time - k.time > TRADE_WINDOW_SECONDS) return false;
-      // The teammate that was killed first must really be a teammate.
-      return teamOf(match, k.victim) === ownTeam && k.victim !== steamId
-        ? true
-        : k.victim === steamId;
+      // The player killed first must really belong to the player's team.
+      return teamOf(match, k.victim) === ownTeam;
     });
     if (traded) tradeKills += 1;
   }
