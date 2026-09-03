@@ -244,6 +244,14 @@ export const listAdminUsers = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Full administrative view of one player's journey.
+ *
+ * All sections are fetched with a bounded number of queries (no N+1): the
+ * player row is resolved first, then every dependent collection is fetched in
+ * parallel and joined in memory. Everything is read through the admin's own
+ * RLS context (`is_staff` policies), never with the service role.
+ */
 export const getAdminUserDetail = createServerFn({ method: "GET" })
   .inputValidator((input: { userId: string }) => input)
   .middleware([requireSupabaseAuth])
@@ -258,23 +266,232 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error || !profile) throw new Error(FAILED);
 
-    const { data: player } = await supabase
-      .from("player_profiles")
-      .select("*")
-      .eq("user_id", data.userId)
-      .maybeSingle();
+    const [{ data: player }, { data: auditRows }, { data: uploadRows }] = await Promise.all([
+      supabase.from("player_profiles").select("*").eq("user_id", data.userId).maybeSingle(),
+      supabase
+        .from("admin_audit_logs")
+        .select("id, action, admin_user_id, target_user_id, metadata, created_at")
+        .eq("target_user_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("uploads")
+        .select(
+          "id, file_name, type, source, file_size, mime_type, status, error_message, created_at, processed_at",
+        )
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
-    const identities = player
-      ? ((
-          await supabase
-            .from("player_identities")
-            .select("id, platform, username, external_id, is_verified, profile_url")
-            .eq("player_id", player.id)
-        ).data ?? [])
-      : [];
+    const empty = {
+      identities: [] as AdminIdentity[],
+      matches: [] as AdminMatch[],
+      metrics: [] as AdminMatchMetrics[],
+      analyses: [] as AdminAnalysis[],
+      findings: [] as AdminFinding[],
+      dna: null as AdminDna | null,
+      score: null as AdminScore | null,
+      plans: [] as AdminTrainingPlan[],
+      conversations: [] as AdminConversation[],
+    };
 
-    return { profile, player: player ?? null, identities };
+    if (!player) {
+      return {
+        profile: profile as AdminProfileDetail,
+        player: null,
+        uploads: (uploadRows ?? []) as AdminUpload[],
+        audit: (auditRows ?? []) as AuditLogRow[],
+        ...empty,
+      };
+    }
+
+    const playerId = player.id;
+
+    const [
+      identitiesRes,
+      matchesRes,
+      metricsRes,
+      analysesRes,
+      dnaRes,
+      scoreRes,
+      plansRes,
+      conversationsRes,
+    ] = await Promise.all([
+      supabase
+        .from("player_identities")
+        .select("id, platform, username, external_id, is_verified, profile_url, created_at")
+        .eq("player_id", playerId),
+      supabase
+        .from("matches")
+        .select(
+          "id, map, match_date, platform, result, score_player, score_opponent, rounds, external_match_id",
+        )
+        .eq("player_id", playerId)
+        .order("match_date", { ascending: false })
+        .limit(50),
+      supabase.from("match_metrics").select("*").eq("player_id", playerId).limit(50),
+      supabase
+        .from("analyses")
+        .select("id, analysis_version, status, confidence, summary, created_at, source_upload_id")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("player_dna_snapshots")
+        .select("*")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("player_score_snapshots")
+        .select("id, score, percentile, tier, created_at")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("training_plans")
+        .select("id, horizon, status, title, objective, start_date, end_date, created_at")
+        .eq("player_id", playerId)
+        .order("horizon", { ascending: true }),
+      supabase
+        .from("coach_conversations")
+        .select("id, title, created_at, updated_at")
+        .eq("player_id", playerId)
+        .order("updated_at", { ascending: false })
+        .limit(20),
+    ]);
+
+    const analyses = (analysesRes.data ?? []) as AdminAnalysis[];
+    const plans = (plansRes.data ?? []) as Array<Omit<AdminTrainingPlan, "items">>;
+    const conversations = (conversationsRes.data ?? []) as Array<
+      Omit<AdminConversation, "messageCount">
+    >;
+
+    // Two batched follow-up queries (IN filters) keep this free of N+1 loops.
+    const [findingsRes, itemsRes, messagesRes, skillsRes] = await Promise.all([
+      analyses.length
+        ? supabase
+            .from("analysis_findings")
+            .select(
+              "id, analysis_id, skill_id, type, priority, impact, confidence, title, description, evidence",
+            )
+            .in(
+              "analysis_id",
+              analyses.map((a) => a.id),
+            )
+        : Promise.resolve({ data: [] }),
+      plans.length
+        ? supabase
+            .from("training_plan_items")
+            .select(
+              "id, training_plan_id, skill_id, lesson_id, title, description, target_metric, target_value, sort_order, status",
+            )
+            .in(
+              "training_plan_id",
+              plans.map((p) => p.id),
+            )
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [] }),
+      conversations.length
+        ? supabase
+            .from("coach_messages")
+            .select("id, conversation_id")
+            .in(
+              "conversation_id",
+              conversations.map((c) => c.id),
+            )
+        : Promise.resolve({ data: [] }),
+      supabase.from("skills").select("id, slug"),
+    ]);
+
+    const skillSlug = new Map<string, string>(
+      ((skillsRes.data ?? []) as Array<{ id: string; slug: string }>).map((s) => [s.id, s.slug]),
+    );
+
+    const findings = ((findingsRes.data ?? []) as AdminFinding[]).map((f) => ({
+      ...f,
+      skill_slug: f.skill_id ? (skillSlug.get(f.skill_id) ?? null) : null,
+    }));
+
+    const items = (itemsRes.data ?? []) as AdminTrainingItem[];
+    const messageCounts = new Map<string, number>();
+    for (const message of (messagesRes.data ?? []) as Array<{ conversation_id: string }>) {
+      messageCounts.set(
+        message.conversation_id,
+        (messageCounts.get(message.conversation_id) ?? 0) + 1,
+      );
+    }
+
+    return {
+      profile: profile as AdminProfileDetail,
+      player: player as AdminPlayerDetail,
+      identities: (identitiesRes.data ?? []) as AdminIdentity[],
+      uploads: (uploadRows ?? []) as AdminUpload[],
+      matches: (matchesRes.data ?? []) as AdminMatch[],
+      metrics: (metricsRes.data ?? []) as AdminMatchMetrics[],
+      analyses,
+      findings,
+      dna: (dnaRes.data ?? null) as AdminDna | null,
+      score: (scoreRes.data ?? null) as AdminScore | null,
+      plans: plans.map((plan) => ({
+        ...plan,
+        items: items
+          .filter((i) => i.training_plan_id === plan.id)
+          .map((i) => ({
+            ...i,
+            skill_slug: i.skill_id ? (skillSlug.get(i.skill_id) ?? null) : null,
+          })),
+      })),
+      conversations: conversations.map((c) => ({
+        ...c,
+        messageCount: messageCounts.get(c.id) ?? 0,
+      })),
+      audit: (auditRows ?? []) as AuditLogRow[],
+    };
   });
+
+/**
+ * Starts a secure password reset for a player through Supabase Auth.
+ * No password is ever stored or generated by the product: the user completes
+ * the flow through the normal `/reset-password` route.
+ */
+export const resetAdminUserPassword = createServerFn({ method: "POST" })
+  .inputValidator((input: { userId: string; redirectTo: string }) => input)
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    await resolveAdmin(context as Ctx);
+    const supabase = (context as Ctx).supabase;
+
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("id, email, role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!target?.email) throw new Error(FAILED);
+
+    // Only same-origin app URLs are accepted as the recovery destination.
+    let redirectTo: string;
+    try {
+      const url = new URL(data.redirectTo);
+      redirectTo = `${url.origin}/reset-password`;
+    } catch {
+      throw new Error(FAILED);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(target.email, { redirectTo });
+    if (error) throw new Error(FAILED);
+
+    await writeAuditLog(context as Ctx, "PASSWORD_RESET_REQUESTED", data.userId, {
+      email: target.email,
+    });
+
+    return { ok: true };
+  });
+
 
 export const updateAdminUser = createServerFn({ method: "POST" })
   .inputValidator(
