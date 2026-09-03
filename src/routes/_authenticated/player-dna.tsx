@@ -8,7 +8,7 @@ import { ProgressBar } from "@/components/common/ProgressBar";
 import { AppShell } from "@/components/layout/AppShell";
 import { getPlayerDna } from "@/services/playerService";
 
-export const Route = createFileRoute("/player-dna")({
+export const Route = createFileRoute("/_authenticated/_authenticated/player-dna")({
   head: () => ({
     meta: [
       { title: "Player DNA — CS2 PRO AI COACH" },

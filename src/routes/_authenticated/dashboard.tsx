@@ -22,7 +22,7 @@ import {
   getTrends,
 } from "@/services/playerService";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — CS2 PRO AI COACH" },

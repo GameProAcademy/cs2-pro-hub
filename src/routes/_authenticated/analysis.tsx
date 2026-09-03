@@ -10,7 +10,7 @@ import { BottleneckList } from "@/components/panels/BottleneckList";
 import { StrengthList } from "@/components/panels/StrengthList";
 import { getAnalysis, getBottlenecks, getStrengths } from "@/services/playerService";
 
-export const Route = createFileRoute("/analysis")({
+export const Route = createFileRoute("/_authenticated/_authenticated/analysis")({
   head: () => ({
     meta: [
       { title: "Meu Raio-X — CS2 PRO AI COACH" },

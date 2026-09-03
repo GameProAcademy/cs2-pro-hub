@@ -10,36 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalysisRouteImport } from './routes/analysis'
-import { Route as CoachRouteImport } from './routes/coach'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as MatchesRouteImport } from './routes/matches'
-import { Route as PerformanceRouteImport } from './routes/performance'
-import { Route as PlayerDnaRouteImport } from './routes/player-dna'
-import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
-import { Route as TrainingRouteImport } from './routes/training'
-import { Route as UploadRouteImport } from './routes/upload'
+import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
+import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
+import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
+import { Route as AuthenticatedPlayerDnaRouteImport } from './routes/_authenticated/player-dna'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
+import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnalysisRoute = AnalysisRouteImport.update({
-  id: '/analysis',
-  path: '/analysis',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CoachRoute = CoachRouteImport.update({
-  id: '/coach',
-  path: '/coach',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -47,143 +32,159 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MatchesRoute = MatchesRouteImport.update({
-  id: '/matches',
-  path: '/matches',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerformanceRoute = PerformanceRouteImport.update({
-  id: '/performance',
-  path: '/performance',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlayerDnaRoute = PlayerDnaRouteImport.update({
-  id: '/player-dna',
-  path: '/player-dna',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TrainingRoute = TrainingRouteImport.update({
-  id: '/training',
+const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
+  id: '/_authenticated/analysis',
+  path: '/analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
+  id: '/_authenticated/coach',
+  path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/_authenticated/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedMatchesRoute = AuthenticatedMatchesRouteImport.update({
+  id: '/_authenticated/matches',
+  path: '/matches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedPerformanceRoute =
+  AuthenticatedPerformanceRouteImport.update({
+    id: '/_authenticated/performance',
+    path: '/performance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPlayerDnaRoute = AuthenticatedPlayerDnaRouteImport.update({
+  id: '/_authenticated/player-dna',
+  path: '/player-dna',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/_authenticated/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/_authenticated/training',
   path: '/training',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UploadRoute = UploadRouteImport.update({
-  id: '/upload',
+const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
+  id: '/_authenticated/upload',
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/matches': typeof MatchesRoute
-  '/performance': typeof PerformanceRoute
-  '/player-dna': typeof PlayerDnaRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/training': typeof TrainingRoute
-  '/upload': typeof UploadRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/coach': typeof AuthenticatedCoachRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/matches': typeof AuthenticatedMatchesRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
+  '/player-dna': typeof AuthenticatedPlayerDnaRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/training': typeof AuthenticatedTrainingRoute
+  '/upload': typeof AuthenticatedUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/matches': typeof MatchesRoute
-  '/performance': typeof PerformanceRoute
-  '/player-dna': typeof PlayerDnaRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/training': typeof TrainingRoute
-  '/upload': typeof UploadRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/coach': typeof AuthenticatedCoachRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/matches': typeof AuthenticatedMatchesRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
+  '/player-dna': typeof AuthenticatedPlayerDnaRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/training': typeof AuthenticatedTrainingRoute
+  '/upload': typeof AuthenticatedUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/matches': typeof MatchesRoute
-  '/performance': typeof PerformanceRoute
-  '/player-dna': typeof PlayerDnaRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/training': typeof TrainingRoute
-  '/upload': typeof UploadRoute
+  '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
+  '/_authenticated/coach': typeof AuthenticatedCoachRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/matches': typeof AuthenticatedMatchesRoute
+  '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
+  '/_authenticated/player-dna': typeof AuthenticatedPlayerDnaRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/_authenticated/upload': typeof AuthenticatedUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
+    | '/register'
     | '/analysis'
     | '/coach'
     | '/dashboard'
-    | '/login'
     | '/matches'
     | '/performance'
     | '/player-dna'
     | '/profile'
-    | '/register'
     | '/training'
     | '/upload'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/register'
     | '/analysis'
     | '/coach'
     | '/dashboard'
-    | '/login'
     | '/matches'
     | '/performance'
     | '/player-dna'
     | '/profile'
-    | '/register'
     | '/training'
     | '/upload'
   id:
     | '__root__'
     | '/'
-    | '/analysis'
-    | '/coach'
-    | '/dashboard'
     | '/login'
-    | '/matches'
-    | '/performance'
-    | '/player-dna'
-    | '/profile'
     | '/register'
-    | '/training'
-    | '/upload'
+    | '/_authenticated/analysis'
+    | '/_authenticated/coach'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/matches'
+    | '/_authenticated/performance'
+    | '/_authenticated/player-dna'
+    | '/_authenticated/profile'
+    | '/_authenticated/training'
+    | '/_authenticated/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalysisRoute: typeof AnalysisRoute
-  CoachRoute: typeof CoachRoute
-  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
-  MatchesRoute: typeof MatchesRoute
-  PerformanceRoute: typeof PerformanceRoute
-  PlayerDnaRoute: typeof PlayerDnaRoute
-  ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
-  TrainingRoute: typeof TrainingRoute
-  UploadRoute: typeof UploadRoute
+  AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
+  AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
+  AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
+  AuthenticatedPlayerDnaRoute: typeof AuthenticatedPlayerDnaRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
+  AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -195,60 +196,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analysis': {
-      id: '/analysis'
-      path: '/analysis'
-      fullPath: '/analysis'
-      preLoaderRoute: typeof AnalysisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/coach': {
-      id: '/coach'
-      path: '/coach'
-      fullPath: '/coach'
-      preLoaderRoute: typeof CoachRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/matches': {
-      id: '/matches'
-      path: '/matches'
-      fullPath: '/matches'
-      preLoaderRoute: typeof MatchesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/performance': {
-      id: '/performance'
-      path: '/performance'
-      fullPath: '/performance'
-      preLoaderRoute: typeof PerformanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/player-dna': {
-      id: '/player-dna'
-      path: '/player-dna'
-      fullPath: '/player-dna'
-      preLoaderRoute: typeof PlayerDnaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -258,18 +210,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/training': {
-      id: '/training'
-      path: '/training'
-      fullPath: '/training'
-      preLoaderRoute: typeof TrainingRouteImport
+    '/_authenticated/analysis': {
+      id: '/_authenticated/analysis'
+      path: '/analysis'
+      fullPath: '/analysis'
+      preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/upload': {
-      id: '/upload'
+    '/_authenticated/coach': {
+      id: '/_authenticated/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof AuthenticatedCoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/matches': {
+      id: '/_authenticated/matches'
+      path: '/matches'
+      fullPath: '/matches'
+      preLoaderRoute: typeof AuthenticatedMatchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/performance': {
+      id: '/_authenticated/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof AuthenticatedPerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/player-dna': {
+      id: '/_authenticated/player-dna'
+      path: '/player-dna'
+      fullPath: '/player-dna'
+      preLoaderRoute: typeof AuthenticatedPlayerDnaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/upload': {
+      id: '/_authenticated/upload'
       path: '/upload'
       fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
+      preLoaderRoute: typeof AuthenticatedUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -277,17 +278,17 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalysisRoute: AnalysisRoute,
-  CoachRoute: CoachRoute,
-  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
-  MatchesRoute: MatchesRoute,
-  PerformanceRoute: PerformanceRoute,
-  PlayerDnaRoute: PlayerDnaRoute,
-  ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
-  TrainingRoute: TrainingRoute,
-  UploadRoute: UploadRoute,
+  AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
+  AuthenticatedCoachRoute: AuthenticatedCoachRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,
+  AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
+  AuthenticatedPlayerDnaRoute: AuthenticatedPlayerDnaRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
+  AuthenticatedUploadRoute: AuthenticatedUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

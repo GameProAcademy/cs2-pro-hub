@@ -12,7 +12,7 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/upload")({
+export const Route = createFileRoute("/_authenticated/_authenticated/upload")({
   head: () => ({
     meta: [
       { title: "Analisar meu jogo — CS2 PRO AI COACH" },

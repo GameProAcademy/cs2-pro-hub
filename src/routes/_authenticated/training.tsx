@@ -14,7 +14,7 @@ import type { TranslationKey } from "@/i18n/config";
 import { getLessonsForHorizon, getTrainingPlans } from "@/services/playerService";
 import type { TrainingPlan } from "@/types";
 
-export const Route = createFileRoute("/training")({
+export const Route = createFileRoute("/_authenticated/_authenticated/training")({
   head: () => ({
     meta: [
       { title: "Meu Treinamento — CS2 PRO AI COACH" },
