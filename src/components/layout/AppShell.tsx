@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, Menu, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -10,6 +11,7 @@ import { DEMO_DATA } from "@/config/app";
 import { navItems, uploadNavItem } from "@/config/navigation";
 import { demoProfile } from "@/data/demoPlayer";
 import { useT } from "@/i18n";
+import { signOutEverywhere } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
@@ -37,6 +39,8 @@ function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const t = useT();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />
