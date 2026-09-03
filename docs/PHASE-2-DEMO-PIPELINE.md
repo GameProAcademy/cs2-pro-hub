@@ -110,3 +110,50 @@ Trocar parser: implementar `DemoParserAdapter` e alterar apenas
 `resolveParserAdapter()`. Novos eventos: adicionar em `EVENT_ALIASES` /
 `CanonicalEventType`. Mudança de schema: subir `SCHEMA_VERSION`
 (e `ANALYSIS_VERSION` quando métricas/features mudarem).
+
+## Fase 2.1 — Hardening (correções cirúrgicas)
+
+Nenhuma funcionalidade nova foi adicionada nesta fase; apenas correções de
+correção e segurança sobre a arquitetura da Fase 2.
+
+1. **`storage_path` no INSERT** — `createDemoUpload()` gera o UUID do upload
+   antes do INSERT e grava `storage_path = {user_id}/{upload_id}.dem` na própria
+   inserção. Não existe mais janela em que a linha exista sem caminho.
+2. **Duplicidade explícita** — o mesmo SHA-256 do mesmo usuário devolve
+   `duplicate`, `duplicateStatus` (`processed` / `pending` / `failed`) e o job
+   existente. Uma demo já processada não é reenviada nem reprocessada: os dados
+   derivados são permanentes.
+3. **Enqueue e retry assíncronos** — `enqueueDemoJob()`, `retryMyDemoJob()` e
+   `adminRetryDemoJob()` apenas enfileiram (`pending` / `queued`) e retornam. O
+   parse acontece na camada worker/cron; o usuário nunca espera o parser dentro
+   da requisição.
+4. **Claim atômico** — `claimNextJob()` usa a função SQL
+   `claim_next_demo_job(_max_concurrent)` (`SECURITY DEFINER`,
+   `search_path = ''`, `FOR UPDATE SKIP LOCKED`), que respeita o limite de
+   concorrência e marca `processing` na mesma transação. `processJob()` aceita um
+   job já reivindicado e, fora desse caminho, só promove linhas ainda `pending`.
+5. **Integridade real do arquivo** — o hash enviado pelo navegador é somente
+   chave de idempotência. Antes do parse, `computeStoredDemoSha256()` recalcula
+   o SHA-256 dos bytes armazenados no bucket privado; divergência falha com
+   `CORRUPTED_DEMO`.
+6. **Contrato do parser** — o adapter valida `contract_version`, o nome do
+   parser (`demoparser2`) e compatibilidade major/minor da versão pinada.
+   Payload de outro parser ou de versão incompatível é rejeitado.
+7. **Score por time** — `ownScores()` deriva `score_player` / `score_opponent`
+   do time do jogador (`teamA` / `teamB`), não do lado inicial. Sem associação
+   confiável de time, score e resultado ficam nulos.
+8. **KAST por rounds jogados** — o denominador conta apenas rounds em que o
+   Steam ID resolvido aparece (lado, economia ou evento). Sem participação,
+   `kast` é `null`.
+9. **Economia sem proxy de dano** — `buy_discipline` e `damage_per_dollar` são
+   `null`. Só existe o sinal factual `economy_data_available`.
+10. **Reset de senha com allowlist** — `safeResetPasswordUrl()` valida origem
+    exata contra uma allowlist, exige `https` (exceto localhost fora de
+    produção) e normaliza sempre para `/reset-password`, descartando path,
+    query e fragmento.
+
+Testes: 40 testes unitários (`bun run test`), incluindo identidade/versão do
+parser, KAST por participação, economia nula, score por time e allowlist de
+redirect. Permanece verdadeiro que nenhum `.dem` real foi parseado: o worker
+externo continua não configurado (`PARSER_UNAVAILABLE`). Fase 3 (motor de
+análise/IA), integrações e pagamentos não foram implementados.

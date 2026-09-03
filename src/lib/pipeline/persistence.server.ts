@@ -8,12 +8,7 @@
 import { ANALYSIS_VERSION, SCHEMA_VERSION } from "@/config/pipeline";
 import { classifyBuyContext } from "@/lib/pipeline/normalizer";
 import { PipelineError } from "@/lib/pipeline/errors";
-import type {
-  CanonicalFeatures,
-  CanonicalMatch,
-  CanonicalMetrics,
-  Side,
-} from "@/lib/pipeline/types";
+import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 
 const EVENT_CHUNK = 500;
@@ -25,12 +20,27 @@ function fail(message: string | undefined): never {
   throw new PipelineError("PERSISTENCE_ERROR", message);
 }
 
-function matchResult(match: CanonicalMatch, side: Side | null) {
-  if (match.scoreA == null || match.scoreB == null || side == null) return null;
-  const own = side === "CT" ? match.scoreA : match.scoreB;
-  const other = side === "CT" ? match.scoreB : match.scoreA;
-  if (own > other) return "win" as const;
-  if (own < other) return "loss" as const;
+/**
+ * Score ownership is a TEAM question, never a SIDE question: a team plays both
+ * CT and T inside the same match, so CT/T must not decide which score belongs
+ * to the player. `scoreA` belongs to `teamA`, `scoreB` to `teamB`.
+ */
+export function ownScores(
+  match: CanonicalMatch,
+  playerTeam: string | null,
+): { player: number | null; opponent: number | null } {
+  if (match.scoreA == null || match.scoreB == null || playerTeam == null) {
+    return { player: null, opponent: null };
+  }
+  if (playerTeam === match.teamA) return { player: match.scoreA, opponent: match.scoreB };
+  if (playerTeam === match.teamB) return { player: match.scoreB, opponent: match.scoreA };
+  return { player: null, opponent: null };
+}
+
+function matchResult(scores: { player: number | null; opponent: number | null }) {
+  if (scores.player == null || scores.opponent == null) return null;
+  if (scores.player > scores.opponent) return "win" as const;
+  if (scores.player < scores.opponent) return "loss" as const;
   return "draw" as const;
 }
 
@@ -53,6 +63,16 @@ export async function persistCanonicalMatch(args: {
 
   const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
   const ownSide = match.rounds[0]?.sides[steamId] ?? ownPlayer?.side ?? null;
+  const teamPlayer = ownPlayer?.team ?? null;
+  const teamOpponent =
+    teamPlayer == null
+      ? null
+      : teamPlayer === match.teamA
+        ? match.teamB
+        : teamPlayer === match.teamB
+          ? match.teamA
+          : null;
+  const scores = ownScores(match, teamPlayer);
 
   // 1. Match (idempotent by upload_id)
   const { data: matchRow, error: matchError } = await supabaseAdmin
@@ -67,11 +87,11 @@ export async function persistCanonicalMatch(args: {
         game_version: match.gameVersion,
         duration_seconds: match.durationSeconds,
         rounds: match.rounds.length,
-        team_player: ownPlayer?.team ?? match.teamA,
-        team_opponent: ownPlayer?.team === match.teamA ? match.teamB : match.teamA,
-        score_player: ownSide === "T" ? match.scoreB : match.scoreA,
-        score_opponent: ownSide === "T" ? match.scoreA : match.scoreB,
-        result: matchResult(match, ownSide),
+        team_player: teamPlayer,
+        team_opponent: teamOpponent,
+        score_player: scores.player,
+        score_opponent: scores.opponent,
+        result: matchResult(scores),
         demo_metadata: {
           schema_version: match.schemaVersion,
           parser: match.parser,

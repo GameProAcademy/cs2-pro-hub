@@ -71,7 +71,7 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
       assister: e.assisterSteamId,
       headshot: e.headshot,
       flashAssister: e.victimSteamId
-        ? flashAssists.get(`${e.roundNumber}:${e.victimSteamId}`) ?? null
+        ? (flashAssists.get(`${e.roundNumber}:${e.victimSteamId}`) ?? null)
         : null,
     }))
     .sort((a, b) => a.round - b.round || a.time - b.time);
@@ -145,10 +145,29 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const playerKills = kills.filter((k) => k.attacker === steamId);
   const playerDeaths = kills.filter((k) => k.victim === steamId);
   const assists = kills.filter((k) => k.assister === steamId).length;
-  const flashAssists = kills.filter((k) => k.flashAssister === steamId && k.attacker !== steamId)
-    .length;
+  const flashAssists = kills.filter(
+    (k) => k.flashAssister === steamId && k.attacker !== steamId,
+  ).length;
 
-  const roundNumbers = new Set(match.rounds.map((r) => r.roundNumber));
+  // Rounds the player ACTUALLY participated in. The denominator is never the
+  // raw round count of the demo: a round only counts when the resolved Steam ID
+  // is present in that round (side assignment, economy entry or an event).
+  const roundNumbers = new Set<number>();
+  for (const round of match.rounds) {
+    const hasSide = round.sides[steamId] != null;
+    const hasEconomy =
+      round.moneyStart[steamId] != null ||
+      round.moneyEnd[steamId] != null ||
+      round.equipmentValue[steamId] != null;
+    const inEvents = match.events.some(
+      (event) =>
+        event.roundNumber === round.roundNumber &&
+        (event.actorSteamId === steamId ||
+          event.victimSteamId === steamId ||
+          event.assisterSteamId === steamId),
+    );
+    if (hasSide || hasEconomy || inEvents) roundNumbers.add(round.roundNumber);
+  }
   const roundsPlayed = roundNumbers.size;
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
@@ -168,9 +187,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
         /hegrenade|molotov|inferno|incgrenade|flashbang|decoy|smoke/i.test(e.weapon),
     )
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
-  const grenadesUsed = match.events.filter(
-    (e) => utilityTypes.has(e.type) || e.type === "flash" || e.type === "smoke",
-  ).filter((e) => e.actorSteamId === steamId).length;
+  const grenadesUsed = match.events
+    .filter((e) => utilityTypes.has(e.type) || e.type === "flash" || e.type === "smoke")
+    .filter((e) => e.actorSteamId === steamId).length;
   const enemiesFlashed = match.events
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
@@ -287,7 +306,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     tRating: sideRating("T"),
     sourceRating:
       roundsPlayed > 0
-        ? round3(compositeRating(playerKills.length, playerDeaths.length, damageGiven, roundsPlayed))
+        ? round3(
+            compositeRating(playerKills.length, playerDeaths.length, damageGiven, roundsPlayed),
+          )
         : null,
     damageEfficiency: damageTaken > 0 ? round3(damageGiven / damageTaken) : null,
   };

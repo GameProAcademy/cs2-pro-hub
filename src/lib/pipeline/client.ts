@@ -7,7 +7,12 @@
  */
 import { DEMO_BUCKET, MAX_DEMO_SIZE_BYTES, MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
 import { supabase } from "@/integrations/supabase/client";
-import { createDemoUpload, enqueueDemoJob, getDemoJobStatus, type DemoJobView } from "@/lib/pipeline.functions";
+import {
+  createDemoUpload,
+  enqueueDemoJob,
+  getDemoJobStatus,
+  type DemoJobView,
+} from "@/lib/pipeline.functions";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -35,13 +40,21 @@ export function precheckDemo(file: File): void {
   if (file.size > MAX_DEMO_SIZE_BYTES) throw new DemoUploadError("DEMO_TOO_LARGE");
 }
 
-export async function submitDemo(file: File): Promise<{ jobId: string; duplicate: boolean }> {
+export async function submitDemo(
+  file: File,
+): Promise<{ jobId: string | null; duplicate: boolean }> {
   precheckDemo(file);
   const demoSha256 = await sha256Hex(file);
 
   const slot = await createDemoUpload({
     data: { fileName: file.name, fileSize: file.size, demoSha256 },
   });
+
+  // A demo already processed keeps its permanent derived data: it is never
+  // re-uploaded or re-processed (the temporary file may no longer exist).
+  if (slot.duplicateStatus === "processed") {
+    return { jobId: slot.existingJobId, duplicate: true };
+  }
 
   const { error } = await supabase.storage.from(DEMO_BUCKET).upload(slot.storagePath, file, {
     contentType: "application/octet-stream",

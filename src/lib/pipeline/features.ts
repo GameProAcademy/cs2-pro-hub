@@ -56,17 +56,22 @@ export function extractFeatures(
       map_spread: match.quality.flags.includes("missing_positions") ? null : null,
     },
     utility: {
-      utility_damage_per_round: hasUtility ? scale(metrics.utilityDamage / Math.max(rounds, 1), 12) : null,
-      flash_assists_per_round: hasUtility ? scale(metrics.flashAssists / Math.max(rounds, 1), 0.4) : null,
+      utility_damage_per_round: hasUtility
+        ? scale(metrics.utilityDamage / Math.max(rounds, 1), 12)
+        : null,
+      flash_assists_per_round: hasUtility
+        ? scale(metrics.flashAssists / Math.max(rounds, 1), 0.4)
+        : null,
       enemies_flashed_per_round: hasUtility
         ? scale(metrics.enemiesFlashed / Math.max(rounds, 1), 1.2)
         : null,
-      grenades_per_round: hasUtility ? scale(metrics.grenadesUsed / Math.max(rounds, 1), 2.5) : null,
+      grenades_per_round: hasUtility
+        ? scale(metrics.grenadesUsed / Math.max(rounds, 1), 2.5)
+        : null,
     },
     decision_making: {
       kast: metrics.kast == null ? null : clamp01(metrics.kast / 100),
-      early_death_avoidance:
-        rounds > 0 ? clamp01(1 - metrics.earlyDeaths / rounds) : null,
+      early_death_avoidance: rounds > 0 ? clamp01(1 - metrics.earlyDeaths / rounds) : null,
       opening_discipline:
         metrics.openingAttempts > 0 ? clamp01(metrics.firstKills / metrics.openingAttempts) : null,
       early_window_seconds: EARLY_DEATH_SECONDS,
@@ -77,9 +82,14 @@ export function extractFeatures(
       trade_participation: ratio(metrics.tradeKills, Math.max(rounds, 1)),
     },
     economy: {
-      // Economy features need buy data; absent => null, never guessed.
-      buy_discipline: hasEconomy ? scale(metrics.damageGiven / Math.max(rounds, 1), 110) : null,
+      // Economy MUST come from real buy data (money_start / money_end /
+      // equipment_value / buy context). Damage is NOT a proxy for economic
+      // discipline, so nothing is derived from it here: a null with a known
+      // low confidence is better than a fabricated number.
+      buy_discipline: null,
       damage_per_dollar: null,
+      /** Factual signal only: whether the demo carried economy data at all. */
+      economy_data_available: hasEconomy ? 1 : 0,
     },
     clutch: {
       clutch_win_rate: ratio(metrics.clutchWins, Math.max(metrics.clutchAttempts, 1)),

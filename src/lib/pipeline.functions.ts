@@ -33,59 +33,98 @@ export interface DemoJobView {
 }
 
 const createSchema = z.object({
-  fileName: z.string().min(5).max(255),
+  fileName: z
+    .string()
+    .min(5)
+    .max(255)
+    .refine((value) => value.toLowerCase().endsWith(".dem"), "INVALID_DEMO_FORMAT"),
   fileSize: z.number().int().min(MIN_DEMO_SIZE_BYTES).max(MAX_DEMO_SIZE_BYTES),
   demoSha256: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
-/** Registers the upload row + job and returns the private storage path. */
+/** Status of a demo that was already submitted with the same content hash. */
+export type DuplicateStatus = "processed" | "pending" | "failed" | null;
+
+/**
+ * Registers the upload row and returns the private storage path.
+ *
+ * The row is inserted ALREADY containing the deterministic `storage_path`
+ * (`{user_id}/{upload_id}.dem`): the player has no UPDATE privilege on
+ * `uploads`, so nothing may depend on a later client-side update. Every
+ * administrative/technical column (status, parser, schema, analysis, timestamps,
+ * error codes) is set by the backend only and never accepted from the browser.
+ */
 export const createDemoUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Idempotency: the same file content re-uploaded reuses the existing job.
+    // Idempotency: the same file content re-uploaded reuses the existing row.
     const { data: existing } = await supabase
       .from("uploads")
-      .select("id, demo_sha256, demo_jobs(id)")
+      .select("id, status, storage_path, demo_jobs(id, status, storage_deleted_at)")
       .eq("user_id", userId)
       .eq("demo_sha256", data.demoSha256)
       .limit(1)
       .maybeSingle();
 
     if (existing?.id) {
+      const related = existing.demo_jobs as { id: string }[] | { id: string } | null;
+      const job = Array.isArray(related) ? (related[0] ?? null) : related;
+      const duplicateStatus: DuplicateStatus =
+        existing.status === "processed"
+          ? "processed"
+          : existing.status === "failed"
+            ? "failed"
+            : "pending";
       return {
         uploadId: existing.id,
-        storagePath: `${userId}/${existing.id}.dem`,
+        storagePath: existing.storage_path ?? `${userId}/${existing.id}.dem`,
         bucket: DEMO_BUCKET,
         duplicate: true as const,
+        duplicateStatus,
+        // A processed demo keeps its permanent derived data even after the
+        // temporary file expired; it must NOT be re-processed.
+        existingJobId: job?.id ?? null,
       };
     }
 
-    const { data: upload, error } = await supabase
-      .from("uploads")
-      .insert({
-        user_id: userId,
-        type: "demo",
-        source: "manual",
-        file_name: data.fileName,
-        file_size: data.fileSize,
-        mime_type: "application/octet-stream",
-        demo_sha256: data.demoSha256,
-        status: "pending",
-      })
-      .select("id")
-      .single();
-    if (error || !upload) throw new Error("UPLOAD_REGISTRATION_FAILED");
+    const uploadId = crypto.randomUUID();
+    const storagePath = `${userId}/${uploadId}.dem`;
 
-    const storagePath = `${userId}/${upload.id}.dem`;
-    await supabase.from("uploads").update({ storage_path: storagePath }).eq("id", upload.id);
+    const { error } = await supabase.from("uploads").insert({
+      id: uploadId,
+      user_id: userId,
+      type: "demo",
+      source: "manual",
+      file_name: data.fileName,
+      file_size: data.fileSize,
+      mime_type: "application/octet-stream",
+      demo_sha256: data.demoSha256,
+      storage_path: storagePath,
+      status: "pending",
+      processed_at: null,
+      error_message: null,
+    });
+    if (error) throw new Error("UPLOAD_REGISTRATION_FAILED");
 
-    return { uploadId: upload.id, storagePath, bucket: DEMO_BUCKET, duplicate: false as const };
+    return {
+      uploadId,
+      storagePath,
+      bucket: DEMO_BUCKET,
+      duplicate: false as const,
+      duplicateStatus: null as DuplicateStatus,
+      existingJobId: null,
+    };
   });
 
-/** Queues the job after the file landed in storage, then runs one step. */
+/**
+ * Queues the job after the file landed in storage and returns immediately.
+ *
+ * NOTHING is parsed inside this request: the worker/cron layer claims and
+ * processes the job later, and the UI polls the job status.
+ */
 export const enqueueDemoJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ uploadId: z.string().uuid() }).parse(input))
@@ -94,12 +133,32 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
 
     const { data: upload } = await supabase
       .from("uploads")
-      .select("id, user_id, file_size, demo_sha256, storage_path")
+      .select("id, user_id, status, file_size, demo_sha256, storage_path")
       .eq("id", data.uploadId)
       .maybeSingle();
     if (!upload || upload.user_id !== userId) throw new Error("UPLOAD_NOT_FOUND");
+    if (!upload.storage_path || !upload.storage_path.startsWith(`${userId}/`)) {
+      throw new Error("UPLOAD_NOT_FOUND");
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // An already processed upload keeps its permanent derived data: re-queueing
+    // it would only duplicate work against a file that may no longer exist.
+    if (upload.status === "processed") {
+      const { data: done } = await supabaseAdmin
+        .from("demo_jobs")
+        .select("id")
+        .eq("upload_id", upload.id)
+        .maybeSingle();
+      if (done?.id) return { jobId: done.id, queued: false as const, duplicate: true as const };
+    }
+
+    // The file must really be in the private bucket before a job is queued.
+    const { demoExists } = await import("@/lib/pipeline/storage.server");
+    const stored = await demoExists(upload.storage_path);
+    if (!stored) throw new Error("DEMO_NOT_FOUND");
+
     const { data: job, error } = await supabaseAdmin
       .from("demo_jobs")
       .upsert(
@@ -112,6 +171,10 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
           demo_sha256: upload.demo_sha256,
           file_size: upload.file_size,
           queued_at: new Date().toISOString(),
+          started_at: null,
+          finished_at: null,
+          error_code: null,
+          error_message: null,
         },
         { onConflict: "upload_id" },
       )
@@ -119,15 +182,7 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
       .single();
     if (error || !job) throw new Error("JOB_ENQUEUE_FAILED");
 
-    // Process asynchronously relative to the UI: the client keeps polling.
-    const { claimNextJob, processJob, recoverStaleJobs } = await import(
-      "@/lib/pipeline/jobs.server"
-    );
-    await recoverStaleJobs();
-    const next = (await claimNextJob()) ?? job.id;
-    const result = await processJob(next);
-
-    return { jobId: job.id, processed: result.status };
+    return { jobId: job.id, queued: true as const, duplicate: false as const };
   });
 
 function toView(row: {
@@ -206,15 +261,22 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
     if (job.storage_deleted_at) throw new Error("DEMO_EXPIRED");
     if (job.retry_count >= job.max_retries) throw new Error("RETRY_LIMIT_REACHED");
 
+    // Retry only RE-QUEUES: the worker/cron layer picks the job up afterwards,
+    // so the user never waits for the parser inside this request.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
       .from("demo_jobs")
-      .update({ status: "pending", stage: "queued", error_code: null, error_message: null })
+      .update({
+        status: "pending",
+        stage: "queued",
+        error_code: null,
+        error_message: null,
+        started_at: null,
+        finished_at: null,
+      })
       .eq("id", job.id);
 
-    const { processJob } = await import("@/lib/pipeline/jobs.server");
-    const result = await processJob(job.id);
-    return { jobId: job.id, processed: result.status };
+    return { jobId: job.id, queued: true as const };
   });
 
 /** Tells the UI honestly whether real processing is currently possible. */

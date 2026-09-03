@@ -6,7 +6,7 @@
  * replaced or upgraded without touching the normalizer, metrics, features,
  * persistence or UI layers.
  */
-import { PARSER_CONTRACT_VERSION } from "@/config/pipeline";
+import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
@@ -29,7 +29,8 @@ export interface DemoParserAdapter {
 
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
-  if (!value || typeof value !== "object") throw new PipelineError("PARSER_ERROR", "empty response");
+  if (!value || typeof value !== "object")
+    throw new PipelineError("PARSER_ERROR", "empty response");
   const raw = value as Partial<RawParserOutput>;
 
   if (raw.contract_version !== PARSER_CONTRACT_VERSION) {
@@ -38,10 +39,27 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!raw.parser?.name || !raw.parser?.version) {
     throw new PipelineError("PARSER_ERROR", "missing parser identity");
   }
+  // The parser identity is pinned in configuration. An incompatible worker is
+  // rejected explicitly instead of being accepted silently; the version is only
+  // bumped deliberately in `src/config/pipeline.ts`.
+  if (raw.parser.name !== PARSER_NAME) {
+    throw new PipelineError("UNSUPPORTED_DEMO", `parser name mismatch: ${raw.parser.name}`);
+  }
+  if (majorMinor(raw.parser.version) !== majorMinor(PARSER_VERSION)) {
+    throw new PipelineError(
+      "PARSER_ERROR",
+      `parser version mismatch: got ${raw.parser.version}, expected ${PARSER_VERSION}`,
+    );
+  }
   if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events)) {
     throw new PipelineError("PARSER_ERROR", "missing players/rounds/events");
   }
   return raw as RawParserOutput;
+}
+
+/** `0.31.4` -> `0.31`: patch releases of the pinned parser stay compatible. */
+function majorMinor(version: string): string {
+  return version.split(".").slice(0, 2).join(".");
 }
 
 /**
