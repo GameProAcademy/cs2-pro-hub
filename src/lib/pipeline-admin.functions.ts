@@ -131,19 +131,28 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
 
     await supabaseAdmin
       .from("demo_jobs")
-      .update({ status: "pending", stage: "queued", error_code: null, error_message: null })
+      .update({
+        status: "pending",
+        stage: "queued",
+        error_code: null,
+        error_message: null,
+        started_at: null,
+        finished_at: null,
+      })
       .eq("id", data.jobId);
 
-    await (context as Ctx).supabase.from("admin_audit_logs").insert({
-      admin_user_id: (context as Ctx).userId,
-      action: "DEMO_JOB_RETRIED",
-      target_user_id: null,
-      metadata: { job_id: data.jobId },
-    });
+    const { error: auditError } = await (context as Ctx).supabase
+      .from("admin_audit_logs")
+      .insert({
+        admin_user_id: (context as Ctx).userId,
+        action: "DEMO_JOB_RETRIED",
+        target_user_id: null,
+        metadata: { job_id: data.jobId },
+      });
+    if (auditError) throw new Error("AUDIT_FAILED");
 
-    const { processJob } = await import("@/lib/pipeline/jobs.server");
-    const result = await processJob(data.jobId);
-    return { status: result.status, errorCode: result.errorCode ?? null };
+    // Re-queue only: the worker/cron layer performs the processing.
+    return { status: "queued" as const, errorCode: null };
   });
 
 /** Master-triggered retention cleanup of expired temporary demo files. */
