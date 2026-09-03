@@ -49,9 +49,6 @@ export const ptBR = {
   "login.password": "Senha",
   "login.submit": "Entrar",
   "login.forgot": "Esqueci minha senha",
-  "login.mockTitle": "Sem autenticação real.",
-  "login.mockBody":
-    "Esta etapa entrega apenas a interface: nenhuma credencial é validada, salva ou enviada. O botão acima apenas abre a navegação da aplicação.",
 
   "register.title": "Criar sua conta",
   "register.subtitle":

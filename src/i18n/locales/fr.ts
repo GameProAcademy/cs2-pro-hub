@@ -46,9 +46,6 @@ export const fr: Dictionary = {
   "login.password": "Mot de passe",
   "login.submit": "Se connecter",
   "login.forgot": "Mot de passe oublié",
-  "login.mockTitle": "Aucune authentification réelle.",
-  "login.mockBody":
-    "Cette étape ne livre que l'interface : aucun identifiant n'est validé, enregistré ou envoyé. Le bouton ci-dessus ouvre simplement la navigation de l'application.",
 
   "register.title": "Créer votre compte",
   "register.subtitle":

@@ -45,9 +45,6 @@ export const en: Dictionary = {
   "login.password": "Password",
   "login.submit": "Sign in",
   "login.forgot": "Forgot my password",
-  "login.mockTitle": "No real authentication.",
-  "login.mockBody":
-    "This stage ships the interface only: no credential is validated, stored or sent. The button above simply opens the app navigation.",
 
   "register.title": "Create your account",
   "register.subtitle":

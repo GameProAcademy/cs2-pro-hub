@@ -46,9 +46,6 @@ export const es: Dictionary = {
   "login.password": "Contraseña",
   "login.submit": "Entrar",
   "login.forgot": "Olvidé mi contraseña",
-  "login.mockTitle": "Sin autenticación real.",
-  "login.mockBody":
-    "Esta etapa entrega solo la interfaz: ninguna credencial se valida, guarda ni envía. El botón de arriba solo abre la navegación de la aplicación.",
 
   "register.title": "Crea tu cuenta",
   "register.subtitle":

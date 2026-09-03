@@ -46,9 +46,6 @@ export const ptPT: Dictionary = {
   "login.password": "Palavra-passe",
   "login.submit": "Entrar",
   "login.forgot": "Esqueci-me da palavra-passe",
-  "login.mockTitle": "Sem autenticação real.",
-  "login.mockBody":
-    "Esta etapa entrega apenas a interface: nenhuma credencial é validada, guardada ou enviada. O botão acima apenas abre a navegação da aplicação.",
 
   "register.title": "Criar a sua conta",
   "register.subtitle":
