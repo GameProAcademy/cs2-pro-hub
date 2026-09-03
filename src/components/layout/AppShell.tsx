@@ -60,11 +60,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
             {t("nav.demoSession")}
           </p>
         ) : null}
-        <Button asChild variant="ghost" size="sm" className="mt-2 w-full justify-start gap-2 px-2">
-          <Link to="/login" onClick={onNavigate}>
-            <LogOut className="size-3.5" aria-hidden />
-            {t("nav.logout")}
-          </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 w-full justify-start gap-2 px-2"
+          onClick={async () => {
+            onNavigate?.();
+            await queryClient.cancelQueries();
+            queryClient.clear();
+            await signOutEverywhere();
+            navigate({ to: "/login", replace: true });
+          }}
+        >
+          <LogOut className="size-3.5" aria-hidden />
+          {t("nav.logout")}
         </Button>
       </div>
     </div>
