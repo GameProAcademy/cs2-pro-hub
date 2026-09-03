@@ -438,7 +438,9 @@ export const listAuditLogs = createServerFn({ method: "GET" })
 
     const ids = Array.from(
       new Set(
-        ((logs ?? []) as AuditLogRow[]).flatMap((l) => [l.admin_user_id, l.target_user_id]).filter(Boolean),
+        ((logs ?? []) as AuditLogRow[])
+          .flatMap((l) => [l.admin_user_id, l.target_user_id])
+          .filter(Boolean),
       ),
     ) as string[];
 
