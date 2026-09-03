@@ -41,6 +41,8 @@ type Ctx = { supabase: any; userId: string };
 /** Generic, non-revealing error codes surfaced to the client. */
 const FORBIDDEN = "ADMIN_FORBIDDEN";
 const FAILED = "ADMIN_OPERATION_FAILED";
+/** The authorisation state could not be determined (backend/infra problem). */
+const UNAVAILABLE = "ADMIN_UNAVAILABLE";
 
 async function resolveAdmin(context: Ctx): Promise<AdminSession> {
   const { supabase, userId } = context;
@@ -51,32 +53,45 @@ async function resolveAdmin(context: Ctx): Promise<AdminSession> {
     .eq("id", userId)
     .maybeSingle();
 
-  // Fail-closed: no profile / unreadable profile / not active => no access.
-  if (error || !profile || profile.status !== "active") throw new Error(FORBIDDEN);
+  // The profile could not be read at all: this is an infrastructure failure,
+  // not a denial. It is reported separately so the UI can show an error state
+  // instead of silently pretending the user is not an administrator.
+  if (error) throw new Error(UNAVAILABLE);
+
+  // Fail-closed: no profile / not active => no access.
+  if (!profile || profile.status !== "active") throw new Error(FORBIDDEN);
 
   // Authoritative role check against `user_roles` (security-definer function).
   const { data: master, error: masterError } = await supabase.rpc("is_admin_master", {
     _user_id: userId,
   });
 
-  if (masterError || master !== true) throw new Error(FORBIDDEN);
+  if (masterError) throw new Error(UNAVAILABLE);
+  if (master !== true) throw new Error(FORBIDDEN);
 
   return { userId, role: "admin_master", isMaster: true };
 }
 
+/**
+ * Appends an audit entry. Auditing is mandatory: when the entry cannot be
+ * written the caller MUST treat the whole operation as failed, so this throws
+ * instead of silently swallowing the error.
+ */
 async function writeAuditLog(
   context: Ctx,
   action: string,
   targetUserId: string | null,
   metadata: Record<string, unknown>,
 ) {
-  await context.supabase.from("admin_audit_logs").insert({
+  const { error } = await context.supabase.from("admin_audit_logs").insert({
     admin_user_id: context.userId,
     action,
     target_user_id: targetUserId,
     metadata,
   });
+  if (error) throw new Error(FAILED);
 }
+
 
 /** Returns the caller's administrative session, or throws when unauthorised. */
 export const getAdminSession = createServerFn({ method: "GET" })
@@ -274,12 +289,14 @@ export const setAdminUserStatus = createServerFn({ method: "POST" })
 
     const { data: target } = await supabase
       .from("profiles")
-      .select("id, role")
+      .select("id, role, status")
       .eq("id", data.userId)
       .maybeSingle();
     if (!target) throw new Error(FAILED);
     // Administrator accounts are never deactivated through user management.
     if (target.role !== "player") throw new Error(FORBIDDEN);
+
+    const previousStatus = target.status as AccountStatus;
 
     const { error } = await supabase
       .from("profiles")
@@ -287,15 +304,23 @@ export const setAdminUserStatus = createServerFn({ method: "POST" })
       .eq("id", data.userId);
     if (error) throw new Error(FAILED);
 
-    await writeAuditLog(
-      context as Ctx,
-      data.status === "active" ? "USER_ACTIVATED" : "USER_DEACTIVATED",
-      data.userId,
-      { status: data.status },
-    );
+    try {
+      await writeAuditLog(
+        context as Ctx,
+        data.status === "active" ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+        data.userId,
+        { status: data.status, previous_status: previousStatus },
+      );
+    } catch (auditError) {
+      // Auditing is mandatory: revert the change so no unaudited status
+      // transition can persist.
+      await supabase.from("profiles").update({ status: previousStatus }).eq("id", data.userId);
+      throw auditError;
+    }
 
     return { ok: true };
   });
+
 
 export const createAdminUser = createServerFn({ method: "POST" })
   .inputValidator(

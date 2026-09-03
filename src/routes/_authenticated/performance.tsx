@@ -8,6 +8,7 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
+import { useT, type TranslationKey } from "@/i18n";
 import { getMapPerformance, getMetrics, getSideSplit, getTrends } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/performance")({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/performance")({
 });
 
 function PerformancePage() {
+  const t = useT();
   const metrics = getMetrics();
   const trends = getTrends();
   const maps = getMapPerformance();
@@ -38,9 +40,9 @@ function PerformancePage() {
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Métricas"
-          title="Performance"
-          description="Indicadores de impacto individual, duelos de abertura e consistência ao longo do tempo."
+          eyebrow={t("performance.eyebrow")}
+          title={t("performance.title")}
+          description={t("performance.description")}
         />
 
         <DemoDataNotice />
@@ -53,27 +55,27 @@ function PerformancePage() {
               value={m.value}
               unit={m.unit}
               delta={m.delta}
-              hint={m.hint}
+              hint={m.hint ? t(m.hint as TranslationKey) : undefined}
               invertDelta={m.key === "fdr"}
             />
           ))}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <ChartCard title="K/D ao longo do tempo">
+          <ChartCard title={t("performance.kdTrend")}>
             <TrendChart data={trends.kd} series={[{ key: "kd", label: "K/D" }]} variant="line" />
           </ChartCard>
-          <ChartCard title="ADR ao longo do tempo">
+          <ChartCard title={t("performance.adrTrend")}>
             <TrendChart data={trends.adr} series={[{ key: "adr", label: "ADR" }]} />
           </ChartCard>
-          <ChartCard title="KAST ao longo do tempo">
+          <ChartCard title={t("performance.kastTrend")}>
             <TrendChart
               data={trends.kast}
               series={[{ key: "kast", label: "KAST", color: "var(--chart-3)" }]}
               unit="%"
             />
           </ChartCard>
-          <ChartCard title="HS% ao longo do tempo">
+          <ChartCard title={t("performance.hsTrend")}>
             <TrendChart
               data={trends.hs}
               series={[{ key: "hs", label: "HS%", color: "var(--chart-4)" }]}
@@ -81,8 +83,8 @@ function PerformancePage() {
             />
           </ChartCard>
           <ChartCard
-            title="Duelos de abertura"
-            subtitle="First Kill Rate vs First Death Rate"
+            title={t("performance.opening")}
+            subtitle={t("performance.openingSub")}
             className="lg:col-span-2"
           >
             <TrendChart
@@ -99,8 +101,8 @@ function PerformancePage() {
 
         <div className="grid gap-5 lg:grid-cols-5">
           <ChartCard
-            title="Performance por mapa"
-            subtitle="Win rate por mapa do pool ativo"
+            title={t("performance.maps")}
+            subtitle={t("performance.mapsSub")}
             className="lg:col-span-3"
           >
             <MapPerformanceChart data={maps} />
@@ -112,7 +114,8 @@ function PerformancePage() {
                 >
                   <span className="font-medium">{m.map}</span>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {m.matches} jogos · rating {m.rating.toFixed(2)} · ADR {m.adr}
+                    {m.matches} {t("performance.games")} · {t("performance.rating")}{" "}
+                    {m.rating.toFixed(2)} · ADR {m.adr}
                   </span>
                 </div>
               ))}
@@ -120,8 +123,8 @@ function PerformancePage() {
           </ChartCard>
 
           <ChartCard
-            title="CT Side vs T Side"
-            subtitle="Comparação de impacto por lado"
+            title={t("performance.sides")}
+            subtitle={t("performance.sidesSub")}
             className="lg:col-span-2"
           >
             <SideSplitChart data={getSideSplit()} hasEnoughData />

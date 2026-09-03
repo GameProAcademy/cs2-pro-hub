@@ -8,6 +8,7 @@ import { ProgressBar } from "@/components/common/ProgressBar";
 import { AppShell } from "@/components/layout/AppShell";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { StrengthList } from "@/components/panels/StrengthList";
+import { useT } from "@/i18n";
 import { getAnalysis, getBottlenecks, getStrengths } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/analysis")({
@@ -30,33 +31,34 @@ export const Route = createFileRoute("/_authenticated/analysis")({
 });
 
 function AnalysisPage() {
+  const t = useT();
   const analysis = getAnalysis();
 
   return (
     <AppShell>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Diagnóstico"
-          title="Seu Raio-X CS2 PRO"
-          description="A leitura estruturada do seu jogo: onde você ganha rounds, onde perde e o que atacar primeiro."
+          eyebrow={t("analysis.eyebrow")}
+          title={t("analysis.title")}
+          description={t("analysis.description")}
         />
 
-        <DemoDataNotice context="Este diagnóstico é um exemplo de formato. Nenhuma análise real foi executada — não existe engine de diagnóstico nesta etapa." />
+        <DemoDataNotice context={t("analysis.notice")} />
 
-        <ChartCard title="Performance geral">
+        <ChartCard title={t("analysis.overall")}>
           <p className="text-sm leading-relaxed text-muted-foreground">{analysis.overall}</p>
         </ChartCard>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <ChartCard title="Pontos fortes">
+          <ChartCard title={t("analysis.strengths")}>
             <StrengthList items={getStrengths()} />
           </ChartCard>
-          <ChartCard title="Principais gargalos">
+          <ChartCard title={t("analysis.bottlenecks")}>
             <BottleneckList items={getBottlenecks()} />
           </ChartCard>
         </div>
 
-        <ChartCard title="Evidências" subtitle="Sinais usados para sustentar o diagnóstico">
+        <ChartCard title={t("analysis.evidence")} subtitle={t("analysis.evidenceSub")}>
           <ul className="space-y-3">
             {analysis.evidence.map((e) => (
               <li key={e} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
@@ -68,14 +70,14 @@ function AnalysisPage() {
         </ChartCard>
 
         <div className="grid gap-5 lg:grid-cols-3">
-          <ChartCard title="Prioridade #1" className="lg:col-span-2">
+          <ChartCard title={t("analysis.priority")} className="lg:col-span-2">
             <div className="flex gap-3">
               <Quote className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
               <div className="space-y-4">
                 <p className="text-base leading-relaxed text-foreground">{analysis.priority}</p>
                 <div>
                   <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Recomendação
+                    {t("analysis.recommendation")}
                   </p>
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     {analysis.recommendation}
@@ -85,15 +87,14 @@ function AnalysisPage() {
             </div>
           </ChartCard>
 
-          <ChartCard title="Confiança da análise">
+          <ChartCard title={t("analysis.confidence")}>
             <div className="num-display text-5xl font-bold text-foreground">
               {analysis.confidence}
               <span className="text-2xl text-muted-foreground">%</span>
             </div>
             <ProgressBar className="mt-5" value={analysis.confidence} tone="accent" />
             <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-              A confiança cresce conforme mais partidas são enviadas e o volume de rounds por lado e
-              por mapa aumenta.
+              {t("analysis.confidenceHint")}
             </p>
           </ChartCard>
         </div>

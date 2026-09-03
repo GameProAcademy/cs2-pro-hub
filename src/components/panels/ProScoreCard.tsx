@@ -2,9 +2,12 @@ import { TrendingUp } from "lucide-react";
 
 import { DemoTag } from "@/components/common/DemoDataNotice";
 import { ProgressBar } from "@/components/common/ProgressBar";
+import { useT } from "@/i18n";
 import type { ProScore } from "@/types";
 
 export function ProScoreCard({ score }: { score: ProScore }) {
+  const t = useT();
+
   return (
     <section className="surface-panel relative overflow-hidden rounded-lg border border-border p-6">
       <div
@@ -30,11 +33,11 @@ export function ProScoreCard({ score }: { score: ProScore }) {
 
       <div className="relative mt-5 flex flex-wrap items-center gap-3">
         <span className="inline-flex items-center gap-1.5 rounded-sm bg-success/12 px-2 py-1 font-mono text-xs font-medium text-success">
-          <TrendingUp className="size-3.5" aria-hidden />+{score.deltaSinceFirstAnalysis} desde a
-          primeira análise
+          <TrendingUp className="size-3.5" aria-hidden />+{score.deltaSinceFirstAnalysis}{" "}
+          {t("score.sinceFirst")}
         </span>
         <span className="text-xs text-muted-foreground">
-          Top {100 - score.percentile}% do seu nível
+          {t("score.top")} {100 - score.percentile}% {t("score.ofYourLevel")}
         </span>
       </div>
 

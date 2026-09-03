@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useT, type TranslationKey } from "@/i18n";
 import type { MatchRow } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,23 @@ const resultTone = {
   E: "text-muted-foreground",
 } as const;
 
-const resultLabel = { V: "Vitória", D: "Derrota", E: "Empate" } as const;
+const resultKey: Record<MatchRow["result"], TranslationKey> = {
+  V: "matches.result.win",
+  D: "matches.result.loss",
+  E: "matches.result.draw",
+};
+
+const columnKeys: TranslationKey[] = [
+  "matches.col.date",
+  "matches.col.platform",
+  "matches.col.map",
+  "matches.col.result",
+  "matches.col.kills",
+  "matches.col.deaths",
+  "matches.col.adr",
+  "matches.col.kast",
+  "matches.col.rating",
+];
 
 function formatDate(iso: string) {
   const [y = "", m = "", d = ""] = iso.split("-");
@@ -23,27 +40,19 @@ function formatDate(iso: string) {
 }
 
 export function MatchesTable({ rows }: { rows: MatchRow[] }) {
+  const t = useT();
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            {[
-              "Data",
-              "Plataforma",
-              "Mapa",
-              "Resultado",
-              "Kills",
-              "Deaths",
-              "ADR",
-              "KAST",
-              "Rating",
-            ].map((h) => (
+            {columnKeys.map((key) => (
               <TableHead
-                key={h}
+                key={key}
                 className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
               >
-                {h}
+                {t(key)}
               </TableHead>
             ))}
           </TableRow>
@@ -58,7 +67,7 @@ export function MatchesTable({ rows }: { rows: MatchRow[] }) {
               <TableCell className="whitespace-nowrap text-sm font-medium">{row.map}</TableCell>
               <TableCell className="whitespace-nowrap">
                 <span className={cn("text-sm font-semibold", resultTone[row.result])}>
-                  {resultLabel[row.result]}
+                  {t(resultKey[row.result])}
                 </span>
                 <span className="ml-2 font-mono text-xs text-muted-foreground">{row.score}</span>
               </TableCell>
