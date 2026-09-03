@@ -215,6 +215,53 @@ WITH catalogue AS (
                  AND fk.conkey @> (i.indkey::int2[])[0:array_length(fk.conkey,1)-1]
              )
          )
+  -- 24. player_connections (Phase 2.1.2 integration readiness)
+  UNION ALL
+  SELECT '24a. player_connections has RLS enabled',
+         (SELECT relrowsecurity FROM pg_class
+          WHERE oid = 'public.player_connections'::regclass)
+
+  UNION ALL
+  SELECT '24b. players cannot update connection state (no UPDATE policy)',
+         NOT EXISTS (
+           SELECT 1 FROM pg_policies
+           WHERE schemaname = 'public' AND tablename = 'player_connections'
+             AND cmd = 'UPDATE' AND 'authenticated' = ANY(roles)
+         )
+
+  UNION ALL
+  SELECT '24c. player_connections is not readable by anon',
+         NOT has_table_privilege('anon', 'public.player_connections', 'SELECT')
+
+  UNION ALL
+  SELECT '24d. connection status guard trigger is active',
+         EXISTS (
+           SELECT 1 FROM pg_trigger
+           WHERE tgrelid = 'public.player_connections'::regclass
+             AND tgname = 'player_connections_guard_status' AND NOT tgisinternal
+         )
+
+  UNION ALL
+  SELECT '24e. player_connections stores no token-like column',
+         NOT EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'player_connections'
+             AND (column_name ILIKE '%token%' OR column_name ILIKE '%secret%'
+                  OR column_name ILIKE '%password%' OR column_name ILIKE '%refresh%')
+         )
+
+  UNION ALL
+  SELECT '24f. matches carry source provenance',
+         (SELECT count(*) = 3 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'matches'
+            AND column_name IN ('data_source','source_fetched_at','source_version'))
+
+  UNION ALL
+  SELECT '24g. external match ids are unique per source',
+         EXISTS (
+           SELECT 1 FROM pg_indexes
+           WHERE schemaname = 'public' AND indexname = 'matches_source_external_uniq'
+         )
 )
 SELECT check_name,
        CASE WHEN passed THEN 'PASS' ELSE 'FAIL' END AS result
