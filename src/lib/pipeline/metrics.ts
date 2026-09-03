@@ -24,7 +24,11 @@
  * source_rating is a transparent, documented composite derived ONLY from this
  * match. It is explicitly NOT the CS2 PRO Score (later phase).
  */
-import { EARLY_DEATH_SECONDS, TRADE_WINDOW_SECONDS } from "@/config/pipeline";
+import {
+  EARLY_DEATH_SECONDS,
+  FLASH_ASSIST_WINDOW_SECONDS,
+  TRADE_WINDOW_SECONDS,
+} from "@/config/pipeline";
 import type { CanonicalEvent, CanonicalMatch, CanonicalMetrics, Side } from "@/lib/pipeline/types";
 
 interface KillRecord {
@@ -260,8 +264,8 @@ function clutchStats(match: CanonicalMatch, kills: KillRecord[], steamId: string
     if (!clutch) continue;
     attempts += 1;
 
-    const playerSide = round.sides[steamId] ?? sideOf(match, steamId, round.roundNumber);
-    const survived = !roundKills.some((k) => k.victim === steamId);
+    const playerSide = sideInRound(match, steamId, round.roundNumber);
+    const survived = playerSurvivedRound(match, steamId, round.roundNumber) === true;
     const wonRound =
       (round.winnerSide != null && playerSide != null && round.winnerSide === playerSide) ||
       (round.winnerTeam != null && team != null && round.winnerTeam === team);
@@ -338,18 +342,29 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const openingSuccessRate = openingAttempts > 0 ? round3(firstKills / openingAttempts) : null;
 
   // Trades
+  // A trade kill is the offensive half of a trade: the player kills an enemy
+  // who, within the window and in the same round, had just killed one of the
+  // player's teammates. Team kills, suicides and events without Steam IDs are
+  // never counted.
+  const ownTeam = teamOf(match, steamId);
   let tradeKills = 0;
   for (const kill of playerKills) {
-    const victimTeam = teamOf(match, kill.victim ?? "");
-    const traded = kills.some(
-      (k) =>
-        k.round === kill.round &&
-        k.time < kill.time &&
-        kill.time - k.time <= TRADE_WINDOW_SECONDS &&
-        k.attacker === kill.victim &&
-        teamOf(match, k.victim ?? "") === teamOf(match, steamId) &&
-        victimTeam !== teamOf(match, steamId),
-    );
+    if (!kill.attacker || !kill.victim) continue;
+    if (kill.attacker === kill.victim) continue;
+    const victimTeam = teamOf(match, kill.victim);
+    if (ownTeam == null || victimTeam == null || victimTeam === ownTeam) continue;
+    const traded = kills.some((k) => {
+      if (!k.attacker || !k.victim) return false;
+      if (k.round !== kill.round) return false;
+      if (k.attacker !== kill.victim) return false;
+      if (k.attacker === k.victim) return false;
+      if (k.time >= kill.time) return false;
+      if (kill.time - k.time > TRADE_WINDOW_SECONDS) return false;
+      // The teammate that was killed first must really be a teammate.
+      return teamOf(match, k.victim) === ownTeam && k.victim !== steamId
+        ? true
+        : k.victim === steamId;
+    });
     if (traded) tradeKills += 1;
   }
   let tradeDeaths = 0;
@@ -380,7 +395,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
       (k) => k.assister === steamId || (k.flashAssister === steamId && k.attacker !== steamId),
     );
     const death = roundKills.find((k) => k.victim === steamId);
-    const survived = !death;
+    // Survival uses the shared definition: absence of a death event is not
+    // survival unless there is positive evidence for it.
+    const survived = playerSurvivedRound(match, steamId, roundNumber) === true;
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
@@ -391,7 +408,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   // Side ratings use the same composite formula restricted to CT/T rounds.
   const sideRating = (side: Side): number | null => {
     const sideRounds = match.rounds.filter(
-      (r) => (r.sides[steamId] ?? sideOf(match, steamId, r.roundNumber)) === side,
+      (r) => sideInRound(match, steamId, r.roundNumber) === side,
     );
     if (sideRounds.length === 0) return null;
     const nums = new Set(sideRounds.map((r) => r.roundNumber));
