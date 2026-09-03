@@ -1400,6 +1400,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_next_demo_job: {
+        Args: { _max_concurrent?: number }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
