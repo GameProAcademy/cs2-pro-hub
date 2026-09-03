@@ -13,13 +13,14 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type AdminRole = "admin_master" | "admin" | "player";
+/** Single-administrator product model: one `admin_master`, everyone else is a player. */
+export type AdminRole = "admin_master" | "player";
 export type AccountStatus = "active" | "inactive";
 
 export interface AdminSession {
   userId: string;
-  role: Extract<AdminRole, "admin_master" | "admin">;
-  isMaster: boolean;
+  role: "admin_master";
+  isMaster: true;
 }
 
 export interface AdminUserRow {
@@ -53,15 +54,14 @@ async function resolveAdmin(context: Ctx): Promise<AdminSession> {
   // Fail-closed: no profile / unreadable profile / not active => no access.
   if (error || !profile || profile.status !== "active") throw new Error(FORBIDDEN);
 
-  const [{ data: staff, error: staffError }, { data: master, error: masterError }] =
-    await Promise.all([
-      supabase.rpc("is_staff", { _user_id: userId }),
-      supabase.rpc("is_admin_master", { _user_id: userId }),
-    ]);
+  // Authoritative role check against `user_roles` (security-definer function).
+  const { data: master, error: masterError } = await supabase.rpc("is_admin_master", {
+    _user_id: userId,
+  });
 
-  if (staffError || masterError || staff !== true) throw new Error(FORBIDDEN);
+  if (masterError || master !== true) throw new Error(FORBIDDEN);
 
-  return { userId, role: master === true ? "admin_master" : "admin", isMaster: master === true };
+  return { userId, role: "admin_master", isMaster: true };
 }
 
 async function writeAuditLog(
@@ -93,11 +93,10 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     // Filters must be chained AFTER select() on the PostgREST builder.
     const count = () => supabase.from("profiles").select("id", { count: "exact", head: true });
 
-    const [total, active, inactive, admins, masters, recent, logins] = await Promise.all([
+    const [total, active, inactive, admins, recent, logins] = await Promise.all([
       count(),
       count().eq("status", "active").eq("role", "player"),
       count().eq("status", "inactive"),
-      count().in("role", ["admin", "admin_master"]),
       count().eq("role", "admin_master"),
       count().gte("created_at", sevenDaysAgo),
       supabase
@@ -113,7 +112,6 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       activePlayers: active.count ?? 0,
       inactiveUsers: inactive.count ?? 0,
       admins: admins.count ?? 0,
-      masters: masters.count ?? 0,
       newUsers: recent.count ?? 0,
       lastLogins: (logins.data ?? []) as Array<{
         id: string;
@@ -280,8 +278,8 @@ export const setAdminUserStatus = createServerFn({ method: "POST" })
       .eq("id", data.userId)
       .maybeSingle();
     if (!target) throw new Error(FAILED);
-    // Only a master admin may deactivate another administrator.
-    if (target.role !== "player" && !session.isMaster) throw new Error(FORBIDDEN);
+    // Administrator accounts are never deactivated through user management.
+    if (target.role !== "player") throw new Error(FORBIDDEN);
 
     const { error } = await supabase
       .from("profiles")
@@ -299,45 +297,11 @@ export const setAdminUserStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const setAdminUserRole = createServerFn({ method: "POST" })
-  .inputValidator((input: { userId: string; role: AdminRole }) => input)
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ data, context }) => {
-    const session = await resolveAdmin(context as Ctx);
-    // Role management is reserved to master admins (also enforced in the
-    // database by the `guard_profile_role` trigger).
-    if (!session.isMaster) throw new Error(FORBIDDEN);
-    if (data.userId === session.userId) throw new Error(FORBIDDEN);
-    if (!["admin_master", "admin", "player"].includes(data.role)) throw new Error(FAILED);
-
-    const supabase = (context as Ctx).supabase;
-    const { data: before } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.userId)
-      .maybeSingle();
-    if (!before) throw new Error(FAILED);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: data.role })
-      .eq("id", data.userId);
-    if (error) throw new Error(FAILED);
-
-    await writeAuditLog(context as Ctx, "ROLE_CHANGED", data.userId, {
-      from: before.role,
-      to: data.role,
-    });
-
-    return { ok: true };
-  });
-
 export const createAdminUser = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
       email: string;
       password: string;
-      role: AdminRole;
       display_name?: string;
       nickname?: string;
       country?: string;
@@ -346,10 +310,8 @@ export const createAdminUser = createServerFn({ method: "POST" })
   )
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
-    const session = await resolveAdmin(context as Ctx);
-    if (!session.isMaster) throw new Error(FORBIDDEN);
+    await resolveAdmin(context as Ctx);
     if (!data.email.includes("@") || data.password.length < 8) throw new Error(FAILED);
-    if (!["admin_master", "admin", "player"].includes(data.role)) throw new Error(FAILED);
 
     // The service-role key never leaves the server runtime.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -368,17 +330,11 @@ export const createAdminUser = createServerFn({ method: "POST" })
     if (error || !created?.user) throw new Error(FAILED);
 
     const newUserId = created.user.id;
-    if (data.role !== "player") {
-      const { error: roleError } = await supabaseAdmin
-        .from("profiles")
-        .update({ role: data.role })
-        .eq("id", newUserId);
-      if (roleError) throw new Error(FAILED);
-    }
 
+    // Only player accounts can be created: this product has a single administrator.
     await writeAuditLog(context as Ctx, "USER_CREATED", newUserId, {
       email: data.email,
-      role: data.role,
+      role: "player",
     });
 
     return { ok: true, userId: newUserId };
