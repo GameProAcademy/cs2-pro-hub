@@ -82,8 +82,7 @@ export const ptBR = {
   "analyze.report.dropTitle": "Arraste seus prints ou relatórios aqui",
   "analyze.report.dropHint": "Imagens (PNG, JPG) e relatórios (CSV, JSON, PDF) são aceitos.",
   "analyze.report.invalid": "Formato inválido. Envie imagens, CSV, JSON ou PDF.",
-  "analyze.recommendation":
-    "Recomendação: demos permitem uma análise mais profunda do seu jogo.",
+  "analyze.recommendation": "Recomendação: demos permitem uma análise mais profunda do seu jogo.",
   "analyze.selectFile": "Selecionar arquivo",
   "analyze.notSent": "Nesta etapa o arquivo não é enviado nem processado.",
   "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
@@ -181,7 +180,8 @@ export const ptBR = {
   "login.forgotSubtitle": "Informe seu e-mail e enviaremos as instruções para redefinir sua senha.",
   "login.forgotSubmit": "Enviar instruções",
   "login.forgotSending": "Enviando…",
-  "login.forgotSent": "Se existir uma conta associada a este e-mail, enviaremos instruções para redefinir sua senha.",
+  "login.forgotSent":
+    "Se existir uma conta associada a este e-mail, enviaremos instruções para redefinir sua senha.",
   "login.backToLogin": "Voltar para o login",
   "register.password": "Senha",
   "register.email": "E-mail",
@@ -190,7 +190,8 @@ export const ptBR = {
   "register.passwordMismatch": "As senhas não coincidem.",
   "register.submitting": "Criando conta…",
   "register.successTitle": "Cadastro realizado",
-  "register.checkEmail": "Cadastro realizado. Verifique seu e-mail para confirmar sua conta antes de entrar.",
+  "register.checkEmail":
+    "Cadastro realizado. Verifique seu e-mail para confirmar sua conta antes de entrar.",
   "register.emailTaken": "Já existe uma conta com este e-mail.",
   "register.genericError": "Não foi possível criar sua conta. Tente novamente.",
   "register.level.beginner": "Iniciante",
@@ -209,7 +210,8 @@ export const ptBR = {
   "reset.submit": "Salvar nova senha",
   "reset.submitting": "Salvando…",
   "reset.success": "Senha alterada com sucesso. Você já pode entrar com a nova senha.",
-  "reset.invalidLink": "Link de recuperação inválido ou expirado. Solicite um novo e-mail de recuperação.",
+  "reset.invalidLink":
+    "Link de recuperação inválido ou expirado. Solicite um novo e-mail de recuperação.",
   "reset.genericError": "Não foi possível alterar sua senha. Tente novamente.",
   "admin.area": "Administração",
   "admin.nav.overview": "Visão geral",
@@ -284,9 +286,11 @@ export const ptBR = {
   "admin.field.password": "Senha temporária",
   "admin.create.title": "Criar usuário",
   "admin.create.subtitle": "Somente Master Admins podem criar contas por aqui.",
-  "admin.create.passwordHint": "Mínimo de 8 caracteres. A senha nunca é armazenada em tabelas públicas.",
+  "admin.create.passwordHint":
+    "Mínimo de 8 caracteres. A senha nunca é armazenada em tabelas públicas.",
   "admin.confirm.deactivateTitle": "Desativar usuário?",
-  "admin.confirm.deactivateBody": "O usuário perderá o acesso ao produto imediatamente, mesmo com sessão ativa. Os dados são preservados.",
+  "admin.confirm.deactivateBody":
+    "O usuário perderá o acesso ao produto imediatamente, mesmo com sessão ativa. Os dados são preservados.",
   "admin.confirm.activateTitle": "Ativar usuário?",
   "admin.confirm.activateBody": "O usuário voltará a ter acesso normal ao produto.",
   "admin.confirm.roleTitle": "Alterar role?",
@@ -327,7 +331,8 @@ export const ptBR = {
   "dna.dimensions": "Dimensões",
   "dna.dimensionsSubtitle": "Valor atual vs média do nível",
   "dna.radarTitle": "Radar do Player DNA",
-  "dna.description": "Cada dimensão é comparada com a média esperada para o seu nível. O objetivo não é ter tudo alto, é conhecer o seu formato.",
+  "dna.description":
+    "Cada dimensão é comparada com a média esperada para o seu nível. O objetivo não é ter tudo alto, é conhecer o seu formato.",
   "admin.unauthorized": "Acesso não autorizado",
 } as const;
 

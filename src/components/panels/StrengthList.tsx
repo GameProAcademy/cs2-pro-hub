@@ -18,9 +18,7 @@ export function StrengthList({ items }: { items: Strength[] }) {
             <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
               {t(dnaLabelKey(item.area))}
             </h3>
-            <span className="ml-auto font-mono text-xs text-success">
-              P{item.percentile}
-            </span>
+            <span className="ml-auto font-mono text-xs text-success">P{item.percentile}</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.summary}</p>
           <ProgressBar className="mt-4" value={item.percentile} tone="success" />

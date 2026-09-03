@@ -175,10 +175,12 @@ export const ptPT: Dictionary = {
   "login.genericError": "Não foi possível entrar. Tente novamente.",
   "login.inactive": "A sua conta está inativa. Contacte o suporte da GamePro.",
   "login.forgotTitle": "Recuperar palavra-passe",
-  "login.forgotSubtitle": "Indique o seu e-mail e enviaremos as instruções para redefinir a palavra-passe.",
+  "login.forgotSubtitle":
+    "Indique o seu e-mail e enviaremos as instruções para redefinir a palavra-passe.",
   "login.forgotSubmit": "Enviar instruções",
   "login.forgotSending": "A enviar…",
-  "login.forgotSent": "Se existir uma conta associada a este e-mail, enviaremos instruções para redefinir a palavra-passe.",
+  "login.forgotSent":
+    "Se existir uma conta associada a este e-mail, enviaremos instruções para redefinir a palavra-passe.",
   "login.backToLogin": "Voltar ao início de sessão",
   "register.password": "Palavra-passe",
   "register.email": "E-mail",
@@ -187,7 +189,8 @@ export const ptPT: Dictionary = {
   "register.passwordMismatch": "As palavras-passe não coincidem.",
   "register.submitting": "A criar conta…",
   "register.successTitle": "Registo concluído",
-  "register.checkEmail": "Registo concluído. Verifique o seu e-mail para confirmar a conta antes de entrar.",
+  "register.checkEmail":
+    "Registo concluído. Verifique o seu e-mail para confirmar a conta antes de entrar.",
   "register.emailTaken": "Já existe uma conta com este e-mail.",
   "register.genericError": "Não foi possível criar a sua conta. Tente novamente.",
   "register.level.beginner": "Iniciante",
@@ -281,9 +284,11 @@ export const ptPT: Dictionary = {
   "admin.field.password": "Palavra-passe temporária",
   "admin.create.title": "Criar utilizador",
   "admin.create.subtitle": "Apenas Master Admins podem criar contas aqui.",
-  "admin.create.passwordHint": "Mínimo de 8 caracteres. A palavra-passe nunca é guardada em tabelas públicas.",
+  "admin.create.passwordHint":
+    "Mínimo de 8 caracteres. A palavra-passe nunca é guardada em tabelas públicas.",
   "admin.confirm.deactivateTitle": "Desativar utilizador?",
-  "admin.confirm.deactivateBody": "O utilizador perde o acesso imediatamente, mesmo com sessão ativa. Os dados são preservados.",
+  "admin.confirm.deactivateBody":
+    "O utilizador perde o acesso imediatamente, mesmo com sessão ativa. Os dados são preservados.",
   "admin.confirm.activateTitle": "Ativar utilizador?",
   "admin.confirm.activateBody": "O utilizador voltará a ter acesso normal ao produto.",
   "admin.confirm.roleTitle": "Alterar role?",
@@ -324,6 +329,7 @@ export const ptPT: Dictionary = {
   "dna.dimensions": "Dimensões",
   "dna.dimensionsSubtitle": "Valor atual vs média do nível",
   "dna.radarTitle": "Radar do Player DNA",
-  "dna.description": "Cada dimensão é comparada com a média esperada para o teu nível. O objetivo não é ter tudo alto, é conhecer o teu formato.",
+  "dna.description":
+    "Cada dimensão é comparada com a média esperada para o teu nível. O objetivo não é ter tudo alto, é conhecer o teu formato.",
   "admin.unauthorized": "Acesso não autorizado",
 };

@@ -74,14 +74,27 @@ export function TrendChart({
             <defs>
               {series.map((s, i) => (
                 <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={s.color ?? PALETTE[i % PALETTE.length]} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={s.color ?? PALETTE[i % PALETTE.length]} stopOpacity={0} />
+                  <stop
+                    offset="0%"
+                    stopColor={s.color ?? PALETTE[i % PALETTE.length]}
+                    stopOpacity={0.35}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={s.color ?? PALETTE[i % PALETTE.length]}
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               ))}
             </defs>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} {...(unit ? { unit } : {})} width={44} />
+            <YAxis
+              {...axisProps}
+              domain={domain ?? ["auto", "auto"]}
+              {...(unit ? { unit } : {})}
+              width={44}
+            />
             <Tooltip {...tooltipStyle} />
             {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
             {series.map((s, i) => (
@@ -102,7 +115,12 @@ export function TrendChart({
           <LineChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} domain={domain ?? ["auto", "auto"]} {...(unit ? { unit } : {})} width={44} />
+            <YAxis
+              {...axisProps}
+              domain={domain ?? ["auto", "auto"]}
+              {...(unit ? { unit } : {})}
+              width={44}
+            />
             <Tooltip {...tooltipStyle} />
             {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
             {series.map((s, i) => (

@@ -75,7 +75,9 @@ function PathCard({
       <span
         className={cn(
           "mb-4 flex size-10 items-center justify-center rounded-lg border",
-          active ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground",
+          active
+            ? "border-primary/40 bg-primary/10 text-primary"
+            : "border-border bg-secondary text-muted-foreground",
         )}
       >
         <Icon className="size-4" aria-hidden />

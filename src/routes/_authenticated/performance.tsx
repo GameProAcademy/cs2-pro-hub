@@ -8,12 +8,7 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
-import {
-  getMapPerformance,
-  getMetrics,
-  getSideSplit,
-  getTrends,
-} from "@/services/playerService";
+import { getMapPerformance, getMetrics, getSideSplit, getTrends } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/performance")({
   head: () => ({

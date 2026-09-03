@@ -39,8 +39,7 @@ export const es: Dictionary = {
   "common.language": "Idioma",
 
   "login.title": "Iniciar sesión",
-  "login.subtitle":
-    "Entra para ver tu CS2 PRO Score, tu Player DNA y tu plan de entrenamiento.",
+  "login.subtitle": "Entra para ver tu CS2 PRO Score, tu Player DNA y tu plan de entrenamiento.",
   "login.email": "Correo electrónico",
   "login.emailPlaceholder": "tu@email.com",
   "login.password": "Contraseña",
@@ -175,10 +174,12 @@ export const es: Dictionary = {
   "login.genericError": "No se pudo iniciar sesión. Inténtalo de nuevo.",
   "login.inactive": "Tu cuenta está inactiva. Contacta con el soporte de GamePro.",
   "login.forgotTitle": "Recuperar contraseña",
-  "login.forgotSubtitle": "Introduce tu correo y te enviaremos las instrucciones para restablecer tu contraseña.",
+  "login.forgotSubtitle":
+    "Introduce tu correo y te enviaremos las instrucciones para restablecer tu contraseña.",
   "login.forgotSubmit": "Enviar instrucciones",
   "login.forgotSending": "Enviando…",
-  "login.forgotSent": "Si existe una cuenta asociada a este correo, enviaremos instrucciones para restablecer tu contraseña.",
+  "login.forgotSent":
+    "Si existe una cuenta asociada a este correo, enviaremos instrucciones para restablecer tu contraseña.",
   "login.backToLogin": "Volver al inicio de sesión",
   "register.password": "Contraseña",
   "register.email": "Correo electrónico",
@@ -187,7 +188,8 @@ export const es: Dictionary = {
   "register.passwordMismatch": "Las contraseñas no coinciden.",
   "register.submitting": "Creando cuenta…",
   "register.successTitle": "Registro realizado",
-  "register.checkEmail": "Registro realizado. Revisa tu correo para confirmar tu cuenta antes de entrar.",
+  "register.checkEmail":
+    "Registro realizado. Revisa tu correo para confirmar tu cuenta antes de entrar.",
   "register.emailTaken": "Ya existe una cuenta con este correo electrónico.",
   "register.genericError": "No se pudo crear tu cuenta. Inténtalo de nuevo.",
   "register.level.beginner": "Principiante",
@@ -206,7 +208,8 @@ export const es: Dictionary = {
   "reset.submit": "Guardar nueva contraseña",
   "reset.submitting": "Guardando…",
   "reset.success": "Contraseña actualizada. Ya puedes entrar con tu nueva contraseña.",
-  "reset.invalidLink": "Enlace de recuperación inválido o expirado. Solicita un nuevo correo de recuperación.",
+  "reset.invalidLink":
+    "Enlace de recuperación inválido o expirado. Solicita un nuevo correo de recuperación.",
   "reset.genericError": "No se pudo cambiar tu contraseña. Inténtalo de nuevo.",
   "admin.area": "Administración",
   "admin.nav.overview": "Visión general",
@@ -281,9 +284,11 @@ export const es: Dictionary = {
   "admin.field.password": "Contraseña temporal",
   "admin.create.title": "Crear usuario",
   "admin.create.subtitle": "Solo los Master Admins pueden crear cuentas aquí.",
-  "admin.create.passwordHint": "Mínimo 8 caracteres. La contraseña nunca se guarda en tablas públicas.",
+  "admin.create.passwordHint":
+    "Mínimo 8 caracteres. La contraseña nunca se guarda en tablas públicas.",
   "admin.confirm.deactivateTitle": "¿Desactivar usuario?",
-  "admin.confirm.deactivateBody": "El usuario perderá el acceso de inmediato, incluso con sesión activa. Los datos se conservan.",
+  "admin.confirm.deactivateBody":
+    "El usuario perderá el acceso de inmediato, incluso con sesión activa. Los datos se conservan.",
   "admin.confirm.activateTitle": "¿Activar usuario?",
   "admin.confirm.activateBody": "El usuario recuperará el acceso normal al producto.",
   "admin.confirm.roleTitle": "¿Cambiar rol?",
@@ -324,6 +329,7 @@ export const es: Dictionary = {
   "dna.dimensions": "Dimensiones",
   "dna.dimensionsSubtitle": "Valor actual vs media del nivel",
   "dna.radarTitle": "Radar del Player DNA",
-  "dna.description": "Cada dimensión se compara con la media esperada para tu nivel. El objetivo no es tenerlo todo alto, es conocer tu perfil.",
+  "dna.description":
+    "Cada dimensión se compara con la media esperada para tu nivel. El objetivo no es tenerlo todo alto, es conocer tu perfil.",
   "admin.unauthorized": "Acceso no autorizado",
 };

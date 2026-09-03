@@ -182,7 +182,11 @@ function TrainingPage() {
         <Tabs defaultValue="30">
           <TabsList className="w-full sm:w-auto">
             {plans.map((p) => (
-              <TabsTrigger key={p.horizon} value={String(p.horizon)} className="flex-1 sm:flex-none">
+              <TabsTrigger
+                key={p.horizon}
+                value={String(p.horizon)}
+                className="flex-1 sm:flex-none"
+              >
                 {t("training.plan")} {p.horizon} {t("training.days")}
               </TabsTrigger>
             ))}

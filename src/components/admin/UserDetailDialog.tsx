@@ -139,8 +139,7 @@ export function UserDetailDialog({
   });
 
   const changeStatus = useMutation({
-    mutationFn: (status: "active" | "inactive") =>
-      setAdminUserStatus({ data: { userId, status } }),
+    mutationFn: (status: "active" | "inactive") => setAdminUserStatus({ data: { userId, status } }),
     onSuccess: () => {
       setError(null);
       setMessage(t("admin.msg.statusUpdated"));
@@ -230,7 +229,10 @@ export function UserDetailDialog({
                   <Field label={t("admin.table.nickname")} value={profile.nickname || dash} />
                   <Field label={t("admin.table.country")} value={profile.country || dash} />
                   <Field label={t("admin.field.locale")} value={profile.locale} />
-                  <Field label={t("admin.table.role")} value={t(`admin.role.${profile.role as AdminRole}`)} />
+                  <Field
+                    label={t("admin.table.role")}
+                    value={t(`admin.role.${profile.role as AdminRole}`)}
+                  />
                   <Field
                     label={t("admin.table.status")}
                     value={t(`admin.status.${profile.status as "active" | "inactive"}`)}
@@ -317,10 +319,7 @@ export function UserDetailDialog({
                       className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-4"
                     >
                       <Field label={t("admin.detail.platform")} value={identity.platform} />
-                      <Field
-                        label={t("admin.detail.username")}
-                        value={identity.username || dash}
-                      />
+                      <Field label={t("admin.detail.username")} value={identity.username || dash} />
                       <Field
                         label={t("admin.detail.externalId")}
                         value={identity.external_id || dash}
@@ -371,23 +370,25 @@ export function UserDetailDialog({
                     : t("admin.action.activate")}
                 </Button>
               ) : null}
-
             </section>
           </div>
         )}
 
-        <AlertDialog open={confirm !== null} onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}>
+        <AlertDialog
+          open={confirm !== null}
+          onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {confirm?.status === "inactive"
-                    ? t("admin.confirm.deactivateTitle")
-                    : t("admin.confirm.activateTitle")}
+                  ? t("admin.confirm.deactivateTitle")
+                  : t("admin.confirm.activateTitle")}
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {confirm?.status === "inactive"
-                    ? t("admin.confirm.deactivateBody")
-                    : t("admin.confirm.activateBody")}
+                  ? t("admin.confirm.deactivateBody")
+                  : t("admin.confirm.activateBody")}
                 <br />
                 <strong>{t("admin.confirm.affected")}:</strong>{" "}
                 {profile?.display_name || profile?.nickname || profile?.email}

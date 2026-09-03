@@ -55,7 +55,6 @@ export async function touchLastLogin(userId: string) {
     .eq("id", userId);
 }
 
-
 /** Ends the Supabase session. Callers redirect to /login afterwards. */
 export async function signOutEverywhere() {
   await supabase.auth.signOut();

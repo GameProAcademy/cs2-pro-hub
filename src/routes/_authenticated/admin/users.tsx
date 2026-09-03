@@ -63,8 +63,7 @@ function AdminUsersPage() {
 
   const users = useQuery({
     queryKey: ["admin", "users", { search, role, status, page }],
-    queryFn: () =>
-      listAdminUsers({ data: { search, role, status, page, pageSize: PAGE_SIZE } }),
+    queryFn: () => listAdminUsers({ data: { search, role, status, page, pageSize: PAGE_SIZE } }),
   });
 
   const total = users.data?.total ?? 0;

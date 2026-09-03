@@ -67,7 +67,9 @@ function PlayerDnaPage() {
                         {d.value}
                         <span
                           className={
-                            diff >= 0 ? "ml-2 text-xs text-success" : "ml-2 text-xs text-destructive"
+                            diff >= 0
+                              ? "ml-2 text-xs text-success"
+                              : "ml-2 text-xs text-destructive"
                           }
                         >
                           {diff >= 0 ? "+" : ""}

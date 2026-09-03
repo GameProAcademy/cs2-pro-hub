@@ -171,18 +171,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         {navItems
           .filter((i) => i.primary)
           .map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            activeProps={{ className: "text-primary" }}
-            className={cn(
-              "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
-            )}
-          >
-            <item.icon className="size-4" aria-hidden />
-            <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
-          </Link>
-        ))}
+            <Link
+              key={item.to}
+              to={item.to}
+              activeProps={{ className: "text-primary" }}
+              className={cn(
+                "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
+              )}
+            >
+              <item.icon className="size-4" aria-hidden />
+              <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
+            </Link>
+          ))}
       </nav>
 
       {/* Desktop-only floating Coach access */}

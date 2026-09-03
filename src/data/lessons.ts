@@ -40,7 +40,8 @@ export const demoLessons: CourseLesson[] = [
   {
     lessonId: "cs2pro-peek-01",
     title: "Disciplina de duelo e repeek",
-    description: "Quando abrir o ângulo, quando recuar e como evitar o segundo duelo desnecessário.",
+    description:
+      "Quando abrir o ângulo, quando recuar e como evitar o segundo duelo desnecessário.",
     module: "Duelos",
     lessonUrl: null,
     locale: "pt-BR",

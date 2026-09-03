@@ -175,10 +175,12 @@ export const fr: Dictionary = {
   "login.genericError": "Connexion impossible. Veuillez réessayer.",
   "login.inactive": "Votre compte est inactif. Contactez le support GamePro.",
   "login.forgotTitle": "Réinitialiser le mot de passe",
-  "login.forgotSubtitle": "Saisissez votre e-mail et nous enverrons les instructions de réinitialisation.",
+  "login.forgotSubtitle":
+    "Saisissez votre e-mail et nous enverrons les instructions de réinitialisation.",
   "login.forgotSubmit": "Envoyer les instructions",
   "login.forgotSending": "Envoi…",
-  "login.forgotSent": "Si un compte existe pour cet e-mail, nous enverrons les instructions pour réinitialiser votre mot de passe.",
+  "login.forgotSent":
+    "Si un compte existe pour cet e-mail, nous enverrons les instructions pour réinitialiser votre mot de passe.",
   "login.backToLogin": "Retour à la connexion",
   "register.password": "Mot de passe",
   "register.email": "E-mail",
@@ -187,7 +189,8 @@ export const fr: Dictionary = {
   "register.passwordMismatch": "Les mots de passe ne correspondent pas.",
   "register.submitting": "Création du compte…",
   "register.successTitle": "Inscription réussie",
-  "register.checkEmail": "Inscription réussie. Vérifiez votre e-mail pour confirmer votre compte avant de vous connecter.",
+  "register.checkEmail":
+    "Inscription réussie. Vérifiez votre e-mail pour confirmer votre compte avant de vous connecter.",
   "register.emailTaken": "Un compte existe déjà avec cet e-mail.",
   "register.genericError": "Impossible de créer votre compte. Veuillez réessayer.",
   "register.level.beginner": "Débutant",
@@ -281,9 +284,11 @@ export const fr: Dictionary = {
   "admin.field.password": "Mot de passe temporaire",
   "admin.create.title": "Créer un utilisateur",
   "admin.create.subtitle": "Seuls les Master Admins peuvent créer des comptes ici.",
-  "admin.create.passwordHint": "8 caractères minimum. Le mot de passe n'est jamais stocké dans des tables publiques.",
+  "admin.create.passwordHint":
+    "8 caractères minimum. Le mot de passe n'est jamais stocké dans des tables publiques.",
   "admin.confirm.deactivateTitle": "Désactiver l'utilisateur ?",
-  "admin.confirm.deactivateBody": "L'utilisateur perd l'accès immédiatement, même avec une session active. Les données sont conservées.",
+  "admin.confirm.deactivateBody":
+    "L'utilisateur perd l'accès immédiatement, même avec une session active. Les données sont conservées.",
   "admin.confirm.activateTitle": "Activer l'utilisateur ?",
   "admin.confirm.activateBody": "L'utilisateur retrouvera un accès normal au produit.",
   "admin.confirm.roleTitle": "Changer le rôle ?",
@@ -324,6 +329,7 @@ export const fr: Dictionary = {
   "dna.dimensions": "Dimensions",
   "dna.dimensionsSubtitle": "Valeur actuelle vs moyenne du niveau",
   "dna.radarTitle": "Radar du Player DNA",
-  "dna.description": "Chaque dimension est comparée à la moyenne attendue pour votre niveau. L'objectif n'est pas d'être au maximum partout, mais de connaître votre profil.",
+  "dna.description":
+    "Chaque dimension est comparée à la moyenne attendue pour votre niveau. L'objectif n'est pas d'être au maximum partout, mais de connaître votre profil.",
   "admin.unauthorized": "Accès non autorisé",
 };

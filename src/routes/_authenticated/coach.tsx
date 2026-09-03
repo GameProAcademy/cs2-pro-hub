@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/coach")({
       { title: "AI Coach — CS2 PRO AI COACH" },
       {
         name: "description",
-        content: "Converse com o AI Coach sobre seus gargalos, decisões de round e plano de treino.",
+        content:
+          "Converse com o AI Coach sobre seus gargalos, decisões de round e plano de treino.",
       },
       { property: "og:title", content: "AI Coach — CS2 PRO AI COACH" },
       {
@@ -69,9 +70,7 @@ function CoachPage() {
           <ChartCard title={t("coach.contextTitle")}>
             <div className="num-display text-4xl font-bold text-foreground">
               {score.value}
-              <span className="ml-1 text-base font-normal text-muted-foreground">
-                /{score.max}
-              </span>
+              <span className="ml-1 text-base font-normal text-muted-foreground">/{score.max}</span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{score.tier}</p>
             <ul className="mt-5 space-y-2.5">
@@ -85,7 +84,9 @@ function CoachPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{analysis.priority}</p>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+              {analysis.priority}
+            </p>
           </ChartCard>
         </div>
       </div>

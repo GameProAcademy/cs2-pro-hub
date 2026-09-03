@@ -51,11 +51,7 @@ function MatchesPage() {
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Partidas" value={rows.length} />
-          <MetricCard
-            label="Win rate"
-            value={Math.round((wins / rows.length) * 100)}
-            unit="%"
-          />
+          <MetricCard label="Win rate" value={Math.round((wins / rows.length) * 100)} unit="%" />
           <MetricCard label="Rating médio" value={avgRating} />
           <MetricCard label="ADR médio" value={avgAdr} />
         </div>
