@@ -90,15 +90,16 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     const supabase = (context as Ctx).supabase;
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const count = (q: any) => q.select("id", { count: "exact", head: true });
+    // Filters must be chained AFTER select() on the PostgREST builder.
+    const count = () => supabase.from("profiles").select("id", { count: "exact", head: true });
 
     const [total, active, inactive, admins, masters, recent, logins] = await Promise.all([
-      count(supabase.from("profiles")),
-      count(supabase.from("profiles").eq("status", "active").eq("role", "player")),
-      count(supabase.from("profiles").eq("status", "inactive")),
-      count(supabase.from("profiles").in("role", ["admin", "admin_master"])),
-      count(supabase.from("profiles").eq("role", "admin_master")),
-      count(supabase.from("profiles").gte("created_at", sevenDaysAgo)),
+      count(),
+      count().eq("status", "active").eq("role", "player"),
+      count().eq("status", "inactive"),
+      count().in("role", ["admin", "admin_master"]),
+      count().eq("role", "admin_master"),
+      count().gte("created_at", sevenDaysAgo),
       supabase
         .from("profiles")
         .select("id, display_name, nickname, email, last_login_at")
