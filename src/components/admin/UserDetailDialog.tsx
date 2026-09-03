@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
+import type { DnaDimension } from "@/types";
 import {
   getAdminUserDetail,
   resetAdminUserPassword,
@@ -234,6 +235,14 @@ export function UserDetailDialog({
   const audit = detail.data?.audit ?? [];
   const isSelf = profile?.id === session.userId;
   const busy = save.isPending || changeStatus.isPending || resetPassword.isPending;
+
+  /** DNA slugs are translated; any other skill slug is shown verbatim. */
+  const skillLabel = (slug: string | null | undefined) => {
+    if (!slug) return dash;
+    return (DNA_KEYS as readonly string[]).includes(slug)
+      ? t(dnaLabelKey(slug as DnaDimension))
+      : slug;
+  };
 
   const tabs: Array<[string, TranslationKey]> = [
     ["overview", "admin.tab.overview"],
@@ -651,11 +660,7 @@ export function UserDetailDialog({
                           <Field label={t("admin.field.title")} value={finding.title} />
                           <Field
                             label={t("admin.field.skill")}
-                            value={
-                              finding.skill_slug
-                                ? t(dnaLabelKey(finding.skill_slug))
-                                : dash
-                            }
+                            value={skillLabel(finding.skill_slug)}
                           />
                           <Field label={t("admin.field.type")} value={finding.type} />
                           <Field
@@ -773,7 +778,7 @@ export function UserDetailDialog({
                                 <Field label={t("admin.field.title")} value={item.title} />
                                 <Field
                                   label={t("admin.field.skill")}
-                                  value={item.skill_slug ? t(dnaLabelKey(item.skill_slug)) : dash}
+                                  value={skillLabel(item.skill_slug)}
                                 />
                                 <Field
                                   label={t("admin.field.lesson")}
