@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
-import { createAdminUser, type AdminRole } from "@/lib/admin.functions";
+import { createAdminUser } from "@/lib/admin.functions";
 
 export function CreateUserDialog({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -17,7 +17,6 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
     display_name: "",
     nickname: "",
     country: "",
-    role: "player" as AdminRole,
   });
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -97,19 +96,6 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
                 value={form.country}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
               />
-            </div>
-            <div>
-              <Label htmlFor="c-role">{t("admin.table.role")}</Label>
-              <select
-                id="c-role"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="player">{t("admin.role.player")}</option>
-                <option value="admin">{t("admin.role.admin")}</option>
-                <option value="admin_master">{t("admin.role.admin_master")}</option>
-              </select>
             </div>
           </div>
 

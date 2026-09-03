@@ -78,12 +78,10 @@ function AdminUsersPage() {
         title={t("admin.users.title")}
         description={t("admin.users.subtitle")}
         actions={
-          adminSession.isMaster ? (
-            <Button className="gap-2" onClick={() => setCreating(true)}>
-              <Plus className="size-4" aria-hidden />
-              {t("admin.action.createUser")}
-            </Button>
-          ) : undefined
+          <Button className="gap-2" onClick={() => setCreating(true)}>
+            <Plus className="size-4" aria-hidden />
+            {t("admin.action.createUser")}
+          </Button>
         }
       />
 
@@ -117,7 +115,6 @@ function AdminUsersPage() {
           >
             <option value="all">{`${t("admin.filter.role")}: ${t("admin.filter.all")}`}</option>
             <option value="player">{t("admin.role.player")}</option>
-            <option value="admin">{t("admin.role.admin")}</option>
             <option value="admin_master">{t("admin.role.admin_master")}</option>
           </select>
         </div>

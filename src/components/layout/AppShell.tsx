@@ -149,7 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {t("nav.demoMode")}
             </span>
           ) : null}
-          <LanguageSelector compact className="hidden sm:flex" />
+          <LanguageSelector compact />
           <Button asChild size="sm" variant="outline" className="gap-2">
             <Link to="/upload">
               <Upload className="size-3.5" aria-hidden />
@@ -166,9 +166,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation — the Coach stays reachable here. */}
       <nav
         aria-label={t("nav.quickLabel")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
       >
-        {[...navItems.filter((i) => i.primary), uploadNavItem].map((item) => (
+        {navItems
+          .filter((i) => i.primary)
+          .map((item) => (
           <Link
             key={item.to}
             to={item.to}

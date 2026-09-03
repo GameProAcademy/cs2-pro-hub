@@ -69,7 +69,6 @@ function AdminOverviewPage() {
             <StatCard label={t("admin.metric.activePlayers")} value={overview.data.activePlayers} />
             <StatCard label={t("admin.metric.inactiveUsers")} value={overview.data.inactiveUsers} />
             <StatCard label={t("admin.metric.admins")} value={overview.data.admins} />
-            <StatCard label={t("admin.metric.masters")} value={overview.data.masters} />
             <StatCard label={t("admin.metric.newUsers")} value={overview.data.newUsers} />
           </div>
 
