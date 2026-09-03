@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/common/States";
+import { useT } from "@/i18n";
 import type { SideSplit } from "@/types";
 
 /**
@@ -13,7 +14,10 @@ export function SideSplitChart({
   data: SideSplit[];
   hasEnoughData?: boolean | undefined;
 }) {
+  const t = useT();
+
   if (!hasEnoughData || data.length === 0) {
+
     return (
       <EmptyState
         title={t("performance.sidesEmptyTitle")}
