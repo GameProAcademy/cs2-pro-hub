@@ -34,13 +34,23 @@ function envOrigins(): string[] {
   return origins;
 }
 
+/**
+ * Official hosts of this application (non-secret). Exact origins only.
+ */
+const PROJECT_ORIGINS = [
+  "https://id-preview--91478977-16c3-4839-ae28-6796024bcfc9.lovable.app",
+  "https://project--91478977-16c3-4839-ae28-6796024bcfc9.lovable.app",
+  "https://project--91478977-16c3-4839-ae28-6796024bcfc9-dev.lovable.app",
+];
+
 /** Local development origins, only outside production. */
 const DEV_ORIGINS = ["http://localhost:8080", "http://127.0.0.1:8080"];
 
 export function allowedAppOrigins(): string[] {
   const isProduction = process.env["NODE_ENV"] === "production";
   const configured = envOrigins();
-  return [...new Set(isProduction ? configured : [...configured, ...DEV_ORIGINS])];
+  const base = [...PROJECT_ORIGINS, ...configured];
+  return [...new Set(isProduction ? base : [...base, ...DEV_ORIGINS])];
 }
 
 export class UnsafeRedirectError extends Error {
