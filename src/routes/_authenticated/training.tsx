@@ -91,7 +91,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {lesson.relatedSkills.map((skill) => (
                     <span
-                      key={t(dnaLabelKey(skill))}
+                      key={skill}
                       className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
                     >
                       {t(dnaLabelKey(skill))}
