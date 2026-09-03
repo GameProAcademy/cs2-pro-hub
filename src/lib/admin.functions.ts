@@ -65,7 +65,16 @@ export interface AdminPlayerDetail {
   role: string | null;
   experience: string | null;
   team: string | null;
+  faceit_username: string | null;
+  faceit_player_id: string | null;
+  gamersclub_username: string | null;
+  gamersclub_player_id: string | null;
+  steam_id: string | null;
 }
+
+/** JSON-serialisable value (audit metadata crosses the server boundary). */
+export type JsonValue =
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export interface AdminIdentity {
   id: string;
@@ -81,7 +90,7 @@ export interface AuditLogRow {
   action: string;
   admin_user_id: string;
   target_user_id: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: Record<string, JsonValue> | null;
   created_at: string;
 }
 
@@ -130,7 +139,7 @@ async function writeAuditLog(
   context: Ctx,
   action: string,
   targetUserId: string | null,
-  metadata: Record<string, unknown>,
+  metadata: Record<string, JsonValue>,
 ) {
   const { error } = await context.supabase.from("admin_audit_logs").insert({
     admin_user_id: context.userId,
