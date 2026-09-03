@@ -450,9 +450,7 @@ export const ptBR = {
   "avatar.error.failed": "Não foi possível atualizar a foto de perfil. Tente novamente.",
   "avatar.fallbackHint": "Sem foto: o símbolo GamePro é exibido.",
   "profile.account": "Conta",
-} as const;
-
-export type Dictionary = Record<keyof typeof ptBR, string>;  "admin.tab.overview": "Visão geral",
+  "admin.tab.overview": "Visão geral",
   "admin.tab.cs2": "Perfil CS2",
   "admin.tab.uploads": "Uploads",
   "admin.tab.matches": "Partidas",
@@ -537,4 +535,6 @@ export type Dictionary = Record<keyof typeof ptBR, string>;  "admin.tab.overview
   "admin.confirm.resetTitle": "Enviar redefinição de senha?",
   "admin.confirm.resetBody": "O jogador receberá um e-mail seguro para definir uma nova senha. Nenhuma senha é armazenada pela plataforma.",
   "admin.detail.avatar": "Foto de perfil",
+} as const;
 
+export type Dictionary = Record<keyof typeof ptBR, string>;
