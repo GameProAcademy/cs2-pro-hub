@@ -260,15 +260,22 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
     if (job.storage_deleted_at) throw new Error("DEMO_EXPIRED");
     if (job.retry_count >= job.max_retries) throw new Error("RETRY_LIMIT_REACHED");
 
+    // Retry only RE-QUEUES: the worker/cron layer picks the job up afterwards,
+    // so the user never waits for the parser inside this request.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
       .from("demo_jobs")
-      .update({ status: "pending", stage: "queued", error_code: null, error_message: null })
+      .update({
+        status: "pending",
+        stage: "queued",
+        error_code: null,
+        error_message: null,
+        started_at: null,
+        finished_at: null,
+      })
       .eq("id", job.id);
 
-    const { processJob } = await import("@/lib/pipeline/jobs.server");
-    const result = await processJob(job.id);
-    return { jobId: job.id, processed: result.status };
+    return { jobId: job.id, queued: true as const };
   });
 
 /** Tells the UI honestly whether real processing is currently possible. */
