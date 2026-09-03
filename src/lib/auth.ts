@@ -30,18 +30,31 @@ export function signUpErrorKey(message: string | undefined): TranslationKey {
 
 /**
  * Reads the account status from the existing `profiles` row.
- * Returns `null` when the profile cannot be read (treated as active so a
- * transient read failure never locks a legitimate user out).
+ *
+ * Fail-closed: when the profile is missing or the query fails, the status
+ * cannot be confirmed and `"unknown"` is returned — callers MUST treat that
+ * as unauthorised rather than assuming the account is active.
  */
-export async function fetchAccountStatus(userId: string): Promise<"active" | "inactive" | null> {
+export async function fetchAccountStatus(
+  userId: string,
+): Promise<"active" | "inactive" | "unknown"> {
   const { data, error } = await supabase
     .from("profiles")
     .select("status")
     .eq("id", userId)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data || (data.status !== "active" && data.status !== "inactive")) return "unknown";
   return data.status;
 }
+
+/** Records the current sign-in timestamp on the user's own profile row. */
+export async function touchLastLogin(userId: string) {
+  await supabase
+    .from("profiles")
+    .update({ last_login_at: new Date().toISOString() })
+    .eq("id", userId);
+}
+
 
 /** Ends the Supabase session. Callers redirect to /login afterwards. */
 export async function signOutEverywhere() {
