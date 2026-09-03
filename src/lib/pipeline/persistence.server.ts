@@ -7,6 +7,7 @@
  */
 import { ANALYSIS_VERSION, SCHEMA_VERSION } from "@/config/pipeline";
 import { classifyBuyContext } from "@/lib/pipeline/normalizer";
+import { playerSurvivedRound, sideInRound } from "@/lib/pipeline/metrics";
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
@@ -62,7 +63,6 @@ export async function persistCanonicalMatch(args: {
   const { match, metrics, features, uploadId, playerId, steamId } = args;
 
   const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
-  const ownSide = match.rounds[0]?.sides[steamId] ?? ownPlayer?.side ?? null;
   const teamPlayer = ownPlayer?.team ?? null;
   const teamOpponent =
     teamPlayer == null
@@ -114,13 +114,9 @@ export async function persistCanonicalMatch(args: {
 
   // 3. Rounds — stored from the owning player's perspective
   const roundRows = match.rounds.map((round) => {
-    const side = round.sides[steamId] ?? ownSide;
-    const died = match.events.some(
-      (event) =>
-        event.type === "kill" &&
-        event.roundNumber === round.roundNumber &&
-        event.victimSteamId === steamId,
-    );
+    // Side is per-round only: halftime swaps make another round's side useless
+    // as evidence. Unknown stays NULL.
+    const side = sideInRound(match, steamId, round.roundNumber);
     return {
       match_id: matchId,
       round_number: round.roundNumber,
@@ -133,7 +129,8 @@ export async function persistCanonicalMatch(args: {
       bomb_defused: round.bombDefused,
       bomb_exploded: round.bombExploded,
       player_side: side,
-      player_survived: match.events.length > 0 ? !died : null,
+      // Shared survival definition; NULL whenever the demo does not prove it.
+      player_survived: playerSurvivedRound(match, steamId, round.roundNumber),
       player_money_start: round.moneyStart[steamId] ?? null,
       player_money_end: round.moneyEnd[steamId] ?? null,
       player_equipment_value: round.equipmentValue[steamId] ?? null,
