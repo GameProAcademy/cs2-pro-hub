@@ -8,7 +8,8 @@
  * A round counts towards KAST for a player when AT LEAST ONE of:
  *   K - the player got a kill in the round;
  *   A - the player got an assist (including flash assists) in the round;
- *   S - the player survived the round (no death event for the player);
+ *   S - the player provably survived the round (see `playerSurvivedRound`: the
+ *       mere absence of a death event is NOT survival);
  *   T - the player died and the death was traded, i.e. an enemy killed the
  *       player's killer within TRADE_WINDOW_SECONDS of the player's death.
  * KAST = (qualifying rounds / rounds played) * 100, rounded to 1 decimal.
@@ -24,7 +25,11 @@
  * source_rating is a transparent, documented composite derived ONLY from this
  * match. It is explicitly NOT the CS2 PRO Score (later phase).
  */
-import { EARLY_DEATH_SECONDS, TRADE_WINDOW_SECONDS } from "@/config/pipeline";
+import {
+  EARLY_DEATH_SECONDS,
+  FLASH_ASSIST_WINDOW_SECONDS,
+  TRADE_WINDOW_SECONDS,
+} from "@/config/pipeline";
 import type { CanonicalEvent, CanonicalMatch, CanonicalMetrics, Side } from "@/lib/pipeline/types";
 
 interface KillRecord {
@@ -48,32 +53,148 @@ function teamOf(match: CanonicalMatch, steamId: string): string | null {
   return match.players.find((p) => p.steamId === steamId)?.team ?? null;
 }
 
-function sideOf(match: CanonicalMatch, steamId: string, roundNumber: number): Side | null {
+/**
+ * Side of a player IN A SPECIFIC ROUND.
+ *
+ * Only per-round information is trusted: a player changes side at halftime, so
+ * the side of another round (or a match-level default) is NOT evidence for this
+ * round. Without per-round data the answer is null.
+ */
+export function sideInRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): Side | null {
   const round = match.rounds.find((r) => r.roundNumber === roundNumber);
-  return round?.sides[steamId] ?? match.players.find((p) => p.steamId === steamId)?.side ?? null;
+  return round?.sides[steamId] ?? null;
+}
+
+/** True when the resolved player is provably present in the round. */
+export function participatedInRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): boolean {
+  const round = match.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round) return false;
+  if (round.sides[steamId] != null) return true;
+  if (
+    round.moneyStart[steamId] != null ||
+    round.moneyEnd[steamId] != null ||
+    round.equipmentValue[steamId] != null
+  ) {
+    return true;
+  }
+  return match.events.some(
+    (event) =>
+      event.roundNumber === roundNumber &&
+      (event.actorSteamId === steamId ||
+        event.victimSteamId === steamId ||
+        event.assisterSteamId === steamId),
+  );
+}
+
+/**
+ * Survival of a player in a round — the single definition used by metrics,
+ * features and persistence.
+ *
+ * `false` requires an explicit death event. `true` requires positive evidence:
+ * the player participated, the round provably ended and the round's events were
+ * actually extracted (complete parse). Anything weaker is `null`: a missing
+ * death event is NOT proof of survival.
+ */
+export function playerSurvivedRound(
+  match: CanonicalMatch,
+  steamId: string,
+  roundNumber: number,
+): boolean | null {
+  const round = match.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round) return null;
+
+  const died = match.events.some(
+    (event) =>
+      event.type === "kill" && event.roundNumber === roundNumber && event.victimSteamId === steamId,
+  );
+  if (died) return false;
+
+  if (!participatedInRound(match, steamId, roundNumber)) return null;
+  if (match.quality.partialParse) return null;
+
+  const roundEnded =
+    round.endTick != null ||
+    round.durationSeconds != null ||
+    round.winnerSide != null ||
+    round.winnerTeam != null;
+  if (!roundEnded) return null;
+
+  // The round must actually carry extracted combat/round events; otherwise the
+  // absence of a death event says nothing at all.
+  const hasRoundEvidence = match.events.some(
+    (event) =>
+      event.roundNumber === roundNumber &&
+      (event.type === "kill" || event.type === "damage" || event.type === "round_end"),
+  );
+  if (!hasRoundEvidence) return null;
+
+  return true;
+}
+
+interface FlashRecord {
+  round: number;
+  time: number;
+  flasher: string;
+  victim: string;
 }
 
 function collectKills(match: CanonicalMatch): KillRecord[] {
-  const flashAssists = new Map<string, string>(); // `${round}:${victim}` -> flasher
+  const flashes: FlashRecord[] = [];
   for (const event of match.events) {
-    if (event.type === "flash" && event.actorSteamId && event.victimSteamId) {
-      flashAssists.set(`${event.roundNumber}:${event.victimSteamId}`, event.actorSteamId);
-    }
+    if (event.type !== "flash") continue;
+    if (!event.actorSteamId || !event.victimSteamId) continue;
+    if (event.actorSteamId === event.victimSteamId) continue; // self-flash
+    flashes.push({
+      round: event.roundNumber,
+      time: eventTime(event),
+      flasher: event.actorSteamId,
+      victim: event.victimSteamId,
+    });
   }
+
+  /**
+   * Flash assist attribution: temporal, at most ONE per kill.
+   * The flash must precede the kill, be inside FLASH_ASSIST_WINDOW_SECONDS,
+   * target the same victim, and not come from the killer itself. Among the
+   * eligible flashes only the most recent one is credited.
+   */
+  const flashAssisterFor = (kill: KillRecord): string | null => {
+    if (!kill.victim) return null;
+    let best: FlashRecord | null = null;
+    for (const flash of flashes) {
+      if (flash.round !== kill.round) continue;
+      if (flash.victim !== kill.victim) continue;
+      if (flash.flasher === kill.attacker) continue;
+      if (flash.time > kill.time) continue;
+      if (kill.time - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
+      if (!best || flash.time > best.time) best = flash;
+    }
+    return best?.flasher ?? null;
+  };
 
   return match.events
     .filter((e) => e.type === "kill")
-    .map((e) => ({
-      round: e.roundNumber,
-      time: eventTime(e),
-      attacker: e.actorSteamId,
-      victim: e.victimSteamId,
-      assister: e.assisterSteamId,
-      headshot: e.headshot,
-      flashAssister: e.victimSteamId
-        ? (flashAssists.get(`${e.roundNumber}:${e.victimSteamId}`) ?? null)
-        : null,
-    }))
+    .map((e) => {
+      const kill: KillRecord = {
+        round: e.roundNumber,
+        time: eventTime(e),
+        attacker: e.actorSteamId,
+        victim: e.victimSteamId,
+        assister: e.assisterSteamId,
+        headshot: e.headshot,
+        flashAssister: null,
+      };
+      kill.flashAssister = flashAssisterFor(kill);
+      return kill;
+    })
     .sort((a, b) => a.round - b.round || a.time - b.time);
 }
 
@@ -84,18 +205,36 @@ export function openingDuels(kills: KillRecord[]) {
   return byRound;
 }
 
-/** True when `death` was traded within the configured window. */
+/**
+ * True when `death` was traded within the configured window.
+ *
+ * Required evidence: same round, chronological order, both Steam IDs present,
+ * the avenger kills exactly the original killer, the avenger belongs to the
+ * victim's team and is not the victim itself, and the original death is not a
+ * team kill or a suicide.
+ */
 function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch): boolean {
   if (!death.attacker || !death.victim) return false;
+  if (death.attacker === death.victim) return false; // suicide
   const victimTeam = teamOf(match, death.victim);
-  return kills.some(
-    (k) =>
-      k.round === death.round &&
-      k.time > death.time &&
-      k.time - death.time <= TRADE_WINDOW_SECONDS &&
-      k.victim === death.attacker &&
-      (victimTeam == null || teamOf(match, k.attacker ?? "") === victimTeam),
-  );
+  const killerTeam = teamOf(match, death.attacker);
+  if (victimTeam != null && killerTeam != null && victimTeam === killerTeam) return false;
+
+  return kills.some((k) => {
+    if (!k.attacker || !k.victim) return false;
+    if (k.round !== death.round) return false;
+    if (k.victim !== death.attacker) return false;
+    if (k.attacker === k.victim) return false;
+    if (k.attacker === death.victim) return false;
+    if (k.time <= death.time) return false;
+    if (k.time - death.time > TRADE_WINDOW_SECONDS) return false;
+    const avengerTeam = teamOf(match, k.attacker);
+    // The avenger must be a teammate of the original victim, and must not kill
+    // one of its own (team kills never count as trades).
+    if (victimTeam == null || avengerTeam == null) return false;
+    if (avengerTeam !== victimTeam) return false;
+    return teamOf(match, k.victim) !== avengerTeam;
+  });
 }
 
 /** Clutch detection: player alive alone against N living enemies. */
@@ -127,8 +266,8 @@ function clutchStats(match: CanonicalMatch, kills: KillRecord[], steamId: string
     if (!clutch) continue;
     attempts += 1;
 
-    const playerSide = round.sides[steamId] ?? sideOf(match, steamId, round.roundNumber);
-    const survived = !roundKills.some((k) => k.victim === steamId);
+    const playerSide = sideInRound(match, steamId, round.roundNumber);
+    const survived = playerSurvivedRound(match, steamId, round.roundNumber) === true;
     const wonRound =
       (round.winnerSide != null && playerSide != null && round.winnerSide === playerSide) ||
       (round.winnerTeam != null && team != null && round.winnerTeam === team);
@@ -205,18 +344,27 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const openingSuccessRate = openingAttempts > 0 ? round3(firstKills / openingAttempts) : null;
 
   // Trades
+  // A trade kill is the offensive half of a trade: the player kills an enemy
+  // who, within the window and in the same round, had just killed one of the
+  // player's teammates. Team kills, suicides and events without Steam IDs are
+  // never counted.
+  const ownTeam = teamOf(match, steamId);
   let tradeKills = 0;
   for (const kill of playerKills) {
-    const victimTeam = teamOf(match, kill.victim ?? "");
-    const traded = kills.some(
-      (k) =>
-        k.round === kill.round &&
-        k.time < kill.time &&
-        kill.time - k.time <= TRADE_WINDOW_SECONDS &&
-        k.attacker === kill.victim &&
-        teamOf(match, k.victim ?? "") === teamOf(match, steamId) &&
-        victimTeam !== teamOf(match, steamId),
-    );
+    if (!kill.attacker || !kill.victim) continue;
+    if (kill.attacker === kill.victim) continue;
+    const victimTeam = teamOf(match, kill.victim);
+    if (ownTeam == null || victimTeam == null || victimTeam === ownTeam) continue;
+    const traded = kills.some((k) => {
+      if (!k.attacker || !k.victim) return false;
+      if (k.round !== kill.round) return false;
+      if (k.attacker !== kill.victim) return false;
+      if (k.attacker === k.victim) return false;
+      if (k.time >= kill.time) return false;
+      if (kill.time - k.time > TRADE_WINDOW_SECONDS) return false;
+      // The player killed first must really belong to the player's team.
+      return teamOf(match, k.victim) === ownTeam;
+    });
     if (traded) tradeKills += 1;
   }
   let tradeDeaths = 0;
@@ -247,7 +395,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
       (k) => k.assister === steamId || (k.flashAssister === steamId && k.attacker !== steamId),
     );
     const death = roundKills.find((k) => k.victim === steamId);
-    const survived = !death;
+    // Survival uses the shared definition: absence of a death event is not
+    // survival unless there is positive evidence for it.
+    const survived = playerSurvivedRound(match, steamId, roundNumber) === true;
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
@@ -258,7 +408,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   // Side ratings use the same composite formula restricted to CT/T rounds.
   const sideRating = (side: Side): number | null => {
     const sideRounds = match.rounds.filter(
-      (r) => (r.sides[steamId] ?? sideOf(match, steamId, r.roundNumber)) === side,
+      (r) => sideInRound(match, steamId, r.roundNumber) === side,
     );
     if (sideRounds.length === 0) return null;
     const nums = new Set(sideRounds.map((r) => r.roundNumber));
