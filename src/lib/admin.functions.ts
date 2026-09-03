@@ -412,11 +412,19 @@ export const createPlayerUser = createServerFn({ method: "POST" })
 
     const newUserId = created.user.id;
 
-    // Only player accounts can be created: this product has a single administrator.
-    await writeAuditLog(context as Ctx, "USER_CREATED", newUserId, {
-      email: data.email,
-      role: "player",
-    });
+    // Auditing is mandatory. The Auth Admin API is not transactional, so when
+    // the audit entry cannot be written the freshly created account is removed
+    // again: no unaudited account may survive this operation.
+    try {
+      // Only player accounts can be created: this product has a single administrator.
+      await writeAuditLog(context as Ctx, "USER_CREATED", newUserId, {
+        email: data.email,
+        role: "player",
+      });
+    } catch (auditError) {
+      await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      throw auditError;
+    }
 
     return { ok: true, userId: newUserId };
   });

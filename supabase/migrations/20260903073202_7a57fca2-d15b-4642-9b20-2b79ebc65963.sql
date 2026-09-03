@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.guard_identity_verification() FROM PUBLIC, anon, authenticated;
