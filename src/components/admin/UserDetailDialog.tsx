@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT } from "@/i18n";
@@ -21,6 +22,9 @@ import {
   getAdminUserDetail,
   setAdminUserStatus,
   updateAdminUser,
+  type AdminIdentity,
+  type AdminPlayerDetail,
+  type AdminProfileDetail,
   type AdminRole,
   type AdminSession,
 } from "@/lib/admin.functions";
@@ -80,8 +84,8 @@ export function UserDetailDialog({
   });
 
   useEffect(() => {
-    const profile = detail.data?.profile as any;
-    const player = detail.data?.player as any;
+    const profile = detail.data?.profile as AdminProfileDetail | undefined;
+    const player = detail.data?.player as AdminPlayerDetail | null | undefined;
     if (!profile) return;
     setForm({
       display_name: profile.display_name ?? "",
@@ -148,9 +152,9 @@ export function UserDetailDialog({
     onError: handleError,
   });
 
-  const profile = detail.data?.profile as any;
-  const player = detail.data?.player as any;
-  const identities = (detail.data?.identities ?? []) as any[];
+  const profile = detail.data?.profile as AdminProfileDetail | undefined;
+  const player = detail.data?.player as AdminPlayerDetail | null | undefined;
+  const identities = (detail.data?.identities ?? []) as AdminIdentity[];
   const isSelf = profile?.id === session.userId;
   const busy = save.isPending || changeStatus.isPending;
 
@@ -158,8 +162,18 @@ export function UserDetailDialog({
     <Dialog open onOpenChange={(open) => (!open ? onClose() : undefined)}>
       <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="uppercase tracking-tight">
-            {profile?.display_name || profile?.nickname || profile?.email || t("admin.action.view")}
+          <DialogTitle className="flex items-center gap-3 uppercase tracking-tight">
+            <UserAvatar
+              source={(profile as { avatar_url?: string | null } | undefined)?.avatar_url ?? null}
+              name={profile?.display_name ?? profile?.nickname ?? null}
+              size={36}
+            />
+            <span className="truncate">
+              {profile?.display_name ||
+                profile?.nickname ||
+                profile?.email ||
+                t("admin.action.view")}
+            </span>
           </DialogTitle>
         </DialogHeader>
 

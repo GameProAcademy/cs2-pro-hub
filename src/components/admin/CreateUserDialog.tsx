@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
-import { createAdminUser } from "@/lib/admin.functions";
+import { createPlayerUser } from "@/lib/admin.functions";
 
 export function CreateUserDialog({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -22,7 +22,7 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () => createAdminUser({ data: form }),
+    mutationFn: () => createPlayerUser({ data: form }),
     onSuccess: () => {
       setError(null);
       setMessage(t("admin.msg.userCreated"));

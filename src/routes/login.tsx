@@ -70,10 +70,9 @@ function LoginPage() {
       return;
     }
 
-    await touchLastLogin(data.user.id);
+    await touchLastLogin();
     setLoading(false);
     navigate({ to: "/dashboard", replace: true });
-
   }
 
   async function handleForgot(event: React.FormEvent) {

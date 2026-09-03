@@ -6,12 +6,14 @@ import { useState, type ReactNode } from "react";
 import { CoachFab } from "@/components/coach/CoachFab";
 import { LanguageSelector } from "@/components/common/LanguageSelector";
 import { Brand } from "@/components/layout/Brand";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
 import { navItems, uploadNavItem } from "@/config/navigation";
 import { demoProfile } from "@/data/demoPlayer";
 import { useT } from "@/i18n";
 import { useAdminSession } from "@/hooks/useAdminSession";
+import { useAccount } from "@/hooks/useAccount";
 import { signOutEverywhere } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: adminSession } = useAdminSession();
+  const { data: account } = useAccount();
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />
@@ -67,8 +70,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         </Button>
       ) : null}
       <div className="rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3">
-        <p className="truncate text-sm font-medium text-foreground">{demoProfile.name}</p>
-        <p className="truncate text-xs text-muted-foreground">{demoProfile.level}</p>
+        <div className="flex items-center gap-3">
+          <UserAvatar
+            source={account?.avatar_url ?? null}
+            name={account?.display_name ?? account?.nickname ?? null}
+            size={36}
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">
+              {account?.display_name || account?.nickname || account?.email || demoProfile.name}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">{demoProfile.level}</p>
+          </div>
+        </div>
         {DEMO_DATA ? (
           <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-warning">
             {t("nav.demoSession")}

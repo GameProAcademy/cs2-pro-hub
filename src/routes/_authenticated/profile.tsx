@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { AvatarCard } from "@/components/profile/AvatarCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,8 @@ function ProfilePage() {
           title={t("profile.title")}
           description={t("profile.description")}
         />
+
+        <AvatarCard />
 
         <div className="grid gap-5 lg:grid-cols-3">
           <ChartCard title={t("profile.playerData")} className="lg:col-span-2" showDemoTag={false}>

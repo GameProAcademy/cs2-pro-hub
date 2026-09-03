@@ -433,4 +433,19 @@ export const ptPT: Dictionary = {
   "admin.error.title": "Erro na administração",
   "admin.error.unexpected":
     "Não foi possível carregar a área administrativa devido a um erro interno. Tenta novamente dentro de alguns instantes.",
+  "avatar.title": "Fotografia de perfil",
+  "avatar.description":
+    "Carregue uma imagem JPEG, PNG ou WebP até 200 KB. A imagem é redimensionada e comprimida automaticamente.",
+  "avatar.upload": "Carregar fotografia",
+  "avatar.replace": "Substituir fotografia",
+  "avatar.remove": "Remover fotografia",
+  "avatar.uploading": "A carregar...",
+  "avatar.updated": "Fotografia de perfil atualizada.",
+  "avatar.removed": "Fotografia de perfil removida.",
+  "avatar.error.type": "Formato inválido. Utilize JPEG, PNG ou WebP.",
+  "avatar.error.tooLarge":
+    "Não foi possível comprimir a imagem para menos de 200 KB. Carregue uma imagem menor.",
+  "avatar.error.failed": "Não foi possível atualizar a fotografia de perfil. Tente novamente.",
+  "avatar.fallbackHint": "Sem fotografia: é apresentado o símbolo GamePro.",
+  "profile.account": "Conta",
 };

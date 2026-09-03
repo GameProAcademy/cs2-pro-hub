@@ -6,6 +6,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { TranslationKey } from "@/i18n";
+import { recordLogin } from "@/lib/session.functions";
 
 /** Maps a Supabase auth error to a translated, non-revealing message key. */
 export function authErrorKey(message: string | undefined): TranslationKey {
@@ -47,12 +48,18 @@ export async function fetchAccountStatus(
   return data.status;
 }
 
-/** Records the current sign-in timestamp on the user's own profile row. */
-export async function touchLastLogin(userId: string) {
-  await supabase
-    .from("profiles")
-    .update({ last_login_at: new Date().toISOString() })
-    .eq("id", userId);
+/**
+ * Records the current sign-in timestamp.
+ *
+ * `last_login_at` is administrative: the database blocks players from writing
+ * it, so the value is set server-side for the authenticated caller.
+ */
+export async function touchLastLogin() {
+  try {
+    await recordLogin();
+  } catch {
+    // Never block sign-in because of a telemetry write.
+  }
 }
 
 /** Ends the Supabase session. Callers redirect to /login afterwards. */

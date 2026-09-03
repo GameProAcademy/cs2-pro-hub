@@ -435,6 +435,21 @@ export const ptBR = {
   "admin.error.title": "Erro na administração",
   "admin.error.unexpected":
     "Não foi possível carregar a área administrativa por um erro interno. Tente novamente em alguns instantes.",
+  "avatar.title": "Foto de perfil",
+  "avatar.description":
+    "Envie uma imagem JPEG, PNG ou WebP de até 200 KB. A imagem é redimensionada e comprimida automaticamente.",
+  "avatar.upload": "Enviar foto",
+  "avatar.replace": "Trocar foto",
+  "avatar.remove": "Remover foto",
+  "avatar.uploading": "Enviando...",
+  "avatar.updated": "Foto de perfil atualizada.",
+  "avatar.removed": "Foto de perfil removida.",
+  "avatar.error.type": "Formato inválido. Use JPEG, PNG ou WebP.",
+  "avatar.error.tooLarge":
+    "Não foi possível comprimir a imagem para menos de 200 KB. Envie uma imagem menor.",
+  "avatar.error.failed": "Não foi possível atualizar a foto de perfil. Tente novamente.",
+  "avatar.fallbackHint": "Sem foto: o símbolo GamePro é exibido.",
+  "profile.account": "Conta",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;
