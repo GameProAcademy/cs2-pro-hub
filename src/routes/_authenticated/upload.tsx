@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { UploadBox, type UploadKind } from "@/components/common/UploadBox";
 import { AppShell } from "@/components/layout/AppShell";
 import { DemoIngestPanel } from "@/components/pipeline/DemoIngestPanel";
+import { SourcesPanel } from "@/components/pipeline/SourcesPanel";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
@@ -179,6 +180,18 @@ function AnalyzePage() {
               </p>
             ) : null}
           </ChartCard>
+
+          {/* Integration readiness (Phase 2.1.2): declared sources only.
+              No external integration is active, so no connect action exists. */}
+          <div className="lg:col-span-3">
+            <ChartCard
+              title={t("sources.title")}
+              subtitle={t("sources.subtitle")}
+              showDemoTag={false}
+            >
+              <SourcesPanel />
+            </ChartCard>
+          </div>
         </div>
       </div>
     </AppShell>
