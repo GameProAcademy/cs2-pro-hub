@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, Menu, Upload, X } from "lucide-react";
+import { LogOut, Menu, Shield, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { CoachFab } from "@/components/coach/CoachFab";
@@ -11,6 +11,7 @@ import { DEMO_DATA } from "@/config/app";
 import { navItems, uploadNavItem } from "@/config/navigation";
 import { demoProfile } from "@/data/demoPlayer";
 import { useT } from "@/i18n";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { signOutEverywhere } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
   const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: adminSession } = useAdminSession();
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />
@@ -56,6 +58,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         </p>
         <NavLinks onNavigate={onNavigate} />
       </div>
+      {adminSession ? (
+        <Button asChild variant="outline" className="w-full justify-start gap-2">
+          <Link to="/admin" onClick={onNavigate}>
+            <Shield className="size-4" aria-hidden />
+            {t("admin.area")}
+          </Link>
+        </Button>
+      ) : null}
       <div className="rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3">
         <p className="truncate text-sm font-medium text-foreground">{demoProfile.name}</p>
         <p className="truncate text-xs text-muted-foreground">{demoProfile.level}</p>
