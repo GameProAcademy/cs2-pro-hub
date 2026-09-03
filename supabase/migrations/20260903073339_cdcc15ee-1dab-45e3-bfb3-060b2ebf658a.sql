@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS lesson_skills_skill_idx ON public.lesson_skills (skill_id);
