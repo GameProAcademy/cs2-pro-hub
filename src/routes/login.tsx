@@ -84,10 +84,15 @@ function LoginPage() {
     if (!isValidEmail(email)) return setError(t("login.emailInvalid"));
 
     setLoading(true);
-    await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
+    // Rate limits / transport failures are surfaced; account existence never is.
+    if (resetError && resetError.status && resetError.status >= 429) {
+      setError(t("login.genericError"));
+      return;
+    }
     // Generic message: never reveal whether the account exists.
     setNotice(t("login.forgotSent"));
   }
