@@ -237,7 +237,7 @@ describe("KAST denominator", () => {
 
 describe("economy features", () => {
   it("never derives economic discipline from damage", () => {
-    const economy = features.dimensions["economy"]!;
+    const economy = extractFeatures(match, metrics).dimensions["economy"]!;
     expect(economy["buy_discipline"]).toBeNull();
     expect(economy["damage_per_dollar"]).toBeNull();
   });
