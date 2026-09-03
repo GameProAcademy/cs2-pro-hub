@@ -312,6 +312,23 @@ export const ptBR = {
   "admin.audit.target": "Usuário afetado",
   "admin.audit.date": "Data/hora",
   "admin.audit.metadata": "Metadata",
+  "dna.dim.aim": "Mira",
+  "dna.dim.dueling": "Duelos",
+  "dna.dim.survivability": "Sobrevivência",
+  "dna.dim.positioning": "Posicionamento",
+  "dna.dim.utility": "Utilitários",
+  "dna.dim.decision_making": "Tomada de decisão",
+  "dna.dim.teamplay": "Trabalho em equipe",
+  "dna.dim.economy": "Economia",
+  "dna.dim.clutch": "Clutch",
+  "dna.dim.consistency": "Consistência",
+  "dna.chart.you": "Você",
+  "dna.chart.average": "Média do nível",
+  "dna.dimensions": "Dimensões",
+  "dna.dimensionsSubtitle": "Valor atual vs média do nível",
+  "dna.radarTitle": "Radar do Player DNA",
+  "dna.description": "Cada dimensão é comparada com a média esperada para o seu nível. O objetivo não é ter tudo alto, é conhecer o seu formato.",
+  "admin.unauthorized": "Acesso não autorizado",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;
