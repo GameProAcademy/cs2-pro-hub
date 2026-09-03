@@ -2,6 +2,7 @@ import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 export function EmptyState({
@@ -37,12 +38,13 @@ export function EmptyState({
 }
 
 export function LoadingState({
-  label = "Carregando",
+  label,
   className,
 }: {
   label?: string | undefined;
   className?: string | undefined;
 }) {
+  const t = useT();
   return (
     <div
       role="status"
@@ -53,14 +55,14 @@ export function LoadingState({
       )}
     >
       <Loader2 className="size-5 animate-spin text-primary" aria-hidden />
-      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">{label ?? t("common.loading")}</p>
     </div>
   );
 }
 
 export function ErrorState({
-  title = "Algo deu errado",
-  description = "Não foi possível carregar esta seção. Tente novamente.",
+  title,
+  description,
   onRetry,
   className,
 }: {
@@ -69,6 +71,7 @@ export function ErrorState({
   onRetry?: (() => void) | undefined;
   className?: string | undefined;
 }) {
+  const t = useT();
   return (
     <div
       role="alert"
@@ -78,11 +81,13 @@ export function ErrorState({
       )}
     >
       <AlertTriangle className="mb-4 size-5 text-destructive" aria-hidden />
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">{title}</h3>
-      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">{title ?? t("common.errorTitle")}</h3>
+      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+        {description ?? t("common.errorDescription")}
+      </p>
       {onRetry ? (
         <Button variant="outline" className="mt-5" onClick={onRetry}>
-          Tentar novamente
+          {t("common.retry")}
         </Button>
       ) : null}
     </div>

@@ -19,7 +19,7 @@ function errorKeyFor(error: unknown): TranslationKey {
   return "avatar.error.failed";
 }
 
-export function AvatarCard() {
+export function AvatarCard({ embedded = false }: { embedded?: boolean }) {
   const t = useT();
   const queryClient = useQueryClient();
   const { data: account } = useAccount();
@@ -60,13 +60,18 @@ export function AvatarCard() {
   const busy = upload.isPending || remove.isPending;
   const hasAvatar = Boolean(account?.avatar_url);
 
-  return (
-    <ChartCard title={t("avatar.title")} showDemoTag={false}>
+  const body = (
+    <div className="space-y-3">
+      {embedded ? (
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          {t("avatar.title")}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <UserAvatar
           source={account?.avatar_url ?? null}
           name={account?.display_name ?? account?.nickname ?? null}
-          size={88}
+          size={embedded ? 72 : 88}
         />
         <div className="min-w-0 flex-1 space-y-3">
           <p className="text-xs leading-relaxed text-muted-foreground">{t("avatar.description")}</p>
@@ -111,6 +116,14 @@ export function AvatarCard() {
           ) : null}
         </div>
       </div>
+    </div>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <ChartCard title={t("avatar.title")} showDemoTag={false}>
+      {body}
     </ChartCard>
   );
 }

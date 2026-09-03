@@ -17,7 +17,7 @@ export type Locale = "pt-BR" | "en" | "es" | "fr" | "pt-PT";
 
 export type TranslationKey = keyof typeof ptBR;
 
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "pt-BR";
 
 export const dictionaries: Record<Locale, Dictionary> = {
   "pt-BR": ptBR,
