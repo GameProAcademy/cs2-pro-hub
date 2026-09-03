@@ -328,4 +328,7 @@ export const en: Dictionary = {
   "dna.description":
     "Every dimension is compared with the average expected for your level. The goal is not to max everything, it is to know your shape.",
   "admin.unauthorized": "Access not authorised",
+  "demo.label": "Demonstration data.",
+  "demo.notice":
+    "No demo has been processed. The values below are fictional and exist only to showcase the interface — no parser, database or AI is connected at this stage.",
 };

@@ -332,4 +332,7 @@ export const es: Dictionary = {
   "dna.description":
     "Cada dimensión se compara con la media esperada para tu nivel. El objetivo no es tenerlo todo alto, es conocer tu perfil.",
   "admin.unauthorized": "Acceso no autorizado",
+  "demo.label": "Datos de demostración.",
+  "demo.notice":
+    "No se ha procesado ninguna demo. Los valores siguientes son ficticios y solo sirven para mostrar la interfaz: no hay parser, base de datos ni IA conectados en esta etapa.",
 };

@@ -332,4 +332,7 @@ export const fr: Dictionary = {
   "dna.description":
     "Chaque dimension est comparée à la moyenne attendue pour votre niveau. L'objectif n'est pas d'être au maximum partout, mais de connaître votre profil.",
   "admin.unauthorized": "Accès non autorisé",
+  "demo.label": "Données de démonstration.",
+  "demo.notice":
+    "Aucune démo n'a été traitée. Les valeurs ci-dessous sont fictives et servent uniquement à présenter l'interface — aucun parser, base de données ou IA n'est connecté à ce stade.",
 };
