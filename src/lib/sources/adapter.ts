@@ -15,10 +15,26 @@ import type { CanonicalMatch } from "@/lib/pipeline/types";
 import type { DataCapabilities } from "./capabilities";
 import type { DataSource } from "./sources";
 
-/** Where a canonical match came from. Persisted alongside the match row. */
+/**
+ * Where a canonical match came from. Persisted alongside the match row.
+ *
+ * DATABASE MAPPING (no redundant column exists, and none may be added):
+ * - `source`         -> `matches.data_source`
+ * - `sourceRecordId` -> `matches.external_match_id`
+ * - `fetchedAt`      -> `matches.source_fetched_at`
+ * - `sourceVersion`  -> `matches.source_version`
+ *
+ * Deduplication therefore happens on
+ * `(player_id, data_source, external_match_id)`: the same game observed through
+ * two different sources yields two rows, one per source, and never a duplicate
+ * inside a single source.
+ */
 export interface SourceProvenance {
   source: DataSource;
-  /** Identifier of the record inside the source, when the source has one. */
+  /**
+   * Identifier of the record inside the source, when the source has one.
+   * Stored as `matches.external_match_id`.
+   */
   sourceRecordId: string | null;
   /** When the data was collected from the source. */
   fetchedAt: string | null;
@@ -26,10 +42,29 @@ export interface SourceProvenance {
   sourceVersion: string | null;
 }
 
+/** Columns of `public.matches` that carry provenance. */
+export interface MatchProvenanceColumns {
+  data_source: DataSource;
+  external_match_id: string | null;
+  source_fetched_at: string | null;
+  source_version: string | null;
+}
+
+/** Single, canonical translation from the contract to the database columns. */
+export function provenanceToMatchColumns(provenance: SourceProvenance): MatchProvenanceColumns {
+  return {
+    data_source: provenance.source,
+    external_match_id: provenance.sourceRecordId,
+    source_fetched_at: provenance.fetchedAt,
+    source_version: provenance.sourceVersion,
+  };
+}
+
 export interface SourceMatchResult {
   provenance: SourceProvenance;
   match: CanonicalMatch;
 }
+
 
 export type SourceAdapterUnavailableReason =
   | "not_implemented"
