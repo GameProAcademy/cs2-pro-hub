@@ -80,16 +80,46 @@ export function buildAuthorizeUrl(input: AuthorizeUrlInput): string {
 export const FACEIT_OAUTH_DEFAULT_SCOPE = "openid profile email";
 
 /**
- * FACEIT exposes the canonical player id under a few documented names
- * (`guid` in OpenID userinfo, `player_id` in the Data API). The nickname is
- * NEVER accepted as an identifier.
+ * CANONICAL IDENTITY RULE (documented, deterministic — never arbitrary):
+ *
+ *  1. `guid`      — FACEIT OpenID userinfo exposes the account id here;
+ *  2. `player_id` — name used by the Data API for the same value;
+ *  3. `playerId`  — camelCase alias seen in some payloads;
+ *  4. `sub`       — OIDC subject; accepted ONLY when it is UUID-shaped, because
+ *                   a non-UUID `sub` is not guaranteed to be the player id.
+ *
+ * The first candidate that passes validation wins. `nickname` is NEVER an
+ * identifier: it is mutable display data.
  */
-export function extractFaceitPlayerId(payload: unknown): string | null {
+const FACEIT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type FaceitIdentitySource = "guid" | "player_id" | "playerId" | "sub";
+
+export interface FaceitIdentityResolution {
+  playerId: string;
+  source: FaceitIdentitySource;
+}
+
+export function resolveFaceitIdentityFromPayload(
+  payload: unknown,
+): FaceitIdentityResolution | null {
   if (!payload || typeof payload !== "object") return null;
   const record = payload as Record<string, unknown>;
-  for (const key of ["guid", "player_id", "playerId", "sub"]) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim().length > 0) return value.trim();
+  const order: FaceitIdentitySource[] = ["guid", "player_id", "playerId", "sub"];
+  for (const key of order) {
+    const raw = record[key];
+    if (typeof raw !== "string") continue;
+    const value = raw.trim();
+    if (!FACEIT_ID_PATTERN.test(value)) continue;
+    if (key === "sub" && !UUID_PATTERN.test(value)) continue;
+    return { playerId: value, source: key };
   }
   return null;
 }
+
+/** Backwards-compatible helper returning only the id. */
+export function extractFaceitPlayerId(payload: unknown): string | null {
+  return resolveFaceitIdentityFromPayload(payload)?.playerId ?? null;
+}
+
