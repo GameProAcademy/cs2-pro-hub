@@ -78,7 +78,7 @@ export function PlayerIdentityPanel({ observations }: { observations: IdentityOb
                 className="flex items-center justify-between gap-3 font-mono text-[11px] text-muted-foreground"
               >
                 <span>
-                  {item.identityASource} ↔ {item.identityBSource} · {item.attribute}
+                  {item.identityA.source} ↔ {item.identityB.source} · {item.attribute}
                 </span>
                 <span>{EVIDENCE_WEIGHTS[item.attribute].strength}</span>
               </li>
