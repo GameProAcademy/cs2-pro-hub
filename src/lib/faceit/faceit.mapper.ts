@@ -5,6 +5,7 @@
  * accepts `null`. ABSOLUTE RULE: a missing statistic stays `null`; it is never
  * turned into `0`, and nothing is ever estimated and presented as official.
  */
+import { FACEIT_TERMINAL_MATCH_STATUSES } from "./faceit.constants";
 import type {
   FaceitHistoryItem,
   FaceitMatch,
@@ -160,12 +161,36 @@ export interface CanonicalFaceitMatch {
   result: MatchResult | null;
   /** ROUNDS ACTUALLY PLAYED. Never the number of maps won. `null` when unknown. */
   rounds: number | null;
+  /**
+   * FASE 2.2.1D — whether FACEIT PROVED the match is over. Never inferred from
+   * `match_date`, which may come from `started_at`.
+   */
+  finished: boolean;
   team_player: string | null;
   team_opponent: string | null;
   duration_seconds: number | null;
   source_fetched_at: string;
   source_version: string;
   metadata: Record<string, unknown>;
+}
+
+/**
+ * FASE 2.2.1D — is this match terminally finished?
+ *
+ * The ONLY accepted evidence is `finished_at` or an explicitly terminal status.
+ * `started_at`, `match_date`, the presence of details, a partial score or the
+ * presence of stats prove NOTHING. Unknown status + no `finished_at` => false.
+ */
+export function isFaceitMatchFinished(input: {
+  status?: string | null | undefined;
+  finishedAt?: number | null | undefined;
+}): boolean {
+  if (typeof input.finishedAt === "number" && Number.isFinite(input.finishedAt) && input.finishedAt > 0) {
+    return true;
+  }
+  const status = typeof input.status === "string" ? input.status.trim().toLowerCase() : null;
+  if (!status) return false;
+  return FACEIT_TERMINAL_MATCH_STATUSES.has(status);
 }
 
 function epochToIso(value: number | null): string | null {
@@ -358,6 +383,8 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       ? Math.round(finishedRaw - startedRaw)
       : null;
 
+  const statusText = input.details?.status ?? input.history?.status ?? null;
+
   const teamRecord = (teams ?? {}) as Record<
     string,
     { nickname?: string | null; name?: string | null }
@@ -381,6 +408,7 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
     score_opponent: scoreOpponent,
     result,
     rounds,
+    finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
     team_player: teamPlayer,
     team_opponent: teamOpponent,
     duration_seconds: duration,
@@ -393,7 +421,8 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       competition: input.details?.competition_name ?? input.history?.competition_name ?? null,
       competition_type: input.details?.competition_type ?? input.history?.competition_type ?? null,
       faceit_url: input.details?.faceit_url ?? input.history?.faceit_url ?? null,
-      status: input.details?.status ?? input.history?.status ?? null,
+      status: statusText,
+      finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
       best_of: series.bestOf,
       maps_played: series.mapsPlayed,
       is_series: series.isSeries,
