@@ -297,41 +297,127 @@ function statNumber(
   return null;
 }
 
+export interface FaceitPlayerRoundStats {
+  /** `match_id` reported inside the round entry, when present. */
+  matchId: string | null;
+  roundsInEntry: number | null;
+  stats: Record<string, string | number | boolean | null> | null;
+}
+
+/**
+ * DETERMINISTIC SELECTION.
+ *
+ * The `rounds` array of `/matches/{id}/stats` is NOT "one entry per round of the
+ * match": it is one entry per played map/segment. So we never take
+ * `rounds[0]` blindly. Instead we collect EVERY entry that contains the target
+ * player, matched exclusively by FACEIT `player_id` (never nickname), optionally
+ * restricted to a given `match_id`, and in the order returned by FACEIT.
+ */
+export function selectFaceitPlayerRounds(
+  stats: FaceitMatchStats,
+  playerId: string,
+  matchId?: string | null,
+): FaceitPlayerRoundStats[] {
+  const selected: FaceitPlayerRoundStats[] = [];
+  for (const round of stats.rounds ?? []) {
+    if (matchId && round.match_id && round.match_id !== matchId) continue;
+    for (const team of round.teams ?? []) {
+      for (const player of team.players ?? []) {
+        if (typeof player.player_id !== "string") continue;
+        if (player.player_id !== playerId) continue;
+        selected.push({
+          matchId: round.match_id ?? null,
+          roundsInEntry: statNumber(round.round_stats, "Rounds"),
+          stats: player.player_stats ?? null,
+        });
+      }
+    }
+  }
+  return selected;
+}
+
+function sumOrNull(values: Array<number | null>): number | null {
+  const present = values.filter((value): value is number => value !== null);
+  return present.length === 0 ? null : present.reduce((acc, value) => acc + value, 0);
+}
+
+/** Weighted mean; absent values are skipped, they are never treated as zero. */
+function weightedMean(pairs: Array<[number | null, number]>): number | null {
+  let weight = 0;
+  let total = 0;
+  for (const [value, w] of pairs) {
+    if (value === null) continue;
+    const effective = w > 0 ? w : 1;
+    total += value * effective;
+    weight += effective;
+  }
+  if (weight === 0) return null;
+  return Math.round((total / weight) * 100) / 100;
+}
+
 /**
  * Maps FACEIT match stats onto `match_metrics` columns that FACEIT genuinely
  * reports. Demo-only signals (trades, economy, utility timing, positioning,
  * round events, features) are NOT produced here: FACEIT stats are not a demo.
+ *
+ * Multiple map segments (bo2/bo3) are aggregated deterministically: counters are
+ * summed, ratios are averaged weighted by the rounds of each segment. A metric
+ * FACEIT never reported stays `null`; a metric reported as `0` stays `0`.
  */
 export function mapFaceitMatchStatsToMetrics(
   stats: FaceitMatchStats,
   playerId: string,
+  matchId?: string | null,
 ): CanonicalFaceitMetrics | null {
-  for (const round of stats.rounds ?? []) {
-    for (const team of round.teams ?? []) {
-      for (const player of team.players ?? []) {
-        if (player.player_id !== playerId) continue;
-        const s = player.player_stats ?? null;
-        const kills = statNumber(s, "Kills");
-        const deaths = statNumber(s, "Deaths");
-        const rounds = statNumber(round.round_stats, "Rounds");
-        return {
-          kills,
-          deaths,
-          assists: statNumber(s, "Assists"),
-          adr: statNumber(s, "ADR", "Average Damage per Round"),
-          hs_percent: statNumber(s, "Headshots %"),
-          kast: statNumber(s, "KAST", "KAST %"),
-          rating: statNumber(s, "Rating"),
-          multi_kills: statNumber(s, "Penta Kills") !== null || statNumber(s, "Quadro Kills") !== null
-            ? (statNumber(s, "Penta Kills") ?? 0) + (statNumber(s, "Quadro Kills") ?? 0)
-            : null,
-          rounds_played: rounds,
-        };
-      }
-    }
-  }
-  return null;
+  const entries = selectFaceitPlayerRounds(stats, playerId, matchId);
+  if (entries.length === 0) return null;
+
+  const weights = entries.map((entry) => entry.roundsInEntry ?? 1);
+  const pick = (...keys: string[]) => entries.map((entry) => statNumber(entry.stats, ...keys));
+  const ratio = (...keys: string[]) =>
+    weightedMean(pick(...keys).map((value, index) => [value, weights[index] ?? 1] as [number | null, number]));
+
+  const quads = pick("Quadro Kills");
+  const pentas = pick("Penta Kills");
+  const multi =
+    quads.some((v) => v !== null) || pentas.some((v) => v !== null)
+      ? sumOrNull([...quads, ...pentas])
+      : null;
+
+  return {
+    kills: sumOrNull(pick("Kills")),
+    deaths: sumOrNull(pick("Deaths")),
+    assists: sumOrNull(pick("Assists")),
+    adr: ratio("ADR", "Average Damage per Round"),
+    hs_percent: ratio("Headshots %"),
+    kast: ratio("KAST", "KAST %"),
+    rating: ratio("Rating", "Player Rating"),
+    multi_kills: multi,
+    rounds_played: sumOrNull(entries.map((entry) => entry.roundsInEntry)),
+  };
 }
+
+/**
+ * Lifetime/aggregate statistics — kept as a flat, non-sensitive numeric map.
+ * `null` is preserved: FACEIT not reporting a metric is not the same as zero.
+ */
+export function mapFaceitLifetimeStats(
+  lifetime: Record<string, string | number | boolean | null> | null | undefined,
+): Record<string, number | null> | null {
+  if (!lifetime) return null;
+  const out: Record<string, number | null> = {};
+  for (const [key, raw] of Object.entries(lifetime)) {
+    if (typeof raw === "boolean") continue;
+    if (raw === null || raw === undefined || raw === "") {
+      out[key] = null;
+      continue;
+    }
+    const parsed = typeof raw === "number" ? raw : Number(raw);
+    out[key] = Number.isFinite(parsed) ? parsed : null;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 
 /** K/D only when both values exist and deaths > 0. Never invented. */
 export function safeKdRatio(kills: number | null, deaths: number | null): number | null {
