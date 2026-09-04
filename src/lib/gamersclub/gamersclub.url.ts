@@ -4,6 +4,11 @@
  * PURE function: it NEVER performs a request. A URL typed by a player is a
  * declaration of intent, not consent to crawl, and there is no permitted
  * collection path today (see `gamersclub.constants.ts`).
+ *
+ * CRITICAL MODEL RULE:
+ * `/player/123456` and `/player/nickname` are NOT the same thing. A slug is not
+ * a stable identifier and must never be stored as `externalId` (GCID). Only a
+ * collection/normalization step that observes the real GCID may set it.
  */
 import { GAMERS_CLUB_ALLOWED_HOSTS, GAMERS_CLUB_PROFILE_PATH } from "./gamersclub.constants";
 import type { GamersClubErrorCode } from "./gamersclub.errors";
@@ -17,13 +22,25 @@ export type GamersClubUrlError = Extract<
   | "GAMERS_CLUB_INVALID_PROFILE_PATH"
 >;
 
+/** How the profile is addressed in the URL. */
+export type GamersClubProfileLocatorType = "numeric_id" | "slug";
+
 export interface GamersClubProfileRef {
-  /** `https://gamersclub.com.br/player/<externalId>` — no query, no fragment. */
+  /** `https://gamersclub.com.br/player/<locator>` — no query, no fragment. */
   canonicalProfileUrl: string;
-  /** Numeric id or public slug, exactly as published. */
-  externalId: string;
-  /** Present only when the identifier is a slug; ids carry no username. */
-  username: string | null;
+  profileLocatorType: GamersClubProfileLocatorType;
+  /**
+   * GCID. Set ONLY when the URL carries a numeric identifier, and even then it
+   * remains "claimed" until a collection step confirms it. Never a slug.
+   */
+  externalId: string | null;
+  /** Public slug/nickname locator. `null` for numeric URLs. */
+  profileSlug: string | null;
+  /**
+   * Whether the GCID is confirmed by observation. A player-supplied URL never
+   * confirms anything, so this is always `false` here.
+   */
+  externalIdConfirmed: boolean;
 }
 
 export type GamersClubUrlResult =
@@ -65,15 +82,26 @@ export function parseGamersClubProfileUrl(raw: string): GamersClubUrlResult {
     return fail("GAMERS_CLUB_INVALID_PROFILE_PATH");
   }
 
-  const identifier = decodeURIComponent(segments[1] ?? "");
+  let identifier: string;
+  try {
+    identifier = decodeURIComponent(segments[1] ?? "");
+  } catch {
+    return fail("GAMERS_CLUB_INVALID_PROFILE_PATH");
+  }
+  if (identifier.includes("/") || identifier.includes("\\")) {
+    return fail("GAMERS_CLUB_INVALID_PROFILE_PATH");
+  }
+
   if (NUMERIC_ID.test(identifier)) {
     return {
       ok: true,
       error: null,
       profile: {
         canonicalProfileUrl: `https://${host}/${GAMERS_CLUB_PROFILE_PATH}/${identifier}`,
+        profileLocatorType: "numeric_id",
         externalId: identifier,
-        username: null,
+        profileSlug: null,
+        externalIdConfirmed: false,
       },
     };
   }
@@ -85,8 +113,30 @@ export function parseGamersClubProfileUrl(raw: string): GamersClubUrlResult {
     error: null,
     profile: {
       canonicalProfileUrl: `https://${host}/${GAMERS_CLUB_PROFILE_PATH}/${slug}`,
-      externalId: slug,
-      username: slug,
+      profileLocatorType: "slug",
+      /** A slug is NOT a GCID. */
+      externalId: null,
+      profileSlug: slug,
+      externalIdConfirmed: false,
     },
+  };
+}
+
+/**
+ * Promotes a parsed reference to a confirmed GCID. Only a collector/normalizer
+ * that OBSERVED the id may call this — never the UI, never a URL parse.
+ */
+export function withConfirmedGamersClubId(
+  profile: GamersClubProfileRef,
+  observedExternalId: string,
+): GamersClubProfileRef {
+  if (!NUMERIC_ID.test(observedExternalId)) {
+    throw new Error("A confirmed Gamers Club id must be numeric.");
+  }
+  return {
+    ...profile,
+    profileLocatorType: "numeric_id",
+    externalId: observedExternalId,
+    externalIdConfirmed: true,
   };
 }
