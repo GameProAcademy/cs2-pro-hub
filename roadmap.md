@@ -58,3 +58,13 @@ Bloqueado (não implementado, e não implementável sem acesso permitido):
 
 Desbloqueio possível: API/parceria oficial da Gamers Club, ou confirmação escrita
 de um endpoint público sem autenticação e sem desafio anti-bot.
+
+## FASE 2.3 — Gamers Club + Player Identity Graph — PARTIAL / BLOCKED_EXTERNAL_ACCESS
+- Locator model (numeric_id vs slug, externalIdConfirmed), access classification, provider abstraction,
+  HTTP/deadline/budget/retry semantics, bounded pagination, cache TTL + freshness, job lifecycle,
+  identity correlation engine with evidence hierarchy — implemented and tested (265 tests).
+- DB: identity state + locator columns, identity_correlation_evidence, gamers_club_profile_snapshots,
+  gamers_club_sync_jobs, atomic claim + stale recovery (service_role only).
+- UI: GamersClubPanel + PlayerIdentityPanel on /upload (honest blocked/correlated states).
+- BLOCKED: collection itself — gamersclub.com.br answers HTTP 403 Cloudflare challenge; no official API.
+  Collector/parser/worker remain unimplemented on purpose. Unblocks with an authorised provider.
