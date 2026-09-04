@@ -17,7 +17,7 @@ import {
   mapFaceitMatchStatsToMetrics,
   mapFaceitMatchToMatch,
 } from "../faceit.mapper";
-import { faceitMatchStatsSchema, parseFaceit } from "../faceit.types";
+import { faceitMatchStatsSchema, parseFaceit, type FaceitMatchStats } from "../faceit.types";
 
 const PLAYER = "11111111-2222-3333-4444-555555555555";
 
@@ -280,7 +280,7 @@ describe("FASE 2.2.1D — TESTE J: ausência continua null, zero continua zero",
           teams: [{ players: [{ player_id: PLAYER, player_stats: { Kills: "10", ADR: "0" } }] }],
         },
       ],
-    });
+    }) as FaceitMatchStats;
     const metrics = mapFaceitMatchStatsToMetrics(stats, PLAYER, "match-1");
     expect(metrics).not.toBeNull();
     expect(metrics?.kills).toBe(10);
