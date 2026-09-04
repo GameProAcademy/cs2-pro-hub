@@ -58,10 +58,31 @@ export const FACEIT_MIN_CALL_SPACING_MS = 120;
 export const FACEIT_MAX_MATCH_FETCH_ATTEMPTS = 3;
 
 /**
- * FASE 2.2.1D — FACEIT match statuses that PROVE a match is over.
+ * FASE 2.2.1D — FACEIT match statuses that PROVE a match FINISHED NORMALLY,
+ * i.e. it may legitimately carry a score, a result and a duration.
  *
  * Deliberately minimal: only states the API documents as terminally finished.
  * We do not invent statuses; when the status is unknown the strongest evidence
  * remains `finished_at != null`.
  */
-export const FACEIT_TERMINAL_MATCH_STATUSES: ReadonlySet<string> = new Set(["finished"]);
+export const FACEIT_FINISHED_MATCH_STATUSES: ReadonlySet<string> = new Set(["finished"]);
+
+/**
+ * FASE 2.2.1E — statuses that end the match LIFECYCLE without a normal result.
+ * A cancelled/aborted match must never be turned into a win or a loss; it is
+ * simply no longer worth re-fetching.
+ */
+export const FACEIT_CANCELLED_MATCH_STATUSES: ReadonlySet<string> = new Set([
+  "cancelled",
+  "canceled",
+  "aborted",
+]);
+
+/**
+ * FASE 2.2.1E — every status that ends the lifecycle: finished normally OR
+ * cancelled/aborted. TERMINAL means "stop re-fetching", NOT "has a result".
+ */
+export const FACEIT_TERMINAL_MATCH_STATUSES: ReadonlySet<string> = new Set([
+  ...FACEIT_FINISHED_MATCH_STATUSES,
+  ...FACEIT_CANCELLED_MATCH_STATUSES,
+]);
