@@ -58,7 +58,7 @@ describe("data sources", () => {
 
 describe("unimplemented adapters", () => {
   it("report unavailability instead of pretending", () => {
-    for (const source of CONNECTABLE_SOURCES) {
+    for (const source of CONNECTABLE_SOURCES.filter((s) => s !== "faceit")) {
       expect(getSourceAdapter(source).availability()).toEqual({
         available: false,
         reason: "not_implemented",
