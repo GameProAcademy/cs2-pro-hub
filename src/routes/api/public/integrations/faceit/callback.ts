@@ -38,6 +38,11 @@ export const Route = createFileRoute("/api/public/integrations/faceit/callback")
         const code = params.get("code");
 
         if (oauthError) {
+          // The attempt is burned even on the error path: no replay window.
+          const { consumeFaceitOAuthStateQuietly } = await import(
+            "@/lib/faceit/faceit.oauth.server"
+          );
+          await consumeFaceitOAuthStateQuietly(state);
           const mapped = faceitErrorFromOAuthParam(oauthError);
           console.warn(`[faceit] faceit_connection_failure code=${mapped}`);
           return redirectTo(request, errorPath(callbackReason(mapped)));
