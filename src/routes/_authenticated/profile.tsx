@@ -74,6 +74,7 @@ function ProfilePage() {
   // Persisted values always win; detection only fills an empty country.
   useEffect(() => {
     if (!profile || hydrated) return;
+    if (typeof window !== "undefined") console.log("HYDRATE", JSON.stringify({c: profile.country, p: profile.mainPlatform, e: profile.experience, n: profile.nickname}));
     setDisplayName(profile.displayName ?? "");
     setNickname(profile.nickname ?? "");
     setTeam(profile.team ?? "");
