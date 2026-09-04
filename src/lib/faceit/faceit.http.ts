@@ -159,7 +159,7 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
         } catch (error) {
           lastError = toFaceitError(error);
           if (!lastError.retryable || attempt === maxAttempts) throw lastError;
-          await sleep(backoffMs(attempt, lastError.retryAfterSeconds));
+          await sleep(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
         }
       }
       throw lastError;
