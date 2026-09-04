@@ -28,3 +28,33 @@
 - Worker deadline propagado ao client (abort = min(timeout, deadline); `FACEIT_WORKER_DEADLINE_EXCEEDED`).
 - Disconnect race: update final de `player_connections` guardado por `status = 'connected'`.
 - Testes novos: `faceit.validation.test.ts` (21) e `faceit.lifecycle.test.ts` (3). Total 169.
+
+## FASE 2.3 — Gamers Club — PARCIAL / BLOQUEADA
+
+**Bloqueio (Regra Zero).** Não existe API pública oficial da Gamers Club e todas as
+requisições não autenticadas ao site público — inclusive a home — respondem
+`HTTP 403` com desafio interstitial da Cloudflare (`cf-mitigated: challenge`).
+Contornar isso exigiria cookie de sessão, stealth browser, proxy rotativo ou
+bypass de CAPTCHA, todos explicitamente proibidos. Portanto NÃO há caminho de
+coleta permitido e nada de collector foi implementado.
+
+Implementado:
+- [x] Validador/parser de URL pública (`src/lib/gamersclub/gamersclub.url.ts`): host allowlist,
+      HTTPS obrigatório, rejeita userinfo/porta/`javascript:`/`data:`/sufixo falso, normaliza
+      trailing slash, query e fragment, extrai `external_id` numérico ou slug.
+- [x] Erros estruturados GC (somente códigos alcançáveis hoje).
+- [x] `is_verified` nunca é promovido por URL informada (`GAMERS_CLUB_IDENTITY_VERIFIABLE = false`).
+- [x] Estados de disponibilidade de fonte (`src/lib/sources/availability.ts`):
+      implemented / available / degraded / unavailable / configuration_missing / unsupported.
+      GC = `unavailable` (`anti_bot_challenge`), não colecionável.
+- [x] Correção de honestidade: `IMPLEMENTED_SOURCES = ["demo", "faceit"]`;
+      `getSourceAdapter` não devolve mais adapter falso para FACEIT; `FEATURES.faceitIntegration = true`.
+- [x] Testes: 23 casos GC (URL + invariantes). Suíte total 212/212.
+
+Bloqueado (não implementado, e não implementável sem acesso permitido):
+- [ ] collector/HTTP client GC, parser de perfil, parser de histórico, normalizer canônico
+- [ ] `gamers_club_sync_jobs`, `gamers_club_profile_snapshots`, worker/cron, cache, snapshots
+- [ ] UI "Conectar Gamers Club", refresh manual, security checks GC, migrations
+
+Desbloqueio possível: API/parceria oficial da Gamers Club, ou confirmação escrita
+de um endpoint público sem autenticação e sem desafio anti-bot.
