@@ -25,6 +25,20 @@ export interface FaceitClientOptions {
    * rate limiter. Retry-After and backoff remain untouched and always win.
    */
   minSpacingMs?: number;
+  /**
+   * FASE 2.2.1D — HARD CEILING of HTTP requests this client may ever send.
+   * Every real attempt counts, INCLUDING retries after 429/5xx/timeout/network
+   * error. When the ceiling is reached the request is not sent at all and a
+   * controlled `FACEIT_API_BUDGET_EXHAUSTED` is raised.
+   */
+  callBudget?: number;
+  /**
+   * FASE 2.2.1D — epoch ms after which no new request may START, and beyond
+   * which an in-flight request is aborted. Combined with `timeoutMs`: the
+   * effective abort is whichever comes first, so the normal request timeout is
+   * never silently replaced by a shorter arbitrary one.
+   */
+  deadlineAt?: number | (() => number | undefined);
 }
 
 export interface FaceitRequestLog {
@@ -37,8 +51,10 @@ export interface FaceitRequestLog {
 
 export interface FaceitClient {
   get<T>(path: string, query?: Record<string, string | number | undefined>): Promise<unknown>;
-  /** Number of HTTP requests performed; used by the pagination tests. */
+  /** REAL number of HTTP requests performed, retries included. */
   readonly requestCount: number;
+  /** Requests still allowed by the budget (`Infinity` when unbounded). */
+  readonly remainingCalls: number;
 }
 
 /** Hard ceiling for any single wait, so a hostile Retry-After cannot stall us. */
@@ -80,8 +96,30 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
   const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const base = options.baseUrl.replace(/\/+$/, "");
   const minSpacingMs = Math.max(0, options.minSpacingMs ?? 0);
+  const callBudget =
+    typeof options.callBudget === "number" && Number.isFinite(options.callBudget)
+      ? Math.max(0, Math.floor(options.callBudget))
+      : Number.POSITIVE_INFINITY;
   let requestCount = 0;
   let lastRequestAt = 0;
+
+  function deadlineAt(): number | undefined {
+    const raw =
+      typeof options.deadlineAt === "function" ? options.deadlineAt() : options.deadlineAt;
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
+  }
+
+  /**
+   * Single gate every real attempt must pass. It is checked before the initial
+   * request AND before each retry, so no code path can exceed the ceiling.
+   */
+  function assertCanSend(): void {
+    if (requestCount >= callBudget) throw new FaceitError("FACEIT_API_BUDGET_EXHAUSTED");
+    const deadline = deadlineAt();
+    if (deadline !== undefined && Date.now() >= deadline) {
+      throw new FaceitError("FACEIT_WORKER_DEADLINE_EXCEEDED");
+    }
+  }
 
   async function pace(): Promise<void> {
     if (minSpacingMs === 0) return;
@@ -92,7 +130,11 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
 
   async function attemptOnce(url: string, endpoint: string, attempt: number): Promise<unknown> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+    // Abort at whichever comes first: the request timeout or the worker deadline.
+    const deadline = deadlineAt();
+    const untilDeadline = deadline === undefined ? Number.POSITIVE_INFINITY : deadline - Date.now();
+    const abortInMs = Math.max(1, Math.min(options.timeoutMs, untilDeadline));
+    const timer = setTimeout(() => controller.abort(), abortInMs);
     const startedAt = Date.now();
     requestCount += 1;
     lastRequestAt = startedAt;
@@ -157,6 +199,11 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
     get requestCount() {
       return requestCount;
     },
+    get remainingCalls() {
+      return callBudget === Number.POSITIVE_INFINITY
+        ? Number.POSITIVE_INFINITY
+        : Math.max(0, callBudget - requestCount);
+    },
     async get(path, query) {
       const url = new URL(base + (path.startsWith("/") ? path : `/${path}`));
       for (const [key, value] of Object.entries(query ?? {})) {
@@ -170,11 +217,16 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
       let lastError: FaceitError = new FaceitError("FACEIT_INTERNAL_ERROR");
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
+          // Budget/deadline gate FIRST: a request that cannot be afforded is
+          // never sent, not even as a retry after Retry-After.
+          assertCanSend();
           await pace();
           return await attemptOnce(url.toString(), endpoint, attempt);
         } catch (error) {
           lastError = toFaceitError(error);
           if (!lastError.retryable || attempt === maxAttempts) throw lastError;
+          // Waiting is pointless if the retry itself could never be sent.
+          assertCanSend();
           await sleep(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
         }
       }

@@ -30,9 +30,10 @@ import {
   FACEIT_WORKER_MAX_JOBS,
   FACEIT_WORKER_TIME_BUDGET_MS,
 } from "./faceit.constants";
-import { FaceitError, toFaceitError } from "./faceit.errors";
+import { FaceitError, isFaceitBudgetError, toFaceitError } from "./faceit.errors";
 import {
   faceitMapFromStats,
+  faceitMatchConverged,
   mapFaceitLifetimeStats,
   mapFaceitMatchStatsToMetrics,
   mapFaceitMatchToMatch,
@@ -295,7 +296,9 @@ export async function processClaimedFaceitSyncJob(
         last_sync_error: faceitError.code,
         updated_at: now,
       })
-      .eq("id", job.connectionId);
+      .eq("id", job.connectionId)
+      // Never touch a connection the user already disconnected.
+      .eq("status", "connected");
 
     console.warn(
       `[faceit] sync_failed job=${job.id} code=${faceitError.code} attempts=${attempts} retrying=${retryable}`,
@@ -392,13 +395,29 @@ export async function runFaceitSync(
 ): Promise<SyncCounters> {
   const startedAt = Date.now();
   const db = await admin();
-  const { client, config } = faceitRuntime();
   const apiCallBudget = Math.max(4, options.apiCallBudget ?? FACEIT_JOB_API_CALL_BUDGET);
+  // FASE 2.2.1D — the ceiling lives INSIDE the client, so every HTTP attempt
+  // (retries included) is counted and no code path can bypass it.
+  const { client, config } = faceitRuntime({
+    callBudget: apiCallBudget,
+    ...(options.deadlineAt === undefined ? {} : { deadlineAt: options.deadlineAt }),
+  });
   const counters = emptyCounters();
 
+  /** Planning hint only; the real enforcement is the client-level gate. */
   const outOfBudget = (reserve: number): boolean => {
     if (client.requestCount + reserve > apiCallBudget) return true;
-    return options.deadlineAt !== undefined && Date.now() > options.deadlineAt;
+    return options.deadlineAt !== undefined && Date.now() >= options.deadlineAt;
+  };
+
+  /** True when the connection is still `connected` right now. */
+  const connectionStillActive = async (): Promise<boolean> => {
+    const { data } = await db
+      .from("player_connections")
+      .select("status")
+      .eq("id", connectionId)
+      .maybeSingle();
+    return data?.status === "connected";
   };
 
   const { data: connection } = await db
@@ -474,7 +493,7 @@ export async function runFaceitSync(
   }
 
   // 4./5. details + stats for pending matches only, inside the budget.
-  for (const item of history.items) {
+  for (const [index, item] of history.items.entries()) {
     const existing = known.get(item.match_id) ?? null;
     if (existing?.complete && jobType !== "manual") {
       counters.matchesSkipped += 1;
@@ -484,8 +503,8 @@ export async function runFaceitSync(
     // Each match costs two calls (details + stats). Stop cleanly, never halfway.
     if (outOfBudget(2)) {
       counters.budgetExhausted = true;
-      counters.matchesDeferred += 1;
-      continue;
+      counters.matchesDeferred += history.items.length - index;
+      break;
     }
     await options.heartbeat?.();
 
@@ -509,10 +528,10 @@ export async function runFaceitSync(
 
       const metadata = canonical.metadata as Record<string, unknown>;
       const isSeries = metadata["is_series"] === true;
-      const statusText =
-        typeof metadata["status"] === "string" ? metadata["status"].toLowerCase() : null;
-      // Only a finished match burns an attempt: an ongoing one is not "missing".
-      const finished = statusText === "finished" || canonical.match_date !== null;
+      // FASE 2.2.1D — `match_date` is NOT evidence of completion (it may be
+      // `started_at`). Only `finished_at` or a terminal status counts, and only
+      // a finished match burns a fetch attempt.
+      const finished = canonical.finished;
       const attempts = (existing?.attempts ?? 0) + (finished ? 1 : 0);
 
       const metrics =
@@ -523,9 +542,16 @@ export async function runFaceitSync(
         canonical.match_date !== null &&
         metrics !== null &&
         (canonical.map !== null || isSeries);
-      // CONVERGENCE: either the data is complete, or we tried enough times and
-      // accept the row as-is with NULL in the missing fields. Never a zero.
-      const converged = dataComplete || (finished && attempts >= FACEIT_MAX_MATCH_FETCH_ATTEMPTS);
+      // CONVERGENCE: either the data is complete, or the match is PROVEN
+      // finished and we tried enough times, accepting NULL in what is missing.
+      // An ongoing match never converges by attempt count, so it stays
+      // revisitable until FACEIT actually ends it.
+      const converged = faceitMatchConverged({
+        dataComplete,
+        finished,
+        attempts,
+        maxAttempts: FACEIT_MAX_MATCH_FETCH_ATTEMPTS,
+      });
 
       const writable = {
         map: canonical.map,
@@ -604,6 +630,15 @@ export async function runFaceitSync(
       }
     } catch (error) {
       const faceitError = toFaceitError(error);
+      // Budget/deadline exhaustion is a CONTROLLED stop, never a data error and
+      // never a permanent failure: the rest is left for the next run and no
+      // partial match is marked as complete.
+      if (isFaceitBudgetError(faceitError.code)) {
+        counters.budgetExhausted = true;
+        counters.matchesDeferred += history.items.length - index;
+        console.info(`[faceit] run_stopped code=${faceitError.code}`);
+        break;
+      }
       // A transient upstream failure must fail the JOB (so it is retried with
       // backoff); anything else is recorded against this single match only.
       if (faceitError.retryable) throw faceitError;
@@ -616,6 +651,7 @@ export async function runFaceitSync(
   const lifetime = outOfBudget(1)
     ? null
     : await safeLifetime(client, faceitPlayerId, config.gameId);
+  if (lifetime === null && outOfBudget(1)) counters.budgetExhausted = true;
 
   const now = new Date().toISOString();
   const baseMetadata = profileFields?.metadata ?? previousMetadata;
@@ -628,22 +664,35 @@ export async function runFaceitSync(
   // Last line of defence before writing: no credential-like key may be stored.
   assertSafeConnectionMetadata(metadata);
 
-  await db
-    .from("player_connections")
-    .update({
-      ...(profileFields
-        ? {
-            external_username: profileFields.external_username,
-            profile_url: profileFields.profile_url,
-          }
-        : {}),
-      metadata: metadata as never,
-      last_sync_at: now,
-      last_sync_status: "success",
-      last_sync_error: null,
-      updated_at: now,
-    })
-    .eq("id", connectionId);
+  // FASE 2.2.1D — DISCONNECT RACE: the user may have disconnected while this
+  // job was running. A stale job must never resurrect a disconnected account,
+  // so we re-check and, above all, guard the write with `status = 'connected'`.
+  // Zero rows updated means the disconnect won: that is not corruption.
+  if (await connectionStillActive()) {
+    const { data: updated } = await db
+      .from("player_connections")
+      .update({
+        ...(profileFields
+          ? {
+              external_username: profileFields.external_username,
+              profile_url: profileFields.profile_url,
+            }
+          : {}),
+        metadata: metadata as never,
+        last_sync_at: now,
+        last_sync_status: "success",
+        last_sync_error: null,
+        updated_at: now,
+      })
+      .eq("id", connectionId)
+      .eq("status", "connected")
+      .select("id");
+    if ((updated?.length ?? 0) === 0) {
+      console.info("[faceit] connection_disconnected_during_sync");
+    }
+  } else {
+    console.info("[faceit] connection_disconnected_during_sync");
+  }
 
   counters.apiCalls = client.requestCount;
   counters.durationMs = Date.now() - startedAt;
