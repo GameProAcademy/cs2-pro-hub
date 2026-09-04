@@ -265,6 +265,16 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       competition_type: input.details?.competition_type ?? input.history?.competition_type ?? null,
       faceit_url: input.details?.faceit_url ?? input.history?.faceit_url ?? null,
       status: input.details?.status ?? input.history?.status ?? null,
+      best_of: input.details?.best_of ?? null,
+      maps_played: input.details?.detailed_results?.length ?? null,
+      /**
+       * Availability only — the demo URL itself is NEVER stored, fetched or
+       * downloaded in this phase. FACEIT demos stay on FACEIT.
+       */
+      demo_available:
+        input.details?.demo_url === undefined || input.details?.demo_url === null
+          ? null
+          : input.details.demo_url.length > 0,
       started_at: startedAt,
       finished_at: finishedAt,
     },
