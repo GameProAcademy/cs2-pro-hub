@@ -87,3 +87,26 @@ data to anonymous readers.
 - `src/lib/sources/publicProfile.ts` — pure URL validation.
 - `src/lib/connections.functions.ts` — read-only listing of the player's own connections.
 - `src/components/pipeline/SourcesPanel.tsx` — honest UI states.
+
+## Phase 2.1.2.1 — hardening (corrections only)
+
+1. **Match deduplication** — the legacy `UNIQUE (player_id, platform, external_match_id)`
+   constraint was dropped. Uniqueness is now `(player_id, data_source, external_match_id)`
+   (partial, `external_match_id IS NOT NULL`), so the same game observed through two
+   different sources coexists as two rows, while a duplicate from the same source is refused.
+2. **Coverage semantics** — `null`/`undefined`/absent = signal missing (`unavailable`);
+   `0` = signal present with an observed value of zero (`available`). Zero is never absence.
+3. **Provenance** — `SourceProvenance` maps directly onto the existing columns
+   (`data_source`, `external_match_id`, `source_fetched_at`, `source_version`) through
+   `provenanceToMatchColumns()`. No redundant column exists.
+4. **GRANTs** — `anon` holds nothing beyond `SELECT` on the public catalogue.
+   `authenticated` cannot write any derived pipeline data
+   (`matches`, `match_metrics`, `match_features`, `match_rounds`, `round_events`,
+   `demo_jobs`, `analyses`, `analysis_findings`, `player_dna_snapshots`,
+   `player_score_snapshots`) and holds no `TRUNCATE`/`TRIGGER`/`REFERENCES` anywhere.
+5. **`player_connections.metadata`** — non-sensitive metadata only. Enforced in the
+   database by `guard_connection_status()` via `public.jsonb_has_sensitive_key()` and in
+   the application by `validateConnectionMetadata()` / `assertSafeConnectionMetadata()`
+   (case-insensitive, separator-insensitive, recursive).
+6. **Tests** — `src/lib/sources/__tests__/hardening.test.ts` plus checks 25a–25f in
+   `supabase/tests/security_checks.sql`.

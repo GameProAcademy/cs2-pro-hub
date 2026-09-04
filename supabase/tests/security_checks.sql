@@ -262,7 +262,62 @@ WITH catalogue AS (
            SELECT 1 FROM pg_indexes
            WHERE schemaname = 'public' AND indexname = 'matches_source_external_uniq'
          )
+
+  -- 25. Phase 2.1.2.1 hardening
+  UNION ALL
+  SELECT '25a. legacy platform-based match uniqueness is gone',
+         NOT EXISTS (
+           SELECT 1 FROM pg_constraint
+           WHERE connamespace = 'public'::regnamespace
+             AND conname = 'matches_player_id_platform_external_match_id_key'
+         )
+
+  UNION ALL
+  SELECT '25b. anon has no privilege on pipeline-generated tables',
+         NOT EXISTS (
+           SELECT 1 FROM unnest(ARRAY['demo_jobs','match_features','match_rounds','round_events',
+                                      'player_connections','matches','match_metrics']) AS t
+           WHERE has_table_privilege('anon', ('public.'||t)::regclass,
+                                     'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         )
+
+  UNION ALL
+  SELECT '25c. authenticated cannot write derived pipeline data',
+         NOT EXISTS (
+           SELECT 1 FROM unnest(ARRAY['demo_jobs','match_features','match_rounds','round_events',
+                                      'match_metrics','matches','analyses','analysis_findings',
+                                      'player_dna_snapshots','player_score_snapshots']) AS t
+           WHERE has_table_privilege('authenticated', ('public.'||t)::regclass,
+                                     'INSERT,UPDATE,DELETE')
+         )
+
+  UNION ALL
+  SELECT '25d. catalogue tables are read-only for clients',
+         NOT EXISTS (
+           SELECT 1 FROM catalogue
+           WHERE has_table_privilege('anon', ('public.'||t)::regclass,
+                                     'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+              OR has_table_privilege('authenticated', ('public.'||t)::regclass,
+                                     'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         )
+
+  UNION ALL
+  SELECT '25e. authenticated cannot update player_connections',
+         NOT has_table_privilege('authenticated','public.player_connections',
+                                 'UPDATE,TRUNCATE,TRIGGER,REFERENCES')
+
+  UNION ALL
+  SELECT '25f. connection metadata guard rejects credential-like keys',
+         (SELECT bool_and(pg_get_functiondef(p.oid) LIKE '%accesstoken%')
+          FROM pg_proc p WHERE p.proname = 'jsonb_has_sensitive_key'
+            AND p.pronamespace = 'public'::regnamespace)
+         AND NOT has_function_privilege('authenticated',
+               'public.jsonb_has_sensitive_key(jsonb)', 'EXECUTE')
+         AND (SELECT pg_get_functiondef(p.oid) LIKE '%jsonb_has_sensitive_key%'
+              FROM pg_proc p WHERE p.proname = 'guard_connection_status'
+                AND p.pronamespace = 'public'::regnamespace)
 )
+
 SELECT check_name,
        CASE WHEN passed THEN 'PASS' ELSE 'FAIL' END AS result
 FROM checks

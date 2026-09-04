@@ -96,23 +96,28 @@ export function coverageRatio(coverage: DataCoverage): number {
 }
 
 /**
- * Converts an observed-sample description into coverage. `null` means "not
- * reported" and stays `unavailable`; it is never coerced to 0.
+ * Converts an observed-sample description into coverage.
+ *
+ * SEMANTICS (do not "simplify" this):
+ * - `null` / `undefined` / absent  => we do NOT have the signal  -> `unavailable`
+ * - `0`                            => we DO have the signal and the observed
+ *                                     value is zero              -> `available`
+ * - `> 0`                          => available (or `partial` when the sample is
+ *                                     below the configured threshold)
+ *
+ * Zero is an observation, never an absence.
  */
 export function coverageFromSamples(
-  samples: Partial<Record<DataSignal, number | null>>,
+  samples: Partial<Record<DataSignal, number | null | undefined>>,
   partialBelow: Partial<Record<DataSignal, number>> = {},
 ): DataCoverage {
   const coverage = emptyCoverage();
   for (const signal of DATA_SIGNALS) {
     const value = samples[signal];
-    if (value === undefined || value === null) continue;
-    if (value <= 0) {
-      coverage[signal] = "unavailable";
-      continue;
-    }
+    if (value === undefined || value === null || Number.isNaN(value)) continue;
     const threshold = partialBelow[signal];
     coverage[signal] = threshold !== undefined && value < threshold ? "partial" : "available";
   }
   return coverage;
 }
+
