@@ -3,7 +3,10 @@
  * Every other locale file must satisfy `Dictionary` (= typeof ptBR).
  * Brand names (GamePro, CS2 PRO, AI COACH) are never translated.
  */
+import { profilePtBR } from "./profile/pt-BR";
+
 export const ptBR = {
+  ...profilePtBR,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análise de performance e treinamento para Counter-Strike 2",

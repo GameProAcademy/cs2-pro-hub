@@ -18,7 +18,7 @@ export const APP_TAGLINE = "Análise de performance e treinamento para Counter-S
 /** Feature flags for capabilities intentionally NOT implemented in this stage. */
 export const FEATURES = {
   realAuth: true,
-  profilePersistence: false,
+  profilePersistence: true,
   /** Demo ingestion pipeline exists; real parsing depends on the parser worker. */
   demoParser: true,
   faceitIntegration: true,

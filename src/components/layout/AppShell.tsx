@@ -10,7 +10,6 @@ import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
 import { navItems, uploadNavItem } from "@/config/navigation";
-import { demoProfile } from "@/data/demoPlayer";
 import { useT } from "@/i18n";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { useAccount } from "@/hooks/useAccount";
@@ -78,9 +77,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
           />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">
-              {account?.display_name || account?.nickname || account?.email || demoProfile.name}
+              {account?.display_name || account?.nickname || account?.email || "—"}
             </p>
-            <p className="truncate text-xs text-muted-foreground">{demoProfile.level}</p>
+            <p className="truncate text-xs text-muted-foreground">{account?.email ?? "—"}</p>
           </div>
         </div>
         {DEMO_DATA ? (

@@ -12,9 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CountrySelect } from "@/components/profile/CountrySelect";
 import { useI18n, useT } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { MIN_PASSWORD_LENGTH, isValidEmail, signUpErrorKey } from "@/lib/auth";
+import {
+  GOAL_CODES,
+  PLATFORM_CODES,
+  detectCountryCode,
+  goalLabelKey,
+  platformLabelKey,
+} from "@/lib/profile/taxonomy";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
@@ -45,7 +53,8 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [country, setCountry] = useState("");
+  // Detected once as a DEFAULT only; the user can always change it.
+  const [country, setCountry] = useState<string>(() => detectCountryCode() ?? "");
   const [level, setLevel] = useState("");
   const [platform, setPlatform] = useState("");
   const [goal, setGoal] = useState("");
@@ -193,10 +202,10 @@ function RegisterPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="country">{t("register.country")}</Label>
-              <Input
+              <CountrySelect
                 id="country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                value={country || null}
+                onChange={setCountry}
                 disabled={loading}
               />
             </div>
@@ -221,10 +230,11 @@ function RegisterPage() {
                   <SelectValue placeholder={t("register.select")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="faceit">FACEIT</SelectItem>
-                  <SelectItem value="gamersclub">Gamers Club</SelectItem>
-                  <SelectItem value="mm">{t("register.platform.mm")}</SelectItem>
-                  <SelectItem value="esea">ESEA</SelectItem>
+                  {PLATFORM_CODES.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {t(platformLabelKey(code))}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -235,10 +245,11 @@ function RegisterPage() {
                   <SelectValue placeholder={t("register.select")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rank">{t("register.goal.rank")}</SelectItem>
-                  <SelectItem value="team">{t("register.goal.team")}</SelectItem>
-                  <SelectItem value="pro">{t("register.goal.pro")}</SelectItem>
-                  <SelectItem value="consistency">{t("register.goal.consistency")}</SelectItem>
+                  {GOAL_CODES.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {t(goalLabelKey(code))}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
