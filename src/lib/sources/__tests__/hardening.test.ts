@@ -61,7 +61,6 @@ describe("coverage semantics (zero is an observation)", () => {
   });
 });
 
-
 describe("provenance contract maps onto the real columns", () => {
   it("uses external_match_id as the source record id", () => {
     const provenance: SourceProvenance = {
