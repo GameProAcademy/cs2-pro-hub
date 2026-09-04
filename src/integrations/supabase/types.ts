@@ -1488,6 +1488,7 @@ export type Database = {
       is_admin_master: { Args: { _user_id: string }; Returns: boolean }
       is_primary_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      jsonb_has_sensitive_key: { Args: { _value: Json }; Returns: boolean }
       owns_analysis: { Args: { _analysis_id: string }; Returns: boolean }
       owns_conversation: {
         Args: { _conversation_id: string }
