@@ -20,3 +20,11 @@
 
 - [ ] Agendamento externo do cron (`/api/public/pipeline-cron`) com o segredo já configurado.
 - [ ] Gamers Club, dashboard real, Player DNA e AI Coach com dados reais.
+
+## FASE 2.2.1D — FACEIT FINAL VALIDATION PATCH (concluída)
+- `finished` baseado em `finished_at`/status terminal (`isFaceitMatchFinished`); `match_date` nunca é prova.
+- Convergência isolada em `faceitMatchConverged`: partida ongoing nunca converge por tentativas.
+- API call budget virou hard ceiling no `FaceitClient` (conta retries; erro `FACEIT_API_BUDGET_EXHAUSTED`).
+- Worker deadline propagado ao client (abort = min(timeout, deadline); `FACEIT_WORKER_DEADLINE_EXCEEDED`).
+- Disconnect race: update final de `player_connections` guardado por `status = 'connected'`.
+- Testes novos: `faceit.validation.test.ts` (21) e `faceit.lifecycle.test.ts` (3). Total 169.
