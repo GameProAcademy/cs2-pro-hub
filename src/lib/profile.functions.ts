@@ -76,12 +76,6 @@ const saveSchema = z.object({
 
 export type SavePlayerProfileInput = z.input<typeof saveSchema>;
 
-type AuthedSupabase = Parameters<
-  Parameters<ReturnType<typeof createServerFn>["handler"]>[0]
->[0] extends never
-  ? never
-  : never;
-
 /** Loads (and lazily creates) the player row that belongs to the caller. */
 async function loadOwnPlayer(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,10 +99,13 @@ async function loadOwnPlayer(
   return created.data;
 }
 
-export const getPlayerProfile = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<PlayerProfilePayload> => {
-    const { supabase, userId } = context;
+/** Single read path, shared by the read and the write server functions. */
+async function readProfilePayload(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+): Promise<PlayerProfilePayload> {
+  {
     const player = await loadOwnPlayer(supabase, userId);
 
     const [account, roles, goals, identities, connections] = await Promise.all([
@@ -154,7 +151,14 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       identities: (identities.data ?? []) as PlayerIdentityRow[],
       connections: (connections.data ?? []) as PlayerConnectionRow[],
     };
-  });
+  }
+}
+
+export const getPlayerProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PlayerProfilePayload> =>
+    readProfilePayload(context.supabase, context.userId),
+  );
 
 export const savePlayerProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -215,5 +219,5 @@ export const savePlayerProfile = createServerFn({ method: "POST" })
       if (insertGoals.error) throw new Error(insertGoals.error.message);
     }
 
-    return getPlayerProfile();
+    return readProfilePayload(supabase, userId);
   });
