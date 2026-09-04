@@ -5,7 +5,11 @@
  * accepts `null`. ABSOLUTE RULE: a missing statistic stays `null`; it is never
  * turned into `0`, and nothing is ever estimated and presented as official.
  */
-import { FACEIT_TERMINAL_MATCH_STATUSES } from "./faceit.constants";
+import {
+  FACEIT_CANCELLED_MATCH_STATUSES,
+  FACEIT_FINISHED_MATCH_STATUSES,
+  FACEIT_TERMINAL_MATCH_STATUSES,
+} from "./faceit.constants";
 import type {
   FaceitHistoryItem,
   FaceitMatch,
@@ -166,6 +170,8 @@ export interface CanonicalFaceitMatch {
    * `match_date`, which may come from `started_at`.
    */
   finished: boolean;
+  /** FASE 2.2.1E — lifecycle over (finished normally OR cancelled/aborted). */
+  terminal: boolean;
   team_player: string | null;
   team_opponent: string | null;
   duration_seconds: number | null;
@@ -458,6 +464,7 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
     result,
     rounds,
     finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
+    terminal: isFaceitMatchTerminal({ status: statusText, finishedAt: finishedRaw }),
     team_player: teamPlayer,
     team_opponent: teamOpponent,
     duration_seconds: duration,
@@ -472,6 +479,7 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       faceit_url: input.details?.faceit_url ?? input.history?.faceit_url ?? null,
       status: statusText,
       finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
+      terminal: isFaceitMatchTerminal({ status: statusText, finishedAt: finishedRaw }),
       best_of: series.bestOf,
       maps_played: series.mapsPlayed,
       is_series: series.isSeries,
