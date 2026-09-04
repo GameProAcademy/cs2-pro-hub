@@ -27,6 +27,7 @@ export const FACEIT_ERROR_CODES = [
   "FACEIT_OAUTH_FAILED",
   "FACEIT_NOT_CONNECTED",
   "FACEIT_SYNC_IN_PROGRESS",
+  "FACEIT_JOB_STALE",
   "FACEIT_INTERNAL_ERROR",
 ] as const;
 
@@ -38,6 +39,8 @@ const RETRYABLE: ReadonlySet<FaceitErrorCode> = new Set<FaceitErrorCode>([
   "FACEIT_TEMPORARY_ERROR",
   "FACEIT_TIMEOUT",
   "FACEIT_NETWORK_ERROR",
+  // A job abandoned by a dead worker deserves exactly one more chance.
+  "FACEIT_JOB_STALE",
 ]);
 
 export function isRetryableFaceitError(code: FaceitErrorCode): boolean {

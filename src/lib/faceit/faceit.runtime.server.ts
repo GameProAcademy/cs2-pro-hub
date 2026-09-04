@@ -6,6 +6,7 @@
  */
 import { createFaceitClient, type FaceitClient } from "./faceit.http";
 import { requireFaceitDataApiConfig, type FaceitDataApiConfig } from "./faceit.config.server";
+import { FACEIT_MIN_CALL_SPACING_MS } from "./faceit.constants";
 
 export interface FaceitRuntime {
   client: FaceitClient;
@@ -19,6 +20,7 @@ export function faceitRuntime(): FaceitRuntime {
     baseUrl: config.baseUrl,
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,
+    minSpacingMs: FACEIT_MIN_CALL_SPACING_MS,
     onLog: (entry) => {
       console.info(
         `[faceit] endpoint=${entry.endpoint} status=${entry.status ?? "none"} code=${

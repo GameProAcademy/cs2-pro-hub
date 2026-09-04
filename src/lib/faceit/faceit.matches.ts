@@ -31,13 +31,36 @@ export interface HistoryQuery {
   to?: number | undefined;
 }
 
+/**
+ * Why pagination stopped. `end_of_history` is the ONLY value that proves the
+ * requested window was fully read; anything else means the result is truncated.
+ */
+export type HistoryStopReason =
+  "end_of_history" | "match_limit" | "page_limit" | "offset_limit" | "duplicate_pages";
+
 export interface HistoryResult {
   items: FaceitHistoryItem[];
   pages: number;
+  /** `true` unless we proved we reached the end of the requested window. */
   truncated: boolean;
+  stopReason: HistoryStopReason;
 }
 
-/** GET /players/{player_id}/history — bounded, de-duplicated pagination. */
+/**
+ * Consecutive pages containing exclusively already-seen matches that we tolerate
+ * before stopping. Needed because the incremental `from` window overlaps on
+ * purpose: the first page is often entirely known while newer pages are not.
+ */
+export const FACEIT_HISTORY_DUPLICATE_PAGE_TOLERANCE = 2;
+
+/**
+ * GET /players/{player_id}/history — bounded, de-duplicated pagination.
+ *
+ * A SHORT PAGE IS NOT PROOF OF THE END OF HISTORY: FACEIT may return fewer items
+ * than requested and still have more. We only claim `end_of_history` after an
+ * empty page. Every other exit sets `truncated = true` so the caller knows data
+ * may remain, instead of silently losing it.
+ */
 export async function fetchFaceitHistory(
   client: FaceitClient,
   query: HistoryQuery,
@@ -48,13 +71,23 @@ export async function fetchFaceitHistory(
   const items: FaceitHistoryItem[] = [];
   let pages = 0;
   let offset = 0;
-  let truncated = false;
+  let knownOnlyPages = 0;
+  let stopReason: HistoryStopReason = "page_limit";
 
-  while (pages < maxPages && items.length < query.maxMatches) {
-    if (offset > FACEIT_HISTORY_MAX_OFFSET) {
-      truncated = true;
+  while (true) {
+    if (items.length >= query.maxMatches) {
+      stopReason = "match_limit";
       break;
     }
+    if (pages >= maxPages) {
+      stopReason = "page_limit";
+      break;
+    }
+    if (offset > FACEIT_HISTORY_MAX_OFFSET) {
+      stopReason = "offset_limit";
+      break;
+    }
+
     const limit = Math.min(pageSize, query.maxMatches - items.length);
     const payload = await client.get(`/players/${encodeURIComponent(query.playerId)}/history`, {
       game: query.gameId,
@@ -67,6 +100,12 @@ export async function fetchFaceitHistory(
     const pageItems = page.items ?? [];
     pages += 1;
 
+    // An EMPTY page is the only proof that the window has been fully read.
+    if (pageItems.length === 0) {
+      stopReason = "end_of_history";
+      break;
+    }
+
     let added = 0;
     for (const item of pageItems) {
       if (seen.has(item.match_id)) continue;
@@ -76,14 +115,22 @@ export async function fetchFaceitHistory(
       if (items.length >= query.maxMatches) break;
     }
 
-    // Stop when the page is empty or shorter than requested: there is no more
-    // history. A page that only repeats known ids also stops the loop.
-    if (pageItems.length === 0 || pageItems.length < limit || added === 0) break;
+    // Offset always advances by the page size actually returned, so the loop
+    // makes progress even when every item was already known.
     offset += pageItems.length;
+
+    if (added === 0) {
+      knownOnlyPages += 1;
+      if (knownOnlyPages >= FACEIT_HISTORY_DUPLICATE_PAGE_TOLERANCE) {
+        stopReason = "duplicate_pages";
+        break;
+      }
+    } else {
+      knownOnlyPages = 0;
+    }
   }
 
-  if (items.length >= query.maxMatches) truncated = true;
-  return { items, pages, truncated };
+  return { items, pages, truncated: stopReason !== "end_of_history", stopReason };
 }
 
 /** GET /matches/{match_id} */

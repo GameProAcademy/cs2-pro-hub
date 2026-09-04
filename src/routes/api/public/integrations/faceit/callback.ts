@@ -39,9 +39,8 @@ export const Route = createFileRoute("/api/public/integrations/faceit/callback")
 
         if (oauthError) {
           // The attempt is burned even on the error path: no replay window.
-          const { consumeFaceitOAuthStateQuietly } = await import(
-            "@/lib/faceit/faceit.oauth.server"
-          );
+          const { consumeFaceitOAuthStateQuietly } =
+            await import("@/lib/faceit/faceit.oauth.server");
           await consumeFaceitOAuthStateQuietly(state);
           const mapped = faceitErrorFromOAuthParam(oauthError);
           console.warn(`[faceit] faceit_connection_failure code=${mapped}`);
@@ -52,9 +51,7 @@ export const Route = createFileRoute("/api/public/integrations/faceit/callback")
           const { consumeFaceitOAuthState, exchangeFaceitCode, resolveFaceitPlayerId } =
             await import("@/lib/faceit/faceit.oauth.server");
           const { finalizeFaceitConnection } = await import("@/lib/faceit/faceit.connect.server");
-          const { enqueueFaceitSync, processNextFaceitSyncJob } = await import(
-            "@/lib/faceit/faceit.sync.server"
-          );
+          const { enqueueFaceitSync } = await import("@/lib/faceit/faceit.sync.server");
 
           if (!state) {
             return redirectTo(request, errorPath(callbackReason("FACEIT_OAUTH_STATE_INVALID")));
@@ -68,13 +65,13 @@ export const Route = createFileRoute("/api/public/integrations/faceit/callback")
           const faceitPlayerId = await resolveFaceitPlayerId(token.accessToken);
           const result = await finalizeFaceitConnection(attempt.userId, faceitPlayerId);
 
-          // Synchronisation NEVER runs inside this request.
-          const queued = await enqueueFaceitSync(
+          // Synchronisation NEVER runs inside this request: we enqueue and
+          // redirect. The cron worker claims and executes the job.
+          await enqueueFaceitSync(
             result.playerId,
             result.connectionId,
             result.reconnected ? "incremental" : "initial",
           );
-          if (!queued.alreadyRunning) void processNextFaceitSyncJob().catch(() => undefined);
 
           console.info("[faceit] faceit_connection_success");
           return redirectTo(request, SUCCESS_PATH);

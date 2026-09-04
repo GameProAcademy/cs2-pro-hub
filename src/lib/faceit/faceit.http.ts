@@ -19,6 +19,12 @@ export interface FaceitClientOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Structured, secret-free observability hook. */
   onLog?: (entry: FaceitRequestLog) => void;
+  /**
+   * Minimum spacing between two requests (FASE 2.2.1C). Simple, per-client
+   * pacing: it prevents needless bursts without pretending to be a distributed
+   * rate limiter. Retry-After and backoff remain untouched and always win.
+   */
+  minSpacingMs?: number;
 }
 
 export interface FaceitRequestLog {
@@ -69,18 +75,27 @@ export function parseRetryAfter(header: string | null): number | undefined {
   return seconds > 0 ? seconds : 0;
 }
 
-
 export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
   const doFetch = options.fetchImpl ?? globalThis.fetch;
   const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const base = options.baseUrl.replace(/\/+$/, "");
+  const minSpacingMs = Math.max(0, options.minSpacingMs ?? 0);
   let requestCount = 0;
+  let lastRequestAt = 0;
+
+  async function pace(): Promise<void> {
+    if (minSpacingMs === 0) return;
+    const waitMs = lastRequestAt + minSpacingMs - Date.now();
+    if (waitMs > 0) await sleep(waitMs);
+    lastRequestAt = Date.now();
+  }
 
   async function attemptOnce(url: string, endpoint: string, attempt: number): Promise<unknown> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), options.timeoutMs);
     const startedAt = Date.now();
     requestCount += 1;
+    lastRequestAt = startedAt;
     try {
       const response = await doFetch(url, {
         method: "GET",
@@ -155,6 +170,7 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
       let lastError: FaceitError = new FaceitError("FACEIT_INTERNAL_ERROR");
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
+          await pace();
           return await attemptOnce(url.toString(), endpoint, attempt);
         } catch (error) {
           lastError = toFaceitError(error);

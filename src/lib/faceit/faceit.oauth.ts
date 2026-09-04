@@ -46,10 +46,7 @@ export function generateState(): string {
 
 /** Only the hash of the state is persisted — never the raw state. */
 export async function hashState(state: string): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(state),
-  );
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(state));
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -122,4 +119,3 @@ export function resolveFaceitIdentityFromPayload(
 export function extractFaceitPlayerId(payload: unknown): string | null {
   return resolveFaceitIdentityFromPayload(payload)?.playerId ?? null;
 }
-

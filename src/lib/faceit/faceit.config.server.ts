@@ -73,7 +73,7 @@ export function faceitConfigStatus(): FaceitConfigStatus {
     tokenUrl: isHttpsUrl(env("FACEIT_OAUTH_TOKEN_URL")),
     userinfoUrl: isHttpsUrl(env("FACEIT_OAUTH_USERINFO_URL")),
     redirectUri: isAllowedRedirectUri(env("FACEIT_REDIRECT_URI")),
-    apiBaseUrl: true,
+    apiBaseUrl: isHttpsUrl(env("FACEIT_API_BASE_URL") ?? FACEIT_DEFAULT_API_BASE_URL),
     gameId: true,
   };
   return {
@@ -89,14 +89,41 @@ export function faceitConfigStatus(): FaceitConfigStatus {
   };
 }
 
-
-function isHttpsUrl(value: string | null): boolean {
+export function isHttpsUrl(value: string | null): boolean {
   if (!value) return false;
   try {
     return new URL(value).protocol === "https:";
   } catch {
     return false;
   }
+}
+
+/**
+ * FASE 2.2.1C — HTTPS is enforced at the EFFECTIVE POINT OF USE, not only in the
+ * diagnostics view. A Bearer token (API key or access token) must never be sent
+ * over plain HTTP. Loopback HTTP is tolerated only outside production, so a
+ * local mock server remains usable during development.
+ */
+export function requireSecureFaceitUrl(name: string, value: string | null): string {
+  if (!value) throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
+  }
+  if (url.protocol === "https:") return value;
+  const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (url.protocol === "http:" && isLoopback && process.env["NODE_ENV"] !== "production") {
+    console.warn(`[faceit] insecure_url_allowed_in_development name=${name}`);
+    return value;
+  }
+  throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
+}
+
+/** OAuth userinfo endpoint — HTTPS enforced here, where the token is sent. */
+export function requireFaceitUserinfoUrl(): string {
+  return requireSecureFaceitUrl("FACEIT_OAUTH_USERINFO_URL", env("FACEIT_OAUTH_USERINFO_URL"));
 }
 
 /** HTTPS required; plain http tolerated only for localhost in development. */
@@ -148,7 +175,11 @@ export function requireFaceitDataApiConfig(): FaceitDataApiConfig {
   if (!apiKey) throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
   return {
     apiKey,
-    baseUrl: env("FACEIT_API_BASE_URL") ?? FACEIT_DEFAULT_API_BASE_URL,
+    // The API key travels in the Authorization header: HTTPS is mandatory.
+    baseUrl: requireSecureFaceitUrl(
+      "FACEIT_API_BASE_URL",
+      env("FACEIT_API_BASE_URL") ?? FACEIT_DEFAULT_API_BASE_URL,
+    ),
     gameId: env("FACEIT_GAME_ID") ?? FACEIT_DEFAULT_GAME_ID,
     timeoutMs: int("FACEIT_REQUEST_TIMEOUT_MS", FACEIT_DEFAULT_TIMEOUT_MS),
     maxRetries: int("FACEIT_MAX_RETRIES", FACEIT_DEFAULT_MAX_RETRIES),
