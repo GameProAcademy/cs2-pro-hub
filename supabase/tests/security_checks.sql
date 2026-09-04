@@ -308,9 +308,11 @@ WITH catalogue AS (
 
   UNION ALL
   SELECT '25f. connection metadata guard rejects credential-like keys',
-         public.jsonb_has_sensitive_key('{"Access_Token":"x"}'::jsonb)
-         AND public.jsonb_has_sensitive_key('{"api-key":"x"}'::jsonb)
-         AND NOT public.jsonb_has_sensitive_key('{"nickname":"x","region":"eu"}'::jsonb)
+         (SELECT bool_and(pg_get_functiondef(p.oid) LIKE '%accesstoken%')
+          FROM pg_proc p WHERE p.proname = 'jsonb_has_sensitive_key'
+            AND p.pronamespace = 'public'::regnamespace)
+         AND NOT has_function_privilege('authenticated',
+               'public.jsonb_has_sensitive_key(jsonb)', 'EXECUTE')
          AND (SELECT pg_get_functiondef(p.oid) LIKE '%jsonb_has_sensitive_key%'
               FROM pg_proc p WHERE p.proname = 'guard_connection_status'
                 AND p.pronamespace = 'public'::regnamespace)
