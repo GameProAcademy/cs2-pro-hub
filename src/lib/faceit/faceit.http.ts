@@ -35,18 +35,40 @@ export interface FaceitClient {
   readonly requestCount: number;
 }
 
-function backoffMs(attempt: number, retryAfterSeconds?: number): number {
+/** Hard ceiling for any single wait, so a hostile Retry-After cannot stall us. */
+export const FACEIT_MAX_BACKOFF_MS = 30_000;
+
+/**
+ * Exponential backoff with full jitter. `Retry-After` always wins (capped), and
+ * jitter avoids synchronised retry storms across concurrent jobs.
+ */
+export function faceitBackoffMs(
+  attempt: number,
+  retryAfterSeconds?: number,
+  random: () => number = Math.random,
+): number {
   if (retryAfterSeconds !== undefined && retryAfterSeconds >= 0) {
-    return Math.min(retryAfterSeconds, 30) * 1000;
+    return Math.min(retryAfterSeconds * 1000, FACEIT_MAX_BACKOFF_MS);
   }
-  return Math.min(500 * 2 ** (attempt - 1), 8000);
+  const ceiling = Math.min(500 * 2 ** (attempt - 1), 8000);
+  // Full jitter, but never below 100ms so we do not hot-loop.
+  return Math.max(100, Math.round(ceiling * (0.5 + random() * 0.5)));
 }
 
-function parseRetryAfter(header: string | null): number | undefined {
+/** `Retry-After` is either delta-seconds or an HTTP date; both are supported. */
+export function parseRetryAfter(header: string | null): number | undefined {
   if (!header) return undefined;
-  const seconds = Number.parseInt(header, 10);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+  const trimmed = header.trim();
+  if (/^\d+$/.test(trimmed)) {
+    const seconds = Number.parseInt(trimmed, 10);
+    return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+  }
+  const date = Date.parse(trimmed);
+  if (!Number.isFinite(date)) return undefined;
+  const seconds = Math.ceil((date - Date.now()) / 1000);
+  return seconds > 0 ? seconds : 0;
 }
+
 
 export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
   const doFetch = options.fetchImpl ?? globalThis.fetch;
@@ -137,7 +159,7 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
         } catch (error) {
           lastError = toFaceitError(error);
           if (!lastError.retryable || attempt === maxAttempts) throw lastError;
-          await sleep(backoffMs(attempt, lastError.retryAfterSeconds));
+          await sleep(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
         }
       }
       throw lastError;

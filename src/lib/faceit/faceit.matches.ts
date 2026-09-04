@@ -27,8 +27,8 @@ export interface HistoryQuery {
   maxPages: number;
   /** Page size; clamped to the documented 100. */
   pageSize?: number;
-  from?: number;
-  to?: number;
+  from?: number | undefined;
+  to?: number | undefined;
 }
 
 export interface HistoryResult {

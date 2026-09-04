@@ -90,9 +90,27 @@ export const faceitMatchSchema = z.object({
   competition_type: nullableString,
   organizer_id: nullableString,
   status: nullableString,
+  best_of: nullableNumber,
   started_at: nullableNumber,
   finished_at: nullableNumber,
   faceit_url: nullableString,
+  /**
+   * Reference ONLY. The CS2 PRO never downloads a FACEIT demo and never calls
+   * the Download API; we keep availability as external metadata, not the URL.
+   */
+  demo_url: z.array(z.string()).nullish().transform((v) => v ?? null),
+  detailed_results: z
+    .array(
+      z
+        .object({
+          asc_score: z.boolean().nullish(),
+          winner: nullableString,
+          factions: z.record(z.string(), z.object({ score: nullableNumber }).passthrough()).nullish(),
+        })
+        .passthrough(),
+    )
+    .nullish()
+    .transform((v) => v ?? null),
   voting: z
     .object({ map: z.object({ pick: z.array(z.string()).nullish() }).nullish() })
     .nullish(),

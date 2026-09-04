@@ -18,6 +18,7 @@ import { FaceitError, faceitErrorFromStatus, toFaceitError } from "./faceit.erro
 import {
   buildAuthorizeUrl,
   extractFaceitPlayerId,
+  resolveFaceitIdentityFromPayload,
   codeChallengeS256,
   FACEIT_OAUTH_DEFAULT_SCOPE,
   generateCodeVerifier,
@@ -113,6 +114,19 @@ export async function consumeFaceitOAuthState(state: string): Promise<ConsumedAt
   };
 }
 
+/**
+ * Consumes a state without raising. Used on the ERROR callback path so that a
+ * failed/denied consent still burns the attempt (no replay window is left open).
+ */
+export async function consumeFaceitOAuthStateQuietly(state: string | null): Promise<void> {
+  if (!state) return;
+  try {
+    await consumeFaceitOAuthState(state);
+  } catch {
+    // An invalid/expired/consumed state on the error path is not actionable.
+  }
+}
+
 /** Invalidates every pending attempt of a user (used on disconnect). */
 export async function invalidateFaceitOAuthAttempts(userId: string): Promise<void> {
   const db = await admin();
@@ -177,7 +191,17 @@ export async function exchangeFaceitCode(
     throw new FaceitError("FACEIT_MALFORMED_RESPONSE");
   }
 
+  // OAuth error object returned with a 200 body is still a failure.
+  if (payload && typeof payload === "object" && "error" in (payload as object)) {
+    throw new FaceitError("FACEIT_OAUTH_INVALID_GRANT");
+  }
+
   const token = parseFaceit(faceitTokenResponseSchema, payload);
+  // Only bearer tokens are usable by this integration; anything else is refused
+  // rather than silently sent as a bearer credential.
+  if (token.token_type && token.token_type.toLowerCase() !== "bearer") {
+    throw new FaceitError("FACEIT_OAUTH_FAILED");
+  }
   return { accessToken: token.access_token, idToken: token.id_token ?? null };
 }
 
@@ -211,9 +235,11 @@ export async function resolveFaceitPlayerId(
     throw new FaceitError("FACEIT_MALFORMED_RESPONSE");
   }
 
-  const playerId = extractFaceitPlayerId(payload);
-  if (!playerId) throw new FaceitError("FACEIT_PLAYER_NOT_FOUND");
-  return playerId;
+  const resolution = resolveFaceitIdentityFromPayload(payload);
+  if (!resolution) throw new FaceitError("FACEIT_PLAYER_NOT_FOUND");
+  // Traceability without secrets: which documented field resolved the identity.
+  console.info(`[faceit] identity_resolved source=${resolution.source}`);
+  return resolution.playerId;
 }
 
-export { extractFaceitPlayerId };
+export { extractFaceitPlayerId, resolveFaceitIdentityFromPayload };
