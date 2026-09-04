@@ -22,18 +22,30 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } = await import(
           "@/lib/pipeline/jobs.server"
         );
+        const { processNextFaceitSyncJob } = await import("@/lib/faceit/faceit.sync.server");
 
         const recovered = await recoverStaleJobs();
         const deleted = await cleanupExpiredDemos(50);
         const jobId = await claimNextJob();
         const processed = jobId ? await processJob(jobId) : null;
 
+        // FACEIT synchronisation shares the scheduler but not the demo queue.
+        let faceit: { status: string } | null = null;
+        try {
+          const result = await processNextFaceitSyncJob();
+          faceit = result ? { status: result.status } : null;
+        } catch {
+          faceit = { status: "failed" };
+        }
+
         return Response.json({
           recovered,
           deleted,
           processed: processed ? { status: processed.status, errorCode: processed.errorCode ?? null } : null,
+          faceit,
         });
       },
+
     },
   },
 });

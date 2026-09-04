@@ -380,6 +380,78 @@ export type Database = {
           },
         ]
       }
+      faceit_sync_jobs: {
+        Row: {
+          attempts: number
+          connection_id: string
+          created_at: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          matches_found: number | null
+          matches_new: number | null
+          matches_updated: number | null
+          metadata: Json
+          next_attempt_at: string | null
+          player_id: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["faceit_sync_job_status"]
+          type: Database["public"]["Enums"]["faceit_sync_job_type"]
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          connection_id: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          matches_found?: number | null
+          matches_new?: number | null
+          matches_updated?: number | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          player_id: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["faceit_sync_job_status"]
+          type?: Database["public"]["Enums"]["faceit_sync_job_type"]
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          connection_id?: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          matches_found?: number | null
+          matches_new?: number | null
+          matches_updated?: number | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          player_id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["faceit_sync_job_status"]
+          type?: Database["public"]["Enums"]["faceit_sync_job_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faceit_sync_jobs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "player_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faceit_sync_jobs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_skills: {
         Row: {
           lesson_id: string
@@ -735,6 +807,7 @@ export type Database = {
           score_opponent: number | null
           score_player: number | null
           source_fetched_at: string | null
+          source_metadata: Json | null
           source_version: string | null
           team_opponent: string | null
           team_player: string | null
@@ -757,6 +830,7 @@ export type Database = {
           score_opponent?: number | null
           score_player?: number | null
           source_fetched_at?: string | null
+          source_metadata?: Json | null
           source_version?: string | null
           team_opponent?: string | null
           team_player?: string | null
@@ -779,6 +853,7 @@ export type Database = {
           score_opponent?: number | null
           score_player?: number | null
           source_fetched_at?: string | null
+          source_metadata?: Json | null
           source_version?: string | null
           team_opponent?: string | null
           team_player?: string | null
@@ -800,6 +875,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oauth_connection_states: {
+        Row: {
+          code_verifier: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          provider: Database["public"]["Enums"]["data_source"]
+          redirect_uri: string
+          state_hash: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          provider: Database["public"]["Enums"]["data_source"]
+          redirect_uri: string
+          state_hash: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: Database["public"]["Enums"]["data_source"]
+          redirect_uri?: string
+          state_hash?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       player_connections: {
         Row: {
@@ -1478,6 +1589,7 @@ export type Database = {
         Args: { _max_concurrent?: number }
         Returns: string
       }
+      cleanup_expired_oauth_states: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1514,6 +1626,19 @@ export type Database = {
         | "gamers_club"
         | "steam"
         | "public_profile"
+      faceit_sync_job_status:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "retrying"
+      faceit_sync_job_type:
+        | "initial"
+        | "incremental"
+        | "manual"
+        | "profile"
+        | "match"
+        | "stats"
       finding_priority: "critical" | "high" | "medium" | "low"
       finding_type: "bottleneck" | "strength" | "recommendation"
       match_result: "win" | "loss" | "draw"
@@ -1663,6 +1788,21 @@ export const Constants = {
       ],
       connection_type: ["oauth", "public_profile", "manual"],
       data_source: ["demo", "faceit", "gamers_club", "steam", "public_profile"],
+      faceit_sync_job_status: [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+        "retrying",
+      ],
+      faceit_sync_job_type: [
+        "initial",
+        "incremental",
+        "manual",
+        "profile",
+        "match",
+        "stats",
+      ],
       finding_priority: ["critical", "high", "medium", "low"],
       finding_type: ["bottleneck", "strength", "recommendation"],
       match_result: ["win", "loss", "draw"],

@@ -5,13 +5,27 @@ import { ChartCard } from "@/components/common/ChartCard";
 import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ProgressBar } from "@/components/common/ProgressBar";
+import { FaceitPanel } from "@/components/integrations/FaceitPanel";
 import { AppShell } from "@/components/layout/AppShell";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { StrengthList } from "@/components/panels/StrengthList";
 import { useT } from "@/i18n";
 import { getAnalysis, getBottlenecks, getStrengths } from "@/services/playerService";
 
+interface AnalysisSearch {
+  connection?: "faceit_success" | "faceit_error";
+  reason?: string;
+}
+
 export const Route = createFileRoute("/_authenticated/analysis")({
+  validateSearch: (search: Record<string, unknown>): AnalysisSearch => {
+    const connection = search["connection"];
+    const reason = search["reason"];
+    return {
+      ...(connection === "faceit_success" || connection === "faceit_error" ? { connection } : {}),
+      ...(typeof reason === "string" && /^[a-z_]{1,40}$/.test(reason) ? { reason } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Meu Raio-X — CS2 PRO AI COACH" },
@@ -33,6 +47,14 @@ export const Route = createFileRoute("/_authenticated/analysis")({
 function AnalysisPage() {
   const t = useT();
   const analysis = getAnalysis();
+  const search = Route.useSearch();
+
+  const callback = search.connection
+    ? {
+        status: search.connection === "faceit_success" ? ("success" as const) : ("error" as const),
+        ...(search.reason ? { reason: search.reason } : {}),
+      }
+    : undefined;
 
   return (
     <AppShell>
@@ -44,6 +66,9 @@ function AnalysisPage() {
         />
 
         <DemoDataNotice context={t("analysis.notice")} />
+
+        <FaceitPanel callback={callback} />
+
 
         <ChartCard title={t("analysis.overall")}>
           <p className="text-sm leading-relaxed text-muted-foreground">{analysis.overall}</p>
