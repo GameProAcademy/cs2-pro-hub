@@ -4,7 +4,7 @@
  * The canonical identity is the FACEIT `player_id`; the nickname is display data
  * only, because it can change at any time.
  */
-import type { FaceitClient } from "./faceit.client";
+import type { FaceitClient } from "./faceit.http";
 import { FaceitError } from "./faceit.errors";
 import { faceitPlayerSchema, parseFaceit, type FaceitPlayer } from "./faceit.types";
 

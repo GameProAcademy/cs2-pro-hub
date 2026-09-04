@@ -4,7 +4,7 @@
  * Lifetime statistics and per-match statistics are DIFFERENT things and are
  * never mixed: the caller always states which one it wants.
  */
-import type { FaceitClient } from "./faceit.client";
+import type { FaceitClient } from "./faceit.http";
 import { FaceitError } from "./faceit.errors";
 import { faceitLifetimeStatsSchema, parseFaceit } from "./faceit.types";
 

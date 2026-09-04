@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { FaceitClient } from "../faceit.client";
+import { FaceitClient } from "../faceit.http";
 import {
   callbackReason,
   FaceitError,

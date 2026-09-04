@@ -8,7 +8,7 @@
  */
 import { assertSafeConnectionMetadata } from "@/lib/sources/connectionMetadata";
 
-import { faceitRuntime } from "./faceit.client.server";
+import { faceitRuntime } from "./faceit.runtime.server";
 import { faceitSourceVersion } from "./faceit.config.server";
 import { FaceitError } from "./faceit.errors";
 import {

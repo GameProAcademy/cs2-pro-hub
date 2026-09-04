@@ -6,7 +6,7 @@
  * `demo_jobs` is NOT reused), only one job per connection can be active, and
  * only transient errors are retried.
  */
-import { faceitRuntime } from "./faceit.client.server";
+import { faceitRuntime } from "./faceit.runtime.server";
 import { faceitSourceVersion } from "./faceit.config.server";
 import { FaceitError, toFaceitError } from "./faceit.errors";
 import {

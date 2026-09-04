@@ -5,7 +5,7 @@
  * total match ceiling) and de-duplicates by `match_id`, so a broken upstream
  * cursor can never produce an infinite loop.
  */
-import type { FaceitClient } from "./faceit.client";
+import type { FaceitClient } from "./faceit.http";
 import { FACEIT_HISTORY_MAX_LIMIT, FACEIT_HISTORY_MAX_OFFSET } from "./faceit.constants";
 import { FaceitError } from "./faceit.errors";
 import {

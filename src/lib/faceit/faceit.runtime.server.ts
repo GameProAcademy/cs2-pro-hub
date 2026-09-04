@@ -4,7 +4,7 @@
  * The API key is read here and nowhere else. Logs are structured and contain no
  * key, token, state, verifier, cookie or upstream body.
  */
-import { createFaceitClient, type FaceitClient } from "./faceit.client";
+import { createFaceitClient, type FaceitClient } from "./faceit.http";
 import { requireFaceitDataApiConfig, type FaceitDataApiConfig } from "./faceit.config.server";
 
 export interface FaceitRuntime {
