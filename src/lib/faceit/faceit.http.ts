@@ -121,14 +121,31 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
     }
   }
 
+  /**
+   * FASE 2.2.1E — deadline-aware wait. A wait that would end after the deadline
+   * is pointless: the request it precedes could never legally start, so we fail
+   * immediately with the deadline code instead of sleeping first.
+   */
+  async function waitFor(ms: number): Promise<void> {
+    if (ms <= 0) return;
+    const deadline = deadlineAt();
+    if (deadline !== undefined && Date.now() + ms >= deadline) {
+      throw new FaceitError("FACEIT_WORKER_DEADLINE_EXCEEDED");
+    }
+    await sleep(ms);
+  }
+
   async function pace(): Promise<void> {
     if (minSpacingMs === 0) return;
     const waitMs = lastRequestAt + minSpacingMs - Date.now();
-    if (waitMs > 0) await sleep(waitMs);
+    await waitFor(waitMs);
     lastRequestAt = Date.now();
   }
 
   async function attemptOnce(url: string, endpoint: string, attempt: number): Promise<unknown> {
+    // FINAL defence: the deadline/budget may have expired while pacing. A
+    // request is NEVER sent just because it was authorised a moment ago.
+    assertCanSend();
     const controller = new AbortController();
     // Abort at whichever comes first: the request timeout or the worker deadline.
     const deadline = deadlineAt();
@@ -179,13 +196,24 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
       });
       return payload;
     } catch (error) {
-      const faceitError = toFaceitError(error);
+      let faceitError = toFaceitError(error);
+      // An in-flight request aborted BECAUSE the worker deadline expired is a
+      // controlled stop, not a retryable timeout.
+      const now = Date.now();
+      const currentDeadline = deadlineAt();
+      if (
+        faceitError.code === "FACEIT_TIMEOUT" &&
+        currentDeadline !== undefined &&
+        now >= currentDeadline
+      ) {
+        faceitError = new FaceitError("FACEIT_WORKER_DEADLINE_EXCEEDED");
+      }
       if (!(error instanceof FaceitError)) {
         options.onLog?.({
           endpoint,
           status: null,
           errorCode: faceitError.code,
-          durationMs: Date.now() - startedAt,
+          durationMs: now - startedAt,
           attempt,
         });
       }
@@ -225,9 +253,10 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
         } catch (error) {
           lastError = toFaceitError(error);
           if (!lastError.retryable || attempt === maxAttempts) throw lastError;
-          // Waiting is pointless if the retry itself could never be sent.
+          // Waiting is pointless if the retry itself could never be sent, and a
+          // Retry-After that ends past the deadline must not be waited out.
           assertCanSend();
-          await sleep(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
+          await waitFor(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
         }
       }
       throw lastError;

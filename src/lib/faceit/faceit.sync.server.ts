@@ -395,7 +395,10 @@ export async function runFaceitSync(
 ): Promise<SyncCounters> {
   const startedAt = Date.now();
   const db = await admin();
-  const apiCallBudget = Math.max(4, options.apiCallBudget ?? FACEIT_JOB_API_CALL_BUDGET);
+  // FASE 2.2.1E — an explicit budget is respected LITERALLY. We only reject
+  // invalid numbers (NaN/Infinity/negative/fractional); we never silently
+  // promote a requested 0, 1 or 2 into a larger ceiling.
+  const apiCallBudget = normalizeApiCallBudget(options.apiCallBudget);
   // FASE 2.2.1D — the ceiling lives INSIDE the client, so every HTTP attempt
   // (retries included) is counted and no code path can bypass it.
   const { client, config } = faceitRuntime({
@@ -549,6 +552,9 @@ export async function runFaceitSync(
       const converged = faceitMatchConverged({
         dataComplete,
         finished,
+        // ONGOING never converges: `source_complete` stays false until FACEIT
+        // ends the lifecycle (finished normally, cancelled or aborted).
+        terminal: canonical.terminal,
         attempts,
         maxAttempts: FACEIT_MAX_MATCH_FETCH_ATTEMPTS,
       });
@@ -648,12 +654,27 @@ export async function runFaceitSync(
   }
 
   // 6. aggregate/lifetime statistics — FACEIT's own aggregation, clearly tagged.
-  const lifetime = outOfBudget(1)
-    ? null
-    : await safeLifetime(client, faceitPlayerId, config.gameId);
-  if (lifetime === null && outOfBudget(1)) counters.budgetExhausted = true;
+  let lifetime: Record<string, number | null> | null = null;
+  if (outOfBudget(1)) {
+    counters.budgetExhausted = true;
+  } else {
+    try {
+      // FASE 2.2.1E — deadline/budget errors are NOT "lifetime unavailable":
+      // they propagate out of `safeLifetime` and are recorded as an incomplete
+      // run, never swallowed into `null`.
+      lifetime = await safeLifetime(client, faceitPlayerId, config.gameId);
+    } catch (error) {
+      const faceitError = toFaceitError(error);
+      if (!isFaceitBudgetError(faceitError.code)) throw faceitError;
+      counters.budgetExhausted = true;
+      console.info(`[faceit] run_stopped code=${faceitError.code} stage=lifetime`);
+    }
+  }
 
   const now = new Date().toISOString();
+  // Execution incomplete != success: budget/deadline exhaustion or matches left
+  // behind must be visible on the connection status.
+  const incomplete = counters.budgetExhausted || counters.matchesDeferred > 0;
   const baseMetadata = profileFields?.metadata ?? previousMetadata;
   const metadata: Record<string, unknown> = {
     ...baseMetadata,
@@ -680,8 +701,9 @@ export async function runFaceitSync(
           : {}),
         metadata: metadata as never,
         last_sync_at: now,
-        last_sync_status: "success",
-        last_sync_error: null,
+        // FASE 2.2.1E — an interrupted run is NEVER reported as success.
+        last_sync_status: incomplete ? "partial" : "success",
+        last_sync_error: incomplete ? "FACEIT_SYNC_INCOMPLETE" : null,
         updated_at: now,
       })
       .eq("id", connectionId)
@@ -697,6 +719,17 @@ export async function runFaceitSync(
   counters.apiCalls = client.requestCount;
   counters.durationMs = Date.now() - startedAt;
   return counters;
+}
+
+/**
+ * FASE 2.2.1E — safe normalisation of an explicitly requested API call budget.
+ * Invalid input falls back to the default; a valid value is used verbatim.
+ */
+export function normalizeApiCallBudget(requested?: number): number {
+  if (requested === undefined) return FACEIT_JOB_API_CALL_BUDGET;
+  if (!Number.isFinite(requested)) return FACEIT_JOB_API_CALL_BUDGET;
+  const floored = Math.floor(requested);
+  return floored < 0 ? 0 : floored;
 }
 
 function profileAgeMinutes(value: unknown): number | null {
@@ -741,7 +774,10 @@ async function safeLifetime(
     const payload = await fetchFaceitLifetimeStats(client, faceitPlayerId, gameId);
     return mapFaceitLifetimeStats(payload?.lifetime ?? null);
   } catch (error) {
-    console.warn(`[faceit] lifetime_stats_unavailable code=${toFaceitError(error).code}`);
+    const faceitError = toFaceitError(error);
+    // Execution-control errors are NOT an optional-data failure: propagate.
+    if (isFaceitBudgetError(faceitError.code)) throw faceitError;
+    console.warn(`[faceit] lifetime_stats_unavailable code=${faceitError.code}`);
     return null;
   }
 }

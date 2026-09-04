@@ -5,7 +5,11 @@
  * accepts `null`. ABSOLUTE RULE: a missing statistic stays `null`; it is never
  * turned into `0`, and nothing is ever estimated and presented as official.
  */
-import { FACEIT_TERMINAL_MATCH_STATUSES } from "./faceit.constants";
+import {
+  FACEIT_CANCELLED_MATCH_STATUSES,
+  FACEIT_FINISHED_MATCH_STATUSES,
+  FACEIT_TERMINAL_MATCH_STATUSES,
+} from "./faceit.constants";
 import type {
   FaceitHistoryItem,
   FaceitMatch,
@@ -166,6 +170,8 @@ export interface CanonicalFaceitMatch {
    * `match_date`, which may come from `started_at`.
    */
   finished: boolean;
+  /** FASE 2.2.1E — lifecycle over (finished normally OR cancelled/aborted). */
+  terminal: boolean;
   team_player: string | null;
   team_opponent: string | null;
   duration_seconds: number | null;
@@ -174,17 +180,27 @@ export interface CanonicalFaceitMatch {
   metadata: Record<string, unknown>;
 }
 
+function normalizedStatus(status?: string | null): string | null {
+  const value = typeof status === "string" ? status.trim().toLowerCase() : null;
+  return value && value.length > 0 ? value : null;
+}
+
 /**
- * FASE 2.2.1D — is this match terminally finished?
+ * FASE 2.2.1E — did the match END NORMALLY (so a score/result/duration is
+ * legitimate)?
  *
- * The ONLY accepted evidence is `finished_at` or an explicitly terminal status.
+ * The ONLY accepted evidence is `finished_at` or an explicitly finished status.
  * `started_at`, `match_date`, the presence of details, a partial score or the
  * presence of stats prove NOTHING. Unknown status + no `finished_at` => false.
+ * A cancelled/aborted match is NEVER "finished normally", even if FACEIT filled
+ * `finished_at` when it closed the lifecycle.
  */
 export function isFaceitMatchFinished(input: {
   status?: string | null | undefined;
   finishedAt?: number | null | undefined;
 }): boolean {
+  const status = normalizedStatus(input.status);
+  if (status && FACEIT_CANCELLED_MATCH_STATUSES.has(status)) return false;
   if (
     typeof input.finishedAt === "number" &&
     Number.isFinite(input.finishedAt) &&
@@ -192,27 +208,44 @@ export function isFaceitMatchFinished(input: {
   ) {
     return true;
   }
-  const status = typeof input.status === "string" ? input.status.trim().toLowerCase() : null;
   if (!status) return false;
-  return FACEIT_TERMINAL_MATCH_STATUSES.has(status);
+  return FACEIT_FINISHED_MATCH_STATUSES.has(status);
 }
 
 /**
- * FASE 2.2.1D — convergence decision, isolated so it is directly testable.
+ * FASE 2.2.1E — is the match LIFECYCLE over (finished normally, cancelled or
+ * aborted)? Terminal means "no point re-fetching", NOT "has a result".
+ */
+export function isFaceitMatchTerminal(input: {
+  status?: string | null | undefined;
+  finishedAt?: number | null | undefined;
+}): boolean {
+  const status = normalizedStatus(input.status);
+  if (status && FACEIT_TERMINAL_MATCH_STATUSES.has(status)) return true;
+  return isFaceitMatchFinished(input);
+}
+
+/**
+ * FASE 2.2.1E — convergence decision, isolated so it is directly testable.
  *
- * A match stops being re-fetched when the data is complete OR when FACEIT
- * PROVED it is finished and we already spent the attempt ceiling (missing
- * fields stay NULL — never zero). An ongoing match NEVER converges by attempt
- * count: it must stay revisitable until it actually ends.
+ * ABSOLUTE RULE: an ONGOING match never converges — not even with every field
+ * currently available and not even after the attempt ceiling. Only a terminal
+ * lifecycle (finished normally, cancelled or aborted) may converge: either the
+ * data is complete, or we already spent the attempt ceiling and accept NULL in
+ * what is missing.
  */
 export function faceitMatchConverged(input: {
   dataComplete: boolean;
   finished: boolean;
+  /** Lifecycle over. Defaults to `finished` for callers that cannot distinguish. */
+  terminal?: boolean;
   attempts: number;
   maxAttempts: number;
 }): boolean {
+  const terminal = input.terminal ?? input.finished;
+  if (!terminal) return false;
   if (input.dataComplete) return true;
-  return input.finished && input.attempts >= input.maxAttempts;
+  return input.attempts >= input.maxAttempts;
 }
 
 function epochToIso(value: number | null): string | null {
@@ -431,6 +464,7 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
     result,
     rounds,
     finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
+    terminal: isFaceitMatchTerminal({ status: statusText, finishedAt: finishedRaw }),
     team_player: teamPlayer,
     team_opponent: teamOpponent,
     duration_seconds: duration,
@@ -445,6 +479,7 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       faceit_url: input.details?.faceit_url ?? input.history?.faceit_url ?? null,
       status: statusText,
       finished: isFaceitMatchFinished({ status: statusText, finishedAt: finishedRaw }),
+      terminal: isFaceitMatchTerminal({ status: statusText, finishedAt: finishedRaw }),
       best_of: series.bestOf,
       maps_played: series.mapsPlayed,
       is_series: series.isSeries,
