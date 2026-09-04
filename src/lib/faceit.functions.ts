@@ -18,11 +18,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { FaceitError, toFaceitError, type FaceitErrorCode } from "./faceit/faceit.errors";
 
 export type FaceitConnectionState =
-  | "disconnected"
-  | "connected"
-  | "syncing"
-  | "error"
-  | "configuration_missing";
+  "disconnected" | "connected" | "syncing" | "error" | "configuration_missing";
 
 export interface FaceitSyncView {
   status: "queued" | "processing" | "completed" | "failed" | "retrying";
@@ -213,9 +209,7 @@ export const requestFaceitSync = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<SyncRequestResult> => {
     try {
       const { requirePlayerId } = await import("./faceit/faceit.connect.server");
-      const { enqueueFaceitSync, processNextFaceitSyncJob } = await import(
-        "./faceit/faceit.sync.server"
-      );
+      const { enqueueFaceitSync } = await import("./faceit/faceit.sync.server");
       const { faceitConfigStatus } = await import("./faceit/faceit.config.server");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -239,9 +233,10 @@ export const requestFaceitSync = createServerFn({ method: "POST" })
       const queued = await enqueueFaceitSync(playerId, connection.id, "manual");
       if (queued.alreadyRunning) return { ok: true, alreadyRunning: true };
 
-      // The request does not wait for the whole synchronisation.
-      void processNextFaceitSyncJob().catch(() => undefined);
-      console.info("[faceit] faceit_sync_started");
+      // FASE 2.2.1C: the request ONLY enqueues. Execution belongs to the cron
+      // worker, because a promise left running after the response is not
+      // guaranteed to complete on a serverless/edge runtime.
+      console.info("[faceit] faceit_sync_enqueued");
       return { ok: true, alreadyRunning: false };
     } catch (error) {
       return { ok: false, errorCode: toFaceitError(error).code };

@@ -386,14 +386,17 @@ export type Database = {
           connection_id: string
           created_at: string
           finished_at: string | null
+          heartbeat_at: string | null
           id: string
           last_error: string | null
           matches_found: number | null
           matches_new: number | null
+          matches_skipped: number | null
           matches_updated: number | null
           metadata: Json
           next_attempt_at: string | null
           player_id: string
+          stale_recoveries: number
           started_at: string | null
           status: Database["public"]["Enums"]["faceit_sync_job_status"]
           type: Database["public"]["Enums"]["faceit_sync_job_type"]
@@ -404,14 +407,17 @@ export type Database = {
           connection_id: string
           created_at?: string
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           last_error?: string | null
           matches_found?: number | null
           matches_new?: number | null
+          matches_skipped?: number | null
           matches_updated?: number | null
           metadata?: Json
           next_attempt_at?: string | null
           player_id: string
+          stale_recoveries?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["faceit_sync_job_status"]
           type?: Database["public"]["Enums"]["faceit_sync_job_type"]
@@ -422,14 +428,17 @@ export type Database = {
           connection_id?: string
           created_at?: string
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           last_error?: string | null
           matches_found?: number | null
           matches_new?: number | null
+          matches_skipped?: number | null
           matches_updated?: number | null
           metadata?: Json
           next_attempt_at?: string | null
           player_id?: string
+          stale_recoveries?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["faceit_sync_job_status"]
           type?: Database["public"]["Enums"]["faceit_sync_job_type"]
@@ -806,6 +815,8 @@ export type Database = {
           rounds: number | null
           score_opponent: number | null
           score_player: number | null
+          source_complete: boolean
+          source_fetch_attempts: number
           source_fetched_at: string | null
           source_metadata: Json | null
           source_version: string | null
@@ -829,6 +840,8 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          source_complete?: boolean
+          source_fetch_attempts?: number
           source_fetched_at?: string | null
           source_metadata?: Json | null
           source_version?: string | null
@@ -852,6 +865,8 @@ export type Database = {
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          source_complete?: boolean
+          source_fetch_attempts?: number
           source_fetched_at?: string | null
           source_metadata?: Json | null
           source_version?: string | null
@@ -1589,6 +1604,10 @@ export type Database = {
         Args: { _max_concurrent?: number }
         Returns: string
       }
+      claim_next_faceit_sync_job: {
+        Args: { _max_concurrent?: number }
+        Returns: string
+      }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -1608,6 +1627,10 @@ export type Database = {
       }
       owns_plan: { Args: { _plan_id: string }; Returns: boolean }
       owns_player: { Args: { _player_id: string }; Returns: boolean }
+      recover_stale_faceit_sync_jobs: {
+        Args: { _max_attempts?: number; _stale_seconds?: number }
+        Returns: number
+      }
     }
     Enums: {
       analysis_status: "pending" | "processing" | "completed" | "failed"

@@ -1,16 +1,25 @@
 /**
- * Scheduled pipeline maintenance (external caller: cron).
+ * Scheduled pipeline maintenance and THE FACEIT QUEUE WORKER (external caller:
+ * cron).
  *
- * Bearer-secret authenticated with the existing cron helper. It only:
- *  - re-queues jobs stuck in `processing` past the stale window;
+ * Bearer-secret authenticated with the existing cron helper (timing-safe, fail
+ * closed when the secret is not configured). It:
+ *  - re-queues demo jobs stuck in `processing` past the stale window;
  *  - deletes temporary demo files whose retention window expired;
- *  - advances at most one queued job (concurrency-limited).
+ *  - advances at most one queued demo job (concurrency-limited);
+ *  - runs the FACEIT worker: stale recovery, atomic claim, execution and state
+ *    transition, within an explicit time budget so the handler always returns
+ *    before the runtime timeout instead of being killed mid-job.
  *
- * No PII is returned.
+ * A single invocation never loops indefinitely and never swallows a failure
+ * silently: every outcome is reported in the response. No PII is returned.
  */
 import { createFileRoute } from "@tanstack/react-router";
 
 import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
+
+/** Wall-clock budget for the FACEIT part of this invocation. */
+const FACEIT_WORKER_BUDGET_MS = 20_000;
 
 export const Route = createFileRoute("/api/public/pipeline-cron")({
   server: {
@@ -19,10 +28,9 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const unauthorized = await authenticateCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } = await import(
-          "@/lib/pipeline/jobs.server"
-        );
-        const { processNextFaceitSyncJob } = await import("@/lib/faceit/faceit.sync.server");
+        const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } =
+          await import("@/lib/pipeline/jobs.server");
+        const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
 
         const recovered = await recoverStaleJobs();
         const deleted = await cleanupExpiredDemos(50);
@@ -30,22 +38,39 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const processed = jobId ? await processJob(jobId) : null;
 
         // FACEIT synchronisation shares the scheduler but not the demo queue.
-        let faceit: { status: string } | null = null;
+        let faceit: {
+          recovered: number;
+          processed: { status: string; errorCode: string | null }[];
+          budgetReached: boolean;
+          error?: string;
+        };
         try {
-          const result = await processNextFaceitSyncJob();
-          faceit = result ? { status: result.status } : null;
-        } catch {
-          faceit = { status: "failed" };
+          const result = await runFaceitSyncWorker({ timeBudgetMs: FACEIT_WORKER_BUDGET_MS });
+          faceit = {
+            recovered: result.recovered,
+            processed: result.processed.map((outcome) => ({
+              status: outcome.status,
+              errorCode: outcome.errorCode ?? null,
+            })),
+            budgetReached: result.budgetReached,
+          };
+        } catch (error) {
+          // The worker itself broke (not a job): surfaced, never silenced. A job
+          // left in `processing` is recovered by the next invocation.
+          const code = error instanceof Error ? error.name : "unknown_error";
+          console.error(`[cron] faceit_worker_error code=${code}`);
+          faceit = { recovered: 0, processed: [], budgetReached: false, error: "worker_error" };
         }
 
         return Response.json({
           recovered,
           deleted,
-          processed: processed ? { status: processed.status, errorCode: processed.errorCode ?? null } : null,
+          processed: processed
+            ? { status: processed.status, errorCode: processed.errorCode ?? null }
+            : null,
           faceit,
         });
       },
-
     },
   },
 });

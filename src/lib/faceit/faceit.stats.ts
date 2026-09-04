@@ -8,22 +8,6 @@ import type { FaceitClient } from "./faceit.http";
 import { FaceitError } from "./faceit.errors";
 import { faceitLifetimeStatsSchema, parseFaceit } from "./faceit.types";
 
-/** GET /players/{player_id}/games/{game_id}/stats — recent match statistics. */
-export async function fetchFaceitRecentMatchStats(
-  client: FaceitClient,
-  playerId: string,
-  gameId: string,
-): Promise<unknown | null> {
-  try {
-    return await client.get(
-      `/players/${encodeURIComponent(playerId)}/games/${encodeURIComponent(gameId)}/stats`,
-    );
-  } catch (error) {
-    if (error instanceof FaceitError && error.code === "FACEIT_RESOURCE_NOT_FOUND") return null;
-    throw error;
-  }
-}
-
 /** GET /players/{player_id}/stats/{game_id} — aggregated lifetime statistics. */
 export async function fetchFaceitLifetimeStats(
   client: FaceitClient,

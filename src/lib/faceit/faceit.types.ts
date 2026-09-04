@@ -9,7 +9,11 @@ import { z } from "zod";
 
 import { FaceitError } from "./faceit.errors";
 
-const nullableString = z.string().min(1).nullish().transform((v) => v ?? null);
+const nullableString = z
+  .string()
+  .min(1)
+  .nullish()
+  .transform((v) => v ?? null);
 const nullableNumber = z
   .union([z.number(), z.string()])
   .nullish()
@@ -35,9 +39,15 @@ export const faceitPlayerSchema = z.object({
   faceit_url: nullableString,
   steam_id_64: nullableString,
   membership_type: nullableString,
-  memberships: z.array(z.string()).nullish().transform((v) => v ?? null),
+  memberships: z
+    .array(z.string())
+    .nullish()
+    .transform((v) => v ?? null),
   activated_at: nullableString,
-  verified: z.boolean().nullish().transform((v) => v ?? null),
+  verified: z
+    .boolean()
+    .nullish()
+    .transform((v) => v ?? null),
   games: z.record(z.string(), faceitGameSchema.partial().passthrough()).nullish(),
 });
 
@@ -77,7 +87,10 @@ export const faceitHistoryItemSchema = z.object({
 export type FaceitHistoryItem = z.infer<typeof faceitHistoryItemSchema>;
 
 export const faceitHistoryPageSchema = z.object({
-  items: z.array(faceitHistoryItemSchema).nullish().transform((v) => v ?? []),
+  items: z
+    .array(faceitHistoryItemSchema)
+    .nullish()
+    .transform((v) => v ?? []),
   start: nullableNumber,
   end: nullableNumber,
 });
@@ -98,22 +111,25 @@ export const faceitMatchSchema = z.object({
    * Reference ONLY. The CS2 PRO never downloads a FACEIT demo and never calls
    * the Download API; we keep availability as external metadata, not the URL.
    */
-  demo_url: z.array(z.string()).nullish().transform((v) => v ?? null),
+  demo_url: z
+    .array(z.string())
+    .nullish()
+    .transform((v) => v ?? null),
   detailed_results: z
     .array(
       z
         .object({
           asc_score: z.boolean().nullish(),
           winner: nullableString,
-          factions: z.record(z.string(), z.object({ score: nullableNumber }).passthrough()).nullish(),
+          factions: z
+            .record(z.string(), z.object({ score: nullableNumber }).passthrough())
+            .nullish(),
         })
         .passthrough(),
     )
     .nullish()
     .transform((v) => v ?? null),
-  voting: z
-    .object({ map: z.object({ pick: z.array(z.string()).nullish() }).nullish() })
-    .nullish(),
+  voting: z.object({ map: z.object({ pick: z.array(z.string()).nullish() }).nullish() }).nullish(),
   results: z
     .object({ winner: nullableString, score: z.record(z.string(), nullableNumber).nullish() })
     .nullish(),

@@ -5,7 +5,12 @@
  * accepts `null`. ABSOLUTE RULE: a missing statistic stays `null`; it is never
  * turned into `0`, and nothing is ever estimated and presented as official.
  */
-import type { FaceitHistoryItem, FaceitMatch, FaceitMatchStats, FaceitPlayer } from "./faceit.types";
+import type {
+  FaceitHistoryItem,
+  FaceitMatch,
+  FaceitMatchStats,
+  FaceitPlayer,
+} from "./faceit.types";
 
 export interface FaceitConnectionFields {
   external_id: string;
@@ -149,9 +154,11 @@ export interface CanonicalFaceitMatch {
   platform: "faceit";
   map: string | null;
   match_date: string | null;
+  /** Series score when the match is a bo2/bo3 (maps won), rounds for a bo1. */
   score_player: number | null;
   score_opponent: number | null;
   result: MatchResult | null;
+  /** ROUNDS ACTUALLY PLAYED. Never the number of maps won. `null` when unknown. */
   rounds: number | null;
   team_player: string | null;
   team_opponent: string | null;
@@ -171,7 +178,19 @@ function epochToIso(value: number | null): string | null {
 
 /** Finds the roster/team key that contains the player. Returns null if absent. */
 function locatePlayerTeam(
-  teams: Record<string, { team_id?: string | null; nickname?: string | null; name?: string | null; roster?: Array<{ player_id?: string | null }> | null; players?: Array<{ player_id?: string | null }> | null }> | null | undefined,
+  teams:
+    | Record<
+        string,
+        {
+          team_id?: string | null;
+          nickname?: string | null;
+          name?: string | null;
+          roster?: Array<{ player_id?: string | null }> | null;
+          players?: Array<{ player_id?: string | null }> | null;
+        }
+      >
+    | null
+    | undefined,
   playerId: string,
 ): { key: string; other: string | null } | null {
   if (!teams) return null;
@@ -193,11 +212,100 @@ export interface MapMatchInput {
   details?: FaceitMatch | null;
   sourceVersion: string;
   gameId: string;
+  /**
+   * Optional map name resolved from `/matches/{id}/stats` (`round_stats.Map`),
+   * used only when match details do not expose a single decided map pick.
+   */
+  mapFromStats?: string | null;
+}
+
+/**
+ * How many maps the series is composed of, according to FACEIT itself.
+ * `best_of` is authoritative when present; `detailed_results` is the fallback.
+ */
+export function faceitSeriesShape(details: FaceitMatch | null | undefined): {
+  bestOf: number | null;
+  mapsPlayed: number | null;
+  isSeries: boolean;
+} {
+  const bestOf =
+    typeof details?.best_of === "number" && details.best_of > 0 ? details.best_of : null;
+  const detailed = details?.detailed_results ?? null;
+  const mapsPlayed = detailed ? detailed.length : null;
+  const isSeries = (bestOf !== null && bestOf > 1) || (mapsPlayed !== null && mapsPlayed > 1);
+  return { bestOf, mapsPlayed, isSeries };
+}
+
+/**
+ * Rounds played, taken from `detailed_results[].factions[].score`, which is the
+ * ONLY place FACEIT reports per-map round scores. Returns `null` unless every
+ * map segment exposes both faction scores — a partial sum would be a lie.
+ */
+function roundsFromDetailedResults(
+  details: FaceitMatch | null | undefined,
+  ownKey: string | null,
+  otherKey: string | null,
+): { rounds: number | null; perMap: Array<{ player: number; opponent: number }> | null } {
+  const detailed = details?.detailed_results ?? null;
+  if (!detailed || detailed.length === 0 || !ownKey || !otherKey) {
+    return { rounds: null, perMap: null };
+  }
+  const perMap: Array<{ player: number; opponent: number }> = [];
+  for (const entry of detailed) {
+    const factions = (entry.factions ?? null) as Record<string, { score?: number | null }> | null;
+    const own = factions?.[ownKey]?.score;
+    const other = factions?.[otherKey]?.score;
+    if (typeof own !== "number" || typeof other !== "number") return { rounds: null, perMap: null };
+    perMap.push({ player: own, opponent: other });
+  }
+  const rounds = perMap.reduce((acc, entry) => acc + entry.player + entry.opponent, 0);
+  return { rounds, perMap };
+}
+
+/**
+ * Map name, resolved from the fields FACEIT actually provides, in order:
+ * a single decided vote pick, then the map reported by match stats.
+ * NEVER invented: an undecided or multi-map series resolves to `null`.
+ */
+export function extractFaceitMap(
+  details: FaceitMatch | null | undefined,
+  mapFromStats?: string | null,
+): string | null {
+  const picks = (details?.voting?.map?.pick ?? []).filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  );
+  if (picks.length === 1) return picks[0] ?? null;
+  const fromStats =
+    typeof mapFromStats === "string" && mapFromStats.length > 0 ? mapFromStats : null;
+  if (fromStats) return fromStats;
+  return null;
+}
+
+/**
+ * Single map name reported by `/matches/{id}/stats`. Returns `null` when the
+ * payload covers several distinct maps (a series has no single map).
+ */
+export function faceitMapFromStats(
+  stats: FaceitMatchStats,
+  matchId?: string | null,
+): string | null {
+  const names = new Set<string>();
+  for (const round of stats.rounds ?? []) {
+    if (matchId && round.match_id && round.match_id !== matchId) continue;
+    const raw = round.round_stats?.["Map"];
+    if (typeof raw === "string" && raw.length > 0) names.add(raw);
+  }
+  if (names.size !== 1) return null;
+  return [...names][0] ?? null;
 }
 
 /**
  * Builds the canonical match row. Anything FACEIT does not expose stays `null`;
  * the score is only set when both team scores are actually present.
+ *
+ * SCORE vs ROUNDS: `results.score` is rounds for a bo1 but MAPS WON for a
+ * bo2/bo3. `rounds` therefore only ever comes from per-map round scores, and is
+ * `null` when FACEIT does not expose them. A 2-1 bo3 is never "3 rounds".
  */
 export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatch | null {
   const matchId = input.details?.match_id ?? input.history?.match_id ?? null;
@@ -224,8 +332,22 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
     result = scorePlayer === scoreOpponent ? "draw" : scorePlayer > scoreOpponent ? "win" : "loss";
   }
 
-  const rounds =
-    scorePlayer !== null && scoreOpponent !== null ? scorePlayer + scoreOpponent : null;
+  const series = faceitSeriesShape(input.details);
+  const detailedRounds = roundsFromDetailedResults(
+    input.details,
+    located?.key ?? null,
+    located?.other ?? null,
+  );
+
+  // Rounds priority: real per-map round scores; then, for a single-map match
+  // ONLY, the match score (which is the round score in a bo1). Never for series.
+  let rounds: number | null = detailedRounds.rounds;
+  let roundsSource: "detailed_results" | "match_score" | null =
+    detailedRounds.rounds === null ? null : "detailed_results";
+  if (rounds === null && !series.isSeries && scorePlayer !== null && scoreOpponent !== null) {
+    rounds = scorePlayer + scoreOpponent;
+    roundsSource = "match_score";
+  }
 
   const startedAt = epochToIso(input.details?.started_at ?? input.history?.started_at ?? null);
   const finishedAt = epochToIso(input.details?.finished_at ?? input.history?.finished_at ?? null);
@@ -236,12 +358,19 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       ? Math.round(finishedRaw - startedRaw)
       : null;
 
-  const teamRecord = (teams ?? {}) as Record<string, { nickname?: string | null; name?: string | null }>;
-  const teamPlayer = located ? (teamRecord[located.key]?.nickname ?? teamRecord[located.key]?.name ?? null) : null;
-  const teamOpponent =
-    located?.other ? (teamRecord[located.other]?.nickname ?? teamRecord[located.other]?.name ?? null) : null;
+  const teamRecord = (teams ?? {}) as Record<
+    string,
+    { nickname?: string | null; name?: string | null }
+  >;
+  const teamPlayer = located
+    ? (teamRecord[located.key]?.nickname ?? teamRecord[located.key]?.name ?? null)
+    : null;
+  const teamOpponent = located?.other
+    ? (teamRecord[located.other]?.nickname ?? teamRecord[located.other]?.name ?? null)
+    : null;
 
-  const map = input.details?.voting?.map?.pick?.[0] ?? null;
+  // A multi-map series has no single map: keep `null` and record the segments.
+  const map = series.isSeries ? null : extractFaceitMap(input.details, input.mapFromStats);
 
   return {
     external_match_id: matchId,
@@ -265,8 +394,13 @@ export function mapFaceitMatchToMatch(input: MapMatchInput): CanonicalFaceitMatc
       competition_type: input.details?.competition_type ?? input.history?.competition_type ?? null,
       faceit_url: input.details?.faceit_url ?? input.history?.faceit_url ?? null,
       status: input.details?.status ?? input.history?.status ?? null,
-      best_of: input.details?.best_of ?? null,
-      maps_played: input.details?.detailed_results?.length ?? null,
+      best_of: series.bestOf,
+      maps_played: series.mapsPlayed,
+      is_series: series.isSeries,
+      /** What `score_player`/`score_opponent` actually mean for this row. */
+      score_unit: series.isSeries ? "maps" : "rounds",
+      rounds_source: roundsSource,
+      map_scores: detailedRounds.perMap,
       /**
        * Availability only — the demo URL itself is NEVER stored, fetched or
        * downloaded in this phase. FACEIT demos stay on FACEIT.
@@ -385,7 +519,9 @@ export function mapFaceitMatchStatsToMetrics(
   const weights = entries.map((entry) => entry.roundsInEntry ?? 1);
   const pick = (...keys: string[]) => entries.map((entry) => statNumber(entry.stats, ...keys));
   const ratio = (...keys: string[]) =>
-    weightedMean(pick(...keys).map((value, index) => [value, weights[index] ?? 1] as [number | null, number]));
+    weightedMean(
+      pick(...keys).map((value, index) => [value, weights[index] ?? 1] as [number | null, number]),
+    );
 
   const quads = pick("Quadro Kills");
   const pentas = pick("Penta Kills");
@@ -427,7 +563,6 @@ export function mapFaceitLifetimeStats(
   }
   return Object.keys(out).length > 0 ? out : null;
 }
-
 
 /** K/D only when both values exist and deaths > 0. Never invented. */
 export function safeKdRatio(kills: number | null, deaths: number | null): number | null {

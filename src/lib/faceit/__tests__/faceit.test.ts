@@ -142,7 +142,7 @@ describe("paginação do histórico", () => {
     let call = 0;
     const { client: api, fetchMock } = client(() => {
       call += 1;
-      // A segunda página repete tudo: o loop precisa parar.
+      // Todas as páginas repetem tudo: o loop precisa convergir (tolerância).
       return call === 1 ? page(["m1", "m2"]) : page(["m1", "m2"]);
     });
 
@@ -155,7 +155,12 @@ describe("paginação do histórico", () => {
     });
 
     expect(result.items.map((item) => item.match_id)).toEqual(["m1", "m2"]);
-    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(2);
+    // FASE 2.2.1C: uma página só com ids conhecidos não é prova de fim de
+    // histórico (a janela incremental sobrepõe de propósito), então toleramos
+    // duas páginas duplicadas seguidas antes de parar — e paramos de fato.
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(3);
+    expect(result.truncated).toBe(true);
+    expect(result.stopReason).toBe("duplicate_pages");
   });
 });
 

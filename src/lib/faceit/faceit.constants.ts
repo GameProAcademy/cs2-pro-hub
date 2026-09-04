@@ -25,3 +25,34 @@ export const FACEIT_OAUTH_STATE_TTL_SECONDS = 600;
 export const FACEIT_SYNC_OVERLAP_SECONDS = 3600;
 /** Profile cache window: the dashboard reads our database, not FACEIT. */
 export const FACEIT_PROFILE_CACHE_MINUTES = 20;
+
+/* ---------------------------------------------------------------------------
+ * FASE 2.2.1C — job engine / worker budget.
+ *
+ * A user request only ENQUEUES; the cron worker executes. Every bound below
+ * exists so a dead worker, a slow API or a hostile payload cannot produce a
+ * stuck job, an infinite retry loop or an unbounded burst of API calls.
+ * ------------------------------------------------------------------------- */
+
+/** A `processing` job whose heartbeat is older than this is considered dead. */
+export const FACEIT_JOB_STALE_SECONDS = 300;
+/** Attempts (including stale recoveries) before a job is failed for good. */
+export const FACEIT_MAX_JOB_ATTEMPTS = 3;
+/** Global ceiling of simultaneously `processing` FACEIT jobs. */
+export const FACEIT_MAX_CONCURRENT_JOBS = 1;
+/** Hard ceiling of Data API calls a single job may spend. */
+export const FACEIT_JOB_API_CALL_BUDGET = 60;
+/** Wall-clock budget for one worker invocation (well under the edge timeout). */
+export const FACEIT_WORKER_TIME_BUDGET_MS = 20_000;
+/** Jobs a single worker invocation may process before returning. */
+export const FACEIT_WORKER_MAX_JOBS = 2;
+/** How often the worker refreshes `heartbeat_at` while a job runs. */
+export const FACEIT_HEARTBEAT_INTERVAL_MS = 10_000;
+/** Minimum spacing between two Data API calls, to avoid needless bursts. */
+export const FACEIT_MIN_CALL_SPACING_MS = 120;
+/**
+ * How many times we may re-fetch the same match trying to complete it. Once
+ * exhausted the match is stored with the available fields (missing stays NULL)
+ * and marked as converged, so the sync can never loop on it forever.
+ */
+export const FACEIT_MAX_MATCH_FETCH_ATTEMPTS = 3;

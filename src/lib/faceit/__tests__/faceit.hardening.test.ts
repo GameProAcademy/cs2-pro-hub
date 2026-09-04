@@ -181,7 +181,11 @@ describe("match details — metadados externos", () => {
     expect(canonical?.metadata["best_of"]).toBe(3);
     expect(metadata).not.toContain("secret.dem");
     expect(canonical?.result).toBe("win");
-    expect(canonical?.rounds).toBe(20);
+    // 13/7 em um best_of 3 SEM detailed_results é ambíguo: preferimos null a
+    // gravar "20 rounds" que pode não ter existido.
+    expect(canonical?.rounds).toBeNull();
+    expect(canonical?.metadata["score_unit"]).toBe("maps");
+    expect(canonical?.map).toBeNull();
   });
 });
 
@@ -278,9 +282,7 @@ describe("rate limit, retry e erros permanentes", () => {
     const withJitter = faceitBackoffMs(3, undefined, () => 0);
     expect(withJitter).toBeGreaterThanOrEqual(100);
     expect(withJitter).toBeLessThanOrEqual(8000);
-    expect(faceitBackoffMs(1, undefined, () => 0)).not.toBe(
-      faceitBackoffMs(1, undefined, () => 1),
-    );
+    expect(faceitBackoffMs(1, undefined, () => 0)).not.toBe(faceitBackoffMs(1, undefined, () => 1));
   });
 
   it("429 é reclassificado, aguarda o Retry-After e não faz loop infinito", async () => {

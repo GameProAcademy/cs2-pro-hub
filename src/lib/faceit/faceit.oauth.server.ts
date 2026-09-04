@@ -10,10 +10,7 @@
  * this module to resolve the identity and are then discarded: no functional need
  * exists for keeping them in this phase, so they are not persisted anywhere.
  */
-import {
-  FACEIT_OAUTH_STATE_TTL_SECONDS,
-  requireFaceitOAuthConfig,
-} from "./faceit.config.server";
+import { FACEIT_OAUTH_STATE_TTL_SECONDS, requireFaceitOAuthConfig } from "./faceit.config.server";
 import { FaceitError, faceitErrorFromStatus, toFaceitError } from "./faceit.errors";
 import {
   buildAuthorizeUrl,
@@ -215,8 +212,9 @@ export async function resolveFaceitPlayerId(
   accessToken: string,
   fetchImpl: typeof fetch = globalThis.fetch,
 ): Promise<string> {
-  const userinfoUrl = process.env["FACEIT_OAUTH_USERINFO_URL"];
-  if (!userinfoUrl) throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
+  // HTTPS enforced HERE, at the point where the Bearer token is actually sent.
+  const { requireFaceitUserinfoUrl } = await import("./faceit.config.server");
+  const userinfoUrl = requireFaceitUserinfoUrl();
 
   let response: Response;
   try {
