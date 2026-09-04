@@ -30,7 +30,14 @@ export function CountrySelect({
   const countries = useMemo(() => sortedCountries(intlTag), [intlTag]);
 
   return (
-    <Select value={value ?? ""} onValueChange={(v) => { console.log("COUNTRYCHANGE", JSON.stringify(v)); onChange(v); }} disabled={disabled}>
+    <Select
+      value={value ?? ""}
+      onValueChange={(next) => {
+        // Radix emits "" from its hidden native select on mount; ignore it.
+        if (next) onChange(next);
+      }}
+      disabled={disabled}
+    >
       <SelectTrigger id={id}>
         <SelectValue placeholder={t("profile.selectPlaceholder")} />
       </SelectTrigger>

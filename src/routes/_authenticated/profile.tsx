@@ -74,7 +74,6 @@ function ProfilePage() {
   // Persisted values always win; detection only fills an empty country.
   useEffect(() => {
     if (!profile || hydrated) return;
-    if (typeof window !== "undefined") console.log("HYDRATE", JSON.stringify({c: profile.country, p: profile.mainPlatform, e: profile.experience, n: profile.nickname}));
     setDisplayName(profile.displayName ?? "");
     setNickname(profile.nickname ?? "");
     setTeam(profile.team ?? "");
@@ -128,7 +127,6 @@ function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-8">
-        <span data-testid="dbg">{JSON.stringify({country, mainPlatform, experience, hydrated})}</span>
         <PageHeader
           eyebrow={t("profile.eyebrow")}
           title={t("profile.title")}
@@ -201,7 +199,11 @@ function ProfilePage() {
                   <Label htmlFor="mainPlatform">{t("profile.field.mainPlatform")}</Label>
                   <Select
                     value={mainPlatform ?? ""}
-                    onValueChange={(v) => { console.log("PLATCHANGE", JSON.stringify(v), new Error().stack); setMainPlatform(v); }}
+                    onValueChange={(value) => {
+                      // Radix mirrors the value in a hidden native select inside the
+                      // form and emits "" on mount; an empty code is never valid.
+                      if (value) setMainPlatform(value);
+                    }}
                     disabled={busy}
                   >
                     <SelectTrigger id="mainPlatform">
@@ -220,7 +222,9 @@ function ProfilePage() {
                   <Label htmlFor="experience">{t("profile.field.experienceCode")}</Label>
                   <Select
                     value={experience ?? ""}
-                    onValueChange={setExperience}
+                    onValueChange={(value) => {
+                      if (value) setExperience(value);
+                    }}
                     disabled={busy}
                   >
                     <SelectTrigger id="experience">
