@@ -17,7 +17,7 @@ import {
 } from "../faceit.mapper";
 import { fetchFaceitHistory } from "../faceit.matches";
 import { resolveFaceitIdentityFromPayload } from "../faceit.oauth";
-import { faceitMatchStatsSchema, parseFaceit } from "../faceit.types";
+import { faceitMatchStatsSchema, parseFaceit, type FaceitMatchStats } from "../faceit.types";
 
 const TARGET = "11111111-2222-3333-4444-555555555555";
 
@@ -107,7 +107,7 @@ describe("match stats — seleção determinística por player_id", () => {
         ],
       },
     ],
-  });
+  }) as FaceitMatchStats;
 
   it("nunca usa o primeiro round cegamente nem o nickname", () => {
     const rounds = selectFaceitPlayerRounds(stats, TARGET, "match-1");
