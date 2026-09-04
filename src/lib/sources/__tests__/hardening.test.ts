@@ -38,6 +38,27 @@ describe("coverage semantics (zero is an observation)", () => {
   it("treats NaN as missing, never as zero", () => {
     expect(coverageFromSamples({ adr: Number.NaN }).adr).toBe("unavailable");
   });
+
+  it("treats an explicit zero as available for every representative signal", () => {
+    const coverage = coverageFromSamples({
+      kills: 0,
+      deaths: 0,
+      assists: 0,
+      utility: 0,
+      economy: 0,
+    } as Parameters<typeof coverageFromSamples>[0]);
+    for (const signal of ["kills", "deaths", "assists", "utility", "economy"] as const) {
+      if (signal in coverage) {
+        expect(coverage[signal as keyof typeof coverage]).toBe("available");
+      }
+    }
+  });
+
+  it("keeps zero available while null and undefined stay unavailable", () => {
+    expect(coverageFromSamples({ utility: 0 }).utility).toBe("available");
+    expect(coverageFromSamples({ utility: null }).utility).toBe("unavailable");
+    expect(coverageFromSamples({ utility: undefined }).utility).toBe("unavailable");
+  });
 });
 
 describe("provenance contract maps onto the real columns", () => {
@@ -106,10 +127,37 @@ describe("connection metadata cannot become a credential store", () => {
     expect(validateConnectionMetadata([1, 2]).ok).toBe(false);
   });
 
+  it("rejects sensitive keys nested in objects and arrays at any depth", () => {
+    const cases: unknown[] = [
+      { provider: { access_token: "test-secret" } },
+      { provider: { credentials: { refreshToken: "test-secret" } } },
+      { providers: [{ auth: { client_secret: "test-secret" } }] },
+      { a: { b: [{ c: { "ACCESS-TOKEN": "test-secret" } }] } },
+      { metadata: { oauth: { refresh_token: "test-secret" } } },
+      { nested: { deep: { authorization: "test-secret" } } },
+    ];
+    for (const value of cases) {
+      const result = validateConnectionMetadata(value);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.reason).toBe("sensitive_key");
+    }
+  });
+
+  it("still accepts safe descriptive metadata", () => {
+    expect(
+      validateConnectionMetadata({
+        provider: "faceit",
+        username: "player123",
+        profile_url: "https://example.com/player123",
+      }).ok,
+    ).toBe(true);
+  });
+
   it("throws with a stable code on the server path", () => {
     expect(() => assertSafeConnectionMetadata({ refresh_token: "x" })).toThrow(
       "CONNECTION_METADATA_SENSITIVE",
     );
+
     expect(() => assertSafeConnectionMetadata("nope")).toThrow("CONNECTION_METADATA_INVALID");
     expect(() => assertSafeConnectionMetadata({ nickname: "ok" })).not.toThrow();
   });
