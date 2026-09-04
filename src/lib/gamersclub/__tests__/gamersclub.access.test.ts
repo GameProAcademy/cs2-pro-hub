@@ -77,7 +77,11 @@ describe("gamers club provider", () => {
 
 describe("control errors are never swallowed", () => {
   it("rethrows deadline and budget errors from a safe step", async () => {
-    for (const code of ["GC_WORKER_DEADLINE_EXCEEDED", "GC_API_BUDGET_EXHAUSTED", "GC_CANCELLED"] as const) {
+    for (const code of [
+      "GC_WORKER_DEADLINE_EXCEEDED",
+      "GC_API_BUDGET_EXHAUSTED",
+      "GC_CANCELLED",
+    ] as const) {
       await expect(
         safeGamersClubStep(() => Promise.reject(new GamersClubError(code)), "fallback"),
       ).rejects.toThrow(code);

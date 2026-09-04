@@ -527,7 +527,8 @@ export const en: Dictionary = {
   "admin.action.resetPassword": "Reset password",
   "admin.msg.resetSent": "Reset email sent to the player.",
   "admin.confirm.resetTitle": "Send password reset?",
-  "admin.confirm.resetBody": "The player receives a secure email to set a new password. No password is ever stored by the platform.",
+  "admin.confirm.resetBody":
+    "The player receives a secure email to set a new password. No password is ever stored by the platform.",
   "admin.detail.avatar": "Profile photo",
   "pipeline.title": "Demo processing",
   "pipeline.subtitle": "Real ingestion of .dem demos",
@@ -543,7 +544,8 @@ export const en: Dictionary = {
   "pipeline.status.processed": "Processed",
   "pipeline.status.failed": "Failed",
   "pipeline.workerOfflineTitle": "Processing worker unavailable.",
-  "pipeline.workerOfflineBody": "Demos can be uploaded and queued, but the parser service is not configured, so no demo is analysed yet.",
+  "pipeline.workerOfflineBody":
+    "Demos can be uploaded and queued, but the parser service is not configured, so no demo is analysed yet.",
   "pipeline.error.DEMO_TOO_LARGE": "This demo exceeds the maximum accepted size.",
   "pipeline.error.DEMO_TOO_SMALL": "This file is too small to be a valid demo.",
   "pipeline.error.INVALID_DEMO_FORMAT": "Invalid format. Only .dem demos are accepted.",
@@ -554,7 +556,8 @@ export const en: Dictionary = {
   "pipeline.error.PARSER_ERROR": "The demo could not be processed.",
   "pipeline.error.PARSER_TIMEOUT": "Processing took too long and was interrupted.",
   "pipeline.error.VALIDATION_ERROR": "The extracted data is insufficient for an analysis.",
-  "pipeline.error.PLAYER_IDENTITY_UNRESOLVED": "We could not identify you in this demo. Add your Steam ID to your profile.",
+  "pipeline.error.PLAYER_IDENTITY_UNRESOLVED":
+    "We could not identify you in this demo. Add your Steam ID to your profile.",
   "pipeline.error.STORAGE_ERROR": "The upload failed. Please try again.",
   "pipeline.error.PROCESSING_ERROR": "Unexpected processing failure.",
   "pipeline.admin.title": "Demo pipeline",
@@ -574,7 +577,8 @@ export const en: Dictionary = {
   "sources.source.public_profile": "Public profile",
   "sources.state.active": "Available now",
   "sources.state.prepared": "Architecture prepared",
-  "sources.notAvailable": "No external integration is active. Today the only working source is the demo you upload.",
+  "sources.notAvailable":
+    "No external integration is active. Today the only working source is the demo you upload.",
   "sources.quality.high": "High evidence",
   "sources.quality.medium": "Medium evidence",
   "sources.quality.low": "Limited evidence",
@@ -583,7 +587,8 @@ export const en: Dictionary = {
   "sources.publicProfile.placeholder": "https://faceit.com/en/players/your-nick",
   "sources.publicProfile.validate": "Validate link",
   "sources.publicProfile.valid": "Valid, recognised link. Nothing is collected at this stage.",
-  "sources.publicProfile.notice": "We only validate the link format. We do not access, copy or collect the page.",
+  "sources.publicProfile.notice":
+    "We only validate the link format. We do not access, copy or collect the page.",
   "sources.publicProfile.error.empty": "Enter a link.",
   "sources.publicProfile.error.invalid_url": "Invalid link.",
   "sources.publicProfile.error.insecure_url": "Use an https link.",
@@ -599,10 +604,12 @@ export const en: Dictionary = {
   "sources.limitation.no_utility_data": "No utility data.",
   "sources.limitation.no_economy_data": "No economy data.",
   "sources.limitation.no_positioning_data": "No positioning data.",
-  "sources.privacy": "Only your own accounts, authorised by you. We never analyse other players and never store your passwords.",
+  "sources.privacy":
+    "Only your own accounts, authorised by you. We never analyse other players and never store your passwords.",
   "faceit.title": "FACEIT account",
   "faceit.subtitle": "Official OAuth connection",
-  "faceit.notice": "Connect your FACEIT account to import your CS2 matches. We never ask for your password and never download FACEIT demos.",
+  "faceit.notice":
+    "Connect your FACEIT account to import your CS2 matches. We never ask for your password and never download FACEIT demos.",
   "faceit.state.disconnected": "Not connected",
   "faceit.state.connected": "Connected",
   "faceit.state.syncing": "Syncing",
@@ -627,7 +634,8 @@ export const en: Dictionary = {
   "faceit.matchesFound": "Found",
   "faceit.matchesNew": "New",
   "faceit.matchesUpdated": "Updated",
-  "faceit.limits": "We only import CS2 matches from your own account. Data FACEIT does not provide is shown as “—”, never as zero.",
+  "faceit.limits":
+    "We only import CS2 matches from your own account. Data FACEIT does not provide is shown as “—”, never as zero.",
   "faceit.reason.access_denied": "You cancelled the authorization on FACEIT.",
   "faceit.reason.duplicate_account": "This FACEIT account is already linked to another user.",
   "faceit.reason.expired": "The connection request expired. Please try again.",
@@ -650,8 +658,10 @@ export const en: Dictionary = {
   "gc.locator.slug": "Nickname (not an ID)",
   "gc.gcid": "GCID",
   "gc.gcidUnknown": "Still unknown",
-  "gc.blockedNotice": "Gamers Club detected an access restriction for this environment. Your profile was saved, but automatic data could not be synced yet.",
-  "gc.ownershipNotice": "Providing a public URL does not prove the account is yours. The identity stays correlated until real ownership proof exists.",
+  "gc.blockedNotice":
+    "Gamers Club detected an access restriction for this environment. Your profile was saved, but automatic data could not be synced yet.",
+  "gc.ownershipNotice":
+    "Providing a public URL does not prove the account is yours. The identity stays correlated until real ownership proof exists.",
   "gc.invalidUrl": "Invalid profile URL.",
   "gc.state.connected": "Connected",
   "gc.state.blocked": "External access blocked",

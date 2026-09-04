@@ -115,7 +115,12 @@ export function isJobStale(
 /** Exponential backoff with jitter, capped, and never past the deadline. */
 export function retryDelayMs(
   attempt: number,
-  options: { retryAfterMs?: number | null; random?: () => number; deadlineAt?: number; now?: number } = {},
+  options: {
+    retryAfterMs?: number | null;
+    random?: () => number;
+    deadlineAt?: number;
+    now?: number;
+  } = {},
 ): number {
   const now = options.now ?? Date.now();
   const base = Math.min(GC_MAX_RETRY_WAIT_MS, 500 * 2 ** Math.max(0, attempt - 1));

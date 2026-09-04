@@ -9,7 +9,11 @@ import { Fingerprint } from "lucide-react";
 
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
-import { confidenceLabel, correlateIdentityGraph, type IdentityObservation } from "@/lib/identity/identity.correlation";
+import {
+  confidenceLabel,
+  correlateIdentityGraph,
+  type IdentityObservation,
+} from "@/lib/identity/identity.correlation";
 import { EVIDENCE_WEIGHTS } from "@/lib/identity/identity.types";
 import { cn } from "@/lib/utils";
 

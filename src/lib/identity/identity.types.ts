@@ -77,7 +77,10 @@ export type EvidenceStrength = "very_strong" | "strong" | "auxiliary" | "weak" |
  * HEURISTIC weights. Configurable on purpose, and never presented to the user as
  * a mathematical certainty.
  */
-export const EVIDENCE_WEIGHTS: Record<EvidenceAttribute, { strength: EvidenceStrength; weight: number }> = {
+export const EVIDENCE_WEIGHTS: Record<
+  EvidenceAttribute,
+  { strength: EvidenceStrength; weight: number }
+> = {
   authenticated_link: { strength: "very_strong", weight: 1 },
   steam_id64: { strength: "very_strong", weight: 0.95 },
   external_account_id: { strength: "very_strong", weight: 0.9 },
@@ -90,9 +93,7 @@ export const EVIDENCE_WEIGHTS: Record<EvidenceAttribute, { strength: EvidenceStr
 };
 
 /** Only these attributes can ever justify `verified`. */
-export const OWNERSHIP_PROOF_ATTRIBUTES: readonly EvidenceAttribute[] = [
-  "authenticated_link",
-];
+export const OWNERSHIP_PROOF_ATTRIBUTES: readonly EvidenceAttribute[] = ["authenticated_link"];
 
 export interface IdentityCorrelationEvidence {
   identityA: { source: IdentitySource; id: string | null };

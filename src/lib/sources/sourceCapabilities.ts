@@ -36,11 +36,7 @@ export type ArchitectureState = "implemented" | "architecture_ready" | "not_impl
 
 /** External access, observed rather than assumed. */
 export type ExternalAccessStatus =
-  | "available"
-  | "blocked_external_access"
-  | "unavailable"
-  | "unknown"
-  | "not_applicable";
+  "available" | "blocked_external_access" | "unavailable" | "unknown" | "not_applicable";
 
 export interface SourceOperationalProfile {
   source: DataSource;
@@ -88,10 +84,7 @@ const PROFILES: Record<
   gamers_club: {
     architecture: "architecture_ready",
     externalAccess: "blocked_external_access",
-    operations: ops(
-      { identity: "supported", realtime: "unsupported" },
-      "architecture_ready",
-    ),
+    operations: ops({ identity: "supported", realtime: "unsupported" }, "architecture_ready"),
   },
   steam: {
     architecture: "not_implemented",

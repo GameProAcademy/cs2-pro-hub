@@ -26,7 +26,10 @@ export interface GamersClubPanelProps {
 export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersClubPanelProps) {
   const t = useT();
   const [value, setValue] = useState(profileUrl ?? "");
-  const parsed = useMemo(() => (value.trim() === "" ? null : parseGamersClubProfileUrl(value)), [value]);
+  const parsed = useMemo(
+    () => (value.trim() === "" ? null : parseGamersClubProfileUrl(value)),
+    [value],
+  );
   const operational = sourceOperationalProfile("gamers_club");
   const blocked = operational.externalAccess === "blocked_external_access";
 
@@ -65,8 +68,12 @@ export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersCl
           {parsed.ok ? (
             <>
               <div>
-                <dt className="text-muted-foreground">{t("gc.locator." + parsed.profile.profileLocatorType as TranslationKey)}</dt>
-                <dd className="truncate font-mono text-foreground">{parsed.profile.canonicalProfileUrl}</dd>
+                <dt className="text-muted-foreground">
+                  {t(("gc.locator." + parsed.profile.profileLocatorType) as TranslationKey)}
+                </dt>
+                <dd className="truncate font-mono text-foreground">
+                  {parsed.profile.canonicalProfileUrl}
+                </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">{t("gc.gcid")}</dt>

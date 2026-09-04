@@ -155,8 +155,18 @@ export function normalizeGamersClubMatchStatus(rawStatus: unknown, finishedAt: u
   const cancelled = status !== null && CANCELLED_STATUSES.has(status);
   const aborted = status !== null && ABORTED_STATUSES.has(status);
   // A match date proves scheduling, never completion.
-  const finished = !cancelled && !aborted && (finishedAtIso !== null || (status !== null && FINISHED_STATUSES.has(status)));
-  return { status, finishedAt: finishedAtIso, finished, cancelled, aborted, terminal: finished || cancelled || aborted };
+  const finished =
+    !cancelled &&
+    !aborted &&
+    (finishedAtIso !== null || (status !== null && FINISHED_STATUSES.has(status)));
+  return {
+    status,
+    finishedAt: finishedAtIso,
+    finished,
+    cancelled,
+    aborted,
+    terminal: finished || cancelled || aborted,
+  };
 }
 
 const METRIC_FIELDS = [

@@ -193,7 +193,13 @@ function AnalyzePage() {
             >
               <SourcesPanel />
               <GamersClubPanel />
-              <PlayerIdentityPanel observations={[{ source: "faceit" }, { source: "gamers_club" }, { source: "steam" }]} />
+              <PlayerIdentityPanel
+                observations={[
+                  { source: "faceit" },
+                  { source: "gamers_club" },
+                  { source: "steam" },
+                ]}
+              />
             </ChartCard>
           </div>
         </div>

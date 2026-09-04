@@ -14,7 +14,12 @@ import {
   type IdentitySource,
   type IdentityStatus,
 } from "./identity.types";
-import { evidenceValueHash, normalizeExternalId, normalizeNickname, normalizeSteamId64 } from "./identity.normalize";
+import {
+  evidenceValueHash,
+  normalizeExternalId,
+  normalizeNickname,
+  normalizeSteamId64,
+} from "./identity.normalize";
 
 /** Observed attributes of one external identity. Absent = unknown, never empty. */
 export interface IdentityObservation {
@@ -151,9 +156,7 @@ export function finalizeCorrelation(
   for (const item of evidence) remaining *= 1 - Math.min(0.99, item.confidenceScore);
   const confidence = Number((1 - remaining).toFixed(4));
 
-  const hasProof = evidence.some((item) =>
-    OWNERSHIP_PROOF_ATTRIBUTES.includes(item.attribute),
-  );
+  const hasProof = evidence.some((item) => OWNERSHIP_PROOF_ATTRIBUTES.includes(item.attribute));
   // A single very strong signal (shared SteamID64, shared account id) is enough
   // for STRONGLY_CORRELATED, but never for VERIFIED. Weak signals never are.
   const veryStrongCount = evidence.filter(

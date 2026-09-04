@@ -107,7 +107,8 @@ export interface GamersClubHealthProbeInput {
 const REQUEST_ID_SHAPE = /^[A-Za-z0-9_.:-]{1,64}$/;
 
 export function recordGamersClubProbe(input: GamersClubHealthProbeInput): GamersClubHealthProbe {
-  const status = input.status ?? (input.facts ? classifyGamersClubResponse(input.facts) : "unknown_error");
+  const status =
+    input.status ?? (input.facts ? classifyGamersClubResponse(input.facts) : "unknown_error");
   const requestId =
     input.requestId && REQUEST_ID_SHAPE.test(input.requestId) ? input.requestId : null;
   return {

@@ -88,10 +88,7 @@ export function isGamersClubError(value: unknown): value is GamersClubError {
  * A generic try/catch is not acceptable here: an interrupted execution must
  * never look like a successful one.
  */
-export async function safeGamersClubStep<T>(
-  step: () => Promise<T>,
-  fallback: T,
-): Promise<T> {
+export async function safeGamersClubStep<T>(step: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await step();
   } catch (error) {

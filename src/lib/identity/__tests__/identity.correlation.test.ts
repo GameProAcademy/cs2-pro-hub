@@ -98,11 +98,21 @@ describe("identity correlation confidence model", () => {
   });
 
   it("keeps heuristic weights ordered from strong to weak", () => {
-    expect(EVIDENCE_WEIGHTS.authenticated_link.weight).toBeGreaterThan(EVIDENCE_WEIGHTS.steam_id64.weight);
-    expect(EVIDENCE_WEIGHTS.steam_id64.weight).toBeGreaterThan(EVIDENCE_WEIGHTS.faceit_linked_identity.weight);
-    expect(EVIDENCE_WEIGHTS.faceit_linked_identity.weight).toBeGreaterThan(EVIDENCE_WEIGHTS.nickname_exact.weight);
-    expect(EVIDENCE_WEIGHTS.nickname_exact.weight).toBeGreaterThan(EVIDENCE_WEIGHTS.nickname_normalized.weight);
-    expect(EVIDENCE_WEIGHTS.nickname_normalized.weight).toBeGreaterThan(EVIDENCE_WEIGHTS.avatar.weight);
+    expect(EVIDENCE_WEIGHTS.authenticated_link.weight).toBeGreaterThan(
+      EVIDENCE_WEIGHTS.steam_id64.weight,
+    );
+    expect(EVIDENCE_WEIGHTS.steam_id64.weight).toBeGreaterThan(
+      EVIDENCE_WEIGHTS.faceit_linked_identity.weight,
+    );
+    expect(EVIDENCE_WEIGHTS.faceit_linked_identity.weight).toBeGreaterThan(
+      EVIDENCE_WEIGHTS.nickname_exact.weight,
+    );
+    expect(EVIDENCE_WEIGHTS.nickname_exact.weight).toBeGreaterThan(
+      EVIDENCE_WEIGHTS.nickname_normalized.weight,
+    );
+    expect(EVIDENCE_WEIGHTS.nickname_normalized.weight).toBeGreaterThan(
+      EVIDENCE_WEIGHTS.avatar.weight,
+    );
   });
 
   it("labels confidence conservatively", () => {

@@ -22,18 +22,28 @@ describe("job outcome semantics", () => {
   });
 
   it("never calls a partial collection success", () => {
-    expect(classifyRunOutcome({ ...emptyRunCounters(), itemsExpected: 5, itemsCollected: 2 })).toBe("partial");
-    expect(classifyRunOutcome({ ...emptyRunCounters(), itemsCollected: 2, budgetExhausted: true })).toBe("partial");
-    expect(classifyRunOutcome({ ...emptyRunCounters(), itemsCollected: 2, itemsDeferred: 1 })).toBe("partial");
+    expect(classifyRunOutcome({ ...emptyRunCounters(), itemsExpected: 5, itemsCollected: 2 })).toBe(
+      "partial",
+    );
+    expect(
+      classifyRunOutcome({ ...emptyRunCounters(), itemsCollected: 2, budgetExhausted: true }),
+    ).toBe("partial");
+    expect(classifyRunOutcome({ ...emptyRunCounters(), itemsCollected: 2, itemsDeferred: 1 })).toBe(
+      "partial",
+    );
     // Technically finished, semantically partial.
     expect(nextJobStatus("partial", 1)).toBe("completed");
   });
 
   it("distinguishes blocked, rate limited, timeout, cancelled and failed", () => {
-    expect(classifyRunOutcome({ ...emptyRunCounters(), blocked: true })).toBe("blocked_external_access");
+    expect(classifyRunOutcome({ ...emptyRunCounters(), blocked: true })).toBe(
+      "blocked_external_access",
+    );
     expect(classifyRunOutcome({ ...emptyRunCounters(), rateLimited: true })).toBe("rate_limited");
     expect(classifyRunOutcome({ ...emptyRunCounters(), deadlineExceeded: true })).toBe("timeout");
-    expect(classifyRunOutcome({ ...emptyRunCounters(), deadlineExceeded: true, itemsCollected: 1 })).toBe("partial");
+    expect(
+      classifyRunOutcome({ ...emptyRunCounters(), deadlineExceeded: true, itemsCollected: 1 }),
+    ).toBe("partial");
     expect(classifyRunOutcome({ ...emptyRunCounters(), cancelled: true })).toBe("cancelled");
     expect(classifyRunOutcome({ ...emptyRunCounters(), failed: true })).toBe("failed");
   });
@@ -62,7 +72,9 @@ describe("job outcome semantics", () => {
     expect(shouldRethrow(new GamersClubError("GC_WORKER_DEADLINE_EXCEEDED"))).toBe(true);
     expect(shouldRethrow(new GamersClubError("GC_API_BUDGET_EXHAUSTED"))).toBe(true);
     expect(shouldRethrow(new GamersClubError("GC_INVALID_RESPONSE"))).toBe(false);
-    expect(classifyRunOutcome(controlCodeToCounters("GC_API_BUDGET_EXHAUSTED", emptyRunCounters()))).toBe("partial");
+    expect(
+      classifyRunOutcome(controlCodeToCounters("GC_API_BUDGET_EXHAUSTED", emptyRunCounters())),
+    ).toBe("partial");
   });
 });
 
@@ -79,7 +91,10 @@ describe("disconnect safety", () => {
 });
 
 describe("bounded pagination", () => {
-  const page = (ids: string[], exhausted = false) => ({ items: ids.map((id) => ({ id })), exhausted });
+  const page = (ids: string[], exhausted = false) => ({
+    items: ids.map((id) => ({ id })),
+    exhausted,
+  });
 
   it("respects the literal request budget", async () => {
     let calls = 0;
@@ -161,7 +176,9 @@ describe("cache freshness", () => {
   it("classifies fresh, stale, expired and unknown", () => {
     expect(freshness("profile", new Date(now - 60_000).toISOString(), now)).toBe("fresh");
     expect(freshness("profile", new Date(now - 60 * 60_000).toISOString(), now)).toBe("stale");
-    expect(freshness("profile", new Date(now - 10 * 60 * 60_000).toISOString(), now)).toBe("expired");
+    expect(freshness("profile", new Date(now - 10 * 60 * 60_000).toISOString(), now)).toBe(
+      "expired",
+    );
     expect(freshness("profile", null, now)).toBe("unknown");
   });
 

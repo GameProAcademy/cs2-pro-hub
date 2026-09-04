@@ -55,12 +55,21 @@ describe("gamers club match status semantics", () => {
   });
 
   it("keeps cancelled/aborted terminal but never finished, and never a loss", () => {
-    const cancelled = normalizeGamersClubMatch({ id: "m2", status: "cancelled", score_player: 3, score_opponent: 10 });
+    const cancelled = normalizeGamersClubMatch({
+      id: "m2",
+      status: "cancelled",
+      score_player: 3,
+      score_opponent: 10,
+    });
     expect(cancelled?.finished).toBe(false);
     expect(cancelled?.terminal).toBe(true);
     expect(cancelled?.result).toBe("cancelled");
 
-    const aborted = normalizeGamersClubMatch({ id: "m3", status: "aborted", finished_at: "2026-09-01T11:00:00Z" });
+    const aborted = normalizeGamersClubMatch({
+      id: "m3",
+      status: "aborted",
+      finished_at: "2026-09-01T11:00:00Z",
+    });
     expect(aborted?.finished).toBe(false);
     expect(aborted?.result).toBe("aborted");
   });
@@ -72,13 +81,31 @@ describe("gamers club match status semantics", () => {
   });
 
   it("derives win/loss/draw only from finished matches with both scores", () => {
-    expect(normalizeGamersClubMatch({ id: "a", status: "finished", score_player: 16, score_opponent: 9 })?.result).toBe("win");
-    expect(normalizeGamersClubMatch({ id: "b", status: "finished", score_player: 9, score_opponent: 16 })?.result).toBe("loss");
-    expect(normalizeGamersClubMatch({ id: "c", status: "finished", score_player: 15, score_opponent: 15 })?.result).toBe("draw");
+    expect(
+      normalizeGamersClubMatch({ id: "a", status: "finished", score_player: 16, score_opponent: 9 })
+        ?.result,
+    ).toBe("win");
+    expect(
+      normalizeGamersClubMatch({ id: "b", status: "finished", score_player: 9, score_opponent: 16 })
+        ?.result,
+    ).toBe("loss");
+    expect(
+      normalizeGamersClubMatch({
+        id: "c",
+        status: "finished",
+        score_player: 15,
+        score_opponent: 15,
+      })?.result,
+    ).toBe("draw");
   });
 
   it("finished never implies source_complete", () => {
-    const match = normalizeGamersClubMatch({ id: "d", status: "finished", score_player: 16, score_opponent: 4 });
+    const match = normalizeGamersClubMatch({
+      id: "d",
+      status: "finished",
+      score_player: 16,
+      score_opponent: 4,
+    });
     expect(match?.finished).toBe(true);
     expect(match?.sourceComplete).toBe(false);
   });
