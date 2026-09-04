@@ -142,7 +142,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
         {reason ? (
           <p className="flex items-start gap-2 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-            {t(`faceit.reason.${reason}`)}
+            {t(`faceit.reason.${reason}` as Parameters<typeof t>[0])}
           </p>
         ) : null}
 

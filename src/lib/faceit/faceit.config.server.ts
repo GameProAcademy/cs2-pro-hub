@@ -11,6 +11,7 @@ import { FaceitError } from "./faceit.errors";
 export * from "./faceit.constants";
 import {
   FACEIT_DEFAULT_API_BASE_URL,
+  FACEIT_HISTORY_MAX_LIMIT,
   FACEIT_DEFAULT_GAME_ID,
   FACEIT_DEFAULT_MAX_RETRIES,
   FACEIT_DEFAULT_SYNC_MATCH_LIMIT,

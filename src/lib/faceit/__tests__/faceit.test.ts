@@ -109,7 +109,7 @@ describe("client HTTP", () => {
   it("envia a API key como Bearer e nunca na query string", async () => {
     const { client: api, fetchMock } = client(() => ({ ok: true }));
     await api.get("/players/abc");
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(String(url)).not.toContain("test-key");
     expect(new Headers(init.headers).get("Authorization")).toBe("Bearer test-key");
   });
@@ -184,7 +184,7 @@ describe("mapeamento canônico", () => {
             ],
           },
         ],
-      },
+      } as never,
       "p1",
     );
     expect(metrics?.kills).toBe(10);
@@ -203,7 +203,7 @@ describe("mapeamento canônico", () => {
   it("ignora partidas sem identificador ou sem data", () => {
     const canonical = mapFaceitMatchToMatch({
       playerId: "p1",
-      history,
+      history: history as never,
       details: null,
       sourceVersion: "faceit-v4",
       gameId: "cs2",

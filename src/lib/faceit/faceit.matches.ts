@@ -71,7 +71,7 @@ export async function fetchFaceitHistory(
     for (const item of pageItems) {
       if (seen.has(item.match_id)) continue;
       seen.add(item.match_id);
-      items.push(item);
+      items.push(item as FaceitHistoryItem);
       added += 1;
       if (items.length >= query.maxMatches) break;
     }
