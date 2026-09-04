@@ -68,3 +68,25 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - UI: GamersClubPanel + PlayerIdentityPanel on /upload (honest blocked/correlated states).
 - BLOCKED: collection itself — gamersclub.com.br answers HTTP 403 Cloudflare challenge; no official API.
   Collector/parser/worker remain unimplemented on purpose. Unblocks with an authorised provider.
+
+## FASE 2.4 — Player Profile + Identity Graph + Verification Engine + CS2 Map Pool — DONE
+- Perfil 100% persistente (nenhuma página lê `demoProfile`): `player_profiles`
+  (nickname, country ISO-2 com CHECK, main_platform em STEAM_PREMIER/FACEIT/GAMERS_CLUB/OTHER,
+  experience, team) + `player_profile_roles` (9 códigos estáveis) + `player_profile_goals`
+  (6 códigos, único primário via índice parcial). RLS owner-only write, leitura owner/staff.
+- Server fns `src/lib/profile.functions.ts` (`getPlayerProfile`/`savePlayerProfile`) sob
+  `requireSupabaseAuth`; hook `usePlayerProfile`; `FEATURES.profilePersistence = true`.
+- Cadastro e perfil compartilham a mesma taxonomia (`src/lib/profile/taxonomy.ts`),
+  país detectado por navigator.language/locale/timezone (persistido sempre vence).
+- Verification engine puro (`src/lib/profile/verification.ts`): `calculateIdentityConfidence`,
+  `deriveIdentityStatus`, `evaluateVerification`, `profileCompleteness`. Termômetro e badge
+  derivados de dados reais; badge só com prova de posse e perfil completo, sem conflito.
+- Identidades externas read-only na UI; `guard_identity_verification()` impede auto-promoção
+  (is_verified/identity_status/confidence_score/verification_method/verified_at/external_id/platform).
+- Map pool CS2 versionado (`src/lib/cs2/maps.ts`): Cache no Active Duty desde 2026-07-08,
+  Overpass fora; gráficos mostram "—" quando não há dados reais.
+- Correção de UI encontrada em teste real: o `Select` do Radix espelha o valor num `select`
+  nativo dentro do `<form>` e emite `""` na montagem, apagando país/plataforma/experiência
+  recém-carregados. Handlers agora ignoram valor vazio; recarregar mantém os valores salvos.
+- Checks: typecheck limpo, 287/287 testes, build OK, verificação end-to-end no navegador
+  (salvar → reload → valores vindos do banco: nickname thg, BR, FACEIT, 1_3Y, IGL+AWPER, CLIMB_RATING primário).
