@@ -19,12 +19,14 @@ import {
 } from "../sources";
 
 describe("data sources", () => {
-  it("only the demo source is implemented", () => {
+  it("only demo and faceit are implemented", () => {
     expect(isSourceImplemented("demo")).toBe(true);
-    for (const source of DATA_SOURCES.filter((s) => s !== "demo")) {
+    expect(isSourceImplemented("faceit")).toBe(true);
+    for (const source of DATA_SOURCES.filter((s) => s !== "demo" && s !== "faceit")) {
       expect(isSourceImplemented(source)).toBe(false);
     }
   });
+
 
   it("demo always wins the priority comparison", () => {
     for (const source of CONNECTABLE_SOURCES) {
