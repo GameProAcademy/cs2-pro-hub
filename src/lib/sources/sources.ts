@@ -66,8 +66,16 @@ export function preferredSource(a: DataSource, b: DataSource): DataSource {
   return SOURCE_PRIORITY[a] >= SOURCE_PRIORITY[b] ? a : b;
 }
 
-/** Sources that are actually implemented today. Only demos are real. */
-export const IMPLEMENTED_SOURCES: readonly DataSource[] = ["demo"];
+/**
+ * Sources with an implemented, validated adapter.
+ * - `demo`: local pipeline.
+ * - `faceit`: official Data API + OAuth (see `src/lib/faceit`).
+ * `gamers_club` is NOT here: there is no official API and the public site
+ * answers unauthenticated requests with a Cloudflare challenge, which we are
+ * not allowed to bypass. Runtime usability lives in `./availability`.
+ */
+export const IMPLEMENTED_SOURCES: readonly DataSource[] = ["demo", "faceit"];
+
 
 export function isSourceImplemented(source: DataSource): boolean {
   return IMPLEMENTED_SOURCES.includes(source);
