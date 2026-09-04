@@ -108,8 +108,17 @@ describe("FASE 2.2.1D — convergência", () => {
   });
 
   it("TESTE H — finished converge com dados completos ou tentativas esgotadas", () => {
+    // FASE 2.2.1E: dados completos NÃO bastam; o ciclo precisa ter terminado.
     expect(
       faceitMatchConverged({ dataComplete: true, finished: false, attempts: 0, maxAttempts: max }),
+    ).toBe(false);
+    expect(
+      faceitMatchConverged({
+        dataComplete: true,
+        finished: true,
+        attempts: 0,
+        maxAttempts: max,
+      }),
     ).toBe(true);
     expect(
       faceitMatchConverged({
@@ -278,7 +287,10 @@ describe("FASE 2.2.1D — worker deadline", () => {
       sleep: async () => undefined,
       deadlineAt: Date.now() + 20,
     });
-    await expect(client.get("/matches/m1")).rejects.toMatchObject({ code: "FACEIT_TIMEOUT" });
+    // FASE 2.2.1E: abortar por deadline é parada controlada, não timeout comum.
+    await expect(client.get("/matches/m1")).rejects.toMatchObject({
+      code: "FACEIT_WORKER_DEADLINE_EXCEEDED",
+    });
   });
 });
 
