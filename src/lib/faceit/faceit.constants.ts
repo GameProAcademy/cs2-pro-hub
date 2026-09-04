@@ -18,5 +18,10 @@ export const FACEIT_HISTORY_MAX_LIMIT = 100;
 export const FACEIT_HISTORY_MAX_OFFSET = 1000;
 /** OAuth state time-to-live. */
 export const FACEIT_OAUTH_STATE_TTL_SECONDS = 600;
+/**
+ * Incremental overlap (seconds) applied to the FACEIT `from` window so a match
+ * finishing exactly at the boundary is never lost. Deduplication absorbs it.
+ */
+export const FACEIT_SYNC_OVERLAP_SECONDS = 3600;
 /** Profile cache window: the dashboard reads our database, not FACEIT. */
 export const FACEIT_PROFILE_CACHE_MINUTES = 20;
