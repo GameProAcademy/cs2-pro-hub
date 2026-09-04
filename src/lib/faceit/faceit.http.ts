@@ -253,9 +253,10 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
         } catch (error) {
           lastError = toFaceitError(error);
           if (!lastError.retryable || attempt === maxAttempts) throw lastError;
-          // Waiting is pointless if the retry itself could never be sent.
+          // Waiting is pointless if the retry itself could never be sent, and a
+          // Retry-After that ends past the deadline must not be waited out.
           assertCanSend();
-          await sleep(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
+          await waitFor(faceitBackoffMs(attempt, lastError.retryAfterSeconds));
         }
       }
       throw lastError;
