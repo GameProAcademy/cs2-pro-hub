@@ -178,7 +178,7 @@ export async function exchangeFaceitCode(
   }
 
   const token = parseFaceit(faceitTokenResponseSchema, payload);
-  return { accessToken: token.access_token, idToken: token.id_token };
+  return { accessToken: token.access_token, idToken: token.id_token ?? null };
 }
 
 /**

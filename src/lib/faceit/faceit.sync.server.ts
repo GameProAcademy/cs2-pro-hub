@@ -138,7 +138,6 @@ export async function processNextFaceitSyncJob(): Promise<{
       .update({
         last_sync_status: retryable ? "retrying" : "error",
         last_sync_error: faceitError.code,
-        status: faceitError.code === "FACEIT_API_UNAUTHORIZED" ? "connected" : undefined,
         updated_at: new Date().toISOString(),
       })
       .eq("id", candidate.connection_id);
@@ -234,7 +233,7 @@ export async function runFaceitSync(playerId: string, connectionId: string): Pro
           duration_seconds: canonical.duration_seconds,
           source_fetched_at: canonical.source_fetched_at,
           source_version: canonical.source_version,
-          source_metadata: canonical.metadata,
+          source_metadata: canonical.metadata as never,
         })
         .eq("id", matchId);
       counters.matchesUpdated += 1;
@@ -258,7 +257,7 @@ export async function runFaceitSync(playerId: string, connectionId: string): Pro
           duration_seconds: canonical.duration_seconds,
           source_fetched_at: canonical.source_fetched_at,
           source_version: canonical.source_version,
-          source_metadata: canonical.metadata,
+          source_metadata: canonical.metadata as never,
         })
         .select("id")
         .maybeSingle();
@@ -300,7 +299,7 @@ export async function runFaceitSync(playerId: string, connectionId: string): Pro
     .update({
       external_username: profileFields.external_username,
       profile_url: profileFields.profile_url,
-      metadata: profileFields.metadata,
+      metadata: profileFields.metadata as never,
       last_sync_at: now,
       last_sync_status: "success",
       last_sync_error: null,

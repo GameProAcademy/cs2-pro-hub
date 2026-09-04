@@ -15,7 +15,7 @@ export async function fetchFaceitPlayer(
 ): Promise<FaceitPlayer> {
   try {
     const payload = await client.get(`/players/${encodeURIComponent(playerId)}`);
-    return parseFaceit(faceitPlayerSchema, payload);
+    return parseFaceit(faceitPlayerSchema, payload) as FaceitPlayer;
   } catch (error) {
     if (error instanceof FaceitError && error.code === "FACEIT_RESOURCE_NOT_FOUND") {
       throw new FaceitError("FACEIT_PLAYER_NOT_FOUND", { status: 404 });
@@ -31,7 +31,7 @@ export async function fetchFaceitPlayerByNickname(
 ): Promise<FaceitPlayer> {
   try {
     const payload = await client.get("/players", { nickname });
-    return parseFaceit(faceitPlayerSchema, payload);
+    return parseFaceit(faceitPlayerSchema, payload) as FaceitPlayer;
   } catch (error) {
     if (error instanceof FaceitError && error.code === "FACEIT_RESOURCE_NOT_FOUND") {
       throw new FaceitError("FACEIT_PLAYER_NOT_FOUND", { status: 404 });

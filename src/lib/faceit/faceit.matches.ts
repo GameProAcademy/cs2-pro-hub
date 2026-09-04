@@ -64,10 +64,11 @@ export async function fetchFaceitHistory(
       to: query.to,
     });
     const page = parseFaceit(faceitHistoryPageSchema, payload);
+    const pageItems = page.items ?? [];
     pages += 1;
 
     let added = 0;
-    for (const item of page.items) {
+    for (const item of pageItems) {
       if (seen.has(item.match_id)) continue;
       seen.add(item.match_id);
       items.push(item);
@@ -77,8 +78,8 @@ export async function fetchFaceitHistory(
 
     // Stop when the page is empty or shorter than requested: there is no more
     // history. A page that only repeats known ids also stops the loop.
-    if (page.items.length === 0 || page.items.length < limit || added === 0) break;
-    offset += page.items.length;
+    if (pageItems.length === 0 || pageItems.length < limit || added === 0) break;
+    offset += pageItems.length;
   }
 
   if (items.length >= query.maxMatches) truncated = true;
@@ -92,7 +93,7 @@ export async function fetchFaceitMatchDetails(
 ): Promise<FaceitMatch | null> {
   try {
     const payload = await client.get(`/matches/${encodeURIComponent(matchId)}`);
-    return parseFaceit(faceitMatchSchema, payload);
+    return parseFaceit(faceitMatchSchema, payload) as FaceitMatch;
   } catch (error) {
     // A match that no longer exists is not a sync failure.
     if (error instanceof FaceitError && error.code === "FACEIT_RESOURCE_NOT_FOUND") return null;
@@ -107,7 +108,7 @@ export async function fetchFaceitMatchStats(
 ): Promise<FaceitMatchStats | null> {
   try {
     const payload = await client.get(`/matches/${encodeURIComponent(matchId)}/stats`);
-    return parseFaceit(faceitMatchStatsSchema, payload);
+    return parseFaceit(faceitMatchStatsSchema, payload) as FaceitMatchStats;
   } catch (error) {
     if (error instanceof FaceitError && error.code === "FACEIT_RESOURCE_NOT_FOUND") return null;
     throw error;

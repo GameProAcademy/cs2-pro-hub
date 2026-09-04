@@ -99,7 +99,7 @@ export async function finalizeFaceitConnection(
     external_id: fields.external_id,
     external_username: fields.external_username,
     profile_url: fields.profile_url,
-    metadata: fields.metadata,
+    metadata: fields.metadata as never,
     status: "connected" as const,
     connected_at: now,
     disconnected_at: null,
