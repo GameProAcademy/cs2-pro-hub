@@ -7,13 +7,17 @@
  */
 import {
   EVIDENCE_WEIGHTS,
-  OWNERSHIP_PROOF_ATTRIBUTES,
   type EvidenceAttribute,
   type EvidenceMatchType,
   type IdentityCorrelationEvidence,
   type IdentitySource,
   type IdentityStatus,
 } from "./identity.types";
+import {
+  MATCH_TYPE_FACTOR,
+  calculateIdentityConfidence,
+  deriveIdentityStatus,
+} from "@/lib/profile/verification";
 import {
   evidenceValueHash,
   normalizeExternalId,
@@ -44,16 +48,9 @@ export interface CorrelationResult {
   conflicts: IdentityCorrelationEvidence[];
 }
 
-const MATCH_TYPE_FACTOR: Record<EvidenceMatchType, number> = {
-  exact: 1,
-  normalized_exact: 0.8,
-  partial: 0.5,
-  visual_match: 0.4,
-  conflict: 1,
-};
+// Weights, thresholds and the state machine live in the verification engine so
+// the UI meter and this engine can never disagree.
 
-const CORRELATED_THRESHOLD = 0.15;
-const STRONGLY_CORRELATED_THRESHOLD = 0.85;
 
 function makeEvidence(
   a: IdentityObservation,
@@ -151,38 +148,9 @@ export function finalizeCorrelation(
   conflicts: IdentityCorrelationEvidence[],
   reasons: string[],
 ): CorrelationResult {
-  // Diminishing-returns combination: weak signals can never sum to certainty.
-  let remaining = 1;
-  for (const item of evidence) remaining *= 1 - Math.min(0.99, item.confidenceScore);
-  const confidence = Number((1 - remaining).toFixed(4));
-
-  const hasProof = evidence.some((item) => OWNERSHIP_PROOF_ATTRIBUTES.includes(item.attribute));
-  // A single very strong signal (shared SteamID64, shared account id) is enough
-  // for STRONGLY_CORRELATED, but never for VERIFIED. Weak signals never are.
-  const veryStrongCount = evidence.filter(
-    (item) => EVIDENCE_WEIGHTS[item.attribute].strength === "very_strong",
-  ).length;
-  const strongCount =
-    veryStrongCount +
-    evidence.filter((item) => EVIDENCE_WEIGHTS[item.attribute].strength === "strong").length;
-
-  let status: IdentityStatus;
-  if (conflicts.length > 0) {
-    // A weak correlation must never destroy or override a strong identity.
-    status = "conflict";
-  } else if (hasProof) {
-    status = "verified";
-  } else if (
-    (veryStrongCount >= 1 || strongCount >= 2) &&
-    confidence >= STRONGLY_CORRELATED_THRESHOLD
-  ) {
-    status = "strongly_correlated";
-  } else if (confidence >= CORRELATED_THRESHOLD) {
-    status = "correlated";
-  } else {
-    status = "unlinked";
-  }
-
+  // Single source of truth: the same pure functions the profile meter uses.
+  const confidence = calculateIdentityConfidence(evidence);
+  const status = deriveIdentityStatus(evidence, conflicts, confidence);
   return { status, confidence, evidence, reasons, conflicts };
 }
 

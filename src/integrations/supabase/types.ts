@@ -1335,6 +1335,73 @@ export type Database = {
           },
         ]
       }
+      player_profile_goals: {
+        Row: {
+          created_at: string
+          goal_code: string
+          id: string
+          is_primary: boolean
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goal_code: string
+          id?: string
+          is_primary?: boolean
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goal_code?: string
+          id?: string
+          is_primary?: boolean
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_profile_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_profile_roles: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          role_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          role_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          role_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_profile_roles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profiles: {
         Row: {
           competitive_goal: string | null

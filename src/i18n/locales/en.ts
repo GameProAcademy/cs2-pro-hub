@@ -1,6 +1,8 @@
 import type { Dictionary } from "./pt-BR";
+import { profileEn } from "./profile/en";
 
 export const en: Dictionary = {
+  ...profileEn,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Performance analytics and training for Counter-Strike 2",
