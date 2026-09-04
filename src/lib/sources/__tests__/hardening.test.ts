@@ -38,7 +38,29 @@ describe("coverage semantics (zero is an observation)", () => {
   it("treats NaN as missing, never as zero", () => {
     expect(coverageFromSamples({ adr: Number.NaN }).adr).toBe("unavailable");
   });
+
+  it("treats an explicit zero as available for every representative signal", () => {
+    const coverage = coverageFromSamples({
+      kills: 0,
+      deaths: 0,
+      assists: 0,
+      utility: 0,
+      economy: 0,
+    } as Parameters<typeof coverageFromSamples>[0]);
+    for (const signal of ["kills", "deaths", "assists", "utility", "economy"] as const) {
+      if (signal in coverage) {
+        expect(coverage[signal as keyof typeof coverage]).toBe("available");
+      }
+    }
+  });
+
+  it("keeps zero available while null and undefined stay unavailable", () => {
+    expect(coverageFromSamples({ utility: 0 }).utility).toBe("available");
+    expect(coverageFromSamples({ utility: null }).utility).toBe("unavailable");
+    expect(coverageFromSamples({ utility: undefined }).utility).toBe("unavailable");
+  });
 });
+
 
 describe("provenance contract maps onto the real columns", () => {
   it("uses external_match_id as the source record id", () => {
