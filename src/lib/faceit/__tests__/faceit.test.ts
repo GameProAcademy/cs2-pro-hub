@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { FaceitClient } from "../faceit.http";
+import { createFaceitClient } from "../faceit.http";
 import {
   callbackReason,
   FaceitError,
@@ -32,7 +32,7 @@ function client(handler: (url: string) => unknown, extra: Partial<{ maxRetries: 
   );
   return {
     fetchMock,
-    client: new FaceitClient({
+    client: createFaceitClient({
       apiKey: "test-key",
       baseUrl: "https://open.faceit.com/data/v4",
       timeoutMs: 1000,
@@ -116,7 +116,7 @@ describe("client HTTP", () => {
 
   it("não repete requisições para erros permanentes", async () => {
     const fetchMock = vi.fn(async () => new Response("nope", { status: 403 }));
-    const api = new FaceitClient({
+    const api = createFaceitClient({
       apiKey: "k",
       baseUrl: "https://open.faceit.com/data/v4",
       timeoutMs: 500,
