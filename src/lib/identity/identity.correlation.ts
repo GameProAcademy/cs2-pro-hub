@@ -154,9 +154,14 @@ export function finalizeCorrelation(
   const hasProof = evidence.some((item) =>
     OWNERSHIP_PROOF_ATTRIBUTES.includes(item.attribute),
   );
-  const strongCount = evidence.filter(
-    (item) => EVIDENCE_WEIGHTS[item.attribute].strength === "very_strong" || EVIDENCE_WEIGHTS[item.attribute].strength === "strong",
+  // A single very strong signal (shared SteamID64, shared account id) is enough
+  // for STRONGLY_CORRELATED, but never for VERIFIED. Weak signals never are.
+  const veryStrongCount = evidence.filter(
+    (item) => EVIDENCE_WEIGHTS[item.attribute].strength === "very_strong",
   ).length;
+  const strongCount =
+    veryStrongCount +
+    evidence.filter((item) => EVIDENCE_WEIGHTS[item.attribute].strength === "strong").length;
 
   let status: IdentityStatus;
   if (conflicts.length > 0) {
@@ -164,7 +169,10 @@ export function finalizeCorrelation(
     status = "conflict";
   } else if (hasProof) {
     status = "verified";
-  } else if (strongCount >= 2 && confidence >= STRONGLY_CORRELATED_THRESHOLD) {
+  } else if (
+    (veryStrongCount >= 1 || strongCount >= 2) &&
+    confidence >= STRONGLY_CORRELATED_THRESHOLD
+  ) {
     status = "strongly_correlated";
   } else if (confidence >= CORRELATED_THRESHOLD) {
     status = "correlated";
