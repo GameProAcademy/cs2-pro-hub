@@ -108,7 +108,8 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
   const data = connection.data;
   const state = data?.state ?? "disconnected";
   const busy = startMutation.isPending || syncMutation.isPending || disconnectMutation.isPending;
-  const reason = localReason ?? (callback?.status === "error" ? (callback.reason ?? "error") : null);
+  const reason =
+    localReason ?? (callback?.status === "error" ? (callback.reason ?? "error") : null);
 
   return (
     <ChartCard title={t("faceit.title")} subtitle={t("faceit.subtitle")}>
@@ -208,11 +209,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
                 )}
                 {state === "syncing" ? t("faceit.syncing") : t("faceit.sync")}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => disconnectMutation.mutate()}
-                disabled={busy}
-              >
+              <Button variant="outline" onClick={() => disconnectMutation.mutate()} disabled={busy}>
                 <Link2Off className="size-4" aria-hidden />
                 {t("faceit.disconnect")}
               </Button>

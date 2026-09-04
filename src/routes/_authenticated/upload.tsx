@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { UploadBox, type UploadKind } from "@/components/common/UploadBox";
 import { AppShell } from "@/components/layout/AppShell";
 import { DemoIngestPanel } from "@/components/pipeline/DemoIngestPanel";
+import { GamersClubPanel } from "@/components/integrations/GamersClubPanel";
+import { PlayerIdentityPanel } from "@/components/integrations/PlayerIdentityPanel";
 import { SourcesPanel } from "@/components/pipeline/SourcesPanel";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/config/app";
@@ -190,6 +192,14 @@ function AnalyzePage() {
               showDemoTag={false}
             >
               <SourcesPanel />
+              <GamersClubPanel />
+              <PlayerIdentityPanel
+                observations={[
+                  { source: "faceit" },
+                  { source: "gamers_club" },
+                  { source: "steam" },
+                ]}
+              />
             </ChartCard>
           </div>
         </div>
