@@ -196,7 +196,7 @@ function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="mainPlatform">{t("profile.field.mainPlatform")}</Label>
                   <Select
-                    value={mainPlatform ?? undefined}
+                    {...(mainPlatform ? { value: mainPlatform } : {})}
                     onValueChange={setMainPlatform}
                     disabled={busy}
                   >
@@ -215,7 +215,7 @@ function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="experience">{t("profile.field.experienceCode")}</Label>
                   <Select
-                    value={experience ?? undefined}
+                    {...(experience ? { value: experience } : {})}
                     onValueChange={setExperience}
                     disabled={busy}
                   >
