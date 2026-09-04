@@ -108,7 +108,7 @@ export function coverageRatio(coverage: DataCoverage): number {
  * Zero is an observation, never an absence.
  */
 export function coverageFromSamples(
-  samples: Partial<Record<DataSignal, number | null>>,
+  samples: Partial<Record<DataSignal, number | null | undefined>>,
   partialBelow: Partial<Record<DataSignal, number>> = {},
 ): DataCoverage {
   const coverage = emptyCoverage();
