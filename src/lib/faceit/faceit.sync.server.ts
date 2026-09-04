@@ -33,6 +33,7 @@ import {
 import { FaceitError, isFaceitBudgetError, toFaceitError } from "./faceit.errors";
 import {
   faceitMapFromStats,
+  faceitMatchConverged,
   mapFaceitLifetimeStats,
   mapFaceitMatchStatsToMetrics,
   mapFaceitMatchToMatch,
@@ -545,7 +546,12 @@ export async function runFaceitSync(
       // finished and we tried enough times, accepting NULL in what is missing.
       // An ongoing match never converges by attempt count, so it stays
       // revisitable until FACEIT actually ends it.
-      const converged = dataComplete || (finished && attempts >= FACEIT_MAX_MATCH_FETCH_ATTEMPTS);
+      const converged = faceitMatchConverged({
+        dataComplete,
+        finished,
+        attempts,
+        maxAttempts: FACEIT_MAX_MATCH_FETCH_ATTEMPTS,
+      });
 
       const writable = {
         map: canonical.map,

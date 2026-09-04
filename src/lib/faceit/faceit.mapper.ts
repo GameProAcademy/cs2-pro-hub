@@ -193,6 +193,24 @@ export function isFaceitMatchFinished(input: {
   return FACEIT_TERMINAL_MATCH_STATUSES.has(status);
 }
 
+/**
+ * FASE 2.2.1D — convergence decision, isolated so it is directly testable.
+ *
+ * A match stops being re-fetched when the data is complete OR when FACEIT
+ * PROVED it is finished and we already spent the attempt ceiling (missing
+ * fields stay NULL — never zero). An ongoing match NEVER converges by attempt
+ * count: it must stay revisitable until it actually ends.
+ */
+export function faceitMatchConverged(input: {
+  dataComplete: boolean;
+  finished: boolean;
+  attempts: number;
+  maxAttempts: number;
+}): boolean {
+  if (input.dataComplete) return true;
+  return input.finished && input.attempts >= input.maxAttempts;
+}
+
 function epochToIso(value: number | null): string | null {
   if (value === null) return null;
   // FACEIT reports seconds; tolerate milliseconds without inventing a date.
