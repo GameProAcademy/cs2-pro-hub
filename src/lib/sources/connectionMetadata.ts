@@ -66,8 +66,7 @@ export function isSensitiveMetadataKey(key: string): boolean {
 }
 
 export type MetadataValidation =
-  | { ok: true }
-  | { ok: false; reason: "not_an_object" | "sensitive_key"; key?: string };
+  { ok: true } | { ok: false; reason: "not_an_object" | "sensitive_key"; key?: string };
 
 /**
  * Validates connection metadata recursively. Rejects sensitive keys at any

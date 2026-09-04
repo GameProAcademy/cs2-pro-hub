@@ -46,4 +46,3 @@ export function describeSource(source: DataSource): SourceDescriptor {
 export function getSourceAdapter(source: Exclude<DataSource, "demo" | "faceit">): SourceAdapter {
   return new UnimplementedSourceAdapter(source, SOURCE_CAPABILITIES[source]);
 }
-

@@ -15,10 +15,7 @@
 import type { DataSource } from "./sources";
 
 export type PublicProfileValidationError =
-  | "empty"
-  | "invalid_url"
-  | "insecure_url"
-  | "unsupported_host";
+  "empty" | "invalid_url" | "insecure_url" | "unsupported_host";
 
 export interface PublicProfileParseResult {
   ok: boolean;

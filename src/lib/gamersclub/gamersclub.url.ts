@@ -5,10 +5,7 @@
  * declaration of intent, not consent to crawl, and there is no permitted
  * collection path today (see `gamersclub.constants.ts`).
  */
-import {
-  GAMERS_CLUB_ALLOWED_HOSTS,
-  GAMERS_CLUB_PROFILE_PATH,
-} from "./gamersclub.constants";
+import { GAMERS_CLUB_ALLOWED_HOSTS, GAMERS_CLUB_PROFILE_PATH } from "./gamersclub.constants";
 import type { GamersClubErrorCode } from "./gamersclub.errors";
 
 export type GamersClubUrlError = Extract<

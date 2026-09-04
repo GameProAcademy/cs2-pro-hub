@@ -76,7 +76,6 @@ export function preferredSource(a: DataSource, b: DataSource): DataSource {
  */
 export const IMPLEMENTED_SOURCES: readonly DataSource[] = ["demo", "faceit"];
 
-
 export function isSourceImplemented(source: DataSource): boolean {
   return IMPLEMENTED_SOURCES.includes(source);
 }

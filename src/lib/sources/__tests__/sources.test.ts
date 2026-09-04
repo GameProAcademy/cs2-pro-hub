@@ -27,7 +27,6 @@ describe("data sources", () => {
     }
   });
 
-
   it("demo always wins the priority comparison", () => {
     for (const source of CONNECTABLE_SOURCES) {
       expect(preferredSource("demo", source)).toBe("demo");

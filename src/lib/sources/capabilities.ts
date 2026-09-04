@@ -120,4 +120,3 @@ export function coverageFromSamples(
   }
   return coverage;
 }
-
