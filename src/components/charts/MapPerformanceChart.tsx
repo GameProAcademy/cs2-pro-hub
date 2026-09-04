@@ -10,6 +10,7 @@ import {
 } from "recharts";
 
 import { useT } from "@/i18n";
+import { mapDisplayName } from "@/lib/cs2/maps";
 import type { MapPerformance } from "@/types";
 
 export function MapPerformanceChart({
@@ -21,6 +22,14 @@ export function MapPerformanceChart({
 }) {
   const t = useT();
 
+  if (data.length === 0) {
+    return (
+      <div style={{ height }} className="flex w-full items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("maps.noData")}</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -28,6 +37,7 @@ export function MapPerformanceChart({
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="map"
+            tickFormatter={(value: string) => mapDisplayName(value)}
             stroke="var(--muted-foreground)"
             tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
             tickLine={false}
