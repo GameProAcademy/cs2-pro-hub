@@ -316,7 +316,26 @@ WITH catalogue AS (
          AND (SELECT pg_get_functiondef(p.oid) LIKE '%jsonb_has_sensitive_key%'
               FROM pg_proc p WHERE p.proname = 'guard_connection_status'
                 AND p.pronamespace = 'public'::regnamespace)
+
+  -- 26. Phase 2.1.2.2 — the database guard is recursive
+  UNION ALL
+  SELECT '26a. metadata guard inspects nested objects',
+         public.jsonb_has_sensitive_key('{"provider":{"auth":{"access_token":"test-secret"}}}'::jsonb)
+
+  UNION ALL
+  SELECT '26b. metadata guard inspects arrays at any depth',
+         public.jsonb_has_sensitive_key('{"a":{"b":[{"c":{"ACCESS-TOKEN":"test-secret"}}]}}'::jsonb)
+
+  UNION ALL
+  SELECT '26c. metadata guard ignores separators and casing',
+         public.jsonb_has_sensitive_key('{"nested":{"deep":{"Refresh Token":"test-secret"}}}'::jsonb)
+
+  UNION ALL
+  SELECT '26d. safe descriptive metadata is still accepted',
+         NOT public.jsonb_has_sensitive_key(
+           '{"provider":"faceit","username":"player123","profile_url":"https://example.com/p"}'::jsonb)
 )
+
 
 SELECT check_name,
        CASE WHEN passed THEN 'PASS' ELSE 'FAIL' END AS result
