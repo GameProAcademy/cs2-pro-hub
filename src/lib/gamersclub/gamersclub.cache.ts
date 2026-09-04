@@ -6,7 +6,7 @@
  */
 import { GC_CACHE_TTL_MINUTES, type GamersClubCacheKind } from "./gamersclub.constants";
 
-export type CacheOutcome = "cache_hit" | "cache_stale" | "cache_miss";
+export type CacheOutcome = "cache_hit" | "cache_stale" | "cache_miss" | "cache_refresh";
 export type FreshnessState = "fresh" | "stale" | "expired" | "unknown";
 
 /** Stale-while-revalidate window, as a multiple of the TTL. */
@@ -51,7 +51,7 @@ export function decideCache(
   const ageMs = Number.isNaN(time) ? null : Math.max(0, now - time);
 
   if (options.force === true) {
-    return { outcome: "cache_refresh" as unknown as CacheOutcome, state, refresh: true, ageMs };
+    return { outcome: "cache_refresh", state, refresh: true, ageMs };
   }
   if (state === "fresh") return { outcome: "cache_hit", state, refresh: false, ageMs };
   if (state === "stale") return { outcome: "cache_stale", state, refresh: true, ageMs };
