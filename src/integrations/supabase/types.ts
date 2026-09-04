@@ -461,6 +461,215 @@ export type Database = {
           },
         ]
       }
+      gamers_club_profile_snapshots: {
+        Row: {
+          completeness: number | null
+          connection_id: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          observed_at: string
+          player_id: string
+          profile: Json
+          profile_slug: string | null
+          source_version: string
+        }
+        Insert: {
+          completeness?: number | null
+          connection_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          observed_at?: string
+          player_id: string
+          profile?: Json
+          profile_slug?: string | null
+          source_version: string
+        }
+        Update: {
+          completeness?: number | null
+          connection_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          observed_at?: string
+          player_id?: string
+          profile?: Json
+          profile_slug?: string | null
+          source_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gamers_club_profile_snapshots_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "player_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamers_club_profile_snapshots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gamers_club_sync_jobs: {
+        Row: {
+          api_calls_used: number
+          attempts: number
+          connection_id: string | null
+          created_at: string
+          external_access_status: string | null
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          items_collected: number
+          items_deferred: number
+          items_expected: number | null
+          items_skipped: number
+          last_error: string | null
+          last_error_code: string | null
+          max_attempts: number
+          metadata: Json
+          next_attempt_at: string | null
+          outcome: Database["public"]["Enums"]["gc_job_outcome"] | null
+          player_id: string
+          stale_recoveries: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["gc_job_status"]
+          type: Database["public"]["Enums"]["gc_job_type"]
+          updated_at: string
+        }
+        Insert: {
+          api_calls_used?: number
+          attempts?: number
+          connection_id?: string | null
+          created_at?: string
+          external_access_status?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          items_collected?: number
+          items_deferred?: number
+          items_expected?: number | null
+          items_skipped?: number
+          last_error?: string | null
+          last_error_code?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_attempt_at?: string | null
+          outcome?: Database["public"]["Enums"]["gc_job_outcome"] | null
+          player_id: string
+          stale_recoveries?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["gc_job_status"]
+          type: Database["public"]["Enums"]["gc_job_type"]
+          updated_at?: string
+        }
+        Update: {
+          api_calls_used?: number
+          attempts?: number
+          connection_id?: string | null
+          created_at?: string
+          external_access_status?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          items_collected?: number
+          items_deferred?: number
+          items_expected?: number | null
+          items_skipped?: number
+          last_error?: string | null
+          last_error_code?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_attempt_at?: string | null
+          outcome?: Database["public"]["Enums"]["gc_job_outcome"] | null
+          player_id?: string
+          stale_recoveries?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["gc_job_status"]
+          type?: Database["public"]["Enums"]["gc_job_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gamers_club_sync_jobs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "player_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamers_club_sync_jobs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      identity_correlation_evidence: {
+        Row: {
+          attribute: string
+          confidence_score: number
+          created_at: string
+          evidence_value_hash: string | null
+          expires_at: string | null
+          id: string
+          identity_a_id: string | null
+          identity_a_source: string
+          identity_b_id: string | null
+          identity_b_source: string
+          match_type: string
+          observed_at: string
+          provenance: string
+          user_id: string
+        }
+        Insert: {
+          attribute: string
+          confidence_score?: number
+          created_at?: string
+          evidence_value_hash?: string | null
+          expires_at?: string | null
+          id?: string
+          identity_a_id?: string | null
+          identity_a_source: string
+          identity_b_id?: string | null
+          identity_b_source: string
+          match_type: string
+          observed_at?: string
+          provenance?: string
+          user_id: string
+        }
+        Update: {
+          attribute?: string
+          confidence_score?: number
+          created_at?: string
+          evidence_value_hash?: string | null
+          expires_at?: string | null
+          id?: string
+          identity_a_id?: string | null
+          identity_a_source?: string
+          identity_b_id?: string | null
+          identity_b_source?: string
+          match_type?: string
+          observed_at?: string
+          provenance?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_correlation_evidence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_skills: {
         Row: {
           lesson_id: string
@@ -941,6 +1150,8 @@ export type Database = {
           last_sync_status: string | null
           metadata: Json
           player_id: string
+          profile_locator_type: string | null
+          profile_slug: string | null
           profile_url: string | null
           source: Database["public"]["Enums"]["data_source"]
           status: Database["public"]["Enums"]["connection_status"]
@@ -959,6 +1170,8 @@ export type Database = {
           last_sync_status?: string | null
           metadata?: Json
           player_id: string
+          profile_locator_type?: string | null
+          profile_slug?: string | null
           profile_url?: string | null
           source: Database["public"]["Enums"]["data_source"]
           status?: Database["public"]["Enums"]["connection_status"]
@@ -977,6 +1190,8 @@ export type Database = {
           last_sync_status?: string | null
           metadata?: Json
           player_id?: string
+          profile_locator_type?: string | null
+          profile_slug?: string | null
           profile_url?: string | null
           source?: Database["public"]["Enums"]["data_source"]
           status?: Database["public"]["Enums"]["connection_status"]
@@ -1060,37 +1275,55 @@ export type Database = {
       }
       player_identities: {
         Row: {
+          confidence_score: number
           created_at: string
           external_id: string | null
           id: string
+          identity_status: Database["public"]["Enums"]["identity_link_status"]
           is_verified: boolean
           platform: Database["public"]["Enums"]["platform_kind"]
           player_id: string
+          profile_locator_type: string | null
+          profile_slug: string | null
           profile_url: string | null
           updated_at: string
           username: string | null
+          verification_method: string | null
+          verified_at: string | null
         }
         Insert: {
+          confidence_score?: number
           created_at?: string
           external_id?: string | null
           id?: string
+          identity_status?: Database["public"]["Enums"]["identity_link_status"]
           is_verified?: boolean
           platform: Database["public"]["Enums"]["platform_kind"]
           player_id: string
+          profile_locator_type?: string | null
+          profile_slug?: string | null
           profile_url?: string | null
           updated_at?: string
           username?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
         }
         Update: {
+          confidence_score?: number
           created_at?: string
           external_id?: string | null
           id?: string
+          identity_status?: Database["public"]["Enums"]["identity_link_status"]
           is_verified?: boolean
           platform?: Database["public"]["Enums"]["platform_kind"]
           player_id?: string
+          profile_locator_type?: string | null
+          profile_slug?: string | null
           profile_url?: string | null
           updated_at?: string
           username?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -1608,6 +1841,10 @@ export type Database = {
         Args: { _max_concurrent?: number }
         Returns: string
       }
+      claim_next_gamers_club_sync_job: {
+        Args: { _max_concurrent?: number }
+        Returns: string
+      }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -1628,6 +1865,10 @@ export type Database = {
       owns_plan: { Args: { _plan_id: string }; Returns: boolean }
       owns_player: { Args: { _player_id: string }; Returns: boolean }
       recover_stale_faceit_sync_jobs: {
+        Args: { _max_attempts?: number; _stale_seconds?: number }
+        Returns: number
+      }
+      recover_stale_gamers_club_sync_jobs: {
         Args: { _max_attempts?: number; _stale_seconds?: number }
         Returns: number
       }
@@ -1664,6 +1905,33 @@ export type Database = {
         | "stats"
       finding_priority: "critical" | "high" | "medium" | "low"
       finding_type: "bottleneck" | "strength" | "recommendation"
+      gc_job_outcome:
+        | "success"
+        | "partial"
+        | "failed"
+        | "blocked_external_access"
+        | "rate_limited"
+        | "timeout"
+        | "cancelled"
+      gc_job_status:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "retrying"
+        | "cancelled"
+      gc_job_type:
+        | "gamers_club_profile_sync"
+        | "gamers_club_match_history_sync"
+        | "gamers_club_match_details_sync"
+        | "gamers_club_stats_sync"
+        | "identity_correlation_job"
+      identity_link_status:
+        | "unlinked"
+        | "correlated"
+        | "strongly_correlated"
+        | "verified"
+        | "conflict"
       match_result: "win" | "loss" | "draw"
       plan_item_status: "pending" | "in_progress" | "done" | "skipped"
       plan_status: "draft" | "active" | "completed" | "archived"
@@ -1828,6 +2096,37 @@ export const Constants = {
       ],
       finding_priority: ["critical", "high", "medium", "low"],
       finding_type: ["bottleneck", "strength", "recommendation"],
+      gc_job_outcome: [
+        "success",
+        "partial",
+        "failed",
+        "blocked_external_access",
+        "rate_limited",
+        "timeout",
+        "cancelled",
+      ],
+      gc_job_status: [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+        "retrying",
+        "cancelled",
+      ],
+      gc_job_type: [
+        "gamers_club_profile_sync",
+        "gamers_club_match_history_sync",
+        "gamers_club_match_details_sync",
+        "gamers_club_stats_sync",
+        "identity_correlation_job",
+      ],
+      identity_link_status: [
+        "unlinked",
+        "correlated",
+        "strongly_correlated",
+        "verified",
+        "conflict",
+      ],
       match_result: ["win", "loss", "draw"],
       plan_item_status: ["pending", "in_progress", "done", "skipped"],
       plan_status: ["draft", "active", "completed", "archived"],
