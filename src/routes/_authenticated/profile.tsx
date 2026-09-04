@@ -201,7 +201,7 @@ function ProfilePage() {
                   <Label htmlFor="mainPlatform">{t("profile.field.mainPlatform")}</Label>
                   <Select
                     value={mainPlatform ?? ""}
-                    onValueChange={setMainPlatform}
+                    onValueChange={(v) => { console.log("PLATCHANGE", JSON.stringify(v), new Error().stack); setMainPlatform(v); }}
                     disabled={busy}
                   >
                     <SelectTrigger id="mainPlatform">

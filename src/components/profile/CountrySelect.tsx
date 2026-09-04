@@ -30,7 +30,7 @@ export function CountrySelect({
   const countries = useMemo(() => sortedCountries(intlTag), [intlTag]);
 
   return (
-    <Select value={value ?? ""} onValueChange={onChange} disabled={disabled}>
+    <Select value={value ?? ""} onValueChange={(v) => { console.log("COUNTRYCHANGE", JSON.stringify(v)); onChange(v); }} disabled={disabled}>
       <SelectTrigger id={id}>
         <SelectValue placeholder={t("profile.selectPlaceholder")} />
       </SelectTrigger>
