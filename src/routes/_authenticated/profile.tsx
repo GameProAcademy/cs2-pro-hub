@@ -198,8 +198,12 @@ function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="mainPlatform">{t("profile.field.mainPlatform")}</Label>
                   <Select
-                    {...(mainPlatform ? { value: mainPlatform } : {})}
-                    onValueChange={setMainPlatform}
+                    value={mainPlatform ?? ""}
+                    onValueChange={(value) => {
+                      // Radix mirrors the value in a hidden native select inside the
+                      // form and emits "" on mount; an empty code is never valid.
+                      if (value) setMainPlatform(value);
+                    }}
                     disabled={busy}
                   >
                     <SelectTrigger id="mainPlatform">
@@ -217,8 +221,10 @@ function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="experience">{t("profile.field.experienceCode")}</Label>
                   <Select
-                    {...(experience ? { value: experience } : {})}
-                    onValueChange={setExperience}
+                    value={experience ?? ""}
+                    onValueChange={(value) => {
+                      if (value) setExperience(value);
+                    }}
                     disabled={busy}
                   >
                     <SelectTrigger id="experience">
