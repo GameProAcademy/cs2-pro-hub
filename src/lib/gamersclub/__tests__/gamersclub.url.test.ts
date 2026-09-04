@@ -2,24 +2,38 @@ import { describe, expect, it } from "vitest";
 
 import { sourceAvailability, isSourceCollectable } from "@/lib/sources/availability";
 import { isSourceImplemented } from "@/lib/sources/sources";
+import {
+  operationBlockedExternally,
+  sourceOperationalProfile,
+  supportsOperation,
+} from "@/lib/sources/sourceCapabilities";
 
 import { GAMERS_CLUB_IDENTITY_VERIFIABLE } from "../gamersclub.constants";
 import { GamersClubError } from "../gamersclub.errors";
-import { parseGamersClubProfileUrl } from "../gamersclub.url";
+import { parseGamersClubProfileUrl, withConfirmedGamersClubId } from "../gamersclub.url";
 
 describe("gamers club profile URL — accepted", () => {
-  it("accepts a numeric profile", () => {
+  it("treats a numeric profile as a numeric_id locator", () => {
     const result = parseGamersClubProfileUrl("https://gamersclub.com.br/player/1879287");
     expect(result.ok).toBe(true);
+    expect(result.profile?.profileLocatorType).toBe("numeric_id");
     expect(result.profile?.externalId).toBe("1879287");
-    expect(result.profile?.username).toBeNull();
+    expect(result.profile?.profileSlug).toBeNull();
+    expect(result.profile?.externalIdConfirmed).toBe(false);
     expect(result.profile?.canonicalProfileUrl).toBe("https://gamersclub.com.br/player/1879287");
   });
 
-  it("accepts a slug profile and keeps it as the username snapshot", () => {
+  it("NEVER stores a slug as externalId", () => {
     const result = parseGamersClubProfileUrl("https://WWW.GamersClub.com.br/player/ZDR");
-    expect(result.profile?.externalId).toBe("zdr");
-    expect(result.profile?.username).toBe("zdr");
+    expect(result.profile?.profileLocatorType).toBe("slug");
+    expect(result.profile?.externalId).toBeNull();
+    expect(result.profile?.profileSlug).toBe("zdr");
+  });
+
+  it("accepts valid slug characters", () => {
+    const result = parseGamersClubProfileUrl("https://gamersclub.com.br/player/pro_player.1-x");
+    expect(result.ok).toBe(true);
+    expect(result.profile?.profileSlug).toBe("pro_player.1-x");
   });
 
   it("normalises trailing slash, query and fragment", () => {
@@ -28,6 +42,26 @@ describe("gamers club profile URL — accepted", () => {
     );
     expect(result.ok).toBe(true);
     expect(result.profile?.canonicalProfileUrl).toBe("https://gamersclub.com.br/player/1879287");
+  });
+
+  it("decodes an encoded slug", () => {
+    const result = parseGamersClubProfileUrl("https://gamersclub.com.br/player/z%64r");
+    expect(result.profile?.profileSlug).toBe("zdr");
+  });
+
+  it("keeps a canonical URL even when the GCID is unknown", () => {
+    const result = parseGamersClubProfileUrl("https://gamersclub.com.br/player/zdr");
+    expect(result.profile?.canonicalProfileUrl).toBe("https://gamersclub.com.br/player/zdr");
+    expect(result.profile?.externalId).toBeNull();
+  });
+
+  it("only sets a confirmed GCID through explicit promotion", () => {
+    const parsed = parseGamersClubProfileUrl("https://gamersclub.com.br/player/zdr");
+    const promoted = withConfirmedGamersClubId(parsed.profile!, "1879287");
+    expect(promoted.externalId).toBe("1879287");
+    expect(promoted.externalIdConfirmed).toBe(true);
+    expect(promoted.profileSlug).toBe("zdr");
+    expect(() => withConfirmedGamersClubId(parsed.profile!, "zdr")).toThrow();
   });
 });
 
@@ -48,6 +82,7 @@ describe("gamers club profile URL — rejected", () => {
     ["https://gamersclub.com.br/team/1879287", "GAMERS_CLUB_INVALID_PROFILE_PATH"],
     ["https://gamersclub.com.br/player/1879287/matches", "GAMERS_CLUB_INVALID_PROFILE_PATH"],
     ["https://gamersclub.com.br/player/..%2Fetc", "GAMERS_CLUB_INVALID_PROFILE_PATH"],
+    ["https://gamersclub.com.br/player/%2e%2e%2f%2e%2e", "GAMERS_CLUB_INVALID_PROFILE_PATH"],
     ["https://gamersclub.com.br/player/-bad", "GAMERS_CLUB_INVALID_PROFILE_PATH"],
   ];
 
@@ -81,8 +116,21 @@ describe("gamers club honesty invariants", () => {
     expect(isSourceCollectable("public_profile")).toBe(false);
   });
 
-  it("treats every current gamers club error as non-retryable", () => {
-    expect(new GamersClubError("GAMERS_CLUB_PROFILE_NOT_FOUND" as never).retryable).toBe(false);
+  it("reports architecture_ready + blocked external access, not fully implemented", () => {
+    const profile = sourceOperationalProfile("gamers_club");
+    expect(profile.architecture).toBe("architecture_ready");
+    expect(profile.externalAccess).toBe("blocked_external_access");
+    expect(supportsOperation("gamers_club", "match_history")).toBe(false);
+    expect(operationBlockedExternally("gamers_club", "match_history")).toBe(true);
+    // Identity handling needs no external access.
+    expect(supportsOperation("gamers_club", "identity")).toBe(true);
+    expect(sourceOperationalProfile("faceit").externalAccess).toBe("available");
+  });
+
+  it("marks non-transient gamers club errors correctly", () => {
     expect(new GamersClubError("GAMERS_CLUB_UNSUPPORTED_HOST").retryable).toBe(false);
+    expect(new GamersClubError("GC_BLOCKED_EXTERNAL_ACCESS").retryable).toBe(false);
+    expect(new GamersClubError("GC_RATE_LIMITED").retryable).toBe(true);
+    expect(new GamersClubError("GC_WORKER_DEADLINE_EXCEEDED").control).toBe(true);
   });
 });
