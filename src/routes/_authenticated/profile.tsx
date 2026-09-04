@@ -128,6 +128,7 @@ function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-8">
+        <span data-testid="dbg">{JSON.stringify({country, mainPlatform, experience, hydrated})}</span>
         <PageHeader
           eyebrow={t("profile.eyebrow")}
           title={t("profile.title")}
