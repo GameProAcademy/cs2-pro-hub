@@ -196,13 +196,24 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
       });
       return payload;
     } catch (error) {
-      const faceitError = toFaceitError(error);
+      let faceitError = toFaceitError(error);
+      // An in-flight request aborted BECAUSE the worker deadline expired is a
+      // controlled stop, not a retryable timeout.
+      const now = Date.now();
+      const currentDeadline = deadlineAt();
+      if (
+        faceitError.code === "FACEIT_TIMEOUT" &&
+        currentDeadline !== undefined &&
+        now >= currentDeadline
+      ) {
+        faceitError = new FaceitError("FACEIT_WORKER_DEADLINE_EXCEEDED");
+      }
       if (!(error instanceof FaceitError)) {
         options.onLog?.({
           endpoint,
           status: null,
           errorCode: faceitError.code,
-          durationMs: Date.now() - startedAt,
+          durationMs: now - startedAt,
           attempt,
         });
       }
