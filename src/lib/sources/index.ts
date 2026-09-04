@@ -4,3 +4,5 @@ export * from "./adapter";
 export * from "./registry";
 export * from "./readiness";
 export * from "./publicProfile";
+export * from "./connectionMetadata";
+
