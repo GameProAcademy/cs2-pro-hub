@@ -122,10 +122,15 @@ describe("verification meter", () => {
   });
 
   it("an incomplete profile can never be badged", () => {
-    const result = evaluateVerification(
-      { nickname: "thg" },
-      [{ source: "faceit", connected: true, status: "verified", confidence: 1, ownershipProven: true }],
-    );
+    const result = evaluateVerification({ nickname: "thg" }, [
+      {
+        source: "faceit",
+        connected: true,
+        status: "verified",
+        confidence: 1,
+        ownershipProven: true,
+      },
+    ]);
     expect(result.verifiedBadge).toBe(false);
     expect(result.recommendations).toContain("complete_profile");
   });

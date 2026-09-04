@@ -82,7 +82,9 @@ function ProfilePage() {
     setExperience(profile.experience);
     setRoleCodes(profile.roleCodes);
     setGoalCodes(
-      [...profile.goals].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary)).map((g) => g.code),
+      [...profile.goals]
+        .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+        .map((g) => g.code),
     );
     setHydrated(true);
   }, [profile, hydrated, locale]);

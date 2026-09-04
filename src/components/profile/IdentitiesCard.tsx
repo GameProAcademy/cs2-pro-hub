@@ -96,7 +96,10 @@ export function IdentitiesCard({
         <Lock className="size-3" aria-hidden />
         {t("profile.identities.readOnly")}
       </p>
-      <Link to="/upload" className="mt-2 inline-block text-xs font-medium text-primary hover:underline">
+      <Link
+        to="/upload"
+        className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+      >
         {t("profile.identities.connect")}
       </Link>
     </ChartCard>

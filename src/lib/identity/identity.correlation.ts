@@ -51,7 +51,6 @@ export interface CorrelationResult {
 // Weights, thresholds and the state machine live in the verification engine so
 // the UI meter and this engine can never disagree.
 
-
 function makeEvidence(
   a: IdentityObservation,
   b: IdentityObservation,

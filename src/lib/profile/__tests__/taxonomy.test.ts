@@ -45,9 +45,9 @@ describe("profile taxonomy", () => {
     expect(countryFromTimeZone("America/Sao_Paulo")).toBe("BR");
     expect(countryFromTimeZone("Etc/UTC")).toBeNull();
     expect(detectCountryCode({ languages: ["pt"], timeZone: "Europe/Lisbon" })).toBe("PT");
-    expect(
-      detectCountryCode({ languages: [], timeZone: "Etc/UTC", fallbackLocale: "pt-BR" }),
-    ).toBe("BR");
+    expect(detectCountryCode({ languages: [], timeZone: "Etc/UTC", fallbackLocale: "pt-BR" })).toBe(
+      "BR",
+    );
     expect(detectCountryCode({ languages: [], timeZone: "Etc/UTC" })).toBeNull();
   });
 });

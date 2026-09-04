@@ -66,8 +66,7 @@ export const CS2_MAP_POOL_VERSIONS: readonly Cs2MapPoolVersion[] = [
   },
 ] as const;
 
-export const CURRENT_MAP_POOL_VERSION =
-  CS2_MAP_POOL_VERSIONS[CS2_MAP_POOL_VERSIONS.length - 1]!;
+export const CURRENT_MAP_POOL_VERSION = CS2_MAP_POOL_VERSIONS[CS2_MAP_POOL_VERSIONS.length - 1]!;
 
 function timeOf(value: Date | string): number {
   const date = typeof value === "string" ? new Date(value) : value;
