@@ -90,7 +90,12 @@ describe("FASE 2.2.1D — convergência", () => {
 
   it("TESTE G — ongoing nunca converge, nem estourando as tentativas", () => {
     expect(
-      faceitMatchConverged({ dataComplete: false, finished: false, attempts: max, maxAttempts: max }),
+      faceitMatchConverged({
+        dataComplete: false,
+        finished: false,
+        attempts: max,
+        maxAttempts: max,
+      }),
     ).toBe(false);
     expect(
       faceitMatchConverged({
@@ -107,7 +112,12 @@ describe("FASE 2.2.1D — convergência", () => {
       faceitMatchConverged({ dataComplete: true, finished: false, attempts: 0, maxAttempts: max }),
     ).toBe(true);
     expect(
-      faceitMatchConverged({ dataComplete: false, finished: true, attempts: max, maxAttempts: max }),
+      faceitMatchConverged({
+        dataComplete: false,
+        finished: true,
+        attempts: max,
+        maxAttempts: max,
+      }),
     ).toBe(true);
     expect(
       faceitMatchConverged({ dataComplete: false, finished: true, attempts: 1, maxAttempts: max }),
@@ -254,7 +264,9 @@ describe("FASE 2.2.1D — worker deadline", () => {
     const fetchMock = vi.fn(
       (_url: string, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => reject(new DOMException("x", "AbortError")));
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("x", "AbortError")),
+          );
         }),
     );
     const client = createFaceitClient({

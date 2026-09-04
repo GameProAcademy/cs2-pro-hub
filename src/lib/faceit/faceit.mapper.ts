@@ -185,7 +185,11 @@ export function isFaceitMatchFinished(input: {
   status?: string | null | undefined;
   finishedAt?: number | null | undefined;
 }): boolean {
-  if (typeof input.finishedAt === "number" && Number.isFinite(input.finishedAt) && input.finishedAt > 0) {
+  if (
+    typeof input.finishedAt === "number" &&
+    Number.isFinite(input.finishedAt) &&
+    input.finishedAt > 0
+  ) {
     return true;
   }
   const status = typeof input.status === "string" ? input.status.trim().toLowerCase() : null;

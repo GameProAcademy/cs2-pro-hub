@@ -104,7 +104,8 @@ export function createFaceitClient(options: FaceitClientOptions): FaceitClient {
   let lastRequestAt = 0;
 
   function deadlineAt(): number | undefined {
-    const raw = typeof options.deadlineAt === "function" ? options.deadlineAt() : options.deadlineAt;
+    const raw =
+      typeof options.deadlineAt === "function" ? options.deadlineAt() : options.deadlineAt;
     return typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
   }
 
