@@ -128,10 +128,37 @@ describe("connection metadata cannot become a credential store", () => {
     expect(validateConnectionMetadata([1, 2]).ok).toBe(false);
   });
 
+  it("rejects sensitive keys nested in objects and arrays at any depth", () => {
+    const cases: unknown[] = [
+      { provider: { access_token: "test-secret" } },
+      { provider: { credentials: { refreshToken: "test-secret" } } },
+      { providers: [{ auth: { client_secret: "test-secret" } }] },
+      { a: { b: [{ c: { "ACCESS-TOKEN": "test-secret" } }] } },
+      { metadata: { oauth: { refresh_token: "test-secret" } } },
+      { nested: { deep: { authorization: "test-secret" } } },
+    ];
+    for (const value of cases) {
+      const result = validateConnectionMetadata(value);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.reason).toBe("sensitive_key");
+    }
+  });
+
+  it("still accepts safe descriptive metadata", () => {
+    expect(
+      validateConnectionMetadata({
+        provider: "faceit",
+        username: "player123",
+        profile_url: "https://example.com/player123",
+      }).ok,
+    ).toBe(true);
+  });
+
   it("throws with a stable code on the server path", () => {
     expect(() => assertSafeConnectionMetadata({ refresh_token: "x" })).toThrow(
       "CONNECTION_METADATA_SENSITIVE",
     );
+
     expect(() => assertSafeConnectionMetadata("nope")).toThrow("CONNECTION_METADATA_INVALID");
     expect(() => assertSafeConnectionMetadata({ nickname: "ok" })).not.toThrow();
   });
