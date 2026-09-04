@@ -21,8 +21,10 @@ export const FEATURES = {
   profilePersistence: false,
   /** Demo ingestion pipeline exists; real parsing depends on the parser worker. */
   demoParser: true,
-  faceitIntegration: false,
+  faceitIntegration: true,
+  /** No official API and the public site is behind an anti-bot challenge. */
   gamersClubIntegration: false,
+
   steamIntegration: false,
   aiCoachApi: false,
   payments: false,

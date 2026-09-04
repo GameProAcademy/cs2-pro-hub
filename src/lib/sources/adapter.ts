@@ -65,7 +65,6 @@ export interface SourceMatchResult {
   match: CanonicalMatch;
 }
 
-
 export type SourceAdapterUnavailableReason =
   | "not_implemented"
   | "not_connected"

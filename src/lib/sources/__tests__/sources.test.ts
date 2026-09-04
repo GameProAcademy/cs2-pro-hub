@@ -19,9 +19,10 @@ import {
 } from "../sources";
 
 describe("data sources", () => {
-  it("only the demo source is implemented", () => {
+  it("only demo and faceit are implemented", () => {
     expect(isSourceImplemented("demo")).toBe(true);
-    for (const source of DATA_SOURCES.filter((s) => s !== "demo")) {
+    expect(isSourceImplemented("faceit")).toBe(true);
+    for (const source of DATA_SOURCES.filter((s) => s !== "demo" && s !== "faceit")) {
       expect(isSourceImplemented(source)).toBe(false);
     }
   });
@@ -56,7 +57,7 @@ describe("data sources", () => {
 
 describe("unimplemented adapters", () => {
   it("report unavailability instead of pretending", () => {
-    for (const source of CONNECTABLE_SOURCES) {
+    for (const source of CONNECTABLE_SOURCES.filter((s) => s !== "faceit")) {
       expect(getSourceAdapter(source).availability()).toEqual({
         available: false,
         reason: "not_implemented",

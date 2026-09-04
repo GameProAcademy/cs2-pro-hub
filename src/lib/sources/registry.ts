@@ -38,9 +38,11 @@ export function describeSource(source: DataSource): SourceDescriptor {
 }
 
 /**
- * Adapters for the prepared-but-not-implemented sources. The demo source is NOT
- * here: it is served by the real pipeline in `src/lib/pipeline/*`.
+ * Adapters for the prepared-but-not-implemented sources. `demo` is NOT here
+ * (served by `src/lib/pipeline/*`) and neither is `faceit` (served by
+ * `src/lib/faceit/*`) — returning an "unimplemented" adapter for either would
+ * misrepresent a working integration.
  */
-export function getSourceAdapter(source: Exclude<DataSource, "demo">): SourceAdapter {
+export function getSourceAdapter(source: Exclude<DataSource, "demo" | "faceit">): SourceAdapter {
   return new UnimplementedSourceAdapter(source, SOURCE_CAPABILITIES[source]);
 }
