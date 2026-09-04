@@ -28,6 +28,10 @@ export const FACEIT_ERROR_CODES = [
   "FACEIT_NOT_CONNECTED",
   "FACEIT_SYNC_IN_PROGRESS",
   "FACEIT_JOB_STALE",
+  /** Controlled interruption: the run spent its Data API call budget. */
+  "FACEIT_API_BUDGET_EXHAUSTED",
+  /** Controlled interruption: the worker's wall-clock deadline expired. */
+  "FACEIT_WORKER_DEADLINE_EXCEEDED",
   "FACEIT_INTERNAL_ERROR",
 ] as const;
 
@@ -45,6 +49,14 @@ const RETRYABLE: ReadonlySet<FaceitErrorCode> = new Set<FaceitErrorCode>([
 
 export function isRetryableFaceitError(code: FaceitErrorCode): boolean {
   return RETRYABLE.has(code);
+}
+
+/**
+ * Budget/deadline exhaustion is NOT a data error and NOT a permanent failure:
+ * it is a controlled stop that leaves the remaining work for the next run.
+ */
+export function isFaceitBudgetError(code: FaceitErrorCode): boolean {
+  return code === "FACEIT_API_BUDGET_EXHAUSTED" || code === "FACEIT_WORKER_DEADLINE_EXCEEDED";
 }
 
 export class FaceitError extends Error {

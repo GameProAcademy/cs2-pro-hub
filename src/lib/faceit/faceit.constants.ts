@@ -56,3 +56,12 @@ export const FACEIT_MIN_CALL_SPACING_MS = 120;
  * and marked as converged, so the sync can never loop on it forever.
  */
 export const FACEIT_MAX_MATCH_FETCH_ATTEMPTS = 3;
+
+/**
+ * FASE 2.2.1D — FACEIT match statuses that PROVE a match is over.
+ *
+ * Deliberately minimal: only states the API documents as terminally finished.
+ * We do not invent statuses; when the status is unknown the strongest evidence
+ * remains `finished_at != null`.
+ */
+export const FACEIT_TERMINAL_MATCH_STATUSES: ReadonlySet<string> = new Set(["finished"]);
