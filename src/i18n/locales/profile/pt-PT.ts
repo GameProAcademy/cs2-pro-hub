@@ -82,4 +82,13 @@ export const profilePtPT: Record<keyof typeof profilePtBR, string> = {
   "maps.pool.activeDuty": "Active Duty",
   "maps.pool.outOfPool": "Fora do pool",
   "maps.noData": "Sem dados reais para este mapa.",
+  "profile.field.currentLevel": "Nível atual",
+  "profile.field.currentLevelHint":
+    "Nível declarado por ti. Não é o nível FACEIT nem o rating Premier.",
+  "profile.loadError": "Não foi possível carregar o perfil.",
+  "level.BEGINNER": "Iniciante",
+  "level.INTERMEDIATE": "Intermédio",
+  "level.ADVANCED": "Avançado",
+  "level.SEMI_PRO": "Semiprofissional",
+  "nav.openProfile": "Abrir o meu perfil",
 };

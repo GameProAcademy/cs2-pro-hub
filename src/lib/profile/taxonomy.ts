@@ -247,3 +247,21 @@ export function detectCountryCode(input?: {
 
   return countryFromLocaleTag(input?.fallbackLocale ?? null);
 }
+
+/* ------------------------------------------------------------------ *
+ * Declared current level (DECLARED data, never an external rating)     *
+ * ------------------------------------------------------------------ */
+
+/**
+ * The level the PLAYER declares about themself. It is deliberately unrelated to
+ * FACEIT level/ELO, Premier rating or Gamers Club level: those are OBSERVED
+ * external data and will live in their own fields.
+ */
+export const LEVEL_CODES = ["BEGINNER", "INTERMEDIATE", "ADVANCED", "SEMI_PRO"] as const;
+export type LevelCode = (typeof LEVEL_CODES)[number];
+
+export const levelLabelKey = (code: string) => `level.${code}` as TranslationKey;
+
+export function isLevelCode(value: unknown): value is LevelCode {
+  return typeof value === "string" && (LEVEL_CODES as readonly string[]).includes(value);
+}

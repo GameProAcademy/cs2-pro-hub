@@ -134,6 +134,28 @@ export function profileCompleteness(input: ProfileCompletenessInput): Completene
  * Combined verification state                                         *
  * ------------------------------------------------------------------ */
 
+/**
+ * Not every difference between two identities is a conflict. Only evidence that
+ * can actually prove ownership can contradict ownership; a new nickname, avatar,
+ * team or country is a WEAK DIFFERENCE and never blocks verification.
+ */
+export type ConflictSeverity = "weak_difference" | "strong_conflict";
+
+const STRONG_CONFLICT_ATTRIBUTES: readonly EvidenceAttribute[] = [
+  "authenticated_link",
+  "steam_id64",
+  "external_account_id",
+  "faceit_linked_identity",
+];
+
+export function classifyConflict(attribute: EvidenceAttribute): ConflictSeverity {
+  return STRONG_CONFLICT_ATTRIBUTES.includes(attribute) ? "strong_conflict" : "weak_difference";
+}
+
+export function hasStrongConflict(conflicts: readonly ScorableEvidence[]): boolean {
+  return conflicts.some((item) => classifyConflict(item.attribute) === "strong_conflict");
+}
+
 export interface IdentitySummary {
   source: string;
   connected: boolean;
@@ -141,6 +163,8 @@ export interface IdentitySummary {
   confidence: number;
   /** True only when an authenticated flow proved ownership. */
   ownershipProven: boolean;
+  /** Weak differences are informational and never block verification. */
+  conflictSeverity?: ConflictSeverity;
   /** Set when the source cannot be reached server-side (e.g. anti-bot). */
   blockedExternalAccess?: boolean;
 }
@@ -165,10 +189,15 @@ export interface VerificationResult {
 }
 
 /**
- * Half the meter is declared data, half is evidence-backed identity. Identity
- * contribution is the best confidence among connected identities, so an
- * unlinked account contributes exactly zero.
+ * The bar is "verification progress", not confidence: half declared data, half
+ * identity. The identity half only reaches 1 when ownership was actually proven,
+ * and correlation alone is capped below 1. So a complete profile without a
+ * proven identity can never read 100%, and a proven identity with an incomplete
+ * profile can never read 100% either — while the badge (proven ownership +
+ * complete profile + no strong conflict) always implies 100%.
  */
+export const MAX_IDENTITY_FACTOR_WITHOUT_OWNERSHIP = 0.9;
+
 export function evaluateVerification(
   profile: ProfileCompletenessInput,
   identities: readonly IdentitySummary[],
@@ -181,7 +210,9 @@ export function evaluateVerification(
     0,
   );
 
-  const hasConflict = identities.some((identity) => identity.status === "conflict");
+  const hasConflict = identities.some(
+    (identity) => identity.status === "conflict" && identity.conflictSeverity !== "weak_difference",
+  );
   const ownershipProven = connected.some((identity) => identity.ownershipProven);
 
   const identityStatus: IdentityStatus = hasConflict
@@ -196,16 +227,27 @@ export function evaluateVerification(
             ? "correlated"
             : "unlinked";
 
-  const percent = Math.floor((completeness.ratio * 0.5 + identityConfidence * 0.5) * 100);
+  const identityFactor =
+    ownershipProven && !hasConflict
+      ? 1
+      : Math.min(identityConfidence, MAX_IDENTITY_FACTOR_WITHOUT_OWNERSHIP);
+
+  const percent = Math.floor((completeness.ratio * 0.5 + identityFactor * 0.5) * 100);
 
   const recommendations: VerificationRecommendation[] = [];
   if (hasConflict) recommendations.push("resolve_conflict");
   if (completeness.missing.length > 0) recommendations.push("complete_profile");
-  if (!connected.some((identity) => identity.source === "faceit")) {
-    recommendations.push("connect_faceit");
-  }
-  if (!connected.some((identity) => identity.source === "steam")) {
-    recommendations.push("connect_steam");
+  // Never contradict a verified identity by asking to connect it again.
+  if (identityStatus !== "verified") {
+    if (
+      !connected.some((identity) => identity.source === "faceit" && identity.ownershipProven) &&
+      !connected.some((identity) => identity.source === "faceit")
+    ) {
+      recommendations.push("connect_faceit");
+    }
+    if (!connected.some((identity) => identity.source === "steam")) {
+      recommendations.push("connect_steam");
+    }
   }
   if (identities.some((identity) => identity.blockedExternalAccess)) {
     recommendations.push("gamers_club_blocked");

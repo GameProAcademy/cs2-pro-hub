@@ -82,4 +82,12 @@ export const profileEn: Record<keyof typeof profilePtBR, string> = {
   "maps.pool.activeDuty": "Active Duty",
   "maps.pool.outOfPool": "Out of pool",
   "maps.noData": "No real data for this map.",
+  "profile.field.currentLevel": "Current level",
+  "profile.field.currentLevelHint": "Level you declare. Not your FACEIT level or Premier rating.",
+  "profile.loadError": "Could not load your profile.",
+  "level.BEGINNER": "Beginner",
+  "level.INTERMEDIATE": "Intermediate",
+  "level.ADVANCED": "Advanced",
+  "level.SEMI_PRO": "Semi-professional",
+  "nav.openProfile": "Open my profile",
 };

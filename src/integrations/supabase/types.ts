@@ -1939,6 +1939,21 @@ export type Database = {
         Args: { _max_attempts?: number; _stale_seconds?: number }
         Returns: number
       }
+      save_player_profile: {
+        Args: {
+          _country: string
+          _current_level: string
+          _display_name: string
+          _experience: string
+          _goal_codes: string[]
+          _main_platform: string
+          _nickname: string
+          _primary_goal: string
+          _role_codes: string[]
+          _team: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       analysis_status: "pending" | "processing" | "completed" | "failed"
