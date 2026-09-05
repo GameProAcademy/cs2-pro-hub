@@ -90,7 +90,7 @@ export function isSourceImplemented(source: DataSource): boolean {
  *   to access this account". Players may only create a `pending` connection and
  *   delete their own; every other state transition is server-side.
  */
-export const CONNECTION_TYPES = ["oauth", "public_profile", "manual"] as const;
+export const CONNECTION_TYPES = ["oauth", "openid", "public_profile", "manual"] as const;
 export type ConnectionType = (typeof CONNECTION_TYPES)[number];
 
 export const CONNECTION_STATUSES = [
@@ -118,7 +118,9 @@ export const CONNECTABLE_SOURCES: readonly Exclude<DataSource, "demo">[] = [
 export const SOURCE_CONNECTION_TYPES: Record<Exclude<DataSource, "demo">, ConnectionType[]> = {
   faceit: ["oauth", "public_profile"],
   gamers_club: ["public_profile"],
-  steam: ["oauth", "public_profile"],
+  // Steam publishes NO OAuth2 server for account linking: OpenID 2.0 is the
+  // official, permitted mechanism (see src/lib/steam).
+  steam: ["openid", "public_profile"],
   public_profile: ["public_profile", "manual"],
 };
 
@@ -132,6 +134,8 @@ export const INTEGRATION_AUDIT_ACTIONS = [
   "connection_removed",
   "identity_verified",
   "identity_unverified",
+  "steam_connection_created",
+  "steam_connection_removed",
   "sync_started",
   "sync_completed",
   "sync_failed",

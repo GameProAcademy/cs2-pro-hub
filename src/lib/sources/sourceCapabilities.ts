@@ -86,10 +86,15 @@ const PROFILES: Record<
     externalAccess: "blocked_external_access",
     operations: ops({ identity: "supported", realtime: "unsupported" }, "architecture_ready"),
   },
+  /**
+   * Steam: identity linking through the official OpenID 2.0 sign-in is
+   * implemented and proves ownership. Match/statistics collection is NOT
+   * supported — Steam does not publish CS2 match history.
+   */
   steam: {
-    architecture: "not_implemented",
-    externalAccess: "unknown",
-    operations: ops({ identity: "architecture_ready" }, "unsupported"),
+    architecture: "implemented",
+    externalAccess: "available",
+    operations: ops({ identity: "supported" }, "unsupported"),
   },
   public_profile: {
     architecture: "architecture_ready",
