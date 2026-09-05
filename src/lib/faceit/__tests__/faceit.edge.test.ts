@@ -55,7 +55,10 @@ function client(options: {
 describe("FASE 2.2.1E — deadline", () => {
   it("1. deadline válido permite a request", async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
-    const c = client({ fetchImpl: fetchMock as unknown as typeof fetch, deadlineAt: Date.now() + 60_000 });
+    const c = client({
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      deadlineAt: Date.now() + 60_000,
+    });
     await expect(c.get("/players/p1")).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(c.requestCount).toBe(1);
@@ -63,7 +66,10 @@ describe("FASE 2.2.1E — deadline", () => {
 
   it("2. deadline já expirado: nenhum fetch e erro de deadline", async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
-    const c = client({ fetchImpl: fetchMock as unknown as typeof fetch, deadlineAt: Date.now() - 1 });
+    const c = client({
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      deadlineAt: Date.now() - 1,
+    });
     await expect(c.get("/players/p1")).rejects.toMatchObject({
       code: "FACEIT_WORKER_DEADLINE_EXCEEDED",
     });
@@ -115,7 +121,7 @@ describe("FASE 2.2.1E — deadline", () => {
   });
 
   it("5./6. retry após o deadline não começa e Retry-After não é aguardado", async () => {
-    let now = 2_000_000;
+    const now = 2_000_000;
     const deadline = now + 100;
     const fetchMock = vi.fn(async () =>
       jsonResponse({ error: "rate" }, 429, { "retry-after": "600" }),
@@ -168,11 +174,7 @@ describe("FASE 2.2.1E — deadline", () => {
 
 describe("FASE 2.2.1E — API budget", () => {
   it("8. budget 3 com 503/503/200 gasta exatamente 3 requests", async () => {
-    const responses = [
-      jsonResponse({}, 503),
-      jsonResponse({}, 503),
-      jsonResponse({ ok: true }),
-    ];
+    const responses = [jsonResponse({}, 503), jsonResponse({}, 503), jsonResponse({ ok: true })];
     const fetchMock = vi.fn(async () => responses.shift()!);
     const c = client({ fetchImpl: fetchMock as unknown as typeof fetch, callBudget: 3 });
     await expect(c.get("/players/p1")).resolves.toEqual({ ok: true });

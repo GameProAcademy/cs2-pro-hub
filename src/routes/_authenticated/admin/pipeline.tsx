@@ -88,10 +88,18 @@ function AdminPipelinePage() {
                 </span>
               </p>
               <div className="flex flex-wrap gap-3 font-mono text-xs text-muted-foreground">
-                <span>{t("pipeline.status.pending")}: {overview.data.counts.pending}</span>
-                <span>{t("pipeline.status.processing")}: {overview.data.counts.processing}</span>
-                <span>{t("pipeline.status.processed")}: {overview.data.counts.processed}</span>
-                <span>{t("pipeline.status.failed")}: {overview.data.counts.failed}</span>
+                <span>
+                  {t("pipeline.status.pending")}: {overview.data.counts.pending}
+                </span>
+                <span>
+                  {t("pipeline.status.processing")}: {overview.data.counts.processing}
+                </span>
+                <span>
+                  {t("pipeline.status.processed")}: {overview.data.counts.processed}
+                </span>
+                <span>
+                  {t("pipeline.status.failed")}: {overview.data.counts.failed}
+                </span>
               </div>
               <Button
                 size="sm"

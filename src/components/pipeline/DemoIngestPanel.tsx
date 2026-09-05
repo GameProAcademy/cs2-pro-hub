@@ -52,13 +52,18 @@ export function DemoIngestPanel() {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const pipeline = useQuery({ queryKey: ["pipeline", "status"], queryFn: () => getPipelineStatus() });
+  const pipeline = useQuery({
+    queryKey: ["pipeline", "status"],
+    queryFn: () => getPipelineStatus(),
+  });
 
   const jobs = useQuery({
     queryKey: ["pipeline", "jobs"],
     queryFn: () => listMyDemoJobs(),
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((job) => job.status === "pending" || job.status === "processing")
+      (query.state.data ?? []).some(
+        (job) => job.status === "pending" || job.status === "processing",
+      )
         ? 4000
         : false,
   });
@@ -100,7 +105,10 @@ export function DemoIngestPanel() {
       ) : null}
 
       {localError ? (
-        <p role="alert" className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm">
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm"
+        >
           {t(errorKey(localError))}
         </p>
       ) : null}
