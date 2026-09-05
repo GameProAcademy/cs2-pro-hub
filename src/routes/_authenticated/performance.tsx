@@ -107,19 +107,25 @@ function PerformancePage() {
           >
             <MapPerformanceChart data={maps} />
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {maps.map((m) => (
+              {getMapPerformanceDisplayContexts(maps).map((m) => (
                 <div
-                  key={m.map}
+                  key={m.displayLabel}
                   className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
                 >
-                  <span className="font-medium">{m.map}</span>
+                  <span className="font-medium">{m.displayLabel}</span>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {m.matches} {t("performance.games")} · {t("performance.rating")}{" "}
-                    {m.rating.toFixed(2)} · ADR {m.adr}
+                    {m.hasData
+                      ? `${m.matches} ${t("performance.games")} · ${t("performance.rating")} ${
+                          m.row.rating === null || m.row.rating === undefined
+                            ? "—"
+                            : m.row.rating.toFixed(2)
+                        } · ADR ${m.row.adr ?? "—"}`
+                      : t("maps.noMatches")}
                   </span>
                 </div>
               ))}
             </div>
+
           </ChartCard>
 
           <ChartCard
