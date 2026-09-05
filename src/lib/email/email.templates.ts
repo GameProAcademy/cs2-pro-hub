@@ -22,6 +22,7 @@ import {
   paragraph,
 } from "./email.components";
 import { renderEmailLayout } from "./email.layout";
+import type { EmailLocale as EmailLocaleValue } from "./email.locale";
 
 export type { EmailLocale } from "./email.locale";
 
@@ -69,7 +70,7 @@ interface AuthCopy {
 type AuthTemplateId =
   "confirm_signup" | "magic_link" | "invite" | "recovery" | "email_change" | "reauthentication";
 
-const AUTH_COPY: Record<EmailLocale, Record<AuthTemplateId, AuthCopy>> = {
+const AUTH_COPY: Record<AuthLocale, Record<AuthTemplateId, AuthCopy>> = {
   "pt-BR": {
     confirm_signup: {
       subject: "Confirme seu e-mail — GamePro",
@@ -222,8 +223,11 @@ export const AUTH_TEMPLATE_IDS: readonly AuthTemplateId[] = [
 ];
 
 /** Renders one Supabase auth template, placeholders included. */
-export function renderAuthEmail(id: AuthTemplateId, locale: EmailLocale = "pt-BR"): RenderedEmail {
-  const copy = AUTH_COPY[locale][id];
+export function renderAuthEmail(
+  id: AuthTemplateId,
+  locale: EmailLocaleValue = "pt-BR",
+): RenderedEmail {
+  const copy = AUTH_COPY[authLocaleOf(locale)][id];
   const isCode = id === "reauthentication";
   const body = [
     heading(copy.title),
@@ -266,7 +270,7 @@ export interface SteamLinkEmailInput {
   steamIdMasked: string;
   personaName: string | null;
   occurredAt: string;
-  locale?: EmailLocale;
+  locale?: EmailLocaleValue;
 }
 
 /** "Your Steam account was linked" — a security notification, not marketing. */
