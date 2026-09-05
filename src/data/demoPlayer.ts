@@ -166,14 +166,20 @@ export const demoOpeningTrend: TimeSeriesPoint[] = [
   { label: "Jul", firstKill: 14.2, firstDeath: 17.9 },
 ];
 
+/**
+ * DEMONSTRATION map performance. `matchDate` is what lets the UI say honestly
+ * "this map was Active Duty when these matches were played" — Overpass below is
+ * such a case, and Cache has no matches at all (absent, never 0%).
+ */
 export const demoMapPerformance: MapPerformance[] = [
-  { map: "Mirage", matches: 42, winRate: 61, rating: 1.14, adr: 88 },
-  { map: "Inferno", matches: 31, winRate: 55, rating: 1.06, adr: 82 },
-  { map: "Nuke", matches: 18, winRate: 39, rating: 0.91, adr: 71 },
-  { map: "Ancient", matches: 22, winRate: 52, rating: 1.03, adr: 80 },
-  { map: "Anubis", matches: 16, winRate: 48, rating: 0.98, adr: 77 },
-  { map: "Dust2", matches: 27, winRate: 63, rating: 1.17, adr: 90 },
-  { map: "Overpass", matches: 12, winRate: 41, rating: 0.94, adr: 73 },
+  { map: "Mirage", matches: 42, winRate: 61, rating: 1.14, adr: 88, matchDate: "2026-07-20" },
+  { map: "Inferno", matches: 31, winRate: 55, rating: 1.06, adr: 82, matchDate: "2026-07-18" },
+  { map: "Nuke", matches: 18, winRate: 39, rating: 0.91, adr: 71, matchDate: "2026-07-15" },
+  { map: "Ancient", matches: 22, winRate: 52, rating: 1.03, adr: 80, matchDate: "2026-07-12" },
+  { map: "Anubis", matches: 16, winRate: 48, rating: 0.98, adr: 77, matchDate: "2026-07-11" },
+  { map: "Dust2", matches: 27, winRate: 63, rating: 1.17, adr: 90, matchDate: "2026-07-10" },
+  { map: "Overpass", matches: 12, winRate: 41, rating: 0.94, adr: 73, matchDate: "2026-06-28" },
+  { map: "Cache", matches: 0, winRate: null, rating: null, adr: null, matchDate: null },
 ];
 
 export const demoSideSplit: SideSplit[] = [
