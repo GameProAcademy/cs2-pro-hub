@@ -710,8 +710,10 @@ export const es: Dictionary = {
   "steam.field.profileVisibility": "Perfil de Steam",
   "steam.visibility.public": "Público",
   "steam.visibility.private": "Privado",
-  "steam.note.identityOnly": "Iniciar sesión con Steam prueba QUIÉN eres. No aporta partidas ni estadísticas: los datos de rendimiento siguen viniendo de las demos y de FACEIT.",
-  "steam.note.unlinkKeepsHistory": "Desvincular no borra nada: partidas, análisis e historial se mantienen.",
+  "steam.note.identityOnly":
+    "Iniciar sesión con Steam prueba QUIÉN eres. No aporta partidas ni estadísticas: los datos de rendimiento siguen viniendo de las demos y de FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Desvincular no borra nada: partidas, análisis e historial se mantienen.",
   "steam.unavailable": "La vinculación con Steam aún no está configurada en este entorno.",
   "steam.linked": "Cuenta de Steam vinculada y verificada.",
   "steam.action.link": "Iniciar sesión con Steam",
@@ -719,14 +721,17 @@ export const es: Dictionary = {
   "steam.action.revealId": "Mostrar SteamID",
   "steam.action.hideId": "Ocultar SteamID",
   "steam.action.openProfile": "Abrir perfil de Steam",
-  "steam.reason.configuration_missing": "La vinculación con Steam no está configurada en este entorno.",
+  "steam.reason.configuration_missing":
+    "La vinculación con Steam no está configurada en este entorno.",
   "steam.reason.cancelled": "Cancelaste el inicio de sesión en Steam.",
-  "steam.reason.state_invalid": "La solicitud de vinculación expiró o ya se usó. Inténtalo de nuevo.",
+  "steam.reason.state_invalid":
+    "La solicitud de vinculación expiró o ya se usó. Inténtalo de nuevo.",
   "steam.reason.not_validated": "Steam no confirmó esta vinculación. No se cambió nada.",
   "steam.reason.duplicate_account": "Esta cuenta de Steam ya está vinculada a otro jugador.",
   "steam.reason.not_connected": "No hay ninguna cuenta de Steam vinculada.",
   "steam.reason.profile_unavailable": "El perfil público de Steam no está accesible ahora.",
-  "steam.reason.rate_limited": "Steam limitó temporalmente las solicitudes. Inténtalo en unos minutos.",
+  "steam.reason.rate_limited":
+    "Steam limitó temporalmente las solicitudes. Inténtalo en unos minutos.",
   "steam.reason.temporary": "Steam no está disponible en este momento. Inténtalo de nuevo.",
   "steam.reason.error": "No se pudo completar la vinculación con Steam.",
 };

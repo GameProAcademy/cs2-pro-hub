@@ -709,8 +709,10 @@ export const ptPT: Dictionary = {
   "steam.field.profileVisibility": "Perfil Steam",
   "steam.visibility.public": "Público",
   "steam.visibility.private": "Privado",
-  "steam.note.identityOnly": "O início de sessão da Steam prova QUEM é. Não traz partidas nem estatísticas: os dados de desempenho continuam a vir das demos e da FACEIT.",
-  "steam.note.unlinkKeepsHistory": "Desligar não apaga nada: partidas, análises e histórico mantêm-se.",
+  "steam.note.identityOnly":
+    "O início de sessão da Steam prova QUEM é. Não traz partidas nem estatísticas: os dados de desempenho continuam a vir das demos e da FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Desligar não apaga nada: partidas, análises e histórico mantêm-se.",
   "steam.unavailable": "A ligação à Steam ainda não está configurada neste ambiente.",
   "steam.linked": "Conta Steam ligada e verificada.",
   "steam.action.link": "Iniciar sessão com a Steam",
@@ -725,7 +727,8 @@ export const ptPT: Dictionary = {
   "steam.reason.duplicate_account": "Esta conta Steam já está ligada a outro jogador.",
   "steam.reason.not_connected": "Nenhuma conta Steam ligada.",
   "steam.reason.profile_unavailable": "O perfil público da Steam não está acessível neste momento.",
-  "steam.reason.rate_limited": "A Steam limitou temporariamente os pedidos. Tente dentro de alguns minutos.",
+  "steam.reason.rate_limited":
+    "A Steam limitou temporariamente os pedidos. Tente dentro de alguns minutos.",
   "steam.reason.temporary": "A Steam está indisponível neste momento. Tente novamente.",
   "steam.reason.error": "Não foi possível concluir a ligação à Steam.",
 };

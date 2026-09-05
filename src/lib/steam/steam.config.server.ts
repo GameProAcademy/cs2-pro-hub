@@ -68,8 +68,7 @@ export function steamConfigStatus(): SteamConfigStatus {
   const webApiKey = env("STEAM_WEB_API_KEY");
 
   const transportSecure =
-    (isHttpsUrl(realm) || isLocalUrl(realm)) &&
-    (isHttpsUrl(returnUrl) || isLocalUrl(returnUrl));
+    (isHttpsUrl(realm) || isLocalUrl(realm)) && (isHttpsUrl(returnUrl) || isLocalUrl(returnUrl));
 
   let returnUrlInsideRealm = false;
   if (realm && returnUrl) {

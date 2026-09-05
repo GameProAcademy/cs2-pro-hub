@@ -10,7 +10,17 @@
  * No template ever contains a secret, a password, a session token or a full
  * SteamID64 — account identifiers are always masked before they reach a message.
  */
-import { button, codeBlock, detailList, divider, fallbackLink, heading, muted, notice, paragraph } from "./email.components";
+import {
+  button,
+  codeBlock,
+  detailList,
+  divider,
+  fallbackLink,
+  heading,
+  muted,
+  notice,
+  paragraph,
+} from "./email.components";
 import { renderEmailLayout } from "./email.layout";
 
 export type EmailLocale = "pt-BR" | "en";
@@ -46,12 +56,7 @@ interface AuthCopy {
 }
 
 type AuthTemplateId =
-  | "confirm_signup"
-  | "magic_link"
-  | "invite"
-  | "recovery"
-  | "email_change"
-  | "reauthentication";
+  "confirm_signup" | "magic_link" | "invite" | "recovery" | "email_change" | "reauthentication";
 
 const AUTH_COPY: Record<EmailLocale, Record<AuthTemplateId, AuthCopy>> = {
   "pt-BR": {
@@ -105,7 +110,8 @@ const AUTH_COPY: Record<EmailLocale, Record<AuthTemplateId, AuthCopy>> = {
       subject: "Confirme seu novo e-mail — GamePro",
       preheader: "Confirme a troca de endereço da sua conta.",
       title: "Confirme seu novo e-mail",
-      intro: "Você pediu para trocar o e-mail da sua conta. Confirme o novo endereço para concluir.",
+      intro:
+        "Você pediu para trocar o e-mail da sua conta. Confirme o novo endereço para concluir.",
       cta: "Confirmar novo e-mail",
       fallbackIntro: "Se o botão não funcionar, copie e cole este endereço no navegador:",
       security: "Enquanto a confirmação não acontecer, seu e-mail antigo continua ativo.",
@@ -273,19 +279,13 @@ export function renderSteamLinkedEmail(input: SteamLinkEmailInput): RenderedEmai
 
   const rows = [
     { label: pt ? "Conta Steam" : "Steam account", value: input.steamIdMasked },
-    ...(input.personaName
-      ? [{ label: pt ? "Apelido" : "Persona", value: input.personaName }]
-      : []),
+    ...(input.personaName ? [{ label: pt ? "Apelido" : "Persona", value: input.personaName }] : []),
     { label: pt ? "Data" : "Date", value: input.occurredAt },
   ];
 
   const body = [
     heading(title),
-    paragraph(
-      input.name
-        ? `${pt ? "Olá" : "Hi"}, ${input.name}. ${intro}`
-        : intro,
-    ),
+    paragraph(input.name ? `${pt ? "Olá" : "Hi"}, ${input.name}. ${intro}` : intro),
     detailList(rows),
     notice(capability, "info"),
     notice(warn, "danger"),
@@ -302,7 +302,14 @@ export function renderSteamLinkedEmail(input: SteamLinkEmailInput): RenderedEmai
       footerNote: footer,
       lang: locale,
     }),
-    text: textOf([title, intro, `${rows.map((r) => `${r.label}: ${r.value}`).join("\n")}`, capability, warn, footer]),
+    text: textOf([
+      title,
+      intro,
+      `${rows.map((r) => `${r.label}: ${r.value}`).join("\n")}`,
+      capability,
+      warn,
+      footer,
+    ]),
   };
 }
 

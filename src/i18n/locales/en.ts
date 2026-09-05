@@ -702,8 +702,10 @@ export const en: Dictionary = {
   "steam.field.profileVisibility": "Steam profile",
   "steam.visibility.public": "Public",
   "steam.visibility.private": "Private",
-  "steam.note.identityOnly": "Signing in with Steam proves WHO you are. It brings no matches and no statistics: performance data still comes from demos and FACEIT.",
-  "steam.note.unlinkKeepsHistory": "Unlinking deletes nothing: matches, analyses and history all stay in place.",
+  "steam.note.identityOnly":
+    "Signing in with Steam proves WHO you are. It brings no matches and no statistics: performance data still comes from demos and FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Unlinking deletes nothing: matches, analyses and history all stay in place.",
   "steam.unavailable": "Steam linking is not configured in this environment yet.",
   "steam.linked": "Steam account linked and verified.",
   "steam.action.link": "Sign in through Steam",
@@ -718,7 +720,8 @@ export const en: Dictionary = {
   "steam.reason.duplicate_account": "This Steam account is already linked to another player.",
   "steam.reason.not_connected": "No Steam account is linked.",
   "steam.reason.profile_unavailable": "The public Steam profile is not reachable right now.",
-  "steam.reason.rate_limited": "Steam temporarily rate-limited our requests. Try again in a few minutes.",
+  "steam.reason.rate_limited":
+    "Steam temporarily rate-limited our requests. Try again in a few minutes.",
   "steam.reason.temporary": "Steam is unavailable right now. Please try again.",
   "steam.reason.error": "The Steam link could not be completed.",
 };

@@ -24,8 +24,7 @@ export const EMAIL_THEME = {
   radius: "12px",
   radiusSmall: "8px",
   maxWidth: "600px",
-  fontFamily:
-    "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
+  fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
   monoFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
 } as const;
 

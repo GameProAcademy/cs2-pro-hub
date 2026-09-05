@@ -33,13 +33,8 @@ export function generateState(): string {
 
 /** SHA-256 hex. Only the hash of a state is ever persisted. */
 export async function hashState(state: string): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(state),
-  );
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(state));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /** Appends our single-use state to the configured return URL. */

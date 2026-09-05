@@ -11,7 +11,11 @@
 import { STEAM_HTTP_TIMEOUT_MS, STEAM_WEB_API_BASE_URL } from "./steam.constants";
 import { steamConfigStatus, requireSteamWebApiKey } from "./steam.config.server";
 import { steamErrorFromStatus, toSteamError } from "./steam.errors";
-import { mapSteamPlayerSummary, steamMinimalProfile, type SteamPlayerSummary } from "./steam.mapper";
+import {
+  mapSteamPlayerSummary,
+  steamMinimalProfile,
+  type SteamPlayerSummary,
+} from "./steam.mapper";
 import { isSteamId64 } from "./steam.openid";
 import { SteamError } from "./steam.errors";
 import type { SteamProfileView } from "./steam.types";

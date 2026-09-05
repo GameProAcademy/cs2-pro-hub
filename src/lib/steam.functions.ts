@@ -93,7 +93,11 @@ export const getSteamConnection = createServerFn({ method: "GET" })
 
     return {
       ...base,
-      state: !status.openidReady ? "configuration_missing" : connected ? "connected" : "disconnected",
+      state: !status.openidReady
+        ? "configuration_missing"
+        : connected
+          ? "connected"
+          : "disconnected",
       connected,
       // The full id is returned ONLY to the owner of the account.
       steamId64: connection.external_id,
@@ -140,7 +144,10 @@ export const unlinkSteamConnection = createServerFn({ method: "POST" })
     try {
       const { unlinkSteamAccount } = await import("./steam/steam.connect.server");
       const result = await unlinkSteamAccount(context.userId);
-      return { ok: result.disconnected, ...(result.disconnected ? {} : { errorCode: "STEAM_NOT_CONNECTED" as const }) };
+      return {
+        ok: result.disconnected,
+        ...(result.disconnected ? {} : { errorCode: "STEAM_NOT_CONNECTED" as const }),
+      };
     } catch (error) {
       return { ok: false, errorCode: toSteamError(error).code };
     }

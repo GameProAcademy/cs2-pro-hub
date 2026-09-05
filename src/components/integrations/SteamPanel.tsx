@@ -9,7 +9,16 @@
  *  - it says out loud that Steam proves WHO you are, not HOW you played.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Eye, EyeOff, ExternalLink, Link2, Link2Off, Loader2, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Link2,
+  Link2Off,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -69,14 +78,11 @@ export function SteamPanel({ callback }: SteamPanelProps) {
   const configured = view?.openidReady ?? false;
   const connected = view?.connected ?? false;
   const busy = link.isPending || unlink.isPending || connection.isLoading;
-  const activeReason = reason ?? (callback?.status === "error" ? (callback.reason ?? "error") : null);
+  const activeReason =
+    reason ?? (callback?.status === "error" ? (callback.reason ?? "error") : null);
 
   return (
-    <ChartCard
-      title={t("steam.title")}
-      subtitle={t("steam.subtitle")}
-      showDemoTag={false}
-    >
+    <ChartCard title={t("steam.title")} subtitle={t("steam.subtitle")} showDemoTag={false}>
       <div className="space-y-4">
         {/* State line */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/40 px-3 py-2.5">

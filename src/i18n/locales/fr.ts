@@ -709,8 +709,10 @@ export const fr: Dictionary = {
   "steam.field.profileVisibility": "Profil Steam",
   "steam.visibility.public": "Public",
   "steam.visibility.private": "Privé",
-  "steam.note.identityOnly": "La connexion Steam prouve QUI vous êtes. Elle n’apporte ni matchs ni statistiques : les données de performance viennent toujours des demos et de FACEIT.",
-  "steam.note.unlinkKeepsHistory": "Délier ne supprime rien : matchs, analyses et historique restent en place.",
+  "steam.note.identityOnly":
+    "La connexion Steam prouve QUI vous êtes. Elle n’apporte ni matchs ni statistiques : les données de performance viennent toujours des demos et de FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Délier ne supprime rien : matchs, analyses et historique restent en place.",
   "steam.unavailable": "La liaison Steam n’est pas encore configurée dans cet environnement.",
   "steam.linked": "Compte Steam lié et vérifié.",
   "steam.action.link": "Se connecter avec Steam",
@@ -718,14 +720,16 @@ export const fr: Dictionary = {
   "steam.action.revealId": "Afficher le SteamID",
   "steam.action.hideId": "Masquer le SteamID",
   "steam.action.openProfile": "Ouvrir le profil Steam",
-  "steam.reason.configuration_missing": "La liaison Steam n’est pas configurée dans cet environnement.",
+  "steam.reason.configuration_missing":
+    "La liaison Steam n’est pas configurée dans cet environnement.",
   "steam.reason.cancelled": "Vous avez annulé la connexion Steam.",
   "steam.reason.state_invalid": "La demande de liaison a expiré ou a déjà été utilisée. Réessayez.",
   "steam.reason.not_validated": "Steam n’a pas confirmé cette liaison. Rien n’a été modifié.",
   "steam.reason.duplicate_account": "Ce compte Steam est déjà lié à un autre joueur.",
   "steam.reason.not_connected": "Aucun compte Steam lié.",
   "steam.reason.profile_unavailable": "Le profil public Steam n’est pas accessible pour le moment.",
-  "steam.reason.rate_limited": "Steam a temporairement limité nos requêtes. Réessayez dans quelques minutes.",
+  "steam.reason.rate_limited":
+    "Steam a temporairement limité nos requêtes. Réessayez dans quelques minutes.",
   "steam.reason.temporary": "Steam est indisponible pour le moment. Réessayez.",
   "steam.reason.error": "La liaison Steam n’a pas pu être finalisée.",
 };

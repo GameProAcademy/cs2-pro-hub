@@ -17,8 +17,7 @@ export const STEAM_OPENID_DEFAULT_ENDPOINT = "https://steamcommunity.com/openid/
 export const STEAM_OPENID_NS = "http://specs.openid.net/auth/2.0";
 
 /** "Let the provider tell us who the user is" identifier. */
-export const STEAM_OPENID_IDENTIFIER_SELECT =
-  "http://specs.openid.net/auth/2.0/identifier_select";
+export const STEAM_OPENID_IDENTIFIER_SELECT = "http://specs.openid.net/auth/2.0/identifier_select";
 
 /** Steam always returns a claimed_id under this prefix. */
 export const STEAM_CLAIMED_ID_PREFIX = "https://steamcommunity.com/openid/id/";

@@ -11,7 +11,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { requireSteamOpenIdConfig, steamConfigStatus } from "../steam.config.server";
 import { STEAM_ERROR_CODES, SteamError, callbackReason, toSteamError } from "../steam.errors";
-import { mapSteamConnectionFields, mapSteamPlayerSummary, steamMinimalProfile } from "../steam.mapper";
+import {
+  mapSteamConnectionFields,
+  mapSteamPlayerSummary,
+  steamMinimalProfile,
+} from "../steam.mapper";
 import { assertSafeConnectionMetadata } from "@/lib/sources/connectionMetadata";
 import { sourceAvailability } from "@/lib/sources/availability";
 import { SOURCE_CONNECTION_TYPES } from "@/lib/sources/sources";
@@ -51,9 +55,7 @@ describe("steam configuration", () => {
     const status = steamConfigStatus();
     expect(status.state).toBe("not_configured");
     expect(status.openidReady).toBe(false);
-    expect(() => requireSteamOpenIdConfig()).toThrow(
-      new SteamError("STEAM_CONFIGURATION_MISSING"),
-    );
+    expect(() => requireSteamOpenIdConfig()).toThrow(new SteamError("STEAM_CONFIGURATION_MISSING"));
   });
 
   it("only exposes booleans and a state — never a value", () => {

@@ -58,7 +58,9 @@ describe("steam openid — authorization request", () => {
     expect(url.searchParams.get("openid.mode")).toBe("checkid_setup");
     expect(url.searchParams.get("openid.identity")).toBe(STEAM_OPENID_IDENTIFIER_SELECT);
     expect(url.searchParams.get("openid.claimed_id")).toBe(STEAM_OPENID_IDENTIFIER_SELECT);
-    expect(extractStateFromReturnTo(url.searchParams.get("openid.return_to")!)).toBe("a".repeat(64));
+    expect(extractStateFromReturnTo(url.searchParams.get("openid.return_to")!)).toBe(
+      "a".repeat(64),
+    );
   });
 
   it("generates a 64-hex state and only ever persists its hash", async () => {
@@ -81,8 +83,9 @@ describe("steam openid — callback parsing", () => {
   });
 
   it("reports an explicit cancellation", () => {
-    expect(() => parseSteamCallback(validParams(state, { "openid.mode": "cancel" }), RETURN_URL))
-      .toThrow(new SteamError("STEAM_OPENID_CANCELLED"));
+    expect(() =>
+      parseSteamCallback(validParams(state, { "openid.mode": "cancel" }), RETURN_URL),
+    ).toThrow(new SteamError("STEAM_OPENID_CANCELLED"));
   });
 
   it("refuses a foreign namespace", () => {
@@ -153,8 +156,9 @@ describe("steam openid — verification round trip", () => {
   });
 
   it("only accepts an explicit is_valid:true", () => {
-    expect(parseCheckAuthenticationResponse("ns:http://specs.openid.net/auth/2.0\nis_valid:true\n"))
-      .toBe(true);
+    expect(
+      parseCheckAuthenticationResponse("ns:http://specs.openid.net/auth/2.0\nis_valid:true\n"),
+    ).toBe(true);
     expect(parseCheckAuthenticationResponse("is_valid:false\n")).toBe(false);
     expect(parseCheckAuthenticationResponse("")).toBe(false);
     expect(parseCheckAuthenticationResponse("garbage")).toBe(false);
