@@ -39,6 +39,18 @@ export async function startSteamLinkAttempt(userId: string): Promise<StartedStea
   const expiresAt = new Date(Date.now() + STEAM_LINK_STATE_TTL_SECONDS * 1000).toISOString();
   const db = await admin();
 
+  // FASE 2.5.1 — shared-state throttle. Counting the rows the flow already owns
+  // is correct across instances, unlike an in-memory counter.
+  const windowStart = new Date(Date.now() - STEAM_LINK_STATE_TTL_SECONDS * 1000).toISOString();
+  const { count: recentAttempts } = await db
+    .from("steam_link_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", windowStart);
+  if ((recentAttempts ?? 0) >= STEAM_MAX_ATTEMPTS_PER_WINDOW) {
+    throw new SteamError("STEAM_RATE_LIMITED");
+  }
+
   // Only one live attempt per user: starting a new one burns the old ones.
   await invalidateSteamLinkAttempts(userId);
 
