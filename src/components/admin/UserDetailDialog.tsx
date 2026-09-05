@@ -26,7 +26,9 @@ import { UserAvatar } from "@/components/common/UserAvatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
+import { CountrySelect } from "@/components/profile/CountrySelect";
 import { dnaLabelKey } from "@/lib/dna";
+import { countryFlagEmoji, countryName, goalLabelKey } from "@/lib/profile/taxonomy";
 import type { DnaDimension } from "@/types";
 import {
   getAdminUserDetail,
@@ -135,7 +137,6 @@ export function UserDetailDialog({
     playerNickname: "",
     main_platform: "",
     current_level: "",
-    competitive_goal: "",
     gameRole: "",
     experience: "",
     team: "",
@@ -153,7 +154,6 @@ export function UserDetailDialog({
       playerNickname: player?.nickname ?? "",
       main_platform: player?.main_platform ?? "",
       current_level: player?.current_level ?? "",
-      competitive_goal: player?.competitive_goal ?? "",
       gameRole: player?.role ?? "",
       experience: player?.experience ?? "",
       team: player?.team ?? "",
@@ -184,7 +184,6 @@ export function UserDetailDialog({
             nickname: form.playerNickname || null,
             main_platform: form.main_platform || null,
             current_level: form.current_level || null,
-            competitive_goal: form.competitive_goal || null,
             role: form.gameRole || null,
             experience: form.experience || null,
             team: form.team || null,
@@ -233,6 +232,7 @@ export function UserDetailDialog({
   const plans = detail.data?.plans ?? [];
   const conversations = detail.data?.conversations ?? [];
   const audit = detail.data?.audit ?? [];
+  const goals = (detail.data?.goals ?? []) as Array<{ code: string; isPrimary: boolean }>;
   const isSelf = profile?.id === session.userId;
   const busy = save.isPending || changeStatus.isPending || resetPassword.isPending;
 
@@ -329,10 +329,10 @@ export function UserDetailDialog({
                     </div>
                     <div>
                       <Label htmlFor="ct">{t("admin.table.country")}</Label>
-                      <Input
+                      <CountrySelect
                         id="ct"
-                        value={form.country}
-                        onChange={(e) => setForm({ ...form, country: e.target.value })}
+                        value={form.country || null}
+                        onChange={(code) => setForm({ ...form, country: code })}
                       />
                     </div>
                     <div>
@@ -356,7 +356,14 @@ export function UserDetailDialog({
                     <Field label={t("admin.table.name")} value={profile.display_name || dash} />
                     <Field label={t("admin.table.email")} value={profile.email || dash} />
                     <Field label={t("admin.table.nickname")} value={profile.nickname || dash} />
-                    <Field label={t("admin.table.country")} value={profile.country || dash} />
+                    <Field
+                      label={t("admin.table.country")}
+                      value={
+                        profile.country
+                          ? `${countryFlagEmoji(profile.country)} ${countryName(profile.country, intlTag)}`
+                          : dash
+                      }
+                    />
                     <Field label={t("admin.field.locale")} value={profile.locale} />
                     <Field
                       label={t("admin.table.role")}
@@ -393,7 +400,6 @@ export function UserDetailDialog({
                           ["playerNickname", "admin.table.nickname"],
                           ["main_platform", "admin.field.mainPlatform"],
                           ["current_level", "admin.field.currentLevel"],
-                          ["competitive_goal", "admin.field.goal"],
                           ["gameRole", "admin.field.gameRole"],
                           ["experience", "admin.field.experience"],
                           ["team", "admin.field.team"],
@@ -422,7 +428,16 @@ export function UserDetailDialog({
                       />
                       <Field
                         label={t("admin.field.goal")}
-                        value={player?.competitive_goal || dash}
+                        value={
+                          goals.length
+                            ? goals
+                                .map(
+                                  (goal) =>
+                                    `${t(goalLabelKey(goal.code))}${goal.isPrimary ? ` (${t("profile.primaryGoal")})` : ""}`,
+                                )
+                                .join(", ")
+                            : dash
+                        }
                       />
                       <Field label={t("admin.field.gameRole")} value={player?.role || dash} />
                       <Field

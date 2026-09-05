@@ -62,6 +62,7 @@ export interface AdminPlayerDetail {
   country: string | null;
   main_platform: string | null;
   current_level: string | null;
+  /** LEGACY column — never a source of truth. Goals live in player_profile_goals. */
   competitive_goal: string | null;
   role: string | null;
   experience: string | null;
@@ -430,6 +431,7 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       return {
         profile: profile as AdminProfileDetail,
         player: null,
+        goals: [] as Array<{ code: string; isPrimary: boolean }>,
         uploads: (uploadRows ?? []) as AdminUpload[],
         audit: (auditRows ?? []) as AuditLogRow[],
         ...empty,
@@ -537,6 +539,13 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       supabase.from("skills").select("id, slug"),
     ]);
 
+    // Goals: single source of truth (never player_profiles.competitive_goal).
+    const { data: goalRows } = await supabase
+      .from("player_profile_goals")
+      .select("goal_code, is_primary")
+      .eq("player_id", playerId)
+      .order("goal_code");
+
     const skillSlug = new Map<string, string>(
       ((skillsRes.data ?? []) as Array<{ id: string; slug: string }>).map((s) => [s.id, s.slug]),
     );
@@ -558,6 +567,10 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
     return {
       profile: profile as AdminProfileDetail,
       player: player as AdminPlayerDetail,
+      goals: ((goalRows ?? []) as Array<{ goal_code: string; is_primary: boolean }>).map((row) => ({
+        code: row.goal_code,
+        isPrimary: row.is_primary,
+      })),
       identities: (identitiesRes.data ?? []) as AdminIdentity[],
       uploads: (uploadRows ?? []) as AdminUpload[],
       matches: (matchesRes.data ?? []) as AdminMatch[],
@@ -638,7 +651,6 @@ export const updateAdminUser = createServerFn({ method: "POST" })
         country?: string | null;
         main_platform?: string | null;
         current_level?: string | null;
-        competitive_goal?: string | null;
         role?: string | null;
         experience?: string | null;
         team?: string | null;

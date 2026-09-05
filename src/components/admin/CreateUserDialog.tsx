@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { CountrySelect } from "@/components/profile/CountrySelect";
 import { useT } from "@/i18n";
 import { createPlayerUser } from "@/lib/admin.functions";
 
@@ -91,10 +92,10 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <Label htmlFor="c-country">{t("admin.table.country")}</Label>
-              <Input
+              <CountrySelect
                 id="c-country"
-                value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                value={form.country || null}
+                onChange={(code) => setForm({ ...form, country: code })}
               />
             </div>
           </div>

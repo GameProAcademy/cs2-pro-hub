@@ -47,9 +47,12 @@ export interface TimeSeriesPoint {
 export interface MapPerformance {
   map: string;
   matches: number;
-  winRate: number;
-  rating: number;
-  adr: number;
+  /** null/undefined = no data. Never coerce absence into 0. */
+  winRate: number | null;
+  rating: number | null;
+  adr: number | null;
+  /** Date the matches were played, when known — drives the historical pool. */
+  matchDate?: string | null;
 }
 
 export interface SideSplit {
