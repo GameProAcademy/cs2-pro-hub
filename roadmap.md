@@ -90,3 +90,36 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
   recém-carregados. Handlers agora ignoram valor vazio; recarregar mantém os valores salvos.
 - Checks: typecheck limpo, 287/287 testes, build OK, verificação end-to-end no navegador
   (salvar → reload → valores vindos do banco: nickname thg, BR, FACEIT, 1_3Y, IGL+AWPER, CLIMB_RATING primário).
+
+## FASE 2.5 — Steam Identity Foundation (concluída)
+
+- Steam entra como **fonte de identidade, nunca de partidas**: a Valve não publica
+  histórico CS2. Codificado em `availability.ts` (`identity_only`, não coletável),
+  `sourceCapabilities.ts` (só `identity: supported`) e
+  `STEAM_MATCH_DATA_SUPPORTED = false`.
+- OpenID 2.0 (não OAuth: a Steam não oferece servidor OAuth2 para vínculo) — nenhum
+  token existe para guardar. `connection_type` ganhou o valor `openid`.
+- Anti-CSRF/replay: `steam_link_attempts` guarda só o **hash** do state, TTL 10 min,
+  uso único com `UPDATE ... WHERE status='pending'`; RLS com zero policies e sem GRANT
+  para anon/authenticated. O state viaja dentro do `return_to`, que a Steam assina.
+- Callback valida estrutura → `check_authentication` (só `is_valid:true`) → consumo.
+  O SteamID64 nunca vem de query param confiável.
+- Propriedade única: pré-checagem na aplicação + índices parciais únicos
+  `player_connections_steam_external_uniq` / `player_identities_steam_external_uniq`
+  (23505 → `STEAM_DUPLICATE_ACCOUNT`).
+- Estruturas canônicas: `player_connections`, `player_identities`,
+  `identity_correlation_evidence`. Nenhuma tabela Steam paralela de identidade.
+- Correlação: `authenticated_link` (1.0) verifica a identidade Steam; `steam_id64`
+  (0.95) cruza com FACEIT/Gamers Club promovendo no máximo a `strongly_correlated`;
+  divergência grava **conflict**, nunca resolve em silêncio.
+- Privacidade: SteamID64 completo só para o dono (mascarado até revelar); auditoria,
+  logs, e-mails e o Admin usam sempre a forma mascarada.
+- Desvincular é não destrutivo: partidas/análises/planos permanecem; revoga-se a
+  confiança e cancelam-se as tentativas pendentes.
+- Design system de e-mail (`src/lib/email/`): tema, componentes em tabela, layout dark,
+  6 templates AUTH com placeholders do backend exportados em
+  `docs/email/supabase-auth/` + avisos de segurança Steam. Renderiza, não envia.
+- `.env.example` + `ENVIRONMENT.md`; `.env` no `.gitignore`. Sem chave configurada a
+  integração diz `not_configured` e não desenha botão — nenhuma chave é pedida ao jogador.
+- Checks: typecheck limpo, 354/354 testes, lint 0 erros, build OK, checks persistentes
+  29a–29g PASS no banco.
