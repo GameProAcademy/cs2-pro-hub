@@ -418,6 +418,46 @@ WITH catalogue AS (
           FROM pg_proc p WHERE p.proname='handle_new_user'
             AND p.pronamespace='public'::regnamespace)
 
+  UNION ALL
+  SELECT '29a. steam_link_attempts is unreachable by anon and authenticated',
+         NOT has_table_privilege('anon','public.steam_link_attempts','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('authenticated','public.steam_link_attempts','SELECT,INSERT,UPDATE,DELETE')
+
+  UNION ALL
+  SELECT '29b. steam_link_attempts has RLS enabled and zero policies (backend only)',
+         (SELECT c.relrowsecurity FROM pg_class c
+           WHERE c.oid='public.steam_link_attempts'::regclass)
+         AND NOT EXISTS (SELECT 1 FROM pg_policies
+                          WHERE schemaname='public' AND tablename='steam_link_attempts')
+
+  UNION ALL
+  SELECT '29c. a state hash is unique, so an attempt cannot be replayed',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+                  AND indexname='steam_link_attempts_state_hash_uniq')
+
+  UNION ALL
+  SELECT '29d. one Steam account maps to exactly one player (connection)',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+                  AND indexname='player_connections_steam_external_uniq')
+
+  UNION ALL
+  SELECT '29e. one Steam account maps to exactly one player (identity)',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+                  AND indexname='player_identities_steam_external_uniq')
+
+  UNION ALL
+  SELECT '29f. steam link attempt metadata cannot hold credentials',
+         EXISTS (SELECT 1 FROM pg_trigger t
+                  WHERE t.tgrelid='public.steam_link_attempts'::regclass
+                    AND t.tgname='guard_steam_link_attempt_metadata'
+                    AND NOT t.tgisinternal)
+
+  UNION ALL
+  SELECT '29g. openid is a first-class connection type',
+         EXISTS (SELECT 1 FROM pg_enum e
+                  JOIN pg_type ty ON ty.oid=e.enumtypid
+                  WHERE ty.typname='connection_type' AND e.enumlabel='openid')
+
 )
 
 
