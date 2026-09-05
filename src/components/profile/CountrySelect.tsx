@@ -44,7 +44,7 @@ export function CountrySelect({
       <SelectContent className="max-h-72">
         {countries.map((country) => (
           <SelectItem key={country.code} value={country.code}>
-            {country.name}
+            <span aria-hidden>{country.flag}</span> {country.name}
           </SelectItem>
         ))}
       </SelectContent>
