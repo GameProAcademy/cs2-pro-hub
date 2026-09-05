@@ -158,7 +158,8 @@ export function parseSteamCallback(
 
   // Byte-for-byte binding to the URL we asked Steam to sign.
   if (returnTo !== buildReturnTo(expectedReturnUrl, state)) {
-    throw new SteamError("STEAM_OPENID_STATE_INVALID");
+    // origin, protocol, host, path and query (state included) must all match.
+    throw new SteamError("STEAM_OPENID_INVALID_RETURN_TO");
   }
 
   const claimedId = params["openid.claimed_id"]!;
@@ -170,20 +171,22 @@ export function parseSteamCallback(
   // FASE 2.5.1 — the assertion must come from the provider WE asked, and be
   // scoped to OUR realm. A response signed by some other OpenID provider, or
   // issued for a different realm, is refused even if it is internally valid.
+  // FASE 2.5.2 — MANDATORY, not "validate if present". A missing endpoint or
+  // realm is a rejected assertion: `must exist AND must equal what we asked`.
   const opEndpoint = params["openid.op_endpoint"];
-  if (opEndpoint !== undefined) {
-    if (!isSteamOpEndpoint(opEndpoint)) throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
-    if (expected.opEndpoint && !sameUrl(opEndpoint, expected.opEndpoint)) {
-      throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
-    }
+  if (!opEndpoint) throw new SteamError("STEAM_OPENID_INVALID_ENDPOINT");
+  if (!isSteamOpEndpoint(opEndpoint)) throw new SteamError("STEAM_OPENID_INVALID_ENDPOINT");
+  if (expected.opEndpoint && !sameUrl(opEndpoint, expected.opEndpoint)) {
+    throw new SteamError("STEAM_OPENID_INVALID_ENDPOINT");
   }
 
   const realm = params["openid.realm"];
-  if (expected.realm && realm !== undefined && !sameOrigin(realm, expected.realm)) {
-    throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
-  }
-  if (expected.realm && !sameOrigin(returnTo, expected.realm)) {
-    throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+  if (expected.realm !== undefined) {
+    if (!realm) throw new SteamError("STEAM_OPENID_INVALID_REALM");
+    if (!sameOrigin(realm, expected.realm)) throw new SteamError("STEAM_OPENID_INVALID_REALM");
+    if (!sameOrigin(returnTo, expected.realm)) {
+      throw new SteamError("STEAM_OPENID_INVALID_REALM");
+    }
   }
 
   const steamId64 = steamId64FromClaimedId(claimedId);
