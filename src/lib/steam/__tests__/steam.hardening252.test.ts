@@ -146,7 +146,7 @@ describe("steam callback — public payload ceilings", () => {
 
   it("rejects an oversized URL", () => {
     const url = new URL(RETURN_URL);
-    url.searchParams.set("openid.sig", "x".repeat(STEAM_CALLBACK_LIMITS.maxTotalBytes + 1));
+    url.searchParams.set("openid.sig", "x".repeat(STEAM_CALLBACK_LIMITS.maxQueryBytes + 1));
     expect(() => assertCallbackPayloadWithinLimits(url)).toThrow();
   });
 
