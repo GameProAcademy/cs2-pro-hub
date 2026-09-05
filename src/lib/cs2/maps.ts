@@ -5,9 +5,8 @@
  * explicit `effectiveFrom` date, so a match played in the past is always judged
  * against the pool that was active THEN, never against today's pool.
  *
- * Only pool versions we can state with confidence are recorded here. Absence of
- * an intermediate version is not an error: `resolveMapPool` always returns the
- * most recent version effective at the requested date.
+ * `resolveMapPool(matchDate)` is the ONLY resolver: components never contain
+ * pool logic of their own.
  */
 export const CS2_MAP_CODES = [
   "ancient",
@@ -60,6 +59,30 @@ export const CS2_MAP_POOL_VERSIONS: readonly Cs2MapPoolVersion[] = [
   },
   {
     version: 2,
+    effectiveFrom: "2024-04-25",
+    activeDuty: ["ancient", "anubis", "dust2", "inferno", "mirage", "nuke", "vertigo"],
+    note: "Dust II enters; Overpass leaves.",
+  },
+  {
+    version: 3,
+    effectiveFrom: "2025-01-28",
+    activeDuty: ["ancient", "anubis", "dust2", "inferno", "mirage", "nuke", "train"],
+    note: "Train enters; Vertigo leaves.",
+  },
+  {
+    version: 4,
+    effectiveFrom: "2025-07-16",
+    activeDuty: ["ancient", "dust2", "inferno", "mirage", "nuke", "overpass", "train"],
+    note: "Overpass returns; Anubis leaves.",
+  },
+  {
+    version: 5,
+    effectiveFrom: "2026-01-21",
+    activeDuty: ["ancient", "anubis", "dust2", "inferno", "mirage", "nuke", "overpass"],
+    note: "Anubis returns; Train leaves.",
+  },
+  {
+    version: 6,
     effectiveFrom: "2026-07-08",
     activeDuty: ["ancient", "anubis", "cache", "dust2", "inferno", "mirage", "nuke"],
     note: "Cache enters Active Duty; Overpass leaves Active Duty.",

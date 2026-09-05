@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
 import { createPlayerUser } from "@/lib/admin.functions";
@@ -62,9 +63,8 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <Label htmlFor="c-password">{t("admin.field.password")}</Label>
-            <Input
+            <PasswordInput
               id="c-password"
-              type="password"
               required
               minLength={8}
               value={form.password}

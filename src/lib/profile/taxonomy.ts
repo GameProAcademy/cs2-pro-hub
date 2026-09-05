@@ -59,80 +59,261 @@ export function isExperienceCode(value: unknown): value is ExperienceCode {
  * Countries (ISO 3166-1 alpha-2)                                      *
  * ------------------------------------------------------------------ */
 
+/**
+ * ISO 3166-1 alpha-2 — mirrors public.iso_alpha2_codes() in the database, which
+ * is the server-side source of truth. Only codes are stored; the visible name is
+ * always produced by Intl for the active locale.
+ */
 export const COUNTRY_CODES = [
+  "AD",
+  "AE",
+  "AF",
+  "AG",
+  "AI",
+  "AL",
+  "AM",
+  "AO",
+  "AQ",
   "AR",
+  "AS",
   "AT",
   "AU",
+  "AW",
+  "AX",
+  "AZ",
+  "BA",
+  "BB",
+  "BD",
   "BE",
+  "BF",
   "BG",
+  "BH",
+  "BI",
+  "BJ",
+  "BL",
+  "BM",
+  "BN",
   "BO",
+  "BQ",
   "BR",
+  "BS",
+  "BT",
+  "BV",
+  "BW",
+  "BY",
+  "BZ",
   "CA",
+  "CC",
+  "CD",
+  "CF",
+  "CG",
   "CH",
+  "CI",
+  "CK",
   "CL",
+  "CM",
   "CN",
   "CO",
   "CR",
+  "CU",
+  "CV",
+  "CW",
+  "CX",
+  "CY",
   "CZ",
   "DE",
+  "DJ",
   "DK",
+  "DM",
   "DO",
+  "DZ",
   "EC",
   "EE",
   "EG",
+  "EH",
+  "ER",
   "ES",
+  "ET",
   "FI",
+  "FJ",
+  "FK",
+  "FM",
+  "FO",
   "FR",
+  "GA",
   "GB",
+  "GD",
+  "GE",
+  "GF",
+  "GG",
+  "GH",
+  "GI",
+  "GL",
+  "GM",
+  "GN",
+  "GP",
+  "GQ",
   "GR",
+  "GS",
   "GT",
+  "GU",
+  "GW",
+  "GY",
   "HK",
+  "HM",
   "HN",
   "HR",
+  "HT",
   "HU",
   "ID",
   "IE",
   "IL",
+  "IM",
   "IN",
+  "IO",
+  "IQ",
+  "IR",
   "IS",
   "IT",
+  "JE",
+  "JM",
+  "JO",
   "JP",
+  "KE",
+  "KG",
+  "KH",
+  "KI",
+  "KM",
+  "KN",
+  "KP",
   "KR",
+  "KW",
+  "KY",
   "KZ",
+  "LA",
+  "LB",
+  "LC",
+  "LI",
+  "LK",
+  "LR",
+  "LS",
   "LT",
   "LU",
   "LV",
+  "LY",
   "MA",
+  "MC",
+  "MD",
+  "ME",
+  "MF",
+  "MG",
+  "MH",
+  "MK",
+  "ML",
+  "MM",
+  "MN",
+  "MO",
+  "MP",
+  "MQ",
+  "MR",
+  "MS",
+  "MT",
+  "MU",
+  "MV",
+  "MW",
   "MX",
   "MY",
+  "MZ",
+  "NA",
+  "NC",
+  "NE",
+  "NF",
   "NG",
   "NI",
   "NL",
   "NO",
+  "NP",
+  "NR",
+  "NU",
   "NZ",
+  "OM",
   "PA",
   "PE",
+  "PF",
+  "PG",
   "PH",
+  "PK",
   "PL",
+  "PM",
+  "PN",
+  "PR",
+  "PS",
   "PT",
+  "PW",
   "PY",
+  "QA",
+  "RE",
   "RO",
   "RS",
+  "RU",
+  "RW",
   "SA",
+  "SB",
+  "SC",
+  "SD",
   "SE",
   "SG",
+  "SH",
   "SI",
+  "SJ",
   "SK",
+  "SL",
+  "SM",
+  "SN",
+  "SO",
+  "SR",
+  "SS",
+  "ST",
   "SV",
+  "SX",
+  "SY",
+  "SZ",
+  "TC",
+  "TD",
+  "TF",
+  "TG",
   "TH",
+  "TJ",
+  "TK",
+  "TL",
+  "TM",
+  "TN",
+  "TO",
   "TR",
+  "TT",
+  "TV",
   "TW",
+  "TZ",
   "UA",
+  "UG",
+  "UM",
   "US",
   "UY",
+  "UZ",
+  "VA",
+  "VC",
   "VE",
+  "VG",
+  "VI",
   "VN",
+  "VU",
+  "WF",
+  "WS",
+  "YE",
+  "YT",
   "ZA",
+  "ZM",
+  "ZW",
 ] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
@@ -150,10 +331,30 @@ export function countryName(code: string, intlTag: string): string {
   }
 }
 
-export function sortedCountries(intlTag: string): Array<{ code: CountryCode; name: string }> {
-  return COUNTRY_CODES.map((code) => ({ code, name: countryName(code, intlTag) })).sort((a, b) =>
-    a.name.localeCompare(b.name, intlTag),
-  );
+/**
+ * ISO alpha-2 -> regional indicator flag emoji. Deterministic, so no emoji is
+ * ever maintained by hand. Invalid input yields an empty string, never a wrong
+ * flag.
+ */
+export function countryFlagEmoji(code: string): string {
+  const upper = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return "";
+  return String.fromCodePoint(...[...upper].map((char) => 0x1f1e6 + (char.codePointAt(0)! - 65)));
+}
+
+export interface CountryOption {
+  code: CountryCode;
+  name: string;
+  flag: string;
+}
+
+/** Sorted by the LOCALISED country name, never by the ISO code. */
+export function sortedCountries(intlTag: string): CountryOption[] {
+  return COUNTRY_CODES.map((code) => ({
+    code,
+    name: countryName(code, intlTag),
+    flag: countryFlagEmoji(code),
+  })).sort((a, b) => a.name.localeCompare(b.name, intlTag));
 }
 
 /** Timezone -> country, only for zones that map to exactly one country. */
@@ -201,11 +402,20 @@ const TIMEZONE_COUNTRY: Record<string, CountryCode> = {
   "Africa/Johannesburg": "ZA",
 };
 
-/** Region subtag of a BCP-47 tag, e.g. "pt-BR" -> "BR". */
+/**
+ * Region subtag of a BCP-47 tag: "pt-BR" -> "BR", "zh-Hant-TW" -> "TW".
+ * The second subtag is NOT assumed to be the region — script subtags such as
+ * "Hant" are skipped, and only a real ISO alpha-2 region is accepted.
+ */
 export function countryFromLocaleTag(tag: string | null | undefined): CountryCode | null {
   if (!tag) return null;
-  const region = tag.split(/[-_]/)[1]?.toUpperCase();
-  return isCountryCode(region) ? region : null;
+  const parts = tag.split(/[-_]/).slice(1);
+  for (const part of parts) {
+    if (part.length !== 2) continue; // language/script/variant subtags
+    const region = part.toUpperCase();
+    if (isCountryCode(region)) return region;
+  }
+  return null;
 }
 
 export function countryFromTimeZone(timeZone: string | null | undefined): CountryCode | null {

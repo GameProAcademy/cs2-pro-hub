@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,9 +105,8 @@ function ResetPasswordPage() {
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div className="space-y-2">
             <Label htmlFor="new-password">{t("reset.newPassword")}</Label>
-            <Input
+            <PasswordInput
               id="new-password"
-              type="password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -116,9 +116,8 @@ function ResetPasswordPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">{t("reset.confirmPassword")}</Label>
-            <Input
+            <PasswordInput
               id="confirm-password"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

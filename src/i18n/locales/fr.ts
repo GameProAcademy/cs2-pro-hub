@@ -373,7 +373,7 @@ export const fr: Dictionary = {
   "performance.openingSub": "First Kill Rate vs First Death Rate",
   "performance.maps": "Performance par carte",
   "performance.mapsSub": "Win rate par carte du pool actif",
-  "performance.sides": "Côté CT vs côté T",
+  "performance.sides": "Côté CT vs Côté T",
   "performance.sidesSub": "Comparaison d'impact par côté",
   "performance.games": "parties",
   "performance.rating": "rating",

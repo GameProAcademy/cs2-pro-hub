@@ -175,7 +175,7 @@ function AnalyzePage() {
                 </li>
               ))}
             </ul>
-            {!FEATURES.demoParser ? (
+            {!FEATURES.realDemoParser ? (
               <p className="mt-5 rounded-md border border-warning/25 bg-warning/8 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
                 <span className="font-medium text-warning">{t("analyze.noProcessingTitle")}</span>{" "}
                 {t("analyze.noProcessingBody")}

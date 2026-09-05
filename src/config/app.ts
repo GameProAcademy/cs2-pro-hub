@@ -19,8 +19,11 @@ export const APP_TAGLINE = "Análise de performance e treinamento para Counter-S
 export const FEATURES = {
   realAuth: true,
   profilePersistence: true,
-  /** Demo ingestion pipeline exists; real parsing depends on the parser worker. */
-  demoParser: true,
+  /** The demo ingestion UI (select, validate, queue) exists and is usable. */
+  demoIngestionUI: true,
+  /** No real .dem parser worker is connected yet — the UI must say so. */
+  realDemoParser: false,
+
   faceitIntegration: true,
   /** No official API and the public site is behind an anti-bot challenge. */
   gamersClubIntegration: false,

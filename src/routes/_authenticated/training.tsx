@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/training")({
       {
         name: "description",
         content:
-          "Plano adaptativo de 30, 60 e 90 dias com aulas recomendadas do CS2 PRO para corrigir gargalos.",
+          "Plano adaptativo de 30, 60 e 90 dias com aulas recomendadas do CS2 PRO para corrigir pontos de melhoria.",
       },
       { property: "og:title", content: "Meu Treinamento — CS2 PRO AI COACH" },
       {

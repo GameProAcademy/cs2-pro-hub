@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/analysis")({
       {
         name: "description",
         content:
-          "Diagnóstico completo da sua performance: pontos fortes, gargalos, evidências e prioridade #1.",
+          "Diagnóstico completo da sua performance: pontos fortes, pontos de melhoria, evidências e prioridade #1.",
       },
       { property: "og:title", content: "Meu Raio-X — CS2 PRO AI COACH" },
       {

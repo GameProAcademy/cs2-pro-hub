@@ -8,6 +8,7 @@ import { AvatarCard } from "@/components/profile/AvatarCard";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
 import { CountrySelect } from "@/components/profile/CountrySelect";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
+import { PasswordCard } from "@/components/profile/PasswordCard";
 import { VerificationCard } from "@/components/profile/VerificationCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -332,6 +333,7 @@ function ProfilePage() {
                 <AvatarCard embedded />
               </ChartCard>
               <VerificationCard result={verification} />
+              <PasswordCard />
             </div>
 
             <div className="lg:col-span-3">

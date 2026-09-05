@@ -29,10 +29,10 @@ export function SideSplitChart({
     <div className="space-y-5">
       <div className="flex items-center gap-6 text-xs">
         <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="size-2 rounded-full bg-accent" aria-hidden /> CT Side
+          <span className="size-2 rounded-full bg-accent" aria-hidden /> {t("performance.ctSide")}
         </span>
         <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="size-2 rounded-full bg-primary" aria-hidden /> T Side
+          <span className="size-2 rounded-full bg-primary" aria-hidden /> {t("performance.tSide")}
         </span>
       </div>
 
