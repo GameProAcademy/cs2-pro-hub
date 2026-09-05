@@ -4,7 +4,7 @@ import { ChartCard } from "@/components/common/ChartCard";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { useT } from "@/i18n";
+import { useT, type TranslationKey } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PASSWORD_MIN_LENGTH,
@@ -14,7 +14,7 @@ import {
 } from "@/lib/password";
 import { cn } from "@/lib/utils";
 
-const ERROR_KEYS: Record<Exclude<PasswordFormError, null>, string> = {
+const ERROR_KEYS: Record<Exclude<PasswordFormError, null>, TranslationKey> = {
   currentRequired: "security.errorCurrent",
   tooShort: "security.errorShort",
   mismatch: "security.errorMismatch",
@@ -47,7 +47,7 @@ export function PasswordCard() {
 
     const invalid = validatePasswordChange({ current, next, confirm });
     if (invalid) {
-      setError(t(ERROR_KEYS[invalid] as never));
+      setError(t(ERROR_KEYS[invalid]));
       return;
     }
 
@@ -57,7 +57,7 @@ export function PasswordCard() {
     const email = userData.user?.email;
     if (!email) {
       setLoading(false);
-      setError(t("security.errorGeneric" as never));
+      setError(t("security.errorGeneric"));
       return;
     }
 
@@ -69,14 +69,14 @@ export function PasswordCard() {
     });
     if (reauthError) {
       setLoading(false);
-      setError(t("security.errorWrongCurrent" as never));
+      setError(t("security.errorWrongCurrent"));
       return;
     }
 
     const { error: updateError } = await supabase.auth.updateUser({ password: next });
     setLoading(false);
     if (updateError) {
-      setError(t("security.errorGeneric" as never));
+      setError(t("security.errorGeneric"));
       return;
     }
 
@@ -87,14 +87,14 @@ export function PasswordCard() {
   }
 
   return (
-    <ChartCard title={t("security.title" as never)} showDemoTag={false}>
+    <ChartCard title={t("security.title")} showDemoTag={false}>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        {t("security.subtitle" as never)}
+        {t("security.subtitle")}
       </p>
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit} noValidate>
         <div className="space-y-2">
-          <Label htmlFor="current-password">{t("security.currentPassword" as never)}</Label>
+          <Label htmlFor="current-password">{t("security.currentPassword")}</Label>
           <PasswordInput
             id="current-password"
             autoComplete="current-password"
@@ -105,7 +105,7 @@ export function PasswordCard() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="new-password">{t("security.newPassword" as never)}</Label>
+          <Label htmlFor="new-password">{t("security.newPassword")}</Label>
           <PasswordInput
             id="new-password"
             autoComplete="new-password"
@@ -116,7 +116,7 @@ export function PasswordCard() {
           />
           {next ? (
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              {t("security.strengthLabel" as never)}:{" "}
+              {t("security.strengthLabel")}:{" "}
               <span
                 className={cn(
                   strength === "strong" && "text-primary",
@@ -124,14 +124,14 @@ export function PasswordCard() {
                   strength === "weak" && "text-destructive",
                 )}
               >
-                {t(`security.strength.${strength}` as never)}
+                {t(`security.strength.${strength}`)}
               </span>
             </p>
           ) : null}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirm-password">{t("security.confirmPassword" as never)}</Label>
+          <Label htmlFor="confirm-password">{t("security.confirmPassword")}</Label>
           <PasswordInput
             id="confirm-password"
             autoComplete="new-password"
@@ -155,12 +155,12 @@ export function PasswordCard() {
             role="status"
             className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs leading-relaxed text-foreground"
           >
-            {t("security.success" as never)}
+            {t("security.success")}
           </p>
         ) : null}
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? t("security.submitting" as never) : t("security.submit" as never)}
+          {loading ? t("security.submitting") : t("security.submit")}
         </Button>
       </form>
     </ChartCard>
