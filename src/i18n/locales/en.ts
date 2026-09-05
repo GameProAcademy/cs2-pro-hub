@@ -690,4 +690,38 @@ export const en: Dictionary = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "Not connected",
+
+  /* FASE 2.5 — Steam identity */
+  "steam.title": "Steam account",
+  "steam.subtitle": "Link your account through the official Steam sign-in",
+  "steam.state.not_configured": "Unavailable",
+  "steam.state.configured": "Configured",
+  "steam.state.available": "Available",
+  "steam.state.error": "Error",
+  "steam.field.identityStatus": "Identity status",
+  "steam.field.profileVisibility": "Steam profile",
+  "steam.visibility.public": "Public",
+  "steam.visibility.private": "Private",
+  "steam.note.identityOnly":
+    "Signing in with Steam proves WHO you are. It brings no matches and no statistics: performance data still comes from demos and FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Unlinking deletes nothing: matches, analyses and history all stay in place.",
+  "steam.unavailable": "Steam linking is not configured in this environment yet.",
+  "steam.linked": "Steam account linked and verified.",
+  "steam.action.link": "Sign in through Steam",
+  "steam.action.unlink": "Unlink",
+  "steam.action.revealId": "Show SteamID",
+  "steam.action.hideId": "Hide SteamID",
+  "steam.action.openProfile": "Open Steam profile",
+  "steam.reason.configuration_missing": "Steam linking is not configured in this environment.",
+  "steam.reason.cancelled": "You cancelled the Steam sign-in.",
+  "steam.reason.state_invalid": "The link request expired or was already used. Please try again.",
+  "steam.reason.not_validated": "Steam did not confirm this link. Nothing was changed.",
+  "steam.reason.duplicate_account": "This Steam account is already linked to another player.",
+  "steam.reason.not_connected": "No Steam account is linked.",
+  "steam.reason.profile_unavailable": "The public Steam profile is not reachable right now.",
+  "steam.reason.rate_limited":
+    "Steam temporarily rate-limited our requests. Try again in a few minutes.",
+  "steam.reason.temporary": "Steam is unavailable right now. Please try again.",
+  "steam.reason.error": "The Steam link could not be completed.",
 };

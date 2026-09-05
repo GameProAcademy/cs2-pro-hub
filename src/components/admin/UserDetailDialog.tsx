@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { CountrySelect } from "@/components/profile/CountrySelect";
+import { maskSteamId64 } from "@/lib/steam/steam.openid";
 import { dnaLabelKey } from "@/lib/dna";
 import { countryFlagEmoji, countryName, goalLabelKey } from "@/lib/profile/taxonomy";
 import type { DnaDimension } from "@/types";
@@ -484,7 +485,13 @@ export function UserDetailDialog({
                           />
                           <Field
                             label={t("admin.detail.externalId")}
-                            value={identity.external_id || dash}
+                            value={
+                              /* A SteamID64 is never shown in full outside the
+                                 account owner's own profile. */
+                              (identity.platform === "STEAM"
+                                ? maskSteamId64(identity.external_id)
+                                : identity.external_id) || dash
+                            }
                           />
                           <Field
                             label={t("admin.detail.url")}

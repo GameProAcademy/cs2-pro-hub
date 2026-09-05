@@ -697,4 +697,38 @@ export const ptPT: Dictionary = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "Não ligada",
+
+  /* FASE 2.5 — Steam identity */
+  "steam.title": "Conta Steam",
+  "steam.subtitle": "Ligue a sua conta através do início de sessão oficial da Steam",
+  "steam.state.not_configured": "Indisponível",
+  "steam.state.configured": "Configurado",
+  "steam.state.available": "Disponível",
+  "steam.state.error": "Erro",
+  "steam.field.identityStatus": "Status da identidade",
+  "steam.field.profileVisibility": "Perfil Steam",
+  "steam.visibility.public": "Público",
+  "steam.visibility.private": "Privado",
+  "steam.note.identityOnly":
+    "O início de sessão da Steam prova QUEM é. Não traz partidas nem estatísticas: os dados de desempenho continuam a vir das demos e da FACEIT.",
+  "steam.note.unlinkKeepsHistory":
+    "Desligar não apaga nada: partidas, análises e histórico mantêm-se.",
+  "steam.unavailable": "A ligação à Steam ainda não está configurada neste ambiente.",
+  "steam.linked": "Conta Steam ligada e verificada.",
+  "steam.action.link": "Iniciar sessão com a Steam",
+  "steam.action.unlink": "Desligar",
+  "steam.action.revealId": "Mostrar SteamID",
+  "steam.action.hideId": "Ocultar SteamID",
+  "steam.action.openProfile": "Abrir perfil na Steam",
+  "steam.reason.configuration_missing": "A ligação à Steam não está configurada neste ambiente.",
+  "steam.reason.cancelled": "Cancelou o início de sessão na Steam.",
+  "steam.reason.state_invalid": "O pedido de ligação expirou ou já foi utilizado. Tente novamente.",
+  "steam.reason.not_validated": "A Steam não confirmou esta ligação. Nada foi alterado.",
+  "steam.reason.duplicate_account": "Esta conta Steam já está ligada a outro jogador.",
+  "steam.reason.not_connected": "Nenhuma conta Steam ligada.",
+  "steam.reason.profile_unavailable": "O perfil público da Steam não está acessível neste momento.",
+  "steam.reason.rate_limited":
+    "A Steam limitou temporariamente os pedidos. Tente dentro de alguns minutos.",
+  "steam.reason.temporary": "A Steam está indisponível neste momento. Tente novamente.",
+  "steam.reason.error": "Não foi possível concluir a ligação à Steam.",
 };

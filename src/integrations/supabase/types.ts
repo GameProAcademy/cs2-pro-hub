@@ -1682,6 +1682,59 @@ export type Database = {
         }
         Relationships: []
       }
+      steam_link_attempts: {
+        Row: {
+          cancelled_at: string | null
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          metadata: Json
+          player_id: string | null
+          realm: string
+          return_url: string
+          state_hash: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          player_id?: string | null
+          realm: string
+          return_url: string
+          state_hash: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          player_id?: string | null
+          realm?: string
+          return_url?: string
+          state_hash?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steam_link_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_plan_items: {
         Row: {
           description: string | null
@@ -1966,7 +2019,7 @@ export type Database = {
         | "disconnected"
         | "expired"
         | "error"
-      connection_type: "oauth" | "public_profile" | "manual"
+      connection_type: "oauth" | "public_profile" | "manual" | "openid"
       data_source:
         | "demo"
         | "faceit"
@@ -2160,7 +2213,7 @@ export const Constants = {
         "expired",
         "error",
       ],
-      connection_type: ["oauth", "public_profile", "manual"],
+      connection_type: ["oauth", "public_profile", "manual", "openid"],
       data_source: ["demo", "faceit", "gamers_club", "steam", "public_profile"],
       faceit_sync_job_status: [
         "queued",

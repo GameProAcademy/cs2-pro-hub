@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
 import { CountrySelect } from "@/components/profile/CountrySelect";
+import { SteamPanel } from "@/components/integrations/SteamPanel";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
 import { PasswordCard } from "@/components/profile/PasswordCard";
 import { VerificationCard } from "@/components/profile/VerificationCard";
@@ -37,7 +38,20 @@ import {
 } from "@/lib/profile/taxonomy";
 import { evaluateVerification, type IdentitySummary } from "@/lib/profile/verification";
 
+interface ProfileSearch {
+  connection?: "steam_success" | "steam_error";
+  reason?: string;
+}
+
 export const Route = createFileRoute("/_authenticated/profile")({
+  validateSearch: (search: Record<string, unknown>): ProfileSearch => {
+    const connection = search["connection"];
+    const reason = search["reason"];
+    return {
+      ...(connection === "steam_success" || connection === "steam_error" ? { connection } : {}),
+      ...(typeof reason === "string" && /^[a-z_]{1,40}$/.test(reason) ? { reason } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Meu Perfil — CS2 PRO AI COACH" },
@@ -60,6 +74,13 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const t = useT();
+  const search = Route.useSearch();
+  const steamCallback = search.connection
+    ? {
+        status: search.connection === "steam_success" ? ("success" as const) : ("error" as const),
+        ...(search.reason ? { reason: search.reason } : {}),
+      }
+    : undefined;
   const { locale } = useI18n();
   const { data: profile, isLoading, isError } = usePlayerProfile();
   const save = useSavePlayerProfile();
@@ -334,6 +355,10 @@ function ProfilePage() {
               </ChartCard>
               <VerificationCard result={verification} />
               <PasswordCard />
+            </div>
+
+            <div className="lg:col-span-2">
+              <SteamPanel callback={steamCallback} />
             </div>
 
             <div className="lg:col-span-3">

@@ -33,6 +33,7 @@ export type SourceAvailabilityReason =
   | "credentials_missing"
   | "no_official_api"
   | "anti_bot_challenge"
+  | "identity_only"
   | "validation_only";
 
 export interface SourceAvailability {
@@ -51,13 +52,17 @@ export interface SourceAvailability {
  *   including the homepage — answers HTTP 403 with a Cloudflare interstitial
  *   challenge (`cf-mitigated: challenge`). Bypassing it is forbidden, so there
  *   is NO permitted collection path: `unavailable`, not `available`.
- * - `steam` / `public_profile`: no adapter; URL validation only.
+ * - `steam`: OpenID 2.0 identity linking implemented; no match-data collection.
+ * - `public_profile`: no adapter; URL validation only.
  */
 const AVAILABILITY: Record<DataSource, Omit<SourceAvailability, "source" | "collectable">> = {
   demo: { state: "implemented", reason: "adapter_implemented" },
   faceit: { state: "implemented", reason: "adapter_implemented" },
   gamers_club: { state: "unavailable", reason: "anti_bot_challenge" },
-  steam: { state: "unsupported", reason: "not_implemented" },
+  // Steam: account LINKING is implemented (OpenID 2.0, see src/lib/steam) and
+  // proves identity ownership. That is not the same as collecting match data —
+  // Steam publishes no CS2 match history, so nothing is collectable here.
+  steam: { state: "unavailable", reason: "identity_only" },
   public_profile: { state: "unavailable", reason: "validation_only" },
 };
 

@@ -28,7 +28,11 @@ export const FEATURES = {
   /** No official API and the public site is behind an anti-bot challenge. */
   gamersClubIntegration: false,
 
-  steamIntegration: false,
+  /**
+   * Steam identity linking (OpenID 2.0). The UI still refuses to offer the
+   * button unless the server environment is actually configured.
+   */
+  steamIntegration: true,
   aiCoachApi: false,
   payments: false,
 } as const;
