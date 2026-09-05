@@ -380,6 +380,60 @@ export type Database = {
           },
         ]
       }
+      email_delivery_logs: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          kind: string
+          last_error: string | null
+          locale: string
+          provider: string
+          provider_message_id: string | null
+          recipient: string
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          kind: string
+          last_error?: string | null
+          locale?: string
+          provider: string
+          provider_message_id?: string | null
+          recipient: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          last_error?: string | null
+          locale?: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       faceit_sync_jobs: {
         Row: {
           attempts: number
@@ -1679,6 +1733,27 @@ export type Database = {
           id?: string
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      steam_callback_events: {
+        Row: {
+          client_hash: string
+          created_at: string
+          id: string
+          outcome: string
+        }
+        Insert: {
+          client_hash: string
+          created_at?: string
+          id?: string
+          outcome?: string
+        }
+        Update: {
+          client_hash?: string
+          created_at?: string
+          id?: string
+          outcome?: string
         }
         Relationships: []
       }
