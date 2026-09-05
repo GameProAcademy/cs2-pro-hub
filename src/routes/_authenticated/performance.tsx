@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { getMapPerformanceDisplayContexts } from "@/lib/cs2/mapPerformance";
 import { MapPerformanceChart } from "@/components/charts/MapPerformanceChart";
 import { SideSplitChart } from "@/components/charts/SideSplitChart";
 import { TrendChart } from "@/components/charts/TrendChart";
