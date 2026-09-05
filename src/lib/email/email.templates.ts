@@ -23,7 +23,18 @@ import {
 } from "./email.components";
 import { renderEmailLayout } from "./email.layout";
 
-export type EmailLocale = "pt-BR" | "en";
+export type { EmailLocale } from "./email.locale";
+
+/**
+ * The AUTH family is delivered by the auth backend from exported HTML files, so
+ * it stays on the two locales that were exported and reviewed. Product emails
+ * (the ones this app sends itself) cover all five.
+ */
+export type AuthLocale = "pt-BR" | "en";
+
+function authLocaleOf(locale: EmailLocaleValue): AuthLocale {
+  return locale === "pt-BR" || locale === "pt-PT" ? "pt-BR" : "en";
+}
 
 export interface RenderedEmail {
   subject: string;
