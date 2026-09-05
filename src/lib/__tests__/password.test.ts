@@ -28,7 +28,7 @@ describe("password change validation", () => {
 
   it("grades strength without ever storing the value", () => {
     expect(passwordStrength("abc")).toBe("weak");
-    expect(passwordStrength("abcdefgh")).toBe("fair");
+    expect(passwordStrength("abcdefg1")).toBe("fair");
     expect(passwordStrength("Abcdefgh1!x2")).toBe("strong");
   });
 });
