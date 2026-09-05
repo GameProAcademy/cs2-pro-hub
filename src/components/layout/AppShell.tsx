@@ -69,7 +69,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         </Button>
       ) : null}
       <div className="rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3">
-        <div className="flex items-center gap-3">
+        <Link
+          to="/profile"
+          onClick={onNavigate}
+          aria-label={t("nav.openProfile")}
+          className="flex items-center gap-3 rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <UserAvatar
             source={account?.avatar_url ?? null}
             name={account?.display_name ?? account?.nickname ?? null}
@@ -81,7 +86,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
             </p>
             <p className="truncate text-xs text-muted-foreground">{account?.email ?? "—"}</p>
           </div>
-        </div>
+        </Link>
         {DEMO_DATA ? (
           <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-warning">
             {t("nav.demoSession")}

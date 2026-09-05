@@ -22,6 +22,8 @@ import {
   detectCountryCode,
   goalLabelKey,
   platformLabelKey,
+  LEVEL_CODES,
+  levelLabelKey,
 } from "@/lib/profile/taxonomy";
 
 export const Route = createFileRoute("/register")({
@@ -216,10 +218,11 @@ function RegisterPage() {
                   <SelectValue placeholder={t("register.select")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="beginner">{t("register.level.beginner")}</SelectItem>
-                  <SelectItem value="intermediate">{t("register.level.intermediate")}</SelectItem>
-                  <SelectItem value="advanced">{t("register.level.advanced")}</SelectItem>
-                  <SelectItem value="semi-pro">{t("register.level.semipro")}</SelectItem>
+                  {LEVEL_CODES.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {t(levelLabelKey(code))}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

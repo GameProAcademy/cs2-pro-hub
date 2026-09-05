@@ -334,6 +334,90 @@ WITH catalogue AS (
   SELECT '26d. safe descriptive metadata is still accepted',
          NOT public.jsonb_has_sensitive_key(
            '{"provider":"faceit","username":"player123","profile_url":"https://example.com/p"}'::jsonb)
+  -- 27. Phase 2.4.1 — player_identities is SERVER-CONTROLLED
+  UNION ALL
+  SELECT '27a. authenticated cannot write player_identities',
+         NOT has_table_privilege('authenticated','public.player_identities',
+                                 'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+
+  UNION ALL
+  SELECT '27b. authenticated can read player_identities',
+         has_table_privilege('authenticated','public.player_identities','SELECT')
+
+  UNION ALL
+  SELECT '27c. player_identities has no ALL/write policy for authenticated',
+         NOT EXISTS (SELECT 1 FROM pg_policies
+                      WHERE schemaname='public' AND tablename='player_identities'
+                        AND cmd <> 'SELECT')
+
+  UNION ALL
+  SELECT '27d. player_identities select policy is owner/staff scoped',
+         EXISTS (SELECT 1 FROM pg_policies
+                  WHERE schemaname='public' AND tablename='player_identities'
+                    AND cmd='SELECT' AND qual LIKE '%owns_player%')
+
+  UNION ALL
+  SELECT '27e. guard triggers still protect verification fields',
+         (SELECT count(*) FROM pg_trigger t
+           WHERE t.tgrelid='public.player_identities'::regclass
+             AND NOT t.tgisinternal
+             AND t.tgfoid='public.guard_identity_verification'::regproc) >= 1
+
+  UNION ALL
+  SELECT '27f. anon has no access to player_identities',
+         NOT has_table_privilege('anon','public.player_identities','SELECT,INSERT,UPDATE,DELETE')
+
+  UNION ALL
+  SELECT '27g. identity evidence is not user-writable',
+         NOT has_table_privilege('authenticated','public.identity_correlation_evidence',
+                                 'INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('anon','public.identity_correlation_evidence','SELECT')
+
+  UNION ALL
+  SELECT '27h. profiles role/status guarded by trigger',
+         (SELECT count(*) FROM pg_trigger t
+           WHERE t.tgrelid='public.profiles'::regclass AND NOT t.tgisinternal
+             AND t.tgfoid='public.guard_profile_role'::regproc) >= 1
+         AND (SELECT pg_get_functiondef(p.oid) LIKE '%Changing the account role is not allowed%'
+              FROM pg_proc p WHERE p.proname='guard_profile_role'
+                AND p.pronamespace='public'::regnamespace)
+
+  -- 28. Phase 2.4.1 — atomic profile save
+  UNION ALL
+  SELECT '28a. save_player_profile exists as SECURITY DEFINER with pinned search_path',
+         EXISTS (SELECT 1 FROM pg_proc p
+                  WHERE p.proname='save_player_profile'
+                    AND p.pronamespace='public'::regnamespace
+                    AND p.prosecdef
+                    AND p.proconfig::text LIKE '%search_path=%')
+
+  UNION ALL
+  SELECT '28b. save_player_profile derives the owner from auth.uid()',
+         (SELECT pg_get_functiondef(p.oid) LIKE '%auth.uid()%'
+          FROM pg_proc p WHERE p.proname='save_player_profile'
+            AND p.pronamespace='public'::regnamespace)
+
+  UNION ALL
+  SELECT '28c. anon cannot execute save_player_profile',
+         NOT has_function_privilege('anon',
+           'public.save_player_profile(text,text,text,text,text,text,text,text[],text[],text)','EXECUTE')
+
+  UNION ALL
+  SELECT '28d. at most one primary goal per player is enforced',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+                  AND indexname='player_profile_goals_single_primary_idx')
+
+  UNION ALL
+  SELECT '28e. declared roles/goals are not exposed to anon',
+         NOT has_table_privilege('anon','public.player_profile_roles','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('anon','public.player_profile_goals','SELECT,INSERT,UPDATE,DELETE')
+
+  UNION ALL
+  SELECT '28f. signup trigger feeds the official goals table',
+         (SELECT pg_get_functiondef(p.oid) LIKE '%player_profile_goals%'
+          FROM pg_proc p WHERE p.proname='handle_new_user'
+            AND p.pronamespace='public'::regnamespace)
+
 )
 
 

@@ -24,11 +24,13 @@ import { useI18n, useT } from "@/i18n";
 import {
   EXPERIENCE_CODES,
   GOAL_CODES,
+  LEVEL_CODES,
   PLATFORM_CODES,
   TEAM_ROLE_CODES,
   detectCountryCode,
   experienceLabelKey,
   goalLabelKey,
+  levelLabelKey,
   platformLabelKey,
   roleLabelKey,
 } from "@/lib/profile/taxonomy";
@@ -58,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const t = useT();
   const { locale } = useI18n();
-  const { data: profile, isLoading } = usePlayerProfile();
+  const { data: profile, isLoading, isError } = usePlayerProfile();
   const save = useSavePlayerProfile();
 
   const [displayName, setDisplayName] = useState("");
@@ -66,6 +68,7 @@ function ProfilePage() {
   const [team, setTeam] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [mainPlatform, setMainPlatform] = useState<string | null>(null);
+  const [currentLevel, setCurrentLevel] = useState<string | null>(null);
   const [experience, setExperience] = useState<string | null>(null);
   const [roleCodes, setRoleCodes] = useState<string[]>([]);
   const [goalCodes, setGoalCodes] = useState<string[]>([]);
@@ -79,6 +82,7 @@ function ProfilePage() {
     setTeam(profile.team ?? "");
     setCountry(profile.country ?? detectCountryCode({ fallbackLocale: locale }));
     setMainPlatform(profile.mainPlatform);
+    setCurrentLevel(profile.currentLevel);
     setExperience(profile.experience);
     setRoleCodes(profile.roleCodes);
     setGoalCodes(
@@ -133,7 +137,11 @@ function ProfilePage() {
           description={t("profile.description")}
         />
 
-        {isLoading && !profile ? (
+        {isError && !profile ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t("profile.loadError")}
+          </p>
+        ) : isLoading && !profile ? (
           <p className="text-sm text-muted-foreground">{t("profile.loading")}</p>
         ) : (
           <div className="grid gap-5 lg:grid-cols-3">
@@ -153,6 +161,8 @@ function ProfilePage() {
                     team,
                     country: (country ?? null) as never,
                     mainPlatform: (mainPlatform ?? null) as never,
+                    currentLevel: (currentLevel ?? null) as never,
+                    primaryGoalCode: (goalCodes[0] ?? null) as never,
                     experience: (experience ?? null) as never,
                     roleCodes: roleCodes as never,
                     goalCodes: goalCodes as never,
@@ -217,6 +227,30 @@ function ProfilePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currentLevel">{t("profile.field.currentLevel")}</Label>
+                  <Select
+                    value={currentLevel ?? ""}
+                    onValueChange={(value) => {
+                      if (value) setCurrentLevel(value);
+                    }}
+                    disabled={busy}
+                  >
+                    <SelectTrigger id="currentLevel">
+                      <SelectValue placeholder={t("profile.selectPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEVEL_CODES.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {t(levelLabelKey(code))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {t("profile.field.currentLevelHint")}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="experience">{t("profile.field.experienceCode")}</Label>
