@@ -851,7 +851,8 @@ export const listAuditLogs = createServerFn({ method: "GET" })
  * claiming a blanket success. Auditing is mandatory per user and a failed audit
  * reverts that user's change.
  */
-export type BulkOutcome = "applied" | "skipped_self" | "skipped_not_player" | "skipped_unchanged" | "failed";
+export type BulkOutcome =
+  "applied" | "skipped_self" | "skipped_not_player" | "skipped_unchanged" | "failed";
 
 export interface BulkStatusResult {
   userId: string;

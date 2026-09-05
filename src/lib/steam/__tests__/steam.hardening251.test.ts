@@ -82,10 +82,14 @@ describe("callback provider and realm binding", () => {
 
   it("refuses an assertion issued for another realm", () => {
     expect(() =>
-      parseSteamCallback(callbackParams({ "openid.realm": "https://other.example.com" }), RETURN_URL, {
-        realm: REALM,
-        opEndpoint: STEAM_OPENID_DEFAULT_ENDPOINT,
-      }),
+      parseSteamCallback(
+        callbackParams({ "openid.realm": "https://other.example.com" }),
+        RETURN_URL,
+        {
+          realm: REALM,
+          opEndpoint: STEAM_OPENID_DEFAULT_ENDPOINT,
+        },
+      ),
     ).toThrowError(/STEAM_OPENID_INVALID_RESPONSE/);
   });
 });

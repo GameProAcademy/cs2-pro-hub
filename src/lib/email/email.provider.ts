@@ -11,10 +11,7 @@
  * touch the environment.
  */
 
-export type TransactionalEmailKind =
-  | "steam_linked"
-  | "steam_unlinked"
-  | "security_notice";
+export type TransactionalEmailKind = "steam_linked" | "steam_unlinked" | "security_notice";
 
 export interface TransactionalEmailMessage {
   to: string;
