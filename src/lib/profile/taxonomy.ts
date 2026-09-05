@@ -331,11 +331,34 @@ export function countryName(code: string, intlTag: string): string {
   }
 }
 
-export function sortedCountries(intlTag: string): Array<{ code: CountryCode; name: string }> {
-  return COUNTRY_CODES.map((code) => ({ code, name: countryName(code, intlTag) })).sort((a, b) =>
-    a.name.localeCompare(b.name, intlTag),
+/**
+ * ISO alpha-2 -> regional indicator flag emoji. Deterministic, so no emoji is
+ * ever maintained by hand. Invalid input yields an empty string, never a wrong
+ * flag.
+ */
+export function countryFlagEmoji(code: string): string {
+  const upper = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return "";
+  return String.fromCodePoint(
+    ...[...upper].map((char) => 0x1f1e6 + (char.codePointAt(0)! - 65)),
   );
 }
+
+export interface CountryOption {
+  code: CountryCode;
+  name: string;
+  flag: string;
+}
+
+/** Sorted by the LOCALISED country name, never by the ISO code. */
+export function sortedCountries(intlTag: string): CountryOption[] {
+  return COUNTRY_CODES.map((code) => ({
+    code,
+    name: countryName(code, intlTag),
+    flag: countryFlagEmoji(code),
+  })).sort((a, b) => a.name.localeCompare(b.name, intlTag));
+}
+
 
 /** Timezone -> country, only for zones that map to exactly one country. */
 const TIMEZONE_COUNTRY: Record<string, CountryCode> = {
