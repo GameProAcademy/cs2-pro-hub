@@ -339,9 +339,7 @@ export function countryName(code: string, intlTag: string): string {
 export function countryFlagEmoji(code: string): string {
   const upper = code.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(upper)) return "";
-  return String.fromCodePoint(
-    ...[...upper].map((char) => 0x1f1e6 + (char.codePointAt(0)! - 65)),
-  );
+  return String.fromCodePoint(...[...upper].map((char) => 0x1f1e6 + (char.codePointAt(0)! - 65)));
 }
 
 export interface CountryOption {
@@ -358,7 +356,6 @@ export function sortedCountries(intlTag: string): CountryOption[] {
     flag: countryFlagEmoji(code),
   })).sort((a, b) => a.name.localeCompare(b.name, intlTag));
 }
-
 
 /** Timezone -> country, only for zones that map to exactly one country. */
 const TIMEZONE_COUNTRY: Record<string, CountryCode> = {
@@ -420,7 +417,6 @@ export function countryFromLocaleTag(tag: string | null | undefined): CountryCod
   }
   return null;
 }
-
 
 export function countryFromTimeZone(timeZone: string | null | undefined): CountryCode | null {
   if (!timeZone) return null;

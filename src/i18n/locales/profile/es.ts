@@ -112,7 +112,8 @@ export const profileEs: Record<keyof typeof profilePtBR, string> = {
   "security.errorWrongCurrent": "La contraseña actual es incorrecta.",
   "security.errorGeneric": "No fue posible cambiar la contraseña ahora. Inténtalo de nuevo.",
   "security.confirmTitle": "Confirma por correo",
-  "security.confirmSent": "Enviamos un código de confirmación a tu correo. Ingresa el código para completar el cambio.",
+  "security.confirmSent":
+    "Enviamos un código de confirmación a tu correo. Ingresa el código para completar el cambio.",
   "security.confirmCode": "Código de confirmación",
   "security.confirmSubmit": "Completar cambio",
   "security.resend": "Reenviar código",

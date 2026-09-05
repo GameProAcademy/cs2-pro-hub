@@ -19,11 +19,7 @@ export function passwordStrength(value: string): PasswordStrength {
 }
 
 export type PasswordFormError =
-  | "currentRequired"
-  | "tooShort"
-  | "mismatch"
-  | "sameAsCurrent"
-  | null;
+  "currentRequired" | "tooShort" | "mismatch" | "sameAsCurrent" | null;
 
 /** Pure validation of the change-password form. */
 export function validatePasswordChange(input: {

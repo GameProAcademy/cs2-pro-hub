@@ -88,9 +88,7 @@ export function PasswordCard() {
 
   return (
     <ChartCard title={t("security.title")} showDemoTag={false}>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {t("security.subtitle")}
-      </p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{t("security.subtitle")}</p>
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit} noValidate>
         <div className="space-y-2">

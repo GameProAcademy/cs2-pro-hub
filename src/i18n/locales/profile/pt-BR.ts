@@ -111,7 +111,8 @@ export const profilePtBR = {
   "security.errorWrongCurrent": "Senha atual incorreta.",
   "security.errorGeneric": "Não foi possível alterar a senha agora. Tente novamente.",
   "security.confirmTitle": "Confirme pelo e-mail",
-  "security.confirmSent": "Enviamos um código de confirmação para o seu e-mail. Informe o código para concluir a alteração.",
+  "security.confirmSent":
+    "Enviamos um código de confirmação para o seu e-mail. Informe o código para concluir a alteração.",
   "security.confirmCode": "Código de confirmação",
   "security.confirmSubmit": "Concluir alteração",
   "security.resend": "Reenviar código",
