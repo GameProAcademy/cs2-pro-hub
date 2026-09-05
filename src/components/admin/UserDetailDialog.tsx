@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { CountrySelect } from "@/components/profile/CountrySelect";
+import { hasOwnershipProof } from "@/lib/identity/ownership";
 import { maskSteamId64 } from "@/lib/steam/steam.openid";
 import { dnaLabelKey } from "@/lib/dna";
 import { countryFlagEmoji, countryName, goalLabelKey } from "@/lib/profile/taxonomy";
@@ -504,6 +505,26 @@ export function UserDetailDialog({
                                 ? t("admin.detail.verified")
                                 : t("admin.detail.notVerified")
                             }
+                          />
+                          {/* FASE 2.5.1 — ownership proof is stated explicitly,
+                              so correlation is never read as verification. */}
+                          <Field
+                            label={t("admin.steam.method")}
+                            value={
+                              hasOwnershipProof(identity)
+                                ? (identity.verification_method ?? dash)
+                                : t("admin.detail.notVerified")
+                            }
+                          />
+                          <Field
+                            label={t("admin.steam.correlation")}
+                            value={`${identity.identity_status ?? dash} · ${Number(
+                              identity.confidence_score ?? 0,
+                            ).toFixed(2)}`}
+                          />
+                          <Field
+                            label={t("admin.steam.verifiedAt")}
+                            value={identity.verified_at || dash}
                           />
                         </li>
                       ))}

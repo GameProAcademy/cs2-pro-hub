@@ -40,6 +40,7 @@ except the optional Web API key.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
+| `STEAM_INTEGRATION_ENABLED` | yes | master switch, **default off**. Only `true`/`1`/`yes`/`on` enables the integration; anything else keeps it `not_configured`. |
 | `STEAM_OPENID_REALM` | yes | public origin of the app, e.g. `https://app.example.com`. HTTPS required (`localhost` tolerated in development). |
 | `STEAM_OPENID_RETURN_URL` | yes | must be **inside the realm** and point at `/api/public/integrations/steam/callback` |
 | `STEAM_OPENID_ENDPOINT` | no | override of `https://steamcommunity.com/openid/login`; must be HTTPS |

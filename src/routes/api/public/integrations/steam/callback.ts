@@ -28,11 +28,16 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const params = new URL(request.url).searchParams;
+        const url = new URL(request.url);
         const { paramsToRecord } = await import("@/lib/steam/steam.openid");
-        const record = paramsToRecord(params);
 
         try {
+          // FASE 2.5.1 — reject oversized / over-wide payloads before touching
+          // the database or calling Steam. Cheapest possible abuse defence.
+          const { assertCallbackPayloadWithinLimits } = await import("@/lib/steam/steam.limits");
+          assertCallbackPayloadWithinLimits(url);
+          const record = paramsToRecord(url.searchParams);
+
           const { validateSteamCallback } = await import("@/lib/steam/steam.openid.server");
           const { finalizeSteamConnection } = await import("@/lib/steam/steam.connect.server");
 

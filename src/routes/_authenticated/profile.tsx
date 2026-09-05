@@ -36,6 +36,7 @@ import {
   platformLabelKey,
   roleLabelKey,
 } from "@/lib/profile/taxonomy";
+import { hasOwnershipProof } from "@/lib/identity/ownership";
 import { evaluateVerification, type IdentitySummary } from "@/lib/profile/verification";
 
 interface ProfileSearch {
@@ -126,7 +127,9 @@ function ProfilePage() {
       connected: Boolean(identity.external_id || identity.username),
       status: (identity.identity_status ?? "unlinked") as IdentitySummary["status"],
       confidence: Number(identity.confidence_score ?? 0),
-      ownershipProven: identity.verification_method === "oauth" && identity.is_verified,
+      // Single source of truth: OAuth (FACEIT) and OpenID (Steam) both prove
+      // ownership; correlation never does.
+      ownershipProven: hasOwnershipProof(identity),
       blockedExternalAccess: identity.platform === "GAMERS_CLUB",
     }));
   }, [profile]);

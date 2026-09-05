@@ -47,7 +47,22 @@ function isLocalUrl(value: string | null): boolean {
   }
 }
 
+/**
+ * FASE 2.5.1 — explicit kill switch, DEFAULT OFF.
+ *
+ * A fully configured environment is still not enough: the operator must opt in
+ * with `STEAM_INTEGRATION_ENABLED=true`. Anything else (absent, empty, "false",
+ * "0", "off") keeps the integration dark, and the UI says so honestly.
+ */
+export function steamIntegrationEnabled(): boolean {
+  const raw = env("STEAM_INTEGRATION_ENABLED");
+  if (!raw) return false;
+  return ["true", "1", "yes", "on"].includes(raw.toLowerCase());
+}
+
 export interface SteamConfigStatus {
+  /** Operator opt-in. False means the feature is off no matter what else is set. */
+  enabled: boolean;
   realm: boolean;
   returnUrl: boolean;
   endpoint: boolean;
@@ -79,7 +94,10 @@ export function steamConfigStatus(): SteamConfigStatus {
     }
   }
 
+  const enabled = steamIntegrationEnabled();
+
   const openidReady =
+    enabled &&
     Boolean(realm) &&
     Boolean(returnUrl) &&
     isHttpsUrl(endpoint) &&
@@ -95,6 +113,7 @@ export function steamConfigStatus(): SteamConfigStatus {
       : "configured";
 
   return {
+    enabled,
     realm: Boolean(realm),
     returnUrl: Boolean(returnUrl),
     endpoint: isHttpsUrl(endpoint),

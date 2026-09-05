@@ -13,7 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n, useT } from "@/i18n";
-import { listAdminUsers, type AccountStatus, type AdminRole } from "@/lib/admin.functions";
+import {
+  bulkSetAdminUserStatus,
+  listAdminUsers,
+  type AccountStatus,
+  type AdminRole,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   head: () => ({
@@ -61,11 +66,52 @@ function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  // FASE 2.5.1 — bulk selection lives in the page, scoped to the visible page.
+  const [checked, setChecked] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkSummary, setBulkSummary] = useState<string | null>(null);
 
   const users = useQuery({
     queryKey: ["admin", "users", { search, role, status, page }],
     queryFn: () => listAdminUsers({ data: { search, role, status, page, pageSize: PAGE_SIZE } }),
   });
+
+  const rows = users.data?.rows ?? [];
+  const selectableIds = rows.filter((row) => row.role === "player").map((row) => row.id);
+  const selectedOnPage = checked.filter((id) => selectableIds.includes(id));
+  const allSelected = selectableIds.length > 0 && selectedOnPage.length === selectableIds.length;
+  const someSelected = selectedOnPage.length > 0 && !allSelected;
+
+  function toggleOne(id: string) {
+    setBulkSummary(null);
+    setChecked((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+  }
+
+  function toggleAll() {
+    setBulkSummary(null);
+    setChecked(allSelected ? [] : selectableIds);
+  }
+
+  async function runBulk(status: AccountStatus) {
+    if (selectedOnPage.length === 0) return;
+    setBulkBusy(true);
+    setBulkSummary(null);
+    try {
+      const result = await bulkSetAdminUserStatus({ data: { userIds: selectedOnPage, status } });
+      // Honest, per-outcome summary — never a blanket "success".
+      setBulkSummary(
+        `${result.applied} ${t("admin.bulk.applied")} · ${result.skipped} ${t("admin.bulk.skipped")} · ${result.failed} ${t("admin.bulk.failed")}`,
+      );
+      setChecked([]);
+      await users.refetch();
+    } catch {
+      setBulkSummary(t("admin.error.generic"));
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   const total = users.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -138,6 +184,36 @@ function AdminUsersPage() {
         </div>
       </div>
 
+      {selectedOnPage.length > 0 || bulkSummary ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
+          <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            {`${selectedOnPage.length} ${t("admin.bulk.selected")}`}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulkBusy || selectedOnPage.length === 0}
+            onClick={() => void runBulk("active")}
+          >
+            {t("admin.bulk.activate")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulkBusy || selectedOnPage.length === 0}
+            onClick={() => void runBulk("inactive")}
+          >
+            {t("admin.bulk.deactivate")}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setChecked([])} disabled={bulkBusy}>
+            {t("admin.bulk.clear")}
+          </Button>
+          {bulkSummary ? (
+            <span className="font-mono text-xs text-muted-foreground">{bulkSummary}</span>
+          ) : null}
+        </div>
+      ) : null}
+
       {users.isLoading ? (
         <LoadingState label={t("common.loading")} />
       ) : users.isError ? (
@@ -155,6 +231,18 @@ function AdminUsersPage() {
             <table className="w-full text-sm">
               <thead className="bg-secondary/50">
                 <tr className="text-left font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <th className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      aria-label={t("admin.bulk.selectAll")}
+                      checked={allSelected}
+                      ref={(node) => {
+                        if (node) node.indeterminate = someSelected;
+                      }}
+                      onChange={toggleAll}
+                      className="size-4 accent-primary"
+                    />
+                  </th>
                   <th className="px-3 py-2">{t("admin.detail.avatar")}</th>
                   <th className="px-3 py-2">{t("admin.table.name")}</th>
                   <th className="px-3 py-2">{t("admin.table.nickname")}</th>
@@ -170,6 +258,17 @@ function AdminUsersPage() {
               <tbody className="divide-y divide-border">
                 {users.data?.rows.map((user) => (
                   <tr key={user.id} className="hover:bg-secondary/30">
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={t("admin.bulk.select")}
+                        // Administrator accounts are never bulk-mutable.
+                        disabled={user.role !== "player"}
+                        checked={checked.includes(user.id)}
+                        onChange={() => toggleOne(user.id)}
+                        className="size-4 accent-primary"
+                      />
+                    </td>
                     <td className="px-3 py-2">
                       <UserAvatar
                         source={user.avatar_url}
@@ -209,6 +308,14 @@ function AdminUsersPage() {
             {users.data?.rows.map((user) => (
               <li key={user.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
+                  <input
+                    type="checkbox"
+                    aria-label={t("admin.bulk.select")}
+                    disabled={user.role !== "player"}
+                    checked={checked.includes(user.id)}
+                    onChange={() => toggleOne(user.id)}
+                    className="mt-1 size-4 accent-primary"
+                  />
                   <UserAvatar
                     source={user.avatar_url}
                     name={user.display_name ?? user.nickname}

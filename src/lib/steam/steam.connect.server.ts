@@ -244,7 +244,11 @@ async function recordSteamCorrelation(
   const rows: Array<Record<string, unknown>> = [
     {
       user_id: userId,
-      identity_a_source: "gamepro",
+      // FASE 2.5.1 — this side of the pair is the INTERNAL account, not an
+      // external identity source. Labelling it "gamepro" made an internal
+      // assertion look like third-party evidence; `internal_account` states
+      // plainly that the proof is "our own authenticated session".
+      identity_a_source: "internal_account",
       identity_a_id: userId,
       identity_b_source: "steam",
       identity_b_id: steamId64,

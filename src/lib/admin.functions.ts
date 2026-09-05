@@ -86,6 +86,11 @@ export interface AdminIdentity {
   is_verified: boolean;
   profile_url: string | null;
   created_at?: string;
+  /** FASE 2.5.1 — trust state, so the admin sees WHY an identity is trusted. */
+  identity_status?: string | null;
+  confidence_score?: number | null;
+  verification_method?: string | null;
+  verified_at?: string | null;
 }
 
 export interface AdminUpload {
@@ -452,7 +457,9 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
     ] = await Promise.all([
       supabase
         .from("player_identities")
-        .select("id, platform, username, external_id, is_verified, profile_url, created_at")
+        .select(
+          "id, platform, username, external_id, is_verified, profile_url, created_at, identity_status, confidence_score, verification_method, verified_at",
+        )
         .eq("player_id", playerId),
       supabase
         .from("matches")
@@ -832,4 +839,98 @@ export const listAuditLogs = createServerFn({ method: "GET" })
     }
 
     return { rows: (logs ?? []) as AuditLogRow[], names, total: count ?? 0, page, pageSize };
+  });
+
+/**
+ * FASE 2.5.1 — BULK STATUS CHANGE.
+ *
+ * Authorisation is server-side and re-evaluated per user, never trusted from the
+ * client: the caller must be the administrator, the target must be a player, and
+ * the administrator can never act on their own account. Each user is reported
+ * individually (applied / skipped / failed) so the UI can be honest instead of
+ * claiming a blanket success. Auditing is mandatory per user and a failed audit
+ * reverts that user's change.
+ */
+export type BulkOutcome =
+  "applied" | "skipped_self" | "skipped_not_player" | "skipped_unchanged" | "failed";
+
+export interface BulkStatusResult {
+  userId: string;
+  outcome: BulkOutcome;
+}
+
+/** Hard ceiling: a bulk action is a convenience, not a mass-mutation tool. */
+export const BULK_STATUS_MAX_USERS = 50;
+
+export const bulkSetAdminUserStatus = createServerFn({ method: "POST" })
+  .inputValidator((input: { userIds: string[]; status: AccountStatus }) => input)
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    const session = await resolveAdmin(context as Ctx);
+    const supabase = (context as Ctx).supabase;
+
+    const unique = Array.from(new Set(data.userIds)).slice(0, BULK_STATUS_MAX_USERS);
+    if (unique.length === 0) throw new Error(FAILED);
+    if (data.status !== "active" && data.status !== "inactive") throw new Error(FAILED);
+
+    const results: BulkStatusResult[] = [];
+
+    for (const userId of unique) {
+      if (userId === session.userId) {
+        results.push({ userId, outcome: "skipped_self" });
+        continue;
+      }
+
+      const { data: target } = await supabase
+        .from("profiles")
+        .select("id, role, status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!target) {
+        results.push({ userId, outcome: "failed" });
+        continue;
+      }
+      if (target.role !== "player") {
+        results.push({ userId, outcome: "skipped_not_player" });
+        continue;
+      }
+      const previousStatus = target.status as AccountStatus;
+      if (previousStatus === data.status) {
+        results.push({ userId, outcome: "skipped_unchanged" });
+        continue;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: data.status })
+        .eq("id", userId);
+      if (error) {
+        results.push({ userId, outcome: "failed" });
+        continue;
+      }
+
+      try {
+        await writeAuditLog(
+          context as Ctx,
+          data.status === "active" ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+          userId,
+          { status: data.status, previous_status: previousStatus, bulk: true },
+        );
+        results.push({ userId, outcome: "applied" });
+      } catch {
+        // No unaudited transition may persist.
+        await supabase.from("profiles").update({ status: previousStatus }).eq("id", userId);
+        results.push({ userId, outcome: "failed" });
+      }
+    }
+
+    const applied = results.filter((row) => row.outcome === "applied").length;
+    const failed = results.filter((row) => row.outcome === "failed").length;
+    return {
+      results,
+      applied,
+      failed,
+      skipped: results.length - applied - failed,
+    };
   });
