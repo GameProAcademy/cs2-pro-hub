@@ -44,6 +44,8 @@ export interface MapPerformanceDisplayContext {
   winRate: number | null;
   matches: number;
   displayLabel: string;
+  /** The original row, for callers that need the remaining metrics. */
+  row: MapPerformance;
 }
 
 function isoDate(value: string | Date | null | undefined): string | null {
@@ -83,6 +85,7 @@ export function getMapPerformanceDisplayContext(
     hasData,
     winRate: hasData ? (row.winRate as number) : null,
     matches: row.matches,
+    row,
     displayLabel: isHistorical ? `${base}${HISTORICAL_MAP_MARKER}` : base,
   };
 }
