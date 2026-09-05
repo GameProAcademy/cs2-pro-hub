@@ -77,7 +77,7 @@ describe("callback provider and realm binding", () => {
         RETURN_URL,
         { realm: REALM, opEndpoint: STEAM_OPENID_DEFAULT_ENDPOINT },
       ),
-    ).toThrowError(/STEAM_OPENID_INVALID_RESPONSE/);
+    ).toThrowError(/STEAM_OPENID_INVALID_ENDPOINT/);
   });
 
   it("refuses an assertion issued for another realm", () => {
@@ -90,7 +90,7 @@ describe("callback provider and realm binding", () => {
           opEndpoint: STEAM_OPENID_DEFAULT_ENDPOINT,
         },
       ),
-    ).toThrowError(/STEAM_OPENID_INVALID_RESPONSE/);
+    ).toThrowError(/STEAM_OPENID_INVALID_REALM/);
   });
 });
 
