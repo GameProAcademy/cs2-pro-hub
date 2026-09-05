@@ -70,6 +70,9 @@ function AdminUsersPage() {
   const [checked, setChecked] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkSummary, setBulkSummary] = useState<string | null>(null);
+  // FASE 2.5.2 — a bulk mutation NEVER runs on a single click: the operator has
+  // to confirm the exact action and the exact number of accounts.
+  const [bulkConfirm, setBulkConfirm] = useState<AccountStatus | null>(null);
 
   const users = useQuery({
     queryKey: ["admin", "users", { search, role, status, page }],
@@ -96,6 +99,7 @@ function AdminUsersPage() {
 
   async function runBulk(status: AccountStatus) {
     if (selectedOnPage.length === 0) return;
+    setBulkConfirm(null);
     setBulkBusy(true);
     setBulkSummary(null);
     try {
@@ -107,7 +111,7 @@ function AdminUsersPage() {
       setChecked([]);
       await users.refetch();
     } catch {
-      setBulkSummary(t("admin.error.generic"));
+      setBulkSummary(t("admin.bulk.limitExceeded"));
     } finally {
       setBulkBusy(false);
     }
@@ -193,7 +197,7 @@ function AdminUsersPage() {
             size="sm"
             variant="outline"
             disabled={bulkBusy || selectedOnPage.length === 0}
-            onClick={() => void runBulk("active")}
+            onClick={() => setBulkConfirm("active")}
           >
             {t("admin.bulk.activate")}
           </Button>
@@ -201,13 +205,40 @@ function AdminUsersPage() {
             size="sm"
             variant="outline"
             disabled={bulkBusy || selectedOnPage.length === 0}
-            onClick={() => void runBulk("inactive")}
+            onClick={() => setBulkConfirm("inactive")}
           >
             {t("admin.bulk.deactivate")}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setChecked([])} disabled={bulkBusy}>
             {t("admin.bulk.clear")}
           </Button>
+          {bulkConfirm ? (
+            <div className="flex w-full flex-wrap items-center gap-2 rounded-md border border-border bg-card/60 p-2">
+              <span className="text-xs text-foreground">
+                {t(
+                  bulkConfirm === "active"
+                    ? "admin.bulk.confirmActivate"
+                    : "admin.bulk.confirmDeactivate",
+                ).replace("{count}", String(selectedOnPage.length))}
+              </span>
+              <Button
+                size="sm"
+                variant={bulkConfirm === "active" ? "default" : "destructive"}
+                disabled={bulkBusy}
+                onClick={() => void runBulk(bulkConfirm)}
+              >
+                {t("admin.bulk.confirm")}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={bulkBusy}
+                onClick={() => setBulkConfirm(null)}
+              >
+                {t("admin.bulk.cancel")}
+              </Button>
+            </div>
+          ) : null}
           {bulkSummary ? (
             <span className="font-mono text-xs text-muted-foreground">{bulkSummary}</span>
           ) : null}
