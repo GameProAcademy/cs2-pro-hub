@@ -36,6 +36,7 @@ import {
   platformLabelKey,
   roleLabelKey,
 } from "@/lib/profile/taxonomy";
+import { hasOwnershipProof } from "@/lib/identity/ownership";
 import { evaluateVerification, type IdentitySummary } from "@/lib/profile/verification";
 
 interface ProfileSearch {
