@@ -132,19 +132,23 @@ describe("transactional email dispatch", () => {
   };
 
   it("reports not_configured instead of faking a delivery", async () => {
-    const outcome = await sendTransactionalEmail(message, noopEmailProvider);
+    const outcome = await sendTransactionalEmail(message, { provider: null, persist: false });
     expect(outcome).toEqual({ status: "skipped", reason: "not_configured" });
   });
 
   it("retries a retryable failure and stops at the ceiling", async () => {
     let attempts = 0;
     const outcome = await sendTransactionalEmail(
-      { ...message, idempotencyKey: "retry-test" },
+      { ...message, idempotencyKey: `retry-${Date.now()}` },
       {
-        id: "test",
-        async sendTransactionalEmail() {
-          attempts += 1;
-          return { status: "failed", reason: "PROVIDER_5XX", retryable: true };
+        persist: false,
+        sleepImpl: async () => {},
+        provider: {
+          id: "test",
+          async sendTransactionalEmail() {
+            attempts += 1;
+            return { status: "failed", reason: "PROVIDER_5XX", retryable: true };
+          },
         },
       },
     );
@@ -162,8 +166,9 @@ describe("transactional email dispatch", () => {
       },
     };
     const key = `dedupe-${Date.now()}`;
-    await sendTransactionalEmail({ ...message, idempotencyKey: key }, provider);
-    const second = await sendTransactionalEmail({ ...message, idempotencyKey: key }, provider);
+    const options = { provider, persist: false };
+    await sendTransactionalEmail({ ...message, idempotencyKey: key }, options);
+    const second = await sendTransactionalEmail({ ...message, idempotencyKey: key }, options);
     expect(attempts).toBe(1);
     expect(second).toEqual({ status: "skipped", reason: "duplicate" });
   });

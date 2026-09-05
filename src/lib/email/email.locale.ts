@@ -84,10 +84,13 @@ export interface EmailLocaleSignals {
 }
 
 export function resolveEmailLocale(signals: EmailLocaleSignals = {}): EmailLocale {
-  return (
-    normalizeEmailLocale(signals.preferredLocale) ??
-    normalizeEmailLocale(signals.browserLocale) ??
-    (signals.country ? (COUNTRY_LANGUAGE[signals.country.trim().toUpperCase()] ?? null) : null) ??
-    DEFAULT_EMAIL_LOCALE
-  );
+  const explicit =
+    normalizeEmailLocale(signals.preferredLocale) ?? normalizeEmailLocale(signals.browserLocale);
+  if (explicit) return explicit;
+
+  // Country is a WEAK signal and only ever a fallback: a country is not a
+  // language, so it never overrides a stated preference.
+  const country = signals.country?.trim().toUpperCase();
+  const fromCountry = country ? COUNTRY_LANGUAGE[country] : undefined;
+  return fromCountry ?? DEFAULT_EMAIL_LOCALE;
 }

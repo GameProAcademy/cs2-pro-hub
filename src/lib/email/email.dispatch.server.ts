@@ -94,6 +94,9 @@ export async function attemptDelivery(
   return { outcome: lastFailure, attempts: MAX_EMAIL_ATTEMPTS };
 }
 
+/** Process-local ledger; see the comment at its single use site. */
+const deliveredKeys = new Set<string>();
+
 export async function sendTransactionalEmail(
   message: TransactionalEmailMessage,
   options: DispatchOptions = {},
@@ -103,6 +106,12 @@ export async function sendTransactionalEmail(
       ? { provider: options.provider, reason: "not_configured" as const }
       : resolveEmailProvider();
   const persist = options.persist ?? true;
+
+  // First layer: same-isolate duplicate (a retried request). The authoritative
+  // layer is the UNIQUE index below, which survives a restart.
+  if (deliveredKeys.has(message.idempotencyKey)) {
+    return { status: "skipped", reason: "duplicate" };
+  }
 
   let logId: string | null = null;
 
@@ -169,5 +178,6 @@ export async function sendTransactionalEmail(
     message,
     options.sleepImpl ?? sleep,
   );
+  if (outcome.status === "sent") deliveredKeys.add(message.idempotencyKey);
   return finish(outcome, attempts, resolved.provider.id);
 }
