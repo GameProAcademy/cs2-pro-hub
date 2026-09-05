@@ -36,7 +36,9 @@ export function SourcesPanel() {
               className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card/40 px-3 py-2.5"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{t(sourceKey(source))}</p>
+                <p className="truncate text-sm font-medium text-foreground">
+                  {t(sourceKey(source))}
+                </p>
                 <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                   {t(`sources.quality.${descriptor.quality}` as TranslationKey)}
                 </p>

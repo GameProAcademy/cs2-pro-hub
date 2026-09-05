@@ -69,7 +69,6 @@ function AnalysisPage() {
 
         <FaceitPanel callback={callback} />
 
-
         <ChartCard title={t("analysis.overall")}>
           <p className="text-sm leading-relaxed text-muted-foreground">{analysis.overall}</p>
         </ChartCard>

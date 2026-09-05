@@ -234,7 +234,9 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
 export function classifyBuyContext(
   moneyStart: number | undefined,
   equipmentValue: number | undefined,
-): CanonicalRound["sides"] extends never ? never : "full_buy" | "force_buy" | "half_buy" | "eco" | "save" | "unknown" {
+): CanonicalRound["sides"] extends never
+  ? never
+  : "full_buy" | "force_buy" | "half_buy" | "eco" | "save" | "unknown" {
   if (equipmentValue == null && moneyStart == null) return "unknown";
   const equip = equipmentValue ?? 0;
   if (equipmentValue == null) return "unknown";

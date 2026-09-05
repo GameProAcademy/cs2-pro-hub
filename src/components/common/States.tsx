@@ -55,7 +55,9 @@ export function LoadingState({
       )}
     >
       <Loader2 className="size-5 animate-spin text-primary" aria-hidden />
-      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">{label ?? t("common.loading")}</p>
+      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+        {label ?? t("common.loading")}
+      </p>
     </div>
   );
 }
@@ -81,7 +83,9 @@ export function ErrorState({
       )}
     >
       <AlertTriangle className="mb-4 size-5 text-destructive" aria-hidden />
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">{title ?? t("common.errorTitle")}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+        {title ?? t("common.errorTitle")}
+      </h3>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
         {description ?? t("common.errorDescription")}
       </p>

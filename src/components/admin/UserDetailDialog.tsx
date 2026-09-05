@@ -420,9 +420,15 @@ export function UserDetailDialog({
                         label={t("admin.field.currentLevel")}
                         value={player?.current_level || dash}
                       />
-                      <Field label={t("admin.field.goal")} value={player?.competitive_goal || dash} />
+                      <Field
+                        label={t("admin.field.goal")}
+                        value={player?.competitive_goal || dash}
+                      />
                       <Field label={t("admin.field.gameRole")} value={player?.role || dash} />
-                      <Field label={t("admin.field.experience")} value={player?.experience || dash} />
+                      <Field
+                        label={t("admin.field.experience")}
+                        value={player?.experience || dash}
+                      />
                       <Field label={t("admin.field.team")} value={player?.team || dash} />
                       <Field
                         label={t("admin.field.faceit")}
@@ -502,9 +508,7 @@ export function UserDetailDialog({
                         <Field
                           label={t("admin.field.size")}
                           value={
-                            upload.file_size
-                              ? `${Math.round(upload.file_size / 1024)} KB`
-                              : dash
+                            upload.file_size ? `${Math.round(upload.file_size / 1024)} KB` : dash
                           }
                         />
                         <Field label={t("admin.field.mime")} value={upload.mime_type || dash} />
@@ -523,10 +527,7 @@ export function UserDetailDialog({
                         />
                         {upload.error_message ? (
                           <div className="sm:col-span-3 lg:col-span-4">
-                            <Field
-                              label={t("admin.field.error")}
-                              value={upload.error_message}
-                            />
+                            <Field label={t("admin.field.error")} value={upload.error_message} />
                           </div>
                         ) : null}
                       </li>
@@ -550,7 +551,9 @@ export function UserDetailDialog({
                         <Field label={t("admin.field.map")} value={match.map || dash} />
                         <Field
                           label={t("admin.field.matchDate")}
-                          value={match.match_date ? dayFormat.format(new Date(match.match_date)) : dash}
+                          value={
+                            match.match_date ? dayFormat.format(new Date(match.match_date)) : dash
+                          }
                         />
                         <Field label={t("admin.detail.platform")} value={match.platform || dash} />
                         <Field label={t("admin.field.result")} value={match.result || dash} />
@@ -624,7 +627,9 @@ export function UserDetailDialog({
                           <Field label={t("admin.table.status")} value={analysis.status} />
                           <Field
                             label={t("admin.field.confidence")}
-                            value={analysis.confidence !== null ? String(analysis.confidence) : dash}
+                            value={
+                              analysis.confidence !== null ? String(analysis.confidence) : dash
+                            }
                           />
                           <Field
                             label={t("admin.table.createdAt")}
@@ -705,7 +710,9 @@ export function UserDetailDialog({
                         <Field
                           key={key}
                           label={t(dnaLabelKey(key))}
-                          value={dna[key] !== null && dna[key] !== undefined ? String(dna[key]) : dash}
+                          value={
+                            dna[key] !== null && dna[key] !== undefined ? String(dna[key]) : dash
+                          }
                         />
                       ))}
                     </div>
@@ -759,7 +766,9 @@ export function UserDetailDialog({
                           <Field label={t("training.progress")} value={`${progress}%`} />
                           <Field
                             label={t("admin.field.start")}
-                            value={plan.start_date ? dayFormat.format(new Date(plan.start_date)) : dash}
+                            value={
+                              plan.start_date ? dayFormat.format(new Date(plan.start_date)) : dash
+                            }
                           />
                           <Field
                             label={t("admin.field.end")}
@@ -917,7 +926,10 @@ export function UserDetailDialog({
           </div>
         )}
 
-        <AlertDialog open={confirm !== null} onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}>
+        <AlertDialog
+          open={confirm !== null}
+          onOpenChange={(open) => (!open ? setConfirm(null) : undefined)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>

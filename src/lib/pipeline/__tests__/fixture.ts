@@ -26,7 +26,13 @@ function kill(
   return { type: "player_death", round, time_seconds: time, attacker, victim, ...extra };
 }
 
-function damage(round: number, time: number, attacker: string, victim: string, dmg: number): RawParserEvent {
+function damage(
+  round: number,
+  time: number,
+  attacker: string,
+  victim: string,
+  dmg: number,
+): RawParserEvent {
   return { type: "player_hurt", round, time_seconds: time, attacker, victim, damage: dmg };
 }
 
@@ -70,7 +76,14 @@ const events: RawParserEvent[] = [
   damage(4, 38, ME, ENEMY_A, 70),
 
   // Round 5: flash assist by ME.
-  { type: "player_blind", round: 5, time_seconds: 20, attacker: ME, victim: ENEMY_B, players_flashed: 1 },
+  {
+    type: "player_blind",
+    round: 5,
+    time_seconds: 20,
+    attacker: ME,
+    victim: ENEMY_B,
+    players_flashed: 1,
+  },
   kill(5, 21, MATE, ENEMY_B),
 
   // Round 6: 1v2 clutch won by ME.
@@ -79,7 +92,7 @@ const events: RawParserEvent[] = [
   kill(6, 33, ME, ENEMY_B),
 
   // Round 7: utility damage by ME.
-  damage(7, 18, ME, ENEMY_A, 40, ),
+  damage(7, 18, ME, ENEMY_A, 40),
   { type: "hegrenade_detonate", round: 7, time_seconds: 18, attacker: ME },
   kill(7, 45, ENEMY_B, ME),
 
