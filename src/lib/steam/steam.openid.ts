@@ -120,9 +120,17 @@ export function paramsToRecord(params: URLSearchParams): SteamCallbackParams {
  * Structural validation of a callback BEFORE any network call.
  * Returns the claimed id (still unverified) and the echoed state.
  */
+export interface SteamCallbackExpectations {
+  /** Our configured realm; Steam echoes and signs `openid.realm` when present. */
+  realm?: string;
+  /** Provider endpoint we asked to authenticate against. */
+  opEndpoint?: string;
+}
+
 export function parseSteamCallback(
   params: SteamCallbackParams,
   expectedReturnUrl: string,
+  expected: SteamCallbackExpectations = {},
 ): { claimedId: string; steamId64: string; state: string } {
   const mode = params["openid.mode"];
   if (mode === "cancel") throw new SteamError("STEAM_OPENID_CANCELLED");
@@ -158,10 +166,50 @@ export function parseSteamCallback(
     throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
   }
 
+  // FASE 2.5.1 — the assertion must come from the provider WE asked, and be
+  // scoped to OUR realm. A response signed by some other OpenID provider, or
+  // issued for a different realm, is refused even if it is internally valid.
+  const opEndpoint = params["openid.op_endpoint"];
+  if (opEndpoint !== undefined) {
+    if (!isSteamOpEndpoint(opEndpoint)) throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+    if (expected.opEndpoint && !sameUrl(opEndpoint, expected.opEndpoint)) {
+      throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+    }
+  }
+
+  const realm = params["openid.realm"];
+  if (expected.realm && realm !== undefined && !sameOrigin(realm, expected.realm)) {
+    throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+  }
+  if (expected.realm && !sameOrigin(returnTo, expected.realm)) {
+    throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+  }
+
   const steamId64 = steamId64FromClaimedId(claimedId);
   if (!steamId64) throw new SteamError("STEAM_INVALID_STEAM_ID");
 
   return { claimedId, steamId64, state };
+}
+
+/** Only the official Steam Community OpenID endpoint is acceptable. */
+export function isSteamOpEndpoint(value: string): boolean {
+  return value === STEAM_OPENID_DEFAULT_ENDPOINT;
+}
+
+function sameUrl(a: string, b: string): boolean {
+  try {
+    return new URL(a).toString() === new URL(b).toString();
+  } catch {
+    return false;
+  }
+}
+
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
 }
 
 /** Body for the provider-side `check_authentication` round trip. */
