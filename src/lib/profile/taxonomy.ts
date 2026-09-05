@@ -405,12 +405,22 @@ const TIMEZONE_COUNTRY: Record<string, CountryCode> = {
   "Africa/Johannesburg": "ZA",
 };
 
-/** Region subtag of a BCP-47 tag, e.g. "pt-BR" -> "BR". */
+/**
+ * Region subtag of a BCP-47 tag: "pt-BR" -> "BR", "zh-Hant-TW" -> "TW".
+ * The second subtag is NOT assumed to be the region — script subtags such as
+ * "Hant" are skipped, and only a real ISO alpha-2 region is accepted.
+ */
 export function countryFromLocaleTag(tag: string | null | undefined): CountryCode | null {
   if (!tag) return null;
-  const region = tag.split(/[-_]/)[1]?.toUpperCase();
-  return isCountryCode(region) ? region : null;
+  const parts = tag.split(/[-_]/).slice(1);
+  for (const part of parts) {
+    if (part.length !== 2) continue; // language/script/variant subtags
+    const region = part.toUpperCase();
+    if (isCountryCode(region)) return region;
+  }
+  return null;
 }
+
 
 export function countryFromTimeZone(timeZone: string | null | undefined): CountryCode | null {
   if (!timeZone) return null;
