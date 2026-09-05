@@ -86,6 +86,11 @@ export interface AdminIdentity {
   is_verified: boolean;
   profile_url: string | null;
   created_at?: string;
+  /** FASE 2.5.1 — trust state, so the admin sees WHY an identity is trusted. */
+  identity_status?: string | null;
+  confidence_score?: number | null;
+  verification_method?: string | null;
+  verified_at?: string | null;
 }
 
 export interface AdminUpload {
@@ -452,7 +457,9 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
     ] = await Promise.all([
       supabase
         .from("player_identities")
-        .select("id, platform, username, external_id, is_verified, profile_url, created_at")
+        .select(
+          "id, platform, username, external_id, is_verified, profile_url, created_at, identity_status, confidence_score, verification_method, verified_at",
+        )
         .eq("player_id", playerId),
       supabase
         .from("matches")
