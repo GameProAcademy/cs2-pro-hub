@@ -126,7 +126,6 @@ function PerformancePage() {
                 </div>
               ))}
             </div>
-
           </ChartCard>
 
           <ChartCard

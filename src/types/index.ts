@@ -55,7 +55,6 @@ export interface MapPerformance {
   matchDate?: string | null;
 }
 
-
 export interface SideSplit {
   metric: string;
   ct: number;
