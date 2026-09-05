@@ -259,7 +259,7 @@ export const fr: Dictionary = {
   "admin.bulk.applied": "appliqué(s)",
   "admin.bulk.skipped": "ignoré(s)",
   "admin.bulk.failed": "en échec",
-  "admin.bulk.select": "Sélectionner l"utilisateur",
+  "admin.bulk.select": "Sélectionner l’utilisateur",
   "admin.steam.title": "Identité Steam",
   "admin.steam.none": "Aucun compte Steam lié",
   "admin.steam.method": "Preuve de propriété",
