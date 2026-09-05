@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/coach")({
       {
         name: "description",
         content:
-          "Converse com o AI Coach sobre seus gargalos, decisões de round e plano de treino.",
+          "Converse com o AI Coach sobre seus pontos de melhoria, decisões de round e plano de treino.",
       },
       { property: "og:title", content: "AI Coach — CS2 PRO AI COACH" },
       {

@@ -294,7 +294,7 @@ export const demoMatches: MatchRow[] = [
 export const demoTrainingPlans: TrainingPlan[] = [
   {
     horizon: 30,
-    title: "Plano 30 dias — Correção dos gargalos",
+    title: "Plano 30 dias — Correção dos pontos de melhoria",
     goal: "Reduzir erros de decisão em rounds pós-plant e elevar o uso de utilitário por round.",
     focus: ["decision_making", "utility"],
     progress: 42,
@@ -371,7 +371,7 @@ export const demoCoachMessages: CoachMessage[] = [
     id: "c-1",
     role: "coach",
     content:
-      "Exemplo de resposta (mensagem demonstrativa — o AI Coach ainda não está conectado a nenhum modelo). Seu maior gargalo aparente é Decision Making em rounds pós-plant: as rotações começam tarde e você entra em duelos sem cobertura.",
+      "Exemplo de resposta (mensagem demonstrativa — o AI Coach ainda não está conectado a nenhum modelo). Seu principal ponto de melhoria aparente é Decision Making em rounds pós-plant: as rotações começam tarde e você entra em duelos sem cobertura.",
     time: "10:02",
   },
   {

@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "Visão geral do seu CS2 PRO Score, Player DNA, gargalos, pontos fortes e últimas partidas.",
+          "Visão geral do seu CS2 PRO Score, Player DNA, pontos de melhoria, pontos fortes e últimas partidas.",
       },
       { property: "og:title", content: "Dashboard — CS2 PRO AI COACH" },
       {
