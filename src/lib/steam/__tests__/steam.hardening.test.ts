@@ -21,6 +21,7 @@ import { sourceAvailability } from "@/lib/sources/availability";
 import { SOURCE_CONNECTION_TYPES } from "@/lib/sources/sources";
 
 const KEYS = [
+  "STEAM_INTEGRATION_ENABLED",
   "STEAM_OPENID_REALM",
   "STEAM_OPENID_RETURN_URL",
   "STEAM_OPENID_ENDPOINT",
@@ -44,6 +45,9 @@ afterEach(() => {
 });
 
 function configure(overrides: Partial<Record<(typeof KEYS)[number], string>> = {}) {
+  // FASE 2.5.1 — the master switch is OFF by default, so a configured
+  // environment must opt in explicitly.
+  process.env["STEAM_INTEGRATION_ENABLED"] = "true";
   process.env["STEAM_OPENID_REALM"] = "https://app.example.com";
   process.env["STEAM_OPENID_RETURN_URL"] =
     "https://app.example.com/api/public/integrations/steam/callback";
