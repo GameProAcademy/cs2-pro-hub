@@ -36,7 +36,7 @@ export function Brand({
           <span className="block font-display text-base font-bold uppercase tracking-[0.14em] text-foreground">
             CS2 PRO
           </span>
-          <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
+          <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
             AI COACH
           </span>
         </span>
