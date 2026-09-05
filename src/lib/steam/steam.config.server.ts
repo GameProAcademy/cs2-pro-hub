@@ -113,6 +113,7 @@ export function steamConfigStatus(): SteamConfigStatus {
       : "configured";
 
   return {
+    enabled,
     realm: Boolean(realm),
     returnUrl: Boolean(returnUrl),
     endpoint: isHttpsUrl(endpoint),
