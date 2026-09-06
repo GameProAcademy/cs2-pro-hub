@@ -140,8 +140,16 @@ describe("FASE 2.6.4 — match identity resolution", () => {
   });
 
   it("resolveAgainstAll never hides a CONFLICT behind a weaker positive", () => {
-    const incoming = candidate({ source: "demo", externalMatchId: null, scoreTeamA: 13, scoreTeamB: 2 });
-    const result = resolveAgainstAll(incoming, [candidate(), candidate({ externalMatchId: "1-x" })]);
+    const incoming = candidate({
+      source: "demo",
+      externalMatchId: null,
+      scoreTeamA: 13,
+      scoreTeamB: 2,
+    });
+    const result = resolveAgainstAll(incoming, [
+      candidate(),
+      candidate({ externalMatchId: "1-x" }),
+    ]);
     expect(result.decision.resolution).toBe("CONFLICT");
   });
 

@@ -45,7 +45,12 @@ export function projectPlayerMatch(
 
   const team = participant.team;
   const opponentTeam = otherTeam(team);
-  const own = team === "team_a" ? bundle.match.scoreTeamA : team === "team_b" ? bundle.match.scoreTeamB : null;
+  const own =
+    team === "team_a"
+      ? bundle.match.scoreTeamA
+      : team === "team_b"
+        ? bundle.match.scoreTeamB
+        : null;
   const other =
     opponentTeam === "team_a"
       ? bundle.match.scoreTeamA
@@ -61,7 +66,8 @@ export function projectPlayerMatch(
     internalPlayerId: participant.internalPlayerId,
     team,
     opponentTeam,
-    teamName: team === "team_a" ? bundle.match.teamA : team === "team_b" ? bundle.match.teamB : null,
+    teamName:
+      team === "team_a" ? bundle.match.teamA : team === "team_b" ? bundle.match.teamB : null,
     opponentTeamName:
       opponentTeam === "team_a"
         ? bundle.match.teamA

@@ -12,11 +12,7 @@
 import type { DataSource } from "@/lib/sources/sources";
 
 export type MatchResolution =
-  | "EXACT_MATCH"
-  | "PROBABLE_MATCH"
-  | "POSSIBLE_MATCH"
-  | "NO_MATCH"
-  | "CONFLICT";
+  "EXACT_MATCH" | "PROBABLE_MATCH" | "POSSIBLE_MATCH" | "NO_MATCH" | "CONFLICT";
 
 /** Minimal fingerprint of a match, from either side of the comparison. */
 export interface MatchIdentityCandidate {
@@ -142,7 +138,11 @@ export function resolveMatchIdentity(
   if (bothMapsKnown && !sameMap) {
     // Different maps in the same time window with the same roster is a real
     // contradiction worth reviewing, not a silent NO_MATCH.
-    if (delta !== null && delta <= MATCH_TIME_TOLERANCE_MS && (shared ?? 0) >= MIN_SHARED_PARTICIPANTS) {
+    if (
+      delta !== null &&
+      delta <= MATCH_TIME_TOLERANCE_MS &&
+      (shared ?? 0) >= MIN_SHARED_PARTICIPANTS
+    ) {
       return decision("CONFLICT", 0.5, ["map_differs", "roster_overlap", "time_close"], true);
     }
     return decision("NO_MATCH", 0, ["map_differs"]);
@@ -178,7 +178,8 @@ export function resolveAgainstAll(
   candidates: readonly MatchIdentityCandidate[],
 ): { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate | null } {
   let best: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate } | null = null;
-  let conflict: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate } | null = null;
+  let conflict: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate } | null =
+    null;
 
   for (const candidate of candidates) {
     const result = resolveMatchIdentity(incoming, candidate);
@@ -189,7 +190,8 @@ export function resolveAgainstAll(
       continue;
     }
     if (result.resolution === "NO_MATCH") continue;
-    if (!best || result.confidence > best.decision.confidence) best = { decision: result, candidate };
+    if (!best || result.confidence > best.decision.confidence)
+      best = { decision: result, candidate };
   }
 
   if (best && best.decision.resolution === "EXACT_MATCH") return best;

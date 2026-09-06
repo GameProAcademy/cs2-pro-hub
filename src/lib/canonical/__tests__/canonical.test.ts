@@ -10,7 +10,12 @@ import { demoToCanonicalBundle } from "../adapters/demo.adapter";
 import { faceitToCanonicalBundles } from "../adapters/faceit.adapter";
 import { gamersClubCanonicalAdapter } from "../adapters/gamersclub.adapter";
 import { projectAllPlayers, projectPlayerMatch } from "../canonical.projection";
-import { computeCoverage, hasAnalyticalCoverage, quality, worstQuality } from "../canonical.quality";
+import {
+  computeCoverage,
+  hasAnalyticalCoverage,
+  quality,
+  worstQuality,
+} from "../canonical.quality";
 import type { CanonicalFaceitMatch } from "@/lib/faceit/faceit.mapper";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { CANONICAL_SCHEMA_VERSION, SOURCE_CONTRACT_VERSIONS } from "../canonical.versions";

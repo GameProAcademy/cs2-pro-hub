@@ -27,13 +27,7 @@ export type CanonicalTeamSlot = "team_a" | "team_b";
 
 /** Lifecycle of a canonical entity, independent of analytics completeness. */
 export type CanonicalStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "partial"
-  | "failed"
-  | "cancelled"
-  | "unknown";
+  "queued" | "processing" | "completed" | "partial" | "failed" | "cancelled" | "unknown";
 
 /* ------------------------------------------------------------------ *
  * Quality                                                             *
@@ -162,11 +156,7 @@ export interface CanonicalMatch {
  * ------------------------------------------------------------------ */
 
 export type IdentityStatus =
-  | "unlinked"
-  | "correlated"
-  | "strongly_correlated"
-  | "verified"
-  | "conflict";
+  "unlinked" | "correlated" | "strongly_correlated" | "verified" | "conflict";
 
 /**
  * A participant of a canonical match. It may exist WITHOUT an internal player:
@@ -194,12 +184,7 @@ export interface CanonicalParticipant {
  * ------------------------------------------------------------------ */
 
 export type RoundWinReason =
-  | "elimination"
-  | "bomb_exploded"
-  | "bomb_defused"
-  | "time_expired"
-  | "surrender"
-  | "unknown";
+  "elimination" | "bomb_exploded" | "bomb_defused" | "time_expired" | "surrender" | "unknown";
 
 /** NEUTRAL facts of a round. No player-specific field belongs here. */
 export interface CanonicalRound {
