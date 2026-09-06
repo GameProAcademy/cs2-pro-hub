@@ -311,4 +311,3 @@ export async function unlinkSteamAccount(userId: string): Promise<{ disconnected
   await notifySteamLink("steam_unlinked", userId, result.external_id ?? null, null, now);
   return { disconnected: true };
 }
-

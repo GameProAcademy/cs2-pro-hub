@@ -52,7 +52,6 @@ export async function startSteamLinkAttempt(userId: string): Promise<StartedStea
   if (slotError) throw new SteamError("STEAM_INTERNAL_ERROR");
   if (slot !== true) throw new SteamError("STEAM_RATE_LIMITED");
 
-
   // Only one live attempt per user: starting a new one burns the old ones.
   await invalidateSteamLinkAttempts(userId);
 
@@ -150,7 +149,6 @@ export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSt
 
   return { userId: consumed.user_id, returnUrl: consumed.return_url };
 }
-
 
 /** Burns an attempt on the failure path so no replay window stays open. */
 export async function consumeSteamLinkAttemptQuietly(state: string | null): Promise<void> {

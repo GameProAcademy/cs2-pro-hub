@@ -123,3 +123,15 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
   integração diz `not_configured` e não desenha botão — nenhuma chave é pedida ao jogador.
 - Checks: typecheck limpo, 354/354 testes, lint 0 erros, build OK, checks persistentes
   29a–29g PASS no banco.
+
+## FASE 2.5.2C — Steam + e-mail transacional (fechamento)
+
+- [x] Link e unlink do Steam viraram transação única (`steam_link_commit` / `steam_unlink_commit`, service_role): conexão + identidade + evidência + auditoria são atômicos.
+- [x] Takeover e posse do perfil revalidados dentro do banco; índices UNIQUE seguem como última defesa.
+- [x] Unlink nunca reescreve um `conflict` registrado (histórico preservado).
+- [x] Consumo de state 100% atômico; vínculo de usuário vem só da linha vencedora (`STEAM_STATE_ALREADY_USED`).
+- [x] Throttle de início do link atômico via `claim_steam_link_slot` (advisory lock por usuário).
+- [x] Transporte real de e-mail: Hostinger Mail API (HTTPS). Nenhum caminho SMTP existe (Workers não abre TCP).
+- [x] HTTP 202 = `accepted` (aceito/enfileirado), nunca "entregue"; 4xx permanente, 429/5xx transitório com `Retry-After` respeitado e limitado.
+- [x] Idempotência com claim/lease no banco (`claim_email_delivery`): aceito nunca reenvia, falho pode retentar, lease vivo bloqueia concorrente, lease expirado é recuperado.
+- [x] Checks permanentes 30a–30d e 17 novos testes de transporte/configuração.

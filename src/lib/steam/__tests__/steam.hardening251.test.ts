@@ -197,5 +197,4 @@ describe("transactional email dispatch", () => {
     expect(attempts).toBe(1);
     expect(outcome.status).toBe("failed");
   });
-
 });
