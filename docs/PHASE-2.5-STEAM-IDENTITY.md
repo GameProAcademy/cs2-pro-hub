@@ -97,3 +97,33 @@ hardcoded.
 - Steam inventory, friends, bans or playtime reads.
 - Automatic identity promotion from weak evidence.
 - Email delivery from app code (the email design system renders; it does not send).
+
+
+## FASE 2.5.2C — closure (atomicity, transport, throttle)
+
+1. **Atomic link/unlink.** `finalizeSteamConnection` and `unlinkSteamAccount` no
+   longer write four times in a row. They call `public.steam_link_commit` /
+   `public.steam_unlink_commit` (SECURITY DEFINER, `search_path=''`, EXECUTE for
+   `service_role` only), so connection, identity, correlation evidence and the
+   mandatory audit record land in ONE transaction — or none of them does. Both
+   routines re-verify that the player profile belongs to the caller and refuse a
+   takeover of a SteamID64 that already belongs to another player; the partial
+   unique indexes stay as the last line of defence. An unlink never rewrites a
+   recorded `conflict`, so conflict history survives.
+2. **Atomic state consumption.** The winning `UPDATE ... WHERE status='pending'
+   AND expires_at > now()` row is now the ONLY source of the user binding — the
+   fallback to the earlier read is gone. The loser of the race gets the new
+   `STEAM_STATE_ALREADY_USED` code.
+3. **Atomic start throttle.** Counting attempts and deciding used to be two
+   observations, so simultaneous requests could all pass. `public.claim_steam_link_slot`
+   takes a per-user advisory lock inside the transaction and answers once.
+4. **Real transport.** Transactional email goes through the **Hostinger Mail API
+   over HTTPS** (`email.config.server.ts` + `email.transport.server.ts`). There is
+   no SMTP path anywhere: Cloudflare Workers cannot open a raw TCP socket to
+   25/465/587. HTTP 202 is recorded as `accepted` (queued by the provider) and is
+   never presented as inbox delivery. A 4xx is permanent, a 429/5xx is transient,
+   and `Retry-After` is honoured and capped.
+5. **Leased idempotency.** `public.claim_email_delivery` decides atomically per
+   key: `accepted`/`sent` is never re-sent, `failed`/`skipped` may be retried, a
+   live lease blocks a concurrent worker (`in_progress`), an expired lease is
+   recovered so no row is abandoned in `pending`.
