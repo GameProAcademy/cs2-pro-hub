@@ -28,12 +28,18 @@ import {
   type TransactionalEmailMessage,
 } from "./email.provider";
 import { resolveEmailProvider } from "./email.transport.server";
+import {
+  EMAIL_BACKOFF_BASE_MS,
+  EMAIL_LEASE_SECONDS as LEASE_SECONDS,
+  MAX_EMAIL_ATTEMPTS_PER_CALL,
+  MAX_TOTAL_EMAIL_ATTEMPTS,
+} from "@/config/email";
 
-/** Retry ceiling for a retryable provider failure. */
-export const MAX_EMAIL_ATTEMPTS = 3;
-const BASE_BACKOFF_MS = 250;
+/** Retry ceiling for a retryable provider failure INSIDE one call. */
+export const MAX_EMAIL_ATTEMPTS = MAX_EMAIL_ATTEMPTS_PER_CALL;
+const BASE_BACKOFF_MS = EMAIL_BACKOFF_BASE_MS;
 /** Lease held while an attempt is in flight; an abandoned row expires with it. */
-export const EMAIL_LEASE_SECONDS = 120;
+export const EMAIL_LEASE_SECONDS = LEASE_SECONDS;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
