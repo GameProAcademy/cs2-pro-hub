@@ -388,6 +388,7 @@ export type Database = {
           idempotency_key: string
           kind: string
           last_error: string | null
+          lease_expires_at: string | null
           locale: string
           provider: string
           provider_message_id: string | null
@@ -405,6 +406,7 @@ export type Database = {
           idempotency_key: string
           kind: string
           last_error?: string | null
+          lease_expires_at?: string | null
           locale?: string
           provider: string
           provider_message_id?: string | null
@@ -422,6 +424,7 @@ export type Database = {
           idempotency_key?: string
           kind?: string
           last_error?: string | null
+          lease_expires_at?: string | null
           locale?: string
           provider?: string
           provider_message_id?: string | null
@@ -2028,6 +2031,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_email_delivery: {
+        Args: {
+          _idempotency_key: string
+          _kind: string
+          _lease_seconds?: number
+          _locale: string
+          _provider: string
+          _recipient: string
+          _subject: string
+          _user_id?: string
+        }
+        Returns: Json
+      }
       claim_next_demo_job: {
         Args: { _max_concurrent?: number }
         Returns: string
@@ -2039,6 +2055,14 @@ export type Database = {
       claim_next_gamers_club_sync_job: {
         Args: { _max_concurrent?: number }
         Returns: string
+      }
+      claim_steam_link_slot: {
+        Args: {
+          _max_attempts?: number
+          _user_id: string
+          _window_seconds?: number
+        }
+        Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
       has_role: {
@@ -2082,6 +2106,23 @@ export type Database = {
           _team: string
         }
         Returns: string
+      }
+      steam_link_commit: {
+        Args: {
+          _audit?: Json
+          _connection: Json
+          _correlations?: Json
+          _evidence?: Json
+          _identity: Json
+          _player_id: string
+          _steam_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      steam_unlink_commit: {
+        Args: { _audit?: Json; _player_id: string; _user_id: string }
+        Returns: Json
       }
     }
     Enums: {

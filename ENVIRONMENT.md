@@ -23,6 +23,27 @@ Rules that apply to every variable below:
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | privileged operations; bypasses RLS |
 | `SUPABASE_PROJECT_ID` / `VITE_SUPABASE_PROJECT_ID` | server / client | project reference |
 
+## Transactional email — Hostinger Mail API (server only)
+
+The runtime is Cloudflare Workers, which cannot open a raw outbound TCP socket to
+port 25/465/587. Classic SMTP is therefore not implementable here and no SMTP
+relay exists in this codebase: transactional email goes through the Hostinger
+Mail API over HTTPS.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `EMAIL_PROVIDER` | yes, for delivery | `hostinger` or unset. Unset keeps delivery dark (`skipped / not_configured`). |
+| `HOSTINGER_MAIL_API_TOKEN` | yes, for delivery | **secret**. Hostinger Mail API token, read inside the send call, never logged or returned. |
+| `EMAIL_FROM_EMAIL` | yes, for delivery | visible sender address on the verified domain |
+| `EMAIL_FROM_NAME` | no | visible sender name |
+
+`emailConfigStatus()` exposes booleans only (`tokenConfigured`,
+`senderConfigured`) plus the public sender address, so an admin screen can show
+"configured / missing" without ever reading the token.
+
+Provider acceptance (HTTP 202) is recorded as `accepted`, which means queued by
+Hostinger — never as proof that the message reached the inbox.
+
 ## FACEIT (server only)
 
 | Variable | Required | Purpose |

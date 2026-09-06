@@ -458,6 +458,40 @@ WITH catalogue AS (
                   JOIN pg_type ty ON ty.oid=e.enumtypid
                   WHERE ty.typname='connection_type' AND e.enumlabel='openid')
 
+  -- FASE 2.5.2C — atomic commit routines and leased email delivery.
+  UNION ALL
+  SELECT '30a. steam link/unlink are atomic server-only routines',
+         EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                  WHERE n.nspname='public' AND p.proname='steam_link_commit' AND p.prosecdef)
+         AND EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                      WHERE n.nspname='public' AND p.proname='steam_unlink_commit' AND p.prosecdef)
+
+  UNION ALL
+  SELECT '30b. no client role can execute the Steam commit routines',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+            WHERE n.nspname='public'
+              AND p.proname IN ('steam_link_commit','steam_unlink_commit',
+                                'claim_steam_link_slot','claim_email_delivery')
+              AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+                OR has_function_privilege('authenticated', p.oid, 'EXECUTE')))
+
+  UNION ALL
+  SELECT '30c. email delivery is idempotent by key and leased',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+                  AND tablename='email_delivery_logs'
+                  AND indexdef ILIKE '%UNIQUE%idempotency_key%')
+         AND EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_schema='public' AND table_name='email_delivery_logs'
+                        AND column_name='lease_expires_at')
+
+  UNION ALL
+  SELECT '30d. the delivery log records provider ACCEPTANCE as its own state',
+         EXISTS (SELECT 1 FROM pg_constraint
+                  WHERE conrelid='public.email_delivery_logs'::regclass
+                    AND contype='c'
+                    AND pg_get_constraintdef(oid) ILIKE '%accepted%')
+
 )
 
 

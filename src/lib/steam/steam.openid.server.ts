@@ -40,17 +40,17 @@ export async function startSteamLinkAttempt(userId: string): Promise<StartedStea
   const expiresAt = new Date(Date.now() + STEAM_LINK_STATE_TTL_SECONDS * 1000).toISOString();
   const db = await admin();
 
-  // FASE 2.5.1 — shared-state throttle. Counting the rows the flow already owns
-  // is correct across instances, unlike an in-memory counter.
-  const windowStart = new Date(Date.now() - STEAM_LINK_STATE_TTL_SECONDS * 1000).toISOString();
-  const { count: recentAttempts } = await db
-    .from("steam_link_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .gte("created_at", windowStart);
-  if ((recentAttempts ?? 0) >= STEAM_MAX_ATTEMPTS_PER_WINDOW) {
-    throw new SteamError("STEAM_RATE_LIMITED");
-  }
+  // FASE 2.5.2C — ATOMIC throttle. Counting and deciding used to be two separate
+  // observations, so N simultaneous requests could all read the same count and
+  // all pass. `claim_steam_link_slot` takes a per-user advisory lock inside the
+  // transaction, which makes the decision indivisible across instances.
+  const { data: slot, error: slotError } = await db.rpc("claim_steam_link_slot", {
+    _user_id: userId,
+    _window_seconds: STEAM_LINK_STATE_TTL_SECONDS,
+    _max_attempts: STEAM_MAX_ATTEMPTS_PER_WINDOW,
+  });
+  if (slotError) throw new SteamError("STEAM_INTERNAL_ERROR");
+  if (slot !== true) throw new SteamError("STEAM_RATE_LIMITED");
 
   // Only one live attempt per user: starting a new one burns the old ones.
   await invalidateSteamLinkAttempts(userId);
@@ -129,7 +129,7 @@ export async function peekSteamLinkAttempt(state: string): Promise<ConsumedSteam
  * `STEAM_OPENID_STATE_CONSUMED`.
  */
 export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSteamAttempt> {
-  const attempt = await peekSteamLinkAttempt(state);
+  await peekSteamLinkAttempt(state);
   const db = await admin();
   const stateHash = await hashState(state);
   const now = new Date().toISOString();
@@ -142,9 +142,12 @@ export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSt
     .gt("expires_at", now)
     .select("id, user_id, return_url")
     .maybeSingle();
-  if (!consumed) throw new SteamError("STEAM_OPENID_STATE_CONSUMED");
+  if (!consumed) throw new SteamError("STEAM_STATE_ALREADY_USED");
+  // FASE 2.5.2C — the winning row is the ONLY source of the user binding. There
+  // is no fallback to the earlier read: a state with no owner is not linkable.
+  if (!consumed.user_id) throw new SteamError("STEAM_OPENID_STATE_INVALID");
 
-  return { userId: consumed.user_id ?? attempt.userId, returnUrl: consumed.return_url };
+  return { userId: consumed.user_id, returnUrl: consumed.return_url };
 }
 
 /** Burns an attempt on the failure path so no replay window stays open. */

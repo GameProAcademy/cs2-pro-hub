@@ -10,6 +10,11 @@ export const STEAM_ERROR_CODES = [
   "STEAM_OPENID_STATE_INVALID",
   "STEAM_OPENID_STATE_EXPIRED",
   "STEAM_OPENID_STATE_CONSUMED",
+  // Lost the atomic consume race: another callback consumed this exact state
+  // first. Distinct from "consumed long ago" so replay is observable.
+  "STEAM_STATE_ALREADY_USED",
+  "STEAM_FORBIDDEN",
+
   "STEAM_OPENID_INVALID_RESPONSE",
   "STEAM_OPENID_INVALID_ENDPOINT",
   "STEAM_OPENID_INVALID_REALM",
@@ -81,7 +86,11 @@ export function callbackReason(code: SteamErrorCode): string {
     case "STEAM_OPENID_STATE_INVALID":
     case "STEAM_OPENID_STATE_EXPIRED":
     case "STEAM_OPENID_STATE_CONSUMED":
+    case "STEAM_STATE_ALREADY_USED":
       return "state_invalid";
+    case "STEAM_FORBIDDEN":
+      return "error";
+
     case "STEAM_OPENID_INVALID_ENDPOINT":
     case "STEAM_OPENID_INVALID_REALM":
     case "STEAM_OPENID_INVALID_RETURN_TO":
