@@ -275,10 +275,14 @@ async function buildSteamCorrelation(
   return { evidence, correlations };
 }
 
-
 /**
  * Unlink. NON-destructive by design: matches, metrics, analyses and the identity
  * record are all preserved. Trust is what gets revoked.
+ *
+ * FASE 2.5.2C — one transaction (`public.steam_unlink_commit`): the connection is
+ * disconnected, the ownership proof is revoked and the audit record is written
+ * together, or nothing happens. A recorded `conflict` is NEVER rewritten by an
+ * unlink, so conflict history survives.
  */
 export async function unlinkSteamAccount(userId: string): Promise<{ disconnected: boolean }> {
   const db = await admin();
@@ -287,44 +291,24 @@ export async function unlinkSteamAccount(userId: string): Promise<{ disconnected
 
   await invalidateSteamLinkAttempts(userId);
 
-  const { data: connection } = await db
-    .from("player_connections")
-    .select("id, external_id")
-    .eq("player_id", playerId)
-    .eq("source", "steam")
-    .eq("connection_type", "openid")
-    .maybeSingle();
+  const { data, error } = await db.rpc("steam_unlink_commit", {
+    _user_id: userId,
+    _player_id: playerId,
+    _audit: { source: "steam" } as never,
+  });
 
-  if (!connection) return { disconnected: false };
+  if (error) {
+    if (/STEAM_FORBIDDEN/.test(error.message ?? "")) throw new SteamError("STEAM_FORBIDDEN");
+    console.warn("[steam] steam_unlink_commit_failed");
+    throw new SteamError("STEAM_INTERNAL_ERROR");
+  }
 
-  await db
-    .from("player_connections")
-    .update({
-      status: "disconnected",
-      disconnected_at: now,
-      last_sync_status: null,
-      last_sync_error: null,
-      updated_at: now,
-    })
-    .eq("id", connection.id);
+  const result = (data ?? {}) as { disconnected?: boolean; external_id?: string | null };
+  if (!result.disconnected) return { disconnected: false };
 
-  // The identity row survives (history), but ownership proof is revoked: a
-  // relink must go through Steam again.
-  await db
-    .from("player_identities")
-    .update({
-      is_verified: false,
-      identity_status: "correlated",
-      verification_method: null,
-      verified_at: null,
-      updated_at: now,
-    })
-    .eq("player_id", playerId)
-    .eq("platform", "STEAM");
-
-  await audit(userId, "steam_connection_removed", connection.external_id);
   console.info("[steam] steam_unlink_success");
 
-  await notifySteamLink("steam_unlinked", userId, connection.external_id, null, now);
+  await notifySteamLink("steam_unlinked", userId, result.external_id ?? null, null, now);
   return { disconnected: true };
 }
+
