@@ -121,7 +121,9 @@ describe("steam callback — mandatory assertion fields", () => {
 
   it("rejects claimed_id and identity pointing at different accounts", () => {
     expectRejection(
-      callbackParams({ "openid.identity": "https://steamcommunity.com/openid/id/76561198000000099" }),
+      callbackParams({
+        "openid.identity": "https://steamcommunity.com/openid/id/76561198000000099",
+      }),
     );
   });
 
@@ -152,7 +154,8 @@ describe("steam callback — public payload ceilings", () => {
 
   it("rejects too many parameters", () => {
     const url = new URL(RETURN_URL);
-    for (let i = 0; i <= STEAM_CALLBACK_LIMITS.maxParams; i += 1) url.searchParams.append(`p${i}`, "1");
+    for (let i = 0; i <= STEAM_CALLBACK_LIMITS.maxParams; i += 1)
+      url.searchParams.append(`p${i}`, "1");
     expect(() => assertCallbackPayloadWithinLimits(url)).toThrow();
   });
 
@@ -171,9 +174,9 @@ describe("bulk status ceiling", () => {
 
 describe("email locale resolution", () => {
   it("prefers the saved preference over everything else", () => {
-    expect(resolveEmailLocale({ preferredLocale: "fr", browserLocale: "en-US", country: "BR" })).toBe(
-      "fr",
-    );
+    expect(
+      resolveEmailLocale({ preferredLocale: "fr", browserLocale: "en-US", country: "BR" }),
+    ).toBe("fr");
   });
 
   it("falls back to the browser locale when no preference is saved", () => {

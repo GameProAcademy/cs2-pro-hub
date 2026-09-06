@@ -88,9 +88,8 @@ async function notifySteamLink(
   try {
     const masked = maskSteamId64(steamId64);
     if (!masked) return;
-    const { notifySteamLinked, notifySteamUnlinked } = await import(
-      "@/lib/email/email.events.server"
-    );
+    const { notifySteamLinked, notifySteamUnlinked } =
+      await import("@/lib/email/email.events.server");
     const notify = kind === "steam_linked" ? notifySteamLinked : notifySteamUnlinked;
     await notify({ userId, steamIdMasked: masked, personaName, eventId: occurredAt, occurredAt });
   } catch {

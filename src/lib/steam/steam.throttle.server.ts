@@ -51,9 +51,7 @@ export async function callbackClientHash(request: Request): Promise<string> {
 
 /** Throws `STEAM_CALLBACK_RATE_LIMITED` when this caller is over budget. */
 export async function assertCallbackAllowed(clientHash: string): Promise<void> {
-  const since = new Date(
-    Date.now() - STEAM_CALLBACK_THROTTLE.windowSeconds * 1000,
-  ).toISOString();
+  const since = new Date(Date.now() - STEAM_CALLBACK_THROTTLE.windowSeconds * 1000).toISOString();
   const supabase = await db();
 
   const [total, invalid] = await Promise.all([
@@ -85,9 +83,7 @@ export async function recordCallbackOutcome(
 ): Promise<void> {
   try {
     const supabase = await db();
-    await supabase
-      .from("steam_callback_events")
-      .insert({ client_hash: clientHash, outcome });
+    await supabase.from("steam_callback_events").insert({ client_hash: clientHash, outcome });
   } catch {
     // Intentionally silent: throttling telemetry is not worth a failed link.
   }
