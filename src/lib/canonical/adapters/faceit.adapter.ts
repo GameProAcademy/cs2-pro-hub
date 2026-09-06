@@ -9,11 +9,7 @@
  *
  * No network access here: the caller supplies already-fetched payloads.
  */
-import {
-  isFaceitMatchFinished,
-  isFaceitMatchTerminal,
-  type CanonicalFaceitMatch,
-} from "@/lib/faceit/faceit.mapper";
+import type { CanonicalFaceitMatch } from "@/lib/faceit/faceit.mapper";
 
 import { computeCoverage, quality } from "../canonical.quality";
 import type {
@@ -174,18 +170,11 @@ export function faceitToCanonicalBundles(input: FaceitAdapterInput): CanonicalMa
           finishedAt: (mapped.metadata["finished_at"] as string | null) ?? null,
           durationSeconds: mapped.duration_seconds,
           status: statusOf(mapped),
-          finished: isFaceitMatchFinished({
-            status: mapped.metadata["status"] as string | null,
-            finishedAt: null,
-          })
-            ? true
-            : mapped.finished,
-          terminal: isFaceitMatchTerminal({
-            status: mapped.metadata["status"] as string | null,
-            finishedAt: null,
-          })
-            ? true
-            : mapped.terminal,
+          // Lifecycle comes from the mapper, which already demands real proof
+          // (`finished_at` or an explicitly finished status). Nothing here may
+          // upgrade an unfinished match into a finished one.
+          finished: mapped.finished,
+          terminal: mapped.terminal,
           teamA: teamNames.team_a,
           teamB: teamNames.team_b,
           scoreTeamA: targetSlot === "team_a" ? mapped.score_player : mapped.score_opponent,
