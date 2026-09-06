@@ -72,8 +72,9 @@ export async function persistCanonicalObservation(args: {
 
   const { data, error } = await supabaseAdmin.rpc("persist_canonical_observation", {
     _bundle: payload as never,
-    _owner_player_id: args.ownerPlayerId ?? undefined,
-    _upload_id: args.uploadId ?? undefined,
+    // Omitted (not null) so the routine's own defaults apply.
+    ...(args.ownerPlayerId ? { _owner_player_id: args.ownerPlayerId } : {}),
+    ...(args.uploadId ? { _upload_id: args.uploadId } : {}),
   });
 
   if (error) throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", error.message);
