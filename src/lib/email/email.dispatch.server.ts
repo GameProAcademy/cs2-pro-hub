@@ -135,7 +135,7 @@ export async function sendTransactionalEmail(
       _locale: message.locale ?? "pt-BR",
       _subject: message.subject,
       _provider: providerId,
-      _user_id: message.userId ?? undefined,
+      ...(message.userId ? { _user_id: message.userId } : {}),
       _lease_seconds: EMAIL_LEASE_SECONDS,
     });
 

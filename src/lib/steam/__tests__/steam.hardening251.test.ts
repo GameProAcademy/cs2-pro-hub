@@ -156,20 +156,46 @@ describe("transactional email dispatch", () => {
     expect(outcome.status).toBe("failed");
   });
 
-  it("never sends the same notice twice", async () => {
+  // FASE 2.5.2C — idempotency is owned by the DATABASE
+  // (`public.claim_email_delivery`), not by a process-local set, so it survives a
+  // restart and works across instances. With `persist: false` the claim is
+  // bypassed on purpose; what is asserted here is that ONE claimed delivery costs
+  // exactly one accepted provider call and is never retried after acceptance.
+  it("stops at the first acceptance and never retries an accepted message", async () => {
     let attempts = 0;
     const provider = {
       id: "test",
       async sendTransactionalEmail() {
         attempts += 1;
-        return { status: "sent" as const, providerId: "test", messageId: null };
+        return { status: "accepted" as const, providerId: "test", messageId: "m-1" };
       },
     };
-    const key = `dedupe-${Date.now()}`;
-    const options = { provider, persist: false };
-    await sendTransactionalEmail({ ...message, idempotencyKey: key }, options);
-    const second = await sendTransactionalEmail({ ...message, idempotencyKey: key }, options);
+    const outcome = await sendTransactionalEmail(
+      { ...message, idempotencyKey: `accept-${Date.now()}` },
+      { provider, persist: false },
+    );
     expect(attempts).toBe(1);
-    expect(second).toEqual({ status: "skipped", reason: "duplicate" });
+    expect(outcome).toEqual({ status: "accepted", providerId: "test", messageId: "m-1" });
   });
+
+  it("never retries a permanent refusal", async () => {
+    let attempts = 0;
+    const outcome = await sendTransactionalEmail(
+      { ...message, idempotencyKey: `permanent-${Date.now()}` },
+      {
+        persist: false,
+        sleepImpl: async () => {},
+        provider: {
+          id: "test",
+          async sendTransactionalEmail() {
+            attempts += 1;
+            return { status: "failed", reason: "EMAIL_PROVIDER_ERROR_422", retryable: false };
+          },
+        },
+      },
+    );
+    expect(attempts).toBe(1);
+    expect(outcome.status).toBe("failed");
+  });
+
 });
