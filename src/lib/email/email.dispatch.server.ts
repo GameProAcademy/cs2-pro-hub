@@ -206,10 +206,27 @@ export async function sendTransactionalEmail(
     return finish({ status: "skipped", reason: "not_configured" }, 0, "none");
   }
 
+  // FASE 2.6.0 — GLOBAL attempt budget for this idempotency key. The claim
+  // returns how many attempts the message already spent; when the budget is
+  // exhausted the message is permanently failed instead of retried forever.
+  const remaining = MAX_TOTAL_EMAIL_ATTEMPTS - previousAttempts;
+  if (persist && remaining <= 0) {
+    console.warn(
+      `[email] retry_budget_exhausted kind=${message.kind}` +
+        ` idempotency=${message.idempotencyKey} attempts=${previousAttempts}`,
+    );
+    return finish(
+      { status: "failed", reason: "EMAIL_RETRY_BUDGET_EXHAUSTED", retryable: false },
+      0,
+      resolved.provider.id,
+    );
+  }
+
   const { outcome, attempts } = await attemptDelivery(
     resolved.provider,
     message,
     options.sleepImpl ?? sleep,
+    persist ? remaining : MAX_EMAIL_ATTEMPTS,
   );
   return finish(outcome, attempts, resolved.provider.id);
 }
