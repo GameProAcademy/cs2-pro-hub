@@ -993,66 +993,156 @@ export type Database = {
           },
         ]
       }
+      match_participants: {
+        Row: {
+          created_at: string
+          external_player_id: string | null
+          id: string
+          identity_confidence: number | null
+          identity_status: Database["public"]["Enums"]["identity_link_status"]
+          internal_player_id: string | null
+          is_target_player: boolean
+          match_id: string
+          metadata: Json
+          nickname_snapshot: string | null
+          participant_key: string
+          source: Database["public"]["Enums"]["data_source"]
+          steam_id64: string | null
+          team: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          external_player_id?: string | null
+          id?: string
+          identity_confidence?: number | null
+          identity_status?: Database["public"]["Enums"]["identity_link_status"]
+          internal_player_id?: string | null
+          is_target_player?: boolean
+          match_id: string
+          metadata?: Json
+          nickname_snapshot?: string | null
+          participant_key: string
+          source: Database["public"]["Enums"]["data_source"]
+          steam_id64?: string | null
+          team?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          external_player_id?: string | null
+          id?: string
+          identity_confidence?: number | null
+          identity_status?: Database["public"]["Enums"]["identity_link_status"]
+          internal_player_id?: string | null
+          is_target_player?: boolean
+          match_id?: string
+          metadata?: Json
+          nickname_snapshot?: string | null
+          participant_key?: string
+          source?: Database["public"]["Enums"]["data_source"]
+          steam_id64?: string | null
+          team?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_participants_internal_player_id_fkey"
+            columns: ["internal_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_participants_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rounds: {
         Row: {
-          bomb_defused: boolean
-          bomb_exploded: boolean
-          bomb_planted: boolean
+          bomb_defused: boolean | null
+          bomb_exploded: boolean | null
+          bomb_planted: boolean | null
           buy_context: string | null
           created_at: string
           duration_seconds: number | null
           end_tick: number | null
+          end_time_seconds: number | null
           id: string
           match_id: string
+          metadata: Json
           player_equipment_value: number | null
           player_money_end: number | null
           player_money_start: number | null
           player_side: string | null
           player_survived: boolean | null
+          quality: Json
           round_number: number
           start_tick: number | null
+          start_time_seconds: number | null
+          win_reason: string | null
           winner_side: string | null
           winner_team: string | null
+          winning_side: string | null
+          winning_team: string | null
         }
         Insert: {
-          bomb_defused?: boolean
-          bomb_exploded?: boolean
-          bomb_planted?: boolean
+          bomb_defused?: boolean | null
+          bomb_exploded?: boolean | null
+          bomb_planted?: boolean | null
           buy_context?: string | null
           created_at?: string
           duration_seconds?: number | null
           end_tick?: number | null
+          end_time_seconds?: number | null
           id?: string
           match_id: string
+          metadata?: Json
           player_equipment_value?: number | null
           player_money_end?: number | null
           player_money_start?: number | null
           player_side?: string | null
           player_survived?: boolean | null
+          quality?: Json
           round_number: number
           start_tick?: number | null
+          start_time_seconds?: number | null
+          win_reason?: string | null
           winner_side?: string | null
           winner_team?: string | null
+          winning_side?: string | null
+          winning_team?: string | null
         }
         Update: {
-          bomb_defused?: boolean
-          bomb_exploded?: boolean
-          bomb_planted?: boolean
+          bomb_defused?: boolean | null
+          bomb_exploded?: boolean | null
+          bomb_planted?: boolean | null
           buy_context?: string | null
           created_at?: string
           duration_seconds?: number | null
           end_tick?: number | null
+          end_time_seconds?: number | null
           id?: string
           match_id?: string
+          metadata?: Json
           player_equipment_value?: number | null
           player_money_end?: number | null
           player_money_start?: number | null
           player_side?: string | null
           player_survived?: boolean | null
+          quality?: Json
           round_number?: number
           start_tick?: number | null
+          start_time_seconds?: number | null
+          win_reason?: string | null
           winner_side?: string | null
           winner_team?: string | null
+          winning_side?: string | null
+          winning_team?: string | null
         }
         Relationships: [
           {
@@ -1064,81 +1154,295 @@ export type Database = {
           },
         ]
       }
+      match_series: {
+        Row: {
+          best_of: number | null
+          canonical_schema_version: number
+          created_at: string
+          duration_seconds: number | null
+          external_series_id: string | null
+          finished_at: string | null
+          game: string
+          id: string
+          maps_won_team_a: number | null
+          maps_won_team_b: number | null
+          metadata: Json
+          quality: Json
+          source: Database["public"]["Enums"]["data_source"]
+          started_at: string | null
+          status: string
+          team_a: string | null
+          team_b: string | null
+          updated_at: string
+          winner_team: string | null
+        }
+        Insert: {
+          best_of?: number | null
+          canonical_schema_version?: number
+          created_at?: string
+          duration_seconds?: number | null
+          external_series_id?: string | null
+          finished_at?: string | null
+          game?: string
+          id?: string
+          maps_won_team_a?: number | null
+          maps_won_team_b?: number | null
+          metadata?: Json
+          quality?: Json
+          source: Database["public"]["Enums"]["data_source"]
+          started_at?: string | null
+          status?: string
+          team_a?: string | null
+          team_b?: string | null
+          updated_at?: string
+          winner_team?: string | null
+        }
+        Update: {
+          best_of?: number | null
+          canonical_schema_version?: number
+          created_at?: string
+          duration_seconds?: number | null
+          external_series_id?: string | null
+          finished_at?: string | null
+          game?: string
+          id?: string
+          maps_won_team_a?: number | null
+          maps_won_team_b?: number | null
+          metadata?: Json
+          quality?: Json
+          source?: Database["public"]["Enums"]["data_source"]
+          started_at?: string | null
+          status?: string
+          team_a?: string | null
+          team_b?: string | null
+          updated_at?: string
+          winner_team?: string | null
+        }
+        Relationships: []
+      }
+      match_sources: {
+        Row: {
+          created_at: string
+          external_match_id: string | null
+          external_parent_id: string | null
+          fetched_at: string
+          fingerprint: string | null
+          id: string
+          match_id: string
+          metadata: Json
+          observation_count: number
+          quality: Json
+          series_id: string | null
+          source: Database["public"]["Enums"]["data_source"]
+          source_contract_version: string
+          source_updated_at: string | null
+          source_version: string | null
+          status: string
+          updated_at: string
+          upload_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_match_id?: string | null
+          external_parent_id?: string | null
+          fetched_at: string
+          fingerprint?: string | null
+          id?: string
+          match_id: string
+          metadata?: Json
+          observation_count?: number
+          quality?: Json
+          series_id?: string | null
+          source: Database["public"]["Enums"]["data_source"]
+          source_contract_version: string
+          source_updated_at?: string | null
+          source_version?: string | null
+          status?: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_match_id?: string | null
+          external_parent_id?: string | null
+          fetched_at?: string
+          fingerprint?: string | null
+          id?: string
+          match_id?: string
+          metadata?: Json
+          observation_count?: number
+          quality?: Json
+          series_id?: string | null
+          source?: Database["public"]["Enums"]["data_source"]
+          source_contract_version?: string
+          source_updated_at?: string | null
+          source_version?: string | null
+          status?: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_sources_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sources_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "match_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sources_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
+          canonical_schema_version: number
+          canonical_source: Database["public"]["Enums"]["data_source"] | null
+          canonical_status: string | null
+          content_fingerprint: string | null
+          coverage: Json
           created_at: string
           data_source: Database["public"]["Enums"]["data_source"]
           demo_metadata: Json | null
           duration_seconds: number | null
           external_match_id: string | null
+          finished: boolean
+          finished_at: string | null
+          game: string
           game_version: string | null
           id: string
           map: string | null
+          map_number: number | null
           match_date: string | null
           platform: string | null
-          player_id: string
+          played_at: string | null
+          player_id: string | null
+          quality: Json
           result: Database["public"]["Enums"]["match_result"] | null
+          round_count: number | null
+          round_source: Database["public"]["Enums"]["data_source"] | null
           rounds: number | null
           score_opponent: number | null
           score_player: number | null
+          score_team_a: number | null
+          score_team_b: number | null
+          series_id: string | null
           source_complete: boolean
           source_fetch_attempts: number
           source_fetched_at: string | null
           source_metadata: Json | null
           source_version: string | null
+          started_at: string | null
+          team_a: string | null
+          team_b: string | null
           team_opponent: string | null
           team_player: string | null
+          terminal: boolean
           upload_id: string | null
+          winner_team: string | null
         }
         Insert: {
+          canonical_schema_version?: number
+          canonical_source?: Database["public"]["Enums"]["data_source"] | null
+          canonical_status?: string | null
+          content_fingerprint?: string | null
+          coverage?: Json
           created_at?: string
           data_source?: Database["public"]["Enums"]["data_source"]
           demo_metadata?: Json | null
           duration_seconds?: number | null
           external_match_id?: string | null
+          finished?: boolean
+          finished_at?: string | null
+          game?: string
           game_version?: string | null
           id?: string
           map?: string | null
+          map_number?: number | null
           match_date?: string | null
           platform?: string | null
-          player_id: string
+          played_at?: string | null
+          player_id?: string | null
+          quality?: Json
           result?: Database["public"]["Enums"]["match_result"] | null
+          round_count?: number | null
+          round_source?: Database["public"]["Enums"]["data_source"] | null
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          score_team_a?: number | null
+          score_team_b?: number | null
+          series_id?: string | null
           source_complete?: boolean
           source_fetch_attempts?: number
           source_fetched_at?: string | null
           source_metadata?: Json | null
           source_version?: string | null
+          started_at?: string | null
+          team_a?: string | null
+          team_b?: string | null
           team_opponent?: string | null
           team_player?: string | null
+          terminal?: boolean
           upload_id?: string | null
+          winner_team?: string | null
         }
         Update: {
+          canonical_schema_version?: number
+          canonical_source?: Database["public"]["Enums"]["data_source"] | null
+          canonical_status?: string | null
+          content_fingerprint?: string | null
+          coverage?: Json
           created_at?: string
           data_source?: Database["public"]["Enums"]["data_source"]
           demo_metadata?: Json | null
           duration_seconds?: number | null
           external_match_id?: string | null
+          finished?: boolean
+          finished_at?: string | null
+          game?: string
           game_version?: string | null
           id?: string
           map?: string | null
+          map_number?: number | null
           match_date?: string | null
           platform?: string | null
-          player_id?: string
+          played_at?: string | null
+          player_id?: string | null
+          quality?: Json
           result?: Database["public"]["Enums"]["match_result"] | null
+          round_count?: number | null
+          round_source?: Database["public"]["Enums"]["data_source"] | null
           rounds?: number | null
           score_opponent?: number | null
           score_player?: number | null
+          score_team_a?: number | null
+          score_team_b?: number | null
+          series_id?: string | null
           source_complete?: boolean
           source_fetch_attempts?: number
           source_fetched_at?: string | null
           source_metadata?: Json | null
           source_version?: string | null
+          started_at?: string | null
+          team_a?: string | null
+          team_b?: string | null
           team_opponent?: string | null
           team_player?: string | null
+          terminal?: boolean
           upload_id?: string | null
+          winner_team?: string | null
         }
         Relationships: [
           {
@@ -1146,6 +1450,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "match_series"
             referencedColumns: ["id"]
           },
           {
@@ -1629,8 +1940,13 @@ export type Database = {
           headshot: boolean | null
           id: string
           match_id: string
+          match_source_id: string | null
+          quality: Json
           round_id: string | null
           round_number: number
+          source_actor_external_id: string | null
+          source_assister_external_id: string | null
+          source_victim_external_id: string | null
           tick: number | null
           time_seconds: number | null
           victim_steam_id: string | null
@@ -1647,8 +1963,13 @@ export type Database = {
           headshot?: boolean | null
           id?: string
           match_id: string
+          match_source_id?: string | null
+          quality?: Json
           round_id?: string | null
           round_number: number
+          source_actor_external_id?: string | null
+          source_assister_external_id?: string | null
+          source_victim_external_id?: string | null
           tick?: number | null
           time_seconds?: number | null
           victim_steam_id?: string | null
@@ -1665,8 +1986,13 @@ export type Database = {
           headshot?: boolean | null
           id?: string
           match_id?: string
+          match_source_id?: string | null
+          quality?: Json
           round_id?: string | null
           round_number?: number
+          source_actor_external_id?: string | null
+          source_assister_external_id?: string | null
+          source_victim_external_id?: string | null
           tick?: number | null
           time_seconds?: number | null
           victim_steam_id?: string | null
@@ -1681,7 +2007,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "round_events_match_source_id_fkey"
+            columns: ["match_source_id"]
+            isOneToOne: false
+            referencedRelation: "match_sources"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "round_events_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "match_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_players: {
+        Row: {
+          assists: number | null
+          buy_context: string | null
+          created_at: string
+          damage: number | null
+          deaths: number | null
+          equipment_value: number | null
+          flash_assists: number | null
+          id: string
+          internal_player_id: string | null
+          kills: number | null
+          match_id: string
+          metadata: Json
+          money_end: number | null
+          money_start: number | null
+          opening_death: boolean | null
+          opening_kill: boolean | null
+          participant_key: string
+          round_id: string | null
+          round_number: number
+          side: string | null
+          survived: boolean | null
+          trade_kill: boolean | null
+          traded: boolean | null
+        }
+        Insert: {
+          assists?: number | null
+          buy_context?: string | null
+          created_at?: string
+          damage?: number | null
+          deaths?: number | null
+          equipment_value?: number | null
+          flash_assists?: number | null
+          id?: string
+          internal_player_id?: string | null
+          kills?: number | null
+          match_id: string
+          metadata?: Json
+          money_end?: number | null
+          money_start?: number | null
+          opening_death?: boolean | null
+          opening_kill?: boolean | null
+          participant_key: string
+          round_id?: string | null
+          round_number: number
+          side?: string | null
+          survived?: boolean | null
+          trade_kill?: boolean | null
+          traded?: boolean | null
+        }
+        Update: {
+          assists?: number | null
+          buy_context?: string | null
+          created_at?: string
+          damage?: number | null
+          deaths?: number | null
+          equipment_value?: number | null
+          flash_assists?: number | null
+          id?: string
+          internal_player_id?: string | null
+          kills?: number | null
+          match_id?: string
+          metadata?: Json
+          money_end?: number | null
+          money_start?: number | null
+          opening_death?: boolean | null
+          opening_kill?: boolean | null
+          participant_key?: string
+          round_id?: string | null
+          round_number?: number
+          side?: string | null
+          survived?: boolean | null
+          trade_kill?: boolean | null
+          traded?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_players_internal_player_id_fkey"
+            columns: ["internal_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_players_round_id_fkey"
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "match_rounds"
@@ -2031,6 +2464,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      canonical_source_priority: {
+        Args: { _source: Database["public"]["Enums"]["data_source"] }
+        Returns: number
+      }
       claim_email_delivery: {
         Args: {
           _idempotency_key: string
@@ -2078,12 +2515,18 @@ export type Database = {
       iso_alpha2_codes: { Args: never; Returns: string[] }
       jsonb_has_sensitive_key: { Args: { _value: Json }; Returns: boolean }
       owns_analysis: { Args: { _analysis_id: string }; Returns: boolean }
+      owns_canonical_match: { Args: { _match_id: string }; Returns: boolean }
+      owns_canonical_series: { Args: { _series_id: string }; Returns: boolean }
       owns_conversation: {
         Args: { _conversation_id: string }
         Returns: boolean
       }
       owns_plan: { Args: { _plan_id: string }; Returns: boolean }
       owns_player: { Args: { _player_id: string }; Returns: boolean }
+      persist_canonical_observation: {
+        Args: { _bundle: Json; _owner_player_id?: string; _upload_id?: string }
+        Returns: Json
+      }
       recover_stale_faceit_sync_jobs: {
         Args: { _max_attempts?: number; _stale_seconds?: number }
         Returns: number

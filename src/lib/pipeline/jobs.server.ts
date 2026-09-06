@@ -15,6 +15,8 @@ import {
   MAX_JOB_RETRIES,
   SCHEMA_VERSION,
 } from "@/config/pipeline";
+import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
+import { persistCanonicalObservation } from "@/lib/canonical/canonical.persistence.server";
 import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
@@ -208,6 +210,21 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       match,
       metrics,
       features,
+    });
+
+    // FASE 2.6 — the same demo is ALSO written through the source-neutral
+    // canonical engine (series/observation/participants/round state). It
+    // converges on the same match row via the upload id, so no duplicate match
+    // is created, and it fails loudly instead of leaving half the model behind.
+    await persistCanonicalObservation({
+      bundle: demoToCanonicalBundle({
+        parsed: match,
+        fingerprint: job.demo_sha256 ?? null,
+        targetSteamId: steamId,
+        internalPlayerId: player.id,
+      }),
+      ownerPlayerId: player.id,
+      uploadId: job.upload_id,
     });
 
     const durationMs = Date.now() - startedAt;
