@@ -10,7 +10,6 @@
  * No network access here: the caller supplies already-fetched payloads.
  */
 import {
-  faceitSeriesShape,
   isFaceitMatchFinished,
   isFaceitMatchTerminal,
   type CanonicalFaceitMatch,
@@ -98,7 +97,6 @@ export function faceitToCanonicalBundles(input: FaceitAdapterInput): CanonicalMa
     metadata: {},
   }));
 
-  const series = faceitSeriesShape(null);
   const isSeries = Boolean(mapped.metadata["is_series"]);
   const bestOf = typeof mapped.metadata["best_of"] === "number" ? mapped.metadata["best_of"] : null;
   const segments =
@@ -259,6 +257,3 @@ export function faceitToCanonicalBundles(input: FaceitAdapterInput): CanonicalMa
     };
   });
 }
-
-/** Unused import guard: keeps the series-shape helper contract referenced. */
-export const FACEIT_SERIES_SHAPE_CONTRACT = typeof series;
