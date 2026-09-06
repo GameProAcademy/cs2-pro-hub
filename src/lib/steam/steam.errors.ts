@@ -89,8 +89,8 @@ export function callbackReason(code: SteamErrorCode): string {
     case "STEAM_STATE_ALREADY_USED":
       return "state_invalid";
     case "STEAM_FORBIDDEN":
+      return "error";
 
-      return "state_invalid";
     case "STEAM_OPENID_INVALID_ENDPOINT":
     case "STEAM_OPENID_INVALID_REALM":
     case "STEAM_OPENID_INVALID_RETURN_TO":
