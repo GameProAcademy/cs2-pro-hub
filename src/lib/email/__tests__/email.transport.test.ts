@@ -29,7 +29,7 @@ const message = {
 const config = {
   provider: "hostinger" as const,
   token: "secret-token",
-  sender: { address: "no-reply@gamepro.academy", name: "GamePro" },
+  sender: { address: "hub@gamepro.academy", name: "GamePro" },
 };
 
 function response(status: number, body: unknown, headers: Record<string, string> = {}): Response {
@@ -63,14 +63,14 @@ describe("email configuration", () => {
 
   it("never activates a provider with a sender but no token", () => {
     process.env["EMAIL_PROVIDER"] = "hostinger";
-    process.env["EMAIL_FROM_EMAIL"] = "no-reply@gamepro.academy";
+    process.env["EMAIL_FROM_EMAIL"] = "hub@gamepro.academy";
     expect(resolveEmailConfig()).toBeNull();
   });
 
   it("refuses an unknown provider instead of guessing", () => {
     process.env["EMAIL_PROVIDER"] = "smtp";
     process.env["HOSTINGER_MAIL_API_TOKEN"] = "t";
-    process.env["EMAIL_FROM_EMAIL"] = "no-reply@gamepro.academy";
+    process.env["EMAIL_FROM_EMAIL"] = "hub@gamepro.academy";
     expect(resolveEmailConfig()).toBeNull();
     expect(emailConfigStatus().provider).toBe("none");
   });
@@ -78,19 +78,19 @@ describe("email configuration", () => {
   it("resolves Hostinger when token and sender are present", () => {
     process.env["EMAIL_PROVIDER"] = "hostinger";
     process.env["HOSTINGER_MAIL_API_TOKEN"] = "t";
-    process.env["EMAIL_FROM_EMAIL"] = "no-reply@gamepro.academy";
+    process.env["EMAIL_FROM_EMAIL"] = "hub@gamepro.academy";
     process.env["EMAIL_FROM_NAME"] = "GamePro";
     expect(resolveEmailConfig()?.provider).toBe("hostinger");
     expect(resolveEmailProvider().provider?.id).toBe("hostinger");
     const status = emailConfigStatus();
     expect(status.state).toBe("configured");
-    expect(status.senderAddress).toBe("no-reply@gamepro.academy");
+    expect(status.senderAddress).toBe("hub@gamepro.academy");
   });
 
   it("exposes booleans only — never the token", () => {
     process.env["EMAIL_PROVIDER"] = "hostinger";
     process.env["HOSTINGER_MAIL_API_TOKEN"] = "super-secret";
-    process.env["EMAIL_FROM_EMAIL"] = "no-reply@gamepro.academy";
+    process.env["EMAIL_FROM_EMAIL"] = "hub@gamepro.academy";
     expect(JSON.stringify(emailConfigStatus())).not.toContain("super-secret");
   });
 });

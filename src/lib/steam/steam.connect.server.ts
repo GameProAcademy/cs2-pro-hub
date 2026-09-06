@@ -103,6 +103,11 @@ export interface SteamConnectResult {
   profile: SteamProfileView;
   reconnected: boolean;
   enriched: boolean;
+  /**
+   * `pending` means the ownership link committed but the supplemental
+   * correlation evidence could not be built. Never reported as complete.
+   */
+  correlationStatus: "complete" | "pending";
 }
 
 /**
@@ -130,7 +135,20 @@ export async function finalizeSteamConnection(
   const now = new Date().toISOString();
 
   // Read-only: builds the evidence/correlation payload. Nothing is written here.
-  const { evidence, correlations } = await buildSteamCorrelation(userId, playerId, steamId64, now);
+  // FASE 2.6.0 — correlation is SUPPLEMENTAL. If building it fails, the ownership
+  // link still proceeds, but the state is recorded honestly as `pending`: the
+  // system never claims "fully correlated" without evidence.
+  let evidence: Array<Record<string, unknown>> = [];
+  let correlations: Array<Record<string, unknown>> = [];
+  let correlationStatus: "complete" | "pending" = "complete";
+  try {
+    const built = await buildSteamCorrelation(userId, playerId, steamId64, now);
+    evidence = built.evidence;
+    correlations = built.correlations;
+  } catch {
+    correlationStatus = "pending";
+    console.warn("[steam] steam_correlation_build_failed correlation_status=pending");
+  }
 
   const { data, error } = await db.rpc("steam_link_commit", {
     _user_id: userId,
@@ -156,6 +174,7 @@ export async function finalizeSteamConnection(
       source: "steam",
       steam_id_64_masked: maskSteamId64(steamId64),
       enriched,
+      correlation_status: correlationStatus,
     } as never,
   });
 
@@ -172,13 +191,23 @@ export async function finalizeSteamConnection(
   if (!result.connection_id) throw new SteamError("STEAM_INTERNAL_ERROR");
   const reconnected = Boolean(result.reconnected);
 
-  console.info(`[steam] steam_link_success reconnected=${reconnected} enriched=${enriched}`);
+  console.info(
+    `[steam] steam_link_success reconnected=${reconnected} enriched=${enriched}` +
+      ` correlation_status=${correlationStatus}`,
+  );
 
   // FASE 2.5.2 — email LAST: identity committed, correlation written, audit
   // written. A delivery failure is logged, never rolled back onto the link.
   await notifySteamLink("steam_linked", userId, steamId64, profile.personaName ?? null, now);
 
-  return { connectionId: result.connection_id, playerId, profile, reconnected, enriched };
+  return {
+    connectionId: result.connection_id,
+    playerId,
+    profile,
+    reconnected,
+    enriched,
+    correlationStatus,
+  };
 }
 
 interface SteamCorrelationPayload {
