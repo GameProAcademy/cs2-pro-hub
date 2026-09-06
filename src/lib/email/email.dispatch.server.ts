@@ -75,14 +75,21 @@ export async function attemptDelivery(
   provider: EmailTransport,
   message: TransactionalEmailMessage,
   sleepImpl: (ms: number) => Promise<void> = sleep,
+  /**
+   * FASE 2.6.0 — attempts allowed in THIS call. The caller narrows it to the
+   * message's remaining GLOBAL budget, so a message can never restart 1..3
+   * forever, one call at a time.
+   */
+  maxAttempts: number = MAX_EMAIL_ATTEMPTS,
 ): Promise<{ outcome: EmailSendOutcome; attempts: number }> {
   let lastFailure: EmailSendOutcome = {
     status: "failed",
     reason: "EMAIL_NOT_ATTEMPTED",
     retryable: false,
   };
+  const ceiling = Math.max(1, Math.min(maxAttempts, MAX_EMAIL_ATTEMPTS));
 
-  for (let attempt = 1; attempt <= MAX_EMAIL_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= ceiling; attempt += 1) {
     let outcome: EmailSendOutcome;
     try {
       outcome = await provider.sendTransactionalEmail(message);
