@@ -108,12 +108,12 @@ export async function attemptDelivery(
     if (outcome.status !== "failed" || !outcome.retryable) return { outcome, attempts: attempt };
 
     lastFailure = outcome;
-    if (attempt < MAX_EMAIL_ATTEMPTS) {
+    if (attempt < ceiling) {
       await sleepImpl(backoffFor(attempt, outcome.retryAfterSeconds ?? null));
     }
   }
 
-  return { outcome: lastFailure, attempts: MAX_EMAIL_ATTEMPTS };
+  return { outcome: lastFailure, attempts: ceiling };
 }
 
 interface ClaimResult {
