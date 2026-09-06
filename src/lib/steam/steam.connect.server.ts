@@ -181,25 +181,33 @@ export async function finalizeSteamConnection(
   return { connectionId: result.connection_id, playerId, profile, reconnected, enriched };
 }
 
+interface SteamCorrelationPayload {
+  evidence: Array<Record<string, unknown>>;
+  correlations: Array<Record<string, unknown>>;
+}
 
 /**
- * Records the ownership proof and, when another source independently reports the
- * same SteamID64, the resulting correlation evidence. FACEIT/Gamers Club
- * identities are only ever promoted to `strongly_correlated` — `verified`
- * remains reserved for a source that authenticated the user itself.
+ * BUILDS (never writes) the ownership proof and, when another source
+ * independently reports the same SteamID64, the resulting correlation evidence.
+ * FACEIT/Gamers Club identities are only ever promoted to `strongly_correlated` —
+ * `verified` remains reserved for a source that authenticated the user itself.
+ *
+ * FASE 2.5.2C — the returned payload is applied by `public.steam_link_commit` in
+ * the SAME transaction as the connection and the identity, so evidence can no
+ * longer be lost while the link is kept.
  */
-async function recordSteamCorrelation(
+async function buildSteamCorrelation(
   userId: string,
   playerId: string,
   steamId64: string,
-): Promise<void> {
+  now: string,
+): Promise<SteamCorrelationPayload> {
   const db = await admin();
   const { evidenceValueHash } = await import("@/lib/identity/identity.normalize");
   const { EVIDENCE_WEIGHTS } = await import("@/lib/identity/identity.types");
-  const now = new Date().toISOString();
   const hashed = evidenceValueHash(steamId64);
 
-  const rows: Array<Record<string, unknown>> = [
+  const evidence: Array<Record<string, unknown>> = [
     {
       user_id: userId,
       // FASE 2.5.1 — this side of the pair is the INTERNAL account, not an
@@ -218,6 +226,7 @@ async function recordSteamCorrelation(
       observed_at: now,
     },
   ];
+  const correlations: Array<Record<string, unknown>> = [];
 
   // Other sources that publish a SteamID64 for this player.
   const { data: connections } = await db
@@ -232,7 +241,7 @@ async function recordSteamCorrelation(
     const reported = profile?.["steam_id_64"];
     if (typeof reported !== "string" || reported.length === 0) continue;
     const matches = reported === steamId64;
-    rows.push({
+    evidence.push({
       user_id: userId,
       identity_a_source: connection.source,
       identity_a_id: connection.external_id,
@@ -246,7 +255,6 @@ async function recordSteamCorrelation(
       observed_at: now,
     });
 
-    const nextStatus = matches ? "strongly_correlated" : "conflict";
     const platform =
       connection.source === "faceit"
         ? "FACEIT"
@@ -255,30 +263,18 @@ async function recordSteamCorrelation(
           : null;
     if (!platform) continue;
 
-    const { data: identity } = await db
-      .from("player_identities")
-      .select("id, identity_status, confidence_score")
-      .eq("player_id", playerId)
-      .eq("platform", platform)
-      .maybeSingle();
-    // A `verified` identity is never downgraded by heuristic evidence, and a
+    // A `verified` identity is never downgraded (the routine skips it), and a
     // conflict is never resolved silently — it is recorded as a conflict.
-    if (!identity || identity.identity_status === "verified") continue;
-    await db
-      .from("player_identities")
-      .update({
-        identity_status: nextStatus,
-        confidence_score: matches
-          ? Math.max(Number(identity.confidence_score ?? 0), EVIDENCE_WEIGHTS.steam_id64.weight)
-          : Number(identity.confidence_score ?? 0),
-        updated_at: now,
-      })
-      .eq("id", identity.id);
+    correlations.push({
+      platform,
+      identity_status: matches ? "strongly_correlated" : "conflict",
+      confidence_score: matches ? EVIDENCE_WEIGHTS.steam_id64.weight : 0,
+    });
   }
 
-  const { error } = await db.from("identity_correlation_evidence").insert(rows as never);
-  if (error) console.warn("[steam] correlation_evidence_write_failed");
+  return { evidence, correlations };
 }
+
 
 /**
  * Unlink. NON-destructive by design: matches, metrics, analyses and the identity
