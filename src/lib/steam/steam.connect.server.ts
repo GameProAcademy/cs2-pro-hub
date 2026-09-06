@@ -108,6 +108,13 @@ export interface SteamConnectResult {
 /**
  * Finalises the link after a VALIDATED OpenID assertion.
  * `steamId64` always comes from `validateSteamCallback`, never from the browser.
+ *
+ * FASE 2.5.2C — the write is ATOMIC. Connection, identity, correlation evidence
+ * and the audit record are applied by `public.steam_link_commit` inside ONE
+ * database transaction, so a failure halfway can no longer leave a connected
+ * connection with an unverified identity, or a link with no audit trail. The
+ * routine re-checks ownership and takeover server-side; the partial unique
+ * indexes remain the last line of defence.
  */
 export async function finalizeSteamConnection(
   userId: string,
@@ -117,140 +124,63 @@ export async function finalizeSteamConnection(
   const playerId = await requireSteamPlayerId(userId);
   const { profile, enriched } = await resolveSteamProfile(steamId64);
 
-  // 1. Unique ownership, application side.
-  const { data: connectionOwner } = await db
-    .from("player_connections")
-    .select("id, player_id")
-    .eq("source", "steam")
-    .eq("external_id", steamId64)
-    .maybeSingle();
-  if (connectionOwner && connectionOwner.player_id !== playerId) {
-    throw new SteamError("STEAM_DUPLICATE_ACCOUNT");
-  }
-
-  const { data: identityOwner } = await db
-    .from("player_identities")
-    .select("id, player_id")
-    .eq("platform", "STEAM")
-    .eq("external_id", steamId64)
-    .maybeSingle();
-  if (identityOwner && identityOwner.player_id !== playerId) {
-    throw new SteamError("STEAM_DUPLICATE_ACCOUNT");
-  }
-
   const fields = mapSteamConnectionFields(profile, steamSourceVersion());
   assertSafeConnectionMetadata(fields.metadata);
+  const identity = mapSteamIdentityFields(profile);
   const now = new Date().toISOString();
 
-  // 2. Connection: one row per (player, source, connection_type). Relinking
-  //    updates it in place instead of creating a second connection.
-  const { data: existing } = await db
-    .from("player_connections")
-    .select("id")
-    .eq("player_id", playerId)
-    .eq("source", "steam")
-    .eq("connection_type", "openid")
-    .maybeSingle();
+  // Read-only: builds the evidence/correlation payload. Nothing is written here.
+  const { evidence, correlations } = await buildSteamCorrelation(userId, playerId, steamId64, now);
 
-  const payload = {
-    external_id: fields.external_id,
-    external_username: fields.external_username,
-    profile_url: fields.profile_url,
-    profile_locator_type: fields.profile_locator_type,
-    profile_slug: fields.profile_slug,
-    metadata: fields.metadata as never,
-    status: "connected" as const,
-    connected_at: now,
-    disconnected_at: null,
-    last_sync_status: null,
-    last_sync_error: null,
-    updated_at: now,
-  };
-
-  let connectionId: string;
-  const reconnected = Boolean(existing);
-  try {
-    if (existing) {
-      const { data, error } = await db
-        .from("player_connections")
-        .update(payload)
-        .eq("id", existing.id)
-        .select("id")
-        .single();
-      if (error) throw error;
-      connectionId = data.id;
-    } else {
-      const { data, error } = await db
-        .from("player_connections")
-        .insert({
-          player_id: playerId,
-          source: "steam",
-          connection_type: "openid",
-          ...payload,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      connectionId = data.id;
-    }
-  } catch (error) {
-    if (isUniqueViolation(error)) throw new SteamError("STEAM_DUPLICATE_ACCOUNT");
-    throw new SteamError("STEAM_INTERNAL_ERROR");
-  }
-
-  // 3. Identity: `verified` because the OFFICIAL Steam sign-in succeeded.
-  const identity = mapSteamIdentityFields(profile);
-  try {
-    const { data: ownIdentity } = await db
-      .from("player_identities")
-      .select("id")
-      .eq("player_id", playerId)
-      .eq("platform", "STEAM")
-      .maybeSingle();
-
-    const identityPayload = {
-      external_id: identity.external_id,
+  const { data, error } = await db.rpc("steam_link_commit", {
+    _user_id: userId,
+    _player_id: playerId,
+    _steam_id: steamId64,
+    _connection: {
+      external_username: fields.external_username,
+      profile_url: fields.profile_url,
+      profile_locator_type: fields.profile_locator_type,
+      profile_slug: fields.profile_slug,
+      metadata: fields.metadata,
+    } as never,
+    _identity: {
       username: identity.username,
       profile_url: identity.profile_url,
       profile_locator_type: identity.profile_locator_type,
       profile_slug: identity.profile_slug,
-      is_verified: true,
-      identity_status: "verified" as const,
-      confidence_score: 1,
-      verification_method: "openid",
-      verified_at: now,
-      updated_at: now,
-    };
+    } as never,
+    _evidence: evidence as never,
+    _correlations: correlations as never,
+    // The full SteamID64 is NEVER written to the audit log.
+    _audit: {
+      source: "steam",
+      steam_id_64_masked: maskSteamId64(steamId64),
+      enriched,
+    } as never,
+  });
 
-    if (ownIdentity) {
-      const { error } = await db
-        .from("player_identities")
-        .update(identityPayload)
-        .eq("id", ownIdentity.id);
-      if (error) throw error;
-    } else {
-      const { error } = await db
-        .from("player_identities")
-        .insert({ player_id: playerId, platform: "STEAM", ...identityPayload });
-      if (error) throw error;
+  if (error) {
+    if (isUniqueViolation(error) || /STEAM_DUPLICATE_ACCOUNT/.test(error.message ?? "")) {
+      throw new SteamError("STEAM_DUPLICATE_ACCOUNT");
     }
-  } catch (error) {
-    if (isUniqueViolation(error)) throw new SteamError("STEAM_DUPLICATE_ACCOUNT");
+    if (/STEAM_FORBIDDEN/.test(error.message ?? "")) throw new SteamError("STEAM_FORBIDDEN");
+    console.warn("[steam] steam_link_commit_failed");
     throw new SteamError("STEAM_INTERNAL_ERROR");
   }
 
-  // 4. Evidence + cross-source correlation (never a silent promotion).
-  await recordSteamCorrelation(userId, playerId, steamId64);
+  const result = (data ?? {}) as { connection_id?: string; reconnected?: boolean };
+  if (!result.connection_id) throw new SteamError("STEAM_INTERNAL_ERROR");
+  const reconnected = Boolean(result.reconnected);
 
-  await audit(userId, "steam_connection_created", steamId64, { reconnected, enriched });
   console.info(`[steam] steam_link_success reconnected=${reconnected} enriched=${enriched}`);
 
   // FASE 2.5.2 — email LAST: identity committed, correlation written, audit
   // written. A delivery failure is logged, never rolled back onto the link.
   await notifySteamLink("steam_linked", userId, steamId64, profile.personaName ?? null, now);
 
-  return { connectionId, playerId, profile, reconnected, enriched };
+  return { connectionId: result.connection_id, playerId, profile, reconnected, enriched };
 }
+
 
 /**
  * Records the ownership proof and, when another source independently reports the
