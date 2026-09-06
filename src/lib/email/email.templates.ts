@@ -22,8 +22,20 @@ import {
   paragraph,
 } from "./email.components";
 import { renderEmailLayout } from "./email.layout";
+import type { EmailLocale as EmailLocaleValue } from "./email.locale";
 
-export type EmailLocale = "pt-BR" | "en";
+export type { EmailLocale } from "./email.locale";
+
+/**
+ * The AUTH family is delivered by the auth backend from exported HTML files, so
+ * it stays on the two locales that were exported and reviewed. Product emails
+ * (the ones this app sends itself) cover all five.
+ */
+export type AuthLocale = "pt-BR" | "en";
+
+function authLocaleOf(locale: EmailLocaleValue): AuthLocale {
+  return locale === "pt-BR" || locale === "pt-PT" ? "pt-BR" : "en";
+}
 
 export interface RenderedEmail {
   subject: string;
@@ -58,7 +70,7 @@ interface AuthCopy {
 type AuthTemplateId =
   "confirm_signup" | "magic_link" | "invite" | "recovery" | "email_change" | "reauthentication";
 
-const AUTH_COPY: Record<EmailLocale, Record<AuthTemplateId, AuthCopy>> = {
+const AUTH_COPY: Record<AuthLocale, Record<AuthTemplateId, AuthCopy>> = {
   "pt-BR": {
     confirm_signup: {
       subject: "Confirme seu e-mail — GamePro",
@@ -211,8 +223,11 @@ export const AUTH_TEMPLATE_IDS: readonly AuthTemplateId[] = [
 ];
 
 /** Renders one Supabase auth template, placeholders included. */
-export function renderAuthEmail(id: AuthTemplateId, locale: EmailLocale = "pt-BR"): RenderedEmail {
-  const copy = AUTH_COPY[locale][id];
+export function renderAuthEmail(
+  id: AuthTemplateId,
+  locale: EmailLocaleValue = "pt-BR",
+): RenderedEmail {
+  const copy = AUTH_COPY[authLocaleOf(locale)][id];
   const isCode = id === "reauthentication";
   const body = [
     heading(copy.title),
@@ -245,7 +260,7 @@ export function renderAuthEmail(id: AuthTemplateId, locale: EmailLocale = "pt-BR
 }
 
 /* ------------------------------------------------------------------ *
- * PRODUCT templates                                                   *
+ * PRODUCT templates — security notices, five languages                *
  * ------------------------------------------------------------------ */
 
 export interface SteamLinkEmailInput {
@@ -255,101 +270,234 @@ export interface SteamLinkEmailInput {
   steamIdMasked: string;
   personaName: string | null;
   occurredAt: string;
-  locale?: EmailLocale;
+  locale?: EmailLocaleValue;
+}
+
+interface SteamCopy {
+  subject: string;
+  preheader: string;
+  title: string;
+  intro: string;
+  /** Steam is IDENTITY only; the copy must never imply match imports. */
+  capability: string;
+  warn: string;
+  footer: string;
+  greeting: string;
+  labelAccount: string;
+  labelPersona: string;
+  labelDate: string;
+}
+
+const LINKED_COPY: Record<EmailLocaleValue, SteamCopy> = {
+  "pt-BR": {
+    subject: "Sua conta Steam foi vinculada — GamePro",
+    preheader: "Confirmação de vinculação de conta.",
+    title: "Sua conta Steam foi vinculada",
+    intro:
+      "A vinculação foi confirmada pelo login oficial da Steam. A partir de agora sua identidade está verificada no GamePro.",
+    capability:
+      "O login da Steam confirma sua identidade. Ele não traz partidas nem estatísticas: seus dados de desempenho continuam vindo das fontes de dados apropriadas.",
+    warn: "Se não foi você, desvincule a conta no seu perfil e troque sua senha imediatamente.",
+    footer:
+      "Você recebeu este aviso de segurança porque uma conta externa foi vinculada ao seu perfil GamePro.",
+    greeting: "Olá",
+    labelAccount: "Conta Steam",
+    labelPersona: "Apelido",
+    labelDate: "Data",
+  },
+  "pt-PT": {
+    subject: "A sua conta Steam foi associada — GamePro",
+    preheader: "Confirmação de associação de conta.",
+    title: "A sua conta Steam foi associada",
+    intro:
+      "A associação foi confirmada pela sessão oficial da Steam. A sua identidade está agora verificada no GamePro.",
+    capability:
+      "A sessão da Steam confirma a sua identidade. Não traz partidas nem estatísticas: os dados de desempenho continuam a vir das fontes de dados adequadas.",
+    warn: "Se não foi você, desassocie a conta no seu perfil e altere a palavra-passe imediatamente.",
+    footer:
+      "Recebeu este aviso de segurança porque uma conta externa foi associada ao seu perfil GamePro.",
+    greeting: "Olá",
+    labelAccount: "Conta Steam",
+    labelPersona: "Alcunha",
+    labelDate: "Data",
+  },
+  en: {
+    subject: "Your Steam account was linked — GamePro",
+    preheader: "Account link confirmation.",
+    title: "Your Steam account was linked",
+    intro:
+      "The link was confirmed by the official Steam sign-in. Your identity is now verified on GamePro.",
+    capability:
+      "Signing in with Steam confirms your identity. It brings no matches and no statistics: performance data still comes from the appropriate data sources.",
+    warn: "If this was not you, unlink the account in your profile and change your password immediately.",
+    footer:
+      "You received this security notice because an external account was linked to your GamePro profile.",
+    greeting: "Hi",
+    labelAccount: "Steam account",
+    labelPersona: "Persona",
+    labelDate: "Date",
+  },
+  es: {
+    subject: "Tu cuenta de Steam fue vinculada — GamePro",
+    preheader: "Confirmación de vinculación de cuenta.",
+    title: "Tu cuenta de Steam fue vinculada",
+    intro:
+      "La vinculación fue confirmada por el inicio de sesión oficial de Steam. Tu identidad ya está verificada en GamePro.",
+    capability:
+      "El inicio de sesión de Steam confirma tu identidad. No trae partidas ni estadísticas: los datos de rendimiento siguen viniendo de las fuentes de datos correspondientes.",
+    warn: "Si no fuiste tú, desvincula la cuenta en tu perfil y cambia tu contraseña de inmediato.",
+    footer:
+      "Recibiste este aviso de seguridad porque una cuenta externa fue vinculada a tu perfil de GamePro.",
+    greeting: "Hola",
+    labelAccount: "Cuenta de Steam",
+    labelPersona: "Apodo",
+    labelDate: "Fecha",
+  },
+  fr: {
+    subject: "Votre compte Steam a été lié — GamePro",
+    preheader: "Confirmation de liaison de compte.",
+    title: "Votre compte Steam a été lié",
+    intro:
+      "La liaison a été confirmée par la connexion officielle Steam. Votre identité est désormais vérifiée sur GamePro.",
+    capability:
+      "La connexion Steam confirme votre identité. Elle n'apporte ni matchs ni statistiques : vos données de performance proviennent toujours des sources de données appropriées.",
+    warn: "Si ce n'était pas vous, dissociez le compte dans votre profil et changez votre mot de passe immédiatement.",
+    footer:
+      "Vous recevez cet avis de sécurité parce qu'un compte externe a été lié à votre profil GamePro.",
+    greeting: "Bonjour",
+    labelAccount: "Compte Steam",
+    labelPersona: "Pseudo",
+    labelDate: "Date",
+  },
+};
+
+const UNLINKED_COPY: Record<EmailLocaleValue, SteamCopy> = {
+  "pt-BR": {
+    subject: "Sua conta Steam foi desvinculada — GamePro",
+    preheader: "Confirmação de desvinculação.",
+    title: "Sua conta Steam foi desvinculada",
+    intro:
+      "A verificação de identidade pela Steam foi revogada. Nada foi apagado: partidas, análises e histórico continuam no lugar.",
+    capability:
+      "A Steam serve apenas para confirmar identidade. Seus dados de desempenho continuam vindo das fontes de dados apropriadas.",
+    warn: "Se não foi você, entre na sua conta e troque sua senha imediatamente.",
+    footer:
+      "Você recebeu este aviso de segurança porque uma conta externa foi desvinculada do seu perfil GamePro.",
+    greeting: "Olá",
+    labelAccount: "Conta Steam",
+    labelPersona: "Apelido",
+    labelDate: "Data",
+  },
+  "pt-PT": {
+    subject: "A sua conta Steam foi desassociada — GamePro",
+    preheader: "Confirmação de desassociação.",
+    title: "A sua conta Steam foi desassociada",
+    intro:
+      "A verificação de identidade pela Steam foi revogada. Nada foi eliminado: partidas, análises e histórico mantêm-se.",
+    capability:
+      "A Steam serve apenas para confirmar identidade. Os dados de desempenho continuam a vir das fontes de dados adequadas.",
+    warn: "Se não foi você, entre na sua conta e altere a palavra-passe imediatamente.",
+    footer:
+      "Recebeu este aviso de segurança porque uma conta externa foi desassociada do seu perfil GamePro.",
+    greeting: "Olá",
+    labelAccount: "Conta Steam",
+    labelPersona: "Alcunha",
+    labelDate: "Data",
+  },
+  en: {
+    subject: "Your Steam account was unlinked — GamePro",
+    preheader: "Unlink confirmation.",
+    title: "Your Steam account was unlinked",
+    intro:
+      "Steam identity verification was revoked. Nothing was deleted: matches, analyses and history all stay in place.",
+    capability:
+      "Steam only confirms identity. Your performance data still comes from the appropriate data sources.",
+    warn: "If this was not you, sign in and change your password immediately.",
+    footer:
+      "You received this security notice because an external account was unlinked from your GamePro profile.",
+    greeting: "Hi",
+    labelAccount: "Steam account",
+    labelPersona: "Persona",
+    labelDate: "Date",
+  },
+  es: {
+    subject: "Tu cuenta de Steam fue desvinculada — GamePro",
+    preheader: "Confirmación de desvinculación.",
+    title: "Tu cuenta de Steam fue desvinculada",
+    intro:
+      "La verificación de identidad por Steam fue revocada. No se eliminó nada: partidas, análisis e historial siguen en su lugar.",
+    capability:
+      "Steam solo confirma identidad. Tus datos de rendimiento siguen viniendo de las fuentes de datos correspondientes.",
+    warn: "Si no fuiste tú, inicia sesión y cambia tu contraseña de inmediato.",
+    footer:
+      "Recibiste este aviso de seguridad porque una cuenta externa fue desvinculada de tu perfil de GamePro.",
+    greeting: "Hola",
+    labelAccount: "Cuenta de Steam",
+    labelPersona: "Apodo",
+    labelDate: "Fecha",
+  },
+  fr: {
+    subject: "Votre compte Steam a été dissocié — GamePro",
+    preheader: "Confirmation de dissociation.",
+    title: "Votre compte Steam a été dissocié",
+    intro:
+      "La vérification d'identité par Steam a été révoquée. Rien n'a été supprimé : matchs, analyses et historique restent en place.",
+    capability:
+      "Steam ne sert qu'à confirmer l'identité. Vos données de performance proviennent toujours des sources de données appropriées.",
+    warn: "Si ce n'était pas vous, connectez-vous et changez votre mot de passe immédiatement.",
+    footer:
+      "Vous recevez cet avis de sécurité parce qu'un compte externe a été dissocié de votre profil GamePro.",
+    greeting: "Bonjour",
+    labelAccount: "Compte Steam",
+    labelPersona: "Pseudo",
+    labelDate: "Date",
+  },
+};
+
+function renderSteamNotice(copy: SteamCopy, input: SteamLinkEmailInput): RenderedEmail {
+  const locale = input.locale ?? "pt-BR";
+  const rows = [
+    { label: copy.labelAccount, value: input.steamIdMasked },
+    ...(input.personaName ? [{ label: copy.labelPersona, value: input.personaName }] : []),
+    { label: copy.labelDate, value: input.occurredAt },
+  ];
+
+  const body = [
+    heading(copy.title),
+    paragraph(input.name ? `${copy.greeting}, ${input.name}. ${copy.intro}` : copy.intro),
+    detailList(rows),
+    notice(copy.capability, "info"),
+    notice(copy.warn, "danger"),
+    divider(),
+    muted(copy.footer),
+  ].join("\n");
+
+  return {
+    subject: copy.subject,
+    html: renderEmailLayout({
+      subject: copy.subject,
+      preheader: copy.preheader,
+      body,
+      footerNote: copy.footer,
+      lang: locale,
+    }),
+    text: textOf([
+      copy.title,
+      copy.intro,
+      rows.map((row) => `${row.label}: ${row.value}`).join("\n"),
+      copy.capability,
+      copy.warn,
+      copy.footer,
+    ]),
+  };
 }
 
 /** "Your Steam account was linked" — a security notification, not marketing. */
 export function renderSteamLinkedEmail(input: SteamLinkEmailInput): RenderedEmail {
-  const locale = input.locale ?? "pt-BR";
-  const pt = locale === "pt-BR";
-  const subject = pt ? "Conta Steam vinculada — GamePro" : "Steam account linked — GamePro";
-  const title = pt ? "Sua conta Steam foi vinculada" : "Your Steam account was linked";
-  const intro = pt
-    ? "A vinculação foi confirmada pelo login oficial da Steam. A partir de agora sua identidade está verificada no GamePro."
-    : "The link was confirmed by the official Steam sign-in. Your identity is now verified on GamePro.";
-  const capability = pt
-    ? "O login da Steam prova quem você é. Ele não traz partidas nem estatísticas: seus dados de desempenho continuam vindo das demos e da FACEIT."
-    : "Signing in with Steam proves who you are. It brings no matches and no statistics: performance data still comes from demos and FACEIT.";
-  const warn = pt
-    ? "Se não foi você, desvincule a conta no seu perfil e troque sua senha imediatamente."
-    : "If this was not you, unlink the account in your profile and change your password immediately.";
-  const footer = pt
-    ? "Você recebeu este aviso de segurança porque uma conta externa foi vinculada ao seu perfil GamePro."
-    : "You received this security notice because an external account was linked to your GamePro profile.";
-
-  const rows = [
-    { label: pt ? "Conta Steam" : "Steam account", value: input.steamIdMasked },
-    ...(input.personaName ? [{ label: pt ? "Apelido" : "Persona", value: input.personaName }] : []),
-    { label: pt ? "Data" : "Date", value: input.occurredAt },
-  ];
-
-  const body = [
-    heading(title),
-    paragraph(input.name ? `${pt ? "Olá" : "Hi"}, ${input.name}. ${intro}` : intro),
-    detailList(rows),
-    notice(capability, "info"),
-    notice(warn, "danger"),
-    divider(),
-    muted(footer),
-  ].join("\n");
-
-  return {
-    subject,
-    html: renderEmailLayout({
-      subject,
-      preheader: pt ? "Confirmação de vinculação de conta." : "Account link confirmation.",
-      body,
-      footerNote: footer,
-      lang: locale,
-    }),
-    text: textOf([
-      title,
-      intro,
-      `${rows.map((r) => `${r.label}: ${r.value}`).join("\n")}`,
-      capability,
-      warn,
-      footer,
-    ]),
-  };
+  return renderSteamNotice(LINKED_COPY[input.locale ?? "pt-BR"], input);
 }
 
 /** "Your Steam account was unlinked" — same security-notice discipline. */
 export function renderSteamUnlinkedEmail(input: SteamLinkEmailInput): RenderedEmail {
-  const locale = input.locale ?? "pt-BR";
-  const pt = locale === "pt-BR";
-  const subject = pt ? "Conta Steam desvinculada — GamePro" : "Steam account unlinked — GamePro";
-  const title = pt ? "Sua conta Steam foi desvinculada" : "Your Steam account was unlinked";
-  const intro = pt
-    ? "A verificação de identidade pela Steam foi revogada. Nada foi apagado: partidas, análises e histórico continuam no lugar."
-    : "Steam identity verification was revoked. Nothing was deleted: matches, analyses and history all stay in place.";
-  const warn = pt
-    ? "Se não foi você, entre na sua conta e troque sua senha imediatamente."
-    : "If this was not you, sign in and change your password immediately.";
-  const footer = pt
-    ? "Você recebeu este aviso de segurança porque uma conta externa foi desvinculada do seu perfil GamePro."
-    : "You received this security notice because an external account was unlinked from your GamePro profile.";
-
-  const body = [
-    heading(title),
-    paragraph(intro),
-    detailList([
-      { label: pt ? "Conta Steam" : "Steam account", value: input.steamIdMasked },
-      { label: pt ? "Data" : "Date", value: input.occurredAt },
-    ]),
-    notice(warn, "danger"),
-    divider(),
-    muted(footer),
-  ].join("\n");
-
-  return {
-    subject,
-    html: renderEmailLayout({
-      subject,
-      preheader: pt ? "Confirmação de desvinculação." : "Unlink confirmation.",
-      body,
-      footerNote: footer,
-      lang: locale,
-    }),
-    text: textOf([title, intro, input.steamIdMasked, warn, footer]),
-  };
+  return renderSteamNotice(UNLINKED_COPY[input.locale ?? "pt-BR"], input);
 }

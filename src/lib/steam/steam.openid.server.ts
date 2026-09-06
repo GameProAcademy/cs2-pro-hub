@@ -88,11 +88,13 @@ export interface ConsumedSteamAttempt {
 }
 
 /**
- * Validates and consumes a state. Replay is impossible: the UPDATE that stamps
- * `consumed_at` is conditional on the row still being `pending`, so exactly one
- * caller can win the race.
+ * FASE 2.5.2 — READ-ONLY state check, run BEFORE we ever talk to Steam.
+ *
+ * A stranger hitting the public callback with a random state must not be able to
+ * make us call `check_authentication`. This resolves the attempt, proves it is
+ * pending, unexpired and bound to a real user, and consumes nothing.
  */
-export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSteamAttempt> {
+export async function peekSteamLinkAttempt(state: string): Promise<ConsumedSteamAttempt> {
   if (!state || state.length < 32) throw new SteamError("STEAM_OPENID_STATE_INVALID");
   const db = await admin();
   const stateHash = await hashState(state);
@@ -115,17 +117,34 @@ export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSt
       .eq("status", "pending");
     throw new SteamError("STEAM_OPENID_STATE_EXPIRED");
   }
+  if (!attempt.user_id) throw new SteamError("STEAM_OPENID_STATE_INVALID");
+
+  return { userId: attempt.user_id, returnUrl: attempt.return_url };
+}
+
+/**
+ * Validates and consumes a state. Replay is impossible: the UPDATE that stamps
+ * `consumed_at` is conditional on the row still being `pending` AND unexpired,
+ * so exactly one of two concurrent callbacks can win the race; the loser gets
+ * `STEAM_OPENID_STATE_CONSUMED`.
+ */
+export async function consumeSteamLinkAttempt(state: string): Promise<ConsumedSteamAttempt> {
+  const attempt = await peekSteamLinkAttempt(state);
+  const db = await admin();
+  const stateHash = await hashState(state);
+  const now = new Date().toISOString();
 
   const { data: consumed } = await db
     .from("steam_link_attempts")
-    .update({ status: "consumed", consumed_at: new Date().toISOString() })
-    .eq("id", attempt.id)
+    .update({ status: "consumed", consumed_at: now })
+    .eq("state_hash", stateHash)
     .eq("status", "pending")
-    .select("id")
+    .gt("expires_at", now)
+    .select("id, user_id, return_url")
     .maybeSingle();
   if (!consumed) throw new SteamError("STEAM_OPENID_STATE_CONSUMED");
 
-  return { userId: attempt.user_id, returnUrl: attempt.return_url };
+  return { userId: consumed.user_id ?? attempt.userId, returnUrl: consumed.return_url };
 }
 
 /** Burns an attempt on the failure path so no replay window stays open. */
@@ -160,7 +179,14 @@ export async function validateSteamCallback(
   fetchImpl: typeof fetch = globalThis.fetch,
 ): Promise<{ userId: string; steamId64: string }> {
   const config = requireSteamOpenIdConfig();
-  const parsed = parseSteamCallback(params, config.returnUrl);
+  const parsed = parseSteamCallback(params, config.returnUrl, {
+    realm: config.realm,
+    opEndpoint: config.endpoint,
+  });
+
+  // FASE 2.5.2 — the attempt must exist, be pending and be unexpired BEFORE we
+  // spend a request on Steam. An arbitrary callback costs us one indexed read.
+  await peekSteamLinkAttempt(parsed.state);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), STEAM_HTTP_TIMEOUT_MS);

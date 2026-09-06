@@ -22,6 +22,10 @@ export interface TransactionalEmailMessage {
   /** Stable key so a retry can never deliver the same notice twice. */
   idempotencyKey: string;
   kind: TransactionalEmailKind;
+  /** Owner of the notice, for the delivery log. Never used for delivery. */
+  userId?: string | null;
+  /** Language the message was rendered in (see `resolveEmailLocale`). */
+  locale?: string;
 }
 
 export type EmailSendOutcome =

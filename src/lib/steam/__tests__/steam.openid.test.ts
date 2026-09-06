@@ -111,7 +111,7 @@ describe("steam openid — callback parsing", () => {
         }),
         RETURN_URL,
       ),
-    ).toThrow(new SteamError("STEAM_OPENID_STATE_INVALID"));
+    ).toThrow(new SteamError("STEAM_OPENID_INVALID_RETURN_TO"));
   });
 
   it("refuses an assertion with no state at all", () => {

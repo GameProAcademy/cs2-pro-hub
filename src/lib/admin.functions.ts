@@ -869,8 +869,11 @@ export const bulkSetAdminUserStatus = createServerFn({ method: "POST" })
     const session = await resolveAdmin(context as Ctx);
     const supabase = (context as Ctx).supabase;
 
-    const unique = Array.from(new Set(data.userIds)).slice(0, BULK_STATUS_MAX_USERS);
+    // FASE 2.5.2 — the ceiling is a HARD limit, never a silent truncation: over
+    // the limit nothing at all is applied and the caller is told why.
+    const unique = Array.from(new Set(data.userIds));
     if (unique.length === 0) throw new Error(FAILED);
+    if (unique.length > BULK_STATUS_MAX_USERS) throw new Error("BULK_LIMIT_EXCEEDED");
     if (data.status !== "active" && data.status !== "inactive") throw new Error(FAILED);
 
     const results: BulkStatusResult[] = [];

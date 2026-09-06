@@ -73,6 +73,30 @@ async function audit(
   });
 }
 
+/**
+ * Fire-and-record security notice. Imported lazily so the email layer never
+ * enters a bundle that does not send email, and wrapped so a provider outage can
+ * never undo a committed link/unlink.
+ */
+async function notifySteamLink(
+  kind: "steam_linked" | "steam_unlinked",
+  userId: string,
+  steamId64: string | null,
+  personaName: string | null,
+  occurredAt: string,
+): Promise<void> {
+  try {
+    const masked = maskSteamId64(steamId64);
+    if (!masked) return;
+    const { notifySteamLinked, notifySteamUnlinked } =
+      await import("@/lib/email/email.events.server");
+    const notify = kind === "steam_linked" ? notifySteamLinked : notifySteamUnlinked;
+    await notify({ userId, steamIdMasked: masked, personaName, eventId: occurredAt, occurredAt });
+  } catch {
+    console.warn(`[email] steam_notice_failed kind=${kind}`);
+  }
+}
+
 export interface SteamConnectResult {
   connectionId: string;
   playerId: string;
@@ -220,6 +244,10 @@ export async function finalizeSteamConnection(
 
   await audit(userId, "steam_connection_created", steamId64, { reconnected, enriched });
   console.info(`[steam] steam_link_success reconnected=${reconnected} enriched=${enriched}`);
+
+  // FASE 2.5.2 — email LAST: identity committed, correlation written, audit
+  // written. A delivery failure is logged, never rolled back onto the link.
+  await notifySteamLink("steam_linked", userId, steamId64, profile.personaName ?? null, now);
 
   return { connectionId, playerId, profile, reconnected, enriched };
 }
@@ -370,5 +398,7 @@ export async function unlinkSteamAccount(userId: string): Promise<{ disconnected
 
   await audit(userId, "steam_connection_removed", connection.external_id);
   console.info("[steam] steam_unlink_success");
+
+  await notifySteamLink("steam_unlinked", userId, connection.external_id, null, now);
   return { disconnected: true };
 }
