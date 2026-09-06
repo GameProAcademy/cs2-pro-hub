@@ -46,3 +46,41 @@ Rendered samples: `docs/email/preview/*.html`.
   from the copy, never scraped from the HTML.
 - Every CTA is followed by a copy-and-paste fallback URL, because buttons get
   stripped.
+
+## Delivery (FASE 2.5.2)
+
+Rendering stays pure; delivery lives in three server-only modules:
+
+| Module | Responsibility |
+| --- | --- |
+| `email.transport.server.ts` | Real transports over the provider **HTTPS API** (Resend, SendGrid). SMTP is refused honestly (`EMAIL_TRANSPORT_UNSUPPORTED`): raw TCP is not available in the Workers runtime. |
+| `email.dispatch.server.ts` | Persistent idempotency, bounded retry with exponential backoff + jitter, delivery log, masked observability. |
+| `email.events.server.ts` | Turns an application event into an email. Called **after** the state is committed and audited. |
+
+### Environment
+
+| Variable | Secret | Purpose |
+| --- | --- | --- |
+| `EMAIL_PROVIDER` | no | `resend`, `sendgrid`, `smtp` or unset. Unset = no delivery. |
+| `RESEND_API_KEY` | yes | Required for `resend`. |
+| `SENDGRID_API_KEY` | yes | Required for `sendgrid`. |
+| `SMTP_FROM_EMAIL` | no | Visible sender address. |
+| `SMTP_FROM_NAME` | no | Visible sender name. |
+
+With nothing configured, every send resolves `skipped / not_configured`. The app
+never claims a delivery it did not make, and a delivery failure never breaks the
+feature that triggered it (linking Steam still succeeds).
+
+### Language
+
+`resolveEmailLocale()` decides the language in this order: saved preference →
+browser locale → country → `pt-BR`. A country is never treated as a language on
+its own; it is only the last fallback.
+
+### Delivery log
+
+`email_delivery_logs` is server-role only (RLS on, zero policies, no `anon` /
+`authenticated` grant). One row per event, keyed by a UNIQUE `idempotency_key`,
+so a retry after a restart cannot send twice. `status` is one of
+`pending | sent | failed | skipped`; `sent` is only written after the provider
+confirms.
