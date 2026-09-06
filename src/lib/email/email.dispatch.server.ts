@@ -28,12 +28,18 @@ import {
   type TransactionalEmailMessage,
 } from "./email.provider";
 import { resolveEmailProvider } from "./email.transport.server";
+import {
+  EMAIL_BACKOFF_BASE_MS,
+  EMAIL_LEASE_SECONDS as LEASE_SECONDS,
+  MAX_EMAIL_ATTEMPTS_PER_CALL,
+  MAX_TOTAL_EMAIL_ATTEMPTS,
+} from "@/config/email";
 
-/** Retry ceiling for a retryable provider failure. */
-export const MAX_EMAIL_ATTEMPTS = 3;
-const BASE_BACKOFF_MS = 250;
+/** Retry ceiling for a retryable provider failure INSIDE one call. */
+export const MAX_EMAIL_ATTEMPTS = MAX_EMAIL_ATTEMPTS_PER_CALL;
+const BASE_BACKOFF_MS = EMAIL_BACKOFF_BASE_MS;
 /** Lease held while an attempt is in flight; an abandoned row expires with it. */
-export const EMAIL_LEASE_SECONDS = 120;
+export const EMAIL_LEASE_SECONDS = LEASE_SECONDS;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -69,14 +75,21 @@ export async function attemptDelivery(
   provider: EmailTransport,
   message: TransactionalEmailMessage,
   sleepImpl: (ms: number) => Promise<void> = sleep,
+  /**
+   * FASE 2.6.0 — attempts allowed in THIS call. The caller narrows it to the
+   * message's remaining GLOBAL budget, so a message can never restart 1..3
+   * forever, one call at a time.
+   */
+  maxAttempts: number = MAX_EMAIL_ATTEMPTS,
 ): Promise<{ outcome: EmailSendOutcome; attempts: number }> {
   let lastFailure: EmailSendOutcome = {
     status: "failed",
     reason: "EMAIL_NOT_ATTEMPTED",
     retryable: false,
   };
+  const ceiling = Math.max(1, Math.min(maxAttempts, MAX_EMAIL_ATTEMPTS));
 
-  for (let attempt = 1; attempt <= MAX_EMAIL_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= ceiling; attempt += 1) {
     let outcome: EmailSendOutcome;
     try {
       outcome = await provider.sendTransactionalEmail(message);
@@ -95,12 +108,12 @@ export async function attemptDelivery(
     if (outcome.status !== "failed" || !outcome.retryable) return { outcome, attempts: attempt };
 
     lastFailure = outcome;
-    if (attempt < MAX_EMAIL_ATTEMPTS) {
+    if (attempt < ceiling) {
       await sleepImpl(backoffFor(attempt, outcome.retryAfterSeconds ?? null));
     }
   }
 
-  return { outcome: lastFailure, attempts: MAX_EMAIL_ATTEMPTS };
+  return { outcome: lastFailure, attempts: ceiling };
 }
 
 interface ClaimResult {
@@ -140,8 +153,14 @@ export async function sendTransactionalEmail(
     });
 
     if (claim.error) {
-      // The log is not a reason to lose the notice, but we cannot claim a send.
-      console.warn(`[email] claim_unavailable kind=${message.kind}`);
+      // FASE 2.6.0 — FAIL CLOSED. Without a claim there is no idempotency guard,
+      // so sending anyway could duplicate a notice on every retry. No claim, no
+      // send: the condition is reported as a retryable operational failure.
+      console.error(
+        `[email] claim_unavailable kind=${message.kind}` +
+          ` idempotency=${message.idempotencyKey} outcome=not_sent`,
+      );
+      return { status: "failed", reason: "EMAIL_CLAIM_UNAVAILABLE", retryable: true };
     } else {
       const result = claim.data as unknown as ClaimResult;
       if (!result.claimed) {
@@ -187,10 +206,27 @@ export async function sendTransactionalEmail(
     return finish({ status: "skipped", reason: "not_configured" }, 0, "none");
   }
 
+  // FASE 2.6.0 — GLOBAL attempt budget for this idempotency key. The claim
+  // returns how many attempts the message already spent; when the budget is
+  // exhausted the message is permanently failed instead of retried forever.
+  const remaining = MAX_TOTAL_EMAIL_ATTEMPTS - previousAttempts;
+  if (persist && remaining <= 0) {
+    console.warn(
+      `[email] retry_budget_exhausted kind=${message.kind}` +
+        ` idempotency=${message.idempotencyKey} attempts=${previousAttempts}`,
+    );
+    return finish(
+      { status: "failed", reason: "EMAIL_RETRY_BUDGET_EXHAUSTED", retryable: false },
+      0,
+      resolved.provider.id,
+    );
+  }
+
   const { outcome, attempts } = await attemptDelivery(
     resolved.provider,
     message,
     options.sleepImpl ?? sleep,
+    persist ? remaining : MAX_EMAIL_ATTEMPTS,
   );
   return finish(outcome, attempts, resolved.provider.id);
 }

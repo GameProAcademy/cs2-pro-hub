@@ -107,7 +107,9 @@ export async function peekSteamLinkAttempt(state: string): Promise<ConsumedSteam
 
   if (!attempt) throw new SteamError("STEAM_OPENID_STATE_INVALID");
   if (attempt.status !== "pending" || attempt.consumed_at) {
-    throw new SteamError("STEAM_OPENID_STATE_CONSUMED");
+    // FASE 2.6.0 — one public semantics for "this state was already used",
+    // whether it was consumed a minute ago or by a concurrent callback.
+    throw new SteamError("STEAM_STATE_ALREADY_USED");
   }
   if (new Date(attempt.expires_at).getTime() <= Date.now()) {
     await db

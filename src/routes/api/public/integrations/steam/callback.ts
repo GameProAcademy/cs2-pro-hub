@@ -20,7 +20,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 
-import { callbackReason, toSteamError } from "@/lib/steam/steam.errors";
+import { callbackReason, publicSteamErrorCode, toSteamError } from "@/lib/steam/steam.errors";
 
 const SUCCESS_PATH = "/profile?connection=steam_success";
 
@@ -64,19 +64,20 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
           return redirectTo(request, SUCCESS_PATH);
         } catch (error) {
           const steamError = toSteamError(error);
+          const publicCode = publicSteamErrorCode(steamError.code);
           // Code only: no SteamID64, no signature, no upstream body.
-          console.warn(`[steam] steam_link_failure code=${steamError.code}`);
-          if (clientHash && steamError.code !== "STEAM_CALLBACK_RATE_LIMITED") {
+          console.warn(`[steam] steam_link_failure code=${publicCode}`);
+          if (clientHash && publicCode !== "STEAM_CALLBACK_RATE_LIMITED") {
             const invalidState =
-              steamError.code === "STEAM_OPENID_STATE_INVALID" ||
-              steamError.code === "STEAM_OPENID_STATE_EXPIRED" ||
-              steamError.code === "STEAM_OPENID_STATE_CONSUMED";
+              publicCode === "STEAM_OPENID_STATE_INVALID" ||
+              publicCode === "STEAM_OPENID_STATE_EXPIRED" ||
+              publicCode === "STEAM_STATE_ALREADY_USED";
             await throttle.recordCallbackOutcome(
               clientHash,
               invalidState ? "invalid_state" : "rejected",
             );
           }
-          return redirectTo(request, errorPath(callbackReason(steamError.code)));
+          return redirectTo(request, errorPath(callbackReason(publicCode)));
         }
       },
     },
