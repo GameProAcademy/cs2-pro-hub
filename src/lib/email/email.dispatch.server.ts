@@ -153,8 +153,14 @@ export async function sendTransactionalEmail(
     });
 
     if (claim.error) {
-      // The log is not a reason to lose the notice, but we cannot claim a send.
-      console.warn(`[email] claim_unavailable kind=${message.kind}`);
+      // FASE 2.6.0 — FAIL CLOSED. Without a claim there is no idempotency guard,
+      // so sending anyway could duplicate a notice on every retry. No claim, no
+      // send: the condition is reported as a retryable operational failure.
+      console.error(
+        `[email] claim_unavailable kind=${message.kind}` +
+          ` idempotency=${message.idempotencyKey} outcome=not_sent`,
+      );
+      return { status: "failed", reason: "EMAIL_CLAIM_UNAVAILABLE", retryable: true };
     } else {
       const result = claim.data as unknown as ClaimResult;
       if (!result.claimed) {
