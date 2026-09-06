@@ -15,7 +15,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { maskSteamId64 } from "./steam/steam.openid";
-import { toSteamError, type SteamErrorCode } from "./steam/steam.errors";
+import { publicSteamErrorCode, toSteamError, type SteamErrorCode } from "./steam/steam.errors";
 import type { SteamConnectionView } from "./steam/steam.types";
 
 function profileField(metadata: unknown, key: string): unknown {
@@ -131,9 +131,9 @@ export const startSteamConnection = createServerFn({ method: "POST" })
       console.info("[steam] steam_link_attempt");
       return { ok: true, redirectUrl: attempt.redirectUrl };
     } catch (error) {
-      const steamError = toSteamError(error);
-      console.warn(`[steam] steam_link_failure code=${steamError.code}`);
-      return { ok: false, errorCode: steamError.code };
+      const errorCode = publicSteamErrorCode(toSteamError(error).code);
+      console.warn(`[steam] steam_link_failure code=${errorCode}`);
+      return { ok: false, errorCode };
     }
   });
 
@@ -149,7 +149,7 @@ export const unlinkSteamConnection = createServerFn({ method: "POST" })
         ...(result.disconnected ? {} : { errorCode: "STEAM_NOT_CONNECTED" as const }),
       };
     } catch (error) {
-      return { ok: false, errorCode: toSteamError(error).code };
+      return { ok: false, errorCode: publicSteamErrorCode(toSteamError(error).code) };
     }
   });
 
