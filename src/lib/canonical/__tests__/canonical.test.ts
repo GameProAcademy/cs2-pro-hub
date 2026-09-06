@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { buildFixture } from "@/lib/pipeline/__tests__/fixture";
+import { syntheticParserOutput, ME } from "@/lib/pipeline/__tests__/fixture";
 
 import { demoToCanonicalBundle } from "../adapters/demo.adapter";
 import { faceitToCanonicalBundles } from "../adapters/faceit.adapter";
@@ -16,11 +16,11 @@ import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { CANONICAL_SCHEMA_VERSION, SOURCE_CONTRACT_VERSIONS } from "../canonical.versions";
 
 function demoBundle() {
-  const parsed = normalizeParserOutput(buildFixture());
+  const parsed = normalizeParserOutput(syntheticParserOutput);
   return demoToCanonicalBundle({
     parsed,
     fingerprint: "a".repeat(64),
-    targetSteamId: parsed.players[0]?.steamId ?? null,
+    targetSteamId: ME,
     internalPlayerId: "player-1",
     fetchedAt: "2026-01-02T03:04:05.000Z",
   });
