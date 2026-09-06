@@ -47,25 +47,33 @@ Rendered samples: `docs/email/preview/*.html`.
 - Every CTA is followed by a copy-and-paste fallback URL, because buttons get
   stripped.
 
-## Delivery (FASE 2.5.2)
+## Delivery (FASE 2.5.2C)
 
-Rendering stays pure; delivery lives in three server-only modules:
+Rendering stays pure; delivery lives in four server-only modules:
 
 | Module | Responsibility |
 | --- | --- |
-| `email.transport.server.ts` | Real transports over the provider **HTTPS API** (Resend, SendGrid). SMTP is refused honestly (`EMAIL_TRANSPORT_UNSUPPORTED`): raw TCP is not available in the Workers runtime. |
-| `email.dispatch.server.ts` | Persistent idempotency, bounded retry with exponential backoff + jitter, delivery log, masked observability. |
+| `email.config.server.ts` | Reads the operator configuration inside a call. Exposes **booleans only** as diagnostics; never returns or logs a token. |
+| `email.transport.server.ts` | The real transport: **Hostinger Mail API over HTTPS**. |
+| `email.dispatch.server.ts` | Atomic claim/lease idempotency, bounded retry with backoff + jitter and `Retry-After`, delivery log, masked observability. |
 | `email.events.server.ts` | Turns an application event into an email. Called **after** the state is committed and audited. |
+
+### Why there is no SMTP
+
+This app runs on Cloudflare Workers, which cannot open an arbitrary outbound TCP
+socket to port 25/465/587. A classic SMTP client (`nodemailer` and friends)
+therefore cannot work here, and pretending otherwise would produce an
+integration that fails silently in production. The Hostinger Mail API over HTTPS
+is the transport, and no SMTP relay exists anywhere in this codebase.
 
 ### Environment
 
 | Variable | Secret | Purpose |
 | --- | --- | --- |
-| `EMAIL_PROVIDER` | no | `resend`, `sendgrid`, `smtp` or unset. Unset = no delivery. |
-| `RESEND_API_KEY` | yes | Required for `resend`. |
-| `SENDGRID_API_KEY` | yes | Required for `sendgrid`. |
-| `SMTP_FROM_EMAIL` | no | Visible sender address. |
-| `SMTP_FROM_NAME` | no | Visible sender name. |
+| `EMAIL_PROVIDER` | no | `hostinger`, or unset. Unset = no delivery. |
+| `HOSTINGER_MAIL_API_TOKEN` | **yes** | Hostinger Mail API token. Server-only; never reaches a browser or a log. |
+| `EMAIL_FROM_EMAIL` | no | Visible sender address (must be a mailbox on the verified domain). |
+| `EMAIL_FROM_NAME` | no | Visible sender name. |
 
 With nothing configured, every send resolves `skipped / not_configured`. The app
 never claims a delivery it did not make, and a delivery failure never breaks the
@@ -77,10 +85,24 @@ feature that triggered it (linking Steam still succeeds).
 browser locale → country → `pt-BR`. A country is never treated as a language on
 its own; it is only the last fallback.
 
-### Delivery log
+### Delivery log and idempotency
 
 `email_delivery_logs` is server-role only (RLS on, zero policies, no `anon` /
-`authenticated` grant). One row per event, keyed by a UNIQUE `idempotency_key`,
-so a retry after a restart cannot send twice. `status` is one of
-`pending | sent | failed | skipped`; `sent` is only written after the provider
-confirms.
+`authenticated` grant). One row per event, keyed by a UNIQUE `idempotency_key`.
+
+The claim is atomic — `public.claim_email_delivery` (service_role only) takes a
+per-key advisory lock and decides:
+
+| Current state | Decision |
+| --- | --- |
+| no row | claimed, row created with a lease |
+| `accepted` / `sent` | **never re-sent** (permanent idempotency) |
+| `failed` / `skipped` | claimed again; a new attempt is allowed |
+| `pending`, live lease | refused (`in_progress`) — another worker owns it |
+| `pending`, expired lease | recovered — no abandoned row |
+
+`status` is one of `pending | accepted | sent | failed | skipped`.
+**`accepted` means the provider accepted/queued the message (HTTP 202) — it is
+not proof of inbox delivery**, and no UI copy may claim otherwise. `sent_at`
+records when the provider accepted it.
+
