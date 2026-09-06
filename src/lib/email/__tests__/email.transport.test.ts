@@ -105,10 +105,13 @@ describe("hostinger transport", () => {
   });
 
   it("sends the token in the Authorization header only", async () => {
-    const fetchMock = vi.fn(async () => response(202, {}));
-    vi.stubGlobal("fetch", fetchMock);
+    const calls: Array<[string, RequestInit]> = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      calls.push([url, init]);
+      return response(202, {});
+    });
     await hostingerMailApiTransport(config).sendTransactionalEmail(message);
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const init = calls[0]?.[1] as RequestInit;
     expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer secret-token");
     expect(String(init.body)).not.toContain("secret-token");
   });
