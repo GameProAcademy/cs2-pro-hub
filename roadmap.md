@@ -135,3 +135,22 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] HTTP 202 = `accepted` (aceito/enfileirado), nunca "entregue"; 4xx permanente, 429/5xx transitório com `Retry-After` respeitado e limitado.
 - [x] Idempotência com claim/lease no banco (`claim_email_delivery`): aceito nunca reenvia, falho pode retentar, lease vivo bloqueia concorrente, lease expirado é recuperado.
 - [x] Checks permanentes 30a–30d e 17 novos testes de transporte/configuração.
+
+## FASE 2.6.0 — hardening final da 2.5.2C
+
+- [x] E-mail fail-closed: falha ao reservar o envio devolve `EMAIL_CLAIM_UNAVAILABLE` (retentável) em vez de seguir adiante.
+- [x] Teto global de tentativas por e-mail (9) em `src/config/email.ts`; esgotado devolve `EMAIL_RETRY_BUDGET_EXHAUSTED` (não retentável).
+- [x] Semântica única de corrida de state: qualquer state já usado sai como `STEAM_STATE_ALREADY_USED` (`publicSteamErrorCode`) no callback e nos server functions.
+- [x] Correlação é suplementar: se a construção da evidência falhar, o vínculo de posse é mantido e o estado é registrado honestamente como `correlation_status=pending`.
+- [x] Remetente das fixtures de e-mail alinhado a `hub@gamepro.academy`.
+
+## FASE 2.6 — Canonical Match Engine (domínio)
+
+- [x] `CANONICAL_SCHEMA_VERSION = 2` com três eixos independentes de versão (canônico, análise, contrato por fonte).
+- [x] Domínio neutro: series opcional, match = um mapa jogável, observação por fonte, participantes sem `player_id`, rounds neutros vs estado por jogador, eventos preservando IDs externos.
+- [x] Qualidade e cobertura por camada com motivos explícitos; NULL nunca vira ZERO.
+- [x] Contrato único de adapter (`CanonicalSourceAdapter`); DEMO e FACEIT traduzidos; Gamers Club falha alto (`external_access_blocked`).
+- [x] Match Identity Resolver com EXACT/PROBABLE/POSSIBLE/NO_MATCH/CONFLICT; só EXACT anexa automaticamente; prioridade de fonte não é merge.
+- [x] Projeção por jogador (vitória/derrota/"meu placar") derivada, nunca gravada no match.
+- [x] 37 testes novos (454 no total), typecheck limpo, lint limpo, build OK.
+- [ ] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — próximo passo, ainda NÃO aplicados.
