@@ -48,6 +48,16 @@ export class SteamError extends Error {
   }
 }
 
+/**
+ * FASE 2.6.0 — normalises internal codes into the PUBLIC taxonomy. Different
+ * internal mechanisms (a row already consumed vs. losing the atomic consume
+ * race) describe the SAME situation for the caller, so both surface as
+ * `STEAM_STATE_ALREADY_USED`.
+ */
+export function publicSteamErrorCode(code: SteamErrorCode): SteamErrorCode {
+  return code === "STEAM_OPENID_STATE_CONSUMED" ? "STEAM_STATE_ALREADY_USED" : code;
+}
+
 export function isSteamError(error: unknown): error is SteamError {
   return error instanceof SteamError;
 }
