@@ -27,8 +27,19 @@ import {
 } from "@/lib/canonical/canonical.versions";
 import {
   persistCanonicalObservation,
+  persistCanonicalSeriesObservation,
   CanonicalPersistenceError,
 } from "@/lib/canonical/canonical.persistence.server";
+import {
+  canConvergeCrossSource,
+  resolveAgainstAll,
+  type MatchIdentityCandidate,
+} from "@/lib/canonical/canonical.resolver";
+import {
+  loadCandidates,
+  resolveFaceitIdentities,
+  FaceitIdentityResolutionError,
+} from "@/lib/faceit/faceit.canonical.server";
 import type {
   CanonicalMatchBundle,
   CanonicalParticipant,
@@ -52,12 +63,17 @@ const quality = (status: CanonicalQuality["status"], reasons: string[] = []): Ca
   confidence: null,
 });
 
-function participants(source: "demo" | "faceit"): CanonicalParticipant[] {
-  return ROSTER.map((steamId, index) => ({
+function participants(
+  source: "demo" | "faceit",
+  roster: readonly string[] = ROSTER,
+  externalIds: readonly string[] | null = null,
+): CanonicalParticipant[] {
+  return roster.map((steamId, index) => ({
     participantKey: steamId,
     internalPlayerId: null,
     source,
-    externalPlayerId: source === "faceit" ? `${RUN}-faceit-player-${index}` : null,
+    externalPlayerId:
+      source === "faceit" ? (externalIds?.[index] ?? `${RUN}-faceit-player-${index}`) : null,
     steamId64: steamId,
     nicknameSnapshot: null,
     team: index < 5 ? "team_a" : "team_b",
@@ -75,8 +91,14 @@ function bundle(args: {
   scoreTeamA: number | null;
   scoreTeamB: number | null;
   withRounds: boolean;
+  roster?: readonly string[];
+  externalPlayerIds?: readonly string[] | null;
+  map?: string;
+  playedAt?: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
 }): CanonicalMatchBundle {
-  const roster = participants(args.source);
+  const roster = participants(args.source, args.roster ?? ROSTER, args.externalPlayerIds ?? null);
   return {
     observation: {
       source: args.source,
@@ -94,11 +116,11 @@ function bundle(args: {
     series: null,
     match: {
       game: "cs2",
-      map: MAP,
+      map: args.map ?? MAP,
       mapNumber: null,
-      playedAt: PLAYED_AT,
-      startedAt: null,
-      finishedAt: null,
+      playedAt: args.playedAt ?? PLAYED_AT,
+      startedAt: args.startedAt ?? null,
+      finishedAt: args.finishedAt ?? null,
       durationSeconds: null,
       status: "completed",
       finished: true,
@@ -113,9 +135,9 @@ function bundle(args: {
       coverage: {
         roundsExpected: null,
         roundsObserved: args.withRounds ? 1 : null,
-        participantsExpected: 10,
-        participantsObserved: 10,
-        participantsResolved: 10,
+        participantsExpected: roster.length,
+        participantsObserved: roster.length,
+        participantsResolved: roster.length,
         eventsObserved: args.withRounds ? 2 : null,
         hasRoundData: args.withRounds,
         hasEventData: args.withRounds,
@@ -267,6 +289,8 @@ async function main() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const touchedMatchIds = new Set<string>();
   const touchedSeriesIds = new Set<string>();
+  const touchedUserIds = new Set<string>();
+  const touchedProfileIds = new Set<string>();
 
   console.log(`\ncanonical proof run=${RUN} map=${MAP} playedAt=${PLAYED_AT}\n`);
 
@@ -484,6 +508,346 @@ async function main() {
         );
       }
     }
+
+    /* ------------------------------------------------------------------ */
+    /* FASE 2.6.11.4 — Identity Graph, temporal semantics, ambiguity        */
+    /* ------------------------------------------------------------------ */
+
+    /* Fixtures: ten REAL accounts with a FACEIT identity and a proven Steam
+       identity, so nothing below invents a SteamID64 or a fingerprint. */
+    const graphSteamIds = Array.from(
+      { length: 10 },
+      (_, i) => `7656119${(8000000000 + i).toString()}`,
+    );
+    const graphFaceitIds = Array.from({ length: 10 }, (_, i) => `${RUN}-gc-faceit-${i}`);
+
+    for (let i = 0; i < 10; i += 1) {
+      const created = await supabaseAdmin.auth.admin.createUser({
+        email: `proof-${RUN}-${i}@canonical-proof.invalid`,
+        password: randomUUID(),
+        email_confirm: true,
+        user_metadata: { full_name: `proof ${RUN} ${i}` },
+      });
+      if (created.error || !created.data.user) {
+        record(
+          "14 — Identity Graph fixtures",
+          "SKIPPED",
+          `auth admin unavailable: ${created.error?.message ?? "no user"}`,
+        );
+        break;
+      }
+      touchedUserIds.add(created.data.user.id);
+      const profile = await supabaseAdmin
+        .from("player_profiles")
+        .select("id")
+        .eq("user_id", created.data.user.id)
+        .maybeSingle();
+      const profileId = profile.data?.id;
+      if (!profileId) continue;
+      touchedProfileIds.add(profileId);
+      const identityInsert = await supabaseAdmin.from("player_identities").insert([
+        {
+          player_id: profileId,
+          platform: "FACEIT",
+          external_id: graphFaceitIds[i]!,
+          identity_status: "verified",
+          is_verified: true,
+        },
+        {
+          player_id: profileId,
+          platform: "STEAM",
+          external_id: graphSteamIds[i]!,
+          identity_status: "verified",
+          is_verified: true,
+        },
+      ]);
+      if (identityInsert.error) {
+        record(
+          "14 — Identity Graph fixtures",
+          "SKIPPED",
+          `identity insert failed: ${identityInsert.error.message}`,
+        );
+        break;
+      }
+    }
+
+    const graphReady = touchedProfileIds.size === 10;
+
+    if (!graphReady) {
+      for (const gate of [
+        "14 — Identity Graph CASE A (resolved)",
+        "15 — Identity Graph CASE B (unresolved)",
+        "17 — cross-source EXACT through the real graph",
+        "18 — temporal semantics (start vs finish)",
+        "19 — multiple EXACT candidates => ambiguity",
+      ]) {
+        record(gate, "SKIPPED", `only ${touchedProfileIds.size}/10 identity fixtures available`);
+      }
+    } else {
+      /* Gate 14 — CASE A: the graph resolves FACEIT -> profile -> SteamID64. */
+      const caseA = await resolveFaceitIdentities(supabaseAdmin, graphFaceitIds);
+      const resolvedSteam = graphFaceitIds
+        .map((id) => caseA.identities.get(id)?.steamId64)
+        .filter((id): id is string => typeof id === "string");
+      check(
+        "14 — Identity Graph CASE A (resolved)",
+        caseA.resolution === "RESOLVED" &&
+          resolvedSteam.length === 10 &&
+          resolvedSteam.every((id) => graphSteamIds.includes(id)),
+        `resolution=${caseA.resolution} steamIds=${resolvedSteam.length}`,
+      );
+
+      /* Gate 15 — CASE B: an absent identity is UNRESOLVED, never an error. */
+      const caseB = await resolveFaceitIdentities(supabaseAdmin, [`${RUN}-absent-faceit-id`]);
+      check(
+        "15 — Identity Graph CASE B (unresolved, not an error)",
+        caseB.resolution === "IDENTITY_UNRESOLVED" && caseB.identities.size === 0,
+        `resolution=${caseB.resolution} entries=${caseB.identities.size}`,
+      );
+
+      /* Gate 17/18 — DEMO persisted, then the SAME match seen on FACEIT with a
+         DIFFERENT external id, NO fingerprint and a `playedAt` that carries the
+         END instant. Convergence must come from the graph roster + the START. */
+      const demoStart = new Date("2026-01-15T22:00:00.000Z").toISOString();
+      const faceitStart = new Date("2026-01-15T22:01:00.000Z").toISOString();
+      const faceitFinish = new Date("2026-01-15T22:42:00.000Z").toISOString();
+
+      const graphDemo = await persistCanonicalObservation({
+        bundle: bundle({
+          source: "demo",
+          externalMatchId: null,
+          fingerprint: `proof-${RUN}-graph-demo-sha256`,
+          scoreTeamA: 13,
+          scoreTeamB: 9,
+          withRounds: true,
+          roster: graphSteamIds,
+          playedAt: demoStart,
+          startedAt: demoStart,
+        }),
+      });
+      touchedMatchIds.add(graphDemo.matchId);
+
+      const faceitCross = bundle({
+        source: "faceit",
+        externalMatchId: `proof-${RUN}-faceit-cross`,
+        fingerprint: null,
+        scoreTeamA: 13,
+        scoreTeamB: 9,
+        withRounds: false,
+        roster: resolvedSteam,
+        externalPlayerIds: graphFaceitIds,
+        // FACEIT's `match_date` may be the END instant.
+        playedAt: faceitFinish,
+        startedAt: faceitStart,
+        finishedAt: faceitFinish,
+      });
+
+      // Isolated to the fixture under proof: unrelated fixtures from earlier
+      // gates share the map and the discovery window on purpose.
+      const crossCandidates = (
+        await loadCandidates(supabaseAdmin, faceitStart, resolvedSteam)
+      ).filter((candidate) => candidate.canonicalMatchId === graphDemo.matchId);
+      const incoming: MatchIdentityCandidate = {
+        source: "faceit",
+        externalMatchId: faceitCross.observation.externalMatchId,
+        fingerprint: null,
+        map: faceitCross.match.map,
+        playedAt: faceitCross.match.playedAt,
+        startedAt: faceitCross.match.startedAt,
+        finishedAt: faceitCross.match.finishedAt,
+        roundCount: null,
+        scoreTeamA: faceitCross.match.scoreTeamA,
+        scoreTeamB: faceitCross.match.scoreTeamB,
+        participantSteamIds: resolvedSteam,
+      };
+      const resolvedCross = resolveAgainstAll(incoming, crossCandidates);
+      const attachTarget =
+        canConvergeCrossSource(resolvedCross.decision) &&
+        resolvedCross.candidate?.canonicalMatchId
+          ? resolvedCross.candidate.canonicalMatchId
+          : null;
+      const crossPersisted = await persistCanonicalObservation({
+        bundle: faceitCross,
+        attachMatchId: attachTarget,
+      });
+      touchedMatchIds.add(crossPersisted.matchId);
+
+      const crossSources = await supabaseAdmin
+        .from("match_sources")
+        .select("source")
+        .eq("match_id", graphDemo.matchId);
+      const crossParticipants = await supabaseAdmin
+        .from("match_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("match_id", graphDemo.matchId);
+      check(
+        "17 — cross-source EXACT through the real graph (no fingerprint, no shared external id)",
+        resolvedCross.decision.resolution === "EXACT_MATCH" &&
+          crossPersisted.matchId === graphDemo.matchId &&
+          (crossSources.data ?? []).length === 2 &&
+          crossParticipants.count === 10,
+        `resolution=${resolvedCross.decision.resolution} signals=${resolvedCross.decision.signals.join(",")} sources=${(crossSources.data ?? []).length} participants=${crossParticipants.count}`,
+      );
+      check(
+        "18 — temporal semantics: DEMO start vs FACEIT start (never vs finish)",
+        resolvedCross.decision.signals.includes("time_close"),
+        `demoStart=${demoStart} faceitStart=${faceitStart} faceitFinish=${faceitFinish} signals=${resolvedCross.decision.signals.join(",")}`,
+      );
+
+      const precedence = await supabaseAdmin
+        .from("matches")
+        .select("canonical_source, round_source, score_team_a, score_team_b, round_count")
+        .eq("id", graphDemo.matchId)
+        .maybeSingle();
+      check(
+        "20 — source precedence: the weaker source never degrades canonical facts",
+        precedence.data?.canonical_source === "demo" &&
+          precedence.data?.round_source === "demo" &&
+          precedence.data?.score_team_a === 13 &&
+          precedence.data?.round_count === 1,
+        JSON.stringify(precedence.data),
+      );
+
+      /* Gate 19 — TWO equally EXACT candidates must NEVER be auto-attached. */
+      const twinA = await persistCanonicalObservation({
+        bundle: bundle({
+          source: "faceit",
+          externalMatchId: `proof-${RUN}-twin-a`,
+          fingerprint: null,
+          scoreTeamA: 13,
+          scoreTeamB: 9,
+          withRounds: false,
+          roster: graphSteamIds,
+          playedAt: new Date("2026-01-16T10:00:00.000Z").toISOString(),
+          startedAt: new Date("2026-01-16T10:00:00.000Z").toISOString(),
+        }),
+      });
+      const twinB = await persistCanonicalObservation({
+        bundle: bundle({
+          source: "faceit",
+          externalMatchId: `proof-${RUN}-twin-b`,
+          fingerprint: null,
+          scoreTeamA: 13,
+          scoreTeamB: 9,
+          withRounds: false,
+          roster: graphSteamIds,
+          playedAt: new Date("2026-01-16T10:02:00.000Z").toISOString(),
+          startedAt: new Date("2026-01-16T10:02:00.000Z").toISOString(),
+        }),
+      });
+      touchedMatchIds.add(twinA.matchId);
+      touchedMatchIds.add(twinB.matchId);
+      const twinCandidates = (
+        await loadCandidates(
+          supabaseAdmin,
+          new Date("2026-01-16T10:00:00.000Z").toISOString(),
+          graphSteamIds,
+        )
+      ).filter((candidate) => [twinA.matchId, twinB.matchId].includes(candidate.canonicalMatchId!));
+      const twinDecision = resolveAgainstAll(
+        {
+          source: "demo",
+          externalMatchId: null,
+          fingerprint: `proof-${RUN}-twin-demo`,
+          map: MAP,
+          playedAt: new Date("2026-01-16T10:01:00.000Z").toISOString(),
+          startedAt: new Date("2026-01-16T10:01:00.000Z").toISOString(),
+          roundCount: null,
+          scoreTeamA: 13,
+          scoreTeamB: 9,
+          participantSteamIds: graphSteamIds,
+        },
+        twinCandidates,
+      );
+      check(
+        "19 — two EXACT candidates => ambiguity, never an arbitrary attach",
+        twinCandidates.length === 2 &&
+          twinDecision.decision.resolution === "CONFLICT" &&
+          twinDecision.candidate === null &&
+          canConvergeCrossSource(twinDecision.decision) === false,
+        `candidates=${twinCandidates.length} resolution=${twinDecision.decision.resolution} signals=${twinDecision.decision.signals.join(",")}`,
+      );
+
+      /* Gate 16 — CASE C: a FAILING graph query is an error, never "absent". */
+      const publishable = process.env["SUPABASE_PUBLISHABLE_KEY"];
+      const projectUrl = process.env["SUPABASE_URL"];
+      if (!publishable || !projectUrl) {
+        record(
+          "16 — Identity Graph CASE C (query failure)",
+          "SKIPPED",
+          "no publishable key in this environment",
+        );
+      } else {
+        const denied = createClient<Database>(projectUrl, publishable, {
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
+        let caseC = "none";
+        try {
+          const out = await resolveFaceitIdentities(denied, graphFaceitIds);
+          caseC = `NO_ERROR:${out.resolution}`;
+        } catch (error) {
+          caseC =
+            error instanceof FaceitIdentityResolutionError
+              ? `IDENTITY_RESOLUTION_ERROR:${error.detail}`
+              : `WRONG_ERROR:${String(error)}`;
+        }
+        check(
+          "16 — Identity Graph CASE C: a query failure raises IDENTITY_RESOLUTION_ERROR",
+          caseC.startsWith("IDENTITY_RESOLUTION_ERROR"),
+          caseC,
+        );
+      }
+    }
+
+    /* Gate 21 — SERIES-ONLY stays intact: a proven BO3 with unproven maps
+       stores the SERIES and no placeholder match. */
+    const seriesExternalId = `proof-${RUN}-series-only`;
+    const seriesPersisted = await persistCanonicalSeriesObservation({
+      series: {
+        game: "cs2",
+        bestOf: 3,
+        status: "completed",
+        startedAt: null,
+        finishedAt: null,
+        durationSeconds: null,
+        teamA: `proof-${RUN}-S-A`,
+        teamB: `proof-${RUN}-S-B`,
+        mapsWonTeamA: 2,
+        mapsWonTeamB: 1,
+        winnerTeam: "team_a",
+        schemaVersion: CANONICAL_SCHEMA_VERSION,
+        quality: quality("degraded", ["series_only"]),
+        metadata: { canonical_proof_run: RUN },
+      },
+      observation: {
+        source: "faceit",
+        externalSeriesId: seriesExternalId,
+        sourceContractVersion: SOURCE_CONTRACT_VERSIONS["faceit"],
+        sourceVersion: null,
+        fetchedAt: new Date().toISOString(),
+        status: "incomplete",
+        quality: quality("degraded", ["series_only"]),
+        metadata: { canonical_shape: "series_only" },
+      },
+    });
+    touchedSeriesIds.add(seriesPersisted.seriesId);
+    const seriesSources = await supabaseAdmin
+      .from("match_sources")
+      .select("match_id, series_id")
+      .eq("series_id", seriesPersisted.seriesId);
+    const seriesMatches = await supabaseAdmin
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("series_id", seriesPersisted.seriesId);
+    check(
+      "21 — SERIES-ONLY: one series, zero placeholder matches",
+      (seriesSources.data ?? []).length === 1 &&
+        seriesSources.data?.[0]?.match_id === null &&
+        seriesSources.data?.[0]?.series_id === seriesPersisted.seriesId &&
+        seriesMatches.count === 0,
+      `sources=${JSON.stringify(seriesSources.data)} matches=${seriesMatches.count}`,
+    );
+
   } finally {
     /* Cleanup — fixtures only, verified by re-reading the tables. */
     const ids = [...touchedMatchIds];
@@ -511,6 +875,20 @@ async function main() {
         .delete()
         .in("id", [...touchedSeriesIds]);
     }
+    // Identity fixtures: deleting the auth user cascades profile + identities.
+    for (const userId of touchedUserIds) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+    }
+    const leftIdentities = await supabaseAdmin
+      .from("player_identities")
+      .select("id", { count: "exact", head: true })
+      .like("external_id", `${RUN}-gc-faceit-%`);
+    check(
+      "22 — identity fixtures fully removed",
+      leftIdentities.count === 0,
+      `leftoverIdentities=${leftIdentities.count}`,
+    );
+
     const leftMatches = await supabaseAdmin
       .from("matches")
       .select("id", { count: "exact", head: true })

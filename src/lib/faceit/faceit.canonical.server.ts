@@ -273,7 +273,7 @@ export async function loadCandidates(
   const { data, error } = await db
     .from("matches")
     .select(
-      "id, data_source, external_match_id, content_fingerprint, map, played_at, match_date, round_count, score_team_a, score_team_b",
+      "id, data_source, external_match_id, content_fingerprint, map, played_at, match_date, started_at, finished_at, round_count, score_team_a, score_team_b",
     )
     .in("id", [...ids])
     .limit(200);
@@ -292,6 +292,9 @@ export async function loadCandidates(
     fingerprint: row.content_fingerprint ?? null,
     map: row.map ?? null,
     playedAt: row.played_at ?? row.match_date ?? null,
+    // FASE 2.6.11.4 — identity compares STARTS, never a start against an end.
+    startedAt: row.started_at ?? null,
+    finishedAt: row.finished_at ?? null,
     roundCount: row.round_count ?? null,
     scoreTeamA: row.score_team_a ?? null,
     scoreTeamB: row.score_team_b ?? null,
@@ -371,7 +374,11 @@ export async function persistFaceitObservation(args: {
   const provenSteamIds = enriched
     .map((p) => p.steamId64)
     .filter((id): id is string => typeof id === "string");
-  const candidates = await loadCandidates(args.db, args.mapped.match_date, provenSteamIds);
+  // FASE 2.6.11.4 — discovery is centred on the match START when FACEIT proves
+  // it; `match_date` may be the END and would shift the window.
+  const discoveryAnchor =
+    (args.mapped.metadata?.["started_at"] as string | null | undefined) ?? args.mapped.match_date;
+  const candidates = await loadCandidates(args.db, discoveryAnchor, provenSteamIds);
 
   for (const bundle of observation.bundles) {
     const incoming: MatchIdentityCandidate = {
@@ -380,6 +387,8 @@ export async function persistFaceitObservation(args: {
       fingerprint: bundle.observation.fingerprint,
       map: bundle.match.map,
       playedAt: bundle.match.playedAt,
+      startedAt: bundle.match.startedAt,
+      finishedAt: bundle.match.finishedAt ?? null,
       roundCount: bundle.match.roundCount,
       scoreTeamA: bundle.match.scoreTeamA,
       scoreTeamB: bundle.match.scoreTeamB,
