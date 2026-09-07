@@ -156,6 +156,13 @@ export function faceitToCanonicalObservation(
         }
       : null;
 
+  const meta = {
+    externalSeriesId: seriesRecord ? mapped.external_match_id : null,
+    sourceContractVersion: SOURCE_CONTRACT_VERSIONS.faceit as string,
+    sourceVersion: mapped.source_version as string | null,
+    fetchedAt,
+  };
+
   const observationBase = {
     source: "faceit" as const,
     sourceContractVersion: SOURCE_CONTRACT_VERSIONS.faceit,
@@ -171,7 +178,7 @@ export function faceitToCanonicalObservation(
 
   // BO1: one map, and the FACEIT score IS the round score.
   if (!seriesRecord) {
-    return [
+    const bundles: CanonicalMatchBundle[] = [
       {
         observation: {
           ...observationBase,
@@ -216,13 +223,17 @@ export function faceitToCanonicalObservation(
         events: [],
       },
     ];
+    return { series: null, bundles, ...meta };
   }
 
   // Series: one canonical match per map segment FACEIT actually reported. When
-  // no per-map score exists, no map row is invented — only the series survives.
-  if (!segments || segments.length === 0) return [];
+  // no per-map score exists, NO map row is invented — the series survives on
+  // its own (1 series, 0 matches), never a placeholder match with `map = null`.
+  if (!segments || segments.length === 0) {
+    return { series: seriesRecord, bundles: [], ...meta };
+  }
 
-  return segments.map((segment, index) => {
+  const bundles: CanonicalMatchBundle[] = segments.map((segment, index) => {
     const scoreTarget = segment.player;
     const scoreOther = segment.opponent;
     const mapName = input.mapNames?.[index] ?? null;
@@ -263,4 +274,14 @@ export function faceitToCanonicalObservation(
       events: [],
     };
   });
+
+  return { series: seriesRecord, bundles, ...meta };
+}
+
+/**
+ * Backwards-compatible projection: only the playable maps. Callers that also
+ * need a series-only observation must use `faceitToCanonicalObservation`.
+ */
+export function faceitToCanonicalBundles(input: FaceitAdapterInput): CanonicalMatchBundle[] {
+  return faceitToCanonicalObservation(input).bundles;
 }
