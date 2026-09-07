@@ -52,12 +52,17 @@ const quality = (status: CanonicalQuality["status"], reasons: string[] = []): Ca
   confidence: null,
 });
 
-function participants(source: "demo" | "faceit"): CanonicalParticipant[] {
-  return ROSTER.map((steamId, index) => ({
+function participants(
+  source: "demo" | "faceit",
+  roster: readonly string[] = ROSTER,
+  externalIds: readonly string[] | null = null,
+): CanonicalParticipant[] {
+  return roster.map((steamId, index) => ({
     participantKey: steamId,
     internalPlayerId: null,
     source,
-    externalPlayerId: source === "faceit" ? `${RUN}-faceit-player-${index}` : null,
+    externalPlayerId:
+      source === "faceit" ? (externalIds?.[index] ?? `${RUN}-faceit-player-${index}`) : null,
     steamId64: steamId,
     nicknameSnapshot: null,
     team: index < 5 ? "team_a" : "team_b",
@@ -75,8 +80,14 @@ function bundle(args: {
   scoreTeamA: number | null;
   scoreTeamB: number | null;
   withRounds: boolean;
+  roster?: readonly string[];
+  externalPlayerIds?: readonly string[] | null;
+  map?: string;
+  playedAt?: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
 }): CanonicalMatchBundle {
-  const roster = participants(args.source);
+  const roster = participants(args.source, args.roster ?? ROSTER, args.externalPlayerIds ?? null);
   return {
     observation: {
       source: args.source,
@@ -94,11 +105,11 @@ function bundle(args: {
     series: null,
     match: {
       game: "cs2",
-      map: MAP,
+      map: args.map ?? MAP,
       mapNumber: null,
-      playedAt: PLAYED_AT,
-      startedAt: null,
-      finishedAt: null,
+      playedAt: args.playedAt ?? PLAYED_AT,
+      startedAt: args.startedAt ?? null,
+      finishedAt: args.finishedAt ?? null,
       durationSeconds: null,
       status: "completed",
       finished: true,
@@ -113,9 +124,9 @@ function bundle(args: {
       coverage: {
         roundsExpected: null,
         roundsObserved: args.withRounds ? 1 : null,
-        participantsExpected: 10,
-        participantsObserved: 10,
-        participantsResolved: 10,
+        participantsExpected: roster.length,
+        participantsObserved: roster.length,
+        participantsResolved: roster.length,
         eventsObserved: args.withRounds ? 2 : null,
         hasRoundData: args.withRounds,
         hasEventData: args.withRounds,
