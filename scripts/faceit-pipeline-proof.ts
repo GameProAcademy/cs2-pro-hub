@@ -249,6 +249,8 @@ async function main() {
           .maybeSingle();
         const profileId = profile.data?.id;
         if (!profileId) break;
+        touchedProfileIds.add(profileId);
+
         const inserted = await supabaseAdmin.from("player_identities").insert([
           {
             player_id: profileId,
