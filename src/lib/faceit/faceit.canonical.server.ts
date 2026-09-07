@@ -124,20 +124,48 @@ export interface ResolvedGraphIdentity {
   steamId64: string | null;
 }
 
+/**
+ * FASE 2.6.11.3 — a technical failure is NOT an absent identity.
+ *
+ * A database error, a permission denial or a timeout says nothing about whether
+ * the identity exists. Treating it as "no identity found" would silently turn a
+ * broken Identity Graph into a resolver that never converges, so the failure is
+ * raised instead of being flattened into an empty result.
+ */
+export class FaceitIdentityResolutionError extends Error {
+  constructor(readonly detail: string) {
+    super(`IDENTITY_RESOLUTION_ERROR: ${detail}`);
+    this.name = "FaceitIdentityResolutionError";
+  }
+}
+
+export type FaceitIdentityResolution =
+  /** The graph answered and every requested identity resolved to Steam. */
+  | "RESOLVED"
+  /** The graph answered; some or all identities simply do not exist yet. */
+  | "IDENTITY_UNRESOLVED";
+
+export interface FaceitIdentityResult {
+  identities: Map<string, ResolvedGraphIdentity>;
+  resolution: FaceitIdentityResolution;
+}
+
 export async function resolveFaceitIdentities(
   db: SupabaseClient<Database>,
   faceitPlayerIds: readonly string[],
-): Promise<Map<string, ResolvedGraphIdentity>> {
+): Promise<FaceitIdentityResult> {
   const out = new Map<string, ResolvedGraphIdentity>();
   const ids = [...new Set(faceitPlayerIds.filter((id) => id.length > 0))];
-  if (ids.length === 0) return out;
+  if (ids.length === 0) return { identities: out, resolution: "IDENTITY_UNRESOLVED" };
 
-  const { data: faceitRows } = await db
+  const { data: faceitRows, error: faceitError } = await db
     .from("player_identities")
     .select("player_id, external_id, identity_status")
     .eq("platform", "FACEIT")
     .in("external_id", ids)
     .in("identity_status", [...GRAPH_TRUSTED_STATUSES]);
+
+  if (faceitError) throw new FaceitIdentityResolutionError(faceitError.message);
 
   const byPlayer = new Map<string, string[]>();
   for (const row of faceitRows ?? []) {
@@ -147,15 +175,17 @@ export async function resolveFaceitIdentities(
     list.push(row.external_id);
     byPlayer.set(row.player_id, list);
   }
-  if (byPlayer.size === 0) return out;
+  if (byPlayer.size === 0) return { identities: out, resolution: "IDENTITY_UNRESOLVED" };
 
   // A Steam identity is only usable when the graph proved OWNERSHIP of it.
-  const { data: steamRows } = await db
+  const { data: steamRows, error: steamError } = await db
     .from("player_identities")
     .select("player_id, external_id, identity_status")
     .eq("platform", "STEAM")
     .in("player_id", [...byPlayer.keys()])
     .in("identity_status", [...GRAPH_STEAM_STATUSES]);
+
+  if (steamError) throw new FaceitIdentityResolutionError(steamError.message);
 
   for (const row of steamRows ?? []) {
     const steamId = normalizeSteamId64(row.external_id);
@@ -165,7 +195,12 @@ export async function resolveFaceitIdentities(
       if (current) current.steamId64 = steamId;
     }
   }
-  return out;
+
+  const resolvedSteam = [...out.values()].filter((entry) => entry.steamId64 !== null).length;
+  return {
+    identities: out,
+    resolution: resolvedSteam === ids.length ? "RESOLVED" : "IDENTITY_UNRESOLVED",
+  };
 }
 
 /** SteamID64s already stored for a canonical match, used as resolver evidence. */
@@ -175,10 +210,11 @@ async function loadCandidateRosters(
 ): Promise<Map<string, string[]>> {
   const rosters = new Map<string, string[]>();
   if (matchIds.length === 0) return rosters;
-  const { data } = await db
+  const { data, error } = await db
     .from("match_participants")
     .select("match_id, steam_id64")
     .in("match_id", [...matchIds]);
+  if (error) throw new FaceitIdentityResolutionError(error.message);
   for (const row of data ?? []) {
     const steamId = normalizeSteamId64(row.steam_id64);
     if (!steamId) continue;
@@ -190,27 +226,58 @@ async function loadCandidateRosters(
 }
 
 /**
- * Already stored matches of this player near the same competitive date. They are
- * the candidates the resolver compares the incoming FACEIT observation against.
+ * FASE 2.6.11.3 — PLAYER-NEUTRAL candidate discovery.
+ *
+ * A canonical match does not belong to a player, so discovery may NOT depend on
+ * `matches.player_id`: a match persisted without an owner (or owned by another
+ * participant) is still the same match. Candidates are found by canonical
+ * attributes only — the participants proven by the Identity Graph, plus the
+ * competitive time window.
  */
 async function loadCandidates(
   db: SupabaseClient<Database>,
-  playerId: string,
   playedAt: string | null,
+  steamIds: readonly string[],
 ): Promise<MatchIdentityCandidate[]> {
   if (!playedAt) return [];
   const center = Date.parse(playedAt);
   if (!Number.isFinite(center)) return [];
+  const from = new Date(center - CANDIDATE_WINDOW_MS).toISOString();
+  const to = new Date(center + CANDIDATE_WINDOW_MS).toISOString();
 
-  const { data } = await db
+  const ids = new Set<string>();
+
+  // 1. Roster-driven discovery: matches that already contain these accounts.
+  if (steamIds.length > 0) {
+    const { data: byRoster, error: rosterError } = await db
+      .from("match_participants")
+      .select("match_id")
+      .in("steam_id64", [...new Set(steamIds)])
+      .limit(500);
+    if (rosterError) throw new FaceitIdentityResolutionError(rosterError.message);
+    for (const row of byRoster ?? []) if (row.match_id) ids.add(row.match_id);
+  }
+
+  // 2. Time-window discovery, so a match with no resolved roster is still seen.
+  const { data: byWindow, error: windowError } = await db
+    .from("matches")
+    .select("id")
+    .gte("match_date", from)
+    .lte("match_date", to)
+    .limit(200);
+  if (windowError) throw new FaceitIdentityResolutionError(windowError.message);
+  for (const row of byWindow ?? []) ids.add(row.id);
+
+  if (ids.size === 0) return [];
+
+  const { data, error } = await db
     .from("matches")
     .select(
       "id, data_source, external_match_id, content_fingerprint, map, played_at, match_date, round_count, score_team_a, score_team_b",
     )
-    .eq("player_id", playerId)
-    .gte("match_date", new Date(center - CANDIDATE_WINDOW_MS).toISOString())
-    .lte("match_date", new Date(center + CANDIDATE_WINDOW_MS).toISOString())
-    .limit(50);
+    .in("id", [...ids])
+    .limit(200);
+  if (error) throw new FaceitIdentityResolutionError(error.message);
 
   const rosters = await loadCandidateRosters(
     db,
@@ -230,6 +297,7 @@ async function loadCandidates(
     scoreTeamB: row.score_team_b ?? null,
   }));
 }
+
 
 /**
  * Persists ONE FACEIT match observation canonically. Returns the canonical match
