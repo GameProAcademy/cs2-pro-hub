@@ -61,10 +61,28 @@ const FACEIT_COVERAGE_REASONS = [
 ];
 
 /**
- * Translates ONE FACEIT match record. Returns one bundle per playable map: a
- * BO1 yields one, a series yields one per map segment FACEIT actually reported.
+ * Result of translating ONE FACEIT record. `series` survives even when no
+ * playable map could be identified — a known BO3 must not vanish just because
+ * FACEIT did not report per-map scores.
  */
-export function faceitToCanonicalBundles(input: FaceitAdapterInput): CanonicalMatchBundle[] {
+export interface FaceitCanonicalObservation {
+  series: CanonicalSeries | null;
+  bundles: CanonicalMatchBundle[];
+  /** External identifier of the series, when a series exists. */
+  externalSeriesId: string | null;
+  sourceContractVersion: string;
+  sourceVersion: string | null;
+  fetchedAt: string;
+}
+
+/**
+ * Translates ONE FACEIT match record. A BO1 yields one bundle; a series yields
+ * one bundle per map segment FACEIT actually reported, plus the series itself.
+ */
+export function faceitToCanonicalObservation(
+  input: FaceitAdapterInput,
+): FaceitCanonicalObservation {
+
   const mapped = input.mapped;
   const fetchedAt = input.fetchedAt ?? mapped.source_fetched_at ?? new Date().toISOString();
   const targetSlot = input.targetTeamSlot;
