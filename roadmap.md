@@ -175,3 +175,23 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [ ] Pendente: FACEIT `sync.server.ts` ainda grava pelo caminho antigo — converter para
       `faceitToCanonicalBundles()` + `persist_canonical_observation()`; teste de
       concorrência real; RLS negativa via sessão autenticada.
+
+## FASE 2.6.11.2 — erro de runtime do painel administrativo
+
+- [x] Causa: o menu lateral consultava a sessão administrativa em TODAS as páginas
+      autenticadas. Para um jogador comum a resposta era uma recusa (`ADMIN_FORBIDDEN`)
+      e, quando ainda não havia sessão no navegador, `Unauthorized: No authorization
+      header provided` — dois erros visíveis no console em uso perfeitamente normal.
+- [x] Correção: novo `getAdminSessionProbe()` (mesma verificação no servidor) devolve
+      `null` para quem não é administrador e só falha em problema de infraestrutura;
+      o hook só consulta quando existe sessão no navegador. O portão de `/admin`
+      continua usando `getAdminSession()` estrito.
+- [x] Prova em navegador real, sessão de jogador: `/login`, `/register`,
+      `/reset-password`, `/dashboard`, `/matches`, `/profile`, `/upload` sem erros de
+      `ADMIN_FORBIDDEN`/`Unauthorized`; `/admin` redireciona para `/dashboard`;
+      recarregar `/dashboard` mantém a sessão.
+- [x] Privilégios mínimos reconfirmados: tabelas canônicas só com leitura para usuário
+      autenticado, zero acesso anônimo; rotinas de persistência canônica apenas
+      `service_role`, SECURITY DEFINER com `search_path=''`.
+- [ ] Resta um aviso de desenvolvimento do React em `/dashboard` (atualização de estado
+      durante render em sub-árvore `ssr: false`), sem efeito no usuário final.
