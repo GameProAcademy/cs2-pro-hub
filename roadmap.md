@@ -195,3 +195,48 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       `service_role`, SECURITY DEFINER com `search_path=''`.
 - [ ] Resta um aviso de desenvolvimento do React em `/dashboard` (atualização de estado
       durante render em sub-árvore `ssr: false`), sem efeito no usuário final.
+
+## FASE 2.6.11.3 — Production cross-source identity closure
+
+- [x] **Bloqueio P0 encontrado — descoberta de candidatos dependia do jogador.**
+      `loadCandidates()` filtrava `matches.player_id = playerId`. Uma partida canônica
+      NÃO pertence a um jogador (provado no banco: `player_id IS NULL`), portanto a
+      descoberta ficava cega. Agora é neutra: encontra candidatos pelos participantes
+      provados no Identity Graph (`match_participants.steam_id64`) e pela janela
+      competitiva, nunca pelo dono.
+- [x] **Bloqueio P0 encontrado — nenhuma evidência EXACT legítima entre fontes.**
+      O demo tem fingerprint, a FACEIT não, e os ids externos das duas fontes não se
+      relacionam: na prática nunca haveria convergência real. Regra nova e determinística:
+      roster COMPLETO e IDÊNTICO de dez contas provadas pelo Identity Graph, mesmo mapa,
+      mesma janela competitiva e sem placar contraditório ⇒ `EXACT_MATCH`
+      (`cross_source_roster_identical`). Nada mais foi enfraquecido: parcial continua
+      `PROBABLE`/`POSSIBLE`, contradição continua `CONFLICT`, e só EXACT anexa.
+      Nenhum fingerprint é copiado, nenhum SteamID64 é inventado.
+- [x] **Bloqueio P0 encontrado — erro técnico virava "identidade inexistente".**
+      As consultas ao Identity Graph ignoravam `error`. Agora falha de banco/permissão
+      levanta `FaceitIdentityResolutionError` (IDENTITY_RESOLUTION_ERROR) e a ausência
+      real devolve `IDENTITY_UNRESOLVED` — estados distintos para quem chama.
+- [x] Prova no banco real (fixtures isoladas, removidas ao final, zero dado real tocado):
+      demo persistida (1 partida, 1 round, 2 eventos); FACEIT anexada ⇒ MESMA partida;
+      6 repetições ⇒ 1 partida, 1 observação FACEIT, `observation_count = 7`, 10
+      participantes sem duplicação; caso negativo (placar contraditório) ⇒ partida
+      separada; anexo a partida inexistente ⇒ `CANONICAL_ATTACH_TARGET_NOT_FOUND` com
+      ZERO sobras (rollback).
+- [x] RLS reprovada em sessão simulada por papel: participante vê a partida; usuário
+      autenticado não participante não vê partida, participantes nem observações;
+      `admin_master` vê por política explícita `is_staff`; anônimo sem acesso;
+      `INSERT` direto em `matches` negado; `EXECUTE` da rotina de persistência negado
+      para `authenticated`. Rotinas canônicas: SECURITY DEFINER, `search_path=''`,
+      EXECUTE só para `postgres`/`service_role`.
+- [x] Runtime em navegador real: visitante em `/`, `/login`, `/register`,
+      `/reset-password` sem erros; jogador em `/dashboard`, `/matches`, `/profile`,
+      `/upload` sem erros; `/admin` redireciona para `/dashboard`.
+- [x] Suíte: 461 → 480 testes, typecheck, lint e build OK. Novo teste
+      `production-cross-source-identity-closure.test.ts` percorre as funções de produção
+      (roster FACEIT → Identity Graph → descoberta de candidatos → resolvedor → anexo).
+- [ ] **LIMITAÇÃO declarada:** concorrência com sessões paralelas de verdade não pôde ser
+      executada nesta fase — não há credencial de escrita paralela disponível no ambiente
+      (`dblink` exige senha do banco, indisponível). A serialização segue garantida por
+      `pg_advisory_xact_lock` e pela unicidade `(source, external_match_id)`, e a prova
+      com dois workers foi feita na 2.6.11; ainda assim, esta gate NÃO é declarada
+      provada nesta fase.
