@@ -21,7 +21,10 @@ import { randomUUID } from "node:crypto";
 
 import { createClient } from "@supabase/supabase-js";
 
-import { CANONICAL_SCHEMA_VERSION } from "@/lib/canonical/canonical.versions";
+import {
+  CANONICAL_SCHEMA_VERSION,
+  SOURCE_CONTRACT_VERSIONS,
+} from "@/lib/canonical/canonical.versions";
 import {
   persistCanonicalObservation,
   CanonicalPersistenceError,
@@ -77,7 +80,7 @@ function bundle(args: {
   return {
     observation: {
       source: args.source,
-      sourceContractVersion: args.source === "demo" ? "demo.v1" : "faceit.v1",
+      sourceContractVersion: SOURCE_CONTRACT_VERSIONS[args.source],
       externalMatchId: args.externalMatchId,
       externalParentId: null,
       sourceVersion: null,
