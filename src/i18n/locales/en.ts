@@ -258,7 +258,8 @@ export const en: Dictionary = {
   "admin.bulk.confirm": "Confirm",
   "admin.bulk.cancel": "Cancel",
   "admin.bulk.confirmActivate": "Activate {count} account(s)? This change is audited.",
-  "admin.bulk.confirmDeactivate": "Deactivate {count} account(s)? They will lose access immediately. This change is audited.",
+  "admin.bulk.confirmDeactivate":
+    "Deactivate {count} account(s)? They will lose access immediately. This change is audited.",
   "admin.bulk.limitExceeded": "Action not applied. Select at most 50 accounts.",
   "admin.bulk.select": "Select user",
   "admin.steam.title": "Steam identity",

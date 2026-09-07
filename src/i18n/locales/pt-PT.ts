@@ -262,7 +262,8 @@ export const ptPT: Dictionary = {
   "admin.bulk.confirm": "Confirmar",
   "admin.bulk.cancel": "Cancelar",
   "admin.bulk.confirmActivate": "Ativar {count} conta(s)? A alteração é auditada.",
-  "admin.bulk.confirmDeactivate": "Desativar {count} conta(s)? O acesso é perdido imediatamente. A alteração é auditada.",
+  "admin.bulk.confirmDeactivate":
+    "Desativar {count} conta(s)? O acesso é perdido imediatamente. A alteração é auditada.",
   "admin.bulk.limitExceeded": "Ação não aplicada. Selecione no máximo 50 contas.",
   "admin.bulk.select": "Selecionar utilizador",
   "admin.steam.title": "Identidade Steam",

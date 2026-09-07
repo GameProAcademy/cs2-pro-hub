@@ -154,3 +154,24 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Projeção por jogador (vitória/derrota/"meu placar") derivada, nunca gravada no match.
 - [x] 37 testes novos (454 no total), typecheck limpo, lint limpo, build OK.
 - [ ] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — próximo passo, ainda NÃO aplicados.
+
+## FASE 2.6.9 — persistência canônica: prova contra o banco real
+
+- [x] Idempotência provada com dados de teste no banco real: a MESMA observação gravada
+      duas vezes devolveu o mesmo `match_id`/`match_source_id`, `created=false` e manteve
+      1 partida, 1 fonte, 4 participantes, 2 rounds, 8 estados por round, 1 evento
+      (`observation_count` 1 → 2).
+- [x] Precedência de fonte provada: uma observação FACEIT (nível de partida, sem rounds,
+      placar 99–1, mapa nulo) convergiu para a MESMA partida pelo fingerprint e NÃO
+      sobrescreveu mapa, placar, contagem de rounds nem qualidade vindos do demo;
+      `canonical_source`/`round_source` seguem `demo` e a segunda fonte foi registrada.
+- [x] `NULL ≠ FALSE` confirmado no banco: `survived` seguiu NULL nos 8 estados por round,
+      `winning_team` NULL e `player_id` NULL (partida não pertence a um jogador).
+- [x] Falha real encontrada e corrigida: um estado por round citando participante
+      inexistente era aceito em silêncio (linha órfã). `persist_canonical_observation`
+      agora recusa a observação inteira com `CANONICAL_PARTICIPANT_UNKNOWN` /
+      `CANONICAL_ROUND_UNKNOWN`; reteste confirmou erro e ZERO linhas gravadas.
+- [x] Fixtures de teste removidas do banco ao final (nenhum dado real tocado).
+- [ ] Pendente: FACEIT `sync.server.ts` ainda grava pelo caminho antigo — converter para
+      `faceitToCanonicalBundles()` + `persist_canonical_observation()`; teste de
+      concorrência real; RLS negativa via sessão autenticada.
