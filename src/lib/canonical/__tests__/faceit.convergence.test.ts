@@ -153,9 +153,9 @@ describe("cross-source convergence gate", () => {
   it("each resolution class maps to an explicit attach authorisation", () => {
     const base = { confidence: 1, signals: [] as string[], requiresReview: false };
     expect(canConvergeCrossSource({ ...base, resolution: "EXACT_MATCH" })).toBe(true);
-    expect(canConvergeCrossSource({ ...base, resolution: "EXACT_MATCH", requiresReview: true })).toBe(
-      false,
-    );
+    expect(
+      canConvergeCrossSource({ ...base, resolution: "EXACT_MATCH", requiresReview: true }),
+    ).toBe(false);
     expect(canConvergeCrossSource({ ...base, resolution: "PROBABLE_MATCH" })).toBe(false);
     expect(
       canConvergeCrossSource({ ...base, resolution: "PROBABLE_MATCH", requiresReview: true }),
