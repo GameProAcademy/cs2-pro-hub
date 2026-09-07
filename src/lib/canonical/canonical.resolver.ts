@@ -207,18 +207,15 @@ export function canAttachAutomatically(decisionResult: MatchIdentityDecision): b
 
 /**
  * Cross-source convergence (e.g. a DEMO already stored and the same match seen
- * on FACEIT). No shared identifier exists between such sources, so EXACT_MATCH
- * is impossible by construction: the strongest honest evidence is same map +
- * same time window + at least `MIN_SHARED_PARTICIPANTS` shared SteamID64s.
+ * on FACEIT).
  *
- * Anything weaker (partial or unknown roster, unknown map) stays unattached and
- * is escalated for review — a wrong attach corrupts history permanently.
+ * FASE 2.6.11.1 — ONLY an unambiguous EXACT_MATCH may attach an observation to
+ * an existing canonical match. Confidence is a measurement, never an
+ * authorisation: PROBABLE_MATCH (same map, close time, overlapping roster) is
+ * deliberately NOT enough, because the cost of a wrong fusion is permanent
+ * corruption of history, while the cost of keeping two observations apart is
+ * merely duplicated storage.
  */
 export function canConvergeCrossSource(decisionResult: MatchIdentityDecision): boolean {
-  if (canAttachAutomatically(decisionResult)) return true;
-  return (
-    decisionResult.resolution === "PROBABLE_MATCH" &&
-    !decisionResult.requiresReview &&
-    decisionResult.confidence >= 0.85
-  );
+  return canAttachAutomatically(decisionResult);
 }

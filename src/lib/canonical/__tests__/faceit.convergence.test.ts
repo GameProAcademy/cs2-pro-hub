@@ -116,7 +116,7 @@ describe("cross-source convergence gate", () => {
     participantSteamIds: ["1", "2", "3", "4", "5", "6", "7"],
   };
 
-  it("attaches when map, time and roster agree", () => {
+  it("PROBABLE_MATCH (map, time and roster agree) is NEVER auto-attached", () => {
     const resolved = resolveAgainstAll(
       {
         source: "faceit",
@@ -130,8 +130,59 @@ describe("cross-source convergence gate", () => {
       [demoCandidate],
     );
     expect(resolved.decision.resolution).toBe("PROBABLE_MATCH");
-    expect(canConvergeCrossSource(resolved.decision)).toBe(true);
+    // FASE 2.6.11.1 — only EXACT_MATCH authorises an attach.
+    expect(canConvergeCrossSource(resolved.decision)).toBe(false);
     expect(resolved.candidate?.canonicalMatchId).toBe("match-demo");
+  });
+
+  it("EXACT_MATCH (identical content fingerprint) is the only auto-attach", () => {
+    const resolved = resolveAgainstAll(
+      {
+        source: "faceit",
+        externalMatchId: "1-abc",
+        fingerprint: "sha-demo",
+        map: "de_mirage",
+        playedAt: "2026-02-01T20:00:00.000Z",
+      },
+      [demoCandidate],
+    );
+    expect(resolved.decision.resolution).toBe("EXACT_MATCH");
+    expect(canConvergeCrossSource(resolved.decision)).toBe(true);
+  });
+
+  it("each resolution class maps to an explicit attach authorisation", () => {
+    const base = { confidence: 1, signals: [] as string[], requiresReview: false };
+    expect(canConvergeCrossSource({ ...base, resolution: "EXACT_MATCH" })).toBe(true);
+    expect(
+      canConvergeCrossSource({ ...base, resolution: "EXACT_MATCH", requiresReview: true }),
+    ).toBe(false);
+    expect(canConvergeCrossSource({ ...base, resolution: "PROBABLE_MATCH" })).toBe(false);
+    expect(
+      canConvergeCrossSource({ ...base, resolution: "PROBABLE_MATCH", requiresReview: true }),
+    ).toBe(false);
+    expect(canConvergeCrossSource({ ...base, resolution: "POSSIBLE_MATCH" })).toBe(false);
+    expect(canConvergeCrossSource({ ...base, resolution: "CONFLICT" })).toBe(false);
+    expect(canConvergeCrossSource({ ...base, resolution: "NO_MATCH", confidence: 0 })).toBe(false);
+  });
+
+  it("a weaker positive never overturns a CONFLICT decision", () => {
+    const resolved = resolveAgainstAll(
+      {
+        source: "faceit",
+        externalMatchId: "1-zzz",
+        map: "de_mirage",
+        playedAt: "2026-02-01T20:05:00.000Z",
+        scoreTeamA: 13,
+        scoreTeamB: 2,
+        participantSteamIds: ["1", "2", "3", "4", "5", "6", "7"],
+      },
+      [
+        demoCandidate,
+        { ...demoCandidate, canonicalMatchId: "match-weak", participantSteamIds: ["1", "2"] },
+      ],
+    );
+    expect(resolved.decision.resolution).toBe("CONFLICT");
+    expect(canConvergeCrossSource(resolved.decision)).toBe(false);
   });
 
   it("refuses to attach when the roster is unknown", () => {
