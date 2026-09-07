@@ -30,6 +30,7 @@ import {
   persistCanonicalObservation,
   persistCanonicalSeriesObservation,
 } from "@/lib/canonical/canonical.persistence.server";
+import { normalizeSteamId64 } from "@/lib/identity/identity.normalize";
 import type { Database } from "@/integrations/supabase/types";
 import type { CanonicalFaceitMatch } from "./faceit.mapper";
 import type { FaceitMatch, FaceitMatchStats } from "./faceit.types";
@@ -107,6 +108,88 @@ export function faceitParticipants(
 }
 
 /**
+ * FASE 2.6.11.1 — IDENTITY GRAPH resolution for FACEIT participants.
+ *
+ * FACEIT match payloads never expose SteamID64s. The ONLY legitimate way to
+ * obtain one is an identity the Player Identity Graph already correlated with
+ * enough evidence. A nickname, an avatar, a team name or a coincidence in time
+ * is NOT evidence, and a missing identity stays missing: no SteamID is ever
+ * fabricated to make a comparison succeed.
+ */
+const GRAPH_TRUSTED_STATUSES = ["correlated", "strongly_correlated", "verified"] as const;
+const GRAPH_STEAM_STATUSES = ["strongly_correlated", "verified"] as const;
+
+export interface ResolvedGraphIdentity {
+  internalPlayerId: string | null;
+  steamId64: string | null;
+}
+
+export async function resolveFaceitIdentities(
+  db: SupabaseClient<Database>,
+  faceitPlayerIds: readonly string[],
+): Promise<Map<string, ResolvedGraphIdentity>> {
+  const out = new Map<string, ResolvedGraphIdentity>();
+  const ids = [...new Set(faceitPlayerIds.filter((id) => id.length > 0))];
+  if (ids.length === 0) return out;
+
+  const { data: faceitRows } = await db
+    .from("player_identities")
+    .select("player_id, external_id, identity_status")
+    .eq("platform", "FACEIT")
+    .in("external_id", ids)
+    .in("identity_status", [...GRAPH_TRUSTED_STATUSES]);
+
+  const byPlayer = new Map<string, string[]>();
+  for (const row of faceitRows ?? []) {
+    if (!row.external_id) continue;
+    out.set(row.external_id, { internalPlayerId: row.player_id, steamId64: null });
+    const list = byPlayer.get(row.player_id) ?? [];
+    list.push(row.external_id);
+    byPlayer.set(row.player_id, list);
+  }
+  if (byPlayer.size === 0) return out;
+
+  // A Steam identity is only usable when the graph proved OWNERSHIP of it.
+  const { data: steamRows } = await db
+    .from("player_identities")
+    .select("player_id, external_id, identity_status")
+    .eq("platform", "STEAM")
+    .in("player_id", [...byPlayer.keys()])
+    .in("identity_status", [...GRAPH_STEAM_STATUSES]);
+
+  for (const row of steamRows ?? []) {
+    const steamId = normalizeSteamId64(row.external_id);
+    if (!steamId) continue;
+    for (const externalId of byPlayer.get(row.player_id) ?? []) {
+      const current = out.get(externalId);
+      if (current) current.steamId64 = steamId;
+    }
+  }
+  return out;
+}
+
+/** SteamID64s already stored for a canonical match, used as resolver evidence. */
+async function loadCandidateRosters(
+  db: SupabaseClient<Database>,
+  matchIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  const rosters = new Map<string, string[]>();
+  if (matchIds.length === 0) return rosters;
+  const { data } = await db
+    .from("match_participants")
+    .select("match_id, steam_id64")
+    .in("match_id", [...matchIds]);
+  for (const row of data ?? []) {
+    const steamId = normalizeSteamId64(row.steam_id64);
+    if (!steamId) continue;
+    const list = rosters.get(row.match_id) ?? [];
+    list.push(steamId);
+    rosters.set(row.match_id, list);
+  }
+  return rosters;
+}
+
+/**
  * Already stored matches of this player near the same competitive date. They are
  * the candidates the resolver compares the incoming FACEIT observation against.
  */
@@ -129,8 +212,14 @@ async function loadCandidates(
     .lte("match_date", new Date(center + CANDIDATE_WINDOW_MS).toISOString())
     .limit(50);
 
+  const rosters = await loadCandidateRosters(
+    db,
+    (data ?? []).map((row) => row.id),
+  );
+
   return (data ?? []).map((row) => ({
     canonicalMatchId: row.id,
+    participantSteamIds: rosters.get(row.id) ?? [],
     source: row.data_source,
     externalMatchId: row.external_match_id ?? null,
     fingerprint: row.content_fingerprint ?? null,
@@ -162,10 +251,24 @@ export async function persistFaceitObservation(args: {
     targetSlot,
   );
 
+  // Real Identity Graph, never invented identities.
+  const graph = await resolveFaceitIdentities(
+    args.db,
+    participants.map((p) => p.externalPlayerId),
+  );
+  const enriched = participants.map((p) => {
+    const resolvedIdentity = graph.get(p.externalPlayerId);
+    return {
+      ...p,
+      steamId64: resolvedIdentity?.steamId64 ?? p.steamId64,
+      internalPlayerId: resolvedIdentity?.internalPlayerId ?? p.internalPlayerId ?? null,
+    };
+  });
+
   const observation = faceitToCanonicalObservation({
     mapped: args.mapped,
     targetTeamSlot: targetSlot,
-    participants,
+    participants: enriched,
   });
 
   const result: FaceitCanonicalResult = {
@@ -210,6 +313,10 @@ export async function persistFaceitObservation(args: {
       roundCount: bundle.match.roundCount,
       scoreTeamA: bundle.match.scoreTeamA,
       scoreTeamB: bundle.match.scoreTeamB,
+      // Only graph-proven SteamID64s; absence is never filled in.
+      participantSteamIds: enriched
+        .map((p) => p.steamId64)
+        .filter((id): id is string => typeof id === "string"),
     };
     const resolved = resolveAgainstAll(incoming, candidates);
     const attach =

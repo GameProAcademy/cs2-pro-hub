@@ -75,26 +75,19 @@ export async function persistCanonicalObservation(args: {
   const payload = canonicalBundleToRpcPayload(args.bundle);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // Reserving the source slot BEFORE the write is what makes two sources
-  // converge on one canonical match instead of duplicating it. It never merges
-  // facts: source precedence still decides which observation may write them.
-  if (args.attachMatchId && args.bundle.observation.externalMatchId) {
-    const { error: attachError } = await supabaseAdmin.rpc("canonical_attach_source", {
-      _source: args.bundle.observation.source,
-      _external_match_id: args.bundle.observation.externalMatchId,
-      _match_id: args.attachMatchId,
-      _source_contract_version: args.bundle.observation.sourceContractVersion,
-    });
-    if (attachError) {
-      throw new CanonicalPersistenceError("CANONICAL_ATTACH_FAILED", attachError.message);
-    }
-  }
-
-  const { data, error } = await supabaseAdmin.rpc("persist_canonical_observation", {
+  // FASE 2.6.11.1 — attach + persistence are ONE database transaction. The
+  // attach reservation is what makes two sources converge on a single canonical
+  // match, and running it inside the same routine means a later failure rolls it
+  // back too: no partial attach, no orphan source. It still never merges facts —
+  // source precedence alone decides which observation may write them.
+  const { data, error } = await supabaseAdmin.rpc("persist_canonical_observation_attached", {
     _bundle: payload as never,
     // Omitted (not null) so the routine's own defaults apply.
     ...(args.ownerPlayerId ? { _owner_player_id: args.ownerPlayerId } : {}),
     ...(args.uploadId ? { _upload_id: args.uploadId } : {}),
+    ...(args.attachMatchId && args.bundle.observation.externalMatchId
+      ? { _attach_match_id: args.attachMatchId }
+      : {}),
   });
 
   if (error) throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", error.message);
