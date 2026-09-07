@@ -194,7 +194,7 @@ export function resolveMatchIdentity(
     return decision("NO_MATCH", 0, ["same_source_external_id_differs"]);
   }
 
-  const delta = timeDeltaMs(incoming.playedAt, existing.playedAt);
+  const delta = timeDeltaMs(canonicalStartTimestamp(incoming), canonicalStartTimestamp(existing));
   const shared = sharedParticipants(incoming.participantSteamIds, existing.participantSteamIds);
   const bothMapsKnown = Boolean(incoming.map && existing.map);
   const sameMap = bothMapsKnown && incoming.map === existing.map;
@@ -256,6 +256,7 @@ export function resolveAgainstAll(
   let best: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate } | null = null;
   let conflict: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate } | null =
     null;
+  const exactMatches: { decision: MatchIdentityDecision; candidate: MatchIdentityCandidate }[] = [];
 
   for (const candidate of candidates) {
     const result = resolveMatchIdentity(incoming, candidate);
@@ -266,8 +267,28 @@ export function resolveAgainstAll(
       continue;
     }
     if (result.resolution === "NO_MATCH") continue;
+    if (result.resolution === "EXACT_MATCH" && !result.requiresReview) {
+      exactMatches.push({ decision: result, candidate });
+    }
     if (!best || result.confidence > best.decision.confidence)
       best = { decision: result, candidate };
+  }
+
+  // FASE 2.6.11.4 — AMBIGUITY IS NOT A TIE-BREAK.
+  // Two EXACT candidates mean the evidence identifies more than one canonical
+  // match, which is impossible: one of them is wrong. Picking "the first" would
+  // fuse history arbitrarily, so this is escalated as a CONFLICT and never
+  // auto-attached.
+  if (exactMatches.length > 1) {
+    return {
+      decision: decision(
+        "CONFLICT",
+        0.5,
+        ["ambiguous_multiple_exact_candidates", ...exactMatches[0]!.decision.signals],
+        true,
+      ),
+      candidate: null,
+    };
   }
 
   if (best && best.decision.resolution === "EXACT_MATCH") return best;
