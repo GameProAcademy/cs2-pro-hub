@@ -44,13 +44,11 @@ export interface FaceitCanonicalResult {
   decisions: Array<{ resolution: string; confidence: number; attached: boolean }>;
 }
 
-function slotOf(teams: FaceitMatch["teams"], faceitPlayerId: string): CanonicalTeamSlot {
-  // The target player's team is always projected onto `team_a`; the neutral
-  // slot only has to be STABLE for one observation, never globally meaningful.
-  if (!teams) return "team_a";
-  return "team_a";
-  void faceitPlayerId;
-}
+/**
+ * The target player's team is projected onto `team_a`. The neutral slot only has
+ * to be STABLE within one observation; FACEIT factions carry no global meaning.
+ */
+const TARGET_TEAM_SLOT: CanonicalTeamSlot = "team_a";
 
 /** Roster of both teams, from details when present, else from the stats payload. */
 export function faceitParticipants(
@@ -154,7 +152,7 @@ export async function persistFaceitObservation(args: {
   details: FaceitMatch | null;
   stats: FaceitMatchStats | null;
 }): Promise<FaceitCanonicalResult> {
-  const targetSlot = slotOf(args.details?.teams ?? null, args.faceitPlayerId);
+  const targetSlot = TARGET_TEAM_SLOT;
   const participants = faceitParticipants(
     args.details,
     args.stats,
