@@ -16,10 +16,13 @@
 - [x] (M) Contadores honestos (inserted / updated / existed / skipped / failed / deferred).
 - [x] (N) `fetchFaceitRecentMatchStats` (código morto) removido.
 
-## Aberto (fases seguintes, fora de 2.2.1C)
+## Aberto (fases seguintes)
 
 - [ ] Agendamento externo do cron (`/api/public/pipeline-cron`) com o segredo já configurado.
-- [ ] Gamers Club, dashboard real, Player DNA e AI Coach com dados reais.
+- [ ] Dashboard real, Pro Score, Player DNA, diagnóstico e AI Coach com dados reais (hoje mock sob `DEMO_DATA`).
+- [ ] Worker real de parser de `.dem` (`FEATURES.realDemoParser = false`).
+- [x] Gamers Club: INDISPONÍVEL por bloqueio externo (403/Cloudflare, sem API pública). Não haverá contorno de anti-bot.
+
 
 ## FASE 2.2.1D — FACEIT FINAL VALIDATION PATCH (concluída)
 - `finished` baseado em `finished_at`/status terminal (`isFaceitMatchFinished`); `match_date` nunca é prova.
