@@ -82,7 +82,6 @@ export interface FaceitCanonicalObservation {
 export function faceitToCanonicalObservation(
   input: FaceitAdapterInput,
 ): FaceitCanonicalObservation {
-
   const mapped = input.mapped;
   const fetchedAt = input.fetchedAt ?? mapped.source_fetched_at ?? new Date().toISOString();
   const targetSlot = input.targetTeamSlot;

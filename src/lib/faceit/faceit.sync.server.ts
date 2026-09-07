@@ -616,7 +616,6 @@ export async function runFaceitSync(
           { onConflict: "match_id,player_id" },
         );
       }
-
     } catch (error) {
       const faceitError = toFaceitError(error);
       // Budget/deadline exhaustion is a CONTROLLED stop, never a data error and

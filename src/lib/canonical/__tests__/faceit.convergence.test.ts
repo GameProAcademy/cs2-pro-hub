@@ -142,7 +142,7 @@ describe("cross-source convergence gate", () => {
         map: "de_mirage",
         playedAt: "2026-02-01T20:05:00.000Z",
       },
-      [{ ...demoCandidate, participantSteamIds: undefined }],
+      [{ ...demoCandidate, participantSteamIds: [] }],
     );
     expect(canConvergeCrossSource(resolved.decision)).toBe(false);
     expect(resolved.decision.requiresReview).toBe(true);
