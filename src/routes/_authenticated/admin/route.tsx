@@ -4,9 +4,21 @@ import { ErrorState } from "@/components/common/States";
 import { useT } from "@/i18n";
 import { getAdminSession } from "@/lib/admin.functions";
 
-type AdminGate =
-  | { gate: "ok"; adminSession: Awaited<ReturnType<typeof getAdminSession>> }
-  | { gate: "signin" | "forbidden"; adminSession: null };
+type AdminSessionContext = Awaited<ReturnType<typeof getAdminSession>>;
+
+interface AdminGate {
+  gate: "ok" | "signin" | "forbidden";
+  /**
+   * Only meaningful when `gate === "ok"`. On the denial gates the children are
+   * never rendered (the component navigates away instead), so no descendant can
+   * observe this value — it is typed non-nullable purely so authorised screens
+   * do not have to re-narrow an impossible null.
+   */
+  adminSession: AdminSessionContext;
+}
+
+/** Denial gates never render children; see `adminSession` above. */
+const NO_ADMIN_SESSION = null as unknown as AdminSessionContext;
 
 /**
  * Administrative gate. Authorisation is resolved server-side (session +
@@ -31,12 +43,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
     // simply "not signed in". The absence of a session is answered here, and
     // authorisation itself is still decided server-side below.
     if (!(context as { user?: { id: string } | null }).user) {
-      return { gate: "signin", adminSession: null };
+      return { gate: "signin", adminSession: NO_ADMIN_SESSION };
     }
 
     try {
       const session = await getAdminSession();
-      if (!session?.userId) return { gate: "forbidden", adminSession: null };
+      if (!session?.userId) return { gate: "forbidden", adminSession: NO_ADMIN_SESSION };
       return { gate: "ok", adminSession: session };
     } catch (error) {
       if (isRedirect(error)) throw error;
@@ -44,10 +56,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
       const message = error instanceof Error ? error.message : String(error);
 
       // Session missing/expired: back to the public login route.
-      if (/unauthorized|401/i.test(message)) return { gate: "signin", adminSession: null };
+      if (/unauthorized|401/i.test(message)) return { gate: "signin", adminSession: NO_ADMIN_SESSION };
 
       // Explicit denial: the user is signed in but is not the administrator.
-      if (message.includes("ADMIN_FORBIDDEN")) return { gate: "forbidden", adminSession: null };
+      if (message.includes("ADMIN_FORBIDDEN")) return { gate: "forbidden", adminSession: NO_ADMIN_SESSION };
 
       // Anything else is an unexpected backend failure: surface a controlled
       // error state instead of a silent redirect. No internal detail is shown.
