@@ -194,8 +194,10 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Privilégios mínimos reconfirmados: tabelas canônicas só com leitura para usuário
       autenticado, zero acesso anônimo; rotinas de persistência canônica apenas
       `service_role`, SECURITY DEFINER com `search_path=''`.
-- [ ] Resta um aviso de desenvolvimento do React em `/dashboard` (atualização de estado
-      durante render em sub-árvore `ssr: false`), sem efeito no usuário final.
+- [x] O aviso de desenvolvimento do React em `/dashboard` foi eliminado na FASE 2.6.11.5:
+      os portões de `/_authenticated` e `/admin` decidem em `beforeLoad` e navegam de
+      forma declarativa (`<Navigate replace />`), sem atualizar estado durante o render.
+
 
 ## FASE 2.6.11.3 — Production cross-source identity closure
 
