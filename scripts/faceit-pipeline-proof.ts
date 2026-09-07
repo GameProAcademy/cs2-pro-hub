@@ -360,6 +360,17 @@ async function main() {
       `match=${demo.matchId}`,
     );
 
+    // Ownership state of the target BEFORE the FACEIT pipeline runs. This is the
+    // value candidate discovery could have keyed on — it is NULL, so a match
+    // found through it proves discovery is player-neutral.
+    const ownerBeforeAttach = await supabaseAdmin
+      .from("matches")
+      .select("player_id")
+      .eq("id", demo.matchId)
+      .maybeSingle();
+
+
+
     /* Gate 05 — FULL production pipeline: EXACT + attach. */
     const positive = await runPipeline(positivePayload, A.faceit[0]!);
     for (const id of positive.result.matchIds) touchedMatchIds.add(id);
