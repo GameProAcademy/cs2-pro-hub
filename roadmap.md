@@ -172,9 +172,10 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       agora recusa a observação inteira com `CANONICAL_PARTICIPANT_UNKNOWN` /
       `CANONICAL_ROUND_UNKNOWN`; reteste confirmou erro e ZERO linhas gravadas.
 - [x] Fixtures de teste removidas do banco ao final (nenhum dado real tocado).
-- [ ] Pendente: FACEIT `sync.server.ts` ainda grava pelo caminho antigo — converter para
-      `faceitToCanonicalBundles()` + `persist_canonical_observation()`; teste de
-      concorrência real; RLS negativa via sessão autenticada.
+- [x] Fechado na FASE 2.6.11: `faceit.sync.server.ts` grava EXCLUSIVAMENTE por
+      `persistFaceitObservation()` (adapter + resolver + persistência transacional);
+      concorrência real e RLS negativa provadas na FASE 2.6.11.5.
+
 
 ## FASE 2.6.11.2 — erro de runtime do painel administrativo
 
