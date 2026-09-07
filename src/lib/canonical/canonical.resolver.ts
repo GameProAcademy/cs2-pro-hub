@@ -48,6 +48,34 @@ export const MATCH_TIME_TOLERANCE_MS = 20 * 60 * 1000;
 /** Minimum shared participants for a cross-source claim of "same match". */
 export const MIN_SHARED_PARTICIPANTS = 6;
 
+/**
+ * FASE 2.6.11.3 — the ONLY legitimate cross-source EXACT evidence.
+ *
+ * A demo carries a content fingerprint, FACEIT carries none, and the external
+ * ids of two different sources are unrelated — so a cross-source EXACT can only
+ * come from the identities themselves. A FULL, IDENTICAL roster of ten
+ * graph-proven SteamID64 accounts, on the same map, inside the competitive time
+ * window, with no contradicting score, identifies one single match: the same ten
+ * accounts cannot be in two different matches of the same map at the same time.
+ *
+ * Anything weaker (partial roster, nicknames, score similarity, close
+ * timestamps) stays PROBABLE/POSSIBLE and is never auto-attached.
+ */
+export const FULL_ROSTER_IDENTITY_SIZE = 10;
+
+function rosterIdentical(
+  a: readonly string[] | undefined,
+  b: readonly string[] | undefined,
+): boolean {
+  if (!a || !b) return false;
+  const left = new Set(a);
+  const right = new Set(b);
+  if (left.size < FULL_ROSTER_IDENTITY_SIZE || left.size !== right.size) return false;
+  for (const id of left) if (!right.has(id)) return false;
+  return true;
+}
+
+
 function decision(
   resolution: MatchResolution,
   confidence: number,
