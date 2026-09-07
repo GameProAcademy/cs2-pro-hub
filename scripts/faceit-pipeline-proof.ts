@@ -839,23 +839,55 @@ async function main() {
       await supabaseAdmin.auth.admin.deleteUser(userId);
     }
 
+    const profileIds = [...touchedProfileIds];
+    const fallback = [randomUUID()];
     const leftMatches = await supabaseAdmin
       .from("matches")
       .select("id", { count: "exact", head: true })
-      .in("id", ids.length > 0 ? ids : [randomUUID()]);
+      .in("id", ids.length > 0 ? ids : fallback);
     const leftSources = await supabaseAdmin
       .from("match_sources")
       .select("id", { count: "exact", head: true })
       .like("external_match_id", `${RUN}-%`);
+    const leftParticipants = await supabaseAdmin
+      .from("match_participants")
+      .select("id", { count: "exact", head: true })
+      .in("match_id", ids.length > 0 ? ids : fallback);
     const leftIdentities = await supabaseAdmin
       .from("player_identities")
       .select("id", { count: "exact", head: true })
       .like("external_id", `${RUN}-fc-%`);
+    // The fixture accounts cascade away with the auth user; prove it.
+    const leftProfiles = await supabaseAdmin
+      .from("player_profiles")
+      .select("id", { count: "exact", head: true })
+      .in("id", profileIds.length > 0 ? profileIds : fallback);
+    const leftConnections = await supabaseAdmin
+      .from("player_connections")
+      .select("id", { count: "exact", head: true })
+      .in("player_id", profileIds.length > 0 ? profileIds : fallback);
+    // `match_series` is only written by BO2/BO3 observations; this fixture is
+    // BO1-only, so the assertion is that it was never touched at all.
+    const leftSeries = await supabaseAdmin
+      .from("match_series")
+      .select("id", { count: "exact", head: true })
+      .in("discovered_by_player_id", profileIds.length > 0 ? profileIds : fallback);
     check(
       "18 — fixtures fully removed from the real database",
-      leftMatches.count === 0 && leftSources.count === 0 && leftIdentities.count === 0,
-      `matches=${leftMatches.count} sources=${leftSources.count} identities=${leftIdentities.count}`,
+      leftMatches.count === 0 &&
+        leftSources.count === 0 &&
+        leftParticipants.count === 0 &&
+        leftIdentities.count === 0 &&
+        leftProfiles.count === 0 &&
+        leftConnections.count === 0 &&
+        leftSeries.count === 0,
+      `matches=${leftMatches.count} sources=${leftSources.count} participants=${
+        leftParticipants.count
+      } identities=${leftIdentities.count} profiles=${leftProfiles.count} connections=${
+        leftConnections.count
+      } series=${leftSeries.count} (series never written: BO1-only fixture)`,
     );
+
 
     const tally = (verdict: Verdict) => results.filter((r) => r.verdict === verdict).length;
     console.log(
