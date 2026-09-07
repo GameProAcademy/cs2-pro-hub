@@ -475,15 +475,73 @@ async function main() {
         (sources.data ?? []).map((r) => r.source),
       )} participants=${(parts.data ?? []).length} unique=${uniqueKeys.size}`,
     );
-    check(
-      "09 — no orphan/invented identity among canonical participants",
-      (parts.data ?? []).every(
-        (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
+    /* Gate 09 — the FULL identity chain of all ten canonical participants:
+       FACEIT external id -> Identity Graph row -> player profile -> STEAM
+       identity -> SteamID64 -> persisted canonical participant. Every link is
+       read back from the database; nothing is accepted because the fixture
+       declared it. */
+    const persistedSteamIds = (parts.data ?? [])
+      .map((row) => row.steam_id64)
+      .filter((id): id is string => typeof id === "string");
+    // Identity rows as the DATABASE has them, for the profiles the graph resolved.
+    const graphProfileIds = [
+      ...new Set(
+        A.faceit
+          .map((id) => graph.identities.get(id)?.internalPlayerId)
+          .filter((id): id is string => typeof id === "string"),
       ),
-      `allFromIdentityGraph=${(parts.data ?? []).every(
-        (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
-      )}`,
+    ];
+    const identityRows = await supabaseAdmin
+      .from("player_identities")
+      .select("player_id, platform, external_id, identity_status")
+      .in("player_id", graphProfileIds.length > 0 ? graphProfileIds : [randomUUID()]);
+    const steamByProfile = new Map<string, string>();
+    const faceitByProfile = new Map<string, string>();
+    for (const row of identityRows.data ?? []) {
+      if (row.platform === "STEAM") steamByProfile.set(row.player_id, row.external_id);
+      if (row.platform === "FACEIT") faceitByProfile.set(row.player_id, row.external_id);
+    }
+    // Chain, rebuilt from database rows only: FACEIT id -> profile -> SteamID64.
+    const chainSteamIds = new Set(
+      graphProfileIds
+        .filter((profileId) => A.faceit.includes(faceitByProfile.get(profileId) ?? ""))
+        .map((profileId) => steamByProfile.get(profileId))
+        .filter((id): id is string => typeof id === "string"),
     );
+    const gate09 = {
+      exactlyTenParticipants: (parts.data ?? []).length === 10,
+      tenUniqueSteamIds: new Set(persistedSteamIds).size === 10,
+      noNullSteamId: persistedSteamIds.length === 10,
+      // every FACEIT id of the converging roster has an Identity Graph row
+      allFaceitIdsInGraph: A.faceit.every(
+        (id) => typeof graph.identities.get(id)?.internalPlayerId === "string",
+      ),
+      // the chain rebuilt from the DB accounts for all ten SteamIDs
+      chainCoversAllTen: chainSteamIds.size === 10,
+      everyPersistedIdFromChain: persistedSteamIds.every((id) => chainSteamIds.has(id)),
+      // and for nothing else: no participant outside the resolved chain
+      noExtraParticipant: persistedSteamIds.every((id) =>
+        [...graph.identities.values()].some((entry) => entry.steamId64 === id),
+      ),
+      // no SteamID64 could have come from the FACEIT payload or a nickname
+      noSteamIdInFaceitPayload: /7656119\d{10}/.test(JSON.stringify(positivePayload)) === false,
+      noNicknameDerivedId: persistedSteamIds.every((id) => /^7656119\d{10}$/.test(id)),
+      // every persisted id is a verified STEAM identity row in the database
+      everyIdIsVerifiedIdentityRow: persistedSteamIds.every((id) =>
+        (identityRows.data ?? []).some(
+          (row) =>
+            row.platform === "STEAM" &&
+            row.external_id === id &&
+            row.identity_status === "verified",
+        ),
+      ),
+    };
+    check(
+      "09 — all ten participants trace back through the Identity Graph chain",
+      Object.values(gate09).every(Boolean),
+      JSON.stringify(gate09),
+    );
+
 
     /* Gate 10 — idempotency of the production pipeline. */
     const again = await runPipeline(positivePayload, A.faceit[0]!);
