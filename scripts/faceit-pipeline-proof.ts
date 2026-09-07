@@ -424,9 +424,13 @@ async function main() {
         convergedMatch.data?.started_at !== null &&
         Date.parse(String(convergedMatch.data?.started_at)) ===
           Date.parse(String(positive.mapped.metadata["started_at"])),
+      // FACEIT reports the score for the TARGET faction; the target sits in
+      // `team_a` by construction of the adapter, so the canonical scores must
+      // agree with the FACEIT ones for the resolver to see no contradiction.
       noScoreContradiction:
-        convergedMatch.data?.score_team_a === positive.mapped.score_team_a &&
-        convergedMatch.data?.score_team_b === positive.mapped.score_team_b,
+        convergedMatch.data?.score_team_a === positive.mapped.score_player &&
+        convergedMatch.data?.score_team_b === positive.mapped.score_opponent,
+
       // no SteamID64 exists anywhere in the FACEIT payload
       noSteamIdInPayload: faceitPayloadHasSteamId === false,
       // (F) the attach was produced by the production entry point
