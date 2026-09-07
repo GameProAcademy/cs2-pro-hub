@@ -391,11 +391,54 @@ async function main() {
       )} demo=${demo.matchId}`,
     );
 
+    /* Gate 06 — the convergence is proven to rest ONLY on legitimate signals.
+       Every property below is asserted, not merely printed: a violation fails. */
+    const demoFingerprint = `faceit-e2e-${RUN}-demo-sha256`;
+    const convergedSources = await supabaseAdmin
+      .from("match_sources")
+      .select("source, external_match_id, fingerprint, match_id")
+      .eq("match_id", demo.matchId);
+    const faceitSource = (convergedSources.data ?? []).find((row) => row.source === "faceit");
+    const demoSource = (convergedSources.data ?? []).find((row) => row.source === "demo");
+    const convergedMatch = await supabaseAdmin
+      .from("matches")
+      .select("map, started_at, score_team_a, score_team_b")
+      .eq("id", demo.matchId)
+      .maybeSingle();
+    const faceitPayloadHasSteamId = /7656119\d{10}/.test(JSON.stringify(positivePayload));
+
+    const gate06 = {
+      // (A) the FACEIT observation carries NO fingerprint at all
+      faceitFingerprintNull: faceitSource?.fingerprint === null,
+      // (B) the demo fingerprint was NOT copied onto the FACEIT observation
+      demoFingerprintKept: demoSource?.fingerprint === demoFingerprint,
+      fingerprintNotShared: faceitSource?.fingerprint !== demoSource?.fingerprint,
+      // (C)+(D) external ids differ, so equality of external ids cannot explain it
+      externalIdsDiffer: faceitSource?.external_match_id !== demoSource?.external_match_id,
+      faceitExternalId: faceitSource?.external_match_id === `${RUN}-faceit-positive`,
+      demoExternalIdNull: demoSource?.external_match_id === null,
+      // (E) the legitimate signals: same map, same canonical start, identical
+      //     ten-account roster, no contradicting score
+      sameMap: convergedMatch.data?.map === MAP && positive.mapped.map === MAP,
+      sameCanonicalStart:
+        convergedMatch.data?.started_at !== null &&
+        Date.parse(String(convergedMatch.data?.started_at)) ===
+          Date.parse(String(positive.mapped.metadata["started_at"])),
+      noScoreContradiction:
+        convergedMatch.data?.score_team_a === positive.mapped.score_team_a &&
+        convergedMatch.data?.score_team_b === positive.mapped.score_team_b,
+      // no SteamID64 exists anywhere in the FACEIT payload
+      noSteamIdInPayload: faceitPayloadHasSteamId === false,
+      // (F) the attach was produced by the production entry point
+      productionAttach:
+        faceitSource?.match_id === demo.matchId && positive.result.matchIds[0] === demo.matchId,
+    };
     check(
       "06 — convergence used NO fingerprint and NO shared external id",
-      positive.mapped.external_match_id === `${RUN}-faceit-positive`,
-      `faceitFingerprint=null demoFingerprint=faceit-e2e-${RUN}-demo-sha256 externalIdsShared=false`,
+      Object.values(gate06).every(Boolean),
+      JSON.stringify(gate06),
     );
+
     check(
       "07 — started_at is the temporal anchor, finished_at is not",
       positive.mapped.metadata["started_at"] === iso(T1_START) &&
