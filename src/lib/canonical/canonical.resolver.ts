@@ -23,8 +23,19 @@ export interface MatchIdentityCandidate {
   /** Deterministic content fingerprint (e.g. demo SHA-256). */
   fingerprint?: string | null;
   map: string | null;
-  /** Competitive date (ISO). Never an ingestion timestamp. */
+  /**
+   * Competitive date (ISO). Never an ingestion timestamp.
+   *
+   * FASE 2.6.11.4 — this field may carry different SEMANTICS per source (a demo
+   * exposes the start, FACEIT's `match_date` falls back to `finished_at`), so it
+   * is NOT used directly for identity time comparison. See
+   * `canonicalStartTimestamp`.
+   */
   playedAt: string | null;
+  /** Match START (ISO), when the source proves it. Identity reference. */
+  startedAt?: string | null;
+  /** Match END (ISO). Lifecycle/duration only — never an identity reference. */
+  finishedAt?: string | null;
   roundCount?: number | null;
   scoreTeamA?: number | null;
   scoreTeamB?: number | null;
