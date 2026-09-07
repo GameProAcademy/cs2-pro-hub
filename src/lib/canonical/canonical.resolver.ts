@@ -95,6 +95,32 @@ function decision(
   return { resolution, confidence, signals: [...new Set(signals)].sort(), requiresReview };
 }
 
+/**
+ * FASE 2.6.11.4 — TEMPORAL SEMANTICS.
+ *
+ * Cross-source identity may ONLY compare comparable instants. A demo exposes the
+ * match START; FACEIT's `match_date` is `finished_at ?? started_at`, so it may
+ * carry the END. Comparing a demo start against a FACEIT end manufactures a fake
+ * ~40 minute divergence and destroys legitimate convergence.
+ *
+ * Rule: the identity reference is `startedAt` when the source proves it. When it
+ * does not, `playedAt` is accepted ONLY if it is not demonstrably the end
+ * instant (i.e. it does not equal `finishedAt`). Otherwise there is NO trusted
+ * start, and the resolver treats the timestamp as unknown instead of pretending
+ * precision it does not have. `finishedAt` remains available for duration and
+ * lifecycle, never as a silent substitute for the start.
+ */
+export function canonicalStartTimestamp(candidate: MatchIdentityCandidate): string | null {
+  if (candidate.startedAt) return candidate.startedAt;
+  if (candidate.finishedAt && candidate.playedAt === candidate.finishedAt) return null;
+  return candidate.playedAt ?? null;
+}
+
+/** Match END instant, for duration/lifecycle only. */
+export function canonicalEndTimestamp(candidate: MatchIdentityCandidate): string | null {
+  return candidate.finishedAt ?? null;
+}
+
 function timeDeltaMs(a: string | null, b: string | null): number | null {
   if (!a || !b) return null;
   const ta = Date.parse(a);
