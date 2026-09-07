@@ -32,7 +32,10 @@ import {
   persistCanonicalObservation,
   CanonicalPersistenceError,
 } from "@/lib/canonical/canonical.persistence.server";
-import { SOURCE_CONTRACT_VERSIONS, CANONICAL_SCHEMA_VERSION } from "@/lib/canonical/canonical.versions";
+import {
+  SOURCE_CONTRACT_VERSIONS,
+  CANONICAL_SCHEMA_VERSION,
+} from "@/lib/canonical/canonical.versions";
 import type {
   CanonicalMatchBundle,
   CanonicalParticipant,
@@ -369,8 +372,6 @@ async function main() {
       .eq("id", demo.matchId)
       .maybeSingle();
 
-
-
     /* Gate 05 — FULL production pipeline: EXACT + attach. */
     const positive = await runPipeline(positivePayload, A.faceit[0]!);
     for (const id of positive.result.matchIds) touchedMatchIds.add(id);
@@ -429,7 +430,9 @@ async function main() {
     );
     check(
       "09 — no orphan/invented identity among canonical participants",
-      (parts.data ?? []).every((row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64)),
+      (parts.data ?? []).every(
+        (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
+      ),
       `allFromIdentityGraph=${(parts.data ?? []).every(
         (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
       )}`,
@@ -467,7 +470,8 @@ async function main() {
       Array.from({ length: 6 }, () => runPipeline(positivePayload, A.faceit[0]!)),
     );
     for (const entry of concurrent) {
-      if (entry.status === "fulfilled") for (const id of entry.value.result.matchIds) touchedMatchIds.add(id);
+      if (entry.status === "fulfilled")
+        for (const id of entry.value.result.matchIds) touchedMatchIds.add(id);
     }
     const concurrentMatches = await supabaseAdmin
       .from("matches")
@@ -563,7 +567,10 @@ async function main() {
         global: {
           fetch: (input, init) => {
             const headers = new Headers(init?.headers);
-            if (publishable.startsWith("sb_") && headers.get("Authorization") === `Bearer ${publishable}`) {
+            if (
+              publishable.startsWith("sb_") &&
+              headers.get("Authorization") === `Bearer ${publishable}`
+            ) {
               headers.delete("Authorization");
             }
             headers.set("apikey", publishable);
@@ -701,8 +708,6 @@ async function main() {
       )} (legacy per-player projection column, written by the persistence routine ` +
         `from the collecting player; never an identity/discovery signal)`,
     );
-
-
   } catch (error) {
     record(
       "RUN — unexpected failure",
