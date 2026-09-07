@@ -506,15 +506,13 @@ async function main() {
           .update({ map: "de_dust2" })
           .eq("id", demo.matchId);
         const del = await asUser.from("matches").delete().eq("id", demo.matchId);
-        const insertSource = await asUser
-          .from("match_sources")
-          .insert({
-            match_id: demo.matchId,
-            source: "faceit",
-            source_contract_version: SOURCE_CONTRACT_VERSIONS["faceit"],
-            fetched_at: new Date().toISOString(),
-            status: "incomplete",
-          });
+        const insertSource = await asUser.from("match_sources").insert({
+          match_id: demo.matchId,
+          source: "faceit",
+          source_contract_version: SOURCE_CONTRACT_VERSIONS["faceit"],
+          fetched_at: new Date().toISOString(),
+          status: "incomplete",
+        });
         const insertParticipant = await asUser
           .from("match_participants")
           .insert({ match_id: demo.matchId, participant_key: "x", source: "faceit" });
@@ -543,8 +541,16 @@ async function main() {
           : null;
         const myProfileId = myProfile?.data?.id ?? null;
         if (!myProfileId) {
-          record("23 — RLS: USER A reads own canonical match", "SKIPPED", "no player profile for the proof session");
-          record("24 — RLS: USER B cannot read a foreign canonical match", "SKIPPED", "no player profile for the proof session");
+          record(
+            "23 — RLS: USER A reads own canonical match",
+            "SKIPPED",
+            "no player profile for the proof session",
+          );
+          record(
+            "24 — RLS: USER B cannot read a foreign canonical match",
+            "SKIPPED",
+            "no player profile for the proof session",
+          );
         } else {
           const ownedFixture = await persistCanonicalObservation({
             bundle: bundle({
@@ -729,8 +735,7 @@ async function main() {
       };
       const resolvedCross = resolveAgainstAll(incoming, crossCandidates);
       const attachTarget =
-        canConvergeCrossSource(resolvedCross.decision) &&
-        resolvedCross.candidate?.canonicalMatchId
+        canConvergeCrossSource(resolvedCross.decision) && resolvedCross.candidate?.canonicalMatchId
           ? resolvedCross.candidate.canonicalMatchId
           : null;
       const crossPersisted = await persistCanonicalObservation({
@@ -914,7 +919,6 @@ async function main() {
         seriesMatches.count === 0,
       `sources=${JSON.stringify(seriesSources.data)} matches=${seriesMatches.count}`,
     );
-
   } finally {
     /* Cleanup — fixtures only, verified by re-reading the tables. */
     const ids = [...touchedMatchIds];
