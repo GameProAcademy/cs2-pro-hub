@@ -412,7 +412,9 @@ async function main() {
       ),
     );
     const fulfilled = parallel.filter(
-      (entry): entry is PromiseFulfilledResult<Awaited<ReturnType<typeof persistCanonicalObservation>>> =>
+      (
+        entry,
+      ): entry is PromiseFulfilledResult<Awaited<ReturnType<typeof persistCanonicalObservation>>> =>
         entry.status === "fulfilled",
     );
     for (const entry of fulfilled) touchedMatchIds.add(entry.value.matchId);

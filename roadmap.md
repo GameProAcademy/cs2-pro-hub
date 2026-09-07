@@ -234,9 +234,20 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Suíte: 461 → 480 testes, typecheck, lint e build OK. Novo teste
       `production-cross-source-identity-closure.test.ts` percorre as funções de produção
       (roster FACEIT → Identity Graph → descoberta de candidatos → resolvedor → anexo).
-- [ ] **LIMITAÇÃO declarada:** concorrência com sessões paralelas de verdade não pôde ser
-      executada nesta fase — não há credencial de escrita paralela disponível no ambiente
-      (`dblink` exige senha do banco, indisponível). A serialização segue garantida por
-      `pg_advisory_xact_lock` e pela unicidade `(source, external_match_id)`, e a prova
-      com dois workers foi feita na 2.6.11; ainda assim, esta gate NÃO é declarada
-      provada nesta fase.
+- [x] **Concorrência real PROVADA** (limitação anterior removida): `scripts/canonical-proof.ts`
+      dispara SEIS gravações PARALELAS (`Promise.all`) da MESMA observação pelo caminho de
+      produção (`persistCanonicalObservation` → `persist_canonical_observation_attached`).
+      Resultado verificado no banco: 6/6 concluídas, 1 partida canônica, 1 linha de
+      observação (`observation_count = 6`), roster com 10 participantes, zero duplicação.
+- [x] **Prova canônica reexecutável e versionada:** `bun scripts/canonical-proof.ts` cria as
+      fixtures, executa o caminho de produção contra o banco real e imprime PASS/FAIL por
+      gate (observação demo, partida sem dono, `NULL ≠ FALSE`, convergência entre fontes,
+      preservação de rounds da fonte forte, idempotência, rollback atômico do anexo,
+      não-fusão de partida contraditória, concorrência paralela, leitura anônima negada,
+      escrita negada ao usuário autenticado quando há token) e remove tudo ao final,
+      confirmando zero sobras. Execução atual: 12 PASS / 0 FAIL / 1 SKIPPED
+      (gate de usuário autenticado exige `PROOF_USER_ACCESS_TOKEN`).
+- [x] **Aviso de hidratação eliminado:** o portão autenticado (`ssr: false`) não troca mais a
+      rota durante a hidratação — decide em `beforeLoad`, renderiza nada e navega para
+      `/login` após a primeira pintura. Console de visitante em rota protegida agora limpo;
+      jogador autenticado continua entrando direto no `/dashboard`.
