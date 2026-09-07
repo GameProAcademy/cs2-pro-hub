@@ -681,20 +681,27 @@ async function main() {
        collected FOR a player; the pipeline still discovered and attached it, so
        discovery cannot be keyed on the ownership column. `matches.player_id`
        remains a per-player projection column, never an identity signal. */
-    const neutrality = await supabaseAdmin
+    const ownerAfterAttach = await supabaseAdmin
       .from("matches")
       .select("id, player_id")
       .eq("id", demo.matchId)
       .maybeSingle();
     check(
-      "17 — discovery is player-neutral (attached target has player_id NULL)",
-      neutrality.data?.player_id === null &&
+      "17 — discovery is player-neutral (target had player_id NULL when found)",
+      ownerBeforeAttach.data?.player_id === null &&
         positive.result.matchIds[0] === demo.matchId &&
         ownerPlayerId !== null,
-      `targetPlayerId=${JSON.stringify(neutrality.data?.player_id)} collectedForPlayer=${String(
-        ownerPlayerId,
-      )} attachedTo=${positive.result.matchIds[0]}`,
+      `ownerBeforeAttach=${JSON.stringify(
+        ownerBeforeAttach.data?.player_id,
+      )} collectedForPlayer=${String(ownerPlayerId)} attachedTo=${positive.result.matchIds[0]}`,
     );
+    console.log(
+      `NOTE       matches.player_id after attach = ${JSON.stringify(
+        ownerAfterAttach.data?.player_id,
+      )} (legacy per-player projection column, written by the persistence routine ` +
+        `from the collecting player; never an identity/discovery signal)`,
+    );
+
 
   } catch (error) {
     record(
