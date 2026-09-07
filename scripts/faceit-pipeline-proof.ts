@@ -215,6 +215,8 @@ async function main() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const touchedMatchIds = new Set<string>();
   const touchedUserIds = new Set<string>();
+  const touchedProfileIds = new Set<string>();
+
 
   console.log(`\nFACEIT production pipeline E2E proof run=${RUN}\n`);
 
