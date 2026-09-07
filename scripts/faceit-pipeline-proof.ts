@@ -217,7 +217,6 @@ async function main() {
   const touchedUserIds = new Set<string>();
   const touchedProfileIds = new Set<string>();
 
-
   console.log(`\nFACEIT production pipeline E2E proof run=${RUN}\n`);
 
   try {
@@ -545,7 +544,6 @@ async function main() {
       Object.values(gate09).every(Boolean),
       JSON.stringify(gate09),
     );
-
 
     /* Gate 10 — idempotency of the production pipeline. */
     const again = await runPipeline(positivePayload, A.faceit[0]!);
@@ -891,7 +889,6 @@ async function main() {
         leftConnections.count
       } series=${leftSeries.count} (series never written: BO1-only fixture)`,
     );
-
 
     const tally = (verdict: Verdict) => results.filter((r) => r.verdict === verdict).length;
     console.log(
