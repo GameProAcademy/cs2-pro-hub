@@ -2547,6 +2547,15 @@ export type Database = {
         Args: { _bundle: Json; _owner_player_id?: string; _upload_id?: string }
         Returns: Json
       }
+      persist_canonical_observation_attached: {
+        Args: {
+          _attach_match_id?: string
+          _bundle: Json
+          _owner_player_id?: string
+          _upload_id?: string
+        }
+        Returns: Json
+      }
       persist_canonical_series_observation: {
         Args: { _observation: Json; _owner_player_id?: string; _series: Json }
         Returns: Json
