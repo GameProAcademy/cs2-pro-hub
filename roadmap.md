@@ -305,3 +305,43 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [ ] NOT_PROVEN: introspecção de PIDs do PostgreSQL (limitação do ambiente). Invariante
       garantida por lock advisory em transação + unicidade `match_sources(source, external_match_id)`.
 - [x] Relatório: `docs/PHASE-2.6.11.5-FINAL-FACEIT-PRODUCTION-E2E-CLOSURE.md`.
+
+## FASE 2.6.11.5A — Integridade das evidências e reconciliação do roadmap
+
+- [x] **Gates frágeis reforçados** em `scripts/faceit-pipeline-proof.ts`:
+      - gate 06 agora prova a convergência pelo conteúdo das observações (fingerprint
+        FACEIT nulo, fingerprint do demo igual à fixture, ids externos distintos), e não
+        apenas pela contagem de linhas;
+      - gate 09 encadeia as asserções: exatamente 10 SteamIDs distintos gravados, cada um
+        presente nas identidades resolvidas pelo Identity Graph e cada id externo FACEIT
+        contabilizado no pareamento;
+      - gate de limpeza verifica participantes, séries, conexões, perfis, identidades e
+        observações — nenhuma linha órfã sobrevive à execução.
+      Reexecução: PASS=18, FAIL=0, BLOCKED=0, NOT_PROVEN=1 (introspecção de PIDs do
+      PostgreSQL, limitação do ambiente).
+- [x] **Deficiência real de banco encontrada e corrigida**: o check permanente
+      "23. all foreign keys have a supporting index" estava FAIL. Sete chaves
+      estrangeiras não tinham índice de apoio (`gamers_club_profile_snapshots`,
+      `gamers_club_sync_jobs`, `steam_link_attempts`, `match_sources` ×2,
+      `round_players` ×2). Índices criados; nenhuma política, grant ou estrutura mudou.
+- [x] **Suíte de segurança permanente 100% PASS**: 67/67 (63 via `psql`; os 4 checks
+      `26a–26d` exigem execução privilegiada da função-guarda e foram provados pelo
+      runner privilegiado — a própria negação de EXECUTE ao aplicativo é o check `25f`).
+- [x] **Contradições do roadmap eliminadas**: 2.6.2/2.6.5 marcados como aplicados,
+      pendência do `faceit.sync.server.ts` fechada (grava só por `persistFaceitObservation`),
+      aviso de render do React marcado como resolvido, Gamers Club registrado como
+      bloqueio externo definitivo.
+- [x] **README reconciliado** com o estado real: Steam é fonte de identidade (Valve não
+      publica histórico de CS2), FACEIT e Canonical Match Engine reais, Pro Score/DNA/
+      diagnóstico/Coach/treino ainda mock sob `DEMO_DATA`, Gamers Club indisponível.
+- [x] **Runtime revalidado** em navegador headless: deslogado (`/`, `/login`, `/register`,
+      `/reset-password`, `/dashboard`, `/admin`) e logado como jogador (`/dashboard`,
+      `/matches`, `/profile`, `/upload`, `/training`, `/admin` → `/dashboard`) — zero erros
+      de console e zero erros de página nos dois cenários.
+- [x] 490/490 testes, typecheck limpo, `eslint` sem erros (8 warnings preexistentes de
+      react-refresh), build OK, linter de banco sem achado novo (14 conhecidos e
+      justificados).
+
+### Veredito
+
+**FASE 2.6.11.5A — CLOSED. READY FOR PHASE 2.7.**
