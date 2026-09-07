@@ -10,7 +10,10 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { I18nProvider } from "../i18n";
+// Must use the SAME specifier as every consumer ("@/i18n"). Mixing the alias
+// with a relative path can yield two module instances (two React contexts)
+// across the SSR/client graphs, which makes useI18n() throw inside the provider.
+import { I18nProvider } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
