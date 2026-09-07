@@ -273,3 +273,29 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       nem de hidratação; `/admin` redireciona não-admin para `/dashboard`.
 - [x] 490/490 testes, typecheck limpo, lint sem erros, build OK.
 - [x] Relatório: `docs/PHASE-2.6.11.4-FINAL-DATABASE-PROOF.md`.
+
+## FASE 2.6.11.5 — Prova E2E do pipeline FACEIT real e fechamento
+
+- [x] **Prova reexecutável no banco real** (`bun scripts/faceit-pipeline-proof.ts`, 19 gates)
+      pelo caminho de produção (`persistFaceitObservation`), com contas e identidades reais,
+      sem `fakeDb`, sem fingerprint/SteamID inventado e com limpeza verificada.
+      Resultado: PASS=18, FAIL=0, BLOCKED=0, NOT_PROVEN=1.
+- [x] **Convergência DEMO↔FACEIT** provada sem fingerprint e sem id externo compartilhado:
+      1 partida canônica, 2 observações, 10 participantes vindos só do Identity Graph.
+- [x] **Negativas provadas**: partida parecida mas diferente não converge; identidade
+      irresolúvel bloqueia; falha de consulta é `IDENTITY_RESOLUTION_ERROR` (≠ ausência);
+      dois candidatos EXACT ⇒ `CONFLICT`; attach a alvo inexistente faz rollback total.
+- [x] **Descoberta neutra por jogador** provada: o alvo tinha `player_id = NULL` quando foi
+      encontrado; `matches.player_id` é projeção por jogador, nunca sinal de identidade.
+- [x] **Runtime corrigido**: gate autenticado e gate administrativo agora navegam de forma
+      declarativa (`<Navigate>`), decidindo ainda fail-closed em `beforeLoad`. Fim do
+      `Unauthorized: No authorization header provided`, do `ADMIN_FORBIDDEN` exibido como
+      erro, do mismatch de hidratação em `/admin` e do aviso de update em componente
+      desmontado. Navegador headless: zero erros deslogado e logado.
+- [x] **Teste mock renomeado** para `unit-mock-cross-source-identity-closure.test.ts`, sem
+      afirmar ser prova de produção.
+- [x] 490/490 testes, typecheck limpo, lint sem erros, build OK, linter de banco sem
+      achado novo.
+- [ ] NOT_PROVEN: introspecção de PIDs do PostgreSQL (limitação do ambiente). Invariante
+      garantida por lock advisory em transação + unicidade `match_sources(source, external_match_id)`.
+- [x] Relatório: `docs/PHASE-2.6.11.5-FINAL-FACEIT-PRODUCTION-E2E-CLOSURE.md`.
