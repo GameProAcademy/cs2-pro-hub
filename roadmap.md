@@ -153,7 +153,7 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Match Identity Resolver com EXACT/PROBABLE/POSSIBLE/NO_MATCH/CONFLICT; só EXACT anexa automaticamente; prioridade de fonte não é merge.
 - [x] Projeção por jogador (vitória/derrota/"meu placar") derivada, nunca gravada no match.
 - [x] 37 testes novos (454 no total), typecheck limpo, lint limpo, build OK.
-- [ ] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — próximo passo, ainda NÃO aplicados.
+- [x] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — APLICADOS e provados contra o banco real (ver 2.6.9 e 2.6.11.5).
 
 ## FASE 2.6.9 — persistência canônica: prova contra o banco real
 
