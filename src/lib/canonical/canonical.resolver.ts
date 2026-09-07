@@ -204,3 +204,21 @@ export function resolveAgainstAll(
 export function canAttachAutomatically(decisionResult: MatchIdentityDecision): boolean {
   return decisionResult.resolution === "EXACT_MATCH" && !decisionResult.requiresReview;
 }
+
+/**
+ * Cross-source convergence (e.g. a DEMO already stored and the same match seen
+ * on FACEIT). No shared identifier exists between such sources, so EXACT_MATCH
+ * is impossible by construction: the strongest honest evidence is same map +
+ * same time window + at least `MIN_SHARED_PARTICIPANTS` shared SteamID64s.
+ *
+ * Anything weaker (partial or unknown roster, unknown map) stays unattached and
+ * is escalated for review — a wrong attach corrupts history permanently.
+ */
+export function canConvergeCrossSource(decisionResult: MatchIdentityDecision): boolean {
+  if (canAttachAutomatically(decisionResult)) return true;
+  return (
+    decisionResult.resolution === "PROBABLE_MATCH" &&
+    !decisionResult.requiresReview &&
+    decisionResult.confidence >= 0.85
+  );
+}
