@@ -215,6 +215,7 @@ async function main() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const touchedMatchIds = new Set<string>();
   const touchedUserIds = new Set<string>();
+  const touchedProfileIds = new Set<string>();
 
   console.log(`\nFACEIT production pipeline E2E proof run=${RUN}\n`);
 
@@ -247,6 +248,8 @@ async function main() {
           .maybeSingle();
         const profileId = profile.data?.id;
         if (!profileId) break;
+        touchedProfileIds.add(profileId);
+
         const inserted = await supabaseAdmin.from("player_identities").insert([
           {
             player_id: profileId,
@@ -387,11 +390,58 @@ async function main() {
       )} demo=${demo.matchId}`,
     );
 
+    /* Gate 06 — the convergence is proven to rest ONLY on legitimate signals.
+       Every property below is asserted, not merely printed: a violation fails. */
+    const demoFingerprint = `faceit-e2e-${RUN}-demo-sha256`;
+    const convergedSources = await supabaseAdmin
+      .from("match_sources")
+      .select("source, external_match_id, fingerprint, match_id")
+      .eq("match_id", demo.matchId);
+    const faceitSource = (convergedSources.data ?? []).find((row) => row.source === "faceit");
+    const demoSource = (convergedSources.data ?? []).find((row) => row.source === "demo");
+    const convergedMatch = await supabaseAdmin
+      .from("matches")
+      .select("map, started_at, score_team_a, score_team_b")
+      .eq("id", demo.matchId)
+      .maybeSingle();
+    const faceitPayloadHasSteamId = /7656119\d{10}/.test(JSON.stringify(positivePayload));
+
+    const gate06 = {
+      // (A) the FACEIT observation carries NO fingerprint at all
+      faceitFingerprintNull: faceitSource?.fingerprint === null,
+      // (B) the demo fingerprint was NOT copied onto the FACEIT observation
+      demoFingerprintKept: demoSource?.fingerprint === demoFingerprint,
+      fingerprintNotShared: faceitSource?.fingerprint !== demoSource?.fingerprint,
+      // (C)+(D) external ids differ, so equality of external ids cannot explain it
+      externalIdsDiffer: faceitSource?.external_match_id !== demoSource?.external_match_id,
+      faceitExternalId: faceitSource?.external_match_id === `${RUN}-faceit-positive`,
+      demoExternalIdNull: demoSource?.external_match_id === null,
+      // (E) the legitimate signals: same map, same canonical start, identical
+      //     ten-account roster, no contradicting score
+      sameMap: convergedMatch.data?.map === MAP && positive.mapped.map === MAP,
+      sameCanonicalStart:
+        convergedMatch.data?.started_at !== null &&
+        Date.parse(String(convergedMatch.data?.started_at)) ===
+          Date.parse(String(positive.mapped.metadata["started_at"])),
+      // FACEIT reports the score for the TARGET faction; the target sits in
+      // `team_a` by construction of the adapter, so the canonical scores must
+      // agree with the FACEIT ones for the resolver to see no contradiction.
+      noScoreContradiction:
+        convergedMatch.data?.score_team_a === positive.mapped.score_player &&
+        convergedMatch.data?.score_team_b === positive.mapped.score_opponent,
+
+      // no SteamID64 exists anywhere in the FACEIT payload
+      noSteamIdInPayload: faceitPayloadHasSteamId === false,
+      // (F) the attach was produced by the production entry point
+      productionAttach:
+        faceitSource?.match_id === demo.matchId && positive.result.matchIds[0] === demo.matchId,
+    };
     check(
       "06 — convergence used NO fingerprint and NO shared external id",
-      positive.mapped.external_match_id === `${RUN}-faceit-positive`,
-      `faceitFingerprint=null demoFingerprint=faceit-e2e-${RUN}-demo-sha256 externalIdsShared=false`,
+      Object.values(gate06).every(Boolean),
+      JSON.stringify(gate06),
     );
+
     check(
       "07 — started_at is the temporal anchor, finished_at is not",
       positive.mapped.metadata["started_at"] === iso(T1_START) &&
@@ -428,14 +478,71 @@ async function main() {
         (sources.data ?? []).map((r) => r.source),
       )} participants=${(parts.data ?? []).length} unique=${uniqueKeys.size}`,
     );
-    check(
-      "09 — no orphan/invented identity among canonical participants",
-      (parts.data ?? []).every(
-        (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
+    /* Gate 09 — the FULL identity chain of all ten canonical participants:
+       FACEIT external id -> Identity Graph row -> player profile -> STEAM
+       identity -> SteamID64 -> persisted canonical participant. Every link is
+       read back from the database; nothing is accepted because the fixture
+       declared it. */
+    const persistedSteamIds = (parts.data ?? [])
+      .map((row) => row.steam_id64)
+      .filter((id): id is string => typeof id === "string");
+    // Identity rows as the DATABASE has them, for the profiles the graph resolved.
+    const graphProfileIds = [
+      ...new Set(
+        A.faceit
+          .map((id) => graph.identities.get(id)?.internalPlayerId)
+          .filter((id): id is string => typeof id === "string"),
       ),
-      `allFromIdentityGraph=${(parts.data ?? []).every(
-        (row) => row.steam_id64 !== null && A.steam.includes(row.steam_id64),
-      )}`,
+    ];
+    const identityRows = await supabaseAdmin
+      .from("player_identities")
+      .select("player_id, platform, external_id, identity_status")
+      .in("player_id", graphProfileIds.length > 0 ? graphProfileIds : [randomUUID()]);
+    const steamByProfile = new Map<string, string>();
+    const faceitByProfile = new Map<string, string>();
+    for (const row of identityRows.data ?? []) {
+      if (row.platform === "STEAM") steamByProfile.set(row.player_id, row.external_id);
+      if (row.platform === "FACEIT") faceitByProfile.set(row.player_id, row.external_id);
+    }
+    // Chain, rebuilt from database rows only: FACEIT id -> profile -> SteamID64.
+    const chainSteamIds = new Set(
+      graphProfileIds
+        .filter((profileId) => A.faceit.includes(faceitByProfile.get(profileId) ?? ""))
+        .map((profileId) => steamByProfile.get(profileId))
+        .filter((id): id is string => typeof id === "string"),
+    );
+    const gate09 = {
+      exactlyTenParticipants: (parts.data ?? []).length === 10,
+      tenUniqueSteamIds: new Set(persistedSteamIds).size === 10,
+      noNullSteamId: persistedSteamIds.length === 10,
+      // every FACEIT id of the converging roster has an Identity Graph row
+      allFaceitIdsInGraph: A.faceit.every(
+        (id) => typeof graph.identities.get(id)?.internalPlayerId === "string",
+      ),
+      // the chain rebuilt from the DB accounts for all ten SteamIDs
+      chainCoversAllTen: chainSteamIds.size === 10,
+      everyPersistedIdFromChain: persistedSteamIds.every((id) => chainSteamIds.has(id)),
+      // and for nothing else: no participant outside the resolved chain
+      noExtraParticipant: persistedSteamIds.every((id) =>
+        [...graph.identities.values()].some((entry) => entry.steamId64 === id),
+      ),
+      // no SteamID64 could have come from the FACEIT payload or a nickname
+      noSteamIdInFaceitPayload: /7656119\d{10}/.test(JSON.stringify(positivePayload)) === false,
+      noNicknameDerivedId: persistedSteamIds.every((id) => /^7656119\d{10}$/.test(id)),
+      // every persisted id is a verified STEAM identity row in the database
+      everyIdIsVerifiedIdentityRow: persistedSteamIds.every((id) =>
+        (identityRows.data ?? []).some(
+          (row) =>
+            row.platform === "STEAM" &&
+            row.external_id === id &&
+            row.identity_status === "verified",
+        ),
+      ),
+    };
+    check(
+      "09 — all ten participants trace back through the Identity Graph chain",
+      Object.values(gate09).every(Boolean),
+      JSON.stringify(gate09),
     );
 
     /* Gate 10 — idempotency of the production pipeline. */
@@ -734,22 +841,53 @@ async function main() {
       await supabaseAdmin.auth.admin.deleteUser(userId);
     }
 
+    const profileIds = [...touchedProfileIds];
+    const fallback = [randomUUID()];
     const leftMatches = await supabaseAdmin
       .from("matches")
       .select("id", { count: "exact", head: true })
-      .in("id", ids.length > 0 ? ids : [randomUUID()]);
+      .in("id", ids.length > 0 ? ids : fallback);
     const leftSources = await supabaseAdmin
       .from("match_sources")
       .select("id", { count: "exact", head: true })
       .like("external_match_id", `${RUN}-%`);
+    const leftParticipants = await supabaseAdmin
+      .from("match_participants")
+      .select("id", { count: "exact", head: true })
+      .in("match_id", ids.length > 0 ? ids : fallback);
     const leftIdentities = await supabaseAdmin
       .from("player_identities")
       .select("id", { count: "exact", head: true })
       .like("external_id", `${RUN}-fc-%`);
+    // The fixture accounts cascade away with the auth user; prove it.
+    const leftProfiles = await supabaseAdmin
+      .from("player_profiles")
+      .select("id", { count: "exact", head: true })
+      .in("id", profileIds.length > 0 ? profileIds : fallback);
+    const leftConnections = await supabaseAdmin
+      .from("player_connections")
+      .select("id", { count: "exact", head: true })
+      .in("player_id", profileIds.length > 0 ? profileIds : fallback);
+    // `match_series` is only written by BO2/BO3 observations; this fixture is
+    // BO1-only, so the assertion is that it was never touched at all.
+    const leftSeries = await supabaseAdmin
+      .from("match_series")
+      .select("id", { count: "exact", head: true })
+      .in("discovered_by_player_id", profileIds.length > 0 ? profileIds : fallback);
     check(
       "18 — fixtures fully removed from the real database",
-      leftMatches.count === 0 && leftSources.count === 0 && leftIdentities.count === 0,
-      `matches=${leftMatches.count} sources=${leftSources.count} identities=${leftIdentities.count}`,
+      leftMatches.count === 0 &&
+        leftSources.count === 0 &&
+        leftParticipants.count === 0 &&
+        leftIdentities.count === 0 &&
+        leftProfiles.count === 0 &&
+        leftConnections.count === 0 &&
+        leftSeries.count === 0,
+      `matches=${leftMatches.count} sources=${leftSources.count} participants=${
+        leftParticipants.count
+      } identities=${leftIdentities.count} profiles=${leftProfiles.count} connections=${
+        leftConnections.count
+      } series=${leftSeries.count} (series never written: BO1-only fixture)`,
     );
 
     const tally = (verdict: Verdict) => results.filter((r) => r.verdict === verdict).length;
