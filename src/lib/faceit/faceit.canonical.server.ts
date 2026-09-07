@@ -325,7 +325,7 @@ export async function persistFaceitObservation(args: {
     participants.map((p) => p.externalPlayerId),
   );
   const enriched = participants.map((p) => {
-    const resolvedIdentity = graph.get(p.externalPlayerId);
+    const resolvedIdentity = graph.identities.get(p.externalPlayerId);
     return {
       ...p,
       steamId64: resolvedIdentity?.steamId64 ?? p.steamId64,
@@ -369,7 +369,10 @@ export async function persistFaceitObservation(args: {
     return result;
   }
 
-  const candidates = await loadCandidates(args.db, args.playerId, args.mapped.match_date);
+  const provenSteamIds = enriched
+    .map((p) => p.steamId64)
+    .filter((id): id is string => typeof id === "string");
+  const candidates = await loadCandidates(args.db, args.mapped.match_date, provenSteamIds);
 
   for (const bundle of observation.bundles) {
     const incoming: MatchIdentityCandidate = {
@@ -382,9 +385,7 @@ export async function persistFaceitObservation(args: {
       scoreTeamA: bundle.match.scoreTeamA,
       scoreTeamB: bundle.match.scoreTeamB,
       // Only graph-proven SteamID64s; absence is never filled in.
-      participantSteamIds: enriched
-        .map((p) => p.steamId64)
-        .filter((id): id is string => typeof id === "string"),
+      participantSteamIds: provenSteamIds,
     };
     const resolved = resolveAgainstAll(incoming, candidates);
     const attach =
