@@ -40,7 +40,11 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) void navigate({ to: "/login", replace: true });
+    if (user) return;
+    // Deferred by a macrotask: navigating synchronously inside the first effect
+    // reenters the router while it is still mounting the matched route.
+    const timer = setTimeout(() => void navigate({ to: "/login", replace: true }), 0);
+    return () => clearTimeout(timer);
   }, [user, navigate]);
 
   if (!user) return null;
