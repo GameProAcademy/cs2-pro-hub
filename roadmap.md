@@ -16,10 +16,13 @@
 - [x] (M) Contadores honestos (inserted / updated / existed / skipped / failed / deferred).
 - [x] (N) `fetchFaceitRecentMatchStats` (código morto) removido.
 
-## Aberto (fases seguintes, fora de 2.2.1C)
+## Aberto (fases seguintes)
 
 - [ ] Agendamento externo do cron (`/api/public/pipeline-cron`) com o segredo já configurado.
-- [ ] Gamers Club, dashboard real, Player DNA e AI Coach com dados reais.
+- [ ] Dashboard real, Pro Score, Player DNA, diagnóstico e AI Coach com dados reais (hoje mock sob `DEMO_DATA`).
+- [ ] Worker real de parser de `.dem` (`FEATURES.realDemoParser = false`).
+- [x] Gamers Club: INDISPONÍVEL por bloqueio externo (403/Cloudflare, sem API pública). Não haverá contorno de anti-bot.
+
 
 ## FASE 2.2.1D — FACEIT FINAL VALIDATION PATCH (concluída)
 - `finished` baseado em `finished_at`/status terminal (`isFaceitMatchFinished`); `match_date` nunca é prova.
@@ -153,7 +156,7 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Match Identity Resolver com EXACT/PROBABLE/POSSIBLE/NO_MATCH/CONFLICT; só EXACT anexa automaticamente; prioridade de fonte não é merge.
 - [x] Projeção por jogador (vitória/derrota/"meu placar") derivada, nunca gravada no match.
 - [x] 37 testes novos (454 no total), typecheck limpo, lint limpo, build OK.
-- [ ] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — próximo passo, ainda NÃO aplicados.
+- [x] 2.6.2 banco (match_series/match_sources/match_participants/round_players) e 2.6.5 persistência transacional — APLICADOS e provados contra o banco real (ver 2.6.9 e 2.6.11.5).
 
 ## FASE 2.6.9 — persistência canônica: prova contra o banco real
 
@@ -172,9 +175,10 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       agora recusa a observação inteira com `CANONICAL_PARTICIPANT_UNKNOWN` /
       `CANONICAL_ROUND_UNKNOWN`; reteste confirmou erro e ZERO linhas gravadas.
 - [x] Fixtures de teste removidas do banco ao final (nenhum dado real tocado).
-- [ ] Pendente: FACEIT `sync.server.ts` ainda grava pelo caminho antigo — converter para
-      `faceitToCanonicalBundles()` + `persist_canonical_observation()`; teste de
-      concorrência real; RLS negativa via sessão autenticada.
+- [x] Fechado na FASE 2.6.11: `faceit.sync.server.ts` grava EXCLUSIVAMENTE por
+      `persistFaceitObservation()` (adapter + resolver + persistência transacional);
+      concorrência real e RLS negativa provadas na FASE 2.6.11.5.
+
 
 ## FASE 2.6.11.2 — erro de runtime do painel administrativo
 
@@ -193,8 +197,10 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Privilégios mínimos reconfirmados: tabelas canônicas só com leitura para usuário
       autenticado, zero acesso anônimo; rotinas de persistência canônica apenas
       `service_role`, SECURITY DEFINER com `search_path=''`.
-- [ ] Resta um aviso de desenvolvimento do React em `/dashboard` (atualização de estado
-      durante render em sub-árvore `ssr: false`), sem efeito no usuário final.
+- [x] O aviso de desenvolvimento do React em `/dashboard` foi eliminado na FASE 2.6.11.5:
+      os portões de `/_authenticated` e `/admin` decidem em `beforeLoad` e navegam de
+      forma declarativa (`<Navigate replace />`), sem atualizar estado durante o render.
+
 
 ## FASE 2.6.11.3 — Production cross-source identity closure
 
@@ -299,3 +305,43 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [ ] NOT_PROVEN: introspecção de PIDs do PostgreSQL (limitação do ambiente). Invariante
       garantida por lock advisory em transação + unicidade `match_sources(source, external_match_id)`.
 - [x] Relatório: `docs/PHASE-2.6.11.5-FINAL-FACEIT-PRODUCTION-E2E-CLOSURE.md`.
+
+## FASE 2.6.11.5A — Integridade das evidências e reconciliação do roadmap
+
+- [x] **Gates frágeis reforçados** em `scripts/faceit-pipeline-proof.ts`:
+      - gate 06 agora prova a convergência pelo conteúdo das observações (fingerprint
+        FACEIT nulo, fingerprint do demo igual à fixture, ids externos distintos), e não
+        apenas pela contagem de linhas;
+      - gate 09 encadeia as asserções: exatamente 10 SteamIDs distintos gravados, cada um
+        presente nas identidades resolvidas pelo Identity Graph e cada id externo FACEIT
+        contabilizado no pareamento;
+      - gate de limpeza verifica participantes, séries, conexões, perfis, identidades e
+        observações — nenhuma linha órfã sobrevive à execução.
+      Reexecução: PASS=18, FAIL=0, BLOCKED=0, NOT_PROVEN=1 (introspecção de PIDs do
+      PostgreSQL, limitação do ambiente).
+- [x] **Deficiência real de banco encontrada e corrigida**: o check permanente
+      "23. all foreign keys have a supporting index" estava FAIL. Sete chaves
+      estrangeiras não tinham índice de apoio (`gamers_club_profile_snapshots`,
+      `gamers_club_sync_jobs`, `steam_link_attempts`, `match_sources` ×2,
+      `round_players` ×2). Índices criados; nenhuma política, grant ou estrutura mudou.
+- [x] **Suíte de segurança permanente 100% PASS**: 67/67 (63 via `psql`; os 4 checks
+      `26a–26d` exigem execução privilegiada da função-guarda e foram provados pelo
+      runner privilegiado — a própria negação de EXECUTE ao aplicativo é o check `25f`).
+- [x] **Contradições do roadmap eliminadas**: 2.6.2/2.6.5 marcados como aplicados,
+      pendência do `faceit.sync.server.ts` fechada (grava só por `persistFaceitObservation`),
+      aviso de render do React marcado como resolvido, Gamers Club registrado como
+      bloqueio externo definitivo.
+- [x] **README reconciliado** com o estado real: Steam é fonte de identidade (Valve não
+      publica histórico de CS2), FACEIT e Canonical Match Engine reais, Pro Score/DNA/
+      diagnóstico/Coach/treino ainda mock sob `DEMO_DATA`, Gamers Club indisponível.
+- [x] **Runtime revalidado** em navegador headless: deslogado (`/`, `/login`, `/register`,
+      `/reset-password`, `/dashboard`, `/admin`) e logado como jogador (`/dashboard`,
+      `/matches`, `/profile`, `/upload`, `/training`, `/admin` → `/dashboard`) — zero erros
+      de console e zero erros de página nos dois cenários.
+- [x] 490/490 testes, typecheck limpo, `eslint` sem erros (8 warnings preexistentes de
+      react-refresh), build OK, linter de banco sem achado novo (14 conhecidos e
+      justificados).
+
+### Veredito
+
+**FASE 2.6.11.5A — CLOSED. READY FOR PHASE 2.7.**
