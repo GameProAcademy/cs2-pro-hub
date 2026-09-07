@@ -1,5 +1,4 @@
-import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAccountStatus } from "@/lib/auth";
@@ -9,12 +8,13 @@ import { fetchAccountStatus } from "@/lib/auth";
  * subtree is client-rendered (`ssr: false`).
  *
  * The decision is taken in `beforeLoad` (fail-closed), but the NAVIGATION away
- * happens after the first client render. Throwing a redirect during
+ * happens during render, through `<Navigate>`. Throwing a redirect from
  * `beforeLoad` swaps the rendered route while React is still hydrating the
- * server markup, which React reports as a hydration mismatch. Rendering
- * nothing and navigating from an effect keeps the first client render aligned
- * with the server output while remaining just as closed: children are never
- * rendered without an active, active-status session.
+ * server markup (hydration mismatch), and navigating from an effect can update
+ * a component the router has already unmounted ("state update on a component
+ * that hasn't mounted yet"). Declarative navigation avoids both while staying
+ * just as closed: children are never rendered without an active session whose
+ * account status is `active`.
  */
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -37,20 +37,8 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { user } = Route.useRouteContext();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) return;
-    // Deferred to the next paint: navigating synchronously inside the first
-    // effect reenters the router while it is still mounting the matched route,
-    // which React reports as a state update on an unmounted component.
-    let frame = 0;
-    frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => void navigate({ to: "/login", replace: true }));
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [user, navigate]);
-
-  if (!user) return null;
+  if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
+
