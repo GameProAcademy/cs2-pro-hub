@@ -43,7 +43,7 @@ function AuthenticatedLayout() {
     if (user) return;
     // Deferred by a macrotask: navigating synchronously inside the first effect
     // reenters the router while it is still mounting the matched route.
-    const timer = setTimeout(() => void navigate({ to: "/login", replace: true }), 0);
+    const timer = setTimeout(() => void navigate({ to: "/login", replace: true }), 120);
     return () => clearTimeout(timer);
   }, [user, navigate]);
 
