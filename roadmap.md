@@ -251,3 +251,25 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       rota durante a hidratação — decide em `beforeLoad`, renderiza nada e navega para
       `/login` após a primeira pintura. Console de visitante em rota protegida agora limpo;
       jogador autenticado continua entrando direto no `/dashboard`.
+
+## FASE 2.6.11.4 — Prova final no banco real e fechamento da convergência temporal
+
+- [x] **Semântica temporal corrigida.** `match_date` da FACEIT é `finished_at ?? started_at`:
+      podia ser o FIM da partida sendo comparado com o INÍCIO do demo. Agora a identidade
+      usa timestamps canônicos (`canonicalStartTimestamp`/`canonicalEndTimestamp`): quando
+      só existe o instante final, o início é `null` — nunca inventado — e a convergência
+      compara início com início.
+- [x] **Ambiguidade nunca vira anexo arbitrário.** Dois candidatos EXACT ⇒ `CONFLICT` com
+      `ambiguous_multiple_exact_candidates` e `candidate = null`.
+- [x] **Prova reexecutável** em `scripts/canonical-proof.ts` (24 gates), sempre pelo caminho
+      de produção, com fixtures próprias e limpeza verificada ao final.
+- [x] **Concorrência real**: 6 escritores simultâneos da mesma observação ⇒ 1 partida
+      canônica, 1 observação por fonte, roster sem duplicação, zero `match_sources` órfão.
+      Introspecção de PIDs das sessões continua NÃO PROVADA (sem `dblink`/RPC privilegiada).
+- [x] **RLS com sessão autêntica**: dono lê a própria partida (1 linha); autenticado não
+      participante lê 0 linhas; anônimo recebe `permission denied`; escrita e execução da
+      rotina negadas ao aplicativo.
+- [x] **Runtime**: visitante e jogador validados em navegador headless, sem erros de console
+      nem de hidratação; `/admin` redireciona não-admin para `/dashboard`.
+- [x] 490/490 testes, typecheck limpo, lint sem erros, build OK.
+- [x] Relatório: `docs/PHASE-2.6.11.4-FINAL-DATABASE-PROOF.md`.
