@@ -235,7 +235,11 @@ describe("PRODUCTION CROSS-SOURCE CLOSURE PROOF", () => {
   it("D/E — full identical proven roster on the same map yields EXACT and authorises attach", async () => {
     const fixture = demoCanonicalFixture(STEAM);
     const { incoming } = await faceitIncoming(fixture);
-    const candidates = await loadCandidates(fakeDb(fixture), PLAYED_AT, incoming.participantSteamIds!);
+    const candidates = await loadCandidates(
+      fakeDb(fixture),
+      PLAYED_AT,
+      incoming.participantSteamIds!,
+    );
     const resolved = resolveAgainstAll(incoming, candidates);
 
     expect(resolved.decision.resolution).toBe("EXACT_MATCH");
@@ -249,7 +253,11 @@ describe("PRODUCTION CROSS-SOURCE CLOSURE PROOF", () => {
   it("G — a similar but different match is NEVER attached (partial roster + same map + close time)", async () => {
     const fixture = demoCanonicalFixture(STEAM.slice(0, 7));
     const { incoming } = await faceitIncoming(fixture);
-    const candidates = await loadCandidates(fakeDb(fixture), PLAYED_AT, incoming.participantSteamIds!);
+    const candidates = await loadCandidates(
+      fakeDb(fixture),
+      PLAYED_AT,
+      incoming.participantSteamIds!,
+    );
     const resolved = resolveAgainstAll(incoming, candidates);
 
     expect(resolved.decision.resolution).toBe("PROBABLE_MATCH");
@@ -259,7 +267,11 @@ describe("PRODUCTION CROSS-SOURCE CLOSURE PROOF", () => {
   it("G — a contradicting score is a CONFLICT and never attaches", async () => {
     const fixture = demoCanonicalFixture(STEAM, { score_team_a: 7, score_team_b: 16 });
     const { incoming } = await faceitIncoming(fixture);
-    const candidates = await loadCandidates(fakeDb(fixture), PLAYED_AT, incoming.participantSteamIds!);
+    const candidates = await loadCandidates(
+      fakeDb(fixture),
+      PLAYED_AT,
+      incoming.participantSteamIds!,
+    );
     const resolved = resolveAgainstAll(incoming, candidates);
 
     expect(resolved.decision.resolution).toBe("CONFLICT");
@@ -281,9 +293,9 @@ describe("PRODUCTION CROSS-SOURCE CLOSURE PROOF", () => {
 
   it("I — a failing Identity Graph query is an ERROR, never 'no identity found'", async () => {
     const fixture: Fixture = { ...demoCanonicalFixture(STEAM), failOn: "player_identities" };
-    await expect(
-      resolveFaceitIdentities(fakeDb(fixture), FACEIT_IDS),
-    ).rejects.toBeInstanceOf(FaceitIdentityResolutionError);
+    await expect(resolveFaceitIdentities(fakeDb(fixture), FACEIT_IDS)).rejects.toBeInstanceOf(
+      FaceitIdentityResolutionError,
+    );
   });
 
   it("I — an empty graph is UNRESOLVED, with no invented identity", async () => {

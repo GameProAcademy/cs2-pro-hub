@@ -298,7 +298,6 @@ export async function loadCandidates(
   }));
 }
 
-
 /**
  * Persists ONE FACEIT match observation canonically. Returns the canonical match
  * ids so the caller can project player-scoped metrics onto them.

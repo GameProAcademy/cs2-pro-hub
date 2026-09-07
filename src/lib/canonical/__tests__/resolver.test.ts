@@ -106,7 +106,6 @@ describe("FASE 2.6.4 — match identity resolution", () => {
     expect(result.resolution).toBe("EXACT_MATCH");
   });
 
-
   it("a different map with the same roster and time is escalated as CONFLICT", () => {
     const result = resolveMatchIdentity(
       candidate({ source: "demo", externalMatchId: null, map: "de_inferno" }),

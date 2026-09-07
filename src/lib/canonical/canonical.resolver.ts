@@ -75,7 +75,6 @@ function rosterIdentical(
   return true;
 }
 
-
 function decision(
   resolution: MatchResolution,
   confidence: number,
@@ -189,15 +188,10 @@ export function resolveMatchIdentity(
     delta <= MATCH_TIME_TOLERANCE_MS &&
     rosterIdentical(incoming.participantSteamIds, existing.participantSteamIds)
   ) {
-    return decision("EXACT_MATCH", 1, [
-      "cross_source_roster_identical",
-      "map_equal",
-      "time_close",
-    ]);
+    return decision("EXACT_MATCH", 1, ["cross_source_roster_identical", "map_equal", "time_close"]);
   }
 
   if (sameMap && delta !== null && delta <= MATCH_TIME_TOLERANCE_MS) {
-
     if (shared !== null && shared >= MIN_SHARED_PARTICIPANTS) {
       return decision("PROBABLE_MATCH", 0.85, ["map_equal", "time_close", "roster_overlap"]);
     }
