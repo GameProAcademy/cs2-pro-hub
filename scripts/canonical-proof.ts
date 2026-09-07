@@ -517,7 +517,7 @@ async function main() {
        identity, so nothing below invents a SteamID64 or a fingerprint. */
     const graphSteamIds = Array.from(
       { length: 10 },
-      (_, i) => `7656119${(80000000 + i).toString()}`,
+      (_, i) => `7656119${(8000000000 + i).toString()}`,
     );
     const graphFaceitIds = Array.from({ length: 10 }, (_, i) => `${RUN}-gc-faceit-${i}`);
 
@@ -545,7 +545,7 @@ async function main() {
       const profileId = profile.data?.id;
       if (!profileId) continue;
       touchedProfileIds.add(profileId);
-      await supabaseAdmin.from("player_identities").insert([
+      const identityInsert = await supabaseAdmin.from("player_identities").insert([
         {
           player_id: profileId,
           platform: "FACEIT",
@@ -561,6 +561,14 @@ async function main() {
           is_verified: true,
         },
       ]);
+      if (identityInsert.error) {
+        record(
+          "14 — Identity Graph fixtures",
+          "SKIPPED",
+          `identity insert failed: ${identityInsert.error.message}`,
+        );
+        break;
+      }
     }
 
     const graphReady = touchedProfileIds.size === 10;
@@ -634,7 +642,11 @@ async function main() {
         finishedAt: faceitFinish,
       });
 
-      const crossCandidates = await loadCandidates(supabaseAdmin, faceitStart, resolvedSteam);
+      // Isolated to the fixture under proof: unrelated fixtures from earlier
+      // gates share the map and the discovery window on purpose.
+      const crossCandidates = (
+        await loadCandidates(supabaseAdmin, faceitStart, resolvedSteam)
+      ).filter((candidate) => candidate.canonicalMatchId === graphDemo.matchId);
       const incoming: MatchIdentityCandidate = {
         source: "faceit",
         externalMatchId: faceitCross.observation.externalMatchId,
@@ -822,7 +834,7 @@ async function main() {
     const seriesSources = await supabaseAdmin
       .from("match_sources")
       .select("match_id, series_id")
-      .eq("external_series_id", seriesExternalId);
+      .eq("series_id", seriesPersisted.seriesId);
     const seriesMatches = await supabaseAdmin
       .from("matches")
       .select("id", { count: "exact", head: true })
