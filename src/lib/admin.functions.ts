@@ -291,6 +291,26 @@ export const getAdminSession = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => resolveAdmin(context as Ctx));
 
+/**
+ * UI-only probe with the SAME server-side authorisation as `getAdminSession`.
+ *
+ * Denial is an EXPECTED outcome here (most signed-in users are players), so it
+ * is reported as `null` instead of an error: an ordinary player loading the app
+ * shell must not produce a failed request. Infrastructure failures still throw,
+ * and no administrative operation ever relies on this result — every one of
+ * them re-runs `resolveAdmin` server-side.
+ */
+export const getAdminSessionProbe = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminSession | null> => {
+    try {
+      return await resolveAdmin(context as Ctx);
+    } catch (error) {
+      if (error instanceof Error && error.message === FORBIDDEN) return null;
+      throw error;
+    }
+  });
+
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
