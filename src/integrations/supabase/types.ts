@@ -1159,6 +1159,7 @@ export type Database = {
           best_of: number | null
           canonical_schema_version: number
           created_at: string
+          discovered_by_player_id: string | null
           duration_seconds: number | null
           external_series_id: string | null
           finished_at: string | null
@@ -1180,6 +1181,7 @@ export type Database = {
           best_of?: number | null
           canonical_schema_version?: number
           created_at?: string
+          discovered_by_player_id?: string | null
           duration_seconds?: number | null
           external_series_id?: string | null
           finished_at?: string | null
@@ -1201,6 +1203,7 @@ export type Database = {
           best_of?: number | null
           canonical_schema_version?: number
           created_at?: string
+          discovered_by_player_id?: string | null
           duration_seconds?: number | null
           external_series_id?: string | null
           finished_at?: string | null
@@ -1218,7 +1221,15 @@ export type Database = {
           updated_at?: string
           winner_team?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "match_series_discovered_by_player_id_fkey"
+            columns: ["discovered_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       match_sources: {
         Row: {
@@ -1228,7 +1239,7 @@ export type Database = {
           fetched_at: string
           fingerprint: string | null
           id: string
-          match_id: string
+          match_id: string | null
           metadata: Json
           observation_count: number
           quality: Json
@@ -1248,7 +1259,7 @@ export type Database = {
           fetched_at: string
           fingerprint?: string | null
           id?: string
-          match_id: string
+          match_id?: string | null
           metadata?: Json
           observation_count?: number
           quality?: Json
@@ -1268,7 +1279,7 @@ export type Database = {
           fetched_at?: string
           fingerprint?: string | null
           id?: string
-          match_id?: string
+          match_id?: string | null
           metadata?: Json
           observation_count?: number
           quality?: Json
@@ -2464,6 +2475,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      canonical_attach_source: {
+        Args: {
+          _external_match_id: string
+          _match_id: string
+          _source: Database["public"]["Enums"]["data_source"]
+          _source_contract_version: string
+        }
+        Returns: string
+      }
       canonical_source_priority: {
         Args: { _source: Database["public"]["Enums"]["data_source"] }
         Returns: number
@@ -2525,6 +2545,10 @@ export type Database = {
       owns_player: { Args: { _player_id: string }; Returns: boolean }
       persist_canonical_observation: {
         Args: { _bundle: Json; _owner_player_id?: string; _upload_id?: string }
+        Returns: Json
+      }
+      persist_canonical_series_observation: {
+        Args: { _observation: Json; _owner_player_id?: string; _series: Json }
         Returns: Json
       }
       recover_stale_faceit_sync_jobs: {

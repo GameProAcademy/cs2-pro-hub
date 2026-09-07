@@ -16,7 +16,7 @@
  * stronger one.
  */
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
-import type { CanonicalMatchBundle } from "./canonical.types";
+import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
 
 export interface CanonicalPersistResult {
   matchId: string;
@@ -66,9 +66,29 @@ export async function persistCanonicalObservation(args: {
   ownerPlayerId?: string | null;
   /** Upload the observation came from, for a demo. */
   uploadId?: string | null;
+  /**
+   * Canonical match this observation must join, as decided by the Match
+   * Identity Resolver. Set ONLY for a positive, non-reviewable decision.
+   */
+  attachMatchId?: string | null;
 }): Promise<CanonicalPersistResult> {
   const payload = canonicalBundleToRpcPayload(args.bundle);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Reserving the source slot BEFORE the write is what makes two sources
+  // converge on one canonical match instead of duplicating it. It never merges
+  // facts: source precedence still decides which observation may write them.
+  if (args.attachMatchId && args.bundle.observation.externalMatchId) {
+    const { error: attachError } = await supabaseAdmin.rpc("canonical_attach_source", {
+      _source: args.bundle.observation.source,
+      _external_match_id: args.bundle.observation.externalMatchId,
+      _match_id: args.attachMatchId,
+      _source_contract_version: args.bundle.observation.sourceContractVersion,
+    });
+    if (attachError) {
+      throw new CanonicalPersistenceError("CANONICAL_ATTACH_FAILED", attachError.message);
+    }
+  }
 
   const { data, error } = await supabaseAdmin.rpc("persist_canonical_observation", {
     _bundle: payload as never,
@@ -101,5 +121,66 @@ export async function persistCanonicalObservation(args: {
     roundsWritten: row.rounds_written ?? 0,
     roundPlayersWritten: row.round_players_written ?? 0,
     eventsWritten: row.events_written ?? 0,
+  };
+}
+
+export interface CanonicalSeriesPersistResult {
+  seriesId: string;
+  matchSourceId: string;
+  created: boolean;
+}
+
+/**
+ * Persists a SERIES-ONLY observation: a series the source proved exists (a
+ * BO3/BO5) whose individual maps it never reported. No placeholder match is
+ * created — a match with no map and no score would be a lie.
+ */
+export async function persistCanonicalSeriesObservation(args: {
+  series: CanonicalSeries;
+  observation: {
+    source: string;
+    externalSeriesId: string;
+    sourceContractVersion: string;
+    sourceVersion: string | null;
+    fetchedAt: string;
+    status?: "complete" | "incomplete" | "stale" | "conflicting" | "unknown";
+    quality?: unknown;
+    metadata?: Record<string, unknown>;
+  };
+  ownerPlayerId?: string | null;
+}): Promise<CanonicalSeriesPersistResult> {
+  if (args.series.schemaVersion !== CANONICAL_SCHEMA_VERSION) {
+    throw new CanonicalPersistenceError(
+      "CANONICAL_SCHEMA_UNSUPPORTED",
+      `series=${args.series.schemaVersion} expected=${CANONICAL_SCHEMA_VERSION}`,
+    );
+  }
+  if (!args.observation.externalSeriesId) {
+    throw new CanonicalPersistenceError("CANONICAL_OBSERVATION_UNIDENTIFIABLE");
+  }
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("persist_canonical_series_observation", {
+    _series: JSON.parse(JSON.stringify(args.series)) as never,
+    _observation: JSON.parse(
+      JSON.stringify({ status: "incomplete", quality: {}, metadata: {}, ...args.observation }),
+    ) as never,
+    ...(args.ownerPlayerId ? { _owner_player_id: args.ownerPlayerId } : {}),
+  });
+
+  if (error) throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", error.message);
+
+  const row = (data ?? null) as {
+    series_id?: string;
+    match_source_id?: string;
+    created?: boolean;
+  } | null;
+  if (!row?.series_id || !row.match_source_id) {
+    throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", "empty routine result");
+  }
+  return {
+    seriesId: row.series_id,
+    matchSourceId: row.match_source_id,
+    created: row.created === true,
   };
 }

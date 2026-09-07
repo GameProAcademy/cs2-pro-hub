@@ -559,80 +559,62 @@ export async function runFaceitSync(
         maxAttempts: FACEIT_MAX_MATCH_FETCH_ATTEMPTS,
       });
 
-      const writable = {
-        map: canonical.map,
-        match_date: canonical.match_date,
-        score_player: canonical.score_player,
-        score_opponent: canonical.score_opponent,
-        result: canonical.result,
-        rounds: canonical.rounds,
-        team_player: canonical.team_player,
-        team_opponent: canonical.team_opponent,
-        duration_seconds: canonical.duration_seconds,
-        source_fetched_at: canonical.source_fetched_at,
-        source_version: canonical.source_version,
-        source_metadata: canonical.metadata as never,
-        source_complete: converged,
-        source_fetch_attempts: attempts,
-      };
+      // FASE 2.6.11 — the CANONICAL MATCH ENGINE owns the write. FACEIT no
+      // longer inserts into `matches` itself: the adapter turns this record into
+      // canonical observations (one series + one match per REPORTED map, or a
+      // series alone when FACEIT reported no per-map score), the resolver
+      // decides whether it is an already known canonical match, and the
+      // transactional routine persists it idempotently.
+      const { persistFaceitObservation } = await import("./faceit.canonical.server");
+      const persisted = await persistFaceitObservation({
+        db,
+        playerId,
+        faceitPlayerId,
+        mapped: canonical,
+        details,
+        stats,
+      });
 
-      let matchId = existing?.id ?? null;
-      if (matchId) {
-        await db
-          .from("matches")
-          .update(writable)
-          .eq("id", matchId)
-          // Defensive: a FACEIT sync never rewrites a demo-sourced row.
-          .eq("data_source", "faceit");
-        counters.matchesUpdated += 1;
-      } else {
-        const { data: inserted, error } = await db
-          .from("matches")
-          .insert({
-            player_id: playerId,
-            upload_id: null,
-            data_source: "faceit",
-            platform: "faceit",
-            external_match_id: canonical.external_match_id,
-            ...writable,
-          })
-          .select("id")
-          .maybeSingle();
-
-        if (error) {
-          // Concurrent sync already inserted it: idempotent, not a failure and
-          // NOT an update — the honest counter is `alreadyExisted`.
-          if ((error as { code?: string }).code !== "23505") {
-            throw new FaceitError("FACEIT_INTERNAL_ERROR");
-          }
-          const { data: raced } = await db
-            .from("matches")
-            .select("id")
-            .eq("player_id", playerId)
-            .eq("data_source", "faceit")
-            .eq("external_match_id", canonical.external_match_id)
-            .maybeSingle();
-          matchId = raced?.id ?? null;
-          counters.matchesAlreadyExisted += 1;
+      // A series whose maps FACEIT never reported yields NO canonical match.
+      // That is a legitimate outcome, not a failure and not an update.
+      if (persisted.matchIds.length === 0) {
+        if (persisted.seriesId) {
+          counters.matchesSkipped += 1;
+          console.info(`[faceit] series_only match=${item.match_id}`);
         } else {
-          matchId = inserted?.id ?? null;
-          counters.matchesInserted += 1;
+          counters.matchesFailed += 1;
         }
-      }
-
-      if (!matchId) {
-        counters.matchesFailed += 1;
         continue;
       }
 
+      counters.matchesInserted += persisted.created;
+      counters.matchesUpdated += persisted.matchIds.length - persisted.created;
+
+      // Convergence bookkeeping stays on the source-scoped columns: they are
+      // what stops a match FACEIT will never complete from being re-fetched.
+      await db
+        .from("matches")
+        .update({
+          source_complete: converged,
+          source_fetch_attempts: attempts,
+          source_metadata: canonical.metadata as never,
+          source_fetched_at: canonical.source_fetched_at,
+          source_version: canonical.source_version,
+        })
+        .in("id", persisted.matchIds);
+
       // Match stats are frequently unavailable; absence is null, never zero.
+      // These are a PLAYER-SCOPED PROJECTION of the canonical match, not a
+      // second source of truth.
       if (metrics) {
-        await db
-          .from("match_metrics")
-          .upsert(
-            { match_id: matchId, player_id: playerId, ...metrics },
-            { onConflict: "match_id,player_id" },
-          );
+        await db.from("match_metrics").upsert(
+          persisted.matchIds.map((matchId) => ({
+            match_id: matchId,
+            player_id: playerId,
+            ...metrics,
+          })),
+          { onConflict: "match_id,player_id" },
+        );
       }
     } catch (error) {
       const faceitError = toFaceitError(error);
