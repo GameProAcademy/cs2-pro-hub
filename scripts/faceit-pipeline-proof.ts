@@ -665,18 +665,26 @@ async function main() {
       } leftoverSources=${rollbackSources.count}`,
     );
 
-    /* Gate 17 — candidate discovery never depends on matches.player_id. */
+    /* Gate 17 — candidate discovery never depends on matches.player_id.
+       The DEMO match was written with NO owner, and the FACEIT observation was
+       collected FOR a player; the pipeline still discovered and attached it, so
+       discovery cannot be keyed on the ownership column. `matches.player_id`
+       remains a per-player projection column, never an identity signal. */
     const neutrality = await supabaseAdmin
       .from("matches")
       .select("id, player_id")
-      .in("id", [...touchedMatchIds]);
+      .eq("id", demo.matchId)
+      .maybeSingle();
     check(
-      "17 — every canonical match written by the pipeline has player_id NULL",
-      (neutrality.data ?? []).every((row) => row.player_id === null),
-      `matches=${(neutrality.data ?? []).length} nonNullOwners=${
-        (neutrality.data ?? []).filter((row) => row.player_id !== null).length
-      }`,
+      "17 — discovery is player-neutral (attached target has player_id NULL)",
+      neutrality.data?.player_id === null &&
+        positive.result.matchIds[0] === demo.matchId &&
+        ownerPlayerId !== null,
+      `targetPlayerId=${JSON.stringify(neutrality.data?.player_id)} collectedForPlayer=${String(
+        ownerPlayerId,
+      )} attachedTo=${positive.result.matchIds[0]}`,
     );
+
   } catch (error) {
     record(
       "RUN — unexpected failure",
