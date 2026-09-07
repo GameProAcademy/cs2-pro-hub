@@ -56,10 +56,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
       const message = error instanceof Error ? error.message : String(error);
 
       // Session missing/expired: back to the public login route.
-      if (/unauthorized|401/i.test(message)) return { gate: "signin", adminSession: NO_ADMIN_SESSION };
+      if (/unauthorized|401/i.test(message))
+        return { gate: "signin", adminSession: NO_ADMIN_SESSION };
 
       // Explicit denial: the user is signed in but is not the administrator.
-      if (message.includes("ADMIN_FORBIDDEN")) return { gate: "forbidden", adminSession: NO_ADMIN_SESSION };
+      if (message.includes("ADMIN_FORBIDDEN"))
+        return { gate: "forbidden", adminSession: NO_ADMIN_SESSION };
 
       // Anything else is an unexpected backend failure: surface a controlled
       // error state instead of a silent redirect. No internal detail is shown.
@@ -76,7 +78,6 @@ function AdminGateComponent() {
   if (gate === "forbidden") return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 }
-
 
 function AdminErrorScreen() {
   const t = useT();
