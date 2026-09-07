@@ -501,11 +501,84 @@ async function main() {
         const rpc = await asUser.rpc("persist_canonical_observation_attached", {
           _bundle: {} as never,
         });
+        const update = await asUser
+          .from("matches")
+          .update({ map: "de_dust2" })
+          .eq("id", demo.matchId);
+        const del = await asUser.from("matches").delete().eq("id", demo.matchId);
+        const insertSource = await asUser.from("match_sources").insert({
+          match_id: demo.matchId,
+          source: "faceit",
+          source_contract_version: SOURCE_CONTRACT_VERSIONS["faceit"],
+          fetched_at: new Date().toISOString(),
+          status: "incomplete",
+        });
+        const insertParticipant = await asUser
+          .from("match_participants")
+          .insert({ match_id: demo.matchId, participant_key: "x", source: "faceit" });
         check(
-          "12 — a signed-in user can neither write matches nor run the canonical routine",
-          Boolean(insert.error) && Boolean(rpc.error),
-          `insert=${insert.error?.message ?? "ALLOWED"} rpc=${rpc.error?.message ?? "ALLOWED"}`,
+          "12 — a signed-in user can neither write canonical tables nor run the canonical routine",
+          Boolean(insert.error) &&
+            Boolean(rpc.error) &&
+            Boolean(insertSource.error) &&
+            Boolean(insertParticipant.error) &&
+            (Boolean(update.error) || update.count === 0) &&
+            (Boolean(del.error) || del.count === 0),
+          `insert=${insert.error?.message ?? "ALLOWED"} update=${update.error?.message ?? "no-row"} delete=${del.error?.message ?? "no-row"} sources=${insertSource.error?.message ?? "ALLOWED"} participants=${insertParticipant.error?.message ?? "ALLOWED"} rpc=${rpc.error?.message ?? "ALLOWED"}`,
         );
+
+        /* Gates 23/24 — RLS read scoping with a REAL session.
+           USER A owns a canonical match through participation; the very same
+           authenticated user must NOT see a match it does not participate in
+           (the USER B position). */
+        const me = await asUser.auth.getUser();
+        const myProfile = me.data.user
+          ? await supabaseAdmin
+              .from("player_profiles")
+              .select("id")
+              .eq("user_id", me.data.user.id)
+              .maybeSingle()
+          : null;
+        const myProfileId = myProfile?.data?.id ?? null;
+        if (!myProfileId) {
+          record(
+            "23 — RLS: USER A reads own canonical match",
+            "SKIPPED",
+            "no player profile for the proof session",
+          );
+          record(
+            "24 — RLS: USER B cannot read a foreign canonical match",
+            "SKIPPED",
+            "no player profile for the proof session",
+          );
+        } else {
+          const ownedFixture = await persistCanonicalObservation({
+            bundle: bundle({
+              source: "faceit",
+              externalMatchId: `proof-${RUN}-rls-owned`,
+              fingerprint: null,
+              scoreTeamA: 13,
+              scoreTeamB: 4,
+              withRounds: false,
+              playedAt: new Date("2026-01-17T12:00:00.000Z").toISOString(),
+            }),
+            ownerPlayerId: myProfileId,
+          });
+          touchedMatchIds.add(ownedFixture.matchId);
+          const readOwn = await asUser.from("matches").select("id").eq("id", ownedFixture.matchId);
+          check(
+            "23 — RLS: USER A reads its own canonical match",
+            !readOwn.error && (readOwn.data ?? []).length === 1,
+            `rows=${(readOwn.data ?? []).length} error=${readOwn.error?.message ?? "none"}`,
+          );
+
+          const readForeign = await asUser.from("matches").select("id").eq("id", other.matchId);
+          check(
+            "24 — RLS: a signed-in NON-participant cannot read a foreign canonical match",
+            !readForeign.error && (readForeign.data ?? []).length === 0,
+            `rows=${(readForeign.data ?? []).length} error=${readForeign.error?.message ?? "none"}`,
+          );
+        }
       }
     }
 
@@ -662,8 +735,7 @@ async function main() {
       };
       const resolvedCross = resolveAgainstAll(incoming, crossCandidates);
       const attachTarget =
-        canConvergeCrossSource(resolvedCross.decision) &&
-        resolvedCross.candidate?.canonicalMatchId
+        canConvergeCrossSource(resolvedCross.decision) && resolvedCross.candidate?.canonicalMatchId
           ? resolvedCross.candidate.canonicalMatchId
           : null;
       const crossPersisted = await persistCanonicalObservation({
@@ -847,7 +919,6 @@ async function main() {
         seriesMatches.count === 0,
       `sources=${JSON.stringify(seriesSources.data)} matches=${seriesMatches.count}`,
     );
-
   } finally {
     /* Cleanup — fixtures only, verified by re-reading the tables. */
     const ids = [...touchedMatchIds];
