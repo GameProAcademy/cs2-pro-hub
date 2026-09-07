@@ -234,7 +234,7 @@ async function loadCandidateRosters(
  * attributes only — the participants proven by the Identity Graph, plus the
  * competitive time window.
  */
-async function loadCandidates(
+export async function loadCandidates(
   db: SupabaseClient<Database>,
   playedAt: string | null,
   steamIds: readonly string[],
