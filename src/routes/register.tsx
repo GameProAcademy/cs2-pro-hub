@@ -57,7 +57,13 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   // Detected once as a DEFAULT only; the user can always change it.
-  const [country, setCountry] = useState<string>(() => detectCountryCode() ?? "");
+  // The detection reads navigator/Intl, so it must run AFTER hydration —
+  // doing it in the state initializer makes SSR and the first client render
+  // disagree (hydration mismatch).
+  const [country, setCountry] = useState<string>("");
+  useEffect(() => {
+    setCountry((current) => current || (detectCountryCode() ?? ""));
+  }, []);
   const [level, setLevel] = useState("");
   const [platform, setPlatform] = useState("");
   const [goal, setGoal] = useState("");
