@@ -180,7 +180,24 @@ export function resolveMatchIdentity(
     return decision("CONFLICT", 0.5, ["score_contradiction"], true);
   }
 
+  // Cross-source EXACT: full identical roster of proven accounts, same map,
+  // same competitive window, no contradicting score.
+  if (
+    incoming.source !== existing.source &&
+    sameMap &&
+    delta !== null &&
+    delta <= MATCH_TIME_TOLERANCE_MS &&
+    rosterIdentical(incoming.participantSteamIds, existing.participantSteamIds)
+  ) {
+    return decision("EXACT_MATCH", 1, [
+      "cross_source_roster_identical",
+      "map_equal",
+      "time_close",
+    ]);
+  }
+
   if (sameMap && delta !== null && delta <= MATCH_TIME_TOLERANCE_MS) {
+
     if (shared !== null && shared >= MIN_SHARED_PARTICIPANTS) {
       return decision("PROBABLE_MATCH", 0.85, ["map_equal", "time_close", "roster_overlap"]);
     }
