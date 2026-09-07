@@ -118,3 +118,27 @@ _upload_id uuid)` — one `SECURITY DEFINER` routine, `search_path = ''`,
 ## Tests
 
 `canonical.test.ts` (22), `resolver.test.ts` (15), `persistence.test.ts` (7).
+
+## FASE 2.6.11 — Convergência canônica (fechamento)
+
+- **FACEIT deixou de escrever `matches` diretamente.** `faceit.sync.server.ts`
+  agora chama `persistFaceitObservation()`
+  (`src/lib/faceit/faceit.canonical.server.ts`), que usa o adaptador, o Match
+  Identity Resolver e as rotinas transacionais. As colunas de convergência de
+  fonte (`source_complete`, `source_fetch_attempts`, `source_metadata`) e
+  `match_metrics` continuam como PROJEÇÃO por jogador, nunca como fonte da
+  verdade.
+- **SERIES-ONLY.** Uma bo3 provada sem placar por mapa grava a série sozinha
+  (`persist_canonical_series_observation`) — nenhuma partida fantasma com
+  `map = null` é inventada. `match_sources.match_id` passou a aceitar `NULL`
+  com a regra "partida OU série".
+- **Convergência entre fontes.** `canonical_attach_source()` reserva o vínculo
+  da observação a uma partida canônica já existente; a rotina de persistência
+  então escreve na MESMA partida. Só uma decisão positiva e não revisável
+  (`canConvergeCrossSource`) atribui; ambiguidade fica separada e sinalizada.
+- **Concorrência.** Dois workers persistindo a mesma observação em paralelo
+  produzem 1 partida, 1 observação por fonte (verificado no banco).
+- **RLS.** `match_series`/`match_sources`/`matches`: leitura apenas para o dono
+  (participação na partida ou `discovered_by_player_id` da série), zero acesso
+  anônimo, zero escrita pelo aplicativo. Rotinas novas executáveis só por
+  `service_role`.
