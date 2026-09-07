@@ -20,14 +20,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   faceitToCanonicalObservation,
-  persistCanonicalObservation,
-  persistCanonicalSeriesObservation,
   resolveAgainstAll,
   canConvergeCrossSource,
   type CanonicalTeamSlot,
   type FaceitParticipantInput,
   type MatchIdentityCandidate,
 } from "@/lib/canonical";
+import {
+  persistCanonicalObservation,
+  persistCanonicalSeriesObservation,
+} from "@/lib/canonical/canonical.persistence.server";
 import type { Database } from "@/integrations/supabase/types";
 import type { CanonicalFaceitMatch } from "./faceit.mapper";
 import type { FaceitMatch, FaceitMatchStats } from "./faceit.types";

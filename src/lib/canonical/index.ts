@@ -12,6 +12,8 @@ export * from "./canonical.resolver";
 export { demoToCanonicalBundle, type DemoAdapterInput } from "./adapters/demo.adapter";
 export {
   faceitToCanonicalBundles,
+  faceitToCanonicalObservation,
+  type FaceitCanonicalObservation,
   type FaceitAdapterInput,
   type FaceitParticipantInput,
 } from "./adapters/faceit.adapter";
