@@ -1,5 +1,14 @@
 /**
- * FASE 2.6.11.3 — THIS IS THE PRODUCTION CROSS-SOURCE CLOSURE PROOF.
+ * FASE 2.6.11.5 — UNIT / MOCK PROOF (NOT a production E2E proof).
+ *
+ * This file exercises the production FUNCTIONS in isolation behind an in-memory
+ * PostgREST-shaped fake (`fakeDb`). It is useful, fast regression cover for the
+ * convergence chain, but it is NOT evidence that the pipeline works against the
+ * real database. That evidence lives in `scripts/faceit-pipeline-proof.ts`
+ * (REAL DB / REAL PRODUCTION PIPELINE) — see
+ * docs/PHASE-2.6.11.5-FINAL-FACEIT-PRODUCTION-E2E-CLOSURE.md.
+ *
+ * FASE 2.6.11.3 — cross-source closure logic, component level.
  *
  * Every assertion here runs the PRODUCTION functions of the convergence chain:
  *
@@ -214,7 +223,7 @@ async function faceitIncoming(fixture: Fixture): Promise<{
 
 /* --------------------------------- gates -------------------------------- */
 
-describe("PRODUCTION CROSS-SOURCE CLOSURE PROOF", () => {
+describe("UNIT/MOCK cross-source closure (fakeDb — not a production E2E proof)", () => {
   it("A/B — FACEIT ids resolve to Steam identities exclusively through the graph", async () => {
     const { proven, resolution } = await faceitIncoming(demoCanonicalFixture(STEAM));
     expect(resolution).toBe("RESOLVED");

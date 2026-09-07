@@ -15,11 +15,22 @@ import { getAdminSession } from "@/lib/admin.functions";
  *  - authorisation could not be determined -> controlled error screen.
  */
 export const Route = createFileRoute("/_authenticated/admin")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ context }) => {
+    // FASE 2.6.11.5 — the parent gate already resolved the browser session.
+    // Calling an authenticated server function with no session would send a
+    // request with no Authorization header, which the middleware correctly
+    // rejects as `Unauthorized` — surfacing an application error for what is
+    // simply "not signed in". The absence of a session is answered here, and
+    // authorisation itself is still decided server-side below.
+    if (!(context as { user?: { id: string } | null }).user) {
+      throw redirect({ to: "/login" });
+    }
+
     let session: Awaited<ReturnType<typeof getAdminSession>> | null = null;
 
     try {
       session = await getAdminSession();
+
     } catch (error) {
       if (isRedirect(error)) throw error;
 
