@@ -151,3 +151,54 @@ Gate 11b remains `NOT_PROVEN` and is reported as such: it is an environment
 limitation of the sandbox, not a defect, and the concurrency invariant is
 otherwise enforced by the in-transaction advisory lock and the unique
 constraint. Nothing from Phase 2.7 was started.
+
+---
+
+## FASE 2.6.11.5A — Evidence integrity + roadmap reconciliation
+
+Re-run: `bun scripts/faceit-pipeline-proof.ts` → **PASS=18 FAIL=0 BLOCKED=0 NOT_PROVEN=1**
+(19 gates; the single `NOT_PROVEN` is PostgreSQL backend-PID introspection, an
+environment limitation, never claimed as a pass).
+
+### Gates that were strengthened (they were countable, not conclusive)
+
+| Gate | Was | Now |
+| --- | --- | --- |
+| 06 — convergence used no fingerprint / no shared external id | row counts only | reads `match_sources` content: FACEIT fingerprint IS NULL, demo fingerprint equals the fixture, fingerprints not shared, external ids differ, same map, same canonical start, no score contradiction, production attach |
+| 09 — participants trace back to the Identity Graph | 10 rows exist | chained: exactly 10 participants, 10 distinct SteamIDs, no NULL, every FACEIT id present in the graph, chain covers all ten, every persisted id comes from the chain, no extra participant, no SteamID in the FACEIT payload, no nickname-derived id, every id is a verified identity row |
+| 18 — cleanup | matches/sources only | matches, sources, participants, series, identities, profiles and connections all back to zero |
+
+### Real database deficiency found and fixed
+
+The permanent suite's check **"23. all foreign keys have a supporting index"** was
+**FAIL**. Seven foreign keys had no supporting index:
+`gamers_club_profile_snapshots.connection_id`, `gamers_club_sync_jobs.connection_id`,
+`steam_link_attempts.player_id`, `match_sources.series_id`, `match_sources.upload_id`,
+`round_players.round_id`, `round_players.internal_player_id`.
+
+Indexes created (additive only — no policy, grant, routine or column changed).
+
+### Permanent security suite
+
+**67/67 PASS.** 63 rows run under the read-only sandbox role; the four `26a–26d` rows
+call the credential-guard function directly and require a privileged runner, because
+EXECUTE is deliberately revoked from `anon`/`authenticated` — that revocation is itself
+check `25f`, which passes.
+
+### Runtime revalidation (headless Chromium, localhost:8080)
+
+- Signed out: `/` → `/login`, `/login`, `/register`, `/reset-password`,
+  `/dashboard` → `/login`, `/admin` → `/login`. **0 console errors, 0 page errors.**
+- Signed in as player `thg`: `/dashboard`, `/matches`, `/profile`, `/upload`,
+  `/training` render; `/admin` → `/dashboard`. **0 console errors, 0 page errors.**
+
+### Battery
+
+490/490 tests, typecheck clean, `eslint .` 0 errors (8 pre-existing react-refresh
+warnings), build OK, database linter with no new finding (14 known and justified: 4
+RLS-enabled-no-policy on server-only tables, 10 SECURITY DEFINER helpers that RLS
+policies must be able to call).
+
+### Verdict
+
+**FASE 2.6.11.5A — CLOSED. READY FOR PHASE 2.7.**
