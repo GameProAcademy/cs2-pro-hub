@@ -49,13 +49,26 @@ describe("FASE 2.6.4 — match identity resolution", () => {
     ).toBe("NO_MATCH");
   });
 
-  it("cross-source with same map, close time and full roster is PROBABLE_MATCH only", () => {
+  it("FASE 2.6.11.3 — cross-source with same map, close time and a FULL identical proven roster is EXACT", () => {
     const result = resolveMatchIdentity(
       candidate({ source: "demo", externalMatchId: null, fingerprint: "a".repeat(64) }),
       candidate({ fingerprint: null }),
     );
+    expect(result.resolution).toBe("EXACT_MATCH");
+    expect(result.signals).toContain("cross_source_roster_identical");
+    expect(canAttachAutomatically(result)).toBe(true);
+  });
+
+  it("cross-source with an incomplete roster stays PROBABLE_MATCH and is not attached", () => {
+    const result = resolveMatchIdentity(
+      candidate({
+        source: "demo",
+        externalMatchId: null,
+        participantSteamIds: roster.slice(0, 9),
+      }),
+      candidate({ participantSteamIds: roster.slice(0, 9) }),
+    );
     expect(result.resolution).toBe("PROBABLE_MATCH");
-    // Probable is NOT good enough to attach automatically.
     expect(canAttachAutomatically(result)).toBe(false);
   });
 
@@ -82,16 +95,17 @@ describe("FASE 2.6.4 — match identity resolution", () => {
       candidate({ source: "demo", externalMatchId: null, scoreTeamA: 8, scoreTeamB: 13 }),
       candidate(),
     );
-    expect(result.resolution).toBe("PROBABLE_MATCH");
+    expect(result.resolution).toBe("EXACT_MATCH");
   });
 
-  it("an unknown score is not a contradiction", () => {
+  it("an unknown score is not a contradiction, and the full roster still identifies the match", () => {
     const result = resolveMatchIdentity(
       candidate({ source: "demo", externalMatchId: null, scoreTeamA: null, scoreTeamB: null }),
       candidate(),
     );
-    expect(result.resolution).toBe("PROBABLE_MATCH");
+    expect(result.resolution).toBe("EXACT_MATCH");
   });
+
 
   it("a different map with the same roster and time is escalated as CONFLICT", () => {
     const result = resolveMatchIdentity(
