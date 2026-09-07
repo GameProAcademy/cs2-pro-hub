@@ -374,7 +374,11 @@ export async function persistFaceitObservation(args: {
   const provenSteamIds = enriched
     .map((p) => p.steamId64)
     .filter((id): id is string => typeof id === "string");
-  const candidates = await loadCandidates(args.db, args.mapped.match_date, provenSteamIds);
+  // FASE 2.6.11.4 — discovery is centred on the match START when FACEIT proves
+  // it; `match_date` may be the END and would shift the window.
+  const discoveryAnchor =
+    (args.mapped.metadata?.["started_at"] as string | null | undefined) ?? args.mapped.match_date;
+  const candidates = await loadCandidates(args.db, discoveryAnchor, provenSteamIds);
 
   for (const bundle of observation.bundles) {
     const incoming: MatchIdentityCandidate = {
