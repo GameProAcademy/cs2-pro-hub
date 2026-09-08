@@ -70,10 +70,7 @@ describe("rate features are not their own complement", () => {
     expect(featureDirection("survivability", "damage_taken_per_round")).toBe("down");
     const value = survivability()["damage_taken_per_round"];
     if (metrics.damageTaken != null) {
-      expect(value).toBeCloseTo(
-        Math.min(1, metrics.damageTaken / metrics.roundsPlayed / 120),
-        3,
-      );
+      expect(value).toBeCloseTo(Math.min(1, metrics.damageTaken / metrics.roundsPlayed / 120), 3);
     }
   });
 

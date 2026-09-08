@@ -15,7 +15,12 @@
  * player, `match_metrics`, `match_features`). It always runs AFTER the canonical
  * persistence and against the canonical match id it returned.
  */
-import { ANALYSIS_VERSION, FEATURES_VERSION, METRICS_VERSION, SCHEMA_VERSION } from "@/config/pipeline";
+import {
+  ANALYSIS_VERSION,
+  FEATURES_VERSION,
+  METRICS_VERSION,
+  SCHEMA_VERSION,
+} from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";

@@ -583,7 +583,8 @@ export const en: Dictionary = {
   "pipeline.error.STORAGE_ERROR": "The upload failed. Please try again.",
   "pipeline.error.DEMO_EMPTY": "The uploaded file is empty.",
   "pipeline.error.IDENTITY_RESOLUTION_ERROR": "Your linked identities could not be checked.",
-  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT": "This match matched more than one existing record and needs review.",
+  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
+    "This match matched more than one existing record and needs review.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "The match could not be saved safely.",
   "pipeline.error.METRICS_ERROR": "Metrics calculation failed.",
   "pipeline.error.FEATURES_ERROR": "Signal calculation failed.",

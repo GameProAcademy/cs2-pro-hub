@@ -588,8 +588,10 @@ export const es: Dictionary = {
     "No pudimos identificarte en esta demo. Añade tu Steam ID a tu perfil.",
   "pipeline.error.STORAGE_ERROR": "La subida falló. Inténtalo de nuevo.",
   "pipeline.error.DEMO_EMPTY": "El archivo enviado está vacío.",
-  "pipeline.error.IDENTITY_RESOLUTION_ERROR": "No se pudieron consultar tus identidades vinculadas.",
-  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT": "Esta partida coincidió con más de un registro existente y necesita revisión.",
+  "pipeline.error.IDENTITY_RESOLUTION_ERROR":
+    "No se pudieron consultar tus identidades vinculadas.",
+  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
+    "Esta partida coincidió con más de un registro existente y necesita revisión.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "No se pudo guardar la partida de forma segura.",
   "pipeline.error.METRICS_ERROR": "Falló el cálculo de las métricas.",
   "pipeline.error.FEATURES_ERROR": "Falló el cálculo de los indicadores.",

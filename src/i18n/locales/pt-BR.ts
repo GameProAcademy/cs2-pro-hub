@@ -590,8 +590,10 @@ export const ptBR = {
     "Não conseguimos te identificar nesta demo. Adicione seu Steam ID ao perfil.",
   "pipeline.error.STORAGE_ERROR": "O envio falhou. Tente novamente.",
   "pipeline.error.DEMO_EMPTY": "O arquivo enviado está vazio.",
-  "pipeline.error.IDENTITY_RESOLUTION_ERROR": "Não foi possível consultar suas identidades vinculadas.",
-  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT": "Esta partida coincidiu com mais de um registro existente e precisa de revisão.",
+  "pipeline.error.IDENTITY_RESOLUTION_ERROR":
+    "Não foi possível consultar suas identidades vinculadas.",
+  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
+    "Esta partida coincidiu com mais de um registro existente e precisa de revisão.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "Não foi possível gravar a partida com segurança.",
   "pipeline.error.METRICS_ERROR": "Falha no cálculo das métricas.",
   "pipeline.error.FEATURES_ERROR": "Falha no cálculo dos indicadores.",
