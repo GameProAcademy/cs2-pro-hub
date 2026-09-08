@@ -587,6 +587,17 @@ export const es: Dictionary = {
   "pipeline.error.PLAYER_IDENTITY_UNRESOLVED":
     "No pudimos identificarte en esta demo. Añade tu Steam ID a tu perfil.",
   "pipeline.error.STORAGE_ERROR": "La subida falló. Inténtalo de nuevo.",
+  "pipeline.error.DEMO_EMPTY": "El archivo enviado está vacío.",
+  "pipeline.error.IDENTITY_RESOLUTION_ERROR":
+    "No se pudieron consultar tus identidades vinculadas.",
+  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
+    "Esta partida coincidió con más de un registro existente y necesita revisión.",
+  "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "No se pudo guardar la partida de forma segura.",
+  "pipeline.error.METRICS_ERROR": "Falló el cálculo de las métricas.",
+  "pipeline.error.FEATURES_ERROR": "Falló el cálculo de los indicadores.",
+  "pipeline.error.JOB_TIMEOUT": "El procesamiento superó el tiempo permitido.",
+  "pipeline.error.JOB_STALE": "El procesamiento se detuvo y volvió a la cola.",
+  "pipeline.error.RESOURCE_LIMIT": "Este archivo requiere más recursos de los permitidos.",
   "pipeline.error.PROCESSING_ERROR": "Fallo inesperado de procesamiento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Trabajos, calidad y retención",

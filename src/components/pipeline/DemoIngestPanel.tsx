@@ -26,6 +26,7 @@ function errorKey(code: string | null): TranslationKey {
   const known: TranslationKey[] = [
     "pipeline.error.DEMO_TOO_LARGE",
     "pipeline.error.DEMO_TOO_SMALL",
+    "pipeline.error.DEMO_EMPTY",
     "pipeline.error.INVALID_DEMO_FORMAT",
     "pipeline.error.CORRUPTED_DEMO",
     "pipeline.error.UNSUPPORTED_DEMO",
@@ -35,6 +36,14 @@ function errorKey(code: string | null): TranslationKey {
     "pipeline.error.PARSER_TIMEOUT",
     "pipeline.error.VALIDATION_ERROR",
     "pipeline.error.PLAYER_IDENTITY_UNRESOLVED",
+    "pipeline.error.IDENTITY_RESOLUTION_ERROR",
+    "pipeline.error.CANONICAL_RESOLUTION_CONFLICT",
+    "pipeline.error.CANONICAL_PERSISTENCE_ERROR",
+    "pipeline.error.METRICS_ERROR",
+    "pipeline.error.FEATURES_ERROR",
+    "pipeline.error.JOB_TIMEOUT",
+    "pipeline.error.JOB_STALE",
+    "pipeline.error.RESOURCE_LIMIT",
     "pipeline.error.STORAGE_ERROR",
     "pipeline.error.PROCESSING_ERROR",
   ];

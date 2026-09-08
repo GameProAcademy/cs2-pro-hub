@@ -345,3 +345,41 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 ### Veredito
 
 **FASE 2.6.11.5A — CLOSED. READY FOR PHASE 2.7.**
+
+## FASE 2.7 — Real demo ingestion + canonical analytics foundation (EM ANDAMENTO)
+
+Objetivo: `.dem` real → upload → job → parser real → normalização → identidade →
+observação canônica → resolver → persistência transacional → métricas → features →
+data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
+
+- [x] **Dupla persistência do demo eliminada (GATE 28)**: a rotina canônica
+      transacional roda primeiro e é a única escritora de fatos canônicos;
+      `persistDemoProjection()` grava apenas a projeção por jogador
+      (`matches` conveniência, `match_metrics`, `match_features`). Fim do risco de
+      segunda linha de partida quando o demo converge com FACEIT.
+- [x] **Auditoria semântica das features (GATE 20)**: catálogo
+      `src/lib/pipeline/features.catalog.ts` com fórmula, unidade, intervalo,
+      direção, significado, comportamento nulo, amostra e impacto na confiança.
+      Inversões corrigidas: `early_death_rate`, `untraded_death_rate`,
+      `damage_taken_per_round`; complementos passam a ter nome próprio
+      (`early_death_avoidance`, `early_death_free_rate`).
+- [x] **NULL nunca virá 0**: denominador zero devolve `null` em todas as razões
+      (o antigo `Math.max(x, 1)` mascarava ausência de amostra como zero).
+- [x] **Taxonomia de erros**: `DEMO_EMPTY`, `IDENTITY_RESOLUTION_ERROR`,
+      `CANONICAL_RESOLUTION_CONFLICT`, `CANONICAL_PERSISTENCE_ERROR`,
+      `METRICS_ERROR`, `FEATURES_ERROR`, `JOB_TIMEOUT`, `JOB_STALE`,
+      `RESOURCE_LIMIT`, `STORAGE_ERROR` — com mensagens nos cinco idiomas.
+- [x] **Limites e versões**: `PARSER_MAX_DURATION_MS`, `MAX_PARSER_PAYLOAD_BYTES`,
+      `METRICS_VERSION`, `FEATURES_VERSION` (gravados na metadata da observação e
+      em `matches.demo_metadata` para linhagem).
+- [x] 500/500 testes, typecheck limpo, lint sem erros, build OK. Nenhuma
+      migration, política, grant ou rotina de banco alterada.
+- [ ] **BLOCKED (P1) — parser real não provisionado**: ler `.dem` de CS2 exige
+      parser nativo e CPU longa, impossível no runtime edge da aplicação. O
+      contrato do worker externo existe, mas `DEMO_PARSER_URL` e
+      `DEMO_PARSER_TOKEN` não estão cadastrados; sem eles o job falha com
+      `PARSER_UNAVAILABLE`. GATES 02, 03 e os gates que exigem arquivo real
+      (01 completo, 05 parcial, 08, 14–19 sobre demo, 22–24 do caminho demo)
+      permanecem BLOCKED / NOT_PROVEN — nunca PASS.
+- [ ] Pendência de infraestrutura: agendamento externo de `/api/public/pipeline-cron`.
+- [x] Documento da fase: `docs/PHASE-2.7-REAL-DEMO-INGESTION-AND-CANONICAL-ANALYTICS.md`.

@@ -1,18 +1,29 @@
 /**
- * Persistence layer (service-role only, server-side).
+ * FASE 2.7 — DEMO per-player PROJECTION (service-role only, server-side).
  *
- * Writes the PERMANENT derived data. The demo file itself is temporary.
- * Idempotency: matches are keyed by `upload_id`, so reprocessing the same
- * upload replaces the derived rows instead of duplicating them.
+ * SINGLE SOURCE OF TRUTH
+ * ----------------------
+ * The canonical model (matches, match_sources, match_participants, match_rounds,
+ * round_players, round_events) is written EXCLUSIVELY by the transactional
+ * canonical routine (`persist_canonical_observation_attached`). This module no
+ * longer inserts a match, rounds or events: doing both was the double
+ * persistence identified by the audit, and it could create a second match row
+ * whenever the resolver attached the demo to an existing FACEIT match.
+ *
+ * What remains here is only what the canonical model deliberately does NOT hold:
+ * the per-player projection (`matches` convenience columns for the owning
+ * player, `match_metrics`, `match_features`). It always runs AFTER the canonical
+ * persistence and against the canonical match id it returned.
  */
-import { ANALYSIS_VERSION, SCHEMA_VERSION } from "@/config/pipeline";
-import { classifyBuyContext } from "@/lib/pipeline/normalizer";
-import { playerSurvivedRound, sideInRound } from "@/lib/pipeline/metrics";
+import {
+  ANALYSIS_VERSION,
+  FEATURES_VERSION,
+  METRICS_VERSION,
+  SCHEMA_VERSION,
+} from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
-
-const EVENT_CHUNK = 500;
 
 /** Safe conversion of canonical structures into the database Json type. */
 const toJson = (value: unknown) => JSON.parse(JSON.stringify(value)) as Json;
@@ -47,11 +58,20 @@ function matchResult(scores: { player: number | null; opponent: number | null })
 
 export interface PersistResult {
   matchId: string;
-  roundsWritten: number;
-  eventsWritten: number;
+  metricsWritten: boolean;
+  featuresWritten: boolean;
 }
 
-export async function persistCanonicalMatch(args: {
+/**
+ * Writes the per-player projection of an ALREADY persisted canonical match.
+ *
+ * Idempotent: metrics are keyed by (match_id, player_id) and features are
+ * replaced for the same pair, so reprocessing the same demo never duplicates a
+ * row. Nothing here creates canonical facts.
+ */
+export async function persistDemoProjection(args: {
+  /** Canonical match id returned by the canonical persistence routine. */
+  matchId: string;
   uploadId: string;
   playerId: string;
   steamId: string;
@@ -60,7 +80,7 @@ export async function persistCanonicalMatch(args: {
   features: CanonicalFeatures;
 }): Promise<PersistResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { match, metrics, features, uploadId, playerId, steamId } = args;
+  const { match, metrics, features, matchId, uploadId, playerId, steamId } = args;
 
   const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
   const teamPlayer = ownPlayer?.team ?? null;
@@ -74,105 +94,45 @@ export async function persistCanonicalMatch(args: {
           : null;
   const scores = ownScores(match, teamPlayer);
 
-  // 1. Match (idempotent by upload_id)
-  const { data: matchRow, error: matchError } = await supabaseAdmin
+  // 1. Per-player convenience columns on the canonical match row.
+  //    `player_id` is a PROJECTION, never an identity signal, so an existing
+  //    projection belonging to another player is never overwritten.
+  const { data: existing, error: readError } = await supabaseAdmin
     .from("matches")
-    .upsert(
-      {
-        upload_id: uploadId,
-        player_id: playerId,
-        platform: "demo",
-        map: match.map,
-        match_date: match.matchDate,
-        game_version: match.gameVersion,
-        duration_seconds: match.durationSeconds,
-        rounds: match.rounds.length,
-        team_player: teamPlayer,
-        team_opponent: teamOpponent,
-        score_player: scores.player,
-        score_opponent: scores.opponent,
-        result: matchResult(scores),
-        demo_metadata: {
-          schema_version: match.schemaVersion,
-          parser: match.parser,
-          quality: toJson(match.quality),
-          tickrate: match.tickrate,
-        },
+    .select("id, player_id")
+    .eq("id", matchId)
+    .maybeSingle();
+  if (readError) fail(readError.message);
+  if (!existing) fail("canonical match not found for projection");
+
+  const { error: updateError } = await supabaseAdmin
+    .from("matches")
+    .update({
+      ...(existing.player_id == null || existing.player_id === playerId
+        ? { player_id: playerId, upload_id: uploadId }
+        : {}),
+      platform: "demo",
+      rounds: match.rounds.length,
+      duration_seconds: match.durationSeconds,
+      game_version: match.gameVersion,
+      team_player: teamPlayer,
+      team_opponent: teamOpponent,
+      score_player: scores.player,
+      score_opponent: scores.opponent,
+      result: matchResult(scores),
+      demo_metadata: {
+        schema_version: match.schemaVersion,
+        parser: toJson(match.parser),
+        quality: toJson(match.quality),
+        tickrate: match.tickrate,
+        metrics_version: METRICS_VERSION,
+        features_version: FEATURES_VERSION,
       },
-      { onConflict: "upload_id" },
-    )
-    .select("id")
-    .single();
+    })
+    .eq("id", matchId);
+  if (updateError) fail(updateError.message);
 
-  if (matchError || !matchRow) fail(matchError?.message);
-  const matchId = matchRow.id;
-
-  // 2. Replace derived rows for this match (reprocessing safety)
-  await supabaseAdmin.from("round_events").delete().eq("match_id", matchId);
-  await supabaseAdmin.from("match_rounds").delete().eq("match_id", matchId);
-  await supabaseAdmin.from("match_features").delete().eq("match_id", matchId);
-
-  // 3. Rounds — stored from the owning player's perspective
-  const roundRows = match.rounds.map((round) => {
-    // Side is per-round only: halftime swaps make another round's side useless
-    // as evidence. Unknown stays NULL.
-    const side = sideInRound(match, steamId, round.roundNumber);
-    return {
-      match_id: matchId,
-      round_number: round.roundNumber,
-      winner_team: round.winnerTeam,
-      winner_side: round.winnerSide,
-      start_tick: round.startTick,
-      end_tick: round.endTick,
-      duration_seconds: round.durationSeconds,
-      bomb_planted: round.bombPlanted,
-      bomb_defused: round.bombDefused,
-      bomb_exploded: round.bombExploded,
-      player_side: side,
-      // Shared survival definition; NULL whenever the demo does not prove it.
-      player_survived: playerSurvivedRound(match, steamId, round.roundNumber),
-      player_money_start: round.moneyStart[steamId] ?? null,
-      player_money_end: round.moneyEnd[steamId] ?? null,
-      player_equipment_value: round.equipmentValue[steamId] ?? null,
-      buy_context: classifyBuyContext(round.moneyStart[steamId], round.equipmentValue[steamId]),
-    };
-  });
-
-  const roundIdByNumber = new Map<number, string>();
-  if (roundRows.length > 0) {
-    const { data, error } = await supabaseAdmin
-      .from("match_rounds")
-      .insert(roundRows)
-      .select("id, round_number");
-    if (error) fail(error.message);
-    for (const row of data ?? []) roundIdByNumber.set(row.round_number, row.id);
-  }
-
-  // 4. Events (chunked; positions only on meaningful events)
-  let eventsWritten = 0;
-  for (let index = 0; index < match.events.length; index += EVENT_CHUNK) {
-    const chunk = match.events.slice(index, index + EVENT_CHUNK).map((event) => ({
-      match_id: matchId,
-      round_id: roundIdByNumber.get(event.roundNumber) ?? null,
-      round_number: event.roundNumber,
-      event_type: event.type,
-      tick: event.tick,
-      time_seconds: event.timeSeconds,
-      actor_steam_id: event.actorSteamId,
-      victim_steam_id: event.victimSteamId,
-      assister_steam_id: event.assisterSteamId,
-      weapon: event.weapon,
-      headshot: event.headshot,
-      distance: event.distance,
-      damage: event.damage,
-      data: toJson(event.data),
-    }));
-    const { error } = await supabaseAdmin.from("round_events").insert(chunk);
-    if (error) fail(error.message);
-    eventsWritten += chunk.length;
-  }
-
-  // 5. Metrics (idempotent per match+player)
+  // 2. Metrics (idempotent per match+player)
   const { error: metricsError } = await supabaseAdmin.from("match_metrics").upsert(
     {
       match_id: matchId,
@@ -208,7 +168,13 @@ export async function persistCanonicalMatch(args: {
   );
   if (metricsError) fail(metricsError.message);
 
-  // 6. Feature signals for the future analysis engine
+  // 3. Feature signals for the future analysis engine (replaced, not stacked)
+  await supabaseAdmin
+    .from("match_features")
+    .delete()
+    .eq("match_id", matchId)
+    .eq("player_id", playerId);
+
   const { error: featuresError } = await supabaseAdmin.from("match_features").insert({
     match_id: matchId,
     player_id: playerId,
@@ -224,5 +190,5 @@ export async function persistCanonicalMatch(args: {
   });
   if (featuresError) fail(featuresError.message);
 
-  return { matchId, roundsWritten: roundRows.length, eventsWritten };
+  return { matchId, metricsWritten: true, featuresWritten: true };
 }

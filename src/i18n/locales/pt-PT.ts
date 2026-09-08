@@ -586,6 +586,17 @@ export const ptPT: Dictionary = {
   "pipeline.error.PLAYER_IDENTITY_UNRESOLVED":
     "Não conseguimos identificá-lo nesta demo. Adicione o seu Steam ID ao perfil.",
   "pipeline.error.STORAGE_ERROR": "O envio falhou. Tente novamente.",
+  "pipeline.error.DEMO_EMPTY": "O ficheiro enviado está vazio.",
+  "pipeline.error.IDENTITY_RESOLUTION_ERROR":
+    "Não foi possível consultar as suas identidades ligadas.",
+  "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
+    "Esta partida coincidiu com mais de um registo existente e precisa de revisão.",
+  "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "Não foi possível gravar a partida com segurança.",
+  "pipeline.error.METRICS_ERROR": "Falha no cálculo das métricas.",
+  "pipeline.error.FEATURES_ERROR": "Falha no cálculo dos indicadores.",
+  "pipeline.error.JOB_TIMEOUT": "O processamento excedeu o tempo permitido.",
+  "pipeline.error.JOB_STALE": "O processamento ficou parado e foi recolocado na fila.",
+  "pipeline.error.RESOURCE_LIMIT": "Este ficheiro exige mais recursos do que o permitido.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Trabalhos, qualidade e retenção",
