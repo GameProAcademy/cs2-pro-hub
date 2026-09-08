@@ -11,11 +11,12 @@ import { EARLY_DEATH_SECONDS } from "@/config/pipeline";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { FEATURE_CATALOG, featureDirection } from "@/lib/pipeline/features.catalog";
 import { computeMetrics } from "@/lib/pipeline/metrics";
+import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import type { CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 
-import { demoFixture, ME } from "./fixture";
+import { ME, syntheticParserOutput } from "./fixture";
 
-const match: CanonicalMatch = demoFixture();
+const match: CanonicalMatch = normalizeParserOutput(syntheticParserOutput);
 const metrics: CanonicalMetrics = computeMetrics(match, ME);
 const features = extractFeatures(match, metrics);
 
