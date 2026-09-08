@@ -8,7 +8,7 @@
  *
  * No network access, no parsing and no file I/O happens here.
  */
-import { ANALYSIS_VERSION } from "@/config/pipeline";
+import { ANALYSIS_VERSION, FEATURES_VERSION, METRICS_VERSION } from "@/config/pipeline";
 import type {
   CanonicalMatch as LegacyDemoMatch,
   CanonicalRound as LegacyDemoRound,
