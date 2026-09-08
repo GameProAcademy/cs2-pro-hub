@@ -197,6 +197,9 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
       fingerprint: input.fingerprint,
       metadata: {
         analysis_version: ANALYSIS_VERSION,
+        // FASE 2.7 lineage: which code version produced the derived layers.
+        metrics_version: METRICS_VERSION,
+        features_version: FEATURES_VERSION,
         parser_revision: parsed.parser.revision,
         tickrate: parsed.tickrate,
         legacy_schema_version: parsed.schemaVersion,

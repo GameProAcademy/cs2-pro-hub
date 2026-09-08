@@ -22,7 +22,7 @@ import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { resolveParserAdapter } from "@/lib/pipeline/parser/remoteParser.server";
-import { persistCanonicalMatch } from "@/lib/pipeline/persistence.server";
+import { persistDemoProjection } from "@/lib/pipeline/persistence.server";
 import {
   assertDemoIntegrity,
   computeStoredDemoSha256,
@@ -199,32 +199,55 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const steamId = resolveOwnSteamId(match, player.steam_id);
 
     await setStage(jobId, "metrics");
-    const metrics = computeMetrics(match, steamId);
-    const features = extractFeatures(match, metrics);
+    let metrics;
+    let features;
+    try {
+      metrics = computeMetrics(match, steamId);
+    } catch (error) {
+      throw new PipelineError("METRICS_ERROR", error instanceof Error ? error.message : undefined);
+    }
+    try {
+      features = extractFeatures(match, metrics);
+    } catch (error) {
+      throw new PipelineError("FEATURES_ERROR", error instanceof Error ? error.message : undefined);
+    }
 
+    // FASE 2.7 — the canonical engine is the ONLY writer of canonical facts and
+    // it runs FIRST. It resolves/attaches the observation transactionally and
+    // returns the canonical match id; the demo no longer inserts a match of its
+    // own, so a demo that converges with FACEIT cannot create a second row.
     await setStage(jobId, "persisting");
-    const persisted = await persistCanonicalMatch({
+    let canonical;
+    try {
+      canonical = await persistCanonicalObservation({
+        bundle: demoToCanonicalBundle({
+          parsed: match,
+          fingerprint: job.demo_sha256 ?? null,
+          targetSteamId: steamId,
+          internalPlayerId: player.id,
+        }),
+        ownerPlayerId: player.id,
+        uploadId: job.upload_id,
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : undefined;
+      throw new PipelineError(
+        detail?.toLowerCase().includes("conflict")
+          ? "CANONICAL_RESOLUTION_CONFLICT"
+          : "CANONICAL_PERSISTENCE_ERROR",
+        detail,
+      );
+    }
+
+    // Per-player projection only (metrics/features/convenience columns).
+    const persisted = await persistDemoProjection({
+      matchId: canonical.matchId,
       uploadId: job.upload_id,
       playerId: player.id,
       steamId,
       match,
       metrics,
       features,
-    });
-
-    // FASE 2.6 — the same demo is ALSO written through the source-neutral
-    // canonical engine (series/observation/participants/round state). It
-    // converges on the same match row via the upload id, so no duplicate match
-    // is created, and it fails loudly instead of leaving half the model behind.
-    await persistCanonicalObservation({
-      bundle: demoToCanonicalBundle({
-        parsed: match,
-        fingerprint: job.demo_sha256 ?? null,
-        targetSteamId: steamId,
-        internalPlayerId: player.id,
-      }),
-      ownerPlayerId: player.id,
-      uploadId: job.upload_id,
     });
 
     const durationMs = Date.now() - startedAt;
