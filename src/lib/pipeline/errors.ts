@@ -7,6 +7,7 @@
 export const PIPELINE_ERROR_CODES = [
   "DEMO_TOO_LARGE",
   "DEMO_TOO_SMALL",
+  "DEMO_EMPTY",
   "INVALID_DEMO_FORMAT",
   "CORRUPTED_DEMO",
   "UNSUPPORTED_DEMO",
@@ -18,6 +19,16 @@ export const PIPELINE_ERROR_CODES = [
   "VALIDATION_ERROR",
   "PERSISTENCE_ERROR",
   "PLAYER_IDENTITY_UNRESOLVED",
+  // FASE 2.7 — precise causes instead of a single "processing failed".
+  "IDENTITY_RESOLUTION_ERROR",
+  "CANONICAL_RESOLUTION_CONFLICT",
+  "CANONICAL_PERSISTENCE_ERROR",
+  "METRICS_ERROR",
+  "FEATURES_ERROR",
+  "JOB_TIMEOUT",
+  "JOB_STALE",
+  "RESOURCE_LIMIT",
+  "STORAGE_ERROR",
   "PROCESSING_ERROR",
   "CLEANUP_ERROR",
 ] as const;
@@ -31,11 +42,15 @@ export type PipelineErrorCode = (typeof PIPELINE_ERROR_CODES)[number];
 const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "DEMO_TOO_LARGE",
   "DEMO_TOO_SMALL",
+  "DEMO_EMPTY",
   "INVALID_DEMO_FORMAT",
   "CORRUPTED_DEMO",
   "UNSUPPORTED_DEMO",
   "VALIDATION_ERROR",
   "PLAYER_IDENTITY_UNRESOLVED",
+  // A human decision is required: two canonical candidates matched EXACT.
+  "CANONICAL_RESOLUTION_CONFLICT",
+  "RESOURCE_LIMIT",
 ]);
 
 export class PipelineError extends Error {

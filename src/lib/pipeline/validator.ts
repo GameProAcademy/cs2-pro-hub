@@ -16,6 +16,8 @@ export function validateDemoFile(fileName: string, fileSize: number): void {
   if (!fileName.toLowerCase().endsWith(DEMO_EXTENSION)) {
     throw new PipelineError("INVALID_DEMO_FORMAT", "extension");
   }
+  // An empty file is a distinct, precisely known cause — not "too small".
+  if (fileSize <= 0) throw new PipelineError("DEMO_EMPTY");
   if (fileSize < MIN_DEMO_SIZE_BYTES) throw new PipelineError("DEMO_TOO_SMALL");
   if (fileSize > MAX_DEMO_SIZE_BYTES) throw new PipelineError("DEMO_TOO_LARGE");
 }

@@ -71,3 +71,19 @@ export const JOB_STALE_MINUTES = 30;
 
 /** Minimum rounds required before a match is considered a usable sample. */
 export const MIN_VALID_ROUNDS = 8;
+
+/**
+ * FASE 2.7 — version stamps of the derived layers. They are recorded on every
+ * observation so a future reprocessing can tell which code produced a number.
+ */
+export const METRICS_VERSION = "metrics-v1";
+export const FEATURES_VERSION = "features-v1";
+
+/**
+ * Resource ceilings. The parse itself runs in an external worker, so the app
+ * server can only enforce the transport-side limits; the worker owns CPU and
+ * memory. Documented honestly rather than pretended.
+ */
+export const PARSER_MAX_DURATION_MS = 240_000;
+/** Largest parser response accepted before the payload is refused. */
+export const MAX_PARSER_PAYLOAD_BYTES = 96 * 1024 * 1024;
