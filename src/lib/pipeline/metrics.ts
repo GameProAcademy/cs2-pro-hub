@@ -34,7 +34,12 @@ import type { CanonicalEvent, CanonicalMatch, CanonicalMetrics, Side } from "@/l
 
 interface KillRecord {
   round: number;
-  time: number;
+  /**
+   * Seconds inside the round. NULL when the parser gave neither `time_seconds`
+   * nor a usable tickrate: a fabricated timestamp would fabricate trades,
+   * flash assists and early deaths.
+   */
+  time: number | null;
   attacker: string | null;
   victim: string | null;
   assister: string | null;
@@ -42,12 +47,24 @@ interface KillRecord {
   flashAssister: string | null;
 }
 
+
 const round1 = (v: number) => Number(v.toFixed(1));
 const round3 = (v: number) => Number(v.toFixed(3));
 
-function eventTime(event: CanonicalEvent): number {
-  return event.timeSeconds ?? (event.tick ?? 0) / 64;
+/**
+ * FASE 2.7 — TIMING WITHOUT ASSUMPTIONS.
+ *
+ * Precedence: `time_seconds` from the parser, then `tick / tickrate` when the
+ * demo reported its own tickrate. A tickrate is NEVER assumed (a 128-tick demo
+ * divided by 64 doubles every duration), so an unknown tickrate yields NULL and
+ * every timing-dependent metric becomes NULL instead of wrong.
+ */
+export function eventTime(event: CanonicalEvent, tickrate: number | null): number | null {
+  if (event.timeSeconds != null) return event.timeSeconds;
+  if (event.tick != null && tickrate != null && tickrate > 0) return event.tick / tickrate;
+  return null;
 }
+
 
 function teamOf(match: CanonicalMatch, steamId: string): string | null {
   return match.players.find((p) => p.steamId === steamId)?.team ?? null;
