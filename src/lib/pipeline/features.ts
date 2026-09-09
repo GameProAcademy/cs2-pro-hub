@@ -51,7 +51,7 @@ export function extractFeatures(
   const rounds = metrics.roundsPlayed;
   const deaths = metrics.deaths;
   const hasEconomy = match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0);
-  const hasUtility = metrics.grenadesUsed > 0 || metrics.enemiesFlashed > 0;
+  const hasUtility = (metrics.grenadesUsed ?? 0) > 0 || (metrics.enemiesFlashed ?? 0) > 0;
 
   const earlyDeathRate = ratio(metrics.earlyDeaths, deaths);
   const firstDeathRate = ratio(metrics.firstDeaths, rounds);
