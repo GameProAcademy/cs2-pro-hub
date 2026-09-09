@@ -197,16 +197,32 @@ export interface CanonicalMatch {
  * Derived metrics + features                                          *
  * ------------------------------------------------------------------ */
 
+/**
+ * FASE 2.7 — classes of evidence the observation actually carries. Metrics that
+ * depend on a missing class are emitted as NULL, never as 0.
+ */
+export interface MetricsAvailability {
+  killEvents: boolean;
+  damageEvents: boolean;
+  utilityEvents: boolean;
+  roundEndEvidence: boolean;
+  economy: boolean;
+  /** Every kill event has a trustworthy instant (time_seconds or tick+tickrate). */
+  timing: boolean;
+}
+
 export interface CanonicalMetrics {
   steamId: string;
+  /** Which evidence classes backed this computation. */
+  availability: MetricsAvailability;
   roundsPlayed: number;
   kills: number;
   deaths: number;
   assists: number;
   headshots: number;
   hsPercent: number | null;
-  damageGiven: number;
-  damageTaken: number;
+  damageGiven: number | null;
+  damageTaken: number | null;
   adr: number | null;
   kast: number | null;
   firstKills: number;
@@ -214,25 +230,28 @@ export interface CanonicalMetrics {
   openingAttempts: number;
   openingSuccess: number;
   openingSuccessRate: number | null;
-  tradeKills: number;
-  tradeDeaths: number;
-  untradedDeaths: number;
-  earlyDeaths: number;
-  clutchAttempts: number;
-  clutchWins: number;
+  /** NULL when timing is unknown: trades cannot be observed without instants. */
+  tradeKills: number | null;
+  tradeDeaths: number | null;
+  untradedDeaths: number | null;
+  earlyDeaths: number | null;
+  /** NULL when kill events are missing: alive/dead state is unknowable. */
+  clutchAttempts: number | null;
+  clutchWins: number | null;
   multiKills: number;
   multiKillBreakdown: { k2: number; k3: number; k4: number; ace: number };
-  utilityDamage: number;
-  grenadeDamage: number;
-  flashAssists: number;
-  enemiesFlashed: number;
-  grenadesUsed: number;
+  utilityDamage: number | null;
+  grenadeDamage: number | null;
+  flashAssists: number | null;
+  enemiesFlashed: number | null;
+  grenadesUsed: number | null;
   ctRating: number | null;
   tRating: number | null;
   /** Rating derived from this pipeline. NOT the CS2 PRO Score. */
   sourceRating: number | null;
   damageEfficiency: number | null;
 }
+
 
 /** Feature signals consumed by the future analysis engine, per DNA dimension. */
 export interface CanonicalFeatures {

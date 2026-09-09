@@ -30,7 +30,14 @@ import {
   FLASH_ASSIST_WINDOW_SECONDS,
   TRADE_WINDOW_SECONDS,
 } from "@/config/pipeline";
-import type { CanonicalEvent, CanonicalMatch, CanonicalMetrics, Side } from "@/lib/pipeline/types";
+import type {
+  CanonicalEvent,
+  CanonicalMatch,
+  CanonicalMetrics,
+  MetricsAvailability,
+  Side,
+} from "@/lib/pipeline/types";
+
 
 interface KillRecord {
   round: number;
