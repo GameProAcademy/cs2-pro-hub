@@ -124,14 +124,20 @@ export interface CanonicalRound {
   startTick: number | null;
   endTick: number | null;
   durationSeconds: number | null;
-  bombPlanted: boolean;
-  bombDefused: boolean;
-  bombExploded: boolean;
+  /**
+   * FASE 2.7 — NULL ≠ FALSE. `null` means the parser did not report the fact;
+   * `false` means it reported that it did NOT happen. The absence of evidence is
+   * never turned into negative evidence.
+   */
+  bombPlanted: boolean | null;
+  bombDefused: boolean | null;
+  bombExploded: boolean | null;
   moneyStart: Record<string, number>;
   moneyEnd: Record<string, number>;
   equipmentValue: Record<string, number>;
   sides: Record<string, Side>;
 }
+
 
 export interface CanonicalEvent {
   roundNumber: number;
