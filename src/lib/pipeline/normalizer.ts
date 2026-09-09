@@ -199,9 +199,10 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
       startTick: num(r.start_tick),
       endTick: num(r.end_tick),
       durationSeconds: num(r.duration_seconds),
-      bombPlanted: r.bomb_planted === true,
-      bombDefused: r.bomb_defused === true,
-      bombExploded: r.bomb_exploded === true,
+      bombPlanted: bool(r.bomb_planted),
+      bombDefused: bool(r.bomb_defused),
+      bombExploded: bool(r.bomb_exploded),
+
       moneyStart: r.money_start ?? {},
       moneyEnd: r.money_end ?? {},
       equipmentValue: r.equipment_value ?? {},
