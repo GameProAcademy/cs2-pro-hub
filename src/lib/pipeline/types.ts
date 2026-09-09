@@ -258,7 +258,9 @@ export interface CanonicalFeatures {
   steamId: string;
   sampleRounds: number;
   sampleOpeningDuels: number;
-  sampleClutches: number;
+  /** NULL when clutches were not observable (no kill events). */
+  sampleClutches: number | null;
+
   /** dimension -> feature name -> value */
   dimensions: Record<string, Record<string, number | null>>;
 }
