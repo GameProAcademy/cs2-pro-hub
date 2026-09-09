@@ -164,14 +164,18 @@ interface FlashRecord {
 }
 
 function collectKills(match: CanonicalMatch): KillRecord[] {
+  const tickrate = match.tickrate;
   const flashes: FlashRecord[] = [];
   for (const event of match.events) {
     if (event.type !== "flash") continue;
     if (!event.actorSteamId || !event.victimSteamId) continue;
     if (event.actorSteamId === event.victimSteamId) continue; // self-flash
+    const time = eventTime(event, tickrate);
+    // Without a trustworthy instant a flash cannot be attributed to a kill.
+    if (time == null) continue;
     flashes.push({
       round: event.roundNumber,
-      time: eventTime(event),
+      time,
       flasher: event.actorSteamId,
       victim: event.victimSteamId,
     });
@@ -181,17 +185,19 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
    * Flash assist attribution: temporal, at most ONE per kill.
    * The flash must precede the kill, be inside FLASH_ASSIST_WINDOW_SECONDS,
    * target the same victim, and not come from the killer itself. Among the
-   * eligible flashes only the most recent one is credited.
+   * eligible flashes only the most recent one is credited. A kill with unknown
+   * timing is never credited a flash assist.
    */
   const flashAssisterFor = (kill: KillRecord): string | null => {
-    if (!kill.victim) return null;
+    if (!kill.victim || kill.time == null) return null;
+    const killTime = kill.time;
     let best: FlashRecord | null = null;
     for (const flash of flashes) {
       if (flash.round !== kill.round) continue;
       if (flash.victim !== kill.victim) continue;
       if (flash.flasher === kill.attacker) continue;
-      if (flash.time > kill.time) continue;
-      if (kill.time - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
+      if (flash.time > killTime) continue;
+      if (killTime - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
       if (!best || flash.time > best.time) best = flash;
     }
     return best?.flasher ?? null;
@@ -202,7 +208,7 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
     .map((e) => {
       const kill: KillRecord = {
         round: e.roundNumber,
-        time: eventTime(e),
+        time: eventTime(e, tickrate),
         attacker: e.actorSteamId,
         victim: e.victimSteamId,
         assister: e.assisterSteamId,
@@ -212,8 +218,13 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
       kill.flashAssister = flashAssisterFor(kill);
       return kill;
     })
-    .sort((a, b) => a.round - b.round || a.time - b.time);
+    .sort(
+      (a, b) =>
+        a.round - b.round ||
+        (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY),
+    );
 }
+
 
 /** Opening duel of a round: the chronologically first kill. */
 export function openingDuels(kills: KillRecord[]) {
