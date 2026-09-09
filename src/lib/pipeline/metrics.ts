@@ -30,11 +30,23 @@ import {
   FLASH_ASSIST_WINDOW_SECONDS,
   TRADE_WINDOW_SECONDS,
 } from "@/config/pipeline";
-import type { CanonicalEvent, CanonicalMatch, CanonicalMetrics, Side } from "@/lib/pipeline/types";
+import type {
+  CanonicalEvent,
+  CanonicalMatch,
+  CanonicalMetrics,
+  MetricsAvailability,
+  Side,
+} from "@/lib/pipeline/types";
+
 
 interface KillRecord {
   round: number;
-  time: number;
+  /**
+   * Seconds inside the round. NULL when the parser gave neither `time_seconds`
+   * nor a usable tickrate: a fabricated timestamp would fabricate trades,
+   * flash assists and early deaths.
+   */
+  time: number | null;
   attacker: string | null;
   victim: string | null;
   assister: string | null;
@@ -42,12 +54,24 @@ interface KillRecord {
   flashAssister: string | null;
 }
 
+
 const round1 = (v: number) => Number(v.toFixed(1));
 const round3 = (v: number) => Number(v.toFixed(3));
 
-function eventTime(event: CanonicalEvent): number {
-  return event.timeSeconds ?? (event.tick ?? 0) / 64;
+/**
+ * FASE 2.7 — TIMING WITHOUT ASSUMPTIONS.
+ *
+ * Precedence: `time_seconds` from the parser, then `tick / tickrate` when the
+ * demo reported its own tickrate. A tickrate is NEVER assumed (a 128-tick demo
+ * divided by 64 doubles every duration), so an unknown tickrate yields NULL and
+ * every timing-dependent metric becomes NULL instead of wrong.
+ */
+export function eventTime(event: CanonicalEvent, tickrate: number | null): number | null {
+  if (event.timeSeconds != null) return event.timeSeconds;
+  if (event.tick != null && tickrate != null && tickrate > 0) return event.tick / tickrate;
+  return null;
 }
+
 
 function teamOf(match: CanonicalMatch, steamId: string): string | null {
   return match.players.find((p) => p.steamId === steamId)?.team ?? null;
@@ -147,14 +171,18 @@ interface FlashRecord {
 }
 
 function collectKills(match: CanonicalMatch): KillRecord[] {
+  const tickrate = match.tickrate;
   const flashes: FlashRecord[] = [];
   for (const event of match.events) {
     if (event.type !== "flash") continue;
     if (!event.actorSteamId || !event.victimSteamId) continue;
     if (event.actorSteamId === event.victimSteamId) continue; // self-flash
+    const time = eventTime(event, tickrate);
+    // Without a trustworthy instant a flash cannot be attributed to a kill.
+    if (time == null) continue;
     flashes.push({
       round: event.roundNumber,
-      time: eventTime(event),
+      time,
       flasher: event.actorSteamId,
       victim: event.victimSteamId,
     });
@@ -164,17 +192,19 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
    * Flash assist attribution: temporal, at most ONE per kill.
    * The flash must precede the kill, be inside FLASH_ASSIST_WINDOW_SECONDS,
    * target the same victim, and not come from the killer itself. Among the
-   * eligible flashes only the most recent one is credited.
+   * eligible flashes only the most recent one is credited. A kill with unknown
+   * timing is never credited a flash assist.
    */
   const flashAssisterFor = (kill: KillRecord): string | null => {
-    if (!kill.victim) return null;
+    if (!kill.victim || kill.time == null) return null;
+    const killTime = kill.time;
     let best: FlashRecord | null = null;
     for (const flash of flashes) {
       if (flash.round !== kill.round) continue;
       if (flash.victim !== kill.victim) continue;
       if (flash.flasher === kill.attacker) continue;
-      if (flash.time > kill.time) continue;
-      if (kill.time - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
+      if (flash.time > killTime) continue;
+      if (killTime - flash.time > FLASH_ASSIST_WINDOW_SECONDS) continue;
       if (!best || flash.time > best.time) best = flash;
     }
     return best?.flasher ?? null;
@@ -185,7 +215,7 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
     .map((e) => {
       const kill: KillRecord = {
         round: e.roundNumber,
-        time: eventTime(e),
+        time: eventTime(e, tickrate),
         attacker: e.actorSteamId,
         victim: e.victimSteamId,
         assister: e.assisterSteamId,
@@ -195,8 +225,13 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
       kill.flashAssister = flashAssisterFor(kill);
       return kill;
     })
-    .sort((a, b) => a.round - b.round || a.time - b.time);
+    .sort(
+      (a, b) =>
+        a.round - b.round ||
+        (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY),
+    );
 }
+
 
 /** Opening duel of a round: the chronologically first kill. */
 export function openingDuels(kills: KillRecord[]) {
@@ -208,26 +243,28 @@ export function openingDuels(kills: KillRecord[]) {
 /**
  * True when `death` was traded within the configured window.
  *
- * Required evidence: same round, chronological order, both Steam IDs present,
- * the avenger kills exactly the original killer, the avenger belongs to the
- * victim's team and is not the victim itself, and the original death is not a
- * team kill or a suicide.
+ * Required evidence: same round, KNOWN timing for both kills, chronological
+ * order, both Steam IDs present, the avenger kills exactly the original killer,
+ * the avenger belongs to the victim's team and is not the victim itself, and the
+ * original death is not a team kill or a suicide.
  */
 function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch): boolean {
   if (!death.attacker || !death.victim) return false;
   if (death.attacker === death.victim) return false; // suicide
+  if (death.time == null) return false; // no timing => no trade evidence
+  const deathTime = death.time;
   const victimTeam = teamOf(match, death.victim);
   const killerTeam = teamOf(match, death.attacker);
   if (victimTeam != null && killerTeam != null && victimTeam === killerTeam) return false;
 
   return kills.some((k) => {
-    if (!k.attacker || !k.victim) return false;
+    if (!k.attacker || !k.victim || k.time == null) return false;
     if (k.round !== death.round) return false;
     if (k.victim !== death.attacker) return false;
     if (k.attacker === k.victim) return false;
     if (k.attacker === death.victim) return false;
-    if (k.time <= death.time) return false;
-    if (k.time - death.time > TRADE_WINDOW_SECONDS) return false;
+    if (k.time <= deathTime) return false;
+    if (k.time - deathTime > TRADE_WINDOW_SECONDS) return false;
     const avengerTeam = teamOf(match, k.attacker);
     // The avenger must be a teammate of the original victim, and must not kill
     // one of its own (team kills never count as trades).
@@ -237,19 +274,40 @@ function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch
   });
 }
 
-/** Clutch detection: player alive alone against N living enemies. */
-function clutchStats(match: CanonicalMatch, kills: KillRecord[], steamId: string) {
+/**
+ * Clutch detection: player alive alone against N living enemies.
+ *
+ * FASE 2.7 — PARTICIPATION IS EVIDENCE, NOT MEMBERSHIP. A player's global
+ * `team` only says which team the player belonged to in the match, never that
+ * the player was on the server for THIS round (substitutions, disconnects,
+ * partially extracted rounds). Only `participatedInRound()` decides who is in
+ * the round, so a global roster can no longer inflate the number of living
+ * enemies and manufacture a clutch.
+ *
+ * Without kill events the alive/dead state of a round is unknowable, so the
+ * result is NULL: "we cannot tell" is not "it did not happen".
+ */
+function clutchStats(
+  match: CanonicalMatch,
+  kills: KillRecord[],
+  steamId: string,
+): { attempts: number | null; wins: number | null } {
+  if (kills.length === 0) return { attempts: null, wins: null };
+
   const team = teamOf(match, steamId);
   let attempts = 0;
   let wins = 0;
 
   for (const round of match.rounds) {
+    if (!participatedInRound(match, steamId, round.roundNumber)) continue;
     const roundKills = kills.filter((k) => k.round === round.roundNumber);
-    const participants = match.players.filter(
-      (p) => round.sides[p.steamId] != null || p.team != null,
+    const participants = match.players.filter((p) =>
+      participatedInRound(match, p.steamId, round.roundNumber),
     );
     const teammates = participants.filter((p) => p.team === team).map((p) => p.steamId);
-    const enemies = participants.filter((p) => p.team !== team).map((p) => p.steamId);
+    const enemies = participants
+      .filter((p) => p.team != null && team != null && p.team !== team)
+      .map((p) => p.steamId);
     if (!teammates.includes(steamId) || enemies.length === 0) continue;
 
     const dead = new Set<string>();
@@ -277,7 +335,34 @@ function clutchStats(match: CanonicalMatch, kills: KillRecord[], steamId: string
   return { attempts, wins };
 }
 
+/**
+ * FASE 2.7 — DATA-AVAILABILITY MATRIX.
+ *
+ * Which classes of evidence the observation actually carries. Every metric that
+ * depends on a class it does not have is emitted as NULL. See
+ * docs/PHASE-2.7-REAL-DEMO-INGESTION-AND-CANONICAL-ANALYTICS.md for the full
+ * metric -> required data -> null condition table.
+ */
+export function metricsAvailability(match: CanonicalMatch): MetricsAvailability {
+  const kills = match.events.filter((e) => e.type === "kill");
+  const timing =
+    kills.length > 0 && kills.every((e) => eventTime(e, match.tickrate) != null);
+  return {
+    killEvents: kills.length > 0,
+    damageEvents: match.events.some((e) => e.type === "damage"),
+    utilityEvents: match.events.some(
+      (e) => e.type === "flash" || e.type === "he" || e.type === "molotov" || e.type === "smoke",
+    ),
+    roundEndEvidence: match.rounds.some(
+      (r) => r.winnerSide != null || r.winnerTeam != null || r.endTick != null,
+    ),
+    economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
+    timing,
+  };
+}
+
 export function computeMetrics(match: CanonicalMatch, steamId: string): CanonicalMetrics {
+  const availability = metricsAvailability(match);
   const kills = collectKills(match);
   const opening = openingDuels(kills);
 
@@ -290,22 +375,10 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
 
   // Rounds the player ACTUALLY participated in. The denominator is never the
   // raw round count of the demo: a round only counts when the resolved Steam ID
-  // is present in that round (side assignment, economy entry or an event).
+  // is provably present in that round.
   const roundNumbers = new Set<number>();
   for (const round of match.rounds) {
-    const hasSide = round.sides[steamId] != null;
-    const hasEconomy =
-      round.moneyStart[steamId] != null ||
-      round.moneyEnd[steamId] != null ||
-      round.equipmentValue[steamId] != null;
-    const inEvents = match.events.some(
-      (event) =>
-        event.roundNumber === round.roundNumber &&
-        (event.actorSteamId === steamId ||
-          event.victimSteamId === steamId ||
-          event.assisterSteamId === steamId),
-    );
-    if (hasSide || hasEconomy || inEvents) roundNumbers.add(round.roundNumber);
+    if (participatedInRound(match, steamId, round.roundNumber)) roundNumbers.add(round.roundNumber);
   }
   const roundsPlayed = roundNumbers.size;
 
@@ -333,7 +406,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
 
-  // Opening duels
+  // Opening duels — only meaningful when kill events exist.
   let firstKills = 0;
   let firstDeaths = 0;
   for (const [, kill] of opening) {
@@ -343,34 +416,46 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const openingAttempts = firstKills + firstDeaths;
   const openingSuccessRate = openingAttempts > 0 ? round3(firstKills / openingAttempts) : null;
 
-  // Trades
+  // Trades — timing-dependent. Without trustworthy timing the answer is NULL,
+  // never 0: "no trade observed" and "we cannot observe trades" differ.
   // A trade kill is the offensive half of a trade: the player kills an enemy
   // who, within the window and in the same round, had just killed one of the
   // player's teammates. Team kills, suicides and events without Steam IDs are
   // never counted.
   const ownTeam = teamOf(match, steamId);
-  let tradeKills = 0;
-  for (const kill of playerKills) {
-    if (!kill.attacker || !kill.victim) continue;
-    if (kill.attacker === kill.victim) continue;
-    const victimTeam = teamOf(match, kill.victim);
-    if (ownTeam == null || victimTeam == null || victimTeam === ownTeam) continue;
-    const traded = kills.some((k) => {
-      if (!k.attacker || !k.victim) return false;
-      if (k.round !== kill.round) return false;
-      if (k.attacker !== kill.victim) return false;
-      if (k.attacker === k.victim) return false;
-      if (k.time >= kill.time) return false;
-      if (kill.time - k.time > TRADE_WINDOW_SECONDS) return false;
-      // The player killed first must really belong to the player's team.
-      return teamOf(match, k.victim) === ownTeam;
-    });
-    if (traded) tradeKills += 1;
+  let tradeKills: number | null = null;
+  let tradeDeaths: number | null = null;
+  let untradedDeaths: number | null = null;
+  let earlyDeaths: number | null = null;
+
+  if (availability.timing) {
+    let tradeKillCount = 0;
+    for (const kill of playerKills) {
+      if (!kill.attacker || !kill.victim || kill.time == null) continue;
+      if (kill.attacker === kill.victim) continue;
+      const killTime = kill.time;
+      const victimTeam = teamOf(match, kill.victim);
+      if (ownTeam == null || victimTeam == null || victimTeam === ownTeam) continue;
+      const traded = kills.some((k) => {
+        if (!k.attacker || !k.victim || k.time == null) return false;
+        if (k.round !== kill.round) return false;
+        if (k.attacker !== kill.victim) return false;
+        if (k.attacker === k.victim) return false;
+        if (k.time >= killTime) return false;
+        if (killTime - k.time > TRADE_WINDOW_SECONDS) return false;
+        // The player killed first must really belong to the player's team.
+        return teamOf(match, k.victim) === ownTeam;
+      });
+      if (traded) tradeKillCount += 1;
+    }
+    tradeKills = tradeKillCount;
+
+    let tradedDeathCount = 0;
+    for (const death of playerDeaths) if (wasTraded(kills, death, match)) tradedDeathCount += 1;
+    tradeDeaths = tradedDeathCount;
+    untradedDeaths = playerDeaths.length - tradedDeathCount;
+    earlyDeaths = playerDeaths.filter((d) => d.time != null && d.time <= EARLY_DEATH_SECONDS).length;
   }
-  let tradeDeaths = 0;
-  for (const death of playerDeaths) if (wasTraded(kills, death, match)) tradeDeaths += 1;
-  const untradedDeaths = playerDeaths.length - tradeDeaths;
-  const earlyDeaths = playerDeaths.filter((d) => d.time <= EARLY_DEATH_SECONDS).length;
 
   // Multi-kills
   const perRound = new Map<number, number>();
@@ -386,7 +471,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   }
   const multiKills = breakdown.k2 + breakdown.k3 + breakdown.k4 + breakdown.ace;
 
-  // KAST (see header)
+  // KAST (see header). It needs kill events AND timing (the T component is a
+  // trade), so an observation without them reports NULL rather than a number
+  // built on absent evidence.
   let kastRounds = 0;
   for (const roundNumber of roundNumbers) {
     const roundKills = kills.filter((k) => k.round === roundNumber);
@@ -401,6 +488,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
+  const kastAvailable = availability.killEvents && availability.timing && roundsPlayed > 0;
 
   const headshots = playerKills.filter((k) => k.headshot === true).length;
   const clutch = clutchStats(match, kills, steamId);
@@ -420,20 +508,22 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     return round3(compositeRating(k, d, dmg, sideRounds.length));
   };
 
-  const adr = roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
+  // Damage-derived signals require damage events; otherwise they are unknown.
+  const adr = availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
 
   return {
     steamId,
+    availability,
     roundsPlayed,
     kills: playerKills.length,
     deaths: playerDeaths.length,
     assists,
     headshots,
     hsPercent: playerKills.length > 0 ? round1((headshots / playerKills.length) * 100) : null,
-    damageGiven: round1(damageGiven),
-    damageTaken: round1(damageTaken),
+    damageGiven: availability.damageEvents ? round1(damageGiven) : null,
+    damageTaken: availability.damageEvents ? round1(damageTaken) : null,
     adr,
-    kast: roundsPlayed > 0 ? round1((kastRounds / roundsPlayed) * 100) : null,
+    kast: kastAvailable ? round1((kastRounds / roundsPlayed) * 100) : null,
     firstKills,
     firstDeaths,
     openingAttempts,
@@ -447,20 +537,21 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     clutchWins: clutch.wins,
     multiKills,
     multiKillBreakdown: breakdown,
-    utilityDamage: round1(utilityDamage),
-    grenadeDamage: round1(utilityDamage),
-    flashAssists,
-    enemiesFlashed,
-    grenadesUsed,
-    ctRating: sideRating("CT"),
-    tRating: sideRating("T"),
+    utilityDamage: availability.damageEvents ? round1(utilityDamage) : null,
+    grenadeDamage: availability.damageEvents ? round1(utilityDamage) : null,
+    flashAssists: availability.utilityEvents ? flashAssists : null,
+    enemiesFlashed: availability.utilityEvents ? enemiesFlashed : null,
+    grenadesUsed: availability.utilityEvents ? grenadesUsed : null,
+    ctRating: availability.damageEvents ? sideRating("CT") : null,
+    tRating: availability.damageEvents ? sideRating("T") : null,
     sourceRating:
-      roundsPlayed > 0
+      availability.damageEvents && roundsPlayed > 0
         ? round3(
             compositeRating(playerKills.length, playerDeaths.length, damageGiven, roundsPlayed),
           )
         : null,
-    damageEfficiency: damageTaken > 0 ? round3(damageGiven / damageTaken) : null,
+    damageEfficiency:
+      availability.damageEvents && damageTaken > 0 ? round3(damageGiven / damageTaken) : null,
   };
 }
 
@@ -484,3 +575,4 @@ export function compositeRating(
   const value = 0.45 * (kpr / 0.7) + 0.25 * (1 - dpr / 0.75) + 0.3 * (adr / 80);
   return Math.max(0, value);
 }
+

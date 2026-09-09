@@ -67,6 +67,17 @@ function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+/**
+ * FASE 2.7 — NULL ≠ FALSE.
+ *
+ * `undefined` (the parser said nothing) becomes `null`, never `false`. Only an
+ * explicit boolean from the parser is preserved as a boolean.
+ */
+function bool(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+
 function mapSides(raw: Record<string, string> | undefined): Record<string, Side> {
   const out: Record<string, Side> = {};
   for (const [steamId, value] of Object.entries(raw ?? {})) {
@@ -188,9 +199,10 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
       startTick: num(r.start_tick),
       endTick: num(r.end_tick),
       durationSeconds: num(r.duration_seconds),
-      bombPlanted: r.bomb_planted === true,
-      bombDefused: r.bomb_defused === true,
-      bombExploded: r.bomb_exploded === true,
+      bombPlanted: bool(r.bomb_planted),
+      bombDefused: bool(r.bomb_defused),
+      bombExploded: bool(r.bomb_exploded),
+
       moneyStart: r.money_start ?? {},
       moneyEnd: r.money_end ?? {},
       equipmentValue: r.equipment_value ?? {},
