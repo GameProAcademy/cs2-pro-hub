@@ -18,8 +18,18 @@ export const ANALYSIS_VERSION = "v1";
  * are the expected/pinned contract.
  */
 export const PARSER_NAME = "demoparser2";
-/** Pinned parser version expected from the worker. */
+/**
+ * EXPECTED parser version — a PLACEHOLDER, not a confirmed public release.
+ *
+ * FASE 2.7.1D: "0.31.4" has never been verified against a real published
+ * parser build, so nothing may treat it as a version to provision. It only
+ * feeds the worker-identity check and is overridable at runtime through
+ * `DEMO_PARSER_EXPECTED_VERSION`. Selecting and pinning the REAL worker version
+ * (and its revision, CS2 compatibility and output shape) belongs to FASE 2.7.2.
+ */
 export const PARSER_VERSION = "0.31.4";
+/** Explicitly false until FASE 2.7.2 verifies a real parser build. */
+export const PARSER_VERSION_CONFIRMED = false;
 /** Version of the JSON contract exchanged with the parser worker. */
 export const PARSER_CONTRACT_VERSION = 1;
 
