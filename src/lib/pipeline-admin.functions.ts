@@ -153,6 +153,22 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
     return { status: "queued" as const, errorCode: null };
   });
 
+/**
+ * FASE 2.7.2 GATE 1E — parser worker diagnostic (`/health` + `/version`).
+ *
+ * Master-only, never on the parse hot path, never returns the token or the
+ * private endpoint URL beyond its origin.
+ */
+export const getAdminParserWorkerStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireMaster(context as Ctx);
+    const { probeParserWorker } = await import("@/lib/pipeline/parser/remoteParser.server");
+    const { PARSER_CONTRACT_VERSION } = await import("@/config/pipeline");
+    const probe = await probeParserWorker();
+    return { ...probe, appContractVersion: PARSER_CONTRACT_VERSION };
+  });
+
 /** Master-triggered retention cleanup of expired temporary demo files. */
 export const adminCleanupDemos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

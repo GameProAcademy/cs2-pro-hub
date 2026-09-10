@@ -603,6 +603,19 @@ export const ptPT: Dictionary = {
     "O processamento excedeu o tempo limite e foi interrompido.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
     "O resultado do processamento foi demasiado grande para ser aceite.",
+  "pipeline.error.PARSER_CONFIG_ERROR":
+    "O serviço de processamento não está configurado corretamente.",
+  "pipeline.error.PARSER_UNAUTHORIZED": "O serviço de processamento recusou a autenticação.",
+  "pipeline.error.PARSER_FORBIDDEN": "O serviço de processamento negou o acesso.",
+  "pipeline.error.PARSER_CONTRACT_MISMATCH":
+    "O serviço de processamento está numa versão incompatível.",
+  "pipeline.error.PARSER_INVALID_RESPONSE":
+    "O serviço de processamento devolveu uma resposta inválida.",
+  "pipeline.error.PARSER_DOWNLOAD_ERROR":
+    "O serviço de processamento não conseguiu descarregar o ficheiro.",
+  "pipeline.error.PARSER_HASH_MISMATCH": "O ficheiro recebido não corresponde ao ficheiro enviado.",
+  "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
+    "O tamanho do ficheiro recebido não corresponde ao enviado.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Trabalhos, qualidade e retenção",

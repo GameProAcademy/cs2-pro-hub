@@ -15,6 +15,16 @@ export const PIPELINE_ERROR_CODES = [
   "PARSER_UNAVAILABLE",
   "PARSER_ERROR",
   "PARSER_TIMEOUT",
+  // FASE 2.7.2 GATE 1E — parser worker transport/contract taxonomy. A transport
+  // or configuration failure is never reported as an invalid demo.
+  "PARSER_CONFIG_ERROR",
+  "PARSER_UNAUTHORIZED",
+  "PARSER_FORBIDDEN",
+  "PARSER_CONTRACT_MISMATCH",
+  "PARSER_INVALID_RESPONSE",
+  "PARSER_DOWNLOAD_ERROR",
+  "PARSER_HASH_MISMATCH",
+  "PARSER_FILE_SIZE_MISMATCH",
   "NORMALIZATION_ERROR",
   "VALIDATION_ERROR",
   "PERSISTENCE_ERROR",
@@ -61,6 +71,15 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   // The demo will never gain rounds by being parsed again.
   "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
+  // GATE 1E — retrying cannot fix configuration, credentials, a contract
+  // mismatch, a structurally invalid response or an integrity mismatch.
+  "PARSER_CONFIG_ERROR",
+  "PARSER_UNAUTHORIZED",
+  "PARSER_FORBIDDEN",
+  "PARSER_CONTRACT_MISMATCH",
+  "PARSER_INVALID_RESPONSE",
+  "PARSER_HASH_MISMATCH",
+  "PARSER_FILE_SIZE_MISMATCH",
 ]);
 
 export class PipelineError extends Error {

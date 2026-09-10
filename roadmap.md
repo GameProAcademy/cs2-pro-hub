@@ -499,3 +499,30 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - **Estado do Gate 1D: BLOCKED** para fechamento total: implementação e testes
   locais passaram, mas revision e conectividade efetiva do domínio não foram
   comprovadas; nenhuma demo real foi processada por determinação deste Gate.
+
+### FASE 2.7.2 — GATE 1E — CONTRATO APP ↔ WORKER
+
+- [x] `src/lib/pipeline/parser/parserEndpoint.ts` como fonte única: `DEMO_PARSER_URL`
+      exige HTTPS e o caminho completo `/v1/parse`, sem concatenação; `/health` e
+      `/version` derivados da mesma origem apenas para diagnóstico.
+- [x] Requisição alinhada ao worker: `contract_version`, `upload_id`, `demo_url`,
+      `demo_sha256`, `file_size`; token só no header `Authorization`, nunca em URL,
+      corpo ou log.
+- [x] Envelope FastAPI `detail.error_code` lido corretamente, com compatibilidade
+      para o formato plano.
+- [x] Matriz única de classificação (HTTP + `error_code`), com códigos novos
+      `PARSER_CONFIG_ERROR`, `PARSER_UNAUTHORIZED`, `PARSER_FORBIDDEN`,
+      `PARSER_CONTRACT_MISMATCH`, `PARSER_INVALID_RESPONSE`, `PARSER_DOWNLOAD_ERROR`,
+      `PARSER_HASH_MISMATCH`, `PARSER_FILE_SIZE_MISMATCH`; `mapParserErrorCode()`
+      delega à mesma matriz. Falha de transporte nunca vira demo inválida.
+- [x] Diagnóstico master-only `getAdminParserWorkerStatus` (`/health` + `/version`),
+      fora do caminho de parsing, sem expor token nem URL assinada.
+- [x] Mensagens dos novos códigos traduzidas em pt-BR, pt-PT, en, es, fr.
+- [x] 42 testes em `src/lib/pipeline/__tests__/gate1e.test.ts`; suíte total 681/681,
+      typecheck limpo, lint sem erros (8 warnings preexistentes).
+- [ ] Verificação externa do worker: **BLOCKED**. `/health` e `/version` em
+      `https://cs2-demo-parser-production.up.railway.app` respondem
+      `HTTP 404 {"status":"error","code":404,"message":"Application not found"}`.
+      Revision do deployment e E2E real com `.dem`: **NOT PROVEN**.
+- **Estado do Gate 1E: BLOCKED** — lado app completo e provado; lado worker
+  inacessível. FASE 2.8 não iniciada.
