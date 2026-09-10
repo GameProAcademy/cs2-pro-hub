@@ -100,10 +100,14 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
     expect(metrics.kast).toBeNull();
   });
 
-  it("H8: clutch participation requires per-round evidence", () => {
+  it("H8: clutch participation is counted from real per-round evidence", () => {
+    // Round 6 of the fixture is an explicit 1v2 won by ME: exactly one attempt,
+    // exactly one win. No `>= 0` tolerance.
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
-    expect(metrics.clutchAttempts === null || metrics.clutchAttempts >= 0).toBe(true);
+    expect(metrics.clutchAttempts).toBe(1);
+    expect(metrics.clutchWins).toBe(1);
   });
+
 
   it("H9: availability flags describe what the demo actually contained", () => {
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
