@@ -167,7 +167,7 @@ export function extractFeatures(
       early_window_seconds: EARLY_DEATH_SECONDS,
     },
     teamplay: {
-      assists_per_round: gate(hasKills, perRound(metrics.assists, rounds, 0.35)),
+      assists_per_round: gate(hasKills, perRound(metrics.assists, perRoundDenominator, 0.35)),
       flash_assist_share: gate(
         hasKills && hasUtility,
         ratio(metrics.flashAssists, metrics.assists),
