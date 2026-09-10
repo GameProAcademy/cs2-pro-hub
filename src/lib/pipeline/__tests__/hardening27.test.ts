@@ -101,12 +101,15 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
   });
 
   it("H8: clutch participation is counted from real per-round evidence", () => {
-    // Round 6 of the fixture is an explicit 1v2 won by ME: exactly one attempt,
-    // exactly one win. No `>= 0` tolerance.
+    // The fixture contains exactly two rounds where ME is the last player alive
+    // on its team against living enemies: round 6 (1v2, won) and round 9 (ME's
+    // only teammate dies and ME never wins the round). Concrete values, no
+    // `>= 0` tolerance.
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
-    expect(metrics.clutchAttempts).toBe(1);
+    expect(metrics.clutchAttempts).toBe(2);
     expect(metrics.clutchWins).toBe(1);
   });
+
 
 
   it("H9: availability flags describe what the demo actually contained", () => {
