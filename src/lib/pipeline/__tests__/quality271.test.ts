@@ -304,7 +304,13 @@ describe("cases 9/10 — economy and round-end evidence", () => {
 
   it("nulls survival when rounds are not provably finished", () => {
     const dims = featuresOf(
-      metricsWith({ availability: availability({ roundEndEvidence: false }), deaths: 5 }),
+      // FASE 2.7.1D: the denominator itself is unknown when the rounds are not
+      // provably finished, so `survivalRounds` is NULL (see metrics.ts).
+      metricsWith({
+        availability: availability({ roundEndEvidence: false }),
+        deaths: 5,
+        survivalRounds: null,
+      }),
     );
     expect(dims["survivability"]!["survival_rate"]).toBeNull();
   });
