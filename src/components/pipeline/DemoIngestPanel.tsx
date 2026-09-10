@@ -63,6 +63,7 @@ export function DemoIngestPanel() {
   const t = useT();
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState<string | null>(null);
+  const [uploadPercent, setUploadPercent] = useState(0);
 
   const pipeline = useQuery({
     queryKey: ["pipeline", "status"],
@@ -81,8 +82,16 @@ export function DemoIngestPanel() {
   });
 
   const upload = useMutation({
-    mutationFn: (file: File) => submitDemo(file),
-    onMutate: () => setLocalError(null),
+    mutationFn: (file: File) =>
+      submitDemo(file, {
+        onProgress: ({ state, percent }) => {
+          if (state === "uploading" || state === "completed") setUploadPercent(percent);
+        },
+      }),
+    onMutate: () => {
+      setLocalError(null);
+      setUploadPercent(0);
+    },
     onError: (error) =>
       setLocalError(error instanceof DemoUploadError ? error.code : "PROCESSING_ERROR"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline", "jobs"] }),
@@ -110,10 +119,18 @@ export function DemoIngestPanel() {
       <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
 
       {upload.isPending ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-          {t("pipeline.uploading")}
-        </p>
+        <div className="space-y-2" aria-live="polite">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            {t("pipeline.uploading")} {uploadPercent > 0 ? `${uploadPercent}%` : ""}
+          </p>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-[width]"
+              style={{ width: `${uploadPercent}%` }}
+            />
+          </div>
+        </div>
       ) : null}
 
       {localError ? (

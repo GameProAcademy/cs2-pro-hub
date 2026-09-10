@@ -14,24 +14,16 @@ export const ANALYSIS_VERSION = "v1";
 /**
  * Parser identity — EXPECTED values only.
  *
- * No parser worker is provisioned: `DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` are
- * not configured, so nothing here describes a running deployment. When a worker
- * eventually exists it reports its own name/version/revision and THAT report is
- * what gets persisted; these constants only feed the identity check.
+ * The external worker is provisioned and reports its own identity. These values
+ * are the expected defaults; deployment env vars may pin the same identity.
  */
 export const PARSER_NAME = "demoparser2";
 /**
- * EXPECTED parser version — a PLACEHOLDER, never a confirmed release.
- *
- * FASE 2.7.1F: "0.31.4" has NOT been verified against any published parser
- * build, and MUST NOT be used to provision anything. It is only the value the
- * worker-identity check compares against, overridable at runtime through
- * `DEMO_PARSER_EXPECTED_VERSION`. Choosing the REAL version, its revision and
- * the CS2 build compatibility matrix belongs to FASE 2.7.2.
+ * Expected parser release selected for the provisioned remote worker.
+ * CS2 demo compatibility remains a separate E2E concern.
  */
-export const PARSER_VERSION = "0.31.4";
-/** Explicitly false until FASE 2.7.2 verifies a real parser build. */
-export const PARSER_VERSION_CONFIRMED = false;
+export const PARSER_VERSION = "0.42.0";
+export const PARSER_VERSION_CONFIRMED = true;
 /**
  * Version of the JSON CONTRACT exchanged with the parser worker. This is a
  * different concept from `PARSER_VERSION` (the parser executing the `.dem`) and

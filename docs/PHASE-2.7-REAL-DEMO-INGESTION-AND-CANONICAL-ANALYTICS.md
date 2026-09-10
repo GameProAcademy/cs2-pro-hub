@@ -663,3 +663,27 @@ dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
 
 - Vitest: **631/631 PASS** (40 arquivos)
 - Nenhuma alteração de código nesta rodada (apenas auditoria + documentação).
+
+---
+
+## FASE 2.7.2 — GATE 1D: LARGE UPLOAD + REAL PARSER CONFIGURATION
+
+- **TUS large upload: IMPLEMENTED / UNIT TESTED.** O browser envia diretamente
+  ao bucket privado `demos` pelo endpoint resumable do Storage, em chunks de 6
+  MiB, com retomada por fingerprint vinculado ao path
+  `{user_id}/{upload_id}.dem`. A sessão autenticada é renovada antes das
+  requisições; nenhuma credencial privilegiada é usada no browser.
+- SHA-256 pré-upload, idempotência, verificação SHA-256 server-side,
+  `createDemoUpload()`, `enqueueDemoJob()`, polling e retenção foram preservados.
+  O enqueue só ocorre depois de `onSuccess`; erro/cancelamento não enfileiram.
+- **REAL PARSER WORKER PROVISIONED (informado):** transporte existente aponta por
+  `DEMO_PARSER_URL` para o endpoint HTTPS do Railway. Identidade esperada:
+  `demoparser2`, versão `0.42.0`, contrato `1`. Revision continua server-side e
+  configurável; como `/version` não respondeu no domínio informado, seu valor
+  efetivo não foi assumido.
+- `DEMO_PARSER_URL`, `DEMO_PARSER_EXPECTED_NAME` e
+  `DEMO_PARSER_EXPECTED_VERSION` foram cadastradas no ambiente. O bearer
+  `DEMO_PARSER_TOKEN` e `DEMO_PARSER_EXPECTED_REVISION` permanecem
+  **CONFIGURATION REQUIRED**.
+- **Real E2E: NOT YET PROVEN. Real `.dem` parsing: NOT YET PROVEN.** Nenhuma demo
+  real foi enviada ou processada neste Gate.

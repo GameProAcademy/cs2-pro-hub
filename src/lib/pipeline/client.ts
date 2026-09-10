@@ -5,8 +5,7 @@
  * uploads it into the private bucket with the user's own session (RLS scoped to
  * `{user_id}/...`), enqueues the job and then polls the server for the status.
  */
-import { DEMO_BUCKET, MAX_DEMO_SIZE_BYTES, MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
-import { supabase } from "@/integrations/supabase/client";
+import { MAX_DEMO_SIZE_BYTES, MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
 import {
   createDemoUpload,
   enqueueDemoJob,
@@ -14,6 +13,7 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
+import { uploadDemoResumably } from "@/lib/pipeline/resumableUpload";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -27,6 +27,20 @@ export class DemoUploadError extends Error {
     super(code);
     this.name = "DemoUploadError";
   }
+}
+
+export type DemoUploadState = "hashing" | "registering" | "uploading" | "completed";
+
+export interface DemoUploadProgress {
+  state: DemoUploadState;
+  bytesSent: number;
+  bytesTotal: number;
+  percent: number;
+}
+
+export interface SubmitDemoOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: DemoUploadProgress) => void;
 }
 
 /**
@@ -47,10 +61,13 @@ export function precheckDemo(file: File): void {
 
 export async function submitDemo(
   file: File,
+  options: SubmitDemoOptions = {},
 ): Promise<{ jobId: string | null; duplicate: boolean }> {
   precheckDemo(file);
+  options.onProgress?.({ state: "hashing", bytesSent: 0, bytesTotal: file.size, percent: 0 });
   const demoSha256 = await sha256Hex(file);
 
+  options.onProgress?.({ state: "registering", bytesSent: 0, bytesTotal: file.size, percent: 0 });
   const slot = await createDemoUpload({
     data: { fileName: file.name, fileSize: file.size, demoSha256 },
   });
@@ -58,16 +75,37 @@ export async function submitDemo(
   // A demo already processed keeps its permanent derived data: it is never
   // re-uploaded or re-processed (the temporary file may no longer exist).
   if (slot.duplicateStatus === "processed") {
+    options.onProgress?.({
+      state: "completed",
+      bytesSent: file.size,
+      bytesTotal: file.size,
+      percent: 100,
+    });
     return { jobId: slot.existingJobId, duplicate: true };
   }
 
-  const { error } = await supabase.storage.from(DEMO_BUCKET).upload(slot.storagePath, file, {
-    contentType: "application/octet-stream",
-    upsert: true,
-  });
-  if (error) throw new DemoUploadError("STORAGE_ERROR");
+  try {
+    await uploadDemoResumably(file, slot.storagePath, {
+      ...(options.signal ? { signal: options.signal } : {}),
+      onProgress: ({ bytesSent, bytesTotal }) =>
+        options.onProgress?.({
+          state: "uploading",
+          bytesSent,
+          bytesTotal,
+          percent: bytesTotal > 0 ? Math.round((bytesSent / bytesTotal) * 100) : 0,
+        }),
+    });
+  } catch {
+    throw new DemoUploadError("STORAGE_ERROR");
+  }
 
   const job = await enqueueDemoJob({ data: { uploadId: slot.uploadId } });
+  options.onProgress?.({
+    state: "completed",
+    bytesSent: file.size,
+    bytesTotal: file.size,
+    percent: 100,
+  });
   return { jobId: job.jobId, duplicate: slot.duplicate };
 }
 

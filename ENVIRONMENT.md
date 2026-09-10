@@ -23,6 +23,19 @@ Rules that apply to every variable below:
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | privileged operations; bypasses RLS |
 | `SUPABASE_PROJECT_ID` / `VITE_SUPABASE_PROJECT_ID` | server / client | project reference |
 
+## Demo parser worker (server only)
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DEMO_PARSER_URL` | yes | HTTPS `/v1/parse` endpoint of the external parser worker |
+| `DEMO_PARSER_TOKEN` | yes | **secret** bearer token, never logged, returned, or sent to the browser |
+| `DEMO_PARSER_EXPECTED_NAME` | yes | expected parser name (`demoparser2`) |
+| `DEMO_PARSER_EXPECTED_VERSION` | yes | expected parser version (`0.42.0`) |
+| `DEMO_PARSER_EXPECTED_REVISION` | recommended | exact worker revision; validation is enforced when configured |
+
+All five values are read server-side. None may use the `VITE_` prefix. A missing
+or insecure URL, or a missing token, keeps the adapter unavailable.
+
 ## Transactional email — Hostinger Mail API (server only)
 
 The runtime is Cloudflare Workers, which cannot open a raw outbound TCP socket to

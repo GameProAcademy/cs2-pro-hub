@@ -36,10 +36,8 @@ export interface DemoParserAdapter {
 /**
  * FASE 2.7.1 — EXPECTED PARSER IDENTITY IS CONFIGURATION, NOT A CONSTANT.
  *
- * The pinned values in `src/config/pipeline.ts` are only the default. FASE 2.7.2
- * will select a real demoparser2 version/revision after validating it against a
- * CS2 compatibility matrix, so the expectation must be settable per deployment
- * WITHOUT a code change:
+ * The pinned values in `src/config/pipeline.ts` are the defaults. The expectation
+ * remains settable per deployment WITHOUT a code change:
  *   DEMO_PARSER_EXPECTED_NAME
  *   DEMO_PARSER_EXPECTED_VERSION
  *   DEMO_PARSER_EXPECTED_REVISION  (optional; when set, the worker must match it)
@@ -95,7 +93,7 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   return raw as RawParserOutput;
 }
 
-/** `0.31.4` -> `0.31`: patch releases of the pinned parser stay compatible. */
+/** `0.42.0` -> `0.42`: patch releases of the pinned parser stay compatible. */
 function majorMinor(version: string): string {
   return version.split(".").slice(0, 2).join(".");
 }
