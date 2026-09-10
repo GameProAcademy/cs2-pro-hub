@@ -130,6 +130,21 @@ export function participatedInRound(
  * actually extracted (complete parse). Anything weaker is `null`: a missing
  * death event is NOT proof of survival.
  */
+/**
+ * FASE 2.7.1D — SINGLE DEFINITION OF "this round provably ended".
+ *
+ * Used both by `playerSurvivedRound` (per round) and by the survival-rate
+ * denominator (per participated round set), so the two can never disagree.
+ */
+export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): boolean {
+  return (
+    round.endTick != null ||
+    round.durationSeconds != null ||
+    round.winnerSide != null ||
+    round.winnerTeam != null
+  );
+}
+
 export function playerSurvivedRound(
   match: CanonicalMatch,
   steamId: string,
