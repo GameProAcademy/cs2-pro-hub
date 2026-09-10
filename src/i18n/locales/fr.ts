@@ -605,18 +605,15 @@ export const fr: Dictionary = {
     "Le résultat du traitement était trop volumineux pour être accepté.",
   "pipeline.error.PARSER_CONFIG_ERROR":
     "Le service de traitement n'est pas configuré correctement.",
-  "pipeline.error.PARSER_UNAUTHORIZED":
-    "Le service de traitement a refusé l'authentification.",
-  "pipeline.error.PARSER_FORBIDDEN":
-    "Le service de traitement a refusé l'accès.",
+  "pipeline.error.PARSER_UNAUTHORIZED": "Le service de traitement a refusé l'authentification.",
+  "pipeline.error.PARSER_FORBIDDEN": "Le service de traitement a refusé l'accès.",
   "pipeline.error.PARSER_CONTRACT_MISMATCH":
     "Le service de traitement utilise une version incompatible.",
   "pipeline.error.PARSER_INVALID_RESPONSE":
     "Le service de traitement a renvoyé une réponse invalide.",
   "pipeline.error.PARSER_DOWNLOAD_ERROR":
     "Le service de traitement n'a pas pu télécharger le fichier.",
-  "pipeline.error.PARSER_HASH_MISMATCH":
-    "Le fichier reçu ne correspond pas au fichier envoyé.",
+  "pipeline.error.PARSER_HASH_MISMATCH": "Le fichier reçu ne correspond pas au fichier envoyé.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
     "La taille du fichier reçu ne correspond pas à l'envoi.",
   "pipeline.error.PROCESSING_ERROR": "Échec de traitement inattendu.",

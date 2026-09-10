@@ -605,18 +605,15 @@ export const es: Dictionary = {
     "El resultado del procesamiento fue demasiado grande para aceptarlo.",
   "pipeline.error.PARSER_CONFIG_ERROR":
     "El servicio de procesamiento no está configurado correctamente.",
-  "pipeline.error.PARSER_UNAUTHORIZED":
-    "El servicio de procesamiento rechazó la autenticación.",
-  "pipeline.error.PARSER_FORBIDDEN":
-    "El servicio de procesamiento denegó el acceso.",
+  "pipeline.error.PARSER_UNAUTHORIZED": "El servicio de procesamiento rechazó la autenticación.",
+  "pipeline.error.PARSER_FORBIDDEN": "El servicio de procesamiento denegó el acceso.",
   "pipeline.error.PARSER_CONTRACT_MISMATCH":
     "El servicio de procesamiento tiene una versión incompatible.",
   "pipeline.error.PARSER_INVALID_RESPONSE":
     "El servicio de procesamiento devolvió una respuesta inválida.",
   "pipeline.error.PARSER_DOWNLOAD_ERROR":
     "El servicio de procesamiento no pudo descargar el archivo.",
-  "pipeline.error.PARSER_HASH_MISMATCH":
-    "El archivo recibido no coincide con el archivo enviado.",
+  "pipeline.error.PARSER_HASH_MISMATCH": "El archivo recibido no coincide con el archivo enviado.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
     "El tamaño del archivo recibido no coincide con el enviado.",
   "pipeline.error.PROCESSING_ERROR": "Fallo inesperado de procesamiento.",

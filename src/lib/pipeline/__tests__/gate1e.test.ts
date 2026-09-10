@@ -183,7 +183,10 @@ describe("GATE 1E — response contract", () => {
   it("rejects an incompatible parser identity", () => {
     expect(
       code(() =>
-        assertRawParserOutput({ ...validOutput, parser: { name: "other", version: PARSER_VERSION } }),
+        assertRawParserOutput({
+          ...validOutput,
+          parser: { name: "other", version: PARSER_VERSION },
+        }),
       ),
     ).toBe("UNSUPPORTED_DEMO");
     expect(
