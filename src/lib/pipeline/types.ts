@@ -266,7 +266,9 @@ export interface CanonicalMetrics {
 export interface CanonicalFeatures {
   steamId: string;
   sampleRounds: number;
-  sampleOpeningDuels: number;
+  /** NULL when no round had a determinable opening duel. */
+  sampleOpeningDuels: number | null;
+
   /** NULL when clutches were not observable (no kill events). */
   sampleClutches: number | null;
 
