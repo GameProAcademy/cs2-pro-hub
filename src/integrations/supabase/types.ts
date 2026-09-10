@@ -826,7 +826,7 @@ export type Database = {
           match_id: string
           partial_parse: boolean
           player_id: string | null
-          sample_clutches: number
+          sample_clutches: number | null
           sample_opening_duels: number
           sample_rounds: number
           schema_version: number
@@ -841,7 +841,7 @@ export type Database = {
           match_id: string
           partial_parse?: boolean
           player_id?: string | null
-          sample_clutches?: number
+          sample_clutches?: number | null
           sample_opening_duels?: number
           sample_rounds?: number
           schema_version?: number
@@ -856,7 +856,7 @@ export type Database = {
           match_id?: string
           partial_parse?: boolean
           player_id?: string | null
-          sample_clutches?: number
+          sample_clutches?: number | null
           sample_opening_duels?: number
           sample_rounds?: number
           schema_version?: number
