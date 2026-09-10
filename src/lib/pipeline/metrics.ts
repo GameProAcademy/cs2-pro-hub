@@ -162,12 +162,7 @@ export function playerSurvivedRound(
   if (!participatedInRound(match, steamId, roundNumber)) return null;
   if (match.quality.partialParse) return null;
 
-  const roundEnded =
-    round.endTick != null ||
-    round.durationSeconds != null ||
-    round.winnerSide != null ||
-    round.winnerTeam != null;
-  if (!roundEnded) return null;
+  if (!roundHasEndEvidence(round)) return null;
 
   // The round must actually carry extracted combat/round events; otherwise the
   // absence of a death event says nothing at all.
