@@ -681,9 +681,8 @@ dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
   `demoparser2`, versão `0.42.0`, contrato `1`. Revision continua server-side e
   configurável; como `/version` não respondeu no domínio informado, seu valor
   efetivo não foi assumido.
-- `DEMO_PARSER_URL`, `DEMO_PARSER_EXPECTED_NAME` e
-  `DEMO_PARSER_EXPECTED_VERSION` foram cadastradas no ambiente. O bearer
-  `DEMO_PARSER_TOKEN` e `DEMO_PARSER_EXPECTED_REVISION` permanecem
-  **CONFIGURATION REQUIRED**.
+- `DEMO_PARSER_URL`, `DEMO_PARSER_TOKEN`, `DEMO_PARSER_EXPECTED_NAME` e
+  `DEMO_PARSER_EXPECTED_VERSION` foram cadastradas no ambiente. Somente
+  `DEMO_PARSER_EXPECTED_REVISION` permanece **CONFIGURATION REQUIRED**.
 - **Real E2E: NOT YET PROVEN. Real `.dem` parsing: NOT YET PROVEN.** Nenhuma demo
   real foi enviada ou processada neste Gate.

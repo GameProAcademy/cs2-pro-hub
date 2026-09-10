@@ -498,7 +498,7 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
       reenvia o arquivo.
 - [x] Parser esperado atualizado para `demoparser2 0.42.0`, contrato 1; revision
       permanece configurável e não foi inventada.
-- [x] URL/identidade server-only configuradas; `DEMO_PARSER_TOKEN` e revision real
-      continuam **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
+- [x] URL/identidade e `DEMO_PARSER_TOKEN` configurados server-only; revision real
+      continua **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
       verificação pública, portanto conectividade do worker está **NOT PROVEN**.
 - [ ] E2E real e parse de `.dem` real: **NOT PROVEN**, reservados ao próximo Gate.

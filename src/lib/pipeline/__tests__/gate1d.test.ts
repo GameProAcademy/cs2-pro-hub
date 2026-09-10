@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  PARSER_CONTRACT_VERSION,
-  PARSER_NAME,
-  PARSER_VERSION,
-} from "@/config/pipeline";
+import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { DemoUploadError, precheckDemo } from "@/lib/pipeline/client";
 import { assertRawParserOutput, expectedParserIdentity } from "@/lib/pipeline/parser/adapter";
 import { resumableStorageEndpoint, TUS_CHUNK_BYTES } from "@/lib/pipeline/resumableUpload";
@@ -63,8 +59,12 @@ describe("Gate 1D parser identity", () => {
   });
 
   it("rejects wrong name, major/minor, contract, and missing arrays", () => {
-    expect(() => assertRawParserOutput({ ...payload(), parser: { name: "other", version: "0.42.0" } })).toThrow();
-    expect(() => assertRawParserOutput({ ...payload(), parser: { name: PARSER_NAME, version: "0.41.9" } })).toThrow();
+    expect(() =>
+      assertRawParserOutput({ ...payload(), parser: { name: "other", version: "0.42.0" } }),
+    ).toThrow();
+    expect(() =>
+      assertRawParserOutput({ ...payload(), parser: { name: PARSER_NAME, version: "0.41.9" } }),
+    ).toThrow();
     expect(() => assertRawParserOutput({ ...payload(), contract_version: 2 })).toThrow();
     const { events: _events, ...missingEvents } = payload();
     expect(() => assertRawParserOutput(missingEvents)).toThrow();
