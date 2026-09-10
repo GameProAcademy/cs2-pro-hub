@@ -292,7 +292,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       direction: "up",
       meaning: "rounds with a kill, assist, proven survival or trade",
       nullBehavior:
-        "null when no round carried enough evidence or coverage is incomplete; never 0 for unknown",
+        "null when no round carried enough evidence and under partial_parse / incomplete round coverage; never 0 for unknown",
       sampleRequirement: "complete round coverage with kill/damage/round_end evidence per round",
       confidenceImpact: "absence of a death event is never read as survival",
       denominator: "rounds_played (requires complete coverage)",
@@ -458,7 +458,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       direction: "up",
       meaning: "scaled source rating — NOT the CS2 PRO Score",
       nullBehavior:
-        "null when the rating could not be computed: missing kill/damage evidence or incomplete round coverage",
+        "null when the rating could not be computed: missing kill/damage evidence, or partial_parse / incomplete round coverage",
       sampleRequirement: "kill and damage evidence over a complete round set",
       confidenceImpact: "must never be used as a substitute for an unmeasured dimension",
       denominator: "rounds_played (requires complete coverage)",
