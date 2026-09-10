@@ -58,6 +58,32 @@ export function expectedParserIdentity(): {
   };
 }
 
+/**
+ * FASE 2.7.2 — GATE 1E.1 — IS THE REVISION LOCK MANDATORY?
+ *
+ * Production locks the exact worker build by default: without a pinned revision
+ * a redeploy could silently change the parser under a player's analysis. A
+ * development/test environment may run unpinned, and `DEMO_PARSER_REVISION_REQUIRED`
+ * makes the decision explicit either way.
+ */
+export function isParserRevisionRequired(): boolean {
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const explicit = (env?.["DEMO_PARSER_REVISION_REQUIRED"] ?? "").trim().toLowerCase();
+  if (explicit === "true" || explicit === "1") return true;
+  if (explicit === "false" || explicit === "0") return false;
+  return (env?.["NODE_ENV"] ?? "") === "production";
+}
+
+/** The full expectation used by the revision lock (identity + contract). */
+export function expectedParserContract(): ExpectedParserIdentity {
+  const identity = expectedParserIdentity();
+  return {
+    ...identity,
+    revisionRequired: isParserRevisionRequired(),
+    contractVersion: PARSER_CONTRACT_VERSION,
+  };
+}
+
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!value || typeof value !== "object")
