@@ -301,7 +301,9 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
     let canonical;
     try {
+      assertDeadline();
       canonical = await persistCanonicalObservation({
+
         bundle,
         ownerPlayerId: player.id,
         uploadId: job.upload_id,
