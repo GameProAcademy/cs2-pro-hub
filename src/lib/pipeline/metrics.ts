@@ -398,8 +398,13 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     ),
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
     timing,
+    // A partial extraction NEVER counts as complete coverage. Whole-match rates
+    // (rating, KAST) are only defensible over a complete round set, so they are
+    // NULL while the parser reports a partial parse.
+    completeCoverage: match.quality.partialParse !== true,
   };
 }
+
 
 export function computeMetrics(match: CanonicalMatch, steamId: string): CanonicalMetrics {
   const availability = metricsAvailability(match);
