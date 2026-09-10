@@ -17,12 +17,7 @@ const MATE = "76561198000000002";
 const ENEMY_A = "76561198000000101";
 const ENEMY_B = "76561198000000102";
 
-const kill = (
-  round: number,
-  time: number,
-  attacker: string,
-  victim: string,
-): RawParserEvent => ({
+const kill = (round: number, time: number, attacker: string, victim: string): RawParserEvent => ({
   type: "player_death",
   round,
   time_seconds: time,
@@ -148,8 +143,7 @@ describe("survival_rate requires round-end evidence for EVERY round in the denom
 
 describe("partial parse: observed counters stay, whole-match rates go NULL", () => {
   const numbers = [1, 2];
-  const partial = () =>
-    build(numbers.map(endedRound), eventsFor(numbers), ["partial extraction"]);
+  const partial = () => build(numbers.map(endedRound), eventsFor(numbers), ["partial extraction"]);
   const complete = () => build(numbers.map(endedRound), eventsFor(numbers));
 
   it("TEST F: observed counters are NOT discarded by partial parse", () => {

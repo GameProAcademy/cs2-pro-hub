@@ -450,9 +450,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const survivalRounds =
     roundsPlayed > 0 &&
     availability.completeCoverage &&
-    match.rounds
-      .filter((r) => roundNumbers.has(r.roundNumber))
-      .every((r) => roundHasEndEvidence(r))
+    match.rounds.filter((r) => roundNumbers.has(r.roundNumber)).every((r) => roundHasEndEvidence(r))
       ? roundsPlayed
       : null;
 
