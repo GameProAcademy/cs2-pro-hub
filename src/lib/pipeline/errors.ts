@@ -25,6 +25,10 @@ export const PIPELINE_ERROR_CODES = [
   "PARSER_DOWNLOAD_ERROR",
   "PARSER_HASH_MISMATCH",
   "PARSER_FILE_SIZE_MISMATCH",
+  // FASE 2.7.2 GATE 1E.1 — REVISION LOCK. The deployed worker is not the parser
+  // build this deployment expects (name, version or revision). Fail closed: a
+  // silent parser swap or downgrade must never analyse a player's demo.
+  "PARSER_IDENTITY_MISMATCH",
   "NORMALIZATION_ERROR",
   "VALIDATION_ERROR",
   "PERSISTENCE_ERROR",
@@ -80,6 +84,8 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "PARSER_INVALID_RESPONSE",
   "PARSER_HASH_MISMATCH",
   "PARSER_FILE_SIZE_MISMATCH",
+  // GATE 1E.1 — a mismatched parser build stays mismatched on every retry.
+  "PARSER_IDENTITY_MISMATCH",
 ]);
 
 export class PipelineError extends Error {
