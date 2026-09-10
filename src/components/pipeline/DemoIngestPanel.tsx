@@ -45,6 +45,9 @@ function errorKey(code: string | null): TranslationKey {
     "pipeline.error.JOB_STALE",
     "pipeline.error.RESOURCE_LIMIT",
     "pipeline.error.STORAGE_ERROR",
+    "pipeline.error.DEMO_INSUFFICIENT_SAMPLE",
+    "pipeline.error.JOB_DEADLINE_EXCEEDED",
+    "pipeline.error.PARSER_PAYLOAD_TOO_LARGE",
     "pipeline.error.PROCESSING_ERROR",
   ];
   const candidate = `pipeline.error.${code ?? "PROCESSING_ERROR"}` as TranslationKey;
