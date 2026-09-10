@@ -13,7 +13,10 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
-import { uploadDemoResumably } from "@/lib/pipeline/resumableUpload";
+import {
+  uploadDemoResumably,
+  type ResumableUploadOptions,
+} from "@/lib/pipeline/resumableUpload";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -54,7 +57,7 @@ export interface SubmitDemoDependencies {
     duplicateStatus: "processed" | "pending" | "failed" | null;
     existingJobId: string | null;
   }>;
-  upload(file: File, storagePath: string, options: SubmitDemoOptions): Promise<void>;
+  upload(file: File, storagePath: string, options: ResumableUploadOptions): Promise<void>;
   enqueue(input: { data: { uploadId: string } }): Promise<{ jobId: string }>;
 }
 
