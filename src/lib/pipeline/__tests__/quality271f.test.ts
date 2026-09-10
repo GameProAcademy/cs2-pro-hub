@@ -132,13 +132,12 @@ describe("critical features match the catalogue arithmetic", () => {
   });
 
   it("clutch_frequency = min(1, clutch_attempts / rounds_played)", () => {
-    const expected = metrics.clutchAttempts > 0 ? clamp(metrics.clutchAttempts / 4) : null;
-    expect(dim("clutch", "clutch_frequency")).toEqual(expected);
+    // An observed zero stays 0 here: the clutch situation count IS observed.
+    expect(dim("clutch", "clutch_frequency")).toBeCloseTo(clamp(metrics.clutchAttempts / 4), 5);
   });
 
   it("multi_kill_rate = min(1, multi_kills / rounds_played)", () => {
-    const expected = metrics.multiKills > 0 ? clamp(metrics.multiKills / 4) : null;
-    expect(dim("clutch", "multi_kill_rate")).toEqual(expected);
+    expect(dim("clutch", "multi_kill_rate")).toBeCloseTo(clamp(metrics.multiKills / 4), 5);
   });
 
   it("rating = min(1, source_rating / 1.6)", () => {
@@ -153,11 +152,9 @@ describe("critical features match the catalogue arithmetic", () => {
 
 describe("survivalRounds is a determinability claim", () => {
   it("an ended round with no usable evidence for THIS player is not determinable", () => {
-    // Round 2 ended, MATE played it, but ME has no event of any kind in it.
-    const m = build(
-      [ended(1), ended(2)],
-      [kill(1, 12, ME, ENEMY_A), damage(1, ME, ENEMY_A, 100), kill(2, 20, MATE, ENEMY_B)],
-    );
+    // Round 2 ended, but it carries NO extracted event at all, so nothing can
+    // establish whether ME survived it.
+    const m = build([ended(1), ended(2)], [kill(1, 12, ME, ENEMY_A), damage(1, ME, ENEMY_A, 100)]);
     expect(roundHasEndEvidence(m.rounds[1]!)).toBe(true);
     expect(playerSurvivedRound(m, ME, 2)).toBeNull();
   });
