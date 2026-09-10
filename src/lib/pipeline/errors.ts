@@ -37,7 +37,6 @@ export const PIPELINE_ERROR_CODES = [
   "STORAGE_ERROR",
   "PROCESSING_ERROR",
   "CLEANUP_ERROR",
-
 ] as const;
 
 export type PipelineErrorCode = (typeof PIPELINE_ERROR_CODES)[number];
@@ -63,7 +62,6 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
 ]);
-
 
 export class PipelineError extends Error {
   readonly code: PipelineErrorCode;

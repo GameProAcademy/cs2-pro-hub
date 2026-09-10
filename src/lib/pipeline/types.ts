@@ -138,7 +138,6 @@ export interface CanonicalRound {
   sides: Record<string, Side>;
 }
 
-
 export interface CanonicalEvent {
   roundNumber: number;
   type: CanonicalEventType;
@@ -251,7 +250,6 @@ export interface CanonicalMetrics {
   sourceRating: number | null;
   damageEfficiency: number | null;
 }
-
 
 /** Feature signals consumed by the future analysis engine, per DNA dimension. */
 export interface CanonicalFeatures {

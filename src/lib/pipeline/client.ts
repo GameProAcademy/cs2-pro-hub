@@ -15,7 +15,6 @@ import {
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
 
-
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
   | "DEMO_TOO_SMALL"
@@ -38,7 +37,6 @@ export class DemoUploadError extends Error {
 export async function sha256Hex(file: Blob): Promise<string> {
   return sha256HexFromBlob(file);
 }
-
 
 /** Client-side pre-check. The server validates everything again. */
 export function precheckDemo(file: File): void {

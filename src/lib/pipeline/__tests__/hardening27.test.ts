@@ -138,14 +138,10 @@ describe("FASE 2.7 hardening — short demo policy", () => {
 describe("FASE 2.7 hardening — incremental hashing", () => {
   it("H13: matches the known SHA-256 vectors", async () => {
     const empty = new Sha256();
-    expect(empty.hex()).toBe(
-      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    );
+    expect(empty.hex()).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
     const abc = new Sha256();
     abc.update(new TextEncoder().encode("abc"));
-    expect(abc.hex()).toBe(
-      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-    );
+    expect(abc.hex()).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
   });
 
   it("H14: chunked blob hashing equals single-shot hashing", async () => {

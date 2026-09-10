@@ -306,7 +306,6 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       );
     }
 
-
     // Per-player projection only (metrics/features/convenience columns).
     const persisted = await persistDemoProjection({
       matchId: canonical.matchId,

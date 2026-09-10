@@ -26,7 +26,6 @@ export interface ParseRequest {
   deadlineAt?: number;
 }
 
-
 export interface DemoParserAdapter {
   readonly id: string;
   /** True when the adapter can actually run in the current deployment. */

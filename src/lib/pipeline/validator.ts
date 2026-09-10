@@ -46,7 +46,6 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
   }
 }
 
-
 /**
  * Resolves WHICH player in the demo is the signed-in user.
  * Only an explicit, previously stored Steam ID is accepted — the pipeline never

@@ -597,9 +597,12 @@ export const ptPT: Dictionary = {
   "pipeline.error.JOB_TIMEOUT": "O processamento excedeu o tempo permitido.",
   "pipeline.error.JOB_STALE": "O processamento ficou parado e foi recolocado na fila.",
   "pipeline.error.RESOURCE_LIMIT": "Este ficheiro exige mais recursos do que o permitido.",
-  "pipeline.error.DEMO_INSUFFICIENT_SAMPLE": "Esta demo tem rondas insuficientes para uma análise fiável.",
-  "pipeline.error.JOB_DEADLINE_EXCEEDED": "O processamento excedeu o tempo limite e foi interrompido.",
-  "pipeline.error.PARSER_PAYLOAD_TOO_LARGE": "O resultado do processamento foi demasiado grande para ser aceite.",
+  "pipeline.error.DEMO_INSUFFICIENT_SAMPLE":
+    "Esta demo tem rondas insuficientes para uma análise fiável.",
+  "pipeline.error.JOB_DEADLINE_EXCEEDED":
+    "O processamento excedeu o tempo limite e foi interrompido.",
+  "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
+    "O resultado do processamento foi demasiado grande para ser aceite.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Trabalhos, qualidade e retenção",

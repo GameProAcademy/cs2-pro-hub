@@ -93,7 +93,6 @@ export async function persistCanonicalObservation(args: {
     (args.bundle.observation.externalMatchId || args.bundle.observation.fingerprint)
       ? { _attach_match_id: args.attachMatchId }
       : {}),
-
   });
 
   if (error) throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", error.message);

@@ -139,7 +139,8 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
           } | null;
           if (body?.error_code) code = body.error_code;
         } catch (error) {
-          if (error instanceof PipelineError && error.code === "PARSER_PAYLOAD_TOO_LARGE") throw error;
+          if (error instanceof PipelineError && error.code === "PARSER_PAYLOAD_TOO_LARGE")
+            throw error;
           /* non-JSON error body: keep the HTTP status code */
         }
         throw mapParserErrorCode(code);
@@ -159,7 +160,6 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
     }
   },
 };
-
 
 /** Adapter resolution point. Swapping parsers happens only here. */
 export function resolveParserAdapter(): DemoParserAdapter {

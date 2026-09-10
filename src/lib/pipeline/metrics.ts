@@ -38,7 +38,6 @@ import type {
   Side,
 } from "@/lib/pipeline/types";
 
-
 interface KillRecord {
   round: number;
   /**
@@ -53,7 +52,6 @@ interface KillRecord {
   headshot: boolean | null;
   flashAssister: string | null;
 }
-
 
 const round1 = (v: number) => Number(v.toFixed(1));
 const round3 = (v: number) => Number(v.toFixed(3));
@@ -71,7 +69,6 @@ export function eventTime(event: CanonicalEvent, tickrate: number | null): numbe
   if (event.tick != null && tickrate != null && tickrate > 0) return event.tick / tickrate;
   return null;
 }
-
 
 function teamOf(match: CanonicalMatch, steamId: string): string | null {
   return match.players.find((p) => p.steamId === steamId)?.team ?? null;
@@ -232,7 +229,6 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
     );
 }
 
-
 /** Opening duel of a round: the chronologically first kill. */
 export function openingDuels(kills: KillRecord[]) {
   const byRound = new Map<number, KillRecord>();
@@ -345,8 +341,7 @@ function clutchStats(
  */
 export function metricsAvailability(match: CanonicalMatch): MetricsAvailability {
   const kills = match.events.filter((e) => e.type === "kill");
-  const timing =
-    kills.length > 0 && kills.every((e) => eventTime(e, match.tickrate) != null);
+  const timing = kills.length > 0 && kills.every((e) => eventTime(e, match.tickrate) != null);
   return {
     killEvents: kills.length > 0,
     damageEvents: match.events.some((e) => e.type === "damage"),
@@ -454,7 +449,9 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     for (const death of playerDeaths) if (wasTraded(kills, death, match)) tradedDeathCount += 1;
     tradeDeaths = tradedDeathCount;
     untradedDeaths = playerDeaths.length - tradedDeathCount;
-    earlyDeaths = playerDeaths.filter((d) => d.time != null && d.time <= EARLY_DEATH_SECONDS).length;
+    earlyDeaths = playerDeaths.filter(
+      (d) => d.time != null && d.time <= EARLY_DEATH_SECONDS,
+    ).length;
   }
 
   // Multi-kills
@@ -509,7 +506,8 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   };
 
   // Damage-derived signals require damage events; otherwise they are unknown.
-  const adr = availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
+  const adr =
+    availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
 
   return {
     steamId,
@@ -579,4 +577,3 @@ export function compositeRating(
   const value = 0.45 * (kpr / 0.7) + 0.25 * (1 - dpr / 0.75) + 0.3 * (adr / 80);
   return Math.max(0, value);
 }
-
