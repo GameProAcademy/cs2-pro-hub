@@ -469,13 +469,12 @@ e razões cujo denominador é ele mesmo uma contagem observada (`hs_rate`, `trad
 `kd_balance`, `clutch_win_rate`, `opening_discipline`, `flash_assist_share`). Descartá-los seria
 desonesto na direção oposta.
 
-### 3. Versão do parser — placeholder explícito (DOCUMENTED)
+### 3. Versão do parser — histórico da 2.7.1D (SUPERSEDED PELO GATE 1D)
 
-`PARSER_VERSION = "0.31.4"` nunca foi verificada contra um build público real. Continua sendo
-apenas o valor ESPERADO na checagem de identidade do worker (sobrescrevível por
-`DEMO_PARSER_EXPECTED_VERSION`) e agora vem acompanhada de `PARSER_VERSION_CONFIRMED = false`.
-`PARSER_CONTRACT_VERSION` é um conceito SEPARADO (formato de saída) e permanece inalterado.
-Escolher e fixar a versão real do parser é escopo da FASE 2.7.2.
+Na 2.7.1D, `0.31.4` era um placeholder não confirmado. O Gate 1D posterior o
+substituiu pela versão real selecionada `0.42.0` e marcou
+`PARSER_VERSION_CONFIRMED = true`. `PARSER_CONTRACT_VERSION` continua sendo um
+conceito SEPARADO (formato de saída) e permanece em `1`.
 
 ### 4. Testes
 

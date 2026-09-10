@@ -444,7 +444,7 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [x] `survival_rate` exige round-end evidence em TODOS os rounds do denominador (`metrics.survivalRounds`); cobertura incompleta = NULL, nunca parcial nem 0
 - [x] `roundHasEndEvidence()` como definição única, reutilizada por `playerSurvivedRound()`
 - [x] Parse parcial: taxas com denominador de rounds ficam NULL; contadores observados e razões sobre contagens observadas permanecem
-- [x] `PARSER_VERSION` marcada como placeholder não confirmado (`PARSER_VERSION_CONFIRMED = false`); contrato do parser inalterado
+- [x] Registro histórico: a versão era placeholder nessa rodada; o Gate 1D depois confirmou `0.42.0`. Contrato inalterado.
 - [x] `quality271d.test.ts` (fixtures sintéticas). 587/587 testes, tsgo e lint OK
 ## FASE 2.7.1E
 - [x] `src/lib/pipeline/roundEvidence.ts`: a ÚNICA definição de round-end evidence
@@ -465,7 +465,7 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - `survivalRounds` documentado como denominador de determinabilidade (não `roundsPlayed`).
 - `roundDenominated` = denominador derivado do conjunto de rounds (inclui `survivalRounds`).
 - Fórmulas do catálogo sincronizadas com `features.ts`, com o clamp `[0,1]` explícito.
-- Identidade do parser separada: nome / versão (placeholder não confirmado) / revisão / versão de contrato.
+- Identidade do parser separada: nome / versão / revisão / versão de contrato (a versão foi confirmada no Gate 1D posterior).
 - 23 novos testes numéricos de contrato (`quality271f.test.ts`).
 - Verificação: 631/631 testes, `tsgo` OK, lint 0 erros (8 warnings preexistentes), build OK.
 - FASE 2.7.1: **CLOSED**. FASE 2.7: **IN PROGRESS** (parser real e E2E `.dem` NOT PROVEN).
