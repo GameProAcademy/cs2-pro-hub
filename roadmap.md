@@ -475,3 +475,15 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - Verificação: 631/631 testes, `tsgo` OK, lint 0 erros (8 warnings preexistentes), build OK.
 - FASE 2.7.1: **CLOSED**. FASE 2.7: **IN PROGRESS** (parser real e E2E `.dem` NOT PROVEN).
 - FASE 2.7.2: próxima. FASE 2.8: não iniciada.
+
+### FASE 2.7.2 — GATE 0 PASS / PARSER REAL BLOQUEADO
+
+- [x] GATE 0 (auditoria de fechamento da 2.7.1F): 8 commits no escopo, sem regressão;
+      round evidence PASS, survival PASS, NULL≠ZERO PASS, partial parse PASS,
+      parser identity PASS; catálogo PASS nas features com prova numérica e
+      NOT PROVEN nas demais (dívida de cobertura, sem divergência de comportamento).
+- [x] Rodada de verificação: 631/631 testes.
+- [ ] GATES 1–N (parser real, revision pinada, matriz CS2, worker, E2E `.dem`, idempotência):
+      **BLOCKED** — `demoparser2` é nativo e exige worker HTTP externo;
+      `DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` não existem e não podem ser provisionados daqui.
+- [ ] FASE 2.7 permanece IN PROGRESS. FASE 2.8 não iniciada.

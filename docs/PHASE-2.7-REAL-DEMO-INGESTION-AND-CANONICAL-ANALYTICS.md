@@ -590,3 +590,76 @@ Training, UI ou dependências.
   `DEMO_PARSER_TOKEN` inexistentes.
 - E2E real de ingestão: **BLOCKED** pela ausência do parser.
 - FASE 2.7.2 (parser real / worker) e FASE 2.8: **NÃO INICIADAS**.
+
+---
+
+## FASE 2.7.2 — GATE 0 CONCLUÍDO / GATES 1+ BLOQUEADOS
+
+### GATE 0 — FINAL CLOSURE AUDIT DA 2.7.1F
+
+Auditoria dos 8 commits entre `91ca826` e `357771d`
+(`be9d50d` catálogo, `dba96c5` types+config, `7a79d51`/`17a6ede`/`3ff376b`
+`quality271f.test.ts`, `50c0176` catálogo, `ffc2c27` docs/roadmap, `357771d`
+docs/build):
+
+- 8 commits auditados: **PASS** — todos restritos a `features.catalog.ts`,
+  `types.ts`, `config/pipeline.ts`, testes e documentação. Nenhum toque em
+  migrations, RLS, grants, auth, persistência canônica, resolver, FACEIT,
+  Steam, Identity Graph, Gamers Club, storage ou UI. Sem regressão, sem
+  duplicação de comportamento, sem mudança silenciosa de contrato.
+- Catálogo × implementação: **PASS** para as features cobertas por teste
+  numérico; **NOT PROVEN** para as demais (documentação coerente, sem prova
+  numérica dedicada): `opening_success`, `opening_participation`,
+  `untraded_death_rate`, `traded_death_rate`, `early_death_rate`,
+  `utility_damage_per_round`, `flash_assists_per_round`,
+  `enemies_flashed_per_round`, `grenades_per_round`, `kast`,
+  `damage_efficiency`.
+- Round-end evidence: **PASS** — definição única em
+  `src/lib/pipeline/roundEvidence.ts` (`winnerSide`/`winnerTeam`/`endTick`/
+  `durationSeconds` com `!= null`; `0` é evidência válida), consumida por
+  `normalizer.assessQuality()`, `metricsAvailability.roundEndEvidence` e
+  `roundHasEndEvidence()` (re-export delegante). Nenhuma segunda implementação.
+- Survival: **PASS** — `survivalRounds ≠ roundsPlayed`; só entram rounds
+  participados com fim comprovado e decisão determinística de
+  `playerSurvivedRound()`; cobertura incompleta ⇒ `NULL`.
+- NULL ≠ ZERO: **PASS** — os `?? 0` remanescentes somam campos de dano de
+  eventos observados; `matchRounds ?? 0` alimenta apenas um denominador que
+  `ratio()` converte em `NULL` quando não positivo.
+- Partial parse: **PASS** — features round-denominated e `survival_rate`/`kast`/
+  `rating` ficam `NULL`; contadores observados permanecem numéricos.
+- Parser identity: **PASS** — nome / versão / revisão / versão de contrato /
+  schema / analysis separados; `0.31.4` continua `PARSER_VERSION_CONFIRMED =
+  false`.
+
+**GATE 0 RESULT: PASS** (sem BLOCKER, sem FAIL; dívida remanescente apenas de
+cobertura de prova, registrada como NOT PROVEN).
+
+### GATES 1–N — BLOQUEADOS (infraestrutura ausente)
+
+O provisionamento do parser real está **BLOCKED**, não recusado por escopo:
+
+1. `demoparser2` é uma extensão nativa (Rust/PyO3). O runtime de execução deste
+   app é um Worker serverless sem binários nativos, sem `child_process` e sem
+   CPU longa — o parser não pode rodar dentro da aplicação por construção.
+2. A arquitetura correta (worker HTTP externo) exige um host de execução fora
+   desta plataforma, endereçável por `DEMO_PARSER_URL`, com segredo
+   `DEMO_PARSER_TOKEN`. Nenhum host desse tipo existe e não é possível
+   provisioná-lo daqui.
+3. Sem worker real não há release/revision verificável para pinar
+   (GATE 1.A), portanto a matriz de compatibilidade CS2 (GATE 1.B) não pode ser
+   preenchida com dados reais — escrevê-la agora seria inventar evidência.
+4. Sem parser não existe `.dem` processado, logo o E2E completo
+   (upload → storage → job → worker → parser → adapter → normalizer →
+   canonical → metrics → features → persistence), a idempotência real e a
+   não-regressão real permanecem **NOT PROVEN**.
+
+O adaptador continua falhando honestamente com `PARSER_UNAVAILABLE`.
+
+**Desbloqueio necessário (fornecido pelo responsável do projeto):** um endpoint
+HTTPS de worker executando o parser pinado, mais o token de acesso. Com esses
+dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
+
+### Verificação desta rodada
+
+- Vitest: **631/631 PASS** (40 arquivos)
+- Nenhuma alteração de código nesta rodada (apenas auditoria + documentação).
