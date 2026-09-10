@@ -123,14 +123,20 @@ export function extractFeatures(
     decision_making: {
       kast: metrics.kast == null ? null : clamp01(metrics.kast / 100),
       // Round-denominated, so it is NOT the complement of early_death_rate.
-      early_death_free_rate: complement(ratio(metrics.earlyDeaths, rounds)),
-      opening_discipline: ratio(metrics.firstKills, metrics.openingAttempts),
+      early_death_free_rate: gate(
+        hasKills && hasTiming,
+        complement(ratio(metrics.earlyDeaths, rounds)),
+      ),
+      opening_discipline: gate(hasKills, ratio(metrics.firstKills, metrics.openingAttempts)),
       early_window_seconds: EARLY_DEATH_SECONDS,
     },
     teamplay: {
-      assists_per_round: perRound(metrics.assists, rounds, 0.35),
-      flash_assist_share: ratio(metrics.flashAssists, metrics.assists),
-      trade_participation: ratio(metrics.tradeKills, rounds),
+      assists_per_round: gate(hasKills, perRound(metrics.assists, rounds, 0.35)),
+      flash_assist_share: gate(
+        hasKills && hasUtility,
+        ratio(metrics.flashAssists, metrics.assists),
+      ),
+      trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, rounds)),
     },
     economy: {
       // Economy MUST come from real buy data (money_start / money_end /
