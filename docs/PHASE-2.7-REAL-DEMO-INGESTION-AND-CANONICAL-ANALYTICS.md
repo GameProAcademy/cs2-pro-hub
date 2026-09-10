@@ -540,3 +540,53 @@ provisionado, E2E com `.dem` real NÃO provado, FASE 2.7 permanece IN PROGRESS, 
 iniciadas.
 
 Baseline desta rodada: 608/608 testes, tsgo OK, lint com 8 warnings preexistentes.
+
+## FASE 2.7.1F — FINAL SEMANTIC CONTRACT CLEANUP (CLOSED)
+
+Microfase de contrato semântico. Nenhuma alteração em banco/schema/RLS/grants/
+auth/security-definer, persistência canônica, resolver, FACEIT, Gamers Club,
+Steam, Identity Graph, upload/storage, Pro Score, DNA, Diagnóstico, AI Coach,
+Training, UI ou dependências.
+
+### O que foi alinhado
+
+1. **`survivalRounds` documentado pelo que realmente é** (`src/lib/pipeline/types.ts`):
+   denominador de *determinabilidade* — rounds participados com evidência de fim
+   **e** decisão não nula de `playerSurvivedRound()` (`true` = sobrevivência
+   provada, `false` = morte provada). Round terminado não implica sobrevivência
+   determinável. `NULL` = desconhecido, `0` = zero observado.
+2. **`roundDenominated` esclarecido** (`features.catalog.ts`): significa
+   denominador **derivado do conjunto de rounds** — inclui `rounds_played` **e**
+   denominadores derivados como `survivalRounds`. Toda feature round-denominada
+   é `NULL` em `partial_parse`.
+3. **Fórmulas do catálogo sincronizadas com `features.ts`**, incluindo o clamp
+   `[0,1]` realmente aplicado: `min(1, …)` em todas as razões/taxas,
+   `survival_rate = 1 - min(1, deaths / survivalRounds)`,
+   `damage_per_round = min(1, adr / 100)` com `adr = damage_given / rounds_played`,
+   `kast = min(1, kast_percent / 100)`, `rating = min(1, source_rating / 1.6)`
+   com a fórmula composta explícita, `side_balance` com clamp explícito.
+4. **Identidade do parser separada por conceito** (`src/config/pipeline.ts`):
+   `PARSER_NAME` / `PARSER_VERSION` (placeholder, `PARSER_VERSION_CONFIRMED =
+   false`) / revisão de build / `PARSER_CONTRACT_VERSION` nunca se confundem, e
+   nada aqui descreve um worker provisionado.
+5. **Testes numéricos de contrato** (`quality271f.test.ts`, 23 testes sintéticos):
+   valores reais de `survival_rate`, `kills_per_round`, `damage_per_round`,
+   `damage_taken_per_round`, `first_death_rate` + complemento,
+   `trade_participation`, `clutch_frequency`, `multi_kill_rate`, `rating`;
+   determinabilidade de sobrevivência; `partial_parse ⇒ NULL ≠ 0`; regra única de
+   round-end evidence em helper/normalizer/availability; clamp documentado em
+   todas as razões; placeholder do parser não confirmado.
+
+### Verificação
+
+- Vitest: **631/631 PASS** (40 arquivos)
+- `tsgo --noEmit`: **PASS**
+- ESLint: **0 erros**, 8 warnings preexistentes (`react-refresh/only-export-components`)
+- Build: **PASS**
+
+### NOT PROVEN / NÃO INICIADO
+
+- Leitura real de `.dem`: **NOT PROVEN** — nenhum worker; `DEMO_PARSER_URL` /
+  `DEMO_PARSER_TOKEN` inexistentes.
+- E2E real de ingestão: **BLOCKED** pela ausência do parser.
+- FASE 2.7.2 (parser real / worker) e FASE 2.8: **NÃO INICIADAS**.

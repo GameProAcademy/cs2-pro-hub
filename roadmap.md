@@ -464,3 +464,14 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - [ ] FASE 2.7 permanece IN PROGRESS — parser real `.dem` e E2E real NÃO provados (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN)
 - [ ] FASE 2.7.2 (próxima): provisionamento do parser worker e matriz de compatibilidade CS2
 - [ ] FASE 2.8 não iniciada
+
+### FASE 2.7.1F — FINAL SEMANTIC CONTRACT CLEANUP — CLOSED
+
+- `survivalRounds` documentado como denominador de determinabilidade (não `roundsPlayed`).
+- `roundDenominated` = denominador derivado do conjunto de rounds (inclui `survivalRounds`).
+- Fórmulas do catálogo sincronizadas com `features.ts`, com o clamp `[0,1]` explícito.
+- Identidade do parser separada: nome / versão (placeholder não confirmado) / revisão / versão de contrato.
+- 23 novos testes numéricos de contrato (`quality271f.test.ts`).
+- Verificação: 631/631 testes, `tsgo` OK, lint 0 erros (8 warnings preexistentes), build OK.
+- FASE 2.7.1: **CLOSED**. FASE 2.7: **IN PROGRESS** (parser real e E2E `.dem` NOT PROVEN).
+- FASE 2.7.2: próxima. FASE 2.8: não iniciada.
