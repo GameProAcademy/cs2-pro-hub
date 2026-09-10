@@ -128,16 +128,16 @@ describe("critical features match the catalogue arithmetic", () => {
   });
 
   it("trade_participation = min(1, trade_kills / rounds_played)", () => {
-    expect(dim("teamplay", "trade_participation")).toBeCloseTo(clamp(metrics.tradeKills / 4), 5);
+    expect(dim("teamplay", "trade_participation")).toBeCloseTo(clamp(metrics.tradeKills! / 4), 5);
   });
 
   it("clutch_frequency = min(1, clutch_attempts / rounds_played)", () => {
     // An observed zero stays 0 here: the clutch situation count IS observed.
-    expect(dim("clutch", "clutch_frequency")).toBeCloseTo(clamp(metrics.clutchAttempts / 4), 5);
+    expect(dim("clutch", "clutch_frequency")).toBeCloseTo(clamp(metrics.clutchAttempts! / 4), 5);
   });
 
   it("multi_kill_rate = min(1, multi_kills / rounds_played)", () => {
-    expect(dim("clutch", "multi_kill_rate")).toBeCloseTo(clamp(metrics.multiKills / 4), 5);
+    expect(dim("clutch", "multi_kill_rate")).toBeCloseTo(clamp(metrics.multiKills! / 4), 5);
   });
 
   it("rating = min(1, source_rating / 1.6)", () => {
