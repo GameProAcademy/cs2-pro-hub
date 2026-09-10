@@ -221,10 +221,17 @@ export interface CanonicalMetrics {
   availability: MetricsAvailability;
   roundsPlayed: number;
   /**
-   * FASE 2.7.1D — denominator for survival-style rates: the participated round
-   * count when EVERY one of those rounds provably ended and the extraction
-   * covers the whole match. NULL when that coverage is incomplete — a survival
-   * rate over rounds with unknown outcomes would be a fabricated claim.
+   * FASE 2.7.1F — denominator for survival-style rates. It is NOT `roundsPlayed`.
+   *
+   * It counts the rounds where (1) the player provably participated, (2) the
+   * round carries round-end evidence and (3) `playerSurvivedRound()` reaches a
+   * DECISION: `true` = survival proven, `false` = death proven. A round whose
+   * result is `null` (not determinable) is excluded from the denominator — the
+   * absence of a death event is never read as a survival. A round having ENDED
+   * does not by itself make that player's survival determinable.
+   *
+   * NULL (never 0) when the extraction does not cover the whole match or no
+   * participated round is determinable: NULL = unknown, 0 = observed zero.
    */
   survivalRounds: number | null;
   kills: number;
