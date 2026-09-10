@@ -475,9 +475,11 @@ describe("parser contract validation", () => {
     throw new Error("expected assertRawParserOutput to reject");
   }
 
+  // GATE 1E refined the taxonomy: contract/shape failures no longer hide behind
+  // the generic transient PARSER_ERROR.
   it("rejects a wrong contract version", () => {
     const r = rejection({ ...valid(), contract_version: PARSER_CONTRACT_VERSION + 1 });
-    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.code).toBe("PARSER_CONTRACT_MISMATCH");
     expect(r.detail).toContain("contract mismatch");
   });
 
@@ -496,7 +498,7 @@ describe("parser contract validation", () => {
   it("rejects a missing parser identity", () => {
     const { parser: _parser, ...rest } = valid();
     const r = rejection(rest);
-    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.code).toBe("PARSER_INVALID_RESPONSE");
     expect(r.detail).toContain("missing parser identity");
   });
 
@@ -505,7 +507,7 @@ describe("parser contract validation", () => {
       const payload: Record<string, unknown> = { ...valid() };
       delete payload[key];
       const r = rejection(payload);
-      expect(r.code).toBe("PARSER_ERROR");
+      expect(r.code).toBe("PARSER_INVALID_RESPONSE");
       expect(r.detail).toContain(key);
     }
   });

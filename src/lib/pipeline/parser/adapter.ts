@@ -10,6 +10,8 @@ import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/p
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
+import { classifyWorkerFailure } from "./parserEndpoint";
+
 export interface ParseRequest {
   /** Storage path of the demo inside the private demos bucket. */
   storagePath: string;
@@ -59,14 +61,19 @@ export function expectedParserIdentity(): {
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!value || typeof value !== "object")
-    throw new PipelineError("PARSER_ERROR", "empty response");
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "empty response");
   const raw = value as Partial<RawParserOutput>;
 
+  // GATE 1E — APP CONTRACT VERSION == WORKER CONTRACT VERSION. No downgrade,
+  // no fallback, no attempt to interpret an unknown payload.
   if (raw.contract_version !== PARSER_CONTRACT_VERSION) {
-    throw new PipelineError("PARSER_ERROR", `contract mismatch: ${String(raw.contract_version)}`);
+    throw new PipelineError(
+      "PARSER_CONTRACT_MISMATCH",
+      `expected ${PARSER_CONTRACT_VERSION}, got ${String(raw.contract_version)}`,
+    );
   }
   if (!raw.parser?.name || !raw.parser?.version) {
-    throw new PipelineError("PARSER_ERROR", "missing parser identity");
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing parser identity");
   }
   const expected = expectedParserIdentity();
   // An incompatible worker is rejected explicitly instead of being accepted
@@ -87,8 +94,14 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
       `parser revision mismatch: got ${String(raw.parser.revision)}, expected ${expected.revision}`,
     );
   }
+  if (!raw.header || typeof raw.header !== "object") {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing header");
+  }
   if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events)) {
-    throw new PipelineError("PARSER_ERROR", "missing players/rounds/events");
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing players/rounds/events");
+  }
+  if (raw.warnings != null && !Array.isArray(raw.warnings)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "warnings must be an array when present");
   }
   return raw as RawParserOutput;
 }
@@ -100,19 +113,11 @@ function majorMinor(version: string): string {
 
 /**
  * Maps a parser-worker error identifier onto the pipeline error taxonomy.
- * Unknown identifiers are treated as (transient) parser errors.
+ *
+ * GATE 1E — ONE matrix only: this delegates to `classifyWorkerFailure`, which is
+ * the single source of truth for status + `error_code` classification. Unknown
+ * identifiers stay (transient) parser errors.
  */
 export function mapParserErrorCode(code: unknown): PipelineError {
-  switch (String(code)) {
-    case "CORRUPTED_DEMO":
-      return new PipelineError("CORRUPTED_DEMO");
-    case "INVALID_DEMO_FORMAT":
-      return new PipelineError("INVALID_DEMO_FORMAT");
-    case "UNSUPPORTED_DEMO":
-      return new PipelineError("UNSUPPORTED_DEMO");
-    case "TIMEOUT":
-      return new PipelineError("PARSER_TIMEOUT");
-    default:
-      return new PipelineError("PARSER_ERROR", String(code));
-  }
+  return classifyWorkerFailure(500, { error_code: typeof code === "string" ? code : String(code) });
 }

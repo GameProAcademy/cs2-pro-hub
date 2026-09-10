@@ -606,6 +606,22 @@ export const ptBR = {
     "O processamento excedeu o tempo limite e foi interrompido.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
     "O resultado do processamento foi grande demais para ser aceito.",
+  "pipeline.error.PARSER_CONFIG_ERROR":
+    "O serviço de processamento não está configurado corretamente.",
+  "pipeline.error.PARSER_UNAUTHORIZED":
+    "O serviço de processamento recusou a autenticação.",
+  "pipeline.error.PARSER_FORBIDDEN":
+    "O serviço de processamento negou o acesso.",
+  "pipeline.error.PARSER_CONTRACT_MISMATCH":
+    "O serviço de processamento está em uma versão incompatível.",
+  "pipeline.error.PARSER_INVALID_RESPONSE":
+    "O serviço de processamento devolveu uma resposta inválida.",
+  "pipeline.error.PARSER_DOWNLOAD_ERROR":
+    "O serviço de processamento não conseguiu baixar o arquivo.",
+  "pipeline.error.PARSER_HASH_MISMATCH":
+    "O arquivo recebido não corresponde ao arquivo enviado.",
+  "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
+    "O tamanho do arquivo recebido não corresponde ao enviado.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Jobs, qualidade e retenção",

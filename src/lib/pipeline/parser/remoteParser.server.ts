@@ -13,12 +13,14 @@
  * demoparser2, and answers with the `RawParserOutput` contract
  * (`contract_version = PARSER_CONTRACT_VERSION`).
  *
- * Required secrets (absent => the adapter reports itself unavailable and jobs
- * fail with PARSER_UNAVAILABLE instead of pretending to have processed data):
- *   DEMO_PARSER_URL    - https endpoint of the parser worker
- *   DEMO_PARSER_TOKEN  - bearer token the worker verifies
+ * Required secrets (absent/invalid => the adapter reports itself unavailable and
+ * jobs fail with PARSER_CONFIG_ERROR / PARSER_UNAVAILABLE instead of pretending
+ * to have processed data):
+ *   DEMO_PARSER_URL    - FULL https parse endpoint, e.g. .../v1/parse
+ *   DEMO_PARSER_TOKEN  - bearer token the worker verifies (server-side only)
  *
- * See docs/PHASE-2-DEMO-PIPELINE.md for the worker contract.
+ * GATE 1E: the endpoint, the error envelope and the error matrix live in
+ * `./parserEndpoint.ts`; this file only performs the transport.
  */
 import {
   MAX_PARSER_PAYLOAD_BYTES,
@@ -28,18 +30,24 @@ import {
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
+import { assertRawParserOutput, type DemoParserAdapter, type ParseRequest } from "./adapter";
 import {
-  assertRawParserOutput,
-  mapParserErrorCode,
-  type DemoParserAdapter,
-  type ParseRequest,
-} from "./adapter";
+  classifyWorkerFailure,
+  isParserEndpointConfigured,
+  parseWorkerIdentity,
+  resolveParserEndpoints,
+  type ParserWorkerIdentity,
+} from "./parserEndpoint";
 
-function config() {
-  return {
-    url: process.env["DEMO_PARSER_URL"] ?? "",
-    token: process.env["DEMO_PARSER_TOKEN"] ?? "",
-  };
+/** Health/version probe budget: a diagnostic must never block a job for long. */
+const PROBE_TIMEOUT_MS = 10_000;
+
+function rawUrl(): string {
+  return process.env["DEMO_PARSER_URL"] ?? "";
+}
+
+function token(): string {
+  return process.env["DEMO_PARSER_TOKEN"] ?? "";
 }
 
 /**
@@ -87,7 +95,17 @@ function parseJson(text: string): unknown {
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    throw new PipelineError("PARSER_ERROR", "response is not valid JSON");
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "response is not valid JSON");
+  }
+}
+
+/** Reads an error body without ever letting a broken body mask the failure. */
+async function readErrorBody(response: Response): Promise<unknown> {
+  try {
+    return parseJson(await readBoundedText(response, MAX_PARSER_PAYLOAD_BYTES));
+  } catch (error) {
+    if (error instanceof PipelineError && error.code === "PARSER_PAYLOAD_TOO_LARGE") throw error;
+    return null;
   }
 }
 
@@ -95,13 +113,14 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
   id: "demoparser2-remote",
 
   isAvailable() {
-    const { url, token } = config();
-    return url.startsWith("https://") && token.length > 0;
+    return isParserEndpointConfigured(rawUrl()) && token().length > 0;
   },
 
   async parseDemo(request: ParseRequest): Promise<RawParserOutput> {
-    const { url, token } = config();
-    if (!this.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE", "worker not configured");
+    // Configuration is validated FIRST and fails as a configuration error.
+    const endpoints = resolveParserEndpoints(rawUrl());
+    const bearer = token();
+    if (!bearer) throw new PipelineError("PARSER_CONFIG_ERROR", "DEMO_PARSER_TOKEN is not set");
 
     // The transport budget is the smaller of the parser ceiling and whatever is
     // left of the job's absolute deadline.
@@ -112,14 +131,18 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), budget);
+    const startedAt = Date.now();
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(endpoints.parse, {
         method: "POST",
         signal: controller.signal,
+        redirect: "error",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${token}`,
+          authorization: `Bearer ${bearer}`,
+          // Correlation without secrets: upload_id is the minimal job key.
+          "x-correlation-id": request.uploadId,
         },
         body: JSON.stringify({
           contract_version: PARSER_CONTRACT_VERSION,
@@ -131,35 +154,116 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
       });
 
       if (!response.ok) {
-        let code: unknown = `HTTP_${response.status}`;
-        try {
-          // Error bodies are small by contract; the same ceiling still applies.
-          const body = parseJson(await readBoundedText(response, MAX_PARSER_PAYLOAD_BYTES)) as {
-            error_code?: unknown;
-          } | null;
-          if (body?.error_code) code = body.error_code;
-        } catch (error) {
-          if (error instanceof PipelineError && error.code === "PARSER_PAYLOAD_TOO_LARGE")
-            throw error;
-          /* non-JSON error body: keep the HTTP status code */
-        }
-        throw mapParserErrorCode(code);
+        const failure = classifyWorkerFailure(response.status, await readErrorBody(response));
+        // Observability without leaking the token or the signed URL.
+        console.error(
+          `[parser] upload=${request.uploadId} endpoint=${endpoints.origin} status=${response.status} code=${failure.code} elapsed=${Date.now() - startedAt}ms`,
+        );
+        throw failure;
       }
 
-      return assertRawParserOutput(
+      const output = assertRawParserOutput(
         parseJson(await readBoundedText(response, MAX_PARSER_PAYLOAD_BYTES)),
       );
+      console.info(
+        `[parser] upload=${request.uploadId} ok parser=${output.parser.name}@${output.parser.version} revision=${output.parser.revision ?? "unknown"} contract=${output.contract_version} elapsed=${Date.now() - startedAt}ms`,
+      );
+      return output;
     } catch (error) {
       if (error instanceof PipelineError) throw error;
       if (error instanceof Error && error.name === "AbortError") {
-        throw new PipelineError("PARSER_TIMEOUT");
+        throw new PipelineError("PARSER_TIMEOUT", `aborted after ${Date.now() - startedAt}ms`);
       }
-      throw new PipelineError("PARSER_ERROR", error instanceof Error ? error.message : undefined);
+      // Network reset / DNS / TLS: transport failure, never an invalid demo.
+      throw new PipelineError(
+        "PARSER_UNAVAILABLE",
+        error instanceof Error ? error.message : undefined,
+      );
     } finally {
       clearTimeout(timer);
     }
   },
 };
+
+export interface ParserWorkerProbe {
+  endpoint: string;
+  healthy: boolean;
+  healthStatus: number | null;
+  identity: ParserWorkerIdentity | null;
+  error: string | null;
+}
+
+/**
+ * GATE 1E — DIAGNOSTIC PROBE. Answers "is Railway alive, is the expected parser
+ * deployed, is the contract aligned?" WITHOUT parsing a demo. Never called on
+ * the parse hot path, so it adds no latency to a job.
+ */
+export async function probeParserWorker(): Promise<ParserWorkerProbe> {
+  let endpoints;
+  try {
+    endpoints = resolveParserEndpoints(rawUrl());
+  } catch (error) {
+    return {
+      endpoint: "",
+      healthy: false,
+      healthStatus: null,
+      identity: null,
+      error: error instanceof PipelineError ? error.code : "PARSER_CONFIG_ERROR",
+    };
+  }
+
+  const probe = async (url: string): Promise<Response> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    try {
+      return await fetch(url, { method: "GET", signal: controller.signal, redirect: "error" });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  try {
+    const health = await probe(endpoints.health);
+    if (!health.ok) {
+      return {
+        endpoint: endpoints.origin,
+        healthy: false,
+        healthStatus: health.status,
+        identity: null,
+        error: "PARSER_UNAVAILABLE",
+      };
+    }
+    const versionResponse = await probe(endpoints.version);
+    if (!versionResponse.ok) {
+      return {
+        endpoint: endpoints.origin,
+        healthy: true,
+        healthStatus: health.status,
+        identity: null,
+        error: "PARSER_INVALID_RESPONSE",
+      };
+    }
+    const identity = parseWorkerIdentity(
+      parseJson(await readBoundedText(versionResponse, 64 * 1024)),
+    );
+    return {
+      endpoint: endpoints.origin,
+      healthy: true,
+      healthStatus: health.status,
+      identity,
+      error:
+        identity.contractVersion === PARSER_CONTRACT_VERSION ? null : "PARSER_CONTRACT_MISMATCH",
+    };
+  } catch (error) {
+    return {
+      endpoint: endpoints.origin,
+      healthy: false,
+      healthStatus: null,
+      identity: null,
+      error: error instanceof PipelineError ? error.code : "PARSER_UNAVAILABLE",
+    };
+  }
+}
 
 /** Adapter resolution point. Swapping parsers happens only here. */
 export function resolveParserAdapter(): DemoParserAdapter {

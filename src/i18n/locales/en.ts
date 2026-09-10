@@ -595,6 +595,22 @@ export const en: Dictionary = {
     "This demo has too few rounds for a reliable analysis.",
   "pipeline.error.JOB_DEADLINE_EXCEEDED": "Processing exceeded its time budget and was stopped.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE": "The processing result was too large to accept.",
+  "pipeline.error.PARSER_CONFIG_ERROR":
+    "The processing service is not configured correctly.",
+  "pipeline.error.PARSER_UNAUTHORIZED":
+    "The processing service refused authentication.",
+  "pipeline.error.PARSER_FORBIDDEN":
+    "The processing service denied access.",
+  "pipeline.error.PARSER_CONTRACT_MISMATCH":
+    "The processing service runs an incompatible version.",
+  "pipeline.error.PARSER_INVALID_RESPONSE":
+    "The processing service returned an invalid response.",
+  "pipeline.error.PARSER_DOWNLOAD_ERROR":
+    "The processing service could not download the file.",
+  "pipeline.error.PARSER_HASH_MISMATCH":
+    "The received file does not match the uploaded file.",
+  "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
+    "The received file size does not match the upload.",
   "pipeline.error.PROCESSING_ERROR": "Unexpected processing failure.",
   "pipeline.admin.title": "Demo pipeline",
   "pipeline.admin.subtitle": "Jobs, quality and retention",
