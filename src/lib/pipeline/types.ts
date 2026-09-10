@@ -208,7 +208,13 @@ export interface MetricsAvailability {
   economy: boolean;
   /** Every kill event has a trustworthy instant (time_seconds or tick+tickrate). */
   timing: boolean;
+  /**
+   * The extraction covers the whole match. FALSE on a partial parse, which makes
+   * whole-match rates (rating, KAST) unknown instead of understated.
+   */
+  completeCoverage: boolean;
 }
+
 
 export interface CanonicalMetrics {
   steamId: string;
