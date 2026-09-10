@@ -132,7 +132,6 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   return raw as RawParserOutput;
 }
 
-
 /**
  * Maps a parser-worker error identifier onto the pipeline error taxonomy.
  *

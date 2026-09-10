@@ -153,15 +153,15 @@ describe("GATE 1E.1 — revision lock", () => {
   });
 
   it("refuses to run locked without a pinned revision (configuration error)", () => {
-    expect(
-      thrown(() => assertParserIdentity(worker(), { ...expected(), revision: null })),
-    ).toBe("PARSER_CONFIG_ERROR");
+    expect(thrown(() => assertParserIdentity(worker(), { ...expected(), revision: null }))).toBe(
+      "PARSER_CONFIG_ERROR",
+    );
   });
 
   it("still rejects a contract mismatch from /version", () => {
-    expect(
-      thrown(() => assertParserIdentity(worker({ contractVersion: 2 }), expected())),
-    ).toBe("PARSER_CONTRACT_MISMATCH");
+    expect(thrown(() => assertParserIdentity(worker({ contractVersion: 2 }), expected()))).toBe(
+      "PARSER_CONTRACT_MISMATCH",
+    );
   });
 
   it("allows an unpinned revision only when the lock is not required", () => {

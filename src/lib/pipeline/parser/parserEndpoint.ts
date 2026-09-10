@@ -256,7 +256,12 @@ export interface ExpectedParserIdentity {
  *   - the worker speaks another contract     -> PARSER_CONTRACT_MISMATCH
  */
 export function assertParserIdentity(
-  worker: { name: string; version: string; revision: string | null; contractVersion?: number | null },
+  worker: {
+    name: string;
+    version: string;
+    revision: string | null;
+    contractVersion?: number | null;
+  },
   expected: ExpectedParserIdentity,
 ): void {
   if (expected.revisionRequired && !expected.revision) {
