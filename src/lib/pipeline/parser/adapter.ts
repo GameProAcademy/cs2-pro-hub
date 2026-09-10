@@ -18,7 +18,14 @@ export interface ParseRequest {
   uploadId: string;
   fileSize: number;
   demoSha256: string | null;
+  /**
+   * FASE 2.7 — REAL DEADLINE. Absolute epoch-ms budget for the whole job. The
+   * transport never waits past it, so a slow worker cannot hold the job (and the
+   * concurrency slot) beyond the configured ceiling.
+   */
+  deadlineAt?: number;
 }
+
 
 export interface DemoParserAdapter {
   readonly id: string;
