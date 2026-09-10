@@ -278,7 +278,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         );
       }
       if (resolved.candidate && canConvergeCrossSource(resolved.decision)) {
-        attachMatchId = resolved.candidate.canonicalMatchId;
+        attachMatchId = resolved.candidate.canonicalMatchId ?? null;
       }
     } catch (error) {
       if (error instanceof PipelineError) throw error;
