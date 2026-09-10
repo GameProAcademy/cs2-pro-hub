@@ -143,17 +143,25 @@ export function extractFeatures(
       map_spread: null,
     },
     utility: {
-      utility_damage_per_round: hasUtility ? perRound(metrics.utilityDamage, rounds, 12) : null,
-      flash_assists_per_round: hasUtility ? perRound(metrics.flashAssists, rounds, 0.4) : null,
-      enemies_flashed_per_round: hasUtility ? perRound(metrics.enemiesFlashed, rounds, 1.2) : null,
-      grenades_per_round: hasUtility ? perRound(metrics.grenadesUsed, rounds, 2.5) : null,
+      utility_damage_per_round: hasUtility
+        ? perRound(metrics.utilityDamage, perRoundDenominator, 12)
+        : null,
+      flash_assists_per_round: hasUtility
+        ? perRound(metrics.flashAssists, perRoundDenominator, 0.4)
+        : null,
+      enemies_flashed_per_round: hasUtility
+        ? perRound(metrics.enemiesFlashed, perRoundDenominator, 1.2)
+        : null,
+      grenades_per_round: hasUtility
+        ? perRound(metrics.grenadesUsed, perRoundDenominator, 2.5)
+        : null,
     },
     decision_making: {
       kast: metrics.kast == null ? null : clamp01(metrics.kast / 100),
       // Round-denominated, so it is NOT the complement of early_death_rate.
       early_death_free_rate: gate(
         hasKills && hasTiming,
-        complement(ratio(metrics.earlyDeaths, rounds)),
+        complement(ratio(metrics.earlyDeaths, matchRounds)),
       ),
       opening_discipline: gate(hasKills, ratio(metrics.firstKills, metrics.openingAttempts)),
       early_window_seconds: EARLY_DEATH_SECONDS,
