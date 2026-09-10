@@ -228,19 +228,58 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
       kill.flashAssister = flashAssisterFor(kill);
       return kill;
     })
-    .sort(
-      (a, b) =>
-        a.round - b.round ||
-        (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY),
-    );
+    // Unknown timing is NOT late timing: a kill without a trustworthy instant
+    // must never be pushed to the end of the round as if it happened last.
+    // Ordering is therefore only by round here; every time-sensitive derivation
+    // (opening, trades, KAST) compares instants explicitly and refuses unknowns.
+    .sort((a, b) => a.round - b.round);
 }
 
-/** Opening duel of a round: the chronologically first kill. */
-export function openingDuels(kills: KillRecord[]) {
-  const byRound = new Map<number, KillRecord>();
-  for (const kill of kills) if (!byRound.has(kill.round)) byRound.set(kill.round, kill);
-  return byRound;
+/**
+ * Opening duel of a round: the chronologically first kill.
+ *
+ * A round only contributes when the ordering of its kills is DETERMINABLE:
+ * every kill in the round has a known instant and the earliest instant is
+ * unique. Rounds with an unknown instant or a tie are ambiguous and are
+ * excluded from the opening sample — they are never resolved by event order.
+ * Ambiguity in one round never invalidates the determinable rounds.
+ */
+export function openingDuels(kills: KillRecord[]): {
+  openings: Map<number, KillRecord>;
+  determinableRounds: Set<number>;
+  ambiguousRounds: Set<number>;
+} {
+  const byRound = new Map<number, KillRecord[]>();
+  for (const kill of kills) {
+    const list = byRound.get(kill.round);
+    if (list) list.push(kill);
+    else byRound.set(kill.round, [kill]);
+  }
+
+  const openings = new Map<number, KillRecord>();
+  const determinableRounds = new Set<number>();
+  const ambiguousRounds = new Set<number>();
+
+  for (const [roundNumber, list] of byRound) {
+    if (list.length === 0) continue;
+    if (list.some((k) => k.time == null)) {
+      ambiguousRounds.add(roundNumber);
+      continue;
+    }
+    let earliest = list[0]!;
+    for (const kill of list) if (kill.time! < earliest.time!) earliest = kill;
+    const tied = list.filter((kill) => kill.time === earliest.time).length;
+    if (tied > 1) {
+      ambiguousRounds.add(roundNumber);
+      continue;
+    }
+    determinableRounds.add(roundNumber);
+    openings.set(roundNumber, earliest);
+  }
+
+  return { openings, determinableRounds, ambiguousRounds };
 }
+
 
 /**
  * True when `death` was traded within the configured window.
