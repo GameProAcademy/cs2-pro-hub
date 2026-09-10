@@ -164,9 +164,23 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
   await db.from("uploads").update({ status: "processing" }).eq("id", job.upload_id);
 
+  // FASE 2.7.1C — REAL GLOBAL DEADLINE. One absolute budget for the WHOLE job,
+  // derived from the stale threshold and starting at job entry, so no stage
+  // (storage lookup, streamed hashing, signed URL, parser, normalization,
+  // persistence, projection) can hold the single concurrency slot until the
+  // stale sweeper has to rescue it. It is checked BEFORE each expensive step
+  // and between stages. Neither the Storage SDK nor the parser contract exposes
+  // an AbortSignal, so an already-started call is not cancelled mid-flight: the
+  // budget is enforced at every boundary instead.
+  const deadlineAt = startedAt + JOB_STALE_MINUTES * 60_000;
+  const assertDeadline = () => {
+    if (Date.now() > deadlineAt) throw new PipelineError("JOB_DEADLINE_EXCEEDED");
+  };
+
   try {
     if (!job.storage_path) throw new PipelineError("DEMO_NOT_FOUND", "missing storage path");
 
+    assertDeadline();
     const stored = await demoExists(job.storage_path);
     if (!stored) throw new PipelineError("DEMO_NOT_FOUND");
     validateDemoFile(job.storage_path, stored.size || (job.file_size ?? 0));
@@ -175,23 +189,19 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     // recomputes SHA-256 from the stored bytes and refuses a divergent file.
     // Streamed hashing: the file is never loaded into memory as a whole.
     if (job.demo_sha256) {
+      assertDeadline();
       const actual = await computeStoredDemoSha256(job.storage_path);
+      assertDeadline();
       assertDemoIntegrity(actual, job.demo_sha256);
     }
 
     const adapter = resolveParserAdapter();
     if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
 
-    // FASE 2.7 — REAL DEADLINE. One absolute budget for the whole job, derived
-    // from the stale threshold, so a job can never hold the single concurrency
-    // slot until the stale sweeper has to rescue it.
-    const deadlineAt = startedAt + JOB_STALE_MINUTES * 60_000;
-    const assertDeadline = () => {
-      if (Date.now() > deadlineAt) throw new PipelineError("JOB_DEADLINE_EXCEEDED");
-    };
-
     await setStage(jobId, "parsing");
+    assertDeadline();
     const signedUrl = await createDemoSignedUrl(job.storage_path);
+    assertDeadline();
     const raw = await adapter.parseDemo({
       storagePath: job.storage_path,
       signedUrl,
@@ -203,6 +213,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
     await setStage(jobId, "normalizing");
     assertDeadline();
+
     const match = normalizeParserOutput(raw);
     validateCanonicalMatch(match);
 
