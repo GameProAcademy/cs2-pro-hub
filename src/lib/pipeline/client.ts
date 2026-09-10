@@ -13,7 +13,7 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
-import { uploadDemoResumably } from "@/lib/pipeline/resumableUpload";
+import { uploadDemoResumably, type ResumableUploadOptions } from "@/lib/pipeline/resumableUpload";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -43,6 +43,28 @@ export interface SubmitDemoOptions {
   onProgress?: (progress: DemoUploadProgress) => void;
 }
 
+export interface SubmitDemoDependencies {
+  hash(file: Blob): Promise<string>;
+  create(input: { data: { fileName: string; fileSize: number; demoSha256: string } }): Promise<{
+    uploadId: string;
+    storagePath: string;
+    duplicate: boolean;
+    duplicateStatus: "processed" | "pending" | "failed" | null;
+    existingJobId: string | null;
+  }>;
+  upload(file: File, storagePath: string, options: ResumableUploadOptions): Promise<void>;
+  enqueue(input: { data: { uploadId: string } }): Promise<{ jobId: string }>;
+}
+
+const submitDemoDependencies: SubmitDemoDependencies = {
+  hash: sha256Hex,
+  create: createDemoUpload,
+  upload: async (file, storagePath, options) => {
+    await uploadDemoResumably(file, storagePath, options);
+  },
+  enqueue: enqueueDemoJob,
+};
+
 /**
  * FASE 2.7 — chunked hashing. `file.arrayBuffer()` would materialise up to
  * 1.5 GB in the tab and crash on exactly the demos this pipeline targets, so the
@@ -63,12 +85,21 @@ export async function submitDemo(
   file: File,
   options: SubmitDemoOptions = {},
 ): Promise<{ jobId: string | null; duplicate: boolean }> {
+  return submitDemoWithDependencies(file, options, submitDemoDependencies);
+}
+
+/** Testable orchestration seam; production always uses the dependencies above. */
+export async function submitDemoWithDependencies(
+  file: File,
+  options: SubmitDemoOptions,
+  dependencies: SubmitDemoDependencies,
+): Promise<{ jobId: string | null; duplicate: boolean }> {
   precheckDemo(file);
   options.onProgress?.({ state: "hashing", bytesSent: 0, bytesTotal: file.size, percent: 0 });
-  const demoSha256 = await sha256Hex(file);
+  const demoSha256 = await dependencies.hash(file);
 
   options.onProgress?.({ state: "registering", bytesSent: 0, bytesTotal: file.size, percent: 0 });
-  const slot = await createDemoUpload({
+  const slot = await dependencies.create({
     data: { fileName: file.name, fileSize: file.size, demoSha256 },
   });
 
@@ -85,7 +116,7 @@ export async function submitDemo(
   }
 
   try {
-    await uploadDemoResumably(file, slot.storagePath, {
+    await dependencies.upload(file, slot.storagePath, {
       ...(options.signal ? { signal: options.signal } : {}),
       onProgress: ({ bytesSent, bytesTotal }) =>
         options.onProgress?.({
@@ -99,7 +130,7 @@ export async function submitDemo(
     throw new DemoUploadError("STORAGE_ERROR");
   }
 
-  const job = await enqueueDemoJob({ data: { uploadId: slot.uploadId } });
+  const job = await dependencies.enqueue({ data: { uploadId: slot.uploadId } });
   options.onProgress?.({
     state: "completed",
     bytesSent: file.size,

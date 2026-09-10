@@ -469,13 +469,12 @@ e razões cujo denominador é ele mesmo uma contagem observada (`hs_rate`, `trad
 `kd_balance`, `clutch_win_rate`, `opening_discipline`, `flash_assist_share`). Descartá-los seria
 desonesto na direção oposta.
 
-### 3. Versão do parser — placeholder explícito (DOCUMENTED)
+### 3. Versão do parser — histórico da 2.7.1D (SUPERSEDED PELO GATE 1D)
 
-`PARSER_VERSION = "0.31.4"` nunca foi verificada contra um build público real. Continua sendo
-apenas o valor ESPERADO na checagem de identidade do worker (sobrescrevível por
-`DEMO_PARSER_EXPECTED_VERSION`) e agora vem acompanhada de `PARSER_VERSION_CONFIRMED = false`.
-`PARSER_CONTRACT_VERSION` é um conceito SEPARADO (formato de saída) e permanece inalterado.
-Escolher e fixar a versão real do parser é escopo da FASE 2.7.2.
+Na 2.7.1D, `0.31.4` era um placeholder não confirmado. O Gate 1D posterior o
+substituiu pela versão real selecionada `0.42.0` e marcou
+`PARSER_VERSION_CONFIRMED = true`. `PARSER_CONTRACT_VERSION` continua sendo um
+conceito SEPARADO (formato de saída) e permanece em `1`.
 
 ### 4. Testes
 
@@ -681,9 +680,11 @@ dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
   `demoparser2`, versão `0.42.0`, contrato `1`. Revision continua server-side e
   configurável; como `/version` não respondeu no domínio informado, seu valor
   efetivo não foi assumido.
-- `DEMO_PARSER_URL`, `DEMO_PARSER_EXPECTED_NAME` e
-  `DEMO_PARSER_EXPECTED_VERSION` foram cadastradas no ambiente. O bearer
-  `DEMO_PARSER_TOKEN` e `DEMO_PARSER_EXPECTED_REVISION` permanecem
-  **CONFIGURATION REQUIRED**.
+- `DEMO_PARSER_URL`, `DEMO_PARSER_TOKEN`, `DEMO_PARSER_EXPECTED_NAME` e
+  `DEMO_PARSER_EXPECTED_VERSION` foram cadastradas no ambiente. Somente
+  `DEMO_PARSER_EXPECTED_REVISION` permanece **CONFIGURATION REQUIRED**.
 - **Real E2E: NOT YET PROVEN. Real `.dem` parsing: NOT YET PROVEN.** Nenhuma demo
   real foi enviada ou processada neste Gate.
+- **Gate 1D: BLOCKED para PASS total.** O código e os testes locais estão
+  concluídos, porém a revision efetiva e a conectividade do domínio informado
+  não puderam ser confirmadas sem executar o E2E reservado ao próximo Gate.

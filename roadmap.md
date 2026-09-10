@@ -374,13 +374,9 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       em `matches.demo_metadata` para linhagem).
 - [x] 500/500 testes, typecheck limpo, lint sem erros, build OK. Nenhuma
       migration, política, grant ou rotina de banco alterada.
-- [ ] **BLOCKED (P1) — parser real não provisionado**: ler `.dem` de CS2 exige
-      parser nativo e CPU longa, impossível no runtime edge da aplicação. O
-      contrato do worker externo existe, mas `DEMO_PARSER_URL` e
-      `DEMO_PARSER_TOKEN` não estão cadastrados; sem eles o job falha com
-      `PARSER_UNAVAILABLE`. GATES 02, 03 e os gates que exigem arquivo real
-      (01 completo, 05 parcial, 08, 14–19 sobre demo, 22–24 do caminho demo)
-      permanecem BLOCKED / NOT_PROVEN — nunca PASS.
+- [x] **Worker externo configurado no app**: o parser nativo permanece fora do
+      runtime edge; URL HTTPS e token server-only foram cadastrados no Gate 1D.
+      A conectividade e o processamento de `.dem` real seguem NOT PROVEN.
 - [ ] Pendência de infraestrutura: agendamento externo de `/api/public/pipeline-cron`.
 - [x] **Hardening P1–P2 (rodada 2)**: resolver canônico ligado ao caminho demo
       (descoberta neutra + `canConvergeCrossSource`), fingerprint separado da
@@ -410,9 +406,8 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       ambiente.
 - [x] Documento da fase: `docs/PHASE-2.7-REAL-DEMO-INGESTION-AND-CANONICAL-ANALYTICS.md`.
 
-**FASE 2.7 — IN PROGRESS / HARDENING CORRECTIONS COMPLETED.** Não fechada: parser
-real ainda não provisionado, nenhum `.dem` real ingerido, FASE 2.8 não iniciada.
-Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
+**FASE 2.7 — IN PROGRESS / HARDENING CORRECTIONS COMPLETED.** Não fechada: nenhum
+`.dem` real ingerido, FASE 2.8 não iniciada. Próximo passo: E2E real do worker.
 
 - [x] **FASE 2.7.1 — métricas quality-aware (rodada 4)**: classe de evidência
       definida uma única vez em `src/lib/pipeline/evidence.ts` (normalizer e
@@ -442,14 +437,14 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - [x] `completeCoverage` na matriz de disponibilidade (parse parcial nunca é cobertura completa)
 - [x] Projeção do demo em UMA transação (`persist_demo_projection`, service_role only) — rollback real NÃO provado em runtime (nenhuma partida canônica no banco)
 - [x] Deadline global desde a entrada do job, checado antes de storage, hash, signed URL, parser, persistência e projeção
-- [ ] Parser real `.dem` (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN inexistentes)
+- [ ] Parser real `.dem` (worker configurado; E2E ainda NOT PROVEN)
 - [ ] FASE 2.8 não iniciada
 
 ## FASE 2.7.1D
 - [x] `survival_rate` exige round-end evidence em TODOS os rounds do denominador (`metrics.survivalRounds`); cobertura incompleta = NULL, nunca parcial nem 0
 - [x] `roundHasEndEvidence()` como definição única, reutilizada por `playerSurvivedRound()`
 - [x] Parse parcial: taxas com denominador de rounds ficam NULL; contadores observados e razões sobre contagens observadas permanecem
-- [x] `PARSER_VERSION` marcada como placeholder não confirmado (`PARSER_VERSION_CONFIRMED = false`); contrato do parser inalterado
+- [x] Registro histórico: a versão era placeholder nessa rodada; o Gate 1D depois confirmou `0.42.0`. Contrato inalterado.
 - [x] `quality271d.test.ts` (fixtures sintéticas). 587/587 testes, tsgo e lint OK
 ## FASE 2.7.1E
 - [x] `src/lib/pipeline/roundEvidence.ts`: a ÚNICA definição de round-end evidence
@@ -461,8 +456,8 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - [x] `features.catalog.ts` sincronizado: `denominator` + `roundDenominated` por feature,
       `survival_rate` documentada contra `survivalRounds`.
 - [x] `quality271e.test.ts` (21 testes sintéticos). Rodada: 608/608 testes, tsgo e lint OK.
-- [ ] FASE 2.7 permanece IN PROGRESS — parser real `.dem` e E2E real NÃO provados (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN)
-- [ ] FASE 2.7.2 (próxima): provisionamento do parser worker e matriz de compatibilidade CS2
+- [ ] FASE 2.7 permanece IN PROGRESS — parser real `.dem` e E2E real NÃO provados
+- [ ] FASE 2.7.2 (próxima): matriz de compatibilidade CS2 e E2E real
 - [ ] FASE 2.8 não iniciada
 
 ### FASE 2.7.1F — FINAL SEMANTIC CONTRACT CLEANUP — CLOSED
@@ -470,7 +465,7 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - `survivalRounds` documentado como denominador de determinabilidade (não `roundsPlayed`).
 - `roundDenominated` = denominador derivado do conjunto de rounds (inclui `survivalRounds`).
 - Fórmulas do catálogo sincronizadas com `features.ts`, com o clamp `[0,1]` explícito.
-- Identidade do parser separada: nome / versão (placeholder não confirmado) / revisão / versão de contrato.
+- Identidade do parser separada: nome / versão / revisão / versão de contrato (a versão foi confirmada no Gate 1D posterior).
 - 23 novos testes numéricos de contrato (`quality271f.test.ts`).
 - Verificação: 631/631 testes, `tsgo` OK, lint 0 erros (8 warnings preexistentes), build OK.
 - FASE 2.7.1: **CLOSED**. FASE 2.7: **IN PROGRESS** (parser real e E2E `.dem` NOT PROVEN).
@@ -483,9 +478,8 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
       parser identity PASS; catálogo PASS nas features com prova numérica e
       NOT PROVEN nas demais (dívida de cobertura, sem divergência de comportamento).
 - [x] Rodada de verificação: 631/631 testes.
-- [ ] GATES 1–N (parser real, revision pinada, matriz CS2, worker, E2E `.dem`, idempotência):
-      **BLOCKED** — `demoparser2` é nativo e exige worker HTTP externo;
-      `DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` não existem e não podem ser provisionados daqui.
+- [ ] GATES posteriores (revision pinada, matriz CS2, E2E `.dem`, idempotência):
+      **NOT PROVEN** — o worker foi configurado no Gate 1D, sem executar demo real.
 - [ ] FASE 2.7 permanece IN PROGRESS. FASE 2.8 não iniciada.
 
 ### FASE 2.7.2 — GATE 1D
@@ -498,7 +492,10 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
       reenvia o arquivo.
 - [x] Parser esperado atualizado para `demoparser2 0.42.0`, contrato 1; revision
       permanece configurável e não foi inventada.
-- [x] URL/identidade server-only configuradas; `DEMO_PARSER_TOKEN` e revision real
-      continuam **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
+- [x] URL/identidade e `DEMO_PARSER_TOKEN` configurados server-only; revision real
+      continua **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
       verificação pública, portanto conectividade do worker está **NOT PROVEN**.
 - [ ] E2E real e parse de `.dem` real: **NOT PROVEN**, reservados ao próximo Gate.
+- **Estado do Gate 1D: BLOCKED** para fechamento total: implementação e testes
+  locais passaram, mas revision e conectividade efetiva do domínio não foram
+  comprovadas; nenhuma demo real foi processada por determinação deste Gate.

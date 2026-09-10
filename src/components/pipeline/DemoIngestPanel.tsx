@@ -124,12 +124,11 @@ export function DemoIngestPanel() {
             <Loader2 className="size-4 animate-spin" aria-hidden />
             {t("pipeline.uploading")} {uploadPercent > 0 ? `${uploadPercent}%` : ""}
           </p>
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-[width]"
-              style={{ width: `${uploadPercent}%` }}
-            />
-          </div>
+          <progress
+            className="h-1.5 w-full overflow-hidden rounded-full accent-primary"
+            value={uploadPercent}
+            max={100}
+          />
         </div>
       ) : null}
 

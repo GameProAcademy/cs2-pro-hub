@@ -79,9 +79,9 @@ export async function uploadDemoResumably(
     });
 
     const onAbort = () => {
-      void upload.abort(false).finally(() =>
-        finish("reject", new DOMException("Upload aborted", "AbortError")),
-      );
+      void upload
+        .abort(false)
+        .finally(() => finish("reject", new DOMException("Upload aborted", "AbortError")));
     };
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
