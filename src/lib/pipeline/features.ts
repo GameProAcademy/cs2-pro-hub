@@ -45,9 +45,10 @@ function perRound(total: number | null, rounds: number, reference: number): numb
 export const FEATURES_CATALOG_VERSION = FEATURES_VERSION;
 
 export function extractFeatures(
-  match: CanonicalMatch,
+  _match: CanonicalMatch,
   metrics: CanonicalMetrics,
 ): CanonicalFeatures {
+
   const rounds = metrics.roundsPlayed;
   const deaths = metrics.deaths;
   /**
