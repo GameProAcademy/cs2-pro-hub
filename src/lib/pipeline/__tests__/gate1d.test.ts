@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
-import { DemoUploadError, precheckDemo } from "@/lib/pipeline/client";
+import {
+  DemoUploadError,
+  precheckDemo,
+  submitDemoWithDependencies,
+  type SubmitDemoDependencies,
+} from "@/lib/pipeline/client";
 import { assertRawParserOutput, expectedParserIdentity } from "@/lib/pipeline/parser/adapter";
 import { resumableStorageEndpoint, TUS_CHUNK_BYTES } from "@/lib/pipeline/resumableUpload";
 
@@ -27,6 +32,75 @@ describe("Gate 1D upload boundaries", () => {
     );
     expect(TUS_CHUNK_BYTES).toBe(6 * 1024 * 1024);
     expect(() => resumableStorageEndpoint("http://example.supabase.co")).toThrow("STORAGE_ERROR");
+  });
+
+  function flow(overrides: Partial<SubmitDemoDependencies> = {}) {
+    const calls: string[] = [];
+    const dependencies: SubmitDemoDependencies = {
+      hash: async () => {
+        calls.push("hash");
+        return "a".repeat(64);
+      },
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: false,
+          duplicateStatus: null,
+          existingJobId: null,
+        };
+      },
+      upload: async () => {
+        calls.push("upload");
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        return { jobId: "job-id" };
+      },
+      ...overrides,
+    };
+    return { calls, dependencies };
+  }
+
+  it("orders hash, registration, completed TUS upload, then enqueue", async () => {
+    const { calls, dependencies } = flow();
+    await submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies);
+    expect(calls).toEqual(["hash", "create", "upload", "enqueue"]);
+  });
+
+  it("does not enqueue after upload failure or cancellation", async () => {
+    for (const error of [new Error("network"), new DOMException("cancelled", "AbortError")]) {
+      const { calls, dependencies } = flow({
+        upload: async () => {
+          calls.push("upload");
+          throw error;
+        },
+      });
+      await expect(
+        submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+      ).rejects.toThrow("STORAGE_ERROR");
+      expect(calls).toEqual(["hash", "create", "upload"]);
+    }
+  });
+
+  it("does not upload or enqueue an already processed duplicate", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: true,
+          duplicateStatus: "processed",
+          existingJobId: "existing-job",
+        };
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).resolves.toEqual({ jobId: "existing-job", duplicate: true });
+    expect(calls).toEqual(["hash", "create"]);
   });
 });
 
