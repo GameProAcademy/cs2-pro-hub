@@ -35,7 +35,6 @@ import {
   hasKillEvidence,
   hasUtilityEvidence,
   isUtilityEvent,
-  UTILITY_DAMAGE_EVENT_TYPES,
 } from "@/lib/pipeline/evidence";
 import type {
   CanonicalEvent,
@@ -402,8 +401,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
   // Utility usage uses the SHARED evidence classification, so "which events are
   // utility" is defined in exactly one place for quality flags, availability and
-  // counters. UTILITY_DAMAGE_EVENT_TYPES documents which of them can hurt.
-  void UTILITY_DAMAGE_EVENT_TYPES;
+  // counters.
   const grenadesUsed = match.events.filter(
     (e) => isUtilityEvent(e) && e.actorSteamId === steamId,
   ).length;
