@@ -688,3 +688,77 @@ dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
 - **Gate 1D: BLOCKED para PASS total.** O código e os testes locais estão
   concluídos, porém a revision efetiva e a conectividade do domínio informado
   não puderam ser confirmadas sem executar o E2E reservado ao próximo Gate.
+
+## FASE 2.7.2 — GATE 1E — APP ↔ WORKER CONTRACT ALIGNMENT
+
+Escopo: apenas transporte e contrato entre o app e o worker de parsing. Nada de
+engine canônico, Identity Graph, FACEIT, Gamers Club, Steam, resolver, schema,
+métricas, catálogo, evidência, RLS, denominadores ou semântica `NULL ≠ ZERO`.
+
+### Endpoint único e validado
+
+`src/lib/pipeline/parser/parserEndpoint.ts` é a ÚNICA fonte de verdade:
+
+- `DEMO_PARSER_URL` deve ser o endpoint COMPLETO `https://<host>/v1/parse`.
+- HTTPS obrigatório; `http://` e URLs malformadas são rejeitadas.
+- Nenhuma concatenação de caminho: uma URL sem `/v1/parse` falha em
+  `PARSER_CONFIG_ERROR` (permanente) em vez de "consertar" a configuração.
+- `/health` e `/version` são derivados da MESMA origem, apenas para diagnóstico.
+
+### Contrato de requisição (`POST /v1/parse`)
+
+```json
+{
+  "contract_version": 1,
+  "upload_id": "<uuid>",
+  "demo_url": "<signed url>",
+  "demo_sha256": "<64 hex>",
+  "file_size": 123
+}
+```
+
+Token via header `Authorization: Bearer <DEMO_PARSER_TOKEN>` — server-side,
+nunca na URL, nunca no corpo, nunca em log.
+
+### Envelope de erro do worker (FastAPI)
+
+```json
+{ "detail": { "error_code": "...", "message": "..." } }
+```
+
+O formato plano `{ "error_code": ... }` continua aceito por compatibilidade.
+
+### Matriz de classificação (uma única matriz)
+
+| Origem | Código do pipeline | Permanente |
+| --- | --- | --- |
+| 401 | `PARSER_UNAUTHORIZED` | sim |
+| 403 | `PARSER_FORBIDDEN` | sim |
+| 409 / `CONTRACT_MISMATCH` | `PARSER_CONTRACT_MISMATCH` | sim |
+| 413 | `DEMO_TOO_LARGE` | sim |
+| 408 / 504 / abort | `PARSER_TIMEOUT` | não |
+| 502 / 503 / falha de rede | `PARSER_UNAVAILABLE` | não |
+| `INVALID_DEMO_FORMAT` / `CORRUPTED_DEMO` / `UNSUPPORTED_DEMO` | idem | sim |
+| `HASH_MISMATCH` | `PARSER_HASH_MISMATCH` | sim |
+| `FILE_SIZE_MISMATCH` | `PARSER_FILE_SIZE_MISMATCH` | sim |
+| `DOWNLOAD_ERROR` | `PARSER_DOWNLOAD_ERROR` | não |
+| corpo não-JSON / estrutura inválida | `PARSER_INVALID_RESPONSE` | sim |
+| 5xx genérico | `PARSER_ERROR` | não |
+
+Falha de transporte NUNCA é classificada como demo inválida.
+`mapParserErrorCode()` delega a `classifyWorkerFailure()`: matriz única.
+
+### Diagnóstico
+
+`getAdminParserWorkerStatus` (master-only) consulta `/health` e `/version` e
+compara identidade do parser e `contract_version`. Não faz parte do caminho de
+parsing e não devolve token nem URL assinada.
+
+### Status do gate
+
+GATE 1E permanece **BLOCKED** na verificação externa: em
+`https://cs2-demo-parser-production.up.railway.app/health` e `/version` o
+Railway responde `HTTP 404 {"status":"error","code":404,"message":"Application
+not found"}`. Logo o deployment/revision do worker NÃO pode ser provado, e o
+E2E real com `.dem` continua não provado. Todo o lado app do contrato está
+implementado e testado (42 testes em `src/lib/pipeline/__tests__/gate1e.test.ts`).
