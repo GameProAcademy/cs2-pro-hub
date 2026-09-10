@@ -10,7 +10,11 @@ import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/p
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
-import { classifyWorkerFailure } from "./parserEndpoint";
+import {
+  assertParserIdentity,
+  classifyWorkerFailure,
+  type ExpectedParserIdentity,
+} from "./parserEndpoint";
 
 export interface ParseRequest {
   /** Storage path of the demo inside the private demos bucket. */
