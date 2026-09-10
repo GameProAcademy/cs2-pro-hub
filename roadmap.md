@@ -390,4 +390,26 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       stream, SHA-256 incremental no cliente, política de demo curta
       (`DEMO_INSUFFICIENT_SAMPLE`), deadline absoluto do job
       (`JOB_DEADLINE_EXCEEDED`) e single writer preservado. 515/515 testes.
+- [x] **FASE 2.7.1 — attach de demo corrigido (rodada 3)**: migration aplicada —
+      `canonical_attach_source()` aceita `external_match_id` **ou** `fingerprint`
+      (os dois ausentes continuam inválidos), reserva com chave determinística e
+      advisory lock, nunca reaponta uma observação já anexada, e
+      `persist_canonical_observation_attached()` mantém attach + persistência na
+      mesma transação. FACEIT inalterado. Provado contra o banco real em transação
+      abortada: fingerprint attach, idempotência, `CANONICAL_ATTACH_CONFLICT`,
+      `CANONICAL_ATTACH_INVALID` e caminho FACEIT.
+- [x] **Isolamento da projeção**: campos player-scoped só são escritos quando a
+      projeção não tem dono ou pertence ao mesmo jogador (`projectionUpdate()`).
+- [x] **Utility zero corrigido**: disponibilidade vem da classe de evidência
+      (`availability.utilityEvents`), não dos contadores do jogador — zero
+      observado é `0`, ausência de evidência é `null`.
+- [x] Testes: `hardening271.test.ts` (A–O, assertions concretas) + H8/H9
+      reforçados. 539/539 testes, typecheck (tsgo), lint e build OK.
+- [ ] **NOT PROVEN**: atomicidade attach+persistência verificada estruturalmente,
+      não provada em runtime; concorrência real de attach não provada neste
+      ambiente.
 - [x] Documento da fase: `docs/PHASE-2.7-REAL-DEMO-INGESTION-AND-CANONICAL-ANALYTICS.md`.
+
+**FASE 2.7 — IN PROGRESS / HARDENING CORRECTIONS COMPLETED.** Não fechada: parser
+real ainda não provisionado, nenhum `.dem` real ingerido, FASE 2.8 não iniciada.
+Próximo passo: FASE 2.7.2 — provisionamento do parser worker.

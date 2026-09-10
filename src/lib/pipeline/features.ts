@@ -45,13 +45,21 @@ function perRound(total: number | null, rounds: number, reference: number): numb
 export const FEATURES_CATALOG_VERSION = FEATURES_VERSION;
 
 export function extractFeatures(
-  match: CanonicalMatch,
+  _match: CanonicalMatch,
   metrics: CanonicalMetrics,
 ): CanonicalFeatures {
   const rounds = metrics.roundsPlayed;
   const deaths = metrics.deaths;
-  const hasEconomy = match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0);
-  const hasUtility = (metrics.grenadesUsed ?? 0) > 0 || (metrics.enemiesFlashed ?? 0) > 0;
+  /**
+   * FASE 2.7.1 — EVIDENCE AVAILABILITY, NOT PLAYER ACTIVITY.
+   *
+   * `hasUtility` must answer "did the observation contain the utility event
+   * class?", never "did this player throw anything?". Deriving it from the
+   * player's own counters turned an observed ZERO ("the demo has utility events
+   * and this player threw none") into NULL, which is a different claim.
+   */
+  const hasEconomy = metrics.availability.economy;
+  const hasUtility = metrics.availability.utilityEvents;
 
   const earlyDeathRate = ratio(metrics.earlyDeaths, deaths);
   const firstDeathRate = ratio(metrics.firstDeaths, rounds);

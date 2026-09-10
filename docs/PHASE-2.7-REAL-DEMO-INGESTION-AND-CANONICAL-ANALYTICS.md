@@ -208,3 +208,106 @@ Testes: `src/lib/pipeline/__tests__/hardening27.test.ts` (H1–H15) + suíte
 existente = 515 testes. Typecheck, lint e build OK. `match_features.sample_clutches`
 aceita `NULL`. **A FASE 2.7 permanece ABERTA**: sem `DEMO_PARSER_URL` /
 `DEMO_PARSER_TOKEN` nenhum `.dem` real foi processado, e a FASE 2.8 não foi iniciada.
+
+## 9. FASE 2.7.1 — correção final do attach de demo (fase segue ABERTA)
+
+### 9.1. Defeito corrigido
+
+`public.canonical_attach_source()` exigia `external_match_id`. Uma demo NÃO tem
+identificador externo: sua identidade de artefato é o SHA-256 do arquivo. Toda
+decisão EXACT do resolver para demo era portanto recusada com
+`CANONICAL_ATTACH_INVALID`, e a demo só conseguia criar uma NOVA partida
+canônica — o oposto da convergência que a arquitetura promete.
+
+### 9.2. Como o attach funciona agora
+
+Migration `20260910…_phase_271_demo_attach_fingerprint` (aplicada):
+
+- `canonical_attach_source(source, external_match_id, match_id, contract, fingerprint)`
+  aceita `external_match_id` **OU** `fingerprint`; **os dois ausentes continuam
+  inválidos** (`CANONICAL_ATTACH_INVALID`).
+- chave determinística de reserva: `source|ext:<id>` ou `source|fp:<hash>`,
+  protegida por `pg_advisory_xact_lock` na mesma transação;
+- uma observação já existente **nunca** é reapontada para outra partida
+  (`CANONICAL_ATTACH_CONFLICT`);
+- `persist_canonical_observation_attached()` repassa o fingerprint e mantém
+  attach + persistência **em uma única transação** (single canonical writer);
+- FACEIT continua usando `external_match_id`, sem mudança de comportamento;
+- nenhuma permissão nova: `EXECUTE` só para `service_role`.
+
+### 9.3. Identidades — distinção documentada
+
+- **fingerprint** = identidade do ARTEFATO / proveniência / idempotência;
+- **identidade da partida canônica** = decisão do Match Identity Resolver.
+
+Dois arquivos diferentes podem descrever a mesma partida canônica; o fingerprint
+nunca é usado como id canônico.
+
+### 9.4. Isolamento da projeção por jogador
+
+`src/lib/pipeline/persistence.server.ts` passou a montar o update por
+`projectionUpdate()`. Redação correta da garantia:
+
+> campos player-scoped (`player_id`, `upload_id`, `team_player`,
+> `team_opponent`, `score_player`, `score_opponent`, `result`) só são escritos
+> quando a projeção existente não tem dono ou pertence ao mesmo jogador.
+
+Campos match-wide (plataforma, rounds, duração, versão do jogo, metadados)
+continuam atualizáveis por qualquer observador.
+
+### 9.5. NULL ≠ ZERO / utility zero
+
+`extractFeatures()` deixou de inferir disponibilidade de utility a partir dos
+contadores do jogador (`grenadesUsed > 0 || enemiesFlashed > 0`), o que
+transformava um ZERO observado em NULL. Agora usa
+`metrics.availability.utilityEvents` (classe de evidência) e
+`metrics.availability.economy`. Resultado: utility observada com zero uso ⇒ `0`;
+utility não observável ⇒ `null`.
+
+### 9.6. Provas executadas
+
+| item | estado | evidência |
+| --- | --- | --- |
+| attach demo com `external_match_id` NULL | **PASS (banco real)** | `fp_attach=t` |
+| idempotência do mesmo fingerprint | **PASS (banco real)** | `idempotent=t` (1 linha em `match_sources`) |
+| mesmo fingerprint apontado a outra partida | **PASS (banco real)** | `CANONICAL_ATTACH_CONFLICT` |
+| ambos identificadores ausentes | **PASS (banco real)** | `CANONICAL_ATTACH_INVALID` |
+| FACEIT por `external_match_id` | **PASS (banco real)** | `faceit=t` |
+| EXACT/NO_MATCH/CONFLICT do resolver | PASS (unitário) | `hardening271.test.ts` A–F |
+| isolamento de projeção | PASS (unitário) | G1–G3 |
+| NULL vs ZERO / utility | PASS (unitário) | H1–H2, I1–I3 |
+| tickrate 64 / 128 / timestamp / ausente | PASS (unitário) | J, K, L, L2 |
+| clutch 1v1, 1v2 e participante fantasma | PASS (unitário) | M1, M2, N, N2 |
+| amostra insuficiente | PASS (unitário) | O |
+| ausência de segunda persistência | PASS (estrutural) | projeção não escreve fatos canônicos |
+| atomicidade attach+persistência | **NOT PROVEN em runtime** | verificada estruturalmente (mesma transação); falha proposital não executada |
+| concorrência real de attach | **NOT PROVEN** | concurrency real not proven in this environment |
+| pipeline E2E com `.dem` real | **BLOCKED** | parser não provisionado |
+
+A verificação de banco real rodou em transação abortada de propósito
+(`RAISE EXCEPTION` final): nenhuma linha permaneceu (`leftover_fp=0`,
+`leftover_ext=0`), e existe exatamente **uma** assinatura de
+`canonical_attach_source` (sem sobrecarga ambígua).
+
+### 9.7. Correções de documentação exigidas pela auditoria
+
+- **Migrations:** esta rodada CRIOU migration (attach por fingerprint); a rodada
+  anterior também alterou `match_features.sample_clutches`. Afirmações de "nenhuma
+  migration" ficam corrigidas por §9.2.
+- **Projeção:** a redação "projection never overwrites another player" foi
+  substituída pela formulação de §9.4.
+- **Parser:** a justificativa correta NÃO é "não existe parser JS/WASM". É:
+  parsing de demo é workload pesado de CPU/memória; existem implementações e
+  bindings em diferentes runtimes; o Edge runtime tem limites de CPU/memória;
+  queremos isolamento, versionamento e compatibilidade explícita por build do
+  CS2, em um worker independente e sem acesso ao banco.
+
+### 9.8. Estado
+
+**FASE 2.7 — IN PROGRESS / HARDENING CORRECTIONS COMPLETED.** O parser real
+continua NÃO provisionado (`DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` ausentes de
+propósito), nenhum `.dem` real foi ingerido e a FASE 2.8 não foi iniciada.
+Próximo passo recomendado: FASE 2.7.2 — provisionamento do parser worker.
+
+Gates desta rodada: 539/539 testes, typecheck (tsgo) OK, lint OK, build OK,
+linter de segurança do banco sem novos achados.

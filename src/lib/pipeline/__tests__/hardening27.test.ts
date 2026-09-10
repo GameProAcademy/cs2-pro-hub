@@ -100,14 +100,24 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
     expect(metrics.kast).toBeNull();
   });
 
-  it("H8: clutch participation requires per-round evidence", () => {
+  it("H8: clutch participation is counted from real per-round evidence", () => {
+    // The fixture contains exactly two rounds where ME is the last player alive
+    // on its team against living enemies: round 6 (1v2, won) and round 9 (ME's
+    // only teammate dies and ME never wins the round). Concrete values, no
+    // `>= 0` tolerance.
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
-    expect(metrics.clutchAttempts === null || metrics.clutchAttempts >= 0).toBe(true);
+    expect(metrics.clutchAttempts).toBe(2);
+    expect(metrics.clutchWins).toBe(1);
   });
 
   it("H9: availability flags describe what the demo actually contained", () => {
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
-    expect(metrics.availability).toBeDefined();
+    expect(metrics.availability.killEvents).toBe(true);
+    expect(metrics.availability.damageEvents).toBe(true);
+    expect(metrics.availability.utilityEvents).toBe(true);
+    expect(metrics.availability.timing).toBe(true);
+    expect(metrics.availability.economy).toBe(true);
+    expect(metrics.availability.roundEndEvidence).toBe(true);
   });
 });
 
