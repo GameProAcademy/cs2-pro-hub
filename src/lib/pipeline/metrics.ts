@@ -343,11 +343,11 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
   const kills = match.events.filter((e) => e.type === "kill");
   const timing = kills.length > 0 && kills.every((e) => eventTime(e, match.tickrate) != null);
   return {
-    killEvents: kills.length > 0,
-    damageEvents: match.events.some((e) => e.type === "damage"),
-    utilityEvents: match.events.some(
-      (e) => e.type === "flash" || e.type === "he" || e.type === "molotov" || e.type === "smoke",
-    ),
+    killEvents: hasKillEvidence(match.events),
+    damageEvents: hasDamageEvidence(match.events),
+    // Shared, single definition of utility evidence (see evidence.ts): the same
+    // classification the normalizer uses for the `missing_utility` flag.
+    utilityEvents: hasUtilityEvidence(match.events),
     roundEndEvidence: match.rounds.some(
       (r) => r.winnerSide != null || r.winnerTeam != null || r.endTick != null,
     ),

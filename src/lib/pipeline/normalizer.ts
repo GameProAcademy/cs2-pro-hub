@@ -7,6 +7,7 @@
  */
 import { MIN_VALID_ROUNDS, SCHEMA_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
+import { hasUtilityEvidence } from "@/lib/pipeline/evidence";
 import type {
   CanonicalEvent,
   CanonicalEventType,
