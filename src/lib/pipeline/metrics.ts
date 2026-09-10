@@ -392,7 +392,6 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .filter((e) => e.victimSteamId === steamId)
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
 
-  const utilityTypes = new Set(["he", "molotov", "incendiary"]);
   const utilityDamage = damageEvents
     .filter(
       (e) =>
@@ -401,9 +400,13 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
         /hegrenade|molotov|inferno|incgrenade|flashbang|decoy|smoke/i.test(e.weapon),
     )
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
-  const grenadesUsed = match.events
-    .filter((e) => utilityTypes.has(e.type) || e.type === "flash" || e.type === "smoke")
-    .filter((e) => e.actorSteamId === steamId).length;
+  // Utility usage uses the SHARED evidence classification, so "which events are
+  // utility" is defined in exactly one place for quality flags, availability and
+  // counters. UTILITY_DAMAGE_EVENT_TYPES documents which of them can hurt.
+  void UTILITY_DAMAGE_EVENT_TYPES;
+  const grenadesUsed = match.events.filter(
+    (e) => isUtilityEvent(e) && e.actorSteamId === steamId,
+  ).length;
   const enemiesFlashed = match.events
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
