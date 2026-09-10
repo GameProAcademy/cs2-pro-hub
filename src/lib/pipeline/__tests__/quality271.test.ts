@@ -480,7 +480,7 @@ describe("parser contract validation", () => {
   it("rejects a wrong contract version", () => {
     const r = rejection({ ...valid(), contract_version: PARSER_CONTRACT_VERSION + 1 });
     expect(r.code).toBe("PARSER_CONTRACT_MISMATCH");
-    expect(r.detail).toContain("contract mismatch");
+    expect(r.detail).toContain(`expected ${PARSER_CONTRACT_VERSION}`);
   });
 
   it("rejects a wrong parser name as unsupported", () => {
