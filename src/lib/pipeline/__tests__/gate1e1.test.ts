@@ -22,6 +22,7 @@ import {
   parserMajorMinor,
   parseWorkerIdentity,
   WORKER_ERROR_CODES,
+  type WorkerErrorCode,
 } from "@/lib/pipeline/parser/parserEndpoint";
 
 function thrown(fn: () => unknown): string {
