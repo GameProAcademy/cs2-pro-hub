@@ -92,8 +92,15 @@ export function extractFeatures(
   const gate = (available: boolean, value: number | null): number | null =>
     available ? value : null;
 
+  /**
+   * Round denominator for whole-match rates: NULL (and 0 for `perRound`, which
+   * maps a non-positive round count to NULL) while coverage is incomplete.
+   */
+  const matchRounds = hasCoverage ? rounds : null;
+  const perRoundDenominator = matchRounds ?? 0;
+
   const earlyDeathRate = gate(hasKills && hasTiming, ratio(metrics.earlyDeaths, deaths));
-  const firstDeathRate = gate(hasKills, ratio(metrics.firstDeaths, rounds));
+  const firstDeathRate = gate(hasKills, ratio(metrics.firstDeaths, matchRounds));
 
   const dimensions: Record<DnaDimension, Record<string, number | null>> = {
     aim: {
