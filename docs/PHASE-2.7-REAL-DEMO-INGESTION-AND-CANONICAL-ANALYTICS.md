@@ -438,3 +438,56 @@ Códigos de erro, janelas de trade/flash assist, KAST, modelo canônico, resolve
 Steam e Identity Graph inalterados. Nenhum arquivo de UI tocado. Parser real não provisionado. 2.8 não iniciada.
 
 Baseline: 576 testes, tsgo e build OK.
+
+## FASE 2.7.1D — rodada 6: cobertura de survival, semântica de taxas em parse parcial e versão do parser
+
+### 1. `survival_rate` — denominador por round (IMPLEMENTED)
+
+Antes, `survival_rate` era liberado por `availability.roundEndEvidence`, que significa apenas
+"ALGUM round terminou". 19 de 20 rounds encerrados publicavam uma taxa cujo 20º round tinha
+desfecho desconhecido. Agora `metrics.ts` expõe `roundHasEndEvidence(round)` — definição única
+(`end_tick`, `duration_seconds`, `winner_side` ou `winner_team`), reutilizada por
+`playerSurvivedRound()` — e um novo denominador `CanonicalMetrics.survivalRounds`:
+
+- número de rounds em que o jogador participou, SOMENTE se TODOS eles têm round-end evidence
+  E `availability.completeCoverage` é verdadeiro;
+- `NULL` em qualquer outro caso. Nunca parcial, nunca `0` por ausência.
+
+`features.ts` calcula `survival_rate = complement(deaths / survivalRounds)`, então cobertura
+incompleta produz `NULL`. Um round sem desfecho não é contado como sobrevivência nem como morte.
+
+### 2. Parse parcial — contadores vs taxas de partida (IMPLEMENTED)
+
+Toda taxa cujo denominador é o CONJUNTO DE ROUNDS descreve a partida inteira. Em parse parcial o
+conjunto observado não é a partida, então tais sinais ficam `NULL` (`kills_per_round`,
+`damage_per_round`, `damage_taken_per_round`, `assists_per_round`, `*_per_round` de utilidade,
+`first_death_rate`, `opening_participation`, `trade_participation`, `early_death_free_rate`,
+`clutch_frequency`, `multi_kill_rate`, `survival_rate`, KAST).
+
+Permanecem numéricos: contadores diretamente observados (kills, deaths, assists, headshots, dano)
+e razões cujo denominador é ele mesmo uma contagem observada (`hs_rate`, `trade_kill_share`,
+`kd_balance`, `clutch_win_rate`, `opening_discipline`, `flash_assist_share`). Descartá-los seria
+desonesto na direção oposta.
+
+### 3. Versão do parser — placeholder explícito (DOCUMENTED)
+
+`PARSER_VERSION = "0.31.4"` nunca foi verificada contra um build público real. Continua sendo
+apenas o valor ESPERADO na checagem de identidade do worker (sobrescrevível por
+`DEMO_PARSER_EXPECTED_VERSION`) e agora vem acompanhada de `PARSER_VERSION_CONFIRMED = false`.
+`PARSER_CONTRACT_VERSION` é um conceito SEPARADO (formato de saída) e permanece inalterado.
+Escolher e fixar a versão real do parser é escopo da FASE 2.7.2.
+
+### 4. Testes
+
+`src/lib/pipeline/__tests__/quality271d.test.ts` — fixtures sintéticas (sem `.dem`, sem worker, sem
+rede, sem banco): survival com cobertura total, cobertura parcial de um round, nenhuma cobertura,
+parse parcial, round sem desfecho que não vira morte nem sobrevivência, contadores preservados,
+taxas de partida nulas, cobertura completa inalterada, `NULL ≠ ZERO` e o flag de versão do parser.
+
+### 5. Não-regressão
+
+Canonical Match Engine, resolver, persistência canônica, projeção transacional, FACEIT, Gamers Club,
+Steam, Identity Graph, RLS e códigos de erro inalterados. Nenhum arquivo de UI tocado. Parser real
+não provisionado, E2E com `.dem` real NÃO provado, FASE 2.7 permanece IN PROGRESS, 2.8 não iniciada.
+
+Baseline desta rodada: 587/587 testes, tsgo e lint OK.
