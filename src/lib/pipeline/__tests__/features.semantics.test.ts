@@ -44,7 +44,7 @@ describe("rate features are not their own complement", () => {
 
   it("early_death_rate is earlyDeaths / deaths", () => {
     expect(survivability()["early_death_rate"]).toBeCloseTo(
-      metrics.earlyDeaths / metrics.deaths,
+      metrics.earlyDeaths! / metrics.deaths,
       3,
     );
     expect(featureDirection("survivability", "early_death_rate")).toBe("down");
@@ -52,7 +52,7 @@ describe("rate features are not their own complement", () => {
 
   it("early_death_avoidance is the explicit complement", () => {
     expect(survivability()["early_death_avoidance"]).toBeCloseTo(
-      1 - metrics.earlyDeaths / metrics.deaths,
+      1 - metrics.earlyDeaths! / metrics.deaths,
       3,
     );
     expect(featureDirection("survivability", "early_death_avoidance")).toBe("up");
@@ -60,7 +60,7 @@ describe("rate features are not their own complement", () => {
 
   it("untraded_death_rate is untradedDeaths / deaths", () => {
     expect(survivability()["untraded_death_rate"]).toBeCloseTo(
-      metrics.untradedDeaths / metrics.deaths,
+      metrics.untradedDeaths! / metrics.deaths,
       3,
     );
     expect(featureDirection("survivability", "untraded_death_rate")).toBe("down");
@@ -76,7 +76,7 @@ describe("rate features are not their own complement", () => {
 
   it("decision_making early_death_free_rate is round-denominated", () => {
     expect(features.dimensions["decision_making"]?.["early_death_free_rate"]).toBeCloseTo(
-      1 - metrics.earlyDeaths / metrics.roundsPlayed,
+      1 - metrics.earlyDeaths! / metrics.roundsPlayed,
       3,
     );
   });
