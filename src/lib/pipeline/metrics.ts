@@ -36,6 +36,8 @@ import {
   hasUtilityEvidence,
   isUtilityEvent,
 } from "@/lib/pipeline/evidence";
+import { hasRoundEndEvidence } from "@/lib/pipeline/roundEvidence";
+
 import type {
   CanonicalEvent,
   CanonicalMatch,
