@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { MIN_VALID_ROUNDS } from "@/config/pipeline";
 import { canConvergeCrossSource, resolveAgainstAll } from "@/lib/canonical";
-import { isPermanent, PipelineError } from "@/lib/pipeline/errors";
+import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { Sha256, sha256HexFromBlob } from "@/lib/pipeline/sha256";
@@ -25,9 +25,6 @@ import { ME, syntheticParserOutput } from "./fixture";
 function clone(): RawParserOutput {
   return JSON.parse(JSON.stringify(syntheticParserOutput)) as RawParserOutput;
 }
-
-const hex = (bytes: Uint8Array) =>
-  [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 
 describe("FASE 2.7 hardening — NULL is not FALSE", () => {
   it("H1: missing bomb flags stay null instead of becoming false", () => {
@@ -129,8 +126,8 @@ describe("FASE 2.7 hardening — short demo policy", () => {
   });
 
   it("H11: insufficient sample and oversized payload are permanent, not retried", () => {
-    expect(isPermanent("DEMO_INSUFFICIENT_SAMPLE")).toBe(true);
-    expect(isPermanent("PARSER_PAYLOAD_TOO_LARGE")).toBe(true);
+    expect(isPermanentError("DEMO_INSUFFICIENT_SAMPLE")).toBe(true);
+    expect(isPermanentError("PARSER_PAYLOAD_TOO_LARGE")).toBe(true);
   });
 
   it("H12: a full-length demo passes validation", () => {
@@ -141,12 +138,12 @@ describe("FASE 2.7 hardening — short demo policy", () => {
 describe("FASE 2.7 hardening — incremental hashing", () => {
   it("H13: matches the known SHA-256 vectors", async () => {
     const empty = new Sha256();
-    expect(hex(empty.digest())).toBe(
+    expect(empty.hex()).toBe(
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     );
     const abc = new Sha256();
     abc.update(new TextEncoder().encode("abc"));
-    expect(hex(abc.digest())).toBe(
+    expect(abc.hex()).toBe(
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
     );
   });
@@ -157,7 +154,7 @@ describe("FASE 2.7 hardening — incremental hashing", () => {
     const chunked = await sha256HexFromBlob(blob, 4096);
     const oneShot = new Sha256();
     oneShot.update(bytes);
-    expect(chunked).toBe(hex(oneShot.digest()));
+    expect(chunked).toBe(oneShot.hex());
   });
 });
 
