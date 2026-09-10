@@ -13,10 +13,7 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
-import {
-  uploadDemoResumably,
-  type ResumableUploadOptions,
-} from "@/lib/pipeline/resumableUpload";
+import { uploadDemoResumably, type ResumableUploadOptions } from "@/lib/pipeline/resumableUpload";
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -48,9 +45,7 @@ export interface SubmitDemoOptions {
 
 export interface SubmitDemoDependencies {
   hash(file: Blob): Promise<string>;
-  create(input: {
-    data: { fileName: string; fileSize: number; demoSha256: string };
-  }): Promise<{
+  create(input: { data: { fileName: string; fileSize: number; demoSha256: string } }): Promise<{
     uploadId: string;
     storagePath: string;
     duplicate: boolean;
