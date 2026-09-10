@@ -234,13 +234,13 @@ describe("catalogue metadata is semantically precise", () => {
 });
 
 /* ------------------------------------------------------------------ */
-/* 5. Parser identity is still unconfirmed                             */
+/* 5. Parser identity remains separate from the contract              */
 /* ------------------------------------------------------------------ */
 
-describe("parser identity remains an unconfirmed placeholder", () => {
-  it("PARSER_VERSION is not confirmed and is separate from the contract version", () => {
-    expect(PARSER_VERSION_CONFIRMED).toBe(false);
-    expect(typeof PARSER_VERSION).toBe("string");
+describe("parser identity is pinned independently from its contract", () => {
+  it("confirms the selected parser and keeps contract version separate", () => {
+    expect(PARSER_VERSION_CONFIRMED).toBe(true);
+    expect(PARSER_VERSION).toBe("0.42.0");
     expect(typeof PARSER_CONTRACT_VERSION).toBe("number");
     expect(String(PARSER_CONTRACT_VERSION)).not.toBe(PARSER_VERSION);
   });

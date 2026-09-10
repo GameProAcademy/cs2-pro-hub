@@ -487,3 +487,18 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
       **BLOCKED** — `demoparser2` é nativo e exige worker HTTP externo;
       `DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` não existem e não podem ser provisionados daqui.
 - [ ] FASE 2.7 permanece IN PROGRESS. FASE 2.8 não iniciada.
+
+### FASE 2.7.2 — GATE 1D
+
+- [x] Upload grande migrado do envio padrão para TUS retomável, em chunks de 6 MiB,
+      direto do browser ao bucket privado `demos`, preservando o path
+      `{user_id}/{upload_id}.dem`, sessão do usuário, RLS e SHA-256 antes/depois.
+- [x] Job continua sendo enfileirado somente após a conclusão inequívoca do TUS;
+      falha ou cancelamento não enfileiram processamento; duplicata processada não
+      reenvia o arquivo.
+- [x] Parser esperado atualizado para `demoparser2 0.42.0`, contrato 1; revision
+      permanece configurável e não foi inventada.
+- [x] URL/identidade server-only configuradas; `DEMO_PARSER_TOKEN` e revision real
+      continuam **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
+      verificação pública, portanto conectividade do worker está **NOT PROVEN**.
+- [ ] E2E real e parse de `.dem` real: **NOT PROVEN**, reservados ao próximo Gate.
