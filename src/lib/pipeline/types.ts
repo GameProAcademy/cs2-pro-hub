@@ -220,6 +220,13 @@ export interface CanonicalMetrics {
   /** Which evidence classes backed this computation. */
   availability: MetricsAvailability;
   roundsPlayed: number;
+  /**
+   * FASE 2.7.1D — denominator for survival-style rates: the participated round
+   * count when EVERY one of those rounds provably ended and the extraction
+   * covers the whole match. NULL when that coverage is incomplete — a survival
+   * rate over rounds with unknown outcomes would be a fabricated claim.
+   */
+  survivalRounds: number | null;
   kills: number;
   deaths: number;
   assists: number;
