@@ -78,6 +78,36 @@ export function isParserEndpointConfigured(rawUrl: string | undefined | null): b
   }
 }
 
+/**
+ * GATE 1E.1 — OFFICIAL WORKER PROTOCOL CODES.
+ *
+ * This is the documented wire protocol the Railway worker must emit in
+ * `detail.error_code`. It exists so APP and worker share ONE matrix instead of
+ * two divergent ones; every entry is handled explicitly by
+ * `classifyWorkerFailure` (proved by the Gate 1E.1 test suite).
+ */
+export const WORKER_ERROR_CODES = [
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "CONTRACT_MISMATCH",
+  "UNSUPPORTED_CONTRACT_VERSION",
+  "INVALID_DEMO_FORMAT",
+  "CORRUPTED_DEMO",
+  "UNSUPPORTED_DEMO",
+  "HASH_MISMATCH",
+  "FILE_SIZE_MISMATCH",
+  "DEMO_TOO_LARGE",
+  "PAYLOAD_TOO_LARGE",
+  "DOWNLOAD_ERROR",
+  "DOWNLOAD_FAILED",
+  "TIMEOUT",
+  "PARSE_TIMEOUT",
+  "DOWNLOAD_TIMEOUT",
+  "PARSER_ERROR",
+] as const;
+
+export type WorkerErrorCode = (typeof WORKER_ERROR_CODES)[number];
+
 export interface WorkerErrorEnvelope {
   errorCode: string | null;
   /** Internal-only worker message. Never surfaced to a player. */
