@@ -36,6 +36,8 @@ import {
   hasUtilityEvidence,
   isUtilityEvent,
 } from "@/lib/pipeline/evidence";
+import { hasRoundEndEvidence } from "@/lib/pipeline/roundEvidence";
+
 import type {
   CanonicalEvent,
   CanonicalMatch,
@@ -131,18 +133,11 @@ export function participatedInRound(
  * death event is NOT proof of survival.
  */
 /**
- * FASE 2.7.1D — SINGLE DEFINITION OF "this round provably ended".
- *
- * Used both by `playerSurvivedRound` (per round) and by the survival-rate
- * denominator (per participated round set), so the two can never disagree.
+ * FASE 2.7.1E — re-export of the CENTRAL definition (see roundEvidence.ts) so
+ * existing callers keep one import path. There is no second implementation.
  */
 export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): boolean {
-  return (
-    round.endTick != null ||
-    round.durationSeconds != null ||
-    round.winnerSide != null ||
-    round.winnerTeam != null
-  );
+  return hasRoundEndEvidence(round);
 }
 
 export function playerSurvivedRound(
@@ -404,9 +399,8 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     // Shared, single definition of utility evidence (see evidence.ts): the same
     // classification the normalizer uses for the `missing_utility` flag.
     utilityEvents: hasUtilityEvidence(match.events),
-    roundEndEvidence: match.rounds.some(
-      (r) => r.winnerSide != null || r.winnerTeam != null || r.endTick != null,
-    ),
+    roundEndEvidence: match.rounds.some((r) => hasRoundEndEvidence(r)),
+
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
     timing,
     // A partial extraction NEVER counts as complete coverage. Whole-match rates
@@ -438,20 +432,21 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const roundsPlayed = roundNumbers.size;
 
   /**
-   * FASE 2.7.1D — SURVIVAL DENOMINATOR.
+   * FASE 2.7.1E — SURVIVAL DENOMINATOR = REAL DETERMINABILITY.
    *
-   * A survival rate is a claim about EVERY round in its denominator, so "at
-   * least one round ended" (the aggregate `roundEndEvidence` flag) is not
-   * enough: 19 ended rounds out of 20 would publish a rate whose 20th round has
-   * an unknown outcome. The denominator therefore exists only when EVERY round
-   * the player participated in provably ended AND the extraction covers the
-   * whole match. Otherwise it is NULL (unknown), never 0 and never partial.
+   * "The round ended" is NOT "we can tell whether THIS player survived it".
+   * A round only enters the denominator when `playerSurvivedRound()` returns a
+   * decision (true = provably survived, false = provably died). A `null` round is
+   * excluded, so the absence of a death event can never be laundered into a
+   * survival. With no determinable round the denominator is NULL (unknown), never
+   * 0, and `survival_rate` becomes NULL instead of a falsely precise number.
    */
+  const determinableSurvivalRounds = [...roundNumbers].filter(
+    (roundNumber) => playerSurvivedRound(match, steamId, roundNumber) != null,
+  ).length;
   const survivalRounds =
-    roundsPlayed > 0 &&
-    availability.completeCoverage &&
-    match.rounds.filter((r) => roundNumbers.has(r.roundNumber)).every((r) => roundHasEndEvidence(r))
-      ? roundsPlayed
+    availability.completeCoverage && determinableSurvivalRounds > 0
+      ? determinableSurvivalRounds
       : null;
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
