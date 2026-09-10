@@ -17,14 +17,20 @@
  *   sampleRequirement  - the evidence needed for the value to be meaningful
  *   confidenceImpact   - how a partial parse / thin sample should be treated
  *   denominator        - the exact denominator the implementation divides by
- *   roundDenominated   - true when the denominator is the MATCH ROUND SET, which
- *                        means the value is NULL under a partial parse
+ *   roundDenominated   - true when the denominator is DERIVED FROM THE MATCH
+ *                        ROUND SET (`rounds_played`, or a round-derived
+ *                        denominator such as `survivalRounds`), which means the
+ *                        value is NULL under a partial parse
  *
- * FASE 2.7.1E — this catalogue documents the hardened 2.7.1D semantics:
+ * FASE 2.7.1F — this catalogue documents the hardened 2.7.1D/E semantics, and
+ * every `formula` states the real arithmetic, including the [0,1] clamp the
+ * implementation applies:
  *  - round-denominated signals are NULL when coverage is incomplete
  *    (`partial_parse`), because "per observed round" is not "per round";
  *  - `survival_rate` divides by `survivalRounds` — the participated rounds whose
- *    survival is actually DETERMINABLE — never by `rounds_played`;
+ *    survival is actually DETERMINABLE (playerSurvivedRound() decided true or
+ *    false) — never by `rounds_played`. A round having ENDED does not by itself
+ *    make that player's survival determinable;
  *  - directly observed counters and ratios over observed event counts stay
  *    numeric (an observed 0 is 0), so nothing is nulled indiscriminately;
  *  - NULL means unknown / not determinable; 0 means observed and truly zero.
@@ -47,7 +53,13 @@ export interface FeatureSpec {
   confidenceImpact: string;
   /** The exact denominator the implementation uses ("none" for counters/flags). */
   denominator: string;
-  /** True when the denominator is the match round set (NULL under partial parse). */
+  /**
+   * FASE 2.7.1F — TRUE when the denominator is DERIVED FROM THE ROUND SET of the
+   * match/player, so the value only represents the whole match under compatible
+   * round coverage. This includes `rounds_played` AND round-derived denominators
+   * such as `survivalRounds`; it is not restricted to `rounds_played`. Every
+   * round-denominated feature is NULL under a partial parse.
+   */
   roundDenominated: boolean;
 }
 
@@ -75,7 +87,7 @@ const perRound = (what: string, reference: string): FeatureSpec => ({
 export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   aim: {
     hs_rate: {
-      formula: "hs_percent / 100",
+      formula: "min(1, hs_percent / 100)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -88,7 +100,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     kills_per_round: {
-      formula: "kills / rounds_played",
+      formula: "min(1, kills / rounds_played)",
       unit: "rate",
       range: RATIO,
       direction: "up",
@@ -100,7 +112,18 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       denominator: "rounds_played (requires complete coverage)",
       roundDenominated: true,
     },
-    damage_per_round: perRound("damage", "100 ADR"),
+    damage_per_round: {
+      formula: "min(1, adr / 100), adr = damage_given / rounds_played",
+      unit: "rate",
+      range: RATIO,
+      direction: "up",
+      meaning: "damage output per round, scaled against a 100 ADR reference",
+      nullBehavior: `null when damage events are unavailable, when rounds_played = 0, and ${PARTIAL_PARSE_NULL}`,
+      sampleRequirement: "damage-event evidence and complete round coverage",
+      confidenceImpact: "null under partial coverage instead of a per-observed-round value",
+      denominator: "rounds_played (via adr; requires complete coverage)",
+      roundDenominated: true,
+    },
     damage_efficiency: {
       formula: "min(1, (damage_dealt / damage_taken) / 2)",
       unit: "ratio",
@@ -116,7 +139,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   dueling: {
     opening_success: {
-      formula: "opening_success / opening_attempts",
+      formula: "min(1, opening_success / opening_attempts)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -128,7 +151,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     opening_participation: {
-      formula: "opening_attempts / rounds_played",
+      formula: "min(1, opening_attempts / rounds_played)",
       unit: "rate",
       range: RATIO,
       direction: "neutral",
@@ -140,7 +163,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     trade_kill_share: {
-      formula: "trade_kills / kills",
+      formula: "min(1, trade_kills / kills)",
       unit: "ratio",
       range: RATIO,
       direction: "neutral",
@@ -154,7 +177,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     kd_balance: {
-      formula: "kills / (kills + deaths)",
+      formula: "min(1, kills / (kills + deaths))",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -169,7 +192,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   survivability: {
     survival_rate: {
-      formula: "1 - deaths / survivalRounds",
+      formula: "1 - min(1, deaths / survivalRounds)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -185,7 +208,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     early_death_rate: {
-      formula: "early_deaths / deaths",
+      formula: "min(1, early_deaths / deaths)",
       unit: "ratio",
       range: RATIO,
       direction: "down",
@@ -197,7 +220,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     early_death_avoidance: {
-      formula: "1 - early_deaths / deaths",
+      formula: "1 - min(1, early_deaths / deaths)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -209,7 +232,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     untraded_death_rate: {
-      formula: "untraded_deaths / deaths",
+      formula: "min(1, untraded_deaths / deaths)",
       unit: "ratio",
       range: RATIO,
       direction: "down",
@@ -235,7 +258,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   positioning: {
     traded_death_rate: {
-      formula: "trade_deaths / deaths",
+      formula: "min(1, trade_deaths / deaths)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -247,7 +270,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     first_death_rate: {
-      formula: "first_deaths / rounds_played",
+      formula: "min(1, first_deaths / rounds_played)",
       unit: "ratio",
       range: RATIO,
       direction: "down",
@@ -259,7 +282,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     first_death_avoidance: {
-      formula: "1 - first_deaths / rounds_played",
+      formula: "1 - min(1, first_deaths / rounds_played)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -291,7 +314,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   decision_making: {
     kast: {
-      formula: "kast / 100",
+      formula: "min(1, kast_percent / 100), kast_percent = 100 * kast_rounds / rounds_played",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -304,7 +327,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     early_death_free_rate: {
-      formula: "1 - early_deaths / rounds_played",
+      formula: "1 - min(1, early_deaths / rounds_played)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -316,7 +339,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     opening_discipline: {
-      formula: "first_kills / opening_attempts",
+      formula: "min(1, first_kills / opening_attempts)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -343,7 +366,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   teamplay: {
     assists_per_round: perRound("assists", "0.35"),
     flash_assist_share: {
-      formula: "flash_assists / assists",
+      formula: "min(1, flash_assists / assists)",
       unit: "ratio",
       range: RATIO,
       direction: "neutral",
@@ -355,7 +378,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     trade_participation: {
-      formula: "trade_kills / rounds_played",
+      formula: "min(1, trade_kills / rounds_played)",
       unit: "rate",
       range: RATIO,
       direction: "up",
@@ -407,7 +430,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   clutch: {
     clutch_win_rate: {
-      formula: "clutch_wins / clutch_attempts",
+      formula: "min(1, clutch_wins / clutch_attempts)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -419,7 +442,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     clutch_frequency: {
-      formula: "clutch_attempts / rounds_played",
+      formula: "min(1, clutch_attempts / rounds_played)",
       unit: "rate",
       range: RATIO,
       direction: "neutral",
@@ -431,7 +454,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: true,
     },
     multi_kill_rate: {
-      formula: "multi_kills / rounds_played",
+      formula: "min(1, multi_kills / rounds_played)",
       unit: "rate",
       range: RATIO,
       direction: "up",
@@ -445,7 +468,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
   },
   consistency: {
     side_balance: {
-      formula: "1 - |ct_rating - t_rating|",
+      formula: "max(0, min(1, 1 - |ct_rating - t_rating|))",
       unit: "ratio",
       range: RATIO,
       direction: "up",
@@ -457,7 +480,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     rating: {
-      formula: "min(1, source_rating / 1.6)",
+      formula: "min(1, source_rating / 1.6), source_rating = 0.45*(kills/rounds_played / 0.70) + 0.25*(1 - deaths/rounds_played / 0.75) + 0.30*(damage/rounds_played / 80)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
