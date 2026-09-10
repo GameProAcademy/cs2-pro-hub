@@ -85,9 +85,15 @@ export async function persistCanonicalObservation(args: {
     // Omitted (not null) so the routine's own defaults apply.
     ...(args.ownerPlayerId ? { _owner_player_id: args.ownerPlayerId } : {}),
     ...(args.uploadId ? { _upload_id: args.uploadId } : {}),
-    ...(args.attachMatchId && args.bundle.observation.externalMatchId
+    // FASE 2.7 — a DEMO has NO external match id: its identity is the file
+    // fingerprint. Requiring `externalMatchId` here silently dropped every demo
+    // attach, so the guard is now "the observation is identifiable at all",
+    // which is exactly what `canonicalBundleToRpcPayload` already validated.
+    ...(args.attachMatchId &&
+    (args.bundle.observation.externalMatchId || args.bundle.observation.fingerprint)
       ? { _attach_match_id: args.attachMatchId }
       : {}),
+
   });
 
   if (error) throw new CanonicalPersistenceError("CANONICAL_PERSISTENCE_FAILED", error.message);
