@@ -13,6 +13,8 @@ import {
   getDemoJobStatus,
   type DemoJobView,
 } from "@/lib/pipeline.functions";
+import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
+
 
 export type ClientUploadError =
   | "DEMO_TOO_LARGE"
@@ -28,10 +30,15 @@ export class DemoUploadError extends Error {
   }
 }
 
-export async function sha256Hex(file: File): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+/**
+ * FASE 2.7 — chunked hashing. `file.arrayBuffer()` would materialise up to
+ * 1.5 GB in the tab and crash on exactly the demos this pipeline targets, so the
+ * digest is accumulated chunk by chunk.
+ */
+export async function sha256Hex(file: Blob): Promise<string> {
+  return sha256HexFromBlob(file);
 }
+
 
 /** Client-side pre-check. The server validates everything again. */
 export function precheckDemo(file: File): void {
