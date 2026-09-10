@@ -382,4 +382,12 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       (01 completo, 05 parcial, 08, 14–19 sobre demo, 22–24 do caminho demo)
       permanecem BLOCKED / NOT_PROVEN — nunca PASS.
 - [ ] Pendência de infraestrutura: agendamento externo de `/api/public/pipeline-cron`.
+- [x] **Hardening P1–P2 (rodada 2)**: resolver canônico ligado ao caminho demo
+      (descoberta neutra + `canConvergeCrossSource`), fingerprint separado da
+      identidade canônica, attach de demo sem `external_match_id`, flags de bomba
+      `boolean | null`, métricas quality-aware, tickrate nunca assumido, clutch por
+      participação comprovada, resposta do parser limitada por `Content-Length` e
+      stream, SHA-256 incremental no cliente, política de demo curta
+      (`DEMO_INSUFFICIENT_SAMPLE`), deadline absoluto do job
+      (`JOB_DEADLINE_EXCEEDED`) e single writer preservado. 515/515 testes.
 - [x] Documento da fase: `docs/PHASE-2.7-REAL-DEMO-INGESTION-AND-CANONICAL-ANALYTICS.md`.

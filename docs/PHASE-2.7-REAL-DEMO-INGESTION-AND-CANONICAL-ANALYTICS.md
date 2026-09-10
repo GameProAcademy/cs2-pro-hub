@@ -163,3 +163,48 @@ Nenhuma migration foi criada nesta rodada — nenhuma tabela nova foi necessári
 2. Configurar o agendamento externo de `/api/public/pipeline-cron`
    (pendência de infraestrutura, não de código).
 3. Somente depois: Pro Score.
+
+## 8. Rodada de hardening P1–P2 (fase segue ABERTA)
+
+Nenhuma funcionalidade nova. Correções de correção/segurança sobre o pipeline
+demo; o parser real continua não provisionado.
+
+1. **Resolver realmente ligado ao caminho demo.** `processJob()` agora descobre
+   candidatos (`loadCanonicalCandidates`, descoberta neutra de fonte compartilhada
+   com FACEIT), resolve com `resolveAgainstAll()` e só anexa quando
+   `canConvergeCrossSource()` autoriza (EXACT_MATCH inequívoco). `CONFLICT` falha o
+   job (`CANONICAL_RESOLUTION_CONFLICT`) em vez de fundir históricos.
+2. **Fingerprint ≠ identidade canônica.** O SHA-256 do arquivo é evidência de
+   identidade do *arquivo*; o demo não tem `external_match_id`. A persistência
+   canônica deixou de exigir `externalMatchId` para aceitar `_attach_match_id`, o
+   que antes descartava silenciosamente todo attach de demo.
+3. **`NULL ≠ FALSE`.** Flags de bomba (`bombPlanted/Defused/Exploded`) são
+   `boolean | null`: só booleano explícito do parser é preservado; ausência ou
+   valor inválido é `null`.
+4. **Métricas quality-aware.** `metricsAvailability()` descreve o que a demo
+   realmente contém (kills, dano, utility, fim de round, economia, timing) e cada
+   métrica dependente devolve `null` sem a evidência necessária. Flash assist,
+   sendo temporal, exige timing confiável — sem ele é `null`, nunca 0.
+5. **Tickrate nunca assumido.** `eventTime()` usa `time_seconds` ou
+   `tick / tickrate` apenas quando o tickrate foi informado; o `64` fixo saiu.
+6. **Clutch por participação comprovada.** A participação vem do round, não de
+   `team != null`.
+7. **Resposta do parser limitada.** `Content-Length` é validado antes da leitura e
+   o corpo é lido incrementalmente com corte em `MAX_PARSER_PAYLOAD_BYTES`
+   (`PARSER_PAYLOAD_TOO_LARGE`, permanente).
+8. **Hash sem carregar a demo.** `src/lib/pipeline/sha256.ts` implementa SHA-256
+   incremental (chunks de 8 MB); o cliente não usa mais `file.arrayBuffer()`.
+9. **Política de demo curta.** Abaixo de `MIN_VALID_ROUNDS` o job falha com
+   `DEMO_INSUFFICIENT_SAMPLE` (permanente, sem retry) — distinto de demo sem
+   rounds (`VALIDATION_ERROR`).
+10. **Deadline real.** O job tem um orçamento absoluto derivado de
+    `JOB_STALE_MINUTES`, propagado ao adapter (`deadlineAt`) e verificado entre as
+    etapas; esgotado, falha com `JOB_DEADLINE_EXCEEDED` em vez de segurar o slot de
+    concorrência até a varredura de stale.
+11. **Single writer preservado.** `persistCanonicalObservation()` continua a única
+    escritora de fatos canônicos; a projeção por jogador segue separada.
+
+Testes: `src/lib/pipeline/__tests__/hardening27.test.ts` (H1–H15) + suíte
+existente = 515 testes. Typecheck, lint e build OK. `match_features.sample_clutches`
+aceita `NULL`. **A FASE 2.7 permanece ABERTA**: sem `DEMO_PARSER_URL` /
+`DEMO_PARSER_TOKEN` nenhum `.dem` real foi processado, e a FASE 2.8 não foi iniciada.
