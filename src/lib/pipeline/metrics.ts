@@ -625,14 +625,15 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
 
     enemiesFlashed: availability.utilityEvents ? enemiesFlashed : null,
     grenadesUsed: availability.utilityEvents ? grenadesUsed : null,
-    ctRating: availability.damageEvents ? sideRating("CT") : null,
-    tRating: availability.damageEvents ? sideRating("T") : null,
+    ctRating: sideRating("CT"),
+    tRating: sideRating("T"),
     sourceRating:
-      availability.damageEvents && roundsPlayed > 0
+      ratingEvidence && roundsPlayed > 0
         ? round3(
             compositeRating(playerKills.length, playerDeaths.length, damageGiven, roundsPlayed),
           )
         : null,
+
     damageEfficiency:
       availability.damageEvents && damageTaken > 0 ? round3(damageGiven / damageTaken) : null,
   };
