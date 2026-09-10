@@ -311,3 +311,65 @@ Próximo passo recomendado: FASE 2.7.2 — provisionamento do parser worker.
 
 Gates desta rodada: 539/539 testes, typecheck (tsgo) OK, lint OK, build OK,
 linter de segurança do banco sem novos achados.
+
+## 10. FASE 2.7.1 — rodada 4: métricas quality-aware e identidade do parser
+
+### 10.1. Uma única definição de classe de evidência
+
+`src/lib/pipeline/evidence.ts` passa a ser a ÚNICA fonte da classificação de
+eventos canônicos em classes de evidência (`UTILITY_EVENT_TYPES` inclui `flash`,
+`smoke`, `molotov`, `incendiary`, `he`). O normalizer (flag `missing_utility`) e
+`metricsAvailability()` importam desse módulo, portanto não podem mais divergir:
+antes, uma partida só com smokes era "sem utility" para uma camada e "com
+utility" para a outra.
+
+Semântica: a classe descreve **o dataset**, nunca a atividade do jogador.
+
+| classe | ausente | presente + zero observado |
+| --- | --- | --- |
+| `killEvents` | k/d, KAST, opening, clutch, multi-kill, survival = `NULL` | `0` (ou `1` em complementos como `survival_rate`) |
+| `damageEvents` | ADR, dano sofrido, eficiência = `NULL` | `0` |
+| `utilityEvents` | utility damage/flash/granadas = `NULL` | `0` |
+| `timing` | trades, early deaths, KAST = `NULL` | `0` |
+| `roundEndEvidence` | `survival_rate` = `NULL` | valor real |
+| `economy` | `buy_discipline`, `damage_per_dollar` = `NULL`; `economy_data_available` = `0` | `economy_data_available` = `1` |
+
+Denominador ausente continua `NULL` (ex.: `hs_rate` sem nenhuma kill,
+`clutch_win_rate` sem tentativas, `damage_efficiency` sem dano sofrido) — nunca `0`.
+
+### 10.2. Gates em `extractFeatures()`
+
+Todo sinal derivado passa por `gate(<classes de evidência>, valor)`. Somente
+fatos do dataset ficam fora do gate: `sample_rounds` e `early_window_seconds`.
+
+### 10.3. Identidade do parser é configuração
+
+`expectedParserIdentity()` lê, dentro da função (nunca no escopo do módulo):
+`DEMO_PARSER_EXPECTED_NAME`, `DEMO_PARSER_EXPECTED_VERSION` e
+`DEMO_PARSER_EXPECTED_REVISION`. Sem variáveis, valem os valores fixados em
+`src/config/pipeline.ts`. Quando a revisão esperada está definida, um worker com
+outra revisão é rejeitado (`PARSER_ERROR`). Compatibilidade de major/minor **não**
+prova compatibilidade com uma build do CS2: isso só será estabelecido pela matriz
+de compatibilidade da FASE 2.7.2.
+
+### 10.4. Provas desta rodada
+
+`src/lib/pipeline/__tests__/quality271.test.ts` — 28 testes com assertions
+concretas: matriz NULL vs ZERO por classe de evidência; consistência entre flag
+`missing_utility` e `availability.utilityEvents`; tickrate (1280@64 = 20 s,
+1280@128 = 10 s, `time_seconds` com precedência, tickrate ausente/0/negativo →
+`NULL`, sem `NaN`/`Infinity`); clutch 1v1/1v2/1v3, participante ausente do round
+(0 tentativas) e clutch `NULL` sem kill events; contrato do parser (payload
+válido, contract version, nome, major/minor, identidade ausente, arrays ausentes,
+taxonomia de erros do worker).
+
+Gates: 567/567 testes, typecheck (tsgo) OK, lint OK (apenas 8 warnings
+pré-existentes de Fast Refresh), build OK.
+
+### 10.5. Estado
+
+**FASE 2.7 permanece IN PROGRESS.** Parser real não provisionado, nenhum `.dem`
+real ingerido, FASE 2.8 não iniciada. Pré-requisitos da FASE 2.7.2: worker de
+parser HTTPS com `DEMO_PARSER_URL`/`DEMO_PARSER_TOKEN`, identidade/revisão
+esperada configuradas, matriz de compatibilidade por build do CS2 e prova E2E com
+`.dem` real.

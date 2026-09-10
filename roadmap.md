@@ -413,3 +413,24 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 **FASE 2.7 — IN PROGRESS / HARDENING CORRECTIONS COMPLETED.** Não fechada: parser
 real ainda não provisionado, nenhum `.dem` real ingerido, FASE 2.8 não iniciada.
 Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
+
+- [x] **FASE 2.7.1 — métricas quality-aware (rodada 4)**: classe de evidência
+      definida uma única vez em `src/lib/pipeline/evidence.ts` (normalizer e
+      `metricsAvailability()` compartilham a mesma lista, agora com `smoke` e
+      `incendiary`); todos os sinais derivados em `extractFeatures()` passam por
+      gate de disponibilidade — ausência de evidência é `NULL`, zero observado é
+      `0`, denominador ausente é `NULL`; `sample_rounds` e `early_window_seconds`
+      permanecem fatos sem gate.
+- [x] **Identidade do parser configurável**: `expectedParserIdentity()` lê
+      `DEMO_PARSER_EXPECTED_NAME` / `_VERSION` / `_REVISION` dentro da função, com
+      fallback para `src/config/pipeline.ts`; revisão esperada, quando definida, é
+      exigida. Compatibilidade major/minor não prova compatibilidade com build do
+      CS2 (matriz fica para a 2.7.2).
+- [x] Testes: `quality271.test.ts` (28 testes) — matriz NULL vs ZERO, coerência
+      `missing_utility` ↔ `availability.utilityEvents`, matemática de tickrate,
+      clutch por participação e contrato do parser. 567/567 testes, typecheck
+      (tsgo), lint e build OK.
+- [ ] **FASE 2.7.2 (pré-requisitos)**: worker HTTPS de parser
+      (`DEMO_PARSER_URL`/`DEMO_PARSER_TOKEN`), identidade/revisão esperada
+      configuradas, matriz de compatibilidade por build do CS2 e prova E2E com
+      `.dem` real.
