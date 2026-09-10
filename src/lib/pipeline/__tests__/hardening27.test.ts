@@ -30,9 +30,9 @@ describe("FASE 2.7 hardening — NULL is not FALSE", () => {
   it("H1: missing bomb flags stay null instead of becoming false", () => {
     const raw = clone();
     for (const round of raw.rounds) {
-      delete (round as Record<string, unknown>)["bomb_planted"];
-      delete (round as Record<string, unknown>)["bomb_defused"];
-      delete (round as Record<string, unknown>)["bomb_exploded"];
+      delete (round as unknown as Record<string, unknown>)["bomb_planted"];
+      delete (round as unknown as Record<string, unknown>)["bomb_defused"];
+      delete (round as unknown as Record<string, unknown>)["bomb_exploded"];
     }
     const match = normalizeParserOutput(raw);
     for (const round of match.rounds) {
@@ -45,7 +45,7 @@ describe("FASE 2.7 hardening — NULL is not FALSE", () => {
   it("H2: explicit false is preserved as an asserted negative", () => {
     const raw = clone();
     for (const round of raw.rounds) {
-      (round as Record<string, unknown>)["bomb_planted"] = false;
+      (round as unknown as Record<string, unknown>)["bomb_planted"] = false;
     }
     const match = normalizeParserOutput(raw);
     expect(match.rounds.every((round) => round.bombPlanted === false)).toBe(true);
@@ -53,7 +53,7 @@ describe("FASE 2.7 hardening — NULL is not FALSE", () => {
 
   it("H3: non-boolean junk is rejected as unknown, never coerced", () => {
     const raw = clone();
-    (raw.rounds[0] as Record<string, unknown>)["bomb_defused"] = "yes";
+    (raw.rounds[0] as unknown as Record<string, unknown>)["bomb_defused"] = "yes";
     const match = normalizeParserOutput(raw);
     expect(match.rounds[0]!.bombDefused).toBeNull();
   });
@@ -62,10 +62,10 @@ describe("FASE 2.7 hardening — NULL is not FALSE", () => {
 describe("FASE 2.7 hardening — timing is never assumed", () => {
   it("H4: without a tickrate, tick-only events yield no trade timing", () => {
     const raw = clone();
-    delete (raw.header as Record<string, unknown>)["tickrate"];
+    delete (raw.header as unknown as Record<string, unknown>)["tickrate"];
     for (const event of raw.events) {
-      delete (event as Record<string, unknown>)["time_seconds"];
-      (event as Record<string, unknown>)["tick"] = 1000;
+      delete (event as unknown as Record<string, unknown>)["time_seconds"];
+      (event as unknown as Record<string, unknown>)["tick"] = 1000;
     }
     const metrics = computeMetrics(normalizeParserOutput(raw), ME);
     expect(metrics.tradeKills).toBeNull();
@@ -75,7 +75,7 @@ describe("FASE 2.7 hardening — timing is never assumed", () => {
 
   it("H5: a reported tickrate is used instead of a hardcoded 64", () => {
     const raw = clone();
-    (raw.header as Record<string, unknown>)["tickrate"] = 128;
+    (raw.header as unknown as Record<string, unknown>)["tickrate"] = 128;
     const match = normalizeParserOutput(raw);
     expect(match.tickrate).toBe(128);
   });
@@ -90,9 +90,9 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
   it("H7: KAST is null when no round proves the player participated", () => {
     const raw = clone();
     for (const round of raw.rounds) {
-      (round as Record<string, unknown>)["sides"] = {};
-      (round as Record<string, unknown>)["money_start"] = {};
-      (round as Record<string, unknown>)["equipment_value"] = {};
+      (round as unknown as Record<string, unknown>)["sides"] = {};
+      (round as unknown as Record<string, unknown>)["money_start"] = {};
+      (round as unknown as Record<string, unknown>)["equipment_value"] = {};
     }
     raw.events = [];
     const match = normalizeParserOutput(raw);
