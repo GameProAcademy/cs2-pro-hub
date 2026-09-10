@@ -22,11 +22,11 @@ import { describe, expect, it } from "vitest";
 import { MIN_VALID_ROUNDS } from "@/config/pipeline";
 import {
   canConvergeCrossSource,
-  canonicalBundleToRpcPayload,
   resolveAgainstAll,
   resolveMatchIdentity,
   type MatchIdentityCandidate,
 } from "@/lib/canonical";
+import { canonicalBundleToRpcPayload } from "@/lib/canonical/canonical.persistence.server";
 import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
@@ -239,11 +239,16 @@ describe("FASE 2.7.1 — NULL is not ZERO", () => {
 
   it("H2: an observed absence of kills for a player is ZERO, not NULL", () => {
     const { metrics } = featuresFor(clone());
-    const quiet = computeMetrics(normalizeParserOutput(clone()), ENEMY_B);
     expect(metrics.availability.killEvents).toBe(true);
-    expect(quiet.kills).toBe(1);
-    const noKiller = computeMetrics(normalizeParserOutput(clone()), MATE);
-    expect(typeof noKiller.kills).toBe("number");
+    // ENEMY_B killed ME twice in the fixture: an observed count, not an estimate.
+    expect(computeMetrics(normalizeParserOutput(clone()), ENEMY_B).kills).toBe(2);
+    // A participant of an observed round who killed nobody has exactly 0 kills.
+    const observed = clutchMatch({
+      kills: [{ time: 20, attacker: ME, victim: ENEMY_A }],
+      winnerTeam: "Team Alpha",
+      includeGhost: false,
+    });
+    expect(computeMetrics(observed, MATE).kills).toBe(0);
   });
 
   it("I1: utility evidence present and player utility zero => feature 0", () => {
