@@ -452,34 +452,49 @@ describe("parser contract validation", () => {
     expect(identity.version).toBe(PARSER_VERSION);
   });
 
+  /** The public message is the CODE; the reason lives in the internal detail. */
+  function rejection(payload: unknown): { code: string; detail: string } {
+    try {
+      assertRawParserOutput(payload);
+    } catch (error) {
+      const e = error as PipelineError;
+      return { code: e.code, detail: e.detail ?? "" };
+    }
+    throw new Error("expected assertRawParserOutput to reject");
+  }
+
   it("rejects a wrong contract version", () => {
-    expect(() =>
-      assertRawParserOutput({ ...valid(), contract_version: PARSER_CONTRACT_VERSION + 1 }),
-    ).toThrowError(/contract mismatch/);
+    const r = rejection({ ...valid(), contract_version: PARSER_CONTRACT_VERSION + 1 });
+    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.detail).toContain("contract mismatch");
   });
 
   it("rejects a wrong parser name as unsupported", () => {
-    expect(() =>
-      assertRawParserOutput({ ...valid(), parser: { name: "other", version: PARSER_VERSION } }),
-    ).toThrowError(/parser name mismatch/);
+    const r = rejection({ ...valid(), parser: { name: "other", version: PARSER_VERSION } });
+    expect(r.code).toBe("UNSUPPORTED_DEMO");
+    expect(r.detail).toContain("parser name mismatch");
   });
 
   it("rejects a wrong parser major/minor", () => {
-    expect(() =>
-      assertRawParserOutput({ ...valid(), parser: { name: PARSER_NAME, version: "9.99.0" } }),
-    ).toThrowError(/parser version mismatch/);
+    const r = rejection({ ...valid(), parser: { name: PARSER_NAME, version: "9.99.0" } });
+    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.detail).toContain("parser version mismatch");
   });
 
   it("rejects a missing parser identity", () => {
     const { parser: _parser, ...rest } = valid();
-    expect(() => assertRawParserOutput(rest)).toThrowError(/missing parser identity/);
+    const r = rejection(rest);
+    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.detail).toContain("missing parser identity");
   });
 
   it("rejects missing players / rounds / events arrays", () => {
     for (const key of ["players", "rounds", "events"] as const) {
       const payload: Record<string, unknown> = { ...valid() };
       delete payload[key];
-      expect(() => assertRawParserOutput(payload)).toThrowError(/missing players\/rounds\/events/);
+      const r = rejection(payload);
+      expect(r.code).toBe("PARSER_ERROR");
+      expect(r.detail).toContain(key);
     }
   });
 
