@@ -131,19 +131,13 @@ export function participatedInRound(
  * death event is NOT proof of survival.
  */
 /**
- * FASE 2.7.1D — SINGLE DEFINITION OF "this round provably ended".
- *
- * Used both by `playerSurvivedRound` (per round) and by the survival-rate
- * denominator (per participated round set), so the two can never disagree.
+ * FASE 2.7.1E — re-export of the CENTRAL definition (see roundEvidence.ts) so
+ * existing callers keep one import path. There is no second implementation.
  */
 export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): boolean {
-  return (
-    round.endTick != null ||
-    round.durationSeconds != null ||
-    round.winnerSide != null ||
-    round.winnerTeam != null
-  );
+  return hasRoundEndEvidence(round);
 }
+
 
 export function playerSurvivedRound(
   match: CanonicalMatch,

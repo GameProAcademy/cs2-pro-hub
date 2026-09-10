@@ -130,7 +130,11 @@ function assessQuality(
   warnings: string[],
 ): ExtractionQuality {
   const flags = new Set<QualityFlag>();
-  const roundsValid = rounds.filter((r) => r.winnerSide !== null || r.endTick !== null).length;
+  // FASE 2.7.1E — the central round-end evidence rule (roundEvidence.ts), the
+  // same one metrics and survival use. `winnerTeam` and `durationSeconds` count
+  // as evidence too, and a numeric 0 is never read as absence.
+  const roundsValid = rounds.filter((r) => hasRoundEndEvidence(r)).length;
+
 
   if (players.length === 0) flags.add("missing_players");
   if (rounds.length === 0) flags.add("missing_rounds");
