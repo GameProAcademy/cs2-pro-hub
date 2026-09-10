@@ -149,9 +149,9 @@ export function extractFeatures(
       economy_data_available: hasEconomy ? 1 : 0,
     },
     clutch: {
-      clutch_win_rate: ratio(metrics.clutchWins, metrics.clutchAttempts),
-      clutch_frequency: ratio(metrics.clutchAttempts, rounds),
-      multi_kill_rate: ratio(metrics.multiKills, rounds),
+      clutch_win_rate: gate(hasKills, ratio(metrics.clutchWins, metrics.clutchAttempts)),
+      clutch_frequency: gate(hasKills, ratio(metrics.clutchAttempts, rounds)),
+      multi_kill_rate: gate(hasKills, ratio(metrics.multiKills, rounds)),
     },
     consistency: {
       // Single-match consistency is weak by nature; the value is flagged by the
