@@ -78,6 +78,36 @@ export function isParserEndpointConfigured(rawUrl: string | undefined | null): b
   }
 }
 
+/**
+ * GATE 1E.1 — OFFICIAL WORKER PROTOCOL CODES.
+ *
+ * This is the documented wire protocol the Railway worker must emit in
+ * `detail.error_code`. It exists so APP and worker share ONE matrix instead of
+ * two divergent ones; every entry is handled explicitly by
+ * `classifyWorkerFailure` (proved by the Gate 1E.1 test suite).
+ */
+export const WORKER_ERROR_CODES = [
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "CONTRACT_MISMATCH",
+  "UNSUPPORTED_CONTRACT_VERSION",
+  "INVALID_DEMO_FORMAT",
+  "CORRUPTED_DEMO",
+  "UNSUPPORTED_DEMO",
+  "HASH_MISMATCH",
+  "FILE_SIZE_MISMATCH",
+  "DEMO_TOO_LARGE",
+  "PAYLOAD_TOO_LARGE",
+  "DOWNLOAD_ERROR",
+  "DOWNLOAD_FAILED",
+  "TIMEOUT",
+  "PARSE_TIMEOUT",
+  "DOWNLOAD_TIMEOUT",
+  "PARSER_ERROR",
+] as const;
+
+export type WorkerErrorCode = (typeof WORKER_ERROR_CODES)[number];
+
 export interface WorkerErrorEnvelope {
   errorCode: string | null;
   /** Internal-only worker message. Never surfaced to a player. */
@@ -189,10 +219,82 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
   if (typeof name !== "string" || typeof version !== "string" || typeof contract !== "number") {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "/version is missing parser identity");
   }
+  const revision = typeof raw.parser?.revision === "string" ? raw.parser.revision.trim() : "";
   return {
     name,
     version,
-    revision: typeof raw.parser?.revision === "string" ? raw.parser.revision : null,
+    // An empty revision is ABSENT, never an invented identifier.
+    revision: revision.length > 0 ? revision : null,
     contractVersion: contract,
   };
+}
+
+/** `0.42.0` -> `0.42`: patch releases of the pinned parser stay compatible. */
+export function parserMajorMinor(version: string): string {
+  return version.split(".").slice(0, 2).join(".");
+}
+
+/** What this deployment demands from the worker build. */
+export interface ExpectedParserIdentity {
+  name: string;
+  version: string;
+  /** Exact worker build. `null` = not pinned by configuration. */
+  revision: string | null;
+  /** When true, an unpinned or unreported revision fails closed. */
+  revisionRequired: boolean;
+  contractVersion: number;
+}
+
+/**
+ * GATE 1E.1 — REVISION LOCK, FAIL CLOSED.
+ *
+ * Proves `worker.name/version/revision/contract_version` against what this
+ * deployment expects. There is no downgrade, no "close enough" acceptance and no
+ * silent parser swap: any divergence throws.
+ *   - configuration cannot satisfy the lock  -> PARSER_CONFIG_ERROR
+ *   - the worker is a different parser build -> PARSER_IDENTITY_MISMATCH
+ *   - the worker speaks another contract     -> PARSER_CONTRACT_MISMATCH
+ */
+export function assertParserIdentity(
+  worker: {
+    name: string;
+    version: string;
+    revision: string | null;
+    contractVersion?: number | null;
+  },
+  expected: ExpectedParserIdentity,
+): void {
+  if (expected.revisionRequired && !expected.revision) {
+    throw new PipelineError(
+      "PARSER_CONFIG_ERROR",
+      "DEMO_PARSER_EXPECTED_REVISION is required in this environment",
+    );
+  }
+  if (worker.name !== expected.name) {
+    throw new PipelineError(
+      "PARSER_IDENTITY_MISMATCH",
+      `parser name mismatch: got ${worker.name}, expected ${expected.name}`,
+    );
+  }
+  if (parserMajorMinor(worker.version) !== parserMajorMinor(expected.version)) {
+    throw new PipelineError(
+      "PARSER_IDENTITY_MISMATCH",
+      `parser version mismatch: got ${worker.version}, expected ${expected.version}`,
+    );
+  }
+  if (expected.revisionRequired && !worker.revision) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "worker did not report a build revision");
+  }
+  if (expected.revision != null && worker.revision !== expected.revision) {
+    throw new PipelineError(
+      "PARSER_IDENTITY_MISMATCH",
+      `parser revision mismatch: got ${String(worker.revision)}, expected ${expected.revision}`,
+    );
+  }
+  if (worker.contractVersion != null && worker.contractVersion !== expected.contractVersion) {
+    throw new PipelineError(
+      "PARSER_CONTRACT_MISMATCH",
+      `expected contract ${expected.contractVersion}, got ${worker.contractVersion}`,
+    );
+  }
 }

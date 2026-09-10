@@ -483,15 +483,15 @@ describe("parser contract validation", () => {
     expect(r.detail).toContain(`expected ${PARSER_CONTRACT_VERSION}`);
   });
 
-  it("rejects a wrong parser name as unsupported", () => {
+  it("rejects a wrong parser name as an identity mismatch", () => {
     const r = rejection({ ...valid(), parser: { name: "other", version: PARSER_VERSION } });
-    expect(r.code).toBe("UNSUPPORTED_DEMO");
+    expect(r.code).toBe("PARSER_IDENTITY_MISMATCH");
     expect(r.detail).toContain("parser name mismatch");
   });
 
   it("rejects a wrong parser major/minor", () => {
     const r = rejection({ ...valid(), parser: { name: PARSER_NAME, version: "9.99.0" } });
-    expect(r.code).toBe("PARSER_ERROR");
+    expect(r.code).toBe("PARSER_IDENTITY_MISMATCH");
     expect(r.detail).toContain("parser version mismatch");
   });
 

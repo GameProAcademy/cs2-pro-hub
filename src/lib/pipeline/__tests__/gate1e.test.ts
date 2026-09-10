@@ -180,7 +180,7 @@ describe("GATE 1E — response contract", () => {
     );
   });
 
-  it("rejects an incompatible parser identity", () => {
+  it("rejects an incompatible parser identity (GATE 1E.1 fail closed)", () => {
     expect(
       code(() =>
         assertRawParserOutput({
@@ -188,12 +188,13 @@ describe("GATE 1E — response contract", () => {
           parser: { name: "other", version: PARSER_VERSION },
         }),
       ),
-    ).toBe("UNSUPPORTED_DEMO");
+    ).toBe("PARSER_IDENTITY_MISMATCH");
     expect(
       code(() =>
         assertRawParserOutput({ ...validOutput, parser: { name: PARSER_NAME, version: "9.9.9" } }),
       ),
-    ).toBe("PARSER_ERROR");
+    ).toBe("PARSER_IDENTITY_MISMATCH");
+    expect(isPermanentError("PARSER_IDENTITY_MISMATCH")).toBe(true);
   });
 });
 

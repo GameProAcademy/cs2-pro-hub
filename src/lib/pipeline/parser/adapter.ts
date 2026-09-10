@@ -10,7 +10,11 @@ import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/p
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
-import { classifyWorkerFailure } from "./parserEndpoint";
+import {
+  assertParserIdentity,
+  classifyWorkerFailure,
+  type ExpectedParserIdentity,
+} from "./parserEndpoint";
 
 export interface ParseRequest {
   /** Storage path of the demo inside the private demos bucket. */
@@ -58,6 +62,32 @@ export function expectedParserIdentity(): {
   };
 }
 
+/**
+ * FASE 2.7.2 — GATE 1E.1 — IS THE REVISION LOCK MANDATORY?
+ *
+ * Production locks the exact worker build by default: without a pinned revision
+ * a redeploy could silently change the parser under a player's analysis. A
+ * development/test environment may run unpinned, and `DEMO_PARSER_REVISION_REQUIRED`
+ * makes the decision explicit either way.
+ */
+export function isParserRevisionRequired(): boolean {
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const explicit = (env?.["DEMO_PARSER_REVISION_REQUIRED"] ?? "").trim().toLowerCase();
+  if (explicit === "true" || explicit === "1") return true;
+  if (explicit === "false" || explicit === "0") return false;
+  return (env?.["NODE_ENV"] ?? "") === "production";
+}
+
+/** The full expectation used by the revision lock (identity + contract). */
+export function expectedParserContract(): ExpectedParserIdentity {
+  const identity = expectedParserIdentity();
+  return {
+    ...identity,
+    revisionRequired: isParserRevisionRequired(),
+    contractVersion: PARSER_CONTRACT_VERSION,
+  };
+}
+
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!value || typeof value !== "object")
@@ -75,25 +105,21 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!raw.parser?.name || !raw.parser?.version) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing parser identity");
   }
-  const expected = expectedParserIdentity();
-  // An incompatible worker is rejected explicitly instead of being accepted
+  // GATE 1E.1 — ONE revision lock for both /version and the parse response. An
+  // incompatible worker is rejected explicitly instead of being accepted
   // silently. NOTE: major/minor compatibility does NOT guarantee CS2 demo
   // compatibility — only the FASE 2.7.2 compatibility matrix can establish that.
-  if (raw.parser.name !== expected.name) {
-    throw new PipelineError("UNSUPPORTED_DEMO", `parser name mismatch: ${raw.parser.name}`);
-  }
-  if (majorMinor(raw.parser.version) !== majorMinor(expected.version)) {
-    throw new PipelineError(
-      "PARSER_ERROR",
-      `parser version mismatch: got ${raw.parser.version}, expected ${expected.version}`,
-    );
-  }
-  if (expected.revision != null && (raw.parser.revision ?? null) !== expected.revision) {
-    throw new PipelineError(
-      "PARSER_ERROR",
-      `parser revision mismatch: got ${String(raw.parser.revision)}, expected ${expected.revision}`,
-    );
-  }
+  assertParserIdentity(
+    {
+      name: raw.parser.name,
+      version: raw.parser.version,
+      revision:
+        typeof raw.parser.revision === "string" && raw.parser.revision.trim().length > 0
+          ? raw.parser.revision.trim()
+          : null,
+    },
+    expectedParserContract(),
+  );
   if (!raw.header || typeof raw.header !== "object") {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing header");
   }
@@ -104,11 +130,6 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "warnings must be an array when present");
   }
   return raw as RawParserOutput;
-}
-
-/** `0.42.0` -> `0.42`: patch releases of the pinned parser stay compatible. */
-function majorMinor(version: string): string {
-  return version.split(".").slice(0, 2).join(".");
 }
 
 /**

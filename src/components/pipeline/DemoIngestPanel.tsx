@@ -42,6 +42,7 @@ function errorKey(code: string | null): TranslationKey {
     "pipeline.error.PARSER_DOWNLOAD_ERROR",
     "pipeline.error.PARSER_HASH_MISMATCH",
     "pipeline.error.PARSER_FILE_SIZE_MISMATCH",
+    "pipeline.error.PARSER_IDENTITY_MISMATCH",
     "pipeline.error.VALIDATION_ERROR",
     "pipeline.error.PLAYER_IDENTITY_UNRESOLVED",
     "pipeline.error.IDENTITY_RESOLUTION_ERROR",

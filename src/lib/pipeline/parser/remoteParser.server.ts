@@ -30,8 +30,14 @@ import {
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
-import { assertRawParserOutput, type DemoParserAdapter, type ParseRequest } from "./adapter";
 import {
+  assertRawParserOutput,
+  expectedParserContract,
+  type DemoParserAdapter,
+  type ParseRequest,
+} from "./adapter";
+import {
+  assertParserIdentity,
   classifyWorkerFailure,
   isParserEndpointConfigured,
   parseWorkerIdentity,
@@ -246,13 +252,28 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
     const identity = parseWorkerIdentity(
       parseJson(await readBoundedText(versionResponse, 64 * 1024)),
     );
+    // GATE 1E.1 — REVISION LOCK: the diagnostic reports the SAME verdict the
+    // parse path would enforce, so a mismatched build is visible before a job.
+    let identityError: string | null = null;
+    try {
+      assertParserIdentity(
+        {
+          name: identity.name,
+          version: identity.version,
+          revision: identity.revision,
+          contractVersion: identity.contractVersion,
+        },
+        expectedParserContract(),
+      );
+    } catch (error) {
+      identityError = error instanceof PipelineError ? error.code : "PARSER_IDENTITY_MISMATCH";
+    }
     return {
       endpoint: endpoints.origin,
       healthy: true,
       healthStatus: health.status,
       identity,
-      error:
-        identity.contractVersion === PARSER_CONTRACT_VERSION ? null : "PARSER_CONTRACT_MISMATCH",
+      error: identityError,
     };
   } catch (error) {
     return {

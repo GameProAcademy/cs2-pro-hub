@@ -619,6 +619,8 @@ export const ptBR = {
   "pipeline.error.PARSER_HASH_MISMATCH": "O arquivo recebido não corresponde ao arquivo enviado.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
     "O tamanho do arquivo recebido não corresponde ao enviado.",
+  "pipeline.error.PARSER_IDENTITY_MISMATCH":
+    "O serviço de análise está numa versão inesperada. O suporte foi avisado.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Jobs, qualidade e retenção",

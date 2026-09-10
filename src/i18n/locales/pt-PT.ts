@@ -616,6 +616,8 @@ export const ptPT: Dictionary = {
   "pipeline.error.PARSER_HASH_MISMATCH": "O ficheiro recebido não corresponde ao ficheiro enviado.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
     "O tamanho do ficheiro recebido não corresponde ao enviado.",
+  "pipeline.error.PARSER_IDENTITY_MISMATCH":
+    "O serviço de análise está numa versão inesperada. O suporte foi avisado.",
   "pipeline.error.PROCESSING_ERROR": "Falha inesperada no processamento.",
   "pipeline.admin.title": "Pipeline de demos",
   "pipeline.admin.subtitle": "Trabalhos, qualidade e retenção",

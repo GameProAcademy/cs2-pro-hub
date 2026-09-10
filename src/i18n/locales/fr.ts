@@ -616,6 +616,8 @@ export const fr: Dictionary = {
   "pipeline.error.PARSER_HASH_MISMATCH": "Le fichier reçu ne correspond pas au fichier envoyé.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH":
     "La taille du fichier reçu ne correspond pas à l'envoi.",
+  "pipeline.error.PARSER_IDENTITY_MISMATCH":
+    "Le service d'analyse exécute une version inattendue. Le support a été informé.",
   "pipeline.error.PROCESSING_ERROR": "Échec de traitement inattendu.",
   "pipeline.admin.title": "Pipeline des demos",
   "pipeline.admin.subtitle": "Tâches, qualité et rétention",

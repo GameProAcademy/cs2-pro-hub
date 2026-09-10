@@ -129,7 +129,7 @@ describe("Gate 1D parser identity", () => {
     expect(assertRawParserOutput(payload()).parser.revision).toBe("worker-revision");
     expect(() =>
       assertRawParserOutput({ ...payload(), parser: { ...payload().parser, revision: "other" } }),
-    ).toThrow("PARSER_ERROR");
+    ).toThrow("PARSER_IDENTITY_MISMATCH");
   });
 
   it("rejects wrong name, major/minor, contract, and missing arrays", () => {
