@@ -539,7 +539,11 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     multiKillBreakdown: breakdown,
     utilityDamage: availability.damageEvents ? round1(utilityDamage) : null,
     grenadeDamage: availability.damageEvents ? round1(utilityDamage) : null,
-    flashAssists: availability.utilityEvents ? flashAssists : null,
+    // A flash assist is a TEMPORAL claim: it needs both utility events and a
+    // trustworthy instant for every kill. Without reliable timing the count is
+    // unknown, not zero.
+    flashAssists: availability.utilityEvents && availability.timing ? flashAssists : null,
+
     enemiesFlashed: availability.utilityEvents ? enemiesFlashed : null,
     grenadesUsed: availability.utilityEvents ? grenadesUsed : null,
     ctRating: availability.damageEvents ? sideRating("CT") : null,
