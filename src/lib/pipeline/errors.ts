@@ -57,8 +57,13 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "PLAYER_IDENTITY_UNRESOLVED",
   // A human decision is required: two canonical candidates matched EXACT.
   "CANONICAL_RESOLUTION_CONFLICT",
+  // A payload above the ceiling will be above it on every retry.
+  "PARSER_PAYLOAD_TOO_LARGE",
+  // The demo will never gain rounds by being parsed again.
+  "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
 ]);
+
 
 export class PipelineError extends Error {
   readonly code: PipelineErrorCode;
