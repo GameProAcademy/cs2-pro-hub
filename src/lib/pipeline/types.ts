@@ -230,11 +230,16 @@ export interface CanonicalMetrics {
   damageTaken: number | null;
   adr: number | null;
   kast: number | null;
-  firstKills: number;
-  firstDeaths: number;
-  openingAttempts: number;
-  openingSuccess: number;
+  /**
+   * NULL when no round has a determinable opening duel (missing kill evidence,
+   * or unknown/ambiguous instants). Zero would claim "no opening duel happened".
+   */
+  firstKills: number | null;
+  firstDeaths: number | null;
+  openingAttempts: number | null;
+  openingSuccess: number | null;
   openingSuccessRate: number | null;
+
   /** NULL when timing is unknown: trades cannot be observed without instants. */
   tradeKills: number | null;
   tradeDeaths: number | null;
