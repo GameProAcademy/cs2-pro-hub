@@ -129,9 +129,8 @@ export async function persistDemoProjection(args: {
           : null;
   const scores = ownScores(match, teamPlayer);
 
-  // 1. Per-player convenience columns on the canonical match row.
-  //    `player_id` is a PROJECTION, never an identity signal, so an existing
-  //    projection belonging to another player is never overwritten.
+  // 1. Projection columns on the canonical match row. Player-scoped columns are
+  //    only written when this player owns the projection (see projectionUpdate).
   const { data: existing, error: readError } = await supabaseAdmin
     .from("matches")
     .select("id, player_id")
@@ -140,21 +139,15 @@ export async function persistDemoProjection(args: {
   if (readError) fail(readError.message);
   if (!existing) fail("canonical match not found for projection");
 
-  const { error: updateError } = await supabaseAdmin
-    .from("matches")
-    .update({
-      ...(existing.player_id == null || existing.player_id === playerId
-        ? { player_id: playerId, upload_id: uploadId }
-        : {}),
+  const update = projectionUpdate({
+    existingPlayerId: existing.player_id ?? null,
+    playerId,
+    uploadId,
+    matchWide: {
       platform: "demo",
       rounds: match.rounds.length,
       duration_seconds: match.durationSeconds,
       game_version: match.gameVersion,
-      team_player: teamPlayer,
-      team_opponent: teamOpponent,
-      score_player: scores.player,
-      score_opponent: scores.opponent,
-      result: matchResult(scores),
       demo_metadata: {
         schema_version: match.schemaVersion,
         parser: toJson(match.parser),
@@ -163,9 +156,22 @@ export async function persistDemoProjection(args: {
         metrics_version: METRICS_VERSION,
         features_version: FEATURES_VERSION,
       },
-    })
+    },
+    playerScoped: {
+      team_player: teamPlayer,
+      team_opponent: teamOpponent,
+      score_player: scores.player,
+      score_opponent: scores.opponent,
+      result: matchResult(scores),
+    },
+  });
+
+  const { error: updateError } = await supabaseAdmin
+    .from("matches")
+    .update(update as never)
     .eq("id", matchId);
   if (updateError) fail(updateError.message);
+
 
   // 2. Metrics (idempotent per match+player)
   const { error: metricsError } = await supabaseAdmin.from("match_metrics").upsert(
