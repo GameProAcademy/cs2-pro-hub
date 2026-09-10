@@ -621,6 +621,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     steamId,
     availability,
     roundsPlayed,
+    survivalRounds,
     kills: playerKills.length,
     deaths: playerDeaths.length,
     assists,
