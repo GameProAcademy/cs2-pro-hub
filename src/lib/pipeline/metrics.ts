@@ -433,21 +433,23 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   const roundsPlayed = roundNumbers.size;
 
   /**
-   * FASE 2.7.1D — SURVIVAL DENOMINATOR.
+   * FASE 2.7.1E — SURVIVAL DENOMINATOR = REAL DETERMINABILITY.
    *
-   * A survival rate is a claim about EVERY round in its denominator, so "at
-   * least one round ended" (the aggregate `roundEndEvidence` flag) is not
-   * enough: 19 ended rounds out of 20 would publish a rate whose 20th round has
-   * an unknown outcome. The denominator therefore exists only when EVERY round
-   * the player participated in provably ended AND the extraction covers the
-   * whole match. Otherwise it is NULL (unknown), never 0 and never partial.
+   * "The round ended" is NOT "we can tell whether THIS player survived it".
+   * A round only enters the denominator when `playerSurvivedRound()` returns a
+   * decision (true = provably survived, false = provably died). A `null` round is
+   * excluded, so the absence of a death event can never be laundered into a
+   * survival. With no determinable round the denominator is NULL (unknown), never
+   * 0, and `survival_rate` becomes NULL instead of a falsely precise number.
    */
+  const determinableSurvivalRounds = [...roundNumbers].filter(
+    (roundNumber) => playerSurvivedRound(match, steamId, roundNumber) != null,
+  ).length;
   const survivalRounds =
-    roundsPlayed > 0 &&
-    availability.completeCoverage &&
-    match.rounds.filter((r) => roundNumbers.has(r.roundNumber)).every((r) => roundHasEndEvidence(r))
-      ? roundsPlayed
+    availability.completeCoverage && determinableSurvivalRounds > 0
+      ? determinableSurvivalRounds
       : null;
+
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
   const damageGiven = damageEvents
