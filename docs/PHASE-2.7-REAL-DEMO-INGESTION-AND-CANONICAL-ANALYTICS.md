@@ -762,3 +762,86 @@ Railway responde `HTTP 404 {"status":"error","code":404,"message":"Application
 not found"}`. Logo o deployment/revision do worker NÃO pode ser provado, e o
 E2E real com `.dem` continua não provado. Todo o lado app do contrato está
 implementado e testado (42 testes em `src/lib/pipeline/__tests__/gate1e.test.ts`).
+
+---
+
+## FASE 2.7.2 — GATE 1E.1 — WORKER CONTRACT SYNC + REVISION LOCK
+
+### Endpoint e diagnóstico
+
+- APP: `DEMO_PARSER_URL` deve ser o endpoint canônico completo
+  `https://cs2-demo-parser-production.up.railway.app/v1/parse` (HTTPS obrigatório,
+  nunca a origem nua, nunca `/parse`). `/health` e `/version` são derivados da
+  origem em `parserEndpoint.ts`; nada é concatenado no caminho de parse.
+- `/health` e `/version` são diagnósticos (sem token, sem parse, sem Storage);
+  `POST /v1/parse` é a única operação autenticada (`Authorization: Bearer`).
+
+### Identidade e revision lock
+
+`assertParserIdentity()` é a ÚNICA autoridade de identidade e vale igualmente
+para a resposta de `/v1/parse` e para o probe de `/version`:
+
+| divergência | erro | permanência |
+| --- | --- | --- |
+| `parser.name` diferente | `PARSER_IDENTITY_MISMATCH` | permanente |
+| `parser.version` (major.minor) diferente | `PARSER_IDENTITY_MISMATCH` | permanente |
+| `parser.revision` diferente da esperada | `PARSER_IDENTITY_MISMATCH` | permanente |
+| revision exigida e não reportada | `PARSER_IDENTITY_MISMATCH` | permanente |
+| revision exigida e não configurada | `PARSER_CONFIG_ERROR` | permanente |
+| `contract_version` diferente de 1 | `PARSER_CONTRACT_MISMATCH` | permanente |
+
+Revision vazia é ABSENTE — nunca inventada. Em produção o lock é obrigatório por
+padrão (`DEMO_PARSER_REVISION_REQUIRED` torna a decisão explícita). Identidade
+esperada: `demoparser2` / `0.42.0` / revision de build / contract `1`.
+
+### Matriz oficial APP ↔ WORKER
+
+Os códigos do protocolo estão declarados em `WORKER_ERROR_CODES`
+(`parserEndpoint.ts`) e classificados por `classifyWorkerFailure()`; nenhum
+segundo switch existe (`mapParserErrorCode()` delega).
+
+| HTTP | worker `error_code` | PipelineError | retry |
+| --- | --- | --- | --- |
+| 401 | `UNAUTHORIZED` | `PARSER_UNAUTHORIZED` | permanente |
+| 403 | `FORBIDDEN` | `PARSER_FORBIDDEN` | permanente |
+| 409 | `CONTRACT_MISMATCH` / `UNSUPPORTED_CONTRACT_VERSION` | `PARSER_CONTRACT_MISMATCH` | permanente |
+| 422 | `INVALID_DEMO_FORMAT` | `INVALID_DEMO_FORMAT` | permanente |
+| 422 | `CORRUPTED_DEMO` | `CORRUPTED_DEMO` | permanente |
+| 422 | `UNSUPPORTED_DEMO` | `UNSUPPORTED_DEMO` | permanente |
+| 422 | `HASH_MISMATCH` | `PARSER_HASH_MISMATCH` | permanente |
+| 422 | `FILE_SIZE_MISMATCH` | `PARSER_FILE_SIZE_MISMATCH` | permanente |
+| 413 | `DEMO_TOO_LARGE` / `PAYLOAD_TOO_LARGE` | `DEMO_TOO_LARGE` | permanente |
+| 502/503 | `DOWNLOAD_ERROR` / `DOWNLOAD_FAILED` | `PARSER_DOWNLOAD_ERROR` | transiente |
+| 504 | `TIMEOUT` / `PARSE_TIMEOUT` / `DOWNLOAD_TIMEOUT` | `PARSER_TIMEOUT` | transiente |
+| 500 | `PARSER_ERROR` | `PARSER_ERROR` | transiente |
+
+Falha de rede/TLS/DNS → `PARSER_UNAVAILABLE`; abort/deadline → `PARSER_TIMEOUT`.
+Nenhuma falha de transporte, integridade ou configuração vira "demo inválida".
+
+### Envelope oficial
+
+```json
+{ "detail": { "error_code": "CODE", "message": "internal-safe-message" } }
+```
+
+`/version`:
+
+```json
+{ "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "..." }, "contract_version": 1 }
+```
+
+### Status — GATE 1E.1: BLOCKED
+
+Lado APP concluído e provado por testes (`gate1e.test.ts`, `gate1e1.test.ts`).
+Falta, e por isso o gate NÃO é PASS:
+
+1. o repositório do worker não existe neste checkout (`services/cs2-demo-parser`
+   ausente), portanto os testes e o alinhamento do worker não foram executados;
+2. `GET /health` e `GET /version` em
+   `https://cs2-demo-parser-production.up.railway.app` responderam **HTTP 404
+   `Application not found`** — o serviço Railway não está no ar;
+3. sem `/version` real não há revision válida para pinar em
+   `DEMO_PARSER_EXPECTED_REVISION`;
+4. contract, revision e endpoint reais permanecem NOT PROVEN.
+
+Nenhum `.dem` real foi processado. GATE 02 não foi iniciado.

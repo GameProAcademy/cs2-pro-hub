@@ -526,3 +526,17 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       Revision do deployment e E2E real com `.dem`: **NOT PROVEN**.
 - **Estado do Gate 1E: BLOCKED** — lado app completo e provado; lado worker
   inacessível. FASE 2.8 não iniciada.
+
+## FASE 2.7.2 — GATE 1E.1 — WORKER CONTRACT SYNC + REVISION LOCK — BLOCKED
+
+- [x] `WORKER_ERROR_CODES` declara o protocolo oficial do worker num único lugar
+- [x] `classifyWorkerFailure()` cobre todos os códigos oficiais (matriz única)
+- [x] `mapParserErrorCode()` continua delegando (nenhum segundo switch)
+- [x] `PARSER_IDENTITY_MISMATCH` (permanente) para name/version/revision divergentes
+- [x] `assertParserIdentity()` usado por `/v1/parse` e pelo probe `/version`
+- [x] revision lock fail-closed; obrigatório em produção (`DEMO_PARSER_REVISION_REQUIRED`)
+- [x] revision vazia tratada como ausente, nunca inventada
+- [x] integridade (hash/size) e transporte nunca viram "demo inválida"
+- [x] testes: `gate1e1.test.ts` + suíte existente preservada
+- [ ] worker Railway alinhado, `/health` e `/version` 200, revision real pinada
+      (BLOCKED: serviço responde HTTP 404 `Application not found`)
