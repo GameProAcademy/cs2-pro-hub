@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics, eventTime } from "@/lib/pipeline/metrics";
+import { PipelineError } from "@/lib/pipeline/errors";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import {
   assertRawParserOutput,
