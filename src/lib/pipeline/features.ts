@@ -73,7 +73,21 @@ export function extractFeatures(
   const hasKills = metrics.availability.killEvents;
   const hasDamage = metrics.availability.damageEvents;
   const hasTiming = metrics.availability.timing;
-  const hasRoundEnd = metrics.availability.roundEndEvidence;
+  /**
+   * FASE 2.7.1D — PARTIAL PARSE / WHOLE-MATCH RATES.
+   *
+   * A feature whose denominator is the ROUND SET describes the whole match. On a
+   * partial parse the observed round set is not the match, so such a rate would
+   * silently change meaning ("per observed round" published as "per round").
+   * Those signals are therefore NULL while coverage is incomplete.
+   *
+   * Directly observed counters (kills, deaths, assists) and ratios whose
+   * denominator is itself an observed event count (hs_rate = headshots/kills,
+   * trade_kill_share = trades/kills, clutch_win_rate = wins/attempts) stay as
+   * numbers: they are self-consistent over exactly what was observed, and
+   * discarding them would be dishonest in the other direction.
+   */
+  const hasCoverage = metrics.availability.completeCoverage;
   /** NULL unless the required evidence classes are all present. */
   const gate = (available: boolean, value: number | null): number | null =>
     available ? value : null;
