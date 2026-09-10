@@ -453,15 +453,26 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
 
-  // Opening duels — only meaningful when kill events exist.
-  let firstKills = 0;
-  let firstDeaths = 0;
-  for (const [, kill] of opening) {
-    if (kill.attacker === steamId) firstKills += 1;
-    if (kill.victim === steamId) firstDeaths += 1;
+  /**
+   * Opening duels — only over rounds whose kill ordering is determinable and
+   * only when kill evidence exists. With no determinable round the sample is
+   * unknown (NULL), never 0.
+   */
+  const openingDeterminable = availability.killEvents && opening.determinableRounds.size > 0;
+  let firstKillCount = 0;
+  let firstDeathCount = 0;
+  for (const [, kill] of opening.openings) {
+    if (kill.attacker === steamId) firstKillCount += 1;
+    if (kill.victim === steamId) firstDeathCount += 1;
   }
-  const openingAttempts = firstKills + firstDeaths;
-  const openingSuccessRate = openingAttempts > 0 ? round3(firstKills / openingAttempts) : null;
+  const firstKills = openingDeterminable ? firstKillCount : null;
+  const firstDeaths = openingDeterminable ? firstDeathCount : null;
+  const openingAttempts = openingDeterminable ? firstKillCount + firstDeathCount : null;
+  const openingSuccessRate =
+    openingAttempts != null && openingAttempts > 0
+      ? round3(firstKillCount / openingAttempts)
+      : null;
+
 
   // Trades — timing-dependent. Without trustworthy timing the answer is NULL,
   // never 0: "no trade observed" and "we cannot observe trades" differ.
