@@ -603,6 +603,8 @@ export const en: Dictionary = {
   "pipeline.error.PARSER_DOWNLOAD_ERROR": "The processing service could not download the file.",
   "pipeline.error.PARSER_HASH_MISMATCH": "The received file does not match the uploaded file.",
   "pipeline.error.PARSER_FILE_SIZE_MISMATCH": "The received file size does not match the upload.",
+  "pipeline.error.PARSER_IDENTITY_MISMATCH":
+    "The analysis service is running an unexpected version. Support has been notified.",
   "pipeline.error.PROCESSING_ERROR": "Unexpected processing failure.",
   "pipeline.admin.title": "Demo pipeline",
   "pipeline.admin.subtitle": "Jobs, quality and retention",
