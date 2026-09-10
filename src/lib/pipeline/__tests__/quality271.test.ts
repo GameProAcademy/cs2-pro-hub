@@ -233,7 +233,15 @@ describe("cases 5/6 — utility evidence", () => {
     const withoutUtility = normalizeParserOutput({
       ...syntheticParserOutput,
       events: syntheticParserOutput.events.filter(
-        (e) => !["player_blind", "flashbang_detonate", "hegrenade_detonate", "molotov_detonate", "smokegrenade_detonate", "inferno_startburn"].includes(e.type),
+        (e) =>
+          ![
+            "player_blind",
+            "flashbang_detonate",
+            "hegrenade_detonate",
+            "molotov_detonate",
+            "smokegrenade_detonate",
+            "inferno_startburn",
+          ].includes(e.type),
       ),
     });
     const availabilityWithout = computeMetrics(withoutUtility, ME).availability;
@@ -241,9 +249,7 @@ describe("cases 5/6 — utility evidence", () => {
     expect(availabilityWithout.utilityEvents).toBe(false);
 
     const availabilityWith = computeMetrics(match, ME).availability;
-    expect(match.quality.flags.includes("missing_utility")).toBe(
-      !availabilityWith.utilityEvents,
-    );
+    expect(match.quality.flags.includes("missing_utility")).toBe(!availabilityWith.utilityEvents);
   });
 });
 
@@ -392,10 +398,7 @@ describe("clutch participation requires round evidence", () => {
   });
 
   it("counts a 1v1 clutch attempt for the surviving participant", () => {
-    const m = clutchMatch(
-      [kill(20, ENEMY_A, MATE), kill(30, ME, ENEMY_A)],
-      [ENEMY_A, ENEMY_B],
-    );
+    const m = clutchMatch([kill(20, ENEMY_A, MATE), kill(30, ME, ENEMY_A)], [ENEMY_A, ENEMY_B]);
     const metrics = computeMetrics(m, ME);
     expect(metrics.clutchAttempts).toBe(1);
     expect(metrics.clutchWins).toBe(1);
