@@ -186,8 +186,8 @@ export function extractFeatures(
     },
     clutch: {
       clutch_win_rate: gate(hasKills, ratio(metrics.clutchWins, metrics.clutchAttempts)),
-      clutch_frequency: gate(hasKills, ratio(metrics.clutchAttempts, rounds)),
-      multi_kill_rate: gate(hasKills, ratio(metrics.multiKills, rounds)),
+      clutch_frequency: gate(hasKills, ratio(metrics.clutchAttempts, matchRounds)),
+      multi_kill_rate: gate(hasKills, ratio(metrics.multiKills, matchRounds)),
     },
     consistency: {
       // Single-match consistency is weak by nature; the value is flagged by the
