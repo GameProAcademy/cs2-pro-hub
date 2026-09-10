@@ -16,7 +16,14 @@ import {
   SCHEMA_VERSION,
 } from "@/config/pipeline";
 import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
+import { loadCanonicalCandidates } from "@/lib/canonical/candidates.server";
 import { persistCanonicalObservation } from "@/lib/canonical/canonical.persistence.server";
+import {
+  canConvergeCrossSource,
+  resolveAgainstAll,
+  type MatchIdentityCandidate,
+} from "@/lib/canonical/canonical.resolver";
+
 import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
@@ -175,6 +182,14 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const adapter = resolveParserAdapter();
     if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
 
+    // FASE 2.7 — REAL DEADLINE. One absolute budget for the whole job, derived
+    // from the stale threshold, so a job can never hold the single concurrency
+    // slot until the stale sweeper has to rescue it.
+    const deadlineAt = startedAt + JOB_STALE_MINUTES * 60_000;
+    const assertDeadline = () => {
+      if (Date.now() > deadlineAt) throw new PipelineError("JOB_DEADLINE_EXCEEDED");
+    };
+
     await setStage(jobId, "parsing");
     const signedUrl = await createDemoSignedUrl(job.storage_path);
     const raw = await adapter.parseDemo({
@@ -183,9 +198,11 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       uploadId: job.upload_id,
       fileSize: stored.size || (job.file_size ?? 0),
       demoSha256: job.demo_sha256,
+      deadlineAt,
     });
 
     await setStage(jobId, "normalizing");
+    assertDeadline();
     const match = normalizeParserOutput(raw);
     validateCanonicalMatch(match);
 
@@ -199,6 +216,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const steamId = resolveOwnSteamId(match, player.steam_id);
 
     await setStage(jobId, "metrics");
+    assertDeadline();
     let metrics;
     let features;
     try {
@@ -217,17 +235,66 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     // returns the canonical match id; the demo no longer inserts a match of its
     // own, so a demo that converges with FACEIT cannot create a second row.
     await setStage(jobId, "persisting");
+    assertDeadline();
+    const bundle = demoToCanonicalBundle({
+      parsed: match,
+      // A demo's identity IS its file hash; it has no external match id.
+      fingerprint: job.demo_sha256 ?? null,
+      targetSteamId: steamId,
+      internalPlayerId: player.id,
+    });
+
+    // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as
+    // FACEIT instead of persisting blind. Discovery is source-neutral; only an
+    // unambiguous EXACT_MATCH may attach (`canConvergeCrossSource`), and an
+    // ambiguous/conflicting decision fails the job for human review rather than
+    // fusing two histories.
+    let attachMatchId: string | null = null;
+    try {
+      const candidates = await loadCanonicalCandidates(
+        db,
+        bundle.match.playedAt,
+        bundle.participants.map((p) => p.participantKey),
+      );
+      const incoming: MatchIdentityCandidate = {
+        canonicalMatchId: "",
+        participantSteamIds: bundle.participants.map((p) => p.participantKey),
+        source: "demo",
+        externalMatchId: null,
+        fingerprint: bundle.observation.fingerprint,
+        map: bundle.match.map,
+        playedAt: bundle.match.playedAt,
+        startedAt: bundle.match.startedAt,
+        finishedAt: bundle.match.finishedAt,
+        roundCount: bundle.match.roundCount,
+        scoreTeamA: bundle.match.scoreTeamA,
+        scoreTeamB: bundle.match.scoreTeamB,
+      };
+      const resolved = resolveAgainstAll(incoming, candidates);
+      if (resolved.decision.resolution === "CONFLICT") {
+        throw new PipelineError(
+          "CANONICAL_RESOLUTION_CONFLICT",
+          resolved.decision.signals.join(","),
+        );
+      }
+      if (resolved.candidate && canConvergeCrossSource(resolved.decision)) {
+        attachMatchId = resolved.candidate.canonicalMatchId;
+      }
+    } catch (error) {
+      if (error instanceof PipelineError) throw error;
+      throw new PipelineError(
+        "IDENTITY_RESOLUTION_ERROR",
+        error instanceof Error ? error.message : undefined,
+      );
+    }
+
     let canonical;
     try {
       canonical = await persistCanonicalObservation({
-        bundle: demoToCanonicalBundle({
-          parsed: match,
-          fingerprint: job.demo_sha256 ?? null,
-          targetSteamId: steamId,
-          internalPlayerId: player.id,
-        }),
+        bundle,
         ownerPlayerId: player.id,
         uploadId: job.upload_id,
+        attachMatchId,
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : undefined;
@@ -238,6 +305,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         detail,
       );
     }
+
 
     // Per-player projection only (metrics/features/convenience columns).
     const persisted = await persistDemoProjection({
