@@ -12,25 +12,31 @@ export const SCHEMA_VERSION = 1;
 export const ANALYSIS_VERSION = "v1";
 
 /**
- * Parser identity. The actual parse runs in an external server-side worker
- * (see docs/PHASE-2-DEMO-PIPELINE.md); the worker reports its own
- * name/version/revision and that report is what gets persisted. These values
- * are the expected/pinned contract.
+ * Parser identity — EXPECTED values only.
+ *
+ * No parser worker is provisioned: `DEMO_PARSER_URL` / `DEMO_PARSER_TOKEN` are
+ * not configured, so nothing here describes a running deployment. When a worker
+ * eventually exists it reports its own name/version/revision and THAT report is
+ * what gets persisted; these constants only feed the identity check.
  */
 export const PARSER_NAME = "demoparser2";
 /**
- * EXPECTED parser version — a PLACEHOLDER, not a confirmed public release.
+ * EXPECTED parser version — a PLACEHOLDER, never a confirmed release.
  *
- * FASE 2.7.1D: "0.31.4" has never been verified against a real published
- * parser build, so nothing may treat it as a version to provision. It only
- * feeds the worker-identity check and is overridable at runtime through
- * `DEMO_PARSER_EXPECTED_VERSION`. Selecting and pinning the REAL worker version
- * (and its revision, CS2 compatibility and output shape) belongs to FASE 2.7.2.
+ * FASE 2.7.1F: "0.31.4" has NOT been verified against any published parser
+ * build, and MUST NOT be used to provision anything. It is only the value the
+ * worker-identity check compares against, overridable at runtime through
+ * `DEMO_PARSER_EXPECTED_VERSION`. Choosing the REAL version, its revision and
+ * the CS2 build compatibility matrix belongs to FASE 2.7.2.
  */
 export const PARSER_VERSION = "0.31.4";
 /** Explicitly false until FASE 2.7.2 verifies a real parser build. */
 export const PARSER_VERSION_CONFIRMED = false;
-/** Version of the JSON contract exchanged with the parser worker. */
+/**
+ * Version of the JSON CONTRACT exchanged with the parser worker. This is a
+ * different concept from `PARSER_VERSION` (the parser executing the `.dem`) and
+ * from the parser revision (a specific build); the three never conflate.
+ */
 export const PARSER_CONTRACT_VERSION = 1;
 
 /** Largest accepted demo file. CS2 demos of long matches are big by nature. */
