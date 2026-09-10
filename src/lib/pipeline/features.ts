@@ -60,9 +60,26 @@ export function extractFeatures(
    */
   const hasEconomy = metrics.availability.economy;
   const hasUtility = metrics.availability.utilityEvents;
+  /**
+   * FASE 2.7.1 — EVIDENCE GATES (NULL ≠ ZERO).
+   *
+   * `metrics.kills`, `metrics.deaths`, `metrics.assists`, `metrics.firstKills`
+   * and friends are RAW OBSERVED COUNTERS: with no kill events in the dataset
+   * they are legitimately 0 ("we counted nothing"), which is NOT the same claim
+   * as "the player did nothing". Every derived signal is therefore gated on the
+   * evidence class it needs, so an unavailable class yields NULL while an
+   * available class with an observed zero yields 0.
+   */
+  const hasKills = metrics.availability.killEvents;
+  const hasDamage = metrics.availability.damageEvents;
+  const hasTiming = metrics.availability.timing;
+  const hasRoundEnd = metrics.availability.roundEndEvidence;
+  /** NULL unless the required evidence classes are all present. */
+  const gate = (available: boolean, value: number | null): number | null =>
+    available ? value : null;
 
-  const earlyDeathRate = ratio(metrics.earlyDeaths, deaths);
-  const firstDeathRate = ratio(metrics.firstDeaths, rounds);
+  const earlyDeathRate = gate(hasKills && hasTiming, ratio(metrics.earlyDeaths, deaths));
+  const firstDeathRate = gate(hasKills, ratio(metrics.firstDeaths, rounds));
 
   const dimensions: Record<DnaDimension, Record<string, number | null>> = {
     aim: {
