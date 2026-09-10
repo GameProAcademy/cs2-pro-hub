@@ -30,6 +30,13 @@ import {
   FLASH_ASSIST_WINDOW_SECONDS,
   TRADE_WINDOW_SECONDS,
 } from "@/config/pipeline";
+import {
+  hasDamageEvidence,
+  hasKillEvidence,
+  hasUtilityEvidence,
+  isUtilityEvent,
+  UTILITY_DAMAGE_EVENT_TYPES,
+} from "@/lib/pipeline/evidence";
 import type {
   CanonicalEvent,
   CanonicalMatch,
