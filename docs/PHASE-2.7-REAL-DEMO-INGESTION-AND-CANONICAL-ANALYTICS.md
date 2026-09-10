@@ -491,3 +491,52 @@ Steam, Identity Graph, RLS e códigos de erro inalterados. Nenhum arquivo de UI 
 não provisionado, E2E com `.dem` real NÃO provado, FASE 2.7 permanece IN PROGRESS, 2.8 não iniciada.
 
 Baseline desta rodada: 587/587 testes, tsgo e lint OK.
+
+## FASE 2.7.1E — UMA definição de round-end evidence + determinabilidade de sobrevivência
+
+### 1. `src/lib/pipeline/roundEvidence.ts` (NOVO) — a única definição
+
+Quatro camadas faziam a mesma pergunta ("este round terminou?") com subconjuntos de campos
+diferentes, então a mesma observação podia ser válida em uma camada e desconhecida em outra.
+A regra agora vive em um único helper `hasRoundEndEvidence()`, que aceita `winnerSide`,
+`winnerTeam`, `endTick` ou `durationSeconds` e testa presença com `!= null` — `0` continua sendo
+evidência válida, nunca ausência.
+
+Consumidores unificados:
+- `normalizer.assessQuality()` → `roundsValid` (antes só `winnerSide`/`endTick`);
+- `metrics.metricsAvailability().roundEndEvidence` (antes sem `durationSeconds`);
+- `playerSurvivedRound()` e o denominador de sobrevivência, via re-export
+  `roundHasEndEvidence()` que apenas delega — não existe segunda implementação.
+
+### 2. Denominador de sobrevivência = rounds DETERMINÁVEIS
+
+"O round terminou" não é "sabemos se ESTE jogador sobreviveu a ele". `survivalRounds` passa a
+contar apenas os rounds participados cujo `playerSurvivedRound()` devolve decisão (`true` =
+sobrevivência provada, `false` = morte provada). Round indeterminável é excluído, então a ausência
+de death event nunca é convertida em sobrevivência. Sem round determinável ou sob cobertura
+incompleta o denominador é `NULL` (desconhecido), nunca `0`, e `survival_rate` fica `NULL`.
+
+### 3. Catálogo sincronizado
+
+`features.catalog.ts` documentava fórmulas antigas (`survival_rate = 1 - deaths / rounds_played`).
+Cada entrada agora declara `denominator` e `roundDenominated`, e toda entrada round-denominated
+documenta a regra de `NULL` sob `partial_parse`. `survival_rate` é documentada contra
+`survivalRounds`.
+
+### 4. Testes
+
+`src/lib/pipeline/__tests__/quality271e.test.ts` — 21 testes sintéticos (sem `.dem`, sem worker,
+sem rede, sem banco): helper central por campo isolado e com zeros, delegação do re-export,
+`roundsValid` com round só de duração e só de `winnerTeam`, availability com/sem evidência,
+sobrevivência determinável, round indeterminável excluído, morte explícita mantida, parse parcial,
+`NULL ≠ ZERO`, cobertura do catálogo, e a verificação de que EXATAMENTE as features
+round-denominated ficam `NULL` sob parse parcial.
+
+### 5. Não-regressão
+
+Nenhuma mudança em banco, schema, migrations, RLS, auth, FACEIT, Gamers Club, Steam, Identity
+Graph, resolver, persistência canônica, projeção, contrato do parser ou UI. Parser real não
+provisionado, E2E com `.dem` real NÃO provado, FASE 2.7 permanece IN PROGRESS, 2.7.2 e 2.8 não
+iniciadas.
+
+Baseline desta rodada: 608/608 testes, tsgo OK, lint com 8 warnings preexistentes.
