@@ -136,7 +136,6 @@ function assessQuality(
   // as evidence too, and a numeric 0 is never read as absence.
   const roundsValid = rounds.filter((r) => hasRoundEndEvidence(r)).length;
 
-
   if (players.length === 0) flags.add("missing_players");
   if (rounds.length === 0) flags.add("missing_rounds");
   if (roundsValid < rounds.length) flags.add("partial_parse");

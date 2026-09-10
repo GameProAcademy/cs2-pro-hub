@@ -119,7 +119,10 @@ describe("hasRoundEndEvidence is the single definition", () => {
 
 describe("normalizer quality and metrics availability share the rule", () => {
   it("a duration-only round counts as valid for the normalizer (no false partial_parse)", () => {
-    const match = build([round(1, { duration_seconds: 30 }), round(2, { duration_seconds: 30 })], eventsFor([1, 2]));
+    const match = build(
+      [round(1, { duration_seconds: 30 }), round(2, { duration_seconds: 30 })],
+      eventsFor([1, 2]),
+    );
     expect(match.quality.roundsValid).toBe(2);
     expect(match.quality.partialParse).toBe(false);
   });
@@ -145,7 +148,8 @@ describe("normalizer quality and metrics availability share the rule", () => {
 /* ------------------------------------------------------------------ */
 
 describe("survivalRounds counts only rounds whose survival is determinable", () => {
-  const ended = (n: number) => round(n, { winner_side: "CT", end_tick: 5000 * n, duration_seconds: 60 });
+  const ended = (n: number) =>
+    round(n, { winner_side: "CT", end_tick: 5000 * n, duration_seconds: 60 });
 
   it("all rounds determinable => denominator equals the participated rounds", () => {
     const numbers = [1, 2, 3];
@@ -153,7 +157,9 @@ describe("survivalRounds counts only rounds whose survival is determinable", () 
     const metrics = computeMetrics(match, ME);
     for (const n of numbers) expect(playerSurvivedRound(match, ME, n)).not.toBeNull();
     expect(metrics.survivalRounds).toBe(metrics.roundsPlayed);
-    expect(extractFeatures(match, metrics).dimensions["survivability"]!["survival_rate"]).not.toBeNull();
+    expect(
+      extractFeatures(match, metrics).dimensions["survivability"]!["survival_rate"],
+    ).not.toBeNull();
   });
 
   it("an indeterminable round is EXCLUDED, never counted as survived", () => {
@@ -163,7 +169,9 @@ describe("survivalRounds counts only rounds whose survival is determinable", () 
     expect(playerSurvivedRound(match, ME, 3)).toBeNull();
     // Incomplete coverage => the whole denominator is unknown, so NULL, not 2.
     expect(metrics.survivalRounds).toBeNull();
-    expect(extractFeatures(match, metrics).dimensions["survivability"]!["survival_rate"]).toBeNull();
+    expect(
+      extractFeatures(match, metrics).dimensions["survivability"]!["survival_rate"],
+    ).toBeNull();
   });
 
   it("an explicit death is determinable and stays in the denominator", () => {
@@ -200,7 +208,8 @@ describe("survivalRounds counts only rounds whose survival is determinable", () 
 
 describe("feature catalogue is semantically synchronized with features.ts", () => {
   const numbers = [1, 2];
-  const ended = (n: number) => round(n, { winner_side: "CT", end_tick: 5000 * n, duration_seconds: 60 });
+  const ended = (n: number) =>
+    round(n, { winner_side: "CT", end_tick: 5000 * n, duration_seconds: 60 });
 
   it("every emitted feature has catalogue metadata", () => {
     const match = build(numbers.map(ended), eventsFor(numbers));

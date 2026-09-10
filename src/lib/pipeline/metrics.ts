@@ -140,7 +140,6 @@ export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): bo
   return hasRoundEndEvidence(round);
 }
 
-
 export function playerSurvivedRound(
   match: CanonicalMatch,
   steamId: string,
@@ -449,7 +448,6 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     availability.completeCoverage && determinableSurvivalRounds > 0
       ? determinableSurvivalRounds
       : null;
-
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
   const damageGiven = damageEvents

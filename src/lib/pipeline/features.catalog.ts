@@ -82,7 +82,8 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       meaning: "share of kills that were headshots",
       nullBehavior: "null when kill events are unavailable or the player had no kills",
       sampleRequirement: "kill-event evidence and at least one kill",
-      confidenceImpact: "unstable below ~10 kills; survives partial parse (denominator is observed kills)",
+      confidenceImpact:
+        "unstable below ~10 kills; survives partial parse (denominator is observed kills)",
       denominator: "kills (observed event count)",
       roundDenominated: false,
     },
@@ -94,7 +95,8 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       meaning: "kill output per round",
       nullBehavior: `null when rounds_played = 0, when kill events are unavailable, and ${PARTIAL_PARSE_NULL}`,
       sampleRequirement: "kill-event evidence and complete round coverage",
-      confidenceImpact: "clamped at 1.0; single-match value only; null instead of a value under partial coverage",
+      confidenceImpact:
+        "clamped at 1.0; single-match value only; null instead of a value under partial coverage",
       denominator: "rounds_played (requires complete coverage)",
       roundDenominated: true,
     },
@@ -143,9 +145,11 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       range: RATIO,
       direction: "neutral",
       meaning: "share of the player's kills that answered a teammate's death",
-      nullBehavior: "null when kill events or event timings are unavailable, or the player had no kills",
+      nullBehavior:
+        "null when kill events or event timings are unavailable, or the player had no kills",
       sampleRequirement: "kill events with timestamps",
-      confidenceImpact: "depends on the configured trade window; denominator is observed kills, so partial parse keeps it",
+      confidenceImpact:
+        "depends on the configured trade window; denominator is observed kills, so partial parse keeps it",
       denominator: "kills (observed event count)",
       roundDenominated: false,
     },
@@ -155,7 +159,8 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       range: RATIO,
       direction: "up",
       meaning: "0.5 means as many kills as deaths",
-      nullBehavior: "null when kill events are unavailable, or neither kills nor deaths were observed",
+      nullBehavior:
+        "null when kill events are unavailable, or neither kills nor deaths were observed",
       sampleRequirement: "kill-event evidence with at least one kill or death",
       confidenceImpact: "single-match value only",
       denominator: "kills + deaths (observed event counts)",
