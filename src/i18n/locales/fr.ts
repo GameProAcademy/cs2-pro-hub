@@ -597,6 +597,12 @@ export const fr: Dictionary = {
   "pipeline.error.JOB_TIMEOUT": "Le traitement a dépassé le temps autorisé.",
   "pipeline.error.JOB_STALE": "Le traitement s'est bloqué et a été remis en file.",
   "pipeline.error.RESOURCE_LIMIT": "Ce fichier demande plus de ressources que permis.",
+  "pipeline.error.DEMO_INSUFFICIENT_SAMPLE":
+    "Cette demo compte trop peu de rounds pour une analyse fiable.",
+  "pipeline.error.JOB_DEADLINE_EXCEEDED":
+    "Le traitement a dépassé son budget de temps et a été arrêté.",
+  "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
+    "Le résultat du traitement était trop volumineux pour être accepté.",
   "pipeline.error.PROCESSING_ERROR": "Échec de traitement inattendu.",
   "pipeline.admin.title": "Pipeline des demos",
   "pipeline.admin.subtitle": "Tâches, qualité et rétention",

@@ -22,11 +22,24 @@ export function validateDemoFile(fileName: string, fileSize: number): void {
   if (fileSize > MAX_DEMO_SIZE_BYTES) throw new PipelineError("DEMO_TOO_LARGE");
 }
 
-/** Canonical-data sanity check before anything is persisted. */
+/**
+ * Canonical-data sanity check before anything is persisted.
+ *
+ * FASE 2.7 — EXPLICIT SHORT-DEMO POLICY. A short demo (warmup-only recording,
+ * abandoned match, truncated file) is NOT a parser failure and NOT a corrupted
+ * file: it is a valid recording with too small a sample to analyse. It gets its
+ * own permanent code, `DEMO_INSUFFICIENT_SAMPLE`, so the player is told the real
+ * reason ("this demo has too few rounds") instead of a generic validation error,
+ * and the job is not retried — reparsing cannot create rounds.
+ */
 export function validateCanonicalMatch(match: CanonicalMatch): void {
   if (match.players.length === 0) throw new PipelineError("VALIDATION_ERROR", "no players");
+  if (match.rounds.length === 0) throw new PipelineError("VALIDATION_ERROR", "no rounds");
   if (match.rounds.length < MIN_VALID_ROUNDS) {
-    throw new PipelineError("VALIDATION_ERROR", `rounds=${match.rounds.length}`);
+    throw new PipelineError(
+      "DEMO_INSUFFICIENT_SAMPLE",
+      `rounds=${match.rounds.length} < ${MIN_VALID_ROUNDS}`,
+    );
   }
   if (!match.events.some((event) => event.type === "kill")) {
     throw new PipelineError("VALIDATION_ERROR", "no kill events");

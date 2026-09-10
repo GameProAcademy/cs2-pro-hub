@@ -27,6 +27,12 @@ export const PIPELINE_ERROR_CODES = [
   "FEATURES_ERROR",
   "JOB_TIMEOUT",
   "JOB_STALE",
+  // FASE 2.7 — the job's absolute time budget ran out (never silent).
+  "JOB_DEADLINE_EXCEEDED",
+  // The parser worker answered with more bytes than the pipeline accepts.
+  "PARSER_PAYLOAD_TOO_LARGE",
+  // The demo is valid but carries too few usable rounds to analyse honestly.
+  "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
   "STORAGE_ERROR",
   "PROCESSING_ERROR",
@@ -50,6 +56,10 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "PLAYER_IDENTITY_UNRESOLVED",
   // A human decision is required: two canonical candidates matched EXACT.
   "CANONICAL_RESOLUTION_CONFLICT",
+  // A payload above the ceiling will be above it on every retry.
+  "PARSER_PAYLOAD_TOO_LARGE",
+  // The demo will never gain rounds by being parsed again.
+  "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
 ]);
 

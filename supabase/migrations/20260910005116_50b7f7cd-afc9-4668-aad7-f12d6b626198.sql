@@ -1,0 +1,1 @@
+ALTER TABLE public.match_features ALTER COLUMN sample_clutches DROP NOT NULL;

@@ -77,7 +77,6 @@ function bool(value: unknown): boolean | null {
   return typeof value === "boolean" ? value : null;
 }
 
-
 function mapSides(raw: Record<string, string> | undefined): Record<string, Side> {
   const out: Record<string, Side> = {};
   for (const [steamId, value] of Object.entries(raw ?? {})) {
