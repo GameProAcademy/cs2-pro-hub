@@ -99,6 +99,16 @@ export function projectionUpdate(args: {
 /**
  * Writes the per-player projection of an ALREADY persisted canonical match.
  *
+ * ATOMIC (FASE 2.7.1C): the four writes (match projection columns, metrics
+ * upsert, feature delete, feature insert) run inside ONE database transaction
+ * through `public.persist_demo_projection`. Previously they were four separate
+ * statements, so a failure between the feature delete and the feature insert
+ * left the player with no feature row while metrics claimed a fresh analysis.
+ *
+ * The ownership rule of `projectionUpdate()` is enforced inside the routine:
+ * match-wide columns refresh for any observer, player-scoped columns only when
+ * the row has no owner or the owner is this player.
+ *
  * Idempotent: metrics are keyed by (match_id, player_id) and features are
  * replaced for the same pair, so reprocessing the same demo never duplicates a
  * row. Nothing here creates canonical facts.
@@ -128,54 +138,37 @@ export async function persistDemoProjection(args: {
           : null;
   const scores = ownScores(match, teamPlayer);
 
-  // 1. Projection columns on the canonical match row. Player-scoped columns are
-  //    only written when this player owns the projection (see projectionUpdate).
-  const { data: existing, error: readError } = await supabaseAdmin
-    .from("matches")
-    .select("id, player_id")
-    .eq("id", matchId)
-    .maybeSingle();
-  if (readError) fail(readError.message);
-  if (!existing) fail("canonical match not found for projection");
-
-  const update = projectionUpdate({
-    existingPlayerId: existing.player_id ?? null,
-    playerId,
-    uploadId,
-    matchWide: {
-      platform: "demo",
-      rounds: match.rounds.length,
-      duration_seconds: match.durationSeconds,
-      game_version: match.gameVersion,
-      demo_metadata: {
-        schema_version: match.schemaVersion,
-        parser: toJson(match.parser),
-        quality: toJson(match.quality),
-        tickrate: match.tickrate,
-        metrics_version: METRICS_VERSION,
-        features_version: FEATURES_VERSION,
-      },
+  const matchWide = {
+    platform: "demo",
+    rounds: match.rounds.length,
+    duration_seconds: match.durationSeconds,
+    game_version: match.gameVersion,
+    demo_metadata: {
+      schema_version: match.schemaVersion,
+      parser: toJson(match.parser),
+      quality: toJson(match.quality),
+      tickrate: match.tickrate,
+      metrics_version: METRICS_VERSION,
+      features_version: FEATURES_VERSION,
     },
-    playerScoped: {
-      team_player: teamPlayer,
-      team_opponent: teamOpponent,
-      score_player: scores.player,
-      score_opponent: scores.opponent,
-      result: matchResult(scores),
-    },
-  });
+  };
 
-  const { error: updateError } = await supabaseAdmin
-    .from("matches")
-    .update(update as never)
-    .eq("id", matchId);
-  if (updateError) fail(updateError.message);
+  const playerScoped = {
+    team_player: teamPlayer,
+    team_opponent: teamOpponent,
+    score_player: scores.player,
+    score_opponent: scores.opponent,
+    result: matchResult(scores),
+  };
 
-  // 2. Metrics (idempotent per match+player)
-  const { error: metricsError } = await supabaseAdmin.from("match_metrics").upsert(
-    {
-      match_id: matchId,
-      player_id: playerId,
+  const { error } = await supabaseAdmin.rpc("persist_demo_projection", {
+    _match_id: matchId,
+    _upload_id: uploadId,
+    _player_id: playerId,
+    _steam_id: steamId,
+    _match_wide: toJson(matchWide),
+    _player_scoped: toJson(playerScoped),
+    _metrics: toJson({
       rounds_played: metrics.roundsPlayed,
       kills: metrics.kills,
       deaths: metrics.deaths,
@@ -202,32 +195,19 @@ export async function persistDemoProjection(args: {
       ct_rating: metrics.ctRating,
       t_rating: metrics.tRating,
       rating: metrics.sourceRating,
-    },
-    { onConflict: "match_id,player_id" },
-  );
-  if (metricsError) fail(metricsError.message);
-
-  // 3. Feature signals for the future analysis engine (replaced, not stacked)
-  await supabaseAdmin
-    .from("match_features")
-    .delete()
-    .eq("match_id", matchId)
-    .eq("player_id", playerId);
-
-  const { error: featuresError } = await supabaseAdmin.from("match_features").insert({
-    match_id: matchId,
-    player_id: playerId,
-    steam_id: steamId,
-    sample_rounds: features.sampleRounds,
-    sample_opening_duels: features.sampleOpeningDuels,
-    sample_clutches: features.sampleClutches,
-    extraction_confidence: match.quality.extractionConfidence,
-    partial_parse: match.quality.partialParse,
-    features: toJson(features.dimensions),
-    schema_version: SCHEMA_VERSION,
-    analysis_version: ANALYSIS_VERSION,
-  });
-  if (featuresError) fail(featuresError.message);
+    }),
+    _features: toJson({
+      sample_rounds: features.sampleRounds,
+      sample_opening_duels: features.sampleOpeningDuels,
+      sample_clutches: features.sampleClutches,
+      extraction_confidence: match.quality.extractionConfidence,
+      partial_parse: match.quality.partialParse,
+      features: toJson(features.dimensions),
+      schema_version: SCHEMA_VERSION,
+      analysis_version: ANALYSIS_VERSION,
+    }),
+  } as never);
+  if (error) fail(error.message);
 
   return { matchId, metricsWritten: true, featuresWritten: true };
 }

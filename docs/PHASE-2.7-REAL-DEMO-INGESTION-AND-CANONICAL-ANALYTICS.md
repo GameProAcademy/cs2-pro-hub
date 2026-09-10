@@ -373,3 +373,68 @@ real ingerido, FASE 2.8 não iniciada. Pré-requisitos da FASE 2.7.2: worker de
 parser HTTPS com `DEMO_PARSER_URL`/`DEMO_PARSER_TOKEN`, identidade/revisão
 esperada configuradas, matriz de compatibilidade por build do CS2 e prova E2E com
 `.dem` real.
+
+## FASE 2.7.1C — rodada 5: rating gates, abertura determinável, projeção atômica e deadline global
+
+STATUS DA FASE 2.7: **IN PROGRESS — NOT CLOSED** (parser real continua bloqueado por infraestrutura;
+`DEMO_PARSER_URL`/`DEMO_PARSER_TOKEN` não existem).
+
+### 1. Rating — gates de evidência (PASS, provado por teste unitário)
+
+Fórmula e pesos do `compositeRating()` INALTERADOS. O que mudou é quando ele pode ser publicado:
+
+| valor | evidência exigida | NULL quando |
+| --- | --- | --- |
+| `sourceRating` | kill events + damage events + cobertura completa + `roundsPlayed > 0` | falta qualquer uma |
+| `ctRating` / `tRating` | as mesmas + existir round do lado | falta qualquer uma |
+| `consistency.side_balance` | ambos os side ratings | qualquer lado NULL (herdado) |
+| `kast` | kill events + timing + cobertura completa + rounds | falta qualquer uma |
+
+Antes, apenas `damageEvents` era exigido: kills/deaths ausentes entravam na fórmula como zero implícito
+e produziam um número fabricado. Casos A–D cobertos em `src/lib/pipeline/__tests__/quality271c.test.ts`.
+
+### 2. Abertura (opening) — determinabilidade temporal (PASS)
+
+- `collectKills()` não ordena mais por `time ?? Infinity`: **instante desconhecido não é instante tardio**.
+  A ordenação é apenas por round; toda derivação temporal compara instantes explicitamente.
+- `openingDuels()` devolve `openings`, `determinableRounds` e `ambiguousRounds`. Um round só contribui
+  quando TODOS os seus kills têm instante conhecido e o menor instante é único (empate = ambíguo).
+- Um round ambíguo não invalida os determináveis.
+- `firstKills`, `firstDeaths`, `openingAttempts`, `openingSuccess` e `sampleOpeningDuels` agora são
+  `number | null`: sem round determinável a amostra é DESCONHECIDA, não zero.
+  `match_features.sample_opening_duels` passou a aceitar NULL.
+
+### 3. Cobertura parcial (PASS)
+
+`MetricsAvailability.completeCoverage = quality.partialParse !== true`. Parse parcial nunca implica
+cobertura completa: taxas de partida inteira (rating, KAST) viram NULL; contadores brutos observados
+(kills, deaths, assists, dano, utilidade, clutch, multi-kills) continuam observáveis, pois são contagens
+do que foi visto, não taxas sobre o conjunto completo. Nenhum percentual de completude foi inventado.
+
+### 4. Projeção transacional (IMPLEMENTED / NOT RUNTIME-PROVEN)
+
+`persist_demo_projection(uuid, uuid, uuid, text, jsonb, jsonb, jsonb, jsonb)` — `SECURITY DEFINER`,
+`search_path=''`, `EXECUTE` apenas para `service_role` (verificado: anon/authenticated = false).
+Em UMA transação: `FOR UPDATE` na partida, guarda de propriedade (colunas match-wide atualizam para
+qualquer observador; colunas player-scoped somente sem dono ou com o mesmo dono), upsert de
+`match_metrics` por `(match_id, player_id)`, DELETE + INSERT de `match_features`. Antes eram quatro
+statements independentes: uma falha entre o DELETE e o INSERT deixava o jogador sem features.
+Não cria partida, não escreve tabelas canônicas além das colunas de projeção.
+
+NOT RUNTIME-PROVEN: o rollback real não foi executado contra o banco porque não existe nenhuma partida
+canônica persistida (matches = 0) e a política do projeto proíbe semear dados. A prova exige o parser real.
+
+### 5. Deadline global (PASS por inspeção)
+
+O orçamento absoluto (`JOB_STALE_MINUTES`) passa a ser calculado na ENTRADA de `processJob()` e é
+verificado antes de `demoExists`, antes e depois do hash em streaming, antes da signed URL, antes do
+parser, na normalização, antes da persistência canônica e antes da projeção. Nem o SDK de Storage nem
+o contrato do parser expõem `AbortSignal`: chamadas já iniciadas não são canceladas no meio — isso está
+documentado no código, não simulado.
+
+### 6. Não-regressão
+
+Códigos de erro, janelas de trade/flash assist, KAST, modelo canônico, resolver, RLS, FACEIT, Gamers Club,
+Steam e Identity Graph inalterados. Nenhum arquivo de UI tocado. Parser real não provisionado. 2.8 não iniciada.
+
+Baseline: 576 testes, tsgo e build OK.

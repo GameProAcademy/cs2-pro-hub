@@ -434,3 +434,13 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
       (`DEMO_PARSER_URL`/`DEMO_PARSER_TOKEN`), identidade/revisão esperada
       configuradas, matriz de compatibilidade por build do CS2 e prova E2E com
       `.dem` real.
+
+## FASE 2.7.1C
+- [x] Rating (source/CT/T) exige kill + damage + cobertura completa; fórmula inalterada
+- [x] KAST exige cobertura completa
+- [x] Abertura só sobre rounds determináveis; instante desconhecido ≠ instante tardio; amostra NULL quando indeterminável
+- [x] `completeCoverage` na matriz de disponibilidade (parse parcial nunca é cobertura completa)
+- [x] Projeção do demo em UMA transação (`persist_demo_projection`, service_role only) — rollback real NÃO provado em runtime (nenhuma partida canônica no banco)
+- [x] Deadline global desde a entrada do job, checado antes de storage, hash, signed URL, parser, persistência e projeção
+- [ ] Parser real `.dem` (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN inexistentes)
+- [ ] FASE 2.8 não iniciada

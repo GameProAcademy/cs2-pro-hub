@@ -827,7 +827,7 @@ export type Database = {
           partial_parse: boolean
           player_id: string | null
           sample_clutches: number | null
-          sample_opening_duels: number
+          sample_opening_duels: number | null
           sample_rounds: number
           schema_version: number
           steam_id: string | null
@@ -842,7 +842,7 @@ export type Database = {
           partial_parse?: boolean
           player_id?: string | null
           sample_clutches?: number | null
-          sample_opening_duels?: number
+          sample_opening_duels?: number | null
           sample_rounds?: number
           schema_version?: number
           steam_id?: string | null
@@ -857,7 +857,7 @@ export type Database = {
           partial_parse?: boolean
           player_id?: string | null
           sample_clutches?: number | null
-          sample_opening_duels?: number
+          sample_opening_duels?: number | null
           sample_rounds?: number
           schema_version?: number
           steam_id?: string | null
@@ -2560,6 +2560,19 @@ export type Database = {
       persist_canonical_series_observation: {
         Args: { _observation: Json; _owner_player_id?: string; _series: Json }
         Returns: Json
+      }
+      persist_demo_projection: {
+        Args: {
+          _features: Json
+          _match_id: string
+          _match_wide: Json
+          _metrics: Json
+          _player_id: string
+          _player_scoped: Json
+          _steam_id: string
+          _upload_id: string
+        }
+        Returns: string
       }
       recover_stale_faceit_sync_jobs: {
         Args: { _max_attempts?: number; _stale_seconds?: number }

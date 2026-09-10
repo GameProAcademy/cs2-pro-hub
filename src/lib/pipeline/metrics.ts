@@ -213,33 +213,73 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
     return best?.flasher ?? null;
   };
 
-  return match.events
-    .filter((e) => e.type === "kill")
-    .map((e) => {
-      const kill: KillRecord = {
-        round: e.roundNumber,
-        time: eventTime(e, tickrate),
-        attacker: e.actorSteamId,
-        victim: e.victimSteamId,
-        assister: e.assisterSteamId,
-        headshot: e.headshot,
-        flashAssister: null,
-      };
-      kill.flashAssister = flashAssisterFor(kill);
-      return kill;
-    })
-    .sort(
-      (a, b) =>
-        a.round - b.round ||
-        (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY),
-    );
+  return (
+    match.events
+      .filter((e) => e.type === "kill")
+      .map((e) => {
+        const kill: KillRecord = {
+          round: e.roundNumber,
+          time: eventTime(e, tickrate),
+          attacker: e.actorSteamId,
+          victim: e.victimSteamId,
+          assister: e.assisterSteamId,
+          headshot: e.headshot,
+          flashAssister: null,
+        };
+        kill.flashAssister = flashAssisterFor(kill);
+        return kill;
+      })
+      // Unknown timing is NOT late timing: a kill without a trustworthy instant
+      // must never be pushed to the end of the round as if it happened last.
+      // Ordering is therefore only by round here; every time-sensitive derivation
+      // (opening, trades, KAST) compares instants explicitly and refuses unknowns.
+      .sort((a, b) => a.round - b.round)
+  );
 }
 
-/** Opening duel of a round: the chronologically first kill. */
-export function openingDuels(kills: KillRecord[]) {
-  const byRound = new Map<number, KillRecord>();
-  for (const kill of kills) if (!byRound.has(kill.round)) byRound.set(kill.round, kill);
-  return byRound;
+/**
+ * Opening duel of a round: the chronologically first kill.
+ *
+ * A round only contributes when the ordering of its kills is DETERMINABLE:
+ * every kill in the round has a known instant and the earliest instant is
+ * unique. Rounds with an unknown instant or a tie are ambiguous and are
+ * excluded from the opening sample — they are never resolved by event order.
+ * Ambiguity in one round never invalidates the determinable rounds.
+ */
+export function openingDuels(kills: KillRecord[]): {
+  openings: Map<number, KillRecord>;
+  determinableRounds: Set<number>;
+  ambiguousRounds: Set<number>;
+} {
+  const byRound = new Map<number, KillRecord[]>();
+  for (const kill of kills) {
+    const list = byRound.get(kill.round);
+    if (list) list.push(kill);
+    else byRound.set(kill.round, [kill]);
+  }
+
+  const openings = new Map<number, KillRecord>();
+  const determinableRounds = new Set<number>();
+  const ambiguousRounds = new Set<number>();
+
+  for (const [roundNumber, list] of byRound) {
+    if (list.length === 0) continue;
+    if (list.some((k) => k.time == null)) {
+      ambiguousRounds.add(roundNumber);
+      continue;
+    }
+    let earliest = list[0]!;
+    for (const kill of list) if (kill.time! < earliest.time!) earliest = kill;
+    const tied = list.filter((kill) => kill.time === earliest.time).length;
+    if (tied > 1) {
+      ambiguousRounds.add(roundNumber);
+      continue;
+    }
+    determinableRounds.add(roundNumber);
+    openings.set(roundNumber, earliest);
+  }
+
+  return { openings, determinableRounds, ambiguousRounds };
 }
 
 /**
@@ -359,6 +399,10 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     ),
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
     timing,
+    // A partial extraction NEVER counts as complete coverage. Whole-match rates
+    // (rating, KAST) are only defensible over a complete round set, so they are
+    // NULL while the parser reports a partial parse.
+    completeCoverage: match.quality.partialParse !== true,
   };
 }
 
@@ -409,15 +453,25 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
 
-  // Opening duels — only meaningful when kill events exist.
-  let firstKills = 0;
-  let firstDeaths = 0;
-  for (const [, kill] of opening) {
-    if (kill.attacker === steamId) firstKills += 1;
-    if (kill.victim === steamId) firstDeaths += 1;
+  /**
+   * Opening duels — only over rounds whose kill ordering is determinable and
+   * only when kill evidence exists. With no determinable round the sample is
+   * unknown (NULL), never 0.
+   */
+  const openingDeterminable = availability.killEvents && opening.determinableRounds.size > 0;
+  let firstKillCount = 0;
+  let firstDeathCount = 0;
+  for (const [, kill] of opening.openings) {
+    if (kill.attacker === steamId) firstKillCount += 1;
+    if (kill.victim === steamId) firstDeathCount += 1;
   }
-  const openingAttempts = firstKills + firstDeaths;
-  const openingSuccessRate = openingAttempts > 0 ? round3(firstKills / openingAttempts) : null;
+  const firstKills = openingDeterminable ? firstKillCount : null;
+  const firstDeaths = openingDeterminable ? firstDeathCount : null;
+  const openingAttempts = openingDeterminable ? firstKillCount + firstDeathCount : null;
+  const openingSuccessRate =
+    openingAttempts != null && openingAttempts > 0
+      ? round3(firstKillCount / openingAttempts)
+      : null;
 
   // Trades — timing-dependent. Without trustworthy timing the answer is NULL,
   // never 0: "no trade observed" and "we cannot observe trades" differ.
@@ -493,13 +547,30 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
-  const kastAvailable = availability.killEvents && availability.timing && roundsPlayed > 0;
+  // KAST is a whole-match rate: it needs kill evidence, timing AND complete
+  // coverage. Over a partial round set the value would silently mean something
+  // else, so it is NULL.
+  const kastAvailable =
+    availability.killEvents &&
+    availability.timing &&
+    availability.completeCoverage &&
+    roundsPlayed > 0;
 
   const headshots = playerKills.filter((k) => k.headshot === true).length;
   const clutch = clutchStats(match, kills, steamId);
 
+  /**
+   * Rating evidence gate. The composite formula (unchanged) mixes kills, deaths
+   * and damage per round, so it requires KILL evidence AND DAMAGE evidence AND
+   * rounds AND complete coverage. Damage alone would feed implicit zero kills
+   * and zero deaths into the formula and publish a fabricated number.
+   */
+  const ratingEvidence =
+    availability.killEvents && availability.damageEvents && availability.completeCoverage;
+
   // Side ratings use the same composite formula restricted to CT/T rounds.
   const sideRating = (side: Side): number | null => {
+    if (!ratingEvidence) return null;
     const sideRounds = match.rounds.filter(
       (r) => sideInRound(match, steamId, r.roundNumber) === side,
     );
@@ -552,14 +623,15 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
 
     enemiesFlashed: availability.utilityEvents ? enemiesFlashed : null,
     grenadesUsed: availability.utilityEvents ? grenadesUsed : null,
-    ctRating: availability.damageEvents ? sideRating("CT") : null,
-    tRating: availability.damageEvents ? sideRating("T") : null,
+    ctRating: sideRating("CT"),
+    tRating: sideRating("T"),
     sourceRating:
-      availability.damageEvents && roundsPlayed > 0
+      ratingEvidence && roundsPlayed > 0
         ? round3(
             compositeRating(playerKills.length, playerDeaths.length, damageGiven, roundsPlayed),
           )
         : null,
+
     damageEfficiency:
       availability.damageEvents && damageTaken > 0 ? round3(damageGiven / damageTaken) : null,
   };

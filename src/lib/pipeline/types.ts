@@ -208,6 +208,11 @@ export interface MetricsAvailability {
   economy: boolean;
   /** Every kill event has a trustworthy instant (time_seconds or tick+tickrate). */
   timing: boolean;
+  /**
+   * The extraction covers the whole match. FALSE on a partial parse, which makes
+   * whole-match rates (rating, KAST) unknown instead of understated.
+   */
+  completeCoverage: boolean;
 }
 
 export interface CanonicalMetrics {
@@ -224,11 +229,16 @@ export interface CanonicalMetrics {
   damageTaken: number | null;
   adr: number | null;
   kast: number | null;
-  firstKills: number;
-  firstDeaths: number;
-  openingAttempts: number;
-  openingSuccess: number;
+  /**
+   * NULL when no round has a determinable opening duel (missing kill evidence,
+   * or unknown/ambiguous instants). Zero would claim "no opening duel happened".
+   */
+  firstKills: number | null;
+  firstDeaths: number | null;
+  openingAttempts: number | null;
+  openingSuccess: number | null;
   openingSuccessRate: number | null;
+
   /** NULL when timing is unknown: trades cannot be observed without instants. */
   tradeKills: number | null;
   tradeDeaths: number | null;
@@ -255,7 +265,9 @@ export interface CanonicalMetrics {
 export interface CanonicalFeatures {
   steamId: string;
   sampleRounds: number;
-  sampleOpeningDuels: number;
+  /** NULL when no round had a determinable opening duel. */
+  sampleOpeningDuels: number | null;
+
   /** NULL when clutches were not observable (no kill events). */
   sampleClutches: number | null;
 
