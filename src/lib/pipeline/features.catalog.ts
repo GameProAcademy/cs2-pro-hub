@@ -171,7 +171,7 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       meaning:
         "share of the DETERMINABLE participated rounds the player did not die in; rounds whose survival cannot be established are excluded, never counted as survived",
       nullBehavior:
-        "null when survivalRounds is null — no participated round whose survival is determinable, or incomplete coverage. Null means not determinable, not zero survival",
+        "null when survivalRounds is null — no participated round whose survival is determinable, or partial_parse / incomplete round coverage. Null means not determinable, not zero survival",
       sampleRequirement:
         "kill-event evidence plus at least one participated round with round-end evidence AND enough round evidence for playerSurvivedRound() to decide (complete coverage)",
       confidenceImpact:
