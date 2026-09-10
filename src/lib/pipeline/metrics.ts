@@ -548,13 +548,30 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
-  const kastAvailable = availability.killEvents && availability.timing && roundsPlayed > 0;
+  // KAST is a whole-match rate: it needs kill evidence, timing AND complete
+  // coverage. Over a partial round set the value would silently mean something
+  // else, so it is NULL.
+  const kastAvailable =
+    availability.killEvents &&
+    availability.timing &&
+    availability.completeCoverage &&
+    roundsPlayed > 0;
 
   const headshots = playerKills.filter((k) => k.headshot === true).length;
   const clutch = clutchStats(match, kills, steamId);
 
+  /**
+   * Rating evidence gate. The composite formula (unchanged) mixes kills, deaths
+   * and damage per round, so it requires KILL evidence AND DAMAGE evidence AND
+   * rounds AND complete coverage. Damage alone would feed implicit zero kills
+   * and zero deaths into the formula and publish a fabricated number.
+   */
+  const ratingEvidence =
+    availability.killEvents && availability.damageEvents && availability.completeCoverage;
+
   // Side ratings use the same composite formula restricted to CT/T rounds.
   const sideRating = (side: Side): number | null => {
+    if (!ratingEvidence) return null;
     const sideRounds = match.rounds.filter(
       (r) => sideInRound(match, steamId, r.roundNumber) === side,
     );
@@ -571,6 +588,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   // Damage-derived signals require damage events; otherwise they are unknown.
   const adr =
     availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
+
 
   return {
     steamId,
