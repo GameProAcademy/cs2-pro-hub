@@ -138,7 +138,10 @@ function assessQuality(
   if (unsupportedEvents > 0) flags.add("unsupported_event");
   if (!events.some((e) => e.data["position"] != null)) flags.add("missing_positions");
   if (!rounds.some((r) => Object.keys(r.moneyStart).length > 0)) flags.add("missing_economy");
-  if (!events.some((e) => e.type === "flash" || e.type === "he" || e.type === "molotov")) {
+  // FASE 2.7.1 — one single definition of "utility evidence", shared with
+  // `metricsAvailability()` (see src/lib/pipeline/evidence.ts). The two layers
+  // can no longer classify the same observation differently.
+  if (!hasUtilityEvidence(events)) {
     flags.add("missing_utility");
   }
   for (const warning of warnings) {
