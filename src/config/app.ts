@@ -21,8 +21,8 @@ export const FEATURES = {
   profilePersistence: true,
   /** The demo ingestion UI (select, validate, queue) exists and is usable. */
   demoIngestionUI: true,
-  /** No real .dem parser worker is connected yet — the UI must say so. */
-  realDemoParser: false,
+  /** External .dem parser transport is configured; runtime status remains authoritative. */
+  realDemoParser: true,
 
   faceitIntegration: true,
   /** No official API and the public site is behind an anti-bot challenge. */

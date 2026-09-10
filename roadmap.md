@@ -496,3 +496,6 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       continua **CONFIGURATION REQUIRED**. O domínio informado respondeu 404 na
       verificação pública, portanto conectividade do worker está **NOT PROVEN**.
 - [ ] E2E real e parse de `.dem` real: **NOT PROVEN**, reservados ao próximo Gate.
+- **Estado do Gate 1D: BLOCKED** para fechamento total: implementação e testes
+  locais passaram, mas revision e conectividade efetiva do domínio não foram
+  comprovadas; nenhuma demo real foi processada por determinação deste Gate.

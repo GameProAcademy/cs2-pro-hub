@@ -685,3 +685,6 @@ dois valores, os GATES 1–N podem ser executados sem mudança arquitetural.
   `DEMO_PARSER_EXPECTED_REVISION` permanece **CONFIGURATION REQUIRED**.
 - **Real E2E: NOT YET PROVEN. Real `.dem` parsing: NOT YET PROVEN.** Nenhuma demo
   real foi enviada ou processada neste Gate.
+- **Gate 1D: BLOCKED para PASS total.** O código e os testes locais estão
+  concluídos, porém a revision efetiva e a conectividade do domínio informado
+  não puderam ser confirmadas sem executar o E2E reservado ao próximo Gate.
