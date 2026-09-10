@@ -30,6 +30,12 @@ import {
   FLASH_ASSIST_WINDOW_SECONDS,
   TRADE_WINDOW_SECONDS,
 } from "@/config/pipeline";
+import {
+  hasDamageEvidence,
+  hasKillEvidence,
+  hasUtilityEvidence,
+  isUtilityEvent,
+} from "@/lib/pipeline/evidence";
 import type {
   CanonicalEvent,
   CanonicalMatch,
@@ -343,11 +349,11 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
   const kills = match.events.filter((e) => e.type === "kill");
   const timing = kills.length > 0 && kills.every((e) => eventTime(e, match.tickrate) != null);
   return {
-    killEvents: kills.length > 0,
-    damageEvents: match.events.some((e) => e.type === "damage"),
-    utilityEvents: match.events.some(
-      (e) => e.type === "flash" || e.type === "he" || e.type === "molotov" || e.type === "smoke",
-    ),
+    killEvents: hasKillEvidence(match.events),
+    damageEvents: hasDamageEvidence(match.events),
+    // Shared, single definition of utility evidence (see evidence.ts): the same
+    // classification the normalizer uses for the `missing_utility` flag.
+    utilityEvents: hasUtilityEvidence(match.events),
     roundEndEvidence: match.rounds.some(
       (r) => r.winnerSide != null || r.winnerTeam != null || r.endTick != null,
     ),
@@ -385,7 +391,6 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     .filter((e) => e.victimSteamId === steamId)
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
 
-  const utilityTypes = new Set(["he", "molotov", "incendiary"]);
   const utilityDamage = damageEvents
     .filter(
       (e) =>
@@ -394,9 +399,12 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
         /hegrenade|molotov|inferno|incgrenade|flashbang|decoy|smoke/i.test(e.weapon),
     )
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
-  const grenadesUsed = match.events
-    .filter((e) => utilityTypes.has(e.type) || e.type === "flash" || e.type === "smoke")
-    .filter((e) => e.actorSteamId === steamId).length;
+  // Utility usage uses the SHARED evidence classification, so "which events are
+  // utility" is defined in exactly one place for quality flags, availability and
+  // counters.
+  const grenadesUsed = match.events.filter(
+    (e) => isUtilityEvent(e) && e.actorSteamId === steamId,
+  ).length;
   const enemiesFlashed = match.events
     .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
