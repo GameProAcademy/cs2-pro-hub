@@ -73,30 +73,55 @@ export function extractFeatures(
   const hasKills = metrics.availability.killEvents;
   const hasDamage = metrics.availability.damageEvents;
   const hasTiming = metrics.availability.timing;
-  const hasRoundEnd = metrics.availability.roundEndEvidence;
+  /**
+   * FASE 2.7.1D — PARTIAL PARSE / WHOLE-MATCH RATES.
+   *
+   * A feature whose denominator is the ROUND SET describes the whole match. On a
+   * partial parse the observed round set is not the match, so such a rate would
+   * silently change meaning ("per observed round" published as "per round").
+   * Those signals are therefore NULL while coverage is incomplete.
+   *
+   * Directly observed counters (kills, deaths, assists) and ratios whose
+   * denominator is itself an observed event count (hs_rate = headshots/kills,
+   * trade_kill_share = trades/kills, clutch_win_rate = wins/attempts) stay as
+   * numbers: they are self-consistent over exactly what was observed, and
+   * discarding them would be dishonest in the other direction.
+   */
+  const hasCoverage = metrics.availability.completeCoverage;
   /** NULL unless the required evidence classes are all present. */
   const gate = (available: boolean, value: number | null): number | null =>
     available ? value : null;
 
+  /**
+   * Round denominator for whole-match rates: NULL (and 0 for `perRound`, which
+   * maps a non-positive round count to NULL) while coverage is incomplete.
+   */
+  const matchRounds = hasCoverage ? rounds : null;
+  const perRoundDenominator = matchRounds ?? 0;
+
   const earlyDeathRate = gate(hasKills && hasTiming, ratio(metrics.earlyDeaths, deaths));
-  const firstDeathRate = gate(hasKills, ratio(metrics.firstDeaths, rounds));
+  const firstDeathRate = gate(hasKills, ratio(metrics.firstDeaths, matchRounds));
 
   const dimensions: Record<DnaDimension, Record<string, number | null>> = {
     aim: {
       hs_rate: gate(hasKills, metrics.hsPercent == null ? null : clamp01(metrics.hsPercent / 100)),
-      kills_per_round: gate(hasKills, ratio(metrics.kills, rounds)),
-      damage_per_round: gate(hasDamage, scale(metrics.adr, 100)),
+      kills_per_round: gate(hasKills, ratio(metrics.kills, matchRounds)),
+      damage_per_round: gate(hasDamage && hasCoverage, scale(metrics.adr, 100)),
       damage_efficiency: gate(hasDamage, scale(metrics.damageEfficiency, 2)),
     },
     dueling: {
       opening_success: gate(hasKills, metrics.openingSuccessRate),
-      opening_participation: gate(hasKills, ratio(metrics.openingAttempts, rounds)),
+      opening_participation: gate(hasKills, ratio(metrics.openingAttempts, matchRounds)),
       trade_kill_share: gate(hasKills && hasTiming, ratio(metrics.tradeKills, metrics.kills)),
       kd_balance: gate(hasKills, ratio(metrics.kills, metrics.kills + deaths)),
     },
     survivability: {
-      // A survival claim needs both death evidence and provably ended rounds.
-      survival_rate: gate(hasKills && hasRoundEnd, complement(ratio(deaths, rounds))),
+      /**
+       * A survival claim needs death evidence AND a denominator whose every
+       * round provably ended (see `metrics.survivalRounds`). "Some round ended"
+       * is not enough, and insufficient coverage yields NULL, never 0.
+       */
+      survival_rate: gate(hasKills, complement(ratio(deaths, metrics.survivalRounds))),
       // ↓ lower is better: share of deaths that happened early.
       early_death_rate: earlyDeathRate,
       // ↑ higher is better: the complement, named for what it means.
@@ -104,7 +129,10 @@ export function extractFeatures(
       // ↓ lower is better: deaths no teammate answered.
       untraded_death_rate: gate(hasKills && hasTiming, ratio(metrics.untradedDeaths, deaths)),
       // ↓ lower is better: damage absorbed per round.
-      damage_taken_per_round: gate(hasDamage, perRound(metrics.damageTaken, rounds, 120)),
+      damage_taken_per_round: gate(
+        hasDamage,
+        perRound(metrics.damageTaken, perRoundDenominator, 120),
+      ),
     },
     positioning: {
       traded_death_rate: gate(hasKills && hasTiming, ratio(metrics.tradeDeaths, deaths)),
@@ -115,28 +143,36 @@ export function extractFeatures(
       map_spread: null,
     },
     utility: {
-      utility_damage_per_round: hasUtility ? perRound(metrics.utilityDamage, rounds, 12) : null,
-      flash_assists_per_round: hasUtility ? perRound(metrics.flashAssists, rounds, 0.4) : null,
-      enemies_flashed_per_round: hasUtility ? perRound(metrics.enemiesFlashed, rounds, 1.2) : null,
-      grenades_per_round: hasUtility ? perRound(metrics.grenadesUsed, rounds, 2.5) : null,
+      utility_damage_per_round: hasUtility
+        ? perRound(metrics.utilityDamage, perRoundDenominator, 12)
+        : null,
+      flash_assists_per_round: hasUtility
+        ? perRound(metrics.flashAssists, perRoundDenominator, 0.4)
+        : null,
+      enemies_flashed_per_round: hasUtility
+        ? perRound(metrics.enemiesFlashed, perRoundDenominator, 1.2)
+        : null,
+      grenades_per_round: hasUtility
+        ? perRound(metrics.grenadesUsed, perRoundDenominator, 2.5)
+        : null,
     },
     decision_making: {
       kast: metrics.kast == null ? null : clamp01(metrics.kast / 100),
       // Round-denominated, so it is NOT the complement of early_death_rate.
       early_death_free_rate: gate(
         hasKills && hasTiming,
-        complement(ratio(metrics.earlyDeaths, rounds)),
+        complement(ratio(metrics.earlyDeaths, matchRounds)),
       ),
       opening_discipline: gate(hasKills, ratio(metrics.firstKills, metrics.openingAttempts)),
       early_window_seconds: EARLY_DEATH_SECONDS,
     },
     teamplay: {
-      assists_per_round: gate(hasKills, perRound(metrics.assists, rounds, 0.35)),
+      assists_per_round: gate(hasKills, perRound(metrics.assists, perRoundDenominator, 0.35)),
       flash_assist_share: gate(
         hasKills && hasUtility,
         ratio(metrics.flashAssists, metrics.assists),
       ),
-      trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, rounds)),
+      trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, matchRounds)),
     },
     economy: {
       // Economy MUST come from real buy data (money_start / money_end /
@@ -150,8 +186,8 @@ export function extractFeatures(
     },
     clutch: {
       clutch_win_rate: gate(hasKills, ratio(metrics.clutchWins, metrics.clutchAttempts)),
-      clutch_frequency: gate(hasKills, ratio(metrics.clutchAttempts, rounds)),
-      multi_kill_rate: gate(hasKills, ratio(metrics.multiKills, rounds)),
+      clutch_frequency: gate(hasKills, ratio(metrics.clutchAttempts, matchRounds)),
+      multi_kill_rate: gate(hasKills, ratio(metrics.multiKills, matchRounds)),
     },
     consistency: {
       // Single-match consistency is weak by nature; the value is flagged by the

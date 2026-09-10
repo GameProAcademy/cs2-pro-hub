@@ -130,6 +130,21 @@ export function participatedInRound(
  * actually extracted (complete parse). Anything weaker is `null`: a missing
  * death event is NOT proof of survival.
  */
+/**
+ * FASE 2.7.1D — SINGLE DEFINITION OF "this round provably ended".
+ *
+ * Used both by `playerSurvivedRound` (per round) and by the survival-rate
+ * denominator (per participated round set), so the two can never disagree.
+ */
+export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): boolean {
+  return (
+    round.endTick != null ||
+    round.durationSeconds != null ||
+    round.winnerSide != null ||
+    round.winnerTeam != null
+  );
+}
+
 export function playerSurvivedRound(
   match: CanonicalMatch,
   steamId: string,
@@ -147,12 +162,7 @@ export function playerSurvivedRound(
   if (!participatedInRound(match, steamId, roundNumber)) return null;
   if (match.quality.partialParse) return null;
 
-  const roundEnded =
-    round.endTick != null ||
-    round.durationSeconds != null ||
-    round.winnerSide != null ||
-    round.winnerTeam != null;
-  if (!roundEnded) return null;
+  if (!roundHasEndEvidence(round)) return null;
 
   // The round must actually carry extracted combat/round events; otherwise the
   // absence of a death event says nothing at all.
@@ -427,6 +437,23 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   }
   const roundsPlayed = roundNumbers.size;
 
+  /**
+   * FASE 2.7.1D — SURVIVAL DENOMINATOR.
+   *
+   * A survival rate is a claim about EVERY round in its denominator, so "at
+   * least one round ended" (the aggregate `roundEndEvidence` flag) is not
+   * enough: 19 ended rounds out of 20 would publish a rate whose 20th round has
+   * an unknown outcome. The denominator therefore exists only when EVERY round
+   * the player participated in provably ended AND the extraction covers the
+   * whole match. Otherwise it is NULL (unknown), never 0 and never partial.
+   */
+  const survivalRounds =
+    roundsPlayed > 0 &&
+    availability.completeCoverage &&
+    match.rounds.filter((r) => roundNumbers.has(r.roundNumber)).every((r) => roundHasEndEvidence(r))
+      ? roundsPlayed
+      : null;
+
   const damageEvents = match.events.filter((e) => e.type === "damage");
   const damageGiven = damageEvents
     .filter((e) => e.actorSteamId === steamId)
@@ -592,6 +619,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     steamId,
     availability,
     roundsPlayed,
+    survivalRounds,
     kills: playerKills.length,
     deaths: playerDeaths.length,
     assists,

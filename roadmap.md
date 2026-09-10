@@ -444,3 +444,13 @@ Próximo passo: FASE 2.7.2 — provisionamento do parser worker.
 - [x] Deadline global desde a entrada do job, checado antes de storage, hash, signed URL, parser, persistência e projeção
 - [ ] Parser real `.dem` (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN inexistentes)
 - [ ] FASE 2.8 não iniciada
+
+## FASE 2.7.1D
+- [x] `survival_rate` exige round-end evidence em TODOS os rounds do denominador (`metrics.survivalRounds`); cobertura incompleta = NULL, nunca parcial nem 0
+- [x] `roundHasEndEvidence()` como definição única, reutilizada por `playerSurvivedRound()`
+- [x] Parse parcial: taxas com denominador de rounds ficam NULL; contadores observados e razões sobre contagens observadas permanecem
+- [x] `PARSER_VERSION` marcada como placeholder não confirmado (`PARSER_VERSION_CONFIRMED = false`); contrato do parser inalterado
+- [x] `quality271d.test.ts` (fixtures sintéticas). 587/587 testes, tsgo e lint OK
+- [ ] FASE 2.7 permanece IN PROGRESS — parser real `.dem` e E2E real NÃO provados (BLOQUEADO: worker externo + DEMO_PARSER_URL/TOKEN)
+- [ ] FASE 2.7.2 (próxima): provisionamento do parser worker e matriz de compatibilidade CS2
+- [ ] FASE 2.8 não iniciada
