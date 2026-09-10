@@ -172,7 +172,7 @@ export function extractFeatures(
         hasKills && hasUtility,
         ratio(metrics.flashAssists, metrics.assists),
       ),
-      trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, rounds)),
+      trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, matchRounds)),
     },
     economy: {
       // Economy MUST come from real buy data (money_start / money_end /
