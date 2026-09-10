@@ -105,19 +105,23 @@ export function extractFeatures(
   const dimensions: Record<DnaDimension, Record<string, number | null>> = {
     aim: {
       hs_rate: gate(hasKills, metrics.hsPercent == null ? null : clamp01(metrics.hsPercent / 100)),
-      kills_per_round: gate(hasKills, ratio(metrics.kills, rounds)),
-      damage_per_round: gate(hasDamage, scale(metrics.adr, 100)),
+      kills_per_round: gate(hasKills, ratio(metrics.kills, matchRounds)),
+      damage_per_round: gate(hasDamage && hasCoverage, scale(metrics.adr, 100)),
       damage_efficiency: gate(hasDamage, scale(metrics.damageEfficiency, 2)),
     },
     dueling: {
       opening_success: gate(hasKills, metrics.openingSuccessRate),
-      opening_participation: gate(hasKills, ratio(metrics.openingAttempts, rounds)),
+      opening_participation: gate(hasKills, ratio(metrics.openingAttempts, matchRounds)),
       trade_kill_share: gate(hasKills && hasTiming, ratio(metrics.tradeKills, metrics.kills)),
       kd_balance: gate(hasKills, ratio(metrics.kills, metrics.kills + deaths)),
     },
     survivability: {
-      // A survival claim needs both death evidence and provably ended rounds.
-      survival_rate: gate(hasKills && hasRoundEnd, complement(ratio(deaths, rounds))),
+      /**
+       * A survival claim needs death evidence AND a denominator whose every
+       * round provably ended (see `metrics.survivalRounds`). "Some round ended"
+       * is not enough, and insufficient coverage yields NULL, never 0.
+       */
+      survival_rate: gate(hasKills, complement(ratio(deaths, metrics.survivalRounds))),
       // ↓ lower is better: share of deaths that happened early.
       early_death_rate: earlyDeathRate,
       // ↑ higher is better: the complement, named for what it means.
