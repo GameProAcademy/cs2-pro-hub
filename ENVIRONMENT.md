@@ -31,9 +31,13 @@ Rules that apply to every variable below:
 | `DEMO_PARSER_TOKEN` | yes | **secret** bearer token, never logged, returned, or sent to the browser |
 | `DEMO_PARSER_EXPECTED_NAME` | yes | expected parser name (`demoparser2`) |
 | `DEMO_PARSER_EXPECTED_VERSION` | yes | expected parser version (`0.42.0`) |
-| `DEMO_PARSER_EXPECTED_REVISION` | recommended | exact worker revision; validation is enforced when configured |
+| `DEMO_PARSER_EXPECTED_REVISION` | yes in production | exact worker build revision; the revision lock fails closed on any divergence |
+| `DEMO_PARSER_REVISION_REQUIRED` | optional | `true`/`false` override of the lock; defaults to `true` when `NODE_ENV=production` |
 
-All five values are read server-side. None may use the `VITE_` prefix. A missing
+The official endpoint value is the canonical parse URL, never the bare origin:
+`https://cs2-demo-parser-production.up.railway.app/v1/parse`.
+
+All values are read server-side. None may use the `VITE_` prefix. A missing
 or insecure URL, or a missing token, keeps the adapter unavailable.
 
 ## Transactional email — Hostinger Mail API (server only)
