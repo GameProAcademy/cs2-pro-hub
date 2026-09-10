@@ -213,26 +213,28 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
     return best?.flasher ?? null;
   };
 
-  return match.events
-    .filter((e) => e.type === "kill")
-    .map((e) => {
-      const kill: KillRecord = {
-        round: e.roundNumber,
-        time: eventTime(e, tickrate),
-        attacker: e.actorSteamId,
-        victim: e.victimSteamId,
-        assister: e.assisterSteamId,
-        headshot: e.headshot,
-        flashAssister: null,
-      };
-      kill.flashAssister = flashAssisterFor(kill);
-      return kill;
-    })
-    // Unknown timing is NOT late timing: a kill without a trustworthy instant
-    // must never be pushed to the end of the round as if it happened last.
-    // Ordering is therefore only by round here; every time-sensitive derivation
-    // (opening, trades, KAST) compares instants explicitly and refuses unknowns.
-    .sort((a, b) => a.round - b.round);
+  return (
+    match.events
+      .filter((e) => e.type === "kill")
+      .map((e) => {
+        const kill: KillRecord = {
+          round: e.roundNumber,
+          time: eventTime(e, tickrate),
+          attacker: e.actorSteamId,
+          victim: e.victimSteamId,
+          assister: e.assisterSteamId,
+          headshot: e.headshot,
+          flashAssister: null,
+        };
+        kill.flashAssister = flashAssisterFor(kill);
+        return kill;
+      })
+      // Unknown timing is NOT late timing: a kill without a trustworthy instant
+      // must never be pushed to the end of the round as if it happened last.
+      // Ordering is therefore only by round here; every time-sensitive derivation
+      // (opening, trades, KAST) compares instants explicitly and refuses unknowns.
+      .sort((a, b) => a.round - b.round)
+  );
 }
 
 /**
@@ -279,7 +281,6 @@ export function openingDuels(kills: KillRecord[]): {
 
   return { openings, determinableRounds, ambiguousRounds };
 }
-
 
 /**
  * True when `death` was traded within the configured window.
@@ -405,7 +406,6 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
   };
 }
 
-
 export function computeMetrics(match: CanonicalMatch, steamId: string): CanonicalMetrics {
   const availability = metricsAvailability(match);
   const kills = collectKills(match);
@@ -472,7 +472,6 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     openingAttempts != null && openingAttempts > 0
       ? round3(firstKillCount / openingAttempts)
       : null;
-
 
   // Trades — timing-dependent. Without trustworthy timing the answer is NULL,
   // never 0: "no trade observed" and "we cannot observe trades" differ.
@@ -588,7 +587,6 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
   // Damage-derived signals require damage events; otherwise they are unknown.
   const adr =
     availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
-
 
   return {
     steamId,

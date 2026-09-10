@@ -114,8 +114,24 @@ describe("rating requires kill AND damage evidence AND complete coverage", () =>
 describe("opening duels only over rounds with determinable ordering", () => {
   it("unknown instant is not late: the round is excluded, not resolved by order", () => {
     const result = openingDuels([
-      { round: 1, time: null, attacker: ENEMY_A, victim: ME, assister: null, headshot: null, flashAssister: null },
-      { round: 1, time: 30, attacker: ME, victim: ENEMY_B, assister: null, headshot: null, flashAssister: null },
+      {
+        round: 1,
+        time: null,
+        attacker: ENEMY_A,
+        victim: ME,
+        assister: null,
+        headshot: null,
+        flashAssister: null,
+      },
+      {
+        round: 1,
+        time: 30,
+        attacker: ME,
+        victim: ENEMY_B,
+        assister: null,
+        headshot: null,
+        flashAssister: null,
+      },
     ]);
     expect(result.determinableRounds.size).toBe(0);
     expect(result.ambiguousRounds.has(1)).toBe(true);
@@ -124,8 +140,24 @@ describe("opening duels only over rounds with determinable ordering", () => {
 
   it("a tie on the earliest instant is ambiguous", () => {
     const result = openingDuels([
-      { round: 3, time: 10, attacker: ME, victim: ENEMY_A, assister: null, headshot: null, flashAssister: null },
-      { round: 3, time: 10, attacker: ENEMY_B, victim: MATE, assister: null, headshot: null, flashAssister: null },
+      {
+        round: 3,
+        time: 10,
+        attacker: ME,
+        victim: ENEMY_A,
+        assister: null,
+        headshot: null,
+        flashAssister: null,
+      },
+      {
+        round: 3,
+        time: 10,
+        attacker: ENEMY_B,
+        victim: MATE,
+        assister: null,
+        headshot: null,
+        flashAssister: null,
+      },
     ]);
     expect(result.ambiguousRounds.has(3)).toBe(true);
   });
@@ -148,7 +180,10 @@ describe("opening duels only over rounds with determinable ordering", () => {
   });
 
   it("no determinable round => opening sample is NULL, not zero", () => {
-    const metrics = computeMetrics(build([kill(1, null, ENEMY_A, ME), kill(1, null, ME, ENEMY_B)]), ME);
+    const metrics = computeMetrics(
+      build([kill(1, null, ENEMY_A, ME), kill(1, null, ME, ENEMY_B)]),
+      ME,
+    );
     expect(metrics.firstKills).toBeNull();
     expect(metrics.firstDeaths).toBeNull();
     expect(metrics.openingAttempts).toBeNull();

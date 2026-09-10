@@ -303,7 +303,6 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     try {
       assertDeadline();
       canonical = await persistCanonicalObservation({
-
         bundle,
         ownerPlayerId: player.id,
         uploadId: job.upload_id,
@@ -322,7 +321,6 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     // Per-player projection only (metrics/features/convenience columns).
     assertDeadline();
     const persisted = await persistDemoProjection({
-
       matchId: canonical.matchId,
       uploadId: job.upload_id,
       playerId: player.id,

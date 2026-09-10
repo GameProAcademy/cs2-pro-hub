@@ -211,4 +211,3 @@ export async function persistDemoProjection(args: {
 
   return { matchId, metricsWritten: true, featuresWritten: true };
 }
-

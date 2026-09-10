@@ -215,7 +215,6 @@ export interface MetricsAvailability {
   completeCoverage: boolean;
 }
 
-
 export interface CanonicalMetrics {
   steamId: string;
   /** Which evidence classes backed this computation. */

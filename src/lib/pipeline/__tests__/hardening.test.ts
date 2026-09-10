@@ -166,7 +166,6 @@ describe("5. first death semantics", () => {
       3,
     );
   });
-
 });
 
 describe("6. flash assists and trades", () => {
