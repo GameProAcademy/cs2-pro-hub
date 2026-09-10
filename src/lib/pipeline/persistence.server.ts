@@ -96,7 +96,6 @@ export function projectionUpdate(args: {
   };
 }
 
-
 /**
  * Writes the per-player projection of an ALREADY persisted canonical match.
  *
@@ -171,7 +170,6 @@ export async function persistDemoProjection(args: {
     .update(update as never)
     .eq("id", matchId);
   if (updateError) fail(updateError.message);
-
 
   // 2. Metrics (idempotent per match+player)
   const { error: metricsError } = await supabaseAdmin.from("match_metrics").upsert(

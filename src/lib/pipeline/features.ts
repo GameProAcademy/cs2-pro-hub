@@ -48,7 +48,6 @@ export function extractFeatures(
   _match: CanonicalMatch,
   metrics: CanonicalMetrics,
 ): CanonicalFeatures {
-
   const rounds = metrics.roundsPlayed;
   const deaths = metrics.deaths;
   /**
@@ -61,7 +60,6 @@ export function extractFeatures(
    */
   const hasEconomy = metrics.availability.economy;
   const hasUtility = metrics.availability.utilityEvents;
-
 
   const earlyDeathRate = ratio(metrics.earlyDeaths, deaths);
   const firstDeathRate = ratio(metrics.firstDeaths, rounds);

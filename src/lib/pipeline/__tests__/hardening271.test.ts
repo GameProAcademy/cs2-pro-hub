@@ -255,7 +255,8 @@ describe("FASE 2.7.1 — NULL is not ZERO", () => {
     const raw = clone();
     // Keep the utility event class (another player throws), remove ME's usage.
     raw.events = raw.events.map((event) =>
-      event.attacker === ME && (event.type === "player_blind" || event.type === "hegrenade_detonate")
+      event.attacker === ME &&
+      (event.type === "player_blind" || event.type === "hegrenade_detonate")
         ? { ...event, attacker: MATE }
         : event,
     );
@@ -452,8 +453,10 @@ describe("FASE 2.7.1 — clutch participation", () => {
     expect(withGhost.clutchAttempts).toBe(withoutGhost.clutchAttempts);
     expect(withGhost.clutchWins).toBe(withoutGhost.clutchWins);
     // The ghost never appears in the ghost player's own round sample either.
-    expect(computeMetrics(clutchMatch({ kills, winnerTeam: null, includeGhost: true }), GHOST)
-      .roundsPlayed).toBe(0);
+    expect(
+      computeMetrics(clutchMatch({ kills, winnerTeam: null, includeGhost: true }), GHOST)
+        .roundsPlayed,
+    ).toBe(0);
   });
 
   it("N2: without kill events the clutch answer is NULL, not zero", () => {

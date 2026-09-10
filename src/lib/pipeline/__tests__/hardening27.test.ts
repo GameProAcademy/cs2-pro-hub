@@ -110,8 +110,6 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
     expect(metrics.clutchWins).toBe(1);
   });
 
-
-
   it("H9: availability flags describe what the demo actually contained", () => {
     const metrics = computeMetrics(normalizeParserOutput(clone()), ME);
     expect(metrics.availability.killEvents).toBe(true);
@@ -121,7 +119,6 @@ describe("FASE 2.7 hardening — quality-aware metrics", () => {
     expect(metrics.availability.economy).toBe(true);
     expect(metrics.availability.roundEndEvidence).toBe(true);
   });
-
 });
 
 describe("FASE 2.7 hardening — short demo policy", () => {
