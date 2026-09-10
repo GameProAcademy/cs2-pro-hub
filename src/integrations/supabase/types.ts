@@ -2478,6 +2478,7 @@ export type Database = {
       canonical_attach_source: {
         Args: {
           _external_match_id: string
+          _fingerprint?: string
           _match_id: string
           _source: Database["public"]["Enums"]["data_source"]
           _source_contract_version: string
