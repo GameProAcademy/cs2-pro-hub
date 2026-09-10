@@ -92,6 +92,8 @@ describe("absence of sample is NULL, never zero", () => {
   const empty = extractFeatures(match, {
     ...metrics,
     roundsPlayed: 0,
+    // No round played means no survival denominator either.
+    survivalRounds: null,
     kills: 0,
     deaths: 0,
     assists: 0,
