@@ -129,7 +129,10 @@ export function extractFeatures(
       // ↓ lower is better: deaths no teammate answered.
       untraded_death_rate: gate(hasKills && hasTiming, ratio(metrics.untradedDeaths, deaths)),
       // ↓ lower is better: damage absorbed per round.
-      damage_taken_per_round: gate(hasDamage, perRound(metrics.damageTaken, rounds, 120)),
+      damage_taken_per_round: gate(
+        hasDamage,
+        perRound(metrics.damageTaken, perRoundDenominator, 120),
+      ),
     },
     positioning: {
       traded_death_rate: gate(hasKills && hasTiming, ratio(metrics.tradeDeaths, deaths)),
