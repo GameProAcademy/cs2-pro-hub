@@ -83,30 +83,31 @@ export function extractFeatures(
 
   const dimensions: Record<DnaDimension, Record<string, number | null>> = {
     aim: {
-      hs_rate: metrics.hsPercent == null ? null : clamp01(metrics.hsPercent / 100),
-      kills_per_round: ratio(metrics.kills, rounds),
-      damage_per_round: scale(metrics.adr, 100),
-      damage_efficiency: scale(metrics.damageEfficiency, 2),
+      hs_rate: gate(hasKills, metrics.hsPercent == null ? null : clamp01(metrics.hsPercent / 100)),
+      kills_per_round: gate(hasKills, ratio(metrics.kills, rounds)),
+      damage_per_round: gate(hasDamage, scale(metrics.adr, 100)),
+      damage_efficiency: gate(hasDamage, scale(metrics.damageEfficiency, 2)),
     },
     dueling: {
-      opening_success: metrics.openingSuccessRate,
-      opening_participation: ratio(metrics.openingAttempts, rounds),
-      trade_kill_share: ratio(metrics.tradeKills, metrics.kills),
-      kd_balance: ratio(metrics.kills, metrics.kills + deaths),
+      opening_success: gate(hasKills, metrics.openingSuccessRate),
+      opening_participation: gate(hasKills, ratio(metrics.openingAttempts, rounds)),
+      trade_kill_share: gate(hasKills && hasTiming, ratio(metrics.tradeKills, metrics.kills)),
+      kd_balance: gate(hasKills, ratio(metrics.kills, metrics.kills + deaths)),
     },
     survivability: {
-      survival_rate: complement(ratio(deaths, rounds)),
+      // A survival claim needs both death evidence and provably ended rounds.
+      survival_rate: gate(hasKills && hasRoundEnd, complement(ratio(deaths, rounds))),
       // ↓ lower is better: share of deaths that happened early.
       early_death_rate: earlyDeathRate,
       // ↑ higher is better: the complement, named for what it means.
       early_death_avoidance: complement(earlyDeathRate),
       // ↓ lower is better: deaths no teammate answered.
-      untraded_death_rate: ratio(metrics.untradedDeaths, deaths),
+      untraded_death_rate: gate(hasKills && hasTiming, ratio(metrics.untradedDeaths, deaths)),
       // ↓ lower is better: damage absorbed per round.
-      damage_taken_per_round: perRound(metrics.damageTaken, rounds, 120),
+      damage_taken_per_round: gate(hasDamage, perRound(metrics.damageTaken, rounds, 120)),
     },
     positioning: {
-      traded_death_rate: ratio(metrics.tradeDeaths, deaths),
+      traded_death_rate: gate(hasKills && hasTiming, ratio(metrics.tradeDeaths, deaths)),
       first_death_rate: firstDeathRate,
       first_death_avoidance: complement(firstDeathRate),
       // Requires continuous position samples, which the parser contract does
