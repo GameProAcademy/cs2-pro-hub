@@ -480,7 +480,8 @@ export const FEATURE_CATALOG: Record<string, Record<string, FeatureSpec>> = {
       roundDenominated: false,
     },
     rating: {
-      formula: "min(1, source_rating / 1.6), source_rating = 0.45*(kills/rounds_played / 0.70) + 0.25*(1 - deaths/rounds_played / 0.75) + 0.30*(damage/rounds_played / 80)",
+      formula:
+        "min(1, source_rating / 1.6), source_rating = 0.45*(kills/rounds_played / 0.70) + 0.25*(1 - deaths/rounds_played / 0.75) + 0.30*(damage/rounds_played / 80)",
       unit: "ratio",
       range: RATIO,
       direction: "up",
