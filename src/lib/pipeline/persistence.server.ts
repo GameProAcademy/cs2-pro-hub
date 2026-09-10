@@ -63,6 +63,41 @@ export interface PersistResult {
 }
 
 /**
+ * FASE 2.7.1 — PROJECTION OWNERSHIP.
+ *
+ * `matches` carries two kinds of column:
+ *
+ *  - MATCH-WIDE facts of the projection (platform, rounds, duration, game
+ *    version, demo metadata) — safe to refresh for any observer;
+ *  - PLAYER-SCOPED facts (player_id, upload_id, team_player, team_opponent,
+ *    score_player, score_opponent, result) — these encode ONE player's
+ *    perspective, so they may only be written when the row has no owner yet or
+ *    the owner is the very player being projected. Writing them under any other
+ *    condition would show player A the scoreline of player B.
+ *
+ * Returning the whole update object from one function keeps the guard
+ * indivisible: there is no code path that updates a player-scoped column
+ * outside the ownership check.
+ */
+export function projectionUpdate(args: {
+  existingPlayerId: string | null;
+  playerId: string;
+  uploadId: string;
+  matchWide: Record<string, unknown>;
+  playerScoped: Record<string, unknown>;
+}): Record<string, unknown> {
+  const ownsProjection = args.existingPlayerId == null || args.existingPlayerId === args.playerId;
+  if (!ownsProjection) return { ...args.matchWide };
+  return {
+    ...args.matchWide,
+    player_id: args.playerId,
+    upload_id: args.uploadId,
+    ...args.playerScoped,
+  };
+}
+
+
+/**
  * Writes the per-player projection of an ALREADY persisted canonical match.
  *
  * Idempotent: metrics are keyed by (match_id, player_id) and features are
