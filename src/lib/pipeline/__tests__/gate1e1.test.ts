@@ -43,7 +43,14 @@ const expected = () => ({
   contractVersion: PARSER_CONTRACT_VERSION,
 });
 
-const worker = (over: Partial<ReturnType<typeof expected>> = {}) => ({
+const worker = (
+  over: {
+    name?: string;
+    version?: string;
+    revision?: string | null;
+    contractVersion?: number;
+  } = {},
+) => ({
   name: over.name ?? PARSER_NAME,
   version: over.version ?? PARSER_VERSION,
   revision: over.revision === undefined ? "build-1" : over.revision,
