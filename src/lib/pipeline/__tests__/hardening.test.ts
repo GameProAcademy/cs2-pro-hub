@@ -157,15 +157,16 @@ describe("5. first death semantics", () => {
     const metrics = computeMetrics(match, ME);
     const features = extractFeatures(match, metrics);
     const positioning = features.dimensions["positioning"]!;
-    expect(positioning["first_death_rate"]).toBeCloseTo(
-      metrics.firstDeaths / metrics.roundsPlayed,
-      3,
-    );
+    // The fixture has determinable opening duels, so the sample is known.
+    expect(metrics.firstDeaths).not.toBeNull();
+    const firstDeaths = metrics.firstDeaths!;
+    expect(positioning["first_death_rate"]).toBeCloseTo(firstDeaths / metrics.roundsPlayed, 3);
     expect(positioning["first_death_avoidance"]).toBeCloseTo(
-      1 - metrics.firstDeaths / metrics.roundsPlayed,
+      1 - firstDeaths / metrics.roundsPlayed,
       3,
     );
   });
+
 });
 
 describe("6. flash assists and trades", () => {

@@ -42,6 +42,8 @@ const availability = (over: Partial<MetricsAvailability>): MetricsAvailability =
   roundEndEvidence: true,
   economy: true,
   timing: true,
+  completeCoverage: true,
+
   ...over,
 });
 
