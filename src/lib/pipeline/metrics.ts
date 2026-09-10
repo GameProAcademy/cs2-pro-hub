@@ -398,9 +398,8 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     // Shared, single definition of utility evidence (see evidence.ts): the same
     // classification the normalizer uses for the `missing_utility` flag.
     utilityEvents: hasUtilityEvidence(match.events),
-    roundEndEvidence: match.rounds.some(
-      (r) => r.winnerSide != null || r.winnerTeam != null || r.endTick != null,
-    ),
+    roundEndEvidence: match.rounds.some((r) => hasRoundEndEvidence(r)),
+
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
     timing,
     // A partial extraction NEVER counts as complete coverage. Whole-match rates
