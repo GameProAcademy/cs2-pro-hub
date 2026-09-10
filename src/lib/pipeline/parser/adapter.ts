@@ -33,6 +33,31 @@ export interface DemoParserAdapter {
   parseDemo(request: ParseRequest): Promise<RawParserOutput>;
 }
 
+/**
+ * FASE 2.7.1 — EXPECTED PARSER IDENTITY IS CONFIGURATION, NOT A CONSTANT.
+ *
+ * The pinned values in `src/config/pipeline.ts` are only the default. FASE 2.7.2
+ * will select a real demoparser2 version/revision after validating it against a
+ * CS2 compatibility matrix, so the expectation must be settable per deployment
+ * WITHOUT a code change:
+ *   DEMO_PARSER_EXPECTED_NAME
+ *   DEMO_PARSER_EXPECTED_VERSION
+ *   DEMO_PARSER_EXPECTED_REVISION  (optional; when set, the worker must match it)
+ * Read inside the function: env injection happens at call time, never at import.
+ */
+export function expectedParserIdentity(): {
+  name: string;
+  version: string;
+  revision: string | null;
+} {
+  const env = typeof process === "undefined" ? undefined : process.env;
+  return {
+    name: env?.["DEMO_PARSER_EXPECTED_NAME"] || PARSER_NAME,
+    version: env?.["DEMO_PARSER_EXPECTED_VERSION"] || PARSER_VERSION,
+    revision: env?.["DEMO_PARSER_EXPECTED_REVISION"] || null,
+  };
+}
+
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!value || typeof value !== "object")
@@ -45,16 +70,23 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!raw.parser?.name || !raw.parser?.version) {
     throw new PipelineError("PARSER_ERROR", "missing parser identity");
   }
-  // The parser identity is pinned in configuration. An incompatible worker is
-  // rejected explicitly instead of being accepted silently; the version is only
-  // bumped deliberately in `src/config/pipeline.ts`.
-  if (raw.parser.name !== PARSER_NAME) {
+  const expected = expectedParserIdentity();
+  // An incompatible worker is rejected explicitly instead of being accepted
+  // silently. NOTE: major/minor compatibility does NOT guarantee CS2 demo
+  // compatibility — only the FASE 2.7.2 compatibility matrix can establish that.
+  if (raw.parser.name !== expected.name) {
     throw new PipelineError("UNSUPPORTED_DEMO", `parser name mismatch: ${raw.parser.name}`);
   }
-  if (majorMinor(raw.parser.version) !== majorMinor(PARSER_VERSION)) {
+  if (majorMinor(raw.parser.version) !== majorMinor(expected.version)) {
     throw new PipelineError(
       "PARSER_ERROR",
-      `parser version mismatch: got ${raw.parser.version}, expected ${PARSER_VERSION}`,
+      `parser version mismatch: got ${raw.parser.version}, expected ${expected.version}`,
+    );
+  }
+  if (expected.revision != null && (raw.parser.revision ?? null) !== expected.revision) {
+    throw new PipelineError(
+      "PARSER_ERROR",
+      `parser revision mismatch: got ${String(raw.parser.revision)}, expected ${expected.revision}`,
     );
   }
   if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events)) {
