@@ -675,3 +675,30 @@ removida: o vínculo do jogador deixou de ser pré-condição do parse.
 
 Estado: 761/761 testes, typecheck, lint e build OK. O E2E real da demo depende
 apenas de uma nova execução do Run 1 pelo usuário.
+
+### Identificação explícita do jogador (fechamento)
+
+- `src/lib/pipeline/attachment.ts`: domínio puro separando MATCH IDENTITY,
+  PLAYER IDENTITY, USER ATTACHMENT e IDENTITY METHOD. Estados `attached` /
+  `unattached` / `conflict`; métodos `steam_id_confirmed`,
+  `self_declared_player`, `self_declared_nickname`; origem `system`/`user`;
+  confiança `high` / `user_confirmed` / `low` / `unresolved`.
+- Nickname: normalização conservadora (NFKC, espaços, case). Sem fuzzy, sem
+  inferir Steam ID a partir de nickname. Nickname duplicado → `ambiguous`.
+- Steam ID confirmado tem precedência; declaração divergente → `conflict`,
+  nunca sobrescrita silenciosa.
+- `demo_jobs` ganhou `attachment_source`, `attachment_confidence_label`,
+  `attachment_participant_key`, `declared_participant_key`,
+  `declared_nickname`, `observed_nickname`, `attachment_declared_at`,
+  `attachment_declared_by` + constraints de forma da declaração.
+- `src/lib/pipeline-identity.functions.ts`: `getDemoIdentity()` lista os
+  jogadores detectados sob RLS do dono; `declareDemoPlayer()` valida posse,
+  resolve pelo domínio, grava auditoria e reprocessa o MESMO CanonicalMatch
+  (idempotente) apenas quando a declaração resolve um jogador.
+- `DemoPlayerIdentity.tsx`: "Quem é você nesta demo?" com seleção de jogador,
+  nickname, desambiguação e opção de deixar para depois; i18n nos 5 locales.
+- Testes: `attachment.identity.test.ts` (13 casos) cobrindo perfil ausente,
+  Steam ausente/não encontrado, seleção explícita, nickname único/ambíguo/
+  inexistente, precedência e conflito. 776/776 testes, typecheck, lint, build OK.
+- E2E real da demo NÃO reexecutado nesta fase (fora do escopo); FASE 2.8 não
+  iniciada.

@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2, RefreshCw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
+import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
@@ -216,8 +217,11 @@ export function DemoIngestPanel() {
                   {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
                   ) : null}
-                  {job.status === "processed" && job.attachmentState === "unattached" ? (
-                    <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
+                  {job.status === "processed" && job.attachmentState !== "attached" ? (
+                    <>
+                      <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
+                      <DemoPlayerIdentity jobId={job.jobId} />
+                    </>
                   ) : null}
                 </div>
 

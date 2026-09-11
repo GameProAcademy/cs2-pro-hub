@@ -235,11 +235,18 @@ export type Database = {
         Row: {
           analysis_version: string
           attachment_confidence: number | null
+          attachment_confidence_label: string | null
+          attachment_declared_at: string | null
+          attachment_declared_by: string | null
           attachment_method: string | null
+          attachment_participant_key: string | null
           attachment_reason: string | null
+          attachment_source: string | null
           attachment_state: string
           cleanup_error: string | null
           created_at: string
+          declared_nickname: string | null
+          declared_participant_key: string | null
           demo_sha256: string | null
           duration_ms: number | null
           error_code: string | null
@@ -252,6 +259,7 @@ export type Database = {
           identity_status: string
           match_id: string | null
           max_retries: number
+          observed_nickname: string | null
           parser_name: string | null
           parser_revision: string | null
           parser_version: string | null
@@ -278,11 +286,18 @@ export type Database = {
         Insert: {
           analysis_version?: string
           attachment_confidence?: number | null
+          attachment_confidence_label?: string | null
+          attachment_declared_at?: string | null
+          attachment_declared_by?: string | null
           attachment_method?: string | null
+          attachment_participant_key?: string | null
           attachment_reason?: string | null
+          attachment_source?: string | null
           attachment_state?: string
           cleanup_error?: string | null
           created_at?: string
+          declared_nickname?: string | null
+          declared_participant_key?: string | null
           demo_sha256?: string | null
           duration_ms?: number | null
           error_code?: string | null
@@ -295,6 +310,7 @@ export type Database = {
           identity_status?: string
           match_id?: string | null
           max_retries?: number
+          observed_nickname?: string | null
           parser_name?: string | null
           parser_revision?: string | null
           parser_version?: string | null
@@ -321,11 +337,18 @@ export type Database = {
         Update: {
           analysis_version?: string
           attachment_confidence?: number | null
+          attachment_confidence_label?: string | null
+          attachment_declared_at?: string | null
+          attachment_declared_by?: string | null
           attachment_method?: string | null
+          attachment_participant_key?: string | null
           attachment_reason?: string | null
+          attachment_source?: string | null
           attachment_state?: string
           cleanup_error?: string | null
           created_at?: string
+          declared_nickname?: string | null
+          declared_participant_key?: string | null
           demo_sha256?: string | null
           duration_ms?: number | null
           error_code?: string | null
@@ -338,6 +361,7 @@ export type Database = {
           identity_status?: string
           match_id?: string | null
           max_retries?: number
+          observed_nickname?: string | null
           parser_name?: string | null
           parser_revision?: string | null
           parser_version?: string | null

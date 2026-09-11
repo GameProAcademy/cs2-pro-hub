@@ -29,7 +29,7 @@ export interface DemoJobView {
   partialParse: boolean;
   roundsValid: number | null;
   /** FASE 2.7.2A: whether the canonical match got this player's projection. */
-  attachmentState: "attached" | "unattached";
+  attachmentState: "attached" | "unattached" | "conflict";
   attachmentReason: string | null;
   queuedAt: string;
   finishedAt: string | null;
@@ -219,7 +219,12 @@ function toView(row: {
     extractionConfidence: row.extraction_confidence,
     partialParse: row.partial_parse,
     roundsValid: row.rounds_valid,
-    attachmentState: row.attachment_state === "attached" ? "attached" : "unattached",
+    attachmentState:
+      row.attachment_state === "attached"
+        ? "attached"
+        : row.attachment_state === "conflict"
+          ? "conflict"
+          : "unattached",
     attachmentReason: row.attachment_reason,
     queuedAt: row.queued_at,
     finishedAt: row.finished_at,

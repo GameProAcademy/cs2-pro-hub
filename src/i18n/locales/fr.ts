@@ -566,7 +566,23 @@ export const fr: Dictionary = {
   "pipeline.confidence": "confiance d'extraction",
   "pipeline.partial": "Extraction partielle : une partie des données n'a pas pu être lue.",
   "pipeline.unattached":
-    "Match analysé, mais pas encore lié à votre profil — liez votre compte Steam pour voir vos statistiques.",
+    "Nous avons analysé le match, mais nous n'avons pas encore identifié quel joueur est vous. Liez votre compte Steam ou sélectionnez votre joueur dans cette demo pour débloquer vos métriques.",
+  "pipeline.identify.title": "Qui êtes-vous dans cette demo ?",
+  "pipeline.identify.help":
+    "Sélectionnez votre joueur parmi ceux détectés dans la demo, ou indiquez le pseudo utilisé dans ce match.",
+  "pipeline.identify.selectLabel": "Joueurs détectés",
+  "pipeline.identify.selectCta": "Oui, c'est moi",
+  "pipeline.identify.nicknameLabel": "Mon pseudo dans cette demo",
+  "pipeline.identify.nicknameCta": "Utiliser ce pseudo",
+  "pipeline.identify.later": "Je le ferai plus tard",
+  "pipeline.identify.notFound":
+    "Nous n'avons pas trouvé ce pseudo dans cette demo. Vérifiez l'orthographe ou sélectionnez votre joueur dans la liste.",
+  "pipeline.identify.ambiguous":
+    "Nous avons trouvé plusieurs joueurs avec ce pseudo dans cette demo. Sélectionnez le vôtre dans la liste.",
+  "pipeline.identify.conflict":
+    "Ce choix contredit le compte Steam lié à votre profil. Rien n'a été lié — vérifiez avant de continuer.",
+  "pipeline.identify.reprocessing": "Joueur identifié. Génération de vos métriques pour ce match…",
+  "pipeline.identify.attached": "Ce match est lié à vous.",
   "pipeline.retry": "Réessayer",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":
