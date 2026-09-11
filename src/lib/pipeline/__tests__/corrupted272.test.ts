@@ -8,7 +8,8 @@ import { fr } from "@/i18n/locales/fr";
 import { ptBR } from "@/i18n/locales/pt-BR";
 import { ptPT } from "@/i18n/locales/pt-PT";
 import { PipelineError, isPermanentError } from "@/lib/pipeline/errors";
-import { classifyWorkerFailure, mapParserErrorCode } from "@/lib/pipeline/parser/parserEndpoint";
+import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
+import { classifyWorkerFailure } from "@/lib/pipeline/parser/parserEndpoint";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
