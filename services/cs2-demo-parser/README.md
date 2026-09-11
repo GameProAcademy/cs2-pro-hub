@@ -136,3 +136,9 @@ run it: the parse boundary is injected.
 GATE 1E.1 closes APP ↔ worker contract, errors, HTTP, retry, auth and revision.
 **GATE 02 — REAL PARSER EXECUTION has not been run**: no real `.dem` has been
 processed through this worker.
+
+## Deployment provenance
+
+The Railway production deployment must pin `PARSER_REVISION` to the exact Git
+commit being built. This marker is intentionally separate from the parser
+package version and is verified through `/version` after deployment.
