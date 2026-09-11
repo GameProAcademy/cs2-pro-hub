@@ -23,7 +23,7 @@ const job = (overrides: Partial<E2EJobState> = {}): E2EJobState => ({
   playersDetected: 10,
   parserName: "demoparser2",
   parserVersion: "0.42.0",
-  parserRevision: "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814",
+  parserRevision: "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd",
   ...overrides,
 });
 

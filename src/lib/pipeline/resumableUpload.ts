@@ -28,9 +28,7 @@ export function resumableStorageEndpoint(baseUrl: string): string {
   }
 
   const projectRefMatch = url.hostname.match(/^([a-z0-9-]+)\.supabase\.co$/i);
-  const origin = projectRefMatch
-    ? `https://${projectRefMatch[1]}.storage.supabase.co`
-    : url.origin;
+  const origin = projectRefMatch ? `https://${projectRefMatch[1]}.storage.supabase.co` : url.origin;
 
   return `${origin}/storage/v1/upload/resumable`;
 }
@@ -39,16 +37,16 @@ async function sessionAccessToken(): Promise<string> {
   const { data, error } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (error || !token) {
-    const detail = error?.message ? `AUTH_SESSION_ERROR: ${error.message}` : "AUTH_SESSION_ERROR: no active session";
+    const detail = error?.message
+      ? `AUTH_SESSION_ERROR: ${error.message}`
+      : "AUTH_SESSION_ERROR: no active session";
     throw new Error(detail);
   }
   return token;
 }
 
 function redactDiagnostic(value: string): string {
-  return value
-    .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, "Bearer [REDACTED]")
-    .slice(0, 2_000);
+  return value.replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, "Bearer [REDACTED]").slice(0, 2_000);
 }
 
 function tusErrorDiagnostic(error: unknown, endpoint: string): string {
@@ -61,7 +59,8 @@ function tusErrorDiagnostic(error: unknown, endpoint: string): string {
   };
   const status = candidate.originalResponse?.getStatus?.();
   const body = candidate.originalResponse?.getBody?.();
-  const message = candidate.message instanceof Error ? candidate.message.message : candidate.message;
+  const message =
+    candidate.message instanceof Error ? candidate.message.message : candidate.message;
   const parts = [
     `endpoint=${endpoint}`,
     status != null ? `http_status=${status}` : "http_status=unknown",
@@ -81,7 +80,8 @@ export async function uploadDemoResumably(
   if (!baseUrl) throw new Error("STORAGE_ERROR: VITE_SUPABASE_URL is missing");
   if (options.signal?.aborted) throw new DOMException("Upload aborted", "AbortError");
 
-  const initialToken = await sessionAccessToken();
+  // Fail fast (and with a precise diagnostic) when there is no usable session.
+  await sessionAccessToken();
   const endpoint = resumableStorageEndpoint(baseUrl);
 
   await new Promise<void>((resolve, reject) => {
@@ -105,8 +105,12 @@ export async function uploadDemoResumably(
         contentType: DEMO_CONTENT_TYPE,
         cacheControl: "3600",
       },
+      // The Authorization header is set ONLY in onBeforeRequest. Declaring it here
+      // as well makes the XHR layer call setRequestHeader("authorization", ...)
+      // twice, and the browser then merges both values into
+      // "Bearer <a>, Bearer <b>", which Storage rejects with
+      // 400 / {"code":"AccessDenied","message":"Invalid Compact JWS"}.
       headers: {
-        authorization: `Bearer ${initialToken}`,
         "x-upsert": "true",
       },
       fingerprint: async () => `cs2-demo:${DEMO_BUCKET}:${storagePath}`,
