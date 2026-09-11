@@ -654,3 +654,24 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - Status: infraestrutura do Gate 02-B PRONTA. O E2E positivo/negativo real
   permanece **BLOCKED** até que arquivos `.dem` reais (Mirage inválida, Cache/Dust2
   válida) sejam fornecidos — nenhum `.dem` existe no projeto.
+
+## FASE 2.7.2A — INGESTÃO CANÔNICA + IDENTIFICAÇÃO FLEXÍVEL DO JOGADOR — DONE
+
+Causa do FAIL do Run 1 (`PLAYER_IDENTITY_UNRESOLVED / no steam id on profile`)
+removida: o vínculo do jogador deixou de ser pré-condição do parse.
+
+- `processJob()` agora canonicaliza e persiste a observação ANTES de qualquer
+  exigência de Steam ID; `ownerPlayerId` continua sendo o dono do upload.
+- `resolveOwnParticipant()` retorna estado + motivo real
+  (`no_player_profile` | `no_steam_id_on_profile` | `steam_id_not_in_demo`)
+  em vez de lançar. `resolveOwnSteamId()` permanece para quem exige jogador.
+- Métricas, features e projeção só rodam com Steam ID PROVADO na demo.
+- `demo_jobs` ganhou `attachment_state`, `attachment_method`,
+  `attachment_confidence`, `attachment_reason` (com constraints de coerência).
+- Gate 02-B passou a medir duas dimensões: CANONICAL (obrigatório) e
+  PLAYER PROJECTION (condicional) → `PASS (canonical) / NOT_ATTACHED`.
+- Resolver intocado (só EXACT auto-anexa; CONFLICT ainda falha o job).
+- UI do jogador e console admin mostram o estado/motivo; i18n nos 5 locales.
+
+Estado: 761/761 testes, typecheck, lint e build OK. O E2E real da demo depende
+apenas de uma nova execução do Run 1 pelo usuário.
