@@ -128,6 +128,16 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
     const bearer = token();
     if (!bearer) throw new PipelineError("PARSER_CONFIG_ERROR", "DEMO_PARSER_TOKEN is not set");
 
+    // The canonical pipeline requires a verified SHA-256 before the worker is
+    // called. Sending null here would downgrade the integrity contract into an
+    // ambiguous worker-side validation error, so fail explicitly at the APP edge.
+    if (!request.demoSha256 || !/^[0-9a-f]{64}$/i.test(request.demoSha256)) {
+      throw new PipelineError(
+        "PARSER_CONFIG_ERROR",
+        "demoSha256 must be a verified 64-character SHA-256 digest",
+      );
+    }
+
     // The transport budget is the smaller of the parser ceiling and whatever is
     // left of the job's absolute deadline.
     const remaining =
