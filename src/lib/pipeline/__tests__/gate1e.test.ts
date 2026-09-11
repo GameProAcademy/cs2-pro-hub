@@ -20,7 +20,7 @@ import {
 
 const ORIGIN = "https://cs2-demo-parser-production.up.railway.app";
 const FULL = `${ORIGIN}${PARSER_PARSE_PATH}`;
-const DEPLOYED_REVISION = "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814";
+const DEPLOYED_REVISION = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
 
 afterEach(() => vi.unstubAllEnvs());
 
