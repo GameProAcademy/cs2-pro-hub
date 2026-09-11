@@ -189,10 +189,28 @@ export function DemoIngestPanel() {
                       ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
                       : ""}
                   </p>
-                  {job.status === "failed" ? (
+                  {job.status === "failed" && job.errorCode === "CORRUPTED_DEMO" ? (
+                    <div className="mt-2 rounded-lg border border-destructive/35 bg-destructive/8 px-3 py-2.5">
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("pipeline.corrupted.title")}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t("pipeline.corrupted.body")}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2.5"
+                        onClick={focusUpload}
+                      >
+                        <Upload className="mr-1.5 size-3.5" aria-hidden />
+                        {t("pipeline.corrupted.cta")}
+                      </Button>
+                    </div>
+                  ) : job.status === "failed" ? (
                     <p className="mt-1 text-xs text-destructive">{t(errorKey(job.errorCode))}</p>
                   ) : null}
-                  {job.partialParse ? (
+                  {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
                   ) : null}
                 </div>
@@ -208,7 +226,9 @@ export function DemoIngestPanel() {
                   {t(STATUS_KEY[job.status])}
                 </span>
 
-                {job.status === "failed" && job.retryCount < job.maxRetries ? (
+                {job.status === "failed" &&
+                !isPermanentCode(job.errorCode) &&
+                job.retryCount < job.maxRetries ? (
                   <Button
                     size="sm"
                     variant="outline"
