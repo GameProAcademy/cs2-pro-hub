@@ -23,7 +23,10 @@ export type ClientUploadError =
   | "PROCESSING_ERROR";
 
 export class DemoUploadError extends Error {
-  constructor(readonly code: ClientUploadError, readonly detail?: string) {
+  constructor(
+    readonly code: ClientUploadError,
+    readonly detail?: string,
+  ) {
     super(detail ? `${code}: ${detail}` : code);
     this.name = "DemoUploadError";
   }
