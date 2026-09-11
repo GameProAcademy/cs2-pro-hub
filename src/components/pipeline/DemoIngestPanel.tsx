@@ -85,6 +85,12 @@ export function DemoIngestPanel() {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState<string | null>(null);
   const [uploadPercent, setUploadPercent] = useState(0);
+  const uploadRef = useRef<HTMLDivElement | null>(null);
+
+  const focusUpload = () => {
+    uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    uploadRef.current?.querySelector<HTMLElement>("input,button")?.focus();
+  };
 
   const pipeline = useQuery({
     queryKey: ["pipeline", "status"],
