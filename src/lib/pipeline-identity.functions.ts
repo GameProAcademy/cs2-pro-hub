@@ -185,21 +185,21 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     };
   });
 
-/** Demo players of a canonical match, read under the owner's RLS. */
-async function readParticipants(
-  supabase: {
-    from: (table: "match_participants") => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => PromiseLike<{ data: Array<Record<string, string | null>> | null }>;
-      };
+/** Minimal read surface, kept loose so the generated types stay shallow. */
+interface ParticipantReader {
+  from: (table: "match_participants") => {
+    select: (columns: string) => {
+      eq: (
+        column: string,
+        value: string,
+      ) => PromiseLike<{ data: Array<Record<string, string | null>> | null }>;
     };
-  },
-  matchId: string,
-): Promise<DemoParticipant[]> {
-  const { data } = await supabase
+  };
+}
+
+/** Demo players of a canonical match, read under the owner's RLS. */
+async function readParticipants(supabase: unknown, matchId: string): Promise<DemoParticipant[]> {
+  const { data } = await (supabase as ParticipantReader)
     .from("match_participants")
     .select("participant_key, steam_id64, nickname_snapshot, team")
     .eq("match_id", matchId);
