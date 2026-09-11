@@ -81,7 +81,8 @@ export async function uploadDemoResumably(
   if (!baseUrl) throw new Error("STORAGE_ERROR: VITE_SUPABASE_URL is missing");
   if (options.signal?.aborted) throw new DOMException("Upload aborted", "AbortError");
 
-  const initialToken = await sessionAccessToken();
+  // Fail fast (and with a precise diagnostic) when there is no usable session.
+  await sessionAccessToken();
   const endpoint = resumableStorageEndpoint(baseUrl);
 
   await new Promise<void>((resolve, reject) => {
