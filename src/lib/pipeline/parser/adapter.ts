@@ -43,11 +43,12 @@ export interface DemoParserAdapter {
  * FASE 2.7.2 — DEPLOYED WORKER REVISION.
  *
  * This is deliberately an immutable code-level fallback for the production
- * lock. The Railway deployment proved below is this exact Git commit. An
- * environment variable may override it when a new worker is promoted, but an
- * absent env can NEVER silently unpin production back to "any 0.42.x" worker.
+ * lock. The Railway deployment currently serving the APP reports this exact
+ * Git commit. An environment variable may override it when a new worker is
+ * promoted, but an absent env can NEVER silently unpin production back to
+ * "any 0.42.x" worker.
  */
-export const DEPLOYED_WORKER_REVISION = "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814";
+export const DEPLOYED_WORKER_REVISION = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
 
 /**
  * Expected parser identity. Environment overrides remain supported for future
