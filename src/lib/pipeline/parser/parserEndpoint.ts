@@ -169,8 +169,8 @@ export function classifyWorkerFailure(status: number, body: unknown): PipelineEr
       return new PipelineError("PARSER_FILE_SIZE_MISMATCH", detail);
     case "DEMO_TOO_LARGE":
       return new PipelineError("DEMO_TOO_LARGE", detail);
-    // GATE 1E.1 — the RESPONSE was too large, which is a different fact from a
-    // demo above the ingestion ceiling. Both are permanent, never conflated.
+    // The worker response itself was too large. This is deliberately distinct
+    // from an input .dem that exceeds the ingestion ceiling.
     case "PAYLOAD_TOO_LARGE":
       return new PipelineError("PARSER_PAYLOAD_TOO_LARGE", detail);
     case "DOWNLOAD_ERROR":
@@ -190,8 +190,10 @@ export function classifyWorkerFailure(status: number, body: unknown): PipelineEr
   if (status === 403) return new PipelineError("PARSER_FORBIDDEN", detail);
   if (status === 409) return new PipelineError("PARSER_CONTRACT_MISMATCH", detail);
   if (status === 408 || status === 504) return new PipelineError("PARSER_TIMEOUT", detail);
+  // A bare 413 is intentionally treated as DEMO_TOO_LARGE because without a
+  // worker error_code the APP cannot prove whether the input or response limit
+  // was exceeded. The real worker always emits one of the two explicit codes.
   if (status === 413) return new PipelineError("DEMO_TOO_LARGE", detail);
-  // 400/422 without a code is a REQUEST contract problem, not a broken demo.
   if (status === 400 || status === 422) {
     return new PipelineError("PARSER_INVALID_RESPONSE", detail);
   }
@@ -210,8 +212,9 @@ export interface ParserWorkerIdentity {
 
 /** Validates a `GET /version` payload. Nothing is inferred or fabricated. */
 export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
-  if (!value || typeof value !== "object")
+  if (!value || typeof value !== "object") {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "empty /version payload");
+  }
   const raw = value as {
     parser?: { name?: unknown; version?: unknown; revision?: unknown };
     contract_version?: unknown;
@@ -226,15 +229,9 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
   return {
     name,
     version,
-    // An empty revision is ABSENT, never an invented identifier.
     revision: revision.length > 0 ? revision : null,
     contractVersion: contract,
   };
-}
-
-/** `0.42.0` -> `0.42`: patch releases of the pinned parser stay compatible. */
-export function parserMajorMinor(version: string): string {
-  return version.split(".").slice(0, 2).join(".");
 }
 
 /** What this deployment demands from the worker build. */
@@ -279,7 +276,7 @@ export function assertParserIdentity(
       `parser name mismatch: got ${worker.name}, expected ${expected.name}`,
     );
   }
-  if (parserMajorMinor(worker.version) !== parserMajorMinor(expected.version)) {
+  if (worker.version !== expected.version) {
     throw new PipelineError(
       "PARSER_IDENTITY_MISMATCH",
       `parser version mismatch: got ${worker.version}, expected ${expected.version}`,
