@@ -105,8 +105,12 @@ export async function uploadDemoResumably(
         contentType: DEMO_CONTENT_TYPE,
         cacheControl: "3600",
       },
+      // The Authorization header is set ONLY in onBeforeRequest. Declaring it here
+      // as well makes the XHR layer call setRequestHeader("authorization", ...)
+      // twice, and the browser then merges both values into
+      // "Bearer <a>, Bearer <b>", which Storage rejects with
+      // 400 / {"code":"AccessDenied","message":"Invalid Compact JWS"}.
       headers: {
-        authorization: `Bearer ${initialToken}`,
         "x-upsert": "true",
       },
       fingerprint: async () => `cs2-demo:${DEMO_BUCKET}:${storagePath}`,
