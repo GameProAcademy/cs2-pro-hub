@@ -568,7 +568,8 @@ export const ptBR = {
   "pipeline.rounds": "rounds válidos",
   "pipeline.confidence": "confiança da extração",
   "pipeline.partial": "Extração parcial: parte dos dados não pôde ser lida desta demo.",
-  "pipeline.unattached": "Partida analisada, mas ainda não vinculada ao seu perfil — vincule a Steam para ver as suas métricas.",
+  "pipeline.unattached":
+    "Partida analisada, mas ainda não vinculada ao seu perfil — vincule a Steam para ver as suas métricas.",
   "pipeline.retry": "Tentar novamente",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":

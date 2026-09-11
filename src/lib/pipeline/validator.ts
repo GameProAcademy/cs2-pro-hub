@@ -57,15 +57,14 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
  */
 export function resolveOwnSteamId(match: CanonicalMatch, steamId: string | null): string {
   const outcome = resolveOwnParticipant(match, steamId);
-  if (!outcome.steamId) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", outcome.reason ?? undefined);
+  if (!outcome.steamId)
+    throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", outcome.reason ?? undefined);
   return outcome.steamId;
 }
 
 /** Why the canonical match could not be attached to this user's player. */
 export type PlayerAttachmentReason =
-  | "no_player_profile"
-  | "no_steam_id_on_profile"
-  | "steam_id_not_in_demo";
+  "no_player_profile" | "no_steam_id_on_profile" | "steam_id_not_in_demo";
 
 export interface PlayerAttachmentOutcome {
   /** The proven Steam ID of the signed-in user inside this demo, when present. */

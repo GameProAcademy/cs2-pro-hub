@@ -561,7 +561,8 @@ export const en: Dictionary = {
   "pipeline.rounds": "valid rounds",
   "pipeline.confidence": "extraction confidence",
   "pipeline.partial": "Partial extraction: some data could not be read from this demo.",
-  "pipeline.unattached": "Match analysed, but not yet linked to your profile — link your Steam account to see your own metrics.",
+  "pipeline.unattached":
+    "Match analysed, but not yet linked to your profile — link your Steam account to see your own metrics.",
   "pipeline.retry": "Retry",
   "pipeline.corrupted.title": "We could not analyse this demo",
   "pipeline.corrupted.body":
