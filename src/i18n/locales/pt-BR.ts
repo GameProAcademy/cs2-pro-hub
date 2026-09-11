@@ -220,6 +220,7 @@ export const ptBR = {
   "admin.nav.overview": "Visão geral",
   "admin.nav.users": "Usuários",
   "admin.nav.audit": "Audit Log",
+  "admin.nav.demoE2E": "E2E de demo real",
   "admin.nav.backToApp": "Voltar ao produto",
   "admin.overview.title": "Visão geral",
   "admin.overview.subtitle": "Números reais da plataforma CS2 PRO AI COACH.",

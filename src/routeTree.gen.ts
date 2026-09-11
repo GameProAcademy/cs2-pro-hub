@@ -26,6 +26,7 @@ import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
+import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authenticated/admin/demo-e2e'
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
@@ -117,6 +118,12 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminDemoE2eRoute =
+  AuthenticatedAdminDemoE2eRouteImport.update({
+    id: '/demo-e2e',
+    path: '/demo-e2e',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminPipelineRoute =
   AuthenticatedAdminPipelineRouteImport.update({
     id: '/pipeline',
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -184,6 +192,7 @@ export interface FileRoutesByTo {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -209,6 +218,7 @@ export interface FileRoutesById {
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/admin/audit'
+    | '/admin/demo-e2e'
     | '/admin/pipeline'
     | '/admin/users'
     | '/api/public/pipeline-cron'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/admin/audit'
+    | '/admin/demo-e2e'
     | '/admin/pipeline'
     | '/admin/users'
     | '/api/public/pipeline-cron'
@@ -280,6 +292,7 @@ export interface FileRouteTypes {
     | '/_authenticated/training'
     | '/_authenticated/upload'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/demo-e2e'
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/users'
     | '/api/public/pipeline-cron'
@@ -420,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/demo-e2e': {
+      id: '/_authenticated/admin/demo-e2e'
+      path: '/demo-e2e'
+      fullPath: '/admin/demo-e2e'
+      preLoaderRoute: typeof AuthenticatedAdminDemoE2eRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/pipeline': {
       id: '/_authenticated/admin/pipeline'
       path: '/pipeline'
@@ -460,6 +480,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminDemoE2eRoute: typeof AuthenticatedAdminDemoE2eRoute
   AuthenticatedAdminPipelineRoute: typeof AuthenticatedAdminPipelineRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -468,6 +489,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+    AuthenticatedAdminDemoE2eRoute: AuthenticatedAdminDemoE2eRoute,
     AuthenticatedAdminPipelineRoute: AuthenticatedAdminPipelineRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,

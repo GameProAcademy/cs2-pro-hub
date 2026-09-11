@@ -217,6 +217,7 @@ export const fr: Dictionary = {
   "admin.nav.overview": "Vue d'ensemble",
   "admin.nav.users": "Utilisateurs",
   "admin.nav.audit": "Journal d'audit",
+  "admin.nav.demoE2E": "E2E de démo réelle",
   "admin.nav.backToApp": "Retour à l'app",
   "admin.overview.title": "Vue d'ensemble",
   "admin.overview.subtitle": "Chiffres réels de la plateforme CS2 PRO AI COACH.",
