@@ -1,0 +1,10 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "services/cs2-demo-parser/Dockerfile",
+    "watchPatterns": [
+      "/services/cs2-demo-parser/**"
+    ]
+  }
+}
