@@ -123,8 +123,16 @@ function AdminDemoE2EPage() {
       setUploadPercent(0);
     },
     onSuccess: (result) => setJobId(result.jobId),
+    // Admin console: keep the FULL diagnostic (HTTP status + response body),
+    // never collapse a storage failure into a bare error code.
     onError: (error) =>
-      setUploadError(error instanceof DemoUploadError ? error.code : "UPLOAD_FAILED"),
+      setUploadError(
+        error instanceof DemoUploadError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "UPLOAD_FAILED",
+      ),
   });
 
   const run = useMutation({
