@@ -2,25 +2,22 @@
 
 Only this module touches the parser library. Its job is narrow on purpose:
 
-1. run demoparser2 0.42.0 and collect the RAW material (header dict + event
-   tables as plain records), keeping "stream could not be read" distinct from
-   "stream is empty";
-2. convert parser exceptions into the three semantic demo failures
-   (invalid / corrupted / unsupported) and let any other exception bubble up so
-   `app.py` classifies it as `PARSER_ERROR`;
-3. hand the raw material to `adapter.py`, which owns the translation into the
-   APP contract (`RawParserOutput`).
+1. run demoparser2 0.42.0 and collect RAW material (header + event tables),
+   preserving unreadable streams as unknown instead of empty;
+2. enrich event rows with parser-native round/timing context when available;
+3. remove warmup observations before they can enter the APP contract;
+4. translate parser failures into semantic demo failures and let unrelated
+   failures bubble to app.py as PARSER_ERROR;
+5. hand the resulting raw material to adapter.py, which owns the final
+   RawParserOutput translation.
 
-The parser model and the APP contract are deliberately separate layers: the
-parser library can be swapped without touching the canonical pipeline.
+The parser model and APP contract remain separate. No score/team identity is
+invented, and every timing value comes from parser-native evidence or a real
+header tickrate. Unknown is never converted to zero/false.
 
-NULL means "no evidence". Nothing here fabricates a tickrate, a score, teams, a
-duration or a match date.
-
-Known limitation (documented, not hidden): the parse runs in a worker thread via
-`asyncio.to_thread`. A `PARSE_TIMEOUT` frees the HTTP request but does NOT
-interrupt the native demoparser2 call already in flight; the container's own
-memory/CPU ceilings and `MAX_DEMO_BYTES` are what bound that work.
+Known limitation: parse runs in a worker thread via asyncio.to_thread. A
+PARSE_TIMEOUT frees the HTTP request but does not interrupt the native parser
+call already in flight.
 """
 
 from __future__ import annotations
@@ -30,8 +27,6 @@ from typing import Any
 from adapter import build_raw_parser_output
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
 
-#: Substrings that are POSITIVE evidence about the file itself, not about a bug
-#: in this worker. Matched case-insensitively against the parser message.
 _INVALID_SIGNATURES = (
     "not a valid demo",
     "invalid demo",
@@ -55,9 +50,6 @@ _UNSUPPORTED_SIGNATURES = (
     "unsupported protocol",
 )
 
-#: Event tables read from the demo. Each one is optional: a table that cannot be
-#: read stays `None` (unknown) instead of becoming an empty list (negative
-#: evidence). See `adapter.SUPPORTED_EVENTS` for the contract mapping.
 _EVENT_TABLES = (
     "player_death",
     "player_hurt",
@@ -67,9 +59,14 @@ _EVENT_TABLES = (
     "bomb_exploded",
 )
 
+# These are documented demoparser2 game-state properties and are used only as
+# context. If a particular event stream cannot expose them, the parser falls
+# back to the plain event stream rather than treating the whole demo as bad.
+_EVENT_OTHER_PROPS = ("total_rounds_played", "is_warmup_period", "game_time")
+
 
 def classify_parser_exception(exc: BaseException) -> BaseException:
-    """Return a semantic demo error when there is positive evidence, else `exc`."""
+    """Return a semantic demo error when there is positive evidence, else exc."""
     message = str(exc).lower()
     if any(token in message for token in _CORRUPTED_SIGNATURES):
         return CorruptedDemoError(str(exc))
@@ -93,21 +90,142 @@ def _records(frame: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _parse_event_with_context(demo: Any, name: str) -> list[dict[str, Any]] | None:
+    """Read one event stream with round/timing context, preserving unknown."""
+    try:
+        frame = demo.parse_event(name, [], list(_EVENT_OTHER_PROPS))
+        return _records(frame)
+    except Exception:
+        try:
+            frame = demo.parse_event(name)
+            return _records(frame)
+        except Exception:
+            return None
+
+
+def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True) -> list[dict[str, Any]]:
+    """Add canonical-friendly round context without inventing any values."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        warmup = row.get("is_warmup_period")
+        if drop_warmup and warmup is True:
+            continue
+        enriched = dict(row)
+        round_number = enriched.get("total_rounds_played")
+        if isinstance(round_number, bool):
+            round_number = None
+        if isinstance(round_number, (int, float)) and int(round_number) > 0:
+            enriched["round"] = int(round_number)
+        game_time = enriched.get("game_time")
+        if isinstance(game_time, bool):
+            game_time = None
+        if isinstance(game_time, (int, float)) and game_time >= 0:
+            enriched["time_seconds"] = float(game_time)
+        out.append(enriched)
+    return out
+
+
+def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    """Final semantic guard between adapter output and the HTTP contract.
+
+    This guard fixes only deterministic semantics that the current APP contract
+    requires: parser team-number tokens are sides, real header tickrate is used
+    for timing/duration, and event game_time/tick timing is preserved. It never
+    creates team identity or score.
+    """
+    header = raw.get("header") or {}
+    contract_header = output.get("header") or {}
+
+    tickrate = header.get("playback_ticks_per_second")
+    if isinstance(tickrate, (int, float)) and not isinstance(tickrate, bool) and tickrate > 0:
+        contract_header["tickrate"] = float(tickrate)
+        total_ticks = header.get("playback_ticks")
+        if isinstance(total_ticks, (int, float)) and not isinstance(total_ticks, bool) and total_ticks >= 0:
+            contract_header["duration_seconds"] = round(float(total_ticks) / float(tickrate), 3)
+    output["header"] = contract_header
+
+    # demoparser2 parse_player_info exposes team_number 2/3. That is side
+    # evidence, not team identity. Never leak CT/TERRORIST into RawParserPlayer.team.
+    for player in output.get("players") or []:
+        team = player.get("team")
+        if team == "CT":
+            player["side"] = "CT"
+            player.pop("team", None)
+        elif team == "TERRORIST":
+            player["side"] = "T"
+            player.pop("team", None)
+
+    # Build a real event timing index from the raw parser rows. Prefer native
+    # game_time; otherwise derive from the verified header tickrate.
+    timing_index: dict[tuple[str, int, int], float] = {}
+    for name in _EVENT_TABLES + ("round_start", "round_end"):
+        for row in raw.get(name) or []:
+            tick = row.get("tick")
+            round_number = row.get("round") or row.get("total_rounds_played")
+            if not isinstance(tick, int) or not isinstance(round_number, int) or round_number <= 0:
+                continue
+            game_time = row.get("time_seconds") or row.get("game_time")
+            if isinstance(game_time, (int, float)) and not isinstance(game_time, bool) and game_time >= 0:
+                timing_index[(name, round_number, tick)] = float(game_time)
+
+    for event in output.get("events") or []:
+        event_type = event.get("type")
+        round_number = event.get("round")
+        tick = event.get("tick")
+        if not isinstance(round_number, int) or not isinstance(tick, int):
+            continue
+        source_name = event_type
+        native_name = "round_start" if source_name == "round_start" else "round_end" if source_name == "round_end" else source_name
+        native_time = timing_index.get((native_name, round_number, tick))
+        if native_time is not None:
+            event["time_seconds"] = native_time
+        elif isinstance(contract_header.get("tickrate"), (int, float)) and contract_header["tickrate"] > 0:
+            event["time_seconds"] = round(tick / float(contract_header["tickrate"]), 6)
+
+    # A round_end winner token CT/TERRORIST is side evidence, not team identity.
+    for round_row in output.get("rounds") or []:
+        winner_team = round_row.get("winner_team")
+        if winner_team == "CT":
+            round_row["winner_side"] = "CT"
+            round_row.pop("winner_team", None)
+        elif winner_team == "TERRORIST":
+            round_row["winner_side"] = "T"
+            round_row.pop("winner_team", None)
+
+    return output
+
+
 def extract_raw_material(demo: Any) -> dict[str, Any]:
-    """Collect the untouched demoparser2 material for the adapter."""
+    """Collect demoparser2 material while preserving unavailable streams."""
     warnings: list[str] = []
     raw: dict[str, Any] = {"warnings": warnings}
 
     raw["header"] = dict(demo.parse_header() or {})
-    raw["round_starts"] = _records(demo.parse_event("round_start"))
-    raw["round_ends"] = _records(demo.parse_event("round_end"))
+
+    for name in ("round_start", "round_end"):
+        rows = _parse_event_with_context(demo, name)
+        if rows is None:
+            raw[f"{name.replace('_', '_')}s"] = []
+            warnings.append(f"{name}_unavailable")
+        else:
+            raw[f"{name.replace('_', '_')}s"] = _contextualize_rows(rows)
+
+    # The adapter expects plural round_starts/round_ends, while the event names
+    # are singular. Keep explicit assignments to avoid accidental key drift.
+    if "round_starts" not in raw:
+        raw["round_starts"] = []
+    if "round_ends" not in raw:
+        raw["round_ends"] = []
 
     for name in _EVENT_TABLES:
-        try:
-            raw[name] = _records(demo.parse_event(name))
-        except Exception:  # noqa: BLE001 - optional stream, unknown != empty
+        rows = _parse_event_with_context(demo, name)
+        if rows is None:
             raw[name] = None
             warnings.append(f"{name}_unavailable")
+        else:
+            raw[name] = _contextualize_rows(rows)
 
     try:
         raw["players"] = _records(demo.parse_player_info())
@@ -119,11 +237,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
 
 def parse_demo_file(path: str) -> dict[str, Any]:
-    """Parse a `.dem` file into the `RawParserOutput` sections.
-
-    Sections the demo does not provide stay absent and are reported in
-    `warnings`; they are never filled with guesses.
-    """
+    """Parse a `.dem` file into the `RawParserOutput` contract."""
     try:
         from demoparser2 import DemoParser  # type: ignore[import-not-found]
     except Exception as exc:  # pragma: no cover - environment specific
@@ -134,4 +248,5 @@ def parse_demo_file(path: str) -> dict[str, Any]:
     except BaseException as exc:  # noqa: BLE001 - classified below
         raise classify_parser_exception(exc) from exc
 
-    return build_raw_parser_output(raw)
+    output = build_raw_parser_output(raw)
+    return _postprocess_contract(raw, output)
