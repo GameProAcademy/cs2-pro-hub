@@ -21,7 +21,7 @@ import { PipelineError } from "@/lib/pipeline/errors";
 interface DbOp {
   table: string;
   type: "select" | "update" | "rpc";
-  payload?: Record<string, unknown>;
+  payload?: Record<string, unknown> | undefined;
 }
 
 const ops: DbOp[] = [];
