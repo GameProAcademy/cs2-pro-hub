@@ -47,8 +47,8 @@ export interface E2EJobState {
   parserVersion: string | null;
   parserRevision: string | null;
   /** Player-attachment state recorded by the job itself. */
-  attachmentState?: "attached" | "unattached" | null;
-  attachmentReason?: string | null;
+  attachmentState?: "attached" | "unattached" | null | undefined;
+  attachmentReason?: string | null | undefined;
 }
 
 export interface E2EEvaluation {

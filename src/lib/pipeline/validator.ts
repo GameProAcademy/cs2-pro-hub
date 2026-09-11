@@ -57,7 +57,7 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
  */
 export function resolveOwnSteamId(match: CanonicalMatch, steamId: string | null): string {
   const outcome = resolveOwnParticipant(match, steamId);
-  if (!outcome.steamId) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", outcome.reason);
+  if (!outcome.steamId) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", outcome.reason ?? undefined);
   return outcome.steamId;
 }
 
