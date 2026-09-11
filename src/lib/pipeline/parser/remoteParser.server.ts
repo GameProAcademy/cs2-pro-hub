@@ -265,7 +265,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
     );
     // GATE 1E.1 — REVISION LOCK: the diagnostic reports the SAME verdict the
     // parse path would enforce, so a mismatched build is visible before a job.
-    let identityError: string | null = null;
+    let identityError: PipelineErrorCode | null = null;
     try {
       assertParserIdentity(
         {

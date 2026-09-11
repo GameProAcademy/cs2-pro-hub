@@ -366,9 +366,7 @@ describe("GATE 02 — mandatory worker preflight", () => {
       return fetcher(url);
     }) as typeof fetch;
     try {
-      const { assertParserWorkerReady } = await import(
-        "@/lib/pipeline/parser/remoteParser.server"
-      );
+      const { assertParserWorkerReady } = await import("@/lib/pipeline/parser/remoteParser.server");
       const code = await assertParserWorkerReady()
         .then(() => null)
         .catch((error: unknown) => (error instanceof PipelineError ? error.code : String(error)));
@@ -409,7 +407,11 @@ describe("GATE 02 — mandatory worker preflight", () => {
       url.endsWith("/health")
         ? response({ status: "ok" })
         : response({
-            parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "git:62c37147a64c4037f9825253cdb041baafab6fe3" },
+            parser: {
+              name: PARSER_NAME,
+              version: PARSER_VERSION,
+              revision: "git:62c37147a64c4037f9825253cdb041baafab6fe3",
+            },
             contract_version: PARSER_CONTRACT_VERSION,
           }),
     );
