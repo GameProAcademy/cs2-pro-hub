@@ -259,16 +259,20 @@ def resolve_event_round(
         return None
     previous_end: int | None = None
     for number, start, end in intervals:
-        lower = previous_end if previous_end is not None else (start if start is not None else None)
         if end is None:
-            if lower is not None and tick >= lower:
+            lower = previous_end if previous_end is not None else start
+            if lower is None or tick >= lower:
                 return number
             continue
-        if tick <= end and (lower is None or tick > previous_end if previous_end is not None else True):
-            if previous_end is None or tick > previous_end:
-                return number
+        if previous_end is not None:
+            lower_ok = tick > previous_end
+        else:
+            lower_ok = start is None or tick >= start
+        if lower_ok and tick <= end:
+            return number
         previous_end = end
     return None
+
 
 
 def normalize_rounds(
