@@ -26,9 +26,14 @@ describe("Gate 1D upload boundaries", () => {
     );
   });
 
-  it("uses the official resumable endpoint and 6 MiB chunks", () => {
+  it("uses the dedicated storage resumable endpoint and 6 MiB chunks", () => {
+    // Supabase-hosted projects resolve to the dedicated storage hostname.
     expect(resumableStorageEndpoint("https://example.supabase.co")).toBe(
-      "https://example.supabase.co/storage/v1/upload/resumable",
+      "https://example.storage.supabase.co/storage/v1/upload/resumable",
+    );
+    // Custom domains / local development keep their configured origin.
+    expect(resumableStorageEndpoint("https://storage.acme.dev")).toBe(
+      "https://storage.acme.dev/storage/v1/upload/resumable",
     );
     expect(TUS_CHUNK_BYTES).toBe(6 * 1024 * 1024);
     expect(() => resumableStorageEndpoint("http://example.supabase.co")).toThrow("STORAGE_ERROR");
