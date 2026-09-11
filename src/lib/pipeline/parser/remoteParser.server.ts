@@ -28,6 +28,7 @@ import {
   PARSER_MAX_DURATION_MS,
 } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
+import type { PipelineErrorCode } from "@/lib/pipeline/errors";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 
 import {
@@ -206,7 +207,7 @@ export interface ParserWorkerProbe {
   healthy: boolean;
   healthStatus: number | null;
   identity: ParserWorkerIdentity | null;
-  error: string | null;
+  error: PipelineErrorCode | null;
 }
 
 /**
@@ -294,6 +295,20 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
       error: error instanceof PipelineError ? error.code : "PARSER_UNAVAILABLE",
     };
   }
+}
+
+/**
+ * GATE 02 preflight. A job must not disclose a signed demo URL or start the
+ * expensive parse unless the existing health/version probe proves the exact
+ * worker identity and contract expected by this APP deployment.
+ */
+export async function assertParserWorkerReady(): Promise<ParserWorkerIdentity> {
+  const probe = await probeParserWorker();
+  if (probe.error) throw new PipelineError(probe.error, "parser worker preflight failed");
+  if (!probe.healthy || !probe.identity) {
+    throw new PipelineError("PARSER_UNAVAILABLE", "parser worker preflight failed");
+  }
+  return probe.identity;
 }
 
 /** Adapter resolution point. Swapping parsers happens only here. */

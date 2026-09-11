@@ -28,7 +28,10 @@ import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
-import { resolveParserAdapter } from "@/lib/pipeline/parser/remoteParser.server";
+import {
+  assertParserWorkerReady,
+  resolveParserAdapter,
+} from "@/lib/pipeline/parser/remoteParser.server";
 import { persistDemoProjection } from "@/lib/pipeline/persistence.server";
 import {
   assertDemoIntegrity,
@@ -199,6 +202,10 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
 
     await setStage(jobId, "parsing");
+    assertDeadline();
+    // Gate 02: reuse the official diagnostic before creating the signed URL.
+    // A down, mismatched or unpinned worker must never receive demo access.
+    await assertParserWorkerReady();
     assertDeadline();
     const signedUrl = await createDemoSignedUrl(job.storage_path);
     assertDeadline();
