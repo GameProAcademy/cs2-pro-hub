@@ -94,9 +94,8 @@ export const getDemoE2EPreflight = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<E2EPreflight> => {
     await requireMaster(context as Ctx);
-    const { probeParserWorker, resolveParserAdapter } = await import(
-      "@/lib/pipeline/parser/remoteParser.server"
-    );
+    const { probeParserWorker, resolveParserAdapter } =
+      await import("@/lib/pipeline/parser/remoteParser.server");
     const { expectedParserContract } = await import("@/lib/pipeline/parser/adapter");
     const {
       PARSER_CONTRACT_VERSION,

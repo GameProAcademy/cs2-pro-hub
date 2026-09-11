@@ -18,11 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import { DemoUploadError, submitDemo } from "@/lib/pipeline/client";
 import type { E2EEvidence, E2EExpectation, E2EVerdict } from "@/lib/pipeline/e2e";
-import {
-  getDemoE2EPreflight,
-  runDemoE2E,
-  type E2ERunReport,
-} from "@/lib/pipeline-e2e.functions";
+import { getDemoE2EPreflight, runDemoE2E, type E2ERunReport } from "@/lib/pipeline-e2e.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/demo-e2e")({
@@ -202,7 +198,9 @@ function AdminDemoE2EPage() {
                 variant={expectation === option ? "default" : "outline"}
                 onClick={() => setExpectation(option)}
               >
-                {option === "positive" ? "Cenário positivo (demo válida)" : "Cenário negativo (demo inválida)"}
+                {option === "positive"
+                  ? "Cenário positivo (demo válida)"
+                  : "Cenário negativo (demo inválida)"}
               </Button>
             ))}
           </div>

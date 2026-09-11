@@ -15,7 +15,6 @@ const adminNav = [
   { to: "/admin/audit", labelKey: "admin.nav.audit", icon: ScrollText },
 ] as const;
 
-
 export function AdminShell({ session, children }: { session: AdminSession; children: ReactNode }) {
   const t = useT();
 
