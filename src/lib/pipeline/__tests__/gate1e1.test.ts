@@ -70,7 +70,7 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
     ["HASH_MISMATCH", 422, "PARSER_HASH_MISMATCH", true],
     ["FILE_SIZE_MISMATCH", 422, "PARSER_FILE_SIZE_MISMATCH", true],
     ["DEMO_TOO_LARGE", 413, "DEMO_TOO_LARGE", true],
-    ["PAYLOAD_TOO_LARGE", 413, "DEMO_TOO_LARGE", true],
+    ["PAYLOAD_TOO_LARGE", 413, "PARSER_PAYLOAD_TOO_LARGE", true],
     ["DOWNLOAD_ERROR", 502, "PARSER_DOWNLOAD_ERROR", false],
     ["DOWNLOAD_FAILED", 503, "PARSER_DOWNLOAD_ERROR", false],
     ["TIMEOUT", 504, "PARSER_TIMEOUT", false],

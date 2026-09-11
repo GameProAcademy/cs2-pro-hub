@@ -538,5 +538,13 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [x] revision vazia tratada como ausente, nunca inventada
 - [x] integridade (hash/size) e transporte nunca viram "demo inválida"
 - [x] testes: `gate1e1.test.ts` + suíte existente preservada
-- [ ] worker Railway alinhado, `/health` e `/version` 200, revision real pinada
-      (BLOCKED: serviço responde HTTP 404 `Application not found`)
+- [x] `PAYLOAD_TOO_LARGE` do worker → `PARSER_PAYLOAD_TOO_LARGE` (regra específica do app)
+- [x] worker `services/cs2-demo-parser` no repositório: FastAPI, envelope único,
+      taxonomia alinhada, download seguro, `/health`, `/version`
+- [x] worker: fallback `pypi-0.42.0` removido; produção exige `PARSER_REVISION`
+      imutável e falha closed; fora de produção usa `dev:unpinned` explícito
+- [x] worker: suíte pytest (auth, contract, hash, size, download, parser error,
+      timeout, health, version, revision, no-leak)
+- [ ] deployment Railway alinhado, `/health` e `/version` 200, revision real pinada
+      (BLOCKED: serviço responde HTTP 404 `Application not found`;
+      `DEMO_PARSER_EXPECTED_REVISION` ainda não configurável)

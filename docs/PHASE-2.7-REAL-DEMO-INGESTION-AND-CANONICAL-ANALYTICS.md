@@ -810,7 +810,8 @@ segundo switch existe (`mapParserErrorCode()` delega).
 | 422 | `UNSUPPORTED_DEMO` | `UNSUPPORTED_DEMO` | permanente |
 | 422 | `HASH_MISMATCH` | `PARSER_HASH_MISMATCH` | permanente |
 | 422 | `FILE_SIZE_MISMATCH` | `PARSER_FILE_SIZE_MISMATCH` | permanente |
-| 413 | `DEMO_TOO_LARGE` / `PAYLOAD_TOO_LARGE` | `DEMO_TOO_LARGE` | permanente |
+| 413 | `DEMO_TOO_LARGE` | `DEMO_TOO_LARGE` | permanente |
+| 413 | `PAYLOAD_TOO_LARGE` | `PARSER_PAYLOAD_TOO_LARGE` | permanente |
 | 502/503 | `DOWNLOAD_ERROR` / `DOWNLOAD_FAILED` | `PARSER_DOWNLOAD_ERROR` | transiente |
 | 504 | `TIMEOUT` / `PARSE_TIMEOUT` / `DOWNLOAD_TIMEOUT` | `PARSER_TIMEOUT` | transiente |
 | 500 | `PARSER_ERROR` | `PARSER_ERROR` | transiente |
@@ -830,18 +831,54 @@ Nenhuma falha de transporte, integridade ou configuração vira "demo inválida"
 { "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "..." }, "contract_version": 1 }
 ```
 
+### Worker — `services/cs2-demo-parser`
+
+O worker agora EXISTE no repositório (FastAPI + uvicorn, Docker, root Railway
+`services/cs2-demo-parser`) e fala exatamente o contrato acima:
+
+- `errors.py` é a única taxonomia do worker, espelhada por `WORKER_ERROR_CODES`;
+- contract divergente → 409 `CONTRACT_MISMATCH`; versão desconhecida → 409
+  `UNSUPPORTED_CONTRACT_VERSION`. Nunca `PARSER_ERROR`;
+- hash divergente → 422 `HASH_MISMATCH` (`Demo integrity check failed.`);
+- tamanho divergente → 422 `FILE_SIZE_MISMATCH`;
+- download (4xx/5xx/DNS/reset/timeout) → `DOWNLOAD_ERROR` / `DOWNLOAD_FAILED` /
+  `DOWNLOAD_TIMEOUT`. Nunca `INVALID_DEMO_FORMAT`;
+- só evidência positiva sobre o arquivo gera `INVALID_DEMO_FORMAT`,
+  `CORRUPTED_DEMO` ou `UNSUPPORTED_DEMO` (`parser.py::classify_parser_exception`);
+  qualquer outra exceção é 500 `PARSER_ERROR`;
+- `/health` simples e sem dependências; `/version` determinístico com a MESMA
+  revision usada pelo processo;
+- download HTTPS-only, redirects desabilitados, streaming, SHA-256 incremental,
+  teto de bytes, timeouts, cleanup garantido;
+- respostas externas sem stack trace, path, signed URL, token ou SHA completo.
+
+**Revision lock:** o fallback `pypi-0.42.0` foi eliminado. Em produção
+(`ENVIRONMENT=production`, default da imagem) `PARSER_REVISION` é obrigatória e
+imutável (`git:<full-commit-sha>`); ausente/inválida ⇒ o processo falha closed no
+startup. Fora de produção resolve para o marcador explícito `dev:unpinned`, que
+nunca é aceito como build id.
+
+Testes do worker: `services/cs2-demo-parser/tests/` (pytest) — auth, contract,
+hash, file size, download, parser error, timeout, `/health`, `/version`, revision
+(produção fail-closed + dev) e no-leak. `demoparser2` não é necessário para rodar
+a suíte: a fronteira de parsing é injetada.
+
 ### Status — GATE 1E.1: BLOCKED
 
-Lado APP concluído e provado por testes (`gate1e.test.ts`, `gate1e1.test.ts`).
-Falta, e por isso o gate NÃO é PASS:
+Lado APP concluído e provado (`gate1e.test.ts`, `gate1e1.test.ts`); worker
+implementado e provado por pytest. O gate NÃO é PASS porque:
 
-1. o repositório do worker não existe neste checkout (`services/cs2-demo-parser`
-   ausente), portanto os testes e o alinhamento do worker não foram executados;
-2. `GET /health` e `GET /version` em
-   `https://cs2-demo-parser-production.up.railway.app` responderam **HTTP 404
-   `Application not found`** — o serviço Railway não está no ar;
-3. sem `/version` real não há revision válida para pinar em
-   `DEMO_PARSER_EXPECTED_REVISION`;
-4. contract, revision e endpoint reais permanecem NOT PROVEN.
+1. `GET /health` e `GET /version` do serviço Railway responderam **HTTP 404
+   `Application not found`** — o deployment não está no ar;
+2. sem `/version` real não há revision para pinar em
+   `DEMO_PARSER_EXPECTED_REVISION` (variável ainda ausente no ambiente);
+3. a correspondência entre deployment real e revision esperada permanece
+   NOT VERIFIED.
+
+Ação manual necessária (após o commit definitivo): configurar no Railway
+`PARSER_TOKEN`, `PARSER_CONTRACT_VERSION=1` e `PARSER_REVISION=git:<SHA do
+commit implantado>`, redeployar, e então pinar no APP
+`DEMO_PARSER_EXPECTED_REVISION` com o MESMO valor e
+`DEMO_PARSER_REVISION_REQUIRED=true`.
 
 Nenhum `.dem` real foi processado. GATE 02 não foi iniciado.

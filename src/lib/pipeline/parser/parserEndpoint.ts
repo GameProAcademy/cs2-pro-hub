@@ -168,8 +168,11 @@ export function classifyWorkerFailure(status: number, body: unknown): PipelineEr
     case "FILE_SIZE_MISMATCH":
       return new PipelineError("PARSER_FILE_SIZE_MISMATCH", detail);
     case "DEMO_TOO_LARGE":
-    case "PAYLOAD_TOO_LARGE":
       return new PipelineError("DEMO_TOO_LARGE", detail);
+    // GATE 1E.1 — the RESPONSE was too large, which is a different fact from a
+    // demo above the ingestion ceiling. Both are permanent, never conflated.
+    case "PAYLOAD_TOO_LARGE":
+      return new PipelineError("PARSER_PAYLOAD_TOO_LARGE", detail);
     case "DOWNLOAD_ERROR":
     case "DOWNLOAD_FAILED":
       return new PipelineError("PARSER_DOWNLOAD_ERROR", detail);
