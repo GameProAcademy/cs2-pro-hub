@@ -45,17 +45,29 @@ describe("nickname lookup", () => {
 
 describe("attachment resolution", () => {
   it("is unattached without a player profile", () => {
-    const out = resolvePlayerAttachment({ participants: players, hasProfile: false, profileSteamId: null });
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: false,
+      profileSteamId: null,
+    });
     expect(out).toMatchObject({ state: "unattached", reason: "no_player_profile" });
   });
 
   it("is unattached without a steam id and without declaration", () => {
-    const out = resolvePlayerAttachment({ participants: players, hasProfile: true, profileSteamId: null });
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: null,
+    });
     expect(out).toMatchObject({ state: "unattached", reason: "no_steam_id_on_profile" });
   });
 
   it("attaches with a confirmed steam id", () => {
-    const out = resolvePlayerAttachment({ participants: players, hasProfile: true, profileSteamId: "2" });
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "2",
+    });
     expect(out).toMatchObject({
       state: "attached",
       participantKey: "2",
@@ -67,7 +79,11 @@ describe("attachment resolution", () => {
   });
 
   it("reports steam id absent from the demo", () => {
-    const out = resolvePlayerAttachment({ participants: players, hasProfile: true, profileSteamId: "99" });
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "99",
+    });
     expect(out).toMatchObject({ state: "unattached", reason: "steam_id_not_in_demo" });
   });
 
@@ -130,7 +146,11 @@ describe("attachment resolution", () => {
       profileSteamId: "1",
       declaration: { kind: "nickname", nickname: "FalleN" },
     });
-    expect(out).toMatchObject({ state: "attached", method: "steam_id_confirmed", confidence: "high" });
+    expect(out).toMatchObject({
+      state: "attached",
+      method: "steam_id_confirmed",
+      confidence: "high",
+    });
   });
 
   it("reports a conflict when the declaration contradicts the confirmed steam id", () => {
@@ -140,6 +160,10 @@ describe("attachment resolution", () => {
       profileSteamId: "1",
       declaration: { kind: "participant", participantKey: "4" },
     });
-    expect(out).toMatchObject({ state: "conflict", reason: "identity_conflict", participantKey: null });
+    expect(out).toMatchObject({
+      state: "conflict",
+      reason: "identity_conflict",
+      participantKey: null,
+    });
   });
 });

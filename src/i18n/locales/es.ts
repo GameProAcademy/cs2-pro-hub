@@ -566,17 +566,22 @@ export const es: Dictionary = {
   "pipeline.rounds": "rondas válidas",
   "pipeline.confidence": "confianza de extracción",
   "pipeline.partial": "Extracción parcial: parte de los datos no se pudo leer de esta demo.",
-  "pipeline.unattached": "Analizamos la partida, pero aún no identificamos qué jugador eres. Vincula tu Steam o selecciona tu jugador en esta demo para desbloquear tus métricas.",
+  "pipeline.unattached":
+    "Analizamos la partida, pero aún no identificamos qué jugador eres. Vincula tu Steam o selecciona tu jugador en esta demo para desbloquear tus métricas.",
   "pipeline.identify.title": "¿Quién eres en esta demo?",
-  "pipeline.identify.help": "Selecciona tu jugador entre los detectados en la demo, o indica el nickname que usaste en esta partida.",
+  "pipeline.identify.help":
+    "Selecciona tu jugador entre los detectados en la demo, o indica el nickname que usaste en esta partida.",
   "pipeline.identify.selectLabel": "Jugadores detectados",
   "pipeline.identify.selectCta": "Sí, soy yo",
   "pipeline.identify.nicknameLabel": "Mi nick en esta demo",
   "pipeline.identify.nicknameCta": "Usar este nickname",
   "pipeline.identify.later": "Lo haré más tarde",
-  "pipeline.identify.notFound": "No encontramos este nickname en esta demo. Revisa la escritura o selecciona tu jugador en la lista.",
-  "pipeline.identify.ambiguous": "Encontramos más de un jugador con ese nickname en esta demo. Selecciona el tuyo en la lista.",
-  "pipeline.identify.conflict": "Esta elección contradice la cuenta de Steam vinculada a tu perfil. No se vinculó nada: revísalo antes de continuar.",
+  "pipeline.identify.notFound":
+    "No encontramos este nickname en esta demo. Revisa la escritura o selecciona tu jugador en la lista.",
+  "pipeline.identify.ambiguous":
+    "Encontramos más de un jugador con ese nickname en esta demo. Selecciona el tuyo en la lista.",
+  "pipeline.identify.conflict":
+    "Esta elección contradice la cuenta de Steam vinculada a tu perfil. No se vinculó nada: revísalo antes de continuar.",
   "pipeline.identify.reprocessing": "Jugador identificado. Generando tus métricas de esta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a ti.",
   "pipeline.retry": "Reintentar",
