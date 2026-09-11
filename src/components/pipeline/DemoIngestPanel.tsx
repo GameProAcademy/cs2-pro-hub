@@ -205,12 +205,7 @@ export function DemoIngestPanel() {
                       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                         {t("pipeline.corrupted.body")}
                       </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2.5"
-                        onClick={focusUpload}
-                      >
+                      <Button size="sm" variant="outline" className="mt-2.5" onClick={focusUpload}>
                         <Upload className="mr-1.5 size-3.5" aria-hidden />
                         {t("pipeline.corrupted.cta")}
                       </Button>
