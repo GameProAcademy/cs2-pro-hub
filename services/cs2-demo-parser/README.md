@@ -42,6 +42,75 @@ Response: `parser`, `contract_version`, `header` (`map`, `game_version`,
 `rounds`, `events`, `warnings`. `null` means **no evidence** — nothing is
 fabricated (never a tickrate, score, teams, duration or match date).
 
+## Adapter architecture (demoparser2 -> RawParserOutput)
+
+The demoparser2 raw model and the APP contract are two separate layers, so the
+parser library can be replaced without touching the canonical pipeline:
+
+```
+parser.py                    adapter.py                     app.py
+demoparser2 raw material ->  normalize_header()        ->    /v1/parse payload
+(header dict, event tables)  normalize_players()             (RawParserOutput)
+                             normalize_rounds()
+                             normalize_events()
+                             resolve_event_round()
+                             position normalisation
+```
+
+* `parser.py` only runs demoparser2 and classifies its exceptions. It keeps
+  "stream could not be read" (`None`) distinct from "stream is empty" (`[]`).
+* `adapter.py` is the only translator. Events are **flat** (`{"type", "round",
+  ...}`) — the old `{"type", "data"}` nesting is gone. Players use `steam_id`
+  (from `steamid`); `team_number` 2/3 becomes `team` `TERRORIST`/`CT`, and
+  `side` is left absent because `team_number` describes the team slot at parse
+  time, not a per-round side. Sides are never guessed from team names.
+* Output ordering is deterministic: players by `steam_id`, rounds by `number`,
+  events by `round`, `tick`, `type`, source index.
+
+### Supported events
+
+| demoparser2 event | APP canonical | Fields mapped                                                                             |
+| ----------------- | ------------- | ----------------------------------------------------------------------------------------- |
+| `player_death`    | `kill`        | attacker/victim/assister steam ids, weapon, headshot, noscope, blind, penetration, wallbang (`penetrated > 0`), distance, positions |
+| `player_hurt`     | `damage`      | attacker, victim, weapon, `dmg_health` -> damage, `dmg_armor` -> armor_damage              |
+| `player_blind`    | `flash`       | attacker, victim, `blind_duration` -> flash_duration                                       |
+| `bomb_planted`    | `bomb_plant`  | planter steam id, tick                                                                     |
+| `bomb_defused`    | `bomb_defuse` | defuser steam id, tick                                                                     |
+| `bomb_exploded`   | `bomb_explode`| tick                                                                                       |
+| `round_start`     | `round_start` | tick (round boundaries)                                                                    |
+| `round_end`       | `round_end`   | tick, `winner` -> `winner_side`                                                            |
+
+Metric coverage: kills/deaths/headshots/assists come from `player_death`, damage
+from `player_hurt`, flashes and flash duration from `player_blind`, bomb metrics
+from the bomb events, round data from `round_start`/`round_end`. `players_flashed`
+is not exposed per event by demoparser2 0.42.0 and is therefore absent, never
+fabricated. Economy (`money_start`, `money_end`, `equipment_value`) and per-round
+`sides` are not available from these tables: they are omitted and reported in
+`warnings` (`economy_unavailable`), never zero-filled.
+
+### Round resolution
+
+1. an explicit positive round number on the raw row wins;
+2. otherwise the event tick is matched against the real round windows built from
+   `round_start` / `round_end` ticks — the window of round *n* is
+   `(end(n-1), end(n)]`, so freeze-time and post-plant events land in the right
+   round;
+3. events before the first round, after the last known end, or without a tick are
+   **omitted** and counted in an explicit warning
+   (`N events could not be assigned to a deterministic round and were omitted.`).
+   `round = 0` is never emitted.
+
+### NULL semantics and partial parse
+
+`null`/absent means "no evidence"; it is never `0`, `false` or `""`. A bomb event
+stream that was read but has no row in a round yields `false` (negative
+evidence); a stream that could not be read stays absent. `duration_seconds` is
+derived only when a real tickrate exists — the tickrate is never assumed, and
+demoparser2's header does not provide one. A demo whose header/players parse but
+whose event streams are incomplete stays a **partial parse** with warnings; it is
+not reclassified as an invalid demo.
+
+
 ## Error envelope
 
 Every HTTP error, for every status, uses exactly one shape:
@@ -117,7 +186,25 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 
 HTTPS only, redirects disabled, streaming to a temporary file, incremental
 SHA-256, hard byte ceiling, timeouts and guaranteed cleanup. Demos are never
-loaded whole into memory.
+loaded whole into memory. The CS2 magic header `PBDEMS2\x00` is verified before
+the native parser is invoked — an extra cheap gate, never a replacement for the
+parser's own validation.
+
+## Container security (non-root)
+
+The image creates the user `parser` with the stable UID `10001` and runs with
+`USER 10001`. `/app` and the parser scratch directory `/tmp/parser`
+(`TMPDIR=/tmp/parser`, mode `700`) are owned by that UID, so the worker can start
+uvicorn, download a demo, create and delete its temporary file, and serve
+`/health`, `/version` and `/v1/parse` without root.
+
+## Parse timeout limitation (documented, not hidden)
+
+`/v1/parse` runs the parse in a worker thread with `asyncio.wait_for`. On
+`PARSE_TIMEOUT` the HTTP request returns immediately, but the native demoparser2
+call already in flight is **not** interrupted — Python cannot cancel it. The
+bounds that actually apply are `MAX_DEMO_BYTES`, `MAX_PAYLOAD_BYTES` and the
+container's own CPU/memory ceilings, plus the guaranteed temp-file cleanup.
 
 ## Tests
 
@@ -128,11 +215,23 @@ pytest
 
 The suite covers auth, contract, hash, file size, download failures, parser
 errors, timeouts, `/health`, `/version`, the revision lock (production fail
-closed and the dev marker) and no-leak guarantees. `demoparser2` is not needed to
-run it: the parse boundary is injected.
+closed and the dev marker), no-leak guarantees, the adapter (players, header,
+rounds, events, round resolution, positions, NULL semantics, determinism) and a
+full `RawParserOutput` contract test. `demoparser2` is not needed to run it: the
+parse boundary is injected.
+
+### Real demo fixture (GATE 02)
+
+`tests/test_real_demo.py` is written and ready, but it needs a real CS2 demo and
+is skipped without one — no demo is ever fabricated. To run it, place a real
+`.dem` at `tests/fixtures/sample.dem` or export
+`CS2_DEMO_FIXTURE=/absolute/path/to/file.dem`. Fixtures are git-ignored.
 
 ## Status
 
 GATE 1E.1 closes APP ↔ worker contract, errors, HTTP, retry, auth and revision.
-**GATE 02 — REAL PARSER EXECUTION has not been run**: no real `.dem` has been
+The adapter now produces the APP `RawParserOutput` contract directly (flat
+events, `steam_id`, real rounds).
+**GATE 02 — REAL PARSER EXECUTION is still BLOCKED**: no real `.dem` has been
 processed through this worker.
+

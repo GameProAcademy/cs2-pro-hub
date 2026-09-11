@@ -35,3 +35,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python (parser worker)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+
+# Real .dem fixtures are never committed (size + privacy)
+services/cs2-demo-parser/tests/fixtures/*.dem
