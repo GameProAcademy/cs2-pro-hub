@@ -40,14 +40,19 @@ export interface DemoParserAdapter {
 }
 
 /**
- * FASE 2.7.1 — EXPECTED PARSER IDENTITY IS CONFIGURATION, NOT A CONSTANT.
+ * FASE 2.7.2 — DEPLOYED WORKER REVISION.
  *
- * The pinned values in `src/config/pipeline.ts` are the defaults. The expectation
- * remains settable per deployment WITHOUT a code change:
- *   DEMO_PARSER_EXPECTED_NAME
- *   DEMO_PARSER_EXPECTED_VERSION
- *   DEMO_PARSER_EXPECTED_REVISION  (optional; when set, the worker must match it)
- * Read inside the function: env injection happens at call time, never at import.
+ * This is deliberately an immutable code-level fallback for the production
+ * lock. The Railway deployment proved below is this exact Git commit. An
+ * environment variable may override it when a new worker is promoted, but an
+ * absent env can NEVER silently unpin production back to "any 0.42.x" worker.
+ */
+export const DEPLOYED_WORKER_REVISION =
+  "git:62c37147a64c4037f9825253cdb041baafab6fe3";
+
+/**
+ * Expected parser identity. Environment overrides remain supported for future
+ * promotions, while the deployed revision above is the safe production default.
  */
 export function expectedParserIdentity(): {
   name: string;
@@ -58,7 +63,7 @@ export function expectedParserIdentity(): {
   return {
     name: env?.["DEMO_PARSER_EXPECTED_NAME"] || PARSER_NAME,
     version: env?.["DEMO_PARSER_EXPECTED_VERSION"] || PARSER_VERSION,
-    revision: env?.["DEMO_PARSER_EXPECTED_REVISION"] || null,
+    revision: env?.["DEMO_PARSER_EXPECTED_REVISION"] || DEPLOYED_WORKER_REVISION,
   };
 }
 
@@ -105,10 +110,8 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!raw.parser?.name || !raw.parser?.version) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing parser identity");
   }
-  // GATE 1E.1 — ONE revision lock for both /version and the parse response. An
-  // incompatible worker is rejected explicitly instead of being accepted
-  // silently. NOTE: major/minor compatibility does NOT guarantee CS2 demo
-  // compatibility — only the FASE 2.7.2 compatibility matrix can establish that.
+  // GATE 1E.1 — ONE exact revision lock for both /version and the parse
+  // response. The APP never accepts a merely compatible major/minor version.
   assertParserIdentity(
     {
       name: raw.parser.name,
