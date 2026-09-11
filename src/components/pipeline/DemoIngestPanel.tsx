@@ -143,7 +143,9 @@ export function DemoIngestPanel() {
         </p>
       ) : null}
 
-      <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
+      <div ref={uploadRef}>
+        <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
+      </div>
 
       {upload.isPending ? (
         <div className="space-y-2" aria-live="polite">
