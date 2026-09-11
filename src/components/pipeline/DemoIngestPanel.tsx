@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Loader2, RefreshCw, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,19 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { DemoUploadError, submitDemo } from "@/lib/pipeline/client";
+import {
+  PIPELINE_ERROR_CODES,
+  isPermanentError,
+  type PipelineErrorCode,
+} from "@/lib/pipeline/errors";
 import { cn } from "@/lib/utils";
+
+/** True only for failures where re-running the same bytes cannot help. */
+function isPermanentCode(code: string | null): boolean {
+  if (!code) return false;
+  const candidate = code as PipelineErrorCode;
+  return PIPELINE_ERROR_CODES.includes(candidate) && isPermanentError(candidate);
+}
 
 const STATUS_KEY: Record<DemoJobView["status"], TranslationKey> = {
   pending: "pipeline.status.pending",
@@ -73,6 +85,12 @@ export function DemoIngestPanel() {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState<string | null>(null);
   const [uploadPercent, setUploadPercent] = useState(0);
+  const uploadRef = useRef<HTMLDivElement | null>(null);
+
+  const focusUpload = () => {
+    uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    uploadRef.current?.querySelector<HTMLElement>("input,button")?.focus();
+  };
 
   const pipeline = useQuery({
     queryKey: ["pipeline", "status"],
@@ -125,7 +143,9 @@ export function DemoIngestPanel() {
         </p>
       ) : null}
 
-      <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
+      <div ref={uploadRef}>
+        <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
+      </div>
 
       {upload.isPending ? (
         <div className="space-y-2" aria-live="polite">
@@ -177,10 +197,23 @@ export function DemoIngestPanel() {
                       ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
                       : ""}
                   </p>
-                  {job.status === "failed" ? (
+                  {job.status === "failed" && job.errorCode === "CORRUPTED_DEMO" ? (
+                    <div className="mt-2 rounded-lg border border-destructive/35 bg-destructive/8 px-3 py-2.5">
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("pipeline.corrupted.title")}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t("pipeline.corrupted.body")}
+                      </p>
+                      <Button size="sm" variant="outline" className="mt-2.5" onClick={focusUpload}>
+                        <Upload className="mr-1.5 size-3.5" aria-hidden />
+                        {t("pipeline.corrupted.cta")}
+                      </Button>
+                    </div>
+                  ) : job.status === "failed" ? (
                     <p className="mt-1 text-xs text-destructive">{t(errorKey(job.errorCode))}</p>
                   ) : null}
-                  {job.partialParse ? (
+                  {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
                   ) : null}
                 </div>
@@ -196,7 +229,9 @@ export function DemoIngestPanel() {
                   {t(STATUS_KEY[job.status])}
                 </span>
 
-                {job.status === "failed" && job.retryCount < job.maxRetries ? (
+                {job.status === "failed" &&
+                !isPermanentCode(job.errorCode) &&
+                job.retryCount < job.maxRetries ? (
                   <Button
                     size="sm"
                     variant="outline"

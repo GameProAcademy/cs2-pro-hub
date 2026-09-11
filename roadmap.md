@@ -23,8 +23,8 @@
 - [ ] Worker real de parser de `.dem` (`FEATURES.realDemoParser = false`).
 - [x] Gamers Club: INDISPONÍVEL por bloqueio externo (403/Cloudflare, sem API pública). Não haverá contorno de anti-bot.
 
-
 ## FASE 2.2.1D — FACEIT FINAL VALIDATION PATCH (concluída)
+
 - `finished` baseado em `finished_at`/status terminal (`isFaceitMatchFinished`); `match_date` nunca é prova.
 - Convergência isolada em `faceitMatchConverged`: partida ongoing nunca converge por tentativas.
 - API call budget virou hard ceiling no `FaceitClient` (conta retries; erro `FACEIT_API_BUDGET_EXHAUSTED`).
@@ -42,6 +42,7 @@ bypass de CAPTCHA, todos explicitamente proibidos. Portanto NÃO há caminho de
 coleta permitido e nada de collector foi implementado.
 
 Implementado:
+
 - [x] Validador/parser de URL pública (`src/lib/gamersclub/gamersclub.url.ts`): host allowlist,
       HTTPS obrigatório, rejeita userinfo/porta/`javascript:`/`data:`/sufixo falso, normaliza
       trailing slash, query e fragment, extrai `external_id` numérico ou slug.
@@ -55,6 +56,7 @@ Implementado:
 - [x] Testes: 23 casos GC (URL + invariantes). Suíte total 212/212.
 
 Bloqueado (não implementado, e não implementável sem acesso permitido):
+
 - [ ] collector/HTTP client GC, parser de perfil, parser de histórico, normalizer canônico
 - [ ] `gamers_club_sync_jobs`, `gamers_club_profile_snapshots`, worker/cron, cache, snapshots
 - [ ] UI "Conectar Gamers Club", refresh manual, security checks GC, migrations
@@ -63,6 +65,7 @@ Desbloqueio possível: API/parceria oficial da Gamers Club, ou confirmação esc
 de um endpoint público sem autenticação e sem desafio anti-bot.
 
 ## FASE 2.3 — Gamers Club + Player Identity Graph — PARTIAL / BLOCKED_EXTERNAL_ACCESS
+
 - Locator model (numeric_id vs slug, externalIdConfirmed), access classification, provider abstraction,
   HTTP/deadline/budget/retry semantics, bounded pagination, cache TTL + freshness, job lifecycle,
   identity correlation engine with evidence hierarchy — implemented and tested (265 tests).
@@ -73,6 +76,7 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
   Collector/parser/worker remain unimplemented on purpose. Unblocks with an authorised provider.
 
 ## FASE 2.4 — Player Profile + Identity Graph + Verification Engine + CS2 Map Pool — DONE
+
 - Perfil 100% persistente (nenhuma página lê `demoProfile`): `player_profiles`
   (nickname, country ISO-2 com CHECK, main_platform em STEAM_PREMIER/FACEIT/GAMERS_CLUB/OTHER,
   experience, team) + `player_profile_roles` (9 códigos estáveis) + `player_profile_goals`
@@ -179,13 +183,12 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
       `persistFaceitObservation()` (adapter + resolver + persistência transacional);
       concorrência real e RLS negativa provadas na FASE 2.6.11.5.
 
-
 ## FASE 2.6.11.2 — erro de runtime do painel administrativo
 
 - [x] Causa: o menu lateral consultava a sessão administrativa em TODAS as páginas
       autenticadas. Para um jogador comum a resposta era uma recusa (`ADMIN_FORBIDDEN`)
       e, quando ainda não havia sessão no navegador, `Unauthorized: No authorization
-      header provided` — dois erros visíveis no console em uso perfeitamente normal.
+    header provided` — dois erros visíveis no console em uso perfeitamente normal.
 - [x] Correção: novo `getAdminSessionProbe()` (mesma verificação no servidor) devolve
       `null` para quem não é administrador e só falha em problema de infraestrutura;
       o hook só consulta quando existe sessão no navegador. O portão de `/admin`
@@ -200,7 +203,6 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] O aviso de desenvolvimento do React em `/dashboard` foi eliminado na FASE 2.6.11.5:
       os portões de `/_authenticated` e `/admin` decidem em `beforeLoad` e navegam de
       forma declarativa (`<Navigate replace />`), sem atualizar estado durante o render.
-
 
 ## FASE 2.6.11.3 — Production cross-source identity closure
 
@@ -308,15 +310,12 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 
 ## FASE 2.6.11.5A — Integridade das evidências e reconciliação do roadmap
 
-- [x] **Gates frágeis reforçados** em `scripts/faceit-pipeline-proof.ts`:
-      - gate 06 agora prova a convergência pelo conteúdo das observações (fingerprint
-        FACEIT nulo, fingerprint do demo igual à fixture, ids externos distintos), e não
-        apenas pela contagem de linhas;
-      - gate 09 encadeia as asserções: exatamente 10 SteamIDs distintos gravados, cada um
-        presente nas identidades resolvidas pelo Identity Graph e cada id externo FACEIT
-        contabilizado no pareamento;
-      - gate de limpeza verifica participantes, séries, conexões, perfis, identidades e
-        observações — nenhuma linha órfã sobrevive à execução.
+- [x] **Gates frágeis reforçados** em `scripts/faceit-pipeline-proof.ts`: - gate 06 agora prova a convergência pelo conteúdo das observações (fingerprint
+      FACEIT nulo, fingerprint do demo igual à fixture, ids externos distintos), e não
+      apenas pela contagem de linhas; - gate 09 encadeia as asserções: exatamente 10 SteamIDs distintos gravados, cada um
+      presente nas identidades resolvidas pelo Identity Graph e cada id externo FACEIT
+      contabilizado no pareamento; - gate de limpeza verifica participantes, séries, conexões, perfis, identidades e
+      observações — nenhuma linha órfã sobrevive à execução.
       Reexecução: PASS=18, FAIL=0, BLOCKED=0, NOT_PROVEN=1 (introspecção de PIDs do
       PostgreSQL, limitação do ambiente).
 - [x] **Deficiência real de banco encontrada e corrigida**: o check permanente
@@ -431,6 +430,7 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       `.dem` real.
 
 ## FASE 2.7.1C
+
 - [x] Rating (source/CT/T) exige kill + damage + cobertura completa; fórmula inalterada
 - [x] KAST exige cobertura completa
 - [x] Abertura só sobre rounds determináveis; instante desconhecido ≠ instante tardio; amostra NULL quando indeterminável
@@ -441,12 +441,15 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [ ] FASE 2.8 não iniciada
 
 ## FASE 2.7.1D
+
 - [x] `survival_rate` exige round-end evidence em TODOS os rounds do denominador (`metrics.survivalRounds`); cobertura incompleta = NULL, nunca parcial nem 0
 - [x] `roundHasEndEvidence()` como definição única, reutilizada por `playerSurvivedRound()`
 - [x] Parse parcial: taxas com denominador de rounds ficam NULL; contadores observados e razões sobre contagens observadas permanecem
 - [x] Registro histórico: a versão era placeholder nessa rodada; o Gate 1D depois confirmou `0.42.0`. Contrato inalterado.
 - [x] `quality271d.test.ts` (fixtures sintéticas). 587/587 testes, tsgo e lint OK
+
 ## FASE 2.7.1E
+
 - [x] `src/lib/pipeline/roundEvidence.ts`: a ÚNICA definição de round-end evidence
       (`winnerSide` | `winnerTeam` | `endTick` | `durationSeconds`, presença por `!= null`).
 - [x] Normalizer (`roundsValid`), metrics availability, `playerSurvivedRound()` e denominador
@@ -593,3 +596,20 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [ ] `tests/test_real_demo.py` pronto porém **SKIPPED**: nenhuma demo `.dem`
       real disponível. **Gate 02 permanece BLOCKED.**
 
+## FASE 2.7.2 — UX de demos incompletas / corrompidas
+
+- [x] `CORRUPTED_DEMO` continua **permanente**: o job falha, sem retry
+      automático e sem `CanonicalMatch`, projeção, métricas ou features
+      (o erro é lançado antes de qualquer persistência canônica).
+- [x] Retry server-side (`retryMyDemoJob`) recusa re-enfileirar qualquer job cuja
+      falha seja permanente (`JOB_NOT_RETRYABLE`).
+- [x] UI: estado dedicado de FALHA com título "Não conseguimos analisar esta
+      demo", orientação para reenviar a demo original/completa e CTA
+      "Enviar outra demo" que devolve o usuário ao fluxo de upload.
+- [x] Botão "Tentar novamente" oculto para falhas permanentes; aviso de extração
+      parcial nunca aparece em job falhado (PROCESSANDO → FALHOU).
+- [x] Nenhum detalhe técnico exposto (código, parser, hash, Storage, stack).
+- [x] Matriz de erros preservada por categoria (formato, corrompida, não
+      suportada, timeout, indisponível, interno, integridade).
+- [x] Testes: `src/lib/pipeline/__tests__/corrupted272.test.ts`; APP 723 passed,
+      tipos, lint e build OK.

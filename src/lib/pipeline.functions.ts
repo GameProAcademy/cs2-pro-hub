@@ -253,13 +253,22 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job } = await context.supabase
       .from("demo_jobs")
-      .select("id, status, retry_count, max_retries, storage_deleted_at")
+      .select("id, status, retry_count, max_retries, storage_deleted_at, error_code")
       .eq("id", data.jobId)
       .maybeSingle();
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (job.status !== "failed") throw new Error("JOB_NOT_RETRYABLE");
     if (job.storage_deleted_at) throw new Error("DEMO_EXPIRED");
     if (job.retry_count >= job.max_retries) throw new Error("RETRY_LIMIT_REACHED");
+    // FASE 2.7.2 — a permanent failure (e.g. CORRUPTED_DEMO) stays permanent:
+    // re-queueing the same bytes cannot change the outcome.
+    {
+      const { PIPELINE_ERROR_CODES, isPermanentError } = await import("@/lib/pipeline/errors");
+      const code = job.error_code as (typeof PIPELINE_ERROR_CODES)[number] | null;
+      if (code && PIPELINE_ERROR_CODES.includes(code) && isPermanentError(code)) {
+        throw new Error("JOB_NOT_RETRYABLE");
+      }
+    }
 
     // Retry only RE-QUEUES: the worker/cron layer picks the job up afterwards,
     // so the user never waits for the parser inside this request.

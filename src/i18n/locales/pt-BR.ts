@@ -568,6 +568,10 @@ export const ptBR = {
   "pipeline.confidence": "confiança da extração",
   "pipeline.partial": "Extração parcial: parte dos dados não pôde ser lida desta demo.",
   "pipeline.retry": "Tentar novamente",
+  "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
+  "pipeline.corrupted.body":
+    "O arquivo da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la novamente.",
+  "pipeline.corrupted.cta": "Enviar outra demo",
   "pipeline.status.pending": "Na fila",
   "pipeline.status.processing": "Processando",
   "pipeline.status.processed": "Processada",
