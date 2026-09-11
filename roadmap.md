@@ -188,7 +188,7 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Causa: o menu lateral consultava a sessão administrativa em TODAS as páginas
       autenticadas. Para um jogador comum a resposta era uma recusa (`ADMIN_FORBIDDEN`)
       e, quando ainda não havia sessão no navegador, `Unauthorized: No authorization
-    header provided` — dois erros visíveis no console em uso perfeitamente normal.
+  header provided` — dois erros visíveis no console em uso perfeitamente normal.
 - [x] Correção: novo `getAdminSessionProbe()` (mesma verificação no servidor) devolve
       `null` para quem não é administrador e só falha em problema de infraestrutura;
       o hook só consulta quando existe sessão no navegador. O portão de `/admin`
@@ -613,3 +613,24 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       suportada, timeout, indisponível, interno, integridade).
 - [x] Testes: `src/lib/pipeline/__tests__/corrupted272.test.ts`; APP 723 passed,
       tipos, lint e build OK.
+
+## FASE 2.7.2 — GATE 02-A — HARDENING COMPORTAMENTAL (DONE; GATE 02 REAL E2E segue BLOCKED)
+
+- Novo teste runtime `src/lib/pipeline/__tests__/corrupted272.runtime.test.ts`: executa o
+  `processJob()` REAL com apenas banco, storage e parser mockados. Prova por execução que
+  `CORRUPTED_DEMO` (HTTP 422 do worker) aborta antes de normalização, métricas, features,
+  bundle/resolver canônico, `persistCanonicalObservation()` e `persistDemoProjection()`.
+- Prova de estado: job `status=failed`, `stage=failed`, `error_code=CORRUPTED_DEMO`, sem requeue
+  automático mesmo com retries disponíveis; upload `failed` e nunca `processed`.
+- Prova de ausência de parcial: nenhum update carrega `partial_parse`, `match_id`, `quality_flags`
+  ou valor `partial`.
+- Idempotência: job já `failed` com `CORRUPTED_DEMO` não inicia novo parse; `PARSER_TIMEOUT`
+  (transitório) continua sendo reenfileirado — taxonomy preservada.
+- `corrupted272.test.ts` (classificação 422 → permanente) mantido intacto.
+- Auditoria SCHEMA_VERSION: mantido `1`. É a versão da camada de ingestão de demo
+  (`demo_jobs.schema_version`/`uploads.schema_version`), eixo distinto de
+  `CANONICAL_SCHEMA_VERSION = 2` (`canonical_schema_version`, DEFAULT 2 nas migrations).
+  Nenhuma migration alterou a forma dessas linhas de ingestão. Documentado em `src/config/pipeline.ts`.
+- Worker (`services/cs2-demo-parser/`) e contratos não foram alterados.
+- Bloqueio remanescente para GATE 02 REAL E2E: execução com as demos reais (Mirage truncada,
+  Cache, Dust2) contra o worker Railway.

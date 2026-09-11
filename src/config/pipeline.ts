@@ -5,7 +5,23 @@
  * Nothing in the pipeline is allowed to hard-code these values inline.
  */
 
-/** Canonical schema version of the normalised data written to the database. */
+/**
+ * Schema version of the DEMO INGESTION layer (`demo_jobs.schema_version` and
+ * `uploads.schema_version`) — the per-upload projection produced by this
+ * pipeline. It is NOT the canonical model version.
+ *
+ * FASE 2.7.2 GATE 02-A audit: version 1 is CORRECT and must not be bumped.
+ * Evidence:
+ *  - the canonical model has its own independent axis,
+ *    `CANONICAL_SCHEMA_VERSION = 2` (`src/lib/canonical/canonical.versions.ts`),
+ *    written to the separate `canonical_schema_version` columns, which the
+ *    migrations declare with `DEFAULT 2` and the persistence layer validates;
+ *  - the FASE 2.6 rewrite changed the canonical model, not the shape of the
+ *    ingestion rows this constant stamps, so no migration ever moved
+ *    `schema_version` past 1;
+ *  - bumping it would only desynchronise stored rows from the code that wrote
+ *    them, for cosmetic alignment with the canonical history.
+ */
 export const SCHEMA_VERSION = 1;
 
 /** Version of the derived-metrics / feature-extraction layer. */
