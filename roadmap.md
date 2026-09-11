@@ -566,4 +566,30 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
       CanonicalMatch, persistência, projeção e idempotência reais: **NOT EXECUTED**.
 - **Estado do Gate 02: BLOCKED**, não PASS. Retomar exclusivamente quando uma demo
   real completa (mínimo 8 rounds e contendo o Steam ID vinculado do usuário de
+  real completa (mínimo 8 rounds e contendo o Steam ID vinculado do usuário de
   teste) for fornecida ao upload oficial em `/upload`.
+
+## FASE 2.7.2 — WORKER ADAPTER → RawParserOutput — DONE (Gate 02 segue BLOCKED)
+
+- [x] `services/cs2-demo-parser/adapter.py`: camada única de tradução
+      demoparser2 → contrato do APP (`normalize_header/players/rounds/events`,
+      `resolve_event_round`, posições).
+- [x] Eventos finais planos (`{type, round, ...}`); o aninhamento `{type, data}`
+      foi eliminado. `steamid` → `steam_id`, com validação de Steam ID.
+- [x] Rounds derivados de ticks reais de `round_start`/`round_end`, `number`
+      inteiro positivo, `duration_seconds` apenas com tickrate real.
+- [x] Round de cada evento resolvido por janela de ticks determinística; eventos
+      sem round são omitidos e contabilizados em warning (`round = 0` nunca).
+- [x] NULL ≠ FALSE preservado: stream ilegível fica ausente, stream lido sem
+      ocorrência vira `false`; economia ausente é omitida com warning.
+- [x] `player_hurt` e `bomb_exploded` incluídos (damage e bomba) sem inventar
+      dados; `players_flashed` documentado como indisponível.
+- [x] Container non-root (`parser`, UID 10001, `TMPDIR=/tmp/parser`).
+- [x] `__pycache__`/`*.pyc` removidos do versionamento e bloqueados no
+      `.gitignore`; fixtures `.dem` ignoradas.
+- [x] Testes: adapter (players/header/rounds/eventos/round resolution/posições/
+      NULL semantics/determinismo) + contrato completo do `RawParserOutput`.
+      Worker 78 passed / 3 skipped; APP 716 passed; tipos, lint e build OK.
+- [ ] `tests/test_real_demo.py` pronto porém **SKIPPED**: nenhuma demo `.dem`
+      real disponível. **Gate 02 permanece BLOCKED.**
+
