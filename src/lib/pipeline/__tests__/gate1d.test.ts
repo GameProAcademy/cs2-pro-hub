@@ -105,8 +105,9 @@ describe("Gate 1D upload boundaries", () => {
 });
 
 describe("Gate 1D parser identity", () => {
+  const deployedRevision = "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814";
   const payload = () => ({
-    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "worker-revision" },
+    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
     header: { map: "de_mirage", tickrate: 64 },
     players: [],
@@ -118,7 +119,7 @@ describe("Gate 1D parser identity", () => {
     expect(expectedParserIdentity()).toEqual({
       name: "demoparser2",
       version: "0.42.0",
-      revision: null,
+      revision: deployedRevision,
     });
     expect(PARSER_CONTRACT_VERSION).toBe(1);
   });
@@ -126,7 +127,12 @@ describe("Gate 1D parser identity", () => {
   it("reads and enforces the configured revision", () => {
     vi.stubEnv("DEMO_PARSER_EXPECTED_REVISION", "worker-revision");
     expect(expectedParserIdentity().revision).toBe("worker-revision");
-    expect(assertRawParserOutput(payload()).parser.revision).toBe("worker-revision");
+    expect(
+      assertRawParserOutput({
+        ...payload(),
+        parser: { ...payload().parser, revision: "worker-revision" },
+      }).parser.revision,
+    ).toBe("worker-revision");
     expect(() =>
       assertRawParserOutput({ ...payload(), parser: { ...payload().parser, revision: "other" } }),
     ).toThrow("PARSER_IDENTITY_MISMATCH");

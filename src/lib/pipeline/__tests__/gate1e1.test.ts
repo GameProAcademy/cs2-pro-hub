@@ -133,9 +133,9 @@ describe("GATE 1E.1 — revision lock", () => {
   it("rejects even a patch release of the pinned parser version", () => {
     const [major, minor, patch] = PARSER_VERSION.split(".");
     const nextPatch = `${major}.${minor}.${Number(patch) + 1}`;
-    expect(() =>
-      assertParserIdentity(worker({ version: nextPatch }), expected()),
-    ).toThrowError(/parser version mismatch/);
+    expect(thrown(() => assertParserIdentity(worker({ version: nextPatch }), expected()))).toBe(
+      "PARSER_IDENTITY_MISMATCH",
+    );
   });
 
   it("fails closed on a different parser, version or revision", () => {

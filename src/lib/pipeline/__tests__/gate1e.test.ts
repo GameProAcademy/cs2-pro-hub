@@ -35,7 +35,7 @@ function code(fn: () => unknown): string {
 }
 
 const validOutput = {
-  parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "gate1e" },
+  parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: DEPLOYED_REVISION },
   contract_version: PARSER_CONTRACT_VERSION,
   header: { map: "de_mirage" },
   players: [],
@@ -235,7 +235,7 @@ describe("GATE 1E — /version identity", () => {
 
 describe("GATE 1E — transport request/response", () => {
   const FIXTURE = {
-    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "gate1e" },
+    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: DEPLOYED_REVISION },
     contract_version: PARSER_CONTRACT_VERSION,
     header: { map: "de_mirage" },
     players: [],
