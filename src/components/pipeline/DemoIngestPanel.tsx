@@ -216,6 +216,9 @@ export function DemoIngestPanel() {
                   {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
                   ) : null}
+                  {job.status === "processed" && job.attachmentState === "unattached" ? (
+                    <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
+                  ) : null}
                 </div>
 
                 <span

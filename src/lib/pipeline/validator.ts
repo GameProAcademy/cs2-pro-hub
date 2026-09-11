@@ -50,10 +50,54 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
  * Resolves WHICH player in the demo is the signed-in user.
  * Only an explicit, previously stored Steam ID is accepted — the pipeline never
  * guesses a player from a nickname.
+ *
+ * Kept for callers that legitimately REQUIRE a player (metrics/projection on
+ * demand). The ingestion path uses `resolveOwnParticipant` instead, because a
+ * missing link is a state of the attachment, never a defect of the match.
  */
 export function resolveOwnSteamId(match: CanonicalMatch, steamId: string | null): string {
-  if (!steamId) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", "no steam id on profile");
+  const outcome = resolveOwnParticipant(match, steamId);
+  if (!outcome.steamId) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", outcome.reason);
+  return outcome.steamId;
+}
+
+/** Why the canonical match could not be attached to this user's player. */
+export type PlayerAttachmentReason =
+  | "no_player_profile"
+  | "no_steam_id_on_profile"
+  | "steam_id_not_in_demo";
+
+export interface PlayerAttachmentOutcome {
+  /** The proven Steam ID of the signed-in user inside this demo, when present. */
+  steamId: string | null;
+  reason: PlayerAttachmentReason | null;
+  /** Only method accepted today: an explicitly stored, proven Steam ID. */
+  method: "steam_id_profile" | null;
+  confidence: number | null;
+}
+
+/**
+ * FASE 2.7.2A — attachment as a RESULT, not an exception.
+ *
+ * A demo whose participants do not include the user's Steam ID is still a fully
+ * valid match: it just has no player projection yet. Nothing here infers a
+ * player from a nickname, a team name or a slot index.
+ */
+export function resolveOwnParticipant(
+  match: CanonicalMatch,
+  steamId: string | null,
+): PlayerAttachmentOutcome {
+  if (!steamId) {
+    return {
+      steamId: null,
+      reason: "no_steam_id_on_profile",
+      method: null,
+      confidence: null,
+    };
+  }
   const found = match.players.find((player) => player.steamId === steamId);
-  if (!found) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", "steam id not in demo");
-  return found.steamId;
+  if (!found) {
+    return { steamId: null, reason: "steam_id_not_in_demo", method: null, confidence: null };
+  }
+  return { steamId: found.steamId, reason: null, method: "steam_id_profile", confidence: 1 };
 }

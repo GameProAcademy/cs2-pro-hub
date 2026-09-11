@@ -17,6 +17,13 @@ import { isPermanentError, PIPELINE_ERROR_CODES, type PipelineErrorCode } from "
 export type E2EExpectation = "positive" | "negative";
 export type E2EVerdict = "PASS" | "FAIL" | "BLOCKED";
 
+/**
+ * FASE 2.7.2A — the projection dimension of the verdict. The canonical match is
+ * source-neutral, so a run without a proven Steam link is NOT a failure: it is a
+ * canonical PASS with the projection reported as NOT_ATTACHED.
+ */
+export type E2EProjectionVerdict = "ATTACHED" | "NOT_ATTACHED";
+
 /** Canonical + projection evidence read back from the database after a run. */
 export interface E2EEvidence {
   /** Canonical match ids reached through `match_sources` for this demo. */
@@ -39,11 +46,17 @@ export interface E2EJobState {
   parserName: string | null;
   parserVersion: string | null;
   parserRevision: string | null;
+  /** Player-attachment state recorded by the job itself. */
+  attachmentState?: "attached" | "unattached" | null;
+  attachmentReason?: string | null;
 }
 
 export interface E2EEvaluation {
   verdict: E2EVerdict;
   reasons: string[];
+  /** Present on a positive run: the projection dimension of the result. */
+  projection?: E2EProjectionVerdict;
+  projectionReason?: string | null;
 }
 
 export const EMPTY_EVIDENCE: E2EEvidence = {
@@ -117,20 +130,46 @@ export function evaluateE2ERun(args: {
 
   if (job.status !== "processed") {
     reasons.push(`job failed with ${job.errorCode ?? "unknown error"}`);
-    return { verdict: "FAIL", reasons };
+    return { verdict: "FAIL", reasons, projection: "NOT_ATTACHED" };
   }
+
+  // CANONICAL — mandatory for PASS, independent of any player link.
   if (evidence.matchIds.length !== 1) {
     reasons.push(`expected exactly 1 canonical match, found ${evidence.matchIds.length}`);
   }
   if (!job.matchId) reasons.push("job carries no canonical match id");
   if (evidence.participants <= 0) reasons.push("no canonical participants persisted");
   if (evidence.rounds <= 0) reasons.push("no canonical rounds persisted");
+  if (evidence.roundPlayers <= 0) reasons.push("no canonical round players persisted");
   if (evidence.events <= 0) reasons.push("no canonical round events persisted");
-  if (evidence.metrics !== 1) reasons.push(`expected 1 metrics row, found ${evidence.metrics}`);
-  if (evidence.features !== 1) reasons.push(`expected 1 features row, found ${evidence.features}`);
   if (!job.parserRevision) reasons.push("job did not record the parser revision");
 
-  return { verdict: reasons.length === 0 ? "PASS" : "FAIL", reasons };
+  // PLAYER PROJECTION — conditional. Required only when the executor's Steam ID
+  // was proven inside the demo; otherwise its absence is the expected outcome.
+  const attached = job.attachmentState === "attached";
+  if (attached) {
+    if (evidence.metrics !== 1) reasons.push(`expected 1 metrics row, found ${evidence.metrics}`);
+    if (evidence.features !== 1) {
+      reasons.push(`expected 1 features row, found ${evidence.features}`);
+    }
+  } else {
+    if (evidence.metrics !== 0) {
+      reasons.push(`unattached run must not write metrics, found ${evidence.metrics}`);
+    }
+    if (evidence.features !== 0) {
+      reasons.push(`unattached run must not write features, found ${evidence.features}`);
+    }
+    if (!job.attachmentReason) {
+      reasons.push("unattached run must record why the player was not attached");
+    }
+  }
+
+  return {
+    verdict: reasons.length === 0 ? "PASS" : "FAIL",
+    reasons,
+    projection: attached ? "ATTACHED" : "NOT_ATTACHED",
+    projectionReason: attached ? null : (job.attachmentReason ?? null),
+  };
 }
 
 /**

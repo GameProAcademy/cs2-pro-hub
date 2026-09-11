@@ -252,7 +252,7 @@ async function readJobState(
   const { data } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, uploads(file_name)",
+      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, attachment_state, attachment_reason, uploads(file_name)",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -267,6 +267,8 @@ async function readJobState(
     parserName: data.parser_name,
     parserVersion: data.parser_version,
     parserRevision: data.parser_revision,
+    attachmentState: data.attachment_state as E2EJobState["attachmentState"],
+    attachmentReason: data.attachment_reason,
     uploadId: data.upload_id,
     userId: data.user_id,
     playerId: data.player_id,
@@ -390,6 +392,8 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       parserName: after.parserName,
       parserVersion: after.parserVersion,
       parserRevision: after.parserRevision,
+      attachmentState: after.attachmentState,
+      attachmentReason: after.attachmentReason,
     };
 
     const evaluation = evaluateE2ERun({
@@ -416,6 +420,9 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         job_status: after.status,
         error_code: after.errorCode,
         parser_revision: after.parserRevision,
+        attachment_state: after.attachmentState,
+        attachment_reason: after.attachmentReason,
+        projection: evaluation.projection ?? null,
         match_ids: evidenceAfter.matchIds,
       },
     });
@@ -480,6 +487,8 @@ export const getDemoE2EEvidence = createServerFn({ method: "GET" })
         parserName: job.parserName,
         parserVersion: job.parserVersion,
         parserRevision: job.parserRevision,
+        attachmentState: job.attachmentState,
+        attachmentReason: job.attachmentReason,
         partialParse: job.partialParse,
         extractionConfidence: job.extractionConfidence,
         durationMs: job.durationMs,
