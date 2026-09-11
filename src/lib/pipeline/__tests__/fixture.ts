@@ -114,7 +114,11 @@ const utilityDamage: RawParserEvent = {
 };
 
 export const syntheticParserOutput: RawParserOutput = {
-  parser: { name: "demoparser2", version: "0.42.0", revision: "synthetic-fixture" },
+  parser: {
+    name: "demoparser2",
+    version: "0.42.0",
+    revision: "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814",
+  },
   contract_version: PARSER_CONTRACT_VERSION,
   header: {
     map: "de_mirage",

@@ -200,14 +200,18 @@ describe("parser identity validation", () => {
     ).toThrow(PipelineError);
   });
 
-  it("accepts a patch release of the pinned version", () => {
+  it("rejects a patch release of the exactly pinned version", () => {
     const [major, minor] = PARSER_VERSION.split(".");
-    expect(
+    expect(() =>
       assertRawParserOutput({
         ...syntheticParserOutput,
-        parser: { name: PARSER_NAME, version: `${major}.${minor}.99`, revision: "x" },
-      }).parser.version,
-    ).toBe(`${major}.${minor}.99`);
+        parser: {
+          name: PARSER_NAME,
+          version: `${major}.${minor}.99`,
+          revision: syntheticParserOutput.parser.revision,
+        },
+      }),
+    ).toThrow(PipelineError);
   });
 });
 

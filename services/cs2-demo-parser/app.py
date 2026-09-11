@@ -25,6 +25,7 @@ import hashlib
 import logging
 import os
 import tempfile
+import re
 from typing import Any, Callable
 
 import httpx
@@ -52,6 +53,9 @@ logger = logging.getLogger("cs2-demo-parser")
 
 #: Injected by tests. Production always uses the real demoparser2 boundary.
 ParseFn = Callable[[str], dict[str, Any]]
+
+CS2_DEMO_MAGIC = b"PBDEMS2\x00"
+SHA256_HEX = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 class ParseRequest(BaseModel):
@@ -149,6 +153,17 @@ def _cleanup(path: str) -> None:
         logger.warning("temporary demo cleanup failed")
 
 
+def _require_cs2_magic(path: str) -> None:
+    """Reject non-CS2 input before invoking the native parser."""
+    try:
+        with open(path, "rb") as demo:
+            magic = demo.read(len(CS2_DEMO_MAGIC))
+    except OSError:
+        raise WorkerError(502, E.DOWNLOAD_ERROR, "Demo could not be read.") from None
+    if magic != CS2_DEMO_MAGIC:
+        raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.")
+
+
 def create_app(
     settings: Settings | None = None,
     parse_fn: ParseFn | None = None,
@@ -199,7 +214,7 @@ def create_app(
             raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
         if body.file_size > resolved.max_demo_bytes:
             raise WorkerError(413, E.DEMO_TOO_LARGE, "Demo exceeds the size limit.")
-        if len(body.demo_sha256) != 64:
+        if not SHA256_HEX.fullmatch(body.demo_sha256):
             raise WorkerError(409, E.CONTRACT_MISMATCH, "demo_sha256 must be a sha256 hex digest.")
 
         path, sha256, size = await _download(body.demo_url, body.file_size, resolved)
@@ -208,6 +223,8 @@ def create_app(
                 raise WorkerError(422, E.FILE_SIZE_MISMATCH, "Demo size check failed.")
             if sha256.lower() != body.demo_sha256.lower():
                 raise WorkerError(422, E.HASH_MISMATCH, "Demo integrity check failed.")
+
+            _require_cs2_magic(path)
 
             try:
                 parsed = await asyncio.wait_for(

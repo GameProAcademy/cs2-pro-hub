@@ -28,7 +28,10 @@ import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
-import { resolveParserAdapter } from "@/lib/pipeline/parser/remoteParser.server";
+import {
+  assertParserWorkerReady,
+  resolveParserAdapter,
+} from "@/lib/pipeline/parser/remoteParser.server";
 import { persistDemoProjection } from "@/lib/pipeline/persistence.server";
 import {
   assertDemoIntegrity,
@@ -180,6 +183,14 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
   try {
     if (!job.storage_path) throw new PipelineError("DEMO_NOT_FOUND", "missing storage path");
 
+    const adapter = resolveParserAdapter();
+    if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
+    // Gate 02: reuse the official diagnostic before reading demo bytes or
+    // generating a signed URL. A down, mismatched or unpinned worker must never
+    // start processing the player's artifact.
+    assertDeadline();
+    await assertParserWorkerReady();
+
     assertDeadline();
     const stored = await demoExists(job.storage_path);
     if (!stored) throw new PipelineError("DEMO_NOT_FOUND");
@@ -194,9 +205,6 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       assertDeadline();
       assertDemoIntegrity(actual, job.demo_sha256);
     }
-
-    const adapter = resolveParserAdapter();
-    if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
 
     await setStage(jobId, "parsing");
     assertDeadline();

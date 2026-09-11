@@ -548,3 +548,22 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [ ] deployment Railway alinhado, `/health` e `/version` 200, revision real pinada
       (BLOCKED: serviço responde HTTP 404 `Application not found`;
       `DEMO_PARSER_EXPECTED_REVISION` ainda não configurável)
+
+## FASE 2.7.2 — GATE 02 — PRIMEIRO E2E `.dem` REAL — BLOCKED
+
+- [x] Preflight real: endpoint HTTPS completo `/v1/parse`; `/health` 200;
+      `/version` 200 com `demoparser2 0.42.0`, contrato 1 e revision
+      `git:c1a87f68ccf84e99b3a8ae07133b4a686669d814`.
+- [x] APP pinado à mesma revision imutável; token permanece server-side e não foi
+      exibido. `DEMO_PARSER_EXPECTED_REVISION` está ausente no ambiente, portanto
+      o fallback imutável do código continua sendo a expectativa efetiva.
+- [x] Job agora reutiliza o probe oficial antes de criar a signed URL e antes do
+      POST `/v1/parse`; falha de saúde/identidade/contrato bloqueia o parse.
+- [x] Bucket `demos` confirmado privado; policy `demos_update_own` adicionada para
+      permitir continuação TUS apenas na pasta autenticada e somente em `.dem`.
+- [ ] Demo `.dem` real: **BLOCKED — nenhum artefato real foi fornecido nos uploads**.
+- [ ] TUS, Storage, job, Worker POST, RawParserOutput, validação semântica,
+      CanonicalMatch, persistência, projeção e idempotência reais: **NOT EXECUTED**.
+- **Estado do Gate 02: BLOCKED**, não PASS. Retomar exclusivamente quando uma demo
+  real completa (mínimo 8 rounds e contendo o Steam ID vinculado do usuário de
+  teste) for fornecida ao upload oficial em `/upload`.

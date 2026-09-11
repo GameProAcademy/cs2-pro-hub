@@ -101,6 +101,43 @@ def test_file_size_mismatch_is_422_file_size_mismatch(client_factory, tmp_path):
     assert code(response) == E.FILE_SIZE_MISMATCH
 
 
+def test_non_hex_sha_is_contract_mismatch(client_factory, ok_download):
+    client = client_factory(download=ok_download)
+    response = client.post("/v1/parse", json=parse_body(demo_sha256="z" * 64), headers=auth())
+    assert response.status_code == 409
+    assert code(response) == E.CONTRACT_MISMATCH
+
+
+def test_wrong_magic_is_invalid_demo_before_parser(client_factory, tmp_path):
+    called = False
+
+    async def download(_url, _size, _settings):
+        import hashlib
+
+        path = tmp_path / "not-cs2.dem"
+        content = b"NOTDEMO!" + b"x" * 512
+        path.write_bytes(content)
+        return str(path), hashlib.sha256(content).hexdigest(), len(content)
+
+    def parse(_path):
+        nonlocal called
+        called = True
+        return empty_parse(_path)
+
+    import hashlib
+
+    content = b"NOTDEMO!" + b"x" * 512
+    client = client_factory(parse_fn=parse, download=download)
+    response = client.post(
+        "/v1/parse",
+        json=parse_body(file_size=len(content), demo_sha256=hashlib.sha256(content).hexdigest()),
+        headers=auth(),
+    )
+    assert response.status_code == 422
+    assert code(response) == E.INVALID_DEMO_FORMAT
+    assert called is False
+
+
 # --- PARSER ---------------------------------------------------------------
 
 

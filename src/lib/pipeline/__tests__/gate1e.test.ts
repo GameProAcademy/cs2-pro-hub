@@ -4,7 +4,7 @@
  * These tests prove the transport contract only. No real `.dem` is parsed and no
  * successful parse is mocked as a substitute for the real E2E gate.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
@@ -20,6 +20,9 @@ import {
 
 const ORIGIN = "https://cs2-demo-parser-production.up.railway.app";
 const FULL = `${ORIGIN}${PARSER_PARSE_PATH}`;
+const DEPLOYED_REVISION = "git:c1a87f68ccf84e99b3a8ae07133b4a686669d814";
+
+afterEach(() => vi.unstubAllEnvs());
 
 function code(fn: () => unknown): string {
   try {
@@ -32,7 +35,7 @@ function code(fn: () => unknown): string {
 }
 
 const validOutput = {
-  parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "gate1e" },
+  parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: DEPLOYED_REVISION },
   contract_version: PARSER_CONTRACT_VERSION,
   header: { map: "de_mirage" },
   players: [],
@@ -232,7 +235,7 @@ describe("GATE 1E — /version identity", () => {
 
 describe("GATE 1E — transport request/response", () => {
   const FIXTURE = {
-    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "gate1e" },
+    parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: DEPLOYED_REVISION },
     contract_version: PARSER_CONTRACT_VERSION,
     header: { map: "de_mirage" },
     players: [],
@@ -344,5 +347,74 @@ describe("GATE 1E — transport request/response", () => {
     expect(String(calls[0]?.init.body)).not.toContain("test-token");
     const headers = calls[0]?.init.headers as Record<string, string>;
     expect(headers["authorization"]).toBe("Bearer test-token");
+  });
+});
+
+describe("GATE 02 — mandatory worker preflight", () => {
+  async function runProbe(
+    fetcher: (url: string) => Response | Promise<Response>,
+  ): Promise<{ code: string | null; calls: string[] }> {
+    vi.stubEnv("DEMO_PARSER_URL", FULL);
+    vi.stubEnv("DEMO_PARSER_TOKEN", "server-only-token");
+    vi.stubEnv("DEMO_PARSER_EXPECTED_REVISION", DEPLOYED_REVISION);
+    vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "true");
+    const calls: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      return fetcher(url);
+    }) as typeof fetch;
+    try {
+      const { assertParserWorkerReady } = await import("@/lib/pipeline/parser/remoteParser.server");
+      const code = await assertParserWorkerReady()
+        .then(() => null)
+        .catch((error: unknown) => (error instanceof PipelineError ? error.code : String(error)));
+      return { code, calls };
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  }
+
+  const response = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  it("accepts only the live worker's exact identity and contract", async () => {
+    const { code, calls } = await runProbe((url) =>
+      url.endsWith("/health")
+        ? response({ status: "ok" })
+        : response({
+            parser: {
+              name: PARSER_NAME,
+              version: PARSER_VERSION,
+              revision: DEPLOYED_REVISION,
+            },
+            contract_version: PARSER_CONTRACT_VERSION,
+          }),
+    );
+    expect(code).toBeNull();
+    expect(calls).toEqual([`${ORIGIN}/health`, `${ORIGIN}/version`]);
+  });
+
+  it("blocks before parsing when health fails", async () => {
+    const { code, calls } = await runProbe(() => response({ status: "error" }, 503));
+    expect(code).toBe("PARSER_UNAVAILABLE");
+    expect(calls).toEqual([`${ORIGIN}/health`]);
+  });
+
+  it("blocks a different deployed revision", async () => {
+    const { code } = await runProbe((url) =>
+      url.endsWith("/health")
+        ? response({ status: "ok" })
+        : response({
+            parser: {
+              name: PARSER_NAME,
+              version: PARSER_VERSION,
+              revision: "git:62c37147a64c4037f9825253cdb041baafab6fe3",
+            },
+            contract_version: PARSER_CONTRACT_VERSION,
+          }),
+    );
+    expect(code).toBe("PARSER_IDENTITY_MISMATCH");
   });
 });
