@@ -6,9 +6,11 @@ Only this module touches the parser library. Its job is narrow on purpose:
    preserving unreadable streams as unknown instead of empty;
 2. enrich event rows with parser-native round/timing context when available;
 3. remove warmup observations before they can enter the APP contract;
-4. translate parser failures into semantic demo failures and let unrelated
+4. reject structurally truncated demos before any partial observations can be
+   returned;
+5. translate parser failures into semantic demo failures and let unrelated
    failures bubble to app.py as PARSER_ERROR;
-5. hand the resulting raw material to adapter.py, which owns the final
+6. hand the resulting raw material to adapter.py, which owns the final
    RawParserOutput translation.
 
 The parser model and APP contract remain separate. No score/team identity is
@@ -25,6 +27,7 @@ from __future__ import annotations
 from typing import Any
 
 from adapter import build_raw_parser_output
+from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
 
 _INVALID_SIGNATURES = (
@@ -238,6 +241,11 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
 def parse_demo_file(path: str) -> dict[str, Any]:
     """Parse a `.dem` file into the `RawParserOutput` contract."""
+    # IMPORTANT: run before constructing DemoParser. demoparser2's outer frame
+    # loop deliberately skips a frame whose declared payload runs beyond EOF;
+    # without this gate a truncated prefix could look like a successful match.
+    validate_demo_structure(path)
+
     try:
         from demoparser2 import DemoParser  # type: ignore[import-not-found]
     except Exception as exc:  # pragma: no cover - environment specific
