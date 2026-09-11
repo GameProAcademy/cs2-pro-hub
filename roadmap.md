@@ -188,7 +188,7 @@ de um endpoint público sem autenticação e sem desafio anti-bot.
 - [x] Causa: o menu lateral consultava a sessão administrativa em TODAS as páginas
       autenticadas. Para um jogador comum a resposta era uma recusa (`ADMIN_FORBIDDEN`)
       e, quando ainda não havia sessão no navegador, `Unauthorized: No authorization
-  header provided` — dois erros visíveis no console em uso perfeitamente normal.
+header provided` — dois erros visíveis no console em uso perfeitamente normal.
 - [x] Correção: novo `getAdminSessionProbe()` (mesma verificação no servidor) devolve
       `null` para quem não é administrador e só falha em problema de infraestrutura;
       o hook só consulta quando existe sessão no navegador. O portão de `/admin`
@@ -634,3 +634,23 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - Worker (`services/cs2-demo-parser/`) e contratos não foram alterados.
 - Bloqueio remanescente para GATE 02 REAL E2E: execução com as demos reais (Mirage truncada,
   Cache, Dust2) contra o worker Railway.
+
+## FASE 2.7.2 — GATE 02-B — Runner E2E de demo real (protegido)
+
+- `src/lib/pipeline/e2e.ts` — regras puras de veredito: `BLOCKED` quando o preflight
+  do worker falha ou o job não é terminal; cenário negativo exige falha PERMANENTE
+  e zero escrita canônica/projeção; cenário positivo exige exatamente 1 match
+  canônico + participantes + rounds + eventos + 1 métrica + 1 features + revisão do
+  parser registrada; idempotência compara a evidência antes/depois.
+- `src/lib/pipeline-e2e.functions.ts` — server functions master-only
+  (`getDemoE2EPreflight`, `runDemoE2E`, `getDemoE2EEvidence`). `runDemoE2E` chama o
+  `processJob()` REAL (mesmo caminho do cron, mesmo worker Railway), lê a evidência
+  direto do banco antes/depois via `match_sources` (fingerprint/upload) e grava
+  auditoria `DEMO_E2E_RUN`. Rerun de job terminal exige `rerun: true` explícito.
+- `src/routes/_authenticated/admin/demo-e2e.tsx` — console interno: preflight
+  (Gate 1E.1), upload da demo real, run 1, reprocessamento para idempotência e
+  evidência bruta. Nenhum dado sintético.
+- `src/lib/pipeline/__tests__/e2e.verdict.test.ts` — 13 testes das regras do gate.
+- Status: infraestrutura do Gate 02-B PRONTA. O E2E positivo/negativo real
+  permanece **BLOCKED** até que arquivos `.dem` reais (Mirage inválida, Cache/Dust2
+  válida) sejam fornecidos — nenhum `.dem` existe no projeto.
