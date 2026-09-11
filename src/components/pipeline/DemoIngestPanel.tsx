@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Loader2, RefreshCw, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,19 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { DemoUploadError, submitDemo } from "@/lib/pipeline/client";
+import {
+  PIPELINE_ERROR_CODES,
+  isPermanentError,
+  type PipelineErrorCode,
+} from "@/lib/pipeline/errors";
 import { cn } from "@/lib/utils";
+
+/** True only for failures where re-running the same bytes cannot help. */
+function isPermanentCode(code: string | null): boolean {
+  if (!code) return false;
+  const candidate = code as PipelineErrorCode;
+  return PIPELINE_ERROR_CODES.includes(candidate) && isPermanentError(candidate);
+}
 
 const STATUS_KEY: Record<DemoJobView["status"], TranslationKey> = {
   pending: "pipeline.status.pending",
