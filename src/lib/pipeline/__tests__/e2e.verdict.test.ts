@@ -24,6 +24,8 @@ const job = (overrides: Partial<E2EJobState> = {}): E2EJobState => ({
   parserName: "demoparser2",
   parserVersion: "0.42.0",
   parserRevision: "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd",
+  attachmentState: "attached",
+  attachmentReason: null,
   ...overrides,
 });
 
@@ -72,10 +74,15 @@ describe("evaluateE2ERun", () => {
         job: job(),
         evidence: fullEvidence,
       }),
-    ).toEqual({ verdict: "PASS", reasons: [] });
+    ).toEqual({
+      verdict: "PASS",
+      reasons: [],
+      projection: "ATTACHED",
+      projectionReason: null,
+    });
   });
 
-  it("FAILS the positive scenario when the projection is missing", () => {
+  it("FAILS an ATTACHED positive run when the projection is missing", () => {
     const result = evaluateE2ERun({
       expectation: "positive",
       workerReady: true,
@@ -85,6 +92,58 @@ describe("evaluateE2ERun", () => {
     });
     expect(result.verdict).toBe("FAIL");
     expect(result.reasons).toHaveLength(2);
+    expect(result.projection).toBe("ATTACHED");
+  });
+
+  // FASE 2.7.2A — the canonical match does not belong to a player: no Steam link
+  // means PASS (canonical) / NOT_ATTACHED (projection), never FAIL.
+  it("PASSES an UNATTACHED positive run with canonical evidence and no projection", () => {
+    const result = evaluateE2ERun({
+      expectation: "positive",
+      workerReady: true,
+      workerError: null,
+      job: job({ attachmentState: "unattached", attachmentReason: "no_steam_id_on_profile" }),
+      evidence: { ...fullEvidence, metrics: 0, features: 0 },
+    });
+    expect(result.verdict).toBe("PASS");
+    expect(result.projection).toBe("NOT_ATTACHED");
+    expect(result.projectionReason).toBe("no_steam_id_on_profile");
+  });
+
+  it("FAILS an UNATTACHED run that still wrote a player projection", () => {
+    const result = evaluateE2ERun({
+      expectation: "positive",
+      workerReady: true,
+      workerError: null,
+      job: job({ attachmentState: "unattached", attachmentReason: "steam_id_not_in_demo" }),
+      evidence: fullEvidence,
+    });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.reasons.join(" ")).toContain("must not write metrics");
+  });
+
+  it("FAILS an UNATTACHED run with no recorded reason", () => {
+    const result = evaluateE2ERun({
+      expectation: "positive",
+      workerReady: true,
+      workerError: null,
+      job: job({ attachmentState: "unattached", attachmentReason: null }),
+      evidence: { ...fullEvidence, metrics: 0, features: 0 },
+    });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.reasons.join(" ")).toContain("why the player was not attached");
+  });
+
+  it("FAILS a positive run without canonical round players", () => {
+    const result = evaluateE2ERun({
+      expectation: "positive",
+      workerReady: true,
+      workerError: null,
+      job: job(),
+      evidence: { ...fullEvidence, roundPlayers: 0 },
+    });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.reasons.join(" ")).toContain("round players");
   });
 
   it("FAILS the positive scenario when two canonical matches exist", () => {
