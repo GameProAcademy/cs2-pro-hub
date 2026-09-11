@@ -565,6 +565,10 @@ export const fr: Dictionary = {
   "pipeline.confidence": "confiance d'extraction",
   "pipeline.partial": "Extraction partielle : une partie des données n'a pas pu être lue.",
   "pipeline.retry": "Réessayer",
+  "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
+  "pipeline.corrupted.body":
+    "Le fichier de la demo semble incomplet ou corrompu. Pour éviter des statistiques ou des diagnostics erronés, nous n'analysons pas les matchs incomplets. Envoyez à nouveau la demo originale/complète et relancez le traitement.",
+  "pipeline.corrupted.cta": "Envoyer une autre demo",
   "pipeline.status.pending": "En file",
   "pipeline.status.processing": "Traitement",
   "pipeline.status.processed": "Traitée",
