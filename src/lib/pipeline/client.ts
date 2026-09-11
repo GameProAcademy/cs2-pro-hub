@@ -23,8 +23,8 @@ export type ClientUploadError =
   | "PROCESSING_ERROR";
 
 export class DemoUploadError extends Error {
-  constructor(readonly code: ClientUploadError) {
-    super(code);
+  constructor(readonly code: ClientUploadError, readonly detail?: string) {
+    super(detail ? `${code}: ${detail}` : code);
     this.name = "DemoUploadError";
   }
 }
@@ -126,8 +126,12 @@ export async function submitDemoWithDependencies(
           percent: bytesTotal > 0 ? Math.round((bytesSent / bytesTotal) * 100) : 0,
         }),
     });
-  } catch {
-    throw new DemoUploadError("STORAGE_ERROR");
+  } catch (error) {
+    if (error instanceof DemoUploadError) throw error;
+    throw new DemoUploadError(
+      "STORAGE_ERROR",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 
   const job = await dependencies.enqueue({ data: { uploadId: slot.uploadId } });
