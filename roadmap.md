@@ -593,3 +593,21 @@ data quality. Fora de escopo: Pro Score, DNA, Diagnosis, AI Coach, Training.
 - [ ] `tests/test_real_demo.py` pronto porém **SKIPPED**: nenhuma demo `.dem`
       real disponível. **Gate 02 permanece BLOCKED.**
 
+
+## FASE 2.7.2 — UX de demos incompletas / corrompidas
+
+- [x] `CORRUPTED_DEMO` continua **permanente**: o job falha, sem retry
+      automático e sem `CanonicalMatch`, projeção, métricas ou features
+      (o erro é lançado antes de qualquer persistência canônica).
+- [x] Retry server-side (`retryMyDemoJob`) recusa re-enfileirar qualquer job cuja
+      falha seja permanente (`JOB_NOT_RETRYABLE`).
+- [x] UI: estado dedicado de FALHA com título "Não conseguimos analisar esta
+      demo", orientação para reenviar a demo original/completa e CTA
+      "Enviar outra demo" que devolve o usuário ao fluxo de upload.
+- [x] Botão "Tentar novamente" oculto para falhas permanentes; aviso de extração
+      parcial nunca aparece em job falhado (PROCESSANDO → FALHOU).
+- [x] Nenhum detalhe técnico exposto (código, parser, hash, Storage, stack).
+- [x] Matriz de erros preservada por categoria (formato, corrompida, não
+      suportada, timeout, indisponível, interno, integridade).
+- [x] Testes: `src/lib/pipeline/__tests__/corrupted272.test.ts`; APP 723 passed,
+      tipos, lint e build OK.
