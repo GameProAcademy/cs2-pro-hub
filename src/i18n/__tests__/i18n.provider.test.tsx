@@ -39,10 +39,11 @@ describe("i18n provider tree", () => {
     expect(() => renderToString(<Consumer />)).toThrow(/useI18n must be used inside/);
   });
 
-  it("keeps a single global provider in the root route wrapping <Outlet />", () => {
+  it("keeps a single global provider in the root shell, above every branch", () => {
     const rootRoute = readFileSync(join(root, "src/routes/__root.tsx"), "utf8");
     expect(rootRoute).toMatch(/from "@\/i18n"/);
-    expect(rootRoute).toMatch(/<I18nProvider>[\s\S]*<Outlet \/>[\s\S]*<\/I18nProvider>/);
+    expect(rootRoute).toMatch(/<I18nProvider>\{children\}<\/I18nProvider>/);
+    expect(rootRoute.match(/<I18nProvider>/g)).toHaveLength(1);
   });
 
   it("declares I18nContext exactly once in the codebase", () => {
