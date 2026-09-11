@@ -119,13 +119,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // The single global I18nProvider lives in the shell, which is the outermost
+  // component TanStack Start renders on both SSR and client. Everything below it
+  // — RootComponent, its error/not-found boundaries, pending states and every
+  // route — is therefore always inside the same context instance. Providing it
+  // only in RootComponent leaves the root error/not-found branches outside the
+  // tree, where any useT() consumer would read a null context.
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        <I18nProvider>{children}</I18nProvider>
         <Scripts />
       </body>
     </html>
