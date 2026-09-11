@@ -565,6 +565,8 @@ export const fr: Dictionary = {
   "pipeline.rounds": "rounds valides",
   "pipeline.confidence": "confiance d'extraction",
   "pipeline.partial": "Extraction partielle : une partie des données n'a pas pu être lue.",
+  "pipeline.unattached":
+    "Match analysé, mais pas encore lié à votre profil — liez votre compte Steam pour voir vos statistiques.",
   "pipeline.retry": "Réessayer",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":

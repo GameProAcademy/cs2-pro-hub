@@ -279,6 +279,15 @@ function AdminDemoE2EPage() {
               Run {report.run} · {report.expectation} · {report.fileName || report.uploadId}
             </h3>
             <VerdictBadge verdict={report.evaluation.verdict} reasons={report.evaluation.reasons} />
+            {report.evaluation.projection ? (
+              <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                canonical={report.evaluation.verdict} / projection=
+                {report.evaluation.projection}
+                {report.evaluation.projectionReason
+                  ? ` (${report.evaluation.projectionReason})`
+                  : ""}
+              </p>
+            ) : null}
             {report.idempotency ? (
               <div>
                 <p className="mb-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -296,6 +305,8 @@ function AdminDemoE2EPage() {
               <Row label="error code" value={report.job.errorCode ?? "none"} />
               <Row label="error detail" value={report.job.errorMessage ?? "—"} />
               <Row label="canonical match id" value={report.job.matchId ?? "—"} />
+              <Row label="attachment state" value={report.job.attachmentState ?? "—"} />
+              <Row label="attachment reason" value={report.job.attachmentReason ?? "—"} />
               <Row label="rounds valid" value={String(report.job.roundsValid ?? "—")} />
               <Row label="players detected" value={String(report.job.playersDetected ?? "—")} />
               <Row

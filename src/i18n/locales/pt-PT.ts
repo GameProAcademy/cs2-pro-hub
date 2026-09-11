@@ -565,6 +565,8 @@ export const ptPT: Dictionary = {
   "pipeline.rounds": "rondas válidas",
   "pipeline.confidence": "confiança da extração",
   "pipeline.partial": "Extração parcial: parte dos dados não pôde ser lida desta demo.",
+  "pipeline.unattached":
+    "Partida analisada, mas ainda não associada ao seu perfil — associe a Steam para ver as suas métricas.",
   "pipeline.retry": "Tentar novamente",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":

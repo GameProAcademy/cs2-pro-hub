@@ -42,9 +42,10 @@ import {
   retainUntil,
 } from "@/lib/pipeline/storage.server";
 import {
-  resolveOwnSteamId,
+  resolveOwnParticipant,
   validateCanonicalMatch,
   validateDemoFile,
+  type PlayerAttachmentReason,
 } from "@/lib/pipeline/validator";
 
 export type JobStage =
@@ -63,6 +64,9 @@ export interface JobProcessResult {
   status: "processed" | "failed" | "skipped";
   errorCode?: string;
   matchId?: string;
+  /** Whether the canonical match got a per-player projection in this run. */
+  attachmentState?: "attached" | "unattached";
+  attachmentReason?: PlayerAttachmentReason | null;
 }
 
 async function admin() {
@@ -225,29 +229,25 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const match = normalizeParserOutput(raw);
     validateCanonicalMatch(match);
 
-    // Identity: only an explicitly stored Steam ID is accepted.
+    // FASE 2.7.2A — PLAYER ATTACHMENT IS A SEPARATE DIMENSION.
+    // The CanonicalMatch is source-neutral and does NOT belong to a player, so
+    // the absence of a proven Steam ID can never invalidate the match facts.
+    // Identity is resolved here only to decide whether a per-player projection
+    // is possible; nothing is ever inferred from a nickname.
     const { data: player } = await db
       .from("player_profiles")
       .select("id, steam_id")
       .eq("user_id", job.user_id)
       .maybeSingle();
-    if (!player) throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", "no player profile");
-    const steamId = resolveOwnSteamId(match, player.steam_id);
-
-    await setStage(jobId, "metrics");
-    assertDeadline();
-    let metrics;
-    let features;
-    try {
-      metrics = computeMetrics(match, steamId);
-    } catch (error) {
-      throw new PipelineError("METRICS_ERROR", error instanceof Error ? error.message : undefined);
-    }
-    try {
-      features = extractFeatures(match, metrics);
-    } catch (error) {
-      throw new PipelineError("FEATURES_ERROR", error instanceof Error ? error.message : undefined);
-    }
+    const attachment = player
+      ? resolveOwnParticipant(match, player.steam_id)
+      : ({
+          steamId: null,
+          reason: "no_player_profile",
+          method: null,
+          confidence: null,
+        } as const);
+    const steamId = attachment.steamId;
 
     // FASE 2.7 — the canonical engine is the ONLY writer of canonical facts and
     // it runs FIRST. It resolves/attaches the observation transactionally and
@@ -259,8 +259,9 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       parsed: match,
       // A demo's identity IS its file hash; it has no external match id.
       fingerprint: job.demo_sha256 ?? null,
+      // Both optional: an unattached observation is still a complete match.
       targetSteamId: steamId,
-      internalPlayerId: player.id,
+      internalPlayerId: steamId ? (player?.id ?? null) : null,
     });
 
     // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as
@@ -312,7 +313,8 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       assertDeadline();
       canonical = await persistCanonicalObservation({
         bundle,
-        ownerPlayerId: player.id,
+        // Visibility/RLS of the uploader is preserved even without a Steam link.
+        ownerPlayerId: player?.id ?? null,
         uploadId: job.upload_id,
         attachMatchId,
       });
@@ -326,17 +328,46 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       );
     }
 
-    // Per-player projection only (metrics/features/convenience columns).
-    assertDeadline();
-    const persisted = await persistDemoProjection({
-      matchId: canonical.matchId,
-      uploadId: job.upload_id,
-      playerId: player.id,
-      steamId,
-      match,
-      metrics,
-      features,
-    });
+    // PLAYER ATTACHMENT — metrics, features and the per-player projection only
+    // exist when the user's Steam ID was PROVEN inside this demo. Without it the
+    // job still ends successfully: the match is canonicalised and simply carries
+    // no projection yet, with the real reason recorded.
+    let projectedMatchId = canonical.matchId;
+    if (steamId && player) {
+      await setStage(jobId, "metrics");
+      assertDeadline();
+      let metrics;
+      let features;
+      try {
+        metrics = computeMetrics(match, steamId);
+      } catch (error) {
+        throw new PipelineError(
+          "METRICS_ERROR",
+          error instanceof Error ? error.message : undefined,
+        );
+      }
+      try {
+        features = extractFeatures(match, metrics);
+      } catch (error) {
+        throw new PipelineError(
+          "FEATURES_ERROR",
+          error instanceof Error ? error.message : undefined,
+        );
+      }
+
+      await setStage(jobId, "persisting");
+      assertDeadline();
+      const persisted = await persistDemoProjection({
+        matchId: canonical.matchId,
+        uploadId: job.upload_id,
+        playerId: player.id,
+        steamId,
+        match,
+        metrics,
+        features,
+      });
+      projectedMatchId = persisted.matchId;
+    }
 
     const durationMs = Date.now() - startedAt;
     await db
@@ -346,10 +377,14 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         stage: "done",
         finished_at: new Date().toISOString(),
         duration_ms: durationMs,
-        match_id: persisted.matchId,
-        player_id: player.id,
+        match_id: projectedMatchId,
+        player_id: player?.id ?? null,
         resolved_steam_id: steamId,
-        identity_status: "resolved",
+        identity_status: steamId ? "resolved" : "unresolved",
+        attachment_state: steamId ? "attached" : "unattached",
+        attachment_method: steamId ? attachment.method : null,
+        attachment_confidence: steamId ? attachment.confidence : null,
+        attachment_reason: steamId ? null : attachment.reason,
         parser_name: match.parser.name,
         parser_version: match.parser.version,
         parser_revision: match.parser.revision,
@@ -384,7 +419,13 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       .eq("id", job.upload_id);
 
     await cleanupExpiredDemos(5);
-    return { jobId, status: "processed", matchId: persisted.matchId };
+    return {
+      jobId,
+      status: "processed",
+      matchId: projectedMatchId,
+      attachmentState: steamId ? "attached" : "unattached",
+      attachmentReason: steamId ? null : attachment.reason,
+    };
   } catch (error) {
     const pipelineError = toPipelineError(error);
     const canRetry =

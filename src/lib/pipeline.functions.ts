@@ -28,6 +28,9 @@ export interface DemoJobView {
   extractionConfidence: number | null;
   partialParse: boolean;
   roundsValid: number | null;
+  /** FASE 2.7.2A: whether the canonical match got this player's projection. */
+  attachmentState: "attached" | "unattached";
+  attachmentReason: string | null;
   queuedAt: string;
   finishedAt: string | null;
 }
@@ -197,6 +200,8 @@ function toView(row: {
   extraction_confidence: number | null;
   partial_parse: boolean;
   rounds_valid: number | null;
+  attachment_state: string;
+  attachment_reason: string | null;
   queued_at: string;
   finished_at: string | null;
   uploads?: { file_name: string } | null;
@@ -214,13 +219,15 @@ function toView(row: {
     extractionConfidence: row.extraction_confidence,
     partialParse: row.partial_parse,
     roundsValid: row.rounds_valid,
+    attachmentState: row.attachment_state === "attached" ? "attached" : "unattached",
+    attachmentReason: row.attachment_reason,
     queuedAt: row.queued_at,
     finishedAt: row.finished_at,
   };
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, queued_at, finished_at, uploads(file_name)";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, uploads(file_name)";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
