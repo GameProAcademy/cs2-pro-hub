@@ -391,7 +391,7 @@ def normalize_events(
     warnings: list[str],
 ) -> list[Record]:
     """Flatten every raw event row into the contract shape, with a real round."""
-    events: list[Record] = []
+    pairs: list[tuple[Record, int]] = []
     dropped = 0
     order = 0
     for name, rows in grouped:
@@ -411,16 +411,18 @@ def normalize_events(
             if tick is not None:
                 event["tick"] = tick
             event.update(_event_fields(name, row))
-            events.append((event, order))  # type: ignore[arg-type]
+            pairs.append((event, order))
 
     if dropped:
         warnings.append(
             f"{dropped} events could not be assigned to a deterministic round and were omitted."
         )
 
-    pairs: list[tuple[Record, int]] = events  # type: ignore[assignment]
-    pairs.sort(key=lambda item: (item[0]["round"], item[0].get("tick", 0), item[0]["type"], item[1]))
+    pairs.sort(
+        key=lambda item: (item[0]["round"], item[0].get("tick", 0), item[0]["type"], item[1])
+    )
     return [event for event, _ in pairs]
+
 
 
 # --------------------------------------------------------------------------- #
