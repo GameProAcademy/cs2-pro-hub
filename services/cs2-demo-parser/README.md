@@ -186,7 +186,25 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 
 HTTPS only, redirects disabled, streaming to a temporary file, incremental
 SHA-256, hard byte ceiling, timeouts and guaranteed cleanup. Demos are never
-loaded whole into memory.
+loaded whole into memory. The CS2 magic header `PBDEMS2\x00` is verified before
+the native parser is invoked — an extra cheap gate, never a replacement for the
+parser's own validation.
+
+## Container security (non-root)
+
+The image creates the user `parser` with the stable UID `10001` and runs with
+`USER 10001`. `/app` and the parser scratch directory `/tmp/parser`
+(`TMPDIR=/tmp/parser`, mode `700`) are owned by that UID, so the worker can start
+uvicorn, download a demo, create and delete its temporary file, and serve
+`/health`, `/version` and `/v1/parse` without root.
+
+## Parse timeout limitation (documented, not hidden)
+
+`/v1/parse` runs the parse in a worker thread with `asyncio.wait_for`. On
+`PARSE_TIMEOUT` the HTTP request returns immediately, but the native demoparser2
+call already in flight is **not** interrupted — Python cannot cancel it. The
+bounds that actually apply are `MAX_DEMO_BYTES`, `MAX_PAYLOAD_BYTES` and the
+container's own CPU/memory ceilings, plus the guaranteed temp-file cleanup.
 
 ## Tests
 
@@ -197,11 +215,23 @@ pytest
 
 The suite covers auth, contract, hash, file size, download failures, parser
 errors, timeouts, `/health`, `/version`, the revision lock (production fail
-closed and the dev marker) and no-leak guarantees. `demoparser2` is not needed to
-run it: the parse boundary is injected.
+closed and the dev marker), no-leak guarantees, the adapter (players, header,
+rounds, events, round resolution, positions, NULL semantics, determinism) and a
+full `RawParserOutput` contract test. `demoparser2` is not needed to run it: the
+parse boundary is injected.
+
+### Real demo fixture (GATE 02)
+
+`tests/test_real_demo.py` is written and ready, but it needs a real CS2 demo and
+is skipped without one — no demo is ever fabricated. To run it, place a real
+`.dem` at `tests/fixtures/sample.dem` or export
+`CS2_DEMO_FIXTURE=/absolute/path/to/file.dem`. Fixtures are git-ignored.
 
 ## Status
 
 GATE 1E.1 closes APP ↔ worker contract, errors, HTTP, retry, auth and revision.
-**GATE 02 — REAL PARSER EXECUTION has not been run**: no real `.dem` has been
+The adapter now produces the APP `RawParserOutput` contract directly (flat
+events, `steam_id`, real rounds).
+**GATE 02 — REAL PARSER EXECUTION is still BLOCKED**: no real `.dem` has been
 processed through this worker.
+
