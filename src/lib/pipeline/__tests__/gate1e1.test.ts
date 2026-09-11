@@ -19,7 +19,6 @@ import {
 import {
   assertParserIdentity,
   classifyWorkerFailure,
-  parserMajorMinor,
   parseWorkerIdentity,
   WORKER_ERROR_CODES,
   type WorkerErrorCode,
@@ -90,7 +89,6 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
       });
       expect(error.code).toBe(pipelineCode);
       expect(error.permanent).toBe(permanent);
-      // The APP mapper must reach the SAME verdict — one matrix, not two.
       expect(mapParserErrorCode(workerCode).code).toBe(pipelineCode);
     });
   }
@@ -107,7 +105,6 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
     expect(classifyWorkerFailure(409, { detail: { error_code: "CONTRACT_MISMATCH" } }).code).toBe(
       "PARSER_CONTRACT_MISMATCH",
     );
-    // Even if the worker answers with a wrong status, the code decides.
     expect(classifyWorkerFailure(500, { detail: { error_code: "CONTRACT_MISMATCH" } }).code).toBe(
       "PARSER_CONTRACT_MISMATCH",
     );
@@ -133,12 +130,12 @@ describe("GATE 1E.1 — revision lock", () => {
     expect(() => assertParserIdentity(worker(), expected())).not.toThrow();
   });
 
-  it("accepts a patch release of the pinned version", () => {
-    const [major, minor] = PARSER_VERSION.split(".");
-    expect(parserMajorMinor(`${major}.${minor}.99`)).toBe(parserMajorMinor(PARSER_VERSION));
+  it("rejects even a patch release of the pinned parser version", () => {
+    const [major, minor, patch] = PARSER_VERSION.split(".");
+    const nextPatch = `${major}.${minor}.${Number(patch) + 1}`;
     expect(() =>
-      assertParserIdentity(worker({ version: `${major}.${minor}.99` }), expected()),
-    ).not.toThrow();
+      assertParserIdentity(worker({ version: nextPatch }), expected()),
+    ).toThrowError(/parser version mismatch/);
   });
 
   it("fails closed on a different parser, version or revision", () => {
