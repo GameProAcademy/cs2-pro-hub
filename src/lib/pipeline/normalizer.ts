@@ -151,6 +151,11 @@ function assessQuality(
     flags.add("missing_utility");
   }
   if (rawEvidence?.manifest.partial_parse === true) flags.add("partial_parse");
+  // Contract-v1 synthetic fixtures predate RAW-EVIDENCE-01. Real ingestion is
+  // fail-closed without the envelope; preserve their explicit legacy signal.
+  if (!rawEvidence && warnings.some((warning) => warning.toLowerCase().includes("partial"))) {
+    flags.add("partial_parse");
+  }
 
   // Confidence starts at 1 and is reduced by every missing signal. It is a
   // transparency signal, not a marketing number.

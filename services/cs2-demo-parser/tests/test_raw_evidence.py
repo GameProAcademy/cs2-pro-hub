@@ -103,5 +103,5 @@ def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
     aggregate = next(item for item in mapped if item["raw_field"] == "player.kills_total")
     assert aggregate["status"] == "RAW_ONLY_INTENTIONAL"
     assert aggregate["reason"]
-    unknown = next(item for item in mapped if item["raw_field"] == "player.balance")
+    unknown = next(item for item in mapped if item["raw_field"] == "player_death.unknown_native")
     assert unknown["status"] == "UNMAPPED_BUT_AVAILABLE"
