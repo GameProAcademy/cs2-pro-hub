@@ -1,0 +1,59 @@
+import json
+
+from parser import build_raw_evidence
+from raw_evidence import event_coverage, evidence_digest, finalize_evidence, raw_events
+
+
+def material():
+    return {
+        "header": {"map_name": "de_cache", "playback_ticks": 6400},
+        "players": [{"steamid": "76561198000000001", "name": "alpha", "balance": None}],
+        "event_tables": {
+            "player_death": [{"tick": 20, "round": 1, "headshot": False, "unknown_native": 0}],
+            "weapon_fire": [], "player_hurt": None,
+        },
+        "event_errors": {"player_hurt": RuntimeError("stream failed")},
+        "event_inventory_error": None,
+        "tick_rows": [{"tick": 10, "player_steamid": "76561198000000001", "X": 0.0, "balance": None}],
+        "tick_error": None, "grenade_rows": [], "grenade_error": None,
+    }
+
+
+def output():
+    return {"header": {"tickrate": 64}, "players": [{"steam_id": "76561198000000001"}],
+            "rounds": [{"number": 1}], "events": [{"type": "player_death"}], "warnings": []}
+
+
+def test_empty_event_is_distinct_from_unavailable_and_failed():
+    empty = event_coverage("weapon_fire", True, [])
+    missing = event_coverage("unknown", False, None)
+    failed = event_coverage("player_hurt", True, None, RuntimeError("failed"))
+    assert empty["parse_success"] is True and empty["row_count"] == 0
+    assert missing["parse_attempted"] is False and missing["row_count"] is None
+    assert failed["parse_attempted"] is True and failed["parse_success"] is False
+
+
+def test_raw_event_keeps_native_fields_and_false_zero_values():
+    row = raw_events(material()["event_tables"])[0]
+    assert row["raw_fields"]["unknown_native"] == 0
+    assert row["raw_fields"]["headshot"] is False
+
+
+def test_manifest_coverage_mapping_and_null_semantics_are_deterministic():
+    first = build_raw_evidence(material(), output())
+    second = build_raw_evidence(material(), output())
+    assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
+    assert first["manifest"]["map"] == "de_cache"
+    balance = next(item for item in first["tick_coverage"] if item["property"] == "balance")
+    assert balance["available"] is False and balance["sample"] is None
+    unmapped = next(item for item in first["field_mappings"] if item["raw_field"] == "player_death.unknown_native")
+    assert unmapped["status"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_finalize_binds_worker_and_demo_identity_and_digest():
+    final = finalize_evidence(build_raw_evidence(material(), output()),
+                              parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+                              contract_version=1, demo_sha256="a" * 64, file_size=99)
+    assert final["manifest"]["demo_sha256"] == "a" * 64
+    digest = final.pop("deterministic_digest")
+    assert digest == evidence_digest(final)
