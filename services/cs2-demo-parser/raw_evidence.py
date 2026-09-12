@@ -115,6 +115,7 @@ def field_coverage(rows: Sequence[dict[str, Any]], properties: Iterable[str]) ->
     for prop in sorted(set(properties)):
         values = [row.get(prop) for row in rows if prop in row and row.get(prop) is not None]
         numeric = [float(v) for v in values if _num(v) is not None]
+        first_tick, last_tick = _range([row for row in rows if row.get(prop) is not None], "tick")
         result.append({
             "property": prop,
             "available": bool(values),
@@ -123,6 +124,8 @@ def field_coverage(rows: Sequence[dict[str, Any]], properties: Iterable[str]) ->
             "min": min(numeric) if numeric else None,
             "max": max(numeric) if numeric else None,
             "sample": _safe(values[0]) if values else None,
+            "first_tick": first_tick, "last_tick": last_tick,
+            "success": True, "error": None,
         })
     return result
 
@@ -188,7 +191,7 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
         "tickrate": output.get("header", {}).get("tickrate"), "playback_ticks": header.get("playback_ticks"),
         "playback_time": header.get("playback_time"), "playback_frames": header.get("playback_frames"),
         "players_count": len(output.get("players") or []), "rounds_count": len(output.get("rounds") or []),
-        "events_count": len(output.get("events") or []), "first_tick": min(ticks) if ticks else None,
+        "events_count": sum(len(rows or []) for rows in (raw.get("event_tables") or {}).values()), "first_tick": min(ticks) if ticks else None,
         "last_tick": max(ticks) if ticks else None, "warnings": list(output.get("warnings") or []),
         "partial_parse": any("partial" in str(w).lower() for w in output.get("warnings") or []),
         "extraction_confidence": None,
@@ -206,8 +209,7 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     round_ok = manifest["rounds_count"] > 0
     tick_tested = bool(evidence["tick_coverage"])
     grenade_tested = bool(evidence["grenade_coverage"])
-    economy = [x for x in evidence["player_coverage"] if x["property"] in {"balance", "start_balance", "current_equip_value", "round_start_equip_value", "total_cash_spent", "cash_spent_this_round"}]
-    economy_tested = bool(economy)
+    economy_tested = bool(evidence["economy_coverage"])
     mapping_ok = bool(mappings) and all(item["status"] for item in mappings)
     core_ok = all([manifest.get("demo_sha256"), manifest.get("parser_name"), manifest.get("parser_version"), event_ok, player_ok, round_ok, tick_tested, grenade_tested, economy_tested, mapping_ok])
     return [
