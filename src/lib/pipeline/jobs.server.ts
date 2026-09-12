@@ -132,7 +132,8 @@ async function persistRawEvidence(args: {
     },
     { onConflict: "job_id" },
   );
-  if (error) throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
+  if (error)
+    throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
 }
 
 /** Re-queues jobs stuck in `processing` beyond the stale window. */
