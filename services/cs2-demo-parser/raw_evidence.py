@@ -145,7 +145,7 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
     )
     error_type, error_message = safe_error(error) if error else (None, None)
     return {
-        "event_name": name, "available": available, "parse_attempted": available,
+        "event_name": name, "available": available, "parse_attempted": available or error is not None,
         "parse_success": available and error is None, "row_count": len(safe_rows) if error is None and available else None,
         "first_tick": first_tick, "last_tick": last_tick,
         "first_round": min(rounds) if rounds else None, "last_round": max(rounds) if rounds else None,
