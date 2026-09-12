@@ -38,6 +38,7 @@ import {
   setAdminUserStatus,
   updateAdminUser,
   type AdminIdentity,
+  type AdminDemo,
   type AdminPlayerDetail,
   type AdminProfileDetail,
   type AdminRole,
@@ -225,6 +226,7 @@ export function UserDetailDialog({
   const player = detail.data?.player as AdminPlayerDetail | null | undefined;
   const identities = (detail.data?.identities ?? []) as AdminIdentity[];
   const uploads = detail.data?.uploads ?? [];
+  const demos = (detail.data?.demos ?? []) as AdminDemo[];
   const matches = detail.data?.matches ?? [];
   const metrics = detail.data?.metrics ?? [];
   const analyses = detail.data?.analyses ?? [];
@@ -250,6 +252,7 @@ export function UserDetailDialog({
     ["overview", "admin.tab.overview"],
     ["cs2", "admin.tab.cs2"],
     ["uploads", "admin.tab.uploads"],
+    ["demos", "admin.tab.demos"],
     ["matches", "admin.tab.matches"],
     ["metrics", "admin.tab.metrics"],
     ["analyses", "admin.tab.analyses"],
@@ -573,6 +576,39 @@ export function UserDetailDialog({
                             <Field label={t("admin.field.error")} value={upload.error_message} />
                           </div>
                         ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </TabsContent>
+
+              <TabsContent value="demos" className="space-y-4 pt-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md border border-border p-3">
+                    <Field label={t("admin.demos.total")} value={String(demos.length)} />
+                  </div>
+                  <div className="rounded-md border border-border p-3">
+                    <Field
+                      label={t("admin.demos.latest")}
+                      value={demos[0] ? `${dayFormat.format(new Date(demos[0].queuedAt))} · ${demos[0].map || dash}` : dash}
+                    />
+                  </div>
+                </div>
+                <SectionTitle>{t("admin.demos.history")}</SectionTitle>
+                {demos.length === 0 ? (
+                  <Empty label={t("admin.empty.demos")} />
+                ) : (
+                  <ul className="space-y-2">
+                    {demos.map((demo) => (
+                      <li key={demo.jobId} className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-3 lg:grid-cols-4">
+                        <Field label={t("admin.field.date")} value={dateFormat.format(new Date(demo.queuedAt))} />
+                        <Field label={t("admin.field.file")} value={demo.fileName || dash} />
+                        <Field label={t("admin.field.map")} value={demo.map || dash} />
+                        <Field label={t("admin.table.status")} value={demo.stage || demo.status} />
+                        <Field label={t("admin.field.rounds")} value={demo.rounds !== null ? String(demo.rounds) : dash} />
+                        <Field label={t("admin.demos.matchId")} value={demo.matchId || dash} />
+                        <Field label={t("admin.demos.uploadId")} value={demo.uploadId} />
+                        <Field label={t("admin.demos.jobId")} value={demo.jobId} />
                       </li>
                     ))}
                   </ul>

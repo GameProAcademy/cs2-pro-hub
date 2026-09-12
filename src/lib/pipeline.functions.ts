@@ -31,6 +31,10 @@ export interface DemoJobView {
   /** FASE 2.7.2A: whether the canonical match got this player's projection. */
   attachmentState: "attached" | "unattached" | "conflict";
   attachmentReason: string | null;
+  map: string | null;
+  result: string | null;
+  scorePlayer: number | null;
+  scoreOpponent: number | null;
   queuedAt: string;
   finishedAt: string | null;
 }
@@ -188,7 +192,8 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
     return { jobId: job.id, queued: true as const, duplicate: false as const };
   });
 
-function toView(row: {
+function toView(
+  row: {
   id: string;
   upload_id: string;
   status: string;
@@ -205,7 +210,14 @@ function toView(row: {
   queued_at: string;
   finished_at: string | null;
   uploads?: { file_name: string } | null;
-}): DemoJobView {
+  },
+  match?: {
+    map: string | null;
+    result: string | null;
+    score_player: number | null;
+    score_opponent: number | null;
+  } | null,
+): DemoJobView {
   return {
     jobId: row.id,
     uploadId: row.upload_id,
@@ -226,6 +238,10 @@ function toView(row: {
           ? "conflict"
           : "unattached",
     attachmentReason: row.attachment_reason,
+    map: match?.map ?? null,
+    result: match?.result ?? null,
+    scorePlayer: match?.score_player ?? null,
+    scoreOpponent: match?.score_opponent ?? null,
     queuedAt: row.queued_at,
     finishedAt: row.finished_at,
   };
@@ -243,7 +259,15 @@ export const getDemoJobStatus = createServerFn({ method: "POST" })
       .select(JOB_COLUMNS)
       .eq("id", data.jobId)
       .maybeSingle();
-    return row ? toView(row) : null;
+    if (!row) return null;
+    const { data: match } = row.match_id
+      ? await context.supabase
+          .from("matches")
+          .select("map, result, score_player, score_opponent")
+          .eq("id", row.match_id)
+          .maybeSingle()
+      : { data: null };
+    return toView(row, match);
   });
 
 /** Player's own processing history. RLS scopes it to the signed-in user. */
@@ -255,7 +279,16 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
       .select(JOB_COLUMNS)
       .order("queued_at", { ascending: false })
       .limit(25);
-    return (data ?? []).map(toView);
+    const rows = data ?? [];
+    const matchIds = [...new Set(rows.flatMap((row) => (row.match_id ? [row.match_id] : [])))];
+    const { data: matches } = matchIds.length
+      ? await context.supabase
+          .from("matches")
+          .select("id, map, result, score_player, score_opponent")
+          .in("id", matchIds)
+      : { data: [] };
+    const matchById = new Map((matches ?? []).map((match) => [match.id, match]));
+    return rows.map((row) => toView(row, row.match_id ? matchById.get(row.match_id) : null));
   });
 
 /** Retries a failed job the player owns (bounded by max_retries). */
