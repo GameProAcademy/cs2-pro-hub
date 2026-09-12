@@ -1,6 +1,6 @@
 import json
 
-from parser import build_raw_evidence
+from parser import build_raw_evidence, enrich_rounds_from_tick_evidence
 from raw_evidence import event_coverage, evidence_digest, finalize_evidence, raw_events
 
 
@@ -57,3 +57,21 @@ def test_finalize_binds_worker_and_demo_identity_and_digest():
     assert final["manifest"]["demo_sha256"] == "a" * 64
     digest = final.pop("deterministic_digest")
     assert digest == evidence_digest(final)
+
+
+def test_round_player_material_is_only_projected_from_observed_tick_rows():
+    raw = {
+        "tick_rows": [
+            {"tick": 100, "player_steamid": "76561198000000001", "team_num": 3,
+             "balance": 800, "current_equip_value": 0},
+            {"tick": 200, "player_steamid": "76561198000000001", "balance": 350},
+        ]
+    }
+    parsed = {"rounds": [{"number": 1, "start_tick": 100, "end_tick": 200},
+                          {"number": 2, "start_tick": 300, "end_tick": 400}]}
+    enrich_rounds_from_tick_evidence(raw, parsed)
+    assert parsed["rounds"][0]["sides"] == {"76561198000000001": "CT"}
+    assert parsed["rounds"][0]["money_start"] == {"76561198000000001": 800}
+    assert parsed["rounds"][0]["equipment_value"] == {"76561198000000001": 0}
+    assert parsed["rounds"][0]["money_end"] == {"76561198000000001": 350}
+    assert set(parsed["rounds"][1]) == {"number", "start_tick", "end_tick"}
