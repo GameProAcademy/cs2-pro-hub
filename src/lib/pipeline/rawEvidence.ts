@@ -9,7 +9,7 @@ export type RawFieldMappingStatus =
   | "NOT_PRESENT_IN_DEMO"
   | "UNAVAILABLE"
   | "PARSE_FAILED"
-  | "UNMAPPED_BUT_AVAILABLE"
+  | "UNMAPPED_BUT_AVAILABLE";
 export type RawCapabilityState =
   | "NOT_PRESENT_IN_DEMO"
   | "AVAILABLE_BUT_EMPTY"

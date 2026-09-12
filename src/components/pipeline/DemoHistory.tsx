@@ -14,6 +14,15 @@ const STATUS_KEYS: Record<DemoJobView["status"], TranslationKey> = {
   failed: "pipeline.status.failed",
 };
 
+function statusKey(job: DemoJobView): TranslationKey {
+  if (job.status === "failed") return "pipeline.processing.failed.title";
+  if (job.status === "processed") return "pipeline.processing.done.title";
+  const stage = ["queued", "validating", "parsing", "normalizing", "metrics", "persisting", "cleanup"].includes(job.stage)
+    ? job.stage
+    : "queued";
+  return `pipeline.processing.${stage}.title` as TranslationKey;
+}
+
 function DemoHistoryItem({ job }: { job: DemoJobView }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -45,7 +54,7 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
             (job.status === "pending" || job.status === "processing") && "text-primary",
           )}
         >
-          {t(STATUS_KEYS[job.status])}
+          {t(statusKey(job))}
         </span>
       </div>
       <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-3">

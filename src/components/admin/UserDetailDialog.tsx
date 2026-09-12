@@ -248,6 +248,15 @@ export function UserDetailDialog({
       : slug;
   };
 
+  const demoStatus = (demo: AdminDemo) => {
+    if (demo.status === "failed") return t("pipeline.processing.failed.title");
+    if (demo.status === "processed") return t("pipeline.processing.done.title");
+    const stage = ["queued", "validating", "parsing", "normalizing", "metrics", "persisting", "cleanup"].includes(demo.stage)
+      ? demo.stage
+      : "queued";
+    return t(`pipeline.processing.${stage}.title` as TranslationKey);
+  };
+
   const tabs: Array<[string, TranslationKey]> = [
     ["overview", "admin.tab.overview"],
     ["cs2", "admin.tab.cs2"],
@@ -604,7 +613,7 @@ export function UserDetailDialog({
                         <Field label={t("admin.field.date")} value={dateFormat.format(new Date(demo.queuedAt))} />
                         <Field label={t("admin.field.file")} value={demo.fileName || dash} />
                         <Field label={t("admin.field.map")} value={demo.map || dash} />
-                        <Field label={t("admin.table.status")} value={demo.stage || demo.status} />
+                        <Field label={t("admin.table.status")} value={demoStatus(demo)} />
                         <Field label={t("admin.field.rounds")} value={demo.rounds !== null ? String(demo.rounds) : dash} />
                         <Field label={t("admin.demos.matchId")} value={demo.matchId || dash} />
                         <Field label={t("admin.demos.uploadId")} value={demo.uploadId} />
