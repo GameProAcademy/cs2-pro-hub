@@ -26,6 +26,8 @@ const evidence = {
     players_count: 0,
     rounds_count: 0,
     events_count: 0,
+    event_inventory_success: true,
+    event_inventory_count: 0,
     first_tick: null,
     last_tick: null,
     warnings: [],
