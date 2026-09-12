@@ -211,12 +211,20 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     mappings = evidence["field_mappings"]
     def gate(name: str, passed: bool, reasons: list[str]) -> dict[str, Any]:
         return {"gate": name, "status": "PASS" if passed else "FAIL", "reasons": reasons}
-    event_ok = bool(events) and all(item["parse_attempted"] or not item["available"] for item in events)
+    event_ok = bool(events) and all(
+        item["parse_attempted"] and item["parse_success"] for item in events
+    )
     player_ok = manifest["players_count"] > 0 and bool(evidence["player_coverage"])
     round_ok = manifest["rounds_count"] > 0
-    tick_tested = bool(evidence["tick_coverage"])
-    grenade_tested = bool(evidence["grenade_coverage"])
-    economy_tested = bool(evidence["economy_coverage"])
+    tick_tested = bool(evidence["tick_coverage"]) and all(
+        item.get("success", True) for item in evidence["tick_coverage"]
+    )
+    grenade_tested = bool(evidence["grenade_coverage"]) and all(
+        item.get("success", True) for item in evidence["grenade_coverage"]
+    )
+    economy_tested = bool(evidence["economy_coverage"]) and any(
+        item.get("available") for item in evidence["economy_coverage"]
+    )
     mapping_ok = bool(mappings) and all(item["status"] for item in mappings)
     core_ok = all([manifest.get("demo_sha256"), manifest.get("parser_name"), manifest.get("parser_version"), event_ok, player_ok, round_ok, tick_tested, grenade_tested, economy_tested, mapping_ok])
     return [

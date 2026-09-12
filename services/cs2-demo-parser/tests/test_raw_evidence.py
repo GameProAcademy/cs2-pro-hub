@@ -1,7 +1,7 @@
 import json
 
 from parser import build_raw_evidence, enrich_rounds_from_tick_evidence
-from raw_evidence import event_coverage, evidence_digest, finalize_evidence, raw_events
+from raw_evidence import build_gates, event_coverage, evidence_digest, finalize_evidence, raw_events
 
 
 def material():
@@ -75,3 +75,12 @@ def test_round_player_material_is_only_projected_from_observed_tick_rows():
     assert parsed["rounds"][0]["equipment_value"] == {"76561198000000001": 0}
     assert parsed["rounds"][0]["money_end"] == {"76561198000000001": 350}
     assert set(parsed["rounds"][1]) == {"number", "start_tick", "end_tick"}
+
+
+def test_gates_fail_closed_when_a_stream_or_capability_fails():
+    evidence = build_raw_evidence(material(), output())
+    manifest = evidence["manifest"]
+    manifest.update({"demo_sha256": "a" * 64, "parser_name": "demoparser2", "parser_version": "0.42.0"})
+    gates = {item["gate"]: item["status"] for item in build_gates(evidence)}
+    assert gates["EVENT-COVERAGE"] == "FAIL"
+    assert gates["RAW-EVIDENCE-01"] == "FAIL"

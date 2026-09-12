@@ -133,7 +133,9 @@ def _parse_ticks(
         # The capability is intentionally sampled at deterministic round/event
         # ticks. Asking demoparser2 for every tick would produce an unbounded
         # response before the APP can enforce its payload ceiling.
-        frame = method(list(PLAYER_PROPERTIES), ticks=sample_ticks or None)
+        if not sample_ticks:
+            return [], ValueError("no deterministic event ticks available for sampling")
+        frame = method(list(PLAYER_PROPERTIES), ticks=sample_ticks)
         rows = _records(frame)
         if len(rows) <= TICK_SAMPLE_LIMIT:
             return rows, None
@@ -453,5 +455,16 @@ def parse_demo_file(path: str) -> dict[str, Any]:
 
     output = _postprocess_contract(raw, build_raw_parser_output(raw))
     enrich_rounds_from_tick_evidence(raw, output)
+    if any(
+        round_row.get("money_start")
+        or round_row.get("money_end")
+        or round_row.get("equipment_value")
+        for round_row in output.get("rounds") or []
+    ):
+        output["warnings"] = [
+            warning
+            for warning in output.get("warnings") or []
+            if not str(warning).startswith("economy_unavailable:")
+        ]
     output["raw_evidence"] = build_raw_evidence(raw, output)
     return output
