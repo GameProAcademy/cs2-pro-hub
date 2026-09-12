@@ -1,5 +1,14 @@
 # Roadmap
 
+## FASE UX — Processamento de demo com progresso e etapas (concluída)
+
+- [x] Progresso visual estimado derivado exclusivamente do stage real, com faixas determinísticas, monotonicidade e teto por etapa.
+- [x] Painel premium com etapa atual, etapas concluídas/futuras, mensagens amigáveis e estados de conclusão/falha.
+- [x] Polling existente de 4 segundos preservado, sem consulta paralela ou mudança no backend.
+- [x] Acessibilidade da barra e anúncios de mudança de etapa; animações respeitam redução de movimento.
+- [x] Novas mensagens disponíveis em pt-BR, pt-PT, inglês, espanhol e francês.
+- [x] Testes de mapeamento, fallback, monotonicidade, falha, traduções, acessibilidade e polling.
+
 ## FASE 2.2.1C — Final FACEIT hardening (concluída)
 
 - [x] (A) Execução fire-and-forget removida do callback OAuth e de `requestFaceitSync`.
