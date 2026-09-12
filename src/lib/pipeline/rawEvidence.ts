@@ -143,6 +143,15 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
     raw.gates,
   ];
   if (lists.some((item) => !Array.isArray(item))) throw new Error("invalid raw evidence sections");
+  for (const mapping of raw.field_mappings ?? []) {
+    if (
+      (mapping.status === "RAW_ONLY_INTENTIONAL" && !mapping.reason?.trim()) ||
+      mapping.status === "UNMAPPED_BUT_AVAILABLE" ||
+      mapping.status === "PARSE_FAILED"
+    ) {
+      throw new Error(`RAW evidence has an unresolved mapping: ${mapping.raw_field}`);
+    }
+  }
   if (!/^[0-9a-f]{64}$/.test(raw.deterministic_digest ?? ""))
     throw new Error("invalid raw evidence digest");
   return raw as RawDemoEvidence;

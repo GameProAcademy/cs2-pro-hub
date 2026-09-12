@@ -65,4 +65,34 @@ describe("raw evidence contract", () => {
     expect(() => assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" })).toThrow();
     expect(evaluateRawEvidence(evidence)[0]?.status).toBe("FAIL");
   });
+  it("rejects unresolved mappings and raw-only mappings without a reason", () => {
+    expect(() =>
+      assertRawDemoEvidence({
+        ...evidence,
+        field_mappings: [
+          {
+            raw_field: "event.future_field",
+            app_field: null,
+            canonical_field: null,
+            status: "UNMAPPED_BUT_AVAILABLE",
+            reason: null,
+          },
+        ],
+      }),
+    ).toThrow("unresolved mapping");
+    expect(() =>
+      assertRawDemoEvidence({
+        ...evidence,
+        field_mappings: [
+          {
+            raw_field: "player.kills_total",
+            app_field: null,
+            canonical_field: null,
+            status: "RAW_ONLY_INTENTIONAL",
+            reason: null,
+          },
+        ],
+      }),
+    ).toThrow("unresolved mapping");
+  });
 });
