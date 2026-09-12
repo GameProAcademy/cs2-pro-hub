@@ -595,6 +595,35 @@ export const ptBR = {
   "pipeline.status.processing": "Processando",
   "pipeline.status.processed": "Processada",
   "pipeline.status.failed": "Falhou",
+  "pipeline.processing.title": "Processamento da demo",
+  "pipeline.processing.progress": "Progresso estimado",
+  "pipeline.processing.progressLabel": "Progresso estimado do processamento da demo",
+  "pipeline.processing.estimated": "Estimativa baseada na etapa atual",
+  "pipeline.processing.currentStage": "Etapa atual",
+  "pipeline.processing.queued.title": "Preparando sua análise",
+  "pipeline.processing.queued.body": "Sua demo entrou na fila e será processada em instantes.",
+  "pipeline.processing.validating.title": "Validando sua demo",
+  "pipeline.processing.validating.body":
+    "Estamos conferindo o arquivo e a integridade da partida.",
+  "pipeline.processing.parsing.title": "Lendo sua partida",
+  "pipeline.processing.parsing.body":
+    "Estamos lendo rounds, jogadores, eventos e informações da partida.",
+  "pipeline.processing.normalizing.title": "Organizando suas jogadas",
+  "pipeline.processing.normalizing.body":
+    "Estamos organizando as informações da sua partida.",
+  "pipeline.processing.metrics.title": "Calculando suas métricas",
+  "pipeline.processing.metrics.body":
+    "Estamos transformando suas jogadas em métricas de desempenho.",
+  "pipeline.processing.persisting.title": "Montando seu perfil",
+  "pipeline.processing.persisting.body": "Estamos preparando seus resultados personalizados.",
+  "pipeline.processing.cleanup.title": "Finalizando análise",
+  "pipeline.processing.cleanup.body": "Quase pronto. Estamos finalizando sua análise.",
+  "pipeline.processing.done.title": "Análise concluída",
+  "pipeline.processing.done.body": "Sua análise está pronta.",
+  "pipeline.processing.failed.title": "Não foi possível concluir a análise",
+  "pipeline.processing.failed.body": "Encontramos um problema durante o processamento.",
+  "pipeline.processing.continueBrowsing":
+    "Você pode continuar navegando enquanto preparamos sua análise.",
   "pipeline.workerOfflineTitle": "Serviço de processamento indisponível.",
   "pipeline.workerOfflineBody":
     "As demos podem ser enviadas e enfileiradas, mas o serviço de parser não está configurado, portanto nenhuma demo é analisada ainda.",

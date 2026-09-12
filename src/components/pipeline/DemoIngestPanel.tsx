@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2, RefreshCw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
+import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
@@ -192,7 +193,7 @@ export function DemoIngestPanel() {
                     {job.fileName || job.uploadId}
                   </p>
                   <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    {t(STATUS_KEY[job.status])} · {job.stage}
+                    {t(STATUS_KEY[job.status])}
                     {job.roundsValid != null ? ` · ${job.roundsValid} ${t("pipeline.rounds")}` : ""}
                     {job.extractionConfidence != null
                       ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
@@ -222,6 +223,11 @@ export function DemoIngestPanel() {
                       <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
                       <DemoPlayerIdentity jobId={job.jobId} />
                     </>
+                  ) : null}
+                  {job.status === "pending" ||
+                  job.status === "processing" ||
+                  job.status === "failed" ? (
+                    <DemoProcessingStatus job={job} />
                   ) : null}
                 </div>
 
