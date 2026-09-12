@@ -28,6 +28,8 @@ import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
+import { assertRawDemoEvidence } from "@/lib/pipeline/rawEvidence";
+import type { Json } from "@/integrations/supabase/types";
 import {
   assertParserWorkerReady,
   resolveParserAdapter,
@@ -80,6 +82,57 @@ async function admin() {
 async function setStage(jobId: string, stage: JobStage) {
   const db = await admin();
   await db.from("demo_jobs").update({ stage }).eq("id", jobId);
+}
+
+async function persistRawEvidence(args: {
+  jobId: string;
+  uploadId: string;
+  userId: string;
+  expectedSha256: string | null;
+  raw: import("@/lib/pipeline/types").RawParserOutput;
+}) {
+  const evidence = assertRawDemoEvidence(args.raw.raw_evidence);
+  const manifest = evidence.manifest;
+  if (!args.expectedSha256 || manifest.demo_sha256 !== args.expectedSha256.toLowerCase()) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "raw evidence demo identity mismatch");
+  }
+  if (
+    manifest.parser_name !== args.raw.parser.name ||
+    manifest.parser_version !== args.raw.parser.version ||
+    manifest.parser_revision !== (args.raw.parser.revision ?? null) ||
+    manifest.contract_version !== args.raw.contract_version
+  ) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "raw evidence parser identity mismatch");
+  }
+  const db = await admin();
+  const { error } = await db.from("raw_demo_evidence_reports").upsert(
+    {
+      job_id: args.jobId,
+      upload_id: args.uploadId,
+      user_id: args.userId,
+      demo_sha256: manifest.demo_sha256,
+      evidence_version: evidence.evidence_version,
+      parser_name: manifest.parser_name,
+      parser_version: manifest.parser_version,
+      parser_revision: manifest.parser_revision,
+      contract_version: manifest.contract_version,
+      manifest: evidence.manifest as unknown as Json,
+      event_coverage: evidence.event_coverage as unknown as Json,
+      raw_events: evidence.raw_events as unknown as Json,
+      player_coverage: evidence.player_coverage as unknown as Json,
+      tick_coverage: evidence.tick_coverage as unknown as Json,
+      tick_samples: evidence.tick_samples as unknown as Json,
+      grenade_coverage: evidence.grenade_coverage as unknown as Json,
+      grenade_samples: evidence.grenade_samples as unknown as Json,
+      round_evidence: evidence.round_evidence as unknown as Json,
+      economy_coverage: evidence.economy_coverage as unknown as Json,
+      field_mappings: evidence.field_mappings as unknown as Json,
+      gates: evidence.gates as unknown as Json,
+      deterministic_digest: evidence.deterministic_digest,
+    },
+    { onConflict: "job_id" },
+  );
+  if (error) throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
 }
 
 /** Re-queues jobs stuck in `processing` beyond the stale window. */
@@ -224,6 +277,16 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       fileSize: stored.size || (job.file_size ?? 0),
       demoSha256: job.demo_sha256,
       deadlineAt,
+    });
+
+    // RAW evidence is its own immutable audit layer. Persist it before the APP
+    // contract is normalized or any canonical fact can be written.
+    await persistRawEvidence({
+      jobId,
+      uploadId: job.upload_id,
+      userId: job.user_id,
+      expectedSha256: job.demo_sha256,
+      raw,
     });
 
     await setStage(jobId, "normalizing");

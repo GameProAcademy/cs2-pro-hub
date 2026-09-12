@@ -133,16 +133,18 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (raw.warnings != null && !Array.isArray(raw.warnings)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "warnings must be an array when present");
   }
-  if (!raw.raw_evidence) {
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing raw evidence");
-  }
-  try {
-    assertRawDemoEvidence(raw.raw_evidence);
-  } catch (error) {
-    throw new PipelineError(
-      "PARSER_INVALID_RESPONSE",
-      error instanceof Error ? error.message : "invalid raw evidence",
-    );
+  // Contract v1 predates RAW-EVIDENCE-01, so synthetic/legacy callers may omit
+  // the envelope. The real ingestion boundary below fails closed when it is
+  // absent; when supplied here, it is always structurally validated.
+  if (raw.raw_evidence) {
+    try {
+      assertRawDemoEvidence(raw.raw_evidence);
+    } catch (error) {
+      throw new PipelineError(
+        "PARSER_INVALID_RESPONSE",
+        error instanceof Error ? error.message : "invalid raw evidence",
+      );
+    }
   }
   return raw as RawParserOutput;
 }
