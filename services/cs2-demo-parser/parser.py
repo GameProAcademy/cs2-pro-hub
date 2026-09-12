@@ -332,6 +332,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     inventory, inventory_error = _available_events(demo)
     raw["event_inventory_error"] = inventory_error
+    raw["event_inventory"] = sorted(inventory)
     raw["event_tables"] = {}
     raw["event_errors"] = {}
 

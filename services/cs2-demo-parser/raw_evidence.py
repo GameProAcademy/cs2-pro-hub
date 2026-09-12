@@ -198,7 +198,10 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
         "tickrate": output.get("header", {}).get("tickrate"), "playback_ticks": header.get("playback_ticks"),
         "playback_time": header.get("playback_time"), "playback_frames": header.get("playback_frames"),
         "players_count": len(output.get("players") or []), "rounds_count": len(output.get("rounds") or []),
-        "events_count": sum(len(rows or []) for rows in (raw.get("event_tables") or {}).values()), "first_tick": min(ticks) if ticks else None,
+        "events_count": sum(len(rows or []) for rows in (raw.get("event_tables") or {}).values()),
+        "event_inventory_success": raw.get("event_inventory_error") is None,
+        "event_inventory_count": len(raw.get("event_inventory") or []),
+        "first_tick": min(ticks) if ticks else None,
         "last_tick": max(ticks) if ticks else None, "warnings": list(output.get("warnings") or []),
         "partial_parse": any("partial" in str(w).lower() for w in output.get("warnings") or []),
         "extraction_confidence": None,
@@ -211,8 +214,8 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     mappings = evidence["field_mappings"]
     def gate(name: str, passed: bool, reasons: list[str]) -> dict[str, Any]:
         return {"gate": name, "status": "PASS" if passed else "FAIL", "reasons": reasons}
-    event_ok = bool(events) and all(
-        item["parse_attempted"] and item["parse_success"] for item in events
+    event_ok = bool(events) and manifest.get("event_inventory_success") is True and all(
+        item["parse_success"] for item in events if item["available"]
     )
     player_ok = manifest["players_count"] > 0 and bool(evidence["player_coverage"])
     round_ok = manifest["rounds_count"] > 0

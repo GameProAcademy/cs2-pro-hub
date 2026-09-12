@@ -33,6 +33,8 @@ export interface RawDemoEvidenceManifest {
   players_count: number;
   rounds_count: number;
   events_count: number;
+  event_inventory_success: boolean;
+  event_inventory_count: number;
   first_tick: number | null;
   last_tick: number | null;
   warnings: string[];

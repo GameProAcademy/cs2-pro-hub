@@ -14,6 +14,7 @@ def material():
         },
         "event_errors": {"player_hurt": RuntimeError("stream failed")},
         "event_inventory_error": None,
+        "event_inventory": ["player_death", "player_hurt", "weapon_fire"],
         "tick_rows": [{"tick": 10, "player_steamid": "76561198000000001", "X": 0.0, "balance": None}],
         "tick_error": None, "grenade_rows": [], "grenade_error": None,
     }
