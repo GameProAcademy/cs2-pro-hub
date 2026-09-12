@@ -123,7 +123,9 @@ def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
         return set(EVENT_CANDIDATES), exc
 
 
-def _parse_ticks(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:
+def _parse_ticks(
+    demo: Any, sample_ticks: list[int]
+) -> tuple[list[dict[str, Any]], BaseException | None]:
     method = getattr(demo, "parse_ticks", None)
     if not callable(method):
         return [], AttributeError("parse_ticks is unavailable")
@@ -131,16 +133,7 @@ def _parse_ticks(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]
         # The capability is intentionally sampled at deterministic round/event
         # ticks. Asking demoparser2 for every tick would produce an unbounded
         # response before the APP can enforce its payload ceiling.
-        event_ticks = sorted(
-            {
-                tick
-                for name in ("round_start", "round_end", "player_death")
-                for row in (getattr(demo, "_raw_event_tables", {}).get(name) or [])
-                for tick in [row.get("tick")]
-                if isinstance(tick, int)
-            }
-        )
-        frame = method(list(PLAYER_PROPERTIES), ticks=event_ticks or None)
+        frame = method(list(PLAYER_PROPERTIES), ticks=sample_ticks or None)
         rows = _records(frame)
         if len(rows) <= TICK_SAMPLE_LIMIT:
             return rows, None
@@ -280,9 +273,6 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["round_starts"] = raw["event_tables"].get("round_start") or []
     raw["round_ends"] = raw["event_tables"].get("round_end") or []
-    # Internal hand-off only: lets parse_ticks use observed ticks without
-    # changing demoparser2 or exposing state in the final HTTP response.
-    setattr(demo, "_raw_event_tables", raw["event_tables"])
 
     # The adapter expects plural round_starts/round_ends, while the event names
     # are singular. Keep explicit assignments to avoid accidental key drift.
@@ -300,7 +290,16 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["players"] = []
         warnings.append("player_info_unavailable")
 
-    tick_rows, tick_error = _parse_ticks(demo)
+    sample_ticks = sorted(
+        {
+            tick
+            for name in ("round_start", "round_end", "player_death")
+            for row in (raw["event_tables"].get(name) or [])
+            for tick in [row.get("tick")]
+            if isinstance(tick, int)
+        }
+    )
+    tick_rows, tick_error = _parse_ticks(demo, sample_ticks)
     grenade_rows, grenade_error = _parse_grenades(demo)
     raw["tick_rows"] = tick_rows
     raw["tick_error"] = tick_error
