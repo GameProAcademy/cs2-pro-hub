@@ -108,10 +108,7 @@ describe("demo processing experience", () => {
   });
 
   it("preserves the existing single four-second polling loop", () => {
-    const panel = readFileSync(
-      join(root, "src/components/pipeline/DemoIngestPanel.tsx"),
-      "utf8",
-    );
+    const panel = readFileSync(join(root, "src/components/pipeline/DemoIngestPanel.tsx"), "utf8");
     expect(panel.match(/refetchInterval/g)).toHaveLength(1);
     expect(panel).toMatch(/\? 4000\s*: false/);
   });

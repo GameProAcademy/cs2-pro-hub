@@ -600,16 +600,14 @@ export const fr: Dictionary = {
   "pipeline.processing.queued.title": "Préparation de votre analyse",
   "pipeline.processing.queued.body": "Votre demo est en file et sera traitée dans un instant.",
   "pipeline.processing.validating.title": "Validation de votre demo",
-  "pipeline.processing.validating.body":
-    "Nous vérifions le fichier et l’intégrité du match.",
+  "pipeline.processing.validating.body": "Nous vérifions le fichier et l’intégrité du match.",
   "pipeline.processing.parsing.title": "Lecture de votre match",
   "pipeline.processing.parsing.body":
     "Nous lisons les rounds, les joueurs, les événements et les informations du match.",
   "pipeline.processing.normalizing.title": "Organisation de vos actions",
   "pipeline.processing.normalizing.body": "Nous organisons les informations de votre match.",
   "pipeline.processing.metrics.title": "Calcul de vos métriques",
-  "pipeline.processing.metrics.body":
-    "Nous transformons vos actions en métriques de performance.",
+  "pipeline.processing.metrics.body": "Nous transformons vos actions en métriques de performance.",
   "pipeline.processing.persisting.title": "Création de votre profil",
   "pipeline.processing.persisting.body": "Nous préparons vos résultats personnalisés.",
   "pipeline.processing.cleanup.title": "Finalisation de l’analyse",

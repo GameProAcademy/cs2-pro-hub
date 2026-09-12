@@ -601,7 +601,8 @@ export const es: Dictionary = {
   "pipeline.processing.queued.title": "Preparando tu análisis",
   "pipeline.processing.queued.body": "Tu demo está en cola y se procesará en breve.",
   "pipeline.processing.validating.title": "Validando tu demo",
-  "pipeline.processing.validating.body": "Estamos comprobando el archivo y la integridad de la partida.",
+  "pipeline.processing.validating.body":
+    "Estamos comprobando el archivo y la integridad de la partida.",
   "pipeline.processing.parsing.title": "Leyendo tu partida",
   "pipeline.processing.parsing.body":
     "Estamos leyendo rondas, jugadores, eventos e información de la partida.",

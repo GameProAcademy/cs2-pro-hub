@@ -177,7 +177,10 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
                 {complete ? (
                   <Check className="size-3.5 shrink-0" aria-hidden />
                 ) : current && !failed ? (
-                  <span className="relative flex size-3.5 shrink-0 items-center justify-center" aria-hidden>
+                  <span
+                    className="relative flex size-3.5 shrink-0 items-center justify-center"
+                    aria-hidden
+                  >
                     <span className="absolute size-3 animate-ping rounded-full bg-primary/40 motion-reduce:animate-none" />
                     <Circle className="relative size-3 fill-primary text-primary" />
                   </span>

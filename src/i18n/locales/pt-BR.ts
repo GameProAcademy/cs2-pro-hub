@@ -603,14 +603,12 @@ export const ptBR = {
   "pipeline.processing.queued.title": "Preparando sua análise",
   "pipeline.processing.queued.body": "Sua demo entrou na fila e será processada em instantes.",
   "pipeline.processing.validating.title": "Validando sua demo",
-  "pipeline.processing.validating.body":
-    "Estamos conferindo o arquivo e a integridade da partida.",
+  "pipeline.processing.validating.body": "Estamos conferindo o arquivo e a integridade da partida.",
   "pipeline.processing.parsing.title": "Lendo sua partida",
   "pipeline.processing.parsing.body":
     "Estamos lendo rounds, jogadores, eventos e informações da partida.",
   "pipeline.processing.normalizing.title": "Organizando suas jogadas",
-  "pipeline.processing.normalizing.body":
-    "Estamos organizando as informações da sua partida.",
+  "pipeline.processing.normalizing.body": "Estamos organizando as informações da sua partida.",
   "pipeline.processing.metrics.title": "Calculando suas métricas",
   "pipeline.processing.metrics.body":
     "Estamos transformando suas jogadas em métricas de desempenho.",

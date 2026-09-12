@@ -612,8 +612,7 @@ export const en: Dictionary = {
   "pipeline.processing.done.body": "Your analysis is ready.",
   "pipeline.processing.failed.title": "We could not complete the analysis",
   "pipeline.processing.failed.body": "We found a problem while processing your demo.",
-  "pipeline.processing.continueBrowsing":
-    "You can keep browsing while we prepare your analysis.",
+  "pipeline.processing.continueBrowsing": "You can keep browsing while we prepare your analysis.",
   "pipeline.workerOfflineTitle": "Processing worker unavailable.",
   "pipeline.workerOfflineBody":
     "Demos can be uploaded and queued, but the parser service is not configured, so no demo is analysed yet.",
