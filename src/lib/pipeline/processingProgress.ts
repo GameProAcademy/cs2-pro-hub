@@ -66,7 +66,8 @@ export function estimatedStageProgress(args: {
 }
 
 export function processingStageIndex(stage: string, status: ProcessingStatus): number {
-  return ACTIVE_STAGES.indexOf(safeProcessingStage(stage, status));
+  const safeStage = safeProcessingStage(stage, status);
+  return safeStage === "done" ? ACTIVE_STAGES.length : ACTIVE_STAGES.indexOf(safeStage);
 }
 
 export const VISIBLE_PROCESSING_STAGES = ACTIVE_STAGES;

@@ -224,11 +224,7 @@ export function DemoIngestPanel() {
                       <DemoPlayerIdentity jobId={job.jobId} />
                     </>
                   ) : null}
-                  {job.status === "pending" ||
-                  job.status === "processing" ||
-                  job.status === "failed" ? (
-                    <DemoProcessingStatus job={job} />
-                  ) : null}
+                  <DemoProcessingStatus job={job} />
                 </div>
 
                 <span

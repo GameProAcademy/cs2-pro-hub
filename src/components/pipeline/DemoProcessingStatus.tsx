@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Circle, Loader2 } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useT } from "@/i18n";
@@ -59,6 +59,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const t = useT();
   const failed = job.status === "failed";
   const active = job.status === "pending" || job.status === "processing";
+  const done = job.status === "processed";
   const stage = safeProcessingStage(job.stage, job.status);
   const lastActiveStage = useRef<ProcessingStage>(stage);
   const [progress, setProgress] = useState(() =>
@@ -90,7 +91,10 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const currentIndex = processingStageIndex(lastActiveStage.current, job.status);
 
   return (
-    <section className="mt-4 border-t border-border/80 pt-4" aria-live="polite" aria-atomic="true">
+    <section className="mt-4 border-t border-border/80 pt-4">
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {t(STAGE_KEYS[displayedStage].title)}
+      </p>
       <div className="flex items-start gap-3">
         <span
           className={cn(
@@ -102,6 +106,8 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         >
           {failed ? (
             <AlertCircle className="size-4" aria-hidden />
+          ) : done ? (
+            <CheckCircle2 className="size-4" aria-hidden />
           ) : (
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
           )}
@@ -137,7 +143,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
           <div
             className={cn(
               "relative h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
-              failed ? "bg-destructive" : "bg-primary",
+              failed ? "bg-destructive" : done ? "bg-success" : "bg-primary",
             )}
             style={{ width: `${progress}%` }}
           >
@@ -158,7 +164,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         <ol className="grid gap-2 sm:grid-cols-2">
           {VISIBLE_PROCESSING_STAGES.map((item, index) => {
             const complete = !failed && index < currentIndex;
-            const current = index === currentIndex;
+            const current = !done && index === currentIndex;
             return (
               <li
                 key={item}
