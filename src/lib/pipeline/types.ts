@@ -104,6 +104,8 @@ export interface RawParserOutput {
   rounds: RawParserRound[];
   events: RawParserEvent[];
   warnings?: string[] | undefined;
+  /** Parser-native evidence, validated and persisted before normalization. */
+  raw_evidence?: import("@/lib/pipeline/rawEvidence").RawDemoEvidence | undefined;
 }
 
 /* ------------------------------------------------------------------ *

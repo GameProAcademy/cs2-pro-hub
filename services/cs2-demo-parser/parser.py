@@ -29,6 +29,18 @@ from typing import Any
 from adapter import build_raw_parser_output
 from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
+from raw_evidence import (
+    EVENT_CANDIDATES,
+    PLAYER_PROPERTIES,
+    TICK_SAMPLE_LIMIT,
+    build_gates,
+    build_manifest,
+    event_coverage,
+    field_coverage,
+    mapping_inventory,
+    raw_events,
+    safe_error,
+)
 
 _INVALID_SIGNATURES = (
     "not a valid demo",
@@ -53,14 +65,7 @@ _UNSUPPORTED_SIGNATURES = (
     "unsupported protocol",
 )
 
-_EVENT_TABLES = (
-    "player_death",
-    "player_hurt",
-    "player_blind",
-    "bomb_planted",
-    "bomb_defused",
-    "bomb_exploded",
-)
+_EVENT_TABLES = tuple(name for name in EVENT_CANDIDATES if name not in ("round_start", "round_end"))
 
 # These are documented demoparser2 game-state properties and are used only as
 # context. If a particular event stream cannot expose them, the parser falls
@@ -104,6 +109,41 @@ def _parse_event_with_context(demo: Any, name: str) -> list[dict[str, Any]] | No
             return _records(frame)
         except Exception:
             return None
+
+
+def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
+    method = getattr(demo, "list_game_events", None)
+    if not callable(method):
+        return set(EVENT_CANDIDATES), AttributeError("list_game_events is unavailable")
+    try:
+        return {str(name) for name in method()}, None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return set(EVENT_CANDIDATES), exc
+
+
+def _parse_ticks(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:
+    method = getattr(demo, "parse_ticks", None)
+    if not callable(method):
+        return [], AttributeError("parse_ticks is unavailable")
+    try:
+        frame = method(list(PLAYER_PROPERTIES))
+        rows = _records(frame)
+        if len(rows) <= TICK_SAMPLE_LIMIT:
+            return rows, None
+        step = max(1, len(rows) // TICK_SAMPLE_LIMIT)
+        return rows[::step][:TICK_SAMPLE_LIMIT], None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return [], exc
+
+
+def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:
+    method = getattr(demo, "parse_grenades", None)
+    if not callable(method):
+        return [], AttributeError("parse_grenades is unavailable")
+    try:
+        return _records(method()), None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return [], exc
 
 
 def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True) -> list[dict[str, Any]]:
@@ -207,13 +247,25 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["header"] = dict(demo.parse_header() or {})
 
-    for name in ("round_start", "round_end"):
+    inventory, inventory_error = _available_events(demo)
+    raw["event_inventory_error"] = inventory_error
+    raw["event_tables"] = {}
+    raw["event_errors"] = {}
+
+    for name in EVENT_CANDIDATES:
+        if name not in inventory:
+            raw["event_tables"][name] = None
+            continue
         rows = _parse_event_with_context(demo, name)
         if rows is None:
-            raw[f"{name.replace('_', '_')}s"] = []
+            raw["event_tables"][name] = None
+            raw["event_errors"][name] = RuntimeError(f"{name} could not be parsed")
             warnings.append(f"{name}_unavailable")
         else:
-            raw[f"{name.replace('_', '_')}s"] = _contextualize_rows(rows)
+            raw["event_tables"][name] = _contextualize_rows(rows)
+
+    raw["round_starts"] = raw["event_tables"].get("round_start") or []
+    raw["round_ends"] = raw["event_tables"].get("round_end") or []
 
     # The adapter expects plural round_starts/round_ends, while the event names
     # are singular. Keep explicit assignments to avoid accidental key drift.
@@ -223,12 +275,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["round_ends"] = []
 
     for name in _EVENT_TABLES:
-        rows = _parse_event_with_context(demo, name)
-        if rows is None:
-            raw[name] = None
-            warnings.append(f"{name}_unavailable")
-        else:
-            raw[name] = _contextualize_rows(rows)
+        raw[name] = raw["event_tables"].get(name)
 
     try:
         raw["players"] = _records(demo.parse_player_info())
@@ -236,7 +283,64 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["players"] = []
         warnings.append("player_info_unavailable")
 
+    tick_rows, tick_error = _parse_ticks(demo)
+    grenade_rows, grenade_error = _parse_grenades(demo)
+    raw["tick_rows"] = tick_rows
+    raw["tick_error"] = tick_error
+    raw["grenade_rows"] = grenade_rows
+    raw["grenade_error"] = grenade_error
     return raw
+
+
+def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    coverage = []
+    inventory_error = raw.get("event_inventory_error")
+    for name in EVENT_CANDIDATES:
+        rows = raw["event_tables"].get(name)
+        available = rows is not None or inventory_error is not None
+        coverage.append(event_coverage(name, available, rows, raw["event_errors"].get(name)))
+    tick_rows = raw.get("tick_rows") or []
+    grenade_rows = raw.get("grenade_rows") or []
+    tick_error = raw.get("tick_error")
+    grenade_error = raw.get("grenade_error")
+    tick_properties = sorted({key for row in tick_rows for key in row}) or list(PLAYER_PROPERTIES)
+    tick_coverage = field_coverage(tick_rows, tick_properties)
+    if tick_error:
+        kind, message = safe_error(tick_error)
+        tick_coverage.append({"property": "__capability__", "available": False, "rows": 0,
+                              "null_percent": None, "min": None, "max": None, "sample": None,
+                              "success": False, "error": f"{kind}: {message}"})
+    grenade_properties = sorted({key for row in grenade_rows for key in row})
+    grenade_coverage = field_coverage(grenade_rows, grenade_properties or ["entity_id", "grenade_type", "steamid", "name", "tick", "X", "Y", "Z"])
+    if grenade_error:
+        kind, message = safe_error(grenade_error)
+        grenade_coverage.append({"property": "__capability__", "available": False, "rows": 0,
+                                 "null_percent": None, "min": None, "max": None, "sample": None,
+                                 "success": False, "error": f"{kind}: {message}"})
+    player_rows = raw.get("players") or []
+    player_properties = sorted({key for row in player_rows for key in row})
+    player_coverage = field_coverage(player_rows, player_properties)
+    economy_names = {"balance", "start_balance", "total_cash_spent", "cash_spent_this_round",
+                     "round_start_equip_value", "current_equip_value", "weapon_purchases_this_round",
+                     "weapon_purchases_this_match"}
+    economy_coverage = [item for item in tick_coverage if item["property"] in economy_names]
+    evidence = {
+        "evidence_version": 1,
+        "manifest": build_manifest(raw, output),
+        "event_coverage": sorted(coverage, key=lambda item: item["event_name"]),
+        "raw_events": raw_events(raw["event_tables"]),
+        "player_coverage": player_coverage,
+        "tick_coverage": tick_coverage,
+        "tick_samples": tick_rows,
+        "grenade_coverage": grenade_coverage,
+        "grenade_samples": grenade_rows,
+        "round_evidence": output.get("rounds") or [],
+        "economy_coverage": economy_coverage,
+        "field_mappings": mapping_inventory(raw),
+        "gates": [],
+    }
+    evidence["gates"] = build_gates(evidence)
+    return evidence
 
 
 def parse_demo_file(path: str) -> dict[str, Any]:
@@ -256,5 +360,6 @@ def parse_demo_file(path: str) -> dict[str, Any]:
     except BaseException as exc:  # noqa: BLE001 - classified below
         raise classify_parser_exception(exc) from exc
 
-    output = build_raw_parser_output(raw)
-    return _postprocess_contract(raw, output)
+    output = _postprocess_contract(raw, build_raw_parser_output(raw))
+    output["raw_evidence"] = build_raw_evidence(raw, output)
+    return output
