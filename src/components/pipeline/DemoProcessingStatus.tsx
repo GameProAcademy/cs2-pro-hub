@@ -6,6 +6,7 @@ import type { TranslationKey } from "@/i18n/config";
 import type { DemoJobView } from "@/lib/pipeline.functions";
 import {
   VISIBLE_PROCESSING_STAGES,
+  advanceVisualProgress,
   estimatedStageProgress,
   processingStageIndex,
   safeProcessingStage,
@@ -75,14 +76,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
 
     if (!active) return;
     const timer = window.setInterval(() => {
-      setProgress((current) =>
-        estimatedStageProgress({
-          stage: job.stage,
-          status: job.status,
-          previousProgress: current,
-          animationStep: 1,
-        }),
-      );
+      setProgress((current) => advanceVisualProgress(job.stage, job.status, current));
     }, 1800);
     return () => window.clearInterval(timer);
   }, [active, job.stage, job.status]);

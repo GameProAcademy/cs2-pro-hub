@@ -65,6 +65,20 @@ export function estimatedStageProgress(args: {
   return Math.max(previous, estimate);
 }
 
+export function advanceVisualProgress(
+  stage: string,
+  status: ProcessingStatus,
+  currentProgress: number,
+): number {
+  if (status === "failed") return currentProgress;
+  if (status === "processed") return 100;
+  const safeStage = safeProcessingStage(stage, status);
+  return Math.min(
+    Math.max(currentProgress + 1, STAGE_PROGRESS[safeStage]),
+    stageProgressCeiling(safeStage),
+  );
+}
+
 export function processingStageIndex(stage: string, status: ProcessingStatus): number {
   const safeStage = safeProcessingStage(stage, status);
   return safeStage === "done" ? ACTIVE_STAGES.length : ACTIVE_STAGES.indexOf(safeStage);

@@ -10,6 +10,7 @@ import { dictionaries } from "@/i18n/config";
 import type { DemoJobView } from "@/lib/pipeline.functions";
 import {
   STAGE_PROGRESS,
+  advanceVisualProgress,
   estimatedStageProgress,
   stageProgressCeiling,
 } from "@/lib/pipeline/processingProgress";
@@ -74,6 +75,8 @@ describe("estimated demo processing progress", () => {
       estimatedStageProgress({ stage: "parsing", status: "processing", animationStep: 500 }),
     ).toBe(stageProgressCeiling("parsing"));
     expect(stageProgressCeiling("cleanup")).toBe(99);
+    expect(advanceVisualProgress("parsing", "processing", 40)).toBe(41);
+    expect(advanceVisualProgress("parsing", "processing", 59)).toBe(59);
   });
 
   it("reaches 100 only when processed", () => {
