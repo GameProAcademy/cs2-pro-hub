@@ -29,6 +29,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import type { RawDemoEvidence } from "@/lib/pipeline/rawEvidence";
 import {
   EMPTY_EVIDENCE,
   evaluateE2ERun,
@@ -232,6 +233,20 @@ async function collectEvidence(args: {
   };
 }
 
+async function readRawEvidence(
+  db: SupabaseClient<Database>,
+  jobId: string,
+): Promise<RawDemoEvidence | null> {
+  const { data } = await db
+    .from("raw_demo_evidence_reports")
+    .select(
+      "evidence_version, manifest, event_coverage, raw_events, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, deterministic_digest",
+    )
+    .eq("job_id", jobId)
+    .maybeSingle();
+  return data ? (data as unknown as RawDemoEvidence) : null;
+}
+
 async function readJobState(
   db: SupabaseClient<Database>,
   jobId: string,
@@ -304,6 +319,7 @@ export interface E2ERunReport {
   };
   evidenceBefore: E2EEvidence;
   evidenceAfter: E2EEvidence;
+  rawEvidence: RawDemoEvidence | null;
   evaluation: E2EEvaluation;
   /** Only present when this run reprocessed an already processed demo. */
   idempotency: E2EEvaluation | null;
@@ -382,6 +398,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       demoSha256: after.demoSha256,
       playerId: after.playerId,
     });
+    const rawEvidence = await readRawEvidence(db, data.jobId);
 
     const jobState: E2EJobState = {
       status: after.status,
@@ -452,6 +469,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       },
       evidenceBefore,
       evidenceAfter,
+      rawEvidence,
       evaluation,
       idempotency,
       startedAt,
@@ -467,7 +485,7 @@ export const getDemoE2EEvidence = createServerFn({ method: "GET" })
     await requireMaster(context as Ctx);
     const { db } = await adminDb();
     const job = await readJobState(db, data.jobId);
-    if (!job) return { job: null, evidence: EMPTY_EVIDENCE };
+    if (!job) return { job: null, evidence: EMPTY_EVIDENCE, rawEvidence: null };
     const evidence = await collectEvidence({
       db,
       uploadId: job.uploadId,
@@ -494,5 +512,6 @@ export const getDemoE2EEvidence = createServerFn({ method: "GET" })
         durationMs: job.durationMs,
       },
       evidence,
+      rawEvidence: await readRawEvidence(db, data.jobId),
     };
   });

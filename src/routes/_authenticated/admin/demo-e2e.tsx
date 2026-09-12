@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import { DemoUploadError, submitDemo } from "@/lib/pipeline/client";
 import type { E2EEvidence, E2EExpectation, E2EVerdict } from "@/lib/pipeline/e2e";
+import type { RawDemoEvidence } from "@/lib/pipeline/rawEvidence";
 import { getDemoE2EPreflight, runDemoE2E, type E2ERunReport } from "@/lib/pipeline-e2e.functions";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,33 @@ function EvidenceBlock({ title, evidence }: { title: string; evidence: E2EEviden
       <Row label="round_events" value={String(evidence.events)} />
       <Row label="match_metrics" value={String(evidence.metrics)} />
       <Row label="match_features" value={String(evidence.features)} />
+    </div>
+  );
+}
+
+function RawEvidenceBlock({ evidence }: { evidence: RawDemoEvidence }) {
+  const manifest = evidence.manifest;
+  return (
+    <div className="space-y-4 rounded-lg border border-primary/30 bg-background/50 px-4 py-4">
+      <h4 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-primary">RAW DEMO EVIDENCE</h4>
+      <div className="grid gap-3 md:grid-cols-3">
+        <div><Row label="parser" value={`${manifest.parser_name ?? "—"}@${manifest.parser_version ?? "—"}`} /><Row label="revision" value={manifest.parser_revision ?? "—"} /><Row label="contract" value={String(manifest.contract_version ?? "—")} /></div>
+        <div><Row label="map" value={manifest.map ?? "—"} /><Row label="size" value={manifest.file_size == null ? "—" : `${manifest.file_size} bytes`} /><Row label="sha256" value={manifest.demo_sha256 ?? "—"} /></div>
+        <div><Row label="players" value={String(manifest.players_count)} /><Row label="rounds" value={String(manifest.rounds_count)} /><Row label="raw events" value={String(manifest.events_count)} /><Row label="ticks" value={`${manifest.first_tick ?? "—"} → ${manifest.last_tick ?? "—"}`} /></div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left font-mono text-[11px]">
+          <thead className="text-muted-foreground"><tr>{["EVENT", "AVAILABLE", "SUCCESS", "ROWS", "FIRST TICK", "LAST TICK", "FIELDS", "ERROR"].map((label) => <th key={label} className="border-b border-border px-2 py-2">{label}</th>)}</tr></thead>
+          <tbody>{evidence.event_coverage.map((row) => <tr key={row.event_name}><td className="px-2 py-1.5">{row.event_name}</td><td>{String(row.available)}</td><td>{String(row.parse_success)}</td><td>{row.row_count ?? "—"}</td><td>{row.first_tick ?? "—"}</td><td>{row.last_tick ?? "—"}</td><td>{row.fields_available.join(", ") || "—"}</td><td>{row.error_message_safe ?? "—"}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {([ ["PLAYER FIELD COVERAGE", evidence.player_coverage], ["TICK COVERAGE", evidence.tick_coverage], ["GRENADE COVERAGE", evidence.grenade_coverage] ] as const).map(([title, rows]) => (
+          <div key={title} className="rounded border border-border p-3"><p className="mb-2 font-mono text-[11px] text-primary">{title}</p>{rows.map((row) => <Row key={row.property} label={row.property} value={`${row.available ? "available" : "unknown"} · rows=${row.rows} · null=${row.null_percent ?? "—"}%`} />)}</div>
+        ))}
+        <div className="rounded border border-border p-3"><p className="mb-2 font-mono text-[11px] text-primary">RAW → CONTRACT MAPPING</p>{evidence.field_mappings.map((row) => <Row key={row.raw_field} label={row.raw_field} value={`${row.app_field ?? "—"} → ${row.canonical_field ?? "—"} · ${row.status}`} />)}</div>
+      </div>
+      <div>{evidence.gates.map((gate) => <Row key={gate.gate} label={gate.gate} value={`${gate.status}${gate.reasons.length ? ` · ${gate.reasons.join(", ")}` : ""}`} />)}</div>
     </div>
   );
 }
@@ -334,6 +362,9 @@ function AdminDemoE2EPage() {
               <EvidenceBlock title="evidence before" evidence={report.evidenceBefore} />
               <EvidenceBlock title="evidence after" evidence={report.evidenceAfter} />
             </div>
+            {report.rawEvidence ? <RawEvidenceBlock evidence={report.rawEvidence} /> : (
+              <p className="font-mono text-xs text-warning">RAW DEMO EVIDENCE: BLOCKED — nenhum relatório persistido para este job.</p>
+            )}
           </section>
         ))}
       </div>
