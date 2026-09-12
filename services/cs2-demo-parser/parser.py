@@ -153,6 +153,80 @@ def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | No
         return [], exc
 
 
+def _steam_id(row: dict[str, Any]) -> str | None:
+    value = row.get("player_steamid", row.get("steamid"))
+    if isinstance(value, int) and value > 0:
+        return str(value)
+    if isinstance(value, str) and value.isdigit() and int(value) > 0:
+        return value
+    return None
+
+
+def _side_from_tick(row: dict[str, Any]) -> str | None:
+    value = row.get("team_num", row.get("team_number"))
+    if value in (2, "2", "T", "TERRORIST"):
+        return "T"
+    if value in (3, "3", "CT"):
+        return "CT"
+    return None
+
+
+def _finite_number(value: Any) -> int | float | None:
+    import math
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if math.isfinite(float(value)) else None
+
+
+def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]) -> None:
+    """Project only observed start/end snapshots into APP round evidence."""
+    rows_by_tick: dict[int, list[dict[str, Any]]] = {}
+    for row in raw.get("tick_rows") or []:
+        tick = row.get("tick")
+        if isinstance(tick, int):
+            rows_by_tick.setdefault(tick, []).append(row)
+
+    for round_row in output.get("rounds") or []:
+        start_tick = round_row.get("start_tick")
+        end_tick = round_row.get("end_tick")
+        start_rows = rows_by_tick.get(start_tick, []) if isinstance(start_tick, int) else []
+        end_rows = rows_by_tick.get(end_tick, []) if isinstance(end_tick, int) else []
+        sides: dict[str, str] = {}
+        money_start: dict[str, int | float] = {}
+        money_end: dict[str, int | float] = {}
+        equipment_value: dict[str, int | float] = {}
+        for row in start_rows:
+            steam_id = _steam_id(row)
+            if steam_id is None:
+                continue
+            side = _side_from_tick(row)
+            if side is not None:
+                sides[steam_id] = side
+            balance = _finite_number(row.get("start_balance", row.get("balance")))
+            equipment = _finite_number(
+                row.get("round_start_equip_value", row.get("current_equip_value"))
+            )
+            if balance is not None:
+                money_start[steam_id] = balance
+            if equipment is not None:
+                equipment_value[steam_id] = equipment
+        for row in end_rows:
+            steam_id = _steam_id(row)
+            if steam_id is None:
+                continue
+            balance = _finite_number(row.get("balance"))
+            if balance is not None:
+                money_end[steam_id] = balance
+        if sides:
+            round_row["sides"] = dict(sorted(sides.items()))
+        if money_start:
+            round_row["money_start"] = dict(sorted(money_start.items()))
+        if money_end:
+            round_row["money_end"] = dict(sorted(money_end.items()))
+        if equipment_value:
+            round_row["equipment_value"] = dict(sorted(equipment_value.items()))
+
+
 def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True) -> list[dict[str, Any]]:
     """Add canonical-friendly round context without inventing any values."""
     out: list[dict[str, Any]] = []
@@ -259,7 +333,8 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     raw["event_tables"] = {}
     raw["event_errors"] = {}
 
-    for name in EVENT_CANDIDATES:
+    event_names = sorted(set(EVENT_CANDIDATES) | inventory)
+    for name in event_names:
         if name not in inventory:
             raw["event_tables"][name] = None
             continue
@@ -311,7 +386,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
     coverage = []
     inventory_error = raw.get("event_inventory_error")
-    for name in EVENT_CANDIDATES:
+    for name in sorted(raw["event_tables"]):
         rows = raw["event_tables"].get(name)
         available = rows is not None or inventory_error is not None
         coverage.append(event_coverage(name, available, rows, raw["event_errors"].get(name)))
@@ -377,5 +452,6 @@ def parse_demo_file(path: str) -> dict[str, Any]:
         raise classify_parser_exception(exc) from exc
 
     output = _postprocess_contract(raw, build_raw_parser_output(raw))
+    enrich_rounds_from_tick_evidence(raw, output)
     output["raw_evidence"] = build_raw_evidence(raw, output)
     return output

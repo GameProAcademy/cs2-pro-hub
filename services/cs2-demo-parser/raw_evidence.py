@@ -138,14 +138,18 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
     safe_rows = list(rows or [])
     first_tick, last_tick = _range(safe_rows, "tick")
     rounds = [r for row in safe_rows for r in [_int(row.get("round") or row.get("total_rounds_played"))] if r is not None]
+    all_fields = {str(key) for row in safe_rows for key in row}
     fields = sorted({str(key) for row in safe_rows for key, value in row.items() if value is not None})
+    missing_fields = sorted(
+        field for field in all_fields if any(row.get(field) is None for row in safe_rows)
+    )
     error_type, error_message = safe_error(error) if error else (None, None)
     return {
         "event_name": name, "available": available, "parse_attempted": available,
         "parse_success": available and error is None, "row_count": len(safe_rows) if error is None and available else None,
         "first_tick": first_tick, "last_tick": last_tick,
         "first_round": min(rounds) if rounds else None, "last_round": max(rounds) if rounds else None,
-        "fields_available": fields, "fields_missing": [], "error_type": error_type,
+        "fields_available": fields, "fields_missing": missing_fields, "error_type": error_type,
         "error_message_safe": error_message,
     }
 
