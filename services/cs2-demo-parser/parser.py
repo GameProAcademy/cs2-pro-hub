@@ -29,6 +29,18 @@ from typing import Any
 from adapter import build_raw_parser_output
 from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
+from raw_evidence import (
+    EVENT_CANDIDATES,
+    PLAYER_PROPERTIES,
+    TICK_SAMPLE_LIMIT,
+    build_gates,
+    build_manifest,
+    event_coverage,
+    field_coverage,
+    mapping_inventory,
+    raw_events,
+    safe_error,
+)
 
 _INVALID_SIGNATURES = (
     "not a valid demo",
@@ -53,14 +65,7 @@ _UNSUPPORTED_SIGNATURES = (
     "unsupported protocol",
 )
 
-_EVENT_TABLES = (
-    "player_death",
-    "player_hurt",
-    "player_blind",
-    "bomb_planted",
-    "bomb_defused",
-    "bomb_exploded",
-)
+_EVENT_TABLES = tuple(name for name in EVENT_CANDIDATES if name not in ("round_start", "round_end"))
 
 # These are documented demoparser2 game-state properties and are used only as
 # context. If a particular event stream cannot expose them, the parser falls
@@ -93,17 +98,135 @@ def _records(frame: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _parse_event_with_context(demo: Any, name: str) -> list[dict[str, Any]] | None:
-    """Read one event stream with round/timing context, preserving unknown."""
+def _parse_event_with_context(
+    demo: Any, name: str
+) -> tuple[list[dict[str, Any]] | None, BaseException | None]:
+    """Read one event stream and preserve its final parser failure."""
     try:
         frame = demo.parse_event(name, [], list(_EVENT_OTHER_PROPS))
-        return _records(frame)
+        return _records(frame), None
     except Exception:
         try:
             frame = demo.parse_event(name)
-            return _records(frame)
-        except Exception:
-            return None
+            return _records(frame), None
+        except Exception as exc:
+            return None, exc
+
+
+def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
+    method = getattr(demo, "list_game_events", None)
+    if not callable(method):
+        return set(EVENT_CANDIDATES), AttributeError("list_game_events is unavailable")
+    try:
+        return {str(name) for name in method()}, None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return set(EVENT_CANDIDATES), exc
+
+
+def _parse_ticks(
+    demo: Any, sample_ticks: list[int]
+) -> tuple[list[dict[str, Any]], BaseException | None]:
+    method = getattr(demo, "parse_ticks", None)
+    if not callable(method):
+        return [], AttributeError("parse_ticks is unavailable")
+    try:
+        # The capability is intentionally sampled at deterministic round/event
+        # ticks. Asking demoparser2 for every tick would produce an unbounded
+        # response before the APP can enforce its payload ceiling.
+        if not sample_ticks:
+            return [], ValueError("no deterministic event ticks available for sampling")
+        frame = method(list(PLAYER_PROPERTIES), ticks=sample_ticks)
+        rows = _records(frame)
+        if len(rows) <= TICK_SAMPLE_LIMIT:
+            return rows, None
+        step = max(1, len(rows) // TICK_SAMPLE_LIMIT)
+        return rows[::step][:TICK_SAMPLE_LIMIT], None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return [], exc
+
+
+def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:
+    method = getattr(demo, "parse_grenades", None)
+    if not callable(method):
+        return [], AttributeError("parse_grenades is unavailable")
+    try:
+        return _records(method()), None
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        return [], exc
+
+
+def _steam_id(row: dict[str, Any]) -> str | None:
+    value = row.get("player_steamid", row.get("steamid"))
+    if isinstance(value, int) and value > 0:
+        return str(value)
+    if isinstance(value, str) and value.isdigit() and int(value) > 0:
+        return value
+    return None
+
+
+def _side_from_tick(row: dict[str, Any]) -> str | None:
+    value = row.get("team_num", row.get("team_number"))
+    if value in (2, "2", "T", "TERRORIST"):
+        return "T"
+    if value in (3, "3", "CT"):
+        return "CT"
+    return None
+
+
+def _finite_number(value: Any) -> int | float | None:
+    import math
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if math.isfinite(float(value)) else None
+
+
+def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]) -> None:
+    """Project only observed start/end snapshots into APP round evidence."""
+    rows_by_tick: dict[int, list[dict[str, Any]]] = {}
+    for row in raw.get("tick_rows") or []:
+        tick = row.get("tick")
+        if isinstance(tick, int):
+            rows_by_tick.setdefault(tick, []).append(row)
+
+    for round_row in output.get("rounds") or []:
+        start_tick = round_row.get("start_tick")
+        end_tick = round_row.get("end_tick")
+        start_rows = rows_by_tick.get(start_tick, []) if isinstance(start_tick, int) else []
+        end_rows = rows_by_tick.get(end_tick, []) if isinstance(end_tick, int) else []
+        sides: dict[str, str] = {}
+        money_start: dict[str, int | float] = {}
+        money_end: dict[str, int | float] = {}
+        equipment_value: dict[str, int | float] = {}
+        for row in start_rows:
+            steam_id = _steam_id(row)
+            if steam_id is None:
+                continue
+            side = _side_from_tick(row)
+            if side is not None:
+                sides[steam_id] = side
+            balance = _finite_number(row.get("start_balance", row.get("balance")))
+            equipment = _finite_number(
+                row.get("round_start_equip_value", row.get("current_equip_value"))
+            )
+            if balance is not None:
+                money_start[steam_id] = balance
+            if equipment is not None:
+                equipment_value[steam_id] = equipment
+        for row in end_rows:
+            steam_id = _steam_id(row)
+            if steam_id is None:
+                continue
+            balance = _finite_number(row.get("balance"))
+            if balance is not None:
+                money_end[steam_id] = balance
+        if sides:
+            round_row["sides"] = dict(sorted(sides.items()))
+        if money_start:
+            round_row["money_start"] = dict(sorted(money_start.items()))
+        if money_end:
+            round_row["money_end"] = dict(sorted(money_end.items()))
+        if equipment_value:
+            round_row["equipment_value"] = dict(sorted(equipment_value.items()))
 
 
 def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True) -> list[dict[str, Any]]:
@@ -207,13 +330,27 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["header"] = dict(demo.parse_header() or {})
 
-    for name in ("round_start", "round_end"):
-        rows = _parse_event_with_context(demo, name)
+    inventory, inventory_error = _available_events(demo)
+    raw["event_inventory_error"] = inventory_error
+    raw["event_inventory"] = sorted(inventory)
+    raw["event_tables"] = {}
+    raw["event_errors"] = {}
+
+    event_names = sorted(set(EVENT_CANDIDATES) | inventory)
+    for name in event_names:
+        if name not in inventory:
+            raw["event_tables"][name] = None
+            continue
+        rows, parse_error = _parse_event_with_context(demo, name)
         if rows is None:
-            raw[f"{name.replace('_', '_')}s"] = []
+            raw["event_tables"][name] = None
+            raw["event_errors"][name] = parse_error or RuntimeError(f"{name} could not be parsed")
             warnings.append(f"{name}_unavailable")
         else:
-            raw[f"{name.replace('_', '_')}s"] = _contextualize_rows(rows)
+            raw["event_tables"][name] = _contextualize_rows(rows)
+
+    raw["round_starts"] = raw["event_tables"].get("round_start") or []
+    raw["round_ends"] = raw["event_tables"].get("round_end") or []
 
     # The adapter expects plural round_starts/round_ends, while the event names
     # are singular. Keep explicit assignments to avoid accidental key drift.
@@ -223,12 +360,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["round_ends"] = []
 
     for name in _EVENT_TABLES:
-        rows = _parse_event_with_context(demo, name)
-        if rows is None:
-            raw[name] = None
-            warnings.append(f"{name}_unavailable")
-        else:
-            raw[name] = _contextualize_rows(rows)
+        raw[name] = raw["event_tables"].get(name)
 
     try:
         raw["players"] = _records(demo.parse_player_info())
@@ -236,7 +368,73 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["players"] = []
         warnings.append("player_info_unavailable")
 
+    sample_ticks = sorted(
+        {
+            tick
+            for name in ("round_start", "round_end", "player_death")
+            for row in (raw["event_tables"].get(name) or [])
+            for tick in [row.get("tick")]
+            if isinstance(tick, int)
+        }
+    )
+    tick_rows, tick_error = _parse_ticks(demo, sample_ticks)
+    grenade_rows, grenade_error = _parse_grenades(demo)
+    raw["tick_rows"] = tick_rows
+    raw["tick_error"] = tick_error
+    raw["grenade_rows"] = grenade_rows
+    raw["grenade_error"] = grenade_error
     return raw
+
+
+def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    coverage = []
+    inventory_error = raw.get("event_inventory_error")
+    for name in sorted(raw["event_tables"]):
+        rows = raw["event_tables"].get(name)
+        available = rows is not None or inventory_error is not None
+        coverage.append(event_coverage(name, available, rows, raw["event_errors"].get(name)))
+    tick_rows = raw.get("tick_rows") or []
+    grenade_rows = raw.get("grenade_rows") or []
+    tick_error = raw.get("tick_error")
+    grenade_error = raw.get("grenade_error")
+    tick_properties = sorted({key for row in tick_rows for key in row}) or list(PLAYER_PROPERTIES)
+    tick_coverage = field_coverage(tick_rows, tick_properties)
+    if tick_error:
+        kind, message = safe_error(tick_error)
+        tick_coverage.append({"property": "__capability__", "available": False, "rows": 0,
+                              "null_percent": None, "min": None, "max": None, "sample": None,
+                              "success": False, "error": f"{kind}: {message}"})
+    grenade_properties = sorted({key for row in grenade_rows for key in row})
+    grenade_coverage = field_coverage(grenade_rows, grenade_properties or ["entity_id", "grenade_type", "steamid", "name", "tick", "X", "Y", "Z"])
+    if grenade_error:
+        kind, message = safe_error(grenade_error)
+        grenade_coverage.append({"property": "__capability__", "available": False, "rows": 0,
+                                 "null_percent": None, "min": None, "max": None, "sample": None,
+                                 "success": False, "error": f"{kind}: {message}"})
+    player_rows = raw.get("players") or []
+    player_properties = sorted({key for row in player_rows for key in row})
+    player_coverage = field_coverage(player_rows, player_properties)
+    economy_names = {"balance", "start_balance", "total_cash_spent", "cash_spent_this_round",
+                     "round_start_equip_value", "current_equip_value", "weapon_purchases_this_round",
+                     "weapon_purchases_this_match"}
+    economy_coverage = [item for item in tick_coverage if item["property"] in economy_names]
+    evidence = {
+        "evidence_version": 1,
+        "manifest": build_manifest(raw, output),
+        "event_coverage": sorted(coverage, key=lambda item: item["event_name"]),
+        "raw_events": raw_events(raw["event_tables"]),
+        "player_coverage": player_coverage,
+        "tick_coverage": tick_coverage,
+        "tick_samples": tick_rows,
+        "grenade_coverage": grenade_coverage,
+        "grenade_samples": grenade_rows,
+        "round_evidence": output.get("rounds") or [],
+        "economy_coverage": economy_coverage,
+        "field_mappings": mapping_inventory(raw),
+        "gates": [],
+    }
+    evidence["gates"] = build_gates(evidence)
+    return evidence
 
 
 def parse_demo_file(path: str) -> dict[str, Any]:
@@ -256,5 +454,18 @@ def parse_demo_file(path: str) -> dict[str, Any]:
     except BaseException as exc:  # noqa: BLE001 - classified below
         raise classify_parser_exception(exc) from exc
 
-    output = build_raw_parser_output(raw)
-    return _postprocess_contract(raw, output)
+    output = _postprocess_contract(raw, build_raw_parser_output(raw))
+    enrich_rounds_from_tick_evidence(raw, output)
+    if any(
+        round_row.get("money_start")
+        or round_row.get("money_end")
+        or round_row.get("equipment_value")
+        for round_row in output.get("rounds") or []
+    ):
+        output["warnings"] = [
+            warning
+            for warning in output.get("warnings") or []
+            if not str(warning).startswith("economy_unavailable:")
+        ]
+    output["raw_evidence"] = build_raw_evidence(raw, output)
+    return output

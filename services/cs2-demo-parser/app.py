@@ -41,6 +41,7 @@ from errors import (
     WorkerError,
 )
 from parser import parse_demo_file
+from raw_evidence import finalize_evidence
 from settings import (
     PARSER_NAME,
     PARSER_VERSION,
@@ -256,6 +257,15 @@ def create_app(
             "events": parsed.get("events") or [],
             "warnings": parsed.get("warnings") or [],
         }
+        raw_evidence = parsed.get("raw_evidence")
+        if isinstance(raw_evidence, dict):
+            payload["raw_evidence"] = finalize_evidence(
+                raw_evidence,
+                parser=dict(identity["parser"]),
+                contract_version=resolved.contract_version,
+                demo_sha256=body.demo_sha256,
+                file_size=body.file_size,
+            )
         response = JSONResponse(content=payload)
         if len(response.body) > resolved.max_payload_bytes:
             raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")

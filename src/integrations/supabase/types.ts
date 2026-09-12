@@ -1975,6 +1975,112 @@ export type Database = {
         }
         Relationships: []
       }
+      raw_demo_evidence_reports: {
+        Row: {
+          contract_version: number
+          created_at: string
+          demo_sha256: string
+          deterministic_digest: string
+          economy_coverage: Json
+          event_coverage: Json
+          evidence_version: number
+          field_mappings: Json
+          gates: Json
+          grenade_coverage: Json
+          grenade_samples: Json
+          id: string
+          job_id: string
+          manifest: Json
+          parser_name: string
+          parser_revision: string | null
+          parser_version: string
+          player_coverage: Json
+          raw_events: Json
+          round_evidence: Json
+          tick_coverage: Json
+          tick_samples: Json
+          updated_at: string
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          contract_version: number
+          created_at?: string
+          demo_sha256: string
+          deterministic_digest: string
+          economy_coverage?: Json
+          event_coverage?: Json
+          evidence_version?: number
+          field_mappings?: Json
+          gates?: Json
+          grenade_coverage?: Json
+          grenade_samples?: Json
+          id?: string
+          job_id: string
+          manifest: Json
+          parser_name: string
+          parser_revision?: string | null
+          parser_version: string
+          player_coverage?: Json
+          raw_events?: Json
+          round_evidence?: Json
+          tick_coverage?: Json
+          tick_samples?: Json
+          updated_at?: string
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          contract_version?: number
+          created_at?: string
+          demo_sha256?: string
+          deterministic_digest?: string
+          economy_coverage?: Json
+          event_coverage?: Json
+          evidence_version?: number
+          field_mappings?: Json
+          gates?: Json
+          grenade_coverage?: Json
+          grenade_samples?: Json
+          id?: string
+          job_id?: string
+          manifest?: Json
+          parser_name?: string
+          parser_revision?: string | null
+          parser_version?: string
+          player_coverage?: Json
+          raw_events?: Json
+          round_evidence?: Json
+          tick_coverage?: Json
+          tick_samples?: Json
+          updated_at?: string
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_demo_evidence_reports_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_demo_evidence_reports_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_demo_evidence_reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_events: {
         Row: {
           actor_steam_id: string | null
