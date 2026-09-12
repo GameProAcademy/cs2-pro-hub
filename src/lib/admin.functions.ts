@@ -106,6 +106,19 @@ export interface AdminUpload {
   processed_at: string | null;
 }
 
+export interface AdminDemo {
+  jobId: string;
+  uploadId: string;
+  fileName: string;
+  queuedAt: string;
+  status: string;
+  stage: string;
+  map: string | null;
+  result: string | null;
+  rounds: number | null;
+  matchId: string | null;
+}
+
 export interface AdminMatch {
   id: string;
   map: string | null;
@@ -422,23 +435,56 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error || !profile) throw new Error(FAILED);
 
-    const [{ data: player }, { data: auditRows }, { data: uploadRows }] = await Promise.all([
-      supabase.from("player_profiles").select("*").eq("user_id", data.userId).maybeSingle(),
-      supabase
-        .from("admin_audit_logs")
-        .select("id, action, admin_user_id, target_user_id, metadata, created_at")
-        .eq("target_user_id", data.userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("uploads")
-        .select(
-          "id, file_name, type, source, file_size, mime_type, status, error_message, created_at, processed_at",
-        )
-        .eq("user_id", data.userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
+    const [{ data: player }, { data: auditRows }, { data: uploadRows }, { data: demoJobRows }] =
+      await Promise.all([
+        supabase.from("player_profiles").select("*").eq("user_id", data.userId).maybeSingle(),
+        supabase
+          .from("admin_audit_logs")
+          .select("id, action, admin_user_id, target_user_id, metadata, created_at")
+          .eq("target_user_id", data.userId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("uploads")
+          .select(
+            "id, file_name, type, source, file_size, mime_type, status, error_message, created_at, processed_at",
+          )
+          .eq("user_id", data.userId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("demo_jobs")
+          .select(
+            "id, upload_id, status, stage, queued_at, rounds_valid, match_id, uploads(file_name)",
+          )
+          .eq("user_id", data.userId)
+          .order("queued_at", { ascending: false })
+          .limit(50),
+      ]);
+
+    const demoMatchIds = [
+      ...new Set((demoJobRows ?? []).flatMap((job) => (job.match_id ? [job.match_id] : []))),
+    ];
+    const { data: demoMatches } = demoMatchIds.length
+      ? await supabase.from("matches").select("id, map, result, rounds").in("id", demoMatchIds)
+      : { data: [] };
+    const demoMatchById = new Map((demoMatches ?? []).map((match) => [match.id, match]));
+    const demos: AdminDemo[] = (demoJobRows ?? []).map((job) => {
+      const upload = job.uploads as { file_name: string } | null;
+      const match = job.match_id ? demoMatchById.get(job.match_id) : null;
+      return {
+        jobId: job.id,
+        uploadId: job.upload_id,
+        fileName: upload?.file_name ?? "",
+        queuedAt: job.queued_at,
+        status: job.status,
+        stage: job.stage,
+        map: match?.map ?? null,
+        result: match?.result ?? null,
+        rounds: job.rounds_valid ?? match?.rounds ?? null,
+        matchId: job.match_id,
+      };
+    });
 
     const empty = {
       identities: [] as AdminIdentity[],
@@ -458,6 +504,7 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
         player: null,
         goals: [] as Array<{ code: string; isPrimary: boolean }>,
         uploads: (uploadRows ?? []) as AdminUpload[],
+        demos,
         audit: (auditRows ?? []) as AuditLogRow[],
         ...empty,
       };
@@ -600,6 +647,7 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       })),
       identities: (identitiesRes.data ?? []) as AdminIdentity[],
       uploads: (uploadRows ?? []) as AdminUpload[],
+      demos,
       matches: (matchesRes.data ?? []) as AdminMatch[],
       metrics: (metricsRes.data ?? []) as AdminMatchMetrics[],
       analyses,

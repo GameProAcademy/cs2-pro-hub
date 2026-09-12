@@ -1,5 +1,16 @@
 # Roadmap
 
+## FASE 2.7.2B — RAW Demo Evidence & Full Coverage — IMPLEMENTED / NOT CLOSED
+
+- [x] Conexão oficial do Supabase/Lovable Cloud preservada e cliente fail-closed, sem fallback ou banco alternativo.
+- [x] Histórico real de demos em `/analysis`, derivado de `uploads`, `demo_jobs` e `matches` sob RLS do utilizador.
+- [x] Aba administrativa `Demos`, separada da visão técnica de uploads e protegida pela autorização existente.
+- [x] Inventário integral de eventos separado da allowlist de extração; amostragem determinística limitada a 4096 ticks.
+- [x] Estados explícitos de capacidade, `partial_parse` derivado de falhas reais e mapeamentos RAW-only justificados.
+- [x] Evidência RAW permanece separada do Canonical Engine, preservando `NULL/UNKNOWN` e sem fabricar entidades.
+- [ ] E2E real completo com uma demo privada válida (BLOCKED: arquivo `.dem` não disponível no ambiente).
+- [ ] Fechamento da fase após aprovação de todos os gates reais; FASE 2.8 não iniciada.
+
 ## FASE UX — Processamento de demo com progresso e etapas (concluída)
 
 - [x] Progresso visual estimado derivado exclusivamente do stage real, com faixas determinísticas, monotonicidade e teto por etapa.

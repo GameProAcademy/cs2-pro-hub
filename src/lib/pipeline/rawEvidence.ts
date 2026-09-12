@@ -5,10 +5,17 @@ export type RawEvidenceStatus = "PASS" | "FAIL" | "BLOCKED";
 export type RawFieldMappingStatus =
   | "MAPPED"
   | "DERIVED"
+  | "RAW_ONLY_INTENTIONAL"
+  | "NOT_PRESENT_IN_DEMO"
   | "UNAVAILABLE"
-  | "UNSUPPORTED"
-  | "UNMAPPED_BUT_AVAILABLE"
-  | "DROPPED_WITH_REASON";
+  | "PARSE_FAILED"
+  | "UNMAPPED_BUT_AVAILABLE";
+export type RawCapabilityState =
+  | "NOT_PRESENT_IN_DEMO"
+  | "AVAILABLE_BUT_EMPTY"
+  | "PARSED_SUCCESSFULLY"
+  | "PARSE_FAILED"
+  | "API_UNAVAILABLE";
 
 export interface RawDemoEvidenceManifest {
   parser_name: string | null;
@@ -40,6 +47,12 @@ export interface RawDemoEvidenceManifest {
   warnings: string[];
   partial_parse: boolean;
   extraction_confidence: number | null;
+  event_inventory: string[];
+  selected_event_candidates: string[];
+  parsed_event_tables: string[];
+  tick_sample_rows: number;
+  event_rows: number;
+  estimated_evidence_bytes: number | null;
 }
 export interface RawEventCoverage {
   event_name: string;
@@ -55,6 +68,7 @@ export interface RawEventCoverage {
   fields_missing: string[];
   error_type: string | null;
   error_message_safe: string | null;
+  capability_state: RawCapabilityState;
 }
 export interface RawPropertyCoverage {
   property: string;
@@ -129,6 +143,15 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
     raw.gates,
   ];
   if (lists.some((item) => !Array.isArray(item))) throw new Error("invalid raw evidence sections");
+  for (const mapping of raw.field_mappings ?? []) {
+    if (
+      (mapping.status === "RAW_ONLY_INTENTIONAL" && !mapping.reason?.trim()) ||
+      mapping.status === "UNMAPPED_BUT_AVAILABLE" ||
+      mapping.status === "PARSE_FAILED"
+    ) {
+      throw new Error(`RAW evidence has an unresolved mapping: ${mapping.raw_field}`);
+    }
+  }
   if (!/^[0-9a-f]{64}$/.test(raw.deterministic_digest ?? ""))
     throw new Error("invalid raw evidence digest");
   return raw as RawDemoEvidence;

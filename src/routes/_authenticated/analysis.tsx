@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { FaceitPanel } from "@/components/integrations/FaceitPanel";
 import { AppShell } from "@/components/layout/AppShell";
+import { DemoHistory } from "@/components/pipeline/DemoHistory";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { StrengthList } from "@/components/panels/StrengthList";
 import { useT } from "@/i18n";
@@ -68,6 +69,14 @@ function AnalysisPage() {
         <DemoDataNotice context={t("analysis.notice")} />
 
         <FaceitPanel callback={callback} />
+
+        <ChartCard
+          title={t("pipeline.history.analysisTitle")}
+          subtitle={t("pipeline.history.analysisSubtitle")}
+          showDemoTag={false}
+        >
+          <DemoHistory />
+        </ChartCard>
 
         <ChartCard title={t("analysis.overall")}>
           <p className="text-sm leading-relaxed text-muted-foreground">{analysis.overall}</p>

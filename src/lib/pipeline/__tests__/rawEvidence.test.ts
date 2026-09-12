@@ -33,6 +33,12 @@ const evidence = {
     warnings: [],
     partial_parse: false,
     extraction_confidence: null,
+    event_inventory: [],
+    selected_event_candidates: [],
+    parsed_event_tables: [],
+    tick_sample_rows: 0,
+    event_rows: 0,
+    estimated_evidence_bytes: null,
   },
   event_coverage: [],
   raw_events: [],
@@ -58,5 +64,35 @@ describe("raw evidence contract", () => {
   it("rejects invalid digests and reports gates deterministically", () => {
     expect(() => assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" })).toThrow();
     expect(evaluateRawEvidence(evidence)[0]?.status).toBe("FAIL");
+  });
+  it("rejects unresolved mappings and raw-only mappings without a reason", () => {
+    expect(() =>
+      assertRawDemoEvidence({
+        ...evidence,
+        field_mappings: [
+          {
+            raw_field: "event.future_field",
+            app_field: null,
+            canonical_field: null,
+            status: "UNMAPPED_BUT_AVAILABLE",
+            reason: null,
+          },
+        ],
+      }),
+    ).toThrow("unresolved mapping");
+    expect(() =>
+      assertRawDemoEvidence({
+        ...evidence,
+        field_mappings: [
+          {
+            raw_field: "player.kills_total",
+            app_field: null,
+            canonical_field: null,
+            status: "RAW_ONLY_INTENTIONAL",
+            reason: null,
+          },
+        ],
+      }),
+    ).toThrow("unresolved mapping");
   });
 });

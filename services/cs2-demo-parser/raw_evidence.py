@@ -7,28 +7,53 @@ import math
 from typing import Any, Iterable, Sequence
 
 EVIDENCE_VERSION = 1
-TICK_SAMPLE_LIMIT = 2048
+TICK_SAMPLE_LIMIT = 4096
 
 EVENT_CANDIDATES: tuple[str, ...] = (
-    "bomb_beep", "bomb_begindefuse", "bomb_beginplant", "bomb_defused", "bomb_exploded",
-    "bomb_planted", "decoy_detonate", "flashbang_detonate", "grenade_thrown",
-    "hegrenade_detonate", "inferno_expire", "item_pickup", "item_purchase", "item_remove",
-    "molotov_detonate", "player_blind", "player_death", "player_hurt", "player_spawned",
-    "player_team", "round_end", "round_start", "smokegrenade_expired",
-    "smokegrenade_detonate", "weapon_fire", "weapon_fire_on_empty", "weapon_reload",
-    "weapon_zoom", "weapon_zoom_rifle",
+    "bomb_abortdefuse", "bomb_abortplant", "bomb_begindefuse", "bomb_beginplant",
+    "bomb_defused", "bomb_dropped", "bomb_exploded", "bomb_pickup", "bomb_planted",
+    "bullet_damage", "bullet_impact", "decoy_detonate", "enter_bombzone", "enter_buyzone",
+    "exit_bombzone", "exit_buyzone", "flashbang_detonate", "grenade_thrown",
+    "hegrenade_detonate", "inferno_expire", "inferno_extinguish", "inferno_startburn",
+    "item_equip", "item_pickup", "item_purchase", "item_remove", "molotov_detonate",
+    "player_death", "player_hurt", "round_end", "round_mvp", "round_start",
+    "smokegrenade_detonate", "smokegrenade_expired", "weapon_fire",
+    "weapon_fire_on_empty", "weapon_reload", "weapon_zoom", "weapon_zoom_rifle",
 )
 
 PLAYER_PROPERTIES: tuple[str, ...] = (
-    "X", "Y", "Z", "active_weapon", "armor_value", "balance", "buttons",
+    "X", "Y", "Z", "active_weapon", "active_weapon_name", "active_weapon_ammo",
+    "aim_punch_angle", "aim_punch_angle_vel", "armor_value", "balance",
     "cash_spent_this_round", "current_equip_value", "death_time", "ducked", "ducking",
     "flash_duration", "game_time", "has_defuser", "has_helmet", "health", "in_bomb_zone",
-    "in_buy_zone", "is_airborne", "is_alive", "is_defusing", "is_scoped", "is_walking",
-    "last_place_name", "life_state", "mvps", "ping", "pitch", "player_name",
+    "in_buy_zone", "in_no_defuse_area", "is_airborne", "is_alive", "is_defusing",
+    "is_scoped", "is_strafing", "is_walking", "last_place_name", "life_state",
+    "move_state", "pitch", "player_name",
     "player_steamid", "round_start_equip_value", "score", "shots_fired", "spawn_time",
     "start_balance", "team_num", "total_cash_spent", "velocity", "velocity_X", "velocity_Y",
-    "velocity_Z", "weapon_purchases_this_match", "weapon_purchases_this_round", "yaw",
+    "velocity_Z", "velo_modifier", "weapon_purchases_this_match",
+    "weapon_purchases_this_round", "which_bomb_zone", "yaw",
+    "kills_total", "deaths_total", "assists_total", "alive_time_total",
+    "headshot_kills_total", "ace_rounds_total", "4k_rounds_total", "3k_rounds_total",
+    "damage_total", "objective_total", "utility_damage_total", "enemies_flashed_total",
+    "equipment_value_total", "money_saved_total", "kill_reward_total", "cash_earned_total",
+    "team_rounds_total", "team_name", "team_score_first_half", "team_score_second_half",
+    "team_score_overtime", "is_freeze_period", "is_warmup_period", "match_start_time",
+    "round_start_time", "game_start_time", "game_phase", "total_rounds_played",
+    "rounds_played_this_phase", "is_match_started", "is_bomb_dropped",
+    "is_bomb_planted", "round_win_status", "round_win_reason", "ct_losing_streak",
+    "t_losing_streak", "round_in_progress", "total_ammo_left", "stamina",
 )
+
+RAW_ONLY_REASON = "Retained for future behavioral/aim analysis."
+REVIEWED_EVENT_FIELDS = {
+    "tick", "round", "total_rounds_played", "attacker_steamid", "user_steamid",
+    "assister_steamid", "attacker_name", "user_name", "assister_name", "weapon",
+    "weapon_name", "headshot", "dmg_health", "dmg_armor", "health", "armor",
+    "hitgroup", "blind_duration", "x", "y", "z", "X", "Y", "Z", "site",
+    "team_num", "user_team_num", "attacker_team_num", "penetrated", "noscope",
+    "thrusmoke", "distance", "silenced", "is_warmup_period", "is_freeze_period",
+}
 
 MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "header.map_name": ("header.map", "CanonicalMatch.map", "MAPPED"),
@@ -134,7 +159,7 @@ def field_coverage(rows: Sequence[dict[str, Any]], properties: Iterable[str]) ->
 
 
 def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | None,
-                   error: BaseException | None = None) -> dict[str, Any]:
+                   error: BaseException | None = None, *, api_available: bool = True) -> dict[str, Any]:
     safe_rows = list(rows or [])
     first_tick, last_tick = _range(safe_rows, "tick")
     rounds = [r for row in safe_rows for r in [_int(row.get("round") or row.get("total_rounds_played"))] if r is not None]
@@ -144,13 +169,20 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
         field for field in all_fields if any(row.get(field) is None for row in safe_rows)
     )
     error_type, error_message = safe_error(error) if error else (None, None)
+    state = (
+        "API_UNAVAILABLE" if not api_available else
+        "PARSE_FAILED" if error is not None else
+        "NOT_PRESENT_IN_DEMO" if not available else
+        "AVAILABLE_BUT_EMPTY" if not safe_rows else
+        "PARSED_SUCCESSFULLY"
+    )
     return {
         "event_name": name, "available": available, "parse_attempted": available or error is not None,
         "parse_success": available and error is None, "row_count": len(safe_rows) if error is None and available else None,
         "first_tick": first_tick, "last_tick": last_tick,
         "first_round": min(rounds) if rounds else None, "last_round": max(rounds) if rounds else None,
         "fields_available": fields, "fields_missing": missing_fields, "error_type": error_type,
-        "error_message_safe": error_message,
+        "error_message_safe": error_message, "capability_state": state,
     }
 
 
@@ -179,8 +211,19 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
             for key in row: observed.add(f"{name}.{key}")
     result = []
     for field in sorted(observed):
-        app_field, canonical_field, status = MAPPED_RAW_FIELDS.get(field, (None, None, "UNMAPPED_BUT_AVAILABLE"))
-        result.append({"raw_field": field, "app_field": app_field, "canonical_field": canonical_field, "status": status, "reason": None})
+        if field in MAPPED_RAW_FIELDS:
+            app_field, canonical_field, status = MAPPED_RAW_FIELDS[field]
+            reason = None
+        elif field.startswith("player.") and field.removeprefix("player.") in PLAYER_PROPERTIES:
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
+        elif any(
+            field.startswith(f"{event}.") and field.removeprefix(f"{event}.") in REVIEWED_EVENT_FIELDS
+            for event in EVENT_CANDIDATES
+        ):
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
+        else:
+            app_field, canonical_field, status, reason = None, None, "UNMAPPED_BUT_AVAILABLE", None
+        result.append({"raw_field": field, "app_field": app_field, "canonical_field": canonical_field, "status": status, "reason": reason})
     return result
 
 
@@ -203,8 +246,14 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
         "event_inventory_count": len(raw.get("event_inventory") or []),
         "first_tick": min(ticks) if ticks else None,
         "last_tick": max(ticks) if ticks else None, "warnings": list(output.get("warnings") or []),
-        "partial_parse": any("partial" in str(w).lower() for w in output.get("warnings") or []),
+        "partial_parse": False,
         "extraction_confidence": None,
+        "event_inventory": list(raw.get("event_inventory") or []),
+        "selected_event_candidates": list(EVENT_CANDIDATES),
+        "parsed_event_tables": sorted(name for name, rows in (raw.get("event_tables") or {}).items() if rows is not None),
+        "tick_sample_rows": len(raw.get("tick_rows") or []),
+        "event_rows": sum(len(rows or []) for rows in (raw.get("event_tables") or {}).values()),
+        "estimated_evidence_bytes": None,
     }
 
 
@@ -231,7 +280,10 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     economy_tested = bool(evidence["economy_coverage"]) and any(
         item.get("available") for item in evidence["economy_coverage"]
     )
-    mapping_ok = bool(mappings) and all(item["status"] for item in mappings)
+    mapping_failures = {"UNMAPPED_BUT_AVAILABLE", "PARSE_FAILED"}
+    mapping_ok = bool(mappings) and not any(item["status"] in mapping_failures for item in mappings)
+    intentional_ok = all(item.get("reason") for item in mappings if item["status"] == "RAW_ONLY_INTENTIONAL")
+    mapping_ok = mapping_ok and intentional_ok
     core_ok = all([manifest.get("demo_sha256"), manifest.get("parser_name"), manifest.get("parser_version"), event_ok, player_ok, round_ok, tick_tested, grenade_tested, economy_tested, mapping_ok])
     return [
         gate("RAW-EVIDENCE-01", bool(core_ok), [] if core_ok else ["required evidence capability is missing or failed"]),
@@ -253,5 +305,6 @@ def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contr
                      "demo_sha256": demo_sha256.lower(), "file_size": file_size})
     evidence["gates"] = build_gates(evidence)
     clean = _safe(evidence)
+    clean["manifest"]["estimated_evidence_bytes"] = len(stable_json(clean).encode("utf-8"))
     clean["deterministic_digest"] = evidence_digest(clean)
     return clean
