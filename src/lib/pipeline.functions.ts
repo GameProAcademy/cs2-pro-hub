@@ -194,22 +194,22 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
 
 function toView(
   row: {
-  id: string;
-  upload_id: string;
-  status: string;
-  stage: string;
-  error_code: string | null;
-  retry_count: number;
-  max_retries: number;
-  match_id: string | null;
-  extraction_confidence: number | null;
-  partial_parse: boolean;
-  rounds_valid: number | null;
-  attachment_state: string;
-  attachment_reason: string | null;
-  queued_at: string;
-  finished_at: string | null;
-  uploads?: { file_name: string } | null;
+    id: string;
+    upload_id: string;
+    status: string;
+    stage: string;
+    error_code: string | null;
+    retry_count: number;
+    max_retries: number;
+    match_id: string | null;
+    extraction_confidence: number | null;
+    partial_parse: boolean;
+    rounds_valid: number | null;
+    attachment_state: string;
+    attachment_reason: string | null;
+    queued_at: string;
+    finished_at: string | null;
+    uploads?: { file_name: string } | null;
   },
   match?: {
     map: string | null;

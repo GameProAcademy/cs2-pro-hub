@@ -435,36 +435,38 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error || !profile) throw new Error(FAILED);
 
-    const [{ data: player }, { data: auditRows }, { data: uploadRows }, { data: demoJobRows }] = await Promise.all([
-      supabase.from("player_profiles").select("*").eq("user_id", data.userId).maybeSingle(),
-      supabase
-        .from("admin_audit_logs")
-        .select("id, action, admin_user_id, target_user_id, metadata, created_at")
-        .eq("target_user_id", data.userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("uploads")
-        .select(
-          "id, file_name, type, source, file_size, mime_type, status, error_message, created_at, processed_at",
-        )
-        .eq("user_id", data.userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("demo_jobs")
-        .select("id, upload_id, status, stage, queued_at, rounds_valid, match_id, uploads(file_name)")
-        .eq("user_id", data.userId)
-        .order("queued_at", { ascending: false })
-        .limit(50),
-    ]);
+    const [{ data: player }, { data: auditRows }, { data: uploadRows }, { data: demoJobRows }] =
+      await Promise.all([
+        supabase.from("player_profiles").select("*").eq("user_id", data.userId).maybeSingle(),
+        supabase
+          .from("admin_audit_logs")
+          .select("id, action, admin_user_id, target_user_id, metadata, created_at")
+          .eq("target_user_id", data.userId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("uploads")
+          .select(
+            "id, file_name, type, source, file_size, mime_type, status, error_message, created_at, processed_at",
+          )
+          .eq("user_id", data.userId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("demo_jobs")
+          .select(
+            "id, upload_id, status, stage, queued_at, rounds_valid, match_id, uploads(file_name)",
+          )
+          .eq("user_id", data.userId)
+          .order("queued_at", { ascending: false })
+          .limit(50),
+      ]);
 
-    const demoMatchIds = [...new Set((demoJobRows ?? []).flatMap((job) => (job.match_id ? [job.match_id] : [])))];
+    const demoMatchIds = [
+      ...new Set((demoJobRows ?? []).flatMap((job) => (job.match_id ? [job.match_id] : []))),
+    ];
     const { data: demoMatches } = demoMatchIds.length
-      ? await supabase
-          .from("matches")
-          .select("id, map, result, rounds")
-          .in("id", demoMatchIds)
+      ? await supabase.from("matches").select("id, map, result, rounds").in("id", demoMatchIds)
       : { data: [] };
     const demoMatchById = new Map((demoMatches ?? []).map((match) => [match.id, match]));
     const demos: AdminDemo[] = (demoJobRows ?? []).map((job) => {

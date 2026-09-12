@@ -246,7 +246,14 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
     players,
     rounds,
     events,
-    quality: assessQuality(players, rounds, events, unsupportedEvents, raw.warnings ?? [], raw.raw_evidence),
+    quality: assessQuality(
+      players,
+      rounds,
+      events,
+      unsupportedEvents,
+      raw.warnings ?? [],
+      raw.raw_evidence,
+    ),
     parser: {
       name: raw.parser.name,
       version: raw.parser.version,

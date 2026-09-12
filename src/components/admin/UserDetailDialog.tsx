@@ -251,7 +251,15 @@ export function UserDetailDialog({
   const demoStatus = (demo: AdminDemo) => {
     if (demo.status === "failed") return t("pipeline.processing.failed.title");
     if (demo.status === "processed") return t("pipeline.processing.done.title");
-    const stage = ["queued", "validating", "parsing", "normalizing", "metrics", "persisting", "cleanup"].includes(demo.stage)
+    const stage = [
+      "queued",
+      "validating",
+      "parsing",
+      "normalizing",
+      "metrics",
+      "persisting",
+      "cleanup",
+    ].includes(demo.stage)
       ? demo.stage
       : "queued";
     return t(`pipeline.processing.${stage}.title` as TranslationKey);
@@ -599,7 +607,11 @@ export function UserDetailDialog({
                   <div className="rounded-md border border-border p-3">
                     <Field
                       label={t("admin.demos.latest")}
-                      value={demos[0] ? `${dayFormat.format(new Date(demos[0].queuedAt))} · ${demos[0].map || dash}` : dash}
+                      value={
+                        demos[0]
+                          ? `${dayFormat.format(new Date(demos[0].queuedAt))} · ${demos[0].map || dash}`
+                          : dash
+                      }
                     />
                   </div>
                 </div>
@@ -609,12 +621,21 @@ export function UserDetailDialog({
                 ) : (
                   <ul className="space-y-2">
                     {demos.map((demo) => (
-                      <li key={demo.jobId} className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-3 lg:grid-cols-4">
-                        <Field label={t("admin.field.date")} value={dateFormat.format(new Date(demo.queuedAt))} />
+                      <li
+                        key={demo.jobId}
+                        className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-3 lg:grid-cols-4"
+                      >
+                        <Field
+                          label={t("admin.field.date")}
+                          value={dateFormat.format(new Date(demo.queuedAt))}
+                        />
                         <Field label={t("admin.field.file")} value={demo.fileName || dash} />
                         <Field label={t("admin.field.map")} value={demo.map || dash} />
                         <Field label={t("admin.table.status")} value={demoStatus(demo)} />
-                        <Field label={t("admin.field.rounds")} value={demo.rounds !== null ? String(demo.rounds) : dash} />
+                        <Field
+                          label={t("admin.field.rounds")}
+                          value={demo.rounds !== null ? String(demo.rounds) : dash}
+                        />
                         <Field label={t("admin.demos.matchId")} value={demo.matchId || dash} />
                         <Field label={t("admin.demos.uploadId")} value={demo.uploadId} />
                         <Field label={t("admin.demos.jobId")} value={demo.jobId} />

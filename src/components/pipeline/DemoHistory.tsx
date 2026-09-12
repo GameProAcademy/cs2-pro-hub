@@ -10,7 +10,15 @@ import { cn } from "@/lib/utils";
 function statusKey(job: DemoJobView): TranslationKey {
   if (job.status === "failed") return "pipeline.processing.failed.title";
   if (job.status === "processed") return "pipeline.processing.done.title";
-  const stage = ["queued", "validating", "parsing", "normalizing", "metrics", "persisting", "cleanup"].includes(job.stage)
+  const stage = [
+    "queued",
+    "validating",
+    "parsing",
+    "normalizing",
+    "metrics",
+    "persisting",
+    "cleanup",
+  ].includes(job.stage)
     ? job.stage
     : "queued";
   return `pipeline.processing.${stage}.title` as TranslationKey;
@@ -53,15 +61,30 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
       <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-3">
         <div className="flex items-start gap-2">
           <Map className="mt-0.5 size-3.5 text-muted-foreground" aria-hidden />
-          <div><dt className="text-muted-foreground">{t("pipeline.history.map")}</dt><dd className="text-foreground">{job.map ?? unavailable}</dd></div>
+          <div>
+            <dt className="text-muted-foreground">{t("pipeline.history.map")}</dt>
+            <dd className="text-foreground">{job.map ?? unavailable}</dd>
+          </div>
         </div>
         <div className="flex items-start gap-2">
           <Trophy className="mt-0.5 size-3.5 text-muted-foreground" aria-hidden />
-          <div><dt className="text-muted-foreground">{t("pipeline.history.result")}</dt><dd className="text-foreground">{job.result ? `${t(`pipeline.history.result.${job.result as "win" | "loss" | "draw"}`)} · ${score}` : unavailable}</dd></div>
+          <div>
+            <dt className="text-muted-foreground">{t("pipeline.history.result")}</dt>
+            <dd className="text-foreground">
+              {job.result
+                ? `${t(`pipeline.history.result.${job.result as "win" | "loss" | "draw"}`)} · ${score}`
+                : unavailable}
+            </dd>
+          </div>
         </div>
         <div className="flex items-start gap-2">
           <FileQuestion className="mt-0.5 size-3.5 text-muted-foreground" aria-hidden />
-          <div><dt className="text-muted-foreground">{t("pipeline.history.rounds")}</dt><dd className="text-foreground">{job.roundsValid !== null ? String(job.roundsValid) : unavailable}</dd></div>
+          <div>
+            <dt className="text-muted-foreground">{t("pipeline.history.rounds")}</dt>
+            <dd className="text-foreground">
+              {job.roundsValid !== null ? String(job.roundsValid) : unavailable}
+            </dd>
+          </div>
         </div>
       </dl>
       {job.status === "pending" || job.status === "processing" ? (
@@ -85,8 +108,16 @@ export function DemoHistory() {
   });
 
   if (jobs.isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
-  if (jobs.isError) return <p className="text-sm text-destructive">{t("common.errorDescription")}</p>;
-  if (!jobs.data?.length) return <p className="text-sm text-muted-foreground">{t("pipeline.historyEmpty")}</p>;
+  if (jobs.isError)
+    return <p className="text-sm text-destructive">{t("common.errorDescription")}</p>;
+  if (!jobs.data?.length)
+    return <p className="text-sm text-muted-foreground">{t("pipeline.historyEmpty")}</p>;
 
-  return <ul>{jobs.data.map((job) => <DemoHistoryItem key={job.jobId} job={job} />)}</ul>;
+  return (
+    <ul>
+      {jobs.data.map((job) => (
+        <DemoHistoryItem key={job.jobId} job={job} />
+      ))}
+    </ul>
+  );
 }
