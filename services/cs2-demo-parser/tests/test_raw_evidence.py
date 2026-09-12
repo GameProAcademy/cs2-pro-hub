@@ -32,6 +32,9 @@ def test_empty_event_is_distinct_from_unavailable_and_failed():
     assert empty["parse_success"] is True and empty["row_count"] == 0
     assert missing["parse_attempted"] is False and missing["row_count"] is None
     assert failed["parse_attempted"] is True and failed["parse_success"] is False
+    assert empty["capability_state"] == "AVAILABLE_BUT_EMPTY"
+    assert missing["capability_state"] == "NOT_PRESENT_IN_DEMO"
+    assert failed["capability_state"] == "PARSE_FAILED"
 
 
 def test_raw_event_keeps_native_fields_and_false_zero_values():
@@ -85,3 +88,20 @@ def test_gates_fail_closed_when_a_stream_or_capability_fails():
     gates = {item["gate"]: item["status"] for item in build_gates(evidence)}
     assert gates["EVENT-COVERAGE"] == "FAIL"
     assert gates["RAW-EVIDENCE-01"] == "FAIL"
+
+
+def test_tick_limit_and_high_value_candidates_are_explicit():
+    from raw_evidence import EVENT_CANDIDATES, TICK_SAMPLE_LIMIT
+    assert TICK_SAMPLE_LIMIT == 4096
+    assert {"bullet_damage", "bullet_impact", "weapon_fire", "grenade_thrown"} <= set(EVENT_CANDIDATES)
+
+
+def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
+    reviewed = material()
+    reviewed["players"][0]["kills_total"] = 7
+    mapped = build_raw_evidence(reviewed, output())["field_mappings"]
+    aggregate = next(item for item in mapped if item["raw_field"] == "player.kills_total")
+    assert aggregate["status"] == "RAW_ONLY_INTENTIONAL"
+    assert aggregate["reason"]
+    unknown = next(item for item in mapped if item["raw_field"] == "player.balance")
+    assert unknown["status"] == "UNMAPPED_BUT_AVAILABLE"

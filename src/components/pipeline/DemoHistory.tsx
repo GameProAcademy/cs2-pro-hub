@@ -7,13 +7,6 @@ import type { TranslationKey } from "@/i18n/config";
 import { listMyDemoJobs, type DemoJobView } from "@/lib/pipeline.functions";
 import { cn } from "@/lib/utils";
 
-const STATUS_KEYS: Record<DemoJobView["status"], TranslationKey> = {
-  pending: "pipeline.status.pending",
-  processing: "pipeline.status.processing",
-  processed: "pipeline.status.processed",
-  failed: "pipeline.status.failed",
-};
-
 function statusKey(job: DemoJobView): TranslationKey {
   if (job.status === "failed") return "pipeline.processing.failed.title";
   if (job.status === "processed") return "pipeline.processing.done.title";
