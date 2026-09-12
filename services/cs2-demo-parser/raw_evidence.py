@@ -214,8 +214,11 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     mappings = evidence["field_mappings"]
     def gate(name: str, passed: bool, reasons: list[str]) -> dict[str, Any]:
         return {"gate": name, "status": "PASS" if passed else "FAIL", "reasons": reasons}
-    event_ok = bool(events) and manifest.get("event_inventory_success") is True and all(
-        item["parse_success"] for item in events if item["available"]
+    event_ok = (
+        bool(events)
+        and manifest.get("event_inventory_success") is True
+        and all(item["parse_success"] for item in events if item["available"])
+        and not any(item["parse_attempted"] and not item["parse_success"] for item in events)
     )
     player_ok = manifest["players_count"] > 0 and bool(evidence["player_coverage"])
     round_ok = manifest["rounds_count"] > 0
