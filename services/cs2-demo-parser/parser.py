@@ -336,7 +336,9 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     raw["event_tables"] = {}
     raw["event_errors"] = {}
 
-    event_names = sorted(set(EVENT_CANDIDATES) | inventory)
+    # The complete inventory is retained for audit, but only the reviewed,
+    # bounded high-value allow-list is parsed.
+    event_names = sorted(EVENT_CANDIDATES)
     for name in event_names:
         if name not in inventory:
             raw["event_tables"][name] = None
@@ -371,7 +373,10 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     sample_ticks = sorted(
         {
             tick
-            for name in ("round_start", "round_end", "player_death")
+            for name in (
+                "round_start", "round_end", "player_death", "player_hurt",
+                "bullet_damage", "bullet_impact", "weapon_fire", "grenade_thrown",
+            )
             for row in (raw["event_tables"].get(name) or [])
             for tick in [row.get("tick")]
             if isinstance(tick, int)
@@ -392,7 +397,10 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
     for name in sorted(raw["event_tables"]):
         rows = raw["event_tables"].get(name)
         available = rows is not None or inventory_error is not None
-        coverage.append(event_coverage(name, available, rows, raw["event_errors"].get(name)))
+        coverage.append(event_coverage(
+            name, available, rows, raw["event_errors"].get(name),
+            api_available=inventory_error is None,
+        ))
     tick_rows = raw.get("tick_rows") or []
     grenade_rows = raw.get("grenade_rows") or []
     tick_error = raw.get("tick_error")
@@ -433,6 +441,15 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
         "field_mappings": mapping_inventory(raw),
         "gates": [],
     }
+    failed_capability = any(item["capability_state"] in ("PARSE_FAILED", "API_UNAVAILABLE") for item in coverage)
+    failed_capability = failed_capability or tick_error is not None or grenade_error is not None
+    evidence["manifest"]["partial_parse"] = failed_capability
+    penalties = 0.0
+    penalties += 0.4 if not output.get("players") else 0.0
+    penalties += 0.4 if not output.get("rounds") else 0.0
+    penalties += 0.2 if failed_capability else 0.0
+    penalties += 0.1 if not economy_coverage or not any(item["available"] for item in economy_coverage) else 0.0
+    evidence["manifest"]["extraction_confidence"] = round(max(0.0, 1.0 - penalties), 3)
     evidence["gates"] = build_gates(evidence)
     return evidence
 

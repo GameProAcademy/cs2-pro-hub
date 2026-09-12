@@ -129,6 +129,7 @@ function assessQuality(
   events: CanonicalEvent[],
   unsupportedEvents: number,
   warnings: string[],
+  rawEvidence?: RawParserOutput["raw_evidence"],
 ): ExtractionQuality {
   const flags = new Set<QualityFlag>();
   // FASE 2.7.1E — the central round-end evidence rule (roundEvidence.ts), the
@@ -149,9 +150,7 @@ function assessQuality(
   if (!hasUtilityEvidence(events)) {
     flags.add("missing_utility");
   }
-  for (const warning of warnings) {
-    if (warning.toLowerCase().includes("partial")) flags.add("partial_parse");
-  }
+  if (rawEvidence?.manifest.partial_parse === true) flags.add("partial_parse");
 
   // Confidence starts at 1 and is reduced by every missing signal. It is a
   // transparency signal, not a marketing number.
@@ -165,9 +164,12 @@ function assessQuality(
     unsupported_event: 0.05,
     low_sample: 0.15,
   };
-  let confidence = 1;
-  for (const flag of flags) confidence -= penalties[flag];
-  confidence = Math.max(0, Math.min(1, Number(confidence.toFixed(3))));
+  let confidence = rawEvidence?.manifest.extraction_confidence;
+  if (confidence == null) {
+    confidence = 1;
+    for (const flag of flags) confidence -= penalties[flag];
+    confidence = Math.max(0, Math.min(1, Number(confidence.toFixed(3))));
+  }
 
   const partialParse = flags.has("partial_parse") || roundsValid < rounds.length;
 
@@ -239,7 +241,7 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
     players,
     rounds,
     events,
-    quality: assessQuality(players, rounds, events, unsupportedEvents, raw.warnings ?? []),
+    quality: assessQuality(players, rounds, events, unsupportedEvents, raw.warnings ?? [], raw.raw_evidence),
     parser: {
       name: raw.parser.name,
       version: raw.parser.version,
