@@ -105,7 +105,10 @@ def _range(rows: Sequence[dict[str, Any]], field: str) -> tuple[int | None, int 
 
 
 def safe_error(exc: BaseException) -> tuple[str, str]:
-    message = " ".join(str(exc).split())[:240]
+    import re
+    message = " ".join(str(exc).split())
+    message = re.sub(r"(?:[A-Za-z]:)?[/\\][^\s]+", "[path]", message)
+    message = re.sub(r"(?i)bearer\s+[A-Za-z0-9._~-]+", "Bearer [redacted]", message)[:240]
     return type(exc).__name__, message or "Parser capability failed without a message."
 
 

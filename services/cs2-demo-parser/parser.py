@@ -98,17 +98,19 @@ def _records(frame: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _parse_event_with_context(demo: Any, name: str) -> list[dict[str, Any]] | None:
-    """Read one event stream with round/timing context, preserving unknown."""
+def _parse_event_with_context(
+    demo: Any, name: str
+) -> tuple[list[dict[str, Any]] | None, BaseException | None]:
+    """Read one event stream and preserve its final parser failure."""
     try:
         frame = demo.parse_event(name, [], list(_EVENT_OTHER_PROPS))
-        return _records(frame)
+        return _records(frame), None
     except Exception:
         try:
             frame = demo.parse_event(name)
-            return _records(frame)
-        except Exception:
-            return None
+            return _records(frame), None
+        except Exception as exc:
+            return None, exc
 
 
 def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
@@ -256,10 +258,10 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         if name not in inventory:
             raw["event_tables"][name] = None
             continue
-        rows = _parse_event_with_context(demo, name)
+        rows, parse_error = _parse_event_with_context(demo, name)
         if rows is None:
             raw["event_tables"][name] = None
-            raw["event_errors"][name] = RuntimeError(f"{name} could not be parsed")
+            raw["event_errors"][name] = parse_error or RuntimeError(f"{name} could not be parsed")
             warnings.append(f"{name}_unavailable")
         else:
             raw["event_tables"][name] = _contextualize_rows(rows)
