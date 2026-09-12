@@ -46,6 +46,14 @@ PLAYER_PROPERTIES: tuple[str, ...] = (
 )
 
 RAW_ONLY_REASON = "Retained for future behavioral/aim analysis."
+REVIEWED_EVENT_FIELDS = {
+    "tick", "round", "total_rounds_played", "attacker_steamid", "user_steamid",
+    "assister_steamid", "attacker_name", "user_name", "assister_name", "weapon",
+    "weapon_name", "headshot", "dmg_health", "dmg_armor", "health", "armor",
+    "hitgroup", "blind_duration", "x", "y", "z", "X", "Y", "Z", "site",
+    "team_num", "user_team_num", "attacker_team_num", "penetrated", "noscope",
+    "thrusmoke", "distance", "silenced", "is_warmup_period", "is_freeze_period",
+}
 
 MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "header.map_name": ("header.map", "CanonicalMatch.map", "MAPPED"),
@@ -208,7 +216,10 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
             reason = None
         elif field.startswith("player.") and field.removeprefix("player.") in PLAYER_PROPERTIES:
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
-        elif any(field.startswith(f"{event}.") for event in EVENT_CANDIDATES):
+        elif any(
+            field.startswith(f"{event}.") and field.removeprefix(f"{event}.") in REVIEWED_EVENT_FIELDS
+            for event in EVENT_CANDIDATES
+        ):
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
         else:
             app_field, canonical_field, status, reason = None, None, "UNMAPPED_BUT_AVAILABLE", None
