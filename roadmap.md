@@ -744,3 +744,14 @@ apenas de uma nova execução do Run 1 pelo usuário.
 - Gates `RAW-EVIDENCE-01`, `EVENT-COVERAGE`, `PLAYER-COVERAGE`, `ROUND-COVERAGE`, `ECONOMY-COVERAGE`, `TICK-COVERAGE`, `GRENADE-COVERAGE` e `RAW→CANONICAL` são calculados sem relaxar o Gate 02-B.
 - Testes determinísticos cobrem inventário, vazio versus falha, campos nativos, NULL semantics, digest, mapeamento e projeção por evidência.
 - O E2E real de `furia-vs-gamerlegion-m1-cache.dem` não foi executado nesta rodada porque o artefato privado não está disponível no ambiente. Portanto os gates baseados na demo real permanecem **BLOCKED**, e a FASE 2.8 não foi iniciada.
+
+## FASE 2.7.2C — Demo Pipeline Recovery — EM ANDAMENTO
+
+- [ ] Lifecycle persistente com `cancel_requested` e `cancelled`.
+- [ ] Requeue pós-attachment com timestamps antigos limpos e `match_id` preservado.
+- [ ] Cancelamento real, idempotente, protegido por ownership e checkpoints seguros.
+- [ ] Claim/recovery/retry sem ressuscitar cancelamentos.
+- [ ] Progresso e polling derivados do estado persistido.
+- [ ] Scheduler real comprovado ou bloqueio de plataforma documentado.
+- [ ] Testes de lifecycle, cancelamento, concorrência, attachment e RAW Evidence.
+- [ ] E2E real e validação final do banco; manter NOT CLOSED se algum elo não for comprovado.
