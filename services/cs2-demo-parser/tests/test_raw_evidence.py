@@ -127,6 +127,35 @@ def test_player_blind_is_collected_mapped_and_preserves_unknown_semantics():
     assert absent["row_count"] is None
 
 
+def test_extract_raw_material_selects_player_blind_when_available():
+    from parser import extract_raw_material
+
+    class Demo:
+        def parse_header(self):
+            return {}
+
+        def list_game_events(self):
+            return ["player_blind"]
+
+        def parse_event(self, name, *_args):
+            assert name == "player_blind"
+            return [{"tick": 18, "round": 1, "blind_duration": 1.9}]
+
+        def parse_player_info(self):
+            return []
+
+        def parse_ticks(self, *_args, **_kwargs):
+            return []
+
+        def parse_grenades(self):
+            return []
+
+    raw = extract_raw_material(Demo())
+
+    assert raw["event_tables"]["player_blind"][0]["blind_duration"] == 1.9
+    assert raw["player_blind"][0]["blind_duration"] == 1.9
+
+
 def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
     reviewed = material()
     reviewed["players"][0]["kills_total"] = 7
