@@ -2730,35 +2730,21 @@ export type Database = {
         Args: { _observation: Json; _owner_player_id?: string; _series: Json }
         Returns: Json
       }
-      persist_demo_projection:
-        | {
-            Args: {
-              _features: Json
-              _match_id: string
-              _match_wide: Json
-              _metrics: Json
-              _player_id: string
-              _player_scoped: Json
-              _steam_id: string
-              _upload_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              _features: Json
-              _job_id?: string
-              _job_result?: Json
-              _match_id: string
-              _match_wide: Json
-              _metrics: Json
-              _player_id: string
-              _player_scoped: Json
-              _steam_id: string
-              _upload_id: string
-            }
-            Returns: string
-          }
+      persist_demo_projection: {
+        Args: {
+          _features: Json
+          _job_id?: string
+          _job_result?: Json
+          _match_id: string
+          _match_wide: Json
+          _metrics: Json
+          _player_id: string
+          _player_scoped: Json
+          _steam_id: string
+          _upload_id: string
+        }
+        Returns: string
+      }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
         Returns: number
