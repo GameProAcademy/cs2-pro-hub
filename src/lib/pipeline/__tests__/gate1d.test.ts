@@ -89,24 +89,26 @@ describe("Gate 1D upload boundaries", () => {
     }
   });
 
-  it("does not upload or enqueue an already processed duplicate", async () => {
-    const { calls, dependencies } = flow({
-      create: async () => {
-        calls.push("create");
-        return {
-          uploadId: "11111111-1111-4111-8111-111111111111",
-          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
-          duplicate: true,
-          duplicateStatus: "processed",
-          existingJobId: "existing-job",
-        };
-      },
+  for (const status of ["pending", "processed", "failed"] as const) {
+    it(`does not overwrite storage or enqueue an existing ${status} duplicate`, async () => {
+      const { calls, dependencies } = flow({
+        create: async () => {
+          calls.push("create");
+          return {
+            uploadId: "11111111-1111-4111-8111-111111111111",
+            storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+            duplicate: true,
+            duplicateStatus: status,
+            existingJobId: "existing-job",
+          };
+        },
+      });
+      await expect(
+        submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+      ).resolves.toEqual({ jobId: "existing-job", duplicate: true });
+      expect(calls).toEqual(["hash", "create"]);
     });
-    await expect(
-      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
-    ).resolves.toEqual({ jobId: "existing-job", duplicate: true });
-    expect(calls).toEqual(["hash", "create"]);
-  });
+  }
 });
 
 describe("Gate 1D parser identity", () => {

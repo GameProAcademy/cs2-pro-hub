@@ -789,3 +789,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
       idempotente não foram executados.
 
 **Veredito:** FASE 2.7.2D e FASE 2.7.2 permanecem **NOT CLOSED**; FASE 2.8 não iniciada.
+
+### Correção pós-auditoria — lifecycle/idempotência
+
+- [x] Reserva de upload serializada por usuário + SHA-256; upload cancelado gera novo
+      `upload_id` e caminho, preservando o histórico terminal.
+- [x] Duplicatas ativas/processadas não sobrescrevem o arquivo; falhas permanecem no
+      fluxo explícito de Retry.
+- [x] Enqueue transacional sem upsert destrutivo e sem ressurreição de estados terminais.
+- [x] Dois artefatos de teste identificados restaurados aos estados terminais coerentes.
+- [ ] Scheduler e E2E real permanecem bloqueados; FASE 2.7.2D continua **NOT CLOSED** e
+      FASE 2.8 não iniciada.
