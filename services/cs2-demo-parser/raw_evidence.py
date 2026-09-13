@@ -16,7 +16,7 @@ EVENT_CANDIDATES: tuple[str, ...] = (
     "exit_bombzone", "exit_buyzone", "flashbang_detonate", "grenade_thrown",
     "hegrenade_detonate", "inferno_expire", "inferno_extinguish", "inferno_startburn",
     "item_equip", "item_pickup", "item_purchase", "item_remove", "molotov_detonate",
-    "player_death", "player_hurt", "round_end", "round_mvp", "round_start",
+    "player_blind", "player_death", "player_hurt", "round_end", "round_mvp", "round_start",
     "smokegrenade_detonate", "smokegrenade_expired", "weapon_fire",
     "weapon_fire_on_empty", "weapon_reload", "weapon_zoom", "weapon_zoom_rifle",
 )
