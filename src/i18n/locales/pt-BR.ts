@@ -43,6 +43,7 @@ export const ptBR = {
   "common.interfaceReady": "Interface pronta",
   "common.remove": "Remover arquivo",
   "common.language": "Idioma",
+  "app.loading.initial": "Preparando seu ambiente…",
 
   "login.title": "Login",
   "login.subtitle":
@@ -77,6 +78,7 @@ export const ptBR = {
   "analyze.demo.description": "Envie uma demo .dem para uma análise mais profunda.",
   "analyze.demo.cta": "Enviar demo",
   "analyze.demo.dropTitle": "Arraste sua demo .dem aqui",
+  "analyze.demo.mobileTitle": "Selecione sua demo .dem",
   "analyze.demo.dropHint": "Somente arquivos .dem são aceitos nesta via.",
   "analyze.demo.invalid": "Formato inválido. Selecione um arquivo com extensão .dem.",
   "analyze.report.title": "Não tenho uma demo",
@@ -573,6 +575,9 @@ export const ptBR = {
   "pipeline.uploading": "Enviando e enfileirando a demo…",
   "pipeline.historyTitle": "Histórico de processamento",
   "pipeline.historyEmpty": "Nenhuma demo enviada ainda.",
+  "pipeline.history.emptyTitle": "Seu histórico está vazio",
+  "pipeline.history.emptyBody":
+    "Envie sua primeira demo para começar a construir seu perfil de performance.",
   "pipeline.history.analysisTitle": "Histórico de análises",
   "pipeline.history.analysisSubtitle": "Suas demos e o andamento real de cada análise.",
   "pipeline.history.unavailable": "Indisponível",
@@ -593,6 +598,7 @@ export const ptBR = {
   "pipeline.identify.selectLabel": "Jogadores detectados",
   "pipeline.identify.selectCta": "Sim, sou eu",
   "pipeline.identify.nicknameLabel": "Meu nick nesta demo",
+  "pipeline.identify.nicknamePlaceholder": "Seu nickname",
   "pipeline.identify.nicknameCta": "Usar este nickname",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
@@ -604,7 +610,11 @@ export const ptBR = {
   "pipeline.identify.reprocessing": "Jogador identificado. Gerando suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a você.",
   "pipeline.retry": "Tentar novamente",
+  "pipeline.retrying": "Tentando novamente…",
   "pipeline.cancel": "Cancelar processamento",
+  "pipeline.cancelling": "Solicitando cancelamento…",
+  "pipeline.upload.successTitle": "Demo enviada",
+  "pipeline.upload.successBody": "Entrou na fila de processamento.",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O arquivo da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la novamente.",
@@ -621,7 +631,8 @@ export const ptBR = {
   "pipeline.processing.estimated": "Estimativa baseada na etapa atual",
   "pipeline.processing.currentStage": "Etapa atual",
   "pipeline.processing.queued.title": "Preparando sua análise",
-  "pipeline.processing.queued.body": "Sua demo entrou na fila e será processada em instantes.",
+  "pipeline.processing.queued.body":
+    "Sua demo entrou na fila e será processada assim que estiver disponível.",
   "pipeline.processing.validating.title": "Validando sua demo",
   "pipeline.processing.validating.body": "Estamos conferindo o arquivo e a integridade da partida.",
   "pipeline.processing.parsing.title": "Lendo sua partida",

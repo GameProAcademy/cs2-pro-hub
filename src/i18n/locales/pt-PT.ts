@@ -39,6 +39,7 @@ export const ptPT: Dictionary = {
   "common.interfaceReady": "Interface pronta",
   "common.remove": "Remover ficheiro",
   "common.language": "Idioma",
+  "app.loading.initial": "A preparar o seu ambiente…",
 
   "login.title": "Iniciar sessão",
   "login.subtitle":
@@ -73,6 +74,7 @@ export const ptPT: Dictionary = {
   "analyze.demo.description": "Envie uma demo .dem para uma análise mais profunda.",
   "analyze.demo.cta": "Enviar demo",
   "analyze.demo.dropTitle": "Arraste a sua demo .dem para aqui",
+  "analyze.demo.mobileTitle": "Selecione a sua demo .dem",
   "analyze.demo.dropHint": "Apenas ficheiros .dem são aceites nesta via.",
   "analyze.demo.invalid": "Formato inválido. Selecione um ficheiro com extensão .dem.",
   "analyze.report.title": "Não tenho uma demo",
@@ -570,6 +572,9 @@ export const ptPT: Dictionary = {
   "pipeline.uploading": "A enviar e a colocar a demo na fila…",
   "pipeline.historyTitle": "Histórico de processamento",
   "pipeline.historyEmpty": "Ainda não enviou nenhuma demo.",
+  "pipeline.history.emptyTitle": "O seu histórico está vazio",
+  "pipeline.history.emptyBody":
+    "Envie a sua primeira demo para começar a construir o seu perfil de desempenho.",
   "pipeline.history.analysisTitle": "Histórico de análises",
   "pipeline.history.analysisSubtitle": "As suas demos e o progresso real de cada análise.",
   "pipeline.history.unavailable": "Indisponível",
@@ -590,6 +595,7 @@ export const ptPT: Dictionary = {
   "pipeline.identify.selectLabel": "Jogadores detetados",
   "pipeline.identify.selectCta": "Sim, sou eu",
   "pipeline.identify.nicknameLabel": "O meu nick nesta demo",
+  "pipeline.identify.nicknamePlaceholder": "O seu nickname",
   "pipeline.identify.nicknameCta": "Usar este nickname",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
@@ -601,7 +607,11 @@ export const ptPT: Dictionary = {
   "pipeline.identify.reprocessing": "Jogador identificado. A gerar as suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está ligada a você.",
   "pipeline.retry": "Tentar novamente",
+  "pipeline.retrying": "A tentar novamente…",
   "pipeline.cancel": "Cancelar processamento",
+  "pipeline.cancelling": "A solicitar cancelamento…",
+  "pipeline.upload.successTitle": "Demo enviada",
+  "pipeline.upload.successBody": "Entrou na fila de processamento.",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O ficheiro da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la outra vez.",
@@ -618,7 +628,8 @@ export const ptPT: Dictionary = {
   "pipeline.processing.estimated": "Estimativa baseada na etapa atual",
   "pipeline.processing.currentStage": "Etapa atual",
   "pipeline.processing.queued.title": "A preparar a sua análise",
-  "pipeline.processing.queued.body": "A sua demo entrou na fila e será processada em instantes.",
+  "pipeline.processing.queued.body":
+    "A sua demo entrou na fila e será processada assim que existir disponibilidade.",
   "pipeline.processing.validating.title": "A validar a sua demo",
   "pipeline.processing.validating.body":
     "Estamos a verificar o ficheiro e a integridade da partida.",

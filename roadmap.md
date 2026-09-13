@@ -1,5 +1,14 @@
 # Roadmap
 
+## FASE 2.7.2C — UX Hardening — CONCLUÍDA
+
+- [x] Histórico de demos responsivo, sem compressão ou overflow em telas estreitas.
+- [x] Status, progresso, stepper e cancelamento com hierarquia acessível.
+- [x] Identificação do jogador com opções visuais e nickname manual responsivo.
+- [x] Loader inicial, transição entre páginas e skeletons locais sem atraso artificial.
+- [x] App Shell e upload endurecidos para mobile, preservando toda a lógica existente.
+- [x] Validação visual em 320/360/390/430 px e desktop; TypeScript, lint, testes e build.
+
 ## Recuperação do Preview + player_blind RAW Evidence — CONCLUÍDA
 
 - [x] Confirmar que o preview interno executa o commit esperado e que os erros Hero/Home vêm de uma instância antiga.

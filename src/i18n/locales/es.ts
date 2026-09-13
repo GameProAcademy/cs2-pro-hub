@@ -39,6 +39,7 @@ export const es: Dictionary = {
   "common.interfaceReady": "Interfaz lista",
   "common.remove": "Quitar archivo",
   "common.language": "Idioma",
+  "app.loading.initial": "Preparando tu entorno…",
 
   "login.title": "Iniciar sesión",
   "login.subtitle": "Entra para ver tu CS2 PRO Score, tu Player DNA y tu plan de entrenamiento.",
@@ -72,6 +73,7 @@ export const es: Dictionary = {
   "analyze.demo.description": "Envía una demo .dem para un análisis más profundo.",
   "analyze.demo.cta": "Enviar demo",
   "analyze.demo.dropTitle": "Arrastra tu demo .dem aquí",
+  "analyze.demo.mobileTitle": "Selecciona tu demo .dem",
   "analyze.demo.dropHint": "Solo se aceptan archivos .dem en esta vía.",
   "analyze.demo.invalid": "Formato inválido. Selecciona un archivo con extensión .dem.",
   "analyze.report.title": "No tengo una demo",
@@ -571,6 +573,9 @@ export const es: Dictionary = {
   "pipeline.uploading": "Subiendo y encolando la demo…",
   "pipeline.historyTitle": "Historial de procesamiento",
   "pipeline.historyEmpty": "Todavía no has enviado ninguna demo.",
+  "pipeline.history.emptyTitle": "Tu historial está vacío",
+  "pipeline.history.emptyBody":
+    "Envía tu primera demo para empezar a construir tu perfil de rendimiento.",
   "pipeline.history.analysisTitle": "Historial de análisis",
   "pipeline.history.analysisSubtitle": "Tus demos y el progreso real de cada análisis.",
   "pipeline.history.unavailable": "No disponible",
@@ -591,6 +596,7 @@ export const es: Dictionary = {
   "pipeline.identify.selectLabel": "Jugadores detectados",
   "pipeline.identify.selectCta": "Sí, soy yo",
   "pipeline.identify.nicknameLabel": "Mi nick en esta demo",
+  "pipeline.identify.nicknamePlaceholder": "Tu nickname",
   "pipeline.identify.nicknameCta": "Usar este nickname",
   "pipeline.identify.later": "Lo haré más tarde",
   "pipeline.identify.notFound":
@@ -602,7 +608,11 @@ export const es: Dictionary = {
   "pipeline.identify.reprocessing": "Jugador identificado. Generando tus métricas de esta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a ti.",
   "pipeline.retry": "Reintentar",
+  "pipeline.retrying": "Reintentando…",
   "pipeline.cancel": "Cancelar procesamiento",
+  "pipeline.cancelling": "Solicitando cancelación…",
+  "pipeline.upload.successTitle": "Demo enviada",
+  "pipeline.upload.successBody": "Entró en la cola de procesamiento.",
   "pipeline.corrupted.title": "No pudimos analizar esta demo",
   "pipeline.corrupted.body":
     "El archivo de la demo parece incompleto o corrupto. Para no generar estadísticas ni diagnósticos incorrectos, no analizamos partidas incompletas. Vuelve a enviar la demo original/completa e inténtalo de nuevo.",
@@ -619,7 +629,8 @@ export const es: Dictionary = {
   "pipeline.processing.estimated": "Estimación basada en la etapa actual",
   "pipeline.processing.currentStage": "Etapa actual",
   "pipeline.processing.queued.title": "Preparando tu análisis",
-  "pipeline.processing.queued.body": "Tu demo está en cola y se procesará en breve.",
+  "pipeline.processing.queued.body":
+    "Tu demo está en cola y se procesará cuando haya capacidad disponible.",
   "pipeline.processing.validating.title": "Validando tu demo",
   "pipeline.processing.validating.body":
     "Estamos comprobando el archivo y la integridad de la partida.",

@@ -4,6 +4,7 @@ import { LogOut, Menu, Shield, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { CoachFab } from "@/components/coach/CoachFab";
+import { RouteTransitionBar } from "@/components/common/AppLoaders";
 import { LanguageSelector } from "@/components/common/LanguageSelector";
 import { Brand } from "@/components/layout/Brand";
 import { UserAvatar } from "@/components/common/UserAvatar";
@@ -116,11 +117,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigating = useRouterState({ select: (s) => s.status === "pending" });
   const currentItem = [...navItems, uploadNavItem].find((i) => i.to === pathname);
   const current = currentItem ? t(currentItem.labelKey) : "CS2 PRO";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-background">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
         <SidebarContent />
@@ -129,19 +131,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile drawer */}
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             aria-label={t("nav.closeMenu")}
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            className="absolute inset-0 h-auto w-auto rounded-none bg-background/80 backdrop-blur-sm hover:bg-background/80"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 w-72 border-r border-sidebar-border bg-sidebar">
-            <button
+          <div className="absolute inset-y-0 left-0 w-[min(18rem,calc(100vw-2rem))] border-r border-sidebar-border bg-sidebar">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               aria-label={t("nav.closeMenu")}
-              className="absolute right-3 top-4 rounded-md p-2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-4 text-muted-foreground hover:text-foreground"
               onClick={() => setMobileOpen(false)}
             >
               <X className="size-4" aria-hidden />
-            </button>
+            </Button>
             <SidebarContent onNavigate={() => setMobileOpen(false)} />
           </div>
         </div>
@@ -149,14 +157,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:px-6">
-          <button
-            className="rounded-md p-2 text-muted-foreground hover:text-foreground lg:hidden"
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
+          <RouteTransitionBar active={navigating} />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
             aria-label={t("nav.openMenu")}
             onClick={() => setMobileOpen(true)}
           >
             <Menu className="size-5" aria-hidden />
-          </button>
+          </Button>
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
               {current}
@@ -176,7 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
         </header>
 
-        <main className="mx-auto w-full max-w-[1400px] px-4 pb-28 pt-6 sm:px-6 lg:pb-12">
+        <main className="mx-auto w-full min-w-0 max-w-[1400px] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-6 lg:pb-12">
           {children}
         </main>
       </div>
@@ -184,7 +196,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation — the Coach stays reachable here. */}
       <nav
         aria-label={t("nav.quickLabel")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
         {navItems
           .filter((i) => i.primary)
@@ -194,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={item.to}
               activeProps={{ className: "text-primary" }}
               className={cn(
-                "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
+                "flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
               )}
             >
               <item.icon className="size-4" aria-hidden />

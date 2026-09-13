@@ -1,5 +1,6 @@
 import { Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
 
+import { InitialAppLoader } from "@/components/common/AppLoaders";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAccountStatus } from "@/lib/auth";
 
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
 
     return { user: data.user };
   },
+  pendingComponent: InitialAppLoader,
   component: AuthenticatedLayout,
 });
 

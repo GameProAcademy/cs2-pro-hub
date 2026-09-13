@@ -145,6 +145,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   h1,
@@ -155,6 +156,23 @@
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
+}
+
+@keyframes route-progress {
+  0% {
+    transform: translateX(-70%) scaleX(0.35);
+  }
+  55% {
+    transform: translateX(-10%) scaleX(0.65);
+  }
+  100% {
+    transform: translateX(75%) scaleX(0.3);
+  }
+}
+
+@utility animate-route-progress {
+  animation: route-progress 1s ease-in-out infinite;
+  transform-origin: left;
 }
 
 @utility surface-panel {

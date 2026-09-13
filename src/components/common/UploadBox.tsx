@@ -96,7 +96,7 @@ export function UploadBox({
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          "flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+          "flex min-w-0 flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors sm:px-6 sm:py-12",
           dragging ? "border-primary bg-primary/5" : "border-border bg-card/40",
         )}
       >
@@ -104,7 +104,10 @@ export function UploadBox({
           <UploadCloud className="size-5 text-primary" aria-hidden />
         </div>
         <p className="font-display text-base font-semibold uppercase tracking-wide text-foreground">
-          {t(copy.dropTitle)}
+          <span className="sm:hidden">
+            {kind === "demo" ? t("analyze.demo.mobileTitle") : t(copy.dropTitle)}
+          </span>
+          <span className="hidden sm:inline">{t(copy.dropTitle)}</span>
         </p>
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {t(copy.dropHint)} {t("analyze.notSent")}
@@ -116,7 +119,10 @@ export function UploadBox({
           className="sr-only"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <Button className="mt-6" onClick={() => inputRef.current?.click()}>
+        <Button
+          className="mt-6 min-h-11 w-full sm:w-auto"
+          onClick={() => inputRef.current?.click()}
+        >
           {t("analyze.selectFile")}
         </Button>
       </div>
@@ -132,21 +138,24 @@ export function UploadBox({
       ) : null}
 
       {status === "selected" && selected ? (
-        <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/8 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3 rounded-lg border border-success/30 bg-success/8 px-4 py-3">
           <FileCheck2 className="size-4 shrink-0 text-success" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{selected.name}</p>
+            <p className="break-words text-sm font-medium text-foreground">{selected.name}</p>
             <p className="font-mono text-xs text-muted-foreground">
               {selected.sizeMb} MB · {t("analyze.ready")}
             </p>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={reset}
             aria-label={t("common.remove")}
-            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <X className="size-4" aria-hidden />
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>
