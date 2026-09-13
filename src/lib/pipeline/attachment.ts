@@ -160,7 +160,9 @@ export interface ResolveAttachmentInput {
  *
  * Precedence: a confirmed Steam ID wins over any declaration. A declaration
  * that contradicts a confirmed Steam ID is a CONFLICT — never silently
- * overridden and never silently accepted.
+ * overridden and never silently accepted. If the confirmed Steam ID is absent
+ * from the demo, a declaration cannot override that evidence: the run remains
+ * unattached until the identity graph proves the link.
  */
 export function resolvePlayerAttachment(input: ResolveAttachmentInput): AttachmentOutcome {
   const { participants, hasProfile, profileSteamId, declaration = null } = input;
@@ -186,9 +188,13 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
     return attached(steamParticipant, "steam_id_confirmed", "system", "high");
   }
 
+  // A confirmed profile Steam ID that is not observed in this demo is stronger
+  // evidence than a self-declaration. Never let a declaration silently redirect
+  // the metrics target to another participant.
+  if (profileSteamId) return unattached("steam_id_not_in_demo");
+
   if (declaration) return resolveDeclaration(declaration, participants);
 
-  if (profileSteamId) return unattached("steam_id_not_in_demo");
   return unattached("no_steam_id_on_profile");
 }
 
