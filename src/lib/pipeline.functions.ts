@@ -126,10 +126,20 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Existing jobs are resolved transactionally by the RPC. Do not require a
+    // temporary object that may already have expired after successful processing.
+    const { data: existingJob } = await supabaseAdmin
+      .from("demo_jobs")
+      .select("id")
+      .eq("upload_id", upload.id)
+      .maybeSingle();
+
     // The file must really be in the private bucket before a job is queued.
-    const { demoExists } = await import("@/lib/pipeline/storage.server");
-    const stored = await demoExists(upload.storage_path);
-    if (!stored) throw new Error("DEMO_NOT_FOUND");
+    if (!existingJob) {
+      const { demoExists } = await import("@/lib/pipeline/storage.server");
+      const stored = await demoExists(upload.storage_path);
+      if (!stored) throw new Error("DEMO_NOT_FOUND");
+    }
 
     const { data: enqueued, error } = await supabaseAdmin.rpc("enqueue_demo_job", {
       _upload_id: upload.id,
