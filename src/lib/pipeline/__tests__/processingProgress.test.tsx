@@ -10,7 +10,6 @@ import { dictionaries } from "@/i18n/config";
 import type { DemoJobView } from "@/lib/pipeline.functions";
 import {
   STAGE_PROGRESS,
-  advanceVisualProgress,
   estimatedStageProgress,
   stageProgressCeiling,
 } from "@/lib/pipeline/processingProgress";
@@ -79,12 +78,18 @@ describe("estimated demo processing progress", () => {
       estimatedStageProgress({ stage: "parsing", status: "processing", animationStep: 500 }),
     ).toBe(stageProgressCeiling("parsing"));
     expect(stageProgressCeiling("cleanup")).toBe(99);
-    expect(advanceVisualProgress("parsing", "processing", 40)).toBe(41);
-    expect(advanceVisualProgress("parsing", "processing", 59)).toBe(59);
+    expect(estimatedStageProgress({ stage: "parsing", status: "processing" })).toBe(40);
   });
 
   it("reaches 100 only when processed", () => {
     expect(estimatedStageProgress({ stage: "done", status: "processed" })).toBe(100);
+  });
+
+  it("derives cancellation progress only from persisted status", () => {
+    expect(estimatedStageProgress({ stage: "cancel_requested", status: "cancel_requested" })).toBe(
+      96,
+    );
+    expect(estimatedStageProgress({ stage: "cancelled", status: "cancelled" })).toBe(96);
   });
 });
 
@@ -118,5 +123,6 @@ describe("demo processing experience", () => {
     const panel = readFileSync(join(root, "src/components/pipeline/DemoIngestPanel.tsx"), "utf8");
     expect(panel.match(/refetchInterval/g)).toHaveLength(1);
     expect(panel).toMatch(/\? 4000\s*: false/);
+    expect(panel).toContain('job.status === "cancel_requested"');
   });
 });

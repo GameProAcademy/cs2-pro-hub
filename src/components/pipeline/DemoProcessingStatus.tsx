@@ -6,7 +6,6 @@ import type { TranslationKey } from "@/i18n/config";
 import type { DemoJobView } from "@/lib/pipeline.functions";
 import {
   VISIBLE_PROCESSING_STAGES,
-  advanceVisualProgress,
   estimatedStageProgress,
   processingStageIndex,
   safeProcessingStage,
@@ -97,7 +96,9 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
             "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border",
             failed
               ? "border-destructive/35 bg-destructive/10 text-destructive"
-              : "border-primary/35 bg-primary/10 text-primary",
+              : cancelled || cancelling
+                ? "border-warning/35 bg-warning/10 text-warning"
+                : "border-primary/35 bg-primary/10 text-primary",
           )}
         >
           {failed ? (
@@ -114,7 +115,11 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
           <p
             className={cn(
               "font-display text-sm font-semibold uppercase tracking-[0.12em]",
-              failed ? "text-destructive" : "text-foreground",
+              failed
+                ? "text-destructive"
+                : cancelled || cancelling
+                  ? "text-warning"
+                  : "text-foreground",
             )}
           >
             {t(STAGE_KEYS[displayedStage].title)}
@@ -141,7 +146,13 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
           <div
             className={cn(
               "relative h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
-              failed ? "bg-destructive" : done ? "bg-success" : "bg-primary",
+              failed
+                ? "bg-destructive"
+                : cancelled || cancelling
+                  ? "bg-warning"
+                  : done
+                    ? "bg-success"
+                    : "bg-primary",
             )}
             style={{ width: `${progress}%` }}
           >
