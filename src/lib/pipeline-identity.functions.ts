@@ -140,12 +140,18 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const attach = outcome.state === "attached";
+    const now = new Date().toISOString();
+
+    // A declaration is a new processing attempt when it resolves the player.
+    // Clear all terminal-attempt timestamps so the lifecycle cannot claim that
+    // an old run is still the current run. Keep the canonical match_id: the
+    // subsequent processing is intentionally idempotent against that match.
     await supabaseAdmin
       .from("demo_jobs")
       .update({
         declared_participant_key: data.participantKey ?? null,
         declared_nickname: data.nickname ?? null,
-        attachment_declared_at: new Date().toISOString(),
+        attachment_declared_at: now,
         attachment_declared_by: userId,
         attachment_state: outcome.state,
         attachment_method: outcome.method,
@@ -155,8 +161,18 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         attachment_participant_key: outcome.participantKey,
         observed_nickname: outcome.observedNickname,
         attachment_reason: outcome.reason,
-        // Re-queue only when the declaration actually resolves a player.
-        ...(attach ? { status: "pending" as const, stage: "queued", error_code: null } : {}),
+        ...(attach
+          ? {
+              status: "pending" as const,
+              stage: "queued" as const,
+              retry_count: 0,
+              error_code: null,
+              error_message: null,
+              started_at: null,
+              finished_at: null,
+              duration_ms: null,
+            }
+          : {}),
       })
       .eq("id", job.id)
       .eq("user_id", userId);
