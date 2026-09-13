@@ -114,10 +114,10 @@ async function finishCancellation(jobId: string, storagePath: string | null) {
       cleanupError = toPipelineError(error).code;
     }
   }
-  await db.rpc("finish_demo_job_cancelled", {
-    _job_id: jobId,
-    _cleanup_error: cleanupError ?? undefined,
-  });
+  await db.rpc(
+    "finish_demo_job_cancelled",
+    cleanupError ? { _job_id: jobId, _cleanup_error: cleanupError } : { _job_id: jobId },
+  );
 }
 
 async function persistRawEvidence(args: {
