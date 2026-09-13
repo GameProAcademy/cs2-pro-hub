@@ -87,6 +87,21 @@ describe("attachment resolution", () => {
     expect(out).toMatchObject({ state: "unattached", reason: "steam_id_not_in_demo" });
   });
 
+  it("does not let a declaration override a confirmed steam id absent from the demo", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "99",
+      declaration: { kind: "participant", participantKey: "4" },
+    });
+    expect(out).toMatchObject({
+      state: "unattached",
+      reason: "steam_id_not_in_demo",
+      participantKey: null,
+      steamId: null,
+    });
+  });
+
   it("attaches an explicitly selected participant", () => {
     const out = resolvePlayerAttachment({
       participants: players,
