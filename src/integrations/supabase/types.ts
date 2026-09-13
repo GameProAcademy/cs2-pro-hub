@@ -243,6 +243,9 @@ export type Database = {
           attachment_reason: string | null
           attachment_source: string | null
           attachment_state: string
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           cleanup_error: string | null
           created_at: string
           declared_nickname: string | null
@@ -255,6 +258,7 @@ export type Database = {
           extraction_confidence: number | null
           file_size: number | null
           finished_at: string | null
+          heartbeat_at: string | null
           id: string
           identity_status: string
           match_id: string | null
@@ -294,6 +298,9 @@ export type Database = {
           attachment_reason?: string | null
           attachment_source?: string | null
           attachment_state?: string
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cleanup_error?: string | null
           created_at?: string
           declared_nickname?: string | null
@@ -306,6 +313,7 @@ export type Database = {
           extraction_confidence?: number | null
           file_size?: number | null
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           identity_status?: string
           match_id?: string | null
@@ -345,6 +353,9 @@ export type Database = {
           attachment_reason?: string | null
           attachment_source?: string | null
           attachment_state?: string
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cleanup_error?: string | null
           created_at?: string
           declared_nickname?: string | null
@@ -357,6 +368,7 @@ export type Database = {
           extraction_confidence?: number | null
           file_size?: number | null
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           identity_status?: string
           match_id?: string | null
@@ -386,6 +398,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "demo_jobs_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "demo_jobs_match_id_fkey"
             columns: ["match_id"]
@@ -2665,6 +2684,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
+      finish_demo_job_cancelled: {
+        Args: { _cleanup_error?: string; _job_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2716,6 +2739,10 @@ export type Database = {
         }
         Returns: string
       }
+      recover_stale_demo_jobs: {
+        Args: { _stale_minutes?: number }
+        Returns: number
+      }
       recover_stale_faceit_sync_jobs: {
         Args: { _max_attempts?: number; _stale_seconds?: number }
         Returns: number
@@ -2723,6 +2750,14 @@ export type Database = {
       recover_stale_gamers_club_sync_jobs: {
         Args: { _max_attempts?: number; _stale_seconds?: number }
         Returns: number
+      }
+      request_demo_job_cancel: {
+        Args: { _job_id: string; _user_id: string }
+        Returns: Json
+      }
+      requeue_demo_job_after_attachment: {
+        Args: { _attachment: Json; _job_id: string; _user_id: string }
+        Returns: boolean
       }
       save_player_profile: {
         Args: {
