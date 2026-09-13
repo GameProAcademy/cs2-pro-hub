@@ -116,7 +116,7 @@ async function finishCancellation(jobId: string, storagePath: string | null) {
   }
   await db.rpc("finish_demo_job_cancelled", {
     _job_id: jobId,
-    _cleanup_error: cleanupError,
+    _cleanup_error: cleanupError ?? undefined,
   });
 }
 

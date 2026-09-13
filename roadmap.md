@@ -755,3 +755,11 @@ apenas de uma nova execução do Run 1 pelo usuário.
 - [ ] Scheduler real comprovado ou bloqueio de plataforma documentado.
 - [ ] Testes de lifecycle, cancelamento, concorrência, attachment e RAW Evidence.
 - [ ] E2E real e validação final do banco; manter NOT CLOSED se algum elo não for comprovado.
+
+### Scheduler — bloqueio externo confirmado
+
+O repositório expõe somente `POST /api/public/pipeline-cron`, protegido por
+`Authorization: Bearer <LOVABLE_CRON_SECRET>`. Não existe scheduler no Railway,
+no banco ou no repositório, e o agente não possui acesso ao Cloud Jobs. A fase
+permanece **IMPLEMENTED / NOT CLOSED** até a plataforma configurar e comprovar
+uma chamada por minuto, sem criar um segundo consumidor concorrente.
