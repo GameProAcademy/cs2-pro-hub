@@ -17,6 +17,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { authenticatePipelineCronRequest } from "@/integrations/supabase/pipeline-cron-auth.server";
+import { probeParserWorker } from "@/lib/pipeline/parser/remoteParser.server";
 
 /** Wall-clock budget for the FACEIT part of this invocation. */
 const FACEIT_WORKER_BUDGET_MS = 20_000;
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
       POST: async ({ request }) => {
         const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
+
+        const parserPreflight = await probeParserWorker();
 
         const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } =
           await import("@/lib/pipeline/jobs.server");
@@ -55,14 +58,26 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
             budgetReached: result.budgetReached,
           };
         } catch (error) {
-          // The worker itself broke (not a job): surfaced, never silenced. A job
-          // left in `processing` is recovered by the next invocation.
           const code = error instanceof Error ? error.name : "unknown_error";
           console.error(`[cron] faceit_worker_error code=${code}`);
           faceit = { recovered: 0, processed: [], budgetReached: false, error: "worker_error" };
         }
 
         return Response.json({
+          parserPreflight: {
+            endpoint: parserPreflight.endpoint,
+            healthy: parserPreflight.healthy,
+            healthStatus: parserPreflight.healthStatus,
+            identity: parserPreflight.identity
+              ? {
+                  name: parserPreflight.identity.name,
+                  version: parserPreflight.identity.version,
+                  revision: parserPreflight.identity.revision,
+                  contractVersion: parserPreflight.identity.contractVersion,
+                }
+              : null,
+            error: parserPreflight.error,
+          },
           recovered,
           deleted,
           processed: processed
