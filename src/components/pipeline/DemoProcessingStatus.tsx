@@ -86,7 +86,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const currentIndex = processingStageIndex(lastActiveStage.current, job.status);
 
   return (
-    <section className="mt-4 border-t border-border/80 pt-4">
+    <section className="mt-4 min-w-0 border-t border-border/80 pt-4">
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {t(STAGE_KEYS[displayedStage].title)}
       </p>
@@ -114,7 +114,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "font-display text-sm font-semibold uppercase tracking-[0.12em]",
+               "break-words font-display text-sm font-semibold uppercase tracking-[0.12em]",
               failed
                 ? "text-destructive"
                 : cancelled || cancelling
@@ -170,7 +170,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           {t("pipeline.processing.currentStage")}
         </p>
-        <ol className="grid gap-2 sm:grid-cols-2">
+        <ol className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           {VISIBLE_PROCESSING_STAGES.map((item, index) => {
             const complete = !failed && index < currentIndex;
             const current = !done && index === currentIndex;
@@ -196,7 +196,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
                 ) : (
                   <Circle className="size-3.5 shrink-0" aria-hidden />
                 )}
-                <span className="truncate">{t(STAGE_KEYS[item].title)}</span>
+                 <span className="min-w-0 break-words">{t(STAGE_KEYS[item].title)}</span>
               </li>
             );
           })}

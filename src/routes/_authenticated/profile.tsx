@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { ProfileSkeleton } from "@/components/common/AppLoaders";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
@@ -167,7 +168,7 @@ function ProfilePage() {
             {t("profile.loadError")}
           </p>
         ) : isLoading && !profile ? (
-          <p className="text-sm text-muted-foreground">{t("profile.loading")}</p>
+          <ProfileSkeleton />
         ) : (
           <div className="grid gap-5 lg:grid-cols-3">
             <ChartCard

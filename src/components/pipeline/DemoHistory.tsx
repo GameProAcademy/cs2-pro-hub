@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, FileQuestion, Map, Trophy } from "lucide-react";
 
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
+import { HistorySkeleton } from "@/components/common/AppLoaders";
+import { EmptyState } from "@/components/common/States";
+import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { useI18n, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { listMyDemoJobs, type DemoJobView } from "@/lib/pipeline.functions";
@@ -36,10 +40,10 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
       : unavailable;
 
   return (
-    <li className="border-b border-border py-4 last:border-b-0">
+    <li className="min-w-0 border-b border-border py-5 last:border-b-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">
+          <p className="break-words text-sm font-semibold text-foreground">
             {job.fileName || unavailable}
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -117,11 +121,21 @@ export function DemoHistory() {
         : false,
   });
 
-  if (jobs.isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
+  if (jobs.isLoading) return <HistorySkeleton />;
   if (jobs.isError)
     return <p className="text-sm text-destructive">{t("common.errorDescription")}</p>;
   if (!jobs.data?.length)
-    return <p className="text-sm text-muted-foreground">{t("pipeline.historyEmpty")}</p>;
+    return (
+      <EmptyState
+        title={t("pipeline.history.emptyTitle")}
+        description={t("pipeline.history.emptyBody")}
+        action={
+          <Button asChild>
+            <Link to="/upload">{t("analyze.selectFile")}</Link>
+          </Button>
+        }
+      />
+    );
 
   return (
     <ul>
