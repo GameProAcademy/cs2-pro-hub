@@ -1,5 +1,13 @@
 # Roadmap
 
+## Recuperação do Preview + player_blind RAW Evidence — EM VALIDAÇÃO
+
+- [x] Confirmar que o preview interno executa o commit esperado e que os erros Hero/Home vêm de uma instância antiga.
+- [x] Preservar integralmente Lovable Cloud, Auth, Storage, banco e variáveis gerenciadas.
+- [x] Incluir `player_blind` na allowlist única de eventos do RAW Evidence.
+- [ ] Validar worker, APP, build e rotas internas `/login`, `/admin` e `/dashboard`.
+- [ ] Registrar o 401 externo separadamente, sem alterar a aplicação para contorná-lo.
+
 ## FASE 2.7.2B — RAW Demo Evidence & Full Coverage — IMPLEMENTED / NOT CLOSED
 
 - [x] Conexão oficial do Supabase/Lovable Cloud preservada e cliente fail-closed, sem fallback ou banco alternativo.

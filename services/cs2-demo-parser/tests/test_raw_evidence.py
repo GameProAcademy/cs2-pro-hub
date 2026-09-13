@@ -93,7 +93,38 @@ def test_gates_fail_closed_when_a_stream_or_capability_fails():
 def test_tick_limit_and_high_value_candidates_are_explicit():
     from raw_evidence import EVENT_CANDIDATES, TICK_SAMPLE_LIMIT
     assert TICK_SAMPLE_LIMIT == 4096
-    assert {"bullet_damage", "bullet_impact", "weapon_fire", "grenade_thrown"} <= set(EVENT_CANDIDATES)
+    assert {"bullet_damage", "bullet_impact", "weapon_fire", "grenade_thrown", "player_blind"} <= set(EVENT_CANDIDATES)
+
+
+def test_player_blind_is_collected_mapped_and_preserves_unknown_semantics():
+    raw = material()
+    raw["event_inventory"].append("player_blind")
+    raw["event_tables"]["player_blind"] = [
+        {
+            "tick": 18,
+            "round": 1,
+            "attacker_steamid": "76561198000000001",
+            "user_steamid": "76561198000000002",
+            "blind_duration": 1.9,
+        }
+    ]
+
+    evidence = build_raw_evidence(raw, output())
+    coverage = next(item for item in evidence["event_coverage"] if item["event_name"] == "player_blind")
+    duration = next(
+        item for item in evidence["field_mappings"]
+        if item["raw_field"] == "player_blind.blind_duration"
+    )
+    event = next(item for item in evidence["raw_events"] if item["event_name"] == "player_blind")
+
+    assert coverage["capability_state"] == "PARSED_SUCCESSFULLY"
+    assert coverage["row_count"] == 1
+    assert duration["status"] == "MAPPED"
+    assert event["raw_fields"]["blind_duration"] == 1.9
+
+    absent = event_coverage("player_blind", False, None)
+    assert absent["capability_state"] == "NOT_PRESENT_IN_DEMO"
+    assert absent["row_count"] is None
 
 
 def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
