@@ -640,7 +640,8 @@ export const es: Dictionary = {
   "pipeline.processing.failed.title": "No pudimos completar el análisis",
   "pipeline.processing.failed.body": "Encontramos un problema durante el procesamiento.",
   "pipeline.processing.cancelRequested.title": "Cancelando procesamiento",
-  "pipeline.processing.cancelRequested.body": "El procesamiento se detendrá en el próximo punto seguro.",
+  "pipeline.processing.cancelRequested.body":
+    "El procesamiento se detendrá en el próximo punto seguro.",
   "pipeline.processing.cancelled.title": "Procesamiento cancelado",
   "pipeline.processing.cancelled.body": "Esta demo ya no se está procesando.",
   "pipeline.processing.continueBrowsing":

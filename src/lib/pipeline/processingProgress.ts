@@ -11,12 +11,7 @@ export const PROCESSING_STAGES = [
 
 export type ProcessingStage = (typeof PROCESSING_STAGES)[number];
 export type ProcessingStatus =
-  | "pending"
-  | "processing"
-  | "processed"
-  | "failed"
-  | "cancel_requested"
-  | "cancelled";
+  "pending" | "processing" | "processed" | "failed" | "cancel_requested" | "cancelled";
 
 export const STAGE_PROGRESS: Record<ProcessingStage, number> = {
   queued: 5,

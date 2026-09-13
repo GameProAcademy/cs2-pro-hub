@@ -641,7 +641,8 @@ export const ptBR = {
   "pipeline.processing.failed.title": "Não foi possível concluir a análise",
   "pipeline.processing.failed.body": "Encontramos um problema durante o processamento.",
   "pipeline.processing.cancelRequested.title": "Cancelando processamento",
-  "pipeline.processing.cancelRequested.body": "O processamento será interrompido no próximo ponto seguro.",
+  "pipeline.processing.cancelRequested.body":
+    "O processamento será interrompido no próximo ponto seguro.",
   "pipeline.processing.cancelled.title": "Processamento cancelado",
   "pipeline.processing.cancelled.body": "Esta demo não está mais sendo processada.",
   "pipeline.processing.continueBrowsing":

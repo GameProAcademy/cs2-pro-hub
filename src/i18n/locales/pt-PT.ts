@@ -639,7 +639,8 @@ export const ptPT: Dictionary = {
   "pipeline.processing.failed.title": "Não foi possível concluir a análise",
   "pipeline.processing.failed.body": "Encontrámos um problema durante o processamento.",
   "pipeline.processing.cancelRequested.title": "A cancelar processamento",
-  "pipeline.processing.cancelRequested.body": "O processamento será interrompido no próximo ponto seguro.",
+  "pipeline.processing.cancelRequested.body":
+    "O processamento será interrompido no próximo ponto seguro.",
   "pipeline.processing.cancelled.title": "Processamento cancelado",
   "pipeline.processing.cancelled.body": "Esta demo já não está a ser processada.",
   "pipeline.processing.continueBrowsing":
