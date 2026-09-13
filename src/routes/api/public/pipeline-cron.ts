@@ -2,8 +2,8 @@
  * Scheduled pipeline maintenance and THE FACEIT QUEUE WORKER (external caller:
  * cron).
  *
- * Bearer-secret authenticated with the existing cron helper (timing-safe, fail
- * closed when the secret is not configured). It:
+ * Bearer-secret authenticated with the existing Lovable cron helper or the
+ * database-backed scheduler secret used by native pg_cron. It:
  *  - re-queues demo jobs stuck in `processing` past the stale window;
  *  - deletes temporary demo files whose retention window expired;
  *  - advances at most one queued demo job (concurrency-limited);
@@ -16,7 +16,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 
-import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
+import { authenticatePipelineCronRequest } from "@/integrations/supabase/pipeline-cron-auth.server";
 
 /** Wall-clock budget for the FACEIT part of this invocation. */
 const FACEIT_WORKER_BUDGET_MS = 20_000;
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const unauthorized = await authenticateCronRequest(request);
+        const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
 
         const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } =
