@@ -1,26 +1,10 @@
 /**
  * demoparser2 adapter — remote worker transport.
  *
- * HONEST RUNTIME NOTE
- * -------------------
- * `demoparser2` is a native (Rust/Python) library. The application server runs
- * on an edge Worker runtime with no native addons and no long-running CPU
- * budget, so the parse itself CANNOT execute in-process here. There is no
- * "fake" in-process parser in this codebase.
- *
- * The pipeline therefore calls a dedicated server-side parser worker over HTTP.
- * The worker downloads the demo from a short-lived signed URL, runs
- * demoparser2, and answers with the `RawParserOutput` contract
- * (`contract_version = PARSER_CONTRACT_VERSION`).
- *
- * Required secrets (absent/invalid => the adapter reports itself unavailable and
- * jobs fail with PARSER_CONFIG_ERROR / PARSER_UNAVAILABLE instead of pretending
- * to have processed data):
- *   DEMO_PARSER_URL    - FULL https parse endpoint, e.g. .../v1/parse
- *   DEMO_PARSER_TOKEN  - bearer token the worker verifies (server-side only)
- *
- * GATE 1E: the endpoint, the error envelope and the error matrix live in
- * `./parserEndpoint.ts`; this file only performs the transport.
+ * The parser itself runs on the dedicated Railway worker. Production pins the
+ * dedicated GamePro parser hostname so the APP does not depend on a mutable
+ * Railway-generated hostname. The bearer token remains secret-only and is still
+ * read from the server runtime.
  */
 import {
   MAX_PARSER_PAYLOAD_BYTES,
@@ -46,36 +30,25 @@ import {
   type ParserWorkerIdentity,
 } from "./parserEndpoint";
 
-/** Health/version probe budget: a diagnostic must never block a job for long. */
 const PROBE_TIMEOUT_MS = 10_000;
+const PRODUCTION_PARSER_URL = "https://parser.gamepro.network/v1/parse";
 
 function rawUrl(): string {
-  return process.env["DEMO_PARSER_URL"] ?? "";
+  if ((process.env["NODE_ENV"] ?? "") === "production") return PRODUCTION_PARSER_URL;
+  return process.env["DEMO_PARSER_URL"] || PRODUCTION_PARSER_URL;
 }
 
 function token(): string {
   return process.env["DEMO_PARSER_TOKEN"] ?? "";
 }
 
-/**
- * FASE 2.7 — BOUNDED RESPONSE READING.
- *
- * `response.json()` buffers whatever the worker sends; a hostile or broken
- * worker could exhaust the runtime's memory before any limit is checked. So:
- *   1. `Content-Length`, when present, is refused up front;
- *   2. the body is read incrementally and aborted the moment the accumulated
- *      byte count exceeds MAX_PARSER_PAYLOAD_BYTES;
- *   3. only then is the text decoded and parsed as JSON.
- */
 async function readBoundedText(response: Response, limit: number): Promise<string> {
   const declared = Number(response.headers.get("content-length") ?? "");
   if (Number.isFinite(declared) && declared > limit) {
     throw new PipelineError("PARSER_PAYLOAD_TOO_LARGE", `content-length ${declared} > ${limit}`);
   }
-
   const body = response.body;
   if (!body) return "";
-
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let total = 0;
@@ -106,7 +79,6 @@ function parseJson(text: string): unknown {
   }
 }
 
-/** Reads an error body without ever letting a broken body mask the failure. */
 async function readErrorBody(response: Response): Promise<unknown> {
   try {
     return parseJson(await readBoundedText(response, MAX_PARSER_PAYLOAD_BYTES));
@@ -124,14 +96,9 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
   },
 
   async parseDemo(request: ParseRequest): Promise<RawParserOutput> {
-    // Configuration is validated FIRST and fails as a configuration error.
     const endpoints = resolveParserEndpoints(rawUrl());
     const bearer = token();
     if (!bearer) throw new PipelineError("PARSER_CONFIG_ERROR", "DEMO_PARSER_TOKEN is not set");
-
-    // The canonical pipeline requires a verified SHA-256 before the worker is
-    // called. Sending null here would downgrade the integrity contract into an
-    // ambiguous worker-side validation error, so fail explicitly at the APP edge.
     if (!request.demoSha256 || !/^[0-9a-f]{64}$/i.test(request.demoSha256)) {
       throw new PipelineError(
         "PARSER_CONFIG_ERROR",
@@ -139,8 +106,6 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
       );
     }
 
-    // The transport budget is the smaller of the parser ceiling and whatever is
-    // left of the job's absolute deadline.
     const remaining =
       request.deadlineAt != null ? request.deadlineAt - Date.now() : PARSER_MAX_DURATION_MS;
     const budget = Math.min(PARSER_MAX_DURATION_MS, remaining);
@@ -158,7 +123,6 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${bearer}`,
-          // Correlation without secrets: upload_id is the minimal job key.
           "x-correlation-id": request.uploadId,
         },
         body: JSON.stringify({
@@ -172,7 +136,6 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
 
       if (!response.ok) {
         const failure = classifyWorkerFailure(response.status, await readErrorBody(response));
-        // Observability without leaking the token or the signed URL.
         console.error(
           `[parser] upload=${request.uploadId} endpoint=${endpoints.origin} status=${response.status} code=${failure.code} elapsed=${Date.now() - startedAt}ms`,
         );
@@ -191,7 +154,6 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
       if (error instanceof Error && error.name === "AbortError") {
         throw new PipelineError("PARSER_TIMEOUT", `aborted after ${Date.now() - startedAt}ms`);
       }
-      // Network reset / DNS / TLS: transport failure, never an invalid demo.
       throw new PipelineError(
         "PARSER_UNAVAILABLE",
         error instanceof Error ? error.message : undefined,
@@ -210,11 +172,6 @@ export interface ParserWorkerProbe {
   error: PipelineErrorCode | null;
 }
 
-/**
- * GATE 1E — DIAGNOSTIC PROBE. Answers "is Railway alive, is the expected parser
- * deployed, is the contract aligned?" WITHOUT parsing a demo. Never called on
- * the parse hot path, so it adds no latency to a job.
- */
 export async function probeParserWorker(): Promise<ParserWorkerProbe> {
   let endpoints;
   try {
@@ -263,8 +220,6 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
     const identity = parseWorkerIdentity(
       parseJson(await readBoundedText(versionResponse, 64 * 1024)),
     );
-    // GATE 1E.1 — REVISION LOCK: the diagnostic reports the SAME verdict the
-    // parse path would enforce, so a mismatched build is visible before a job.
     let identityError: PipelineErrorCode | null = null;
     try {
       assertParserIdentity(
@@ -297,11 +252,6 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
   }
 }
 
-/**
- * GATE 02 preflight. A job must not disclose a signed demo URL or start the
- * expensive parse unless the existing health/version probe proves the exact
- * worker identity and contract expected by this APP deployment.
- */
 export async function assertParserWorkerReady(): Promise<ParserWorkerIdentity> {
   const probe = await probeParserWorker();
   if (probe.error) throw new PipelineError(probe.error, "parser worker preflight failed");
@@ -311,7 +261,6 @@ export async function assertParserWorkerReady(): Promise<ParserWorkerIdentity> {
   return probe.identity;
 }
 
-/** Adapter resolution point. Swapping parsers happens only here. */
 export function resolveParserAdapter(): DemoParserAdapter {
   return remoteDemoparser2Adapter;
 }
