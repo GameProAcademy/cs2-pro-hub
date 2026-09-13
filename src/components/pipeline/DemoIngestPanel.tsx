@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, RefreshCw, Upload } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, Square, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import {
+  cancelMyDemoJob,
   getPipelineStatus,
   listMyDemoJobs,
   retryMyDemoJob,
@@ -34,6 +35,8 @@ const STATUS_KEY: Record<DemoJobView["status"], TranslationKey> = {
   processing: "pipeline.status.processing",
   processed: "pipeline.status.processed",
   failed: "pipeline.status.failed",
+  cancel_requested: "pipeline.status.cancelRequested",
+  cancelled: "pipeline.status.cancelled",
 };
 
 function errorKey(code: string | null): TranslationKey {
@@ -104,7 +107,10 @@ export function DemoIngestPanel() {
     queryFn: () => listMyDemoJobs(),
     refetchInterval: (query) =>
       (query.state.data ?? []).some(
-        (job) => job.status === "pending" || job.status === "processing",
+        (job) =>
+          job.status === "pending" ||
+          job.status === "processing" ||
+          job.status === "cancel_requested",
       )
         ? 4000
         : false,
@@ -128,6 +134,11 @@ export function DemoIngestPanel() {
 
   const retry = useMutation({
     mutationFn: (jobId: string) => retryMyDemoJob({ data: { jobId } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline", "jobs"] }),
+  });
+
+  const cancel = useMutation({
+    mutationFn: (jobId: string) => cancelMyDemoJob({ data: { jobId } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline", "jobs"] }),
   });
 
@@ -233,6 +244,8 @@ export function DemoIngestPanel() {
                     job.status === "processed" && "text-success",
                     job.status === "failed" && "text-destructive",
                     (job.status === "pending" || job.status === "processing") && "text-primary",
+                    job.status === "cancel_requested" && "text-warning",
+                    job.status === "cancelled" && "text-muted-foreground",
                   )}
                 >
                   {t(STATUS_KEY[job.status])}
@@ -249,6 +262,18 @@ export function DemoIngestPanel() {
                   >
                     <RefreshCw className="mr-1.5 size-3.5" aria-hidden />
                     {t("pipeline.retry")}
+                  </Button>
+                ) : null}
+
+                {job.status === "pending" || job.status === "processing" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => cancel.mutate(job.jobId)}
+                    disabled={cancel.isPending}
+                  >
+                    <Square className="mr-1.5 size-3.5" aria-hidden />
+                    {t("pipeline.cancel")}
                   </Button>
                 ) : null}
               </li>

@@ -10,7 +10,8 @@ export const PROCESSING_STAGES = [
 ] as const;
 
 export type ProcessingStage = (typeof PROCESSING_STAGES)[number];
-export type ProcessingStatus = "pending" | "processing" | "processed" | "failed";
+export type ProcessingStatus =
+  "pending" | "processing" | "processed" | "failed" | "cancel_requested" | "cancelled";
 
 export const STAGE_PROGRESS: Record<ProcessingStage, number> = {
   queued: 5,
@@ -31,6 +32,7 @@ export function isProcessingStage(stage: string): stage is ProcessingStage {
 
 export function safeProcessingStage(stage: string, status: ProcessingStatus): ProcessingStage {
   if (status === "processed") return "done";
+  if (status === "cancelled" || status === "cancel_requested") return "cleanup";
   if (isProcessingStage(stage) && stage !== "done") return stage;
   return status === "pending" ? "queued" : "validating";
 }
@@ -55,6 +57,8 @@ export function estimatedStageProgress(args: {
 }): number {
   const previous = Math.max(0, Math.min(100, Math.round(args.previousProgress ?? 0)));
   if (args.status === "processed" || args.stage === "done") return 100;
+  if (args.status === "cancelled") return STAGE_PROGRESS.cleanup;
+  if (args.status === "cancel_requested") return STAGE_PROGRESS.cleanup;
   if (args.status === "failed" || args.stage === "failed") return previous || STAGE_PROGRESS.queued;
 
   const stage = safeProcessingStage(args.stage, args.status);
@@ -63,20 +67,6 @@ export function estimatedStageProgress(args: {
     stageProgressCeiling(stage),
   );
   return Math.max(previous, estimate);
-}
-
-export function advanceVisualProgress(
-  stage: string,
-  status: ProcessingStatus,
-  currentProgress: number,
-): number {
-  if (status === "failed") return currentProgress;
-  if (status === "processed") return 100;
-  const safeStage = safeProcessingStage(stage, status);
-  return Math.min(
-    Math.max(currentProgress + 1, STAGE_PROGRESS[safeStage]),
-    stageProgressCeiling(safeStage),
-  );
 }
 
 export function processingStageIndex(stage: string, status: ProcessingStatus): number {

@@ -140,42 +140,26 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const attach = outcome.state === "attached";
-    const now = new Date().toISOString();
-
-    // A declaration is a new processing attempt when it resolves the player.
-    // Clear all terminal-attempt timestamps so the lifecycle cannot claim that
-    // an old run is still the current run. Keep the canonical match_id: the
-    // subsequent processing is intentionally idempotent against that match.
-    await supabaseAdmin
-      .from("demo_jobs")
-      .update({
-        declared_participant_key: data.participantKey ?? null,
-        declared_nickname: data.nickname ?? null,
-        attachment_declared_at: now,
-        attachment_declared_by: userId,
-        attachment_state: outcome.state,
-        attachment_method: outcome.method,
-        attachment_source: outcome.source,
-        attachment_confidence: confidenceScore(outcome.confidence),
-        attachment_confidence_label: outcome.confidence,
-        attachment_participant_key: outcome.participantKey,
-        observed_nickname: outcome.observedNickname,
-        attachment_reason: outcome.reason,
-        ...(attach
-          ? {
-              status: "pending" as const,
-              stage: "queued" as const,
-              retry_count: 0,
-              error_code: null,
-              error_message: null,
-              started_at: null,
-              finished_at: null,
-              duration_ms: null,
-            }
-          : {}),
-      })
-      .eq("id", job.id)
-      .eq("user_id", userId);
+    const { data: requeued, error: requeueError } = await supabaseAdmin.rpc(
+      "requeue_demo_job_after_attachment",
+      {
+        _job_id: job.id,
+        _user_id: userId,
+        _attachment: {
+          declared_participant_key: data.participantKey ?? null,
+          declared_nickname: data.nickname ?? null,
+          state: outcome.state,
+          method: outcome.method,
+          source: outcome.source,
+          confidence_score: confidenceScore(outcome.confidence),
+          confidence: outcome.confidence,
+          participant_key: outcome.participantKey,
+          observed_nickname: outcome.observedNickname,
+          reason: outcome.reason,
+        },
+      },
+    );
+    if (requeueError || !requeued) throw new Error("JOB_REQUEUE_FAILED");
 
     const ambiguous = outcome.reason === "ambiguous_nickname" && data.nickname;
     return {

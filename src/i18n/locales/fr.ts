@@ -601,6 +601,7 @@ export const fr: Dictionary = {
   "pipeline.identify.reprocessing": "Joueur identifié. Génération de vos métriques pour ce match…",
   "pipeline.identify.attached": "Ce match est lié à vous.",
   "pipeline.retry": "Réessayer",
+  "pipeline.cancel": "Annuler le traitement",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":
     "Le fichier de la demo semble incomplet ou corrompu. Pour éviter des statistiques ou des diagnostics erronés, nous n'analysons pas les matchs incomplets. Envoyez à nouveau la demo originale/complète et relancez le traitement.",
@@ -609,6 +610,8 @@ export const fr: Dictionary = {
   "pipeline.status.processing": "Traitement",
   "pipeline.status.processed": "Traitée",
   "pipeline.status.failed": "Échec",
+  "pipeline.status.cancelRequested": "Annulation",
+  "pipeline.status.cancelled": "Annulée",
   "pipeline.processing.title": "Traitement de la demo",
   "pipeline.processing.progress": "Progression estimée",
   "pipeline.processing.progressLabel": "Progression estimée du traitement de la demo",
@@ -633,6 +636,10 @@ export const fr: Dictionary = {
   "pipeline.processing.done.body": "Votre analyse est prête.",
   "pipeline.processing.failed.title": "Impossible de terminer l’analyse",
   "pipeline.processing.failed.body": "Un problème est survenu pendant le traitement.",
+  "pipeline.processing.cancelRequested.title": "Annulation du traitement",
+  "pipeline.processing.cancelRequested.body": "Le traitement s’arrêtera au prochain point sûr.",
+  "pipeline.processing.cancelled.title": "Traitement annulé",
+  "pipeline.processing.cancelled.body": "Cette demo n’est plus en cours de traitement.",
   "pipeline.processing.continueBrowsing":
     "Vous pouvez continuer à naviguer pendant la préparation de votre analyse.",
   "pipeline.workerOfflineTitle": "Service de traitement indisponible.",

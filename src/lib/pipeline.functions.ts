@@ -19,7 +19,7 @@ export interface DemoJobView {
   jobId: string;
   uploadId: string;
   fileName: string;
-  status: "pending" | "processing" | "processed" | "failed";
+  status: "pending" | "processing" | "processed" | "failed" | "cancel_requested" | "cancelled";
   stage: string;
   errorCode: string | null;
   retryCount: number;
@@ -331,6 +331,50 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
       .eq("id", job.id);
 
     return { jobId: job.id, queued: true as const };
+  });
+
+/** Persistently cancels a job owned by the signed-in player. */
+export const cancelMyDemoJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ jobId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: owned } = await context.supabase
+      .from("demo_jobs")
+      .select("id, storage_path, status")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (!owned) throw new Error("JOB_NOT_FOUND");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin.rpc("request_demo_job_cancel", {
+      _job_id: owned.id,
+      _user_id: context.userId,
+    });
+    if (error) throw new Error("JOB_CANCEL_FAILED");
+
+    const outcome = result as { status?: string; changed?: boolean } | null;
+    if (outcome?.status === "cancelled" && owned.storage_path) {
+      const { deleteDemo } = await import("@/lib/pipeline/storage.server");
+      try {
+        await deleteDemo(owned.storage_path);
+        await supabaseAdmin
+          .from("demo_jobs")
+          .update({ storage_deleted_at: new Date().toISOString(), cleanup_error: null })
+          .eq("id", owned.id)
+          .eq("status", "cancelled");
+      } catch {
+        await supabaseAdmin
+          .from("demo_jobs")
+          .update({ cleanup_error: "STORAGE_ERROR" })
+          .eq("id", owned.id)
+          .eq("status", "cancelled");
+      }
+    }
+    return {
+      jobId: owned.id,
+      status: (outcome?.status ?? owned.status) as DemoJobView["status"],
+      changed: outcome?.changed ?? false,
+    };
   });
 
 /** Tells the UI honestly whether real processing is currently possible. */

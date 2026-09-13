@@ -62,11 +62,13 @@ export type JobStage =
   | "persisting"
   | "cleanup"
   | "done"
+  | "cancel_requested"
+  | "cancelled"
   | "failed";
 
 export interface JobProcessResult {
   jobId: string;
-  status: "processed" | "failed" | "skipped";
+  status: "processed" | "failed" | "cancelled" | "skipped";
   errorCode?: string;
   matchId?: string;
   /** Whether the canonical match got a per-player projection in this run. */
@@ -81,7 +83,41 @@ async function admin() {
 
 async function setStage(jobId: string, stage: JobStage) {
   const db = await admin();
-  await db.from("demo_jobs").update({ stage }).eq("id", jobId);
+  await db
+    .from("demo_jobs")
+    .update({ stage, heartbeat_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("status", "processing");
+}
+
+class JobCancelledError extends Error {}
+
+async function assertNotCancelled(jobId: string) {
+  const db = await admin();
+  const { data } = await db.from("demo_jobs").select("status").eq("id", jobId).maybeSingle();
+  if (data?.status === "cancel_requested" || data?.status === "cancelled") {
+    throw new JobCancelledError();
+  }
+}
+
+async function finishCancellation(jobId: string, storagePath: string | null) {
+  const db = await admin();
+  let cleanupError: string | null = null;
+  if (storagePath) {
+    try {
+      await deleteDemo(storagePath);
+      await db
+        .from("demo_jobs")
+        .update({ storage_deleted_at: new Date().toISOString() })
+        .eq("id", jobId);
+    } catch (error) {
+      cleanupError = toPipelineError(error).code;
+    }
+  }
+  await db.rpc(
+    "finish_demo_job_cancelled",
+    cleanupError ? { _job_id: jobId, _cleanup_error: cleanupError } : { _job_id: jobId },
+  );
 }
 
 async function persistRawEvidence(args: {
@@ -139,14 +175,11 @@ async function persistRawEvidence(args: {
 /** Re-queues jobs stuck in `processing` beyond the stale window. */
 export async function recoverStaleJobs(): Promise<number> {
   const db = await admin();
-  const threshold = new Date(Date.now() - JOB_STALE_MINUTES * 60_000).toISOString();
-  const { data } = await db
-    .from("demo_jobs")
-    .update({ status: "pending", stage: "queued" })
-    .eq("status", "processing")
-    .lt("started_at", threshold)
-    .select("id");
-  return data?.length ?? 0;
+  const { data, error } = await db.rpc("recover_stale_demo_jobs", {
+    _stale_minutes: JOB_STALE_MINUTES,
+  });
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  return Number(data ?? 0);
 }
 
 /** Deletes temporary demo files whose retention window has expired. */
@@ -212,6 +245,10 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
   if (!job) return { jobId, status: "skipped", errorCode: "DEMO_NOT_FOUND" };
   if (job.status === "processed") return { jobId, status: "skipped" };
+  if (job.status === "cancel_requested" || job.status === "cancelled") {
+    if (job.status === "cancel_requested") await finishCancellation(jobId, job.storage_path);
+    return { jobId, status: "cancelled" };
+  }
 
   // The job may already have been claimed transactionally by
   // `claim_next_demo_job`. Otherwise claim it here, still atomically: only a
@@ -243,6 +280,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
 
   try {
     if (!job.storage_path) throw new PipelineError("DEMO_NOT_FOUND", "missing storage path");
+    await assertNotCancelled(jobId);
 
     const adapter = resolveParserAdapter();
     if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
@@ -251,6 +289,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     // start processing the player's artifact.
     assertDeadline();
     await assertParserWorkerReady();
+    await assertNotCancelled(jobId);
 
     assertDeadline();
     const stored = await demoExists(job.storage_path);
@@ -279,6 +318,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       demoSha256: job.demo_sha256,
       deadlineAt,
     });
+    await assertNotCancelled(jobId);
 
     // RAW evidence is its own immutable audit layer. Persist it before the APP
     // contract is normalized or any canonical fact can be written.
@@ -289,6 +329,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       expectedSha256: job.demo_sha256,
       raw,
     });
+    await assertNotCancelled(jobId);
 
     await setStage(jobId, "normalizing");
     assertDeadline();
@@ -444,10 +485,11 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         features,
       });
       projectedMatchId = persisted.matchId;
+      await assertNotCancelled(jobId);
     }
 
     const durationMs = Date.now() - startedAt;
-    await db
+    const { data: finalized } = await db
       .from("demo_jobs")
       .update({
         status: "processed",
@@ -482,7 +524,14 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         error_message: null,
         retain_until: retainUntil(true),
       })
-      .eq("id", jobId);
+      .eq("id", jobId)
+      .eq("status", "processing")
+      .select("id");
+
+    if (!finalized || finalized.length === 0) {
+      await finishCancellation(jobId, job.storage_path);
+      return { jobId, status: "cancelled", matchId: projectedMatchId };
+    }
 
     await db
       .from("uploads")
@@ -508,6 +557,10 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       attachmentReason: attachment.reason,
     };
   } catch (error) {
+    if (error instanceof JobCancelledError) {
+      await finishCancellation(jobId, job.storage_path);
+      return { jobId, status: "cancelled" };
+    }
     const pipelineError = toPipelineError(error);
     const canRetry =
       !pipelineError.permanent && job.retry_count < (job.max_retries ?? MAX_JOB_RETRIES);

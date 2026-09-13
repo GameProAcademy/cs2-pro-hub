@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 
 function statusKey(job: DemoJobView): TranslationKey {
   if (job.status === "failed") return "pipeline.processing.failed.title";
+  if (job.status === "cancel_requested") return "pipeline.processing.cancelRequested.title";
+  if (job.status === "cancelled") return "pipeline.processing.cancelled.title";
   if (job.status === "processed") return "pipeline.processing.done.title";
   const stage = [
     "queued",
@@ -52,6 +54,8 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
             "font-mono text-[11px] uppercase tracking-wider",
             job.status === "processed" && "text-success",
             job.status === "failed" && "text-destructive",
+            job.status === "cancel_requested" && "text-warning",
+            job.status === "cancelled" && "text-muted-foreground",
             (job.status === "pending" || job.status === "processing") && "text-primary",
           )}
         >
@@ -87,7 +91,10 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
           </div>
         </div>
       </dl>
-      {job.status === "pending" || job.status === "processing" ? (
+      {job.status === "pending" ||
+      job.status === "processing" ||
+      job.status === "cancel_requested" ||
+      job.status === "cancelled" ? (
         <DemoProcessingStatus job={job} />
       ) : null}
     </li>
@@ -101,7 +108,10 @@ export function DemoHistory() {
     queryFn: () => listMyDemoJobs(),
     refetchInterval: (query) =>
       (query.state.data ?? []).some(
-        (job) => job.status === "pending" || job.status === "processing",
+        (job) =>
+          job.status === "pending" ||
+          job.status === "processing" ||
+          job.status === "cancel_requested",
       )
         ? 4000
         : false,

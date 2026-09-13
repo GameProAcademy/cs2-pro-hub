@@ -597,6 +597,7 @@ export const en: Dictionary = {
   "pipeline.identify.reprocessing": "Player identified. Generating your metrics for this match…",
   "pipeline.identify.attached": "This match is linked to you.",
   "pipeline.retry": "Retry",
+  "pipeline.cancel": "Cancel processing",
   "pipeline.corrupted.title": "We could not analyse this demo",
   "pipeline.corrupted.body":
     "The demo file looks incomplete or corrupted. To avoid producing incorrect stats or diagnostics, we do not analyse incomplete matches. Please upload the original/complete demo again and process it once more.",
@@ -605,6 +606,8 @@ export const en: Dictionary = {
   "pipeline.status.processing": "Processing",
   "pipeline.status.processed": "Processed",
   "pipeline.status.failed": "Failed",
+  "pipeline.status.cancelRequested": "Cancelling",
+  "pipeline.status.cancelled": "Cancelled",
   "pipeline.processing.title": "Demo processing",
   "pipeline.processing.progress": "Estimated progress",
   "pipeline.processing.progressLabel": "Estimated demo processing progress",
@@ -629,6 +632,10 @@ export const en: Dictionary = {
   "pipeline.processing.done.body": "Your analysis is ready.",
   "pipeline.processing.failed.title": "We could not complete the analysis",
   "pipeline.processing.failed.body": "We found a problem while processing your demo.",
+  "pipeline.processing.cancelRequested.title": "Cancelling processing",
+  "pipeline.processing.cancelRequested.body": "Processing will stop at the next safe checkpoint.",
+  "pipeline.processing.cancelled.title": "Processing cancelled",
+  "pipeline.processing.cancelled.body": "This demo is no longer being processed.",
   "pipeline.processing.continueBrowsing": "You can keep browsing while we prepare your analysis.",
   "pipeline.workerOfflineTitle": "Processing worker unavailable.",
   "pipeline.workerOfflineBody":
