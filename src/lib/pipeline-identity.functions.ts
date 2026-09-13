@@ -140,26 +140,26 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const attach = outcome.state === "attached";
-    await supabaseAdmin
-      .from("demo_jobs")
-      .update({
-        declared_participant_key: data.participantKey ?? null,
-        declared_nickname: data.nickname ?? null,
-        attachment_declared_at: new Date().toISOString(),
-        attachment_declared_by: userId,
-        attachment_state: outcome.state,
-        attachment_method: outcome.method,
-        attachment_source: outcome.source,
-        attachment_confidence: confidenceScore(outcome.confidence),
-        attachment_confidence_label: outcome.confidence,
-        attachment_participant_key: outcome.participantKey,
-        observed_nickname: outcome.observedNickname,
-        attachment_reason: outcome.reason,
-        // Re-queue only when the declaration actually resolves a player.
-        ...(attach ? { status: "pending" as const, stage: "queued", error_code: null } : {}),
-      })
-      .eq("id", job.id)
-      .eq("user_id", userId);
+    const { data: requeued, error: requeueError } = await supabaseAdmin.rpc(
+      "requeue_demo_job_after_attachment",
+      {
+        _job_id: job.id,
+        _user_id: userId,
+        _attachment: {
+          declared_participant_key: data.participantKey ?? null,
+          declared_nickname: data.nickname ?? null,
+          state: outcome.state,
+          method: outcome.method,
+          source: outcome.source,
+          confidence_score: confidenceScore(outcome.confidence),
+          confidence: outcome.confidence,
+          participant_key: outcome.participantKey,
+          observed_nickname: outcome.observedNickname,
+          reason: outcome.reason,
+        },
+      },
+    );
+    if (requeueError || !requeued) throw new Error("JOB_REQUEUE_FAILED");
 
     const ambiguous = outcome.reason === "ambiguous_nickname" && data.nickname;
     return {

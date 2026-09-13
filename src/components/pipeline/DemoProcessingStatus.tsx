@@ -1,5 +1,5 @@
-import { AlertCircle, Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Ban, Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { useRef } from "react";
 
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const STAGE_KEYS: Record<
-  ProcessingStage | "failed",
+  ProcessingStage | "failed" | "cancel_requested" | "cancelled",
   { title: TranslationKey; body: TranslationKey }
 > = {
   queued: {
@@ -54,34 +54,36 @@ const STAGE_KEYS: Record<
     title: "pipeline.processing.failed.title",
     body: "pipeline.processing.failed.body",
   },
+  cancel_requested: {
+    title: "pipeline.processing.cancelRequested.title",
+    body: "pipeline.processing.cancelRequested.body",
+  },
+  cancelled: {
+    title: "pipeline.processing.cancelled.title",
+    body: "pipeline.processing.cancelled.body",
+  },
 };
 
 export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const t = useT();
   const failed = job.status === "failed";
-  const active = job.status === "pending" || job.status === "processing";
+  const cancelling = job.status === "cancel_requested";
+  const cancelled = job.status === "cancelled";
+  const active = job.status === "pending" || job.status === "processing" || cancelling;
   const done = job.status === "processed";
   const stage = safeProcessingStage(job.stage, job.status);
   const lastActiveStage = useRef<ProcessingStage>(stage);
-  const [progress, setProgress] = useState(() =>
-    estimatedStageProgress({ stage: job.stage, status: job.status }),
-  );
+  const progress = estimatedStageProgress({ stage: job.stage, status: job.status });
 
   if (!failed) lastActiveStage.current = stage;
 
-  useEffect(() => {
-    setProgress((current) =>
-      estimatedStageProgress({ stage: job.stage, status: job.status, previousProgress: current }),
-    );
-
-    if (!active) return;
-    const timer = window.setInterval(() => {
-      setProgress((current) => advanceVisualProgress(job.stage, job.status, current));
-    }, 1800);
-    return () => window.clearInterval(timer);
-  }, [active, job.stage, job.status]);
-
-  const displayedStage = failed ? "failed" : stage;
+  const displayedStage = failed
+    ? "failed"
+    : cancelled
+      ? "cancelled"
+      : cancelling
+        ? "cancel_requested"
+        : stage;
   const currentIndex = processingStageIndex(lastActiveStage.current, job.status);
 
   return (
@@ -100,6 +102,8 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         >
           {failed ? (
             <AlertCircle className="size-4" aria-hidden />
+          ) : cancelled ? (
+            <Ban className="size-4" aria-hidden />
           ) : done ? (
             <CheckCircle2 className="size-4" aria-hidden />
           ) : (
