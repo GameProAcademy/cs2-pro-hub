@@ -3,6 +3,8 @@ import { AlertTriangle, Loader2, RefreshCw, Square, Upload } from "lucide-react"
 import { useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
+import { HistorySkeleton } from "@/components/common/AppLoaders";
+import { EmptyState } from "@/components/common/States";
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { Button } from "@/components/ui/button";
@@ -161,9 +163,12 @@ export function DemoIngestPanel() {
       </div>
 
       {upload.isPending ? (
-        <div className="space-y-2" aria-live="polite">
+        <div
+          className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-4"
+          aria-live="polite"
+        >
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
             {t("pipeline.uploading")} {uploadPercent > 0 ? `${uploadPercent}%` : ""}
           </p>
           <progress
@@ -171,6 +176,22 @@ export function DemoIngestPanel() {
             value={uploadPercent}
             max={100}
           />
+        </div>
+      ) : null}
+
+      {upload.isSuccess ? (
+        <div
+          className="rounded-lg border border-success/30 bg-success/8 px-4 py-3"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="text-sm font-semibold text-success">{t("pipeline.upload.successTitle")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {t("pipeline.upload.successBody")}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {t("pipeline.processing.continueBrowsing")}
+          </p>
         </div>
       ) : null}
 
@@ -189,27 +210,51 @@ export function DemoIngestPanel() {
         </h3>
 
         {jobs.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          <HistorySkeleton />
         ) : (jobs.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("pipeline.historyEmpty")}</p>
+          <EmptyState
+            title={t("pipeline.history.emptyTitle")}
+            description={t("pipeline.history.emptyBody")}
+            action={<Button onClick={focusUpload}>{t("analyze.selectFile")}</Button>}
+          />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {(jobs.data ?? []).map((job) => (
               <li
                 key={job.jobId}
-                className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card/40 px-4 py-3"
+                className="min-w-0 rounded-lg border border-border bg-card/40 p-4 sm:p-5"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {job.fileName || job.uploadId}
-                  </p>
-                  <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    {t(STATUS_KEY[job.status])}
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold text-foreground">
+                      {job.fileName || job.uploadId}
+                    </p>
+                    <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                     {job.roundsValid != null ? ` · ${job.roundsValid} ${t("pipeline.rounds")}` : ""}
                     {job.extractionConfidence != null
                       ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
                       : ""}
                   </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+                      job.status === "processed" && "border-success/30 bg-success/8 text-success",
+                      job.status === "failed" &&
+                        "border-destructive/30 bg-destructive/8 text-destructive",
+                      (job.status === "pending" || job.status === "processing") &&
+                        "border-primary/30 bg-primary/8 text-primary",
+                      job.status === "cancel_requested" &&
+                        "border-warning/30 bg-warning/8 text-warning",
+                      job.status === "cancelled" &&
+                        "border-border bg-secondary text-muted-foreground",
+                    )}
+                  >
+                    {t(STATUS_KEY[job.status])}
+                  </span>
+                </div>
+
+                <div className="min-w-0">
                   {job.status === "failed" && job.errorCode === "CORRUPTED_DEMO" ? (
                     <div className="mt-2 rounded-lg border border-destructive/35 bg-destructive/8 px-3 py-2.5">
                       <p className="text-sm font-semibold text-destructive">
@@ -238,43 +283,44 @@ export function DemoIngestPanel() {
                   <DemoProcessingStatus job={job} />
                 </div>
 
-                <span
-                  className={cn(
-                    "font-mono text-[11px] uppercase tracking-wider",
-                    job.status === "processed" && "text-success",
-                    job.status === "failed" && "text-destructive",
-                    (job.status === "pending" || job.status === "processing") && "text-primary",
-                    job.status === "cancel_requested" && "text-warning",
-                    job.status === "cancelled" && "text-muted-foreground",
-                  )}
-                >
-                  {t(STATUS_KEY[job.status])}
-                </span>
-
                 {job.status === "failed" &&
                 !isPermanentCode(job.errorCode) &&
                 job.retryCount < job.maxRetries ? (
+                  <div className="mt-4 border-t border-border/70 pt-4">
                   <Button
-                    size="sm"
+                     className="min-h-11 w-full sm:w-auto"
                     variant="outline"
                     onClick={() => retry.mutate(job.jobId)}
                     disabled={retry.isPending}
                   >
-                    <RefreshCw className="mr-1.5 size-3.5" aria-hidden />
-                    {t("pipeline.retry")}
+                     <RefreshCw
+                       className={cn(
+                         "mr-1.5 size-3.5",
+                         retry.isPending && "animate-spin motion-reduce:animate-none",
+                       )}
+                       aria-hidden
+                     />
+                     {retry.isPending ? t("pipeline.retrying") : t("pipeline.retry")}
                   </Button>
+                  </div>
                 ) : null}
 
                 {job.status === "pending" || job.status === "processing" ? (
+                  <div className="mt-4 border-t border-border/70 pt-4">
                   <Button
-                    size="sm"
+                     className="min-h-11 w-full sm:w-auto"
                     variant="outline"
                     onClick={() => cancel.mutate(job.jobId)}
                     disabled={cancel.isPending}
                   >
-                    <Square className="mr-1.5 size-3.5" aria-hidden />
-                    {t("pipeline.cancel")}
+                     {cancel.isPending ? (
+                       <Loader2 className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+                     ) : (
+                       <Square className="mr-1.5 size-3.5" aria-hidden />
+                     )}
+                     {cancel.isPending ? t("pipeline.cancelling") : t("pipeline.cancel")}
                   </Button>
+                  </div>
                 ) : null}
               </li>
             ))}
