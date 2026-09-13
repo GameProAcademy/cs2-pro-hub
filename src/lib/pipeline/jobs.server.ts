@@ -451,6 +451,38 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     // job still ends successfully: the match is canonicalised and simply carries
     // no projection yet, with the real reason recorded.
     let projectedMatchId = canonical.matchId;
+    const finishedAt = new Date().toISOString();
+    const durationMs = Date.now() - startedAt;
+    const finalResult = {
+      finished_at: finishedAt,
+      duration_ms: durationMs,
+      match_id: canonical.matchId,
+      player_id: player?.id ?? null,
+      resolved_steam_id: steamId,
+      identity_status: attachment.state === "attached" ? "resolved" : "unresolved",
+      attachment_state: attachment.state,
+      attachment_method: attachment.method,
+      attachment_confidence: confidenceScore(attachment.confidence),
+      attachment_confidence_label: attachment.confidence,
+      attachment_source: attachment.source,
+      attachment_participant_key: attachment.participantKey,
+      observed_nickname: attachment.observedNickname,
+      attachment_reason: attachment.reason,
+      parser_name: match.parser.name,
+      parser_version: match.parser.version,
+      parser_revision: match.parser.revision,
+      schema_version: SCHEMA_VERSION,
+      analysis_version: ANALYSIS_VERSION,
+      rounds_detected: match.quality.roundsDetected,
+      rounds_valid: match.quality.roundsValid,
+      players_detected: match.quality.playersDetected,
+      events_detected: match.quality.eventsDetected,
+      extraction_confidence: match.quality.extractionConfidence,
+      partial_parse: match.quality.partialParse,
+      quality_flags: match.quality.flags,
+      retain_until: retainUntil(true),
+    } satisfies Json;
+    let finalized = false;
     if (steamId && player) {
       await setStage(jobId, "metrics");
       assertDeadline();
@@ -483,70 +515,26 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         match,
         metrics,
         features,
+        jobId,
+        jobResult: finalResult,
       });
       projectedMatchId = persisted.matchId;
-      await assertNotCancelled(jobId);
+      finalized = true;
     }
 
-    const durationMs = Date.now() - startedAt;
-    const { data: finalized } = await db
-      .from("demo_jobs")
-      .update({
-        status: "processed",
-        stage: "done",
-        finished_at: new Date().toISOString(),
-        duration_ms: durationMs,
-        match_id: projectedMatchId,
-        player_id: player?.id ?? null,
-        resolved_steam_id: steamId,
-        identity_status: attachment.state === "attached" ? "resolved" : "unresolved",
-        attachment_state: attachment.state,
-        attachment_method: attachment.method,
-        attachment_confidence: confidenceScore(attachment.confidence),
-        attachment_confidence_label: attachment.confidence,
-        attachment_source: attachment.source,
-        attachment_participant_key: attachment.participantKey,
-        observed_nickname: attachment.observedNickname,
-        attachment_reason: attachment.reason,
-        parser_name: match.parser.name,
-        parser_version: match.parser.version,
-        parser_revision: match.parser.revision,
-        schema_version: SCHEMA_VERSION,
-        analysis_version: ANALYSIS_VERSION,
-        rounds_detected: match.quality.roundsDetected,
-        rounds_valid: match.quality.roundsValid,
-        players_detected: match.quality.playersDetected,
-        events_detected: match.quality.eventsDetected,
-        extraction_confidence: match.quality.extractionConfidence,
-        partial_parse: match.quality.partialParse,
-        quality_flags: match.quality.flags,
-        error_code: null,
-        error_message: null,
-        retain_until: retainUntil(true),
-      })
-      .eq("id", jobId)
-      .eq("status", "processing")
-      .select("id");
+    if (!finalized) {
+      const { data, error: finishError } = await db.rpc("finish_demo_job_processed", {
+        _job_id: jobId,
+        _result: { ...finalResult, match_id: projectedMatchId },
+      });
+      if (finishError) throw new PipelineError("PERSISTENCE_ERROR", finishError.message);
+      finalized = data === true;
+    }
 
-    if (!finalized || finalized.length === 0) {
+    if (!finalized) {
       await finishCancellation(jobId, job.storage_path);
       return { jobId, status: "cancelled", matchId: projectedMatchId };
     }
-
-    await db
-      .from("uploads")
-      .update({
-        status: "processed",
-        processed_at: new Date().toISOString(),
-        processing_duration_ms: durationMs,
-        parser_name: match.parser.name,
-        parser_version: match.parser.version,
-        schema_version: SCHEMA_VERSION,
-        analysis_version: ANALYSIS_VERSION,
-        error_code: null,
-        error_message: null,
-      })
-      .eq("id", job.upload_id);
 
     await cleanupExpiredDemos(5);
     return {
@@ -565,7 +553,7 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     const canRetry =
       !pipelineError.permanent && job.retry_count < (job.max_retries ?? MAX_JOB_RETRIES);
 
-    await db
+    const { data: failedRows } = await db
       .from("demo_jobs")
       .update({
         status: canRetry ? "pending" : "failed",
@@ -577,7 +565,14 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
         duration_ms: Date.now() - startedAt,
         retain_until: retainUntil(false),
       })
-      .eq("id", jobId);
+      .eq("id", jobId)
+      .eq("status", "processing")
+      .select("id");
+
+    if (!failedRows || failedRows.length === 0) {
+      await finishCancellation(jobId, job.storage_path);
+      return { jobId, status: "cancelled" };
+    }
 
     await db
       .from("uploads")

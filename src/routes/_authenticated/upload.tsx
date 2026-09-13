@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Cpu, Database, FileImage, FileText, Layers, Lightbulb, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -107,6 +107,17 @@ function PathCard({
 function AnalyzePage() {
   const t = useT();
   const [kind, setKind] = useState<UploadKind>("demo");
+  const intakeRef = useRef<HTMLDivElement>(null);
+
+  function selectPath(nextKind: UploadKind) {
+    setKind(nextKind);
+    if (nextKind !== "demo") return;
+    intakeRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+    intakeRef.current?.focus({ preventScroll: true });
+  }
 
   return (
     <AppShell>
@@ -119,18 +130,18 @@ function AnalyzePage() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
               <PathCard
                 kind="demo"
                 icon={Cpu}
                 active={kind === "demo"}
-                onSelect={() => setKind("demo")}
+                onSelect={() => selectPath("demo")}
               />
               <PathCard
                 kind="report"
                 icon={FileImage}
                 active={kind === "report"}
-                onSelect={() => setKind("report")}
+                onSelect={() => selectPath("report")}
               />
             </div>
 
@@ -139,15 +150,17 @@ function AnalyzePage() {
               {t("analyze.recommendation")}
             </p>
 
-            <ChartCard
-              title={kind === "demo" ? t("pipeline.title") : t("analyze.report.title")}
-              subtitle={kind === "demo" ? t("pipeline.subtitle") : undefined}
-              showDemoTag={false}
-            >
-              {/* Demos go through the real ingestion pipeline; the report path
-                  is still an interface-only intake surface. */}
-              {kind === "demo" ? <DemoIngestPanel /> : <UploadBox kind="report" />}
-            </ChartCard>
+            <div ref={intakeRef} tabIndex={-1} className="scroll-mt-24 outline-none">
+              <ChartCard
+                title={kind === "demo" ? t("pipeline.title") : t("analyze.report.title")}
+                subtitle={kind === "demo" ? t("pipeline.subtitle") : undefined}
+                showDemoTag={false}
+              >
+                {/* Demos go through the real ingestion pipeline; the report path
+                    is still an interface-only intake surface. */}
+                {kind === "demo" ? <DemoIngestPanel /> : <UploadBox kind="report" />}
+              </ChartCard>
+            </div>
           </div>
 
           <ChartCard

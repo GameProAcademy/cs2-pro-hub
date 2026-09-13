@@ -65,9 +65,15 @@ describe("2. atomic job claim", () => {
     const files = readdirSync(dir)
       .filter((name) => name.endsWith(".sql"))
       .sort();
-    const withClaim = files.filter((name) =>
-      readFileSync(`${dir}/${name}`, "utf8").includes("claim_next_demo_job"),
-    );
+    const withClaim = files.filter((name) => {
+      const sql = readFileSync(`${dir}/${name}`, "utf8");
+      return (
+        sql.includes("CREATE OR REPLACE FUNCTION public.claim_next_demo_job") &&
+        sql.includes(
+          "REVOKE ALL ON FUNCTION public.claim_next_demo_job(integer) FROM authenticated",
+        )
+      );
+    });
     const last = withClaim[withClaim.length - 1];
     return readFileSync(`${dir}/${last}`, "utf8");
   })();

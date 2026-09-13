@@ -122,9 +122,11 @@ export async function persistDemoProjection(args: {
   match: CanonicalMatch;
   metrics: CanonicalMetrics;
   features: CanonicalFeatures;
+  jobId: string;
+  jobResult: Json;
 }): Promise<PersistResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { match, metrics, features, matchId, uploadId, playerId, steamId } = args;
+  const { match, metrics, features, matchId, uploadId, playerId, steamId, jobId, jobResult } = args;
 
   const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
   const teamPlayer = ownPlayer?.team ?? null;
@@ -206,6 +208,8 @@ export async function persistDemoProjection(args: {
       schema_version: SCHEMA_VERSION,
       analysis_version: ANALYSIS_VERSION,
     }),
+    _job_id: jobId,
+    _job_result: jobResult,
   } as never);
   if (error) fail(error.message);
 

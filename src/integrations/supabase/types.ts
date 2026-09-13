@@ -2688,6 +2688,10 @@ export type Database = {
         Args: { _cleanup_error?: string; _job_id: string }
         Returns: boolean
       }
+      finish_demo_job_processed: {
+        Args: { _job_id: string; _result: Json }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2729,6 +2733,8 @@ export type Database = {
       persist_demo_projection: {
         Args: {
           _features: Json
+          _job_id?: string
+          _job_result?: Json
           _match_id: string
           _match_wide: Json
           _metrics: Json

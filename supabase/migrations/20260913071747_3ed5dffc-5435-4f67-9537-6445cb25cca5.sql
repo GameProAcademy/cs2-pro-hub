@@ -1,0 +1,1 @@
+DROP FUNCTION public.persist_demo_projection(uuid, uuid, uuid, text, jsonb, jsonb, jsonb, jsonb);
