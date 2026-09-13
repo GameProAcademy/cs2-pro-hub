@@ -23,7 +23,7 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain("IF _job.status IN ('pending', 'processing')");
     expect(migration).toContain("RAISE EXCEPTION 'JOB_NOT_ENQUEUEABLE'");
     expect(migration).not.toContain("ON CONFLICT (upload_id) DO UPDATE");
-    expect(functionsSource).not.toContain('.upsert(\n        {\n          upload_id: upload.id');
+    expect(functionsSource).not.toContain(".upsert(\n        {\n          upload_id: upload.id");
   });
 
   it("keeps processed and failed jobs terminal during normal enqueue", () => {
