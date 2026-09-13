@@ -58,18 +58,18 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
       </div>
 
       {participants.length > 0 ? (
-         <fieldset className="space-y-2">
+        <fieldset className="space-y-2">
           <legend className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
             {t("pipeline.identify.selectLabel")}
           </legend>
           {participants.map((participant) => (
-             <label
+            <label
               key={participant.participantKey}
-               className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
-                 selected === participant.participantKey
-                   ? "border-primary/60 bg-primary/10 text-foreground"
-                   : "border-border bg-background/40 text-foreground hover:border-primary/30"
-               }`}
+              className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
+                selected === participant.participantKey
+                  ? "border-primary/60 bg-primary/10 text-foreground"
+                  : "border-border bg-background/40 text-foreground hover:border-primary/30"
+              }`}
             >
               <input
                 type="radio"
@@ -78,12 +78,14 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                 checked={selected === participant.participantKey}
                 onChange={() => setSelected(participant.participantKey)}
               />
-               <span className="min-w-0">
-                 <span className="block break-words font-medium">
-                   {participant.nickname ?? participant.participantKey}
-                 </span>
+              <span className="min-w-0">
+                <span className="block break-words font-medium">
+                  {participant.nickname ?? participant.participantKey}
+                </span>
                 {participant.team ? (
-                   <span className="mt-0.5 block text-xs text-muted-foreground">{participant.team}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {participant.team}
+                  </span>
                 ) : null}
               </span>
             </label>
@@ -128,24 +130,26 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
       </div>
 
       {declare.isPending ? (
-         <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status">
-           <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+        <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status">
+          <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
           {t("common.loading")}
         </p>
       ) : null}
 
       {result ? (
-         <p
+        <p
           role="status"
-           className={`flex items-start gap-2 rounded-md border px-3 py-2.5 ${
+          className={`flex items-start gap-2 rounded-md border px-3 py-2.5 ${
             result.state === "attached"
-               ? "border-success/30 bg-success/8 text-xs text-success"
+              ? "border-success/30 bg-success/8 text-xs text-success"
               : result.state === "conflict"
-                 ? "border-destructive/30 bg-destructive/8 text-xs text-destructive"
-                 : "border-warning/30 bg-warning/8 text-xs text-warning"
-           }`}
+                ? "border-destructive/30 bg-destructive/8 text-xs text-destructive"
+                : "border-warning/30 bg-warning/8 text-xs text-warning"
+          }`}
         >
-           {result.state === "attached" ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" aria-hidden /> : null}
+          {result.state === "attached" ? (
+            <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          ) : null}
           {result.state === "attached"
             ? t("pipeline.identify.reprocessing")
             : result.state === "conflict"

@@ -119,7 +119,10 @@ export function UploadBox({
           className="sr-only"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <Button className="mt-6 min-h-11 w-full sm:w-auto" onClick={() => inputRef.current?.click()}>
+        <Button
+          className="mt-6 min-h-11 w-full sm:w-auto"
+          onClick={() => inputRef.current?.click()}
+        >
           {t("analyze.selectFile")}
         </Button>
       </div>

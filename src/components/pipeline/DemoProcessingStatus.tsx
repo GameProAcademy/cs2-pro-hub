@@ -114,7 +114,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-               "break-words font-display text-sm font-semibold uppercase tracking-[0.12em]",
+              "break-words font-display text-sm font-semibold uppercase tracking-[0.12em]",
               failed
                 ? "text-destructive"
                 : cancelled || cancelling
@@ -196,7 +196,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
                 ) : (
                   <Circle className="size-3.5 shrink-0" aria-hidden />
                 )}
-                 <span className="min-w-0 break-words">{t(STAGE_KEYS[item].title)}</span>
+                <span className="min-w-0 break-words">{t(STAGE_KEYS[item].title)}</span>
               </li>
             );
           })}

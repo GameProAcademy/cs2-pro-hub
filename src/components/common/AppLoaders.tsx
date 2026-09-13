@@ -15,13 +15,22 @@ export function InitialAppLoader() {
     >
       <div className="flex flex-col items-center text-center">
         <span className="flex size-16 items-center justify-center rounded-lg border border-primary/30 bg-elevated shadow-[var(--shadow-glow)]">
-          <img src={gameproSymbol} alt="GamePro" width={42} height={42} className="size-10 object-contain" />
+          <img
+            src={gameproSymbol}
+            alt="GamePro"
+            width={42}
+            height={42}
+            className="size-10 object-contain"
+          />
         </span>
         <p className="mt-5 font-display text-xl font-bold uppercase tracking-[0.14em] text-foreground">
           CS2 PRO HUB
         </p>
         <p className="mt-2 text-sm text-muted-foreground">{t("app.loading.initial")}</p>
-        <Loader2 className="mt-5 size-5 animate-spin text-primary motion-reduce:animate-none" aria-hidden />
+        <Loader2
+          className="mt-5 size-5 animate-spin text-primary motion-reduce:animate-none"
+          aria-hidden
+        />
       </div>
     </div>
   );

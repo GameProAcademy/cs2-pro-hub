@@ -230,11 +230,13 @@ export function DemoIngestPanel() {
                       {job.fileName || job.uploadId}
                     </p>
                     <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    {job.roundsValid != null ? ` · ${job.roundsValid} ${t("pipeline.rounds")}` : ""}
-                    {job.extractionConfidence != null
-                      ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
-                      : ""}
-                  </p>
+                      {job.roundsValid != null
+                        ? ` · ${job.roundsValid} ${t("pipeline.rounds")}`
+                        : ""}
+                      {job.extractionConfidence != null
+                        ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
+                        : ""}
+                    </p>
                   </div>
                   <span
                     className={cn(
@@ -287,39 +289,42 @@ export function DemoIngestPanel() {
                 !isPermanentCode(job.errorCode) &&
                 job.retryCount < job.maxRetries ? (
                   <div className="mt-4 border-t border-border/70 pt-4">
-                  <Button
-                     className="min-h-11 w-full sm:w-auto"
-                    variant="outline"
-                    onClick={() => retry.mutate(job.jobId)}
-                    disabled={retry.isPending}
-                  >
-                     <RefreshCw
-                       className={cn(
-                         "mr-1.5 size-3.5",
-                         retry.isPending && "animate-spin motion-reduce:animate-none",
-                       )}
-                       aria-hidden
-                     />
-                     {retry.isPending ? t("pipeline.retrying") : t("pipeline.retry")}
-                  </Button>
+                    <Button
+                      className="min-h-11 w-full sm:w-auto"
+                      variant="outline"
+                      onClick={() => retry.mutate(job.jobId)}
+                      disabled={retry.isPending}
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "mr-1.5 size-3.5",
+                          retry.isPending && "animate-spin motion-reduce:animate-none",
+                        )}
+                        aria-hidden
+                      />
+                      {retry.isPending ? t("pipeline.retrying") : t("pipeline.retry")}
+                    </Button>
                   </div>
                 ) : null}
 
                 {job.status === "pending" || job.status === "processing" ? (
                   <div className="mt-4 border-t border-border/70 pt-4">
-                  <Button
-                     className="min-h-11 w-full sm:w-auto"
-                    variant="outline"
-                    onClick={() => cancel.mutate(job.jobId)}
-                    disabled={cancel.isPending}
-                  >
-                     {cancel.isPending ? (
-                       <Loader2 className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
-                     ) : (
-                       <Square className="mr-1.5 size-3.5" aria-hidden />
-                     )}
-                     {cancel.isPending ? t("pipeline.cancelling") : t("pipeline.cancel")}
-                  </Button>
+                    <Button
+                      className="min-h-11 w-full sm:w-auto"
+                      variant="outline"
+                      onClick={() => cancel.mutate(job.jobId)}
+                      disabled={cancel.isPending}
+                    >
+                      {cancel.isPending ? (
+                        <Loader2
+                          className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none"
+                          aria-hidden
+                        />
+                      ) : (
+                        <Square className="mr-1.5 size-3.5" aria-hidden />
+                      )}
+                      {cancel.isPending ? t("pipeline.cancelling") : t("pipeline.cancel")}
+                    </Button>
                   </div>
                 ) : null}
               </li>
