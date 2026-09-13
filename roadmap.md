@@ -772,3 +772,20 @@ O repositório expõe somente `POST /api/public/pipeline-cron`, protegido por
 no banco ou no repositório, e o agente não possui acesso ao Cloud Jobs. A fase
 permanece **IMPLEMENTED / NOT CLOSED** até a plataforma configurar e comprovar
 uma chamada por minuto, sem criar um segundo consumidor concorrente.
+
+## FASE 2.7.2D — Scheduler + Cancellation Concurrency + Real E2E — IMPLEMENTADA / NOT CLOSED
+
+- [x] Finalização do job e projeção do jogador protegidas pelo mesmo lock/transação;
+      cancelamento concorrente vence antes do commit ou é recusado depois do commit.
+- [x] Falha concorrente não sobrescreve `cancel_requested`/`cancelled`; requeue pós-attachment
+      não ressuscita job cancelado.
+- [x] Loading inicial reutilizado no boundary raiz, sem atraso ou consulta artificial.
+- [x] Cards de entrada permanecem lado a lado no mobile; "Tenho uma demo" leva e foca a
+      área real de upload, respeitando `prefers-reduced-motion`.
+- [ ] BLOCKER externo: criar/ativar exatamente um Cloud Job a cada minuto para
+      `POST /api/public/pipeline-cron`, autenticado por `LOVABLE_CRON_SECRET`.
+- [ ] BLOCKER: nenhuma chamada real do scheduler foi observada nos logs consultáveis.
+- [ ] BLOCKER: artefato `.dem` real indisponível no ambiente; E2E e segunda execução
+      idempotente não foram executados.
+
+**Veredito:** FASE 2.7.2D e FASE 2.7.2 permanecem **NOT CLOSED**; FASE 2.8 não iniciada.

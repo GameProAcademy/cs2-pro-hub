@@ -66,7 +66,9 @@ describe("2. atomic job claim", () => {
       .filter((name) => name.endsWith(".sql"))
       .sort();
     const withClaim = files.filter((name) =>
-      readFileSync(`${dir}/${name}`, "utf8").includes("claim_next_demo_job"),
+      readFileSync(`${dir}/${name}`, "utf8").includes(
+        "CREATE OR REPLACE FUNCTION public.claim_next_demo_job",
+      ),
     );
     const last = withClaim[withClaim.length - 1];
     return readFileSync(`${dir}/${last}`, "utf8");
