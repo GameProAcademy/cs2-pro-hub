@@ -65,64 +65,40 @@ export const createDemoUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-
-    // Idempotency: the same file content re-uploaded reuses the existing row.
-    const { data: existing } = await supabase
-      .from("uploads")
-      .select("id, status, storage_path, demo_jobs(id, status, storage_deleted_at)")
-      .eq("user_id", userId)
-      .eq("demo_sha256", data.demoSha256)
-      .limit(1)
-      .maybeSingle();
-
-    if (existing?.id) {
-      const related = existing.demo_jobs as { id: string }[] | { id: string } | null;
-      const job = Array.isArray(related) ? (related[0] ?? null) : related;
-      const duplicateStatus: DuplicateStatus =
-        existing.status === "processed"
-          ? "processed"
-          : existing.status === "failed"
-            ? "failed"
-            : "pending";
-      return {
-        uploadId: existing.id,
-        storagePath: existing.storage_path ?? `${userId}/${existing.id}.dem`,
-        bucket: DEMO_BUCKET,
-        duplicate: true as const,
-        duplicateStatus,
-        // A processed demo keeps its permanent derived data even after the
-        // temporary file expired; it must NOT be re-processed.
-        existingJobId: job?.id ?? null,
-      };
+    const { userId } = context;
+    const uploadId = crypto.randomUUID();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: reserved, error } = await supabaseAdmin.rpc("reserve_demo_upload", {
+      _user_id: userId,
+      _upload_id: uploadId,
+      _file_name: data.fileName,
+      _file_size: data.fileSize,
+      _demo_sha256: data.demoSha256,
+    });
+    if (error || !reserved || typeof reserved !== "object" || Array.isArray(reserved)) {
+      throw new Error("UPLOAD_REGISTRATION_FAILED");
     }
 
-    const uploadId = crypto.randomUUID();
-    const storagePath = `${userId}/${uploadId}.dem`;
-
-    const { error } = await supabase.from("uploads").insert({
-      id: uploadId,
-      user_id: userId,
-      type: "demo",
-      source: "manual",
-      file_name: data.fileName,
-      file_size: data.fileSize,
-      mime_type: "application/octet-stream",
-      demo_sha256: data.demoSha256,
-      storage_path: storagePath,
-      status: "pending",
-      processed_at: null,
-      error_message: null,
-    });
-    if (error) throw new Error("UPLOAD_REGISTRATION_FAILED");
+    const result = reserved as Record<string, unknown>;
+    const reservedUploadId = typeof result["upload_id"] === "string" ? result["upload_id"] : null;
+    const storagePath = typeof result["storage_path"] === "string" ? result["storage_path"] : null;
+    if (!reservedUploadId || !storagePath || !storagePath.startsWith(`${userId}/`)) {
+      throw new Error("UPLOAD_REGISTRATION_FAILED");
+    }
+    const duplicate = result["duplicate"] === true;
+    const rawStatus = result["duplicate_status"];
+    const duplicateStatus: DuplicateStatus =
+      rawStatus === "processed" || rawStatus === "failed" || rawStatus === "pending"
+        ? rawStatus
+        : null;
 
     return {
-      uploadId,
+      uploadId: reservedUploadId,
       storagePath,
       bucket: DEMO_BUCKET,
-      duplicate: false as const,
-      duplicateStatus: null as DuplicateStatus,
-      existingJobId: null,
+      duplicate,
+      duplicateStatus,
+      existingJobId: typeof result["job_id"] === "string" ? result["job_id"] : null,
     };
   });
 
@@ -150,46 +126,35 @@ export const enqueueDemoJob = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // An already processed upload keeps its permanent derived data: re-queueing
-    // it would only duplicate work against a file that may no longer exist.
-    if (upload.status === "processed") {
-      const { data: done } = await supabaseAdmin
-        .from("demo_jobs")
-        .select("id")
-        .eq("upload_id", upload.id)
-        .maybeSingle();
-      if (done?.id) return { jobId: done.id, queued: false as const, duplicate: true as const };
-    }
+    // Existing jobs are resolved transactionally by the RPC. Do not require a
+    // temporary object that may already have expired after successful processing.
+    const { data: existingJob } = await supabaseAdmin
+      .from("demo_jobs")
+      .select("id")
+      .eq("upload_id", upload.id)
+      .maybeSingle();
 
     // The file must really be in the private bucket before a job is queued.
-    const { demoExists } = await import("@/lib/pipeline/storage.server");
-    const stored = await demoExists(upload.storage_path);
-    if (!stored) throw new Error("DEMO_NOT_FOUND");
+    if (!existingJob) {
+      const { demoExists } = await import("@/lib/pipeline/storage.server");
+      const stored = await demoExists(upload.storage_path);
+      if (!stored) throw new Error("DEMO_NOT_FOUND");
+    }
 
-    const { data: job, error } = await supabaseAdmin
-      .from("demo_jobs")
-      .upsert(
-        {
-          upload_id: upload.id,
-          user_id: userId,
-          status: "pending",
-          stage: "queued",
-          storage_path: upload.storage_path,
-          demo_sha256: upload.demo_sha256,
-          file_size: upload.file_size,
-          queued_at: new Date().toISOString(),
-          started_at: null,
-          finished_at: null,
-          error_code: null,
-          error_message: null,
-        },
-        { onConflict: "upload_id" },
-      )
-      .select("id")
-      .single();
-    if (error || !job) throw new Error("JOB_ENQUEUE_FAILED");
-
-    return { jobId: job.id, queued: true as const, duplicate: false as const };
+    const { data: enqueued, error } = await supabaseAdmin.rpc("enqueue_demo_job", {
+      _upload_id: upload.id,
+      _user_id: userId,
+    });
+    if (error || !enqueued || typeof enqueued !== "object" || Array.isArray(enqueued)) {
+      throw new Error("JOB_ENQUEUE_FAILED");
+    }
+    const result = enqueued as Record<string, unknown>;
+    if (typeof result["job_id"] !== "string") throw new Error("JOB_ENQUEUE_FAILED");
+    return {
+      jobId: result["job_id"],
+      queued: result["queued"] === true,
+      duplicate: result["duplicate"] === true,
+    };
   });
 
 function toView(

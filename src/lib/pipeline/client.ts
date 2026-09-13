@@ -106,9 +106,9 @@ export async function submitDemoWithDependencies(
     data: { fileName: file.name, fileSize: file.size, demoSha256 },
   });
 
-  // A demo already processed keeps its permanent derived data: it is never
-  // re-uploaded or re-processed (the temporary file may no longer exist).
-  if (slot.duplicateStatus === "processed") {
+  // Existing active/processed uploads must never have their storage object
+  // overwritten. Failed uploads keep using the explicit Retry action.
+  if (slot.duplicate) {
     options.onProgress?.({
       state: "completed",
       bytesSent: file.size,

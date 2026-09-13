@@ -2684,6 +2684,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
+      enqueue_demo_job: {
+        Args: { _upload_id: string; _user_id: string }
+        Returns: Json
+      }
       finish_demo_job_cancelled: {
         Args: { _cleanup_error?: string; _job_id: string }
         Returns: boolean
@@ -2764,6 +2768,16 @@ export type Database = {
       requeue_demo_job_after_attachment: {
         Args: { _attachment: Json; _job_id: string; _user_id: string }
         Returns: boolean
+      }
+      reserve_demo_upload: {
+        Args: {
+          _demo_sha256: string
+          _file_name: string
+          _file_size: number
+          _upload_id: string
+          _user_id: string
+        }
+        Returns: Json
       }
       save_player_profile: {
         Args: {
