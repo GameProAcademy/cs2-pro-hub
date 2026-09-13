@@ -111,7 +111,6 @@ function AnalyzePage() {
 
   function selectPath(nextKind: UploadKind) {
     setKind(nextKind);
-    if (nextKind !== "demo") return;
     intakeRef.current?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
@@ -196,8 +195,6 @@ function AnalyzePage() {
             ) : null}
           </ChartCard>
 
-          {/* Integration readiness (Phase 2.1.2): declared sources only.
-              No external integration is active, so no connect action exists. */}
           <div className="lg:col-span-3">
             <ChartCard
               title={t("sources.title")}
