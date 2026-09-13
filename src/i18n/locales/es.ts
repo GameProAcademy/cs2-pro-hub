@@ -602,6 +602,7 @@ export const es: Dictionary = {
   "pipeline.identify.reprocessing": "Jugador identificado. Generando tus métricas de esta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a ti.",
   "pipeline.retry": "Reintentar",
+  "pipeline.cancel": "Cancelar procesamiento",
   "pipeline.corrupted.title": "No pudimos analizar esta demo",
   "pipeline.corrupted.body":
     "El archivo de la demo parece incompleto o corrupto. Para no generar estadísticas ni diagnósticos incorrectos, no analizamos partidas incompletas. Vuelve a enviar la demo original/completa e inténtalo de nuevo.",
@@ -610,6 +611,8 @@ export const es: Dictionary = {
   "pipeline.status.processing": "Procesando",
   "pipeline.status.processed": "Procesada",
   "pipeline.status.failed": "Con error",
+  "pipeline.status.cancelRequested": "Cancelando",
+  "pipeline.status.cancelled": "Cancelada",
   "pipeline.processing.title": "Procesamiento de la demo",
   "pipeline.processing.progress": "Progreso estimado",
   "pipeline.processing.progressLabel": "Progreso estimado del procesamiento de la demo",
@@ -636,6 +639,10 @@ export const es: Dictionary = {
   "pipeline.processing.done.body": "Tu análisis está listo.",
   "pipeline.processing.failed.title": "No pudimos completar el análisis",
   "pipeline.processing.failed.body": "Encontramos un problema durante el procesamiento.",
+  "pipeline.processing.cancelRequested.title": "Cancelando procesamiento",
+  "pipeline.processing.cancelRequested.body": "El procesamiento se detendrá en el próximo punto seguro.",
+  "pipeline.processing.cancelled.title": "Procesamiento cancelado",
+  "pipeline.processing.cancelled.body": "Esta demo ya no se está procesando.",
   "pipeline.processing.continueBrowsing":
     "Puedes seguir navegando mientras preparamos tu análisis.",
   "pipeline.workerOfflineTitle": "Servicio de procesamiento no disponible.",

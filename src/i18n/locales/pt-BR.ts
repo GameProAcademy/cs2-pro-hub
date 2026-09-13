@@ -604,6 +604,7 @@ export const ptBR = {
   "pipeline.identify.reprocessing": "Jogador identificado. Gerando suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a você.",
   "pipeline.retry": "Tentar novamente",
+  "pipeline.cancel": "Cancelar processamento",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O arquivo da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la novamente.",
@@ -612,6 +613,8 @@ export const ptBR = {
   "pipeline.status.processing": "Processando",
   "pipeline.status.processed": "Processada",
   "pipeline.status.failed": "Falhou",
+  "pipeline.status.cancelRequested": "Cancelando",
+  "pipeline.status.cancelled": "Cancelada",
   "pipeline.processing.title": "Processamento da demo",
   "pipeline.processing.progress": "Progresso estimado",
   "pipeline.processing.progressLabel": "Progresso estimado do processamento da demo",
@@ -637,6 +640,10 @@ export const ptBR = {
   "pipeline.processing.done.body": "Sua análise está pronta.",
   "pipeline.processing.failed.title": "Não foi possível concluir a análise",
   "pipeline.processing.failed.body": "Encontramos um problema durante o processamento.",
+  "pipeline.processing.cancelRequested.title": "Cancelando processamento",
+  "pipeline.processing.cancelRequested.body": "O processamento será interrompido no próximo ponto seguro.",
+  "pipeline.processing.cancelled.title": "Processamento cancelado",
+  "pipeline.processing.cancelled.body": "Esta demo não está mais sendo processada.",
   "pipeline.processing.continueBrowsing":
     "Você pode continuar navegando enquanto preparamos sua análise.",
   "pipeline.workerOfflineTitle": "Serviço de processamento indisponível.",
