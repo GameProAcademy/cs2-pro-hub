@@ -2821,7 +2821,13 @@ export type Database = {
       plan_status: "draft" | "active" | "completed" | "archived"
       platform_kind: "FACEIT" | "GAMERS_CLUB" | "STEAM"
       upload_source: "manual" | "faceit" | "gamers_club" | "steam"
-      upload_status: "pending" | "processing" | "processed" | "failed"
+      upload_status:
+        | "pending"
+        | "processing"
+        | "processed"
+        | "failed"
+        | "cancel_requested"
+        | "cancelled"
       upload_type: "demo" | "screenshot" | "report"
       user_status: "active" | "inactive"
     }
@@ -3016,7 +3022,14 @@ export const Constants = {
       plan_status: ["draft", "active", "completed", "archived"],
       platform_kind: ["FACEIT", "GAMERS_CLUB", "STEAM"],
       upload_source: ["manual", "faceit", "gamers_club", "steam"],
-      upload_status: ["pending", "processing", "processed", "failed"],
+      upload_status: [
+        "pending",
+        "processing",
+        "processed",
+        "failed",
+        "cancel_requested",
+        "cancelled",
+      ],
       upload_type: ["demo", "screenshot", "report"],
       user_status: ["active", "inactive"],
     },
