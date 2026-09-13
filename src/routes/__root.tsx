@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 // with a relative path can yield two module instances (two React contexts)
 // across the SSR/client graphs, which makes useI18n() throw inside the provider.
 import { I18nProvider } from "@/i18n";
+import { InitialAppLoader } from "@/components/common/AppLoaders";
 import { supabase } from "@/integrations/supabase/client";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -114,6 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
   shellComponent: RootShell,
   component: RootComponent,
+  pendingComponent: InitialAppLoader,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
