@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
-import { assertRawParserOutput, mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
+import {
+  assertRawParserOutput,
+  DEPLOYED_WORKER_REVISION,
+  mapParserErrorCode,
+} from "@/lib/pipeline/parser/adapter";
 import {
   classifyWorkerFailure,
   extractWorkerError,
@@ -20,7 +24,7 @@ import {
 
 const ORIGIN = "https://cs2-demo-parser-production.up.railway.app";
 const FULL = `${ORIGIN}${PARSER_PARSE_PATH}`;
-const DEPLOYED_REVISION = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
+const DEPLOYED_REVISION = DEPLOYED_WORKER_REVISION;
 
 afterEach(() => vi.unstubAllEnvs());
 
