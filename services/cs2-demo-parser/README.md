@@ -181,6 +181,23 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 | `MAX_PAYLOAD_BYTES`        | optional            | response ceiling, default 96 MB           |
 | `DOWNLOAD_TIMEOUT_SECONDS` | optional            | default 120                               |
 | `PARSE_TIMEOUT_SECONDS`    | optional            | default 240                               |
+| `DEMO_PIPELINE_BRIDGE_URL` | yes for queue worker | APP bridge ending in `/pipeline-worker`   |
+| `DEMO_PIPELINE_BRIDGE_SECRET` | yes for queue worker | shared bearer; never logged             |
+| `DEMO_PIPELINE_WORKER_ID`  | optional            | stable worker identity; default `railway-parser-1` |
+| `DEMO_QUEUE_POLL_SECONDS`  | optional            | empty-queue backoff; default 5            |
+| `DEMO_QUEUE_HEARTBEAT_SECONDS` | optional        | lease renewal interval; default 60        |
+
+## Durable consumer
+
+When both bridge variables are configured, startup creates one persistent
+consumer task. It claims a small message, receives a short-lived private demo
+URL only after claim, renews the lease during parsing, and posts the raw parser
+contract back to the APP. The APP remains the only canonical writer and archives
+the queue message only after durable persistence. A crash before confirmation
+leaves the message available for redelivery after the visibility timeout.
+
+The consumer has concurrency 1. `/health`, `/version`, and `/v1/parse` remain
+unchanged. No backend privileged credential is present in Railway.
 
 ## Download security
 

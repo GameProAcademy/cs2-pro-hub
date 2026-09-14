@@ -852,13 +852,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Scheduler e E2E real permanecem bloqueados; FASE 2.7.2D continua **NOT CLOSED** e
       FASE 2.8 não iniciada.
 
-### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — PLANEJADA
+### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — IMPLEMENTATION COMPLETE / REAL E2E NOT YET PROVEN
 
-- [ ] Habilitar `pgmq` e criar `demo_parse` de forma idempotente, sem tabela de fila paralela.
-- [ ] Manter `demo_jobs` como fonte de verdade e garantir enqueue/claim/lease/ACK por `job_id + attempt`.
-- [ ] Remover o parse longo da requisição do scheduler sem criar segundo cron ou usar `waitUntil()`.
-- [ ] Adicionar consumer persistente no Railway, preservando `/health`, `/version` e `/v1/parse`.
-- [ ] Reutilizar a persistência APP existente, sem duplicar ou avançar o Canonical.
-- [ ] Provar retry, redelivery, concorrência, heartbeat, cancellation, segurança e ausência de vazamento.
-- [ ] Manter o job Cache intocado; E2E real somente com um novo `.dem` autorizado.
-- [ ] Documentar implantação e permanecer NOT CLOSED até prova durável completa.
+- [x] Habilitar `pgmq` e criar `demo_parse` de forma idempotente, sem tabela de fila paralela.
+- [x] Manter `demo_jobs` como fonte de verdade e garantir enqueue/claim/lease/ACK por `job_id + attempt`.
+- [x] Remover o parse longo da requisição do scheduler sem criar segundo cron ou usar `waitUntil()`.
+- [x] Adicionar consumer persistente no Railway, preservando `/health`, `/version` e `/v1/parse`.
+- [x] Reutilizar a persistência APP existente, sem duplicar ou avançar o Canonical.
+- [x] Cobrir contratos, heartbeat, stale claims, retry/cancelamento e ausência de segredo/URL na mensagem.
+- [x] Manter o job Cache fora da ativação automática; nenhum job existente foi backfilled.
+- [x] Documentar arquitetura e implantação.
+- [ ] Configurar o segredo compartilhado no APP e no Railway e publicar ambos os lados.
+- [ ] Executar E2E somente com um novo `.dem` autorizado; fase permanece **NOT CLOSED** até essa prova.
