@@ -46,13 +46,21 @@ export interface SubmitDemoOptions {
   onProgress?: (progress: DemoUploadProgress) => void;
 }
 
+export type DuplicateStatus = "processed" | "pending" | "failed" | "cancelled" | null;
+
+export interface SubmitDemoResult {
+  jobId: string | null;
+  duplicate: boolean;
+  duplicateStatus: DuplicateStatus;
+}
+
 export interface SubmitDemoDependencies {
   hash(file: Blob): Promise<string>;
   create(input: { data: { fileName: string; fileSize: number; demoSha256: string } }): Promise<{
     uploadId: string;
     storagePath: string;
     duplicate: boolean;
-    duplicateStatus: "processed" | "pending" | "failed" | null;
+    duplicateStatus: DuplicateStatus;
     existingJobId: string | null;
   }>;
   upload(file: File, storagePath: string, options: ResumableUploadOptions): Promise<void>;
@@ -87,7 +95,7 @@ export function precheckDemo(file: File): void {
 export async function submitDemo(
   file: File,
   options: SubmitDemoOptions = {},
-): Promise<{ jobId: string | null; duplicate: boolean }> {
+): Promise<SubmitDemoResult> {
   return submitDemoWithDependencies(file, options, submitDemoDependencies);
 }
 
@@ -96,7 +104,7 @@ export async function submitDemoWithDependencies(
   file: File,
   options: SubmitDemoOptions,
   dependencies: SubmitDemoDependencies,
-): Promise<{ jobId: string | null; duplicate: boolean }> {
+): Promise<SubmitDemoResult> {
   precheckDemo(file);
   options.onProgress?.({ state: "hashing", bytesSent: 0, bytesTotal: file.size, percent: 0 });
   const demoSha256 = await dependencies.hash(file);
@@ -106,16 +114,75 @@ export async function submitDemoWithDependencies(
     data: { fileName: file.name, fileSize: file.size, demoSha256 },
   });
 
-  // Existing active/processed uploads must never have their storage object
-  // overwritten. Failed uploads keep using the explicit Retry action.
-  if (slot.duplicate) {
+  if (slot.duplicate && slot.duplicateStatus === "processed") {
+    // A successfully processed demo is immutable from the user's perspective:
+    // do not overwrite its storage object or create another job.
     options.onProgress?.({
       state: "completed",
       bytesSent: file.size,
       bytesTotal: file.size,
       percent: 100,
     });
-    return { jobId: slot.existingJobId, duplicate: true };
+    return {
+      jobId: slot.existingJobId,
+      duplicate: true,
+      duplicateStatus: "processed",
+    };
+  }
+
+  if (slot.duplicate && (slot.duplicateStatus === "failed" || slot.duplicateStatus === "cancelled")) {
+    // FAILED/CANCELLED is intentionally retryable. Reuse the deterministic
+    // storage path and the same demo_jobs row. The upload is replaced only for
+    // a terminal unsuccessful attempt; processed/pending data is never touched.
+    if (!slot.existingJobId) throw new DemoUploadError("PROCESSING_ERROR", "duplicate job missing");
+    try {
+      await dependencies.upload(file, slot.storagePath, {
+        ...(options.signal ? { signal: options.signal } : {}),
+        onProgress: ({ bytesSent, bytesTotal }) =>
+          options.onProgress?.({
+            state: "uploading",
+            bytesSent,
+            bytesTotal,
+            percent: bytesTotal > 0 ? Math.round((bytesSent / bytesTotal) * 100) : 0,
+          }),
+      });
+    } catch (error) {
+      if (error instanceof DemoUploadError) throw error;
+      throw new DemoUploadError(
+        "STORAGE_ERROR",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+
+    // The server-side enqueue RPC atomically reactivates the existing failed or
+    // cancelled job after the new bytes are safely in storage.
+    const job = await dependencies.enqueue({ data: { uploadId: slot.uploadId } });
+    options.onProgress?.({
+      state: "completed",
+      bytesSent: file.size,
+      bytesTotal: file.size,
+      percent: 100,
+    });
+    return {
+      jobId: job.jobId || slot.existingJobId,
+      duplicate: true,
+      duplicateStatus: slot.duplicateStatus,
+    };
+  }
+
+  if (slot.duplicate) {
+    // Pending/processing duplicate: do not overwrite bytes or enqueue again.
+    options.onProgress?.({
+      state: "completed",
+      bytesSent: file.size,
+      bytesTotal: file.size,
+      percent: 100,
+    });
+    return {
+      jobId: slot.existingJobId,
+      duplicate: true,
+      duplicateStatus: slot.duplicateStatus,
+    };
   }
 
   try {
@@ -144,7 +211,7 @@ export async function submitDemoWithDependencies(
     bytesTotal: file.size,
     percent: 100,
   });
-  return { jobId: job.jobId, duplicate: slot.duplicate };
+  return { jobId: job.jobId, duplicate: false, duplicateStatus: null };
 }
 
 export async function pollJob(jobId: string): Promise<DemoJobView | null> {
