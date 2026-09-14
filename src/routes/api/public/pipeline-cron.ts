@@ -6,7 +6,8 @@
  * database-backed scheduler secret used by native pg_cron. It:
  *  - re-queues demo jobs stuck in `processing` past the stale window;
  *  - deletes temporary demo files whose retention window expired;
- *  - advances at most one queued demo job (concurrency-limited);
+ *  - advances at most one queued demo job (concurrency-limited) when the
+ *    parser preflight gate is healthy;
  *  - runs the FACEIT worker: stale recovery, atomic claim, execution and state
  *    transition, within an explicit time budget so the handler always returns
  *    before the runtime timeout instead of being killed mid-job.
@@ -37,7 +38,12 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
 
         const recovered = await recoverStaleJobs();
         const deleted = await cleanupExpiredDemos(50);
-        const jobId = await claimNextJob();
+
+        // Fail closed: never claim a demo job when the parser preflight is
+        // unhealthy. This prevents scheduler retries from consuming jobs while
+        // the parser dependency is unavailable and makes the gate observable.
+        const parserGate = parserPreflight.healthy ? "PASS" : "BLOCKED";
+        const jobId = parserPreflight.healthy ? await claimNextJob() : null;
         const processed = jobId ? await processJob(jobId) : null;
 
         // FACEIT synchronisation shares the scheduler but not the demo queue.
@@ -78,6 +84,7 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
               : null,
             error: parserPreflight.error,
           },
+          parserGate,
           recovered,
           deleted,
           processed: processed
