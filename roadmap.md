@@ -851,3 +851,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Dois artefatos de teste identificados restaurados aos estados terminais coerentes.
 - [ ] Scheduler e E2E real permanecem bloqueados; FASE 2.7.2D continua **NOT CLOSED** e
       FASE 2.8 não iniciada.
+
+### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — PLANEJADA
+
+- [ ] Habilitar `pgmq` e criar `demo_parse` de forma idempotente, sem tabela de fila paralela.
+- [ ] Manter `demo_jobs` como fonte de verdade e garantir enqueue/claim/lease/ACK por `job_id + attempt`.
+- [ ] Remover o parse longo da requisição do scheduler sem criar segundo cron ou usar `waitUntil()`.
+- [ ] Adicionar consumer persistente no Railway, preservando `/health`, `/version` e `/v1/parse`.
+- [ ] Reutilizar a persistência APP existente, sem duplicar ou avançar o Canonical.
+- [ ] Provar retry, redelivery, concorrência, heartbeat, cancellation, segurança e ausência de vazamento.
+- [ ] Manter o job Cache intocado; E2E real somente com um novo `.dem` autorizado.
+- [ ] Documentar implantação e permanecer NOT CLOSED até prova durável completa.
