@@ -81,7 +81,7 @@ export function parserTransportDiagnostic(error: unknown): string {
     return "TLS_certificate_error";
   }
   if (/fetch failed/i.test(joined)) return "fetch_failed";
-  return "unknown_transport_error".slice(0, MAX_DIAGNOSTIC_LENGTH);
+  return (joined || "unknown_transport_error").slice(0, MAX_DIAGNOSTIC_LENGTH);
 }
 
 function rawUrl(): string {
