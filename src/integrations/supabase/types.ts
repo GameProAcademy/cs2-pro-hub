@@ -253,6 +253,7 @@ export type Database = {
           demo_sha256: string | null
           dispatch_attempt: number | null
           dispatched_at: string | null
+          durable_dispatch_enabled: boolean
           duration_ms: number | null
           error_code: string | null
           error_message: string | null
@@ -313,6 +314,7 @@ export type Database = {
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
+          durable_dispatch_enabled?: boolean
           duration_ms?: number | null
           error_code?: string | null
           error_message?: string | null
@@ -373,6 +375,7 @@ export type Database = {
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
+          durable_dispatch_enabled?: boolean
           duration_ms?: number | null
           error_code?: string | null
           error_message?: string | null
@@ -2711,6 +2714,18 @@ export type Database = {
         Args: { _upload_id: string; _user_id: string }
         Returns: Json
       }
+      fail_demo_parse_message: {
+        Args: {
+          _attempt: number
+          _error_code: string
+          _error_message: string
+          _job_id: string
+          _message_id: number
+          _permanent?: boolean
+          _worker_id: string
+        }
+        Returns: Json
+      }
       finalize_demo_parse_message: {
         Args: {
           _attempt: number
@@ -2740,6 +2755,7 @@ export type Database = {
           _attempt: number
           _job_id: string
           _message_id: number
+          _stage?: string
           _visibility_seconds?: number
           _worker_id: string
         }
