@@ -51,6 +51,7 @@ describe("parser connectivity diagnostics", () => {
     expect(calls.every((call) => call.init.method === "GET" && call.init.headers == null)).toBe(
       true,
     );
+    expect(calls.every((call) => call.init.redirect === "manual")).toBe(true);
     expect(result.customDomain.health).toEqual({
       ok: false,
       status: null,
@@ -66,12 +67,17 @@ describe("parser connectivity diagnostics", () => {
 
   it("keeps the preflight fail-closed and exposes a safe transport diagnostic", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      const error = Object.assign(new TypeError("fetch failed"), {
-        cause: { code: "UND_ERR_CONNECT_TIMEOUT" },
-      });
-      throw error;
-    }));
+    const calls: RequestInit[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init: RequestInit = {}) => {
+        calls.push(init);
+        const error = Object.assign(new TypeError("fetch failed"), {
+          cause: { code: "UND_ERR_CONNECT_TIMEOUT" },
+        });
+        throw error;
+      }),
+    );
 
     const result = await probeParserWorker();
 
@@ -82,5 +88,7 @@ describe("parser connectivity diagnostics", () => {
       error: "PARSER_UNAVAILABLE",
       diagnostic: "UND_ERR_CONNECT_TIMEOUT",
     });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.redirect).toBe("manual");
   });
 });

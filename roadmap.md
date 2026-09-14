@@ -807,6 +807,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Publicação e execução real do scheduler observada às 07:26 UTC.
 - [x] Causa exata registrada: o runtime rejeita `redirect: "error"` antes de enviar os quatro fetches; aceita somente `follow` ou `manual`. FASE 2.7.2D permanece **NOT CLOSED**.
 
+### FASE 2.7.2D.1.1 — Correção do transporte APP → parser — EM ANDAMENTO
+
+- [x] Transporte do parser alterado de `redirect: "error"` para `redirect: "manual"` no POST real, preflight e probes diagnósticos.
+- [x] Redirects não são seguidos automaticamente e respostas 3xx continuam não-OK; gate fail-closed preservado.
+- [x] Regressão coberta para POST, preflight e quatro probes, sem autenticação ou dados de demo nos probes.
+- [ ] Publicação em produção e observação de execução real do scheduler.
+- [ ] Evidência dos quatro probes e das chamadas recebidas no Railway.
+- [ ] FASE 2.7.2D permanece **NOT CLOSED**; 2.7.2D.2 e 2.8 não iniciadas.
+
 ### Correção pós-auditoria — lifecycle/idempotência
 
 - [x] Reserva de upload serializada por usuário + SHA-256; upload cancelado gera novo
