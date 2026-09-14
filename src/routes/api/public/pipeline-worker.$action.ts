@@ -30,15 +30,16 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
           }
           if (params.action === "heartbeat") {
             const input = identity.extend({ stage: z.string().max(32).optional() }).parse(body);
-            return Response.json(await heartbeatDurableDemo(input));
+            return Response.json(await heartbeatDurableDemo(input.stage ? { ...input, stage: input.stage } : input));
           }
           if (params.action === "complete") {
             const input = identity.extend({ result: z.unknown() }).parse(body);
-            return Response.json(await completeDurableDemo(input));
+            if (!("result" in input)) return Response.json({ error: "invalid_request" }, { status: 400 });
+            return Response.json(await completeDurableDemo({ ...input, result: input.result }));
           }
           if (params.action === "fail") {
             const input = identity.extend({ errorCode: z.string().min(1).max(80), detail: z.string().max(300).optional() }).parse(body);
-            return Response.json(await failDurableDemo(input));
+            return Response.json(await failDurableDemo(input.detail ? { ...input, detail: input.detail } : input));
           }
           return Response.json({ error: "not_found" }, { status: 404 });
         } catch (error) {
