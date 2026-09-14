@@ -18,7 +18,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { authenticatePipelineCronRequest } from "@/integrations/supabase/pipeline-cron-auth.server";
-import { probeParserWorker } from "@/lib/pipeline/parser/remoteParser.server";
+import {
+  diagnoseParserConnectivity,
+  probeParserWorker,
+} from "@/lib/pipeline/parser/remoteParser.server";
 
 /** Wall-clock budget for the FACEIT part of this invocation. */
 const FACEIT_WORKER_BUDGET_MS = 20_000;
@@ -30,7 +33,10 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const parserPreflight = await probeParserWorker();
+        const [parserPreflight, parserConnectivityDiagnostics] = await Promise.all([
+          probeParserWorker(),
+          diagnoseParserConnectivity(),
+        ]);
 
         const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } =
           await import("@/lib/pipeline/jobs.server");
@@ -88,8 +94,11 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
                 }
               : null,
             error: parserPreflight.error,
+            diagnostic: parserPreflight.diagnostic,
           },
+          parserConnectivityDiagnostics,
           parserGate,
+          jobId,
           recovered,
           deleted,
           processed: processed

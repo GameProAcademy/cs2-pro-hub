@@ -798,6 +798,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 
 **Veredito:** FASE 2.7.2D e FASE 2.7.2 permanecem **NOT CLOSED**; FASE 2.8 não iniciada.
 
+### FASE 2.7.2D.1 — Diagnóstico APP → parser — EM ANDAMENTO
+
+- [x] Diagnóstico de transporte sanitizado e limitado, preservando `PARSER_UNAVAILABLE`.
+- [x] Probes independentes de `/health` e `/version` nos domínios customizado e Railway.
+- [x] Resultado exposto somente na resposta autenticada do scheduler existente.
+- [x] Gate fail-closed preservado; diagnóstico não reivindica nem processa demos.
+- [ ] Publicação e observação de uma execução real do scheduler.
+- [ ] Causa exata APP → parser registrada; FASE 2.7.2D permanece **NOT CLOSED**.
+
 ### Correção pós-auditoria — lifecycle/idempotência
 
 - [x] Reserva de upload serializada por usuário + SHA-256; upload cancelado gera novo
