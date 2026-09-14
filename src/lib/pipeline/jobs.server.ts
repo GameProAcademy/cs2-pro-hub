@@ -29,6 +29,8 @@ import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import { assertRawDemoEvidence } from "@/lib/pipeline/rawEvidence";
+import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
+import type { RawParserOutput } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 import {
   assertParserWorkerReady,
@@ -74,6 +76,12 @@ export interface JobProcessResult {
   /** Whether the canonical match got a per-player projection in this run. */
   attachmentState?: AttachmentState;
   attachmentReason?: AttachmentReason | null;
+}
+
+export interface DurableJobClaim {
+  messageId: number;
+  attempt: number;
+  workerId: string;
 }
 
 async function admin() {
@@ -182,6 +190,16 @@ export async function recoverStaleJobs(): Promise<number> {
   return Number(data ?? 0);
 }
 
+/** Ensures pending durable jobs have exactly one queue message for their attempt. */
+export async function reconcileDurableDemoQueue(limit = 25): Promise<number> {
+  const db = await admin();
+  const { data, error } = await db.rpc("reconcile_demo_parse_queue" as never, {
+    _limit: limit,
+  } as never);
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  return Number(data ?? 0);
+}
+
 /** Deletes temporary demo files whose retention window has expired. */
 export async function cleanupExpiredDemos(limit = 25): Promise<number> {
   const db = await admin();
@@ -231,14 +249,18 @@ export async function claimNextJob(): Promise<string | null> {
 }
 
 /** Runs one job end to end. Safe to call repeatedly; never throws. */
-export async function processJob(jobId: string): Promise<JobProcessResult> {
+export async function processJob(
+  jobId: string,
+  suppliedRaw?: RawParserOutput,
+  durableClaim?: DurableJobClaim,
+): Promise<JobProcessResult> {
   const db = await admin();
   const startedAt = Date.now();
 
   const { data: job } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname",
+      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, queue_message_id, dispatch_attempt, worker_id, lease_expires_at",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -248,6 +270,20 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
   if (job.status === "cancel_requested" || job.status === "cancelled") {
     if (job.status === "cancel_requested") await finishCancellation(jobId, job.storage_path);
     return { jobId, status: "cancelled" };
+  }
+
+  if (suppliedRaw && !durableClaim) {
+    return { jobId, status: "skipped", errorCode: "PARSER_INVALID_RESPONSE" };
+  }
+  if (durableClaim) {
+    const currentClaim =
+      job.status === "processing" &&
+      Number(job.queue_message_id) === durableClaim.messageId &&
+      job.dispatch_attempt === durableClaim.attempt &&
+      job.worker_id === durableClaim.workerId &&
+      Boolean(job.lease_expires_at) &&
+      new Date(job.lease_expires_at ?? 0).getTime() > Date.now();
+    if (!currentClaim) return { jobId, status: "skipped", errorCode: "JOB_STALE" };
   }
 
   // The job may already have been claimed transactionally by
@@ -282,42 +318,40 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
     if (!job.storage_path) throw new PipelineError("DEMO_NOT_FOUND", "missing storage path");
     await assertNotCancelled(jobId);
 
-    const adapter = resolveParserAdapter();
-    if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
-    // Gate 02: reuse the official diagnostic before reading demo bytes or
-    // generating a signed URL. A down, mismatched or unpinned worker must never
-    // start processing the player's artifact.
-    assertDeadline();
-    await assertParserWorkerReady();
-    await assertNotCancelled(jobId);
-
-    assertDeadline();
-    const stored = await demoExists(job.storage_path);
-    if (!stored) throw new PipelineError("DEMO_NOT_FOUND");
-    validateDemoFile(job.storage_path, stored.size || (job.file_size ?? 0));
-
-    // The hash reported by the browser is NOT proof of integrity: the worker
-    // recomputes SHA-256 from the stored bytes and refuses a divergent file.
-    // Streamed hashing: the file is never loaded into memory as a whole.
-    if (job.demo_sha256) {
+    let raw: RawParserOutput;
+    if (suppliedRaw) {
+      raw = assertRawParserOutput(suppliedRaw);
+    } else {
+      const adapter = resolveParserAdapter();
+      if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
       assertDeadline();
-      const actual = await computeStoredDemoSha256(job.storage_path);
+      await assertParserWorkerReady();
+      await assertNotCancelled(jobId);
+
       assertDeadline();
-      assertDemoIntegrity(actual, job.demo_sha256);
+      const stored = await demoExists(job.storage_path);
+      if (!stored) throw new PipelineError("DEMO_NOT_FOUND");
+      validateDemoFile(job.storage_path, stored.size || (job.file_size ?? 0));
+      if (job.demo_sha256) {
+        assertDeadline();
+        const actual = await computeStoredDemoSha256(job.storage_path);
+        assertDeadline();
+        assertDemoIntegrity(actual, job.demo_sha256);
+      }
+
+      await setStage(jobId, "parsing");
+      assertDeadline();
+      const signedUrl = await createDemoSignedUrl(job.storage_path);
+      assertDeadline();
+      raw = await adapter.parseDemo({
+        storagePath: job.storage_path,
+        signedUrl,
+        uploadId: job.upload_id,
+        fileSize: stored.size || (job.file_size ?? 0),
+        demoSha256: job.demo_sha256,
+        deadlineAt,
+      });
     }
-
-    await setStage(jobId, "parsing");
-    assertDeadline();
-    const signedUrl = await createDemoSignedUrl(job.storage_path);
-    assertDeadline();
-    const raw = await adapter.parseDemo({
-      storagePath: job.storage_path,
-      signedUrl,
-      uploadId: job.upload_id,
-      fileSize: stored.size || (job.file_size ?? 0),
-      demoSha256: job.demo_sha256,
-      deadlineAt,
-    });
     await assertNotCancelled(jobId);
 
     // RAW evidence is its own immutable audit layer. Persist it before the APP
@@ -550,6 +584,19 @@ export async function processJob(jobId: string): Promise<JobProcessResult> {
       return { jobId, status: "cancelled" };
     }
     const pipelineError = toPipelineError(error);
+    if (durableClaim) {
+      const { error: failError } = await db.rpc("fail_demo_parse_message" as never, {
+        _job_id: jobId,
+        _message_id: durableClaim.messageId,
+        _attempt: durableClaim.attempt,
+        _worker_id: durableClaim.workerId,
+        _error_code: pipelineError.code,
+        _error_message: pipelineError.detail ?? null,
+        _permanent: pipelineError.permanent,
+      } as never);
+      if (failError) console.error("[pipeline] durable failure transition failed", { jobId });
+      return { jobId, status: "failed", errorCode: pipelineError.code };
+    }
     const canRetry =
       !pipelineError.permanent && job.retry_count < (job.max_retries ?? MAX_JOB_RETRIES);
 
