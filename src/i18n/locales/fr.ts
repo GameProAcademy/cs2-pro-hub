@@ -623,8 +623,7 @@ export const fr: Dictionary = {
   "pipeline.upload.retryCancelledBody":
     "Vous avez déjà envoyé cette démo et elle a été annulée. Nous allons la traiter à nouveau.",
   "pipeline.upload.duplicatePendingTitle": "Démo déjà reçue",
-  "pipeline.upload.duplicatePendingBody":
-    "Cette démo est déjà dans la file de traitement.",
+  "pipeline.upload.duplicatePendingBody": "Cette démo est déjà dans la file de traitement.",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":
     "Le fichier de la demo semble incomplet ou corrompu. Pour éviter des statistiques ou des diagnostics erronés, nous n'analysons pas les matchs incomplets. Envoyez à nouveau la demo originale/complète et relancez le traitement.",

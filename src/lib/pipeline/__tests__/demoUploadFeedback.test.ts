@@ -36,11 +36,14 @@ describe("FASE 2.7.2D-C — demo upload feedback", () => {
       "pipeline.upload.duplicatePendingBody",
       "info",
     ],
-  ] as const)("maps each backend result to distinct visual feedback", (uploadResult, bodyKey, tone) => {
-    const feedback = getDemoUploadFeedback(uploadResult);
-    expect(feedback.bodyKey).toBe(bodyKey);
-    expect(feedback.tone).toBe(tone);
-  });
+  ] as const)(
+    "maps each backend result to distinct visual feedback",
+    (uploadResult, bodyKey, tone) => {
+      const feedback = getDemoUploadFeedback(uploadResult);
+      expect(feedback.bodyKey).toBe(bodyKey);
+      expect(feedback.tone).toBe(tone);
+    },
+  );
 
   it("enables participant confirmation only after an explicit selection", () => {
     expect(isParticipantConfirmationDisabled(null, false)).toBe(true);

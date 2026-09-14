@@ -1,5 +1,13 @@
 # Roadmap
 
+## FASE 2.7.2D-C — UX de duplicidade e seleção explícita — CONCLUÍDA
+
+- [x] Mensagens distintas para demo nova, processada, em fila, falha e cancelada.
+- [x] Histórico real invalidado após cada resultado, sem entradas artificiais.
+- [x] Seleção explícita e acessível de participantes reais, sem escolha automática.
+- [x] Estado vazio honesto e nickname manual preservado nos cinco idiomas.
+- [x] Testes frontend de feedback, confirmação e ausência de participantes.
+
 ## FASE 2.7.2C — UX Hardening — CONCLUÍDA
 
 - [x] Histórico de demos responsivo, sem compressão ou overflow em telas estreitas.
