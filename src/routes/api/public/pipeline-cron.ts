@@ -18,10 +18,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { authenticatePipelineCronRequest } from "@/integrations/supabase/pipeline-cron-auth.server";
-import {
-  diagnoseParserConnectivity,
-  probeParserWorker,
-} from "@/lib/pipeline/parser/remoteParser.server";
 
 /** Wall-clock budget for the FACEIT part of this invocation. */
 const FACEIT_WORKER_BUDGET_MS = 20_000;
@@ -33,29 +29,15 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const [parserPreflight, parserConnectivityDiagnostics] = await Promise.all([
-          probeParserWorker(),
-          diagnoseParserConnectivity(),
-        ]);
-
-        const { claimNextJob, cleanupExpiredDemos, processJob, recoverStaleJobs } =
+        const { cleanupExpiredDemos, reconcileDurableDemoQueue, recoverStaleJobs } =
           await import("@/lib/pipeline/jobs.server");
         const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
 
-        const recovered = await recoverStaleJobs();
-        const deleted = await cleanupExpiredDemos(50);
-
-        // Fail closed: only claim a demo when the parser is fully ready,
-        // including a successful /health + /version identity/contract check.
-        // This prevents scheduler retries from consuming jobs while the parser
-        // dependency is unavailable or running an incompatible contract.
-        const parserReady =
-          parserPreflight.healthy &&
-          parserPreflight.error === null &&
-          parserPreflight.identity !== null;
-        const parserGate = parserReady ? "PASS" : "BLOCKED";
-        const jobId = parserReady ? await claimNextJob() : null;
-        const processed = jobId ? await processJob(jobId) : null;
+        const [recovered, reconciled, deleted] = await Promise.all([
+          recoverStaleJobs(),
+          reconcileDurableDemoQueue(25),
+          cleanupExpiredDemos(50),
+        ]);
 
         // FACEIT synchronisation shares the scheduler but not the demo queue.
         let faceit: {
@@ -81,29 +63,10 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         }
 
         return Response.json({
-          parserPreflight: {
-            endpoint: parserPreflight.endpoint,
-            healthy: parserPreflight.healthy,
-            healthStatus: parserPreflight.healthStatus,
-            identity: parserPreflight.identity
-              ? {
-                  name: parserPreflight.identity.name,
-                  version: parserPreflight.identity.version,
-                  revision: parserPreflight.identity.revision,
-                  contractVersion: parserPreflight.identity.contractVersion,
-                }
-              : null,
-            error: parserPreflight.error,
-            diagnostic: parserPreflight.diagnostic,
-          },
-          parserConnectivityDiagnostics,
-          parserGate,
-          jobId,
+          demoDispatch: "durable_queue",
+          reconciled,
           recovered,
           deleted,
-          processed: processed
-            ? { status: processed.status, errorCode: processed.errorCode ?? null }
-            : null,
           faceit,
         });
       },

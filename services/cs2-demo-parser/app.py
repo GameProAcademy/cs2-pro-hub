@@ -67,6 +67,68 @@ class ParseRequest(BaseModel):
     file_size: int
 
 
+async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
+    _check_contract(body.contract_version, settings)
+    if body.file_size <= 0:
+        raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
+    if body.file_size > settings.max_demo_bytes:
+        raise WorkerError(413, E.DEMO_TOO_LARGE, "Demo exceeds the size limit.")
+    if not SHA256_HEX.fullmatch(body.demo_sha256):
+        raise WorkerError(409, E.CONTRACT_MISMATCH, "demo_sha256 must be a sha256 hex digest.")
+
+    path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    try:
+        if size != body.file_size:
+            raise WorkerError(422, E.FILE_SIZE_MISMATCH, "Demo size check failed.")
+        if sha256.lower() != body.demo_sha256.lower():
+            raise WorkerError(422, E.HASH_MISMATCH, "Demo integrity check failed.")
+        _require_cs2_magic(path)
+        try:
+            parsed = await asyncio.wait_for(
+                asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
+            )
+        except asyncio.TimeoutError:
+            raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
+        except InvalidDemoError:
+            raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.") from None
+        except CorruptedDemoError:
+            raise WorkerError(422, E.CORRUPTED_DEMO, "Demo file is corrupted.") from None
+        except UnsupportedDemoError:
+            raise WorkerError(422, E.UNSUPPORTED_DEMO, "Demo variant is not supported.") from None
+        except WorkerError:
+            raise
+        except BaseException as exc:
+            logger.exception("parser internal failure: %s", type(exc).__name__)
+            raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.") from None
+    finally:
+        _cleanup(path)
+
+    identity = {
+        "name": PARSER_NAME,
+        "version": PARSER_VERSION,
+        "revision": settings.revision,
+    }
+    payload = {
+        "parser": identity,
+        "contract_version": settings.contract_version,
+        "header": parsed.get("header") or {},
+        "players": parsed.get("players") or [],
+        "rounds": parsed.get("rounds") or [],
+        "events": parsed.get("events") or [],
+        "warnings": parsed.get("warnings") or [],
+    }
+    raw_evidence = parsed.get("raw_evidence")
+    if isinstance(raw_evidence, dict):
+        payload["raw_evidence"] = finalize_evidence(
+            raw_evidence,
+            parser=identity,
+            contract_version=settings.contract_version,
+            demo_sha256=body.demo_sha256,
+            file_size=body.file_size,
+        )
+    return payload
+
+
 def _envelope(status_code: int, error_code: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
@@ -174,6 +236,8 @@ def create_app(
     parse = parse_fn or parse_demo_file
     app = FastAPI(title="cs2-demo-parser", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = resolved
+    app.state.parse_fn = parse
+    app.state.consumer_task = None
 
     identity = {
         "parser": {
@@ -210,66 +274,30 @@ def create_app(
         except (ValidationError, ValueError):
             raise WorkerError(409, E.CONTRACT_MISMATCH, "Malformed parse request.") from None
 
-        _check_contract(body.contract_version, resolved)
-        if body.file_size <= 0:
-            raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
-        if body.file_size > resolved.max_demo_bytes:
-            raise WorkerError(413, E.DEMO_TOO_LARGE, "Demo exceeds the size limit.")
-        if not SHA256_HEX.fullmatch(body.demo_sha256):
-            raise WorkerError(409, E.CONTRACT_MISMATCH, "demo_sha256 must be a sha256 hex digest.")
-
-        path, sha256, size = await _download(body.demo_url, body.file_size, resolved)
-        try:
-            if size != body.file_size:
-                raise WorkerError(422, E.FILE_SIZE_MISMATCH, "Demo size check failed.")
-            if sha256.lower() != body.demo_sha256.lower():
-                raise WorkerError(422, E.HASH_MISMATCH, "Demo integrity check failed.")
-
-            _require_cs2_magic(path)
-
-            try:
-                parsed = await asyncio.wait_for(
-                    asyncio.to_thread(parse, path),
-                    timeout=resolved.parse_timeout_seconds,
-                )
-            except asyncio.TimeoutError:
-                raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
-            except InvalidDemoError:
-                raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.") from None
-            except CorruptedDemoError:
-                raise WorkerError(422, E.CORRUPTED_DEMO, "Demo file is corrupted.") from None
-            except UnsupportedDemoError:
-                raise WorkerError(422, E.UNSUPPORTED_DEMO, "Demo variant is not supported.") from None
-            except WorkerError:
-                raise
-            except BaseException as exc:  # noqa: BLE001 - internal failure, not a bad demo
-                logger.exception("parser internal failure: %s", type(exc).__name__)
-                raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.") from None
-        finally:
-            _cleanup(path)
-
-        payload = {
-            "parser": dict(identity["parser"]),
-            "contract_version": resolved.contract_version,
-            "header": parsed.get("header") or {},
-            "players": parsed.get("players") or [],
-            "rounds": parsed.get("rounds") or [],
-            "events": parsed.get("events") or [],
-            "warnings": parsed.get("warnings") or [],
-        }
-        raw_evidence = parsed.get("raw_evidence")
-        if isinstance(raw_evidence, dict):
-            payload["raw_evidence"] = finalize_evidence(
-                raw_evidence,
-                parser=dict(identity["parser"]),
-                contract_version=resolved.contract_version,
-                demo_sha256=body.demo_sha256,
-                file_size=body.file_size,
-            )
+        payload = await _parse_request(body, resolved, parse)
         response = JSONResponse(content=payload)
         if len(response.body) > resolved.max_payload_bytes:
             raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
         return response
+
+    if resolved.bridge_url and resolved.bridge_secret:
+        from worker import durable_consumer_loop
+
+        @app.on_event("startup")
+        async def _start_consumer() -> None:
+            app.state.consumer_task = asyncio.create_task(
+                durable_consumer_loop(resolved, parse), name="demo-queue-consumer"
+            )
+
+        @app.on_event("shutdown")
+        async def _stop_consumer() -> None:
+            task = app.state.consumer_task
+            if task is not None:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
     return app
 

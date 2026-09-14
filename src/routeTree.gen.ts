@@ -30,6 +30,7 @@ import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
+import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
 import { Route as ApiPublicIntegrationsFaceitCallbackRouteImport } from './routes/api/public/integrations/faceit/callback'
 import { Route as ApiPublicIntegrationsSteamCallbackRouteImport } from './routes/api/public/integrations/steam/callback'
 
@@ -140,6 +141,12 @@ const ApiPublicPipelineCronRoute = ApiPublicPipelineCronRouteImport.update({
   path: '/api/public/pipeline-cron',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPipelineWorkerActionRoute =
+  ApiPublicPipelineWorkerActionRouteImport.update({
+    id: '/api/public/pipeline-worker/$action',
+    path: '/api/public/pipeline-worker/$action',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicIntegrationsFaceitCallbackRoute =
   ApiPublicIntegrationsFaceitCallbackRouteImport.update({
     id: '/api/public/integrations/faceit/callback',
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
   '/api/public/integrations/faceit/callback': typeof ApiPublicIntegrationsFaceitCallbackRoute
   '/api/public/integrations/steam/callback': typeof ApiPublicIntegrationsSteamCallbackRoute
 }
@@ -197,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
   '/api/public/integrations/faceit/callback': typeof ApiPublicIntegrationsFaceitCallbackRoute
   '/api/public/integrations/steam/callback': typeof ApiPublicIntegrationsSteamCallbackRoute
 }
@@ -223,6 +232,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
   '/api/public/integrations/faceit/callback': typeof ApiPublicIntegrationsFaceitCallbackRoute
   '/api/public/integrations/steam/callback': typeof ApiPublicIntegrationsSteamCallbackRoute
 }
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/api/public/pipeline-cron'
     | '/admin/'
+    | '/api/public/pipeline-worker/$action'
     | '/api/public/integrations/faceit/callback'
     | '/api/public/integrations/steam/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/api/public/pipeline-cron'
     | '/admin'
+    | '/api/public/pipeline-worker/$action'
     | '/api/public/integrations/faceit/callback'
     | '/api/public/integrations/steam/callback'
   id:
@@ -297,6 +309,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/api/public/pipeline-cron'
     | '/_authenticated/admin/'
+    | '/api/public/pipeline-worker/$action'
     | '/api/public/integrations/faceit/callback'
     | '/api/public/integrations/steam/callback'
   fileRoutesById: FileRoutesById
@@ -308,6 +321,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
+  ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
   ApiPublicIntegrationsFaceitCallbackRoute: typeof ApiPublicIntegrationsFaceitCallbackRoute
   ApiPublicIntegrationsSteamCallbackRoute: typeof ApiPublicIntegrationsSteamCallbackRoute
 }
@@ -461,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPipelineCronRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/pipeline-worker/$action': {
+      id: '/api/public/pipeline-worker/$action'
+      path: '/api/public/pipeline-worker/$action'
+      fullPath: '/api/public/pipeline-worker/$action'
+      preLoaderRoute: typeof ApiPublicPipelineWorkerActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/integrations/faceit/callback': {
       id: '/api/public/integrations/faceit/callback'
       path: '/api/public/integrations/faceit/callback'
@@ -536,6 +557,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
+  ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
   ApiPublicIntegrationsFaceitCallbackRoute:
     ApiPublicIntegrationsFaceitCallbackRoute,
   ApiPublicIntegrationsSteamCallbackRoute:
