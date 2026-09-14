@@ -816,7 +816,30 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Quatro probes responderam HTTP 200 sem diagnóstico: `/health` e `/version` nos domínios customizado e Railway.
 - [x] Nenhum job foi reivindicado (`jobId = null`, `processed = null`); portanto nenhum POST `/v1/parse` ocorreu nesta execução.
 - [ ] Logs internos do Railway não acessíveis neste ambiente; os HTTP 200 do domínio Railway provam alcance real, mas não substituem a evidência pedida nos logs do serviço.
-- [ ] FASE 2.7.2D permanece **NOT CLOSED**; 2.7.2D.2 e 2.8 não iniciadas.
+- [ ] FASE 2.7.2D permanece **NOT CLOSED**; 2.8 não iniciada.
+
+### FASE 2.7.2D.2 — Async demo dispatch — BLOQUEADA POR RUNTIME
+
+- [x] Causa-raiz confirmada: o scheduler aguarda `processJob()` e o cliente `pg_net`
+      encerra a requisição em 60 segundos, abandonando o job durante o parse remoto.
+- [x] O runtime publicado foi identificado como Worker HTTP. O mecanismo nativo
+      `waitUntil()` mantém trabalho por no máximo 30 segundos depois da resposta;
+      portanto não garante o parse de vários minutos e não será usado como fire-and-forget.
+- [x] O worker de aplicação mantém limite de 128 MB e não oferece, na configuração
+      publicada deste projeto, binding de Queue, Workflow ou Durable Object para um
+      consumidor durável separado.
+- [x] O job Cache foi consultado sem mutação às 08:24 UTC: continuava
+      `processing/parsing`, `retry_count = 1/2`, com heartbeat em 08:16 UTC. Ele não foi
+      recuperado nem duplicado porque ainda não havia ultrapassado a janela stale de 30 minutos.
+- [ ] Implementação bloqueada: é necessário provisionar uma execução durável fora do
+      request HTTP — preferencialmente tornar o serviço Railway assíncrono, com dispatch
+      idempotente por `jobId`, processamento persistente e callback autenticado (ou polling)
+      para conclusão. Isso exige alteração coordenada do serviço/contrato e configuração
+      de infraestrutura, fora do transporte atual do APP.
+- [ ] Nenhum timeout foi aumentado; nenhum segundo scheduler, fila paralela, migration,
+      reprocessamento, recuperação manual ou alteração de dados foi criado.
+- [ ] A validação E2E real permanece pendente. A FASE 2.7.2D.2 está **BLOCKED / NOT CLOSED**;
+      a FASE 2.7.2D continua **NOT CLOSED** e a FASE 2.8 continua bloqueada.
 
 ### Correção pós-auditoria — lifecycle/idempotência
 
