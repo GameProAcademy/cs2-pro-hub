@@ -28,6 +28,11 @@ async def _bridge(client: httpx.AsyncClient, settings: Settings, action: str, bo
     return payload
 
 
+def _worker_error_code(error: WorkerError) -> str:
+    """Keep the wire taxonomy; the APP owns the sole worker-to-pipeline mapping."""
+    return error.error_code
+
+
 async def _heartbeat_loop(client: httpx.AsyncClient, settings: Settings, identity: dict[str, Any], stop: asyncio.Event) -> None:
     while not stop.is_set():
         try:
@@ -73,7 +78,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
                         await _bridge(client, settings, "complete", {**identity, "result": result})
                 except WorkerError as error:
-                    await _bridge(client, settings, "fail", {**identity, "errorCode": error.error_code, "detail": error.message})
+                    await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:

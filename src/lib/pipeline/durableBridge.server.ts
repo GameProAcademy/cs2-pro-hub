@@ -1,9 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 import { MAX_CONCURRENT_DEMO_JOBS, MAX_JOB_RETRIES } from "@/config/pipeline";
-import { PipelineError, isPermanentError, type PipelineErrorCode } from "@/lib/pipeline/errors";
+import { PipelineError } from "@/lib/pipeline/errors";
 import { processJob, type DurableJobClaim } from "@/lib/pipeline/jobs.server";
-import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
+import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
+import type { RawParserOutput } from "@/lib/pipeline/types";
 import { createDemoSignedUrl, demoExists } from "@/lib/pipeline/storage.server";
 
 const VISIBILITY_SECONDS = 15 * 60;
@@ -75,7 +76,7 @@ export async function completeDurableDemo(input: DurableJobClaim & { jobId: stri
   if (heartbeat["accepted"] !== true || heartbeat["cancelled"] === true) {
     return { status: heartbeat["cancelled"] === true ? "cancelled" : "stale" };
   }
-  const result = await processJob(input.jobId, assertRawParserOutput(input.result), input);
+  const result = await processJob(input.jobId, input.result as RawParserOutput, input);
   if (result.status !== "processed") return result;
   const { rpc } = await context();
   const { data, error } = await rpc("finalize_demo_parse_message", {
@@ -89,17 +90,16 @@ export async function completeDurableDemo(input: DurableJobClaim & { jobId: stri
 }
 
 export async function failDurableDemo(input: DurableJobClaim & { jobId: string; errorCode: string; detail?: string }) {
-  const allowed = input.errorCode as PipelineErrorCode;
-  const permanent = isPermanentError(allowed);
+  const mapped = mapParserErrorCode(input.errorCode);
   const { rpc } = await context();
   const { data, error } = await rpc("fail_demo_parse_message", {
     _job_id: input.jobId,
     _message_id: input.messageId,
     _attempt: input.attempt,
     _worker_id: input.workerId,
-    _error_code: allowed,
+    _error_code: mapped.code,
     _error_message: input.detail?.slice(0, 300) ?? null,
-    _permanent: permanent,
+    _permanent: mapped.permanent,
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
   return { ...(data as object), maxRetries: MAX_JOB_RETRIES };
