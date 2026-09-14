@@ -609,12 +609,24 @@ export const ptBR = {
     "Esta escolha contradiz a conta Steam vinculada ao seu perfil. Nada foi vinculado — revise antes de continuar.",
   "pipeline.identify.reprocessing": "Jogador identificado. Gerando suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a você.",
+  "pipeline.identify.empty": "Não conseguimos carregar os jogadores desta demo.",
   "pipeline.retry": "Tentar novamente",
   "pipeline.retrying": "Tentando novamente…",
   "pipeline.cancel": "Cancelar processamento",
   "pipeline.cancelling": "Solicitando cancelamento…",
   "pipeline.upload.successTitle": "Demo enviada",
   "pipeline.upload.successBody": "Entrou na fila de processamento.",
+  "pipeline.upload.duplicateProcessedTitle": "Demo já processada",
+  "pipeline.upload.duplicateProcessedBody":
+    "Esta demo já foi enviada e os dados já foram extraídos. Por favor, envie outra demo.",
+  "pipeline.upload.retryFailedTitle": "Demo reenviada",
+  "pipeline.upload.retryFailedBody":
+    "Você já enviou esta demo anteriormente e ela falhou. Vamos processá-la novamente.",
+  "pipeline.upload.retryCancelledTitle": "Demo reenviada",
+  "pipeline.upload.retryCancelledBody":
+    "Você já enviou esta demo anteriormente e ela foi cancelada. Vamos processá-la novamente.",
+  "pipeline.upload.duplicatePendingTitle": "Demo já recebida",
+  "pipeline.upload.duplicatePendingBody": "Esta demo já está na fila de processamento.",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O arquivo da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la novamente.",

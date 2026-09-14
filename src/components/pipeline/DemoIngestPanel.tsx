@@ -7,6 +7,7 @@ import { HistorySkeleton } from "@/components/common/AppLoaders";
 import { EmptyState } from "@/components/common/States";
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
+import { getDemoUploadFeedback } from "@/components/pipeline/demoUploadFeedback";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
@@ -145,6 +146,7 @@ export function DemoIngestPanel() {
   });
 
   const parserAvailable = pipeline.data?.parserAvailable ?? false;
+  const uploadFeedback = upload.data ? getDemoUploadFeedback(upload.data) : null;
 
   return (
     <div className="space-y-5">
@@ -179,19 +181,33 @@ export function DemoIngestPanel() {
         </div>
       ) : null}
 
-      {upload.isSuccess ? (
+      {upload.isSuccess && uploadFeedback ? (
         <div
-          className="rounded-lg border border-success/30 bg-success/8 px-4 py-3"
+          className={cn(
+            "rounded-lg border px-4 py-3",
+            uploadFeedback.tone === "success"
+              ? "border-success/30 bg-success/8"
+              : "border-primary/30 bg-primary/5",
+          )}
           role="status"
           aria-live="polite"
         >
-          <p className="text-sm font-semibold text-success">{t("pipeline.upload.successTitle")}</p>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              uploadFeedback.tone === "success" ? "text-success" : "text-primary",
+            )}
+          >
+            {t(uploadFeedback.titleKey)}
+          </p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {t("pipeline.upload.successBody")}
+            {t(uploadFeedback.bodyKey)}
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {t("pipeline.processing.continueBrowsing")}
-          </p>
+          {uploadFeedback.showContinueBrowsing ? (
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {t("pipeline.processing.continueBrowsing")}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
