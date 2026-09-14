@@ -32,6 +32,51 @@ import {
 
 const PROBE_TIMEOUT_MS = 10_000;
 const PRODUCTION_PARSER_URL = "https://parser.gamepro.network/v1/parse";
+const CUSTOM_PARSER_ORIGIN = "https://parser.gamepro.network";
+const RAILWAY_PARSER_ORIGIN = "https://cs2-demo-parser-production.up.railway.app";
+const MAX_DIAGNOSTIC_LENGTH = 300;
+
+const TRANSPORT_ERROR_CODES = [
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_SOCKET",
+] as const;
+
+function errorRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function safeErrorField(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  return value
+    .replace(/https?:\/\/[^\s]+/gi, "[url]")
+    .replace(/bearer\s+[^\s]+/gi, "Bearer [redacted]")
+    .replace(/[?&](?:token|signature|key|authorization)=[^\s&]+/gi, "[redacted]")
+    .replace(/[\r\n\t]+/g, " ")
+    .trim();
+}
+
+/** Safe, bounded transport detail for operations. Never includes a stack trace. */
+export function parserTransportDiagnostic(error: unknown): string {
+  const outer = errorRecord(error);
+  const cause = errorRecord(outer?.cause);
+  const fields = [outer?.name, outer?.message, cause?.code, cause?.name, cause?.message]
+    .map(safeErrorField)
+    .filter((value): value is string => value !== null);
+  const joined = fields.join(": ");
+  const knownCode = TRANSPORT_ERROR_CODES.find((code) => joined.toUpperCase().includes(code));
+  if (knownCode) return knownCode;
+  if (/aborterror|aborted|timeout|timed out/i.test(joined)) return "AbortError_timeout";
+  if (/certificate|cert_|tls|ssl|self signed|unable to verify/i.test(joined)) {
+    return "TLS_certificate_error";
+  }
+  if (/fetch failed/i.test(joined)) return "fetch_failed";
+  return (joined || "unknown_transport_error").slice(0, MAX_DIAGNOSTIC_LENGTH);
+}
 
 function rawUrl(): string {
   if ((process.env["NODE_ENV"] ?? "") === "production") return PRODUCTION_PARSER_URL;
@@ -170,6 +215,62 @@ export interface ParserWorkerProbe {
   healthStatus: number | null;
   identity: ParserWorkerIdentity | null;
   error: PipelineErrorCode | null;
+  diagnostic: string | null;
+}
+
+export interface ParserConnectivityResult {
+  ok: boolean;
+  status: number | null;
+  diagnostic: string | null;
+}
+
+export interface ParserOriginConnectivity {
+  origin: string;
+  health: ParserConnectivityResult;
+  version: ParserConnectivityResult;
+}
+
+export interface ParserConnectivityDiagnostics {
+  customDomain: ParserOriginConnectivity;
+  railwayDomain: ParserOriginConnectivity;
+}
+
+async function probeUrl(url: string): Promise<ParserConnectivityResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      redirect: "error",
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      diagnostic: response.ok ? null : `http_${response.status}`,
+    };
+  } catch (error) {
+    return { ok: false, status: null, diagnostic: parserTransportDiagnostic(error) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function probeOrigin(origin: string): Promise<ParserOriginConnectivity> {
+  const [health, version] = await Promise.all([
+    probeUrl(`${origin}/health`),
+    probeUrl(`${origin}/version`),
+  ]);
+  return { origin, health, version };
+}
+
+/** Diagnostic-only GET probes. They send no authorization or demo data. */
+export async function diagnoseParserConnectivity(): Promise<ParserConnectivityDiagnostics> {
+  const [customDomain, railwayDomain] = await Promise.all([
+    probeOrigin(CUSTOM_PARSER_ORIGIN),
+    probeOrigin(RAILWAY_PARSER_ORIGIN),
+  ]);
+  return { customDomain, railwayDomain };
 }
 
 export async function probeParserWorker(): Promise<ParserWorkerProbe> {
@@ -183,6 +284,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
       healthStatus: null,
       identity: null,
       error: error instanceof PipelineError ? error.code : "PARSER_CONFIG_ERROR",
+      diagnostic: error instanceof PipelineError ? error.code : "PARSER_CONFIG_ERROR",
     };
   }
 
@@ -205,6 +307,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
         healthStatus: health.status,
         identity: null,
         error: "PARSER_UNAVAILABLE",
+        diagnostic: `http_${health.status}`,
       };
     }
     const versionResponse = await probe(endpoints.version);
@@ -215,6 +318,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
         healthStatus: health.status,
         identity: null,
         error: "PARSER_INVALID_RESPONSE",
+        diagnostic: `http_${versionResponse.status}`,
       };
     }
     const identity = parseWorkerIdentity(
@@ -240,6 +344,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
       healthStatus: health.status,
       identity,
       error: identityError,
+      diagnostic: identityError,
     };
   } catch (error) {
     return {
@@ -248,6 +353,8 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
       healthStatus: null,
       identity: null,
       error: error instanceof PipelineError ? error.code : "PARSER_UNAVAILABLE",
+      diagnostic:
+        error instanceof PipelineError ? error.code : parserTransportDiagnostic(error),
     };
   }
 }
