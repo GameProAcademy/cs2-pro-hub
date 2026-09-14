@@ -251,6 +251,8 @@ export type Database = {
           declared_nickname: string | null
           declared_participant_key: string | null
           demo_sha256: string | null
+          dispatch_attempt: number | null
+          dispatched_at: string | null
           duration_ms: number | null
           error_code: string | null
           error_message: string | null
@@ -261,6 +263,7 @@ export type Database = {
           heartbeat_at: string | null
           id: string
           identity_status: string
+          lease_expires_at: string | null
           match_id: string | null
           max_retries: number
           observed_nickname: string | null
@@ -271,6 +274,7 @@ export type Database = {
           player_id: string | null
           players_detected: number | null
           quality_flags: Json
+          queue_message_id: number | null
           queued_at: string
           resolved_steam_id: string | null
           retain_until: string | null
@@ -286,6 +290,7 @@ export type Database = {
           updated_at: string
           upload_id: string
           user_id: string
+          worker_id: string | null
         }
         Insert: {
           analysis_version?: string
@@ -306,6 +311,8 @@ export type Database = {
           declared_nickname?: string | null
           declared_participant_key?: string | null
           demo_sha256?: string | null
+          dispatch_attempt?: number | null
+          dispatched_at?: string | null
           duration_ms?: number | null
           error_code?: string | null
           error_message?: string | null
@@ -316,6 +323,7 @@ export type Database = {
           heartbeat_at?: string | null
           id?: string
           identity_status?: string
+          lease_expires_at?: string | null
           match_id?: string | null
           max_retries?: number
           observed_nickname?: string | null
@@ -326,6 +334,7 @@ export type Database = {
           player_id?: string | null
           players_detected?: number | null
           quality_flags?: Json
+          queue_message_id?: number | null
           queued_at?: string
           resolved_steam_id?: string | null
           retain_until?: string | null
@@ -341,6 +350,7 @@ export type Database = {
           updated_at?: string
           upload_id: string
           user_id: string
+          worker_id?: string | null
         }
         Update: {
           analysis_version?: string
@@ -361,6 +371,8 @@ export type Database = {
           declared_nickname?: string | null
           declared_participant_key?: string | null
           demo_sha256?: string | null
+          dispatch_attempt?: number | null
+          dispatched_at?: string | null
           duration_ms?: number | null
           error_code?: string | null
           error_message?: string | null
@@ -371,6 +383,7 @@ export type Database = {
           heartbeat_at?: string | null
           id?: string
           identity_status?: string
+          lease_expires_at?: string | null
           match_id?: string | null
           max_retries?: number
           observed_nickname?: string | null
@@ -381,6 +394,7 @@ export type Database = {
           player_id?: string | null
           players_detected?: number | null
           quality_flags?: Json
+          queue_message_id?: number | null
           queued_at?: string
           resolved_steam_id?: string | null
           retain_until?: string | null
@@ -396,6 +410,7 @@ export type Database = {
           updated_at?: string
           upload_id?: string
           user_id?: string
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -2650,6 +2665,14 @@ export type Database = {
         Args: { _source: Database["public"]["Enums"]["data_source"] }
         Returns: number
       }
+      claim_demo_parse_message: {
+        Args: {
+          _max_concurrent?: number
+          _visibility_seconds?: number
+          _worker_id: string
+        }
+        Returns: Json
+      }
       claim_email_delivery: {
         Args: {
           _idempotency_key: string
@@ -2688,6 +2711,15 @@ export type Database = {
         Args: { _upload_id: string; _user_id: string }
         Returns: Json
       }
+      finalize_demo_parse_message: {
+        Args: {
+          _attempt: number
+          _job_id: string
+          _message_id: number
+          _worker_id: string
+        }
+        Returns: Json
+      }
       finish_demo_job_cancelled: {
         Args: { _cleanup_error?: string; _job_id: string }
         Returns: boolean
@@ -2702,6 +2734,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      heartbeat_demo_parse_message: {
+        Args: {
+          _attempt: number
+          _job_id: string
+          _message_id: number
+          _visibility_seconds?: number
+          _worker_id: string
+        }
+        Returns: Json
       }
       is_admin_master: { Args: { _user_id: string }; Returns: boolean }
       is_primary_admin: { Args: { _user_id: string }; Returns: boolean }
@@ -2749,6 +2791,7 @@ export type Database = {
         }
         Returns: string
       }
+      reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
         Returns: number
