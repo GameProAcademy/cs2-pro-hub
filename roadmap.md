@@ -804,8 +804,8 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Probes independentes de `/health` e `/version` nos domínios customizado e Railway.
 - [x] Resultado exposto somente na resposta autenticada do scheduler existente.
 - [x] Gate fail-closed preservado; diagnóstico não reivindica nem processa demos.
-- [ ] Publicação e observação de uma execução real do scheduler.
-- [ ] Causa exata APP → parser registrada; FASE 2.7.2D permanece **NOT CLOSED**.
+- [x] Publicação e execução real do scheduler observada às 07:19 e 07:20 UTC.
+- [ ] Causa de baixo nível não exposta pelo runtime: os quatro fetches falham antes de qualquer resposta HTTP com `unknown_transport_error`; FASE 2.7.2D permanece **NOT CLOSED**.
 
 ### Correção pós-auditoria — lifecycle/idempotência
 
