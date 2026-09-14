@@ -22,12 +22,11 @@ describe("parser connectivity diagnostics", () => {
     expect(parserTransportDiagnostic(error)).toBe("ENOTFOUND");
   });
 
-  it("redacts URLs and bounds an unknown diagnostic", () => {
+  it("does not echo unknown error content", () => {
     const diagnostic = parserTransportDiagnostic(
       new Error(`failure at https://example.test/path?token=secret ${"x".repeat(500)}`),
     );
-    expect(diagnostic).not.toContain("secret");
-    expect(diagnostic).not.toContain("example.test");
+    expect(diagnostic).toBe("unknown_transport_error");
     expect(diagnostic.length).toBeLessThanOrEqual(300);
   });
 
