@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isParticipantConfirmationDisabled } from "@/components/pipeline/demoUploadFeedback";
 import { useT } from "@/i18n";
 import {
   declareDemoPlayer,
@@ -67,7 +68,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
               key={participant.participantKey}
               className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
                 selected === participant.participantKey
-                  ? "border-primary/60 bg-primary/10 text-foreground"
+                  ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/30"
                   : "border-border bg-background/40 text-foreground hover:border-primary/30"
               }`}
             >
@@ -77,6 +78,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                 value={participant.participantKey}
                 checked={selected === participant.participantKey}
                 onChange={() => setSelected(participant.participantKey)}
+                className="size-4 shrink-0 accent-primary"
               />
               <span className="min-w-0">
                 <span className="block break-words font-medium">
@@ -93,13 +95,17 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
           <Button
             size="sm"
             className="mt-2 min-h-11 w-full sm:w-auto"
-            disabled={!selected || declare.isPending}
+            disabled={isParticipantConfirmationDisabled(selected, declare.isPending)}
             onClick={() => selected && declare.mutate({ participantKey: selected })}
           >
             {t("pipeline.identify.selectCta")}
           </Button>
         </fieldset>
-      ) : null}
+      ) : (
+        <p className="rounded-md border border-border bg-background/40 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+          {t("pipeline.identify.empty")}
+        </p>
+      )}
 
       <div className="space-y-1.5">
         <label

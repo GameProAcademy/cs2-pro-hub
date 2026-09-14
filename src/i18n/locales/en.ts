@@ -602,12 +602,24 @@ export const en: Dictionary = {
     "This choice contradicts the Steam account linked to your profile. Nothing was linked — review it before continuing.",
   "pipeline.identify.reprocessing": "Player identified. Generating your metrics for this match…",
   "pipeline.identify.attached": "This match is linked to you.",
+  "pipeline.identify.empty": "We couldn't load the players from this demo.",
   "pipeline.retry": "Retry",
   "pipeline.retrying": "Retrying…",
   "pipeline.cancel": "Cancel processing",
   "pipeline.cancelling": "Requesting cancellation…",
   "pipeline.upload.successTitle": "Demo uploaded",
   "pipeline.upload.successBody": "It entered the processing queue.",
+  "pipeline.upload.duplicateProcessedTitle": "Demo already processed",
+  "pipeline.upload.duplicateProcessedBody":
+    "This demo has already been uploaded and its data has already been extracted. Please upload another demo.",
+  "pipeline.upload.retryFailedTitle": "Demo uploaded again",
+  "pipeline.upload.retryFailedBody":
+    "You uploaded this demo before and it failed. We'll process it again.",
+  "pipeline.upload.retryCancelledTitle": "Demo uploaded again",
+  "pipeline.upload.retryCancelledBody":
+    "You uploaded this demo before and it was cancelled. We'll process it again.",
+  "pipeline.upload.duplicatePendingTitle": "Demo already received",
+  "pipeline.upload.duplicatePendingBody": "This demo is already in the processing queue.",
   "pipeline.corrupted.title": "We could not analyse this demo",
   "pipeline.corrupted.body":
     "The demo file looks incomplete or corrupted. To avoid producing incorrect stats or diagnostics, we do not analyse incomplete matches. Please upload the original/complete demo again and process it once more.",

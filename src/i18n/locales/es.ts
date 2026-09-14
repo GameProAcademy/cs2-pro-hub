@@ -607,12 +607,24 @@ export const es: Dictionary = {
     "Esta elección contradice la cuenta de Steam vinculada a tu perfil. No se vinculó nada: revísalo antes de continuar.",
   "pipeline.identify.reprocessing": "Jugador identificado. Generando tus métricas de esta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a ti.",
+  "pipeline.identify.empty": "No hemos podido cargar los jugadores de esta demo.",
   "pipeline.retry": "Reintentar",
   "pipeline.retrying": "Reintentando…",
   "pipeline.cancel": "Cancelar procesamiento",
   "pipeline.cancelling": "Solicitando cancelación…",
   "pipeline.upload.successTitle": "Demo enviada",
   "pipeline.upload.successBody": "Entró en la cola de procesamiento.",
+  "pipeline.upload.duplicateProcessedTitle": "Demo ya procesada",
+  "pipeline.upload.duplicateProcessedBody":
+    "Esta demo ya ha sido enviada y sus datos ya han sido extraídos. Por favor, sube otra demo.",
+  "pipeline.upload.retryFailedTitle": "Demo enviada de nuevo",
+  "pipeline.upload.retryFailedBody":
+    "Ya has enviado esta demo anteriormente y ha fallado. Vamos a procesarla de nuevo.",
+  "pipeline.upload.retryCancelledTitle": "Demo enviada de nuevo",
+  "pipeline.upload.retryCancelledBody":
+    "Ya has enviado esta demo anteriormente y fue cancelada. Vamos a procesarla de nuevo.",
+  "pipeline.upload.duplicatePendingTitle": "Demo ya recibida",
+  "pipeline.upload.duplicatePendingBody": "Esta demo ya está en la cola de procesamiento.",
   "pipeline.corrupted.title": "No pudimos analizar esta demo",
   "pipeline.corrupted.body":
     "El archivo de la demo parece incompleto o corrupto. Para no generar estadísticas ni diagnósticos incorrectos, no analizamos partidas incompletas. Vuelve a enviar la demo original/completa e inténtalo de nuevo.",

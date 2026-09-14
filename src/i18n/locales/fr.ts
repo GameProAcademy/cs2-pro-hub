@@ -606,12 +606,25 @@ export const fr: Dictionary = {
     "Ce choix contredit le compte Steam lié à votre profil. Rien n'a été lié — vérifiez avant de continuer.",
   "pipeline.identify.reprocessing": "Joueur identifié. Génération de vos métriques pour ce match…",
   "pipeline.identify.attached": "Ce match est lié à vous.",
+  "pipeline.identify.empty": "Nous n'avons pas pu charger les joueurs de cette démo.",
   "pipeline.retry": "Réessayer",
   "pipeline.retrying": "Nouvelle tentative…",
   "pipeline.cancel": "Annuler le traitement",
   "pipeline.cancelling": "Demande d’annulation…",
   "pipeline.upload.successTitle": "Demo envoyée",
   "pipeline.upload.successBody": "Elle est entrée dans la file de traitement.",
+  "pipeline.upload.duplicateProcessedTitle": "Démo déjà traitée",
+  "pipeline.upload.duplicateProcessedBody":
+    "Cette démo a déjà été envoyée et ses données ont déjà été extraites. Veuillez envoyer une autre démo.",
+  "pipeline.upload.retryFailedTitle": "Démo renvoyée",
+  "pipeline.upload.retryFailedBody":
+    "Vous avez déjà envoyé cette démo et son traitement a échoué. Nous allons la traiter à nouveau.",
+  "pipeline.upload.retryCancelledTitle": "Démo renvoyée",
+  "pipeline.upload.retryCancelledBody":
+    "Vous avez déjà envoyé cette démo et elle a été annulée. Nous allons la traiter à nouveau.",
+  "pipeline.upload.duplicatePendingTitle": "Démo déjà reçue",
+  "pipeline.upload.duplicatePendingBody":
+    "Cette démo est déjà dans la file de traitement.",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":
     "Le fichier de la demo semble incomplet ou corrompu. Pour éviter des statistiques ou des diagnostics erronés, nous n'analysons pas les matchs incomplets. Envoyez à nouveau la demo originale/complète et relancez le traitement.",
