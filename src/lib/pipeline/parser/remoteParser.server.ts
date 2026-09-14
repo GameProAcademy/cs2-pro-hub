@@ -63,8 +63,14 @@ function safeErrorField(value: unknown): string | null {
 /** Safe, bounded transport detail for operations. Never includes a stack trace. */
 export function parserTransportDiagnostic(error: unknown): string {
   const outer = errorRecord(error);
-  const cause = errorRecord(outer?.cause);
-  const fields = [outer?.name, outer?.message, cause?.code, cause?.name, cause?.message]
+  const cause = errorRecord(outer?.["cause"]);
+  const fields = [
+    outer?.["name"],
+    outer?.["message"],
+    cause?.["code"],
+    cause?.["name"],
+    cause?.["message"],
+  ]
     .map(safeErrorField)
     .filter((value): value is string => value !== null);
   const joined = fields.join(": ");
