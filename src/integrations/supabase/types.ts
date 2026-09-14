@@ -2811,6 +2811,10 @@ export type Database = {
         Args: { _audit?: Json; _player_id: string; _user_id: string }
         Returns: Json
       }
+      verify_pipeline_cron_secret: {
+        Args: { candidate: string }
+        Returns: boolean
+      }
     }
     Enums: {
       analysis_status: "pending" | "processing" | "completed" | "failed"
