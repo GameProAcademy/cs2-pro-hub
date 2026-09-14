@@ -58,6 +58,11 @@ class Settings:
     max_payload_bytes: int
     download_timeout_seconds: float
     parse_timeout_seconds: float
+    bridge_url: str | None = None
+    bridge_secret: str | None = None
+    worker_id: str = "railway-parser-1"
+    queue_poll_seconds: float = 5.0
+    queue_heartbeat_seconds: float = 60.0
 
     @property
     def is_production(self) -> bool:
@@ -135,6 +140,11 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
             max_payload_bytes=_int_env("MAX_PAYLOAD_BYTES", 96 * 1024 * 1024),
             download_timeout_seconds=_float_env("DOWNLOAD_TIMEOUT_SECONDS", 120.0),
             parse_timeout_seconds=_float_env("PARSE_TIMEOUT_SECONDS", 240.0),
+            bridge_url=(source.get("DEMO_PIPELINE_BRIDGE_URL") or "").strip().rstrip("/") or None,
+            bridge_secret=(source.get("DEMO_PIPELINE_BRIDGE_SECRET") or "").strip() or None,
+            worker_id=(source.get("DEMO_PIPELINE_WORKER_ID") or "railway-parser-1").strip(),
+            queue_poll_seconds=_float_env("DEMO_QUEUE_POLL_SECONDS", 5.0),
+            queue_heartbeat_seconds=_float_env("DEMO_QUEUE_HEARTBEAT_SECONDS", 60.0),
         )
     finally:
         if previous is not None:

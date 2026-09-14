@@ -25,6 +25,11 @@ def make_settings(**overrides: Any) -> Settings:
         max_payload_bytes=1024 * 1024,
         download_timeout_seconds=5.0,
         parse_timeout_seconds=5.0,
+        bridge_url=None,
+        bridge_secret=None,
+        worker_id="test-worker",
+        queue_poll_seconds=0.01,
+        queue_heartbeat_seconds=0.05,
     )
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]
