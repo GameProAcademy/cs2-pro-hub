@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
-import { assertRawParserOutput, mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
+import {
+  assertRawParserOutput,
+  DEPLOYED_WORKER_REVISION,
+  mapParserErrorCode,
+} from "@/lib/pipeline/parser/adapter";
 import {
   classifyWorkerFailure,
   extractWorkerError,
@@ -20,7 +24,7 @@ import {
 
 const ORIGIN = "https://cs2-demo-parser-production.up.railway.app";
 const FULL = `${ORIGIN}${PARSER_PARSE_PATH}`;
-const DEPLOYED_REVISION = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
+const DEPLOYED_REVISION = DEPLOYED_WORKER_REVISION;
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -289,6 +293,7 @@ describe("GATE 1E — transport request/response", () => {
     expect(result.ok).toBe(true);
     expect(calls[0]?.url).toBe(FULL);
     expect(calls[0]?.init.method).toBe("POST");
+    expect(calls[0]?.init.redirect).toBe("manual");
     const body = JSON.parse(String(calls[0]?.init.body)) as Record<string, unknown>;
     expect(body).toEqual({
       contract_version: PARSER_CONTRACT_VERSION,
@@ -353,16 +358,16 @@ describe("GATE 1E — transport request/response", () => {
 describe("GATE 02 — mandatory worker preflight", () => {
   async function runProbe(
     fetcher: (url: string) => Response | Promise<Response>,
-  ): Promise<{ code: string | null; calls: string[] }> {
+  ): Promise<{ code: string | null; calls: Array<{ url: string; init: RequestInit }> }> {
     vi.stubEnv("DEMO_PARSER_URL", FULL);
     vi.stubEnv("DEMO_PARSER_TOKEN", "server-only-token");
     vi.stubEnv("DEMO_PARSER_EXPECTED_REVISION", DEPLOYED_REVISION);
     vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "true");
-    const calls: string[] = [];
+    const calls: Array<{ url: string; init: RequestInit }> = [];
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
+    globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
       const url = String(input);
-      calls.push(url);
+      calls.push({ url, init });
       return fetcher(url);
     }) as typeof fetch;
     try {
@@ -393,13 +398,15 @@ describe("GATE 02 — mandatory worker preflight", () => {
           }),
     );
     expect(code).toBeNull();
-    expect(calls).toEqual([`${ORIGIN}/health`, `${ORIGIN}/version`]);
+    expect(calls.map((call) => call.url)).toEqual([`${ORIGIN}/health`, `${ORIGIN}/version`]);
+    expect(calls.every((call) => call.init.redirect === "manual")).toBe(true);
   });
 
   it("blocks before parsing when health fails", async () => {
     const { code, calls } = await runProbe(() => response({ status: "error" }, 503));
     expect(code).toBe("PARSER_UNAVAILABLE");
-    expect(calls).toEqual([`${ORIGIN}/health`]);
+    expect(calls.map((call) => call.url)).toEqual([`${ORIGIN}/health`]);
+    expect(calls[0]?.init.redirect).toBe("manual");
   });
 
   it("blocks a different deployed revision", async () => {

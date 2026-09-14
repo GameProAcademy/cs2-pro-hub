@@ -170,7 +170,7 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
       const response = await fetch(endpoints.parse, {
         method: "POST",
         signal: controller.signal,
-        redirect: "error",
+        redirect: "manual",
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${bearer}`,
@@ -248,7 +248,7 @@ async function probeUrl(url: string): Promise<ParserConnectivityResult> {
     const response = await fetch(url, {
       method: "GET",
       signal: controller.signal,
-      redirect: "error",
+      redirect: "manual",
     });
     return {
       ok: response.ok,
@@ -298,7 +298,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     try {
-      return await fetch(url, { method: "GET", signal: controller.signal, redirect: "error" });
+      return await fetch(url, { method: "GET", signal: controller.signal, redirect: "manual" });
     } finally {
       clearTimeout(timer);
     }
