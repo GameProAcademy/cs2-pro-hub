@@ -57,7 +57,7 @@ export async function claimDurableDemo(workerId: string) {
   };
 }
 
-export async function heartbeatDurableDemo(input: DurableJobClaim & { jobId: string; stage?: string }) {
+export async function heartbeatDurableDemo(input: DurableJobClaim & { jobId: string; stage?: string | undefined }) {
   const { rpc } = await context();
   const { data, error } = await rpc("heartbeat_demo_parse_message", {
     _job_id: input.jobId,
@@ -89,7 +89,7 @@ export async function completeDurableDemo(input: DurableJobClaim & { jobId: stri
   return { ...result, queue: data };
 }
 
-export async function failDurableDemo(input: DurableJobClaim & { jobId: string; errorCode: string; detail?: string }) {
+export async function failDurableDemo(input: DurableJobClaim & { jobId: string; errorCode: string; detail?: string | undefined }) {
   const mapped = mapParserErrorCode(input.errorCode);
   const { rpc } = await context();
   const { data, error } = await rpc("fail_demo_parse_message", {
