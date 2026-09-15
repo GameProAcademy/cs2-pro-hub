@@ -137,7 +137,9 @@ export function DemoIngestPanel() {
     refetchInterval: (query) => {
       const job = query.state.data;
       if (!job) return 1500;
-      return job.status === "pending" || job.status === "processing" || job.status === "cancel_requested"
+      return job.status === "pending" ||
+        job.status === "processing" ||
+        job.status === "cancel_requested"
         ? 1500
         : false;
     },
@@ -210,12 +212,19 @@ export function DemoIngestPanel() {
       </div>
 
       {upload.isPending ? (
-        <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-4" aria-live="polite">
+        <div
+          className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-4"
+          aria-live="polite"
+        >
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
             {t("pipeline.uploading")} {uploadPercent > 0 ? `${uploadPercent}%` : ""}
           </p>
-          <progress className="h-1.5 w-full overflow-hidden rounded-full accent-primary" value={uploadPercent} max={100} />
+          <progress
+            className="h-1.5 w-full overflow-hidden rounded-full accent-primary"
+            value={uploadPercent}
+            max={100}
+          />
         </div>
       ) : null}
 
@@ -223,23 +232,37 @@ export function DemoIngestPanel() {
         <div
           className={cn(
             "rounded-lg border px-4 py-3",
-            uploadFeedback.tone === "success" ? "border-success/30 bg-success/8" : "border-primary/30 bg-primary/5",
+            uploadFeedback.tone === "success"
+              ? "border-success/30 bg-success/8"
+              : "border-primary/30 bg-primary/5",
           )}
           role="status"
           aria-live="polite"
         >
-          <p className={cn("text-sm font-semibold", uploadFeedback.tone === "success" ? "text-success" : "text-primary")}>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              uploadFeedback.tone === "success" ? "text-success" : "text-primary",
+            )}
+          >
             {t(uploadFeedback.titleKey)}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(uploadFeedback.bodyKey)}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {t(uploadFeedback.bodyKey)}
+          </p>
           {uploadFeedback.showContinueBrowsing ? (
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("pipeline.processing.continueBrowsing")}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {t("pipeline.processing.continueBrowsing")}
+            </p>
           ) : null}
         </div>
       ) : null}
 
       {localError ? (
-        <p role="alert" className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm">
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm"
+        >
           {t(errorKey(localError))}
         </p>
       ) : null}
@@ -252,33 +275,53 @@ export function DemoIngestPanel() {
         {jobs.isLoading ? (
           <HistorySkeleton />
         ) : jobs.isError ? (
-          <p role="alert" className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+          >
             {t("common.errorDescription")}
           </p>
         ) : visibleJobs.length === 0 ? (
-          <EmptyState title={t("pipeline.history.emptyTitle")} description={t("pipeline.history.emptyBody")} />
+          <EmptyState
+            title={t("pipeline.history.emptyTitle")}
+            description={t("pipeline.history.emptyBody")}
+          />
         ) : (
           <ul className="space-y-3">
             {visibleJobs.map((job) => (
-              <li key={job.jobId} className="min-w-0 rounded-lg border border-border bg-card/40 p-4 sm:p-5">
+              <li
+                key={job.jobId}
+                className="min-w-0 rounded-lg border border-border bg-card/40 p-4 sm:p-5"
+              >
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-semibold text-foreground">{job.fileName || job.uploadId}</p>
+                    <p className="break-words text-sm font-semibold text-foreground">
+                      {job.fileName || job.uploadId}
+                    </p>
                     <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                       {t("pipeline.history.attempt").replace("{number}", String(job.attemptNumber))}
-                      {job.roundsValid != null ? ` · ${job.roundsValid} ${t("pipeline.rounds")}` : ""}
-                      {job.extractionConfidence != null ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}` : ""}
+                      {job.roundsValid != null
+                        ? ` · ${job.roundsValid} ${t("pipeline.rounds")}`
+                        : ""}
+                      {job.extractionConfidence != null
+                        ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}`
+                        : ""}
                     </p>
                   </div>
                   <span
                     className={cn(
                       "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
                       job.status === "processed" && "border-success/30 bg-success/8 text-success",
-                      job.status === "failed" && "border-destructive/30 bg-destructive/8 text-destructive",
-                      job.status === "blocked_raw_audit" && "border-warning/30 bg-warning/8 text-warning",
-                      (job.status === "pending" || job.status === "processing") && "border-primary/30 bg-primary/8 text-primary",
-                      job.status === "cancel_requested" && "border-warning/30 bg-warning/8 text-warning",
-                      job.status === "cancelled" && "border-border bg-secondary text-muted-foreground",
+                      job.status === "failed" &&
+                        "border-destructive/30 bg-destructive/8 text-destructive",
+                      job.status === "blocked_raw_audit" &&
+                        "border-warning/30 bg-warning/8 text-warning",
+                      (job.status === "pending" || job.status === "processing") &&
+                        "border-primary/30 bg-primary/8 text-primary",
+                      job.status === "cancel_requested" &&
+                        "border-warning/30 bg-warning/8 text-warning",
+                      job.status === "cancelled" &&
+                        "border-border bg-secondary text-muted-foreground",
                     )}
                   >
                     {t(STATUS_KEY[job.status])}
@@ -288,8 +331,12 @@ export function DemoIngestPanel() {
                 <div className="min-w-0">
                   {job.status === "failed" && job.errorCode === "CORRUPTED_DEMO" ? (
                     <div className="mt-2 rounded-lg border border-destructive/35 bg-destructive/8 px-3 py-2.5">
-                      <p className="text-sm font-semibold text-destructive">{t("pipeline.corrupted.title")}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("pipeline.corrupted.body")}</p>
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("pipeline.corrupted.title")}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t("pipeline.corrupted.body")}
+                      </p>
                       <Button size="sm" variant="outline" className="mt-2.5" onClick={focusUpload}>
                         <Upload className="mr-1.5 size-3.5" aria-hidden />
                         {t("pipeline.corrupted.cta")}
@@ -298,12 +345,18 @@ export function DemoIngestPanel() {
                   ) : job.status === "failed" ? (
                     <p className="mt-1 text-xs text-destructive">{t(errorKey(job.errorCode))}</p>
                   ) : null}
-                  {job.partialParse && job.status !== "failed" ? <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p> : null}
+                  {job.partialParse && job.status !== "failed" ? (
+                    <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
+                  ) : null}
                   {job.supersedesJobId ? (
-                    <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.replacement")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("pipeline.history.replacement")}
+                    </p>
                   ) : null}
                   {job.supersededByJobId ? (
-                    <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.superseded")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("pipeline.history.superseded")}
+                    </p>
                   ) : null}
                   {job.status === "processed" && job.attachmentState !== "attached" ? (
                     <>
@@ -314,10 +367,23 @@ export function DemoIngestPanel() {
                   <DemoProcessingStatus job={job} />
                 </div>
 
-                {job.status === "failed" && !isPermanentCode(job.errorCode) && job.retryCount < job.maxRetries ? (
+                {job.status === "failed" &&
+                !isPermanentCode(job.errorCode) &&
+                job.retryCount < job.maxRetries ? (
                   <div className="mt-4 border-t border-border/70 pt-4">
-                    <Button className="min-h-11 w-full sm:w-auto" variant="outline" onClick={() => retry.mutate(job.jobId)} disabled={retry.isPending}>
-                      <RefreshCw className={cn("mr-1.5 size-3.5", retry.isPending && "animate-spin motion-reduce:animate-none")} aria-hidden />
+                    <Button
+                      className="min-h-11 w-full sm:w-auto"
+                      variant="outline"
+                      onClick={() => retry.mutate(job.jobId)}
+                      disabled={retry.isPending}
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "mr-1.5 size-3.5",
+                          retry.isPending && "animate-spin motion-reduce:animate-none",
+                        )}
+                        aria-hidden
+                      />
                       {retry.isPending ? t("pipeline.retrying") : t("pipeline.retry")}
                     </Button>
                   </div>
@@ -325,8 +391,20 @@ export function DemoIngestPanel() {
 
                 {job.status === "pending" || job.status === "processing" ? (
                   <div className="mt-4 border-t border-border/70 pt-4">
-                    <Button className="min-h-11 w-full sm:w-auto" variant="outline" onClick={() => cancel.mutate(job.jobId)} disabled={cancel.isPending}>
-                      {cancel.isPending ? <Loader2 className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none" aria-hidden /> : <Square className="mr-1.5 size-3.5" aria-hidden />}
+                    <Button
+                      className="min-h-11 w-full sm:w-auto"
+                      variant="outline"
+                      onClick={() => cancel.mutate(job.jobId)}
+                      disabled={cancel.isPending}
+                    >
+                      {cancel.isPending ? (
+                        <Loader2
+                          className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none"
+                          aria-hidden
+                        />
+                      ) : (
+                        <Square className="mr-1.5 size-3.5" aria-hidden />
+                      )}
                       {cancel.isPending ? t("pipeline.cancelling") : t("pipeline.cancel")}
                     </Button>
                   </div>

@@ -58,7 +58,9 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("distinguishes history query failures from an empty history", () => {
-    expect(functionsSource).toContain('if (jobsError) throw new Error("DEMO_HISTORY_QUERY_FAILED")');
+    expect(functionsSource).toContain(
+      'if (jobsError) throw new Error("DEMO_HISTORY_QUERY_FAILED")',
+    );
     expect(functionsSource).toContain(
       'if (matchesError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED")',
     );

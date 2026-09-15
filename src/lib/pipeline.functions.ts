@@ -50,12 +50,7 @@ export interface DemoJobView {
   replacementReason: ReplacementReason;
 }
 
-export type ReplacementReason =
-  | "stale"
-  | "failed"
-  | "cancelled"
-  | "legacy_unvalidated"
-  | null;
+export type ReplacementReason = "stale" | "failed" | "cancelled" | "legacy_unvalidated" | null;
 
 const createSchema = z.object({
   fileName: z
@@ -121,8 +116,7 @@ export const createDemoUpload = createServerFn({ method: "POST" })
       duplicateStatus,
       existingJobId: typeof result["job_id"] === "string" ? result["job_id"] : null,
       newAttempt: result["new_attempt"] === true,
-      attemptNumber:
-        typeof result["attempt_number"] === "number" ? result["attempt_number"] : 1,
+      attemptNumber: typeof result["attempt_number"] === "number" ? result["attempt_number"] : 1,
       supersedesJobId:
         typeof result["supersedes_job_id"] === "string" ? result["supersedes_job_id"] : null,
       replacementReason:

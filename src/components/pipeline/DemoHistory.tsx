@@ -56,7 +56,9 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
             {t("pipeline.history.attempt").replace("{number}", String(job.attemptNumber))}
           </p>
           {job.supersedesJobId ? (
-            <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.replacement")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("pipeline.history.replacement")}
+            </p>
           ) : null}
           {job.supersededByJobId ? (
             <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.superseded")}</p>
