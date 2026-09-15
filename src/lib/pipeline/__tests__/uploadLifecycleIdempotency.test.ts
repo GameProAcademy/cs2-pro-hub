@@ -8,6 +8,9 @@ const migration = [
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
 const functionsSource = readFileSync("src/lib/pipeline.functions.ts", "utf8");
+const clientSource = readFileSync("src/lib/pipeline/client.ts", "utf8");
+const ingestPanelSource = readFileSync("src/components/pipeline/DemoIngestPanel.tsx", "utf8");
+const historySource = readFileSync("src/components/pipeline/DemoHistory.tsx", "utf8");
 
 describe("demo upload lifecycle idempotency", () => {
   it("serialises reservations by owner and hash", () => {
@@ -52,5 +55,31 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain(
       "REVOKE ALL ON FUNCTION public.enqueue_demo_job(uuid, uuid) FROM PUBLIC, anon, authenticated",
     );
+  });
+
+  it("distinguishes history query failures from an empty history", () => {
+    expect(functionsSource).toContain(
+      'if (jobsError) throw new Error("DEMO_HISTORY_QUERY_FAILED")',
+    );
+    expect(functionsSource).toContain(
+      'if (matchesError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED")',
+    );
+    expect(ingestPanelSource).toContain("jobs.isError");
+    expect(historySource).toContain("jobs.isError");
+  });
+
+  it("keeps the general history empty states free of upload actions", () => {
+    expect(ingestPanelSource).toMatch(
+      /<EmptyState\s+title=\{t\("pipeline\.history\.emptyTitle"\)\}\s+description=\{t\("pipeline\.history\.emptyBody"\)\}\s+\/>/,
+    );
+    expect(historySource).not.toContain('<Link to="/upload">');
+    expect(ingestPanelSource).toContain('t("pipeline.corrupted.cta")');
+  });
+
+  it("preserves legacy unvalidated replacement reasons through server and client types", () => {
+    expect(functionsSource).toContain('| "legacy_unvalidated"');
+    expect(functionsSource).toContain('result["replacement_reason"] === "legacy_unvalidated"');
+    expect(functionsSource).toContain('row.replacement_reason === "legacy_unvalidated"');
+    expect(clientSource).toContain("type ReplacementReason");
   });
 });
