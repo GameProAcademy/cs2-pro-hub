@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertRawAdmissionApproved,
   assertRawDemoEvidence,
+  computeRawEvidenceDigest,
   evaluateRawEvidence,
   runRawForensicAudit,
 } from "@/lib/pipeline/rawEvidence";
@@ -71,7 +72,7 @@ describe("raw evidence contract", () => {
     expect(() => assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" })).toThrow();
     expect(evaluateRawEvidence(evidence)[0]?.status).toBe("FAIL");
   });
-  it("preserves unresolved mappings while blocking canonical admission", () => {
+  it("preserves unresolved mappings while blocking canonical admission", async () => {
     const unknown = assertRawDemoEvidence({
         ...evidence,
         field_mappings: [
@@ -84,7 +85,7 @@ describe("raw evidence contract", () => {
           },
         ],
       });
-    const unknownDecision = runRawForensicAudit(unknown);
+    const unknownDecision = await runRawForensicAudit(unknown);
     expect(unknownDecision.status).toBe("BLOCKED");
     expect(unknownDecision.reasons).toContain("unmapped_but_available:event.future_field");
     expect(() => assertRawAdmissionApproved(unknownDecision)).toThrow("admission denied");
@@ -101,12 +102,12 @@ describe("raw evidence contract", () => {
           },
         ],
       });
-    expect(runRawForensicAudit(unexplained).status).toBe("BLOCKED");
+    expect((await runRawForensicAudit(unexplained)).status).toBe("BLOCKED");
   });
 
-  it("blocks empty audit evidence instead of treating absence as PASS", () => {
+  it("blocks empty audit evidence instead of treating absence as PASS", async () => {
     const complete = assertRawDemoEvidence({ ...evidence, gates: [] });
-    const decision = runRawForensicAudit(complete);
+    const decision = await runRawForensicAudit(complete);
     expect(decision.status).toBe("BLOCKED");
     expect(decision.auditStatus).toBe("BLOCKED");
     expect(decision.approved).toBe(false);
@@ -117,15 +118,15 @@ describe("raw evidence contract", () => {
     expect(() => assertRawAdmissionApproved(decision)).toThrow();
   });
 
-  it("classifies parser mapping failures as FAIL", () => {
+  it("classifies parser mapping failures as FAIL", async () => {
     const failed = assertRawDemoEvidence({
       ...evidence,
       field_mappings: [{ raw_field: "event.bad", app_field: null, canonical_field: null, status: "PARSE_FAILED", reason: "safe" }],
     });
-    expect(runRawForensicAudit(failed).status).toBe("FAIL");
+    expect((await runRawForensicAudit(failed)).status).toBe("FAIL");
   });
 
-  it("keeps unavailable capabilities distinct from parse failures", () => {
+  it("keeps unavailable capabilities distinct from parse failures", async () => {
     const unavailable = assertRawDemoEvidence({
       ...evidence,
       gates: [],
@@ -136,10 +137,10 @@ describe("raw evidence contract", () => {
         error_type: null, error_message_safe: null, capability_state: "NOT_PRESENT_IN_DEMO",
       }],
     });
-    expect(runRawForensicAudit(unavailable).status).toBe("BLOCKED");
+    expect((await runRawForensicAudit(unavailable)).status).toBe("BLOCKED");
   });
 
-  it("independently detects a returned event field missing from preserved RAW", () => {
+  it("independently detects a returned event field missing from preserved RAW", async () => {
     const inconsistent = assertRawDemoEvidence({
       ...evidence,
       gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" as const, reasons: [] }],
@@ -160,10 +161,10 @@ describe("raw evidence contract", () => {
         "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
       ].map((key) => [key, key === "tick_sampling" ? { coverage: "SAMPLE" } : []])),
     });
-    expect(runRawForensicAudit(inconsistent).reasons).toContain("returned_field_not_preserved:player_death.future");
+    expect((await runRawForensicAudit(inconsistent)).reasons).toContain("returned_field_not_preserved:player_death.future");
   });
 
-  it("catalogues every required forensic inventory family", () => {
+  it("catalogues every required forensic inventory family", async () => {
     const inventoried = assertRawDemoEvidence({
       ...evidence,
       gates: [],
@@ -179,7 +180,7 @@ describe("raw evidence contract", () => {
         { property: "grenade_type", available: true, rows: 1, null_percent: 0, min: null, max: null, sample: "smoke" },
       ],
     });
-    const inventory = runRawForensicAudit(inventoried).forensicInventory;
+    const inventory = (await runRawForensicAudit(inventoried)).forensicInventory;
     expect(inventory["grenade_inventory"]).toEqual(["grenade_type"]);
     expect(inventory["usercmd_inventory"]).toEqual(["shots_fired"]);
     expect(inventory["teams_inventory"]).toEqual(["team_num"]);
@@ -187,7 +188,7 @@ describe("raw evidence contract", () => {
     expect(inventory["movement_inventory"]).toEqual(["X"]);
   });
 
-  it("deduplicates and sorts block reasons deterministically", () => {
+  it("deduplicates and sorts block reasons deterministically", async () => {
     const blocked = assertRawDemoEvidence({
       ...evidence,
       gates: [
@@ -195,11 +196,22 @@ describe("raw evidence contract", () => {
         { gate: "Z", status: "FAIL", reasons: [] },
       ],
     });
-    expect(runRawForensicAudit(blocked).reasons).toEqual([
+    expect((await runRawForensicAudit(blocked)).reasons).toEqual(expect.arrayContaining([
       "audit_inventory_missing",
       "audit_mapping_inventory_empty",
       "gate:Z",
       "tick_coverage_mischaracterized",
-    ]);
+    ]));
+  });
+
+  it("recalculates a stable digest and detects changed RAW content", async () => {
+    const unsigned = assertRawDemoEvidence(evidence);
+    const digest = await computeRawEvidenceDigest(unsigned);
+    const signed = assertRawDemoEvidence({ ...unsigned, deterministic_digest: digest });
+    expect((await runRawForensicAudit(signed)).reasons).not.toContain("raw_digest_mismatch");
+    const reordered = assertRawDemoEvidence({ deterministic_digest: digest, ...unsigned });
+    expect(await computeRawEvidenceDigest(reordered)).toBe(digest);
+    const changed = assertRawDemoEvidence({ ...signed, raw_player_info: [{ name: "changed" }] });
+    expect((await runRawForensicAudit(changed)).reasons).toContain("raw_digest_mismatch");
   });
 });

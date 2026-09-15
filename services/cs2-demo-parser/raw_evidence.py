@@ -85,7 +85,9 @@ def _safe(value: Any) -> Any:
     if value is None or isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
-        return value if math.isfinite(value) else None
+        if not math.isfinite(value):
+            return None
+        return int(value) if value.is_integer() else value
     if isinstance(value, dict):
         return {str(k): _safe(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))}
     if isinstance(value, (list, tuple)):

@@ -176,7 +176,7 @@ function jsonSafe(value: unknown): Json {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
         .filter(([, item]) => item !== undefined)
-        .sort(([a], [b]) => a.localeCompare(b))
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
         .map(([key, item]) => [key, jsonSafe(item)]),
     );
   }
@@ -355,6 +355,41 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
     if (!coveredStateFields.includes(field)) reasons.push(`game_state_returned_without_coverage:${field}`);
     if (!mappedFields.has(`game_state.${field}`)) reasons.push(`returned_field_not_in_mapping:game_state.${field}`);
   }
+  const suppliedInventory = evidence.forensic_inventory;
+  const inventoryList = (key: string): string[] => {
+    const value = suppliedInventory?.[key];
+    return Array.isArray(value) ? unique(value.filter((item): item is string => typeof item === "string")) : [];
+  };
+  for (const [key, computed] of [
+    ["player_info_returned_fields", unique([...rawPlayerFields])],
+    ["player_info_preserved_fields", unique([...rawPlayerFields])],
+    ["game_state_returned", sampledStateFields],
+    ["game_state_preserved", sampledStateFields],
+    ["game_state_observed_in_sample", sampledStateFields],
+  ] as const) {
+    if (JSON.stringify(inventoryList(key)) !== JSON.stringify(computed)) reasons.push(`audit_inventory_inconsistent:${key}`);
+  }
+  const eventInventoryObject = (key: string): Record<string, unknown> => {
+    const value = suppliedInventory?.[key];
+    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  };
+  for (const coverage of evidence.event_coverage) {
+    const name = coverage.event_name;
+    const rows = evidence.raw_events.filter((event) => event.event_name === name);
+    const returned = unique(rows.flatMap((event) => Object.keys(event.raw_fields)));
+    const nonNull = unique(rows.flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)));
+    const nullOnly = returned.filter((field) => !nonNull.includes(field));
+    for (const [key, computed] of [
+      ["event_returned_field_inventory", returned],
+      ["event_preserved_field_inventory", returned],
+      ["event_non_null_field_inventory", nonNull],
+      ["event_null_only_field_inventory", nullOnly],
+    ] as const) {
+      const supplied = eventInventoryObject(key)[name];
+      const suppliedFields = Array.isArray(supplied) ? unique(supplied.filter((item): item is string => typeof item === "string")) : [];
+      if (JSON.stringify(suppliedFields) !== JSON.stringify(computed)) reasons.push(`audit_inventory_inconsistent:${key}:${name}`);
+    }
+  }
   if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction !== false) {
     reasons.push("tick_coverage_mischaracterized");
   }
@@ -393,6 +428,17 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
         coverage.event_name,
         unique(evidence.raw_events.filter((event) => event.event_name === coverage.event_name).flatMap((event) => Object.keys(event.raw_fields))),
       ]),
+    ) as Json,
+    event_non_null_field_inventory: Object.fromEntries(
+      evidence.event_coverage.map((coverage) => [coverage.event_name, unique(evidence.raw_events.filter((event) => event.event_name === coverage.event_name).flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)))]),
+    ) as Json,
+    event_null_only_field_inventory: Object.fromEntries(
+      evidence.event_coverage.map((coverage) => {
+        const rows = evidence.raw_events.filter((event) => event.event_name === coverage.event_name);
+        const returned = unique(rows.flatMap((event) => Object.keys(event.raw_fields)));
+        const nonNull = new Set(rows.flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)));
+        return [coverage.event_name, returned.filter((field) => !nonNull.has(field))];
+      }),
     ) as Json,
     usercmd_capability: (evidence.forensic_inventory?.["usercmd_capability"] ?? {
       coverage: "UNAVAILABLE",
