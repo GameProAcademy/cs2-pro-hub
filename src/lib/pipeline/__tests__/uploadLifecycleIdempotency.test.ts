@@ -69,8 +69,8 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("keeps the general history empty states free of upload actions", () => {
-    expect(ingestPanelSource).toContain(
-      '<EmptyState title={t("pipeline.history.emptyTitle")} description={t("pipeline.history.emptyBody")} />',
+    expect(ingestPanelSource).toMatch(
+      /<EmptyState\s+title=\{t\("pipeline\.history\.emptyTitle"\)\}\s+description=\{t\("pipeline\.history\.emptyBody"\)\}\s+\/>/,
     );
     expect(historySource).not.toContain('<Link to="/upload">');
     expect(ingestPanelSource).toContain('t("pipeline.corrupted.cta")');
