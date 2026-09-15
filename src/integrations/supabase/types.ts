@@ -2041,6 +2041,7 @@ export type Database = {
           raw_audit_status: string
           raw_block_reasons: Json
           raw_events: Json
+          raw_player_info: Json
           raw_status: string
           round_evidence: Json
           tick_coverage: Json
@@ -2077,6 +2078,7 @@ export type Database = {
           raw_audit_status?: string
           raw_block_reasons?: Json
           raw_events?: Json
+          raw_player_info?: Json
           raw_status?: string
           round_evidence?: Json
           tick_coverage?: Json
@@ -2113,6 +2115,7 @@ export type Database = {
           raw_audit_status?: string
           raw_block_reasons?: Json
           raw_events?: Json
+          raw_player_info?: Json
           raw_status?: string
           round_evidence?: Json
           tick_coverage?: Json
