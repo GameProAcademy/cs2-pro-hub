@@ -41,6 +41,7 @@ const STATUS_KEY: Record<DemoJobView["status"], TranslationKey> = {
   failed: "pipeline.status.failed",
   cancel_requested: "pipeline.status.cancelRequested",
   cancelled: "pipeline.status.cancelled",
+  blocked_raw_audit: "pipeline.status.rawAuditBlocked",
 };
 
 function errorKey(code: string | null): TranslationKey {
@@ -78,6 +79,7 @@ function errorKey(code: string | null): TranslationKey {
     "pipeline.error.DEMO_INSUFFICIENT_SAMPLE",
     "pipeline.error.JOB_DEADLINE_EXCEEDED",
     "pipeline.error.PARSER_PAYLOAD_TOO_LARGE",
+    "pipeline.error.RAW_AUDIT_BLOCKED",
     "pipeline.error.PROCESSING_ERROR",
   ];
   const candidate = `pipeline.error.${code ?? "PROCESSING_ERROR"}` as TranslationKey;
@@ -260,6 +262,7 @@ export function DemoIngestPanel() {
                       "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
                       job.status === "processed" && "border-success/30 bg-success/8 text-success",
                       job.status === "failed" && "border-destructive/30 bg-destructive/8 text-destructive",
+                      job.status === "blocked_raw_audit" && "border-warning/30 bg-warning/8 text-warning",
                       (job.status === "pending" || job.status === "processing") && "border-primary/30 bg-primary/8 text-primary",
                       job.status === "cancel_requested" && "border-warning/30 bg-warning/8 text-warning",
                       job.status === "cancelled" && "border-border bg-secondary text-muted-foreground",

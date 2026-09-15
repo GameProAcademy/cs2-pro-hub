@@ -1,4 +1,4 @@
-import { AlertCircle, Ban, Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { AlertCircle, Ban, Check, CheckCircle2, Circle, Loader2, ShieldAlert } from "lucide-react";
 import { useRef } from "react";
 
 import { useT } from "@/i18n";
@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const STAGE_KEYS: Record<
-  ProcessingStage | "failed" | "cancel_requested" | "cancelled",
+  ProcessingStage | "failed" | "cancel_requested" | "cancelled" | "blocked_raw_audit",
   { title: TranslationKey; body: TranslationKey }
 > = {
   queued: {
@@ -28,6 +28,10 @@ const STAGE_KEYS: Record<
   parsing: {
     title: "pipeline.processing.parsing.title",
     body: "pipeline.processing.parsing.body",
+  },
+  raw_audit: {
+    title: "pipeline.processing.rawAudit.title",
+    body: "pipeline.processing.rawAudit.body",
   },
   normalizing: {
     title: "pipeline.processing.normalizing.title",
@@ -61,6 +65,10 @@ const STAGE_KEYS: Record<
     title: "pipeline.processing.cancelled.title",
     body: "pipeline.processing.cancelled.body",
   },
+  blocked_raw_audit: {
+    title: "pipeline.processing.rawAuditBlocked.title",
+    body: "pipeline.processing.rawAuditBlocked.body",
+  },
 };
 
 export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
@@ -68,15 +76,18 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const failed = job.status === "failed";
   const cancelling = job.status === "cancel_requested";
   const cancelled = job.status === "cancelled";
+  const rawAuditBlocked = job.status === "blocked_raw_audit";
   const active = job.status === "pending" || job.status === "processing" || cancelling;
   const done = job.status === "processed";
   const stage = safeProcessingStage(job.stage, job.status);
   const lastActiveStage = useRef<ProcessingStage>(stage);
   const progress = estimatedStageProgress({ stage: job.stage, status: job.status });
 
-  if (!failed) lastActiveStage.current = stage;
+  if (!failed && !rawAuditBlocked) lastActiveStage.current = stage;
 
-  const displayedStage = failed
+  const displayedStage = rawAuditBlocked
+    ? "blocked_raw_audit"
+    : failed
     ? "failed"
     : cancelled
       ? "cancelled"
@@ -96,6 +107,8 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
             "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border",
             failed
               ? "border-destructive/35 bg-destructive/10 text-destructive"
+              : rawAuditBlocked
+                ? "border-warning/35 bg-warning/10 text-warning"
               : cancelled || cancelling
                 ? "border-warning/35 bg-warning/10 text-warning"
                 : "border-primary/35 bg-primary/10 text-primary",
@@ -103,6 +116,8 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         >
           {failed ? (
             <AlertCircle className="size-4" aria-hidden />
+          ) : rawAuditBlocked ? (
+            <ShieldAlert className="size-4" aria-hidden />
           ) : cancelled ? (
             <Ban className="size-4" aria-hidden />
           ) : done ? (
@@ -117,7 +132,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
               "break-words font-display text-sm font-semibold uppercase tracking-[0.12em]",
               failed
                 ? "text-destructive"
-                : cancelled || cancelling
+                : cancelled || cancelling || rawAuditBlocked
                   ? "text-warning"
                   : "text-foreground",
             )}
@@ -148,7 +163,7 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
               "relative h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
               failed
                 ? "bg-destructive"
-                : cancelled || cancelling
+                : cancelled || cancelling || rawAuditBlocked
                   ? "bg-warning"
                   : done
                     ? "bg-success"
@@ -172,8 +187,8 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         </p>
         <ol className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           {VISIBLE_PROCESSING_STAGES.map((item, index) => {
-            const complete = !failed && index < currentIndex;
-            const current = !done && index === currentIndex;
+            const complete = !failed && !rawAuditBlocked && index < currentIndex;
+            const current = !done && !rawAuditBlocked && index === currentIndex;
             return (
               <li
                 key={item}
