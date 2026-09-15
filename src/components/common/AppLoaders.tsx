@@ -24,7 +24,7 @@ export function InitialAppLoader() {
           />
         </span>
         <p className="mt-5 font-display text-xl uppercase tracking-[0.14em] text-foreground">
-          <span className="font-bold">GAME</span>PRO HUB
+          <span className="font-bold italic normal-case">GamePro</span> HUB
         </p>
         <p className="mt-2 text-sm text-muted-foreground">{t("app.loading.initial")}</p>
         <Loader2
