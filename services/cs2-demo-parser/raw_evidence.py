@@ -8,6 +8,7 @@ from typing import Any, Iterable, Sequence
 
 EVIDENCE_VERSION = 1
 TICK_SAMPLE_LIMIT = 4096
+AUDIT_SURFACE_VERSION = 2
 
 EVENT_CANDIDATES: tuple[str, ...] = (
     "bomb_abortdefuse", "bomb_abortplant", "bomb_begindefuse", "bomb_beginplant",
@@ -209,6 +210,12 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
     for name, rows in (raw.get("event_tables") or {}).items():
         for row in rows or []:
             for key in row: observed.add(f"{name}.{key}")
+    for row in raw.get("tick_rows") or []:
+        for key in row: observed.add(f"game_state.{key}")
+    for row in raw.get("grenade_rows") or []:
+        for key in row: observed.add(f"grenade.{key}")
+    for row in raw.get("round_rows") or []:
+        for key in row: observed.add(f"round.{key}")
     result = []
     for field in sorted(observed):
         if field in MAPPED_RAW_FIELDS:
@@ -220,6 +227,8 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
             field.startswith(f"{event}.") and field.removeprefix(f"{event}.") in REVIEWED_EVENT_FIELDS
             for event in EVENT_CANDIDATES
         ):
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
+        elif field.startswith("game_state.") and field.removeprefix("game_state.") in PLAYER_PROPERTIES:
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
         else:
             app_field, canonical_field, status, reason = None, None, "UNMAPPED_BUT_AVAILABLE", None
@@ -249,6 +258,8 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
         "partial_parse": False,
         "extraction_confidence": None,
         "event_inventory": list(raw.get("event_inventory") or []),
+        "event_capability_coverage": "COMPLETE" if raw.get("event_inventory_error") is None else "LIMITED",
+        "raw_header": _safe(header),
         "selected_event_candidates": list(EVENT_CANDIDATES),
         "parsed_event_tables": sorted(name for name, rows in (raw.get("event_tables") or {}).items() if rows is not None),
         "tick_sample_rows": len(raw.get("tick_rows") or []),
@@ -259,6 +270,11 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
             "limit": TICK_SAMPLE_LIMIT,
             "strategy": "event-boundary-stratified",
             "truncated": len(raw.get("tick_rows") or []) >= TICK_SAMPLE_LIMIT,
+            "sample_size": len(raw.get("tick_rows") or []),
+            "first_sampled_tick": min((_int(row.get("tick")) for row in raw.get("tick_rows") or []) , default=None),
+            "last_sampled_tick": max((_int(row.get("tick")) for row in raw.get("tick_rows") or []) , default=None),
+            "total_demo_ticks": _int(header.get("playback_ticks")),
+            "full_extraction": False,
         },
     }
 
@@ -308,7 +324,9 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
     manifest = evidence["manifest"]
     mappings = evidence["field_mappings"]
     return {
-        "header_inventory": sorted(manifest.keys()),
+        "header_inventory": sorted((manifest.get("raw_header") or {}).keys()),
+        "header_returned_fields": sorted((manifest.get("raw_header") or {}).keys()),
+        "header_preserved_fields": sorted((manifest.get("raw_header") or {}).keys()),
         "player_info_inventory": sorted(item["property"] for item in evidence["player_coverage"]),
         "game_state_inventory": sorted(item["property"] for item in evidence["tick_coverage"]),
         "round_inventory": sorted({key for row in evidence["round_evidence"] for key in row}),
@@ -325,6 +343,15 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
         "all_event_inventory": list(manifest["event_inventory"]),
         "selected_event_extraction": list(manifest["selected_event_candidates"]),
         "actually_parsed_events": list(manifest["parsed_event_tables"]),
+        "event_capability_coverage": manifest.get("event_capability_coverage", "LIMITED"),
+        "event_returned_field_inventory": {
+            item["event_name"]: list(item["fields_available"])
+            for item in evidence["event_coverage"]
+        },
+        "event_preserved_field_inventory": {
+            name: sorted({key for event in evidence["raw_events"] if event["event_name"] == name for key in event["raw_fields"]})
+            for name in manifest["parsed_event_tables"]
+        },
         "mapping_inventory": mappings,
         "tick_sampling": manifest["tick_sampling"],
     }
@@ -334,6 +361,12 @@ def raw_audit_status(evidence: dict[str, Any]) -> tuple[str, list[str]]:
     """Unknown fields are evidence: preserve them, but never silently admit Canonical."""
     reasons: list[str] = []
     failed = False
+    if not evidence.get("gates"):
+        reasons.append("audit_gates_empty")
+    if not evidence.get("field_mappings"):
+        reasons.append("audit_mapping_inventory_empty")
+    if not evidence.get("forensic_inventory"):
+        reasons.append("audit_inventory_missing")
     for item in evidence["field_mappings"]:
         if item["status"] == "PARSE_FAILED":
             failed = True
@@ -357,6 +390,8 @@ def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contr
     evidence["gates"] = build_gates(evidence)
     evidence["forensic_inventory"] = forensic_inventory(evidence)
     evidence["raw_status"], evidence["raw_block_reasons"] = raw_audit_status(evidence)
+    evidence["raw_audit_status"] = "APPROVED" if evidence["raw_status"] == "PASS" else "BLOCKED"
+    evidence["audit_surface_version"] = AUDIT_SURFACE_VERSION
     clean = _safe(evidence)
     clean["manifest"]["estimated_evidence_bytes"] = len(stable_json(clean).encode("utf-8"))
     clean["deterministic_digest"] = evidence_digest(clean)

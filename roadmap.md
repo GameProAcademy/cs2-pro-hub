@@ -852,7 +852,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Scheduler e E2E real permanecem bloqueados; FASE 2.7.2D continua **NOT CLOSED** e
       FASE 2.8 não iniciada.
 
-### FASE 2.7.2D.3-H — Durable worker hardening + RAW forensic admission gate — IMPLEMENTED / HARDENED / TESTED IN CODE
+### FASE 2.7.2D.3-H — Durable worker hardening + RAW forensic admission gate — IMPLEMENTED / SUPERSEDED BY 2.7.2D.3-I
 
 - [x] Preservar RAW desconhecido e produzir inventário forense campo a campo.
 - [x] Bloquear Canonical sem auditoria e aprovação explícitas, com defesa em profundidade na persistência.
@@ -861,6 +861,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Documentar que RAW é evidência imutável, Canonical é derivado e exige aprovação RAW explícita.
 - [ ] E2E forense com novo `.dem`, Canonical real e deployment Railway permanecem **NOT PROVEN / PENDING**; 2.7.2D.3 continua **NOT CLOSED**.
 - [ ] Métricas, features, DNA, diagnóstico e AI Coach permanecem **BLOCKED** até essa prova real.
+
+### FASE 2.7.2D.3-I — RAW forensic exhaustiveness + independent auditor hardening — IMPLEMENTATION IN PROGRESS / NOT CLOSED UNTIL REVIEW
+
+- [ ] Preservar todos os eventos e campos efetivamente retornados, separando capability, seleção, retorno e mapping.
+- [ ] Tornar a auditoria independente e fail-closed para audit/manifest/inventory vazios ou incompletos.
+- [ ] Versionar RAW por tentativa sem overwrite silencioso e exigir `APPROVED` nas duas defesas Canonical.
+- [ ] Cobrir os 18 cenários obrigatórios e dois fluxos sintéticos de integração.
+- [ ] Revisão técnica final pendente; E2E real e Railway permanecem fora desta fase.
 
 ### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — IMPLEMENTATION COMPLETE / REAL E2E NOT YET PROVEN
 
