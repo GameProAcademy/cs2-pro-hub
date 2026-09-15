@@ -7,7 +7,11 @@ import {
   submitDemoWithDependencies,
   type SubmitDemoDependencies,
 } from "@/lib/pipeline/client";
-import { assertRawParserOutput, expectedParserIdentity } from "@/lib/pipeline/parser/adapter";
+import {
+  assertRawParserOutput,
+  DEPLOYED_WORKER_REVISION,
+  expectedParserIdentity,
+} from "@/lib/pipeline/parser/adapter";
 import { resumableStorageEndpoint, TUS_CHUNK_BYTES } from "@/lib/pipeline/resumableUpload";
 
 function file(name: string, size: number): File {
@@ -27,11 +31,9 @@ describe("Gate 1D upload boundaries", () => {
   });
 
   it("uses the dedicated storage resumable endpoint and 6 MiB chunks", () => {
-    // Supabase-hosted projects resolve to the dedicated storage hostname.
     expect(resumableStorageEndpoint("https://example.supabase.co")).toBe(
       "https://example.storage.supabase.co/storage/v1/upload/resumable",
     );
-    // Custom domains / local development keep their configured origin.
     expect(resumableStorageEndpoint("https://storage.acme.dev")).toBe(
       "https://storage.acme.dev/storage/v1/upload/resumable",
     );
@@ -154,7 +156,7 @@ describe("Gate 1D upload boundaries", () => {
 });
 
 describe("Gate 1D parser identity", () => {
-  const deployedRevision = "git:e6c4257864b0b77416838d09acd0b92032fbb55d";
+  const deployedRevision = DEPLOYED_WORKER_REVISION;
   const payload = () => ({
     parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
@@ -164,7 +166,7 @@ describe("Gate 1D parser identity", () => {
     events: [],
   });
 
-  it("defaults to demoparser2 0.42.0 and contract 1", () => {
+  it("defaults to demoparser2 0.42.0 and the deployed worker revision", () => {
     expect(expectedParserIdentity()).toEqual({
       name: "demoparser2",
       version: "0.42.0",
