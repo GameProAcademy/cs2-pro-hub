@@ -577,6 +577,9 @@ export const en: Dictionary = {
   "pipeline.history.map": "Map",
   "pipeline.history.result": "Result",
   "pipeline.history.rounds": "Rounds",
+  "pipeline.history.attempt": "Attempt {number}",
+  "pipeline.history.replacement": "A new attempt was created from an earlier attempt.",
+  "pipeline.history.superseded": "This attempt was preserved and replaced by a new one.",
   "pipeline.history.result.win": "Win",
   "pipeline.history.result.loss": "Loss",
   "pipeline.history.result.draw": "Draw",
@@ -620,6 +623,9 @@ export const en: Dictionary = {
     "You uploaded this demo before and it was cancelled. We'll process it again.",
   "pipeline.upload.duplicatePendingTitle": "Demo already received",
   "pipeline.upload.duplicatePendingBody": "This demo is already in the processing queue.",
+  "pipeline.upload.replacementTitle": "New attempt created",
+  "pipeline.upload.replacementBody":
+    "The previous attempt was preserved. This demo entered the queue as a new processing attempt.",
   "pipeline.corrupted.title": "We could not analyse this demo",
   "pipeline.corrupted.body":
     "The demo file looks incomplete or corrupted. To avoid producing incorrect stats or diagnostics, we do not analyse incomplete matches. Please upload the original/complete demo again and process it once more.",

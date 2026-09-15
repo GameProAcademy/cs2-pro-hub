@@ -581,6 +581,9 @@ export const fr: Dictionary = {
   "pipeline.history.map": "Carte",
   "pipeline.history.result": "Résultat",
   "pipeline.history.rounds": "Rounds",
+  "pipeline.history.attempt": "Tentative {number}",
+  "pipeline.history.replacement": "Une nouvelle tentative a été créée à partir d’une tentative précédente.",
+  "pipeline.history.superseded": "Cette tentative a été conservée et remplacée par une nouvelle.",
   "pipeline.history.result.win": "Victoire",
   "pipeline.history.result.loss": "Défaite",
   "pipeline.history.result.draw": "Égalité",
@@ -624,6 +627,9 @@ export const fr: Dictionary = {
     "Vous avez déjà envoyé cette démo et elle a été annulée. Nous allons la traiter à nouveau.",
   "pipeline.upload.duplicatePendingTitle": "Démo déjà reçue",
   "pipeline.upload.duplicatePendingBody": "Cette démo est déjà dans la file de traitement.",
+  "pipeline.upload.replacementTitle": "Nouvelle tentative créée",
+  "pipeline.upload.replacementBody":
+    "La tentative précédente a été conservée. Cette démo est entrée dans la file comme un nouveau traitement.",
   "pipeline.corrupted.title": "Nous n'avons pas pu analyser cette demo",
   "pipeline.corrupted.body":
     "Le fichier de la demo semble incomplet ou corrompu. Pour éviter des statistiques ou des diagnostics erronés, nous n'analysons pas les matchs incomplets. Envoyez à nouveau la demo originale/complète et relancez le traitement.",
