@@ -205,8 +205,8 @@ function toView(
     supersedes_job_id: string | null;
     superseded_by_job_id: string | null;
     replacement_reason: string | null;
-    uploads?: { file_name: string } | null;
   },
+  fileName = "",
   match?: {
     map: string | null;
     result: string | null;
@@ -217,7 +217,7 @@ function toView(
   return {
     jobId: row.id,
     uploadId: row.upload_id,
-    fileName: row.uploads?.file_name ?? "",
+    fileName,
     status: row.status as DemoJobView["status"],
     stage: row.stage,
     errorCode: row.error_code,
@@ -254,26 +254,36 @@ function toView(
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason, uploads(file_name)";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ jobId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<DemoJobView | null> => {
-    const { data: row } = await context.supabase
+    const { data: row, error: rowError } = await context.supabase
       .from("demo_jobs")
       .select(JOB_COLUMNS)
       .eq("id", data.jobId)
       .maybeSingle();
+    if (rowError) throw new Error("DEMO_JOB_QUERY_FAILED");
     if (!row) return null;
-    const { data: match } = row.match_id
+
+    const { data: upload, error: uploadError } = await context.supabase
+      .from("uploads")
+      .select("id, file_name")
+      .eq("id", row.upload_id)
+      .maybeSingle();
+    if (uploadError) throw new Error("DEMO_UPLOAD_QUERY_FAILED");
+
+    const { data: match, error: matchError } = row.match_id
       ? await context.supabase
           .from("matches")
           .select("map, result, score_player, score_opponent")
           .eq("id", row.match_id)
           .maybeSingle()
-      : { data: null };
-    return toView(row, match);
+      : { data: null, error: null };
+    if (matchError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED");
+    return toView(row, upload?.file_name ?? "", match);
   });
 
 /** Player's own processing history. RLS scopes it to the signed-in user. */
@@ -287,6 +297,17 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
       .limit(25);
     if (jobsError) throw new Error("DEMO_HISTORY_QUERY_FAILED");
     const rows = data ?? [];
+
+    const uploadIds = [...new Set(rows.map((row) => row.upload_id))];
+    const { data: uploads, error: uploadsError } = uploadIds.length
+      ? await context.supabase
+          .from("uploads")
+          .select("id, file_name")
+          .in("id", uploadIds)
+      : { data: [], error: null };
+    if (uploadsError) throw new Error("DEMO_HISTORY_UPLOAD_QUERY_FAILED");
+    const fileNameByUploadId = new Map((uploads ?? []).map((upload) => [upload.id, upload.file_name]));
+
     const matchIds = [...new Set(rows.flatMap((row) => (row.match_id ? [row.match_id] : [])))];
     const { data: matches, error: matchesError } = matchIds.length
       ? await context.supabase
@@ -296,7 +317,13 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
       : { data: [], error: null };
     if (matchesError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED");
     const matchById = new Map((matches ?? []).map((match) => [match.id, match]));
-    return rows.map((row) => toView(row, row.match_id ? matchById.get(row.match_id) : null));
+    return rows.map((row) =>
+      toView(
+        row,
+        fileNameByUploadId.get(row.upload_id) ?? "",
+        row.match_id ? matchById.get(row.match_id) : null,
+      ),
+    );
   });
 
 /** Re-dispatches a transient failure within the same immutable upload attempt. */
