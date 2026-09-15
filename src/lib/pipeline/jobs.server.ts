@@ -173,6 +173,7 @@ async function persistRawEvidence(args: {
       manifest: evidence.manifest as unknown as Json,
       event_coverage: evidence.event_coverage as unknown as Json,
       raw_events: evidence.raw_events as unknown as Json,
+      raw_player_info: evidence.raw_player_info as unknown as Json,
       player_coverage: evidence.player_coverage as unknown as Json,
       tick_coverage: evidence.tick_coverage as unknown as Json,
       tick_samples: evidence.tick_samples as unknown as Json,

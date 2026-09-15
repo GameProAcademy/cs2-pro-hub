@@ -208,6 +208,8 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
     for row in raw.get("players") or []:
         for key in row: observed.add(f"player.{key}")
     for name, rows in (raw.get("event_tables") or {}).items():
+        if rows is not None and name not in EVENT_CANDIDATES:
+            observed.add(f"{name}.__event__")
         for row in rows or []:
             for key in row: observed.add(f"{name}.{key}")
     for row in raw.get("tick_rows") or []:
@@ -328,6 +330,8 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
         "header_returned_fields": sorted((manifest.get("raw_header") or {}).keys()),
         "header_preserved_fields": sorted((manifest.get("raw_header") or {}).keys()),
         "player_info_inventory": sorted(item["property"] for item in evidence["player_coverage"]),
+        "player_info_returned_fields": sorted({key for row in evidence["raw_player_info"] for key in row}),
+        "player_info_preserved_fields": sorted({key for row in evidence["raw_player_info"] for key in row}),
         "game_state_inventory": sorted(item["property"] for item in evidence["tick_coverage"]),
         "round_inventory": sorted({key for row in evidence["round_evidence"] for key in row}),
         "bomb_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if item["event_name"].startswith("bomb_")),
@@ -352,6 +356,12 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
             name: sorted({key for event in evidence["raw_events"] if event["event_name"] == name for key in event["raw_fields"]})
             for name in manifest["parsed_event_tables"]
         },
+        "usercmd_capability": {
+            "coverage": "UNAVAILABLE",
+            "source": "demoparser2_parse_ticks",
+            "reason": "client usercmd stream is not universally enumerable in server demos",
+        },
+        "movement_coverage": {"coverage": "SAMPLE", "source": "tick_samples", "derived": False},
         "mapping_inventory": mappings,
         "tick_sampling": manifest["tick_sampling"],
     }

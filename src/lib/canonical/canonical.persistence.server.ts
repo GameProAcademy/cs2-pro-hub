@@ -90,7 +90,7 @@ export async function persistCanonicalObservation(args: {
     }
     const { data: audit, error: auditError } = await supabaseAdmin
       .from("raw_demo_evidence_reports")
-      .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, manifest, event_coverage, raw_events, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
+      .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
       .eq("upload_id", args.uploadId)
       .eq("deterministic_digest", args.rawApproval.evidenceDigest)
       .maybeSingle();

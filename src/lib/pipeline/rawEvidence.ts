@@ -125,6 +125,7 @@ export interface RawDemoEvidence {
   manifest: RawDemoEvidenceManifest;
   event_coverage: RawEventCoverage[];
   raw_events: RawDemoEvent[];
+  raw_player_info: Record<string, Json | undefined>[];
   player_coverage: RawPropertyCoverage[];
   tick_coverage: RawPropertyCoverage[];
   tick_samples: Record<string, Json | undefined>[];
@@ -168,6 +169,7 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
   const lists = [
     raw.event_coverage,
     raw.raw_events,
+    raw.raw_player_info,
     raw.player_coverage,
     raw.tick_coverage,
     raw.tick_samples,
@@ -209,6 +211,8 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
     "weapon_inventory", "grenade_inventory", "usercmd_inventory", "teams_inventory",
     "score_inventory", "aggregate_inventory", "movement_inventory", "all_event_inventory",
     "selected_event_extraction", "actually_parsed_events", "mapping_inventory", "tick_sampling",
+    "event_returned_field_inventory", "event_preserved_field_inventory",
+    "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
   ];
 
   if (!evidence.manifest || !evidence.deterministic_digest) reasons.push("audit_manifest_missing");
@@ -268,6 +272,15 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
     }
     if (coverage.capability_state === "PARSE_FAILED") reasons.push(`parse_failed:event:${coverage.event_name}`);
   }
+  const rawPlayerFields = new Set(evidence.raw_player_info.flatMap((row) => Object.keys(row)));
+  const playerMappings = new Set(
+    evidence.field_mappings
+      .filter((mapping) => mapping.raw_field.startsWith("player."))
+      .map((mapping) => mapping.raw_field.slice("player.".length)),
+  );
+  for (const field of rawPlayerFields) {
+    if (!playerMappings.has(field)) reasons.push(`returned_field_not_in_mapping:player.${field}`);
+  }
   if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction === true) {
     reasons.push("tick_coverage_mischaracterized");
   }
@@ -275,6 +288,8 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
   const forensicInventory: Record<string, Json> = {
     header_inventory: Object.keys(manifest.raw_header ?? {}).sort(),
     player_info_inventory: evidence.player_coverage.map((row) => row.property).sort(),
+    player_info_returned_fields: [...rawPlayerFields].sort(),
+    player_info_preserved_fields: [...rawPlayerFields].sort(),
     game_state_inventory: evidence.tick_coverage.map((row) => row.property).sort(),
     round_inventory: evidence.round_evidence.flatMap((row) => Object.keys(row)).filter(Boolean).sort(),
     bomb_inventory: evidence.event_coverage.filter((row) => row.event_name.startsWith("bomb_")).map((row) => row.event_name).sort(),
@@ -290,6 +305,19 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
     all_event_inventory: manifest.event_inventory,
     selected_event_extraction: manifest.selected_event_candidates,
     actually_parsed_events: manifest.parsed_event_tables,
+    event_returned_field_inventory: Object.fromEntries(
+      evidence.event_coverage.map((coverage) => [coverage.event_name, coverage.fields_available]),
+    ) as Json,
+    event_preserved_field_inventory: Object.fromEntries(
+      evidence.event_coverage.map((coverage) => [
+        coverage.event_name,
+        unique(evidence.raw_events.filter((event) => event.event_name === coverage.event_name).flatMap((event) => Object.keys(event.raw_fields))),
+      ]),
+    ) as Json,
+    usercmd_capability: (evidence.forensic_inventory?.["usercmd_capability"] ?? {
+      coverage: "UNAVAILABLE",
+      source: "demoparser2_parse_ticks",
+    }) as Json,
     mapping_inventory: evidence.field_mappings as unknown as Json,
     tick_sampling: (manifest.tick_sampling ?? {
       coverage: "SAMPLE",
