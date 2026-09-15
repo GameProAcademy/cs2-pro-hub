@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const migration = [
   "supabase/migrations/20260915071655_b9115773-c9d6-408a-993d-c2c022530b92.sql",
   "supabase/migrations/20260915072009_eea13ab7-de20-4697-9428-b7c9e2391746.sql",
+  "supabase/migrations/20260915090000_phase_j_legacy_processing_and_processed_reconciliation.sql",
 ]
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
@@ -24,6 +25,21 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain("_replacement_reason := 'cancelled'");
     expect(migration).toContain("INSERT INTO public.uploads");
     expect(migration).toContain("attempt_number, supersedes_job_id, replacement_reason");
+  });
+
+  it("reconciles legacy processing and pre-RAW processed attempts", () => {
+    expect(migration).toContain("_replacement_reason := 'legacy_unvalidated'");
+    expect(migration).toContain("AND r.approved_for_canonical = true");
+    expect(migration).toContain("AND r.raw_audit_status = 'APPROVED'");
+    expect(migration).toContain("_job.status = 'processing' AND NOT _stale");
+    expect(migration).toContain("_job.status = 'processed' OR _upload.status = 'processed'");
+  });
+
+  it("keeps the active SHA uniqueness fence limited to current attempts", () => {
+    expect(migration).toContain(
+      "status IN ('pending', 'processing', 'cancel_requested')",
+    );
+    expect(migration).not.toContain("status IN ('pending', 'processing', 'cancel_requested', 'processed')");
   });
 
   it("keeps healthy and processed attempts idempotent", () => {
