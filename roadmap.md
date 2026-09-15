@@ -36,6 +36,14 @@
 - [ ] E2E real completo com uma demo privada válida (BLOCKED: arquivo `.dem` não disponível no ambiente).
 - [ ] Fechamento da fase após aprovação de todos os gates reais; FASE 2.8 não iniciada.
 
+## FASE 2.7.2B-E2E — Reprocessamento forense Cache — EM EXECUÇÃO
+
+- [x] Correção tipográfica isolada do loading para `GamePro HUB`, com `GamePro` em itálico.
+- [ ] Confirmar artefato original, tamanho, SHA-256 e revision lock antes da nova tentativa.
+- [ ] Criar uma nova tentativa usando o objeto original, sem apagar ou modificar o histórico.
+- [ ] Acompanhar os gates Storage → PBDEMS2 → parser → RAW → digest → auditoria → Canonical → métricas.
+- [ ] Verificar lifecycle e idempotência; manter a antiga match como LEGACY / UNVALIDATED.
+
 ## FASE UX — Processamento de demo com progresso e etapas (concluída)
 
 - [x] Progresso visual estimado derivado exclusivamente do stage real, com faixas determinísticas, monotonicidade e teto por etapa.
