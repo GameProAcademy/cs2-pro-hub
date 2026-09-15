@@ -96,9 +96,9 @@ def validate_demo_structure(path: str) -> None:
     """Fail closed when the PBDEMS2 container is truncated or inconsistent.
 
     PBDEMS2 has a 16-byte fixed header. Both footer offsets are absolute frame
-    offsets; either may be zero when that command is absent. They are validated
-    independently against the complete outer-frame scan. In particular, a
-    validator must NOT assume DEM_Stop is immediately followed by
+    offsets and may be zero when the corresponding command is absent. They are
+    validated independently against the complete outer-frame scan. In
+    particular, a validator must NOT assume DEM_Stop is immediately followed by
     DEM_SpawnGroups, nor that the two footer offsets have a fixed ordering.
     """
     try:
@@ -157,8 +157,6 @@ def validate_demo_structure(path: str) -> None:
                     "Demo ends before a terminal DEM_Stop frame; the recording may be incomplete."
                 )
 
-            # The PBDEMS2 header explicitly permits zero offsets when a target
-            # command is absent. Non-zero offsets must point to exact frame starts.
             _validate_target_offset(
                 target_name="DEM_FileInfo",
                 target_offset=file_info_offset,
@@ -173,9 +171,6 @@ def validate_demo_structure(path: str) -> None:
                 frames=frames,
                 file_size=file_size,
             )
-
-            if file_info_offset == 0:
-                raise CorruptedDemoError("Demo is missing the required DEM_FileInfo footer offset.")
 
     except CorruptedDemoError:
         raise
