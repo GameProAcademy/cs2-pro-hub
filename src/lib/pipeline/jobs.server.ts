@@ -157,7 +157,7 @@ async function persistRawEvidence(args: {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "raw evidence parser identity mismatch");
   }
   const db = await admin();
-  const decision = runRawForensicAudit(evidence);
+  const decision = await runRawForensicAudit(evidence);
   const approvedAt = decision.approved ? new Date().toISOString() : null;
   const { error } = await db.from("raw_demo_evidence_reports").insert(
     {
@@ -184,6 +184,7 @@ async function persistRawEvidence(args: {
       field_mappings: evidence.field_mappings as unknown as Json,
       gates: evidence.gates as unknown as Json,
       deterministic_digest: evidence.deterministic_digest,
+      audited_evidence_digest: decision.evidenceDigest,
       forensic_inventory: decision.forensicInventory as unknown as Json,
       raw_status: decision.status,
       raw_block_reasons: decision.reasons as unknown as Json,
