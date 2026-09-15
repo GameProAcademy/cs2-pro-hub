@@ -44,6 +44,10 @@ export interface DemoJobView {
   scoreOpponent: number | null;
   queuedAt: string;
   finishedAt: string | null;
+  attemptNumber: number;
+  supersedesJobId: string | null;
+  supersededByJobId: string | null;
+  replacementReason: "stale" | "failed" | "cancelled" | null;
 }
 
 const createSchema = z.object({
@@ -57,7 +61,7 @@ const createSchema = z.object({
 });
 
 /** Status of a demo that was already submitted with the same content hash. */
-export type DuplicateStatus = "processed" | "pending" | "failed" | null;
+export type DuplicateStatus = "processed" | "pending" | "failed" | "cancelled" | null;
 
 /**
  * Registers the upload row and returns the private storage path.
@@ -106,6 +110,17 @@ export const createDemoUpload = createServerFn({ method: "POST" })
       duplicate,
       duplicateStatus,
       existingJobId: typeof result["job_id"] === "string" ? result["job_id"] : null,
+      newAttempt: result["new_attempt"] === true,
+      attemptNumber:
+        typeof result["attempt_number"] === "number" ? result["attempt_number"] : 1,
+      supersedesJobId:
+        typeof result["supersedes_job_id"] === "string" ? result["supersedes_job_id"] : null,
+      replacementReason:
+        result["replacement_reason"] === "stale" ||
+        result["replacement_reason"] === "failed" ||
+        result["replacement_reason"] === "cancelled"
+          ? result["replacement_reason"]
+          : null,
     };
   });
 
@@ -181,6 +196,10 @@ function toView(
     attachment_reason: string | null;
     queued_at: string;
     finished_at: string | null;
+    attempt_number: number;
+    supersedes_job_id: string | null;
+    superseded_by_job_id: string | null;
+    replacement_reason: string | null;
     uploads?: { file_name: string } | null;
   },
   match?: {
@@ -216,11 +235,20 @@ function toView(
     scoreOpponent: match?.score_opponent ?? null,
     queuedAt: row.queued_at,
     finishedAt: row.finished_at,
+    attemptNumber: row.attempt_number,
+    supersedesJobId: row.supersedes_job_id,
+    supersededByJobId: row.superseded_by_job_id,
+    replacementReason:
+      row.replacement_reason === "stale" ||
+      row.replacement_reason === "failed" ||
+      row.replacement_reason === "cancelled"
+        ? row.replacement_reason
+        : null,
   };
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, uploads(file_name)";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason, uploads(file_name)";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -263,7 +291,7 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
     return rows.map((row) => toView(row, row.match_id ? matchById.get(row.match_id) : null));
   });
 
-/** Retries a failed job the player owns (bounded by max_retries). */
+/** Re-dispatches a transient failure within the same immutable upload attempt. */
 export const retryMyDemoJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ jobId: z.string().uuid() }).parse(input))

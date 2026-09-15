@@ -88,8 +88,8 @@ function errorKey(code: string | null): TranslationKey {
 
 /**
  * Real demo ingestion surface: upload -> queued job -> server-side processing.
- * The active submission is also polled by job id so a reused FAILED/CANCELLED
- * job cannot leave the UI stuck showing its old terminal state.
+ * The active submission is polled by its attempt-scoped job id. A replacement
+ * therefore moves polling to the new job without mutating the old history row.
  */
 export function DemoIngestPanel() {
   const t = useT();
@@ -129,7 +129,10 @@ export function DemoIngestPanel() {
   const activeSubmissionJobId = submissionResult?.jobId ?? null;
   const activeSubmission = useQuery({
     queryKey: ["pipeline", "submission", activeSubmissionJobId],
-    queryFn: () => getDemoJobStatus({ data: { jobId: activeSubmissionJobId! } }),
+    queryFn: () => {
+      if (!activeSubmissionJobId) return Promise.resolve(null);
+      return getDemoJobStatus({ data: { jobId: activeSubmissionJobId } });
+    },
     enabled: Boolean(activeSubmissionJobId),
     refetchInterval: (query) => {
       const job = query.state.data;
@@ -172,7 +175,12 @@ export function DemoIngestPanel() {
   const retry = useMutation({
     mutationFn: (jobId: string) => retryMyDemoJob({ data: { jobId } }),
     onSuccess: async (result) => {
-      setSubmissionResult({ jobId: result.jobId, duplicate: true, duplicateStatus: "failed" });
+      setSubmissionResult({
+        jobId: result.jobId,
+        duplicate: true,
+        duplicateStatus: "failed",
+        newAttempt: false,
+      });
       await queryClient.refetchQueries({ queryKey: ["pipeline", "jobs"], type: "active" });
     },
   });
@@ -253,6 +261,7 @@ export function DemoIngestPanel() {
                   <div className="min-w-0">
                     <p className="break-words text-sm font-semibold text-foreground">{job.fileName || job.uploadId}</p>
                     <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {t("pipeline.history.attempt").replace("{number}", String(job.attemptNumber))}
                       {job.roundsValid != null ? ` · ${job.roundsValid} ${t("pipeline.rounds")}` : ""}
                       {job.extractionConfidence != null ? ` · ${Math.round(job.extractionConfidence * 100)}% ${t("pipeline.confidence")}` : ""}
                     </p>
@@ -286,6 +295,12 @@ export function DemoIngestPanel() {
                     <p className="mt-1 text-xs text-destructive">{t(errorKey(job.errorCode))}</p>
                   ) : null}
                   {job.partialParse && job.status !== "failed" ? <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p> : null}
+                  {job.supersedesJobId ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.replacement")}</p>
+                  ) : null}
+                  {job.supersededByJobId ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{t("pipeline.history.superseded")}</p>
+                  ) : null}
                   {job.status === "processed" && job.attachmentState !== "attached" ? (
                     <>
                       <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>

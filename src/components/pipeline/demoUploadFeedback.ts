@@ -9,6 +9,15 @@ export interface DemoUploadFeedback {
 }
 
 export function getDemoUploadFeedback(result: SubmitDemoResult): DemoUploadFeedback {
+  if (result.newAttempt) {
+    return {
+      titleKey: "pipeline.upload.replacementTitle",
+      bodyKey: "pipeline.upload.replacementBody",
+      tone: "info",
+      showContinueBrowsing: true,
+    };
+  }
+
   if (!result.duplicate) {
     return {
       titleKey: "pipeline.upload.successTitle",
