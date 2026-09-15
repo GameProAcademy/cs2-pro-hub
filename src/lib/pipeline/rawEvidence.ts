@@ -1,8 +1,10 @@
 import type { Json } from "@/integrations/supabase/types";
 
 export const RAW_EVIDENCE_VERSION = 1;
-export const RAW_EVIDENCE_AUDIT_VERSION = 1;
+export const RAW_EVIDENCE_AUDIT_VERSION = 2;
 export type RawEvidenceStatus = "PASS" | "FAIL" | "BLOCKED";
+export type RawAuditStatus = "PENDING" | "BLOCKED" | "APPROVED";
+export type RawCoverageStatus = "COMPLETE" | "LIMITED" | "SAMPLE";
 export type RawFieldMappingStatus =
   | "MAPPED"
   | "DERIVED"
@@ -54,11 +56,18 @@ export interface RawDemoEvidenceManifest {
   tick_sample_rows: number;
   event_rows: number;
   estimated_evidence_bytes: number | null;
+  event_capability_coverage?: RawCoverageStatus;
+  raw_header?: Record<string, Json | undefined>;
   tick_sampling?: {
     coverage: "SAMPLE";
     limit: number;
     strategy: string;
     truncated: boolean;
+    sample_size?: number;
+    first_sampled_tick?: number | null;
+    last_sampled_tick?: number | null;
+    total_demo_ticks?: number | null;
+    full_extraction?: false;
   };
 }
 export interface RawEventCoverage {
@@ -133,6 +142,7 @@ export interface RawDemoEvidence {
 
 export interface RawAdmissionDecision {
   status: RawEvidenceStatus;
+  auditStatus: RawAuditStatus;
   approved: boolean;
   auditVersion: number;
   reasons: string[];
@@ -142,6 +152,7 @@ export interface RawAdmissionDecision {
 
 export interface RawAdmissionApproval {
   approved: true;
+  auditStatus: "APPROVED";
   auditVersion: number;
   evidenceDigest: string;
 }
@@ -192,6 +203,24 @@ function unique(values: string[]): string[] {
 export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDecision {
   const reasons: string[] = [];
   let status: RawEvidenceStatus = "PASS";
+  const requiredInventoryKeys = [
+    "header_inventory", "player_info_inventory", "game_state_inventory",
+    "round_inventory", "bomb_inventory", "damage_inventory", "death_inventory",
+    "weapon_inventory", "grenade_inventory", "usercmd_inventory", "teams_inventory",
+    "score_inventory", "aggregate_inventory", "movement_inventory", "all_event_inventory",
+    "selected_event_extraction", "actually_parsed_events", "mapping_inventory", "tick_sampling",
+  ];
+
+  if (!evidence.manifest || !evidence.deterministic_digest) reasons.push("audit_manifest_missing");
+  if (evidence.gates.length === 0) reasons.push("audit_gates_empty");
+  if (evidence.field_mappings.length === 0) reasons.push("audit_mapping_inventory_empty");
+  if (!evidence.forensic_inventory || typeof evidence.forensic_inventory !== "object") {
+    reasons.push("audit_inventory_missing");
+  } else {
+    for (const key of requiredInventoryKeys) {
+      if (!(key in evidence.forensic_inventory)) reasons.push(`audit_inventory_missing:${key}`);
+    }
+  }
 
   for (const mapping of evidence.field_mappings) {
     if (mapping.status === "PARSE_FAILED") {
@@ -217,8 +246,34 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
   }
 
   const manifest = evidence.manifest;
+  if (!manifest.parser_name || !manifest.parser_version || !manifest.demo_sha256 || !manifest.contract_version) {
+    reasons.push("audit_identity_incomplete");
+  }
+  if (manifest.event_inventory_count !== manifest.event_inventory.length) {
+    reasons.push("event_inventory_count_mismatch");
+  }
+  const preservedEventFields = new Set(
+    evidence.raw_events.flatMap((event) =>
+      Object.keys(event.raw_fields).map((field) => `${event.event_name}.${field}`),
+    ),
+  );
+  const mappedFields = new Set(evidence.field_mappings.map((mapping) => mapping.raw_field));
+  for (const field of preservedEventFields) {
+    if (!mappedFields.has(field)) reasons.push(`returned_field_not_in_mapping:${field}`);
+  }
+  for (const coverage of evidence.event_coverage) {
+    for (const field of coverage.fields_available) {
+      const qualified = `${coverage.event_name}.${field}`;
+      if (!preservedEventFields.has(qualified)) reasons.push(`returned_field_not_preserved:${qualified}`);
+    }
+    if (coverage.capability_state === "PARSE_FAILED") reasons.push(`parse_failed:event:${coverage.event_name}`);
+  }
+  if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction === true) {
+    reasons.push("tick_coverage_mischaracterized");
+  }
+  if (reasons.length > 0 && status !== "FAIL") status = "BLOCKED";
   const forensicInventory: Record<string, Json> = {
-    header_inventory: Object.keys(manifest).sort(),
+    header_inventory: Object.keys(manifest.raw_header ?? {}).sort(),
     player_info_inventory: evidence.player_coverage.map((row) => row.property).sort(),
     game_state_inventory: evidence.tick_coverage.map((row) => row.property).sort(),
     round_inventory: evidence.round_evidence.flatMap((row) => Object.keys(row)).filter(Boolean).sort(),
@@ -246,6 +301,7 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
 
   return {
     status,
+    auditStatus: status === "PASS" ? "APPROVED" : "BLOCKED",
     approved: status === "PASS",
     auditVersion: RAW_EVIDENCE_AUDIT_VERSION,
     reasons: unique(reasons),
@@ -256,8 +312,8 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
 
 export function assertRawAdmissionApproved(
   decision: RawAdmissionDecision,
-): asserts decision is RawAdmissionDecision & { approved: true; status: "PASS" } {
-  if (!decision.approved || decision.status !== "PASS") {
+): asserts decision is RawAdmissionDecision & { approved: true; status: "PASS"; auditStatus: "APPROVED" } {
+  if (!decision.approved || decision.status !== "PASS" || decision.auditStatus !== "APPROVED") {
     throw new Error(`RAW forensic admission denied: ${decision.reasons.join(",") || decision.status}`);
   }
 }

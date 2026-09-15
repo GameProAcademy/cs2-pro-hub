@@ -17,7 +17,11 @@
  */
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
 import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
-import type { RawAdmissionApproval } from "@/lib/pipeline/rawEvidence";
+import {
+  assertRawDemoEvidence,
+  runRawForensicAudit,
+  type RawAdmissionApproval,
+} from "@/lib/pipeline/rawEvidence";
 
 export interface CanonicalPersistResult {
   matchId: string;
@@ -86,7 +90,7 @@ export async function persistCanonicalObservation(args: {
     }
     const { data: audit, error: auditError } = await supabaseAdmin
       .from("raw_demo_evidence_reports")
-      .select("raw_status, approved_for_canonical, audit_version, deterministic_digest")
+      .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, manifest, event_coverage, raw_events, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
       .eq("upload_id", args.uploadId)
       .eq("deterministic_digest", args.rawApproval.evidenceDigest)
       .maybeSingle();
@@ -94,9 +98,14 @@ export async function persistCanonicalObservation(args: {
       auditError ||
       !audit ||
       audit.raw_status !== "PASS" ||
+      audit.raw_audit_status !== "APPROVED" ||
       audit.approved_for_canonical !== true ||
       audit.audit_version !== args.rawApproval.auditVersion
     ) {
+      throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+    }
+    const independent = runRawForensicAudit(assertRawDemoEvidence(audit));
+    if (!independent.approved || independent.auditStatus !== "APPROVED") {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
   }
