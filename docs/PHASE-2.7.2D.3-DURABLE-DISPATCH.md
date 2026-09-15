@@ -28,11 +28,23 @@ parser failures, and mischaracterized tick sampling fail closed.
 
 Each report is immutable and versioned by `job_id + attempt + evidence_version`.
 Retries create a new forensic record instead of overwriting an earlier attempt.
+The digest covers the persisted evidence sections from `evidence_version` through
+the upstream gates, using one typed, key-sorted canonical byte representation in
+Python and TypeScript. Audit decisions, inventories, reasons, and approval fields
+are excluded from that digest, then permanently bound to it through
+`audited_evidence_digest`. The APP recomputes the hash during initial audit and
+again from the stored row before Canonical admission. Database constraints require
+both digests to match, while triggers and grants reject later update, delete, or
+truncate attempts against evidence or its decision.
 The parser preserves raw headers, player information, discovered event tables,
 tick samples, grenade samples, and round material. Capability discovery, extraction
 selection, returned fields, preserved fields, and mapping status are separate
 inventories; unknown returned material is `UNMAPPED_BUT_AVAILABLE` and blocks
 Canonical admission until reviewed.
+Event inventories distinguish returned keys from non-null and null-only keys.
+Game-state inventory separately records parser capability, requested properties,
+returned/preserved properties, properties observed in the sample, and mappings;
+absence from a sample never means parser unavailability.
 
 ## Lifecycle and idempotency
 
@@ -71,8 +83,8 @@ Focused APP and worker contract tests cover exhaustive RAW preservation/admissio
 independent Canonical re-audit, stale leases, cancellation, retry, and idempotent
 finalization. No real demo was submitted or processed, the
 Railway deployment was not changed, and the historical Cache job was not altered.
-Therefore the phase is **IMPLEMENTED / HARDENED / TESTED IN CODE — REAL FORENSIC
-E2E NOT YET PROVEN**, not CLOSED.
+Therefore phase I.1 is **IMPLEMENTED / HARDENED / TESTED IN CODE — NOT CLOSED
+UNTIL FINAL REVIEW**. Real forensic E2E remains outside this phase and unproven.
 
 The required scenarios are covered across the focused TypeScript and Python
 suites: RAW persistence and blocking semantics (1–5), dual Canonical admission

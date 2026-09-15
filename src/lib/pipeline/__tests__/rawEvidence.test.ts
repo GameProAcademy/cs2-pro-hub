@@ -158,7 +158,10 @@ describe("raw evidence contract", () => {
         "aggregate_inventory", "movement_inventory", "all_event_inventory",
         "selected_event_extraction", "actually_parsed_events", "mapping_inventory",
         "tick_sampling", "event_returned_field_inventory", "event_preserved_field_inventory",
+        "event_non_null_field_inventory", "event_null_only_field_inventory",
         "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
+        "game_state_capability", "game_state_requested", "game_state_returned",
+        "game_state_preserved", "game_state_observed_in_sample", "game_state_mapping_inventory",
       ].map((key) => [key, key === "tick_sampling" ? { coverage: "SAMPLE" } : []])),
     });
     expect((await runRawForensicAudit(inconsistent)).reasons).toContain("returned_field_not_preserved:player_death.future");

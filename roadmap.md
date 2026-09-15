@@ -870,6 +870,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Cobrir cenários RAW/Canonical/worker focados e fluxos sintéticos, sem processar demo real.
 - [ ] Revisão técnica final pendente; E2E real e Railway permanecem fora desta fase.
 
+### FASE 2.7.2D.3-I.1 — Final forensic integrity hardening — IMPLEMENTED / NOT CLOSED UNTIL FINAL REVIEW
+
+- [x] Recomputar o digest RAW independentemente no APP e na defesa Canonical, com representação canônica equivalente em Python e TypeScript.
+- [x] Vincular aprovação ao digest auditado e tornar evidência, decisão e inventários imutáveis e não excluíveis no banco.
+- [x] Separar campos de evento retornados, não nulos, somente nulos e preservados; separar capability, requested, returned, preserved e observed do game state.
+- [x] Cobrir adulteração, ordem de chaves, invariantes do banco e defesa Canonical com testes sintéticos.
+- [ ] Revisão técnica final pendente; nenhum demo real, job histórico ou deployment Railway foi alterado.
+
 ### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — IMPLEMENTATION COMPLETE / REAL E2E NOT YET PROVEN
 
 - [x] Habilitar `pgmq` e criar `demo_parse` de forma idempotente, sem tabela de fila paralela.

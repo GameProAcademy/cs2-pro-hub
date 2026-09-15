@@ -13,6 +13,10 @@ const failMigration = readFileSync(
   "supabase/migrations/20260915051212_a0612c7b-647b-469f-a989-455e84e8d265.sql",
   "utf8",
 );
+const finalForensicMigration = readFileSync(
+  "supabase/migrations/20260915064731_ab306b8a-bf75-43e7-9780-83e80b210ce8.sql",
+  "utf8",
+);
 const jobsSource = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
 const workerSource = readFileSync("services/cs2-demo-parser/worker.py", "utf8");
 const bridgeRouteSource = readFileSync("src/routes/api/public/pipeline-worker.$action.ts", "utf8");
@@ -74,5 +78,12 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(bridgeRouteSource).toContain("request.body.getReader()");
     expect(bridgeRouteSource).toContain("size > MAX_COMPLETE_BYTES");
     expect(bridgeRouteSource).toContain('error: "payload_too_large"');
+  });
+
+  it("binds the immutable audit decision to the evidence digest", () => {
+    expect(finalForensicMigration).toContain("audited_evidence_digest = deterministic_digest");
+    expect(finalForensicMigration).toContain("RAW_EVIDENCE_AND_AUDIT_DECISION_IMMUTABLE");
+    expect(finalForensicMigration).toContain("RAW_EVIDENCE_IMMUTABLE_NO_DELETE");
+    expect(finalForensicMigration).toContain("REVOKE UPDATE, DELETE, TRUNCATE");
   });
 });
