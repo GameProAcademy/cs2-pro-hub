@@ -240,9 +240,11 @@ async function readRawEvidence(
   const { data } = await db
     .from("raw_demo_evidence_reports")
     .select(
-      "evidence_version, manifest, event_coverage, raw_events, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, deterministic_digest, forensic_inventory, raw_status, raw_block_reasons",
+      "evidence_version, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, deterministic_digest, forensic_inventory, raw_status, raw_block_reasons",
     )
     .eq("job_id", jobId)
+    .order("attempt", { ascending: false })
+    .limit(1)
     .maybeSingle();
   return data ? (data as unknown as RawDemoEvidence) : null;
 }

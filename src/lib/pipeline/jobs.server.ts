@@ -140,6 +140,7 @@ async function persistRawEvidence(args: {
   uploadId: string;
   userId: string;
   expectedSha256: string | null;
+  attempt: number;
   raw: import("@/lib/pipeline/types").RawParserOutput;
 }): Promise<RawAdmissionDecision> {
   const evidence = assertRawDemoEvidence(args.raw.raw_evidence);
@@ -158,7 +159,7 @@ async function persistRawEvidence(args: {
   const db = await admin();
   const decision = runRawForensicAudit(evidence);
   const approvedAt = decision.approved ? new Date().toISOString() : null;
-  const { error } = await db.from("raw_demo_evidence_reports").upsert(
+  const { error } = await db.from("raw_demo_evidence_reports").insert(
     {
       job_id: args.jobId,
       upload_id: args.uploadId,
@@ -172,6 +173,7 @@ async function persistRawEvidence(args: {
       manifest: evidence.manifest as unknown as Json,
       event_coverage: evidence.event_coverage as unknown as Json,
       raw_events: evidence.raw_events as unknown as Json,
+      raw_player_info: evidence.raw_player_info as unknown as Json,
       player_coverage: evidence.player_coverage as unknown as Json,
       tick_coverage: evidence.tick_coverage as unknown as Json,
       tick_samples: evidence.tick_samples as unknown as Json,
@@ -189,9 +191,31 @@ async function persistRawEvidence(args: {
       approved_at: approvedAt,
       approved_by: decision.approved ? `server:raw-audit-v${decision.auditVersion}` : null,
       audit_version: decision.auditVersion,
+      attempt: args.attempt,
+      raw_audit_status: decision.auditStatus,
     },
-    { onConflict: "job_id" },
   );
+  if (error?.code === "23505") {
+    const { data: existing, error: existingError } = await db
+      .from("raw_demo_evidence_reports")
+      .select("deterministic_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
+      .eq("job_id", args.jobId)
+      .eq("attempt", args.attempt)
+      .eq("evidence_version", evidence.evidence_version)
+      .maybeSingle();
+    if (existingError || !existing || existing.deterministic_digest !== evidence.deterministic_digest) {
+      throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", "immutable raw evidence conflict");
+    }
+    return {
+      status: existing.raw_status as RawAdmissionDecision["status"],
+      auditStatus: existing.raw_audit_status as RawAdmissionDecision["auditStatus"],
+      approved: existing.raw_audit_status === "APPROVED",
+      auditVersion: existing.audit_version,
+      reasons: Array.isArray(existing.raw_block_reasons) ? existing.raw_block_reasons.filter((item): item is string => typeof item === "string") : [],
+      evidenceDigest: existing.deterministic_digest,
+      forensicInventory: existing.forensic_inventory as Record<string, Json>,
+    };
+  }
   if (error)
     throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
   return decision;
@@ -413,6 +437,7 @@ export async function processJob(
       uploadId: job.upload_id,
       userId: job.user_id,
       expectedSha256: job.demo_sha256,
+      attempt: durableClaim?.attempt ?? job.retry_count,
       raw,
     });
     await assertNotCancelled(jobId);
@@ -423,6 +448,7 @@ export async function processJob(
     assertRawAdmissionApproved(rawAudit);
     const rawApproval: RawAdmissionApproval = {
       approved: true,
+      auditStatus: "APPROVED",
       auditVersion: rawAudit.auditVersion,
       evidenceDigest: rawAudit.evidenceDigest,
     };

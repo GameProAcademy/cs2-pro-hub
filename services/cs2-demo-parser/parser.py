@@ -338,7 +338,9 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     # The complete inventory is retained for audit, but only the reviewed,
     # bounded high-value allow-list is parsed.
-    event_names = sorted(EVENT_CANDIDATES)
+    # Every event advertised by this concrete parser/demo is attempted. The
+    # reviewed list remains useful for mapping, but never limits RAW capture.
+    event_names = sorted(inventory | set(EVENT_CANDIDATES))
     for name in event_names:
         if name not in inventory:
             raw["event_tables"][name] = None
@@ -366,17 +368,16 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     try:
         raw["players"] = _records(demo.parse_player_info())
-    except Exception:  # noqa: BLE001 - optional section
+        raw["player_info_error"] = None
+    except Exception as exc:  # noqa: BLE001 - preserved as forensic evidence
         raw["players"] = []
+        raw["player_info_error"] = exc
         warnings.append("player_info_unavailable")
 
     sample_ticks = sorted(
         {
             tick
-            for name in (
-                "round_start", "round_end", "player_death", "player_hurt",
-                "bullet_damage", "bullet_impact", "weapon_fire", "grenade_thrown",
-            )
+            for name in raw["event_tables"]
             for row in (raw["event_tables"].get(name) or [])
             for tick in [row.get("tick")]
             if isinstance(tick, int)
@@ -396,10 +397,10 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
     inventory_error = raw.get("event_inventory_error")
     for name in sorted(raw["event_tables"]):
         rows = raw["event_tables"].get(name)
-        available = rows is not None or inventory_error is not None
+        available = name in set(raw.get("event_inventory") or [])
         coverage.append(event_coverage(
             name, available, rows, raw["event_errors"].get(name),
-            api_available=inventory_error is None,
+            api_available=inventory_error is None or rows is not None,
         ))
     tick_rows = raw.get("tick_rows") or []
     grenade_rows = raw.get("grenade_rows") or []
@@ -422,6 +423,12 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
     player_rows = raw.get("players") or []
     player_properties = sorted({key for row in player_rows for key in row})
     player_coverage = field_coverage(player_rows, player_properties)
+    player_info_error = raw.get("player_info_error")
+    if player_info_error:
+        kind, message = safe_error(player_info_error)
+        player_coverage.append({"property": "__capability__", "available": False, "rows": 0,
+                                "null_percent": None, "min": None, "max": None, "sample": None,
+                                "success": False, "error": f"{kind}: {message}"})
     economy_names = {"balance", "start_balance", "total_cash_spent", "cash_spent_this_round",
                      "round_start_equip_value", "current_equip_value", "weapon_purchases_this_round",
                      "weapon_purchases_this_match"}
@@ -431,6 +438,7 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
         "manifest": build_manifest(raw, output),
         "event_coverage": sorted(coverage, key=lambda item: item["event_name"]),
         "raw_events": raw_events(raw["event_tables"]),
+        "raw_player_info": player_rows,
         "player_coverage": player_coverage,
         "tick_coverage": tick_coverage,
         "tick_samples": tick_rows,
@@ -442,7 +450,7 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
         "gates": [],
     }
     failed_capability = any(item["capability_state"] in ("PARSE_FAILED", "API_UNAVAILABLE") for item in coverage)
-    failed_capability = failed_capability or tick_error is not None or grenade_error is not None
+    failed_capability = failed_capability or tick_error is not None or grenade_error is not None or player_info_error is not None
     evidence["manifest"]["partial_parse"] = failed_capability
     penalties = 0.0
     penalties += 0.4 if not output.get("players") else 0.0

@@ -19,10 +19,20 @@ The APP alone writes RAW evidence, canonical data, projections, and final status
 RAW evidence is immutable forensic material; Canonical is derived semantic data.
 The APP persists RAW before normalization, inventories available and selected
 parser material separately, and preserves unknown fields in the mapping inventory.
-Canonical admission requires an explicit versioned `PASS` decision. Available but
+Canonical admission requires an explicit versioned `APPROVED` audit decision. Available but
 unmapped material produces `blocked_raw_audit`, preserves the RAW report, and is
 terminal for automatic delivery so it cannot enter a retry loop. Canonical
-persistence verifies the persisted approval again before writing derived data.
+persistence reconstructs and independently audits the persisted evidence before
+writing derived data. Empty or incomplete manifests, gates, mappings, inventories,
+parser failures, and mischaracterized tick sampling fail closed.
+
+Each report is immutable and versioned by `job_id + attempt + evidence_version`.
+Retries create a new forensic record instead of overwriting an earlier attempt.
+The parser preserves raw headers, player information, discovered event tables,
+tick samples, grenade samples, and round material. Capability discovery, extraction
+selection, returned fields, preserved fields, and mapping status are separate
+inventories; unknown returned material is `UNMAPPED_BUT_AVAILABLE` and blocks
+Canonical admission until reviewed.
 
 ## Lifecycle and idempotency
 
@@ -56,9 +66,10 @@ revision. Existing `/health`, `/version`, and `/v1/parse` remain available.
 
 ## Validation status
 
-Queue schema, RAW audit schema, and protected RPCs are applied. Focused APP and
-worker contract tests cover RAW preservation/admission, stale leases, cancellation,
-retry, and idempotent finalization. No real demo was submitted or processed, the
+Queue schema, versioned immutable RAW audit schema, and protected RPCs are applied.
+Focused APP and worker contract tests cover exhaustive RAW preservation/admission,
+independent Canonical re-audit, stale leases, cancellation, retry, and idempotent
+finalization. No real demo was submitted or processed, the
 Railway deployment was not changed, and the historical Cache job was not altered.
 Therefore the phase is **IMPLEMENTED / HARDENED / TESTED IN CODE — REAL FORENSIC
 E2E NOT YET PROVEN**, not CLOSED.

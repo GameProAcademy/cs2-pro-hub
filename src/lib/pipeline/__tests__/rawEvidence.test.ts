@@ -47,6 +47,7 @@ const evidence = {
   },
   event_coverage: [],
   raw_events: [],
+  raw_player_info: [],
   player_coverage: [],
   tick_coverage: [],
   tick_samples: [],
@@ -103,13 +104,17 @@ describe("raw evidence contract", () => {
     expect(runRawForensicAudit(unexplained).status).toBe("BLOCKED");
   });
 
-  it("approves only complete evidence and inventories its sampling semantics", () => {
+  it("blocks empty audit evidence instead of treating absence as PASS", () => {
     const complete = assertRawDemoEvidence({ ...evidence, gates: [] });
     const decision = runRawForensicAudit(complete);
-    expect(decision.status).toBe("PASS");
-    expect(decision.approved).toBe(true);
+    expect(decision.status).toBe("BLOCKED");
+    expect(decision.auditStatus).toBe("BLOCKED");
+    expect(decision.approved).toBe(false);
+    expect(decision.reasons).toContain("audit_gates_empty");
+    expect(decision.reasons).toContain("audit_mapping_inventory_empty");
+    expect(decision.reasons).toContain("audit_inventory_missing");
     expect(decision.forensicInventory["tick_sampling"]).toMatchObject({ coverage: "SAMPLE" });
-    expect(() => assertRawAdmissionApproved(decision)).not.toThrow();
+    expect(() => assertRawAdmissionApproved(decision)).toThrow();
   });
 
   it("classifies parser mapping failures as FAIL", () => {
@@ -131,7 +136,31 @@ describe("raw evidence contract", () => {
         error_type: null, error_message_safe: null, capability_state: "NOT_PRESENT_IN_DEMO",
       }],
     });
-    expect(runRawForensicAudit(unavailable).status).toBe("PASS");
+    expect(runRawForensicAudit(unavailable).status).toBe("BLOCKED");
+  });
+
+  it("independently detects a returned event field missing from preserved RAW", () => {
+    const inconsistent = assertRawDemoEvidence({
+      ...evidence,
+      gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" as const, reasons: [] }],
+      field_mappings: [{ raw_field: "player_death.future", app_field: null, canonical_field: null, status: "MAPPED" as const, reason: null }],
+      event_coverage: [{
+        event_name: "player_death", available: true, parse_attempted: true, parse_success: true,
+        row_count: 1, first_tick: 1, last_tick: 1, first_round: 1, last_round: 1,
+        fields_available: ["future"], fields_missing: [], error_type: null, error_message_safe: null,
+        capability_state: "PARSED_SUCCESSFULLY" as const,
+      }],
+      forensic_inventory: Object.fromEntries([
+        "header_inventory", "player_info_inventory", "game_state_inventory", "round_inventory",
+        "bomb_inventory", "damage_inventory", "death_inventory", "weapon_inventory",
+        "grenade_inventory", "usercmd_inventory", "teams_inventory", "score_inventory",
+        "aggregate_inventory", "movement_inventory", "all_event_inventory",
+        "selected_event_extraction", "actually_parsed_events", "mapping_inventory",
+        "tick_sampling", "event_returned_field_inventory", "event_preserved_field_inventory",
+        "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
+      ].map((key) => [key, key === "tick_sampling" ? { coverage: "SAMPLE" } : []])),
+    });
+    expect(runRawForensicAudit(inconsistent).reasons).toContain("returned_field_not_preserved:player_death.future");
   });
 
   it("catalogues every required forensic inventory family", () => {
@@ -166,6 +195,11 @@ describe("raw evidence contract", () => {
         { gate: "Z", status: "FAIL", reasons: [] },
       ],
     });
-    expect(runRawForensicAudit(blocked).reasons).toEqual(["gate:Z"]);
+    expect(runRawForensicAudit(blocked).reasons).toEqual([
+      "audit_inventory_missing",
+      "audit_mapping_inventory_empty",
+      "gate:Z",
+      "tick_coverage_mischaracterized",
+    ]);
   });
 });

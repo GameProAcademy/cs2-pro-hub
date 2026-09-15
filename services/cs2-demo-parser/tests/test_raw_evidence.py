@@ -201,4 +201,59 @@ def test_not_present_event_is_not_itself_a_raw_audit_failure():
     evidence["field_mappings"] = []
     evidence["gates"] = []
     from raw_evidence import raw_audit_status
-    assert raw_audit_status(evidence) == ("PASS", [])
+    assert raw_audit_status(evidence) == (
+        "BLOCKED",
+        ["audit_gates_empty", "audit_inventory_missing", "audit_mapping_inventory_empty"],
+    )
+
+
+def test_unknown_advertised_event_and_every_returned_field_are_preserved_and_blocked():
+    raw = material()
+    raw["event_inventory"].append("future_event")
+    raw["event_tables"]["future_event"] = [{"tick": 44, "future_field": 123}]
+    final = finalize_evidence(
+        build_raw_evidence(raw, output()),
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+        contract_version=1, demo_sha256="a" * 64, file_size=99,
+    )
+    event = next(item for item in final["raw_events"] if item["event_name"] == "future_event")
+    assert event["raw_fields"]["future_field"] == 123
+    assert any(item["raw_field"] == "future_event.__event__" and item["status"] == "UNMAPPED_BUT_AVAILABLE"
+               for item in final["field_mappings"])
+    assert any(item["raw_field"] == "future_event.future_field" and item["status"] == "UNMAPPED_BUT_AVAILABLE"
+               for item in final["field_mappings"])
+    assert final["raw_audit_status"] == "BLOCKED"
+
+
+def test_raw_header_and_unknown_player_grenade_and_game_state_fields_survive():
+    raw = material()
+    raw["header"]["future_header"] = "kept"
+    raw["players"][0]["future_player"] = False
+    raw["tick_rows"][0]["future_state"] = 0
+    raw["grenade_rows"] = [{"tick": 15, "future_grenade": "kept"}]
+    final = finalize_evidence(
+        build_raw_evidence(raw, output()),
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+        contract_version=1, demo_sha256="a" * 64, file_size=99,
+    )
+    assert final["manifest"]["raw_header"]["future_header"] == "kept"
+    assert final["raw_player_info"][0]["future_player"] is False
+    assert final["tick_samples"][0]["future_state"] == 0
+    assert final["grenade_samples"][0]["future_grenade"] == "kept"
+    expected = {"header.future_header", "player.future_player", "game_state.future_state", "grenade.future_grenade"}
+    blocked = {item["raw_field"] for item in final["field_mappings"] if item["status"] == "UNMAPPED_BUT_AVAILABLE"}
+    assert expected <= blocked
+    assert final["raw_audit_status"] == "BLOCKED"
+
+
+def test_tick_sampling_never_claims_complete_and_records_bounds():
+    final = finalize_evidence(
+        build_raw_evidence(material(), output()),
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+        contract_version=1, demo_sha256="a" * 64, file_size=99,
+    )
+    sampling = final["manifest"]["tick_sampling"]
+    assert sampling["coverage"] == "SAMPLE"
+    assert sampling["full_extraction"] is False
+    assert sampling["sample_size"] == 1
+    assert sampling["first_sampled_tick"] == sampling["last_sampled_tick"] == 10
