@@ -66,7 +66,7 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("keeps stale replacement represented as failed in the duplicate contract", () => {
-    expect(migration).toContain("WHEN _replacement_reason='stale' THEN 'failed'");
+    expect(migration).toContain("WHEN _replacement_reason IN ('failed','stale') THEN 'failed'");
   });
 
   it("allows at most one replacement and keeps both directions of the relationship", () => {
