@@ -2017,6 +2017,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           approved_for_canonical: boolean
+          attempt: number
           audit_version: number
           contract_version: number
           created_at: string
@@ -2037,6 +2038,7 @@ export type Database = {
           parser_revision: string | null
           parser_version: string
           player_coverage: Json
+          raw_audit_status: string
           raw_block_reasons: Json
           raw_events: Json
           raw_status: string
@@ -2051,6 +2053,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           approved_for_canonical?: boolean
+          attempt?: number
           audit_version?: number
           contract_version: number
           created_at?: string
@@ -2071,6 +2074,7 @@ export type Database = {
           parser_revision?: string | null
           parser_version: string
           player_coverage?: Json
+          raw_audit_status?: string
           raw_block_reasons?: Json
           raw_events?: Json
           raw_status?: string
@@ -2085,6 +2089,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           approved_for_canonical?: boolean
+          attempt?: number
           audit_version?: number
           contract_version?: number
           created_at?: string
@@ -2105,6 +2110,7 @@ export type Database = {
           parser_revision?: string | null
           parser_version?: string
           player_coverage?: Json
+          raw_audit_status?: string
           raw_block_reasons?: Json
           raw_events?: Json
           raw_status?: string
@@ -2119,7 +2125,7 @@ export type Database = {
           {
             foreignKeyName: "raw_demo_evidence_reports_job_id_fkey"
             columns: ["job_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "demo_jobs"
             referencedColumns: ["id"]
           },
