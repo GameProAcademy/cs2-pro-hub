@@ -18,6 +18,32 @@ const identity = z.object({
 
 const MAX_COMPLETE_BYTES = 96 * 1024 * 1024;
 
+class PayloadTooLargeError extends Error {}
+
+async function readBoundedJson(request: Request): Promise<unknown> {
+  if (!request.body) return {};
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let size = 0;
+  let text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_COMPLETE_BYTES) {
+        await reader.cancel();
+        throw new PayloadTooLargeError();
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    return text ? JSON.parse(text) : {};
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
   server: {
     handlers: {
@@ -29,7 +55,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
           if (Number.isFinite(declaredLength) && declaredLength > MAX_COMPLETE_BYTES) {
             return Response.json({ error: "payload_too_large" }, { status: 413 });
           }
-          const body = await request.json();
+          const body = await readBoundedJson(request);
           if (params.action === "claim") {
             const { workerId } = z.object({ workerId: z.string().min(3).max(128) }).parse(body);
             return Response.json(await claimDurableDemo(workerId));
@@ -49,6 +75,9 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
           }
           return Response.json({ error: "not_found" }, { status: 404 });
         } catch (error) {
+          if (error instanceof PayloadTooLargeError) {
+            return Response.json({ error: "payload_too_large" }, { status: 413 });
+          }
           const invalid = error instanceof z.ZodError;
           console.error(`[pipeline-worker] request_failed type=${invalid ? "validation" : "internal"}`);
           return Response.json({ error: invalid ? "invalid_request" : "worker_error" }, { status: invalid ? 400 : 500 });
