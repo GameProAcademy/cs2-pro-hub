@@ -15,11 +15,13 @@ function statusKey(job: DemoJobView): TranslationKey {
   if (job.status === "failed") return "pipeline.processing.failed.title";
   if (job.status === "cancel_requested") return "pipeline.processing.cancelRequested.title";
   if (job.status === "cancelled") return "pipeline.processing.cancelled.title";
+  if (job.status === "blocked_raw_audit") return "pipeline.processing.rawAuditBlocked.title";
   if (job.status === "processed") return "pipeline.processing.done.title";
   const stage = [
     "queued",
     "validating",
     "parsing",
+    "raw_audit",
     "normalizing",
     "metrics",
     "persisting",
@@ -60,6 +62,7 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
             job.status === "failed" && "text-destructive",
             job.status === "cancel_requested" && "text-warning",
             job.status === "cancelled" && "text-muted-foreground",
+            job.status === "blocked_raw_audit" && "text-warning",
             (job.status === "pending" || job.status === "processing") && "text-primary",
           )}
         >
@@ -98,7 +101,8 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
       {job.status === "pending" ||
       job.status === "processing" ||
       job.status === "cancel_requested" ||
-      job.status === "cancelled" ? (
+      job.status === "cancelled" ||
+      job.status === "blocked_raw_audit" ? (
         <DemoProcessingStatus job={job} />
       ) : null}
     </li>

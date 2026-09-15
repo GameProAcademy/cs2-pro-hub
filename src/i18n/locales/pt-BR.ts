@@ -637,6 +637,7 @@ export const ptBR = {
   "pipeline.status.failed": "Falhou",
   "pipeline.status.cancelRequested": "Cancelando",
   "pipeline.status.cancelled": "Cancelada",
+  "pipeline.status.rawAuditBlocked": "Revisão necessária",
   "pipeline.processing.title": "Processamento da demo",
   "pipeline.processing.progress": "Progresso estimado",
   "pipeline.processing.progressLabel": "Progresso estimado do processamento da demo",
@@ -650,6 +651,10 @@ export const ptBR = {
   "pipeline.processing.parsing.title": "Lendo sua partida",
   "pipeline.processing.parsing.body":
     "Estamos lendo rounds, jogadores, eventos e informações da partida.",
+  "pipeline.processing.rawAudit.title": "Auditando evidências da demo",
+  "pipeline.processing.rawAudit.body": "Estamos verificando a cobertura RAW antes de criar dados da partida.",
+  "pipeline.processing.rawAuditBlocked.title": "Análise retida para revisão",
+  "pipeline.processing.rawAuditBlocked.body": "As evidências RAW foram preservadas, mas não foram aprovadas para gerar dados da partida.",
   "pipeline.processing.normalizing.title": "Organizando suas jogadas",
   "pipeline.processing.normalizing.body": "Estamos organizando as informações da sua partida.",
   "pipeline.processing.metrics.title": "Calculando suas métricas",
@@ -704,6 +709,8 @@ export const ptBR = {
     "O processamento excedeu o tempo limite e foi interrompido.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
     "O resultado do processamento foi grande demais para ser aceito.",
+  "pipeline.error.RAW_AUDIT_BLOCKED":
+    "As evidências da demo precisam de revisão antes de gerar dados da partida.",
   "pipeline.error.PARSER_CONFIG_ERROR":
     "O serviço de processamento não está configurado corretamente.",
   "pipeline.error.PARSER_UNAUTHORIZED": "O serviço de processamento recusou a autenticação.",

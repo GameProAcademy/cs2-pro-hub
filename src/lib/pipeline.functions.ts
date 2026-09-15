@@ -19,7 +19,14 @@ export interface DemoJobView {
   jobId: string;
   uploadId: string;
   fileName: string;
-  status: "pending" | "processing" | "processed" | "failed" | "cancel_requested" | "cancelled";
+  status:
+    | "pending"
+    | "processing"
+    | "processed"
+    | "failed"
+    | "cancel_requested"
+    | "cancelled"
+    | "blocked_raw_audit";
   stage: string;
   errorCode: string | null;
   retryCount: number;

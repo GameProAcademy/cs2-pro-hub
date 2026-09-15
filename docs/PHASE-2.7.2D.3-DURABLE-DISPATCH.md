@@ -14,13 +14,24 @@ the APP mint a short-lived private URL. Railway downloads and verifies the file,
 runs demoparser2, renews its lease, and sends the existing RawParserOutput back.
 The APP alone writes RAW evidence, canonical data, projections, and final status.
 
+## RAW forensic admission
+
+RAW evidence is immutable forensic material; Canonical is derived semantic data.
+The APP persists RAW before normalization, inventories available and selected
+parser material separately, and preserves unknown fields in the mapping inventory.
+Canonical admission requires an explicit versioned `PASS` decision. Available but
+unmapped material produces `blocked_raw_audit`, preserves the RAW report, and is
+terminal for automatic delivery so it cannot enter a retry loop. Canonical
+persistence verifies the persisted approval again before writing derived data.
+
 ## Lifecycle and idempotency
 
 - `pending` creates one queue message for the current retry attempt.
 - Claim validates message ID, job ID, upload ID, SHA, attempt, and current state.
 - Heartbeat renews both the pgmq visibility timeout and `demo_jobs` lease.
-- Completion is accepted only for the current claim. Queue archive follows
-  successful persistence.
+- Completion is accepted only for the current claim with an unexpired lease.
+  Stale workers, duplicate completion, and heartbeat after lease loss are rejected.
+  Queue archive follows successful persistence or a terminal RAW audit block.
 - Failure archives the current message atomically; transient failures re-enter
   `pending` within the existing retry ceiling, which creates the next message.
 - Terminal, cancelled, malformed, and stale messages are archived or rejected.
@@ -31,7 +42,7 @@ The APP alone writes RAW evidence, canonical data, projections, and final status
 
 The bridge uses a dedicated bearer secret and constant-time digest comparison.
 The browser cannot execute queue RPCs, and Railway never receives a privileged
-database key. Inputs are bounded and validated; errors do not include tokens,
+Inputs are bounded while streaming and validated; errors do not include tokens,
 signed URLs, stack traces, or personal data.
 
 ## Deployment
@@ -45,7 +56,15 @@ revision. Existing `/health`, `/version`, and `/v1/parse` remain available.
 
 ## Validation status
 
-Queue schema and protected RPCs are applied. App contract tests and static types
-pass. No real demo was submitted or processed, and the historical Cache job was
-not altered. Therefore the phase is **IMPLEMENTATION COMPLETE / REAL E2E NOT YET
-PROVEN**, not CLOSED.
+Queue schema, RAW audit schema, and protected RPCs are applied. Focused APP and
+worker contract tests cover RAW preservation/admission, stale leases, cancellation,
+retry, and idempotent finalization. No real demo was submitted or processed, the
+Railway deployment was not changed, and the historical Cache job was not altered.
+Therefore the phase is **IMPLEMENTED / HARDENED / TESTED IN CODE — REAL FORENSIC
+E2E NOT YET PROVEN**, not CLOSED.
+
+The required scenarios are covered across the focused TypeScript and Python
+suites: RAW persistence and blocking semantics (1–5), dual Canonical admission
+defense (6–8), lease takeover/stale worker/finalization behavior (9–13, 16),
+Canonical idempotency and cancellation (14–15), worker import/contract behavior
+(17), and manifest inventory plus unknown-field preservation (18–20).

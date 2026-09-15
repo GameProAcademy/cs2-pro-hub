@@ -2014,6 +2014,10 @@ export type Database = {
       }
       raw_demo_evidence_reports: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_for_canonical: boolean
+          audit_version: number
           contract_version: number
           created_at: string
           demo_sha256: string
@@ -2022,6 +2026,7 @@ export type Database = {
           event_coverage: Json
           evidence_version: number
           field_mappings: Json
+          forensic_inventory: Json
           gates: Json
           grenade_coverage: Json
           grenade_samples: Json
@@ -2032,7 +2037,9 @@ export type Database = {
           parser_revision: string | null
           parser_version: string
           player_coverage: Json
+          raw_block_reasons: Json
           raw_events: Json
+          raw_status: string
           round_evidence: Json
           tick_coverage: Json
           tick_samples: Json
@@ -2041,6 +2048,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_for_canonical?: boolean
+          audit_version?: number
           contract_version: number
           created_at?: string
           demo_sha256: string
@@ -2049,6 +2060,7 @@ export type Database = {
           event_coverage?: Json
           evidence_version?: number
           field_mappings?: Json
+          forensic_inventory?: Json
           gates?: Json
           grenade_coverage?: Json
           grenade_samples?: Json
@@ -2059,7 +2071,9 @@ export type Database = {
           parser_revision?: string | null
           parser_version: string
           player_coverage?: Json
+          raw_block_reasons?: Json
           raw_events?: Json
+          raw_status?: string
           round_evidence?: Json
           tick_coverage?: Json
           tick_samples?: Json
@@ -2068,6 +2082,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_for_canonical?: boolean
+          audit_version?: number
           contract_version?: number
           created_at?: string
           demo_sha256?: string
@@ -2076,6 +2094,7 @@ export type Database = {
           event_coverage?: Json
           evidence_version?: number
           field_mappings?: Json
+          forensic_inventory?: Json
           gates?: Json
           grenade_coverage?: Json
           grenade_samples?: Json
@@ -2086,7 +2105,9 @@ export type Database = {
           parser_revision?: string | null
           parser_version?: string
           player_coverage?: Json
+          raw_block_reasons?: Json
           raw_events?: Json
+          raw_status?: string
           round_evidence?: Json
           tick_coverage?: Json
           tick_samples?: Json
@@ -2654,6 +2675,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      block_demo_job_raw_audit: {
+        Args: {
+          _attempt: number
+          _job_id: string
+          _message_id: number
+          _reasons: Json
+          _worker_id: string
+        }
+        Returns: Json
+      }
       canonical_attach_source: {
         Args: {
           _external_match_id: string
@@ -2946,6 +2977,7 @@ export type Database = {
         | "failed"
         | "cancel_requested"
         | "cancelled"
+        | "blocked_raw_audit"
       upload_type: "demo" | "screenshot" | "report"
       user_status: "active" | "inactive"
     }
@@ -3147,6 +3179,7 @@ export const Constants = {
         "failed",
         "cancel_requested",
         "cancelled",
+        "blocked_raw_audit",
       ],
       upload_type: ["demo", "screenshot", "report"],
       user_status: ["active", "inactive"],

@@ -77,7 +77,7 @@ export async function completeDurableDemo(input: DurableJobClaim & { jobId: stri
     return { status: heartbeat["cancelled"] === true ? "cancelled" : "stale" };
   }
   const result = await processJob(input.jobId, input.result as RawParserOutput, input);
-  if (result.status !== "processed") return result;
+  if (result.status !== "processed" && result.status !== "blocked_raw_audit") return result;
   const { rpc } = await context();
   const { data, error } = await rpc("finalize_demo_parse_message", {
     _job_id: input.jobId,

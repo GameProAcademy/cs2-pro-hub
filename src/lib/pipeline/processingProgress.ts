@@ -2,6 +2,7 @@ export const PROCESSING_STAGES = [
   "queued",
   "validating",
   "parsing",
+  "raw_audit",
   "normalizing",
   "metrics",
   "persisting",
@@ -11,12 +12,19 @@ export const PROCESSING_STAGES = [
 
 export type ProcessingStage = (typeof PROCESSING_STAGES)[number];
 export type ProcessingStatus =
-  "pending" | "processing" | "processed" | "failed" | "cancel_requested" | "cancelled";
+  | "pending"
+  | "processing"
+  | "processed"
+  | "failed"
+  | "cancel_requested"
+  | "cancelled"
+  | "blocked_raw_audit";
 
 export const STAGE_PROGRESS: Record<ProcessingStage, number> = {
   queued: 5,
   validating: 15,
   parsing: 40,
+  raw_audit: 52,
   normalizing: 60,
   metrics: 78,
   persisting: 90,
@@ -33,6 +41,7 @@ export function isProcessingStage(stage: string): stage is ProcessingStage {
 export function safeProcessingStage(stage: string, status: ProcessingStatus): ProcessingStage {
   if (status === "processed") return "done";
   if (status === "cancelled" || status === "cancel_requested") return "cleanup";
+  if (status === "blocked_raw_audit") return "raw_audit";
   if (isProcessingStage(stage) && stage !== "done") return stage;
   return status === "pending" ? "queued" : "validating";
 }
@@ -59,6 +68,8 @@ export function estimatedStageProgress(args: {
   if (args.status === "processed" || args.stage === "done") return 100;
   if (args.status === "cancelled") return STAGE_PROGRESS.cleanup;
   if (args.status === "cancel_requested") return STAGE_PROGRESS.cleanup;
+  if (args.status === "blocked_raw_audit")
+    return Math.max(previous, STAGE_PROGRESS.raw_audit);
   if (args.status === "failed" || args.stage === "failed") return previous || STAGE_PROGRESS.queued;
 
   const stage = safeProcessingStage(args.stage, args.status);

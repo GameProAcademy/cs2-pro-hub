@@ -635,6 +635,7 @@ export const es: Dictionary = {
   "pipeline.status.failed": "Con error",
   "pipeline.status.cancelRequested": "Cancelando",
   "pipeline.status.cancelled": "Cancelada",
+  "pipeline.status.rawAuditBlocked": "Revisión necesaria",
   "pipeline.processing.title": "Procesamiento de la demo",
   "pipeline.processing.progress": "Progreso estimado",
   "pipeline.processing.progressLabel": "Progreso estimado del procesamiento de la demo",
@@ -649,6 +650,12 @@ export const es: Dictionary = {
   "pipeline.processing.parsing.title": "Leyendo tu partida",
   "pipeline.processing.parsing.body":
     "Estamos leyendo rondas, jugadores, eventos e información de la partida.",
+  "pipeline.processing.rawAudit.title": "Auditando evidencias de la demo",
+  "pipeline.processing.rawAudit.body":
+    "Estamos verificando la cobertura RAW antes de crear datos de la partida.",
+  "pipeline.processing.rawAuditBlocked.title": "Análisis retenido para revisión",
+  "pipeline.processing.rawAuditBlocked.body":
+    "Las evidencias RAW se conservaron, pero no fueron aprobadas para crear datos de la partida.",
   "pipeline.processing.normalizing.title": "Organizando tus jugadas",
   "pipeline.processing.normalizing.body": "Estamos organizando la información de tu partida.",
   "pipeline.processing.metrics.title": "Calculando tus métricas",
@@ -702,6 +709,8 @@ export const es: Dictionary = {
   "pipeline.error.JOB_DEADLINE_EXCEEDED": "El procesamiento superó su tiempo límite y se detuvo.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
     "El resultado del procesamiento fue demasiado grande para aceptarlo.",
+  "pipeline.error.RAW_AUDIT_BLOCKED":
+    "Las evidencias de la demo deben revisarse antes de crear datos de la partida.",
   "pipeline.error.PARSER_CONFIG_ERROR":
     "El servicio de procesamiento no está configurado correctamente.",
   "pipeline.error.PARSER_UNAUTHORIZED": "El servicio de procesamiento rechazó la autenticación.",

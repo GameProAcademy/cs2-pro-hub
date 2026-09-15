@@ -17,6 +17,7 @@
  */
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
 import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
+import type { RawAdmissionApproval } from "@/lib/pipeline/rawEvidence";
 
 export interface CanonicalPersistResult {
   matchId: string;
@@ -71,9 +72,34 @@ export async function persistCanonicalObservation(args: {
    * Identity Resolver. Set ONLY for a positive, non-reviewable decision.
    */
   attachMatchId?: string | null;
+  /** Required forensic admission proof for demo observations. */
+  rawApproval?: RawAdmissionApproval;
 }): Promise<CanonicalPersistResult> {
   const payload = canonicalBundleToRpcPayload(args.bundle);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Defense in depth: callers cannot write a demo Canonical observation merely
+  // by skipping the pipeline gate. The persisted server audit must match.
+  if (args.bundle.observation.source === "demo") {
+    if (!args.uploadId || !args.rawApproval?.approved) {
+      throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+    }
+    const { data: audit, error: auditError } = await supabaseAdmin
+      .from("raw_demo_evidence_reports")
+      .select("raw_status, approved_for_canonical, audit_version, deterministic_digest")
+      .eq("upload_id", args.uploadId)
+      .eq("deterministic_digest", args.rawApproval.evidenceDigest)
+      .maybeSingle();
+    if (
+      auditError ||
+      !audit ||
+      audit.raw_status !== "PASS" ||
+      audit.approved_for_canonical !== true ||
+      audit.audit_version !== args.rawApproval.auditVersion
+    ) {
+      throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+    }
+  }
 
   // FASE 2.6.11.1 — attach + persistence are ONE database transaction. The
   // attach reservation is what makes two sources converge on a single canonical
