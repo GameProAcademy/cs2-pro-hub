@@ -5,6 +5,7 @@ const migration = [
   "supabase/migrations/20260915071655_b9115773-c9d6-408a-993d-c2c022530b92.sql",
   "supabase/migrations/20260915072009_eea13ab7-de20-4697-9428-b7c9e2391746.sql",
   "supabase/migrations/20260915090000_phase_j_legacy_processing_and_processed_reconciliation.sql",
+  "supabase/migrations/20260915100000_phase_j_lock_order_and_duplicate_contract.sql",
 ]
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
@@ -56,6 +57,16 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain("PERFORM pgmq.archive('demo_parse', _job.queue_message_id)");
     expect(migration).not.toContain("retry_count = 0");
     expect(functionsSource).toContain('if (job.status !== "failed")');
+  });
+
+  it("uses one consistent advisory-lock order for reservation and enqueue", () => {
+    expect(migration).toContain("SELECT u.demo_sha256 INTO _demo_sha256");
+    expect(migration).toContain("PERFORM pg_advisory_xact_lock(hashtextextended(_user_id::text || ':' || _demo_sha256, 0));");
+    expect(migration).toContain("SELECT * INTO _upload");
+  });
+
+  it("keeps stale replacement represented as failed in the duplicate contract", () => {
+    expect(migration).toContain("WHEN _replacement_reason='stale' THEN 'failed'");
   });
 
   it("allows at most one replacement and keeps both directions of the relationship", () => {
