@@ -24,7 +24,12 @@ def frame(cmd: int, tick: int, payload: bytes = b"") -> bytes:
     return varint(cmd) + varint(tick) + varint(len(payload)) + payload
 
 
-def demo_bytes(*, compressed_stop: bool = False, include_spawn: bool = True) -> bytes:
+def demo_bytes(
+    *,
+    compressed_stop: bool = False,
+    include_spawn: bool = True,
+    include_file_info: bool = True,
+) -> bytes:
     file_header = frame(1, 0, b"header")
     stop = frame(64 if compressed_stop else 0, 100)
     frames = [file_header, stop]
@@ -35,8 +40,12 @@ def demo_bytes(*, compressed_stop: bool = False, include_spawn: bool = True) -> 
     else:
         spawn_offset = 0
 
-    file_info_offset = 16 + sum(len(item) for item in frames)
-    frames.append(frame(2, 100, b"info"))
+    if include_file_info:
+        file_info_offset = 16 + sum(len(item) for item in frames)
+        frames.append(frame(2, 100, b"info"))
+    else:
+        file_info_offset = 0
+
     body = b"".join(frames)
     return MAGIC + struct.pack("<II", file_info_offset, spawn_offset) + body
 
@@ -56,6 +65,12 @@ def test_accepts_compressed_demstop(tmp_path):
 def test_accepts_absent_spawn_groups_offset(tmp_path):
     path = tmp_path / "no-spawn-groups.dem"
     path.write_bytes(demo_bytes(include_spawn=False))
+    validate_demo_structure(str(path))
+
+
+def test_accepts_absent_file_info_offset(tmp_path):
+    path = tmp_path / "no-file-info.dem"
+    path.write_bytes(demo_bytes(include_spawn=False, include_file_info=False))
     validate_demo_structure(str(path))
 
 
@@ -108,15 +123,6 @@ def test_rejects_wrong_file_info_frame(tmp_path):
     path = tmp_path / "wrong-file-info.dem"
     path.write_bytes(data)
     with pytest.raises(CorruptedDemoError, match="DEM_FileInfo"):
-        validate_demo_structure(str(path))
-
-
-def test_rejects_missing_required_file_info_offset(tmp_path):
-    data = bytearray(demo_bytes())
-    data[8:12] = struct.pack("<I", 0)
-    path = tmp_path / "missing-file-info-offset.dem"
-    path.write_bytes(data)
-    with pytest.raises(CorruptedDemoError, match="FileInfo"):
         validate_demo_structure(str(path))
 
 
