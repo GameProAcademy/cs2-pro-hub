@@ -38,6 +38,10 @@ function job(overrides: Partial<DemoJobView> = {}): DemoJobView {
     scoreOpponent: null,
     queuedAt: "2026-09-12T00:00:00.000Z",
     finishedAt: null,
+    attemptNumber: 1,
+    supersedesJobId: null,
+    supersededByJobId: null,
+    replacementReason: null,
     ...overrides,
   };
 }

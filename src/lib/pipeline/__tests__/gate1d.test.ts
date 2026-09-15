@@ -154,7 +154,7 @@ describe("Gate 1D upload boundaries", () => {
 });
 
 describe("Gate 1D parser identity", () => {
-  const deployedRevision = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
+  const deployedRevision = "git:e6c4257864b0b77416838d09acd0b92032fbb55d";
   const payload = () => ({
     parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
