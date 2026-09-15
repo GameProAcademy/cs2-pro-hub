@@ -890,3 +890,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Documentar arquitetura e implantação.
 - [ ] Configurar o segredo compartilhado no APP e no Railway e publicar ambos os lados.
 - [ ] Executar E2E somente com um novo `.dem` autorizado; fase permanece **NOT CLOSED** até essa prova.
+
+### FASE 2.7.2D.3-J — Stale recovery + demo replacement + attempt-aware UX — IMPLEMENTED / HARDENED IN CODE / REAL E2E NOT PROVEN
+
+- [x] Separar SHA-256 dos bytes, tentativa visível e retry interno do worker.
+- [x] Preservar tentativas processadas e ativas saudáveis sem overwrite ou requeue.
+- [x] Detectar stale somente por lease expirada mais heartbeat/start antigo e arquivar a mensagem antiga.
+- [x] Criar upload, storage path e job distintos para replacement stale/failed/cancelled, com relação bidirecional.
+- [x] Serializar reserva por usuário + SHA e limitar cada tentativa antiga a um único replacement.
+- [x] Retornar o novo `jobId`, mover o polling para ele e mostrar tentativas/relações no histórico em cinco idiomas.
+- [x] Preservar retries internos, RAW imutável, auditoria independente e gate Canonical sem alteração.
+- [x] Validar contratos focados, tipos e integridade do diff; schema e RPCs aplicados no banco.
+- [ ] Nenhuma demo real foi enviada e nenhum job histórico foi alterado; E2E real e publicação permanecem pendentes.
