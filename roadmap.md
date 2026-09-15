@@ -901,4 +901,5 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Retornar o novo `jobId`, mover o polling para ele e mostrar tentativas/relações no histórico em cinco idiomas.
 - [x] Preservar retries internos, RAW imutável, auditoria independente e gate Canonical sem alteração.
 - [x] Validar contratos focados, tipos e integridade do diff; schema e RPCs aplicados no banco.
+- [x] Corrigir a UI do histórico: estado vazio sem CTA, falhas de consulta explícitas e `legacy_unvalidated` preservado no client.
 - [ ] Nenhuma demo real foi enviada e nenhum job histórico foi alterado; E2E real e publicação permanecem pendentes.

@@ -47,8 +47,15 @@ export interface DemoJobView {
   attemptNumber: number;
   supersedesJobId: string | null;
   supersededByJobId: string | null;
-  replacementReason: "stale" | "failed" | "cancelled" | null;
+  replacementReason: ReplacementReason;
 }
+
+export type ReplacementReason =
+  | "stale"
+  | "failed"
+  | "cancelled"
+  | "legacy_unvalidated"
+  | null;
 
 const createSchema = z.object({
   fileName: z
@@ -99,7 +106,10 @@ export const createDemoUpload = createServerFn({ method: "POST" })
     const duplicate = result["duplicate"] === true;
     const rawStatus = result["duplicate_status"];
     const duplicateStatus: DuplicateStatus =
-      rawStatus === "processed" || rawStatus === "failed" || rawStatus === "pending"
+      rawStatus === "processed" ||
+      rawStatus === "failed" ||
+      rawStatus === "pending" ||
+      rawStatus === "cancelled"
         ? rawStatus
         : null;
 
@@ -118,7 +128,8 @@ export const createDemoUpload = createServerFn({ method: "POST" })
       replacementReason:
         result["replacement_reason"] === "stale" ||
         result["replacement_reason"] === "failed" ||
-        result["replacement_reason"] === "cancelled"
+        result["replacement_reason"] === "cancelled" ||
+        result["replacement_reason"] === "legacy_unvalidated"
           ? result["replacement_reason"]
           : null,
     };
@@ -241,7 +252,8 @@ function toView(
     replacementReason:
       row.replacement_reason === "stale" ||
       row.replacement_reason === "failed" ||
-      row.replacement_reason === "cancelled"
+      row.replacement_reason === "cancelled" ||
+      row.replacement_reason === "legacy_unvalidated"
         ? row.replacement_reason
         : null,
   };
@@ -274,19 +286,21 @@ export const getDemoJobStatus = createServerFn({ method: "POST" })
 export const listMyDemoJobs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<DemoJobView[]> => {
-    const { data } = await context.supabase
+    const { data, error: jobsError } = await context.supabase
       .from("demo_jobs")
       .select(JOB_COLUMNS)
       .order("queued_at", { ascending: false })
       .limit(25);
+    if (jobsError) throw new Error("DEMO_HISTORY_QUERY_FAILED");
     const rows = data ?? [];
     const matchIds = [...new Set(rows.flatMap((row) => (row.match_id ? [row.match_id] : [])))];
-    const { data: matches } = matchIds.length
+    const { data: matches, error: matchesError } = matchIds.length
       ? await context.supabase
           .from("matches")
           .select("id, map, result, score_player, score_opponent")
           .in("id", matchIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (matchesError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED");
     const matchById = new Map((matches ?? []).map((match) => [match.id, match]));
     return rows.map((row) => toView(row, row.match_id ? matchById.get(row.match_id) : null));
   });

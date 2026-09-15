@@ -11,6 +11,7 @@ import {
   enqueueDemoJob,
   getDemoJobStatus,
   type DemoJobView,
+  type ReplacementReason,
 } from "@/lib/pipeline.functions";
 import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
 import { uploadDemoResumably, type ResumableUploadOptions } from "@/lib/pipeline/resumableUpload";
@@ -55,7 +56,7 @@ export interface SubmitDemoResult {
   newAttempt?: boolean;
   attemptNumber?: number;
   supersedesJobId?: string | null;
-  replacementReason?: "stale" | "failed" | "cancelled" | null;
+  replacementReason?: ReplacementReason;
 }
 
 export interface SubmitDemoDependencies {
@@ -69,7 +70,7 @@ export interface SubmitDemoDependencies {
     newAttempt: boolean;
     attemptNumber: number;
     supersedesJobId: string | null;
-    replacementReason: "stale" | "failed" | "cancelled" | null;
+    replacementReason: ReplacementReason;
   }>;
   upload(file: File, storagePath: string, options: ResumableUploadOptions): Promise<void>;
   enqueue(input: { data: { uploadId: string } }): Promise<{ jobId: string }>;

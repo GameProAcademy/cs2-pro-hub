@@ -4,8 +4,6 @@ import { CalendarDays, FileQuestion, Map, Trophy } from "lucide-react";
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { HistorySkeleton } from "@/components/common/AppLoaders";
 import { EmptyState } from "@/components/common/States";
-import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 import { useI18n, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { listMyDemoJobs, type DemoJobView } from "@/lib/pipeline.functions";
@@ -142,11 +140,6 @@ export function DemoHistory() {
       <EmptyState
         title={t("pipeline.history.emptyTitle")}
         description={t("pipeline.history.emptyBody")}
-        action={
-          <Button asChild>
-            <Link to="/upload">{t("analyze.selectFile")}</Link>
-          </Button>
-        }
       />
     );
 

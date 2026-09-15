@@ -251,8 +251,12 @@ export function DemoIngestPanel() {
 
         {jobs.isLoading ? (
           <HistorySkeleton />
+        ) : jobs.isError ? (
+          <p role="alert" className="rounded-lg border border-destructive/35 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+            {t("common.errorDescription")}
+          </p>
         ) : visibleJobs.length === 0 ? (
-          <EmptyState title={t("pipeline.history.emptyTitle")} description={t("pipeline.history.emptyBody")} action={<Button onClick={focusUpload}>{t("analyze.selectFile")}</Button>} />
+          <EmptyState title={t("pipeline.history.emptyTitle")} description={t("pipeline.history.emptyBody")} />
         ) : (
           <ul className="space-y-3">
             {visibleJobs.map((job) => (
