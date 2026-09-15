@@ -254,6 +254,12 @@ def build_manifest(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any
         "tick_sample_rows": len(raw.get("tick_rows") or []),
         "event_rows": sum(len(rows or []) for rows in (raw.get("event_tables") or {}).values()),
         "estimated_evidence_bytes": None,
+        "tick_sampling": {
+            "coverage": "SAMPLE",
+            "limit": TICK_SAMPLE_LIMIT,
+            "strategy": "event-boundary-stratified",
+            "truncated": len(raw.get("tick_rows") or []) >= TICK_SAMPLE_LIMIT,
+        },
     }
 
 
@@ -297,6 +303,47 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Separate discovery, extraction selection and parsed material explicitly."""
+    manifest = evidence["manifest"]
+    mappings = evidence["field_mappings"]
+    return {
+        "header_inventory": sorted(manifest.keys()),
+        "player_info_inventory": sorted(item["property"] for item in evidence["player_coverage"]),
+        "game_state_inventory": sorted(item["property"] for item in evidence["tick_coverage"]),
+        "round_inventory": sorted({key for row in evidence["round_evidence"] for key in row}),
+        "bomb_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if item["event_name"].startswith("bomb_")),
+        "damage_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if "damage" in item["event_name"] or item["event_name"] == "player_hurt"),
+        "death_inventory": [item["event_name"] for item in evidence["event_coverage"] if item["event_name"] == "player_death"],
+        "weapon_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if "weapon" in item["event_name"] or item["event_name"].startswith("item_")),
+        "aggregate_inventory": sorted(item["raw_field"] for item in mappings if "_total" in item["raw_field"]),
+        "movement_inventory": sorted(item["property"] for item in evidence["tick_coverage"] if item["property"] in {"X", "Y", "Z", "velocity", "velocity_X", "velocity_Y", "velocity_Z", "yaw", "pitch"}),
+        "all_event_inventory": list(manifest["event_inventory"]),
+        "selected_event_extraction": list(manifest["selected_event_candidates"]),
+        "actually_parsed_events": list(manifest["parsed_event_tables"]),
+        "mapping_inventory": mappings,
+        "tick_sampling": manifest["tick_sampling"],
+    }
+
+
+def raw_audit_status(evidence: dict[str, Any]) -> tuple[str, list[str]]:
+    """Unknown fields are evidence: preserve them, but never silently admit Canonical."""
+    reasons: list[str] = []
+    failed = False
+    for item in evidence["field_mappings"]:
+        if item["status"] == "PARSE_FAILED":
+            failed = True
+            reasons.append(f"parse_failed:{item['raw_field']}")
+        elif item["status"] == "UNMAPPED_BUT_AVAILABLE":
+            reasons.append(f"unmapped_but_available:{item['raw_field']}")
+        elif item["status"] == "RAW_ONLY_INTENTIONAL" and not item.get("reason"):
+            reasons.append(f"raw_only_reason_missing:{item['raw_field']}")
+    for gate in evidence.get("gates") or []:
+        if gate["status"] != "PASS":
+            reasons.append(f"gate:{gate['gate']}")
+    return ("FAIL" if failed else "BLOCKED" if reasons else "PASS", sorted(set(reasons)))
+
+
 def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contract_version: int,
                       demo_sha256: str, file_size: int) -> dict[str, Any]:
     manifest = evidence["manifest"]
@@ -304,6 +351,8 @@ def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contr
                      "parser_revision": parser.get("revision"), "contract_version": contract_version,
                      "demo_sha256": demo_sha256.lower(), "file_size": file_size})
     evidence["gates"] = build_gates(evidence)
+    evidence["forensic_inventory"] = forensic_inventory(evidence)
+    evidence["raw_status"], evidence["raw_block_reasons"] = raw_audit_status(evidence)
     clean = _safe(evidence)
     clean["manifest"]["estimated_evidence_bytes"] = len(stable_json(clean).encode("utf-8"))
     clean["deterministic_digest"] = evidence_digest(clean)

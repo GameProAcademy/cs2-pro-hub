@@ -16,6 +16,8 @@ const identity = z.object({
   workerId: z.string().min(3).max(128),
 });
 
+const MAX_COMPLETE_BYTES = 96 * 1024 * 1024;
+
 export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
   server: {
     handlers: {
@@ -23,6 +25,10 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
         const unauthorized = authenticateDurableWorker(request);
         if (unauthorized) return unauthorized;
         try {
+          const declaredLength = Number(request.headers.get("content-length") ?? "0");
+          if (Number.isFinite(declaredLength) && declaredLength > MAX_COMPLETE_BYTES) {
+            return Response.json({ error: "payload_too_large" }, { status: 413 });
+          }
           const body = await request.json();
           if (params.action === "claim") {
             const { workerId } = z.object({ workerId: z.string().min(3).max(128) }).parse(body);

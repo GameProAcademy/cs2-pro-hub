@@ -38,9 +38,14 @@ async def _heartbeat_loop(client: httpx.AsyncClient, settings: Settings, identit
         try:
             await asyncio.wait_for(stop.wait(), timeout=settings.queue_heartbeat_seconds)
         except asyncio.TimeoutError:
-            response = await _bridge(client, settings, "heartbeat", {**identity, "stage": "parsing"})
+            try:
+                response = await _bridge(client, settings, "heartbeat", {**identity, "stage": "parsing"})
+            except httpx.HTTPError:
+                stop.set()
+                return
             if response.get("cancelled") is True or response.get("accepted") is not True:
                 stop.set()
+                return
 
 
 async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[str, Any]]) -> None:
@@ -65,7 +70,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 try:
                     result = await _parse_request(
                         ParseRequest(
-                            contract_version=claim["schema_version"],
+                            contract_version=settings.contract_version,
                             upload_id=claim["upload_id"],
                             demo_url=claim["demo_url"],
                             demo_sha256=claim["demo_sha256"],
@@ -74,6 +79,9 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         settings,
                         parse,
                     )
+                    if stop.is_set():
+                        logger.info("completion suppressed after lease or cancellation rejection")
+                        continue
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
                         await _bridge(client, settings, "complete", {**identity, "result": result})

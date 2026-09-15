@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assertRawDemoEvidence, evaluateRawEvidence } from "@/lib/pipeline/rawEvidence";
+import {
+  assertRawAdmissionApproved,
+  assertRawDemoEvidence,
+  evaluateRawEvidence,
+  runRawForensicAudit,
+} from "@/lib/pipeline/rawEvidence";
 
 const evidence = {
   evidence_version: 1,
@@ -65,9 +70,8 @@ describe("raw evidence contract", () => {
     expect(() => assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" })).toThrow();
     expect(evaluateRawEvidence(evidence)[0]?.status).toBe("FAIL");
   });
-  it("rejects unresolved mappings and raw-only mappings without a reason", () => {
-    expect(() =>
-      assertRawDemoEvidence({
+  it("preserves unresolved mappings while blocking canonical admission", () => {
+    const unknown = assertRawDemoEvidence({
         ...evidence,
         field_mappings: [
           {
@@ -78,10 +82,13 @@ describe("raw evidence contract", () => {
             reason: null,
           },
         ],
-      }),
-    ).toThrow("unresolved mapping");
-    expect(() =>
-      assertRawDemoEvidence({
+      });
+    const unknownDecision = runRawForensicAudit(unknown);
+    expect(unknownDecision.status).toBe("BLOCKED");
+    expect(unknownDecision.reasons).toContain("unmapped_but_available:event.future_field");
+    expect(() => assertRawAdmissionApproved(unknownDecision)).toThrow("admission denied");
+
+    const unexplained = assertRawDemoEvidence({
         ...evidence,
         field_mappings: [
           {
@@ -92,7 +99,24 @@ describe("raw evidence contract", () => {
             reason: null,
           },
         ],
-      }),
-    ).toThrow("unresolved mapping");
+      });
+    expect(runRawForensicAudit(unexplained).status).toBe("BLOCKED");
+  });
+
+  it("approves only complete evidence and inventories its sampling semantics", () => {
+    const complete = assertRawDemoEvidence({ ...evidence, gates: [] });
+    const decision = runRawForensicAudit(complete);
+    expect(decision.status).toBe("PASS");
+    expect(decision.approved).toBe(true);
+    expect(decision.forensicInventory.tick_sampling).toMatchObject({ coverage: "SAMPLE" });
+    expect(() => assertRawAdmissionApproved(decision)).not.toThrow();
+  });
+
+  it("classifies parser mapping failures as FAIL", () => {
+    const failed = assertRawDemoEvidence({
+      ...evidence,
+      field_mappings: [{ raw_field: "event.bad", app_field: null, canonical_field: null, status: "PARSE_FAILED", reason: "safe" }],
+    });
+    expect(runRawForensicAudit(failed).status).toBe("FAIL");
   });
 });

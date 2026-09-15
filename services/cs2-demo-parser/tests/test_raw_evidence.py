@@ -61,6 +61,8 @@ def test_finalize_binds_worker_and_demo_identity_and_digest():
     assert final["manifest"]["demo_sha256"] == "a" * 64
     digest = final.pop("deterministic_digest")
     assert digest == evidence_digest(final)
+    assert final["manifest"]["tick_sampling"]["coverage"] == "SAMPLE"
+    assert final["forensic_inventory"]["all_event_inventory"] == sorted(material()["event_inventory"])
 
 
 def test_round_player_material_is_only_projected_from_observed_tick_rows():
@@ -165,3 +167,13 @@ def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
     assert aggregate["reason"]
     unknown = next(item for item in mapped if item["raw_field"] == "player_death.unknown_native")
     assert unknown["status"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
+    final = finalize_evidence(build_raw_evidence(material(), output()),
+                              parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+                              contract_version=1, demo_sha256="a" * 64, file_size=99)
+    assert final["raw_status"] == "BLOCKED"
+    assert "unmapped_but_available:player_death.unknown_native" in final["raw_block_reasons"]
+    assert any(item["raw_field"] == "player_death.unknown_native"
+               for item in final["forensic_inventory"]["mapping_inventory"])
