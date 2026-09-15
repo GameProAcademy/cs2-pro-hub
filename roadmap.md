@@ -852,6 +852,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Scheduler e E2E real permanecem bloqueados; FASE 2.7.2D continua **NOT CLOSED** e
       FASE 2.8 não iniciada.
 
+### FASE 2.7.2D.3-H — Durable worker hardening + RAW forensic admission gate — EM IMPLEMENTAÇÃO
+
+- [ ] Preservar RAW desconhecido e produzir inventário forense campo a campo.
+- [ ] Bloquear Canonical sem auditoria e aprovação explícitas, com defesa em profundidade na persistência.
+- [ ] Endurecer lease, heartbeat, stale completion, cancelamento, retry e finalização idempotente.
+- [ ] Cobrir os 20 cenários obrigatórios sem processar demo real nem alterar Railway.
+- [ ] Atualizar documentação e estados reais; manter 2.7.2D.3 NOT CLOSED.
+
 ### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — IMPLEMENTATION COMPLETE / REAL E2E NOT YET PROVEN
 
 - [x] Habilitar `pgmq` e criar `demo_parse` de forma idempotente, sem tabela de fila paralela.
