@@ -108,7 +108,7 @@ describe("raw evidence contract", () => {
     const decision = runRawForensicAudit(complete);
     expect(decision.status).toBe("PASS");
     expect(decision.approved).toBe(true);
-    expect(decision.forensicInventory.tick_sampling).toMatchObject({ coverage: "SAMPLE" });
+    expect(decision.forensicInventory["tick_sampling"]).toMatchObject({ coverage: "SAMPLE" });
     expect(() => assertRawAdmissionApproved(decision)).not.toThrow();
   });
 
