@@ -15,6 +15,7 @@ const failMigration = readFileSync(
 );
 const jobsSource = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
 const workerSource = readFileSync("services/cs2-demo-parser/worker.py", "utf8");
+const bridgeRouteSource = readFileSync("src/routes/api/public/pipeline-worker.$action.ts", "utf8");
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   it("lets another worker reclaim only an expired processing lease", () => {
@@ -58,5 +59,20 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(jobsSource).toContain("rawApproval,");
     expect(jobsSource).toContain("fingerprint: job.demo_sha256 ?? null");
     expect(jobsSource).toContain("persistCanonicalObservation({");
+  });
+
+  it("persists unknown RAW material before blocking Canonical admission", () => {
+    const persist = jobsSource.indexOf("const rawAudit = await persistRawEvidence");
+    const block = jobsSource.indexOf("if (!rawAudit.approved)");
+    const normalize = jobsSource.indexOf("const match = normalizeParserOutput(raw)");
+    expect(persist).toBeGreaterThan(-1);
+    expect(block).toBeGreaterThan(persist);
+    expect(normalize).toBeGreaterThan(block);
+  });
+
+  it("bounds the complete payload while streaming rather than trusting content-length", () => {
+    expect(bridgeRouteSource).toContain("request.body.getReader()");
+    expect(bridgeRouteSource).toContain("size > MAX_COMPLETE_BYTES");
+    expect(bridgeRouteSource).toContain('error: "payload_too_large"');
   });
 });

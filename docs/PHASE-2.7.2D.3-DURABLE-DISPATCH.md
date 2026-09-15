@@ -62,3 +62,9 @@ retry, and idempotent finalization. No real demo was submitted or processed, the
 Railway deployment was not changed, and the historical Cache job was not altered.
 Therefore the phase is **IMPLEMENTED / HARDENED / TESTED IN CODE — REAL FORENSIC
 E2E NOT YET PROVEN**, not CLOSED.
+
+The required scenarios are covered across the focused TypeScript and Python
+suites: RAW persistence and blocking semantics (1–5), dual Canonical admission
+defense (6–8), lease takeover/stale worker/finalization behavior (9–13, 16),
+Canonical idempotency and cancellation (14–15), worker import/contract behavior
+(17), and manifest inventory plus unknown-field preservation (18–20).
