@@ -157,7 +157,7 @@ async function persistRawEvidence(args: {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "raw evidence parser identity mismatch");
   }
   const db = await admin();
-  const decision = runRawForensicAudit(evidence);
+  const decision = await runRawForensicAudit(evidence);
   const approvedAt = decision.approved ? new Date().toISOString() : null;
   const { error } = await db.from("raw_demo_evidence_reports").insert(
     {
@@ -184,6 +184,7 @@ async function persistRawEvidence(args: {
       field_mappings: evidence.field_mappings as unknown as Json,
       gates: evidence.gates as unknown as Json,
       deterministic_digest: evidence.deterministic_digest,
+      audited_evidence_digest: decision.evidenceDigest,
       forensic_inventory: decision.forensicInventory as unknown as Json,
       raw_status: decision.status,
       raw_block_reasons: decision.reasons as unknown as Json,
@@ -198,12 +199,16 @@ async function persistRawEvidence(args: {
   if (error?.code === "23505") {
     const { data: existing, error: existingError } = await db
       .from("raw_demo_evidence_reports")
-      .select("deterministic_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
+      .select("deterministic_digest, audited_evidence_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
       .eq("job_id", args.jobId)
       .eq("attempt", args.attempt)
       .eq("evidence_version", evidence.evidence_version)
       .maybeSingle();
-    if (existingError || !existing || existing.deterministic_digest !== evidence.deterministic_digest) {
+    if (
+      existingError || !existing ||
+      existing.deterministic_digest !== evidence.deterministic_digest ||
+      existing.audited_evidence_digest !== evidence.deterministic_digest
+    ) {
       throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", "immutable raw evidence conflict");
     }
     return {

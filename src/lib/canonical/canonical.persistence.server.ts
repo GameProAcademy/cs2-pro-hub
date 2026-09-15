@@ -90,7 +90,7 @@ export async function persistCanonicalObservation(args: {
     }
     const { data: audit, error: auditError } = await supabaseAdmin
       .from("raw_demo_evidence_reports")
-      .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
+      .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, audited_evidence_digest, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
       .eq("upload_id", args.uploadId)
       .eq("deterministic_digest", args.rawApproval.evidenceDigest)
       .maybeSingle();
@@ -100,12 +100,17 @@ export async function persistCanonicalObservation(args: {
       audit.raw_status !== "PASS" ||
       audit.raw_audit_status !== "APPROVED" ||
       audit.approved_for_canonical !== true ||
-      audit.audit_version !== args.rawApproval.auditVersion
+      audit.audit_version !== args.rawApproval.auditVersion ||
+      audit.audited_evidence_digest !== audit.deterministic_digest ||
+      audit.audited_evidence_digest !== args.rawApproval.evidenceDigest
     ) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
-    const independent = runRawForensicAudit(assertRawDemoEvidence(audit));
+    const independent = await runRawForensicAudit(assertRawDemoEvidence(audit));
     if (!independent.approved || independent.auditStatus !== "APPROVED") {
+      throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+    }
+    if (independent.evidenceDigest !== audit.audited_evidence_digest) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
   }

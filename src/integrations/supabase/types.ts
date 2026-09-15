@@ -2019,6 +2019,7 @@ export type Database = {
           approved_for_canonical: boolean
           attempt: number
           audit_version: number
+          audited_evidence_digest: string
           contract_version: number
           created_at: string
           demo_sha256: string
@@ -2056,6 +2057,7 @@ export type Database = {
           approved_for_canonical?: boolean
           attempt?: number
           audit_version?: number
+          audited_evidence_digest: string
           contract_version: number
           created_at?: string
           demo_sha256: string
@@ -2093,6 +2095,7 @@ export type Database = {
           approved_for_canonical?: boolean
           attempt?: number
           audit_version?: number
+          audited_evidence_digest?: string
           contract_version?: number
           created_at?: string
           demo_sha256?: string

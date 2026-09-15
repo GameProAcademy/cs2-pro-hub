@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ME, syntheticParserOutput } from "@/lib/pipeline/__tests__/fixture";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
-import { runRawForensicAudit } from "@/lib/pipeline/rawEvidence";
+import { computeRawEvidenceDigest, runRawForensicAudit } from "@/lib/pipeline/rawEvidence";
 import { demoToCanonicalBundle } from "../adapters/demo.adapter";
 
 const maybeSingle = vi.fn();
@@ -28,7 +28,10 @@ const requiredInventory = Object.fromEntries([
   "grenade_inventory", "usercmd_inventory", "teams_inventory", "score_inventory",
   "aggregate_inventory", "movement_inventory", "all_event_inventory", "selected_event_extraction",
   "actually_parsed_events", "event_returned_field_inventory", "event_preserved_field_inventory",
+  "event_non_null_field_inventory", "event_null_only_field_inventory",
   "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
+  "game_state_capability", "game_state_requested", "game_state_returned",
+  "game_state_preserved", "game_state_observed_in_sample", "game_state_mapping_inventory",
   "mapping_inventory", "tick_sampling",
 ].map((key) => [key, key === "tick_sampling" ? { coverage: "SAMPLE" } : []]));
 const auditEvidence = {
@@ -52,7 +55,8 @@ const auditEvidence = {
   forensic_inventory: requiredInventory,
   deterministic_digest: digest,
 };
-const auditVersion = runRawForensicAudit(auditEvidence).auditVersion;
+auditEvidence.deterministic_digest = await computeRawEvidenceDigest(auditEvidence);
+const auditVersion = (await runRawForensicAudit(auditEvidence)).auditVersion;
 const bundle = demoToCanonicalBundle({
   parsed: normalizeParserOutput(syntheticParserOutput),
   fingerprint: digest,
@@ -80,7 +84,8 @@ describe("Canonical RAW admission defense", () => {
         raw_status: "BLOCKED",
         approved_for_canonical: false,
         audit_version: 1,
-        deterministic_digest: digest,
+        deterministic_digest: auditEvidence.deterministic_digest,
+        audited_evidence_digest: auditEvidence.deterministic_digest,
       },
       error: null,
     });
@@ -88,7 +93,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: auditEvidence.deterministic_digest },
       }),
     ).rejects.toMatchObject({ code: "RAW_ADMISSION_REQUIRED" });
     expect(rpc).not.toHaveBeenCalled();
@@ -102,7 +107,8 @@ describe("Canonical RAW admission defense", () => {
         raw_audit_status: "APPROVED",
         approved_for_canonical: true,
         audit_version: auditVersion,
-        deterministic_digest: digest,
+        deterministic_digest: auditEvidence.deterministic_digest,
+        audited_evidence_digest: auditEvidence.deterministic_digest,
       },
       error: null,
     });
@@ -119,7 +125,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: auditEvidence.deterministic_digest },
       }),
     ).resolves.toMatchObject({ matchId: "match-1", matchSourceId: "source-1" });
     expect(rpc).toHaveBeenCalledTimes(1);

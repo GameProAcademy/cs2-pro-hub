@@ -4,11 +4,17 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import struct
 from typing import Any, Iterable, Sequence
 
 EVIDENCE_VERSION = 1
 TICK_SAMPLE_LIMIT = 4096
 AUDIT_SURFACE_VERSION = 2
+DIGEST_KEYS: tuple[str, ...] = (
+    "evidence_version", "manifest", "event_coverage", "raw_events", "raw_player_info",
+    "player_coverage", "tick_coverage", "tick_samples", "grenade_coverage",
+    "grenade_samples", "round_evidence", "economy_coverage", "field_mappings", "gates",
+)
 
 EVENT_CANDIDATES: tuple[str, ...] = (
     "bomb_abortdefuse", "bomb_abortplant", "bomb_begindefuse", "bomb_beginplant",
@@ -80,7 +86,9 @@ def _safe(value: Any) -> Any:
     if value is None or isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
-        return value if math.isfinite(value) else None
+        if not math.isfinite(value):
+            return None
+        return int(value) if value.is_integer() else value
     if isinstance(value, dict):
         return {str(k): _safe(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))}
     if isinstance(value, (list, tuple)):
@@ -99,7 +107,33 @@ def stable_json(value: Any) -> str:
 
 
 def evidence_digest(value: Any) -> str:
-    return hashlib.sha256(stable_json(value).encode("utf-8")).hexdigest()
+    projection = {key: value[key] for key in DIGEST_KEYS}
+    return hashlib.sha256(canonical_digest_value(projection).encode("utf-8")).hexdigest()
+
+
+def canonical_digest_value(value: Any) -> str:
+    value = _safe(value)
+    if value is None:
+        return "N;"
+    if isinstance(value, bool):
+        return "B1;" if value else "B0;"
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if not math.isfinite(number):
+            return "N;"
+        if number == 0:
+            number = 0.0
+        return f"D{struct.pack('>d', number).hex()};"
+    if isinstance(value, str):
+        return f"S{len(value.encode('utf-8'))}:{value}"
+    if isinstance(value, list):
+        return f"A{len(value)}[" + "".join(canonical_digest_value(item) for item in value) + "]"
+    if isinstance(value, dict):
+        entries = sorted(((str(key), item) for key, item in value.items()), key=lambda item: item[0])
+        return f"O{len(entries)}{{" + "".join(
+            canonical_digest_value(key) + canonical_digest_value(item) for key, item in entries
+        ) + "}"
+    raise TypeError("unsupported RAW evidence value")
 
 
 def _int(value: Any) -> int | None:
@@ -165,10 +199,9 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
     first_tick, last_tick = _range(safe_rows, "tick")
     rounds = [r for row in safe_rows for r in [_int(row.get("round") or row.get("total_rounds_played"))] if r is not None]
     all_fields = {str(key) for row in safe_rows for key in row}
-    fields = sorted({str(key) for row in safe_rows for key, value in row.items() if value is not None})
-    missing_fields = sorted(
-        field for field in all_fields if any(row.get(field) is None for row in safe_rows)
-    )
+    non_null_fields = sorted({str(key) for row in safe_rows for key, value in row.items() if value is not None})
+    null_only_fields = sorted(all_fields - set(non_null_fields))
+    missing_fields = sorted(field for field in all_fields if any(field not in row for row in safe_rows))
     error_type, error_message = safe_error(error) if error else (None, None)
     state = (
         "API_UNAVAILABLE" if not api_available else
@@ -182,7 +215,10 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
         "parse_success": available and error is None, "row_count": len(safe_rows) if error is None and available else None,
         "first_tick": first_tick, "last_tick": last_tick,
         "first_round": min(rounds) if rounds else None, "last_round": max(rounds) if rounds else None,
-        "fields_available": fields, "fields_missing": missing_fields, "error_type": error_type,
+        "fields_available": sorted(all_fields), "fields_missing": missing_fields,
+        "returned_fields": sorted(all_fields), "non_null_fields": non_null_fields,
+        "null_only_fields": null_only_fields, "preserved_fields": sorted(all_fields),
+        "error_type": error_type,
         "error_message_safe": error_message, "capability_state": state,
     }
 
@@ -332,7 +368,13 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
         "player_info_inventory": sorted(item["property"] for item in evidence["player_coverage"]),
         "player_info_returned_fields": sorted({key for row in evidence["raw_player_info"] for key in row}),
         "player_info_preserved_fields": sorted({key for row in evidence["raw_player_info"] for key in row}),
-        "game_state_inventory": sorted(item["property"] for item in evidence["tick_coverage"]),
+        "game_state_inventory": sorted(item["property"] for item in evidence["tick_coverage"] if item["property"] != "__capability__"),
+        "game_state_capability": list(PLAYER_PROPERTIES),
+        "game_state_requested": list(PLAYER_PROPERTIES),
+        "game_state_returned": sorted({key for row in evidence["tick_samples"] for key in row}),
+        "game_state_preserved": sorted({key for row in evidence["tick_samples"] for key in row}),
+        "game_state_observed_in_sample": sorted({key for row in evidence["tick_samples"] for key in row}),
+        "game_state_mapping_inventory": [item for item in mappings if item["raw_field"].startswith("game_state.")],
         "round_inventory": sorted({key for row in evidence["round_evidence"] for key in row}),
         "bomb_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if item["event_name"].startswith("bomb_")),
         "damage_inventory": sorted(item["event_name"] for item in evidence["event_coverage"] if "damage" in item["event_name"] or item["event_name"] == "player_hurt"),
@@ -349,7 +391,15 @@ def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
         "actually_parsed_events": list(manifest["parsed_event_tables"]),
         "event_capability_coverage": manifest.get("event_capability_coverage", "LIMITED"),
         "event_returned_field_inventory": {
-            item["event_name"]: list(item["fields_available"])
+            item["event_name"]: list(item["returned_fields"])
+            for item in evidence["event_coverage"]
+        },
+        "event_non_null_field_inventory": {
+            item["event_name"]: list(item["non_null_fields"])
+            for item in evidence["event_coverage"]
+        },
+        "event_null_only_field_inventory": {
+            item["event_name"]: list(item["null_only_fields"])
             for item in evidence["event_coverage"]
         },
         "event_preserved_field_inventory": {
