@@ -37,6 +37,18 @@ def test_empty_event_is_distinct_from_unavailable_and_failed():
     assert failed["capability_state"] == "PARSE_FAILED"
 
 
+def test_event_fields_distinguish_returned_non_null_null_only_and_missing():
+    coverage = event_coverage("player_hurt", True, [
+        {"tick": 1, "weapon": None, "attacker": "a"},
+        {"tick": 2, "weapon": None},
+    ])
+    assert coverage["returned_fields"] == ["attacker", "tick", "weapon"]
+    assert coverage["non_null_fields"] == ["attacker", "tick"]
+    assert coverage["null_only_fields"] == ["weapon"]
+    assert coverage["preserved_fields"] == coverage["returned_fields"]
+    assert coverage["fields_missing"] == ["attacker"]
+
+
 def test_raw_event_keeps_native_fields_and_false_zero_values():
     row = raw_events(material()["event_tables"])[0]
     assert row["raw_fields"]["unknown_native"] == 0
@@ -63,6 +75,19 @@ def test_finalize_binds_worker_and_demo_identity_and_digest():
     assert digest == evidence_digest(final)
     assert final["manifest"]["tick_sampling"]["coverage"] == "SAMPLE"
     assert final["forensic_inventory"]["all_event_inventory"] == sorted(material()["event_inventory"])
+    game_state = final["forensic_inventory"]
+    assert "health" in game_state["game_state_capability"]
+    assert game_state["game_state_returned"] == sorted(material()["tick_rows"][0])
+    assert game_state["game_state_observed_in_sample"] == game_state["game_state_returned"]
+
+
+def test_digest_is_key_order_stable_and_changes_with_raw_content():
+    first = build_raw_evidence(material(), output())
+    reordered = {key: first[key] for key in reversed(first)}
+    assert evidence_digest(first) == evidence_digest(reordered)
+    changed = json.loads(json.dumps(first))
+    changed["raw_player_info"][0]["name"] = "changed"
+    assert evidence_digest(first) != evidence_digest(changed)
 
 
 def test_round_player_material_is_only_projected_from_observed_tick_rows():

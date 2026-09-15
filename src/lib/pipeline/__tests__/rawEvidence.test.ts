@@ -209,7 +209,7 @@ describe("raw evidence contract", () => {
     const digest = await computeRawEvidenceDigest(unsigned);
     const signed = assertRawDemoEvidence({ ...unsigned, deterministic_digest: digest });
     expect((await runRawForensicAudit(signed)).reasons).not.toContain("raw_digest_mismatch");
-    const reordered = assertRawDemoEvidence({ deterministic_digest: digest, ...unsigned });
+    const reordered = assertRawDemoEvidence({ ...unsigned, deterministic_digest: digest });
     expect(await computeRawEvidenceDigest(reordered)).toBe(digest);
     const changed = assertRawDemoEvidence({ ...signed, raw_player_info: [{ name: "changed" }] });
     expect((await runRawForensicAudit(changed)).reasons).toContain("raw_digest_mismatch");
