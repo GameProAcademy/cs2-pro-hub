@@ -66,6 +66,10 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
         while True:
             try:
                 claim = await _bridge(client, settings, "claim", {"workerId": settings.worker_id})
+                logger.info(
+                    "claim_result status=%s job=%s message=%s attempt=%s",
+                    claim.get("status"), claim.get("job_id"), claim.get("message_id"), claim.get("attempt"),
+                )
                 if claim.get("status") != "claimed":
                     await asyncio.sleep(settings.queue_poll_seconds)
                     continue
