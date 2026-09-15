@@ -1,6 +1,7 @@
 import type { Json } from "@/integrations/supabase/types";
 
 export const RAW_EVIDENCE_VERSION = 1;
+export const RAW_EVIDENCE_AUDIT_VERSION = 1;
 export type RawEvidenceStatus = "PASS" | "FAIL" | "BLOCKED";
 export type RawFieldMappingStatus =
   | "MAPPED"
@@ -53,6 +54,12 @@ export interface RawDemoEvidenceManifest {
   tick_sample_rows: number;
   event_rows: number;
   estimated_evidence_bytes: number | null;
+  tick_sampling?: {
+    coverage: "SAMPLE";
+    limit: number;
+    strategy: string;
+    truncated: boolean;
+  };
 }
 export interface RawEventCoverage {
   event_name: string;
@@ -119,6 +126,24 @@ export interface RawDemoEvidence {
   field_mappings: RawFieldMapping[];
   gates: RawEvidenceGate[];
   deterministic_digest: string;
+  forensic_inventory?: Record<string, Json>;
+  raw_status?: RawEvidenceStatus;
+  raw_block_reasons?: string[];
+}
+
+export interface RawAdmissionDecision {
+  status: RawEvidenceStatus;
+  approved: boolean;
+  auditVersion: number;
+  reasons: string[];
+  evidenceDigest: string;
+  forensicInventory: Record<string, Json>;
+}
+
+export interface RawAdmissionApproval {
+  approved: true;
+  auditVersion: number;
+  evidenceDigest: string;
 }
 
 function array(value: unknown): unknown[] {
@@ -144,13 +169,7 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
   ];
   if (lists.some((item) => !Array.isArray(item))) throw new Error("invalid raw evidence sections");
   for (const mapping of raw.field_mappings ?? []) {
-    if (
-      (mapping.status === "RAW_ONLY_INTENTIONAL" && !mapping.reason?.trim()) ||
-      mapping.status === "UNMAPPED_BUT_AVAILABLE" ||
-      mapping.status === "PARSE_FAILED"
-    ) {
-      throw new Error(`RAW evidence has an unresolved mapping: ${mapping.raw_field}`);
-    }
+    if (!mapping?.raw_field || !mapping.status) throw new Error("invalid raw evidence mapping");
   }
   if (!/^[0-9a-f]{64}$/.test(raw.deterministic_digest ?? ""))
     throw new Error("invalid raw evidence digest");
@@ -160,4 +179,81 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
 export function evaluateRawEvidence(evidence: RawDemoEvidence): RawEvidenceGate[] {
   const gates = array(evidence.gates) as RawEvidenceGate[];
   return [...gates].sort((a, b) => a.gate.localeCompare(b.gate));
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
+/**
+ * Server-side forensic admission decision. Unknown material is retained in RAW
+ * and blocks Canonical; it is never discarded merely because mapping work is pending.
+ */
+export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDecision {
+  const reasons: string[] = [];
+  let status: RawEvidenceStatus = "PASS";
+
+  for (const mapping of evidence.field_mappings) {
+    if (mapping.status === "PARSE_FAILED") {
+      status = "FAIL";
+      reasons.push(`parse_failed:${mapping.raw_field}`);
+    } else if (mapping.status === "UNMAPPED_BUT_AVAILABLE") {
+      if (status !== "FAIL") status = "BLOCKED";
+      reasons.push(`unmapped_but_available:${mapping.raw_field}`);
+    } else if (mapping.status === "RAW_ONLY_INTENTIONAL" && !mapping.reason?.trim()) {
+      if (status !== "FAIL") status = "BLOCKED";
+      reasons.push(`raw_only_reason_missing:${mapping.raw_field}`);
+    }
+  }
+
+  for (const gate of evaluateRawEvidence(evidence)) {
+    if (gate.status === "FAIL") {
+      if (status !== "FAIL") status = "BLOCKED";
+      reasons.push(`gate:${gate.gate}`);
+    } else if (gate.status === "BLOCKED") {
+      if (status !== "FAIL") status = "BLOCKED";
+      reasons.push(`gate:${gate.gate}`);
+    }
+  }
+
+  const manifest = evidence.manifest;
+  const forensicInventory: Record<string, Json> = {
+    header_inventory: Object.keys(manifest).sort(),
+    player_info_inventory: evidence.player_coverage.map((row) => row.property).sort(),
+    game_state_inventory: evidence.tick_coverage.map((row) => row.property).sort(),
+    round_inventory: evidence.round_evidence.flatMap((row) => Object.keys(row)).filter(Boolean).sort(),
+    bomb_inventory: evidence.event_coverage.filter((row) => row.event_name.startsWith("bomb_")).map((row) => row.event_name).sort(),
+    damage_inventory: evidence.event_coverage.filter((row) => row.event_name.includes("damage") || row.event_name === "player_hurt").map((row) => row.event_name).sort(),
+    death_inventory: evidence.event_coverage.filter((row) => row.event_name === "player_death").map((row) => row.event_name),
+    weapon_inventory: evidence.event_coverage.filter((row) => row.event_name.includes("weapon") || row.event_name.startsWith("item_")).map((row) => row.event_name).sort(),
+    aggregate_inventory: evidence.field_mappings.filter((row) => row.raw_field.includes("_total")).map((row) => row.raw_field).sort(),
+    movement_inventory: evidence.tick_coverage.filter((row) => ["X", "Y", "Z", "velocity", "velocity_X", "velocity_Y", "velocity_Z", "yaw", "pitch"].includes(row.property)).map((row) => row.property).sort(),
+    all_event_inventory: manifest.event_inventory,
+    selected_event_extraction: manifest.selected_event_candidates,
+    actually_parsed_events: manifest.parsed_event_tables,
+    mapping_inventory: evidence.field_mappings as unknown as Json,
+    tick_sampling: (manifest.tick_sampling ?? {
+      coverage: "SAMPLE",
+      limit: evidence.tick_samples.length,
+      strategy: "event-boundary-stratified",
+      truncated: false,
+    }) as unknown as Json,
+  };
+
+  return {
+    status,
+    approved: status === "PASS",
+    auditVersion: RAW_EVIDENCE_AUDIT_VERSION,
+    reasons: unique(reasons),
+    evidenceDigest: evidence.deterministic_digest,
+    forensicInventory,
+  };
+}
+
+export function assertRawAdmissionApproved(
+  decision: RawAdmissionDecision,
+): asserts decision is RawAdmissionDecision & { approved: true; status: "PASS" } {
+  if (!decision.approved || decision.status !== "PASS") {
+    throw new Error(`RAW forensic admission denied: ${decision.reasons.join(",") || decision.status}`);
+  }
 }

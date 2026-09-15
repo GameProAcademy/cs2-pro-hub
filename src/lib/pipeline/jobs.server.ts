@@ -28,7 +28,13 @@ import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
-import { assertRawDemoEvidence } from "@/lib/pipeline/rawEvidence";
+import {
+  assertRawAdmissionApproved,
+  assertRawDemoEvidence,
+  runRawForensicAudit,
+  type RawAdmissionApproval,
+  type RawAdmissionDecision,
+} from "@/lib/pipeline/rawEvidence";
 import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
 import type { RawParserOutput } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
@@ -59,6 +65,7 @@ export type JobStage =
   | "queued"
   | "validating"
   | "parsing"
+  | "raw_audit"
   | "normalizing"
   | "metrics"
   | "persisting"
@@ -70,7 +77,7 @@ export type JobStage =
 
 export interface JobProcessResult {
   jobId: string;
-  status: "processed" | "failed" | "cancelled" | "skipped";
+  status: "processed" | "failed" | "cancelled" | "blocked_raw_audit" | "skipped";
   errorCode?: string;
   matchId?: string;
   /** Whether the canonical match got a per-player projection in this run. */
@@ -134,7 +141,7 @@ async function persistRawEvidence(args: {
   userId: string;
   expectedSha256: string | null;
   raw: import("@/lib/pipeline/types").RawParserOutput;
-}) {
+}): Promise<RawAdmissionDecision> {
   const evidence = assertRawDemoEvidence(args.raw.raw_evidence);
   const manifest = evidence.manifest;
   if (!args.expectedSha256 || manifest.demo_sha256 !== args.expectedSha256.toLowerCase()) {
@@ -149,6 +156,8 @@ async function persistRawEvidence(args: {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "raw evidence parser identity mismatch");
   }
   const db = await admin();
+  const decision = runRawForensicAudit(evidence);
+  const approvedAt = decision.approved ? new Date().toISOString() : null;
   const { error } = await db.from("raw_demo_evidence_reports").upsert(
     {
       job_id: args.jobId,
@@ -173,11 +182,53 @@ async function persistRawEvidence(args: {
       field_mappings: evidence.field_mappings as unknown as Json,
       gates: evidence.gates as unknown as Json,
       deterministic_digest: evidence.deterministic_digest,
+      forensic_inventory: decision.forensicInventory as unknown as Json,
+      raw_status: decision.status,
+      raw_block_reasons: decision.reasons as unknown as Json,
+      approved_for_canonical: decision.approved,
+      approved_at: approvedAt,
+      approved_by: decision.approved ? `server:raw-audit-v${decision.auditVersion}` : null,
+      audit_version: decision.auditVersion,
     },
     { onConflict: "job_id" },
   );
   if (error)
     throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
+  return decision;
+}
+
+async function blockForRawAudit(
+  jobId: string,
+  uploadId: string,
+  decision: RawAdmissionDecision,
+  durableClaim?: DurableJobClaim,
+): Promise<void> {
+  const db = await admin();
+  if (durableClaim) {
+    const { data, error } = await db.rpc("block_demo_job_raw_audit", {
+      _job_id: jobId,
+      _message_id: durableClaim.messageId,
+      _attempt: durableClaim.attempt,
+      _worker_id: durableClaim.workerId,
+      _reasons: decision.reasons,
+    });
+    if (error || !(data as { accepted?: boolean } | null)?.accepted) {
+      throw new PipelineError("JOB_STALE", error?.message ?? "RAW block rejected");
+    }
+    return;
+  }
+  await db.from("demo_jobs").update({
+    status: "blocked_raw_audit",
+    stage: "raw_audit",
+    error_code: "RAW_AUDIT_BLOCKED",
+    error_message: decision.reasons.join(",").slice(0, 500),
+    finished_at: new Date().toISOString(),
+  }).eq("id", jobId).eq("status", "processing");
+  await db.from("uploads").update({
+    status: "blocked_raw_audit",
+    error_code: "RAW_AUDIT_BLOCKED",
+    error_message: decision.reasons.join(",").slice(0, 500),
+  }).eq("id", uploadId);
 }
 
 /** Re-queues jobs stuck in `processing` beyond the stale window. */
@@ -356,7 +407,8 @@ export async function processJob(
 
     // RAW evidence is its own immutable audit layer. Persist it before the APP
     // contract is normalized or any canonical fact can be written.
-    await persistRawEvidence({
+    await setStage(jobId, "raw_audit");
+    const rawAudit = await persistRawEvidence({
       jobId,
       uploadId: job.upload_id,
       userId: job.user_id,
@@ -364,6 +416,16 @@ export async function processJob(
       raw,
     });
     await assertNotCancelled(jobId);
+    if (!rawAudit.approved) {
+      await blockForRawAudit(jobId, job.upload_id, rawAudit, durableClaim);
+      return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
+    }
+    assertRawAdmissionApproved(rawAudit);
+    const rawApproval: RawAdmissionApproval = {
+      approved: true,
+      auditVersion: rawAudit.auditVersion,
+      evidenceDigest: rawAudit.evidenceDigest,
+    };
 
     await setStage(jobId, "normalizing");
     assertDeadline();
@@ -469,6 +531,7 @@ export async function processJob(
         ownerPlayerId: player?.id ?? null,
         uploadId: job.upload_id,
         attachMatchId,
+        rawApproval,
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : undefined;

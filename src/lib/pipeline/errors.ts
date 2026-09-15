@@ -45,6 +45,7 @@ export const PIPELINE_ERROR_CODES = [
   "JOB_DEADLINE_EXCEEDED",
   // The parser worker answered with more bytes than the pipeline accepts.
   "PARSER_PAYLOAD_TOO_LARGE",
+  "RAW_AUDIT_BLOCKED",
   // The demo is valid but carries too few usable rounds to analyse honestly.
   "DEMO_INSUFFICIENT_SAMPLE",
   "RESOURCE_LIMIT",
@@ -86,6 +87,7 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   "PARSER_FILE_SIZE_MISMATCH",
   // GATE 1E.1 — a mismatched parser build stays mismatched on every retry.
   "PARSER_IDENTITY_MISMATCH",
+  "RAW_AUDIT_BLOCKED",
 ]);
 
 export class PipelineError extends Error {
