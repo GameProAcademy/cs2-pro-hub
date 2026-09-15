@@ -21,6 +21,11 @@ const { CanonicalPersistenceError, persistCanonicalObservation } = await import(
 );
 
 const digest = "b".repeat(64);
+const auditEvidence = {
+  ...syntheticParserOutput.raw_evidence,
+  raw_player_info: [],
+  deterministic_digest: digest,
+};
 const bundle = demoToCanonicalBundle({
   parsed: normalizeParserOutput(syntheticParserOutput),
   fingerprint: digest,
@@ -56,7 +61,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditVersion: 1, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion: 2, evidenceDigest: digest },
       }),
     ).rejects.toMatchObject({ code: "RAW_ADMISSION_REQUIRED" });
     expect(rpc).not.toHaveBeenCalled();
@@ -65,9 +70,11 @@ describe("Canonical RAW admission defense", () => {
   it("allows Canonical only when persisted approval, version, and digest match", async () => {
     maybeSingle.mockResolvedValue({
       data: {
+        ...auditEvidence,
         raw_status: "PASS",
+        raw_audit_status: "APPROVED",
         approved_for_canonical: true,
-        audit_version: 1,
+        audit_version: 2,
         deterministic_digest: digest,
       },
       error: null,
@@ -85,7 +92,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditVersion: 1, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion: 2, evidenceDigest: digest },
       }),
     ).resolves.toMatchObject({ matchId: "match-1", matchSourceId: "source-1" });
     expect(rpc).toHaveBeenCalledTimes(1);

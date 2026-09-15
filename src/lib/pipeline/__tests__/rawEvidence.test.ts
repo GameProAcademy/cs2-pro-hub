@@ -195,6 +195,11 @@ describe("raw evidence contract", () => {
         { gate: "Z", status: "FAIL", reasons: [] },
       ],
     });
-    expect(runRawForensicAudit(blocked).reasons).toEqual(["gate:Z"]);
+    expect(runRawForensicAudit(blocked).reasons).toEqual([
+      "audit_inventory_missing",
+      "audit_mapping_inventory_empty",
+      "gate:Z",
+      "tick_coverage_mischaracterized",
+    ]);
   });
 });

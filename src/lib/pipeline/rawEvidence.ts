@@ -281,7 +281,7 @@ export function runRawForensicAudit(evidence: RawDemoEvidence): RawAdmissionDeci
   for (const field of rawPlayerFields) {
     if (!playerMappings.has(field)) reasons.push(`returned_field_not_in_mapping:player.${field}`);
   }
-  if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction === true) {
+  if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction !== false) {
     reasons.push("tick_coverage_mischaracterized");
   }
   if (reasons.length > 0 && status !== "FAIL") status = "BLOCKED";
