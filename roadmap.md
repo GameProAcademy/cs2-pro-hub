@@ -862,12 +862,12 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] E2E forense com novo `.dem`, Canonical real e deployment Railway permanecem **NOT PROVEN / PENDING**; 2.7.2D.3 continua **NOT CLOSED**.
 - [ ] Métricas, features, DNA, diagnóstico e AI Coach permanecem **BLOCKED** até essa prova real.
 
-### FASE 2.7.2D.3-I — RAW forensic exhaustiveness + independent auditor hardening — IMPLEMENTATION IN PROGRESS / NOT CLOSED UNTIL REVIEW
+### FASE 2.7.2D.3-I — RAW forensic exhaustiveness + independent auditor hardening — IMPLEMENTED / NOT CLOSED UNTIL REVIEW
 
-- [ ] Preservar todos os eventos e campos efetivamente retornados, separando capability, seleção, retorno e mapping.
-- [ ] Tornar a auditoria independente e fail-closed para audit/manifest/inventory vazios ou incompletos.
-- [ ] Versionar RAW por tentativa sem overwrite silencioso e exigir `APPROVED` nas duas defesas Canonical.
-- [ ] Cobrir os 18 cenários obrigatórios e dois fluxos sintéticos de integração.
+- [x] Preservar todos os eventos e campos efetivamente retornados, separando capability, seleção, retorno e mapping.
+- [x] Tornar a auditoria independente e fail-closed para audit/manifest/inventory vazios ou incompletos.
+- [x] Versionar RAW por tentativa sem overwrite silencioso e exigir `APPROVED` nas duas defesas Canonical.
+- [x] Cobrir cenários RAW/Canonical/worker focados e fluxos sintéticos, sem processar demo real.
 - [ ] Revisão técnica final pendente; E2E real e Railway permanecem fora desta fase.
 
 ### FASE 2.7.2D.3 — Durable dispatch APP → Queue → Railway Worker — IMPLEMENTATION COMPLETE / REAL E2E NOT YET PROVEN
