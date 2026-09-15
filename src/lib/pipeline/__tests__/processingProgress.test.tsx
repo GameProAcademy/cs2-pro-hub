@@ -48,6 +48,7 @@ describe("estimated demo processing progress", () => {
       queued: 5,
       validating: 15,
       parsing: 40,
+      raw_audit: 52,
       normalizing: 60,
       metrics: 78,
       persisting: 90,
@@ -119,10 +120,11 @@ describe("demo processing experience", () => {
     }
   });
 
-  it("preserves the existing single four-second polling loop", () => {
+  it("keeps the history poll at four seconds and the submitted-job poll separate", () => {
     const panel = readFileSync(join(root, "src/components/pipeline/DemoIngestPanel.tsx"), "utf8");
-    expect(panel.match(/refetchInterval/g)).toHaveLength(1);
+    expect(panel.match(/refetchInterval/g)).toHaveLength(2);
     expect(panel).toMatch(/\? 4000\s*: false/);
+    expect(panel).toMatch(/\? 1500\s*: false/);
     expect(panel).toContain('job.status === "cancel_requested"');
   });
 });

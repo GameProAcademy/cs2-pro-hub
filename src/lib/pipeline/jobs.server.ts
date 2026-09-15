@@ -463,8 +463,8 @@ export async function processJob(
     // Metrics target: the DEMO player's own identifier — never a fabricated one.
     const steamId = attachment.state === "attached" ? attachment.steamId : null;
 
-    // FASE 2.7 — the canonical engine is the ONLY writer of canonical facts and
-    // it runs FIRST. It resolves/attaches the observation transactionally and
+    // FASE 2.7 — after RAW evidence passes explicit admission, the canonical
+    // engine is the ONLY writer of canonical facts. It resolves/attaches the observation transactionally and
     // returns the canonical match id; the demo no longer inserts a match of its
     // own, so a demo that converges with FACEIT cannot create a second row.
     await setStage(jobId, "persisting");
