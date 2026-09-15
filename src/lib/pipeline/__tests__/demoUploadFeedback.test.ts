@@ -45,6 +45,14 @@ describe("FASE 2.7.2D-C — demo upload feedback", () => {
     },
   );
 
+  it("uses replacement feedback instead of the healthy duplicate message", () => {
+    const feedback = getDemoUploadFeedback(
+      result({ duplicate: true, duplicateStatus: "failed", newAttempt: true }),
+    );
+    expect(feedback.titleKey).toBe("pipeline.upload.replacementTitle");
+    expect(feedback.bodyKey).toBe("pipeline.upload.replacementBody");
+  });
+
   it("enables participant confirmation only after an explicit selection", () => {
     expect(isParticipantConfirmationDisabled(null, false)).toBe(true);
     expect(isParticipantConfirmationDisabled("participant-1", false)).toBe(false);
@@ -57,6 +65,11 @@ describe("FASE 2.7.2D-C — demo upload feedback", () => {
       "pipeline.upload.retryFailedBody",
       "pipeline.upload.retryCancelledBody",
       "pipeline.upload.duplicatePendingBody",
+      "pipeline.upload.replacementTitle",
+      "pipeline.upload.replacementBody",
+      "pipeline.history.attempt",
+      "pipeline.history.replacement",
+      "pipeline.history.superseded",
       "pipeline.identify.empty",
     ] as const;
     expect(Object.keys(dictionaries)).toHaveLength(5);

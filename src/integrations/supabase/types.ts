@@ -243,6 +243,7 @@ export type Database = {
           attachment_reason: string | null
           attachment_source: string | null
           attachment_state: string
+          attempt_number: number
           cancel_requested_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -277,6 +278,7 @@ export type Database = {
           quality_flags: Json
           queue_message_id: number | null
           queued_at: string
+          replacement_reason: string | null
           resolved_steam_id: string | null
           retain_until: string | null
           retry_count: number
@@ -288,6 +290,8 @@ export type Database = {
           status: Database["public"]["Enums"]["upload_status"]
           storage_deleted_at: string | null
           storage_path: string | null
+          superseded_by_job_id: string | null
+          supersedes_job_id: string | null
           updated_at: string
           upload_id: string
           user_id: string
@@ -304,6 +308,7 @@ export type Database = {
           attachment_reason?: string | null
           attachment_source?: string | null
           attachment_state?: string
+          attempt_number?: number
           cancel_requested_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -338,6 +343,7 @@ export type Database = {
           quality_flags?: Json
           queue_message_id?: number | null
           queued_at?: string
+          replacement_reason?: string | null
           resolved_steam_id?: string | null
           retain_until?: string | null
           retry_count?: number
@@ -349,6 +355,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["upload_status"]
           storage_deleted_at?: string | null
           storage_path?: string | null
+          superseded_by_job_id?: string | null
+          supersedes_job_id?: string | null
           updated_at?: string
           upload_id: string
           user_id: string
@@ -365,6 +373,7 @@ export type Database = {
           attachment_reason?: string | null
           attachment_source?: string | null
           attachment_state?: string
+          attempt_number?: number
           cancel_requested_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -399,6 +408,7 @@ export type Database = {
           quality_flags?: Json
           queue_message_id?: number | null
           queued_at?: string
+          replacement_reason?: string | null
           resolved_steam_id?: string | null
           retain_until?: string | null
           retry_count?: number
@@ -410,6 +420,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["upload_status"]
           storage_deleted_at?: string | null
           storage_path?: string | null
+          superseded_by_job_id?: string | null
+          supersedes_job_id?: string | null
           updated_at?: string
           upload_id?: string
           user_id?: string
@@ -435,6 +447,20 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_jobs_superseded_by_job_id_fkey"
+            columns: ["superseded_by_job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_jobs_supersedes_job_id_fkey"
+            columns: ["supersedes_job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
             referencedColumns: ["id"]
           },
           {
@@ -2590,6 +2616,7 @@ export type Database = {
       uploads: {
         Row: {
           analysis_version: string | null
+          attempt_number: number
           created_at: string
           demo_sha256: string | null
           error_code: string | null
@@ -2602,15 +2629,18 @@ export type Database = {
           parser_version: string | null
           processed_at: string | null
           processing_duration_ms: number | null
+          replacement_reason: string | null
           schema_version: number | null
           source: Database["public"]["Enums"]["upload_source"]
           status: Database["public"]["Enums"]["upload_status"]
           storage_path: string | null
+          supersedes_job_id: string | null
           type: Database["public"]["Enums"]["upload_type"]
           user_id: string
         }
         Insert: {
           analysis_version?: string | null
+          attempt_number?: number
           created_at?: string
           demo_sha256?: string | null
           error_code?: string | null
@@ -2623,15 +2653,18 @@ export type Database = {
           parser_version?: string | null
           processed_at?: string | null
           processing_duration_ms?: number | null
+          replacement_reason?: string | null
           schema_version?: number | null
           source?: Database["public"]["Enums"]["upload_source"]
           status?: Database["public"]["Enums"]["upload_status"]
           storage_path?: string | null
+          supersedes_job_id?: string | null
           type: Database["public"]["Enums"]["upload_type"]
           user_id: string
         }
         Update: {
           analysis_version?: string | null
+          attempt_number?: number
           created_at?: string
           demo_sha256?: string | null
           error_code?: string | null
@@ -2644,14 +2677,23 @@ export type Database = {
           parser_version?: string | null
           processed_at?: string | null
           processing_duration_ms?: number | null
+          replacement_reason?: string | null
           schema_version?: number | null
           source?: Database["public"]["Enums"]["upload_source"]
           status?: Database["public"]["Enums"]["upload_status"]
           storage_path?: string | null
+          supersedes_job_id?: string | null
           type?: Database["public"]["Enums"]["upload_type"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "uploads_supersedes_job_id_fkey"
+            columns: ["supersedes_job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "uploads_user_id_fkey"
             columns: ["user_id"]

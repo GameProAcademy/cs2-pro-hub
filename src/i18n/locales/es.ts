@@ -582,6 +582,9 @@ export const es: Dictionary = {
   "pipeline.history.map": "Mapa",
   "pipeline.history.result": "Resultado",
   "pipeline.history.rounds": "Rondas",
+  "pipeline.history.attempt": "Intento {number}",
+  "pipeline.history.replacement": "Se creó un nuevo intento a partir de uno anterior.",
+  "pipeline.history.superseded": "Este intento se conservó y fue sustituido por uno nuevo.",
   "pipeline.history.result.win": "Victoria",
   "pipeline.history.result.loss": "Derrota",
   "pipeline.history.result.draw": "Empate",
@@ -625,6 +628,9 @@ export const es: Dictionary = {
     "Ya has enviado esta demo anteriormente y fue cancelada. Vamos a procesarla de nuevo.",
   "pipeline.upload.duplicatePendingTitle": "Demo ya recibida",
   "pipeline.upload.duplicatePendingBody": "Esta demo ya está en la cola de procesamiento.",
+  "pipeline.upload.replacementTitle": "Nuevo intento creado",
+  "pipeline.upload.replacementBody":
+    "El intento anterior se conservó. Esta demo entró en la cola como un nuevo procesamiento.",
   "pipeline.corrupted.title": "No pudimos analizar esta demo",
   "pipeline.corrupted.body":
     "El archivo de la demo parece incompleto o corrupto. Para no generar estadísticas ni diagnósticos incorrectos, no analizamos partidas incompletas. Vuelve a enviar la demo original/completa e inténtalo de nuevo.",

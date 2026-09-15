@@ -52,6 +52,10 @@ export interface SubmitDemoResult {
   jobId: string | null;
   duplicate: boolean;
   duplicateStatus: DuplicateStatus;
+  newAttempt?: boolean;
+  attemptNumber?: number;
+  supersedesJobId?: string | null;
+  replacementReason?: "stale" | "failed" | "cancelled" | null;
 }
 
 export interface SubmitDemoDependencies {
@@ -62,6 +66,10 @@ export interface SubmitDemoDependencies {
     duplicate: boolean;
     duplicateStatus: DuplicateStatus;
     existingJobId: string | null;
+    newAttempt: boolean;
+    attemptNumber: number;
+    supersedesJobId: string | null;
+    replacementReason: "stale" | "failed" | "cancelled" | null;
   }>;
   upload(file: File, storagePath: string, options: ResumableUploadOptions): Promise<void>;
   enqueue(input: { data: { uploadId: string } }): Promise<{ jobId: string }>;
@@ -127,14 +135,16 @@ export async function submitDemoWithDependencies(
       jobId: slot.existingJobId,
       duplicate: true,
       duplicateStatus: "processed",
+      newAttempt: false,
+      attemptNumber: slot.attemptNumber,
+      supersedesJobId: null,
+      replacementReason: null,
     };
   }
 
-  if (slot.duplicate && (slot.duplicateStatus === "failed" || slot.duplicateStatus === "cancelled")) {
-    // FAILED/CANCELLED is intentionally retryable. Reuse the deterministic
-    // storage path and the same demo_jobs row. The upload is replaced only for
-    // a terminal unsuccessful attempt; processed/pending data is never touched.
-    if (!slot.existingJobId) throw new DemoUploadError("PROCESSING_ERROR", "duplicate job missing");
+  if (slot.newAttempt) {
+    // Every terminal/stale replacement receives a distinct upload path and job.
+    // The previous bytes and job remain immutable historical evidence.
     try {
       await dependencies.upload(file, slot.storagePath, {
         ...(options.signal ? { signal: options.signal } : {}),
@@ -154,8 +164,6 @@ export async function submitDemoWithDependencies(
       );
     }
 
-    // The server-side enqueue RPC atomically reactivates the existing failed or
-    // cancelled job after the new bytes are safely in storage.
     const job = await dependencies.enqueue({ data: { uploadId: slot.uploadId } });
     options.onProgress?.({
       state: "completed",
@@ -164,9 +172,13 @@ export async function submitDemoWithDependencies(
       percent: 100,
     });
     return {
-      jobId: job.jobId || slot.existingJobId,
+      jobId: job.jobId,
       duplicate: true,
       duplicateStatus: slot.duplicateStatus,
+      newAttempt: true,
+      attemptNumber: slot.attemptNumber,
+      supersedesJobId: slot.supersedesJobId,
+      replacementReason: slot.replacementReason,
     };
   }
 
@@ -182,6 +194,10 @@ export async function submitDemoWithDependencies(
       jobId: slot.existingJobId,
       duplicate: true,
       duplicateStatus: slot.duplicateStatus,
+      newAttempt: false,
+      attemptNumber: slot.attemptNumber,
+      supersedesJobId: slot.supersedesJobId,
+      replacementReason: slot.replacementReason,
     };
   }
 
@@ -211,7 +227,15 @@ export async function submitDemoWithDependencies(
     bytesTotal: file.size,
     percent: 100,
   });
-  return { jobId: job.jobId, duplicate: false, duplicateStatus: null };
+  return {
+    jobId: job.jobId,
+    duplicate: false,
+    duplicateStatus: null,
+    newAttempt: false,
+    attemptNumber: slot.attemptNumber,
+    supersedesJobId: null,
+    replacementReason: null,
+  };
 }
 
 export async function pollJob(jobId: string): Promise<DemoJobView | null> {

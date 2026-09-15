@@ -584,6 +584,9 @@ export const ptBR = {
   "pipeline.history.map": "Mapa",
   "pipeline.history.result": "Resultado",
   "pipeline.history.rounds": "Rounds",
+  "pipeline.history.attempt": "Tentativa {number}",
+  "pipeline.history.replacement": "Nova tentativa criada a partir de uma tentativa anterior.",
+  "pipeline.history.superseded": "Esta tentativa foi preservada e substituída por uma nova.",
   "pipeline.history.result.win": "Vitória",
   "pipeline.history.result.loss": "Derrota",
   "pipeline.history.result.draw": "Empate",
@@ -627,6 +630,9 @@ export const ptBR = {
     "Você já enviou esta demo anteriormente e ela foi cancelada. Vamos processá-la novamente.",
   "pipeline.upload.duplicatePendingTitle": "Demo já recebida",
   "pipeline.upload.duplicatePendingBody": "Esta demo já está na fila de processamento.",
+  "pipeline.upload.replacementTitle": "Nova tentativa criada",
+  "pipeline.upload.replacementBody":
+    "A tentativa anterior foi preservada. Esta demo entrou na fila com um novo processamento.",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O arquivo da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la novamente.",

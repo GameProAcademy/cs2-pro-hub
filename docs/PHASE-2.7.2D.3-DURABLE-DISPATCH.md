@@ -59,6 +59,16 @@ absence from a sample never means parser unavailability.
 - Terminal, cancelled, malformed, and stale messages are archived or rejected.
 - Existing jobs were not backfilled. `durable_dispatch_enabled` activates only
   for jobs inserted or explicitly moved into `pending` after this migration.
+- The SHA-256 identifies the demo bytes, while `attempt_number` identifies a
+  user-visible processing attempt. `retry_count` remains internal to one job.
+- A processed attempt or a healthy pending/processing attempt remains
+  idempotent. A cancelled, failed, or lease-and-heartbeat-confirmed stale
+  attempt is preserved and linked to one new upload, storage path, and job.
+- Replacement is serialized by owner plus SHA-256. The stale queue message is
+  archived before the old job becomes terminal, so old heartbeats and
+  completions continue to fail the existing claim checks.
+- `supersedes_job_id` and `superseded_by_job_id` retain both sides of the
+  attempt relationship for history and audit without touching RAW evidence.
 
 ## Security
 

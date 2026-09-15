@@ -581,6 +581,9 @@ export const ptPT: Dictionary = {
   "pipeline.history.map": "Mapa",
   "pipeline.history.result": "Resultado",
   "pipeline.history.rounds": "Rondas",
+  "pipeline.history.attempt": "Tentativa {number}",
+  "pipeline.history.replacement": "Foi criada uma nova tentativa a partir de uma tentativa anterior.",
+  "pipeline.history.superseded": "Esta tentativa foi preservada e substituída por uma nova.",
   "pipeline.history.result.win": "Vitória",
   "pipeline.history.result.loss": "Derrota",
   "pipeline.history.result.draw": "Empate",
@@ -624,6 +627,9 @@ export const ptPT: Dictionary = {
     "Já enviou esta demo anteriormente e ela foi cancelada. Vamos processá-la novamente.",
   "pipeline.upload.duplicatePendingTitle": "Demo já recebida",
   "pipeline.upload.duplicatePendingBody": "Esta demo já está na fila de processamento.",
+  "pipeline.upload.replacementTitle": "Nova tentativa criada",
+  "pipeline.upload.replacementBody":
+    "A tentativa anterior foi preservada. Esta demo entrou na fila com um novo processamento.",
   "pipeline.corrupted.title": "Não conseguimos analisar esta demo",
   "pipeline.corrupted.body":
     "O ficheiro da demo parece estar incompleto ou corrompido. Para evitar gerar estatísticas ou diagnósticos incorretos, não analisamos partidas incompletas. Envie novamente a demo original/completa e tente processá-la outra vez.",

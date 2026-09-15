@@ -54,6 +54,10 @@ describe("Gate 1D upload boundaries", () => {
           duplicate: false,
           duplicateStatus: null,
           existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 1,
+          supersedesJobId: null,
+          replacementReason: null,
         };
       },
       upload: async () => {
@@ -89,7 +93,7 @@ describe("Gate 1D upload boundaries", () => {
     }
   });
 
-  for (const status of ["pending", "processed", "failed"] as const) {
+  for (const status of ["pending", "processed"] as const) {
     it(`does not overwrite storage or enqueue an existing ${status} duplicate`, async () => {
       const { calls, dependencies } = flow({
         create: async () => {
@@ -100,19 +104,57 @@ describe("Gate 1D upload boundaries", () => {
             duplicate: true,
             duplicateStatus: status,
             existingJobId: "existing-job",
+            newAttempt: false,
+            attemptNumber: 1,
+            supersedesJobId: null,
+            replacementReason: null,
           };
         },
       });
       await expect(
         submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
-      ).resolves.toEqual({ jobId: "existing-job", duplicate: true });
+      ).resolves.toMatchObject({ jobId: "existing-job", duplicate: true, newAttempt: false });
       expect(calls).toEqual(["hash", "create"]);
     });
   }
+
+  it("uploads isolated bytes and polls the new job for a stale replacement", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "22222222-2222-4222-8222-222222222222",
+          storagePath: "user-id/22222222-2222-4222-8222-222222222222.dem",
+          duplicate: true,
+          duplicateStatus: "failed",
+          existingJobId: null,
+          newAttempt: true,
+          attemptNumber: 2,
+          supersedesJobId: "old-job",
+          replacementReason: "stale",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        return { jobId: "new-job" };
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).resolves.toMatchObject({
+      jobId: "new-job",
+      duplicate: true,
+      newAttempt: true,
+      attemptNumber: 2,
+      supersedesJobId: "old-job",
+      replacementReason: "stale",
+    });
+    expect(calls).toEqual(["hash", "create", "upload", "enqueue"]);
+  });
 });
 
 describe("Gate 1D parser identity", () => {
-  const deployedRevision = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
+  const deployedRevision = "git:e6c4257864b0b77416838d09acd0b92032fbb55d";
   const payload = () => ({
     parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
