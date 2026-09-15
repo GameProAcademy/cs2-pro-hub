@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ME, syntheticParserOutput } from "@/lib/pipeline/__tests__/fixture";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
+import { runRawForensicAudit } from "@/lib/pipeline/rawEvidence";
 import { demoToCanonicalBundle } from "../adapters/demo.adapter";
 
 const maybeSingle = vi.fn();
@@ -21,11 +22,37 @@ const { CanonicalPersistenceError, persistCanonicalObservation } = await import(
 );
 
 const digest = "b".repeat(64);
+const requiredInventory = Object.fromEntries([
+  "header_inventory", "player_info_inventory", "game_state_inventory", "round_inventory",
+  "bomb_inventory", "damage_inventory", "death_inventory", "weapon_inventory",
+  "grenade_inventory", "usercmd_inventory", "teams_inventory", "score_inventory",
+  "aggregate_inventory", "movement_inventory", "all_event_inventory", "selected_event_extraction",
+  "actually_parsed_events", "event_returned_field_inventory", "event_preserved_field_inventory",
+  "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
+  "mapping_inventory", "tick_sampling",
+].map((key) => [key, key === "tick_sampling" ? { coverage: "SAMPLE" } : []]));
 const auditEvidence = {
-  ...syntheticParserOutput.raw_evidence,
-  raw_player_info: [],
+  evidence_version: 1,
+  manifest: {
+    parser_name: "demoparser2", parser_version: "0.42.0", parser_revision: "git:a",
+    contract_version: 1, demo_sha256: "a".repeat(64), file_size: 1, map: null,
+    patch_version: null, build_number: null, demo_version_name: null, demo_version_guid: null,
+    demo_file_stamp: null, server_name: null, client_name: null, game_directory: null,
+    tickrate: null, playback_ticks: 1, playback_time: null, playback_frames: null,
+    players_count: 0, rounds_count: 0, events_count: 0, event_inventory_success: true,
+    event_inventory_count: 0, first_tick: null, last_tick: null, warnings: [], partial_parse: false,
+    extraction_confidence: null, event_inventory: [], selected_event_candidates: [],
+    parsed_event_tables: [], tick_sample_rows: 0, event_rows: 0, estimated_evidence_bytes: 1,
+    tick_sampling: { coverage: "SAMPLE" as const, limit: 1, strategy: "test", truncated: false, full_extraction: false as const },
+  },
+  event_coverage: [], raw_events: [], raw_player_info: [], player_coverage: [], tick_coverage: [],
+  tick_samples: [], grenade_coverage: [], grenade_samples: [], round_evidence: [], economy_coverage: [],
+  field_mappings: [{ raw_field: "header.map_name", app_field: "header.map", canonical_field: "match_maps.map", status: "MAPPED" as const, reason: null }],
+  gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" as const, reasons: [] }],
+  forensic_inventory: requiredInventory,
   deterministic_digest: digest,
 };
+const auditVersion = runRawForensicAudit(auditEvidence).auditVersion;
 const bundle = demoToCanonicalBundle({
   parsed: normalizeParserOutput(syntheticParserOutput),
   fingerprint: digest,
@@ -61,7 +88,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion: 2, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: digest },
       }),
     ).rejects.toMatchObject({ code: "RAW_ADMISSION_REQUIRED" });
     expect(rpc).not.toHaveBeenCalled();
@@ -74,7 +101,7 @@ describe("Canonical RAW admission defense", () => {
         raw_status: "PASS",
         raw_audit_status: "APPROVED",
         approved_for_canonical: true,
-        audit_version: 2,
+        audit_version: auditVersion,
         deterministic_digest: digest,
       },
       error: null,
@@ -92,7 +119,7 @@ describe("Canonical RAW admission defense", () => {
       persistCanonicalObservation({
         bundle,
         uploadId: "upload-1",
-        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion: 2, evidenceDigest: digest },
+        rawApproval: { approved: true, auditStatus: "APPROVED", auditVersion, evidenceDigest: digest },
       }),
     ).resolves.toMatchObject({ matchId: "match-1", matchSourceId: "source-1" });
     expect(rpc).toHaveBeenCalledTimes(1);
