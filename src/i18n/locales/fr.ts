@@ -634,6 +634,7 @@ export const fr: Dictionary = {
   "pipeline.status.failed": "Échec",
   "pipeline.status.cancelRequested": "Annulation",
   "pipeline.status.cancelled": "Annulée",
+  "pipeline.status.rawAuditBlocked": "Révision nécessaire",
   "pipeline.processing.title": "Traitement de la demo",
   "pipeline.processing.progress": "Progression estimée",
   "pipeline.processing.progressLabel": "Progression estimée du traitement de la demo",
@@ -647,6 +648,12 @@ export const fr: Dictionary = {
   "pipeline.processing.parsing.title": "Lecture de votre match",
   "pipeline.processing.parsing.body":
     "Nous lisons les rounds, les joueurs, les événements et les informations du match.",
+  "pipeline.processing.rawAudit.title": "Audit des preuves de la demo",
+  "pipeline.processing.rawAudit.body":
+    "Nous vérifions la couverture RAW avant de créer les données du match.",
+  "pipeline.processing.rawAuditBlocked.title": "Analyse retenue pour révision",
+  "pipeline.processing.rawAuditBlocked.body":
+    "Les preuves RAW ont été conservées, mais ne sont pas approuvées pour créer les données du match.",
   "pipeline.processing.normalizing.title": "Organisation de vos actions",
   "pipeline.processing.normalizing.body": "Nous organisons les informations de votre match.",
   "pipeline.processing.metrics.title": "Calcul de vos métriques",
@@ -699,6 +706,8 @@ export const fr: Dictionary = {
     "Le traitement a dépassé son budget de temps et a été arrêté.",
   "pipeline.error.PARSER_PAYLOAD_TOO_LARGE":
     "Le résultat du traitement était trop volumineux pour être accepté.",
+  "pipeline.error.RAW_AUDIT_BLOCKED":
+    "Les preuves de la demo doivent être révisées avant de créer les données du match.",
   "pipeline.error.PARSER_CONFIG_ERROR":
     "Le service de traitement n'est pas configuré correctement.",
   "pipeline.error.PARSER_UNAUTHORIZED": "Le service de traitement a refusé l'authentification.",

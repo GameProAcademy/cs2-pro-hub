@@ -119,4 +119,53 @@ describe("raw evidence contract", () => {
     });
     expect(runRawForensicAudit(failed).status).toBe("FAIL");
   });
+
+  it("keeps unavailable capabilities distinct from parse failures", () => {
+    const unavailable = assertRawDemoEvidence({
+      ...evidence,
+      gates: [],
+      event_coverage: [{
+        event_name: "future_event", available: false, parse_attempted: false,
+        parse_success: false, row_count: null, first_tick: null, last_tick: null,
+        first_round: null, last_round: null, fields_available: [], fields_missing: [],
+        error_type: null, error_message_safe: null, capability_state: "NOT_PRESENT_IN_DEMO",
+      }],
+    });
+    expect(runRawForensicAudit(unavailable).status).toBe("PASS");
+  });
+
+  it("catalogues every required forensic inventory family", () => {
+    const inventoried = assertRawDemoEvidence({
+      ...evidence,
+      gates: [],
+      player_coverage: [
+        { property: "team_num", available: true, rows: 1, null_percent: 0, min: 2, max: 2, sample: 2 },
+        { property: "score", available: true, rows: 1, null_percent: 0, min: 4, max: 4, sample: 4 },
+      ],
+      tick_coverage: [
+        { property: "X", available: true, rows: 1, null_percent: 0, min: 0, max: 0, sample: 0 },
+        { property: "shots_fired", available: true, rows: 1, null_percent: 0, min: 0, max: 0, sample: 0 },
+      ],
+      grenade_coverage: [
+        { property: "grenade_type", available: true, rows: 1, null_percent: 0, min: null, max: null, sample: "smoke" },
+      ],
+    });
+    const inventory = runRawForensicAudit(inventoried).forensicInventory;
+    expect(inventory["grenade_inventory"]).toEqual(["grenade_type"]);
+    expect(inventory["usercmd_inventory"]).toEqual(["shots_fired"]);
+    expect(inventory["teams_inventory"]).toEqual(["team_num"]);
+    expect(inventory["score_inventory"]).toEqual(["score"]);
+    expect(inventory["movement_inventory"]).toEqual(["X"]);
+  });
+
+  it("deduplicates and sorts block reasons deterministically", () => {
+    const blocked = assertRawDemoEvidence({
+      ...evidence,
+      gates: [
+        { gate: "Z", status: "BLOCKED", reasons: [] },
+        { gate: "Z", status: "FAIL", reasons: [] },
+      ],
+    });
+    expect(runRawForensicAudit(blocked).reasons).toEqual(["gate:Z"]);
+  });
 });

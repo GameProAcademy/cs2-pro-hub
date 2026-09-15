@@ -177,3 +177,28 @@ def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
     assert "unmapped_but_available:player_death.unknown_native" in final["raw_block_reasons"]
     assert any(item["raw_field"] == "player_death.unknown_native"
                for item in final["forensic_inventory"]["mapping_inventory"])
+
+
+def test_forensic_inventory_has_explicit_grenade_usercmd_team_and_score_families():
+    evidence = build_raw_evidence(material(), output())
+    evidence["grenade_coverage"] = [{"property": "grenade_type"}]
+    evidence["tick_coverage"] = [{"property": "shots_fired"}, {"property": "X"}]
+    evidence["player_coverage"] = [{"property": "team_num"}, {"property": "score"}]
+    final = finalize_evidence(evidence,
+                              parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+                              contract_version=1, demo_sha256="a" * 64, file_size=99)
+    inventory = final["forensic_inventory"]
+    assert inventory["grenade_inventory"] == ["grenade_type"]
+    assert inventory["usercmd_inventory"] == ["shots_fired"]
+    assert inventory["teams_inventory"] == ["team_num"]
+    assert inventory["score_inventory"] == ["score"]
+    assert inventory["movement_inventory"] == ["X"]
+
+
+def test_not_present_event_is_not_itself_a_raw_audit_failure():
+    evidence = build_raw_evidence(material(), output())
+    evidence["event_coverage"] = [event_coverage("not_in_demo", False, None)]
+    evidence["field_mappings"] = []
+    evidence["gates"] = []
+    from raw_evidence import raw_audit_status
+    assert raw_audit_status(evidence) == ("PASS", [])
