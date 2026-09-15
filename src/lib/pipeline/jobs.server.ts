@@ -199,12 +199,16 @@ async function persistRawEvidence(args: {
   if (error?.code === "23505") {
     const { data: existing, error: existingError } = await db
       .from("raw_demo_evidence_reports")
-      .select("deterministic_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
+      .select("deterministic_digest, audited_evidence_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
       .eq("job_id", args.jobId)
       .eq("attempt", args.attempt)
       .eq("evidence_version", evidence.evidence_version)
       .maybeSingle();
-    if (existingError || !existing || existing.deterministic_digest !== evidence.deterministic_digest) {
+    if (
+      existingError || !existing ||
+      existing.deterministic_digest !== evidence.deterministic_digest ||
+      existing.audited_evidence_digest !== evidence.deterministic_digest
+    ) {
       throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", "immutable raw evidence conflict");
     }
     return {

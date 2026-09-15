@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import struct
 from typing import Any, Iterable, Sequence
 
 EVIDENCE_VERSION = 1
@@ -107,7 +108,32 @@ def stable_json(value: Any) -> str:
 
 def evidence_digest(value: Any) -> str:
     projection = {key: value[key] for key in DIGEST_KEYS}
-    return hashlib.sha256(stable_json(projection).encode("utf-8")).hexdigest()
+    return hashlib.sha256(canonical_digest_value(projection).encode("utf-8")).hexdigest()
+
+
+def canonical_digest_value(value: Any) -> str:
+    value = _safe(value)
+    if value is None:
+        return "N;"
+    if isinstance(value, bool):
+        return "B1;" if value else "B0;"
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if not math.isfinite(number):
+            return "N;"
+        if number == 0:
+            number = 0.0
+        return f"D{struct.pack('>d', number).hex()};"
+    if isinstance(value, str):
+        return f"S{len(value.encode('utf-8'))}:{value}"
+    if isinstance(value, list):
+        return f"A{len(value)}[" + "".join(canonical_digest_value(item) for item in value) + "]"
+    if isinstance(value, dict):
+        entries = sorted(((str(key), item) for key, item in value.items()), key=lambda item: item[0])
+        return f"O{len(entries)}{{" + "".join(
+            canonical_digest_value(key) + canonical_digest_value(item) for key, item in entries
+        ) + "}"
+    raise TypeError("unsupported RAW evidence value")
 
 
 def _int(value: Any) -> int | None:

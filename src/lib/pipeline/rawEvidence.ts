@@ -168,24 +168,29 @@ const DIGEST_KEYS = [
   "grenade_samples", "round_evidence", "economy_coverage", "field_mappings", "gates",
 ] as const;
 
-function jsonSafe(value: unknown): Json {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (Array.isArray(value)) return value.map(jsonSafe);
-  if (typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([, item]) => item !== undefined)
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([key, item]) => [key, jsonSafe(item)]),
-    );
+function canonicalValue(value: unknown): string {
+  if (value === null || value === undefined) return "N;";
+  if (typeof value === "boolean") return value ? "B1;" : "B0;";
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "N;";
+    const bytes = new Uint8Array(8);
+    new DataView(bytes.buffer).setFloat64(0, Object.is(value, -0) ? 0 : value, false);
+    return `D${[...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("")};`;
   }
-  return String(value);
+  if (typeof value === "string") return `S${new TextEncoder().encode(value).length}:${value}`;
+  if (Array.isArray(value)) return `A${value.length}[${value.map(canonicalValue).join("")}]`;
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `O${entries.length}{${entries.map(([key, item]) => `${canonicalValue(key)}${canonicalValue(item)}`).join("")}}`;
+  }
+  throw new Error("unsupported RAW evidence value");
 }
 
 /** Stable UTF-8 JSON used by both parser and APP for the persisted RAW sections. */
 export function canonicalizeRawEvidence(value: Pick<RawDemoEvidence, (typeof DIGEST_KEYS)[number]>): string {
-  return JSON.stringify(jsonSafe(Object.fromEntries(DIGEST_KEYS.map((key) => [key, value[key]]))));
+  return canonicalValue(Object.fromEntries(DIGEST_KEYS.map((key) => [key, value[key]])));
 }
 
 export async function computeRawEvidenceDigest(evidence: RawDemoEvidence): Promise<string> {
@@ -220,8 +225,6 @@ export function assertRawDemoEvidence(value: unknown): RawDemoEvidence {
   for (const mapping of raw.field_mappings ?? []) {
     if (!mapping?.raw_field || !mapping.status) throw new Error("invalid raw evidence mapping");
   }
-  if (!/^[0-9a-f]{64}$/.test(raw.deterministic_digest ?? ""))
-    throw new Error("invalid raw evidence digest");
   return raw as RawDemoEvidence;
 }
 

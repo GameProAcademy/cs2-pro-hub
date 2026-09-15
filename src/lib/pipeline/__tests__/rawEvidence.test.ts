@@ -68,8 +68,8 @@ describe("raw evidence contract", () => {
     expect(value.manifest.partial_parse).toBe(false);
     expect(value.manifest.players_count).toBe(0);
   });
-  it("rejects invalid digests and reports gates deterministically", () => {
-    expect(() => assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" })).toThrow();
+  it("blocks invalid digests and reports gates deterministically", async () => {
+    expect((await runRawForensicAudit(assertRawDemoEvidence({ ...evidence, deterministic_digest: "bad" }))).reasons).toContain("raw_digest_invalid");
     expect(evaluateRawEvidence(evidence)[0]?.status).toBe("FAIL");
   });
   it("preserves unresolved mappings while blocking canonical admission", async () => {
