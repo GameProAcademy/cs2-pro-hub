@@ -63,6 +63,9 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
     for name in ("aim_observations", "position_snapshots", "economy_snapshots"):
         bounded_groups[name], quality[name] = _not_implemented(name)
     limited = sorted(name for name, item in quality.items() if item["status"] == "limited")
+    partial = bool(unclassified_events or limited or any(
+        item["status"] == "not_implemented" for item in quality.values()
+    ))
     return {
         "schema_version": HOT_SCHEMA_VERSION,
         "parser": parser,
@@ -72,7 +75,7 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "players": players,
         "rounds": rounds,
         **bounded_groups,
-        "quality": {"partial": True,
+        "quality": {"partial": partial,
                     "limited_sections": limited, "sections": quality,
                     "unclassified_event_rows": unclassified_events},
         "provenance": {"source": "demo", "raw_artifact_required": True},

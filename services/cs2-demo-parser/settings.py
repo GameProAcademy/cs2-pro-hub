@@ -52,6 +52,7 @@ def is_valid_revision(value: str | None) -> bool:
 class Settings:
     token: str
     revision: str
+    build_revision: str | None
     contract_version: int
     environment: str
     max_demo_bytes: int
@@ -133,9 +134,17 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
                 f"PARSER_CONTRACT_VERSION {contract_version} is not supported by this build"
             )
         revision = resolve_revision(source.get("PARSER_REVISION"), environment=environment)
+        build_candidate = (source.get("PARSER_BUILD_REVISION") or "").strip()
+        if build_candidate and not _GIT_REVISION.fullmatch(build_candidate):
+            raise WorkerConfigurationError(
+                "PARSER_BUILD_REVISION must be an exact git:<full-commit-sha> build identifier"
+            )
         return Settings(
             token=token,
             revision=revision,
+            # Optional during the coordinated rollout. Unlike PARSER_REVISION,
+            # this value is never inferred from an older semantic lock.
+            build_revision=build_candidate or None,
             contract_version=contract_version,
             environment=environment,
             max_demo_bytes=_int_env("MAX_DEMO_BYTES", 1_500 * 1024 * 1024),
