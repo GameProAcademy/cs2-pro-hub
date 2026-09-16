@@ -82,6 +82,26 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _audit_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Small, deterministic evidence summary; the APP owns the final decision."""
+    return {
+        "raw_status": evidence.get("raw_status"),
+        "raw_audit_status": evidence.get("raw_audit_status"),
+        "raw_block_reasons": sorted(str(item) for item in (evidence.get("raw_block_reasons") or [])),
+        "gates": sorted(
+            ({"gate": str(item.get("gate")), "status": str(item.get("status"))}
+             for item in (evidence.get("gates") or []) if isinstance(item, dict)),
+            key=lambda item: item["gate"],
+        ),
+        "field_mappings": sorted(
+            ({"raw_field": str(item.get("raw_field")), "status": str(item.get("status")),
+              "reason_present": bool(str(item.get("reason") or "").strip())}
+             for item in (evidence.get("field_mappings") or []) if isinstance(item, dict)),
+            key=lambda item: item["raw_field"],
+        ),
+    }
+
+
 class RawArtifactWriter:
     def __init__(self, *, context: ArtifactContext, bridge, client: httpx.AsyncClient) -> None:
         self.context = context
@@ -172,7 +192,10 @@ class RawArtifactWriter:
                     "contract_version": self.context.contract_version, "sections": summaries,
                     "root_digest": root_digest, "created_at": artifact.get("created_at"), "status": "ready",
                     "raw_status": "ready",
+                    # Informational only. The APP derives and persists the final
+                    # decision from audit_evidence instead of trusting this field.
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
+                    "audit_evidence": _audit_evidence(evidence),
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,

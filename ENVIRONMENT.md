@@ -53,6 +53,13 @@ enforces the 8 MiB hard maximum for the complete `{hot, raw}` body. The target i
 4 MiB. Queue delivery attempts remain separate from the logical demo attempt
 used in RAW artifact identity and paths.
 
+Production also sets `PARSER_CONTRACT_VERSION=1`, `ENVIRONMENT=production`,
+`MAX_DEMO_BYTES=1610612736`, download/parse timeouts, a stable worker ID, and
+positive poll/heartbeat intervals. `PARSER_REVISION` must use the exact
+`git:<40 lowercase hex>` build identity. Audit presence without printing values.
+The complete Railway alignment, deployment, rollback, and smoke-test gates are
+documented in `docs/PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md`.
+
 ## Transactional email — Hostinger Mail API (server only)
 
 The runtime is Cloudflare Workers, which cannot open a raw outbound TCP socket to

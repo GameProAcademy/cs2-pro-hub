@@ -35,6 +35,11 @@ def test_production_accepts_immutable_revision():
     assert resolve_revision(SHA, environment="production") == SHA
 
 
+def test_production_rejects_opaque_revision_even_when_nonempty():
+    with pytest.raises(WorkerConfigurationError):
+        resolve_revision("railway-build-123", environment="production")
+
+
 def test_development_fallback_is_explicitly_unpinned():
     assert resolve_revision(None, environment="development") == DEV_UNPINNED_REVISION
     assert is_valid_revision(DEV_UNPINNED_REVISION) is False

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { deriveRawArtifactAuditStatus, rawPrefix } from "@/lib/pipeline/durableBridge.server";
+
 const queueMigration = readFileSync(
   "supabase/migrations/20260914085238_9ed55327-dea3-496c-83fb-b8a669f23168.sql",
   "utf8",
@@ -89,6 +91,28 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(durableBridgeSource).toContain("rawPrefix(job.user_id, job.upload_id, job.attempt_number)");
     expect(jobsServerSource).toContain("attemptNumber: job.attempt_number");
     expect(jobsServerSource).not.toContain("attemptNumber: durableClaim?.attempt");
+  });
+
+  it("keeps technical retries on one logical RAW prefix", () => {
+    expect(rawPrefix("user", "upload", 7)).toBe("user/upload/attempt-7");
+    expect(rawPrefix("user", "upload", 7)).toBe("user/upload/attempt-7");
+    expect(rawPrefix("user", "upload", 8)).toBe("user/upload/attempt-8");
+  });
+
+  it("keeps the APP as the final RAW audit authority", () => {
+    const evidence = {
+      raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" }],
+      field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason_present: false }],
+    };
+    expect(deriveRawArtifactAuditStatus({ audit_status: "blocked", audit_evidence: evidence })).toBe("approved");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved" })).toBe("blocked");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
+      ...evidence, gates: [{ gate: "RAW-EVIDENCE-01", status: "FAIL" }],
+    } })).toBe("blocked");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
+      ...evidence, field_mappings: [{ raw_field: "event.future", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }],
+    } })).toBe("blocked");
   });
 
   it("binds the immutable audit decision to the evidence digest", () => {

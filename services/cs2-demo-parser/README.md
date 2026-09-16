@@ -10,6 +10,11 @@ root directory `services/cs2-demo-parser`.
 
 ## Durable RAW boundary
 
+The authoritative surgical sync/deployment runbook is
+[`docs/PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md`](../../docs/PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md).
+Railway's production-only `parser_child.py` memory safeguards must be preserved
+when these files are synchronized; never replace the Railway branch wholesale.
+
 Durable jobs persist full evidence as verified JSONL-gzip chunks in the private
 `cs2-raw-evidence` bucket. Chunks target 4 MiB and fail closed above 8 MiB, carry
 a physical SHA-256 and a cross-section hash chain, and are described by a small
@@ -25,7 +30,8 @@ contract. AIM observations, position snapshots, and economy snapshots are
 explicitly `not_implemented`; empty arrays do not claim complete coverage.
 
 The APP creates short-lived, object-scoped upload URLs. The Railway worker never
-receives a database or Storage credential.
+receives a database or Storage credential. The worker transports a deterministic
+audit summary, but the APP derives and persists the final audit decision.
 
 ## Endpoints
 
@@ -44,7 +50,11 @@ receives a database or Storage credential.
 }
 ```
 
-`POST /v1/parse` request (field names are frozen):
+`POST /v1/parse` is the legacy/non-durable endpoint. Production queue ingestion
+uses HOT + RAW Artifact; the legacy response may contain inline RAW evidence and
+must not be used to justify raising the durable 8 MiB ceiling.
+
+Request (field names are frozen):
 
 ```json
 {
@@ -176,7 +186,7 @@ Rules that are enforced by tests:
 `git:<full-commit-sha>` of the commit actually deployed.
 
 * production (`ENVIRONMENT=production`, the Docker default): the revision is
-  **mandatory**. Missing, empty or invalid (including the retired
+  **mandatory** and must be `git:<40 lowercase hex>`. Missing, empty or invalid (including the retired
   `pypi-0.42.0`) makes the process fail closed at startup — it does not serve.
 * non-production: the revision may be absent and resolves to the explicit
   marker `dev:unpinned`, which is never a valid pinned build id.
@@ -241,6 +251,12 @@ uvicorn, download a demo, create and delete its temporary file, and serve
 call already in flight is **not** interrupted — Python cannot cancel it. The
 bounds that actually apply are `MAX_DEMO_BYTES`, `MAX_PAYLOAD_BYTES` and the
 container's own CPU/memory ceilings, plus the guaranteed temp-file cleanup.
+
+RAW chunking bounds transport and persistence memory, but the main parser still
+materializes native structures before the writer. It is not full parser
+streaming. The Railway branch additionally owns `parser_child.py`; its child
+isolation, bounded ticks, `parse_grenades(grenades=False)`, stage/RSS logs and
+safe-failure behavior are MUST PRESERVE during surgical synchronization.
 
 ## Tests
 

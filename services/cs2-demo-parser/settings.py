@@ -29,9 +29,7 @@ SUPPORTED_CONTRACT_VERSIONS: frozenset[int] = frozenset({1})
 #: Marker used ONLY outside production. It is deliberately not a build id.
 DEV_UNPINNED_REVISION = "dev:unpinned"
 
-#: `git:<40-hex>` is the preferred immutable form; any other opaque, non-empty,
-#: whitespace-free token is accepted so the deployment platform can pin its own
-#: immutable build identifier.
+#: Production uses the source commit itself as the immutable build identity.
 _GIT_REVISION = re.compile(r"^git:[0-9a-f]{40}$")
 _OPAQUE_REVISION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+/-]{6,127}$")
 
@@ -104,7 +102,9 @@ def _float_env(name: str, default: float) -> float:
 def resolve_revision(raw: str | None, *, environment: str) -> str:
     """Resolve the immutable build revision, failing closed in production."""
     candidate = (raw or "").strip()
-    if is_valid_revision(candidate):
+    if environment == "production" and _GIT_REVISION.fullmatch(candidate):
+        return candidate
+    if environment != "production" and is_valid_revision(candidate):
         return candidate
     if environment == "production":
         raise WorkerConfigurationError(

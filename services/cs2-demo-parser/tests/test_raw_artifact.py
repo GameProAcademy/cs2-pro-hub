@@ -99,3 +99,13 @@ async def test_partial_retry_reuses_verified_chunks_without_reuploading():
     assert first["root_digest"] == second["root_digest"]
     assert len(client.objects) == uploaded_once
     assert finalize_calls[0]["manifest"] == finalize_calls[1]["manifest"]
+    audit = finalize_calls[0]["manifest"]["audit_evidence"]
+    assert audit["raw_audit_status"] == "APPROVED"
+    assert audit["raw_block_reasons"] == []
+
+
+def test_physical_chunk_mutation_changes_sha256():
+    body = gzip.compress(b'{"tick":1}\n', mtime=0)
+    changed = bytearray(body)
+    changed[-1] ^= 1
+    assert hashlib.sha256(body).hexdigest() != hashlib.sha256(changed).hexdigest()
