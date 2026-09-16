@@ -1,0 +1,54 @@
+name: CS2 Parser CI
+
+on:
+  pull_request:
+    paths:
+      - "services/cs2-demo-parser/**"
+      - ".github/workflows/cs2-parser-ci.yml"
+  push:
+    branches:
+      - infra/cs2-parser-worker-v8
+      - integration/phase-2.7.2d4-railway-v8-sync
+    paths:
+      - "services/cs2-demo-parser/**"
+      - ".github/workflows/cs2-parser-ci.yml"
+
+jobs:
+  parser-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/cs2-demo-parser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile parser sources
+        run: python -m compileall -q .
+
+      - name: Validate production revision contract
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from settings import resolve_revision
+          from errors import WorkerConfigurationError
+
+          sha = "git:" + ("a" * 40)
+          assert resolve_revision(sha, environment="production") == sha
+          try:
+              resolve_revision("pypi-0.42.0", environment="production")
+          except WorkerConfigurationError:
+              pass
+          else:
+              raise AssertionError("forbidden parser revision was accepted")
+          print("revision contract: OK")
+          PY
+
+      - name: Build Railway Docker image
+        run: docker build -t cs2-demo-parser-ci .
