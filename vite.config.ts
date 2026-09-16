@@ -6,8 +6,20 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const managedSupabaseUrl = process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
+const managedSupabasePublishableKey =
+  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
+  process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+  "";
+
 export default defineConfig({
   vite: {
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(managedSupabaseUrl),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+        managedSupabasePublishableKey,
+      ),
+    },
     plugins: [
       {
         name: "normalize-managed-client-env-access",
