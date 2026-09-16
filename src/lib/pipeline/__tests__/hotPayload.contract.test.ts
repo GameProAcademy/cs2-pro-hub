@@ -5,7 +5,7 @@ import { assertHotDemoPayload } from "@/lib/pipeline/rawArtifact.server";
 import { HOT_DEMO_LIMITS } from "@/lib/pipeline/types";
 
 function validHot() {
-  const rows = {
+  const rows: Record<string, unknown[]> = {
     players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
     aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],
   };
@@ -47,8 +47,10 @@ describe("durable HOT contract", () => {
 
   it("rejects silent overflow", () => {
     const hot = validHot();
-    hot.players = [{ steam_id: "1" }];
-    Object.assign(hot.quality.sections.players, { observed_rows: 2, included_rows: 1, overflow_rows: 1 });
+    hot["players"] = [{ steam_id: "1" }];
+    const playersQuality = hot.quality.sections["players"];
+    if (!playersQuality) throw new Error("missing players quality fixture");
+    Object.assign(playersQuality, { observed_rows: 2, included_rows: 1, overflow_rows: 1 });
     expectInvalid(hot);
   });
 

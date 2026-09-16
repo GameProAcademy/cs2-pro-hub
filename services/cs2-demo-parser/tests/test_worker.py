@@ -83,7 +83,7 @@ def test_consumer_uses_parser_contract_not_queue_schema_version(monkeypatch, tmp
                 raise asyncio.CancelledError()
             return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
                     "message_id": 9, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
-                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 0,
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
                     "demo_url": "https://storage.example/demo.dem", "demo_sha256": DEMO_SHA,
                     "file_size": 520, "schema_version": 999}
         if action == "heartbeat":
@@ -159,7 +159,7 @@ def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path)
                 raise asyncio.CancelledError()
             return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
                     "message_id": 12, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
-                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 0,
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
                     "demo_url": "https://storage.example/demo.dem", "demo_sha256": DEMO_SHA,
                     "file_size": 520, "schema_version": 1}
         return {"accepted": True, "cancelled": False}

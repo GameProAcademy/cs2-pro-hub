@@ -10,6 +10,16 @@
 - [x] Testes focados adicionados para HOT de alto volume, chunking, integridade e idempotência.
 - [ ] Deploy/configuração Railway e E2E real com a demo Cache permanecem pendentes; nenhum secret, deploy ou dado foi alterado nesta fase.
 
+## FASE 2.7.2D.4-B.1 — Contract hardening — IMPLEMENTADA / AUDITORIA EXTERNA PENDENTE
+
+- [x] `dispatch_attempt` técnico separado de `demo_jobs.attempt_number` lógico em claim, lease, artifact, prefixo, manifest e admissão.
+- [x] Eventos não classificados permanecem apenas no RAW e tornam HOT parcial sem erro estrutural.
+- [x] Overflow HOT validado explicitamente; RAW dentro do HOT e truncamento silencioso são rejeitados.
+- [x] Payload durable `{hot, raw}` com alvo de 4 MiB e hard maximum uniforme de 8 MiB.
+- [x] Lifecycle/idempotência endurecidos: retry técnico reutiliza chunks verificados; READY não aceita novos chunks; nova tentativa lógica usa novo prefixo.
+- [x] AIM, position e economy permanecem vazios e explicitamente `not_implemented`; nenhum dado ou métrica foi inventado.
+- [ ] E2E real ainda NÃO aprovado: Railway sync/deploy, smoke test da demo real e validação Canonical real permanecem pendentes para B.2.
+
 ## BLOCKER — Deployment público — CONCLUÍDO
 
 - [x] Causa raiz confirmada: o build público não injetava a configuração pública do Lovable Cloud no cliente gerado.
