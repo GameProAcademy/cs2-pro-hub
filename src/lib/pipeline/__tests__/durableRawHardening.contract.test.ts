@@ -20,6 +20,8 @@ const finalForensicMigration = readFileSync(
 const jobsSource = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
 const workerSource = readFileSync("services/cs2-demo-parser/worker.py", "utf8");
 const bridgeRouteSource = readFileSync("src/routes/api/public/pipeline-worker.$action.ts", "utf8");
+const durableBridgeSource = readFileSync("src/lib/pipeline/durableBridge.server.ts", "utf8");
+const jobsServerSource = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   it("lets another worker reclaim only an expired processing lease", () => {
@@ -76,8 +78,17 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it("bounds the complete payload while streaming rather than trusting content-length", () => {
     expect(bridgeRouteSource).toContain("request.body.getReader()");
-    expect(bridgeRouteSource).toContain("size > MAX_COMPLETE_BYTES");
+    expect(bridgeRouteSource).toContain("size > DURABLE_HOT_HARD_MAX_BYTES");
     expect(bridgeRouteSource).toContain('error: "payload_too_large"');
+  });
+
+  it("separates dispatch attempt from the logical demo attempt", () => {
+    expect(durableBridgeSource).toContain('.select("user_id, attempt_number")');
+    expect(durableBridgeSource).toContain("attempt_number: job.attempt_number");
+    expect(durableBridgeSource).toContain("job.dispatch_attempt !== input.attempt");
+    expect(durableBridgeSource).toContain("rawPrefix(job.user_id, job.upload_id, job.attempt_number)");
+    expect(jobsServerSource).toContain("attemptNumber: job.attempt_number");
+    expect(jobsServerSource).not.toContain("attemptNumber: durableClaim?.attempt");
   });
 
   it("binds the immutable audit decision to the evidence digest", () => {

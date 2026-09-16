@@ -5,10 +5,14 @@ import { PipelineError } from "@/lib/pipeline/errors";
 import { processJob, type DurableJobClaim } from "@/lib/pipeline/jobs.server";
 import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
 import {
-  RAW_ARTIFACT_SECTION_ORDER,
   RAW_CHUNK_HARD_MAX_BYTES,
   type DurableDemoCompletionV1,
 } from "@/lib/pipeline/types";
+import {
+  RAW_ARTIFACT_SECTION_ORDER,
+  rawArtifactSha256,
+  stableRawArtifactJson,
+} from "@/lib/pipeline/rawArtifactContract";
 import { createDemoSignedUrl, demoExists } from "@/lib/pipeline/storage.server";
 import {
   createRawEvidenceSignedUploadUrl,
@@ -218,13 +222,6 @@ export async function verifyRawChunk(input: DurableJobClaim & { jobId: string; a
   return { verified: true };
 }
 
-function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
-  if (value && typeof value === "object") return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;
-  return JSON.stringify(value);
-}
-
 export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: string; artifactId: string;
   rootDigest: string; manifest: Record<string, unknown> }) {
   const { db } = await currentRawJob(input);
@@ -254,9 +251,9 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
     return { name: section, chunk_count: own.length,
       row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
       byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: createHash("sha256").update(stable(own.map((chunk) => chunk.sha256))).digest("hex") };
+      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
   });
-  const computed = createHash("sha256").update(stable(summaries)).digest("hex");
+  const computed = rawArtifactSha256(stableRawArtifactJson(summaries));
   if (computed !== input.rootDigest || input.manifest["root_digest"] !== computed) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root mismatch");
   }
@@ -266,9 +263,9 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
     input.manifest["attempt_number"] === artifact.attempt_number &&
     input.manifest["demo_sha256"] === artifact.demo_sha256 && input.manifest["status"] === "ready" &&
     input.manifest["raw_status"] === "ready" && Array.isArray(manifestSections) &&
-    stable(manifestSections) === stable(summaries);
+    stableRawArtifactJson(manifestSections) === stableRawArtifactJson(summaries);
   if (!manifestIdentity) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest identity mismatch");
-  await uploadRawEvidenceManifest(artifact.manifest_storage_path, stable(input.manifest));
+  await uploadRawEvidenceManifest(artifact.manifest_storage_path, stableRawArtifactJson(input.manifest));
   const totals = { total_chunks: chunks.length,
     total_rows: chunks.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
     total_bytes: chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0) };

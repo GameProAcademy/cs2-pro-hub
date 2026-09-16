@@ -10,7 +10,7 @@ from typing import Any, Callable
 import httpx
 
 from errors import WorkerError
-from settings import Settings
+from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
 
@@ -94,7 +94,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
                         complete_body = {**identity, **result}
                         complete_bytes = len(json.dumps(complete_body, separators=(",", ":")).encode())
-                        if complete_bytes > settings.max_payload_bytes:
+                        if complete_bytes > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
                             raise WorkerError(413, "PAYLOAD_TOO_LARGE", "HOT completion payload is too large.")
                         logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
                                     complete_bytes,

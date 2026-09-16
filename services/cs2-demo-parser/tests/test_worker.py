@@ -27,7 +27,7 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
             return {
                 "status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
                 "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
-                "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 0,
+                 "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 7,
                 "demo_url": "https://storage.example/demo.dem", "demo_sha256": DEMO_SHA,
                 "file_size": 520, "schema_version": 1,
             }
@@ -59,6 +59,8 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
     completed = calls[2][1]
     assert completed["messageId"] == 7
     assert completed["attempt"] == 0
+    durable_call = next(body for name, body in calls if name == "raw-context") if any(name == "raw-context" for name, _ in calls) else None
+    assert durable_call is None
     assert "demo_url" not in completed
     assert "result" not in completed
     assert "hot" in completed and "raw" in completed

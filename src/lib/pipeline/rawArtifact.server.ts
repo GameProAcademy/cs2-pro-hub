@@ -1,6 +1,9 @@
-import { createHash } from "node:crypto";
-
 import { PipelineError } from "@/lib/pipeline/errors";
+import {
+  RAW_ARTIFACT_SECTION_ORDER,
+  rawArtifactSha256,
+  stableRawArtifactJson,
+} from "@/lib/pipeline/rawArtifactContract";
 import type {
   HotDemoPayloadV1,
   RawArtifactReferenceV1,
@@ -10,24 +13,9 @@ import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/
 
 const RAW_BUCKET = "cs2-raw-evidence";
 const HEX_64 = /^[0-9a-f]{64}$/;
-const SECTION_ORDER = [
-  "header", "players", "rounds", "events", "ticks", "grenades", "player-info",
-  "game-state", "economy", "forensic",
-] as const;
-
-function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b));
-    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-function sha256(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
-}
+const HOT_SECTIONS = ["players", "rounds", "combat_events", "utility_events", "objective_events",
+  "aim_observations", "position_snapshots", "economy_snapshots", "warnings"] as const;
+const NOT_IMPLEMENTED_HOT_SECTIONS = new Set(["aim_observations", "position_snapshots", "economy_snapshots"]);
 
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!value || typeof value !== "object") throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT payload");
@@ -35,9 +23,7 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (hot.schema_version !== 1 || hot.contract_version !== 1 || !hot.parser || !hot.demo || !hot.header) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT identity");
   }
-  const sections = ["players", "rounds", "combat_events", "utility_events", "objective_events",
-    "aim_observations", "position_snapshots", "economy_snapshots", "warnings"] as const;
-  if (sections.some((key) => !Array.isArray(hot[key]))) {
+  if (HOT_SECTIONS.some((key) => !Array.isArray(hot[key]))) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT sections");
   }
   const forbidden = ["raw_evidence", "raw_events", "grenade_samples", "tick_samples",
@@ -48,16 +34,34 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!hot.quality || !Array.isArray(hot.quality.limited_sections)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT quality");
   }
-  if (Number((hot.quality as unknown as Record<string, unknown>)["unclassified_event_rows"] ?? 0) > 0) {
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "HOT projection contains unclassified events");
+  const unclassified = hot.quality.unclassified_event_rows;
+  if (!Number.isInteger(unclassified) || unclassified < 0) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT unclassified event count");
   }
-  for (const [name, quality] of Object.entries(hot.quality.sections ?? {})) {
-    if (quality.included_rows > quality.limit || quality.observed_rows - quality.included_rows !== quality.overflow_rows) {
+  for (const name of HOT_SECTIONS) {
+    const quality = hot.quality.sections?.[name];
+    const rows = hot[name];
+    if (!quality || !Number.isInteger(quality.observed_rows) || !Number.isInteger(quality.included_rows) ||
+        !Number.isInteger(quality.limit) || !Number.isInteger(quality.overflow_rows) ||
+        quality.observed_rows < 0 || quality.included_rows < 0 || quality.limit < 0 || quality.overflow_rows < 0 ||
+        quality.included_rows !== rows.length || quality.included_rows > quality.limit ||
+        quality.observed_rows - quality.included_rows !== quality.overflow_rows) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", `invalid HOT bound: ${name}`);
     }
-    if (quality.overflow_rows > 0 && quality.status !== "limited") {
+    if (quality.status === "not_implemented") {
+      if (!NOT_IMPLEMENTED_HOT_SECTIONS.has(name) || quality.observed_rows !== 0 || quality.included_rows !== 0) {
+        throw new PipelineError("PARSER_INVALID_RESPONSE", `invalid HOT implementation status: ${name}`);
+      }
+    } else if ((quality.overflow_rows > 0) !== (quality.status === "limited")) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", `silent HOT overflow: ${name}`);
     }
+  }
+  const expectedLimited = HOT_SECTIONS.filter((name) => hot.quality?.sections?.[name]?.status === "limited").sort();
+  const declaredLimited = [...hot.quality.limited_sections].sort();
+  if (stableRawArtifactJson(expectedLimited) !== stableRawArtifactJson(declaredLimited) ||
+      hot.quality.partial !== (unclassified > 0 || expectedLimited.length > 0 ||
+        HOT_SECTIONS.some((name) => hot.quality?.sections?.[name]?.status === "not_implemented"))) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "inconsistent HOT quality summary");
   }
   return hot as HotDemoPayloadV1;
 }
@@ -126,7 +130,7 @@ export async function verifyRawArtifact(args: {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunks are not verified");
   }
   let previous: string | null = null;
-  for (const section of SECTION_ORDER) {
+  for (const section of RAW_ARTIFACT_SECTION_ORDER) {
     const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
     for (const [index, chunk] of own.entries()) {
       if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous || !HEX_64.test(chunk.sha256)) {
@@ -135,21 +139,29 @@ export async function verifyRawArtifact(args: {
       previous = chunk.sha256;
     }
   }
-  const summaries = SECTION_ORDER.map((section) => {
+  const summaries = RAW_ARTIFACT_SECTION_ORDER.map((section) => {
     const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
     return { name: section, chunk_count: own.length,
       row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
       byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: sha256(stable(own.map((chunk) => chunk.sha256))) };
+      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
   });
-  if (sha256(stable(summaries)) !== artifact.root_digest) {
+  if (rawArtifactSha256(stableRawArtifactJson(summaries)) !== artifact.root_digest) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root digest mismatch");
   }
   const { data: manifestBlob, error: manifestError } = await supabaseAdmin.storage
     .from(RAW_BUCKET).download(artifact.manifest_storage_path);
   if (manifestError || !manifestBlob) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest unavailable");
   const manifest = JSON.parse(await manifestBlob.text()) as Record<string, unknown>;
-  if (manifest["root_digest"] !== artifact.root_digest || manifest["status"] !== "ready") {
+  const manifestMatches = manifest["schema_version"] === 1 && manifest["job_id"] === args.jobId &&
+    manifest["upload_id"] === args.uploadId && manifest["attempt_number"] === args.attemptNumber &&
+    manifest["demo_sha256"] === args.expectedSha256?.toLowerCase() &&
+    manifest["contract_version"] === args.hot.contract_version &&
+    stableRawArtifactJson(manifest["parser"]) === stableRawArtifactJson(args.hot.parser) &&
+    stableRawArtifactJson(manifest["sections"]) === stableRawArtifactJson(summaries) &&
+    manifest["root_digest"] === artifact.root_digest && manifest["status"] === "ready" &&
+    manifest["raw_status"] === "ready" && manifest["audit_status"] === artifact.audit_status;
+  if (!manifestMatches) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest mismatch");
   }
   return { status: "PASS", auditStatus: "APPROVED", approved: true, auditVersion: 3,

@@ -23,7 +23,7 @@ const identity = z.object({
 
 class PayloadTooLargeError extends Error {}
 
-async function readBoundedJson(request: Request): Promise<unknown> {
+export async function readBoundedJson(request: Request): Promise<unknown> {
   if (!request.body) return {};
   const reader = request.body.getReader();
   const decoder = new TextDecoder();

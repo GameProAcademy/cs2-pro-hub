@@ -45,6 +45,7 @@ from hot_payload import build_hot_payload
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
 from settings import (
+    DURABLE_HOT_HARD_MAX_BYTES,
     PARSER_NAME,
     PARSER_VERSION,
     SUPPORTED_CONTRACT_VERSIONS,
@@ -156,7 +157,7 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
     )
     raw = await writer.write(evidence)
     encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
-    if len(encoded) > settings.max_payload_bytes:
+    if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
         raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "HOT payload is too large.")
     logger.info("hot_payload_ready bytes=%s limited=%s artifact=%s digest=%s",
                 len(encoded), hot["quality"]["limited_sections"], raw["artifact_id"],

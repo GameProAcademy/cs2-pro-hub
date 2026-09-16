@@ -139,7 +139,10 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
             contract_version=contract_version,
             environment=environment,
             max_demo_bytes=_int_env("MAX_DEMO_BYTES", 1_500 * 1024 * 1024),
-            max_payload_bytes=_int_env("MAX_PAYLOAD_BYTES", DURABLE_HOT_HARD_MAX_BYTES),
+            max_payload_bytes=min(
+                _int_env("MAX_PAYLOAD_BYTES", DURABLE_HOT_HARD_MAX_BYTES),
+                DURABLE_HOT_HARD_MAX_BYTES,
+            ),
             download_timeout_seconds=_float_env("DOWNLOAD_TIMEOUT_SECONDS", 120.0),
             parse_timeout_seconds=_float_env("PARSE_TIMEOUT_SECONDS", 240.0),
             bridge_url=(source.get("DEMO_PIPELINE_BRIDGE_URL") or "").strip().rstrip("/") or None,
