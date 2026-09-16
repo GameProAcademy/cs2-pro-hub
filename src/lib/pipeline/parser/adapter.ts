@@ -87,8 +87,12 @@ export function isParserRevisionRequired(): boolean {
 /** The full expectation used by the revision lock (identity + contract). */
 export function expectedParserContract(): ExpectedParserIdentity {
   const identity = expectedParserIdentity();
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const buildRevision = env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() || null;
   return {
     ...identity,
+    buildRevision,
+    buildRevisionRequired: (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "").trim().toLowerCase() === "true",
     revisionRequired: isParserRevisionRequired(),
     contractVersion: PARSER_CONTRACT_VERSION,
   };
@@ -120,6 +124,16 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
       revision:
         typeof raw.parser.revision === "string" && raw.parser.revision.trim().length > 0
           ? raw.parser.revision.trim()
+          : null,
+      semanticRevision:
+        typeof raw.parser.semantic_revision === "string" && raw.parser.semantic_revision.trim()
+          ? raw.parser.semantic_revision.trim()
+          : typeof raw.parser.revision === "string" && raw.parser.revision.trim()
+            ? raw.parser.revision.trim()
+            : null,
+      buildRevision:
+        typeof raw.parser.build_revision === "string" && raw.parser.build_revision.trim()
+          ? raw.parser.build_revision.trim()
           : null,
     },
     expectedParserContract(),

@@ -102,6 +102,10 @@ def _audit_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _audit_evidence_digest(evidence: dict[str, Any]) -> str:
+    return hashlib.sha256(_stable(_audit_evidence(evidence))).hexdigest()
+
+
 class RawArtifactWriter:
     def __init__(self, *, context: ArtifactContext, bridge, client: httpx.AsyncClient) -> None:
         self.context = context
@@ -146,6 +150,8 @@ class RawArtifactWriter:
         if artifact.get("status") == "ready":
             return self._reference(artifact)
         artifact_id = str(artifact["id"])
+        if artifact.get("recovered"):
+            logger.info("raw_artifact_recovery artifact=%s", artifact_id)
         chunks: list[dict[str, Any]] = []
         previous: str | None = None
         sections = _section_payloads(evidence)
@@ -186,6 +192,7 @@ class RawArtifactWriter:
                               "byte_count": sum(item["byte_size"] for item in own),
                               "digest": hashlib.sha256(_stable([item["sha256"] for item in own])).hexdigest()})
         root_digest = hashlib.sha256(_stable(summaries)).hexdigest()
+        audit_evidence = _audit_evidence(evidence)
         manifest = {"schema_version": RAW_SCHEMA_VERSION, "demo_sha256": self.context.demo_sha256.lower(),
                     "upload_id": self.context.upload_id, "job_id": self.context.job_id,
                     "attempt_number": self.context.attempt_number, "parser": self.context.parser,
@@ -195,7 +202,8 @@ class RawArtifactWriter:
                     # Informational only. The APP derives and persists the final
                     # decision from audit_evidence instead of trusting this field.
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
-                    "audit_evidence": _audit_evidence(evidence),
+                    "audit_evidence": audit_evidence,
+                    "audit_evidence_digest": hashlib.sha256(_stable(audit_evidence)).hexdigest(),
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
