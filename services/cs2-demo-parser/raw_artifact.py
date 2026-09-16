@@ -7,6 +7,8 @@ import io
 import json
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from itertools import chain
 from typing import Any, Iterable
 from urllib.parse import quote
 
@@ -45,18 +47,18 @@ def _records(value: Any) -> Iterable[Any]:
         yield value
 
 
-def _section_payloads(evidence: dict[str, Any]) -> dict[str, list[Any]]:
+def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
     manifest = evidence.get("manifest") or {}
     return {
         "header": [manifest.get("raw_header") or {}],
-        "players": list(evidence.get("raw_player_info") or []),
-        "rounds": list(evidence.get("round_evidence") or []),
-        "events": list(evidence.get("raw_events") or []),
-        "ticks": list(evidence.get("tick_samples") or []),
-        "grenades": list(evidence.get("grenade_samples") or []),
-        "player-info": list(evidence.get("player_coverage") or []),
-        "game-state": list(evidence.get("tick_coverage") or []) + list(evidence.get("grenade_coverage") or []),
-        "economy": list(evidence.get("economy_coverage") or []),
+        "players": evidence.get("raw_player_info") or [],
+        "rounds": evidence.get("round_evidence") or [],
+        "events": evidence.get("raw_events") or [],
+        "ticks": evidence.get("tick_samples") or [],
+        "grenades": evidence.get("grenade_samples") or [],
+        "player-info": evidence.get("player_coverage") or [],
+        "game-state": chain(evidence.get("tick_coverage") or [], evidence.get("grenade_coverage") or []),
+        "economy": evidence.get("economy_coverage") or [],
         "forensic": [
             {
                 "event_coverage": evidence.get("event_coverage") or [],
@@ -69,6 +71,10 @@ def _section_payloads(evidence: dict[str, Any]) -> dict[str, list[Any]]:
             }
         ],
     }
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 class RawArtifactWriter:
@@ -164,7 +170,7 @@ class RawArtifactWriter:
         self._rest("PATCH", "raw_evidence_chunks",
                    params={"artifact_id": f"eq.{artifact_id}", "section": f"eq.{section}", "chunk_index": f"eq.{index}"},
                    headers={"Prefer": "return=minimal"},
-                   json={"status": "verified", "uploaded_at": "now()", "verified_at": "now()"})
+                   json={"status": "verified", "uploaded_at": _now(), "verified_at": _now()})
         logger.info("raw_chunk_stored section=%s chunk=%s rows=%s bytes=%s sha=%s",
                     section, index, len(rows), len(body), sha256[:12])
         return {"section": section, "chunk_index": index, "storage_path": path,
@@ -203,7 +209,17 @@ class RawArtifactWriter:
                     chunks.append(chunk); previous = chunk["sha256"]
                 logger.info("raw_section_complete section=%s chunks=%s", section,
                             sum(1 for item in chunks if item["section"] == section))
-                sections[section].clear()
+                raw_key = {
+                    "players": "raw_player_info", "rounds": "round_evidence",
+                    "events": "raw_events", "ticks": "tick_samples",
+                    "grenades": "grenade_samples", "player-info": "player_coverage",
+                    "economy": "economy_coverage",
+                }.get(section)
+                if raw_key:
+                    evidence[raw_key] = []
+                if section == "game-state":
+                    evidence["tick_coverage"] = []
+                    evidence["grenade_coverage"] = []
             summaries = []
             for section in SECTION_ORDER:
                 own = [item for item in chunks if item["section"] == section]
@@ -228,7 +244,7 @@ class RawArtifactWriter:
             audit_status = manifest["audit_status"]
             self._patch_artifact(artifact_id, {**totals, "status": "ready", "raw_status": "ready",
                                               "audit_status": audit_status, "root_digest": root_digest,
-                                              "ready_at": "now()"})
+                                              "ready_at": _now()})
             ready = {**artifact, **totals, "status": "ready", "raw_status": "ready",
                      "audit_status": audit_status, "root_digest": root_digest,
                      "manifest_storage_path": manifest_path}
@@ -238,7 +254,7 @@ class RawArtifactWriter:
         except Exception as error:
             self._patch_artifact(artifact_id, {"status": "failed", "raw_status": "failed", "audit_status": "failed",
                                               "error_code": type(error).__name__, "error_message": str(error)[:300],
-                                              "failed_at": "now()"})
+                                              "failed_at": _now()})
             raise
 
     def _reference(self, artifact: dict[str, Any]) -> dict[str, Any]:

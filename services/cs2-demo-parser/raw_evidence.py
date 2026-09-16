@@ -441,8 +441,8 @@ def raw_audit_status(evidence: dict[str, Any]) -> tuple[str, list[str]]:
     return ("FAIL" if failed else "BLOCKED" if reasons else "PASS", sorted(set(reasons)))
 
 
-def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contract_version: int,
-                      demo_sha256: str, file_size: int) -> dict[str, Any]:
+def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contract_version: int,
+                     demo_sha256: str, file_size: int) -> dict[str, Any]:
     manifest = evidence["manifest"]
     manifest.update({"parser_name": parser.get("name"), "parser_version": parser.get("version"),
                      "parser_revision": parser.get("revision"), "contract_version": contract_version,
@@ -452,6 +452,13 @@ def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contr
     evidence["raw_status"], evidence["raw_block_reasons"] = raw_audit_status(evidence)
     evidence["raw_audit_status"] = "APPROVED" if evidence["raw_status"] == "PASS" else "BLOCKED"
     evidence["audit_surface_version"] = AUDIT_SURFACE_VERSION
+    return evidence
+
+
+def finalize_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contract_version: int,
+                      demo_sha256: str, file_size: int) -> dict[str, Any]:
+    evidence = prepare_evidence(evidence, parser=parser, contract_version=contract_version,
+                                demo_sha256=demo_sha256, file_size=file_size)
     clean = _safe(evidence)
     clean["manifest"]["estimated_evidence_bytes"] = len(stable_json(clean).encode("utf-8"))
     clean["deterministic_digest"] = evidence_digest(clean)

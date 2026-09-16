@@ -63,6 +63,8 @@ class Settings:
     worker_id: str = "railway-parser-1"
     queue_poll_seconds: float = 5.0
     queue_heartbeat_seconds: float = 60.0
+    backend_url: str | None = None
+    backend_service_key: str | None = None
 
     @property
     def is_production(self) -> bool:
@@ -145,6 +147,8 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
             worker_id=(source.get("DEMO_PIPELINE_WORKER_ID") or "railway-parser-1").strip(),
             queue_poll_seconds=_float_env("DEMO_QUEUE_POLL_SECONDS", 5.0),
             queue_heartbeat_seconds=_float_env("DEMO_QUEUE_HEARTBEAT_SECONDS", 60.0),
+            backend_url=(source.get("SUPABASE_URL") or "").strip().rstrip("/") or None,
+            backend_service_key=(source.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip() or None,
         )
     finally:
         if previous is not None:
