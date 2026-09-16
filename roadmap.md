@@ -57,6 +57,13 @@
 - [ ] Acompanhar os gates Storage → PBDEMS2 → parser → RAW → digest → auditoria → Canonical → métricas. BLOCKED/PENDING: worker permanece em `processing/parsing`, sem RAW persistida.
 - [ ] Verificar lifecycle e idempotência; manter a antiga match como LEGACY / UNVALIDATED. BLOCKED/PENDING até a tentativa atingir estado terminal.
 
+## FASE — Diagnóstico do lifecycle da Tentativa 4 — MONITORANDO
+
+- [x] Localizar o identificador canônico da Tentativa 4 e consultar job, lease, heartbeat, worker e mensagem sem alteração de dados.
+- [x] Confirmar lease válido, heartbeat renovado e mensagem 6 preservada na fila sob visibilidade do worker `railway-parser-1`.
+- [x] Não acionar recuperação stale enquanto houver posse ativa; nenhuma Tentativa 5 criada.
+- [ ] Aguardar estado terminal ou expiração simultânea do lease e heartbeat antes de qualquer recuperação oficial.
+
 ## FASE UX — Processamento de demo com progresso e etapas (concluída)
 
 - [x] Progresso visual estimado derivado exclusivamente do stage real, com faixas determinísticas, monotonicidade e teto por etapa.
