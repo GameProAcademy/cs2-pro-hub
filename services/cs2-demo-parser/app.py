@@ -40,9 +40,12 @@ from errors import (
     UnsupportedDemoError,
     WorkerError,
 )
-from parser_isolated import parse_demo_file_isolated
-from raw_evidence import finalize_evidence
+from parser import parse_demo_file
+from hot_payload import build_hot_payload
+from raw_artifact import ArtifactContext, RawArtifactWriter
+from raw_evidence import finalize_evidence, prepare_evidence
 from settings import (
+    DURABLE_HOT_HARD_MAX_BYTES,
     PARSER_NAME,
     PARSER_VERSION,
     SUPPORTED_CONTRACT_VERSIONS,
@@ -52,7 +55,7 @@ from settings import (
 
 logger = logging.getLogger("cs2-demo-parser")
 
-#: Injected by tests. Production uses the process-isolated demoparser2 boundary.
+#: Injected by tests. Production always uses the real demoparser2 boundary.
 ParseFn = Callable[[str], dict[str, Any]]
 
 CS2_DEMO_MAGIC = b"PBDEMS2\x00"
@@ -68,6 +71,11 @@ class ParseRequest(BaseModel):
 
 
 async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
+    return await _parse_downloaded(body, settings, parse, finalize_raw=True)
+
+
+async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
+                            finalize_raw: bool) -> dict[str, Any]:
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
         raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
@@ -119,14 +127,42 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
     }
     raw_evidence = parsed.get("raw_evidence")
     if isinstance(raw_evidence, dict):
-        payload["raw_evidence"] = finalize_evidence(
-            raw_evidence,
-            parser=identity,
-            contract_version=settings.contract_version,
-            demo_sha256=body.demo_sha256,
-            file_size=body.file_size,
+        payload["raw_evidence"] = (
+            finalize_evidence(raw_evidence, parser=identity, contract_version=settings.contract_version,
+                              demo_sha256=body.demo_sha256, file_size=body.file_size)
+            if finalize_raw else
+            prepare_evidence(raw_evidence, parser=identity, contract_version=settings.contract_version,
+                             demo_sha256=body.demo_sha256, file_size=body.file_size)
         )
     return payload
+
+
+async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
+                                 job_id: str, user_id: str, attempt_number: int,
+                                 bridge, client: httpx.AsyncClient) -> dict[str, Any]:
+    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False)
+    evidence = payload.pop("raw_evidence", None)
+    if not isinstance(evidence, dict):
+        raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
+    identity = payload["parser"]
+    # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
+    # already validated metadata but never sends or canonicalizes the full RAW.
+    hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
+                            demo_sha256=body.demo_sha256, upload_id=body.upload_id)
+    writer = RawArtifactWriter(
+        context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
+                                attempt_number=attempt_number, demo_sha256=body.demo_sha256,
+                                parser=identity, contract_version=settings.contract_version),
+        bridge=bridge, client=client,
+    )
+    raw = await writer.write(evidence)
+    encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
+    if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "HOT payload is too large.")
+    logger.info("hot_payload_ready bytes=%s limited=%s artifact=%s digest=%s",
+                len(encoded), hot["quality"]["limited_sections"], raw["artifact_id"],
+                str(raw["root_digest"])[:12])
+    return {"hot": hot, "raw": raw}
 
 
 def _envelope(status_code: int, error_code: str, message: str) -> JSONResponse:
@@ -233,7 +269,7 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Raises `WorkerConfigurationError` when config fails closed."""
     resolved = settings or load_settings()
-    parse = parse_fn or parse_demo_file_isolated
+    parse = parse_fn or parse_demo_file
     app = FastAPI(title="cs2-demo-parser", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = resolved
     app.state.parse_fn = parse

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from typing import Any, Callable
 
 import httpx
 
 from errors import WorkerError
-from settings import Settings
+from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
 
@@ -41,57 +42,36 @@ async def _heartbeat_loop(client: httpx.AsyncClient, settings: Settings, identit
             try:
                 response = await _bridge(client, settings, "heartbeat", {**identity, "stage": "parsing"})
             except httpx.HTTPError:
-                logger.warning(
-                    "heartbeat_transport_failed job=%s message=%s attempt=%s",
-                    identity.get("jobId"), identity.get("messageId"), identity.get("attempt"),
-                )
                 stop.set()
                 return
             if response.get("cancelled") is True or response.get("accepted") is not True:
-                logger.warning(
-                    "heartbeat_rejected job=%s message=%s attempt=%s accepted=%s cancelled=%s",
-                    identity.get("jobId"), identity.get("messageId"), identity.get("attempt"),
-                    response.get("accepted"), response.get("cancelled"),
-                )
                 stop.set()
                 return
 
 
 async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[str, Any]]) -> None:
-    from app import ParseRequest, _parse_request
+    from app import ParseRequest, _parse_durable_request
 
     timeout = httpx.Timeout(settings.download_timeout_seconds + settings.parse_timeout_seconds + 60)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
-        logger.info("consumer_loop_started worker_id=%s revision=%s", settings.worker_id, settings.revision)
         while True:
             try:
                 claim = await _bridge(client, settings, "claim", {"workerId": settings.worker_id})
-                logger.info(
-                    "claim_result status=%s job=%s message=%s attempt=%s",
-                    claim.get("status"), claim.get("job_id"), claim.get("message_id"), claim.get("attempt"),
-                )
                 if claim.get("status") != "claimed":
                     await asyncio.sleep(settings.queue_poll_seconds)
                     continue
-
                 identity = {
                     "jobId": claim["job_id"],
                     "messageId": claim["message_id"],
                     "attempt": claim["attempt"],
                     "workerId": settings.worker_id,
                 }
-                logger.info(
-                    "job_claimed job=%s message=%s attempt=%s upload=%s size=%s sha=%s",
-                    identity["jobId"], identity["messageId"], identity["attempt"],
-                    claim.get("upload_id"), claim.get("file_size"),
-                    str(claim.get("demo_sha256", ""))[:12],
-                )
-
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
                 try:
-                    logger.info("job_parse_start job=%s attempt=%s", identity["jobId"], identity["attempt"])
-                    result = await _parse_request(
+                    if claim["attempt_number"] < 1:
+                        raise RuntimeError("invalid logical demo attempt")
+                    result = await _parse_durable_request(
                         ParseRequest(
                             contract_version=settings.contract_version,
                             upload_id=claim["upload_id"],
@@ -101,27 +81,29 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         ),
                         settings,
                         parse,
+                        job_id=identity["jobId"],
+                        user_id=claim["user_id"],
+                        attempt_number=claim["attempt_number"],
+                        bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
+                        client=client,
                     )
-                    logger.info("job_parse_success job=%s attempt=%s", identity["jobId"], identity["attempt"])
                     if stop.is_set():
-                        logger.info("completion_suppressed_after_lease_or_cancellation job=%s", identity["jobId"])
+                        logger.info("completion suppressed after lease or cancellation rejection")
                         continue
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
-                        logger.info("job_complete_start job=%s attempt=%s", identity["jobId"], identity["attempt"])
-                        await _bridge(client, settings, "complete", {**identity, "result": result})
-                        logger.info("job_complete_sent job=%s attempt=%s", identity["jobId"], identity["attempt"])
+                        complete_body = {**identity, **result}
+                        complete_bytes = len(json.dumps(complete_body, separators=(",", ":")).encode())
+                        if complete_bytes > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+                            raise WorkerError(413, "PAYLOAD_TOO_LARGE", "HOT completion payload is too large.")
+                        logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
+                                    complete_bytes,
+                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12])
+                        await _bridge(client, settings, "complete", complete_body)
                 except WorkerError as error:
-                    logger.error(
-                        "job_worker_error job=%s attempt=%s code=%s detail=%s",
-                        identity["jobId"], identity["attempt"], error.error_code, error.message,
-                    )
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    logger.exception(
-                        "job_interrupted job=%s attempt=%s type=%s",
-                        identity["jobId"], identity["attempt"], type(error).__name__,
-                    )
+                    logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()
                     heartbeat.cancel()
@@ -132,5 +114,5 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                logger.exception("queue_poll_failed type=%s", type(error).__name__)
+                logger.warning("queue poll failed type=%s", type(error).__name__)
                 await asyncio.sleep(settings.queue_poll_seconds)

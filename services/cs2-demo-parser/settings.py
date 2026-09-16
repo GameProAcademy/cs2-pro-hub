@@ -19,6 +19,8 @@ from errors import WorkerConfigurationError
 
 PARSER_NAME = "demoparser2"
 PARSER_VERSION = "0.42.0"
+DURABLE_HOT_TARGET_BYTES = 4 * 1024 * 1024
+DURABLE_HOT_HARD_MAX_BYTES = 8 * 1024 * 1024
 
 #: JSON contract spoken with the APP. Different concept from the parser version.
 DEFAULT_CONTRACT_VERSION = 1
@@ -27,9 +29,7 @@ SUPPORTED_CONTRACT_VERSIONS: frozenset[int] = frozenset({1})
 #: Marker used ONLY outside production. It is deliberately not a build id.
 DEV_UNPINNED_REVISION = "dev:unpinned"
 
-#: `git:<40-hex>` is the preferred immutable form; any other opaque, non-empty,
-#: whitespace-free token is accepted so the deployment platform can pin its own
-#: immutable build identifier.
+#: Production uses the source commit itself as the immutable build identity.
 _GIT_REVISION = re.compile(r"^git:[0-9a-f]{40}$")
 _OPAQUE_REVISION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+/-]{6,127}$")
 
@@ -102,12 +102,14 @@ def _float_env(name: str, default: float) -> float:
 def resolve_revision(raw: str | None, *, environment: str) -> str:
     """Resolve the immutable build revision, failing closed in production."""
     candidate = (raw or "").strip()
-    if is_valid_revision(candidate):
+    if environment == "production" and _GIT_REVISION.fullmatch(candidate):
+        return candidate
+    if environment != "production" and is_valid_revision(candidate):
         return candidate
     if environment == "production":
         raise WorkerConfigurationError(
             "PARSER_REVISION is required in production and must be an immutable "
-            "build identifier (preferred form: git:<full-commit-sha>)"
+            "git:<full-commit-sha> build identifier"
         )
     # Outside production only: explicitly unpinned, never a fake build id.
     return DEV_UNPINNED_REVISION
@@ -137,7 +139,10 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
             contract_version=contract_version,
             environment=environment,
             max_demo_bytes=_int_env("MAX_DEMO_BYTES", 1_500 * 1024 * 1024),
-            max_payload_bytes=_int_env("MAX_PAYLOAD_BYTES", 96 * 1024 * 1024),
+            max_payload_bytes=min(
+                _int_env("MAX_PAYLOAD_BYTES", DURABLE_HOT_HARD_MAX_BYTES),
+                DURABLE_HOT_HARD_MAX_BYTES,
+            ),
             download_timeout_seconds=_float_env("DOWNLOAD_TIMEOUT_SECONDS", 120.0),
             parse_timeout_seconds=_float_env("PARSE_TIMEOUT_SECONDS", 240.0),
             bridge_url=(source.get("DEMO_PIPELINE_BRIDGE_URL") or "").strip().rstrip("/") or None,
