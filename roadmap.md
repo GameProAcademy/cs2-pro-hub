@@ -977,3 +977,11 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] C.8 Garantir observabilidade bounded e sanitizada.
 - [x] C.9 Documentar os 16 gates de promoção sem autorizar E2E real.
 - [x] Validar parser, testes focados, tipos e diff: TS 861/861; Python 138/138; release segue BLOCKED no gate 16.
+
+## FASE 2.7.2D.5 — Durable claim + primeiro E2E real Cache — EM EXECUÇÃO
+
+- [x] Confirmar no banco real que `user_id` e `attempt_number` pertencem ao `demo_jobs` reclamado e são distintos do dispatch attempt.
+- [x] Aplicar migration incremental do RPC e adicionar validação fail-closed no APP, sem fallback ou valores inventados.
+- [ ] Validar testes TypeScript/Python, compileall e imagem Railway.
+- [ ] Publicar APP e comprovar o contrato `/claim` atualizado.
+- [ ] Recuperar somente o job Cache pelo mecanismo oficial e acompanhar todos os gates até estado terminal real.

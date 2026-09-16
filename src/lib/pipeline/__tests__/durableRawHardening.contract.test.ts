@@ -6,6 +6,7 @@ import {
   decideRawChunkRecovery,
   deriveRawArtifactAuditStatus,
   rawPrefix,
+  validateDurableClaim,
 } from "@/lib/pipeline/durableBridge.server";
 import { rawArtifactApproval } from "@/lib/pipeline/rawArtifact.server";
 
@@ -30,6 +31,10 @@ const workerSource = readFileSync("services/cs2-demo-parser/worker.py", "utf8");
 const bridgeRouteSource = readFileSync("src/routes/api/public/pipeline-worker.$action.ts", "utf8");
 const durableBridgeSource = readFileSync("src/lib/pipeline/durableBridge.server.ts", "utf8");
 const jobsServerSource = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
+const claimMigration = readFileSync(
+  "supabase/migrations/20260916103513_50aef18c-7978-412f-aefe-eca801eba0a6.sql",
+  "utf8",
+);
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   it("lets another worker reclaim only an expired processing lease", () => {
@@ -91,12 +96,46 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it("separates dispatch attempt from the logical demo attempt", () => {
-    expect(durableBridgeSource).toContain('.select("user_id, attempt_number")');
-    expect(durableBridgeSource).toContain("attempt_number: job.attempt_number");
+    expect(claimMigration).toContain("'user_id', _job.user_id");
+    expect(claimMigration).toContain("'attempt_number', _job.attempt_number");
+    expect(claimMigration).toContain("'attempt', _attempt");
+    expect(durableBridgeSource).toContain("attempt_number: claim.attempt_number");
     expect(durableBridgeSource).toContain("job.dispatch_attempt !== input.attempt");
     expect(durableBridgeSource).toContain("rawPrefix(job.user_id, job.upload_id, job.attempt_number)");
     expect(jobsServerSource).toContain("attemptNumber: job.attempt_number");
     expect(jobsServerSource).not.toContain("attemptNumber: durableClaim?.attempt");
+  });
+
+  it("validates a complete claim and keeps logical and dispatch attempts distinct", () => {
+    const claim = validateDurableClaim({
+      status: "claimed", message_id: 14,
+      job_id: "a31f5c25-b0d8-41ac-8225-27814cd1732a",
+      upload_id: "b7d41ad7-b143-4a3a-ab80-ebfee2d2c043",
+      user_id: "348b6f66-386d-48c4-bac1-7382ab12d7be",
+      demo_sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29e0dd4d446b4ec8ae3d",
+      attempt: 2, attempt_number: 5, schema_version: 1, file_size: 473748061,
+      storage_path: "348b6f66-386d-48c4-bac1-7382ab12d7be/b7d41ad7-b143-4a3a-ab80-ebfee2d2c043.dem",
+    });
+    expect(claim).toMatchObject({ attempt: 2, attempt_number: 5 });
+  });
+
+  it.each(["user_id", "attempt_number"])("fails closed when claimed %s is missing", (field) => {
+    const claim: Record<string, unknown> = {
+      status: "claimed", message_id: 1,
+      job_id: "a31f5c25-b0d8-41ac-8225-27814cd1732a",
+      upload_id: "b7d41ad7-b143-4a3a-ab80-ebfee2d2c043",
+      user_id: "348b6f66-386d-48c4-bac1-7382ab12d7be",
+      demo_sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29e0dd4d446b4ec8ae3d",
+      attempt: 0, attempt_number: 1, schema_version: 1, file_size: 1, storage_path: "u/f.dem",
+    };
+    delete claim[field];
+    expect(() => validateDurableClaim(claim)).toThrowError(
+      expect.objectContaining({ code: "PARSER_INVALID_RESPONSE", detail: "durable claim contract invalid" }),
+    );
+  });
+
+  it("does not inspect claim fields for an empty queue response", () => {
+    expect(validateDurableClaim({ status: "empty" })).toBeNull();
   });
 
   it("keeps technical retries on one logical RAW prefix", () => {
