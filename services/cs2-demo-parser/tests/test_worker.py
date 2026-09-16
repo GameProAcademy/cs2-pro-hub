@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 from conftest import DEMO_SHA, empty_parse, make_settings
 from errors import WorkerError
@@ -9,6 +10,21 @@ from worker import _worker_error_code, durable_consumer_loop
 
 def test_worker_error_preserves_wire_code():
     assert _worker_error_code(WorkerError(422, "HASH_MISMATCH", "safe")) == "HASH_MISMATCH"
+
+
+def test_durable_entrypoint_uses_isolated_parser():
+    entrypoint = Path(__file__).parents[1] / "worker_main.py"
+    source = entrypoint.read_text(encoding="utf-8")
+    assert "from parser_isolated import parse_demo_file_isolated" in source
+    assert "durable_consumer_loop(settings, parse_demo_file_isolated)" in source
+    assert "from parser import parse_demo_file" not in source
+
+
+def test_worker_main_suppresses_http_request_url_logging():
+    entrypoint = Path(__file__).parents[1] / "worker_main.py"
+    source = entrypoint.read_text(encoding="utf-8")
+    assert 'logging.getLogger("httpx").setLevel(logging.WARNING)' in source
+    assert 'logging.getLogger("httpcore").setLevel(logging.WARNING)' in source
 
 
 def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
