@@ -1,10 +1,11 @@
 # Roadmap
 
-## BLOCKER — Deployment público — EM INVESTIGAÇÃO
+## BLOCKER — Deployment público — CONCLUÍDO
 
-- [ ] Identificar a causa raiz da divergência entre Preview, lovable.app e domínio customizado.
-- [ ] Corrigir somente a inicialização/deployment afetado, preservando backend, dados, Railway e pipeline.
-- [ ] Publicar o código atual e validar `/`, `/login`, refresh e redirecionamento de rota protegida nos dois domínios.
+- [x] Causa raiz confirmada: o build público não injetava a configuração pública do Lovable Cloud no cliente gerado.
+- [x] Inicialização corrigida no build, preservando backend, dados, Railway e pipeline.
+- [x] Código publicado e validado em `/`, `/login`, refresh, sessão e rotas protegidas nos dois domínios.
+- [x] `gameprohub.lovable.app` e `gamepro.network` testados em navegador real, sem crash ou tela “This page didn't load”.
 
 ## FASE 2.7.2D-C — UX de duplicidade e seleção explícita — CONCLUÍDA
 
