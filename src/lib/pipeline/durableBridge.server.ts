@@ -4,7 +4,7 @@ import { MAX_CONCURRENT_DEMO_JOBS, MAX_JOB_RETRIES } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { processJob, type DurableJobClaim } from "@/lib/pipeline/jobs.server";
 import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
-import type { RawParserOutput } from "@/lib/pipeline/types";
+import type { DurableDemoCompletionV1 } from "@/lib/pipeline/types";
 import { createDemoSignedUrl, demoExists } from "@/lib/pipeline/storage.server";
 
 const VISIBILITY_SECONDS = 15 * 60;
@@ -48,8 +48,10 @@ export async function claimDurableDemo(workerId: string) {
     message_id: claim["message_id"],
     job_id: claim["job_id"],
     upload_id: claim["upload_id"],
+    user_id: claim["user_id"],
     demo_sha256: claim["demo_sha256"],
     attempt: claim["attempt"],
+    attempt_number: claim["attempt"],
     schema_version: claim["schema_version"],
     file_size: exists.size || claim["file_size"],
     demo_url: await createDemoSignedUrl(storagePath),
@@ -71,12 +73,12 @@ export async function heartbeatDurableDemo(input: DurableJobClaim & { jobId: str
   return data;
 }
 
-export async function completeDurableDemo(input: DurableJobClaim & { jobId: string; result: unknown }) {
+export async function completeDurableDemo(input: DurableJobClaim & { jobId: string } & DurableDemoCompletionV1) {
   const heartbeat = (await heartbeatDurableDemo({ ...input, stage: "persisting" })) as Record<string, unknown>;
   if (heartbeat["accepted"] !== true || heartbeat["cancelled"] === true) {
     return { status: heartbeat["cancelled"] === true ? "cancelled" : "stale" };
   }
-  const result = await processJob(input.jobId, input.result as RawParserOutput, input);
+  const result = await processJob(input.jobId, { hot: input.hot, raw: input.raw }, input);
   if (result.status !== "processed" && result.status !== "blocked_raw_audit") return result;
   const { rpc } = await context();
   const { data, error } = await rpc("finalize_demo_parse_message", {

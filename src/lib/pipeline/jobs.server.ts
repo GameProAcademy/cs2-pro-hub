@@ -36,7 +36,14 @@ import {
   type RawAdmissionDecision,
 } from "@/lib/pipeline/rawEvidence";
 import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
-import type { RawParserOutput } from "@/lib/pipeline/types";
+import {
+  assertHotDemoPayload,
+  assertRawArtifactReference,
+  hotToRawParserOutput,
+  rawArtifactApproval,
+  verifyRawArtifact,
+} from "@/lib/pipeline/rawArtifact.server";
+import type { DurableDemoCompletionV1, RawParserOutput } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 import {
   assertParserWorkerReady,
@@ -331,7 +338,7 @@ export async function claimNextJob(): Promise<string | null> {
 /** Runs one job end to end. Safe to call repeatedly; never throws. */
 export async function processJob(
   jobId: string,
-  suppliedRaw?: RawParserOutput,
+  suppliedRaw?: RawParserOutput | DurableDemoCompletionV1,
   durableClaim?: DurableJobClaim,
 ): Promise<JobProcessResult> {
   const db = await admin();
@@ -399,8 +406,16 @@ export async function processJob(
     await assertNotCancelled(jobId);
 
     let raw: RawParserOutput;
+    let artifactCompletion: DurableDemoCompletionV1 | null = null;
     if (suppliedRaw) {
-      raw = assertRawParserOutput(suppliedRaw);
+      if ("hot" in suppliedRaw && "raw" in suppliedRaw) {
+        const hot = assertHotDemoPayload(suppliedRaw.hot);
+        const artifact = assertRawArtifactReference(suppliedRaw.raw);
+        artifactCompletion = { hot, raw: artifact };
+        raw = hotToRawParserOutput(hot);
+      } else {
+        raw = assertRawParserOutput(suppliedRaw);
+      }
     } else {
       const adapter = resolveParserAdapter();
       if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
@@ -437,26 +452,23 @@ export async function processJob(
     // RAW evidence is its own immutable audit layer. Persist it before the APP
     // contract is normalized or any canonical fact can be written.
     await setStage(jobId, "raw_audit");
-    const rawAudit = await persistRawEvidence({
-      jobId,
-      uploadId: job.upload_id,
-      userId: job.user_id,
-      expectedSha256: job.demo_sha256,
-      attempt: durableClaim?.attempt ?? job.retry_count,
-      raw,
-    });
+    const rawAudit = artifactCompletion
+      ? await verifyRawArtifact({ ref: artifactCompletion.raw, hot: artifactCompletion.hot,
+          jobId, uploadId: job.upload_id, userId: job.user_id,
+          attemptNumber: durableClaim?.attempt ?? job.retry_count,
+          expectedSha256: job.demo_sha256 })
+      : await persistRawEvidence({ jobId, uploadId: job.upload_id, userId: job.user_id,
+          expectedSha256: job.demo_sha256, attempt: durableClaim?.attempt ?? job.retry_count, raw });
     await assertNotCancelled(jobId);
     if (!rawAudit.approved) {
       await blockForRawAudit(jobId, job.upload_id, rawAudit, durableClaim);
       return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
     }
     assertRawAdmissionApproved(rawAudit);
-    const rawApproval: RawAdmissionApproval = {
-      approved: true,
-      auditStatus: "APPROVED",
-      auditVersion: rawAudit.auditVersion,
-      evidenceDigest: rawAudit.evidenceDigest,
-    };
+    const rawApproval: RawAdmissionApproval = artifactCompletion
+      ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id)
+      : { approved: true, auditStatus: "APPROVED", auditVersion: rawAudit.auditVersion,
+          evidenceDigest: rawAudit.evidenceDigest };
 
     await setStage(jobId, "normalizing");
     assertDeadline();

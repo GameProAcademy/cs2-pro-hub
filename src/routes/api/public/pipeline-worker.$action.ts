@@ -16,7 +16,7 @@ const identity = z.object({
   workerId: z.string().min(3).max(128),
 });
 
-const MAX_COMPLETE_BYTES = 96 * 1024 * 1024;
+const MAX_COMPLETE_BYTES = 2 * 1024 * 1024;
 
 class PayloadTooLargeError extends Error {}
 
@@ -65,9 +65,8 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             return Response.json(await heartbeatDurableDemo(input.stage ? { ...input, stage: input.stage } : input));
           }
           if (params.action === "complete") {
-            const input = identity.extend({ result: z.unknown() }).parse(body);
-            if (!("result" in input)) return Response.json({ error: "invalid_request" }, { status: 400 });
-            return Response.json(await completeDurableDemo({ ...input, result: input.result }));
+            const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).parse(body);
+            return Response.json(await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]));
           }
           if (params.action === "fail") {
             const input = identity.extend({ errorCode: z.string().min(1).max(80), detail: z.string().max(300).optional() }).parse(body);

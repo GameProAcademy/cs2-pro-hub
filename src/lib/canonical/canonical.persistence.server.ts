@@ -88,6 +88,19 @@ export async function persistCanonicalObservation(args: {
     if (!args.uploadId || !args.rawApproval?.approved) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
+    if (args.rawApproval.artifactId) {
+      const { data: artifact, error: artifactError } = await supabaseAdmin
+        .from("raw_evidence_artifacts")
+        .select("id, upload_id, status, raw_status, audit_status, root_digest, ready_at")
+        .eq("id", args.rawApproval.artifactId)
+        .eq("upload_id", args.uploadId)
+        .maybeSingle();
+      if (artifactError || !artifact || artifact.status !== "ready" || artifact.raw_status !== "ready" ||
+          artifact.audit_status !== "approved" || !artifact.ready_at ||
+          artifact.root_digest !== args.rawApproval.evidenceDigest) {
+        throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+      }
+    } else {
     const { data: audit, error: auditError } = await supabaseAdmin
       .from("raw_demo_evidence_reports")
       .select("raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, audited_evidence_digest, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version")
@@ -112,6 +125,7 @@ export async function persistCanonicalObservation(args: {
     }
     if (independent.evidenceDigest !== audit.audited_evidence_digest) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
+    }
     }
   }
 
