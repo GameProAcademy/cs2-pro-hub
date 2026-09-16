@@ -122,10 +122,15 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it("fails closed on a broken physical chunk chain", () => {
     const sha = "a".repeat(64);
-    expect(() => computeRawArtifactIntegrity([
-      { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
-        previous_chunk_sha256: "b".repeat(64) },
-    ])).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
+    try {
+      computeRawArtifactIntegrity([
+        { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
+          previous_chunk_sha256: "b".repeat(64) },
+      ]);
+      throw new Error("expected RAW chain validation to fail");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
+    }
   });
 
   it("changes the root digest when a verified chunk digest changes", () => {
