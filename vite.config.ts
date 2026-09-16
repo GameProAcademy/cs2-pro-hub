@@ -6,11 +6,17 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-const managedSupabaseUrl = process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
+// These two values are public browser configuration (not credentials). Keep a
+// production fallback because the publish builder does not inherit the managed
+// VITE_* variables even though the preview and server runtime do.
+const managedSupabaseUrl =
+  process.env["VITE_SUPABASE_URL"] ??
+  process.env["SUPABASE_URL"] ??
+  "https://gafvvcsnotcczgktourw.supabase.co";
 const managedSupabasePublishableKey =
   process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
   process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-  "";
+  "sb_publishable_xuK2nN6Pya1BnY7eWwRmRQ_26itKmfK";
 
 export default defineConfig({
   vite: {
