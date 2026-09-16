@@ -11,6 +11,14 @@ Large public demos can therefore turn an otherwise bounded evidence sample into
 millions of cells. The child applies a deterministic query cap before the parser
 is invoked; the existing RAW evidence layer still records the returned sample as
 SAMPLE coverage and never treats it as full tick extraction.
+
+`parse_grenades()` also has a second, independent native parsing mode. The
+upstream Python binding enables both projectile parsing and grenade entity
+inventory by default. For this worker we only need projectile trajectory rows;
+the grenade entity inventory is not consumed by the current APP contract and
+can multiply native memory use on large demos. The isolated child therefore
+calls the same API with `grenades=False`, preserving projectile extraction while
+disabling the unnecessary grenade-inventory pass.
 """
 
 from __future__ import annotations
@@ -20,7 +28,6 @@ import json
 import os
 from pathlib import Path
 import threading
-import time
 
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
 import parser as parser_module
@@ -96,22 +103,33 @@ def _parse_ticks_bounded(demo, sample_ticks):
     return result
 
 
-_ORIGINAL_PARSE_GRENADES = parser_module._parse_grenades
-
-
-def _parse_grenades_diagnostic(demo):
-    print(f"parser_child_stage=parse_grenades_start rss_gb={_rss_gb()}", flush=True)
-    result = _ORIGINAL_PARSE_GRENADES(demo)
-    rows = len(result[0]) if isinstance(result, tuple) and result and isinstance(result[0], list) else "unknown"
-    print(f"parser_child_stage=parse_grenades_complete rows={rows} rss_gb={_rss_gb()}", flush=True)
-    return result
+def _parse_grenades_safe(demo):
+    """Parse projectile trajectories without the optional grenade inventory pass."""
+    print(f"parser_child_stage=parse_grenades_start rss_gb={_rss_gb()} mode=projectiles_only", flush=True)
+    method = getattr(demo, "parse_grenades", None)
+    if not callable(method):
+        return [], AttributeError("parse_grenades is unavailable")
+    try:
+        frame = method(grenades=False)
+        rows = parser_module._records(frame)
+        print(
+            f"parser_child_stage=parse_grenades_complete rows={len(rows)} rss_gb={_rss_gb()} mode=projectiles_only",
+            flush=True,
+        )
+        return rows, None
+    except BaseException as exc:  # noqa: BLE001 - preserve capability failure as evidence
+        print(
+            f"parser_child_stage=parse_grenades_error type={type(exc).__name__} rss_gb={_rss_gb()} mode=projectiles_only",
+            flush=True,
+        )
+        return [], exc
 
 
 # Patch only the isolated child. The canonical parser module remains unchanged;
 # the durable worker therefore keeps the same public parser contract while the
-# killable child prevents oversized tick queries from exhausting the container.
+# killable child prevents oversized native queries from exhausting the container.
 parser_module._parse_ticks = _parse_ticks_bounded
-parser_module._parse_grenades = _parse_grenades_diagnostic
+parser_module._parse_grenades = _parse_grenades_safe
 parse_demo_file = parser_module.parse_demo_file
 
 
