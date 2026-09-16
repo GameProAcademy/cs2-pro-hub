@@ -964,3 +964,16 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Validar contratos focados, tipos e integridade do diff; schema e RPCs aplicados no banco.
 - [x] Corrigir a UI do histórico: estado vazio sem CTA, falhas de consulta explícitas e `legacy_unvalidated` preservado no client.
 - [ ] Nenhuma demo real foi enviada e nenhum job histórico foi alterado; E2E real e publicação permanecem pendentes.
+
+## FASE 2.7.2D.4-C — Final APP hardening + RAW recovery + release gate
+
+- [ ] C.1 Separar revisão semântica do parser e identidade exata do build, sem quebrar o lock atual.
+- [ ] C.2 Tornar artifacts FAILED recuperáveis idempotentemente para a mesma tentativa lógica.
+- [ ] C.3 Endurecer auditoria RAW, manifest, chain e root com decisão final do APP.
+- [ ] C.4 Congelar e validar a matriz HOT sem truncamento silencioso.
+- [ ] C.5 Congelar /complete em HOT + referência RAW, máximo 8 MiB.
+- [ ] C.6 Congelar matriz de chunks e integridade determinística.
+- [ ] C.7 Ampliar testes de contrato, identidade, lifecycle, auditoria e segurança.
+- [ ] C.8 Garantir observabilidade bounded e sanitizada.
+- [ ] C.9 Documentar os 16 gates de promoção sem autorizar E2E real.
+- [ ] Validar parser, testes focados, tipos, build e diff; classificar o resultado final.
