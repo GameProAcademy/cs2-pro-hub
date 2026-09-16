@@ -1,5 +1,11 @@
 # Roadmap
 
+## BLOCKER — Deployment público — EM INVESTIGAÇÃO
+
+- [ ] Identificar a causa raiz da divergência entre Preview, lovable.app e domínio customizado.
+- [ ] Corrigir somente a inicialização/deployment afetado, preservando backend, dados, Railway e pipeline.
+- [ ] Publicar o código atual e validar `/`, `/login`, refresh e redirecionamento de rota protegida nos dois domínios.
+
 ## FASE 2.7.2D-C — UX de duplicidade e seleção explícita — CONCLUÍDA
 
 - [x] Mensagens distintas para demo nova, processada, em fila, falha e cancelada.
