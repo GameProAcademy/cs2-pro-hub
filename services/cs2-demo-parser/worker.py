@@ -10,6 +10,7 @@ from typing import Any, Callable
 import httpx
 
 from errors import WorkerError
+from parser_isolated import parse_demo_file_isolated
 from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
@@ -71,6 +72,11 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 try:
                     if claim["attempt_number"] < 1:
                         raise RuntimeError("invalid logical demo attempt")
+                    # Durable production ingestion must retain the Railway-specific
+                    # process-isolated native parser boundary. The callable passed by
+                    # app.py is retained for test injection/legacy compatibility, but
+                    # the durable queue always uses the isolated child.
+                    durable_parse = parse_demo_file_isolated
                     result = await _parse_durable_request(
                         ParseRequest(
                             contract_version=settings.contract_version,
@@ -80,7 +86,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                             file_size=claim["file_size"],
                         ),
                         settings,
-                        parse,
+                        durable_parse,
                         job_id=identity["jobId"],
                         user_id=claim["user_id"],
                         attempt_number=claim["attempt_number"],
