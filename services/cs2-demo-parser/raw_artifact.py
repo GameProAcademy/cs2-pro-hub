@@ -41,9 +41,14 @@ def _stable(value: Any) -> bytes:
 
 
 def _records(value: Any) -> Iterable[Any]:
-    if isinstance(value, list):
+    if value is None:
+        return
+    if isinstance(value, dict) or isinstance(value, (str, bytes)):
+        yield value
+        return
+    try:
         yield from value
-    elif value is not None:
+    except TypeError:
         yield value
 
 
