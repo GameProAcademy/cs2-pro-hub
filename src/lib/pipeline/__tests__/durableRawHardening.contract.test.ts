@@ -125,7 +125,7 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(() => computeRawArtifactIntegrity([
       { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
         previous_chunk_sha256: "b".repeat(64) },
-    ])).toThrow("RAW chain mismatch");
+    ])).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
   });
 
   it("changes the root digest when a verified chunk digest changes", () => {
@@ -137,9 +137,14 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it("never constructs Canonical approval from a blocked decision", () => {
-    expect(() => rawArtifactApproval({ status: "BLOCKED", auditStatus: "BLOCKED", approved: false,
+    try {
+      rawArtifactApproval({ status: "BLOCKED", auditStatus: "BLOCKED", approved: false,
       auditVersion: 3, reasons: ["gate:RAW"], evidenceDigest: "a".repeat(64), forensicInventory: {} },
-    "artifact")).toThrow("gate:RAW");
+      "artifact");
+      throw new Error("expected RAW admission to fail");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "RAW_AUDIT_BLOCKED", detail: "gate:RAW" });
+    }
   });
 
   it("binds the immutable audit decision to the evidence digest", () => {
