@@ -15,3 +15,13 @@ def test_hot_payload_is_bounded_and_marks_overflow():
                        "overflow_rows": 7}
     assert hot["quality"]["partial"] is True
     assert "raw_evidence" not in hot and "grenade_samples" not in hot
+
+
+def test_hot_payload_marks_unclassified_events_partial():
+    hot = build_hot_payload(
+        {"header": {}, "players": [], "rounds": [], "events": [{"type": "unknown_event"}]},
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:test"},
+        contract_version=1, demo_sha256="a" * 64, upload_id="upload",
+    )
+    assert hot["quality"]["partial"] is True
+    assert hot["quality"]["unclassified_event_rows"] == 1

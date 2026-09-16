@@ -48,6 +48,9 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!hot.quality || !Array.isArray(hot.quality.limited_sections)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT quality");
   }
+  if (Number((hot.quality as unknown as Record<string, unknown>)["unclassified_event_rows"] ?? 0) > 0) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "HOT projection contains unclassified events");
+  }
   for (const [name, quality] of Object.entries(hot.quality.sections ?? {})) {
     if (quality.included_rows > quality.limit || quality.observed_rows - quality.included_rows !== quality.overflow_rows) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", `invalid HOT bound: ${name}`);
