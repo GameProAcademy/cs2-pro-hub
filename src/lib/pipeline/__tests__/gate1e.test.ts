@@ -216,6 +216,8 @@ describe("GATE 1E — /version identity", () => {
       name: PARSER_NAME,
       version: PARSER_VERSION,
       revision: "abc123",
+      semanticRevision: "abc123",
+      buildRevision: null,
       contractVersion: PARSER_CONTRACT_VERSION,
     });
   });

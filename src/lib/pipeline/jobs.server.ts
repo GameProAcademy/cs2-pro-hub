@@ -49,6 +49,7 @@ import {
   assertParserWorkerReady,
   resolveParserAdapter,
 } from "@/lib/pipeline/parser/remoteParser.server";
+import { assertParserIdentityConsistency } from "@/lib/pipeline/parser/parserEndpoint";
 import { persistDemoProjection } from "@/lib/pipeline/persistence.server";
 import {
   assertDemoIntegrity,
@@ -421,7 +422,7 @@ export async function processJob(
       const adapter = resolveParserAdapter();
       if (!adapter.isAvailable()) throw new PipelineError("PARSER_UNAVAILABLE");
       assertDeadline();
-      await assertParserWorkerReady();
+      const workerIdentity = await assertParserWorkerReady();
       await assertNotCancelled(jobId);
 
       assertDeadline();
@@ -447,6 +448,7 @@ export async function processJob(
         demoSha256: job.demo_sha256,
         deadlineAt,
       });
+      assertParserIdentityConsistency(workerIdentity, raw.parser, raw.contract_version);
     }
     await assertNotCancelled(jobId);
 
