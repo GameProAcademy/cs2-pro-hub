@@ -160,6 +160,7 @@ export interface RawAdmissionApproval {
   auditStatus: "APPROVED";
   auditVersion: number;
   evidenceDigest: string;
+  artifactId?: string;
 }
 
 const DIGEST_KEYS = [

@@ -49,7 +49,7 @@ async def _heartbeat_loop(client: httpx.AsyncClient, settings: Settings, identit
 
 
 async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[str, Any]]) -> None:
-    from app import ParseRequest, _parse_request
+    from app import ParseRequest, _parse_durable_request
 
     timeout = httpx.Timeout(settings.download_timeout_seconds + settings.parse_timeout_seconds + 60)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
@@ -68,7 +68,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
                 try:
-                    result = await _parse_request(
+                    result = await _parse_durable_request(
                         ParseRequest(
                             contract_version=settings.contract_version,
                             upload_id=claim["upload_id"],
@@ -78,13 +78,22 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         ),
                         settings,
                         parse,
+                        job_id=identity["jobId"],
+                        user_id=claim["user_id"],
+                        attempt_number=claim["attempt_number"],
+                        bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
+                        client=client,
                     )
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")
                         continue
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
-                        await _bridge(client, settings, "complete", {**identity, "result": result})
+                        complete_body = {**identity, **result}
+                        logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
+                                    len(__import__("json").dumps(complete_body, separators=(",", ":")).encode()),
+                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12])
+                        await _bridge(client, settings, "complete", complete_body)
                 except WorkerError as error:
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:

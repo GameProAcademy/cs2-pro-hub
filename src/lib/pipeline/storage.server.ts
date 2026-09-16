@@ -9,6 +9,7 @@ import { DEMO_BUCKET, DEMO_RETENTION_HOURS, FAILED_DEMO_RETENTION_HOURS } from "
 import { PipelineError } from "@/lib/pipeline/errors";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 15;
+export const RAW_EVIDENCE_BUCKET = "cs2-raw-evidence";
 
 export function demoStoragePath(userId: string, uploadId: string): string {
   return `${userId}/${uploadId}.dem`;
@@ -28,6 +29,31 @@ export async function createDemoSignedUrl(storagePath: string): Promise<string> 
     throw new PipelineError("DEMO_NOT_FOUND", error?.message ?? "signed url unavailable");
   }
   return data.signedUrl;
+}
+
+export async function createRawEvidenceSignedUploadUrl(storagePath: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.storage
+    .from(RAW_EVIDENCE_BUCKET)
+    .createSignedUploadUrl(storagePath, { upsert: true });
+  if (error || !data?.signedUrl) {
+    throw new PipelineError("PERSISTENCE_ERROR", error?.message ?? "raw upload url unavailable");
+  }
+  return data.signedUrl;
+}
+
+export async function uploadRawEvidenceManifest(storagePath: string, body: string): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.storage.from(RAW_EVIDENCE_BUCKET)
+    .upload(storagePath, body, { contentType: "application/json", upsert: true });
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+}
+
+export async function rawEvidenceObjectSha256(storagePath: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.storage.from(RAW_EVIDENCE_BUCKET).download(storagePath);
+  if (error || !data) throw new PipelineError("PERSISTENCE_ERROR", error?.message ?? "raw object unavailable");
+  return sha256FromStream(data.stream() as ReadableStream<Uint8Array>);
 }
 
 export async function demoExists(storagePath: string): Promise<{ size: number } | null> {

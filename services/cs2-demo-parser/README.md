@@ -8,6 +8,17 @@ root directory `services/cs2-demo-parser`.
 * JSON contract version: `1` (different concept from the parser version)
 * framework: FastAPI + uvicorn, Docker build from this directory
 
+## Durable RAW boundary
+
+Durable jobs persist full evidence as verified JSONL-gzip chunks in the private
+`cs2-raw-evidence` bucket. Chunks target 4 MiB and fail closed above 8 MiB, carry
+a physical SHA-256 and a cross-section hash chain, and are described by a small
+manifest/root digest. The `/complete` callback contains only bounded `hot` data
+plus the READY `raw` artifact reference; full RAW arrays never cross that route.
+
+The APP creates short-lived, object-scoped upload URLs. The Railway worker never
+receives a database or Storage credential.
+
 ## Endpoints
 
 | Method | Path        | Purpose                                              |

@@ -44,7 +44,9 @@ or insecure URL, or a missing token, keeps the adapter unavailable.
 The Railway service additionally receives `DEMO_PIPELINE_BRIDGE_URL` pointing to
 `https://gamepro.network/api/public/pipeline-worker`, the same
 `DEMO_PIPELINE_BRIDGE_SECRET`, a stable `DEMO_PIPELINE_WORKER_ID`, and optional
-poll/heartbeat intervals. It never receives the backend's privileged key.
+poll/heartbeat intervals. RAW artifacts use short-lived, object-scoped upload
+URLs created by the APP; the Railway worker never receives a database or Storage
+credential.
 
 ## Transactional email — Hostinger Mail API (server only)
 
