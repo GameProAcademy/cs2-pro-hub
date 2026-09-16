@@ -23,10 +23,12 @@ function validHot(): HotDemoPayloadV1 {
   }]));
   return {
     schema_version: 1, parser: { name: "demoparser2", version: "0.42.0", revision: "git:test" },
-    contract_version: 1, demo: { sha256: "a".repeat(64), upload_id: "upload" }, header: {}, ...rows,
+    contract_version: 1, demo: { sha256: "a".repeat(64), upload_id: "upload" }, header: {},
+    players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
+    aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],
     quality: { partial: true, limited_sections: [], sections, unclassified_event_rows: 0 },
     provenance: { source: "demo", raw_artifact_required: true },
-  } as HotDemoPayloadV1;
+  };
 }
 
 function expectInvalid(value: unknown) {
