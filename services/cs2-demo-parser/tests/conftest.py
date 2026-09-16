@@ -30,8 +30,6 @@ def make_settings(**overrides: Any) -> Settings:
         worker_id="test-worker",
         queue_poll_seconds=0.01,
         queue_heartbeat_seconds=0.05,
-        backend_url=None,
-        backend_service_key=None,
     )
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]

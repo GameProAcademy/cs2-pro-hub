@@ -81,6 +81,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         job_id=identity["jobId"],
                         user_id=claim["user_id"],
                         attempt_number=claim["attempt_number"],
+                        bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
+                        client=client,
                     )
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")

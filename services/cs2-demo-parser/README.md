@@ -16,8 +16,8 @@ a physical SHA-256 and a cross-section hash chain, and are described by a small
 manifest/root digest. The `/complete` callback contains only bounded `hot` data
 plus the READY `raw` artifact reference; full RAW arrays never cross that route.
 
-The durable runtime requires server-only `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY`. Never expose either in browser variables or logs.
+The APP creates short-lived, object-scoped upload URLs. The Railway worker never
+receives a database or Storage credential.
 
 ## Endpoints
 

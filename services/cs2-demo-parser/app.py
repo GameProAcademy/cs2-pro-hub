@@ -137,9 +137,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
 
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
-                                 job_id: str, user_id: str, attempt_number: int) -> dict[str, Any]:
-    if not settings.backend_url or not settings.backend_service_key:
-        raise WorkerError(503, E.PARSER_ERROR, "RAW artifact storage is not configured.")
+                                 job_id: str, user_id: str, attempt_number: int,
+                                 bridge, client: httpx.AsyncClient) -> dict[str, Any]:
     payload = await _parse_downloaded(body, settings, parse, finalize_raw=False)
     evidence = payload.pop("raw_evidence", None)
     if not isinstance(evidence, dict):
@@ -150,16 +149,12 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
     hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
                             demo_sha256=body.demo_sha256, upload_id=body.upload_id)
     writer = RawArtifactWriter(
-        backend_url=settings.backend_url,
-        service_key=settings.backend_service_key,
         context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
                                 attempt_number=attempt_number, demo_sha256=body.demo_sha256,
                                 parser=identity, contract_version=settings.contract_version),
+        bridge=bridge, client=client,
     )
-    try:
-        raw = await asyncio.to_thread(writer.write, evidence)
-    finally:
-        writer.close()
+    raw = await writer.write(evidence)
     encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
     if len(encoded) > settings.max_payload_bytes:
         raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "HOT payload is too large.")

@@ -7,6 +7,10 @@ import {
   completeDurableDemo,
   failDurableDemo,
   heartbeatDurableDemo,
+  initializeRawArtifact,
+  prepareRawChunk,
+  verifyRawChunk,
+  finalizeRawArtifact,
 } from "@/lib/pipeline/durableBridge.server";
 
 const identity = z.object({
@@ -67,6 +71,27 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
           if (params.action === "complete") {
             const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).parse(body);
             return Response.json(await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]));
+          }
+          if (params.action === "raw-artifact-init") {
+            return Response.json(await initializeRawArtifact(identity.parse(body)));
+          }
+          if (params.action === "raw-chunk-prepare") {
+            const input = identity.extend({ artifactId: z.string().uuid(), section: z.string().min(1).max(32),
+              chunkIndex: z.number().int().nonnegative(), firstRow: z.number().int().nonnegative(),
+              lastRow: z.number().int().nonnegative(), rowCount: z.number().int().positive(),
+              byteSize: z.number().int().positive().max(8 * 1024 * 1024), sha256: z.string().regex(/^[0-9a-f]{64}$/),
+              previousChunkSha256: z.string().regex(/^[0-9a-f]{64}$/).nullable() }).parse(body);
+            return Response.json(await prepareRawChunk(input));
+          }
+          if (params.action === "raw-chunk-verify") {
+            const input = identity.extend({ artifactId: z.string().uuid(), section: z.string().min(1).max(32),
+              chunkIndex: z.number().int().nonnegative() }).parse(body);
+            return Response.json(await verifyRawChunk(input));
+          }
+          if (params.action === "raw-artifact-finalize") {
+            const input = identity.extend({ artifactId: z.string().uuid(), rootDigest: z.string().regex(/^[0-9a-f]{64}$/),
+              manifest: z.record(z.string(), z.unknown()) }).parse(body);
+            return Response.json(await finalizeRawArtifact(input));
           }
           if (params.action === "fail") {
             const input = identity.extend({ errorCode: z.string().min(1).max(80), detail: z.string().max(300).optional() }).parse(body);
