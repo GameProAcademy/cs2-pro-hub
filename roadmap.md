@@ -36,11 +36,11 @@
 - [ ] E2E real completo com uma demo privada válida (BLOCKED: arquivo `.dem` não disponível no ambiente).
 - [ ] Fechamento da fase após aprovação de todos os gates reais; FASE 2.8 não iniciada.
 
-## FASE — Correção do Lovable Preview + Loading Branding — EM EXECUÇÃO
+## FASE — Correção do Lovable Preview + Loading Branding — CONCLUÍDA
 
 - [x] Reassociar as variáveis oficiais do Lovable Cloud ao Preview, sem trocar o backend existente.
 - [x] Corrigir o loader global: `GAME` em negrito, `PRO` regular e `GAMEPRO` sem itálico.
-- [ ] Validar Preview, autenticação e páginas protegidas sem alterar banco, Railway ou pipeline.
+- [x] Validar Preview, sessão autenticada, logout e páginas protegidas sem alterar banco, Railway ou pipeline.
 
 ## FASE 2.7.2B-E2E — Reprocessamento forense Cache — EM EXECUÇÃO
 
