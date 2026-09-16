@@ -66,7 +66,7 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it("persists unknown RAW material before blocking Canonical admission", () => {
-    const persist = jobsSource.indexOf("const rawAudit = await persistRawEvidence");
+    const persist = jobsSource.indexOf("const rawAudit = artifactCompletion");
     const block = jobsSource.indexOf("if (!rawAudit.approved)");
     const normalize = jobsSource.indexOf("const match = normalizeParserOutput(raw)");
     expect(persist).toBeGreaterThan(-1);

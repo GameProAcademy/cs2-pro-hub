@@ -1,5 +1,15 @@
 # Roadmap
 
+## FASE 2.7.2D.4-B.0 — RAW streaming / HOT payload boundary — IMPLEMENTADA / E2E PENDENTE
+
+- [x] Contratos `HotDemoPayloadV1` e `RawArtifactReferenceV1`, com limites e overflow explícitos.
+- [x] Writer JSONL gzip em chunks, SHA físico, hash chain, manifest e root digest no artifact RAW existente.
+- [x] Worker durável envia apenas HOT + referência READY; `/complete` reduzido para 2 MiB e sem RAW legado.
+- [x] APP valida identidade, lifecycle, chunks, manifest e root digest antes do Canonical, sem reler RAW completo.
+- [x] Defesa Canonical aceita somente aprovação pelo artifact READY ou pelo caminho legado auditado.
+- [x] Testes focados adicionados para HOT de alto volume, chunking, integridade e idempotência.
+- [ ] Deploy/configuração Railway e E2E real com a demo Cache permanecem pendentes; nenhum secret, deploy ou dado foi alterado nesta fase.
+
 ## BLOCKER — Deployment público — CONCLUÍDO
 
 - [x] Causa raiz confirmada: o build público não injetava a configuração pública do Lovable Cloud no cliente gerado.

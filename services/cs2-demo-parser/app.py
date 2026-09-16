@@ -70,6 +70,11 @@ class ParseRequest(BaseModel):
 
 
 async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
+    return await _parse_downloaded(body, settings, parse, finalize_raw=True)
+
+
+async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
+                            finalize_raw: bool) -> dict[str, Any]:
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
         raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
@@ -121,12 +126,12 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
     }
     raw_evidence = parsed.get("raw_evidence")
     if isinstance(raw_evidence, dict):
-        payload["raw_evidence"] = finalize_evidence(
-            raw_evidence,
-            parser=identity,
-            contract_version=settings.contract_version,
-            demo_sha256=body.demo_sha256,
-            file_size=body.file_size,
+        payload["raw_evidence"] = (
+            finalize_evidence(raw_evidence, parser=identity, contract_version=settings.contract_version,
+                              demo_sha256=body.demo_sha256, file_size=body.file_size)
+            if finalize_raw else
+            prepare_evidence(raw_evidence, parser=identity, contract_version=settings.contract_version,
+                             demo_sha256=body.demo_sha256, file_size=body.file_size)
         )
     return payload
 
@@ -135,16 +140,13 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
                                  job_id: str, user_id: str, attempt_number: int) -> dict[str, Any]:
     if not settings.backend_url or not settings.backend_service_key:
         raise WorkerError(503, E.PARSER_ERROR, "RAW artifact storage is not configured.")
-    payload = await _parse_request(body, settings, parse)
+    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False)
     evidence = payload.pop("raw_evidence", None)
     if not isinstance(evidence, dict):
         raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
     identity = payload["parser"]
     # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
     # already validated metadata but never sends or canonicalizes the full RAW.
-    evidence.pop("deterministic_digest", None)
-    prepare_evidence(evidence, parser=identity, contract_version=settings.contract_version,
-                     demo_sha256=body.demo_sha256, file_size=body.file_size)
     hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
                             demo_sha256=body.demo_sha256, upload_id=body.upload_id)
     writer = RawArtifactWriter(
