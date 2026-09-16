@@ -5,6 +5,7 @@ import {
   stableRawArtifactJson,
 } from "@/lib/pipeline/rawArtifactContract";
 import type {
+  DURABLE_HOT_HARD_MAX_BYTES,
   HotDemoPayloadV1,
   RawArtifactReferenceV1,
   RawParserOutput,
