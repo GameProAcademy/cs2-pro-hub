@@ -13,7 +13,7 @@ import asyncio
 import logging
 import os
 
-from parser import parse_demo_file
+from parser_isolated import parse_demo_file_isolated
 from settings import load_settings
 from worker import durable_consumer_loop
 
@@ -62,7 +62,10 @@ async def _consumer_supervisor(settings) -> None:
     # silently kill the consumer while leaving the Railway process healthy.
     while True:
         try:
-            await durable_consumer_loop(settings, parse_demo_file)
+            # Production queue jobs MUST use the killable parser boundary.
+            # demoparser2 is native code and can terminate the process directly;
+            # parser_isolated converts child crashes/timeouts into WorkerError.
+            await durable_consumer_loop(settings, parse_demo_file_isolated)
         except asyncio.CancelledError:
             raise
         except BaseException:
@@ -87,8 +90,14 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    # httpx emits request URLs at INFO. The parser downloads short-lived signed
+    # Storage URLs, so request logging must not expose those URLs/tokens in
+    # Railway logs. Worker diagnostics remain available through our own bounded
+    # log messages in parser_isolated.py and worker.py.
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     asyncio.run(main())
