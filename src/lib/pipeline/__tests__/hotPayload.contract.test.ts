@@ -27,7 +27,8 @@ function validHot(): HotDemoPayloadV1 {
     observed_rows: 0, included_rows: 0, limit: limits[name] ?? 0, overflow_rows: 0,
   }]));
   return {
-    schema_version: 1, parser: { name: "demoparser2", version: "0.42.0", revision: "git:test" },
+    schema_version: 1, parser: { name: "demoparser2", version: "0.42.0",
+      revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371" },
     contract_version: 1, demo: { sha256: "a".repeat(64), upload_id: "upload" }, header: {},
     players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
     aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],

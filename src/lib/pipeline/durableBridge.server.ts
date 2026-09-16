@@ -176,8 +176,8 @@ type VerifiedRawChunk = {
 export type RawChunkState = "verified" | "uploading" | "failed";
 
 export function decideRawChunkRecovery(
-  existing: (VerifiedRawChunk & { storage_path: string; first_row: number | null;
-    last_row: number | null; status: string }) | null,
+  existing: ({ row_count: number; byte_size: number; sha256: string; previous_chunk_sha256: string | null;
+    storage_path: string; first_row: number | null; last_row: number | null; status: string }) | null,
   incoming: VerifiedRawChunk & { storage_path: string; first_row: number; last_row: number },
 ): "reuse" | "rewrite" | "create" {
   if (!existing) return "create";
