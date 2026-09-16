@@ -1,1 +1,6 @@
 project_id = "gafvvcsnotcczgktourw"
+
+[storage.buckets."cs2-raw-evidence"]
+public = false
+file_size_limit = "16MiB"
+allowed_mime_types = ["application/json", "application/gzip"]
