@@ -34,6 +34,16 @@ def _bounded(name: str, rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]
     }
 
 
+def _not_implemented(name: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    return [], {
+        "status": "not_implemented",
+        "observed_rows": 0,
+        "included_rows": 0,
+        "limit": HOT_LIMITS[name],
+        "overflow_rows": 0,
+    }
+
+
 def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contract_version: int,
                       demo_sha256: str, upload_id: str) -> dict[str, Any]:
     events = [row for row in parsed.get("events") or [] if isinstance(row, dict)]
@@ -41,9 +51,6 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "combat_events": [row for row in events if row.get("type") in _COMBAT],
         "utility_events": [row for row in events if row.get("type") in _UTILITY],
         "objective_events": [row for row in events if row.get("type") in _OBJECTIVE],
-        "aim_observations": [],
-        "position_snapshots": [],
-        "economy_snapshots": [],
     }
     unclassified_events = sum(1 for row in events if row.get("type") not in _CLASSIFIED)
     players, player_quality = _bounded("players", list(parsed.get("players") or []))
@@ -53,6 +60,8 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
     bounded_groups: dict[str, list[dict[str, Any]]] = {}
     for name, rows in groups.items():
         bounded_groups[name], quality[name] = _bounded(name, rows)
+    for name in ("aim_observations", "position_snapshots", "economy_snapshots"):
+        bounded_groups[name], quality[name] = _not_implemented(name)
     limited = sorted(name for name, item in quality.items() if item["status"] == "limited")
     return {
         "schema_version": HOT_SCHEMA_VERSION,
@@ -63,7 +72,7 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "players": players,
         "rounds": rounds,
         **bounded_groups,
-        "quality": {"partial": bool(limited) or unclassified_events > 0,
+        "quality": {"partial": True,
                     "limited_sections": limited, "sections": quality,
                     "unclassified_event_rows": unclassified_events},
         "provenance": {"source": "demo", "raw_artifact_required": True},

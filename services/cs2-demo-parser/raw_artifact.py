@@ -105,14 +105,15 @@ class RawArtifactWriter:
             "previousChunkSha256": previous,
         }
         prepared = await self.bridge("raw-chunk-prepare", metadata)
-        response = await self.client.put(
-            prepared["uploadUrl"], content=body,
-            headers={"content-type": "application/gzip", "x-upsert": "true"},
-        )
-        response.raise_for_status()
-        await self.bridge("raw-chunk-verify", {
-            "artifactId": artifact_id, "section": section, "chunkIndex": index,
-        })
+        if not prepared.get("alreadyVerified"):
+            response = await self.client.put(
+                prepared["uploadUrl"], content=body,
+                headers={"content-type": "application/gzip", "x-upsert": "true"},
+            )
+            response.raise_for_status()
+            await self.bridge("raw-chunk-verify", {
+                "artifactId": artifact_id, "section": section, "chunkIndex": index,
+            })
         logger.info("raw_chunk_stored section=%s chunk=%s rows=%s bytes=%s sha=%s",
                     section, index, len(rows), len(body), sha256[:12])
         return {"section": section, "chunk_index": index, "storage_path": prepared["path"],

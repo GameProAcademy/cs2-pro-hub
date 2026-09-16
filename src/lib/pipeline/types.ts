@@ -109,6 +109,22 @@ export interface RawParserOutput {
 }
 
 export const HOT_DEMO_PAYLOAD_VERSION = 1;
+export const DURABLE_HOT_TARGET_BYTES = 4 * 1024 * 1024;
+export const DURABLE_HOT_HARD_MAX_BYTES = 8 * 1024 * 1024;
+export const RAW_CHUNK_TARGET_BYTES = 4 * 1024 * 1024;
+export const RAW_CHUNK_HARD_MAX_BYTES = 8 * 1024 * 1024;
+export const RAW_ARTIFACT_SECTION_ORDER = [
+  "header",
+  "players",
+  "rounds",
+  "events",
+  "ticks",
+  "grenades",
+  "player-info",
+  "game-state",
+  "economy",
+  "forensic",
+] as const;
 export const HOT_DEMO_LIMITS = {
   players: 64,
   rounds: 256,
@@ -122,7 +138,7 @@ export const HOT_DEMO_LIMITS = {
 } as const;
 
 export interface HotSectionQuality {
-  status: "complete" | "limited";
+  status: "complete" | "limited" | "not_implemented";
   observed_rows: number;
   included_rows: number;
   limit: number;
@@ -147,6 +163,7 @@ export interface HotDemoPayloadV1 {
     partial: boolean;
     limited_sections: string[];
     sections: Record<string, HotSectionQuality>;
+    unclassified_event_rows: number;
   };
   provenance: { source: "demo"; raw_artifact_required: true };
   warnings: string[];
