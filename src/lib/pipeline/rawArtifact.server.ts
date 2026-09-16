@@ -10,6 +10,8 @@ import type {
   RawParserOutput,
 } from "@/lib/pipeline/types";
 import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/rawEvidence";
+import { expectedParserContract } from "@/lib/pipeline/parser/adapter";
+import { assertParserIdentity } from "@/lib/pipeline/parser/parserEndpoint";
 
 const RAW_BUCKET = "cs2-raw-evidence";
 const HEX_64 = /^[0-9a-f]{64}$/;
@@ -23,6 +25,19 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (hot.schema_version !== 1 || hot.contract_version !== 1 || !hot.parser || !hot.demo || !hot.header) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT identity");
   }
+  const revision = typeof hot.parser.revision === "string" && hot.parser.revision.trim() ? hot.parser.revision.trim() : null;
+  if (typeof hot.parser.name !== "string" || !hot.parser.name.trim() ||
+      typeof hot.parser.version !== "string" || !hot.parser.version.trim()) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT parser identity");
+  }
+  assertParserIdentity({
+    name: hot.parser.name,
+    version: hot.parser.version,
+    revision,
+    semanticRevision: hot.parser.semantic_revision?.trim() || revision,
+    buildRevision: hot.parser.build_revision?.trim() || null,
+    contractVersion: hot.contract_version,
+  }, expectedParserContract());
   if (HOT_SECTIONS.some((key) => !Array.isArray(hot[key]))) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT sections");
   }
@@ -71,7 +86,12 @@ export function assertRawArtifactReference(value: unknown): RawArtifactReference
   const raw = value as Partial<RawArtifactReferenceV1>;
   if (raw.schema_version !== 1 || raw.status !== "ready" || raw.raw_status !== "ready" ||
       raw.bucket !== RAW_BUCKET || !raw.artifact_id || !raw.manifest_storage_path ||
-      !raw.root_digest || !HEX_64.test(raw.root_digest)) {
+      !raw.root_digest || !HEX_64.test(raw.root_digest) || !raw.job_id || !raw.upload_id ||
+      !raw.user_id || !Number.isInteger(raw.attempt_number) || Number(raw.attempt_number) < 1 ||
+      !raw.demo_sha256 || !HEX_64.test(raw.demo_sha256) || !raw.parser ||
+      raw.contract_version !== 1 || !Number.isInteger(raw.total_chunks) || Number(raw.total_chunks) < 1 ||
+      !Number.isInteger(raw.total_rows) || Number(raw.total_rows) < 0 ||
+      !Number.isInteger(raw.total_bytes) || Number(raw.total_bytes) <= 0) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact reference");
   }
   return raw as RawArtifactReferenceV1;
@@ -123,6 +143,17 @@ export async function verifyRawArtifact(args: {
       reasons: [`raw_artifact_audit:${artifact.audit_status}`], evidenceDigest: args.ref.root_digest,
       forensicInventory: {} };
   }
+  if (args.ref.audit_status !== artifact.audit_status || args.ref.parser.name !== args.hot.parser.name ||
+      args.ref.parser.version !== args.hot.parser.version ||
+      (args.ref.parser.revision ?? null) !== (args.hot.parser.revision ?? null) ||
+      (args.ref.parser.semantic_revision ?? args.ref.parser.revision ?? null) !==
+        (args.hot.parser.semantic_revision ?? args.hot.parser.revision ?? null) ||
+      (args.ref.parser.build_revision ?? null) !== (args.hot.parser.build_revision ?? null) ||
+      args.ref.contract_version !== args.hot.contract_version ||
+      args.ref.total_chunks !== artifact.total_chunks || args.ref.total_rows !== artifact.total_rows ||
+      args.ref.total_bytes !== artifact.total_bytes) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW reference mismatch");
+  }
   const { data: chunks, error: chunksError } = await supabaseAdmin.from("raw_evidence_chunks")
     .select("section, chunk_index, row_count, byte_size, sha256, previous_chunk_sha256, status, storage_path")
     .eq("artifact_id", artifact.id).order("section").order("chunk_index");
@@ -153,6 +184,11 @@ export async function verifyRawArtifact(args: {
     .from(RAW_BUCKET).download(artifact.manifest_storage_path);
   if (manifestError || !manifestBlob) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest unavailable");
   const manifest = JSON.parse(await manifestBlob.text()) as Record<string, unknown>;
+  const auditEvidence = manifest["audit_evidence"];
+  const auditEvidenceDigest = manifest["audit_evidence_digest"];
+  const auditEvidenceValid = auditEvidence != null && typeof auditEvidence === "object" &&
+    !Array.isArray(auditEvidence) && typeof auditEvidenceDigest === "string" &&
+    rawArtifactSha256(stableRawArtifactJson(auditEvidence)) === auditEvidenceDigest;
   const manifestMatches = manifest["schema_version"] === 1 && manifest["job_id"] === args.jobId &&
     manifest["upload_id"] === args.uploadId && manifest["attempt_number"] === args.attemptNumber &&
     manifest["demo_sha256"] === args.expectedSha256?.toLowerCase() &&
@@ -160,7 +196,8 @@ export async function verifyRawArtifact(args: {
     stableRawArtifactJson(manifest["parser"]) === stableRawArtifactJson(args.hot.parser) &&
     stableRawArtifactJson(manifest["sections"]) === stableRawArtifactJson(summaries) &&
     manifest["root_digest"] === artifact.root_digest && manifest["status"] === "ready" &&
-    manifest["raw_status"] === "ready" && manifest["audit_status"] === artifact.audit_status;
+    manifest["raw_status"] === "ready" && manifest["audit_status"] === artifact.audit_status &&
+    derivePersistedAuditStatus(manifest) === artifact.audit_status && auditEvidenceValid;
   if (!manifestMatches) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest mismatch");
   }
@@ -168,6 +205,31 @@ export async function verifyRawArtifact(args: {
     reasons: [], evidenceDigest: artifact.root_digest,
     forensicInventory: { artifact_id: artifact.id, manifest_storage_path: artifact.manifest_storage_path,
       total_chunks: artifact.total_chunks, total_rows: artifact.total_rows, total_bytes: artifact.total_bytes } };
+}
+
+function derivePersistedAuditStatus(manifest: Record<string, unknown>): "approved" | "blocked" {
+  const evidence = manifest["audit_evidence"];
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return "blocked";
+  const item = evidence as Record<string, unknown>;
+  const reasons = item["raw_block_reasons"];
+  const gates = item["gates"];
+  const mappings = item["field_mappings"];
+  if (item["raw_status"] !== "PASS" || item["raw_audit_status"] !== "APPROVED" ||
+      !Array.isArray(reasons) || reasons.length || !Array.isArray(gates) || !gates.length ||
+      !Array.isArray(mappings) || !mappings.length) return "blocked";
+  const gatesPass = gates.every((gate) => gate && typeof gate === "object" &&
+    (gate as Record<string, unknown>)["status"] === "PASS");
+  const mappingsPass = mappings.every((mapping) => {
+    if (!mapping || typeof mapping !== "object") return false;
+    const value = mapping as Record<string, unknown>;
+    const status = value["status"];
+    if (status === "PARSE_FAILED") return false;
+    if (status === "UNMAPPED_BUT_AVAILABLE" || status === "RAW_ONLY_INTENTIONAL") {
+      return value["reason_present"] === true;
+    }
+    return true;
+  });
+  return gatesPass && mappingsPass ? "approved" : "blocked";
 }
 
 export function rawArtifactApproval(decision: RawAdmissionDecision, artifactId: string): RawAdmissionApproval {

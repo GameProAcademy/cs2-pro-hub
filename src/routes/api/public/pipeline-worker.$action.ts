@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             return Response.json(await heartbeatDurableDemo(input.stage ? { ...input, stage: input.stage } : input));
           }
           if (params.action === "complete") {
-            const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).parse(body);
+            const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).strict().parse(body);
             return Response.json(await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]));
           }
           if (params.action === "raw-artifact-init") {

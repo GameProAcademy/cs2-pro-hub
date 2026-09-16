@@ -323,3 +323,25 @@ export function assertParserIdentity(
     );
   }
 }
+
+/** Binds a parse response to the identity observed from `/version`. */
+export function assertParserIdentityConsistency(
+  version: ParserWorkerIdentity,
+  parsed: {
+    name: string;
+    version: string;
+    revision?: string | undefined;
+    semantic_revision?: string | undefined;
+    build_revision?: string | null | undefined;
+  },
+  contractVersion: number,
+): void {
+  const parsedRevision = parsed.revision?.trim() || null;
+  const parsedSemantic = parsed.semantic_revision?.trim() || parsedRevision;
+  const parsedBuild = parsed.build_revision?.trim() || null;
+  if (version.name !== parsed.name || version.version !== parsed.version ||
+      version.revision !== parsedRevision || version.semanticRevision !== parsedSemantic ||
+      version.buildRevision !== parsedBuild || version.contractVersion !== contractVersion) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "/version and parse identity diverge");
+  }
+}
