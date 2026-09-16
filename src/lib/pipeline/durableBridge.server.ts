@@ -131,6 +131,55 @@ export function rawPrefix(userId: string, uploadId: string, demoAttemptNumber: n
   return `${userId}/${uploadId}/attempt-${demoAttemptNumber}`;
 }
 
+export function deriveRawArtifactAuditStatus(manifest: Record<string, unknown>): "approved" | "blocked" {
+  const value = manifest["audit_evidence"];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "blocked";
+  const evidence = value as Record<string, unknown>;
+  const reasons = evidence["raw_block_reasons"];
+  const gates = evidence["gates"];
+  const mappings = evidence["field_mappings"];
+  if (evidence["raw_status"] !== "PASS" || evidence["raw_audit_status"] !== "APPROVED" ||
+      !Array.isArray(reasons) || reasons.length > 0 || !Array.isArray(gates) || gates.length === 0 ||
+      !Array.isArray(mappings) || mappings.length === 0) return "blocked";
+  const gatesPass = gates.every((item) => item && typeof item === "object" &&
+    (item as Record<string, unknown>)["status"] === "PASS");
+  const mappingsPass = mappings.every((item) => {
+    if (!item || typeof item !== "object") return false;
+    const mapping = item as Record<string, unknown>;
+    const status = mapping["status"];
+    return status !== "PARSE_FAILED" && status !== "UNMAPPED_BUT_AVAILABLE" &&
+      (status !== "RAW_ONLY_INTENTIONAL" || mapping["reason_present"] === true);
+  });
+  return gatesPass && mappingsPass ? "approved" : "blocked";
+}
+
+type VerifiedRawChunk = {
+  section: string;
+  chunk_index: number;
+  row_count: number;
+  byte_size: number;
+  sha256: string;
+  previous_chunk_sha256: string | null;
+};
+
+export function computeRawArtifactIntegrity(chunks: VerifiedRawChunk[]) {
+  let previous: string | null = null;
+  const summaries = RAW_ARTIFACT_SECTION_ORDER.map((section) => {
+    const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
+    own.forEach((chunk, index) => {
+      if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous) {
+        throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chain mismatch");
+      }
+      previous = chunk.sha256;
+    });
+    return { name: section, chunk_count: own.length,
+      row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
+      byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
+      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
+  });
+  return { summaries, rootDigest: rawArtifactSha256(stableRawArtifactJson(summaries)) };
+}
+
 async function currentRawJob(input: DurableJobClaim & { jobId: string }) {
   const { db } = await context();
   const { data: job, error } = await db.from("demo_jobs")
@@ -249,20 +298,7 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
   if (!["creating", "uploading", "verifying"].includes(artifact.status)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact lifecycle");
   }
-  const order = RAW_ARTIFACT_SECTION_ORDER;
-  let previous: string | null = null;
-  const summaries = order.map((section) => {
-    const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
-    own.forEach((chunk, index) => {
-      if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chain mismatch");
-      previous = chunk.sha256;
-    });
-    return { name: section, chunk_count: own.length,
-      row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
-      byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
-  });
-  const computed = rawArtifactSha256(stableRawArtifactJson(summaries));
+  const { summaries, rootDigest: computed } = computeRawArtifactIntegrity(chunks);
   if (computed !== input.rootDigest || input.manifest["root_digest"] !== computed) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root mismatch");
   }
@@ -278,9 +314,10 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
   const totals = { total_chunks: chunks.length,
     total_rows: chunks.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
     total_bytes: chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0) };
-  const approved = input.manifest["audit_status"] === "approved";
+  // The worker transports evidence; it cannot self-approve Canonical admission.
+  const auditStatus = deriveRawArtifactAuditStatus(input.manifest);
   const { data: ready, error } = await db.from("raw_evidence_artifacts").update({ ...totals,
-    status: "ready", raw_status: "ready", audit_status: approved ? "approved" : "blocked",
+    status: "ready", raw_status: "ready", audit_status: auditStatus,
     root_digest: computed, ready_at: new Date().toISOString() }).eq("id", input.artifactId).select("*").single();
   if (error || !ready) throw new PipelineError("PERSISTENCE_ERROR", error?.message ?? "artifact finalize failed");
   return ready;

@@ -20,6 +20,16 @@
 - [x] AIM, position e economy permanecem vazios e explicitamente `not_implemented`; nenhum dado ou métrica foi inventado.
 - [ ] E2E real ainda NÃO aprovado: Railway sync/deploy, smoke test da demo real e validação Canonical real permanecem pendentes para B.2.
 
+## FASE 2.7.2D.4-B.2–B.5 — Railway alignment — READY FOR RAILWAY SYNC
+
+- [x] Contrato e matriz cirúrgica `MUST SYNC` / `MUST PRESERVE FROM RAILWAY` / `TEST ONLY` documentados; merge integral da `main` proibido.
+- [x] Contratos de versão, HOT/RAW, limites, tentativa lógica/técnica, retry, signed upload e legacy `/v1/parse` explicitados.
+- [x] Produção exige revision `git:<40-hex>` e a decisão de auditoria RAW é derivada pelo APP a partir da evidência, não aceita livremente do worker.
+- [x] Runbook B.2–B.5 preparado com auditoria de ambiente, deploy controlado, rollback e medições obrigatórias do smoke test.
+- [ ] B.3 ainda não executada contra valores Railway; nenhum secret foi lido ou alterado.
+- [ ] B.4 não executada: nenhum sync, merge ou deploy Railway realizado.
+- [ ] B.5 não executada: nenhuma demo real/job reservado foi processado; estado permanece NOT READY FOR REAL E2E.
+
 ## BLOCKER — Deployment público — CONCLUÍDO
 
 - [x] Causa raiz confirmada: o build público não injetava a configuração pública do Lovable Cloud no cliente gerado.

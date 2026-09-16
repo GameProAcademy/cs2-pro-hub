@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import {
+  computeRawArtifactIntegrity,
+  deriveRawArtifactAuditStatus,
+  rawPrefix,
+} from "@/lib/pipeline/durableBridge.server";
+import { rawArtifactApproval } from "@/lib/pipeline/rawArtifact.server";
+
 const queueMigration = readFileSync(
   "supabase/migrations/20260914085238_9ed55327-dea3-496c-83fb-b8a669f23168.sql",
   "utf8",
@@ -89,6 +96,60 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(durableBridgeSource).toContain("rawPrefix(job.user_id, job.upload_id, job.attempt_number)");
     expect(jobsServerSource).toContain("attemptNumber: job.attempt_number");
     expect(jobsServerSource).not.toContain("attemptNumber: durableClaim?.attempt");
+  });
+
+  it("keeps technical retries on one logical RAW prefix", () => {
+    expect(rawPrefix("user", "upload", 7)).toBe("user/upload/attempt-7");
+    expect(rawPrefix("user", "upload", 7)).toBe("user/upload/attempt-7");
+    expect(rawPrefix("user", "upload", 8)).toBe("user/upload/attempt-8");
+  });
+
+  it("keeps the APP as the final RAW audit authority", () => {
+    const evidence = {
+      raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" }],
+      field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason_present: false }],
+    };
+    expect(deriveRawArtifactAuditStatus({ audit_status: "blocked", audit_evidence: evidence })).toBe("approved");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved" })).toBe("blocked");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
+      ...evidence, gates: [{ gate: "RAW-EVIDENCE-01", status: "FAIL" }],
+    } })).toBe("blocked");
+    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
+      ...evidence, field_mappings: [{ raw_field: "event.future", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }],
+    } })).toBe("blocked");
+  });
+
+  it("fails closed on a broken physical chunk chain", () => {
+    const sha = "a".repeat(64);
+    try {
+      computeRawArtifactIntegrity([
+        { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
+          previous_chunk_sha256: "b".repeat(64) },
+      ]);
+      throw new Error("expected RAW chain validation to fail");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
+    }
+  });
+
+  it("changes the root digest when a verified chunk digest changes", () => {
+    const chunk = { section: "events", chunk_index: 0, row_count: 1, byte_size: 10,
+      previous_chunk_sha256: null };
+    const first = computeRawArtifactIntegrity([{ ...chunk, sha256: "a".repeat(64) }]);
+    const second = computeRawArtifactIntegrity([{ ...chunk, sha256: "b".repeat(64) }]);
+    expect(first.rootDigest).not.toBe(second.rootDigest);
+  });
+
+  it("never constructs Canonical approval from a blocked decision", () => {
+    try {
+      rawArtifactApproval({ status: "BLOCKED", auditStatus: "BLOCKED", approved: false,
+      auditVersion: 3, reasons: ["gate:RAW"], evidenceDigest: "a".repeat(64), forensicInventory: {} },
+      "artifact");
+      throw new Error("expected RAW admission to fail");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "RAW_AUDIT_BLOCKED", detail: "gate:RAW" });
+    }
   });
 
   it("binds the immutable audit decision to the evidence digest", () => {
