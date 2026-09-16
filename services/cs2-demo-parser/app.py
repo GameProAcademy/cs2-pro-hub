@@ -40,7 +40,7 @@ from errors import (
     UnsupportedDemoError,
     WorkerError,
 )
-from parser import parse_demo_file
+from parser_isolated import parse_demo_file_isolated
 from raw_evidence import finalize_evidence
 from settings import (
     PARSER_NAME,
@@ -52,7 +52,7 @@ from settings import (
 
 logger = logging.getLogger("cs2-demo-parser")
 
-#: Injected by tests. Production always uses the real demoparser2 boundary.
+#: Injected by tests. Production uses the process-isolated demoparser2 boundary.
 ParseFn = Callable[[str], dict[str, Any]]
 
 CS2_DEMO_MAGIC = b"PBDEMS2\x00"
@@ -233,7 +233,7 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Raises `WorkerConfigurationError` when config fails closed."""
     resolved = settings or load_settings()
-    parse = parse_fn or parse_demo_file
+    parse = parse_fn or parse_demo_file_isolated
     app = FastAPI(title="cs2-demo-parser", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = resolved
     app.state.parse_fn = parse
