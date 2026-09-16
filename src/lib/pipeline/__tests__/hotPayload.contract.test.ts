@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { PipelineError } from "@/lib/pipeline/errors";
 import { assertHotDemoPayload } from "@/lib/pipeline/rawArtifact.server";
-import { HOT_DEMO_LIMITS, type HotDemoPayloadV1 } from "@/lib/pipeline/types";
+import {
+  HOT_DEMO_LIMITS,
+  type HotDemoPayloadV1,
+  type HotSectionQuality,
+} from "@/lib/pipeline/types";
 
 function validHot(): HotDemoPayloadV1 {
   const rows: Record<string, unknown[]> = {
@@ -16,10 +20,10 @@ function validHot(): HotDemoPayloadV1 {
     position_snapshots: HOT_DEMO_LIMITS.positionSnapshots, economy_snapshots: HOT_DEMO_LIMITS.economySnapshots,
     warnings: HOT_DEMO_LIMITS.warnings,
   };
-  const sections = Object.fromEntries(Object.keys(rows).map((name) => [name, {
+  const sections: Record<string, HotSectionQuality> = Object.fromEntries(Object.keys(rows).map((name) => [name, {
     status: ["aim_observations", "position_snapshots", "economy_snapshots"].includes(name)
-      ? "not_implemented" : "complete",
-    observed_rows: 0, included_rows: 0, limit: limits[name], overflow_rows: 0,
+      ? "not_implemented" as const : "complete" as const,
+    observed_rows: 0, included_rows: 0, limit: limits[name] ?? 0, overflow_rows: 0,
   }]));
   return {
     schema_version: 1, parser: { name: "demoparser2", version: "0.42.0", revision: "git:test" },
