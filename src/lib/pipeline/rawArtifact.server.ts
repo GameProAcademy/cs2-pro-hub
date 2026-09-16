@@ -171,6 +171,9 @@ export async function verifyRawArtifact(args: {
 }
 
 export function rawArtifactApproval(decision: RawAdmissionDecision, artifactId: string): RawAdmissionApproval {
+  if (!decision.approved || decision.auditStatus !== "APPROVED" || decision.status !== "PASS") {
+    throw new PipelineError("RAW_AUDIT_BLOCKED", decision.reasons.join(",") || "RAW artifact admission denied");
+  }
   return { approved: true, auditStatus: "APPROVED", auditVersion: decision.auditVersion,
     evidenceDigest: decision.evidenceDigest, artifactId };
 }

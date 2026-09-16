@@ -153,6 +153,33 @@ export function deriveRawArtifactAuditStatus(manifest: Record<string, unknown>):
   return gatesPass && mappingsPass ? "approved" : "blocked";
 }
 
+type VerifiedRawChunk = {
+  section: string;
+  chunk_index: number;
+  row_count: number;
+  byte_size: number;
+  sha256: string;
+  previous_chunk_sha256: string | null;
+};
+
+export function computeRawArtifactIntegrity(chunks: VerifiedRawChunk[]) {
+  let previous: string | null = null;
+  const summaries = RAW_ARTIFACT_SECTION_ORDER.map((section) => {
+    const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
+    own.forEach((chunk, index) => {
+      if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous) {
+        throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chain mismatch");
+      }
+      previous = chunk.sha256;
+    });
+    return { name: section, chunk_count: own.length,
+      row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
+      byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
+      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
+  });
+  return { summaries, rootDigest: rawArtifactSha256(stableRawArtifactJson(summaries)) };
+}
+
 async function currentRawJob(input: DurableJobClaim & { jobId: string }) {
   const { db } = await context();
   const { data: job, error } = await db.from("demo_jobs")
@@ -271,20 +298,7 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
   if (!["creating", "uploading", "verifying"].includes(artifact.status)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact lifecycle");
   }
-  const order = RAW_ARTIFACT_SECTION_ORDER;
-  let previous: string | null = null;
-  const summaries = order.map((section) => {
-    const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
-    own.forEach((chunk, index) => {
-      if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chain mismatch");
-      previous = chunk.sha256;
-    });
-    return { name: section, chunk_count: own.length,
-      row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
-      byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
-  });
-  const computed = rawArtifactSha256(stableRawArtifactJson(summaries));
+  const { summaries, rootDigest: computed } = computeRawArtifactIntegrity(chunks);
   if (computed !== input.rootDigest || input.manifest["root_digest"] !== computed) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root mismatch");
   }

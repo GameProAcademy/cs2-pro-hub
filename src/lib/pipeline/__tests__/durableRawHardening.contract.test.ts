@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { deriveRawArtifactAuditStatus, rawPrefix } from "@/lib/pipeline/durableBridge.server";
+import {
+  computeRawArtifactIntegrity,
+  deriveRawArtifactAuditStatus,
+  rawPrefix,
+} from "@/lib/pipeline/durableBridge.server";
+import { rawArtifactApproval } from "@/lib/pipeline/rawArtifact.server";
 
 const queueMigration = readFileSync(
   "supabase/migrations/20260914085238_9ed55327-dea3-496c-83fb-b8a669f23168.sql",
@@ -113,6 +118,28 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
       ...evidence, field_mappings: [{ raw_field: "event.future", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }],
     } })).toBe("blocked");
+  });
+
+  it("fails closed on a broken physical chunk chain", () => {
+    const sha = "a".repeat(64);
+    expect(() => computeRawArtifactIntegrity([
+      { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
+        previous_chunk_sha256: "b".repeat(64) },
+    ])).toThrow("RAW chain mismatch");
+  });
+
+  it("changes the root digest when a verified chunk digest changes", () => {
+    const chunk = { section: "events", chunk_index: 0, row_count: 1, byte_size: 10,
+      previous_chunk_sha256: null };
+    const first = computeRawArtifactIntegrity([{ ...chunk, sha256: "a".repeat(64) }]);
+    const second = computeRawArtifactIntegrity([{ ...chunk, sha256: "b".repeat(64) }]);
+    expect(first.rootDigest).not.toBe(second.rootDigest);
+  });
+
+  it("never constructs Canonical approval from a blocked decision", () => {
+    expect(() => rawArtifactApproval({ status: "BLOCKED", auditStatus: "BLOCKED", approved: false,
+      auditVersion: 3, reasons: ["gate:RAW"], evidenceDigest: "a".repeat(64), forensicInventory: {} },
+    "artifact")).toThrow("gate:RAW");
   });
 
   it("binds the immutable audit decision to the evidence digest", () => {

@@ -109,7 +109,7 @@ def resolve_revision(raw: str | None, *, environment: str) -> str:
     if environment == "production":
         raise WorkerConfigurationError(
             "PARSER_REVISION is required in production and must be an immutable "
-            "build identifier (preferred form: git:<full-commit-sha>)"
+            "git:<full-commit-sha> build identifier"
         )
     # Outside production only: explicitly unpinned, never a fake build id.
     return DEV_UNPINNED_REVISION

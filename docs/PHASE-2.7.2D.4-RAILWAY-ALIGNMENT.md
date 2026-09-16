@@ -47,7 +47,7 @@ The Railway-specific `parser_child.py` must retain parser isolation, bounded tic
 ## B.2 — Surgical synchronization
 
 1. Check out `infra/cs2-parser-worker-v8` separately; do not merge `main`.
-2. Record the source commit expected for synchronization: `9849863d0e08e9f525b7030768dff8b88228bd01`.
+2. Record the APP revision lock expected by the current code: `git:45c75ffe92ff386bd07affc16ec1d635e81e6371`. The deployed parser build must report that exact immutable identity or the APP gate remains closed.
 3. Diff each MUST SYNC file and its direct imports.
 4. Reconcile `parser_child.py` manually, preserving all Railway memory safeguards.
 5. Run parser and contract tests in the candidate tree.
