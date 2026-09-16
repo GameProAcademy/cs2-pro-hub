@@ -1,41 +1,45 @@
-# Auditoria forense da conclusão da demo Cache
+# FASE 2.7.2D.4-B.0 — RAW streaming / hot payload boundary
 
 ## Objetivo
-Produzir um diagnóstico somente leitura do `complete` do job `a31f5c25-b0d8-41ac-8225-27814cd1732a`, sem alterar arquivos, banco, fila, configurações ou deploy.
+Retirar todo RAW volumoso do callback `/complete`. O parser persistirá a evidência completa em chunks JSONL gzip no bucket privado existente; o APP receberá apenas um payload HOT limitado e uma referência verificável ao artifact READY.
 
-## Evidência já confirmada
-- O job existe e permanece `processing`, na etapa `raw_audit`, com mensagem `14`, `dispatch_attempt = 0`, worker `railway-parser-1` e sem erro terminal.
-- Não existe registro em `raw_demo_evidence_reports` para o job, upload ou SHA informado.
-- Não existe match, observação Canonical, métricas ou features ligados ao upload.
-- Portanto, ainda não há prova de que o RAW tenha sido persistido antes do 502; a execução alcançou a marcação da etapa `raw_audit`, mas não deixou a inserção RAW concluída.
+## Implementação
+1. **Contratos compartilhados e limites**
+   - Introduzir `HotDemoPayloadV1` com parser/demo identity, header, players, rounds, eventos semânticos limitados, quality e provenance.
+   - Definir limites explícitos por coleção e sinalização de overflow/coverage; proibir campos RAW e arrays ilimitados no HOT.
+   - Introduzir `RawArtifactReferenceV1` com artifact, manifest, root digest, identity e status READY.
 
-## Etapas da auditoria
-1. Reconstruir, com referências exatas de código, o caminho síncrono:
-   - leitura e validação do corpo em `/api/public/pipeline-worker/complete`;
-   - renovação do lease em `completeDurableDemo()`;
-   - validação do claim em `processJob()`;
-   - auditoria e inserção RAW;
-   - segunda validação independente antes da escrita Canonical;
-   - persistência Canonical, projeções e finalizações do job/fila.
-2. Delimitar os pontos de persistência parcial e provar quais etapas não ocorreram usando o estado real do banco.
-3. Comparar `RawParserOutput` e `RawDemoEvidence` com a montagem Python e enumerar exatamente o JSON enviado no `result`.
-4. Quantificar limites e amplificação do payload:
-   - `events` normalizados;
-   - `raw_events` com cópia integral de cada linha em `raw_fields`;
-   - `tick_samples` limitado a 4.096 linhas;
-   - `grenade_samples`, eventos e demais coleções sem limite explícito observado;
-   - inventários, coberturas, mappings, rounds e dados de jogadores.
-5. Confrontar os timestamps disponíveis do worker com o comportamento HTTP do endpoint e separar:
-   - timeout do proxy/plataforma durante processamento síncrono;
-   - rejeição por tamanho;
-   - exceção interna do APP;
-   - falha ou latência da inserção RAW.
-6. Entregar uma lista priorizada de causas, indicando para cada uma: evidência favorável, evidência contrária e grau de certeza.
+2. **Writer RAW incremental no parser**
+   - Criar writer server-side que serializa uma linha por vez, fecha chunks gzip perto de 4 MiB e recusa qualquer chunk acima de 8 MiB.
+   - Calcular SHA-256 físico, cadeia `previous_chunk_sha256`, digest por seção e root digest sem remontar o RAW completo.
+   - Persistir lifecycle nas tabelas existentes `raw_evidence_artifacts`/`raw_evidence_chunks` e objetos no bucket privado `cs2-raw-evidence`.
+   - Garantir idempotência por `job_id + attempt_number`: reutilizar READY compatível, rejeitar conflito e separar novas tentativas.
 
-## Restrições
-- Nenhuma escrita, recuperação, reenvio, reenfileiramento ou nova tentativa.
-- Nenhuma alteração de código, migration, RPC, Railway, parser, RAW ou Canonical.
-- O relatório não recomendará nem aplicará correções nesta etapa.
+3. **Extração e memória do parser**
+   - Encaminhar cada seção RAW ao writer sem incluí-la na resposta final.
+   - Tratar as linhas de granadas incrementalmente assim que a API atual as devolver e liberar a referência após a escrita.
+   - Gerar somente projeções semânticas limitadas para o HOT; overflow será explícito, nunca silencioso.
 
-## Saída esperada
-Relatório com estado final observado, tabela das dez etapas solicitadas, anatomia e estimativa do payload, cronologia do 502, conclusão sobre timeout versus erro interno e lacunas que os logs disponíveis não permitem provar.
+4. **Worker e `/complete`**
+   - Fazer o worker enviar somente identidade do claim, HOT e referência RAW.
+   - Reduzir o limite do callback e validar estritamente que nenhum campo RAW legado chegou.
+   - No APP, conferir artifact READY, bucket/path, job, upload, usuário, SHA, tentativa, parser identity, manifest e root digest antes do Canonical.
+   - Substituir a auditoria integral em memória por admissão baseada em manifest/chunks verificados; manter a aprovação fail-closed e a defesa antes do Canonical.
+
+5. **Compatibilidade e documentação**
+   - Preservar normalização, persistência Canonical, métricas e projeções; adaptar apenas as interfaces necessárias ao novo HOT.
+   - Documentar as variáveis server-side esperadas no Railway sem valores e registrar o drift histórico da migration RAW sem tentar corrigi-lo.
+   - Não alterar UI, autenticação, integrações, dados, uploads, demos, Railway ou schema.
+
+6. **Validação**
+   - Adicionar testes Python e TypeScript para limites/overflow, chunking, hard max, hash chain, root digest, lifecycle, idempotência e rejeição do contrato legado.
+   - Medir o tamanho do HOT em fixture de alto volume e provar que 340.885 linhas de granadas não atravessam `/complete`.
+   - Executar testes focados, testes backend existentes, checagem TypeScript e validação automática do build.
+
+## Critérios de conclusão
+- HOT limitado e sem RAW completo.
+- Artifact completo em chunks verificáveis, manifest pequeno e root digest determinístico.
+- `/complete` pequeno e fail-closed, sem canonicalização ou persistência de RAW gigante.
+- Retry técnico idempotente e nova tentativa isolada.
+- Nenhuma UI ou secret alterada.
+- O E2E com a demo real permanece **PENDENTE** até Railway receber as variáveis/deploy e a demo comprovar ausência de OOM em produção.
