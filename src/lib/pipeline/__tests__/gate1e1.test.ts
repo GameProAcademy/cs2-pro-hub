@@ -18,6 +18,7 @@ import {
 } from "@/lib/pipeline/parser/adapter";
 import {
   assertParserIdentity,
+  assertParserIdentityConsistency,
   classifyWorkerFailure,
   parseWorkerIdentity,
   WORKER_ERROR_CODES,
@@ -54,6 +55,8 @@ const worker = (
   version: over.version ?? PARSER_VERSION,
   revision: over.revision === undefined ? "build-1" : over.revision,
   contractVersion: over.contractVersion ?? PARSER_CONTRACT_VERSION,
+  semanticRevision: over.revision === undefined ? "build-1" : over.revision,
+  buildRevision: null,
 });
 
 describe("GATE 1E.1 — official worker protocol codes", () => {
@@ -183,8 +186,8 @@ describe("GATE 1E.1 — revision lock", () => {
       parseWorkerIdentity({
         parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: "  " },
         contract_version: PARSER_CONTRACT_VERSION,
-      }).revision,
-    ).toBeNull();
+      }),
+    ).toMatchObject({ revision: null, semanticRevision: null, buildRevision: null });
   });
 
   it("makes the revision requirement explicit and production-safe", () => {
@@ -206,5 +209,24 @@ describe("GATE 1E.1 — revision lock", () => {
     expect(contract.revision).toBe("build-42");
     expect(contract.contractVersion).toBe(PARSER_CONTRACT_VERSION);
     vi.unstubAllEnvs();
+  });
+
+  it("separates the semantic lock from an exact build identity", () => {
+    vi.stubEnv("DEMO_PARSER_EXPECTED_BUILD_REVISION", `git:${"b".repeat(40)}`);
+    vi.stubEnv("DEMO_PARSER_BUILD_REVISION_REQUIRED", "true");
+    const contract = expectedParserContract();
+    expect(contract.revision).toBeTruthy();
+    expect(contract.buildRevision).toBe(`git:${"b".repeat(40)}`);
+    expect(contract.buildRevisionRequired).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects a mismatch between /version and the parse response", () => {
+    expect(thrown(() => assertParserIdentityConsistency(
+      { ...worker(), semanticRevision: "build-1", buildRevision: `git:${"a".repeat(40)}` },
+      { name: PARSER_NAME, version: PARSER_VERSION, revision: "build-1",
+        semantic_revision: "build-1", build_revision: `git:${"b".repeat(40)}` },
+      PARSER_CONTRACT_VERSION,
+    ))).toBe("PARSER_IDENTITY_MISMATCH");
   });
 });

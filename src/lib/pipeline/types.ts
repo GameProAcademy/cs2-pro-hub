@@ -89,7 +89,15 @@ export interface RawParserEvent {
 }
 
 export interface RawParserOutput {
-  parser: { name: string; version: string; revision?: string | undefined };
+  parser: {
+    name: string;
+    version: string;
+    /** Backward-compatible semantic parser lock. */
+    revision?: string | undefined;
+    semantic_revision?: string | undefined;
+    /** Exact source/build identity; optional during coordinated rollout. */
+    build_revision?: string | null | undefined;
+  };
   contract_version: number;
   header: {
     map?: string | undefined;

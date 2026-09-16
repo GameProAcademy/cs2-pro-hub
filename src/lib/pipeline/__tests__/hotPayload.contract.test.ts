@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { assertHotDemoPayload } from "@/lib/pipeline/rawArtifact.server";
 import {
+  DURABLE_HOT_HARD_MAX_BYTES,
   HOT_DEMO_LIMITS,
   type HotDemoPayloadV1,
   type HotSectionQuality,
@@ -26,7 +27,8 @@ function validHot(): HotDemoPayloadV1 {
     observed_rows: 0, included_rows: 0, limit: limits[name] ?? 0, overflow_rows: 0,
   }]));
   return {
-    schema_version: 1, parser: { name: "demoparser2", version: "0.42.0", revision: "git:test" },
+    schema_version: 1, parser: { name: "demoparser2", version: "0.42.0",
+      revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371" },
     contract_version: 1, demo: { sha256: "a".repeat(64), upload_id: "upload" }, header: {},
     players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
     aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],
@@ -64,4 +66,12 @@ describe("durable HOT contract", () => {
     "rejects forbidden RAW field %s",
     (field) => expectInvalid({ ...validHot(), [field]: [] }),
   );
+
+  it("rejects an oversized HOT object even outside the HTTP boundary", () => {
+    const hot = validHot();
+    hot.warnings = ["x".repeat(DURABLE_HOT_HARD_MAX_BYTES)];
+    expect(() => assertHotDemoPayload(hot)).toThrowError(expect.objectContaining({
+      code: "PARSER_PAYLOAD_TOO_LARGE",
+    }));
+  });
 });

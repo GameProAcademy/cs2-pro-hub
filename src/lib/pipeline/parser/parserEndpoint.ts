@@ -207,6 +207,8 @@ export interface ParserWorkerIdentity {
   name: string;
   version: string;
   revision: string | null;
+  semanticRevision: string | null;
+  buildRevision: string | null;
   contractVersion: number;
 }
 
@@ -216,7 +218,7 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "empty /version payload");
   }
   const raw = value as {
-    parser?: { name?: unknown; version?: unknown; revision?: unknown };
+    parser?: { name?: unknown; version?: unknown; revision?: unknown; semantic_revision?: unknown; build_revision?: unknown };
     contract_version?: unknown;
   };
   const name = raw.parser?.name;
@@ -226,10 +228,17 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "/version is missing parser identity");
   }
   const revision = typeof raw.parser?.revision === "string" ? raw.parser.revision.trim() : "";
+  const semantic = typeof raw.parser?.semantic_revision === "string" ? raw.parser.semantic_revision.trim() : "";
+  const build = typeof raw.parser?.build_revision === "string" ? raw.parser.build_revision.trim() : "";
+  if (semantic && revision && semantic !== revision) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "revision and semantic revision diverge");
+  }
   return {
     name,
     version,
     revision: revision.length > 0 ? revision : null,
+    semanticRevision: (semantic || revision) || null,
+    buildRevision: build || null,
     contractVersion: contract,
   };
 }
@@ -240,6 +249,8 @@ export interface ExpectedParserIdentity {
   version: string;
   /** Exact worker build. `null` = not pinned by configuration. */
   revision: string | null;
+  buildRevision?: string | null;
+  buildRevisionRequired?: boolean;
   /** When true, an unpinned or unreported revision fails closed. */
   revisionRequired: boolean;
   contractVersion: number;
@@ -261,6 +272,8 @@ export function assertParserIdentity(
     version: string;
     revision: string | null;
     contractVersion?: number | null;
+    semanticRevision?: string | null;
+    buildRevision?: string | null;
   },
   expected: ExpectedParserIdentity,
 ): void {
@@ -285,16 +298,50 @@ export function assertParserIdentity(
   if (expected.revisionRequired && !worker.revision) {
     throw new PipelineError("PARSER_IDENTITY_MISMATCH", "worker did not report a build revision");
   }
+  if (worker.semanticRevision != null && worker.semanticRevision !== worker.revision) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "worker semantic revision mismatch");
+  }
   if (expected.revision != null && worker.revision !== expected.revision) {
     throw new PipelineError(
       "PARSER_IDENTITY_MISMATCH",
       `parser revision mismatch: got ${String(worker.revision)}, expected ${expected.revision}`,
     );
   }
+  if (expected.buildRevisionRequired && !expected.buildRevision) {
+    throw new PipelineError("PARSER_CONFIG_ERROR", "DEMO_PARSER_EXPECTED_BUILD_REVISION is required");
+  }
+  if (expected.buildRevisionRequired && !worker.buildRevision) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "worker did not report an exact build revision");
+  }
+  if (expected.buildRevision != null && worker.buildRevision !== expected.buildRevision) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "parser build revision mismatch");
+  }
   if (worker.contractVersion != null && worker.contractVersion !== expected.contractVersion) {
     throw new PipelineError(
       "PARSER_CONTRACT_MISMATCH",
       `expected contract ${expected.contractVersion}, got ${worker.contractVersion}`,
     );
+  }
+}
+
+/** Binds a parse response to the identity observed from `/version`. */
+export function assertParserIdentityConsistency(
+  version: ParserWorkerIdentity,
+  parsed: {
+    name: string;
+    version: string;
+    revision?: string | undefined;
+    semantic_revision?: string | undefined;
+    build_revision?: string | null | undefined;
+  },
+  contractVersion: number,
+): void {
+  const parsedRevision = parsed.revision?.trim() || null;
+  const parsedSemantic = parsed.semantic_revision?.trim() || parsedRevision;
+  const parsedBuild = parsed.build_revision?.trim() || null;
+  if (version.name !== parsed.name || version.version !== parsed.version ||
+      version.revision !== parsedRevision || version.semanticRevision !== parsedSemantic ||
+      version.buildRevision !== parsedBuild || version.contractVersion !== contractVersion) {
+    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "/version and parse identity diverge");
   }
 }

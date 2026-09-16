@@ -967,13 +967,13 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 
 ## FASE 2.7.2D.4-C — Final APP hardening + RAW recovery + release gate
 
-- [ ] C.1 Separar revisão semântica do parser e identidade exata do build, sem quebrar o lock atual.
-- [ ] C.2 Tornar artifacts FAILED recuperáveis idempotentemente para a mesma tentativa lógica.
-- [ ] C.3 Endurecer auditoria RAW, manifest, chain e root com decisão final do APP.
-- [ ] C.4 Congelar e validar a matriz HOT sem truncamento silencioso.
-- [ ] C.5 Congelar /complete em HOT + referência RAW, máximo 8 MiB.
-- [ ] C.6 Congelar matriz de chunks e integridade determinística.
-- [ ] C.7 Ampliar testes de contrato, identidade, lifecycle, auditoria e segurança.
-- [ ] C.8 Garantir observabilidade bounded e sanitizada.
-- [ ] C.9 Documentar os 16 gates de promoção sem autorizar E2E real.
-- [ ] Validar parser, testes focados, tipos, build e diff; classificar o resultado final.
+- [x] C.1 Separar revisão semântica do parser e identidade exata do build, sem quebrar o lock atual.
+- [x] C.2 Tornar artifacts FAILED recuperáveis idempotentemente para a mesma tentativa lógica.
+- [x] C.3 Endurecer auditoria RAW, manifest, chain e root com decisão final do APP.
+- [x] C.4 Congelar e validar a matriz HOT sem truncamento silencioso.
+- [x] C.5 Congelar /complete em HOT + referência RAW, máximo 8 MiB.
+- [x] C.6 Congelar matriz de chunks e integridade determinística.
+- [x] C.7 Ampliar testes de contrato, identidade, lifecycle, auditoria e segurança.
+- [x] C.8 Garantir observabilidade bounded e sanitizada.
+- [x] C.9 Documentar os 16 gates de promoção sem autorizar E2E real.
+- [x] Validar parser, testes focados, tipos e diff: TS 861/861; Python 138/138; release segue BLOCKED no gate 16.

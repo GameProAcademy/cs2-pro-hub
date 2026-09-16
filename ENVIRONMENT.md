@@ -33,6 +33,8 @@ Rules that apply to every variable below:
 | `DEMO_PARSER_EXPECTED_VERSION` | yes | expected parser version (`0.42.0`) |
 | `DEMO_PARSER_EXPECTED_REVISION` | yes in production | exact worker build revision; the revision lock fails closed on any divergence |
 | `DEMO_PARSER_REVISION_REQUIRED` | optional | `true`/`false` override of the lock; defaults to `true` when `NODE_ENV=production` |
+| `DEMO_PARSER_EXPECTED_BUILD_REVISION` | during exact-build promotion | exact `git:<40-hex>` Railway build identity; separate from the semantic compatibility lock |
+| `DEMO_PARSER_BUILD_REVISION_REQUIRED` | optional | `true` requires the worker to report and match the exact build identity |
 | `DEMO_PIPELINE_BRIDGE_SECRET` | yes for durable dispatch | shared bearer secret used only between the app and Railway queue consumer |
 
 The official endpoint value is the canonical parse URL, never the bare origin:
@@ -47,6 +49,11 @@ The Railway service additionally receives `DEMO_PIPELINE_BRIDGE_URL` pointing to
 poll/heartbeat intervals. RAW artifacts use short-lived, object-scoped upload
 URLs created by the APP; the Railway worker never receives a database or Storage
 credential.
+
+Railway may additionally set `PARSER_BUILD_REVISION=git:<40-hex>`. The worker
+reports `semantic_revision` from `PARSER_REVISION` and `build_revision` from this
+exact deployment variable. During coordinated rollout, build identity remains
+optional; setting both APP variables above activates fail-closed exact-build pinning.
 
 `MAX_PAYLOAD_BYTES` on Railway may be set up to `8388608`; the code always
 enforces the 8 MiB hard maximum for the complete `{hot, raw}` body. The target is

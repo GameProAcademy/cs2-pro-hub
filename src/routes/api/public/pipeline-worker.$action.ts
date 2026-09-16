@@ -13,6 +13,7 @@ import {
   finalizeRawArtifact,
 } from "@/lib/pipeline/durableBridge.server";
 import { DURABLE_HOT_HARD_MAX_BYTES, RAW_CHUNK_HARD_MAX_BYTES } from "@/lib/pipeline/types";
+import { RAW_ARTIFACT_SECTION_ORDER } from "@/lib/pipeline/rawArtifactContract";
 
 const identity = z.object({
   jobId: z.string().uuid(),
@@ -68,14 +69,14 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             return Response.json(await heartbeatDurableDemo(input.stage ? { ...input, stage: input.stage } : input));
           }
           if (params.action === "complete") {
-            const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).parse(body);
+            const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).strict().parse(body);
             return Response.json(await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]));
           }
           if (params.action === "raw-artifact-init") {
             return Response.json(await initializeRawArtifact(identity.parse(body)));
           }
           if (params.action === "raw-chunk-prepare") {
-            const input = identity.extend({ artifactId: z.string().uuid(), section: z.string().min(1).max(32),
+            const input = identity.extend({ artifactId: z.string().uuid(), section: z.enum(RAW_ARTIFACT_SECTION_ORDER),
               chunkIndex: z.number().int().nonnegative(), firstRow: z.number().int().nonnegative(),
               lastRow: z.number().int().nonnegative(), rowCount: z.number().int().positive(),
               byteSize: z.number().int().positive().max(RAW_CHUNK_HARD_MAX_BYTES), sha256: z.string().regex(/^[0-9a-f]{64}$/),

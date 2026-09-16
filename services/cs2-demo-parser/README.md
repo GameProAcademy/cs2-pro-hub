@@ -45,7 +45,13 @@ audit summary, but the APP derives and persists the final audit decision.
 
 ```json
 {
-  "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "git:<full-commit-sha>" },
+  "parser": {
+    "name": "demoparser2",
+    "version": "0.42.0",
+    "revision": "git:<semantic-lock-sha>",
+    "semantic_revision": "git:<semantic-lock-sha>",
+    "build_revision": "git:<exact-build-sha>"
+  },
   "contract_version": 1
 }
 ```
@@ -182,16 +188,17 @@ Rules that are enforced by tests:
 
 ## Revision lock (GATE 1E.1)
 
-`PARSER_REVISION` identifies the deployed build immutably. Preferred form
-`git:<full-commit-sha>` of the commit actually deployed.
+`PARSER_REVISION` is the semantic compatibility lock retained during the
+coordinated rollout. `PARSER_BUILD_REVISION` is the optional exact deployed build
+identity. Both use `git:<full-commit-sha>`; neither is inferred from the other.
 
 * production (`ENVIRONMENT=production`, the Docker default): the revision is
   **mandatory** and must be `git:<40 lowercase hex>`. Missing, empty or invalid (including the retired
   `pypi-0.42.0`) makes the process fail closed at startup — it does not serve.
 * non-production: the revision may be absent and resolves to the explicit
   marker `dev:unpinned`, which is never a valid pinned build id.
-* `/version` returns exactly the revision the process runs with (one source, no
-  duplicated value that could drift).
+* `/version` preserves `revision`, mirrors it as `semantic_revision`, and returns
+  `build_revision` separately (`null` until configured).
 
 The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 `DEMO_PARSER_EXPECTED_VERSION`, `DEMO_PARSER_EXPECTED_REVISION` and
@@ -204,6 +211,7 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 | -------------------------- | ------------------- | ----------------------------------------- |
 | `PARSER_TOKEN`             | yes (secret)        | bearer token, never logged or returned    |
 | `PARSER_REVISION`          | yes in production   | `git:<full-commit-sha>` of the deployment |
+| `PARSER_BUILD_REVISION`    | optional during rollout | exact `git:<full-commit-sha>` deployed build; never inferred |
 | `PARSER_CONTRACT_VERSION`  | optional            | defaults to `1`; only `1` is supported    |
 | `ENVIRONMENT`              | optional            | `production` by default in the image      |
 | `MAX_DEMO_BYTES`           | optional            | download ceiling, default 1.5 GB          |

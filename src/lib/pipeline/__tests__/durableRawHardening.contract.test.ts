@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeRawArtifactIntegrity,
+  decideRawChunkRecovery,
   deriveRawArtifactAuditStatus,
   rawPrefix,
 } from "@/lib/pipeline/durableBridge.server";
@@ -139,6 +140,26 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     const first = computeRawArtifactIntegrity([{ ...chunk, sha256: "a".repeat(64) }]);
     const second = computeRawArtifactIntegrity([{ ...chunk, sha256: "b".repeat(64) }]);
     expect(first.rootDigest).not.toBe(second.rootDigest);
+  });
+
+  it("reuses identical verified chunks and rewrites only matching incomplete chunks", () => {
+    const incoming = { section: "events", chunk_index: 0, storage_path: "p/events/0.gz",
+      first_row: 0, last_row: 0, row_count: 1, byte_size: 10, sha256: "a".repeat(64),
+      previous_chunk_sha256: null };
+    expect(decideRawChunkRecovery({ ...incoming, status: "verified" }, incoming)).toBe("reuse");
+    expect(decideRawChunkRecovery({ ...incoming, status: "uploading" }, incoming)).toBe("rewrite");
+    expect(decideRawChunkRecovery({ ...incoming, status: "failed" }, incoming)).toBe("rewrite");
+    expect(() => decideRawChunkRecovery({ ...incoming, status: "failed", sha256: "b".repeat(64) }, incoming))
+      .toThrowError(expect.objectContaining({ code: "PARSER_INVALID_RESPONSE" }));
+  });
+
+  it("requires reasons for every intentionally RAW-only or unmapped available field", () => {
+    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }] };
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
+      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }] } })).toBe("blocked");
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
+      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("approved");
   });
 
   it("never constructs Canonical approval from a blocked decision", () => {

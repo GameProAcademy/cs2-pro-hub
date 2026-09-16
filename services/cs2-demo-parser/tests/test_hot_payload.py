@@ -33,6 +33,19 @@ def test_hot_payload_marks_unclassified_events_partial():
         assert hot["quality"]["sections"][name]["status"] == "not_implemented"
 
 
+def test_limited_sections_and_partial_are_exactly_derived():
+    hot = build_hot_payload(
+        {"players": [{}] * (HOT_LIMITS["players"] + 1), "rounds": [], "events": []},
+        parser={"name": "demoparser2"}, contract_version=1,
+        demo_sha256="a" * 64, upload_id="upload",
+    )
+    assert hot["quality"]["limited_sections"] == ["players"]
+    assert hot["quality"]["partial"] is True
+    for name, quality in hot["quality"]["sections"].items():
+        assert quality["included_rows"] == len(hot[name])
+        assert quality["observed_rows"] - quality["included_rows"] == quality["overflow_rows"]
+
+
 @pytest.mark.parametrize("name", list(HOT_LIMITS))
 def test_hot_bounds_exact_limit_and_limit_plus_one(name):
     if name in {"aim_observations", "position_snapshots", "economy_snapshots"}:

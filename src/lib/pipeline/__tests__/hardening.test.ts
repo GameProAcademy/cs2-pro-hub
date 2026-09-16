@@ -44,7 +44,7 @@ describe("1. streamed demo integrity", () => {
     const source = readFileSync("src/lib/pipeline/storage.server.ts", "utf8");
     const hashSection = source.slice(source.indexOf("sha256FromStream"));
     expect(hashSection).not.toContain("arrayBuffer(");
-    expect(hashSection).not.toContain("crypto.subtle.digest");
+    expect(hashSection.replace(/\/\*[\s\S]*?\*\//g, "")).not.toContain("crypto.subtle.digest");
     expect(source).toContain("createHash");
   });
 

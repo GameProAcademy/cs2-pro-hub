@@ -115,6 +115,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         "name": PARSER_NAME,
         "version": PARSER_VERSION,
         "revision": settings.revision,
+        "semantic_revision": settings.revision,
+        "build_revision": settings.build_revision,
     }
     payload = {
         "parser": identity,
@@ -279,8 +281,10 @@ def create_app(
         "parser": {
             "name": PARSER_NAME,
             "version": PARSER_VERSION,
-            # Exactly the revision this process runs with — single source.
+            # Backward-compatible semantic lock plus an optional exact build id.
             "revision": resolved.revision,
+            "semantic_revision": resolved.revision,
+            "build_revision": resolved.build_revision,
         },
         "contract_version": resolved.contract_version,
     }

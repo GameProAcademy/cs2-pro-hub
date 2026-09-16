@@ -76,6 +76,23 @@ def test_load_settings_reads_the_pinned_revision():
     assert settings.contract_version == 1
 
 
+def test_build_revision_is_optional_for_coordinated_rollout_but_never_inferred():
+    settings = load_settings(
+        {"PARSER_TOKEN": TOKEN, "ENVIRONMENT": "production", "PARSER_REVISION": SHA}
+    )
+    assert settings.build_revision is None
+
+
+def test_exact_build_revision_must_be_full_git_sha_when_present():
+    build = "git:" + "2" * 40
+    settings = load_settings({"PARSER_TOKEN": TOKEN, "ENVIRONMENT": "production",
+                              "PARSER_REVISION": SHA, "PARSER_BUILD_REVISION": build})
+    assert settings.build_revision == build
+    with pytest.raises(WorkerConfigurationError):
+        load_settings({"PARSER_TOKEN": TOKEN, "ENVIRONMENT": "production",
+                       "PARSER_REVISION": SHA, "PARSER_BUILD_REVISION": "build-opaque"})
+
+
 # --- endpoints ------------------------------------------------------------
 
 
@@ -89,7 +106,8 @@ def test_version_reports_the_running_identity(client_factory):
     settings = make_settings(revision=SHA)
     payload = client_factory(settings=settings).get("/version").json()
     assert payload == {
-        "parser": {"name": "demoparser2", "version": "0.42.0", "revision": SHA},
+        "parser": {"name": "demoparser2", "version": "0.42.0", "revision": SHA,
+                   "semantic_revision": SHA, "build_revision": None},
         "contract_version": 1,
     }
 
