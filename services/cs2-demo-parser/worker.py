@@ -109,7 +109,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 except WorkerError as error:
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    logger.warning("durable job interrupted type=%s", type(error).__name__)
+                    logger.exception("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()
                     heartbeat.cancel()
@@ -120,5 +120,5 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                logger.warning("queue poll failed type=%s", type(error).__name__)
+                logger.exception("queue poll failed type=%s", type(error).__name__)
                 await asyncio.sleep(settings.queue_poll_seconds)
