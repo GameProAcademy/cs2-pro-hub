@@ -180,7 +180,7 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
   const path = `${prefix}/${input.section}/chunk-${String(input.chunkIndex).padStart(6, "0")}.jsonl.gz`;
   const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
     .eq("id", input.artifactId).eq("job_id", input.jobId).maybeSingle();
-  if (!artifact || artifact.storage_prefix !== prefix || artifact.status === "ready") {
+  if (!artifact || artifact.storage_prefix !== prefix || !["creating", "uploading", "verifying"].includes(artifact.status)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact state");
   }
   const { data: existingChunk, error: existingChunkError } = await db.from("raw_evidence_chunks")
@@ -208,7 +208,13 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
 
 export async function verifyRawChunk(input: DurableJobClaim & { jobId: string; artifactId: string;
   section: string; chunkIndex: number }) {
-  const { db } = await currentRawJob(input);
+  const { db, job } = await currentRawJob(input);
+  const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
+  const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
+    .eq("id", input.artifactId).eq("job_id", input.jobId).maybeSingle();
+  if (!artifact || artifact.storage_prefix !== prefix || !["creating", "uploading", "verifying"].includes(artifact.status)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact state");
+  }
   const { data: chunk } = await db.from("raw_evidence_chunks").select("storage_path, sha256")
     .eq("artifact_id", input.artifactId).eq("section", input.section)
     .eq("chunk_index", input.chunkIndex).maybeSingle();
@@ -240,6 +246,9 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
     return artifact;
   }
   if (artifact.status === "failed") throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact failed");
+  if (!["creating", "uploading", "verifying"].includes(artifact.status)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact lifecycle");
+  }
   const order = RAW_ARTIFACT_SECTION_ORDER;
   let previous: string | null = null;
   const summaries = order.map((section) => {

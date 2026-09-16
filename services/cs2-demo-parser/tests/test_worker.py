@@ -13,6 +13,7 @@ def test_worker_error_preserves_wire_code():
 
 def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
     calls: list[tuple[str, dict]] = []
+    durable_kwargs = {}
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
 
@@ -40,7 +41,8 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
     import app
     import worker
 
-    async def durable(*_args, **_kwargs):
+    async def durable(*_args, **kwargs):
+        durable_kwargs.update(kwargs)
         return {"hot": {"schema_version": 1}, "raw": {"artifact_id": "artifact", "root_digest": DEMO_SHA}}
 
     monkeypatch.setattr(app, "_download", download)
@@ -59,8 +61,7 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
     completed = calls[2][1]
     assert completed["messageId"] == 7
     assert completed["attempt"] == 0
-    durable_call = next(body for name, body in calls if name == "raw-context") if any(name == "raw-context" for name, _ in calls) else None
-    assert durable_call is None
+    assert durable_kwargs["attempt_number"] == 7
     assert "demo_url" not in completed
     assert "result" not in completed
     assert "hot" in completed and "raw" in completed

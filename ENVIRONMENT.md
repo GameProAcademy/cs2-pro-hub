@@ -48,6 +48,11 @@ poll/heartbeat intervals. RAW artifacts use short-lived, object-scoped upload
 URLs created by the APP; the Railway worker never receives a database or Storage
 credential.
 
+`MAX_PAYLOAD_BYTES` on Railway may be set up to `8388608`; the code always
+enforces the 8 MiB hard maximum for the complete `{hot, raw}` body. The target is
+4 MiB. Queue delivery attempts remain separate from the logical demo attempt
+used in RAW artifact identity and paths.
+
 ## Transactional email — Hostinger Mail API (server only)
 
 The runtime is Cloudflare Workers, which cannot open a raw outbound TCP socket to

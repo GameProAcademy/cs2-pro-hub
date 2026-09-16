@@ -41,7 +41,7 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   for (const name of HOT_SECTIONS) {
     const quality = hot.quality.sections?.[name];
     const rows = hot[name];
-    if (!quality || !Number.isInteger(quality.observed_rows) || !Number.isInteger(quality.included_rows) ||
+    if (!quality || !rows || !Number.isInteger(quality.observed_rows) || !Number.isInteger(quality.included_rows) ||
         !Number.isInteger(quality.limit) || !Number.isInteger(quality.overflow_rows) ||
         quality.observed_rows < 0 || quality.included_rows < 0 || quality.limit < 0 || quality.overflow_rows < 0 ||
         quality.included_rows !== rows.length || quality.included_rows > quality.limit ||
