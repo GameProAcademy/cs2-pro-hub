@@ -31,7 +31,7 @@ export function authenticateDurableWorker(request: Request): Response | null {
 }
 
 export async function claimDurableDemo(workerId: string) {
-  const { rpc } = await context();
+  const { db, rpc } = await context();
   const { data, error } = await rpc("claim_demo_parse_message", {
     _worker_id: workerId,
     _visibility_seconds: VISIBILITY_SECONDS,
@@ -43,12 +43,19 @@ export async function claimDurableDemo(workerId: string) {
   const storagePath = typeof claim["storage_path"] === "string" ? claim["storage_path"] : "";
   const exists = storagePath ? await demoExists(storagePath) : null;
   if (!exists) throw new PipelineError("DEMO_NOT_FOUND");
+  const jobId = typeof claim["job_id"] === "string" ? claim["job_id"] : "";
+  const { data: job, error: jobError } = await db
+    .from("demo_jobs")
+    .select("user_id")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (jobError || !job) throw new PipelineError("PERSISTENCE_ERROR", "durable job owner unavailable");
   return {
     status: "claimed",
     message_id: claim["message_id"],
-    job_id: claim["job_id"],
+    job_id: jobId,
     upload_id: claim["upload_id"],
-    user_id: claim["user_id"],
+    user_id: job.user_id,
     demo_sha256: claim["demo_sha256"],
     attempt: claim["attempt"],
     attempt_number: claim["attempt"],
