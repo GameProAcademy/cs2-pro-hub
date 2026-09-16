@@ -21,6 +21,8 @@ import {
 } from "@/lib/pipeline/storage.server";
 
 const VISIBILITY_SECONDS = 15 * 60;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 
 type Rpc = (name: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
@@ -43,38 +45,62 @@ export function authenticateDurableWorker(request: Request): Response | null {
   return null;
 }
 
+export type ValidatedDurableClaim = {
+  status: "claimed";
+  message_id: number;
+  job_id: string;
+  upload_id: string;
+  user_id: string;
+  demo_sha256: string;
+  attempt: number;
+  attempt_number: number;
+  schema_version: number;
+  file_size: number;
+  storage_path: string;
+};
+
+export function validateDurableClaim(value: unknown): ValidatedDurableClaim | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const claim = value as Record<string, unknown>;
+  if (claim["status"] !== "claimed") return null;
+  const validUuid = (field: string) => typeof claim[field] === "string" && UUID_PATTERN.test(claim[field]);
+  const validInteger = (field: string, minimum: number) =>
+    typeof claim[field] === "number" && Number.isSafeInteger(claim[field]) && claim[field] >= minimum;
+  if (!validUuid("job_id") || !validUuid("upload_id") || !validUuid("user_id") ||
+      !validInteger("message_id", 1) || !validInteger("attempt", 0) ||
+      !validInteger("attempt_number", 1) || !validInteger("schema_version", 1) ||
+      !validInteger("file_size", 1) || typeof claim["demo_sha256"] !== "string" ||
+      !SHA256_PATTERN.test(claim["demo_sha256"]) || typeof claim["storage_path"] !== "string" ||
+      claim["storage_path"].length === 0) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "durable claim contract invalid");
+  }
+  return claim as ValidatedDurableClaim;
+}
+
 export async function claimDurableDemo(workerId: string) {
-  const { db, rpc } = await context();
+  const { rpc } = await context();
   const { data, error } = await rpc("claim_demo_parse_message", {
     _worker_id: workerId,
     _visibility_seconds: VISIBILITY_SECONDS,
     _max_concurrent: MAX_CONCURRENT_DEMO_JOBS,
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
-  const claim = data as Record<string, unknown> | null;
-  if (!claim || claim["status"] !== "claimed") return claim ?? { status: "empty" };
-  const storagePath = typeof claim["storage_path"] === "string" ? claim["storage_path"] : "";
-  const exists = storagePath ? await demoExists(storagePath) : null;
+  const claim = validateDurableClaim(data);
+  if (!claim) return data ?? { status: "empty" };
+  const exists = await demoExists(claim.storage_path);
   if (!exists) throw new PipelineError("DEMO_NOT_FOUND");
-  const jobId = typeof claim["job_id"] === "string" ? claim["job_id"] : "";
-  const { data: job, error: jobError } = await db
-    .from("demo_jobs")
-    .select("user_id, attempt_number")
-    .eq("id", jobId)
-    .maybeSingle();
-  if (jobError || !job) throw new PipelineError("PERSISTENCE_ERROR", "durable job owner unavailable");
   return {
     status: "claimed",
-    message_id: claim["message_id"],
-    job_id: jobId,
-    upload_id: claim["upload_id"],
-    user_id: job.user_id,
-    demo_sha256: claim["demo_sha256"],
-    attempt: claim["attempt"],
-    attempt_number: job.attempt_number,
-    schema_version: claim["schema_version"],
-    file_size: exists.size || claim["file_size"],
-    demo_url: await createDemoSignedUrl(storagePath),
+    message_id: claim.message_id,
+    job_id: claim.job_id,
+    upload_id: claim.upload_id,
+    user_id: claim.user_id,
+    demo_sha256: claim.demo_sha256,
+    attempt: claim.attempt,
+    attempt_number: claim.attempt_number,
+    schema_version: claim.schema_version,
+    file_size: exists.size || claim.file_size,
+    demo_url: await createDemoSignedUrl(claim.storage_path),
     visibility_seconds: VISIBILITY_SECONDS,
   };
 }
