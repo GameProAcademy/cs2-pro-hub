@@ -58,7 +58,7 @@ def parse_demo_file_isolated(path: str) -> dict[str, Any]:
             completed = subprocess.run(
                 command,
                 stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 check=False,
@@ -71,6 +71,13 @@ def parse_demo_file_isolated(path: str) -> dict[str, Any]:
         except OSError as exc:
             logger.exception("parser_child_spawn_failed type=%s", type(exc).__name__)
             raise WorkerError(500, E.PARSER_ERROR, "Parser process could not start.") from None
+
+        stdout = (completed.stdout or "").strip()
+        if stdout:
+            # The child intentionally emits only bounded, non-secret diagnostics.
+            # Preserve the tail for production observability; never expose it via
+            # the external API.
+            logger.info("parser_child_stdout diagnostic=%s", stdout[-2000:])
 
         stderr = (completed.stderr or "").strip()
         if completed.returncode != 0:
