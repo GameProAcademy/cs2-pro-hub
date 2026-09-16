@@ -4,11 +4,11 @@ import {
   rawArtifactSha256,
   stableRawArtifactJson,
 } from "@/lib/pipeline/rawArtifactContract";
-import type {
+import {
   DURABLE_HOT_HARD_MAX_BYTES,
-  HotDemoPayloadV1,
-  RawArtifactReferenceV1,
-  RawParserOutput,
+  type HotDemoPayloadV1,
+  type RawArtifactReferenceV1,
+  type RawParserOutput,
 } from "@/lib/pipeline/types";
 import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/rawEvidence";
 import { expectedParserContract } from "@/lib/pipeline/parser/adapter";
@@ -23,6 +23,9 @@ const NOT_IMPLEMENTED_HOT_SECTIONS = new Set(["aim_observations", "position_snap
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!value || typeof value !== "object") throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT payload");
   const hot = value as Partial<HotDemoPayloadV1>;
+  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > DURABLE_HOT_HARD_MAX_BYTES) {
+    throw new PipelineError("PARSER_PAYLOAD_TOO_LARGE", "HOT payload exceeds 8 MiB");
+  }
   if (hot.schema_version !== 1 || hot.contract_version !== 1 || !hot.parser || !hot.demo || !hot.header) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid HOT identity");
   }

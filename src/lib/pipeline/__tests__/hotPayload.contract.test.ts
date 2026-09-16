@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { assertHotDemoPayload } from "@/lib/pipeline/rawArtifact.server";
 import {
+  DURABLE_HOT_HARD_MAX_BYTES,
   HOT_DEMO_LIMITS,
   type HotDemoPayloadV1,
   type HotSectionQuality,
@@ -64,4 +65,12 @@ describe("durable HOT contract", () => {
     "rejects forbidden RAW field %s",
     (field) => expectInvalid({ ...validHot(), [field]: [] }),
   );
+
+  it("rejects an oversized HOT object even outside the HTTP boundary", () => {
+    const hot = validHot();
+    hot.warnings = ["x".repeat(DURABLE_HOT_HARD_MAX_BYTES)];
+    expect(() => assertHotDemoPayload(hot)).toThrowError(expect.objectContaining({
+      code: "PARSER_PAYLOAD_TOO_LARGE",
+    }));
+  });
 });

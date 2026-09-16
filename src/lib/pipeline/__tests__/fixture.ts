@@ -117,7 +117,7 @@ export const syntheticParserOutput: RawParserOutput = {
   parser: {
     name: "demoparser2",
     version: "0.42.0",
-    revision: "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd",
+    revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371",
   },
   contract_version: PARSER_CONTRACT_VERSION,
   header: {
