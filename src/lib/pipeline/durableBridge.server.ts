@@ -4,7 +4,15 @@ import { MAX_CONCURRENT_DEMO_JOBS, MAX_JOB_RETRIES } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { processJob, type DurableJobClaim } from "@/lib/pipeline/jobs.server";
 import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
-import type { DurableDemoCompletionV1 } from "@/lib/pipeline/types";
+import {
+  RAW_CHUNK_HARD_MAX_BYTES,
+  type DurableDemoCompletionV1,
+} from "@/lib/pipeline/types";
+import {
+  RAW_ARTIFACT_SECTION_ORDER,
+  rawArtifactSha256,
+  stableRawArtifactJson,
+} from "@/lib/pipeline/rawArtifactContract";
 import { createDemoSignedUrl, demoExists } from "@/lib/pipeline/storage.server";
 import {
   createRawEvidenceSignedUploadUrl,
@@ -51,7 +59,7 @@ export async function claimDurableDemo(workerId: string) {
   const jobId = typeof claim["job_id"] === "string" ? claim["job_id"] : "";
   const { data: job, error: jobError } = await db
     .from("demo_jobs")
-    .select("user_id")
+    .select("user_id, attempt_number")
     .eq("id", jobId)
     .maybeSingle();
   if (jobError || !job) throw new PipelineError("PERSISTENCE_ERROR", "durable job owner unavailable");
@@ -63,7 +71,7 @@ export async function claimDurableDemo(workerId: string) {
     user_id: job.user_id,
     demo_sha256: claim["demo_sha256"],
     attempt: claim["attempt"],
-    attempt_number: claim["attempt"],
+    attempt_number: job.attempt_number,
     schema_version: claim["schema_version"],
     file_size: exists.size || claim["file_size"],
     demo_url: await createDemoSignedUrl(storagePath),
@@ -119,14 +127,14 @@ export async function failDurableDemo(input: DurableJobClaim & { jobId: string; 
   return { ...(data as object), maxRetries: MAX_JOB_RETRIES };
 }
 
-function rawPrefix(userId: string, uploadId: string, attempt: number): string {
-  return `${userId}/${uploadId}/attempt-${attempt}`;
+export function rawPrefix(userId: string, uploadId: string, demoAttemptNumber: number): string {
+  return `${userId}/${uploadId}/attempt-${demoAttemptNumber}`;
 }
 
 async function currentRawJob(input: DurableJobClaim & { jobId: string }) {
   const { db } = await context();
   const { data: job, error } = await db.from("demo_jobs")
-    .select("id, upload_id, user_id, demo_sha256, dispatch_attempt, queue_message_id, worker_id, lease_expires_at")
+    .select("id, upload_id, user_id, demo_sha256, attempt_number, dispatch_attempt, queue_message_id, worker_id, lease_expires_at")
     .eq("id", input.jobId).maybeSingle();
   if (error || !job || Number(job.queue_message_id) !== input.messageId ||
       job.dispatch_attempt !== input.attempt || job.worker_id !== input.workerId ||
@@ -138,20 +146,21 @@ async function currentRawJob(input: DurableJobClaim & { jobId: string }) {
 
 export async function initializeRawArtifact(input: DurableJobClaim & { jobId: string }) {
   const { db, job } = await currentRawJob(input);
-  const prefix = rawPrefix(job.user_id, job.upload_id, input.attempt);
+  const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
   const { data: existing, error: existingError } = await db.from("raw_evidence_artifacts")
     .select("*").eq("job_id", input.jobId).maybeSingle();
   if (existingError) throw new PipelineError("PERSISTENCE_ERROR", existingError.message);
   if (existing) {
     if (existing.upload_id !== job.upload_id || existing.user_id !== job.user_id ||
-        existing.attempt_number !== input.attempt || existing.demo_sha256 !== job.demo_sha256) {
+        existing.attempt_number !== job.attempt_number || existing.demo_sha256 !== job.demo_sha256 ||
+        existing.storage_prefix !== prefix) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact identity conflict");
     }
     return existing;
   }
   const { data, error } = await db.from("raw_evidence_artifacts").insert({
     job_id: input.jobId, upload_id: job.upload_id, user_id: job.user_id,
-    attempt_number: input.attempt, demo_sha256: job.demo_sha256 ?? "",
+    attempt_number: job.attempt_number, demo_sha256: job.demo_sha256 ?? "",
     storage_bucket: "cs2-raw-evidence", storage_prefix: prefix,
     manifest_storage_path: `${prefix}/manifest.json`, schema_version: 1,
     status: "uploading", raw_status: "writing", audit_status: "running",
@@ -164,15 +173,28 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
   section: string; chunkIndex: number; firstRow: number; lastRow: number; rowCount: number;
   byteSize: number; sha256: string; previousChunkSha256: string | null }) {
   const { db, job } = await currentRawJob(input);
-  if (input.byteSize <= 0 || input.byteSize > 8 * 1024 * 1024 || !/^[0-9a-f]{64}$/.test(input.sha256)) {
+  if (input.byteSize <= 0 || input.byteSize > RAW_CHUNK_HARD_MAX_BYTES || !/^[0-9a-f]{64}$/.test(input.sha256)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk metadata");
   }
-  const prefix = rawPrefix(job.user_id, job.upload_id, input.attempt);
+  const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
   const path = `${prefix}/${input.section}/chunk-${String(input.chunkIndex).padStart(6, "0")}.jsonl.gz`;
   const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
     .eq("id", input.artifactId).eq("job_id", input.jobId).maybeSingle();
-  if (!artifact || artifact.storage_prefix !== prefix || artifact.status === "ready") {
+  if (!artifact || artifact.storage_prefix !== prefix || !["creating", "uploading", "verifying"].includes(artifact.status)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact state");
+  }
+  const { data: existingChunk, error: existingChunkError } = await db.from("raw_evidence_chunks")
+    .select("storage_path, first_row, last_row, row_count, byte_size, sha256, previous_chunk_sha256, status")
+    .eq("artifact_id", input.artifactId).eq("section", input.section)
+    .eq("chunk_index", input.chunkIndex).maybeSingle();
+  if (existingChunkError) throw new PipelineError("PERSISTENCE_ERROR", existingChunkError.message);
+  if (existingChunk?.status === "verified") {
+    const same = existingChunk.storage_path === path && existingChunk.first_row === input.firstRow &&
+      existingChunk.last_row === input.lastRow && existingChunk.row_count === input.rowCount &&
+      existingChunk.byte_size === input.byteSize && existingChunk.sha256 === input.sha256 &&
+      existingChunk.previous_chunk_sha256 === input.previousChunkSha256;
+    if (!same) throw new PipelineError("PARSER_INVALID_RESPONSE", "verified RAW chunk conflict");
+    return { path, alreadyVerified: true };
   }
   const { error } = await db.from("raw_evidence_chunks").upsert({
     artifact_id: input.artifactId, section: input.section, chunk_index: input.chunkIndex,
@@ -186,7 +208,13 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
 
 export async function verifyRawChunk(input: DurableJobClaim & { jobId: string; artifactId: string;
   section: string; chunkIndex: number }) {
-  const { db } = await currentRawJob(input);
+  const { db, job } = await currentRawJob(input);
+  const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
+  const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
+    .eq("id", input.artifactId).eq("job_id", input.jobId).maybeSingle();
+  if (!artifact || artifact.storage_prefix !== prefix || !["creating", "uploading", "verifying"].includes(artifact.status)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact state");
+  }
   const { data: chunk } = await db.from("raw_evidence_chunks").select("storage_path, sha256")
     .eq("artifact_id", input.artifactId).eq("section", input.section)
     .eq("chunk_index", input.chunkIndex).maybeSingle();
@@ -200,13 +228,6 @@ export async function verifyRawChunk(input: DurableJobClaim & { jobId: string; a
   return { verified: true };
 }
 
-function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
-  if (value && typeof value === "object") return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;
-  return JSON.stringify(value);
-}
-
 export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: string; artifactId: string;
   rootDigest: string; manifest: Record<string, unknown> }) {
   const { db } = await currentRawJob(input);
@@ -218,7 +239,17 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
   if (!artifact || chunksError || !chunks?.length || chunks.some((chunk) => chunk.status !== "verified")) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact incomplete");
   }
-  const order = ["header", "players", "rounds", "events", "ticks", "grenades", "player-info", "game-state", "economy", "forensic"];
+  if (artifact.status === "ready") {
+    if (artifact.root_digest !== input.rootDigest) {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "READY RAW artifact is immutable");
+    }
+    return artifact;
+  }
+  if (artifact.status === "failed") throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact failed");
+  if (!["creating", "uploading", "verifying"].includes(artifact.status)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact lifecycle");
+  }
+  const order = RAW_ARTIFACT_SECTION_ORDER;
   let previous: string | null = null;
   const summaries = order.map((section) => {
     const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
@@ -229,13 +260,21 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
     return { name: section, chunk_count: own.length,
       row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
       byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: createHash("sha256").update(stable(own.map((chunk) => chunk.sha256))).digest("hex") };
+      digest: rawArtifactSha256(stableRawArtifactJson(own.map((chunk) => chunk.sha256))) };
   });
-  const computed = createHash("sha256").update(stable(summaries)).digest("hex");
+  const computed = rawArtifactSha256(stableRawArtifactJson(summaries));
   if (computed !== input.rootDigest || input.manifest["root_digest"] !== computed) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root mismatch");
   }
-  await uploadRawEvidenceManifest(artifact.manifest_storage_path, stable(input.manifest));
+  const manifestSections = input.manifest["sections"];
+  const manifestIdentity = input.manifest["schema_version"] === 1 &&
+    input.manifest["job_id"] === artifact.job_id && input.manifest["upload_id"] === artifact.upload_id &&
+    input.manifest["attempt_number"] === artifact.attempt_number &&
+    input.manifest["demo_sha256"] === artifact.demo_sha256 && input.manifest["status"] === "ready" &&
+    input.manifest["raw_status"] === "ready" && Array.isArray(manifestSections) &&
+    stableRawArtifactJson(manifestSections) === stableRawArtifactJson(summaries);
+  if (!manifestIdentity) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest identity mismatch");
+  await uploadRawEvidenceManifest(artifact.manifest_storage_path, stableRawArtifactJson(input.manifest));
   const totals = { total_chunks: chunks.length,
     total_rows: chunks.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
     total_bytes: chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0) };

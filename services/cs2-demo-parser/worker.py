@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from typing import Any, Callable
 
 import httpx
 
 from errors import WorkerError
-from settings import Settings
+from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
 
@@ -68,6 +69,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
                 try:
+                    if claim["attempt_number"] < 1:
+                        raise RuntimeError("invalid logical demo attempt")
                     result = await _parse_durable_request(
                         ParseRequest(
                             contract_version=settings.contract_version,
@@ -90,8 +93,11 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
                         complete_body = {**identity, **result}
+                        complete_bytes = len(json.dumps(complete_body, separators=(",", ":")).encode())
+                        if complete_bytes > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+                            raise WorkerError(413, "PAYLOAD_TOO_LARGE", "HOT completion payload is too large.")
                         logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
-                                    len(__import__("json").dumps(complete_body, separators=(",", ":")).encode()),
+                                    complete_bytes,
                                     result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12])
                         await _bridge(client, settings, "complete", complete_body)
                 except WorkerError as error:

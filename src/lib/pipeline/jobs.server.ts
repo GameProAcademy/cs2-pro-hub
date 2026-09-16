@@ -94,6 +94,7 @@ export interface JobProcessResult {
 
 export interface DurableJobClaim {
   messageId: number;
+  /** Technical delivery/lease attempt for the current queue message. */
   attempt: number;
   workerId: string;
 }
@@ -347,7 +348,7 @@ export async function processJob(
   const { data: job } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, queue_message_id, dispatch_attempt, worker_id, lease_expires_at",
+      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, queue_message_id, attempt_number, dispatch_attempt, worker_id, lease_expires_at",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -455,10 +456,10 @@ export async function processJob(
     const rawAudit = artifactCompletion
       ? await verifyRawArtifact({ ref: artifactCompletion.raw, hot: artifactCompletion.hot,
           jobId, uploadId: job.upload_id, userId: job.user_id,
-          attemptNumber: durableClaim?.attempt ?? job.retry_count,
+          attemptNumber: job.attempt_number,
           expectedSha256: job.demo_sha256 })
       : await persistRawEvidence({ jobId, uploadId: job.upload_id, userId: job.user_id,
-          expectedSha256: job.demo_sha256, attempt: durableClaim?.attempt ?? job.retry_count, raw });
+          expectedSha256: job.demo_sha256, attempt: job.attempt_number, raw });
     await assertNotCancelled(jobId);
     if (!rawAudit.approved) {
       await blockForRawAudit(jobId, job.upload_id, rawAudit, durableClaim);

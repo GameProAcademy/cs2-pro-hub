@@ -4,11 +4,21 @@
 
 - [x] Contratos `HotDemoPayloadV1` e `RawArtifactReferenceV1`, com limites e overflow explícitos.
 - [x] Writer JSONL gzip em chunks, SHA físico, hash chain, manifest e root digest no artifact RAW existente.
-- [x] Worker durável envia apenas HOT + referência READY; `/complete` reduzido para 2 MiB e sem RAW legado.
+- [x] Worker durável envia apenas HOT + referência READY; `/complete` limitado a 8 MiB e sem RAW legado.
 - [x] APP valida identidade, lifecycle, chunks, manifest e root digest antes do Canonical, sem reler RAW completo.
 - [x] Defesa Canonical aceita somente aprovação pelo artifact READY ou pelo caminho legado auditado.
 - [x] Testes focados adicionados para HOT de alto volume, chunking, integridade e idempotência.
 - [ ] Deploy/configuração Railway e E2E real com a demo Cache permanecem pendentes; nenhum secret, deploy ou dado foi alterado nesta fase.
+
+## FASE 2.7.2D.4-B.1 — Contract hardening — IMPLEMENTADA / AUDITORIA EXTERNA PENDENTE
+
+- [x] `dispatch_attempt` técnico separado de `demo_jobs.attempt_number` lógico em claim, lease, artifact, prefixo, manifest e admissão.
+- [x] Eventos não classificados permanecem apenas no RAW e tornam HOT parcial sem erro estrutural.
+- [x] Overflow HOT validado explicitamente; RAW dentro do HOT e truncamento silencioso são rejeitados.
+- [x] Payload durable `{hot, raw}` com alvo de 4 MiB e hard maximum uniforme de 8 MiB.
+- [x] Lifecycle/idempotência endurecidos: retry técnico reutiliza chunks verificados; READY não aceita novos chunks; nova tentativa lógica usa novo prefixo.
+- [x] AIM, position e economy permanecem vazios e explicitamente `not_implemented`; nenhum dado ou métrica foi inventado.
+- [ ] E2E real ainda NÃO aprovado: Railway sync/deploy, smoke test da demo real e validação Canonical real permanecem pendentes para B.2.
 
 ## BLOCKER — Deployment público — CONCLUÍDO
 

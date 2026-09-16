@@ -16,6 +16,14 @@ a physical SHA-256 and a cross-section hash chain, and are described by a small
 manifest/root digest. The `/complete` callback contains only bounded `hot` data
 plus the READY `raw` artifact reference; full RAW arrays never cross that route.
 
+`dispatch_attempt` is used only for queue ownership and leases. The RAW identity
+and `attempt-N` path always use the logical `demo_jobs.attempt_number`, so a
+technical retry reuses one artifact while a new logical attempt creates another.
+The complete `{hot, raw}` body targets 4 MiB and fails closed above 8 MiB.
+Unclassified events remain in RAW and make HOT partial without invalidating its
+contract. AIM observations, position snapshots, and economy snapshots are
+explicitly `not_implemented`; empty arrays do not claim complete coverage.
+
 The APP creates short-lived, object-scoped upload URLs. The Railway worker never
 receives a database or Storage credential.
 
@@ -189,7 +197,7 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 | `PARSER_CONTRACT_VERSION`  | optional            | defaults to `1`; only `1` is supported    |
 | `ENVIRONMENT`              | optional            | `production` by default in the image      |
 | `MAX_DEMO_BYTES`           | optional            | download ceiling, default 1.5 GB          |
-| `MAX_PAYLOAD_BYTES`        | optional            | response ceiling, default 96 MB           |
+| `MAX_PAYLOAD_BYTES`        | optional            | HOT completion ceiling; hard-capped at 8 MiB |
 | `DOWNLOAD_TIMEOUT_SECONDS` | optional            | default 120                               |
 | `PARSE_TIMEOUT_SECONDS`    | optional            | default 240                               |
 | `DEMO_PIPELINE_BRIDGE_URL` | yes for queue worker | APP bridge ending in `/pipeline-worker`   |

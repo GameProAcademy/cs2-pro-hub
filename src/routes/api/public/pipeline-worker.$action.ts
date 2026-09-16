@@ -12,6 +12,7 @@ import {
   verifyRawChunk,
   finalizeRawArtifact,
 } from "@/lib/pipeline/durableBridge.server";
+import { DURABLE_HOT_HARD_MAX_BYTES, RAW_CHUNK_HARD_MAX_BYTES } from "@/lib/pipeline/types";
 
 const identity = z.object({
   jobId: z.string().uuid(),
@@ -20,11 +21,9 @@ const identity = z.object({
   workerId: z.string().min(3).max(128),
 });
 
-const MAX_COMPLETE_BYTES = 2 * 1024 * 1024;
-
 class PayloadTooLargeError extends Error {}
 
-async function readBoundedJson(request: Request): Promise<unknown> {
+export async function readBoundedJson(request: Request): Promise<unknown> {
   if (!request.body) return {};
   const reader = request.body.getReader();
   const decoder = new TextDecoder();
@@ -35,7 +34,7 @@ async function readBoundedJson(request: Request): Promise<unknown> {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > MAX_COMPLETE_BYTES) {
+      if (size > DURABLE_HOT_HARD_MAX_BYTES) {
         await reader.cancel();
         throw new PayloadTooLargeError();
       }
@@ -56,7 +55,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
         if (unauthorized) return unauthorized;
         try {
           const declaredLength = Number(request.headers.get("content-length") ?? "0");
-          if (Number.isFinite(declaredLength) && declaredLength > MAX_COMPLETE_BYTES) {
+          if (Number.isFinite(declaredLength) && declaredLength > DURABLE_HOT_HARD_MAX_BYTES) {
             return Response.json({ error: "payload_too_large" }, { status: 413 });
           }
           const body = await readBoundedJson(request);
@@ -79,7 +78,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             const input = identity.extend({ artifactId: z.string().uuid(), section: z.string().min(1).max(32),
               chunkIndex: z.number().int().nonnegative(), firstRow: z.number().int().nonnegative(),
               lastRow: z.number().int().nonnegative(), rowCount: z.number().int().positive(),
-              byteSize: z.number().int().positive().max(8 * 1024 * 1024), sha256: z.string().regex(/^[0-9a-f]{64}$/),
+              byteSize: z.number().int().positive().max(RAW_CHUNK_HARD_MAX_BYTES), sha256: z.string().regex(/^[0-9a-f]{64}$/),
               previousChunkSha256: z.string().regex(/^[0-9a-f]{64}$/).nullable() }).parse(body);
             return Response.json(await prepareRawChunk(input));
           }
