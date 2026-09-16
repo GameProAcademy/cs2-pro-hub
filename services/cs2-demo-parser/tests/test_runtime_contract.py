@@ -3,7 +3,7 @@ from pathlib import Path
 
 from hot_payload import HOT_SCHEMA_VERSION
 from raw_artifact import CHUNK_HARD_MAX_BYTES, CHUNK_TARGET_BYTES, RAW_SCHEMA_VERSION
-from settings import DEFAULT_CONTRACT_VERSION, HARD_MAX_PAYLOAD_BYTES, TARGET_PAYLOAD_BYTES
+from settings import DEFAULT_CONTRACT_VERSION, DURABLE_HOT_HARD_MAX_BYTES, DURABLE_HOT_TARGET_BYTES
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = ROOT.parents[1]
@@ -12,8 +12,8 @@ RUNBOOK = REPOSITORY / "docs" / "PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md"
 
 def test_contract_versions_and_transport_limits_are_frozen():
     assert DEFAULT_CONTRACT_VERSION == HOT_SCHEMA_VERSION == RAW_SCHEMA_VERSION == 1
-    assert TARGET_PAYLOAD_BYTES == CHUNK_TARGET_BYTES == 4 * 1024 * 1024
-    assert HARD_MAX_PAYLOAD_BYTES == CHUNK_HARD_MAX_BYTES == 8 * 1024 * 1024
+    assert DURABLE_HOT_TARGET_BYTES == CHUNK_TARGET_BYTES == 4 * 1024 * 1024
+    assert DURABLE_HOT_HARD_MAX_BYTES == CHUNK_HARD_MAX_BYTES == 8 * 1024 * 1024
 
 
 def test_runtime_has_no_privileged_backend_credentials():
