@@ -2177,6 +2177,170 @@ export type Database = {
           },
         ]
       }
+      raw_evidence_artifacts: {
+        Row: {
+          attempt_number: number
+          audit_status: string
+          created_at: string
+          demo_sha256: string
+          error_code: string | null
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          job_id: string
+          manifest_storage_path: string
+          raw_status: string
+          ready_at: string | null
+          root_digest: string | null
+          schema_version: number
+          status: string
+          storage_bucket: string
+          storage_prefix: string
+          total_bytes: number
+          total_chunks: number
+          total_rows: number
+          updated_at: string
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          attempt_number: number
+          audit_status?: string
+          created_at?: string
+          demo_sha256: string
+          error_code?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          job_id: string
+          manifest_storage_path: string
+          raw_status?: string
+          ready_at?: string | null
+          root_digest?: string | null
+          schema_version: number
+          status?: string
+          storage_bucket: string
+          storage_prefix: string
+          total_bytes?: number
+          total_chunks?: number
+          total_rows?: number
+          updated_at?: string
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          attempt_number?: number
+          audit_status?: string
+          created_at?: string
+          demo_sha256?: string
+          error_code?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          job_id?: string
+          manifest_storage_path?: string
+          raw_status?: string
+          ready_at?: string | null
+          root_digest?: string | null
+          schema_version?: number
+          status?: string
+          storage_bucket?: string
+          storage_prefix?: string
+          total_bytes?: number
+          total_chunks?: number
+          total_rows?: number
+          updated_at?: string
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_evidence_artifacts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_evidence_artifacts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raw_evidence_chunks: {
+        Row: {
+          artifact_id: string
+          byte_size: number
+          chunk_index: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          failed_at: string | null
+          first_row: number | null
+          id: string
+          last_row: number | null
+          previous_chunk_sha256: string | null
+          row_count: number
+          section: string
+          sha256: string
+          status: string
+          storage_path: string
+          uploaded_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          artifact_id: string
+          byte_size?: number
+          chunk_index: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          first_row?: number | null
+          id?: string
+          last_row?: number | null
+          previous_chunk_sha256?: string | null
+          row_count?: number
+          section: string
+          sha256: string
+          status?: string
+          storage_path: string
+          uploaded_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          byte_size?: number
+          chunk_index?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          first_row?: number | null
+          id?: string
+          last_row?: number | null
+          previous_chunk_sha256?: string | null
+          row_count?: number
+          section?: string
+          sha256?: string
+          status?: string
+          storage_path?: string
+          uploaded_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_evidence_chunks_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "raw_evidence_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_events: {
         Row: {
           actor_steam_id: string | null
