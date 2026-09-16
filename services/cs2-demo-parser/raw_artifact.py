@@ -203,7 +203,7 @@ class RawArtifactWriter:
                     # decision from audit_evidence instead of trusting this field.
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
-                    "audit_evidence_digest": hashlib.sha256(_stable(audit_evidence)).hexdigest(),
+                    "audit_evidence_digest": _audit_evidence_digest(evidence),
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
