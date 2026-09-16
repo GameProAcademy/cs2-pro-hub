@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "npm run verify:public-build && vitest run",
     "verify:public-build": "node scripts/verify-public-build-config.mjs"
   },
   "overrides": {
