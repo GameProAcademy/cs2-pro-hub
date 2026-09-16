@@ -113,7 +113,7 @@ export async function completeDurableDemo(input: DurableJobClaim & { jobId: stri
 
 export async function failDurableDemo(input: DurableJobClaim & { jobId: string; errorCode: string; detail?: string | undefined }) {
   const mapped = mapParserErrorCode(input.errorCode);
-  const { rpc } = await context();
+  const { db, rpc } = await context();
   const { data, error } = await rpc("fail_demo_parse_message", {
     _job_id: input.jobId,
     _message_id: input.messageId,
@@ -124,6 +124,14 @@ export async function failDurableDemo(input: DurableJobClaim & { jobId: string; 
     _permanent: mapped.permanent,
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  const accepted = (data as { accepted?: boolean } | null)?.accepted === true;
+  if (accepted) {
+    await db.from("raw_evidence_artifacts").update({
+      status: "failed", raw_status: "failed", audit_status: "blocked",
+      error_code: mapped.code, error_message: input.detail?.slice(0, 300) ?? null,
+      failed_at: new Date().toISOString(),
+    }).eq("job_id", input.jobId).neq("status", "ready");
+  }
   return { ...(data as object), maxRetries: MAX_JOB_RETRIES };
 }
 
@@ -164,6 +172,24 @@ type VerifiedRawChunk = {
   sha256: string;
   previous_chunk_sha256: string | null;
 };
+
+export type RawChunkState = "verified" | "uploading" | "failed";
+
+export function decideRawChunkRecovery(
+  existing: (VerifiedRawChunk & { storage_path: string; first_row: number | null;
+    last_row: number | null; status: string }) | null,
+  incoming: VerifiedRawChunk & { storage_path: string; first_row: number; last_row: number },
+): "reuse" | "rewrite" | "create" {
+  if (!existing) return "create";
+  const same = existing.storage_path === incoming.storage_path && existing.first_row === incoming.first_row &&
+    existing.last_row === incoming.last_row && existing.row_count === incoming.row_count &&
+    existing.byte_size === incoming.byte_size && existing.sha256 === incoming.sha256 &&
+    existing.previous_chunk_sha256 === incoming.previous_chunk_sha256;
+  if (!same) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk identity conflict");
+  if (existing.status === "verified") return "reuse";
+  if (existing.status === "uploading" || existing.status === "failed") return "rewrite";
+  throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk lifecycle");
+}
 
 export function computeRawArtifactIntegrity(chunks: VerifiedRawChunk[]) {
   let previous: string | null = null;
@@ -243,6 +269,11 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
   if (input.byteSize <= 0 || input.byteSize > RAW_CHUNK_HARD_MAX_BYTES || !/^[0-9a-f]{64}$/.test(input.sha256)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk metadata");
   }
+  if (!RAW_ARTIFACT_SECTION_ORDER.includes(input.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]) ||
+      input.rowCount <= 0 || input.lastRow !== input.firstRow + input.rowCount - 1 ||
+      (input.chunkIndex === 0 && input.section === RAW_ARTIFACT_SECTION_ORDER[0] && input.previousChunkSha256 !== null)) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk coordinates");
+  }
   const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
   const path = `${prefix}/${input.section}/chunk-${String(input.chunkIndex).padStart(6, "0")}.jsonl.gz`;
   const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
@@ -255,14 +286,13 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
     .eq("artifact_id", input.artifactId).eq("section", input.section)
     .eq("chunk_index", input.chunkIndex).maybeSingle();
   if (existingChunkError) throw new PipelineError("PERSISTENCE_ERROR", existingChunkError.message);
-  if (existingChunk) {
-    const same = existingChunk.storage_path === path && existingChunk.first_row === input.firstRow &&
-      existingChunk.last_row === input.lastRow && existingChunk.row_count === input.rowCount &&
-      existingChunk.byte_size === input.byteSize && existingChunk.sha256 === input.sha256 &&
-      existingChunk.previous_chunk_sha256 === input.previousChunkSha256;
-    if (!same) throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk identity conflict");
-    if (existingChunk.status === "verified") return { path, alreadyVerified: true };
-  }
+  const recovery = decideRawChunkRecovery(existingChunk, {
+    section: input.section, chunk_index: input.chunkIndex, storage_path: path,
+    first_row: input.firstRow, last_row: input.lastRow, row_count: input.rowCount,
+    byte_size: input.byteSize, sha256: input.sha256,
+    previous_chunk_sha256: input.previousChunkSha256,
+  });
+  if (recovery === "reuse") return { path, alreadyVerified: true };
   const { error } = await db.from("raw_evidence_chunks").upsert({
     artifact_id: input.artifactId, section: input.section, chunk_index: input.chunkIndex,
     storage_path: path, first_row: input.firstRow, last_row: input.lastRow,
@@ -310,6 +340,13 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
   if (artifact.status === "ready") {
     if (artifact.root_digest !== input.rootDigest) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", "READY RAW artifact is immutable");
+    }
+    const { data: storedManifest, error: storedManifestError } = await db.storage
+      .from("cs2-raw-evidence").download(artifact.manifest_storage_path);
+    const submitted = { ...input.manifest, audit_status: deriveRawArtifactAuditStatus(input.manifest) };
+    if (storedManifestError || !storedManifest ||
+        stableRawArtifactJson(JSON.parse(await storedManifest.text())) !== stableRawArtifactJson(submitted)) {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "READY RAW artifact manifest conflict");
     }
     return artifact;
   }
