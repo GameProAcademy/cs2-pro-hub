@@ -11,7 +11,6 @@ import {
   rawEvidenceObjectSha256,
   uploadRawEvidenceManifest,
 } from "@/lib/pipeline/storage.server";
-import { createHash as sha256Hash } from "node:crypto";
 
 const VISIBILITY_SECONDS = 15 * 60;
 
@@ -230,9 +229,9 @@ export async function finalizeRawArtifact(input: DurableJobClaim & { jobId: stri
     return { name: section, chunk_count: own.length,
       row_count: own.reduce((sum, chunk) => sum + Number(chunk.row_count), 0),
       byte_count: own.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0),
-      digest: sha256Hash("sha256").update(stable(own.map((chunk) => chunk.sha256))).digest("hex") };
+      digest: createHash("sha256").update(stable(own.map((chunk) => chunk.sha256))).digest("hex") };
   });
-  const computed = sha256Hash("sha256").update(stable(summaries)).digest("hex");
+  const computed = createHash("sha256").update(stable(summaries)).digest("hex");
   if (computed !== input.rootDigest || input.manifest["root_digest"] !== computed) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW root mismatch");
   }

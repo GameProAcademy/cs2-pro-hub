@@ -19,6 +19,7 @@ HOT_LIMITS = {
 _COMBAT = {"player_death", "player_hurt", "weapon_fire", "weapon_fire_on_empty"}
 _UTILITY = {"player_blind", "flashbang_detonate", "smokegrenade_detonate", "smokegrenade_expired", "molotov_detonate", "inferno_startburn", "inferno_expire", "hegrenade_detonate", "decoy_detonate", "grenade_thrown"}
 _OBJECTIVE = {"bomb_planted", "bomb_defused", "bomb_exploded", "bomb_beginplant", "bomb_begindefuse", "round_start", "round_end"}
+_CLASSIFIED = _COMBAT | _UTILITY | _OBJECTIVE
 
 
 def _bounded(name: str, rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -44,6 +45,7 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "position_snapshots": [],
         "economy_snapshots": [],
     }
+    unclassified_events = sum(1 for row in events if row.get("type") not in _CLASSIFIED)
     players, player_quality = _bounded("players", list(parsed.get("players") or []))
     rounds, round_quality = _bounded("rounds", list(parsed.get("rounds") or []))
     warnings, warning_quality = _bounded("warnings", [{"value": str(v)} for v in parsed.get("warnings") or []])
@@ -61,7 +63,9 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "players": players,
         "rounds": rounds,
         **bounded_groups,
-        "quality": {"partial": bool(limited), "limited_sections": limited, "sections": quality},
+        "quality": {"partial": bool(limited) or unclassified_events > 0,
+                    "limited_sections": limited, "sections": quality,
+                    "unclassified_event_rows": unclassified_events},
         "provenance": {"source": "demo", "raw_artifact_required": True},
         "warnings": [item["value"] for item in warnings],
     }
