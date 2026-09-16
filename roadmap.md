@@ -62,6 +62,9 @@
 - [x] Localizar o identificador canônico da Tentativa 4 e consultar job, lease, heartbeat, worker e mensagem sem alteração de dados.
 - [x] Confirmar lease válido, heartbeat renovado e mensagem 6 preservada na fila sob visibilidade do worker `railway-parser-1`.
 - [x] Não acionar recuperação stale enquanto houver posse ativa; nenhuma Tentativa 5 criada.
+- [x] Classificação formal em 2026-09-16 05:10:58 UTC: `ACTIVE_VALID_LEASE`; heartbeat com 290 s, lease válido por mais 610 s e mensagem 6 invisível até o mesmo vencimento.
+- [x] Regression guard do public build alinhado ao contrato real por verificações estruturais de configuração, fallback SSR/client e fail-closed.
+- [x] `verify:public-build` PASS; suíte completa executada com 839/842 testes PASS e 3 falhas preexistentes de fixtures incompatíveis com o revision lock do parser, sem alteração por estarem fora do escopo deste marco.
 - [ ] Aguardar estado terminal ou expiração simultânea do lease e heartbeat antes de qualquer recuperação oficial.
 
 ## FASE UX — Processamento de demo com progresso e etapas (concluída)
