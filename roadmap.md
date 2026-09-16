@@ -36,9 +36,15 @@
 - [ ] E2E real completo com uma demo privada válida (BLOCKED: arquivo `.dem` não disponível no ambiente).
 - [ ] Fechamento da fase após aprovação de todos os gates reais; FASE 2.8 não iniciada.
 
+## FASE — Correção do Lovable Preview + Loading Branding — EM EXECUÇÃO
+
+- [x] Reassociar as variáveis oficiais do Lovable Cloud ao Preview, sem trocar o backend existente.
+- [x] Corrigir o loader global: `GAME` em negrito, `PRO` regular e `GAMEPRO` sem itálico.
+- [ ] Validar Preview, autenticação e páginas protegidas sem alterar banco, Railway ou pipeline.
+
 ## FASE 2.7.2B-E2E — Reprocessamento forense Cache — EM EXECUÇÃO
 
-- [x] Correção tipográfica isolada do loading para `GamePro HUB`, com `GamePro` em itálico.
+- [x] Correção tipográfica isolada do loading para `GAMEPRO HUB`, com `GAME` em negrito, `PRO` regular e sem itálico.
 - [x] Confirmar artefato original, tamanho, SHA-256 e revision lock antes da nova tentativa.
 - [x] Criar uma nova tentativa usando o objeto original, sem apagar ou modificar o histórico.
 - [ ] Acompanhar os gates Storage → PBDEMS2 → parser → RAW → digest → auditoria → Canonical → métricas. BLOCKED/PENDING: worker permanece em `processing/parsing`, sem RAW persistida.
