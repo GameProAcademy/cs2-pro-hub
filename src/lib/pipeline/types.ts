@@ -108,6 +108,76 @@ export interface RawParserOutput {
   raw_evidence?: import("@/lib/pipeline/rawEvidence").RawDemoEvidence | undefined;
 }
 
+export const HOT_DEMO_PAYLOAD_VERSION = 1;
+export const HOT_DEMO_LIMITS = {
+  players: 64,
+  rounds: 256,
+  combatEvents: 50_000,
+  utilityEvents: 20_000,
+  objectiveEvents: 4_096,
+  aimObservations: 4_096,
+  positionSnapshots: 4_096,
+  economySnapshots: 4_096,
+  warnings: 128,
+} as const;
+
+export interface HotSectionQuality {
+  status: "complete" | "limited";
+  observed_rows: number;
+  included_rows: number;
+  limit: number;
+  overflow_rows: number;
+}
+
+export interface HotDemoPayloadV1 {
+  schema_version: 1;
+  parser: RawParserOutput["parser"];
+  contract_version: number;
+  demo: { sha256: string; upload_id: string };
+  header: RawParserOutput["header"];
+  players: RawParserPlayer[];
+  rounds: RawParserRound[];
+  combat_events: RawParserEvent[];
+  utility_events: RawParserEvent[];
+  objective_events: RawParserEvent[];
+  aim_observations: RawParserEvent[];
+  position_snapshots: RawParserEvent[];
+  economy_snapshots: RawParserEvent[];
+  quality: {
+    partial: boolean;
+    limited_sections: string[];
+    sections: Record<string, HotSectionQuality>;
+  };
+  provenance: { source: "demo"; raw_artifact_required: true };
+  warnings: string[];
+}
+
+export interface RawArtifactReferenceV1 {
+  schema_version: 1;
+  artifact_id: string;
+  bucket: "cs2-raw-evidence";
+  manifest_storage_path: string;
+  root_digest: string;
+  status: "ready";
+  raw_status: "ready";
+  audit_status: "approved" | "limited" | "blocked";
+  job_id: string;
+  upload_id: string;
+  user_id: string;
+  attempt_number: number;
+  demo_sha256: string;
+  parser: RawParserOutput["parser"];
+  contract_version: number;
+  total_chunks: number;
+  total_rows: number;
+  total_bytes: number;
+}
+
+export interface DurableDemoCompletionV1 {
+  hot: HotDemoPayloadV1;
+  raw: RawArtifactReferenceV1;
+}
+
 /* ------------------------------------------------------------------ *
  * Canonical schema                                                    *
  * ------------------------------------------------------------------ */
