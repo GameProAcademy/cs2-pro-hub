@@ -4,7 +4,7 @@
 
 - [x] Contratos `HotDemoPayloadV1` e `RawArtifactReferenceV1`, com limites e overflow explícitos.
 - [x] Writer JSONL gzip em chunks, SHA físico, hash chain, manifest e root digest no artifact RAW existente.
-- [x] Worker durável envia apenas HOT + referência READY; `/complete` reduzido para 2 MiB e sem RAW legado.
+- [x] Worker durável envia apenas HOT + referência READY; `/complete` limitado a 8 MiB e sem RAW legado.
 - [x] APP valida identidade, lifecycle, chunks, manifest e root digest antes do Canonical, sem reler RAW completo.
 - [x] Defesa Canonical aceita somente aprovação pelo artifact READY ou pelo caminho legado auditado.
 - [x] Testes focados adicionados para HOT de alto volume, chunking, integridade e idempotência.
