@@ -1,4 +1,10 @@
-export type E2EWaitStatus = "pending" | "processing" | "processed" | "failed";
+export type E2EWaitStatus =
+  | "pending"
+  | "processing"
+  | "processed"
+  | "failed"
+  | "blocked_raw_audit"
+  | "cancelled";
 
 export interface E2EWaitState {
   status: E2EWaitStatus;
@@ -30,7 +36,11 @@ export interface E2EWaitResult<T extends E2EWaitState> {
   reason: string | null;
 }
 
-const terminal = (status: E2EWaitStatus) => status === "processed" || status === "failed";
+const terminal = (status: E2EWaitStatus) =>
+  status === "processed" ||
+  status === "failed" ||
+  status === "blocked_raw_audit" ||
+  status === "cancelled";
 
 const defaultSleep = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
