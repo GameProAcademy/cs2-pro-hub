@@ -118,7 +118,8 @@ export async function persistDemoProjection(args: {
   matchId: string;
   uploadId: string;
   playerId: string;
-  steamId: string;
+  participantKey: string;
+  steamId: string | null;
   match: CanonicalMatch;
   metrics: CanonicalMetrics;
   features: CanonicalFeatures;
@@ -126,9 +127,10 @@ export async function persistDemoProjection(args: {
   jobResult: Json;
 }): Promise<PersistResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { match, metrics, features, matchId, uploadId, playerId, steamId, jobId, jobResult } = args;
+  const { match, metrics, features, matchId, uploadId, playerId, participantKey, steamId, jobId, jobResult } = args;
 
-  const ownPlayer = match.players.find((player) => player.steamId === steamId) ?? null;
+  const ownPlayer =
+    match.players.find((player) => (player.participantKey ?? player.steamId) === participantKey) ?? null;
   const teamPlayer = ownPlayer?.team ?? null;
   const teamOpponent =
     teamPlayer == null
@@ -199,6 +201,7 @@ export async function persistDemoProjection(args: {
       rating: metrics.sourceRating,
     }),
     _features: toJson({
+      participant_key: participantKey,
       sample_rounds: features.sampleRounds,
       sample_opening_duels: features.sampleOpeningDuels,
       sample_clutches: features.sampleClutches,

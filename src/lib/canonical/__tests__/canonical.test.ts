@@ -31,6 +31,17 @@ function demoBundle() {
   });
 }
 
+function participantScopedDemoBundle() {
+  const parsed = normalizeParserOutput(syntheticParserOutput);
+  parsed.players[0] = { ...parsed.players[0]!, participantKey: "participant-local" };
+  return demoToCanonicalBundle({
+    parsed,
+    fingerprint: "b".repeat(64),
+    targetParticipantKey: "participant-local",
+    internalPlayerId: "player-profile-id",
+  });
+}
+
 function faceitMapped(overrides: Partial<CanonicalFaceitMatch> = {}): CanonicalFaceitMatch {
   return {
     external_match_id: "1-abc",
@@ -62,6 +73,13 @@ function faceitMapped(overrides: Partial<CanonicalFaceitMatch> = {}): CanonicalF
 }
 
 describe("FASE 2.6 — canonical domain invariants", () => {
+  it("targets a participant key independently from the profile id", () => {
+    expect(participantScopedDemoBundle().participants[0]).toMatchObject({
+      participantKey: "participant-local",
+      internalPlayerId: "player-profile-id",
+      isTargetPlayer: true,
+    });
+  });
   it("A canonical match belongs to no player: it carries no player-relative field", () => {
     const bundle = demoBundle();
     const keys = Object.keys(bundle.match);

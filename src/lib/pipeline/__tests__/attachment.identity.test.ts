@@ -73,7 +73,7 @@ describe("attachment resolution", () => {
       participantKey: "2",
       steamId: "2",
       method: "steam_id_confirmed",
-      source: "system",
+      source: "steam",
       confidence: "high",
     });
   });
@@ -87,7 +87,7 @@ describe("attachment resolution", () => {
     expect(out).toMatchObject({ state: "unattached", reason: "steam_id_not_in_demo" });
   });
 
-  it("does not let a declaration override a confirmed steam id absent from the demo", () => {
+  it("allows manual selection when the linked Steam ID is absent from the demo", () => {
     const out = resolvePlayerAttachment({
       participants: players,
       hasProfile: true,
@@ -95,10 +95,13 @@ describe("attachment resolution", () => {
       declaration: { kind: "participant", participantKey: "4" },
     });
     expect(out).toMatchObject({
-      state: "unattached",
-      reason: "steam_id_not_in_demo",
-      participantKey: null,
-      steamId: null,
+      state: "attached",
+      reason: null,
+      participantKey: "4",
+      steamId: "4",
+      method: "manual_user_selection",
+      source: "user",
+      confidence: "medium",
     });
   });
 
@@ -113,9 +116,9 @@ describe("attachment resolution", () => {
       state: "attached",
       participantKey: "4",
       steamId: "4",
-      method: "self_declared_player",
+      method: "manual_user_selection",
       source: "user",
-      confidence: "user_confirmed",
+      confidence: "medium",
     });
   });
 
@@ -130,7 +133,7 @@ describe("attachment resolution", () => {
       state: "attached",
       participantKey: "p9",
       steamId: null,
-      method: "self_declared_nickname",
+      method: "manual_user_selection",
     });
   });
 

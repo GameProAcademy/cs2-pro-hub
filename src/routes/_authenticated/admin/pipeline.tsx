@@ -137,6 +137,9 @@ function AdminPipelinePage() {
                         {job.extractionConfidence != null
                           ? ` · ${Math.round(job.extractionConfidence * 100)}%`
                           : ""}
+                        {job.attachmentMethod
+                          ? ` · identity ${job.attachmentMethod}/${job.attachmentSource ?? "unknown"}/${job.attachmentConfidence ?? "unknown"}/${job.attachmentConfirmationStatus}`
+                          : ""}
                         {job.storageDeletedAt ? ` · ${t("pipeline.admin.retention")}` : ""}
                       </p>
                       {job.errorCode ? (

@@ -41,6 +41,7 @@ export interface DemoJobView {
   attachmentMethod?: string | null;
   attachmentSource?: string | null;
   attachmentConfidence?: string | null;
+  attachmentConfirmationStatus?: string;
   attachmentParticipantKey?: string | null;
   observedNickname?: string | null;
   map: string | null;
@@ -207,6 +208,7 @@ function toView(
     attachment_method: string | null;
     attachment_source: string | null;
     attachment_confidence_label: string | null;
+    attachment_confirmation_status: string;
     attachment_participant_key: string | null;
     observed_nickname: string | null;
     queued_at: string;
@@ -247,6 +249,7 @@ function toView(
     attachmentMethod: row.attachment_method,
     attachmentSource: row.attachment_source,
     attachmentConfidence: row.attachment_confidence_label,
+    attachmentConfirmationStatus: row.attachment_confirmation_status,
     attachmentParticipantKey: row.attachment_participant_key,
     observedNickname: row.observed_nickname,
     map: match?.map ?? null,
@@ -269,7 +272,7 @@ function toView(
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

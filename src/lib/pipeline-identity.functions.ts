@@ -38,6 +38,7 @@ export interface DemoIdentityView {
   declaredParticipantKey: string | null;
   observedNickname: string | null;
   latestDecisionStatus: string | null;
+  confirmationStatus: string;
   latestDecisionEventKey: string | null;
   participants: DemoParticipantView[];
 }
@@ -70,7 +71,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     const { data: job } = await supabase
       .from("demo_jobs")
       .select(
-        "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_participant_key, declared_nickname, declared_participant_key, observed_nickname",
+         "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, declared_nickname, declared_participant_key, observed_nickname",
       )
       .eq("id", data.jobId)
       .maybeSingle();
@@ -98,6 +99,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
       declaredParticipantKey: job.declared_participant_key,
       observedNickname: job.observed_nickname,
       latestDecisionStatus: latestDecision?.status ?? null,
+      confirmationStatus: job.attachment_confirmation_status,
       latestDecisionEventKey: latestDecision?.event_key ?? null,
       participants: participants.map((participant) => ({
         participantKey: participant.participantKey,
@@ -156,7 +158,7 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
 
     const declaration: PlayerDeclaration = data.participantKey
       ? { kind: "participant", participantKey: data.participantKey }
-      : { kind: "nickname", nickname: data.nickname! };
+      : { kind: "nickname", nickname: data.nickname ?? "" };
 
     const outcome = resolvePlayerAttachment({
       participants,
@@ -231,7 +233,7 @@ export const decideAutomaticDemoPlayer = createServerFn({ method: "POST" })
     if (
       job.attachment_state !== "attached" ||
       job.attachment_method !== "steam_id_confirmed" ||
-      job.attachment_source !== "system" ||
+      (job.attachment_source !== "steam" && job.attachment_source !== "system") ||
       !job.attachment_participant_key
     ) {
       throw new Error("AUTOMATIC_MATCH_NOT_AVAILABLE");
@@ -245,24 +247,13 @@ export const decideAutomaticDemoPlayer = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.rpc("record_demo_identity_event", {
+    const { data: recorded, error } = await supabaseAdmin.rpc("decide_demo_automatic_identity", {
       _job_id: job.id,
       _user_id: userId,
-      _event_key: `${data.action}:steam:${job.attachment_participant_key}`,
-      _decision: {
-        status: data.action === "confirm" ? "confirmed" : "rejected_auto_match",
-        participant_key: job.attachment_participant_key,
-        nickname: job.observed_nickname,
-        method: job.attachment_method,
-        source: "user",
-        confidence_label: job.attachment_confidence_label,
-        confidence_score: job.attachment_confidence,
-        reason: data.action === "reject" ? "user_rejected_auto_match" : null,
-        evidence: { automatic_source: "steam" },
-        expected_latest_event_key: latestDecision?.event_key ?? null,
-      },
+      _action: data.action,
+      _expected_latest_event_key: latestDecision?.event_key ?? null,
     } as never);
-    if (error) throw new Error("IDENTITY_DECISION_FAILED");
+    if (error || recorded !== true) throw new Error("IDENTITY_DECISION_FAILED");
     return { action: data.action, recorded: true as const };
   });
 

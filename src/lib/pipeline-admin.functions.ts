@@ -51,6 +51,10 @@ export interface AdminDemoJob {
   roundsDetected: number | null;
   roundsValid: number | null;
   identityStatus: string;
+  attachmentMethod: string | null;
+  attachmentSource: string | null;
+  attachmentConfidence: string | null;
+  attachmentConfirmationStatus: string;
   storageDeletedAt: string | null;
   queuedAt: string;
   finishedAt: string | null;
@@ -84,7 +88,7 @@ export const getAdminPipelineOverview = createServerFn({ method: "GET" })
     const { data } = await supabase
       .from("demo_jobs")
       .select(
-        "id, upload_id, user_id, status, stage, error_code, retry_count, max_retries, duration_ms, parser_version, schema_version, extraction_confidence, partial_parse, rounds_detected, rounds_valid, identity_status, storage_deleted_at, queued_at, finished_at, uploads(file_name)",
+        "id, upload_id, user_id, status, stage, error_code, retry_count, max_retries, duration_ms, parser_version, schema_version, extraction_confidence, partial_parse, rounds_detected, rounds_valid, identity_status, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, storage_deleted_at, queued_at, finished_at, uploads(file_name)",
       )
       .order("queued_at", { ascending: false })
       .limit(50);
@@ -114,6 +118,10 @@ export const getAdminPipelineOverview = createServerFn({ method: "GET" })
         roundsDetected: row.rounds_detected,
         roundsValid: row.rounds_valid,
         identityStatus: row.identity_status,
+        attachmentMethod: row.attachment_method,
+        attachmentSource: row.attachment_source,
+        attachmentConfidence: row.attachment_confidence_label,
+        attachmentConfirmationStatus: row.attachment_confirmation_status,
         storageDeletedAt: row.storage_deleted_at,
         queuedAt: row.queued_at,
         finishedAt: row.finished_at,

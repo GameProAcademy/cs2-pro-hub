@@ -235,6 +235,7 @@ export type Database = {
         Row: {
           confidence_label: string | null
           confidence_score: number | null
+          confirmation_status: string
           created_at: string
           event_key: string
           evidence: Json
@@ -255,6 +256,7 @@ export type Database = {
         Insert: {
           confidence_label?: string | null
           confidence_score?: number | null
+          confirmation_status?: string
           created_at?: string
           event_key: string
           evidence?: Json
@@ -275,6 +277,7 @@ export type Database = {
         Update: {
           confidence_label?: string | null
           confidence_score?: number | null
+          confirmation_status?: string
           created_at?: string
           event_key?: string
           evidence?: Json
@@ -335,6 +338,7 @@ export type Database = {
           analysis_version: string
           attachment_confidence: number | null
           attachment_confidence_label: string | null
+          attachment_confirmation_status: string
           attachment_declared_at: string | null
           attachment_declared_by: string | null
           attachment_method: string | null
@@ -400,6 +404,7 @@ export type Database = {
           analysis_version?: string
           attachment_confidence?: number | null
           attachment_confidence_label?: string | null
+          attachment_confirmation_status?: string
           attachment_declared_at?: string | null
           attachment_declared_by?: string | null
           attachment_method?: string | null
@@ -465,6 +470,7 @@ export type Database = {
           analysis_version?: string
           attachment_confidence?: number | null
           attachment_confidence_label?: string | null
+          attachment_confirmation_status?: string
           attachment_declared_at?: string | null
           attachment_declared_by?: string | null
           attachment_method?: string | null
@@ -3180,6 +3186,15 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
+      decide_demo_automatic_identity: {
+        Args: {
+          _action: string
+          _expected_latest_event_key: string
+          _job_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       enqueue_demo_job: {
         Args: { _upload_id: string; _user_id: string }
         Returns: Json

@@ -29,6 +29,38 @@ import {
   type DemoParticipantView,
 } from "@/lib/pipeline-identity.functions";
 
+export type IdentityUiState =
+  | "loading"
+  | "automatic_review"
+  | "manual_selection"
+  | "confirmed"
+  | "manual_selected"
+  | "conflict"
+  | "error";
+
+export function deriveIdentityUiState(
+  identity: Awaited<ReturnType<typeof getDemoIdentity>> | null | undefined,
+  options: { loading: boolean; error: boolean; manualMode: boolean },
+): IdentityUiState {
+  if (options.loading) return "loading";
+  if (options.error || !identity) return "error";
+  if (identity.attachmentState === "conflict") return "conflict";
+  if (options.manualMode || identity.confirmationStatus === "user_rejected") {
+    return "manual_selection";
+  }
+  if (
+    identity.attachmentState === "attached" &&
+    identity.attachmentMethod === "steam_id_confirmed" &&
+    (identity.attachmentSource === "steam" || identity.attachmentSource === "system") &&
+    identity.confirmationStatus === "pending_confirmation"
+  ) {
+    return "automatic_review";
+  }
+  if (identity.confirmationStatus === "user_confirmed") return "confirmed";
+  if (identity.confirmationStatus === "manual_selected") return "manual_selected";
+  return "manual_selection";
+}
+
 export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -68,16 +100,13 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
       ? result.candidates
       : (identity.data?.participants ?? []);
 
-  const automatic =
-    identity.data?.attachmentState === "attached" &&
-    identity.data.attachmentMethod === "steam_id_confirmed" &&
-    identity.data.attachmentSource === "system" &&
-    identity.data.latestDecisionStatus !== "confirmed" &&
-    identity.data.latestDecisionStatus !== "rejected_auto_match";
-  const needsManual =
-    identity.data?.attachmentState !== "attached" ||
-    identity.data?.latestDecisionStatus === "rejected_auto_match" ||
-    manualMode;
+  const uiState = deriveIdentityUiState(identity.data, {
+    loading: identity.isLoading,
+    error: identity.isError,
+    manualMode,
+  });
+  const automatic = uiState === "automatic_review";
+  const needsManual = uiState === "manual_selection" || uiState === "conflict";
 
   useEffect(() => {
     if (identity.data && (automatic || needsManual)) setOpen(true);
@@ -88,7 +117,11 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   return (
     <>
       <Button size="sm" variant="outline" className="mt-3" onClick={() => setOpen(true)}>
-        {automatic ? t("pipeline.identify.review") : t("pipeline.identify.title")}
+        {automatic
+          ? t("pipeline.identify.review")
+          : uiState === "confirmed" || uiState === "manual_selected"
+            ? t("pipeline.identify.attached")
+            : t("pipeline.identify.title")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto">
