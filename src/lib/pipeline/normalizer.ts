@@ -201,15 +201,17 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
     throw new PipelineError("CORRUPTED_DEMO", "no players and no rounds");
   }
 
-  const players: CanonicalPlayer[] = raw.players
-    .filter((player) => sourceParticipantKey(player) != null)
-    .map((p) => ({
-      participantKey: sourceParticipantKey(p) ?? undefined,
-      steamId: p.steam_id?.trim() || null,
-      name: p.name ?? null,
-      team: p.team ?? null,
-      side: toSide(p.side),
-    }));
+  const players: CanonicalPlayer[] = raw.players.flatMap((player) => {
+    const participantKey = sourceParticipantKey(player);
+    if (!participantKey) return [];
+    return [{
+      participantKey,
+      steamId: player.steam_id?.trim() || null,
+      name: player.name ?? null,
+      team: player.team ?? null,
+      side: toSide(player.side),
+    }];
+  });
 
   const rounds: CanonicalRound[] = [...raw.rounds]
     .filter((r) => Number.isInteger(r.number) && r.number > 0)
