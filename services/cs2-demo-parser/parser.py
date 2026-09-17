@@ -186,9 +186,10 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
     Some CS2 demos do not advertise ``round_start``/``round_end`` events even
     though ``parse_ticks`` returns ``total_rounds_played`` and
     ``round_start_time``. Distinct observed start times identify the round
-    sequence. A start tick is accepted only when every row carrying that start
-    time yields the same tick offset; this avoids assuming any tickrate. End
-    ticks remain unknown unless observed; no winner, score, or team is invented.
+    sequence. The tickrate is inferred from repeated samples sharing a start
+    time and accepted only when all observed slopes agree; it is never assumed.
+    End ticks remain unknown unless observed; no winner, score, or team is
+    invented.
     """
     if raw.get("round_starts") or raw.get("round_ends"):
         return
@@ -212,15 +213,23 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
         key = float(round_start_time)
         candidates.setdefault(key, []).append((tick, float(game_time)))
 
+    inferred_rates: list[float] = []
+    for rows in candidates.values():
+        first_tick, first_time = rows[0]
+        for tick, game_time in rows[1:]:
+            if game_time != first_time:
+                inferred_rates.append((tick - first_tick) / (game_time - first_time))
+    valid_rates = [rate for rate in inferred_rates if rate > 0]
+    if not valid_rates or max(valid_rates) - min(valid_rates) > 1e-6:
+        return
+    tickrate = sum(valid_rates) / len(valid_rates)
+
     starts: list[tuple[float, int]] = []
     for start_time, rows in candidates.items():
-        # In Source 2 demo time, tick and game_time share a stable additive
-        # offset. Therefore tick - game_time + round_start_time is a tick-space
-        # boundary without dividing or multiplying by an assumed tickrate.
-        offsets = [tick - game_time for tick, game_time in rows]
-        if max(offsets) - min(offsets) > 1e-6:
+        derived = [round(tick - (game_time - start_time) * tickrate) for tick, game_time in rows]
+        if max(derived) != min(derived):
             continue
-        start_tick = round(offsets[0] + start_time)
+        start_tick = derived[0]
         if start_tick >= 0:
             starts.append((start_time, start_tick))
 
