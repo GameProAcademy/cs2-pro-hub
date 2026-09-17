@@ -6,7 +6,7 @@
 - [x] Polling durável finito aguarda o dispatch solicitado até estado terminal e classifica timeout/stall como BLOCKED.
 - [x] Idempotência exige Run 1 processada e Run 2 realmente reenfileirada/aguardada; duas leituras não contam como duas execuções.
 - [x] AIM, POSITION, ECONOMY e UTILITY permanecem player-scoped com disponibilidade explícita, sem alterar RAW/HOT.
-- [ ] Validar suítes completas, parser, typecheck, build e segurança relevante.
+- [ ] Validar suítes completas, parser, typecheck, build e segurança relevante. (71 testes focados PASS; validação completa em andamento)
 - [ ] **Railway preflight BLOCKED:** `/version` ainda não comprova contract `1` + revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`.
 - [ ] **Cache Run 1 / Run 2 / idempotência NOT_RUN:** job reservado não foi reenfileirado enquanto o preflight está bloqueado.
 

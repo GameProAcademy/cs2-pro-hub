@@ -882,3 +882,43 @@ commit implantado>`, redeployar, e então pinar no APP
 `DEMO_PARSER_REVISION_REQUIRED=true`.
 
 Nenhum `.dem` real foi processado. GATE 02 não foi iniciado.
+
+---
+
+## FASE 2.7.2F.1–F FINAL — Fundação de identidade e E2E
+
+### Identificadores e resolução
+
+- `participantKey` é a identidade canônica source-local do participante no match/demo.
+- `steamId` é evidência externa opcional. Pode coincidir com `participantKey` no parser v1, mas não define seu significado.
+- `internalPlayerId` identifica o perfil interno somente após attachment comprovado.
+- `resolveAnalyticalParticipant()` é o resolvedor único: falha com `PLAYER_IDENTITY_UNRESOLVED` se a chave não existir e retorna separadamente `participantKey`, chave de correlação de eventos e Steam opcional.
+- Um participante sem Steam continua válido quando o source fornece `participant_key`; nickname isolado nunca produz uma chave.
+- Método, source, confidence e confirmation são dimensões independentes. Decisões e eventos preservam provenance; o histórico agregado de nickname não substitui o log de decisão.
+
+### Matriz semântica player-scoped
+
+| DATA CLASS | RAW SOURCE | HOT SOURCE | CANONICAL / PROJECTION | PLAYER SCOPED | AVAILABILITY | NULL RULE | QUALITY |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| AIM | `tick_samples` íntegros em JSONL gzip | `aim_observations` limitado | metadata sem virar evento | `player` = chave resolvida | `complete`, `limited`, `unavailable` | ausência não vira observação zero | HOT declara rows incluídas, observadas, limite e overflow |
+| POSITION | `tick_samples` íntegros | `position_snapshots` limitado | metadata sem virar evento | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | coordenada ausente permanece ausente | qualidade vem da seção HOT |
+| ECONOMY | rounds/ticks/economia íntegros | `economy_snapshots` limitado | metadata e economia canônica por round | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | saldo/equipamento ausente não vira zero | qualidade vem da seção HOT |
+| UTILITY | eventos e trajetórias integrais; trajectory points não são grenade events | eventos compactos HOT | eventos canônicos + contagem player-scoped | ator deve ser a chave resolvida | `available`, `unavailable` | sem cobertura = NULL; cobertura com zero eventos do jogador = zero observável | `missing_utility` distingue ausência de cobertura |
+
+O RAW continua integral, privado e separado do callback `/complete`. O HOT continua alvo 4 MiB e hard limit 8 MiB. JSON não-finito é convertido para `null` antes de `allow_nan=False`. Chunks mantêm SHA-256 físico, `previousChunkSha256`, digest por seção, root digest e manifest determinísticos; timestamps ficam fora do conteúdo determinístico.
+
+### Métricas e NULL
+
+A cadeia é `participantKey → participante → eventPlayerKey → eventos/rounds`. KAST usa somente rounds com participação comprovada; survival distingue vivo, morto e indeterminável. Opening, trade, damage, utility e clutch são filtrados pelo participante resolvido. Falta de cobertura produz `NULL`/`unavailable`, nunca zero artificial.
+
+### Retry, attempts e espera E2E
+
+- `attempt_number` é a tentativa lógica e não muda em retry técnico.
+- `retry_count`/dispatch attempt identifica reenfileiramentos da tentativa.
+- Todo retry passa por `retry_demo_job`; não há update direto de status nem chamada administrativa a `processJob()`.
+- O runner aguarda finitamente o dispatch solicitado, exige observar seu contador, aceita somente terminal `processed`/`failed` e classifica pending/processing expirado como `BLOCKED`.
+- Idempotência requer Run 1 processada, Run 2 reenfileirada pela RPC, Run 2 terminal e comparação posterior. Duas leituras não constituem duas execuções.
+
+### Cache gate e limitações atuais
+
+O job Cache reservado não foi reenfileirado. O preflight real encontrou `/health` saudável, mas `/version` retornou `not_found`; portanto contrato `1` e revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` não foram comprovados. Cache Run 1, Run 2, idempotência e performance permanecem bloqueados/não executados. Nenhuma conclusão de Player DNA, CS2 PRO Score ou AI Coach pertence a esta fase.
