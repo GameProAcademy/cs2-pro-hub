@@ -223,6 +223,16 @@ def test_real_cache_reviewed_raw_fields_do_not_weaken_unknown_field_gate():
     assert future["status"] == "UNMAPPED_BUT_AVAILABLE"
 
 
+def test_game_state_identity_aliases_are_explicitly_catalogued():
+    raw = material()
+    raw["tick_rows"] = [{"tick": 100, "steamid": 76561198000000001, "name": "alpha"}]
+    mappings = build_raw_evidence(raw, output())["field_mappings"]
+    by_field = {item["raw_field"]: item for item in mappings}
+    assert by_field["game_state.tick"]["status"] == "MAPPED"
+    assert by_field["game_state.steamid"]["status"] == "MAPPED"
+    assert by_field["game_state.name"]["status"] == "MAPPED"
+
+
 def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
     final = finalize_evidence(build_raw_evidence(material(), output()),
                               parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},

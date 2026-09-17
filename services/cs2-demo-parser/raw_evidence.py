@@ -143,6 +143,7 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "game_state.round_start_time": ("rounds[].start_tick", "CanonicalRound.startTick", "DERIVED"),
     "game_state.tick": ("hot.*[].tick", "match_sources.metadata.semantic_player_data", "MAPPED"),
     "game_state.steamid": ("hot.*[].player", "match_sources.metadata.semantic_player_data", "MAPPED"),
+    "game_state.name": ("hot.*[].player_name", "match_sources.metadata.semantic_player_data", "MAPPED"),
     "player_death.attacker_steamid": ("events[].attacker", "CanonicalEvent.actorSteamId", "MAPPED"),
     "player_death.user_steamid": ("events[].victim", "CanonicalEvent.victimSteamId", "MAPPED"),
     "player_death.assister_steamid": ("events[].assister", "CanonicalEvent.assisterSteamId", "MAPPED"),
