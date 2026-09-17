@@ -1,5 +1,15 @@
 # Roadmap
 
+## FASE 2.7.2 FINAL — FOUNDATION BLOCKED NO RAW AUDIT REAL
+
+- [x] Railway preflight real PASS: `/health` e `/version` HTTP 200; parser `demoparser2@0.42.0`, contract `1`, semantic revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` e build `git:5d19890cdf8a018469761c597c650016791342d3`.
+- [x] Cache original preservado e reenfileirado uma vez pela RPC oficial: job `a31f5c25-b0d8-41ac-8225-27814cd1732a`, upload `b7d41ad7-b143-4a3a-ab80-ebfee2d2c043`, `attempt_number=7`, dispatch `2`, mensagem `15` consumida e arquivada.
+- [x] RAW real preservado e fisicamente íntegro: artifact READY, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e root digest registrado.
+- [ ] **Run 1 BLOCKED:** terminal `blocked_raw_audit` / `RAW_AUDIT_BLOCKED`; o manifest permaneceu semanticamente bloqueado e nenhum Canonical foi persistido.
+- [ ] **Run 2/idempotência NOT_RUN:** proibidas até Run 1 PASS.
+- [ ] **Performance PARTIAL:** 60,63 s e totais RAW observados; RSS/breakdown completo indisponíveis.
+- [ ] **FASE 2.8 NÃO INICIADA:** depende do fechamento de G16–G18 e G21.
+
 ## FASE 2.7.2F.1–F FINAL — Data foundation closure — EM VALIDAÇÃO / E2E CACHE BLOQUEADO
 
 - [x] `participantKey` source-neutral preservado mesmo sem Steam; nickname isolado nunca gera chave.
@@ -7,8 +17,8 @@
 - [x] Idempotência exige Run 1 processada e Run 2 realmente reenfileirada/aguardada; duas leituras não contam como duas execuções.
 - [x] AIM, POSITION, ECONOMY e UTILITY permanecem player-scoped com disponibilidade explícita, sem alterar RAW/HOT.
 - [x] Validação local PASS: 890 testes APP, 153 testes parser (3 skipped), 71 testes focados, typecheck, compileall, diff check e build automático.
-- [ ] **Railway preflight BLOCKED:** `/version` ainda não comprova contract `1` + revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`.
-- [ ] **Cache Run 1 / Run 2 / idempotência NOT_RUN:** job reservado não foi reenfileirado enquanto o preflight está bloqueado.
+- [x] **Railway preflight PASS (status atual):** `/version` comprova contract `1`, semantic revision e build revision pinadas.
+- [ ] **Cache Run 1 BLOCKED / Run 2 NOT_RUN (status atual):** Run 1 chegou ao RAW READY, mas foi bloqueada pelo RAW audit semântico; idempotência não foi executada.
 
 ## FASE 2.7.2F — Player Identity + Player Data Integrity Closure — IMPLEMENTADA / E2E CACHE BLOQUEADO
 
