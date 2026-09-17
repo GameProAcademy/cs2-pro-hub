@@ -9,6 +9,7 @@
  * worker (see docs/PHASE-2-DEMO-PIPELINE.md).
  */
 import { PARSER_CONTRACT_VERSION } from "@/config/pipeline";
+import { DEPLOYED_WORKER_REVISION } from "@/lib/pipeline/parser/adapter";
 import type { RawParserEvent, RawParserOutput } from "@/lib/pipeline/types";
 
 export const ME = "76561198000000001";
@@ -117,7 +118,7 @@ export const syntheticParserOutput: RawParserOutput = {
   parser: {
     name: "demoparser2",
     version: "0.42.0",
-    revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371",
+    revision: DEPLOYED_WORKER_REVISION,
   },
   contract_version: PARSER_CONTRACT_VERSION,
   header: {

@@ -35,7 +35,9 @@ export interface DemoAdapterInput {
   parsed: LegacyDemoMatch;
   /** SHA-256 of the demo file: the strongest identity evidence we can hold. */
   fingerprint: string | null;
-  /** SteamID64 of the player the upload belongs to, when known. */
+  /** Source-local participant selected for the owning profile. */
+  targetParticipantKey?: string | null;
+  /** @deprecated Compatibility alias for pre-participant-key callers. */
   targetSteamId?: string | null;
   internalPlayerId?: string | null;
   fetchedAt?: string;
@@ -67,14 +69,15 @@ function sideOf(value: Side | null | undefined): "CT" | "T" | null {
 /** Translates one parsed demo into a canonical bundle. */
 export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBundle {
   const parsed = input.parsed;
+  const targetParticipantKey = input.targetParticipantKey ?? input.targetSteamId ?? null;
   const fetchedAt = input.fetchedAt ?? new Date().toISOString();
   const teamA = parsed.teamA;
   const teamB = parsed.teamB;
 
   const participants: CanonicalParticipant[] = parsed.players.map((player) => ({
-    participantKey: player.steamId,
+    participantKey: player.participantKey ?? player.steamId,
     internalPlayerId:
-      input.targetSteamId && player.steamId === input.targetSteamId
+      targetParticipantKey && (player.participantKey ?? player.steamId) === targetParticipantKey
         ? (input.internalPlayerId ?? null)
         : null,
     source: "demo" as const,
@@ -82,7 +85,8 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
     steamId64: player.steamId,
     nicknameSnapshot: player.name,
     team: slotFor(player.team, teamA, teamB),
-    isTargetPlayer: Boolean(input.targetSteamId) && player.steamId === input.targetSteamId,
+    isTargetPlayer:
+      Boolean(targetParticipantKey) && (player.participantKey ?? player.steamId) === targetParticipantKey,
     // A demo proves who was in the server, not who OWNS the account.
     identityStatus: "unlinked" as const,
     identityConfidence: null,

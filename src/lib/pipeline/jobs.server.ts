@@ -362,7 +362,7 @@ export async function processJob(
   const { data: job } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, queue_message_id, attempt_number, dispatch_attempt, worker_id, lease_expires_at",
+      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, attachment_confirmation_status, queue_message_id, attempt_number, dispatch_attempt, worker_id, lease_expires_at",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -525,7 +525,7 @@ export async function processJob(
         : null;
     const attachment = resolvePlayerAttachment({
       participants: match.players.map((demoPlayer) => ({
-        participantKey: demoPlayer.steamId,
+        participantKey: demoPlayer.participantKey ?? demoPlayer.steamId,
         steamId: demoPlayer.steamId,
         nickname: demoPlayer.name,
         team: demoPlayer.team,
@@ -533,8 +533,12 @@ export async function processJob(
       hasProfile: Boolean(player),
       profileSteamId: player?.steam_id ?? null,
       declaration,
+      automaticMatchRejected: job.attachment_confirmation_status === "user_rejected",
     });
-    // Metrics target: the DEMO player's own identifier — never a fabricated one.
+    // Metrics target: the DEMO participant's own source-local key. Steam remains
+    // optional evidence and is never substituted for the internal player id.
+    const participantKey =
+      attachment.state === "attached" ? attachment.participantKey : null;
     const steamId = attachment.state === "attached" ? attachment.steamId : null;
 
     // FASE 2.7 — after RAW evidence passes explicit admission, the canonical
@@ -548,8 +552,8 @@ export async function processJob(
       // A demo's identity IS its file hash; it has no external match id.
       fingerprint: job.demo_sha256 ?? null,
       // Both optional: an unattached observation is still a complete match.
-      targetSteamId: steamId,
-      internalPlayerId: steamId ? (player?.id ?? null) : null,
+      targetParticipantKey: participantKey,
+      internalPlayerId: participantKey ? (player?.id ?? null) : null,
     });
 
     // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as
@@ -619,7 +623,7 @@ export async function processJob(
 
     if (
       attachment.state === "attached" &&
-      attachment.source === "system" &&
+      attachment.source === "steam" &&
       attachment.method === "steam_id_confirmed"
     ) {
       const { error: identityEventError } = await db.rpc("record_demo_identity_event", {
@@ -628,6 +632,7 @@ export async function processJob(
         _event_key: `auto:steam:${attachment.participantKey}`,
         _decision: {
           status: "auto_resolved",
+          confirmation_status: "pending_confirmation",
           participant_key: attachment.participantKey,
           nickname: attachment.observedNickname,
           method: attachment.method,
@@ -653,7 +658,7 @@ export async function processJob(
       finished_at: finishedAt,
       duration_ms: durationMs,
       match_id: canonical.matchId,
-      player_id: player?.id ?? null,
+       player_id: participantKey ? (player?.id ?? null) : null,
       resolved_steam_id: steamId,
       identity_status: attachment.state === "attached" ? "resolved" : "unresolved",
       attachment_state: attachment.state,
@@ -661,6 +666,12 @@ export async function processJob(
       attachment_confidence: confidenceScore(attachment.confidence),
       attachment_confidence_label: attachment.confidence,
       attachment_source: attachment.source,
+       attachment_confirmation_status:
+         attachment.method === "steam_id_confirmed"
+           ? "pending_confirmation"
+           : attachment.state === "attached"
+             ? "manual_selected"
+             : "not_required",
       attachment_participant_key: attachment.participantKey,
       observed_nickname: attachment.observedNickname,
       attachment_reason: attachment.reason,
@@ -679,13 +690,13 @@ export async function processJob(
       retain_until: retainUntil(true),
     } satisfies Json;
     let finalized = false;
-    if (steamId && player) {
+    if (participantKey && player) {
       await setStage(jobId, "metrics");
       assertDeadline();
       let metrics;
       let features;
       try {
-        metrics = computeMetrics(match, steamId);
+        metrics = computeMetrics(match, participantKey);
       } catch (error) {
         throw new PipelineError(
           "METRICS_ERROR",
@@ -707,6 +718,7 @@ export async function processJob(
         matchId: canonical.matchId,
         uploadId: job.upload_id,
         playerId: player.id,
+        participantKey,
         steamId,
         match,
         metrics,

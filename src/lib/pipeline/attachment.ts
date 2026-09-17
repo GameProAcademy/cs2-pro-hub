@@ -17,17 +17,28 @@
 export type AttachmentState = "attached" | "unattached" | "conflict";
 
 /**
- * Identity methods. Only the three below have real data today; FACEIT and
- * Gamers Club are deliberately absent until their integrations exist.
+ * Identity methods. FACEIT and Gamers Club values are reserved for verified
+ * provider evidence; this resolver currently emits Steam or manual selection.
  */
 export type IdentityMethod =
-  "steam_id_confirmed" | "self_declared_player" | "self_declared_nickname";
+  | "steam_id_confirmed"
+  | "faceit_player_id_confirmed"
+  | "gamersclub_player_id_confirmed"
+  | "multi_source_confirmed"
+  | "manual_user_selection";
 
 /** Who established the attachment. */
-export type IdentitySource = "system" | "user";
+export type IdentitySource = "system" | "steam" | "faceit" | "gamersclub" | "user" | "multi_source";
 
 /** Confidence is a separate axis from the method and never hides a conflict. */
-export type IdentityConfidence = "high" | "user_confirmed" | "low" | "unresolved";
+export type IdentityConfidence = "high" | "medium" | "low";
+
+export type IdentityConfirmationStatus =
+  | "pending_confirmation"
+  | "user_confirmed"
+  | "user_rejected"
+  | "not_required"
+  | "manual_selected";
 
 /** WHY there is no attachment (or why it conflicts). Never a state. */
 export type AttachmentReason =
@@ -70,7 +81,7 @@ export function confidenceScore(confidence: IdentityConfidence | null): number |
   switch (confidence) {
     case "high":
       return 1;
-    case "user_confirmed":
+    case "medium":
       return 0.8;
     case "low":
       return 0.3;
@@ -153,6 +164,8 @@ export interface ResolveAttachmentInput {
   profileSteamId: string | null;
   /** Explicit user declaration for this demo, when present. */
   declaration?: PlayerDeclaration | null;
+  /** User explicitly rejected the otherwise strong automatic match. */
+  automaticMatchRejected?: boolean;
 }
 
 /**
@@ -160,12 +173,18 @@ export interface ResolveAttachmentInput {
  *
  * Precedence: a confirmed Steam ID wins over any declaration. A declaration
  * that contradicts a confirmed Steam ID is a CONFLICT — never silently
- * overridden and never silently accepted. If the confirmed Steam ID is absent
- * from the demo, a declaration cannot override that evidence: the run remains
- * unattached until the identity graph proves the link.
+ * overridden and never silently accepted. If the linked Steam ID is absent
+ * from the demo, explicit manual selection remains available without claiming
+ * that the selected participant owns that Steam account.
  */
 export function resolvePlayerAttachment(input: ResolveAttachmentInput): AttachmentOutcome {
-  const { participants, hasProfile, profileSteamId, declaration = null } = input;
+  const {
+    participants,
+    hasProfile,
+    profileSteamId,
+    declaration = null,
+    automaticMatchRejected = false,
+  } = input;
   if (!hasProfile) return unattached("no_player_profile");
 
   const steamParticipant = profileSteamId
@@ -173,6 +192,9 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
     : null;
 
   if (profileSteamId && steamParticipant) {
+    if (automaticMatchRejected) {
+      return declaration ? resolveDeclaration(declaration, participants) : unattached("user_not_selected");
+    }
     // Steam ID has precedence. A declaration pointing elsewhere is contradictory
     // evidence and must be surfaced, never resolved automatically.
     if (declaration) {
@@ -185,12 +207,13 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
       }
     }
     // The observed nickname is auxiliary evidence and never lowers confidence.
-    return attached(steamParticipant, "steam_id_confirmed", "system", "high");
+    return attached(steamParticipant, "steam_id_confirmed", "steam", "high");
   }
 
-  // A confirmed profile Steam ID that is not observed in this demo is stronger
-  // evidence than a self-declaration. Never let a declaration silently redirect
-  // the metrics target to another participant.
+  // A linked Steam account that is absent from this demo cannot prove any
+  // participant. It must not block an explicit manual selection: the method
+  // stays manual and the absent Steam ID is never attached to the chosen row.
+  if (profileSteamId && declaration) return resolveDeclaration(declaration, participants);
   if (profileSteamId) return unattached("steam_id_not_in_demo");
 
   if (declaration) return resolveDeclaration(declaration, participants);
@@ -207,12 +230,12 @@ function resolveDeclaration(
       (candidate) => candidate.participantKey === declaration.participantKey,
     );
     if (!participant) return unattached("user_not_selected");
-    return attached(participant, "self_declared_player", "user", "user_confirmed");
+    return attached(participant, "manual_user_selection", "user", "medium");
   }
 
   const found = matchDeclaredNicknameToDemoPlayers(declaration.nickname, participants);
   if (found.status === "unique" && found.matches[0]) {
-    return attached(found.matches[0], "self_declared_nickname", "user", "user_confirmed");
+    return attached(found.matches[0], "manual_user_selection", "user", "medium");
   }
   if (found.status === "ambiguous") return unattached("ambiguous_nickname");
   return unattached("self_declared_nickname_not_found");

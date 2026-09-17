@@ -73,7 +73,7 @@ describe("attachment resolution", () => {
       participantKey: "2",
       steamId: "2",
       method: "steam_id_confirmed",
-      source: "system",
+      source: "steam",
       confidence: "high",
     });
   });
@@ -87,7 +87,7 @@ describe("attachment resolution", () => {
     expect(out).toMatchObject({ state: "unattached", reason: "steam_id_not_in_demo" });
   });
 
-  it("does not let a declaration override a confirmed steam id absent from the demo", () => {
+  it("allows manual selection when the linked Steam ID is absent from the demo", () => {
     const out = resolvePlayerAttachment({
       participants: players,
       hasProfile: true,
@@ -95,10 +95,13 @@ describe("attachment resolution", () => {
       declaration: { kind: "participant", participantKey: "4" },
     });
     expect(out).toMatchObject({
-      state: "unattached",
-      reason: "steam_id_not_in_demo",
-      participantKey: null,
-      steamId: null,
+      state: "attached",
+      reason: null,
+      participantKey: "4",
+      steamId: "4",
+      method: "manual_user_selection",
+      source: "user",
+      confidence: "medium",
     });
   });
 
@@ -113,9 +116,9 @@ describe("attachment resolution", () => {
       state: "attached",
       participantKey: "4",
       steamId: "4",
-      method: "self_declared_player",
+      method: "manual_user_selection",
       source: "user",
-      confidence: "user_confirmed",
+      confidence: "medium",
     });
   });
 
@@ -130,7 +133,7 @@ describe("attachment resolution", () => {
       state: "attached",
       participantKey: "p9",
       steamId: null,
-      method: "self_declared_nickname",
+      method: "manual_user_selection",
     });
   });
 
@@ -189,6 +192,37 @@ describe("attachment resolution", () => {
       state: "conflict",
       reason: "identity_conflict",
       participantKey: null,
+    });
+  });
+
+  it("never reapplies a Steam auto-match after the user rejected it", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "1",
+      automaticMatchRejected: true,
+    });
+    expect(out).toMatchObject({
+      state: "unattached",
+      reason: "user_not_selected",
+      participantKey: null,
+    });
+  });
+
+  it("uses manual selection after rejecting a Steam auto-match", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "1",
+      automaticMatchRejected: true,
+      declaration: { kind: "participant", participantKey: "4" },
+    });
+    expect(out).toMatchObject({
+      state: "attached",
+      participantKey: "4",
+      method: "manual_user_selection",
+      source: "user",
+      confidence: "medium",
     });
   });
 });

@@ -410,7 +410,11 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
   };
 }
 
-export function computeMetrics(match: CanonicalMatch, steamId: string): CanonicalMetrics {
+export function computeMetrics(match: CanonicalMatch, participantKey: string): CanonicalMetrics {
+  // Contract-v1 parser identifiers are Steam IDs today, but the analytical
+  // target is deliberately named and carried as a participant key. This keeps
+  // manual attachment valid without conflating it with the internal profile id.
+  const steamId = participantKey;
   const availability = metricsAvailability(match);
   const kills = collectKills(match);
   const opening = openingDuels(kills);
@@ -611,6 +615,7 @@ export function computeMetrics(match: CanonicalMatch, steamId: string): Canonica
     availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
 
   return {
+    participantKey,
     steamId,
     availability,
     roundsPlayed,

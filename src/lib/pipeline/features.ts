@@ -202,6 +202,7 @@ export function extractFeatures(
   };
 
   return {
+    participantKey: metrics.participantKey ?? metrics.steamId,
     steamId: metrics.steamId,
     sampleRounds: rounds,
     sampleOpeningDuels: metrics.openingAttempts,

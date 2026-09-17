@@ -197,6 +197,7 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
   const players: CanonicalPlayer[] = raw.players
     .filter((p) => typeof p.steam_id === "string" && p.steam_id.length > 0)
     .map((p) => ({
+      participantKey: p.steam_id,
       steamId: p.steam_id,
       name: p.name ?? null,
       team: p.team ?? null,
