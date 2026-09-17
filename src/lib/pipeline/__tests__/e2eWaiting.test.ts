@@ -61,6 +61,36 @@ describe("waitForTerminalExecution", () => {
     expect(result.state?.status).toBe("failed");
   });
 
+  it("accepts blocked_raw_audit as a terminal execution result", async () => {
+    const states = [state("processing", 4), state("blocked_raw_audit", 4)];
+    const time = clock();
+    const result = await waitForTerminalExecution({
+      read: async () => states.shift() ?? state("blocked_raw_audit", 4),
+      expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
+      timeoutMs: 1_000,
+      pollIntervalMs: 100,
+      ...time,
+    });
+    expect(result).toMatchObject({ terminal: true, observedExecution: true, polls: 2, reason: null });
+    expect(result.state?.status).toBe("blocked_raw_audit");
+  });
+
+  it("accepts cancelled as a terminal execution result", async () => {
+    const states = [state("cancelled", 3), state("cancelled", 4)];
+    const time = clock();
+    const result = await waitForTerminalExecution({
+      read: async () => states.shift() ?? state("cancelled", 4),
+      expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
+      timeoutMs: 1_000,
+      pollIntervalMs: 100,
+      ...time,
+    });
+    expect(result).toMatchObject({ terminal: true, observedExecution: true, polls: 2, reason: null });
+    expect(result.state?.status).toBe("cancelled");
+  });
+
   it("blocks a job that remains pending until the finite timeout", async () => {
     const time = clock();
     const result = await waitForTerminalExecution({
