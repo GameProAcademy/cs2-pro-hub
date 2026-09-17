@@ -13,6 +13,11 @@ import {
 import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/rawEvidence";
 import { expectedParserContract } from "@/lib/pipeline/parser/adapter";
 import { assertParserIdentity } from "@/lib/pipeline/parser/parserEndpoint";
+import {
+  RAW_ARTIFACT_MAX_BYTES,
+  RAW_MAX_CHUNKS_PER_SECTION,
+  RAW_MAX_CHUNKS_TOTAL,
+} from "@/lib/pipeline/durableBridge.server";
 
 const RAW_BUCKET = "cs2-raw-evidence";
 const HEX_64 = /^[0-9a-f]{64}$/;
@@ -171,10 +176,12 @@ export function assertRawArtifactReference(value: unknown): RawArtifactReference
     raw.contract_version !== 1 ||
     !Number.isInteger(raw.total_chunks) ||
     Number(raw.total_chunks) < 1 ||
+    Number(raw.total_chunks) > RAW_MAX_CHUNKS_TOTAL ||
     !Number.isInteger(raw.total_rows) ||
     Number(raw.total_rows) < 0 ||
     !Number.isInteger(raw.total_bytes) ||
     Number(raw.total_bytes) <= 0
+    || Number(raw.total_bytes) > RAW_ARTIFACT_MAX_BYTES
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact reference");
   }
@@ -301,6 +308,9 @@ export async function verifyRawArtifact(args: {
     const own = chunks
       .filter((chunk) => chunk.section === section)
       .sort((a, b) => a.chunk_index - b.chunk_index);
+    if (own.length > RAW_MAX_CHUNKS_PER_SECTION) {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW section chunk limit exceeded");
+    }
     for (const [index, chunk] of own.entries()) {
       if (
         chunk.chunk_index !== index ||

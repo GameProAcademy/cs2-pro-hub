@@ -7,6 +7,9 @@ import {
   deriveRawArtifactAuditStatus,
   rawPrefix,
   validateDurableClaim,
+  RAW_ARTIFACT_MAX_BYTES,
+  RAW_MAX_CHUNKS_PER_SECTION,
+  RAW_MAX_CHUNKS_TOTAL,
 } from "@/lib/pipeline/durableBridge.server";
 import { rawArtifactApproval } from "@/lib/pipeline/rawArtifact.server";
 
@@ -181,6 +184,16 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     const first = computeRawArtifactIntegrity([{ ...chunk, sha256: "a".repeat(64) }]);
     const second = computeRawArtifactIntegrity([{ ...chunk, sha256: "b".repeat(64) }]);
     expect(first.rootDigest).not.toBe(second.rootDigest);
+  });
+
+  it("enforces the immutable RAW artifact and chunk-count ceilings", () => {
+    expect(RAW_ARTIFACT_MAX_BYTES).toBe(2 * 1024 * 1024 * 1024);
+    expect(RAW_MAX_CHUNKS_PER_SECTION).toBe(100_000);
+    expect(RAW_MAX_CHUNKS_TOTAL).toBe(200_000);
+    expect(() => computeRawArtifactIntegrity([
+      { section: "events", chunk_index: 0, row_count: 1,
+        byte_size: RAW_ARTIFACT_MAX_BYTES + 1, sha256: "a".repeat(64), previous_chunk_sha256: null },
+    ])).toThrowError(expect.objectContaining({ detail: "RAW artifact size limit exceeded" }));
   });
 
   it("reuses identical verified chunks and rewrites only matching incomplete chunks", () => {

@@ -26,6 +26,8 @@ import logging
 import os
 import tempfile
 import re
+import resource
+import time
 from typing import Any, Callable
 
 import httpx
@@ -76,6 +78,7 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
                             finalize_raw: bool) -> dict[str, Any]:
+    request_started = time.perf_counter()
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
         raise WorkerError(409, E.CONTRACT_MISMATCH, "file_size must be positive.")
@@ -84,7 +87,9 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
     if not SHA256_HEX.fullmatch(body.demo_sha256):
         raise WorkerError(409, E.CONTRACT_MISMATCH, "demo_sha256 must be a sha256 hex digest.")
 
+    download_started = time.perf_counter()
     path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    download_ms = round((time.perf_counter() - download_started) * 1000)
     try:
         if size != body.file_size:
             raise WorkerError(422, E.FILE_SIZE_MISMATCH, "Demo size check failed.")
@@ -92,9 +97,11 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             raise WorkerError(422, E.HASH_MISMATCH, "Demo integrity check failed.")
         _require_cs2_magic(path)
         try:
+            parse_started = time.perf_counter()
             parsed = await asyncio.wait_for(
                 asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
             )
+            parse_ms = round((time.perf_counter() - parse_started) * 1000)
         except asyncio.TimeoutError:
             raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
         except InvalidDemoError:
@@ -126,6 +133,13 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         "rounds": parsed.get("rounds") or [],
         "events": parsed.get("events") or [],
         "warnings": parsed.get("warnings") or [],
+        "_performance": {
+            "download_ms": download_ms,
+            "parser_ms": parse_ms,
+            "download_bytes": size,
+            "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+            "elapsed_ms": round((time.perf_counter() - request_started) * 1000),
+        },
     }
     raw_evidence = parsed.get("raw_evidence")
     if isinstance(raw_evidence, dict):
@@ -143,12 +157,14 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
                                  job_id: str, user_id: str, attempt_number: int,
                                  bridge, client: httpx.AsyncClient) -> dict[str, Any]:
     payload = await _parse_downloaded(body, settings, parse, finalize_raw=False)
+    performance = payload.pop("_performance", {})
     evidence = payload.pop("raw_evidence", None)
     if not isinstance(evidence, dict):
         raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
     identity = payload["parser"]
     # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
     # already validated metadata but never sends or canonicalizes the full RAW.
+    hot_started = time.perf_counter()
     hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
                             demo_sha256=body.demo_sha256, upload_id=body.upload_id,
                             evidence=evidence)
@@ -158,18 +174,22 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
                                 parser=identity, contract_version=settings.contract_version),
         bridge=bridge, client=client,
     )
-    raw = await writer.write(evidence)
+    performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
+    raw = await writer.write(evidence, performance=performance)
     encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
     hot_metrics = hot_payload_measurements(hot)
     if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
         largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
         logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
         raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
-    logger.info("hot_payload_ready bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s",
+    logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
+                job_id, attempt_number,
                 len(encoded), hot_metrics["hot_payload_bytes"],
                 {key: value["rows"] for key, value in hot_metrics["sections"].items()},
                 {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
-                hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12])
+                hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
+                performance.get("download_ms"), performance.get("parser_ms"),
+                performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
     return {"hot": hot, "raw": raw}
 
 
