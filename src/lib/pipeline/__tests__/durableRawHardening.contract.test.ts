@@ -100,6 +100,11 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(bridgeRouteSource).toContain("complete_end bytes=");
   });
 
+  it("rejects unknown sections on both RAW chunk endpoints", () => {
+    expect(bridgeRouteSource.match(/section: z\.enum\(RAW_ARTIFACT_SECTION_ORDER\)/g)).toHaveLength(2);
+    expect(durableBridgeSource).toContain("RAW_ARTIFACT_SECTION_ORDER.includes(input.section");
+  });
+
   it("separates dispatch attempt from the logical demo attempt", () => {
     expect(claimMigration).toContain("'user_id', _job.user_id");
     expect(claimMigration).toContain("'attempt_number', _job.attempt_number");

@@ -199,6 +199,17 @@ def test_resolve_event_round(tick, expected):
     assert resolve_event_round(tick, INTERVALS) == expected
 
 
+def test_resolve_event_round_with_observed_starts_and_unknown_ends():
+    starts_only = [(1, 100, None), (2, 500, None), (3, 900, None)]
+    assert resolve_event_round(99, starts_only) is None
+    assert resolve_event_round(100, starts_only) == 1
+    assert resolve_event_round(499, starts_only) == 1
+    assert resolve_event_round(500, starts_only) == 2
+    assert resolve_event_round(899, starts_only) == 2
+    assert resolve_event_round(900, starts_only) == 3
+    assert resolve_event_round(1200, starts_only) == 3
+
+
 def test_events_are_flat_and_carry_round():
     warnings: list[str] = []
     events = normalize_events(

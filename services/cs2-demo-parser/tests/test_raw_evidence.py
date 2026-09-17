@@ -194,6 +194,45 @@ def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
     assert unknown["status"] == "UNMAPPED_BUT_AVAILABLE"
 
 
+def test_real_cache_reviewed_raw_fields_do_not_weaken_unknown_field_gate():
+    raw = material()
+    raw["header"]["patch_version"] = "1.40.8.1"
+    raw["event_inventory"].extend(["fire_bullets", "round_freeze_end"])
+    raw["event_tables"].update({
+        "fire_bullets": [{"tick": 30, "round": 1, "inaccuracy": 0.02, "seed": 9}],
+        "round_freeze_end": [{"tick": 10}],
+    })
+    raw["grenade_rows"] = [{
+        "tick": 15, "grenade_entity_id": 7, "grenade_type": "smoke",
+        "steamid": 76561198000000001, "name": "alpha", "x": 1.0, "y": 2.0, "z": 3.0,
+    }]
+    mappings = build_raw_evidence(raw, output())["field_mappings"]
+    by_field = {item["raw_field"]: item for item in mappings}
+    assert by_field["header.patch_version"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["grenade.grenade_entity_id"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["fire_bullets.inaccuracy"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["round_freeze_end.__event__"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert all(by_field[field]["reason"] for field in (
+        "header.patch_version", "grenade.grenade_entity_id",
+        "fire_bullets.inaccuracy", "round_freeze_end.__event__",
+    ))
+
+    raw["grenade_rows"][0]["future_grenade"] = "unknown"
+    blocked = build_raw_evidence(raw, output())["field_mappings"]
+    future = next(item for item in blocked if item["raw_field"] == "grenade.future_grenade")
+    assert future["status"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_game_state_identity_aliases_are_explicitly_catalogued():
+    raw = material()
+    raw["tick_rows"] = [{"tick": 100, "steamid": 76561198000000001, "name": "alpha"}]
+    mappings = build_raw_evidence(raw, output())["field_mappings"]
+    by_field = {item["raw_field"]: item for item in mappings}
+    assert by_field["game_state.tick"]["status"] == "MAPPED"
+    assert by_field["game_state.steamid"]["status"] == "MAPPED"
+    assert by_field["game_state.name"]["status"] == "MAPPED"
+
+
 def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
     final = finalize_evidence(build_raw_evidence(material(), output()),
                               parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
