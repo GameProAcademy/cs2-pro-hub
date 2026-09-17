@@ -10,13 +10,40 @@ function semanticMatch() {
     ...syntheticParserOutput,
     hot_semantic_data: {
       schema_version: 1,
-      aim_observations: [{ player: ME, tick: 1, yaw: 10 }, { player: ENEMY_A, tick: 2, yaw: 20 }],
-      position_snapshots: [{ player: ME, tick: 1, x: 1 }, { player: ENEMY_A, tick: 2, x: 2 }],
-      economy_snapshots: [{ player: ME, round: 1, balance: 800 }, { player: ENEMY_A, round: 1, balance: 1200 }],
+      aim_observations: [
+        { player: ME, tick: 1, yaw: 10 },
+        { player: ENEMY_A, tick: 2, yaw: 20 },
+      ],
+      position_snapshots: [
+        { player: ME, tick: 1, x: 1 },
+        { player: ENEMY_A, tick: 2, x: 2 },
+      ],
+      economy_snapshots: [
+        { player: ME, round: 1, balance: 800 },
+        { player: ENEMY_A, round: 1, balance: 1200 },
+      ],
       quality: {
-        aim_observations: { status: "complete", observed_rows: 2, included_rows: 2, limit: 4096, overflow_rows: 0 },
-        position_snapshots: { status: "limited", observed_rows: 3, included_rows: 2, limit: 4096, overflow_rows: 1 },
-        economy_snapshots: { status: "complete", observed_rows: 2, included_rows: 2, limit: 4096, overflow_rows: 0 },
+        aim_observations: {
+          status: "complete",
+          observed_rows: 2,
+          included_rows: 2,
+          limit: 4096,
+          overflow_rows: 0,
+        },
+        position_snapshots: {
+          status: "limited",
+          observed_rows: 3,
+          included_rows: 2,
+          limit: 4096,
+          overflow_rows: 1,
+        },
+        economy_snapshots: {
+          status: "complete",
+          observed_rows: 2,
+          included_rows: 2,
+          limit: 4096,
+          overflow_rows: 0,
+        },
       },
     },
   });
@@ -34,7 +61,12 @@ describe("player semantic data", () => {
     expect(scoped.position).toHaveLength(1);
     expect(scoped.economy).toHaveLength(1);
     expect(scoped.utility.every((event) => event.actorSteamId === ME)).toBe(true);
-    expect(scoped.availability).toMatchObject({ aim: "complete", position: "limited", economy: "complete", utility: "available" });
+    expect(scoped.availability).toMatchObject({
+      aim: "complete",
+      position: "limited",
+      economy: "complete",
+      utility: "available",
+    });
   });
 
   it("reports unavailable sections without inventing zero-valued evidence", () => {
@@ -54,7 +86,9 @@ describe("player semantic data", () => {
   it("supports a canonical participant without Steam when source keys correlate the evidence", () => {
     const withoutSteam = semanticMatch();
     withoutSteam.players = withoutSteam.players.map((player) =>
-      player.steamId === ME ? { ...player, participantKey: "participant-local", steamId: null } : player,
+      player.steamId === ME
+        ? { ...player, participantKey: "participant-local", steamId: null }
+        : player,
     );
     withoutSteam.hotSemanticData = {
       ...withoutSteam.hotSemanticData!,

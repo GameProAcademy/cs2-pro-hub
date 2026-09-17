@@ -35,7 +35,12 @@ describe("waitForTerminalExecution", () => {
       pollIntervalMs: 100,
       ...time,
     });
-    expect(result).toMatchObject({ terminal: true, observedExecution: true, polls: 3, reason: null });
+    expect(result).toMatchObject({
+      terminal: true,
+      observedExecution: true,
+      polls: 3,
+      reason: null,
+    });
     expect(result.state?.status).toBe("processed");
   });
 
@@ -62,7 +67,11 @@ describe("waitForTerminalExecution", () => {
       pollIntervalMs: 100,
       ...time,
     });
-    expect(result).toMatchObject({ terminal: false, observedExecution: true, reason: "E2E_WAIT_TIMEOUT_PENDING" });
+    expect(result).toMatchObject({
+      terminal: false,
+      observedExecution: true,
+      reason: "E2E_WAIT_TIMEOUT_PENDING",
+    });
   });
 
   it("reports an expired processing lease as a stalled worker", async () => {
@@ -90,6 +99,10 @@ describe("waitForTerminalExecution", () => {
       pollIntervalMs: 100,
       ...time,
     });
-    expect(result).toMatchObject({ terminal: false, observedExecution: false, reason: "E2E_WAIT_TIMEOUT" });
+    expect(result).toMatchObject({
+      terminal: false,
+      observedExecution: false,
+      reason: "E2E_WAIT_TIMEOUT",
+    });
   });
 });

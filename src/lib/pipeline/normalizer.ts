@@ -204,13 +204,15 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
   const players: CanonicalPlayer[] = raw.players.flatMap((player) => {
     const participantKey = sourceParticipantKey(player);
     if (!participantKey) return [];
-    return [{
-      participantKey,
-      steamId: player.steam_id?.trim() || null,
-      name: player.name ?? null,
-      team: player.team ?? null,
-      side: toSide(player.side),
-    }];
+    return [
+      {
+        participantKey,
+        steamId: player.steam_id?.trim() || null,
+        name: player.name ?? null,
+        team: player.team ?? null,
+        side: toSide(player.side),
+      },
+    ];
   });
 
   const rounds: CanonicalRound[] = [...raw.rounds]

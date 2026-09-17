@@ -103,7 +103,9 @@ export function resolveAnalyticalParticipant(
 }
 
 function teamOf(match: CanonicalMatch, eventPlayerKey: string): string | null {
-  return match.players.find((p) => (p.steamId ?? p.participantKey) === eventPlayerKey)?.team ?? null;
+  return (
+    match.players.find((p) => (p.steamId ?? p.participantKey) === eventPlayerKey)?.team ?? null
+  );
 }
 
 /**
@@ -174,7 +176,9 @@ export function playerSurvivedRound(
 
   const died = match.events.some(
     (event) =>
-      event.type === "kill" && event.roundNumber === roundNumber && event.victimSteamId === eventPlayerKey,
+      event.type === "kill" &&
+      event.roundNumber === roundNumber &&
+      event.victimSteamId === eventPlayerKey,
   );
   if (died) return false;
 
@@ -458,7 +462,8 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // is provably present in that round.
   const roundNumbers = new Set<number>();
   for (const round of match.rounds) {
-    if (participatedInRound(match, eventPlayerKey, round.roundNumber)) roundNumbers.add(round.roundNumber);
+    if (participatedInRound(match, eventPlayerKey, round.roundNumber))
+      roundNumbers.add(round.roundNumber);
   }
   const roundsPlayed = roundNumbers.size;
 
@@ -591,7 +596,9 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     const roundKills = kills.filter((k) => k.round === roundNumber);
     const got = roundKills.some((k) => k.attacker === eventPlayerKey);
     const assisted = roundKills.some(
-      (k) => k.assister === eventPlayerKey || (k.flashAssister === eventPlayerKey && k.attacker !== eventPlayerKey),
+      (k) =>
+        k.assister === eventPlayerKey ||
+        (k.flashAssister === eventPlayerKey && k.attacker !== eventPlayerKey),
     );
     const death = roundKills.find((k) => k.victim === eventPlayerKey);
     // Survival uses the shared definition: absence of a death event is not

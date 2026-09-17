@@ -58,7 +58,13 @@ export async function waitForTerminalExecution<T extends E2EWaitState>(
     latest = await options.read();
     polls += 1;
     if (!latest) {
-      return { state: null, terminal: false, observedExecution, polls, reason: "E2E_JOB_DISAPPEARED" };
+      return {
+        state: null,
+        terminal: false,
+        observedExecution,
+        polls,
+        reason: "E2E_JOB_DISAPPEARED",
+      };
     }
 
     if (latest.retryCount >= options.expectedRetryCount) observedExecution = true;

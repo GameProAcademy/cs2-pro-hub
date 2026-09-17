@@ -264,10 +264,10 @@ async function readJobState(
       extractionConfidence: number | null;
       partialParse: boolean;
       errorMessage: string | null;
-       attemptNumber: number;
-       retryCount: number;
-       heartbeatAt: string | null;
-       leaseExpiresAt: string | null;
+      attemptNumber: number;
+      retryCount: number;
+      heartbeatAt: string | null;
+      leaseExpiresAt: string | null;
     })
   | null
 > {
@@ -419,9 +419,10 @@ export const runDemoE2E = createServerFn({ method: "POST" })
     }
 
     const timeoutFromEnv = Number(process.env["DEMO_E2E_WAIT_TIMEOUT_MS"]);
-    const timeoutMs = Number.isFinite(timeoutFromEnv) && timeoutFromEnv > 0
-      ? timeoutFromEnv
-      : DEFAULT_E2E_WAIT_TIMEOUT_MS;
+    const timeoutMs =
+      Number.isFinite(timeoutFromEnv) && timeoutFromEnv > 0
+        ? timeoutFromEnv
+        : DEFAULT_E2E_WAIT_TIMEOUT_MS;
     const wait = requestedExecution
       ? await waitForTerminalExecution({
           read: () => readJobState(db, data.jobId),
@@ -471,11 +472,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
     // this independently requeued and awaited Run 2. A historical failed row is
     // never treated as Run 1 evidence.
     const idempotency =
-      hasProvenFirstRun &&
-      isRerun &&
-      workerReady &&
-      wait.terminal &&
-      wait.observedExecution
+      hasProvenFirstRun && isRerun && workerReady && wait.terminal && wait.observedExecution
         ? evaluateIdempotency(evidenceBefore, evidenceAfter)
         : null;
 

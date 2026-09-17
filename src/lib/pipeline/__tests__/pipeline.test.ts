@@ -161,13 +161,22 @@ describe("metrics", () => {
           Object.entries(round.sides).map(([key, value]) => [key === ME ? sourceKey : key, value]),
         ),
         moneyStart: Object.fromEntries(
-          Object.entries(round.moneyStart).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+          Object.entries(round.moneyStart).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
         ),
         moneyEnd: Object.fromEntries(
-          Object.entries(round.moneyEnd).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+          Object.entries(round.moneyEnd).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
         ),
         equipmentValue: Object.fromEntries(
-          Object.entries(round.equipmentValue).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+          Object.entries(round.equipmentValue).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
         ),
       })),
       events: match.events.map((event) => ({
