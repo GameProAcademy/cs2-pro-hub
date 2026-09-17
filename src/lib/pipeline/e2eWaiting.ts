@@ -87,9 +87,12 @@ export async function waitForTerminalExecution<T extends E2EWaitState>(
       };
     }
 
+    // A wait is tied to the exact logical execution requested by the caller.
+    // Accepting a later retry could make Run 1/Run 2 evidence belong to a
+    // different execution, especially under concurrent retry/recovery paths.
     if (
       latest.attemptNumber === options.expectedAttemptNumber &&
-      latest.retryCount >= options.expectedRetryCount
+      latest.retryCount === options.expectedRetryCount
     ) {
       observedExecution = true;
     }
