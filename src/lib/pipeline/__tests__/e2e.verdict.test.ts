@@ -32,12 +32,17 @@ const job = (overrides: Partial<E2EJobState> = {}): E2EJobState => ({
 const fullEvidence: E2EEvidence = {
   matchIds: ["11111111-1111-1111-1111-111111111111"],
   matchSourceCount: 1,
+  sourceFingerprints: ["demo-sha"],
+  sourceUploadIds: ["upload-1"],
   participants: 10,
   rounds: 24,
   roundPlayers: 240,
   events: 1800,
   metrics: 1,
   features: 1,
+  metricIds: ["metric-1"],
+  featureIds: ["feature-1"],
+  projectedPlayerIds: ["player-1"],
 };
 
 describe("evaluateE2ERun", () => {
@@ -228,6 +233,17 @@ describe("evaluateIdempotency", () => {
     });
     expect(result.verdict).toBe("FAIL");
     expect(result.reasons.join(" ")).toContain("different canonical match");
+  });
+
+  it("FAILS when projection identities change despite equal counts", () => {
+    const result = evaluateIdempotency(fullEvidence, {
+      ...fullEvidence,
+      metricIds: ["metric-2"],
+      projectedPlayerIds: ["player-2"],
+    });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.reasons).toContain("metrics identities changed between runs");
+    expect(result.reasons).toContain("projected player identities changed between runs");
   });
 });
 

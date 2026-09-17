@@ -2,6 +2,7 @@ export type E2EWaitStatus = "pending" | "processing" | "processed" | "failed";
 
 export interface E2EWaitState {
   status: E2EWaitStatus;
+  attemptNumber: number;
   retryCount: number;
   heartbeatAt: string | null;
   leaseExpiresAt: string | null;
@@ -10,6 +11,7 @@ export interface E2EWaitState {
 export interface E2EWaitOptions<T extends E2EWaitState> {
   read: () => Promise<T | null>;
   expectedRetryCount: number;
+  expectedAttemptNumber: number;
   timeoutMs: number;
   pollIntervalMs: number;
   now?: () => number;
@@ -21,6 +23,10 @@ export interface E2EWaitResult<T extends E2EWaitState> {
   terminal: boolean;
   observedExecution: boolean;
   polls: number;
+  startedAt: string;
+  endedAt: string;
+  observedAttemptNumber: number | null;
+  observedRetryCount: number | null;
   reason: string | null;
 }
 
@@ -63,13 +69,32 @@ export async function waitForTerminalExecution<T extends E2EWaitState>(
         terminal: false,
         observedExecution,
         polls,
+        startedAt: new Date(startedAt).toISOString(),
+        endedAt: new Date(now()).toISOString(),
+        observedAttemptNumber: null,
+        observedRetryCount: null,
         reason: "E2E_JOB_DISAPPEARED",
       };
     }
 
-    if (latest.retryCount >= options.expectedRetryCount) observedExecution = true;
+    if (
+      latest.attemptNumber === options.expectedAttemptNumber &&
+      latest.retryCount >= options.expectedRetryCount
+    ) {
+      observedExecution = true;
+    }
     if (observedExecution && terminal(latest.status)) {
-      return { state: latest, terminal: true, observedExecution: true, polls, reason: null };
+      return {
+        state: latest,
+        terminal: true,
+        observedExecution: true,
+        polls,
+        startedAt: new Date(startedAt).toISOString(),
+        endedAt: new Date(now()).toISOString(),
+        observedAttemptNumber: latest.attemptNumber,
+        observedRetryCount: latest.retryCount,
+        reason: null,
+      };
     }
 
     const remaining = options.timeoutMs - (now() - startedAt);
@@ -82,6 +107,10 @@ export async function waitForTerminalExecution<T extends E2EWaitState>(
     terminal: false,
     observedExecution,
     polls,
+    startedAt: new Date(startedAt).toISOString(),
+    endedAt: new Date(now()).toISOString(),
+    observedAttemptNumber: latest?.attemptNumber ?? null,
+    observedRetryCount: latest?.retryCount ?? null,
     reason: timeoutReason(latest, now()),
   };
 }

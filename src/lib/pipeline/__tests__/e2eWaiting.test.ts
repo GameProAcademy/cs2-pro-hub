@@ -8,6 +8,7 @@ const state = (
   overrides: Partial<E2EWaitState> = {},
 ): E2EWaitState => ({
   status,
+  attemptNumber: 7,
   retryCount,
   heartbeatAt: null,
   leaseExpiresAt: null,
@@ -31,6 +32,7 @@ describe("waitForTerminalExecution", () => {
     const result = await waitForTerminalExecution({
       read: async () => states.shift() ?? state("processed", 4),
       expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
       timeoutMs: 1_000,
       pollIntervalMs: 100,
       ...time,
@@ -50,6 +52,7 @@ describe("waitForTerminalExecution", () => {
     const result = await waitForTerminalExecution({
       read: async () => states.shift() ?? state("failed", 4),
       expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
       timeoutMs: 1_000,
       pollIntervalMs: 100,
       ...time,
@@ -63,6 +66,7 @@ describe("waitForTerminalExecution", () => {
     const result = await waitForTerminalExecution({
       read: async () => state("pending", 4),
       expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
       timeoutMs: 250,
       pollIntervalMs: 100,
       ...time,
@@ -83,6 +87,7 @@ describe("waitForTerminalExecution", () => {
           leaseExpiresAt: "1970-01-01T00:00:00.100Z",
         }),
       expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
       timeoutMs: 250,
       pollIntervalMs: 100,
       ...time,
@@ -95,6 +100,7 @@ describe("waitForTerminalExecution", () => {
     const result = await waitForTerminalExecution({
       read: async () => state("processed", 3),
       expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
       timeoutMs: 200,
       pollIntervalMs: 100,
       ...time,
@@ -104,5 +110,18 @@ describe("waitForTerminalExecution", () => {
       observedExecution: false,
       reason: "E2E_WAIT_TIMEOUT",
     });
+  });
+
+  it("does not accept a dispatch from another logical attempt", async () => {
+    const time = clock();
+    const result = await waitForTerminalExecution({
+      read: async () => state("processed", 4, { attemptNumber: 8 }),
+      expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
+      timeoutMs: 200,
+      pollIntervalMs: 100,
+      ...time,
+    });
+    expect(result).toMatchObject({ terminal: false, observedExecution: false });
   });
 });

@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
 import {
+  DEPLOYED_WORKER_BUILD_REVISION,
   expectedParserContract,
   isParserRevisionRequired,
   mapParserErrorCode,
@@ -217,6 +218,16 @@ describe("GATE 1E.1 — revision lock", () => {
     const contract = expectedParserContract();
     expect(contract.revision).toBeTruthy();
     expect(contract.buildRevision).toBe(`git:${"b".repeat(40)}`);
+    expect(contract.buildRevisionRequired).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
+  it("pins the deployed build by default and requires it in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEMO_PARSER_EXPECTED_BUILD_REVISION", "");
+    vi.stubEnv("DEMO_PARSER_BUILD_REVISION_REQUIRED", "");
+    const contract = expectedParserContract();
+    expect(contract.buildRevision).toBe(DEPLOYED_WORKER_BUILD_REVISION);
     expect(contract.buildRevisionRequired).toBe(true);
     vi.unstubAllEnvs();
   });

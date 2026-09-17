@@ -50,6 +50,7 @@ export interface DemoParserAdapter {
  * "any 0.42.x" worker.
  */
 export const DEPLOYED_WORKER_REVISION = "git:40ae4977e174f9a21b1394fb047b53fba2505e8b";
+export const DEPLOYED_WORKER_BUILD_REVISION = "git:5d19890cdf8a018469761c597c650016791342d3";
 
 /**
  * Expected parser identity. Environment overrides remain supported for future
@@ -88,11 +89,21 @@ export function isParserRevisionRequired(): boolean {
 export function expectedParserContract(): ExpectedParserIdentity {
   const identity = expectedParserIdentity();
   const env = typeof process === "undefined" ? undefined : process.env;
-  const buildRevision = env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() || null;
+  const production = (env?.["NODE_ENV"] ?? "") === "production";
+  const buildRevision =
+    env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() || DEPLOYED_WORKER_BUILD_REVISION;
+  const explicitBuildRequirement = (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "")
+    .trim()
+    .toLowerCase();
   return {
     ...identity,
     buildRevision,
-    buildRevisionRequired: (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "").trim().toLowerCase() === "true",
+    buildRevisionRequired:
+      explicitBuildRequirement === "true" || explicitBuildRequirement === "1"
+        ? true
+        : explicitBuildRequirement === "false" || explicitBuildRequirement === "0"
+          ? false
+          : production,
     revisionRequired: isParserRevisionRequired(),
     contractVersion: PARSER_CONTRACT_VERSION,
   };
