@@ -1,5 +1,15 @@
 # Roadmap
 
+## FASE 2.7.2F.1–F FINAL — Data foundation closure — EM VALIDAÇÃO / E2E CACHE BLOQUEADO
+
+- [x] `participantKey` source-neutral preservado mesmo sem Steam; nickname isolado nunca gera chave.
+- [x] Polling durável finito aguarda o dispatch solicitado até estado terminal e classifica timeout/stall como BLOCKED.
+- [x] Idempotência exige Run 1 processada e Run 2 realmente reenfileirada/aguardada; duas leituras não contam como duas execuções.
+- [x] AIM, POSITION, ECONOMY e UTILITY permanecem player-scoped com disponibilidade explícita, sem alterar RAW/HOT.
+- [ ] Validar suítes completas, parser, typecheck, build e segurança relevante.
+- [ ] **Railway preflight BLOCKED:** `/version` ainda não comprova contract `1` + revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`.
+- [ ] **Cache Run 1 / Run 2 / idempotência NOT_RUN:** job reservado não foi reenfileirado enquanto o preflight está bloqueado.
+
 ## FASE 2.7.2F — Player Identity + Player Data Integrity Closure — IMPLEMENTADA / E2E CACHE BLOQUEADO
 
 - [x] **F1 PASS:** identidade, provenance, concorrência e histórico consolidados sem estruturas paralelas ou nickname como prova forte.

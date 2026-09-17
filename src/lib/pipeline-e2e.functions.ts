@@ -384,6 +384,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
     const startedAt = new Date().toISOString();
     const startedMs = Date.now();
     const isRerun = before.status === "processed" || before.status === "failed";
+    const hasProvenFirstRun = before.status === "processed" && evidenceBefore.matchIds.length === 1;
 
     let expectedRetryCount = before.retryCount;
     let requestedExecution = false;
@@ -470,7 +471,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
     // this independently requeued and awaited Run 2. A historical failed row is
     // never treated as Run 1 evidence.
     const idempotency =
-      before.status === "processed" &&
+      hasProvenFirstRun &&
       isRerun &&
       workerReady &&
       wait.terminal &&
@@ -509,7 +510,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       uploadId: after.uploadId,
       fileName: after.fileName,
       expectation: data.expectation,
-      run: isRerun ? 2 : 1,
+      run: hasProvenFirstRun ? 2 : 1,
       job: {
         ...jobState,
         errorMessage: after.errorMessage,

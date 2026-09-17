@@ -57,6 +57,29 @@ describe("normalizer", () => {
       normalizeParserOutput({ ...syntheticParserOutput, players: [], rounds: [] }),
     ).toThrow(PipelineError);
   });
+
+  it("preserves a source participant without fabricating a Steam ID", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [
+        ...syntheticParserOutput.players,
+        { participant_key: "source-player-5", name: "observed-name", team: "Team Alpha" },
+      ],
+    });
+    expect(normalized.players.at(-1)).toMatchObject({
+      participantKey: "source-player-5",
+      steamId: null,
+      name: "observed-name",
+    });
+  });
+
+  it("drops a player row that has neither a participant key nor Steam evidence", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [...syntheticParserOutput.players, { name: "nickname-is-not-identity" }],
+    });
+    expect(normalized.players).toHaveLength(syntheticParserOutput.players.length);
+  });
 });
 
 describe("metrics", () => {

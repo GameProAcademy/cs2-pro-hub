@@ -40,7 +40,10 @@ export interface RawParserPosition {
 }
 
 export interface RawParserPlayer {
-  steam_id: string;
+  /** Stable source-local participant identity. Optional for contract-v1 compatibility. */
+  participant_key?: string | undefined;
+  /** External Steam evidence. A participant may validly have no Steam ID. */
+  steam_id?: string | undefined;
   name?: string | undefined;
   team?: string | undefined;
   side?: string | undefined;

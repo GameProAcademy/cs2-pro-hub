@@ -365,7 +365,13 @@ function AdminDemoE2EPage() {
             <Button
               variant="outline"
               onClick={() => run.mutate({ rerun: true })}
-              disabled={!jobId || run.isPending || reports.length === 0}
+              disabled={
+                !jobId ||
+                run.isPending ||
+                reports.length === 0 ||
+                reports.at(-1)?.run !== 1 ||
+                reports.at(-1)?.evaluation.verdict !== "PASS"
+              }
             >
               <PlayCircle className="mr-1.5 size-4" aria-hidden />
               Reprocessar mesma demo (idempotência)

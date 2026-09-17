@@ -88,6 +88,13 @@ function mapSides(raw: Record<string, string> | undefined): Record<string, Side>
   return out;
 }
 
+function sourceParticipantKey(player: RawParserOutput["players"][number]): string | null {
+  const participantKey = player.participant_key?.trim();
+  if (participantKey) return participantKey;
+  const steamId = player.steam_id?.trim();
+  return steamId || null;
+}
+
 function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
   const alias = EVENT_ALIASES[raw.type] ?? raw.type;
   if (!EVENT_TYPES.has(alias)) return null;
@@ -195,10 +202,10 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
   }
 
   const players: CanonicalPlayer[] = raw.players
-    .filter((p) => typeof p.steam_id === "string" && p.steam_id.length > 0)
+    .filter((player) => sourceParticipantKey(player) != null)
     .map((p) => ({
-      participantKey: p.steam_id,
-      steamId: p.steam_id,
+      participantKey: sourceParticipantKey(p) ?? undefined,
+      steamId: p.steam_id?.trim() || null,
       name: p.name ?? null,
       team: p.team ?? null,
       side: toSide(p.side),
