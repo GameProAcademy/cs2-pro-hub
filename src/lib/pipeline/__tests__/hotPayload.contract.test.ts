@@ -14,27 +14,60 @@ import {
 
 function validHot(): HotDemoPayloadV1 {
   const rows: Record<string, unknown[]> = {
-    players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
-    aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],
+    players: [],
+    rounds: [],
+    combat_events: [],
+    utility_events: [],
+    objective_events: [],
+    aim_observations: [],
+    position_snapshots: [],
+    economy_snapshots: [],
+    warnings: [],
   };
   const limits: Record<string, number> = {
-    players: HOT_DEMO_LIMITS.players, rounds: HOT_DEMO_LIMITS.rounds,
-    combat_events: HOT_DEMO_LIMITS.combatEvents, utility_events: HOT_DEMO_LIMITS.utilityEvents,
-    objective_events: HOT_DEMO_LIMITS.objectiveEvents, aim_observations: HOT_DEMO_LIMITS.aimObservations,
-    position_snapshots: HOT_DEMO_LIMITS.positionSnapshots, economy_snapshots: HOT_DEMO_LIMITS.economySnapshots,
+    players: HOT_DEMO_LIMITS.players,
+    rounds: HOT_DEMO_LIMITS.rounds,
+    combat_events: HOT_DEMO_LIMITS.combatEvents,
+    utility_events: HOT_DEMO_LIMITS.utilityEvents,
+    objective_events: HOT_DEMO_LIMITS.objectiveEvents,
+    aim_observations: HOT_DEMO_LIMITS.aimObservations,
+    position_snapshots: HOT_DEMO_LIMITS.positionSnapshots,
+    economy_snapshots: HOT_DEMO_LIMITS.economySnapshots,
     warnings: HOT_DEMO_LIMITS.warnings,
   };
-  const sections: Record<string, HotSectionQuality> = Object.fromEntries(Object.keys(rows).map((name) => [name, {
-    status: ["aim_observations", "position_snapshots", "economy_snapshots"].includes(name)
-      ? "unavailable" as const : "complete" as const,
-    observed_rows: 0, included_rows: 0, limit: limits[name] ?? 0, overflow_rows: 0,
-  }]));
+  const sections: Record<string, HotSectionQuality> = Object.fromEntries(
+    Object.keys(rows).map((name) => [
+      name,
+      {
+        status: ["aim_observations", "position_snapshots", "economy_snapshots"].includes(name)
+          ? ("unavailable" as const)
+          : ("complete" as const),
+        observed_rows: 0,
+        included_rows: 0,
+        limit: limits[name] ?? 0,
+        overflow_rows: 0,
+      },
+    ]),
+  );
   return {
-    schema_version: 1, parser: { name: "demoparser2", version: "0.42.0",
-      revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371" },
-    contract_version: 1, demo: { sha256: "a".repeat(64), upload_id: "upload" }, header: {},
-    players: [], rounds: [], combat_events: [], utility_events: [], objective_events: [],
-    aim_observations: [], position_snapshots: [], economy_snapshots: [], warnings: [],
+    schema_version: 1,
+    parser: {
+      name: "demoparser2",
+      version: "0.42.0",
+      revision: "git:45c75ffe92ff386bd07affc16ec1d635e81e6371",
+    },
+    contract_version: 1,
+    demo: { sha256: "a".repeat(64), upload_id: "upload" },
+    header: {},
+    players: [],
+    rounds: [],
+    combat_events: [],
+    utility_events: [],
+    objective_events: [],
+    aim_observations: [],
+    position_snapshots: [],
+    economy_snapshots: [],
+    warnings: [],
     quality: { partial: true, limited_sections: [], sections, unclassified_event_rows: 0 },
     provenance: { source: "demo", raw_artifact_required: true },
   };
@@ -72,7 +105,13 @@ describe("durable HOT contract", () => {
     hot.aim_observations = [{ player: "76561198000000001", tick: 10, yaw: 45 }];
     hot.position_snapshots = [{ player: "76561198000000001", tick: 10, x: 12, y: 24, z: 36 }];
     hot.economy_snapshots = [{ player: "76561198000000001", tick: 10, balance: 800 }];
-    for (const name of ["players", "rounds", "aim_observations", "position_snapshots", "economy_snapshots"] as const) {
+    for (const name of [
+      "players",
+      "rounds",
+      "aim_observations",
+      "position_snapshots",
+      "economy_snapshots",
+    ] as const) {
       const quality = hot.quality.sections[name];
       if (!quality) throw new Error(`missing ${name} quality fixture`);
       Object.assign(quality, {
@@ -114,16 +153,21 @@ describe("durable HOT contract", () => {
     expectInvalid(hot);
   });
 
-  it.each(["raw_events", "grenade_samples", "tick_samples", "forensic_inventory", "raw_player_info"])(
-    "rejects forbidden RAW field %s",
-    (field) => expectInvalid({ ...validHot(), [field]: [] }),
-  );
+  it.each([
+    "raw_events",
+    "grenade_samples",
+    "tick_samples",
+    "forensic_inventory",
+    "raw_player_info",
+  ])("rejects forbidden RAW field %s", (field) => expectInvalid({ ...validHot(), [field]: [] }));
 
   it("rejects an oversized HOT object even outside the HTTP boundary", () => {
     const hot = validHot();
     hot.warnings = ["x".repeat(DURABLE_HOT_HARD_MAX_BYTES)];
-    expect(() => assertHotDemoPayload(hot)).toThrowError(expect.objectContaining({
-      code: "PARSER_PAYLOAD_TOO_LARGE",
-    }));
+    expect(() => assertHotDemoPayload(hot)).toThrowError(
+      expect.objectContaining({
+        code: "PARSER_PAYLOAD_TOO_LARGE",
+      }),
+    );
   });
 });
