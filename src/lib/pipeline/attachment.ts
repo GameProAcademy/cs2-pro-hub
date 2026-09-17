@@ -164,6 +164,8 @@ export interface ResolveAttachmentInput {
   profileSteamId: string | null;
   /** Explicit user declaration for this demo, when present. */
   declaration?: PlayerDeclaration | null;
+  /** User explicitly rejected the otherwise strong automatic match. */
+  automaticMatchRejected?: boolean;
 }
 
 /**
@@ -176,7 +178,13 @@ export interface ResolveAttachmentInput {
  * that the selected participant owns that Steam account.
  */
 export function resolvePlayerAttachment(input: ResolveAttachmentInput): AttachmentOutcome {
-  const { participants, hasProfile, profileSteamId, declaration = null } = input;
+  const {
+    participants,
+    hasProfile,
+    profileSteamId,
+    declaration = null,
+    automaticMatchRejected = false,
+  } = input;
   if (!hasProfile) return unattached("no_player_profile");
 
   const steamParticipant = profileSteamId
@@ -184,6 +192,9 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
     : null;
 
   if (profileSteamId && steamParticipant) {
+    if (automaticMatchRejected) {
+      return declaration ? resolveDeclaration(declaration, participants) : unattached("user_not_selected");
+    }
     // Steam ID has precedence. A declaration pointing elsewhere is contradictory
     // evidence and must be surfaced, never resolved automatically.
     if (declaration) {

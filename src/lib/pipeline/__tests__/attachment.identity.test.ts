@@ -194,4 +194,35 @@ describe("attachment resolution", () => {
       participantKey: null,
     });
   });
+
+  it("never reapplies a Steam auto-match after the user rejected it", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "1",
+      automaticMatchRejected: true,
+    });
+    expect(out).toMatchObject({
+      state: "unattached",
+      reason: "user_not_selected",
+      participantKey: null,
+    });
+  });
+
+  it("uses manual selection after rejecting a Steam auto-match", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: "1",
+      automaticMatchRejected: true,
+      declaration: { kind: "participant", participantKey: "4" },
+    });
+    expect(out).toMatchObject({
+      state: "attached",
+      participantKey: "4",
+      method: "manual_user_selection",
+      source: "user",
+      confidence: "medium",
+    });
+  });
 });

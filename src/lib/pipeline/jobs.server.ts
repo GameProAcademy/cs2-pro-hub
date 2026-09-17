@@ -362,7 +362,7 @@ export async function processJob(
   const { data: job } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, queue_message_id, attempt_number, dispatch_attempt, worker_id, lease_expires_at",
+      "id, upload_id, user_id, player_id, status, retry_count, max_retries, storage_path, demo_sha256, file_size, declared_participant_key, declared_nickname, attachment_confirmation_status, queue_message_id, attempt_number, dispatch_attempt, worker_id, lease_expires_at",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -533,6 +533,7 @@ export async function processJob(
       hasProfile: Boolean(player),
       profileSteamId: player?.steam_id ?? null,
       declaration,
+      automaticMatchRejected: job.attachment_confirmation_status === "user_rejected",
     });
     // Metrics target: the DEMO participant's own source-local key. Steam remains
     // optional evidence and is never substituted for the internal player id.
