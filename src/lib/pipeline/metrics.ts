@@ -372,13 +372,18 @@ function clutchStats(
   for (const round of match.rounds) {
     if (!participatedInRound(match, steamId, round.roundNumber)) continue;
     const roundKills = kills.filter((k) => k.round === round.roundNumber);
-    const participants = match.players.filter((p) =>
-      participatedInRound(match, p.steamId, round.roundNumber),
-    );
-    const teammates = participants.filter((p) => p.team === team).map((p) => p.steamId);
+    const participants = match.players.flatMap((player) => {
+      const eventPlayerKey = player.steamId ?? player.participantKey;
+      return eventPlayerKey && participatedInRound(match, eventPlayerKey, round.roundNumber)
+        ? [{ player, eventPlayerKey }]
+        : [];
+    });
+    const teammates = participants
+      .filter(({ player }) => player.team === team)
+      .map(({ eventPlayerKey }) => eventPlayerKey);
     const enemies = participants
-      .filter((p) => p.team != null && team != null && p.team !== team)
-      .map((p) => p.steamId);
+      .filter(({ player }) => player.team != null && team != null && player.team !== team)
+      .map(({ eventPlayerKey }) => eventPlayerKey);
     if (!teammates.includes(steamId) || enemies.length === 0) continue;
 
     const dead = new Set<string>();
