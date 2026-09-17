@@ -49,7 +49,7 @@ export interface DemoParserAdapter {
  * promoted, but an absent env can NEVER silently unpin production back to
  * "any 0.42.x" worker.
  */
-export const DEPLOYED_WORKER_REVISION = "git:45c75ffe92ff386bd07affc16ec1d635e81e6371";
+export const DEPLOYED_WORKER_REVISION = "git:40ae4977e174f9a21b1394fb047b53fba2505e8b";
 
 /**
  * Expected parser identity. Environment overrides remain supported for future
@@ -138,15 +138,12 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
     },
     expectedParserContract(),
   );
-  if (!raw.header || typeof raw.header !== "object") {
+  if (!raw.header || typeof raw.header !== "object")
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing header");
-  }
-  if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events)) {
+  if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events))
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing players/rounds/events");
-  }
-  if (raw.warnings != null && !Array.isArray(raw.warnings)) {
+  if (raw.warnings != null && !Array.isArray(raw.warnings))
     throw new PipelineError("PARSER_INVALID_RESPONSE", "warnings must be an array when present");
-  }
   // Contract v1 predates RAW-EVIDENCE-01, so synthetic/legacy callers may omit
   // the envelope. Real ingestion still requires it in persistRawEvidence.
   if (raw.raw_evidence) {
