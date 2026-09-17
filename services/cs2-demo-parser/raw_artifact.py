@@ -276,22 +276,18 @@ class RawArtifactWriter:
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
                     "audit_evidence_digest": _audit_evidence_digest(evidence),
-                     "measurements": {
-                         "sections": section_measurements,
-                         "grenades": grenade_measurements,
-                         "performance": {
-                             **(performance or {}),
-                             "raw_write_ms": round((time.perf_counter() - started) * 1000),
-                             "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-                         },
-                     },
+                     "measurements": {"sections": section_measurements, "grenades": grenade_measurements},
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
         })
-        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s",
+        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s raw_write_ms=%s peak_rss_kib=%s download_ms=%s parser_ms=%s hot_ms=%s",
                     artifact_id, ready.get("total_chunks"), ready.get("total_rows"),
-                    ready.get("total_bytes"), root_digest[:12])
+                     ready.get("total_bytes"), root_digest[:12],
+                     round((time.perf_counter() - started) * 1000),
+                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                     (performance or {}).get("download_ms"), (performance or {}).get("parser_ms"),
+                     (performance or {}).get("hot_build_ms"))
         return self._reference(ready)
 
     def _reference(self, artifact: dict[str, Any]) -> dict[str, Any]:

@@ -62,8 +62,6 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
     assert measurements["sections"]["events"]["rows"] == 20
     assert measurements["sections"]["events"]["uncompressed_bytes"] > 0
     assert measurements["sections"]["grenades"]["compressed_bytes"] > 0
-    assert measurements["performance"]["raw_write_ms"] >= 0
-    assert measurements["performance"]["peak_rss_kib"] > 0
 
 
 @pytest.mark.asyncio

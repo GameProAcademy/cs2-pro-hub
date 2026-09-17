@@ -73,7 +73,9 @@ class ParseRequest(BaseModel):
 
 
 async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
-    return await _parse_downloaded(body, settings, parse, finalize_raw=True)
+    payload = await _parse_downloaded(body, settings, parse, finalize_raw=True)
+    payload.pop("_performance", None)
+    return payload
 
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
