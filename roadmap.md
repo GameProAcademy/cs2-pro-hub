@@ -982,15 +982,16 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 
 - [x] Confirmar no banco real que `user_id` e `attempt_number` pertencem ao `demo_jobs` reclamado e são distintos do dispatch attempt.
 - [x] Aplicar migration incremental do RPC e adicionar validação fail-closed no APP, sem fallback ou valores inventados.
-- [ ] Validar testes TypeScript/Python, compileall e imagem Railway.
+- [ ] Validar imagem Railway (Docker indisponível neste ambiente).
 - [x] Validar testes TypeScript/Python e compileall: APP completo aprovado; parser 146 passed/3 skipped; imagem depende de Docker disponível.
-- [ ] Publicar APP e comprovar o contrato `/claim` atualizado.
-- [ ] Recuperar somente o job Cache pelo mecanismo oficial e acompanhar todos os gates até estado terminal real.
+- [x] Publicar APP e comprovar o contrato `/claim` atualizado.
+- [x] Retomar somente o job Cache pelo claim oficial, preservando mensagem 14, logical attempt 7 e dispatch attempt 0.
+- [ ] Acompanhar os gates até estado terminal real; bloqueado até a imagem Railway receber a normalização JSON estrita.
 
 ## FASE 2.7.2D.5-A — Strict JSON numeric sanitization + E2E Cache — EM EXECUÇÃO
 
 - [x] Confirmar que o contrato live de claim já entrega `user_id`, `attempt` e `attempt_number` com semânticas distintas e validação fail-closed.
 - [x] Normalizar `NaN`, `Infinity` e `-Infinity` para `null` somente na fronteira JSON RAW, preservando valores finitos e bytes determinísticos.
 - [x] Cobrir todas as estruturas RAW, determinismo, serialização estrita e registro realista de tick com testes Python.
-- [ ] Validar APP/parser/compileall/imagem disponível, publicar APP e reconciliar apenas o job Cache existente pelo mecanismo oficial.
-- [ ] Observar RAW, HOT, auditoria, Canonical, fila, job e upload até estado terminal, sem novo upload, duplicação ou exclusão.
+- [x] Validar APP/parser/compileall, publicar APP e reconciliar apenas o job Cache existente pelo mecanismo oficial; Docker indisponível para validar a imagem.
+- [ ] Observar RAW, HOT, auditoria, Canonical, fila, job e upload até estado terminal, sem novo upload, duplicação ou exclusão. Bloqueado pelo Railway ainda executar a imagem anterior.
