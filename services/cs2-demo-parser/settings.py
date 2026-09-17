@@ -3,8 +3,12 @@
 Rules enforced here:
 
 * `PARSER_TOKEN` is mandatory. Without it the worker refuses to start.
-* `PARSER_REVISION` identifies the deployed build immutably. In production it is
-  mandatory and there is NO silent fallback (`pypi-0.42.0` is gone for good).
+* `PARSER_REVISION` identifies the deployed parser semantic build contract.
+  In production it is mandatory and there is NO silent fallback
+  (`pypi-0.42.0` is gone for good).
+* `RAILWAY_GIT_COMMIT_SHA`, when present, is the authoritative exact source
+  commit for the deployed build identity. This prevents a stale manually
+  maintained `PARSER_BUILD_REVISION` from claiming an older deployment.
 * A development fallback exists, but it only applies outside production and it is
   explicitly marked as unpinned so it can never be mistaken for a real build id.
 """
@@ -101,7 +105,7 @@ def _float_env(name: str, default: float) -> float:
 
 
 def resolve_revision(raw: str | None, *, environment: str) -> str:
-    """Resolve the immutable build revision, failing closed in production."""
+    """Resolve the semantic parser revision, failing closed in production."""
     candidate = (raw or "").strip()
     if environment == "production" and _GIT_REVISION.fullmatch(candidate):
         return candidate
@@ -114,6 +118,30 @@ def resolve_revision(raw: str | None, *, environment: str) -> str:
         )
     # Outside production only: explicitly unpinned, never a fake build id.
     return DEV_UNPINNED_REVISION
+
+
+def resolve_build_revision(source: dict[str, str], *, environment: str) -> str | None:
+    """Resolve the exact source commit for the running deployment.
+
+    Railway exposes RAILWAY_GIT_COMMIT_SHA for GitHub-triggered deployments.
+    It is preferred over the manually configured PARSER_BUILD_REVISION so an
+    older value cannot survive a later deployment and misidentify the binary.
+    """
+    railway_sha = (source.get("RAILWAY_GIT_COMMIT_SHA") or "").strip()
+    if railway_sha:
+        candidate = f"git:{railway_sha.lower()}"
+        if not _GIT_REVISION.fullmatch(candidate):
+            raise WorkerConfigurationError(
+                "RAILWAY_GIT_COMMIT_SHA must be a full 40-character git SHA"
+            )
+        return candidate
+
+    build_candidate = (source.get("PARSER_BUILD_REVISION") or "").strip()
+    if build_candidate and not _GIT_REVISION.fullmatch(build_candidate):
+        raise WorkerConfigurationError(
+            "PARSER_BUILD_REVISION must be an exact git:<full-commit-sha> build identifier"
+        )
+    return build_candidate or None
 
 
 def load_settings(env: dict[str, str] | None = None) -> Settings:
@@ -134,17 +162,11 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
                 f"PARSER_CONTRACT_VERSION {contract_version} is not supported by this build"
             )
         revision = resolve_revision(source.get("PARSER_REVISION"), environment=environment)
-        build_candidate = (source.get("PARSER_BUILD_REVISION") or "").strip()
-        if build_candidate and not _GIT_REVISION.fullmatch(build_candidate):
-            raise WorkerConfigurationError(
-                "PARSER_BUILD_REVISION must be an exact git:<full-commit-sha> build identifier"
-            )
+        build_revision = resolve_build_revision(source, environment=environment)
         return Settings(
             token=token,
             revision=revision,
-            # Optional during the coordinated rollout. Unlike PARSER_REVISION,
-            # this value is never inferred from an older semantic lock.
-            build_revision=build_candidate or None,
+            build_revision=build_revision,
             contract_version=contract_version,
             environment=environment,
             max_demo_bytes=_int_env("MAX_DEMO_BYTES", 1_500 * 1024 * 1024),
