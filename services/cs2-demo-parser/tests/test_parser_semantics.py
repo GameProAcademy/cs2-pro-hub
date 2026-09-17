@@ -37,10 +37,6 @@ def test_round_starts_are_derived_from_native_tick_context_when_events_are_absen
         {"tick": 1688, "round": 1, "derived_from": "game_state.round_start_time"},
         {"tick": 6352, "round": 2, "derived_from": "game_state.round_start_time"},
     ]
-    assert raw["round_rows"] == [
-        {"number": 1, "start_tick": 1688},
-        {"number": 2, "start_tick": 6352},
-    ]
     assert len(raw["warnings"]) == 1
 
 

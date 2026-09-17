@@ -229,7 +229,6 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
         return
     derived = [starts[number] for number in sorted(starts)]
     raw["round_starts"] = derived
-    raw["round_rows"] = [{"number": row["round"], "start_tick": row["tick"]} for row in derived]
     raw["warnings"].append("round_boundaries_derived_from_game_state: end ticks and winners unavailable")
 
 

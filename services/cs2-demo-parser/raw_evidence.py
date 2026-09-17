@@ -139,6 +139,8 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "round_start.tick": ("rounds[].start_tick", "CanonicalRound.startTick", "DERIVED"),
     "round_end.tick": ("rounds[].end_tick", "CanonicalRound.endTick", "DERIVED"),
     "round_end.winner": ("rounds[].winner_side", "CanonicalRound.winnerSide", "MAPPED"),
+    "game_state.total_rounds_played": ("rounds[].number", "CanonicalRound.roundNumber", "DERIVED"),
+    "game_state.round_start_time": ("rounds[].start_tick", "CanonicalRound.startTick", "DERIVED"),
     "player_death.attacker_steamid": ("events[].attacker", "CanonicalEvent.actorSteamId", "MAPPED"),
     "player_death.user_steamid": ("events[].victim", "CanonicalEvent.victimSteamId", "MAPPED"),
     "player_death.assister_steamid": ("events[].assister", "CanonicalEvent.assisterSteamId", "MAPPED"),

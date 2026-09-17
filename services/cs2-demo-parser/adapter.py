@@ -279,10 +279,11 @@ def resolve_event_round(
     if tick is None or not intervals:
         return None
     previous_end: int | None = None
-    for number, start, end in intervals:
+    for index, (number, start, end) in enumerate(intervals):
         if end is None:
-            lower = previous_end if previous_end is not None else start
-            if lower is None or tick >= lower:
+            next_start = intervals[index + 1][1] if index + 1 < len(intervals) else None
+            lower = start if start is not None else previous_end
+            if (lower is None or tick >= lower) and (next_start is None or tick < next_start):
                 return number
             continue
         if previous_end is not None:
