@@ -147,6 +147,32 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
     if not isinstance(evidence, dict):
         raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
     identity = payload["parser"]
+
+    # RAW audit is intentionally fail-closed. Surface its bounded, non-sensitive
+    # field-level reasons in Railway logs so a real-demo block can be diagnosed
+    # without fetching the full private RAW artifact or logging its contents.
+    audit_status = str(evidence.get("raw_audit_status") or "UNKNOWN")
+    raw_status = str(evidence.get("raw_status") or "UNKNOWN")
+    reasons = [str(item) for item in (evidence.get("raw_block_reasons") or [])]
+    failed_gates = [
+        str(item.get("gate"))
+        for item in (evidence.get("gates") or [])
+        if isinstance(item, dict) and item.get("status") != "PASS"
+    ]
+    mappings = [item for item in (evidence.get("field_mappings") or []) if isinstance(item, dict)]
+    mapping_counts: dict[str, int] = {}
+    for item in mappings:
+        status = str(item.get("status") or "UNKNOWN")
+        mapping_counts[status] = mapping_counts.get(status, 0) + 1
+    logger.info(
+        "raw_audit_diagnostic status=%s raw_status=%s reasons=%s failed_gates=%s mapping_counts=%s",
+        audit_status,
+        raw_status,
+        reasons[:100],
+        failed_gates,
+        mapping_counts,
+    )
+
     # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
     # already validated metadata but never sends or canonicalizes the full RAW.
     hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
@@ -262,7 +288,7 @@ def _require_cs2_magic(path: str) -> None:
     except OSError:
         raise WorkerError(502, E.DOWNLOAD_ERROR, "Demo could not be read.") from None
     if magic != CS2_DEMO_MAGIC:
-        raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.")
+        raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.") from None
 
 
 def create_app(
