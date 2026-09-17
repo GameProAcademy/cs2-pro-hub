@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { PipelineError } from "@/lib/pipeline/errors";
-import { assertHotDemoPayload } from "@/lib/pipeline/rawArtifact.server";
+import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
+import { canonicalBundleToRpcPayload } from "@/lib/canonical/canonical.persistence.server";
+import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
+import { assertHotDemoPayload, hotToRawParserOutput } from "@/lib/pipeline/rawArtifact.server";
 import {
   DURABLE_HOT_HARD_MAX_BYTES,
   HOT_DEMO_LIMITS,
@@ -60,6 +63,46 @@ describe("durable HOT contract", () => {
     if (!quality) throw new Error("missing aim quality fixture");
     Object.assign(quality, { status: "complete", observed_rows: 1, included_rows: 1 });
     expect(assertHotDemoPayload(hot).aim_observations).toHaveLength(1);
+  });
+
+  it("preserves semantic observations through normalization and canonical persistence payload", () => {
+    const hot = validHot();
+    hot.players = [{ steam_id: "76561198000000001", name: "Player" }];
+    hot.rounds = [{ number: 1 }];
+    hot.aim_observations = [{ player: "76561198000000001", tick: 10, yaw: 45 }];
+    hot.position_snapshots = [{ player: "76561198000000001", tick: 10, x: 12, y: 24, z: 36 }];
+    hot.economy_snapshots = [{ player: "76561198000000001", tick: 10, balance: 800 }];
+    for (const name of ["players", "rounds", "aim_observations", "position_snapshots", "economy_snapshots"] as const) {
+      const quality = hot.quality.sections[name];
+      if (!quality) throw new Error(`missing ${name} quality fixture`);
+      Object.assign(quality, {
+        status: "complete",
+        observed_rows: hot[name].length,
+        included_rows: hot[name].length,
+      });
+    }
+    hot.quality.partial = false;
+
+    const validated = assertHotDemoPayload(hot);
+    const raw = hotToRawParserOutput(validated);
+    const normalized = normalizeParserOutput(raw);
+    const bundle = demoToCanonicalBundle({ parsed: normalized, fingerprint: hot.demo.sha256 });
+    const payload = canonicalBundleToRpcPayload(bundle) as typeof bundle;
+
+    expect(raw.hot_semantic_data?.aim_observations).toEqual(hot.aim_observations);
+    expect(normalized.hotSemanticData?.position_snapshots).toEqual(hot.position_snapshots);
+    expect(payload.observation.metadata["hot_semantic_data"]).toEqual({
+      schema_version: 1,
+      aim_observations: hot.aim_observations,
+      position_snapshots: hot.position_snapshots,
+      economy_snapshots: hot.economy_snapshots,
+      quality: {
+        aim_observations: hot.quality.sections["aim_observations"],
+        position_snapshots: hot.quality.sections["position_snapshots"],
+        economy_snapshots: hot.quality.sections["economy_snapshots"],
+      },
+    });
+    expect(payload.events).toEqual([]);
   });
 
   it("rejects silent overflow", () => {

@@ -1,5 +1,13 @@
 # Roadmap
 
+## FASE 2.7.2D.7 — E2E Cache + handoff sem perda — EM EXECUÇÃO
+
+- [x] Plano aprovado para preservar AIM, posição e economia no handoff canônico sem misturar snapshots com eventos.
+- [ ] Implementar e validar handoff HOT → normalizer → `match_sources.metadata` com testes comportamentais.
+- [ ] Medir bytes físicos do `/complete` e provar rejeição real acima de 8 MiB sem executar completion.
+- [ ] Endurecer testes de limites, NaN, digest, lifecycle e idempotência prioritários.
+- [ ] Sincronizar/provar Railway e executar exclusivamente o job Cache existente até estado terminal; BLOCKED enquanto `/version` não expõe identidade e não há acesso de deploy.
+
 ## FASE 2.7.2D.4-B.0 — RAW streaming / HOT payload boundary — IMPLEMENTADA / E2E PENDENTE
 
 - [x] Contratos `HotDemoPayloadV1` e `RawArtifactReferenceV1`, com limites e overflow explícitos.

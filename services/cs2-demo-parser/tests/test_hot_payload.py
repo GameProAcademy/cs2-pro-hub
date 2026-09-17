@@ -48,9 +48,15 @@ def test_limited_sections_and_partial_are_exactly_derived():
 
 @pytest.mark.parametrize("name", list(HOT_LIMITS))
 def test_hot_bounds_exact_limit_and_limit_plus_one(name):
-    if name in {"aim_observations", "position_snapshots", "economy_snapshots"}:
-        return
-    if name == "warnings":
+    semantic_fields = {
+        "aim_observations": {"yaw": 1.0},
+        "position_snapshots": {"X": 1.0},
+        "economy_snapshots": {"balance": 800},
+    }
+    if name in semantic_fields:
+        exact_input = {}
+        overflow_input = {}
+    elif name == "warnings":
         exact_input = {"warnings": ["warning"] * HOT_LIMITS[name]}
         overflow_input = {"warnings": ["warning"] * (HOT_LIMITS[name] + 1)}
     elif name in {"players", "rounds"}:
@@ -63,8 +69,14 @@ def test_hot_bounds_exact_limit_and_limit_plus_one(name):
         overflow_input = {"events": [{"type": event_type}] * (HOT_LIMITS[name] + 1)}
     base = dict(parser={"name": "demoparser2"}, contract_version=1,
                 demo_sha256="a" * 64, upload_id="upload")
-    exact = build_hot_payload(exact_input, **base)
-    overflow = build_hot_payload(overflow_input, **base)
+    exact_evidence = ({"tick_samples": [{"tick": index, **semantic_fields[name]}
+                       for index in range(HOT_LIMITS[name])]}
+                      if name in semantic_fields else None)
+    overflow_evidence = ({"tick_samples": [{"tick": index, **semantic_fields[name]}
+                          for index in range(HOT_LIMITS[name] + 1)]}
+                         if name in semantic_fields else None)
+    exact = build_hot_payload(exact_input, evidence=exact_evidence, **base)
+    overflow = build_hot_payload(overflow_input, evidence=overflow_evidence, **base)
     assert exact["quality"]["sections"][name]["status"] == "complete"
     assert exact["quality"]["sections"][name]["overflow_rows"] == 0
     assert overflow["quality"]["sections"][name]["status"] == "limited"

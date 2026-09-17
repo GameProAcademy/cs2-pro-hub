@@ -260,6 +260,7 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
       revision: raw.parser.revision ?? null,
     },
     schemaVersion: SCHEMA_VERSION,
+    hotSemanticData: raw.hot_semantic_data,
   };
 }
 
