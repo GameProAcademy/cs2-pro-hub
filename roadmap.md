@@ -1,5 +1,17 @@
 # Roadmap
 
+## FASES 2.7.2D.9–D.12 + início da 2.7.2E — IMPLEMENTADAS / E2E CACHE BLOQUEADO
+
+- [x] Vocabulários de método, fonte, confiança e confirmação separados, com decisão append-only e confirmação transacional idempotente.
+- [x] Fallback manual permitido quando Steam não existe ou não aparece na demo; nickname permanece contexto exato, nunca prova forte.
+- [x] Rejeição de auto-match preservada no reprocessamento; concorrência stale e ownership continuam fail-closed.
+- [x] Alvo analítico separado em perfil interno, participant key e Steam opcional; Canonical, métricas, features e projeção usam o participante resolvido.
+- [x] State machine explícita na UX, histórico contextual e observabilidade admin com método/fonte/confiança/confirmação.
+- [x] Contract 1, revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`, RAW/HOT e isolamento Railway preservados.
+- [x] Suítes APP/pipeline/canonical, typecheck e parser validados sem regressão.
+- [ ] E2E Cache real permanece BLOCKED: job reservado continua terminal `PARSER_IDENTITY_MISMATCH`, sem decisão, match ou projeção; nenhum retry/requeue/deploy foi executado.
+- [ ] AI Coach real permanece fail-closed e não conectado; nenhuma resposta ou integração fictícia foi criada.
+
 ## FASE 2.7.2D.8 — Player identity resolution — IMPLEMENTADA / E2E CACHE BLOQUEADO
 
 - [x] Consolidar auto-match forte, fallback manual, rejeição e conflitos no resolvedor existente.
