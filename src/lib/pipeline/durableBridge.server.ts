@@ -23,6 +23,9 @@ import {
 const VISIBILITY_SECONDS = 15 * 60;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+export const RAW_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024;
+export const RAW_MAX_CHUNKS_PER_SECTION = 100_000;
+export const RAW_MAX_CHUNKS_TOTAL = 200_000;
 
 type Rpc = (name: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
@@ -218,9 +221,19 @@ export function decideRawChunkRecovery(
 }
 
 export function computeRawArtifactIntegrity(chunks: VerifiedRawChunk[]) {
+  if (chunks.length > RAW_MAX_CHUNKS_TOTAL) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact chunk limit exceeded");
+  }
+  const totalBytes = chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0);
+  if (totalBytes > RAW_ARTIFACT_MAX_BYTES) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact size limit exceeded");
+  }
   let previous: string | null = null;
   const summaries = RAW_ARTIFACT_SECTION_ORDER.map((section) => {
     const own = chunks.filter((chunk) => chunk.section === section).sort((a, b) => a.chunk_index - b.chunk_index);
+    if (own.length > RAW_MAX_CHUNKS_PER_SECTION) {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW section chunk limit exceeded");
+    }
     own.forEach((chunk, index) => {
       if (chunk.chunk_index !== index || chunk.previous_chunk_sha256 !== previous ||
           !/^[0-9a-f]{64}$/.test(chunk.sha256) || chunk.row_count <= 0 || chunk.byte_size <= 0 ||
@@ -294,6 +307,9 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
   const { db, job } = await currentRawJob(input);
   if (input.byteSize <= 0 || input.byteSize > RAW_CHUNK_HARD_MAX_BYTES || !/^[0-9a-f]{64}$/.test(input.sha256)) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk metadata");
+  }
+  if (input.chunkIndex >= RAW_MAX_CHUNKS_PER_SECTION) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW section chunk limit exceeded");
   }
   if (!RAW_ARTIFACT_SECTION_ORDER.includes(input.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]) ||
       input.rowCount <= 0 || input.lastRow !== input.firstRow + input.rowCount - 1 ||

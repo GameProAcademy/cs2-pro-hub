@@ -5,6 +5,7 @@ import json
 import httpx
 import pytest
 
+import raw_artifact
 from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _stable
 
 
@@ -61,6 +62,24 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
     assert measurements["sections"]["events"]["rows"] == 20
     assert measurements["sections"]["events"]["uncompressed_bytes"] > 0
     assert measurements["sections"]["grenades"]["compressed_bytes"] > 0
+
+
+@pytest.mark.asyncio
+async def test_raw_artifact_fails_closed_when_total_chunk_cap_is_reached(monkeypatch):
+    monkeypatch.setattr(raw_artifact, "MAX_CHUNKS_TOTAL", 0)
+    client = FakeAsyncClient()
+
+    async def bridge(action, body):
+        if action == "raw-artifact-init":
+            return {"id": "artifact", "created_at": "now", "status": "uploading"}
+        raise AssertionError(action)
+
+    context = ArtifactContext(job_id="job", upload_id="upload", user_id="user", attempt_number=1,
+                              demo_sha256="a" * 64, parser={"name": "demoparser2"}, contract_version=1)
+    with pytest.raises(RuntimeError, match="RAW_CHUNK_LIMIT_EXCEEDED"):
+        await RawArtifactWriter(context=context, bridge=bridge, client=client).write(
+            {"manifest": {"raw_header": {"map": "de_cache"}}}
+        )
 
 
 def test_grenade_measurements_use_real_projectile_identity_when_available():

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import resource
+import time
 from typing import Any, Callable
 
 import httpx
@@ -66,6 +68,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     "attempt": claim["attempt"],
                     "workerId": settings.worker_id,
                 }
+                execution_started = time.perf_counter()
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
                 try:
@@ -96,9 +99,14 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         complete_bytes = len(json.dumps(complete_body, separators=(",", ":")).encode())
                         if complete_bytes > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
                             raise WorkerError(413, "PAYLOAD_TOO_LARGE", "HOT completion payload is too large.")
-                        logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
+                        logger.info("job_complete_start job=%s upload=%s attempt_number=%s dispatch_attempt=%s bytes=%s artifact=%s digest=%s chunks=%s raw_bytes=%s elapsed_ms=%s peak_rss_kib=%s",
+                                    identity["jobId"], claim["upload_id"], claim["attempt_number"],
+                                    identity["attempt"],
                                     complete_bytes,
-                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12])
+                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12],
+                                    result["raw"].get("total_chunks"), result["raw"].get("total_bytes"),
+                                    round((time.perf_counter() - execution_started) * 1000),
+                                    resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await _bridge(client, settings, "complete", complete_body)
                 except WorkerError as error:
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})

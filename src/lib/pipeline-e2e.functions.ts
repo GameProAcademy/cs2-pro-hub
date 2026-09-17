@@ -188,11 +188,22 @@ async function collectEvidence(args: {
         .from("match_sources")
         .select("id, match_id, fingerprint, upload_id")
         .eq("fingerprint", demoSha256)
-    : { data: [] as { id: string; match_id: string | null }[] };
+    : {
+        data: [] as {
+          id: string;
+          match_id: string | null;
+          fingerprint: string | null;
+          upload_id: string | null;
+        }[],
+      };
 
   const sources = new Map<string, string | null>();
+  const sourceFingerprints = new Set<string>();
+  const sourceUploadIds = new Set<string>();
   for (const row of [...(byUpload.data ?? []), ...(byFingerprint.data ?? [])]) {
     sources.set(row.id, row.match_id);
+    if (row.fingerprint) sourceFingerprints.add(row.fingerprint);
+    if (row.upload_id) sourceUploadIds.add(row.upload_id);
   }
   const matchIds = [...new Set([...sources.values()].filter((id): id is string => !!id))];
 
@@ -205,32 +216,45 @@ async function collectEvidence(args: {
 
   let metrics = 0;
   let features = 0;
+  let metricIds: string[] = [];
+  let featureIds: string[] = [];
+  const projectedPlayerIds = new Set<string>();
   if (matchIds.length > 0) {
     const metricsQuery = db
       .from("match_metrics")
-      .select("id", { count: "exact", head: true })
+      .select("id, player_id")
       .in("match_id", matchIds);
     const featuresQuery = db
       .from("match_features")
-      .select("id", { count: "exact", head: true })
+      .select("id, player_id")
       .in("match_id", matchIds);
     const [m, f] = await Promise.all([
       playerId ? metricsQuery.eq("player_id", playerId) : metricsQuery,
       playerId ? featuresQuery.eq("player_id", playerId) : featuresQuery,
     ]);
-    metrics = m.count ?? 0;
-    features = f.count ?? 0;
+    metricIds = (m.data ?? []).map((row) => row.id).sort();
+    featureIds = (f.data ?? []).map((row) => row.id).sort();
+    for (const row of [...(m.data ?? []), ...(f.data ?? [])]) {
+      if (row.player_id) projectedPlayerIds.add(row.player_id);
+    }
+    metrics = metricIds.length;
+    features = featureIds.length;
   }
 
   return {
     matchIds: matchIds.sort(),
     matchSourceCount: sources.size,
+    sourceFingerprints: [...sourceFingerprints].sort(),
+    sourceUploadIds: [...sourceUploadIds].sort(),
     participants,
     rounds,
     roundPlayers,
     events,
     metrics,
     features,
+    metricIds,
+    featureIds,
+    projectedPlayerIds: [...projectedPlayerIds].sort(),
   };
 }
 
@@ -342,6 +366,10 @@ export interface E2ERunReport {
     terminal: boolean;
     observedExecution: boolean;
     polls: number;
+    startedAt: string;
+    endedAt: string;
+    observedAttemptNumber: number | null;
+    observedRetryCount: number | null;
     reason: string | null;
   };
 }
@@ -427,6 +455,7 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       ? await waitForTerminalExecution({
           read: () => readJobState(db, data.jobId),
           expectedRetryCount,
+          expectedAttemptNumber: before.attemptNumber,
           timeoutMs,
           pollIntervalMs: DEFAULT_E2E_POLL_INTERVAL_MS,
         })
@@ -435,6 +464,10 @@ export const runDemoE2E = createServerFn({ method: "POST" })
           terminal: false,
           observedExecution: false,
           polls: 1,
+          startedAt,
+          endedAt: new Date().toISOString(),
+          observedAttemptNumber: before.attemptNumber,
+          observedRetryCount: before.retryCount,
           reason: workerReady ? "E2E_EXECUTION_NOT_REQUESTED" : "E2E_PREFLIGHT_BLOCKED",
         };
     const after = wait.state;
@@ -498,6 +531,16 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         wait_terminal: wait.terminal,
         wait_observed_execution: wait.observedExecution,
         wait_reason: wait.reason,
+        wait_started_at: wait.startedAt,
+        wait_ended_at: wait.endedAt,
+        wait_polls: wait.polls,
+        observed_attempt_number: wait.observedAttemptNumber,
+        observed_dispatch_attempt: wait.observedRetryCount,
+        worker_name: probe.identity?.name ?? null,
+        worker_version: probe.identity?.version ?? null,
+        worker_revision: probe.identity?.revision ?? null,
+        worker_build_revision: probe.identity?.buildRevision ?? null,
+        worker_contract_version: probe.identity?.contractVersion ?? null,
       },
     });
     if (auditError) throw new Error("AUDIT_FAILED");
@@ -537,6 +580,10 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         terminal: wait.terminal,
         observedExecution: wait.observedExecution,
         polls: wait.polls,
+        startedAt: wait.startedAt,
+        endedAt: wait.endedAt,
+        observedAttemptNumber: wait.observedAttemptNumber,
+        observedRetryCount: wait.observedRetryCount,
         reason: wait.reason,
       },
     };

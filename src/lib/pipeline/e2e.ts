@@ -29,12 +29,17 @@ export interface E2EEvidence {
   /** Canonical match ids reached through `match_sources` for this demo. */
   matchIds: string[];
   matchSourceCount: number;
+  sourceFingerprints: string[];
+  sourceUploadIds: string[];
   participants: number;
   rounds: number;
   roundPlayers: number;
   events: number;
   metrics: number;
   features: number;
+  metricIds: string[];
+  featureIds: string[];
+  projectedPlayerIds: string[];
 }
 
 export interface E2EJobState {
@@ -62,12 +67,17 @@ export interface E2EEvaluation {
 export const EMPTY_EVIDENCE: E2EEvidence = {
   matchIds: [],
   matchSourceCount: 0,
+  sourceFingerprints: [],
+  sourceUploadIds: [],
   participants: 0,
   rounds: 0,
   roundPlayers: 0,
   events: 0,
   metrics: 0,
   features: 0,
+  metricIds: [],
+  featureIds: [],
+  projectedPlayerIds: [],
 };
 
 function isPermanentCode(code: string | null): boolean {
@@ -81,12 +91,17 @@ export function hasNoCanonicalWrite(evidence: E2EEvidence): boolean {
   return (
     evidence.matchIds.length === 0 &&
     evidence.matchSourceCount === 0 &&
+    evidence.sourceFingerprints.length === 0 &&
+    evidence.sourceUploadIds.length === 0 &&
     evidence.participants === 0 &&
     evidence.rounds === 0 &&
     evidence.roundPlayers === 0 &&
     evidence.events === 0 &&
     evidence.metrics === 0 &&
-    evidence.features === 0
+    evidence.features === 0 &&
+    evidence.metricIds.length === 0 &&
+    evidence.featureIds.length === 0 &&
+    evidence.projectedPlayerIds.length === 0
   );
 }
 
@@ -184,6 +199,17 @@ export function evaluateIdempotency(first: E2EEvidence, second: E2EEvidence): E2
     [...first.matchIds].sort().join(",") === [...second.matchIds].sort().join(",");
 
   if (!sameMatches) reasons.push("the second run resolved a different canonical match");
+  const sameValues = (left: string[], right: string[]) =>
+    [...left].sort().join(",") === [...right].sort().join(",");
+  for (const [label, left, right] of [
+    ["source fingerprints", first.sourceFingerprints, second.sourceFingerprints],
+    ["source upload identities", first.sourceUploadIds, second.sourceUploadIds],
+    ["metrics identities", first.metricIds, second.metricIds],
+    ["features identities", first.featureIds, second.featureIds],
+    ["projected player identities", first.projectedPlayerIds, second.projectedPlayerIds],
+  ] as const) {
+    if (!sameValues(left, right)) reasons.push(`${label} changed between runs`);
+  }
   const keys: (keyof E2EEvidence)[] = [
     "matchSourceCount",
     "participants",

@@ -7,6 +7,8 @@ import io
 import json
 import logging
 import math
+import resource
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from itertools import chain
@@ -20,6 +22,9 @@ RAW_BUCKET = "cs2-raw-evidence"
 RAW_SCHEMA_VERSION = 1
 CHUNK_TARGET_BYTES = 4 * 1024 * 1024
 CHUNK_HARD_MAX_BYTES = 8 * 1024 * 1024
+RAW_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024
+MAX_CHUNKS_PER_SECTION = 100_000
+MAX_CHUNKS_TOTAL = 200_000
 SECTION_ORDER = (
     "header", "players", "rounds", "events", "ticks", "grenades", "player-info",
     "game-state", "economy", "forensic",
@@ -183,7 +188,8 @@ class RawArtifactWriter:
                 "row_count": len(rows), "byte_size": len(body), "sha256": sha256,
                 "previous_chunk_sha256": previous}
 
-    async def write(self, evidence: dict[str, Any]) -> dict[str, Any]:
+    async def write(self, evidence: dict[str, Any], performance: dict[str, Any] | None = None) -> dict[str, Any]:
+        started = time.perf_counter()
         artifact = await self.bridge("raw-artifact-init", {})
         if artifact.get("status") == "ready":
             return self._reference(artifact)
@@ -210,12 +216,20 @@ class RawArtifactWriter:
                 pending.append(line)
                 raw_bytes += len(line)
                 if raw_bytes >= CHUNK_TARGET_BYTES:
+                    if chunk_index >= MAX_CHUNKS_PER_SECTION or len(chunks) >= MAX_CHUNKS_TOTAL:
+                        raise RuntimeError("RAW_CHUNK_LIMIT_EXCEEDED")
                     chunk = await self._store_chunk(artifact_id, section, chunk_index, pending, first_row, previous)
                     chunks.append(chunk); previous = chunk["sha256"]
+                    if sum(item["byte_size"] for item in chunks) > RAW_ARTIFACT_MAX_BYTES:
+                        raise RuntimeError("RAW_ARTIFACT_TOO_LARGE")
                     first_row = row_number + 1; chunk_index += 1; pending = []; raw_bytes = 0
             if pending:
+                if chunk_index >= MAX_CHUNKS_PER_SECTION or len(chunks) >= MAX_CHUNKS_TOTAL:
+                    raise RuntimeError("RAW_CHUNK_LIMIT_EXCEEDED")
                 chunk = await self._store_chunk(artifact_id, section, chunk_index, pending, first_row, previous)
                 chunks.append(chunk); previous = chunk["sha256"]
+                if sum(item["byte_size"] for item in chunks) > RAW_ARTIFACT_MAX_BYTES:
+                    raise RuntimeError("RAW_ARTIFACT_TOO_LARGE")
             logger.info("raw_section_complete section=%s chunks=%s", section,
                         sum(1 for item in chunks if item["section"] == section))
             own_chunks = [item for item in chunks if item["section"] == section]
@@ -267,9 +281,13 @@ class RawArtifactWriter:
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
         })
-        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s",
+        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s raw_write_ms=%s peak_rss_kib=%s download_ms=%s parser_ms=%s hot_ms=%s",
                     artifact_id, ready.get("total_chunks"), ready.get("total_rows"),
-                    ready.get("total_bytes"), root_digest[:12])
+                     ready.get("total_bytes"), root_digest[:12],
+                     round((time.perf_counter() - started) * 1000),
+                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                     (performance or {}).get("download_ms"), (performance or {}).get("parser_ms"),
+                     (performance or {}).get("hot_build_ms"))
         return self._reference(ready)
 
     def _reference(self, artifact: dict[str, Any]) -> dict[str, Any]:
