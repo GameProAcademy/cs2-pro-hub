@@ -261,7 +261,8 @@ export interface DurableDemoCompletionV1 {
 export interface CanonicalPlayer {
   /** Stable source-local key for this participant. */
   participantKey?: string;
-  steamId: string;
+  /** Optional external Steam evidence. It is never the participant key by definition. */
+  steamId: string | null;
   name: string | null;
   team: string | null;
   side: Side | null;
@@ -370,7 +371,8 @@ export interface MetricsAvailability {
 export interface CanonicalMetrics {
   /** Participant key used for every player-scoped calculation. */
   participantKey?: string;
-  steamId: string;
+  /** External Steam evidence for compatibility; null for a participant without Steam. */
+  steamId: string | null;
   /** Which evidence classes backed this computation. */
   availability: MetricsAvailability;
   roundsPlayed: number;
@@ -433,7 +435,7 @@ export interface CanonicalMetrics {
 export interface CanonicalFeatures {
   /** Participant key inherited from the metrics target. */
   participantKey?: string;
-  steamId: string;
+  steamId: string | null;
   sampleRounds: number;
   /** NULL when no round had a determinable opening duel. */
   sampleOpeningDuels: number | null;

@@ -23,6 +23,7 @@ import {
 } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
+import { selectPlayerSemanticData } from "@/lib/pipeline/semanticData";
 import type { Json } from "@/integrations/supabase/types";
 
 /** Safe conversion of canonical structures into the database Json type. */
@@ -141,6 +142,7 @@ export async function persistDemoProjection(args: {
           ? match.teamA
           : null;
   const scores = ownScores(match, teamPlayer);
+  const semanticData = selectPlayerSemanticData(match, participantKey);
 
   const matchWide = {
     platform: "demo",
@@ -207,6 +209,15 @@ export async function persistDemoProjection(args: {
       sample_clutches: features.sampleClutches,
       extraction_confidence: match.quality.extractionConfidence,
       partial_parse: match.quality.partialParse,
+      semantic_data: toJson({
+        availability: semanticData.availability,
+        counts: {
+          aim: semanticData.aim.length,
+          position: semanticData.position.length,
+          economy: semanticData.economy.length,
+          utility: semanticData.utility.length,
+        },
+      }),
       features: toJson(features.dimensions),
       schema_version: SCHEMA_VERSION,
       analysis_version: ANALYSIS_VERSION,

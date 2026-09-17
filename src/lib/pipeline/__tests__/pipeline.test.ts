@@ -105,6 +105,26 @@ describe("metrics", () => {
     expect(metrics.utilityDamage).toBe(35);
   });
 
+  it("resolves participantKey before using separate Steam event evidence", () => {
+    const decoupled = {
+      ...match,
+      players: match.players.map((player) =>
+        player.steamId === ME ? { ...player, participantKey: "participant-local" } : player,
+      ),
+    };
+    const scoped = computeMetrics(decoupled, "participant-local");
+    expect(scoped.participantKey).toBe("participant-local");
+    expect(scoped.steamId).toBe(ME);
+    expect(scoped.kills).toBe(metrics.kills);
+    expect(scoped.damageGiven).toBe(metrics.damageGiven);
+  });
+
+  it("fails closed when the requested participant key does not exist", () => {
+    expect(() => computeMetrics(match, "missing-participant")).toThrowError(
+      expect.objectContaining({ code: "PLAYER_IDENTITY_UNRESOLVED" }),
+    );
+  });
+
   it("produces a bounded source rating that is not the CS2 PRO Score", () => {
     expect(metrics.sourceRating).toBeGreaterThan(0);
     expect(metrics.sourceRating).toBeLessThan(3);
@@ -218,9 +238,7 @@ describe("parser identity validation", () => {
 describe("KAST denominator", () => {
   it("only counts rounds the resolved Steam ID actually participated in", () => {
     // A player absent from every round of the demo has no denominator at all.
-    const ghost = computeMetrics(match, "76561198000000999");
-    expect(ghost.roundsPlayed).toBe(0);
-    expect(ghost.kast).toBeNull();
+    expect(() => computeMetrics(match, "76561198000000999")).toThrow(PipelineError);
   });
 
   it("excludes rounds without the player from the denominator", () => {

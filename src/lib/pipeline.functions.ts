@@ -370,17 +370,18 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
     // Retry only RE-QUEUES: the worker/cron layer picks the job up afterwards,
     // so the user never waits for the parser inside this request.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
-      .from("demo_jobs")
-      .update({
-        status: "pending",
-        stage: "queued",
-        error_code: null,
-        error_message: null,
-        started_at: null,
-        finished_at: null,
-      })
-      .eq("id", job.id);
+    const { data: retried, error: retryError } = await supabaseAdmin.rpc(
+      "retry_demo_job" as never,
+      {
+        _job_id: job.id,
+        _user_id: context.userId,
+        _allow_permanent: false,
+        _reason: "user_retry",
+      } as never,
+    );
+    if (retryError || (retried as { queued?: boolean } | null)?.queued !== true) {
+      throw new Error("JOB_REQUEUE_FAILED");
+    }
 
     return { jobId: job.id, queued: true as const };
   });
