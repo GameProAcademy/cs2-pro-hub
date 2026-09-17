@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from raw_artifact import ArtifactContext, RawArtifactWriter, _json_safe, _stable
+from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _stable
 
 
 class FakeAsyncClient:
@@ -23,6 +23,7 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
                 "manifest_storage_path": "user/upload/attempt-2/manifest.json", "status": "uploading",
                 "raw_status": "writing", "audit_status": "running"}
     chunks = []
+    finalized = []
 
     async def bridge(action, body):
         if action == "raw-artifact-init":
@@ -34,6 +35,7 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
         if action == "raw-chunk-verify":
             return {"verified": True}
         if action == "raw-artifact-finalize":
+            finalized.append(body)
             return {**artifact, "status": "ready", "raw_status": "ready", "audit_status": "approved",
                     "root_digest": body["rootDigest"], "total_chunks": len(chunks),
                     "total_rows": sum(item["rowCount"] for item in chunks),
@@ -55,7 +57,25 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
         assert chunk["previousChunkSha256"] == previous
         assert json.loads(gzip.decompress(body).splitlines()[0]) is not None
         previous = chunk["sha256"]
-    manifest = next(body["manifest"] for action, body in [] if action == "raw-artifact-finalize") if False else None
+    measurements = finalized[0]["manifest"]["measurements"]
+    assert measurements["sections"]["events"]["rows"] == 20
+    assert measurements["sections"]["events"]["uncompressed_bytes"] > 0
+    assert measurements["sections"]["grenades"]["compressed_bytes"] > 0
+
+
+def test_grenade_measurements_use_real_projectile_identity_when_available():
+    measured = _grenade_measurements([
+        {"entity_id": 10, "tick": 1}, {"entity_id": 10, "tick": 2},
+        {"entity_id": 11, "tick": 3},
+    ])
+    assert measured == {"rows": 3, "identity_field": "entity_id", "distinct_projectiles": 2,
+                        "average_rows_per_projectile": 1.5, "maximum_rows_per_projectile": 2}
+
+
+def test_grenade_measurements_do_not_invent_projectile_identity():
+    assert _grenade_measurements([{"tick": 1}, {"tick": 2}]) == {
+        "rows": 2, "identity_field": None,
+    }
 
 
 @pytest.mark.asyncio

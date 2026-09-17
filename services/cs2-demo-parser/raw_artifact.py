@@ -124,6 +124,26 @@ def _audit_evidence_digest(evidence: dict[str, Any]) -> str:
     return hashlib.sha256(_stable(_audit_evidence(evidence))).hexdigest()
 
 
+def _grenade_measurements(rows: Any) -> dict[str, Any]:
+    records = [row for row in (rows or []) if isinstance(row, dict)]
+    identity_field = next((field for field in ("entity_id", "grenade_id", "projectile_id")
+                           if any(row.get(field) is not None for row in records)), None)
+    result: dict[str, Any] = {"rows": len(records), "identity_field": identity_field}
+    if identity_field is not None:
+        counts: dict[str, int] = {}
+        for row in records:
+            value = row.get(identity_field)
+            if value is not None:
+                key = str(value)
+                counts[key] = counts.get(key, 0) + 1
+        result.update({
+            "distinct_projectiles": len(counts),
+            "average_rows_per_projectile": round(sum(counts.values()) / len(counts), 3) if counts else None,
+            "maximum_rows_per_projectile": max(counts.values(), default=None),
+        })
+    return result
+
+
 class RawArtifactWriter:
     def __init__(self, *, context: ArtifactContext, bridge, client: httpx.AsyncClient) -> None:
         self.context = context
@@ -172,6 +192,7 @@ class RawArtifactWriter:
             logger.info("raw_artifact_recovery artifact=%s", artifact_id)
         chunks: list[dict[str, Any]] = []
         section_measurements: dict[str, dict[str, int]] = {}
+        grenade_measurements = _grenade_measurements(evidence.get("grenade_samples"))
         previous: str | None = None
         sections = _section_payloads(evidence)
         for section in SECTION_ORDER:
@@ -205,6 +226,10 @@ class RawArtifactWriter:
                 "chunks": len(own_chunks),
                 "largest_chunk_bytes": max((item["byte_size"] for item in own_chunks), default=0),
             }
+            section_measurements[section]["average_chunk_bytes"] = (
+                round(section_measurements[section]["compressed_bytes"] / len(own_chunks))
+                if own_chunks else 0
+            )
             logger.info(
                 "raw_section_metrics section=%s rows=%s uncompressed_bytes=%s compressed_bytes=%s chunks=%s largest_chunk_bytes=%s",
                 section, *section_measurements[section].values(),
@@ -237,7 +262,7 @@ class RawArtifactWriter:
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
                     "audit_evidence_digest": _audit_evidence_digest(evidence),
-                     "measurements": {"sections": section_measurements},
+                     "measurements": {"sections": section_measurements, "grenades": grenade_measurements},
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
