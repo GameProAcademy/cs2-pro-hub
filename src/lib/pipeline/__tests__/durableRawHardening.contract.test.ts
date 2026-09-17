@@ -93,6 +93,8 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(bridgeRouteSource).toContain("request.body.getReader()");
     expect(bridgeRouteSource).toContain("size > DURABLE_HOT_HARD_MAX_BYTES");
     expect(bridgeRouteSource).toContain('error: "payload_too_large"');
+    expect(bridgeRouteSource).toContain("complete_start bytes=");
+    expect(bridgeRouteSource).toContain("complete_end bytes=");
   });
 
   it("separates dispatch attempt from the logical demo attempt", () => {

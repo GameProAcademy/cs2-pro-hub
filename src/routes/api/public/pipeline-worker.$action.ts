@@ -48,6 +48,10 @@ export async function readBoundedJson(request: Request): Promise<unknown> {
   }
 }
 
+function requestByteLength(value: unknown): number {
+  return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}
+
 export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
   server: {
     handlers: {
@@ -70,7 +74,12 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
           }
           if (params.action === "complete") {
             const input = identity.extend({ hot: z.unknown(), raw: z.unknown() }).strict().parse(body);
-            return Response.json(await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]));
+            const startedAt = Date.now();
+            const bytes = requestByteLength(body);
+            console.info(`[pipeline-worker] complete_start bytes=${bytes}`);
+            const result = await completeDurableDemo(input as Parameters<typeof completeDurableDemo>[0]);
+            console.info(`[pipeline-worker] complete_end bytes=${bytes} duration_ms=${Date.now() - startedAt} status=200 memory=unavailable`);
+            return Response.json(result);
           }
           if (params.action === "raw-artifact-init") {
             return Response.json(await initializeRawArtifact(identity.parse(body)));

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import json
 from typing import Any
 
 HOT_SCHEMA_VERSION = 1
@@ -71,6 +72,40 @@ def _put(row: dict[str, Any], key: str, value: Any) -> None:
         row[key] = value
 
 
+def _json_value(value: Any) -> Any:
+    """Keep parser-native structure while making HOT strict-JSON safe."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    scalar = getattr(value, "item", None)
+    if callable(scalar):
+        try:
+            return _json_value(scalar())
+        except Exception:
+            return None
+    return str(value)
+
+
+def hot_payload_measurements(hot: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic compact telemetry; never includes RAW values."""
+    sections = {}
+    for name in HOT_LIMITS:
+        value = hot.get(name) or []
+        sections[name] = {
+            "rows": len(value),
+            "bytes": len(json.dumps(_json_value(value), sort_keys=True, separators=(",", ":"),
+                                    ensure_ascii=False, allow_nan=False).encode("utf-8")),
+        }
+    total = len(json.dumps(_json_value(hot), sort_keys=True, separators=(",", ":"),
+                           ensure_ascii=False, allow_nan=False).encode("utf-8"))
+    return {"hot_payload_bytes": total, "sections": sections}
+
+
 def _tick_context(source: dict[str, Any]) -> dict[str, Any]:
     row: dict[str, Any] = {}
     _put(row, "player", _text(source.get("player_steamid", source.get("steamid"))))
@@ -95,7 +130,7 @@ def _semantic_tick_rows(evidence: dict[str, Any]) -> dict[str, list[dict[str, An
         for key in ("is_scoped",):
             _put(aim, key, source.get(key) if isinstance(source.get(key), bool) else None)
         for key in ("active_weapon", "active_weapon_name", "aim_punch_angle", "aim_punch_angle_vel"):
-            _put(aim, key, source.get(key))
+            _put(aim, key, _json_value(source.get(key)))
         if any(key not in context for key in aim):
             groups["aim_observations"].append(aim)
 
@@ -116,7 +151,7 @@ def _semantic_tick_rows(evidence: dict[str, Any]) -> dict[str, list[dict[str, An
                     "round_start_equip_value", "current_equip_value"):
             _put(economy, key, _finite(source.get(key)))
         for key in ("weapon_purchases_this_round", "weapon_purchases_this_match"):
-            _put(economy, key, source.get(key))
+            _put(economy, key, _json_value(source.get(key)))
         if any(key not in context for key in economy):
             groups["economy_snapshots"].append(economy)
     return groups

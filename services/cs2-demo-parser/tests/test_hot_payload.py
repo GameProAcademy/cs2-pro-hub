@@ -1,6 +1,6 @@
 import pytest
 
-from hot_payload import HOT_LIMITS, build_hot_payload
+from hot_payload import HOT_LIMITS, build_hot_payload, hot_payload_measurements
 
 
 def test_hot_payload_is_bounded_and_marks_overflow():
@@ -133,3 +133,29 @@ def test_semantic_sections_are_bounded_with_explicit_overflow():
         assert hot["quality"]["sections"][name]["status"] == "limited"
         assert hot["quality"]["sections"][name]["overflow_rows"] == 1
     assert hot["quality"]["partial"] is True
+
+
+def test_hot_measurements_report_total_section_bytes_and_rows_without_raw():
+    hot = build_hot_payload(
+        {"header": {}, "players": [], "rounds": [], "events": [], "warnings": []},
+        parser={"name": "demoparser2"}, contract_version=1,
+        demo_sha256="a" * 64, upload_id="upload",
+        evidence={"tick_samples": [{"tick": 1, "yaw": 10.0, "X": 20.0, "balance": 800}]},
+    )
+    measurements = hot_payload_measurements(hot)
+    assert measurements["hot_payload_bytes"] > 0
+    assert measurements["sections"]["aim_observations"]["rows"] == 1
+    assert measurements["sections"]["position_snapshots"]["bytes"] > 0
+    assert "grenades" not in measurements["sections"]
+
+
+def test_parser_native_nested_nonfinite_semantic_values_become_null():
+    hot = build_hot_payload(
+        {"header": {}, "players": [], "rounds": [], "events": []},
+        parser={"name": "demoparser2"}, contract_version=1,
+        demo_sha256="a" * 64, upload_id="upload",
+        evidence={"tick_samples": [{"tick": 1, "aim_punch_angle": [1.0, float("nan")],
+                                      "weapon_purchases_this_round": {"ak47": float("inf")}}]},
+    )
+    assert hot["aim_observations"][0]["aim_punch_angle"] == [1.0, None]
+    assert hot["economy_snapshots"][0]["weapon_purchases_this_round"] == {"ak47": None}
