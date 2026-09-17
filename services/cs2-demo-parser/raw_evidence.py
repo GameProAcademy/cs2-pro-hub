@@ -62,6 +62,73 @@ REVIEWED_EVENT_FIELDS = {
     "thrusmoke", "distance", "silenced", "is_warmup_period", "is_freeze_period",
 }
 
+# Exact parser-native fields observed and reviewed for RAW preservation. These
+# are not promoted to Canonical merely because they exist. Any new event or
+# field still falls through to UNMAPPED_BUT_AVAILABLE and blocks admission.
+REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
+    "announce_phase_end": frozenset({"__event__", "tick"}),
+    "bomb_defused": frozenset({"c4"}),
+    "bomb_dropped": frozenset({"entindex"}),
+    "bomb_exploded": frozenset({"c4"}),
+    "bomb_planted": frozenset({"c4"}),
+    "chat_message": frozenset({"__event__", "chat_message", "tick", "user_name", "user_steamid"}),
+    "cs_intermission": frozenset({"__event__", "tick"}),
+    "cs_pre_restart": frozenset({"__event__", "tick"}),
+    "cs_round_final_beep": frozenset({"__event__", "tick"}),
+    "cs_round_start_beep": frozenset({"__event__", "tick"}),
+    "cs_win_panel_match": frozenset({"__event__", "tick"}),
+    "decoy_detonate": frozenset({"entityid"}),
+    "decoy_started": frozenset({"__event__", "entityid", "tick", "user_name", "user_steamid", "x", "y", "z"}),
+    "entity_killed": frozenset({"__event__", "damagebits", "entindex_attacker", "entindex_inflictor", "entindex_killed", "tick"}),
+    "fire_bullets": frozenset({
+        "__event__", "angles_x", "angles_y", "angles_z", "attack_type", "ent_origin_x",
+        "ent_origin_y", "ent_origin_z", "inaccuracy", "item_def_index", "mode",
+        "num_bullets_remaining", "origin_x", "origin_y", "origin_z", "player",
+        "player_inair", "player_scoped", "recoil_index", "round", "seed",
+        "sound_dsp_effect", "sound_type", "spread", "tick", "user_name",
+        "user_steamid", "weapon_id",
+    }),
+    "flashbang_detonate": frozenset({"entityid"}),
+    "hegrenade_detonate": frozenset({"entityid"}),
+    "hltv_chase": frozenset({"__event__", "distance", "inertia", "ineye", "phi", "target1", "target2", "theta", "tick"}),
+    "hltv_versioninfo": frozenset({"__event__", "tick", "version"}),
+    "inferno_expire": frozenset({"entityid"}),
+    "inferno_startburn": frozenset({"entityid"}),
+    "item_pickup": frozenset({"defindex", "item", "silent"}),
+    "player_activate": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    "player_connect": frozenset({"__event__"}),
+    "player_connect_full": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    "player_death": frozenset({
+        "assistedflash", "attackerblind", "attackerinair", "dominated", "noreplay",
+        "revenge", "weapon_fauxitemid", "weapon_itemid", "weapon_originalowner_xuid", "wipe",
+    }),
+    "player_ping": frozenset({"__event__", "entityid", "tick", "urgent", "user_name", "user_steamid", "x", "y", "z"}),
+    "player_ping_stop": frozenset({"__event__", "entityid", "tick", "user_name", "user_steamid"}),
+    "player_sound": frozenset({"__event__", "duration", "radius", "step", "tick", "user_name", "user_steamid"}),
+    "player_spawn": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    "player_team": frozenset({"__event__", "disconnect", "isbot", "oldteam", "silent", "team", "tick", "user_name", "user_steamid"}),
+    "round_announce_final": frozenset({"__event__", "tick"}),
+    "round_announce_last_round_half": frozenset({"__event__", "tick"}),
+    "round_announce_match_point": frozenset({"__event__", "tick"}),
+    "round_announce_match_start": frozenset({"__event__", "tick"}),
+    "round_freeze_end": frozenset({"__event__", "tick"}),
+    "round_time_warning": frozenset({"__event__", "tick"}),
+    "server_cvar": frozenset({"__event__", "name", "tick", "value"}),
+    "server_message": frozenset({"__event__", "server_message", "tick"}),
+    "smokegrenade_detonate": frozenset({"entityid"}),
+    "smokegrenade_expired": frozenset({"entityid"}),
+}
+
+REVIEWED_GRENADE_FIELDS = frozenset({
+    "grenade_entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z",
+})
+
+REVIEWED_HEADER_FIELDS = frozenset({
+    "addons", "allow_clientside_entities", "allow_clientside_particles", "client_name",
+    "demo_file_stamp", "demo_version_guid", "fullpackets_version", "game_directory",
+    "patch_version", "server_name",
+})
+
 MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "header.map_name": ("header.map", "CanonicalMatch.map", "MAPPED"),
     "header.demo_version_name": ("header.game_version", "CanonicalMatch.gameVersion", "MAPPED"),
@@ -268,6 +335,15 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
         elif field.startswith("game_state.") and field.removeprefix("game_state.") in PLAYER_PROPERTIES:
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
+        elif field.startswith("header.") and field.removeprefix("header.") in REVIEWED_HEADER_FIELDS:
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", "Preserved as parser/demo provenance metadata."
+        elif field.startswith("grenade.") and field.removeprefix("grenade.") in REVIEWED_GRENADE_FIELDS:
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", "Preserved as full-resolution grenade trajectory evidence."
+        elif any(
+            field.startswith(f"{event}.") and field.removeprefix(f"{event}.") in reviewed
+            for event, reviewed in REVIEWED_RAW_ONLY_EVENT_FIELDS.items()
+        ):
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", "Preserved as reviewed parser-native event evidence."
         else:
             app_field, canonical_field, status, reason = None, None, "UNMAPPED_BUT_AVAILABLE", None
         result.append({"raw_field": field, "app_field": app_field, "canonical_field": canonical_field, "status": status, "reason": reason})

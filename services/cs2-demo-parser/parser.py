@@ -180,6 +180,59 @@ def _finite_number(value: Any) -> int | float | None:
     return value if math.isfinite(float(value)) else None
 
 
+def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
+    """Recover round boundaries only from parser-native game-state evidence.
+
+    Some CS2 demos do not advertise ``round_start``/``round_end`` events even
+    though ``parse_ticks`` returns ``total_rounds_played`` and
+    ``round_start_time``. The latter pair deterministically identifies the round
+    start tick at the verified header tickrate. End ticks remain unknown unless
+    observed; no winner, score, team identity, or false boundary is invented.
+    """
+    if raw.get("round_starts") or raw.get("round_ends"):
+        return
+    header = raw.get("header") or {}
+    tickrate = _finite_number(header.get("playback_ticks_per_second"))
+    if tickrate is None or tickrate <= 0:
+        return
+
+    starts: dict[int, dict[str, Any]] = {}
+    for row in raw.get("tick_rows") or []:
+        round_index = row.get("total_rounds_played")
+        tick = row.get("tick")
+        game_time = _finite_number(row.get("game_time"))
+        round_start_time = _finite_number(row.get("round_start_time"))
+        if (
+            isinstance(round_index, bool)
+            or not isinstance(round_index, (int, float))
+            or not float(round_index).is_integer()
+            or round_index < 0
+            or not isinstance(tick, int)
+            or game_time is None
+            or round_start_time is None
+            or game_time < round_start_time
+        ):
+            continue
+        start_tick = round(float(tick) - (float(game_time) - float(round_start_time)) * tickrate)
+        if start_tick < 0:
+            continue
+        number = int(round_index) + 1
+        previous = starts.get(number)
+        if previous is None or start_tick < previous["tick"]:
+            starts[number] = {
+                "tick": start_tick,
+                "round": number,
+                "derived_from": "game_state.round_start_time",
+            }
+
+    if not starts:
+        return
+    derived = [starts[number] for number in sorted(starts)]
+    raw["round_starts"] = derived
+    raw["round_rows"] = [{"number": row["round"], "start_tick": row["tick"]} for row in derived]
+    raw["warnings"].append("round_boundaries_derived_from_game_state: end ticks and winners unavailable")
+
+
 def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]) -> None:
     """Project only observed start/end snapshots into APP round evidence."""
     rows_by_tick: dict[int, list[dict[str, Any]]] = {}
@@ -389,6 +442,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     raw["tick_error"] = tick_error
     raw["grenade_rows"] = grenade_rows
     raw["grenade_error"] = grenade_error
+    derive_round_streams_from_tick_evidence(raw)
     return raw
 
 
