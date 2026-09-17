@@ -38,6 +38,11 @@ export interface DemoJobView {
   /** FASE 2.7.2A: whether the canonical match got this player's projection. */
   attachmentState: "attached" | "unattached" | "conflict";
   attachmentReason: string | null;
+  attachmentMethod?: string | null;
+  attachmentSource?: string | null;
+  attachmentConfidence?: string | null;
+  attachmentParticipantKey?: string | null;
+  observedNickname?: string | null;
   map: string | null;
   result: string | null;
   scorePlayer: number | null;
@@ -199,6 +204,11 @@ function toView(
     rounds_valid: number | null;
     attachment_state: string;
     attachment_reason: string | null;
+    attachment_method: string | null;
+    attachment_source: string | null;
+    attachment_confidence_label: string | null;
+    attachment_participant_key: string | null;
+    observed_nickname: string | null;
     queued_at: string;
     finished_at: string | null;
     attempt_number: number;
@@ -234,6 +244,11 @@ function toView(
           ? "conflict"
           : "unattached",
     attachmentReason: row.attachment_reason,
+    attachmentMethod: row.attachment_method,
+    attachmentSource: row.attachment_source,
+    attachmentConfidence: row.attachment_confidence_label,
+    attachmentParticipantKey: row.attachment_participant_key,
+    observedNickname: row.observed_nickname,
     map: match?.map ?? null,
     result: match?.result ?? null,
     scorePlayer: match?.score_player ?? null,
@@ -254,7 +269,7 @@ function toView(
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -300,13 +315,12 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
 
     const uploadIds = [...new Set(rows.map((row) => row.upload_id))];
     const { data: uploads, error: uploadsError } = uploadIds.length
-      ? await context.supabase
-          .from("uploads")
-          .select("id, file_name")
-          .in("id", uploadIds)
+      ? await context.supabase.from("uploads").select("id, file_name").in("id", uploadIds)
       : { data: [], error: null };
     if (uploadsError) throw new Error("DEMO_HISTORY_UPLOAD_QUERY_FAILED");
-    const fileNameByUploadId = new Map((uploads ?? []).map((upload) => [upload.id, upload.file_name]));
+    const fileNameByUploadId = new Map(
+      (uploads ?? []).map((upload) => [upload.id, upload.file_name]),
+    );
 
     const matchIds = [...new Set(rows.flatMap((row) => (row.match_id ? [row.match_id] : [])))];
     const { data: matches, error: matchesError } = matchIds.length

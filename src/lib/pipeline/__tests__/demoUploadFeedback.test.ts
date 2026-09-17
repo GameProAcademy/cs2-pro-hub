@@ -71,6 +71,13 @@ describe("FASE 2.7.2D-C — demo upload feedback", () => {
       "pipeline.history.replacement",
       "pipeline.history.superseded",
       "pipeline.identify.empty",
+      "pipeline.identify.review",
+      "pipeline.identify.steamMatch",
+      "pipeline.identify.continue",
+      "pipeline.identify.notMe",
+      "pipeline.identify.saveError",
+      "pipeline.identitySummary",
+      "profile.nicknameHistory.title",
     ] as const;
     expect(Object.keys(dictionaries)).toHaveLength(5);
     for (const dictionary of Object.values(dictionaries)) {

@@ -32,9 +32,12 @@ export interface DemoIdentityView {
   attachmentReason: string | null;
   attachmentMethod: string | null;
   attachmentConfidence: string | null;
+  attachmentSource: string | null;
+  attachmentParticipantKey: string | null;
   declaredNickname: string | null;
   declaredParticipantKey: string | null;
   observedNickname: string | null;
+  latestDecisionStatus: string | null;
   participants: DemoParticipantView[];
 }
 
@@ -52,6 +55,11 @@ const declareSchema = z
     "DECLARATION_SHAPE",
   );
 
+const decisionSchema = z.object({
+  jobId: z.string().uuid(),
+  action: z.enum(["confirm", "reject"]),
+});
+
 /** Loads the job (RLS-scoped to its owner) plus the demo players detected. */
 export const getDemoIdentity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -61,13 +69,20 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     const { data: job } = await supabase
       .from("demo_jobs")
       .select(
-        "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_confidence_label, declared_nickname, declared_participant_key, observed_nickname",
+        "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_participant_key, declared_nickname, declared_participant_key, observed_nickname",
       )
       .eq("id", data.jobId)
       .maybeSingle();
     if (!job) return null;
 
     const participants = job.match_id ? await readParticipants(supabase, job.match_id) : [];
+    const { data: latestDecision } = await supabase
+      .from("demo_identity_decisions")
+      .select("status")
+      .eq("job_id", job.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     return {
       jobId: job.id,
@@ -76,9 +91,12 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
       attachmentReason: job.attachment_reason,
       attachmentMethod: job.attachment_method,
       attachmentConfidence: job.attachment_confidence_label,
+      attachmentSource: job.attachment_source,
+      attachmentParticipantKey: job.attachment_participant_key,
       declaredNickname: job.declared_nickname,
       declaredParticipantKey: job.declared_participant_key,
       observedNickname: job.observed_nickname,
+      latestDecisionStatus: latestDecision?.status ?? null,
       participants: participants.map((participant) => ({
         participantKey: participant.participantKey,
         nickname: participant.nickname,
@@ -146,6 +164,7 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         _job_id: job.id,
         _user_id: userId,
         _attachment: {
+          event_key: `manual:${outcome.participantKey ?? data.nickname ?? "unresolved"}`,
           declared_participant_key: data.participantKey ?? null,
           declared_nickname: data.nickname ?? null,
           state: outcome.state,
@@ -183,6 +202,50 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         : [],
       reprocessing: attach,
     };
+  });
+
+/** Records confirmation or rejection of a strong automatic Steam match. */
+export const decideAutomaticDemoPlayer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => decisionSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: job } = await supabase
+      .from("demo_jobs")
+      .select(
+        "id, attachment_state, attachment_method, attachment_source, attachment_confidence, attachment_confidence_label, attachment_participant_key, observed_nickname",
+      )
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (!job) throw new Error("JOB_NOT_FOUND");
+    if (
+      job.attachment_state !== "attached" ||
+      job.attachment_method !== "steam_id_confirmed" ||
+      job.attachment_source !== "system" ||
+      !job.attachment_participant_key
+    ) {
+      throw new Error("AUTOMATIC_MATCH_NOT_AVAILABLE");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.rpc("record_demo_identity_event", {
+      _job_id: job.id,
+      _user_id: userId,
+      _event_key: `${data.action}:steam:${job.attachment_participant_key}`,
+      _decision: {
+        status: data.action === "confirm" ? "confirmed" : "rejected_auto_match",
+        participant_key: job.attachment_participant_key,
+        nickname: job.observed_nickname,
+        method: job.attachment_method,
+        source: "user",
+        confidence_label: job.attachment_confidence_label,
+        confidence_score: job.attachment_confidence,
+        reason: data.action === "reject" ? "user_rejected_auto_match" : null,
+        evidence: { automatic_source: "steam" },
+      },
+    } as never);
+    if (error) throw new Error("IDENTITY_DECISION_FAILED");
+    return { action: data.action, recorded: true as const };
   });
 
 /** Minimal read surface, kept loose so the generated types stay shallow. */

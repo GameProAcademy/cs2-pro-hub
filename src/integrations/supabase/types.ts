@@ -231,6 +231,105 @@ export type Database = {
           },
         ]
       }
+      demo_identity_decisions: {
+        Row: {
+          confidence_label: string | null
+          confidence_score: number | null
+          created_at: string
+          event_key: string
+          evidence: Json
+          id: string
+          job_id: string
+          match_id: string | null
+          method: string | null
+          nickname: string | null
+          participant_key: string | null
+          player_id: string
+          reason: string | null
+          source: string
+          status: string
+          team: string | null
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          confidence_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          event_key: string
+          evidence?: Json
+          id?: string
+          job_id: string
+          match_id?: string | null
+          method?: string | null
+          nickname?: string | null
+          participant_key?: string | null
+          player_id: string
+          reason?: string | null
+          source: string
+          status: string
+          team?: string | null
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          confidence_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          event_key?: string
+          evidence?: Json
+          id?: string
+          job_id?: string
+          match_id?: string | null
+          method?: string | null
+          nickname?: string | null
+          participant_key?: string | null
+          player_id?: string
+          reason?: string | null
+          source?: string
+          status?: string
+          team?: string | null
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_identity_decisions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_identity_decisions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_identity_decisions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_identity_decisions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_identity_decisions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_jobs: {
         Row: {
           analysis_version: string
@@ -1813,6 +1912,128 @@ export type Database = {
           },
         ]
       }
+      player_nickname_history: {
+        Row: {
+          confidence_label: string | null
+          confidence_score: number | null
+          created_at: string
+          first_job_id: string | null
+          first_match_id: string | null
+          first_seen_at: string
+          first_upload_id: string | null
+          id: string
+          last_job_id: string | null
+          last_match_id: string | null
+          last_seen_at: string
+          last_upload_id: string | null
+          metadata: Json
+          method: string | null
+          nickname: string
+          normalized_nickname: string
+          player_id: string
+          source: string
+          steam_id: string | null
+          times_seen: number
+          updated_at: string
+        }
+        Insert: {
+          confidence_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          first_job_id?: string | null
+          first_match_id?: string | null
+          first_seen_at?: string
+          first_upload_id?: string | null
+          id?: string
+          last_job_id?: string | null
+          last_match_id?: string | null
+          last_seen_at?: string
+          last_upload_id?: string | null
+          metadata?: Json
+          method?: string | null
+          nickname: string
+          normalized_nickname: string
+          player_id: string
+          source: string
+          steam_id?: string | null
+          times_seen?: number
+          updated_at?: string
+        }
+        Update: {
+          confidence_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          first_job_id?: string | null
+          first_match_id?: string | null
+          first_seen_at?: string
+          first_upload_id?: string | null
+          id?: string
+          last_job_id?: string | null
+          last_match_id?: string | null
+          last_seen_at?: string
+          last_upload_id?: string | null
+          metadata?: Json
+          method?: string | null
+          nickname?: string
+          normalized_nickname?: string
+          player_id?: string
+          source?: string
+          steam_id?: string | null
+          times_seen?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_nickname_history_first_job_id_fkey"
+            columns: ["first_job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_first_match_id_fkey"
+            columns: ["first_match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_first_upload_id_fkey"
+            columns: ["first_upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_last_job_id_fkey"
+            columns: ["last_job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_last_match_id_fkey"
+            columns: ["last_match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_last_upload_id_fkey"
+            columns: ["last_upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_nickname_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profile_goals: {
         Row: {
           created_at: string
@@ -3057,6 +3278,15 @@ export type Database = {
         Returns: string
       }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
+      record_demo_identity_event: {
+        Args: {
+          _decision: Json
+          _event_key: string
+          _job_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
         Returns: number

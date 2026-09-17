@@ -358,9 +358,11 @@ export function DemoIngestPanel() {
                       {t("pipeline.history.superseded")}
                     </p>
                   ) : null}
-                  {job.status === "processed" && job.attachmentState !== "attached" ? (
+                  {job.status === "processed" ? (
                     <>
-                      <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
+                      {job.attachmentState !== "attached" ? (
+                        <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
+                      ) : null}
                       <DemoPlayerIdentity jobId={job.jobId} />
                     </>
                   ) : null}
