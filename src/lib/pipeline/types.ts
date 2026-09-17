@@ -88,6 +88,15 @@ export interface RawParserEvent {
   victim_position?: RawParserPosition | undefined;
 }
 
+export interface HotSemanticObservation {
+  player?: string | undefined;
+  tick?: number | undefined;
+  round?: number | undefined;
+  time_seconds?: number | undefined;
+  side?: Side | undefined;
+  [field: string]: unknown;
+}
+
 export interface RawParserOutput {
   parser: {
     name: string;
@@ -134,7 +143,7 @@ export const HOT_DEMO_LIMITS = {
 } as const;
 
 export interface HotSectionQuality {
-  status: "complete" | "limited" | "not_implemented";
+  status: "complete" | "limited" | "unavailable" | "not_implemented";
   observed_rows: number;
   included_rows: number;
   limit: number;
@@ -152,9 +161,9 @@ export interface HotDemoPayloadV1 {
   combat_events: RawParserEvent[];
   utility_events: RawParserEvent[];
   objective_events: RawParserEvent[];
-  aim_observations: RawParserEvent[];
-  position_snapshots: RawParserEvent[];
-  economy_snapshots: RawParserEvent[];
+  aim_observations: HotSemanticObservation[];
+  position_snapshots: HotSemanticObservation[];
+  economy_snapshots: HotSemanticObservation[];
   quality: {
     partial: boolean;
     limited_sections: string[];

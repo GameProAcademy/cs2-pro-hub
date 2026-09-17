@@ -79,8 +79,8 @@ export const ptPT: Dictionary = {
   "analyze.demo.invalid": "Formato inválido. Selecione um ficheiro com extensão .dem.",
   "analyze.report.title": "Não tenho uma demo",
   "analyze.report.description": "Envie capturas de ecrã ou relatórios das suas estatísticas.",
-  "analyze.report.cta": "Enviar dados / relatórios",
-  "analyze.report.dropTitle": "Arraste as suas capturas ou relatórios para aqui",
+  "analyze.report.cta": "Enviar dados",
+  "analyze.report.dropTitle": "Envie os seus prints ou relatórios para aqui",
   "analyze.report.dropHint": "Imagens (PNG, JPG) e relatórios (CSV, JSON, PDF) são aceites.",
   "analyze.report.invalid": "Formato inválido. Envie imagens, CSV, JSON ou PDF.",
   "analyze.recommendation":

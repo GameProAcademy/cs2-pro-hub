@@ -27,7 +27,8 @@ technical retry reuses one artifact while a new logical attempt creates another.
 The complete `{hot, raw}` body targets 4 MiB and fails closed above 8 MiB.
 Unclassified events remain in RAW and make HOT partial without invalidating its
 contract. AIM observations, position snapshots, and economy snapshots are
-explicitly `not_implemented`; empty arrays do not claim complete coverage.
+projected only from parser-native, event-boundary tick evidence. Missing source
+fields are explicitly `unavailable`; no value or metric is inferred.
 
 The APP creates short-lived, object-scoped upload URLs. The Railway worker never
 receives a database or Storage credential. The worker transports a deterministic
