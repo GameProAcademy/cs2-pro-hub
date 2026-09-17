@@ -1,5 +1,13 @@
 # Roadmap
 
+## FASE 2.7.2D.8 — Player identity resolution — PLANEJADA
+
+- [ ] Consolidar auto-match forte, fallback manual, rejeição e conflitos no resolvedor existente.
+- [ ] Implementar histórico contextual de nicknames com ownership, RLS e idempotência.
+- [ ] Integrar confirmação e histórico à UI, aos cinco idiomas e ao histórico de demos.
+- [ ] Provar propagação para Canonical, métricas e features sem alterar RAW/HOT/Railway.
+- [ ] Executar testes locais completos e manter E2E Cache bloqueado até Railway sincronizado.
+
 ## FASE 2.7.2D.7 — E2E Cache + handoff sem perda — EM EXECUÇÃO
 
 - [x] Plano aprovado para preservar AIM, posição e economia no handoff canônico sem misturar snapshots com eventos.
