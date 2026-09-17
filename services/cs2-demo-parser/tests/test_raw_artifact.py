@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from raw_artifact import ArtifactContext, RawArtifactWriter
+from raw_artifact import ArtifactContext, RawArtifactWriter, _json_safe, _stable
 
 
 class FakeAsyncClient:
@@ -109,3 +109,99 @@ def test_physical_chunk_mutation_changes_sha256():
     changed = bytearray(body)
     changed[-1] ^= 1
     assert hashlib.sha256(body).hexdigest() != hashlib.sha256(changed).hexdigest()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_non_finite_float_becomes_json_null(value):
+    assert _stable({"x": value}) == b'{"x":null}'
+
+
+def test_json_boundary_normalizes_nested_lists_and_tuples_without_mutating_input():
+    source = {"rows": [1.25, float("nan"), {"velocity": (float("inf"), -3.5)}]}
+    normalized = _json_safe(source)
+    assert normalized == {"rows": [1.25, None, {"velocity": [None, -3.5]}]}
+    assert source["rows"][0] == 1.25
+    assert source["rows"][2]["velocity"][1] == -3.5
+
+
+def test_json_boundary_preserves_supported_scalar_types():
+    value = {"float": 12.375, "integer": 17, "text": "NaN", "missing": None, "flag": True}
+    assert json.loads(_stable(value)) == value
+
+
+def test_strict_serialization_is_deterministic_and_keeps_allow_nan_disabled(monkeypatch):
+    calls = []
+    original = json.dumps
+
+    def recording_dumps(value, **kwargs):
+        calls.append(kwargs)
+        return original(value, **kwargs)
+
+    monkeypatch.setattr(json, "dumps", recording_dumps)
+    value = {"z": float("nan"), "a": [float("inf"), 1.5]}
+    first = _stable(value)
+    second = _stable(value)
+    assert first == second == b'{"a":[null,1.5],"z":null}'
+    assert calls and all(call["allow_nan"] is False for call in calls)
+
+
+def test_realistic_tick_with_non_finite_coordinates_serializes_without_losing_record():
+    tick = {
+        "tick": 18234,
+        "steamid": 76561198000000000,
+        "position": {"x": 128.5, "y": float("nan"), "z": float("-inf")},
+        "velocity": [12.0, float("inf"), 0.0],
+    }
+    decoded = json.loads(_stable(tick))
+    assert decoded["tick"] == 18234
+    assert decoded["steamid"] == 76561198000000000
+    assert decoded["position"] == {"x": 128.5, "y": None, "z": None}
+    assert decoded["velocity"] == [12.0, None, 0.0]
+
+
+@pytest.mark.asyncio
+async def test_nan_is_normalized_for_multiple_raw_sections_and_hashes_are_repeatable():
+    async def run_once():
+        client = FakeAsyncClient()
+        artifact = {"id": "artifact", "created_at": "now", "storage_bucket": "cs2-raw-evidence",
+                    "manifest_storage_path": "user/upload/attempt-7/manifest.json", "status": "uploading",
+                    "raw_status": "writing", "audit_status": "running"}
+        chunks = []
+
+        async def bridge(action, body):
+            if action == "raw-artifact-init":
+                return artifact
+            if action == "raw-chunk-prepare":
+                chunks.append(dict(body))
+                return {"path": f"p/{body['section']}/{body['chunkIndex']}.gz",
+                        "uploadUrl": f"https://storage.example/{len(chunks)}"}
+            if action == "raw-chunk-verify":
+                return {"verified": True}
+            if action == "raw-artifact-finalize":
+                return {**artifact, "status": "ready", "raw_status": "ready", "audit_status": "approved",
+                        "root_digest": body["rootDigest"], "total_chunks": len(chunks),
+                        "total_rows": sum(item["rowCount"] for item in chunks),
+                        "total_bytes": sum(item["byteSize"] for item in chunks)}
+            raise AssertionError(action)
+
+        context = ArtifactContext(job_id="job", upload_id="upload", user_id="user", attempt_number=7,
+                                  demo_sha256="a" * 64, parser={"name": "demoparser2"}, contract_version=1)
+        evidence = {
+            "manifest": {"raw_header": {"duration": float("nan")}},
+            "raw_player_info": [{"rating": float("inf")}],
+            "round_evidence": [{"clock": float("-inf")}],
+            "raw_events": [{"damage": float("nan")}],
+            "tick_samples": [{"x": float("nan")}],
+            "grenade_samples": [{"distance": float("inf")}],
+            "player_coverage": [{"ratio": float("-inf")}],
+            "tick_coverage": [{"value": float("nan")}],
+            "economy_coverage": [{"value": float("inf")}],
+            "forensic_inventory": {"ratio": float("nan")},
+            "raw_audit_status": "APPROVED",
+        }
+        reference = await RawArtifactWriter(context=context, bridge=bridge, client=client).write(evidence)
+        physical = [client.objects[url] for url in sorted(client.objects)]
+        assert all(b"NaN" not in body and b"Infinity" not in body for body in map(gzip.decompress, physical))
+        return reference["root_digest"], [hashlib.sha256(body).hexdigest() for body in physical]
+
+    assert await run_once() == await run_once()

@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import logging
+import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from itertools import chain
@@ -36,8 +37,25 @@ class ArtifactContext:
     contract_version: int
 
 
+def _json_safe(value: Any) -> Any:
+    """Normalize only values JSON cannot represent, without mutating parser data."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
 def _stable(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return json.dumps(
+        _json_safe(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
 
 
 def _records(value: Any) -> Iterable[Any]:
