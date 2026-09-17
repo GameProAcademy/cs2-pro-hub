@@ -231,7 +231,7 @@ class RawArtifactWriter:
                 if own_chunks else 0
             )
             logger.info(
-                "raw_section_metrics section=%s rows=%s uncompressed_bytes=%s compressed_bytes=%s chunks=%s largest_chunk_bytes=%s",
+                "raw_section_metrics section=%s rows=%s uncompressed_bytes=%s compressed_bytes=%s chunks=%s largest_chunk_bytes=%s average_chunk_bytes=%s",
                 section, *section_measurements[section].values(),
             )
             raw_key = {"players": "raw_player_info", "rounds": "round_evidence",
