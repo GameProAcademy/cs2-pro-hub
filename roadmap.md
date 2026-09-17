@@ -995,3 +995,13 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Cobrir todas as estruturas RAW, determinismo, serialização estrita e registro realista de tick com testes Python.
 - [x] Validar APP/parser/compileall, publicar APP e reconciliar apenas o job Cache existente pelo mecanismo oficial; Docker indisponível para validar a imagem.
 - [ ] Observar RAW, HOT, auditoria, Canonical, fila, job e upload até estado terminal, sem novo upload, duplicação ou exclusão. Bloqueado pelo Railway ainda executar a imagem anterior.
+
+## FASE 2.7.2D.6 — Fechamento HOT/RAW + dados essenciais + Railway + E2E Cache — EM EXECUÇÃO
+
+- [ ] Implementar no HOT representações compactas, determinísticas e baseadas somente em evidência real para AIM, posição e economia, preservando combat, utility e objective.
+- [ ] Preservar o RAW integral, chunked JSONL gzip, NaN estrito, hashes físicos, chain, root digest, idempotência e path por `attempt_number`.
+- [ ] Validar contratos APP↔Railway, limites HOT 4/8 MiB, claim e distinção entre logical attempt e dispatch attempt.
+- [ ] Sincronizar cirurgicamente o worker Railway, preservar isolamento/RSS/bounded parsing, publicar e provar revision, contract 1 e health.
+- [ ] Continuar somente o job Cache existente e observar os 20 gates até estado terminal, sem novo upload, mensagem, reset ou exclusão.
+- [ ] Medir parser, RAW, HOT e pipeline antes de qualquer otimização.
+- [ ] Ajustar somente os dois textos portugueses solicitados em “Analisar meu jogo” e validar em mobile.
