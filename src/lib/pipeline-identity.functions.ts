@@ -38,6 +38,7 @@ export interface DemoIdentityView {
   declaredParticipantKey: string | null;
   observedNickname: string | null;
   latestDecisionStatus: string | null;
+  latestDecisionEventKey: string | null;
   participants: DemoParticipantView[];
 }
 
@@ -78,7 +79,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     const participants = job.match_id ? await readParticipants(supabase, job.match_id) : [];
     const { data: latestDecision } = await supabase
       .from("demo_identity_decisions")
-      .select("status")
+      .select("status, event_key")
       .eq("job_id", job.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -97,6 +98,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
       declaredParticipantKey: job.declared_participant_key,
       observedNickname: job.observed_nickname,
       latestDecisionStatus: latestDecision?.status ?? null,
+      latestDecisionEventKey: latestDecision?.event_key ?? null,
       participants: participants.map((participant) => ({
         participantKey: participant.participantKey,
         nickname: participant.nickname,
@@ -139,6 +141,13 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     if (!job.match_id) throw new Error("MATCH_NOT_ANALYSED");
 
     const participants = await readParticipants(supabase, job.match_id);
+    const { data: latestDecision } = await supabase
+      .from("demo_identity_decisions")
+      .select("event_key")
+      .eq("job_id", job.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     const { data: profile } = await supabase
       .from("player_profiles")
       .select("id, steam_id")
@@ -175,6 +184,7 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
           participant_key: outcome.participantKey,
           observed_nickname: outcome.observedNickname,
           reason: outcome.reason,
+          expected_latest_event_key: latestDecision?.event_key ?? null,
         },
       },
     );
@@ -226,6 +236,13 @@ export const decideAutomaticDemoPlayer = createServerFn({ method: "POST" })
     ) {
       throw new Error("AUTOMATIC_MATCH_NOT_AVAILABLE");
     }
+    const { data: latestDecision } = await supabase
+      .from("demo_identity_decisions")
+      .select("event_key")
+      .eq("job_id", job.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.rpc("record_demo_identity_event", {
@@ -242,6 +259,7 @@ export const decideAutomaticDemoPlayer = createServerFn({ method: "POST" })
         confidence_score: job.attachment_confidence,
         reason: data.action === "reject" ? "user_rejected_auto_match" : null,
         evidence: { automatic_source: "steam" },
+        expected_latest_event_key: latestDecision?.event_key ?? null,
       },
     } as never);
     if (error) throw new Error("IDENTITY_DECISION_FAILED");

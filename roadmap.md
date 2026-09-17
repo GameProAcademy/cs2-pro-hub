@@ -5,8 +5,8 @@
 - [x] Consolidar auto-match forte, fallback manual, rejeição e conflitos no resolvedor existente.
 - [x] Implementar histórico contextual de nicknames com ownership, RLS e idempotência.
 - [x] Integrar confirmação e histórico à UI, aos cinco idiomas e ao histórico de demos.
-- [ ] Provar propagação para Canonical, métricas e features sem alterar RAW/HOT/Railway.
-- [ ] Executar testes locais completos e manter E2E Cache bloqueado até Railway sincronizado.
+- [x] Provar propagação para Canonical, métricas e features sem alterar RAW/HOT/Railway.
+- [x] Executar testes locais completos e manter E2E Cache bloqueado até Railway sincronizado.
 
 ## FASE 2.7.2D.7 — E2E Cache + handoff sem perda — EM EXECUÇÃO
 
