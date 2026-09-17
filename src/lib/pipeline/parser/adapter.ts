@@ -91,7 +91,8 @@ export function expectedParserContract(): ExpectedParserIdentity {
   const env = typeof process === "undefined" ? undefined : process.env;
   const production = (env?.["NODE_ENV"] ?? "") === "production";
   const buildRevision =
-    env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() || DEPLOYED_WORKER_BUILD_REVISION;
+    env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() ||
+    (production ? DEPLOYED_WORKER_BUILD_REVISION : null);
   const explicitBuildRequirement = (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "")
     .trim()
     .toLowerCase();
