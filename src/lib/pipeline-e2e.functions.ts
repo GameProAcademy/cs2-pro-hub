@@ -3,11 +3,9 @@
  *
  * WHAT THIS IS
  * ------------
- * A master-admin-only tool that executes the REAL pipeline for one already
- * uploaded demo job and then reads the REAL database back as evidence. There is
- * no fake parser, no synthetic RawParserOutput and no fabricated canonical row:
- * it calls the very same `processJob()` the cron worker calls, against the very
- * same Railway worker, and reports exactly what the database contains.
+ * A master-admin-only tool that requests the REAL durable lifecycle for one
+ * already uploaded demo job and then reads the REAL database back as evidence.
+ * There is no fake parser, synthetic payload or in-process bypass of the queue.
  *
  * WHY IT EXISTS
  * -------------
@@ -339,9 +337,9 @@ const runInput = z.object({
 /**
  * Runs the REAL pipeline for one job, synchronously, and returns the evidence.
  *
- * Order is deliberate: preflight -> evidence BEFORE -> real `processJob()` ->
- * job row re-read -> evidence AFTER -> verdict. Nothing is inferred from the
- * function's own return value alone.
+ * Order is deliberate: preflight -> evidence BEFORE -> official transactional
+ * retry (when explicitly requested) -> job row re-read -> evidence AFTER ->
+ * verdict. The durable worker performs parsing; this request never bypasses it.
  */
 export const runDemoE2E = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -374,22 +372,20 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       if (isRerun && data.rerun !== true) {
         throw new Error("JOB_ALREADY_TERMINAL");
       }
-      if (before.status !== "processing") {
-        await db
-          .from("demo_jobs")
-          .update({
-            status: "pending",
-            stage: "queued",
-            error_code: null,
-            error_message: null,
-            started_at: null,
-            finished_at: null,
-          })
-          .eq("id", data.jobId);
+      if (isRerun) {
+        const { data: requeued, error: requeueError } = await db.rpc(
+          "retry_demo_job" as never,
+          {
+            _job_id: data.jobId,
+            _user_id: before.userId,
+            _allow_permanent: true,
+            _reason: "admin_e2e",
+          } as never,
+        );
+        if (requeueError || (requeued as { queued?: boolean } | null)?.queued !== true) {
+          throw new Error("JOB_REQUEUE_FAILED");
+        }
       }
-
-      const { processJob } = await import("@/lib/pipeline/jobs.server");
-      await processJob(data.jobId);
     }
 
     const after = await readJobState(db, data.jobId);

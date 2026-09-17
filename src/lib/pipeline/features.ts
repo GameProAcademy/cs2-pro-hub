@@ -202,7 +202,7 @@ export function extractFeatures(
   };
 
   return {
-    participantKey: metrics.participantKey ?? metrics.steamId,
+    participantKey: metrics.participantKey,
     steamId: metrics.steamId,
     sampleRounds: rounds,
     sampleOpeningDuels: metrics.openingAttempts,

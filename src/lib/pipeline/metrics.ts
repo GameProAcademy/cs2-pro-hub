@@ -36,6 +36,7 @@ import {
   hasUtilityEvidence,
   isUtilityEvent,
 } from "@/lib/pipeline/evidence";
+import { PipelineError } from "@/lib/pipeline/errors";
 import { hasRoundEndEvidence } from "@/lib/pipeline/roundEvidence";
 
 import type {
@@ -78,8 +79,31 @@ export function eventTime(event: CanonicalEvent, tickrate: number | null): numbe
   return null;
 }
 
-function teamOf(match: CanonicalMatch, steamId: string): string | null {
-  return match.players.find((p) => p.steamId === steamId)?.team ?? null;
+export interface AnalyticalParticipantTarget {
+  participantKey: string;
+  eventPlayerKey: string;
+  steamId: string | null;
+}
+
+export function resolveAnalyticalParticipant(
+  match: CanonicalMatch,
+  participantKey: string,
+): AnalyticalParticipantTarget {
+  const participant = match.players.find(
+    (player) => (player.participantKey ?? player.steamId) === participantKey,
+  );
+  if (!participant) {
+    throw new PipelineError("PLAYER_IDENTITY_UNRESOLVED", "participant key not in match");
+  }
+  return {
+    participantKey,
+    eventPlayerKey: participant.steamId ?? participantKey,
+    steamId: participant.steamId,
+  };
+}
+
+function teamOf(match: CanonicalMatch, eventPlayerKey: string): string | null {
+  return match.players.find((p) => (p.steamId ?? p.participantKey) === eventPlayerKey)?.team ?? null;
 }
 
 /**
@@ -348,13 +372,18 @@ function clutchStats(
   for (const round of match.rounds) {
     if (!participatedInRound(match, steamId, round.roundNumber)) continue;
     const roundKills = kills.filter((k) => k.round === round.roundNumber);
-    const participants = match.players.filter((p) =>
-      participatedInRound(match, p.steamId, round.roundNumber),
-    );
-    const teammates = participants.filter((p) => p.team === team).map((p) => p.steamId);
+    const participants = match.players.flatMap((player) => {
+      const eventPlayerKey = player.steamId ?? player.participantKey;
+      return eventPlayerKey && participatedInRound(match, eventPlayerKey, round.roundNumber)
+        ? [{ player, eventPlayerKey }]
+        : [];
+    });
+    const teammates = participants
+      .filter(({ player }) => player.team === team)
+      .map(({ eventPlayerKey }) => eventPlayerKey);
     const enemies = participants
-      .filter((p) => p.team != null && team != null && p.team !== team)
-      .map((p) => p.steamId);
+      .filter(({ player }) => player.team != null && team != null && player.team !== team)
+      .map(({ eventPlayerKey }) => eventPlayerKey);
     if (!teammates.includes(steamId) || enemies.length === 0) continue;
 
     const dead = new Set<string>();
@@ -411,19 +440,17 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
 }
 
 export function computeMetrics(match: CanonicalMatch, participantKey: string): CanonicalMetrics {
-  // Contract-v1 parser identifiers are Steam IDs today, but the analytical
-  // target is deliberately named and carried as a participant key. This keeps
-  // manual attachment valid without conflating it with the internal profile id.
-  const steamId = participantKey;
+  const target = resolveAnalyticalParticipant(match, participantKey);
+  const eventPlayerKey = target.eventPlayerKey;
   const availability = metricsAvailability(match);
   const kills = collectKills(match);
   const opening = openingDuels(kills);
 
-  const playerKills = kills.filter((k) => k.attacker === steamId);
-  const playerDeaths = kills.filter((k) => k.victim === steamId);
-  const assists = kills.filter((k) => k.assister === steamId).length;
+  const playerKills = kills.filter((k) => k.attacker === eventPlayerKey);
+  const playerDeaths = kills.filter((k) => k.victim === eventPlayerKey);
+  const assists = kills.filter((k) => k.assister === eventPlayerKey).length;
   const flashAssists = kills.filter(
-    (k) => k.flashAssister === steamId && k.attacker !== steamId,
+    (k) => k.flashAssister === eventPlayerKey && k.attacker !== eventPlayerKey,
   ).length;
 
   // Rounds the player ACTUALLY participated in. The denominator is never the
@@ -431,7 +458,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // is provably present in that round.
   const roundNumbers = new Set<number>();
   for (const round of match.rounds) {
-    if (participatedInRound(match, steamId, round.roundNumber)) roundNumbers.add(round.roundNumber);
+    if (participatedInRound(match, eventPlayerKey, round.roundNumber)) roundNumbers.add(round.roundNumber);
   }
   const roundsPlayed = roundNumbers.size;
 
@@ -446,7 +473,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
    * 0, and `survival_rate` becomes NULL instead of a falsely precise number.
    */
   const determinableSurvivalRounds = [...roundNumbers].filter(
-    (roundNumber) => playerSurvivedRound(match, steamId, roundNumber) != null,
+    (roundNumber) => playerSurvivedRound(match, eventPlayerKey, roundNumber) != null,
   ).length;
   const survivalRounds =
     availability.completeCoverage && determinableSurvivalRounds > 0
@@ -455,16 +482,16 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
 
   const damageEvents = match.events.filter((e) => e.type === "damage");
   const damageGiven = damageEvents
-    .filter((e) => e.actorSteamId === steamId)
+    .filter((e) => e.actorSteamId === eventPlayerKey)
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
   const damageTaken = damageEvents
-    .filter((e) => e.victimSteamId === steamId)
+    .filter((e) => e.victimSteamId === eventPlayerKey)
     .reduce((sum, e) => sum + (e.damage ?? 0), 0);
 
   const utilityDamage = damageEvents
     .filter(
       (e) =>
-        e.actorSteamId === steamId &&
+        e.actorSteamId === eventPlayerKey &&
         typeof e.weapon === "string" &&
         /hegrenade|molotov|inferno|incgrenade|flashbang|decoy|smoke/i.test(e.weapon),
     )
@@ -473,10 +500,10 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // utility" is defined in exactly one place for quality flags, availability and
   // counters.
   const grenadesUsed = match.events.filter(
-    (e) => isUtilityEvent(e) && e.actorSteamId === steamId,
+    (e) => isUtilityEvent(e) && e.actorSteamId === eventPlayerKey,
   ).length;
   const enemiesFlashed = match.events
-    .filter((e) => e.type === "flash" && e.actorSteamId === steamId)
+    .filter((e) => e.type === "flash" && e.actorSteamId === eventPlayerKey)
     .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
 
   /**
@@ -488,8 +515,8 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   let firstKillCount = 0;
   let firstDeathCount = 0;
   for (const [, kill] of opening.openings) {
-    if (kill.attacker === steamId) firstKillCount += 1;
-    if (kill.victim === steamId) firstDeathCount += 1;
+    if (kill.attacker === eventPlayerKey) firstKillCount += 1;
+    if (kill.victim === eventPlayerKey) firstDeathCount += 1;
   }
   const firstKills = openingDeterminable ? firstKillCount : null;
   const firstDeaths = openingDeterminable ? firstDeathCount : null;
@@ -505,7 +532,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // who, within the window and in the same round, had just killed one of the
   // player's teammates. Team kills, suicides and events without Steam IDs are
   // never counted.
-  const ownTeam = teamOf(match, steamId);
+  const ownTeam = teamOf(match, eventPlayerKey);
   let tradeKills: number | null = null;
   let tradeDeaths: number | null = null;
   let untradedDeaths: number | null = null;
@@ -562,14 +589,14 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   let kastRounds = 0;
   for (const roundNumber of roundNumbers) {
     const roundKills = kills.filter((k) => k.round === roundNumber);
-    const got = roundKills.some((k) => k.attacker === steamId);
+    const got = roundKills.some((k) => k.attacker === eventPlayerKey);
     const assisted = roundKills.some(
-      (k) => k.assister === steamId || (k.flashAssister === steamId && k.attacker !== steamId),
+      (k) => k.assister === eventPlayerKey || (k.flashAssister === eventPlayerKey && k.attacker !== eventPlayerKey),
     );
-    const death = roundKills.find((k) => k.victim === steamId);
+    const death = roundKills.find((k) => k.victim === eventPlayerKey);
     // Survival uses the shared definition: absence of a death event is not
     // survival unless there is positive evidence for it.
-    const survived = playerSurvivedRound(match, steamId, roundNumber) === true;
+    const survived = playerSurvivedRound(match, eventPlayerKey, roundNumber) === true;
     const traded = death ? wasTraded(kills, death, match) : false;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
@@ -583,7 +610,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     roundsPlayed > 0;
 
   const headshots = playerKills.filter((k) => k.headshot === true).length;
-  const clutch = clutchStats(match, kills, steamId);
+  const clutch = clutchStats(match, kills, eventPlayerKey);
 
   /**
    * Rating evidence gate. The composite formula (unchanged) mixes kills, deaths
@@ -598,14 +625,14 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   const sideRating = (side: Side): number | null => {
     if (!ratingEvidence) return null;
     const sideRounds = match.rounds.filter(
-      (r) => sideInRound(match, steamId, r.roundNumber) === side,
+      (r) => sideInRound(match, eventPlayerKey, r.roundNumber) === side,
     );
     if (sideRounds.length === 0) return null;
     const nums = new Set(sideRounds.map((r) => r.roundNumber));
     const k = playerKills.filter((x) => nums.has(x.round)).length;
     const d = playerDeaths.filter((x) => nums.has(x.round)).length;
     const dmg = damageEvents
-      .filter((e) => e.actorSteamId === steamId && nums.has(e.roundNumber))
+      .filter((e) => e.actorSteamId === eventPlayerKey && nums.has(e.roundNumber))
       .reduce((sum, e) => sum + (e.damage ?? 0), 0);
     return round3(compositeRating(k, d, dmg, sideRounds.length));
   };
@@ -616,7 +643,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
 
   return {
     participantKey,
-    steamId,
+    steamId: target.steamId,
     availability,
     roundsPlayed,
     survivalRounds,

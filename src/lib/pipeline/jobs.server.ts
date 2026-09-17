@@ -524,12 +524,17 @@ export async function processJob(
         ? { kind: "nickname", nickname: job.declared_nickname }
         : null;
     const attachment = resolvePlayerAttachment({
-      participants: match.players.map((demoPlayer) => ({
-        participantKey: demoPlayer.participantKey ?? demoPlayer.steamId,
-        steamId: demoPlayer.steamId,
-        nickname: demoPlayer.name,
-        team: demoPlayer.team,
-      })),
+      participants: match.players.flatMap((demoPlayer) => {
+        const participantKey = demoPlayer.participantKey ?? demoPlayer.steamId;
+        return participantKey
+          ? [{
+              participantKey,
+              steamId: demoPlayer.steamId,
+              nickname: demoPlayer.name,
+              team: demoPlayer.team,
+            }]
+          : [];
+      }),
       hasProfile: Boolean(player),
       profileSteamId: player?.steam_id ?? null,
       declaration,

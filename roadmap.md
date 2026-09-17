@@ -1,13 +1,15 @@
 # Roadmap
 
-## FASE 2.7.2F — Player Identity + Player Data Integrity Closure — PLANEJADA
+## FASE 2.7.2F — Player Identity + Player Data Integrity Closure — IMPLEMENTADA / E2E CACHE BLOQUEADO
 
-- [ ] Fechar identidade, provenance, concorrência e histórico sem duplicar estruturas existentes.
-- [ ] Separar definitivamente `participantKey` das identidades externas em Canonical, métricas, features e projeção.
-- [ ] Formalizar e provar disponibilidade player-scoped de AIM, posição, economia e utility, preservando RAW integral.
-- [ ] Fazer o E2E administrativo usar exclusivamente o lifecycle oficial, com idempotência baseada no banco.
-- [ ] Executar suítes APP/parser, typecheck, build, segurança e documentação do marco.
-- [ ] Executar somente o job Cache reservado se todos os gates reais estiverem válidos; caso contrário manter F4 BLOCKED.
+- [x] **F1 PASS:** identidade, provenance, concorrência e histórico consolidados sem estruturas paralelas ou nickname como prova forte.
+- [x] **F1 PASS:** `participantKey` resolve primeiro o participante; Steam permanece evidência externa opcional em Canonical, métricas e features.
+- [x] **F2 PASS:** seleção player-scoped de AIM, posição, economia e utility com disponibilidade explícita e sem alterar RAW/HOT.
+- [x] **F3 PASS:** retry de usuário e E2E administrativo usam `retry_demo_job`, preservando `attempt_number`, incrementando dispatch e acionando a fila durável; não há chamada direta a `processJob()`.
+- [x] **Validação PASS:** 880 testes APP, 153 testes parser aprovados (3 skipped), 94 testes focados, typecheck, compileall, diff check e build automático.
+- [x] **Segurança PARTIAL:** nova RPC acessível apenas por `service_role`; linter mantém os mesmos 15 findings legados previamente catalogados.
+- [ ] **F4 BLOCKED:** job Cache reservado não foi executado nem reenfileirado; Railway ainda não provou `/version` com revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` e contrato `1` no ambiente real.
+- [ ] **AI Coach BLOCKED:** permanece fail-closed e não conectado a respostas reais; nenhum dado ou integração fictícia foi criado.
 
 ## FASES 2.7.2D.9–D.12 + início da 2.7.2E — IMPLEMENTADAS / E2E CACHE BLOQUEADO
 
