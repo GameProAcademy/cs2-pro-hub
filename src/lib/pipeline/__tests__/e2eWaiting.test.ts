@@ -142,6 +142,19 @@ describe("waitForTerminalExecution", () => {
     });
   });
 
+  it("does not accept a later retry as the requested dispatch", async () => {
+    const time = clock();
+    const result = await waitForTerminalExecution({
+      read: async () => state("processed", 5),
+      expectedRetryCount: 4,
+      expectedAttemptNumber: 7,
+      timeoutMs: 200,
+      pollIntervalMs: 100,
+      ...time,
+    });
+    expect(result).toMatchObject({ terminal: false, observedExecution: false });
+  });
+
   it("does not accept a dispatch from another logical attempt", async () => {
     const time = clock();
     const result = await waitForTerminalExecution({
