@@ -582,7 +582,8 @@ export const fr: Dictionary = {
   "pipeline.history.result": "Résultat",
   "pipeline.history.rounds": "Rounds",
   "pipeline.history.attempt": "Tentative {number}",
-  "pipeline.history.replacement": "Une nouvelle tentative a été créée à partir d’une tentative précédente.",
+  "pipeline.history.replacement":
+    "Une nouvelle tentative a été créée à partir d’une tentative précédente.",
   "pipeline.history.superseded": "Cette tentative a été conservée et remplacée par une nouvelle.",
   "pipeline.history.result.win": "Victoire",
   "pipeline.history.result.loss": "Défaite",
@@ -610,6 +611,13 @@ export const fr: Dictionary = {
   "pipeline.identify.reprocessing": "Joueur identifié. Génération de vos métriques pour ce match…",
   "pipeline.identify.attached": "Ce match est lié à vous.",
   "pipeline.identify.empty": "Nous n'avons pas pu charger les joueurs de cette démo.",
+  "pipeline.identify.review": "Vérifier le joueur identifié",
+  "pipeline.identify.steamMatch": "Identification sécurisée via votre compte Steam lié.",
+  "pipeline.identify.continue": "Continuer",
+  "pipeline.identify.notMe": "Ce n'est pas moi",
+  "pipeline.identify.saveError":
+    "Votre choix n'a pas pu être enregistré. Votre démo est préservée ; réessayez.",
+  "pipeline.identitySummary": "Joueur identifié",
   "pipeline.retry": "Réessayer",
   "pipeline.retrying": "Nouvelle tentative…",
   "pipeline.cancel": "Annuler le traitement",
@@ -860,6 +868,11 @@ export const fr: Dictionary = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "Non connectée",
+  "profile.nicknameHistory.title": "Pseudos utilisés",
+  "profile.nicknameHistory.subtitle": "Noms confirmés dans vos matchs analysés",
+  "profile.nicknameHistory.empty": "Aucun pseudo confirmé n'a encore été enregistré.",
+  "profile.nicknameHistory.period": "Première utilisation {first} · dernière {last}",
+  "profile.nicknameHistory.observations": "{count} observations confirmées",
 
   /* FASE 2.5 — Steam identity */
   "steam.title": "Compte Steam",

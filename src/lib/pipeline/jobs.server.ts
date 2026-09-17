@@ -168,53 +168,54 @@ async function persistRawEvidence(args: {
   const db = await admin();
   const decision = await runRawForensicAudit(evidence);
   const approvedAt = decision.approved ? new Date().toISOString() : null;
-  const { error } = await db.from("raw_demo_evidence_reports").insert(
-    {
-      job_id: args.jobId,
-      upload_id: args.uploadId,
-      user_id: args.userId,
-      demo_sha256: manifest.demo_sha256,
-      evidence_version: evidence.evidence_version,
-      parser_name: manifest.parser_name,
-      parser_version: manifest.parser_version,
-      parser_revision: manifest.parser_revision,
-      contract_version: manifest.contract_version,
-      manifest: evidence.manifest as unknown as Json,
-      event_coverage: evidence.event_coverage as unknown as Json,
-      raw_events: evidence.raw_events as unknown as Json,
-      raw_player_info: evidence.raw_player_info as unknown as Json,
-      player_coverage: evidence.player_coverage as unknown as Json,
-      tick_coverage: evidence.tick_coverage as unknown as Json,
-      tick_samples: evidence.tick_samples as unknown as Json,
-      grenade_coverage: evidence.grenade_coverage as unknown as Json,
-      grenade_samples: evidence.grenade_samples as unknown as Json,
-      round_evidence: evidence.round_evidence as unknown as Json,
-      economy_coverage: evidence.economy_coverage as unknown as Json,
-      field_mappings: evidence.field_mappings as unknown as Json,
-      gates: evidence.gates as unknown as Json,
-      deterministic_digest: evidence.deterministic_digest,
-      audited_evidence_digest: decision.evidenceDigest,
-      forensic_inventory: decision.forensicInventory as unknown as Json,
-      raw_status: decision.status,
-      raw_block_reasons: decision.reasons as unknown as Json,
-      approved_for_canonical: decision.approved,
-      approved_at: approvedAt,
-      approved_by: decision.approved ? `server:raw-audit-v${decision.auditVersion}` : null,
-      audit_version: decision.auditVersion,
-      attempt: args.attempt,
-      raw_audit_status: decision.auditStatus,
-    },
-  );
+  const { error } = await db.from("raw_demo_evidence_reports").insert({
+    job_id: args.jobId,
+    upload_id: args.uploadId,
+    user_id: args.userId,
+    demo_sha256: manifest.demo_sha256,
+    evidence_version: evidence.evidence_version,
+    parser_name: manifest.parser_name,
+    parser_version: manifest.parser_version,
+    parser_revision: manifest.parser_revision,
+    contract_version: manifest.contract_version,
+    manifest: evidence.manifest as unknown as Json,
+    event_coverage: evidence.event_coverage as unknown as Json,
+    raw_events: evidence.raw_events as unknown as Json,
+    raw_player_info: evidence.raw_player_info as unknown as Json,
+    player_coverage: evidence.player_coverage as unknown as Json,
+    tick_coverage: evidence.tick_coverage as unknown as Json,
+    tick_samples: evidence.tick_samples as unknown as Json,
+    grenade_coverage: evidence.grenade_coverage as unknown as Json,
+    grenade_samples: evidence.grenade_samples as unknown as Json,
+    round_evidence: evidence.round_evidence as unknown as Json,
+    economy_coverage: evidence.economy_coverage as unknown as Json,
+    field_mappings: evidence.field_mappings as unknown as Json,
+    gates: evidence.gates as unknown as Json,
+    deterministic_digest: evidence.deterministic_digest,
+    audited_evidence_digest: decision.evidenceDigest,
+    forensic_inventory: decision.forensicInventory as unknown as Json,
+    raw_status: decision.status,
+    raw_block_reasons: decision.reasons as unknown as Json,
+    approved_for_canonical: decision.approved,
+    approved_at: approvedAt,
+    approved_by: decision.approved ? `server:raw-audit-v${decision.auditVersion}` : null,
+    audit_version: decision.auditVersion,
+    attempt: args.attempt,
+    raw_audit_status: decision.auditStatus,
+  });
   if (error?.code === "23505") {
     const { data: existing, error: existingError } = await db
       .from("raw_demo_evidence_reports")
-      .select("deterministic_digest, audited_evidence_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons")
+      .select(
+        "deterministic_digest, audited_evidence_digest, raw_status, raw_audit_status, audit_version, forensic_inventory, raw_block_reasons",
+      )
       .eq("job_id", args.jobId)
       .eq("attempt", args.attempt)
       .eq("evidence_version", evidence.evidence_version)
       .maybeSingle();
     if (
-      existingError || !existing ||
+      existingError ||
+      !existing ||
       existing.deterministic_digest !== evidence.deterministic_digest ||
       existing.audited_evidence_digest !== evidence.deterministic_digest
     ) {
@@ -225,7 +226,9 @@ async function persistRawEvidence(args: {
       auditStatus: existing.raw_audit_status as RawAdmissionDecision["auditStatus"],
       approved: existing.raw_audit_status === "APPROVED",
       auditVersion: existing.audit_version,
-      reasons: Array.isArray(existing.raw_block_reasons) ? existing.raw_block_reasons.filter((item): item is string => typeof item === "string") : [],
+      reasons: Array.isArray(existing.raw_block_reasons)
+        ? existing.raw_block_reasons.filter((item): item is string => typeof item === "string")
+        : [],
       evidenceDigest: existing.deterministic_digest,
       forensicInventory: existing.forensic_inventory as Record<string, Json>,
     };
@@ -255,18 +258,25 @@ async function blockForRawAudit(
     }
     return;
   }
-  await db.from("demo_jobs").update({
-    status: "blocked_raw_audit",
-    stage: "raw_audit",
-    error_code: "RAW_AUDIT_BLOCKED",
-    error_message: decision.reasons.join(",").slice(0, 500),
-    finished_at: new Date().toISOString(),
-  }).eq("id", jobId).eq("status", "processing");
-  await db.from("uploads").update({
-    status: "blocked_raw_audit",
-    error_code: "RAW_AUDIT_BLOCKED",
-    error_message: decision.reasons.join(",").slice(0, 500),
-  }).eq("id", uploadId);
+  await db
+    .from("demo_jobs")
+    .update({
+      status: "blocked_raw_audit",
+      stage: "raw_audit",
+      error_code: "RAW_AUDIT_BLOCKED",
+      error_message: decision.reasons.join(",").slice(0, 500),
+      finished_at: new Date().toISOString(),
+    })
+    .eq("id", jobId)
+    .eq("status", "processing");
+  await db
+    .from("uploads")
+    .update({
+      status: "blocked_raw_audit",
+      error_code: "RAW_AUDIT_BLOCKED",
+      error_message: decision.reasons.join(",").slice(0, 500),
+    })
+    .eq("id", uploadId);
 }
 
 /** Re-queues jobs stuck in `processing` beyond the stale window. */
@@ -282,9 +292,12 @@ export async function recoverStaleJobs(): Promise<number> {
 /** Ensures pending durable jobs have exactly one queue message for their attempt. */
 export async function reconcileDurableDemoQueue(limit = 25): Promise<number> {
   const db = await admin();
-  const { data, error } = await db.rpc("reconcile_demo_parse_queue" as never, {
-    _limit: limit,
-  } as never);
+  const { data, error } = await db.rpc(
+    "reconcile_demo_parse_queue" as never,
+    {
+      _limit: limit,
+    } as never,
+  );
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
   return Number(data ?? 0);
 }
@@ -456,12 +469,23 @@ export async function processJob(
     // contract is normalized or any canonical fact can be written.
     await setStage(jobId, "raw_audit");
     const rawAudit = artifactCompletion
-      ? await verifyRawArtifact({ ref: artifactCompletion.raw, hot: artifactCompletion.hot,
-          jobId, uploadId: job.upload_id, userId: job.user_id,
+      ? await verifyRawArtifact({
+          ref: artifactCompletion.raw,
+          hot: artifactCompletion.hot,
+          jobId,
+          uploadId: job.upload_id,
+          userId: job.user_id,
           attemptNumber: job.attempt_number,
-          expectedSha256: job.demo_sha256 })
-      : await persistRawEvidence({ jobId, uploadId: job.upload_id, userId: job.user_id,
-          expectedSha256: job.demo_sha256, attempt: job.attempt_number, raw });
+          expectedSha256: job.demo_sha256,
+        })
+      : await persistRawEvidence({
+          jobId,
+          uploadId: job.upload_id,
+          userId: job.user_id,
+          expectedSha256: job.demo_sha256,
+          attempt: job.attempt_number,
+          raw,
+        });
     await assertNotCancelled(jobId);
     if (!rawAudit.approved) {
       await blockForRawAudit(jobId, job.upload_id, rawAudit, durableClaim);
@@ -470,8 +494,12 @@ export async function processJob(
     assertRawAdmissionApproved(rawAudit);
     const rawApproval: RawAdmissionApproval = artifactCompletion
       ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id)
-      : { approved: true, auditStatus: "APPROVED", auditVersion: rawAudit.auditVersion,
-          evidenceDigest: rawAudit.evidenceDigest };
+      : {
+          approved: true,
+          auditStatus: "APPROVED",
+          auditVersion: rawAudit.auditVersion,
+          evidenceDigest: rawAudit.evidenceDigest,
+        };
 
     await setStage(jobId, "normalizing");
     assertDeadline();
@@ -589,6 +617,31 @@ export async function processJob(
       );
     }
 
+    if (
+      attachment.state === "attached" &&
+      attachment.source === "system" &&
+      attachment.method === "steam_id_confirmed"
+    ) {
+      const { error: identityEventError } = await db.rpc("record_demo_identity_event", {
+        _job_id: jobId,
+        _user_id: job.user_id,
+        _event_key: `auto:steam:${attachment.participantKey}`,
+        _decision: {
+          status: "auto_resolved",
+          participant_key: attachment.participantKey,
+          nickname: attachment.observedNickname,
+          method: attachment.method,
+          source: attachment.source,
+          confidence_label: attachment.confidence,
+          confidence_score: confidenceScore(attachment.confidence),
+          evidence: { identity_provider: "steam" },
+        },
+      });
+      if (identityEventError) {
+        throw new PipelineError("IDENTITY_RESOLUTION_ERROR", identityEventError.message);
+      }
+    }
+
     // PLAYER ATTACHMENT — metrics, features and the per-player projection only
     // exist when the user's Steam ID was PROVEN inside this demo. Without it the
     // job still ends successfully: the match is canonicalised and simply carries
@@ -694,15 +747,18 @@ export async function processJob(
     }
     const pipelineError = toPipelineError(error);
     if (durableClaim) {
-      const { error: failError } = await db.rpc("fail_demo_parse_message" as never, {
-        _job_id: jobId,
-        _message_id: durableClaim.messageId,
-        _attempt: durableClaim.attempt,
-        _worker_id: durableClaim.workerId,
-        _error_code: pipelineError.code,
-        _error_message: pipelineError.detail ?? null,
-        _permanent: pipelineError.permanent,
-      } as never);
+      const { error: failError } = await db.rpc(
+        "fail_demo_parse_message" as never,
+        {
+          _job_id: jobId,
+          _message_id: durableClaim.messageId,
+          _attempt: durableClaim.attempt,
+          _worker_id: durableClaim.workerId,
+          _error_code: pipelineError.code,
+          _error_message: pipelineError.detail ?? null,
+          _permanent: pipelineError.permanent,
+        } as never,
+      );
       if (failError) console.error("[pipeline] durable failure transition failed", { jobId });
       return { jobId, status: "failed", errorCode: pipelineError.code };
     }

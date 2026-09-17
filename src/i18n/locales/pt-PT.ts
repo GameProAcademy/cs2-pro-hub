@@ -582,7 +582,8 @@ export const ptPT: Dictionary = {
   "pipeline.history.result": "Resultado",
   "pipeline.history.rounds": "Rondas",
   "pipeline.history.attempt": "Tentativa {number}",
-  "pipeline.history.replacement": "Foi criada uma nova tentativa a partir de uma tentativa anterior.",
+  "pipeline.history.replacement":
+    "Foi criada uma nova tentativa a partir de uma tentativa anterior.",
   "pipeline.history.superseded": "Esta tentativa foi preservada e substituída por uma nova.",
   "pipeline.history.result.win": "Vitória",
   "pipeline.history.result.loss": "Derrota",
@@ -610,6 +611,13 @@ export const ptPT: Dictionary = {
   "pipeline.identify.reprocessing": "Jogador identificado. A gerar as suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está ligada a você.",
   "pipeline.identify.empty": "Não foi possível carregar os jogadores desta demo.",
+  "pipeline.identify.review": "Rever jogador identificado",
+  "pipeline.identify.steamMatch": "Identificação segura através da conta Steam ligada.",
+  "pipeline.identify.continue": "Continuar",
+  "pipeline.identify.notMe": "Não sou eu",
+  "pipeline.identify.saveError":
+    "Não foi possível guardar a sua escolha. A demo está segura; tente novamente.",
+  "pipeline.identitySummary": "Jogador identificado",
   "pipeline.retry": "Tentar novamente",
   "pipeline.retrying": "A tentar novamente…",
   "pipeline.cancel": "Cancelar processamento",
@@ -863,6 +871,11 @@ export const ptPT: Dictionary = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "Não ligada",
+  "profile.nicknameHistory.title": "Nicknames usados",
+  "profile.nicknameHistory.subtitle": "Nomes confirmados nas partidas analisadas",
+  "profile.nicknameHistory.empty": "Ainda não foi registado nenhum nickname confirmado.",
+  "profile.nicknameHistory.period": "Primeiro uso em {first} · último em {last}",
+  "profile.nicknameHistory.observations": "{count} observações confirmadas",
 
   /* FASE 2.5 — Steam identity */
   "steam.title": "Conta Steam",

@@ -107,6 +107,12 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
           </div>
         </div>
       </dl>
+      {job.attachmentState === "attached" ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("pipeline.identitySummary")}: {job.observedNickname ?? unavailable} ·{" "}
+          {job.attachmentMethod ?? unavailable}
+        </p>
+      ) : null}
       {job.status === "pending" ||
       job.status === "processing" ||
       job.status === "cancel_requested" ||

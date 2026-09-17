@@ -47,6 +47,16 @@ export interface PlayerConnectionRow {
   last_sync_status: string | null;
 }
 
+export interface PlayerNicknameHistoryRow {
+  nickname: string;
+  source: string;
+  method: string | null;
+  confidenceLabel: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  timesSeen: number;
+}
+
 export interface PlayerProfilePayload {
   playerId: string;
   displayName: string | null;
@@ -62,6 +72,7 @@ export interface PlayerProfilePayload {
   goals: Array<{ code: string; isPrimary: boolean }>;
   identities: PlayerIdentityRow[];
   connections: PlayerConnectionRow[];
+  nicknameHistory: PlayerNicknameHistoryRow[];
 }
 
 const nullableText = (max: number) =>
@@ -126,7 +137,7 @@ async function readProfilePayload(
 ): Promise<PlayerProfilePayload> {
   const player = await loadOwnPlayer(supabase, userId);
 
-  const [account, roles, goals, identities, connections] = await Promise.all([
+  const [account, roles, goals, identities, connections, nicknameHistory] = await Promise.all([
     supabase.from("profiles").select("display_name, email").eq("id", userId).maybeSingle(),
     supabase
       .from("player_profile_roles")
@@ -150,6 +161,11 @@ async function readProfilePayload(
         "source, connection_type, status, external_username, profile_url, last_sync_at, last_sync_status",
       )
       .eq("player_id", player.id),
+    supabase
+      .from("player_nickname_history")
+      .select("nickname, source, method, confidence_label, first_seen_at, last_seen_at, times_seen")
+      .eq("player_id", player.id)
+      .order("last_seen_at", { ascending: false }),
   ]);
 
   const accountRow = unwrap("account", account) as {
@@ -163,6 +179,15 @@ async function readProfilePayload(
   }> | null;
   const identityRows = unwrap("identities", identities) as PlayerIdentityRow[] | null;
   const connectionRows = unwrap("connections", connections) as PlayerConnectionRow[] | null;
+  const nicknameRows = unwrap("nicknameHistory", nicknameHistory) as Array<{
+    nickname: string;
+    source: string;
+    method: string | null;
+    confidence_label: string | null;
+    first_seen_at: string;
+    last_seen_at: string;
+    times_seen: number;
+  }> | null;
 
   return {
     playerId: player.id,
@@ -178,6 +203,15 @@ async function readProfilePayload(
     goals: (goalRows ?? []).map((row) => ({ code: row.goal_code, isPrimary: row.is_primary })),
     identities: identityRows ?? [],
     connections: connectionRows ?? [],
+    nicknameHistory: (nicknameRows ?? []).map((row) => ({
+      nickname: row.nickname,
+      source: row.source,
+      method: row.method,
+      confidenceLabel: row.confidence_label,
+      firstSeenAt: row.first_seen_at,
+      lastSeenAt: row.last_seen_at,
+      timesSeen: row.times_seen,
+    })),
   };
 }
 

@@ -134,6 +134,16 @@ describe("attachment resolution", () => {
     });
   });
 
+  it("never treats a similar nickname as identity evidence", () => {
+    const out = resolvePlayerAttachment({
+      participants: players,
+      hasProfile: true,
+      profileSteamId: null,
+      declaration: { kind: "nickname", nickname: "THIAGO" },
+    });
+    expect(out).toMatchObject({ state: "unattached", participantKey: null });
+  });
+
   it("stays unattached on an ambiguous declared nickname", () => {
     const out = resolvePlayerAttachment({
       participants: players,

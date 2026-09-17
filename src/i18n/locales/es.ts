@@ -611,6 +611,13 @@ export const es: Dictionary = {
   "pipeline.identify.reprocessing": "Jugador identificado. Generando tus métricas de esta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a ti.",
   "pipeline.identify.empty": "No hemos podido cargar los jugadores de esta demo.",
+  "pipeline.identify.review": "Revisar jugador identificado",
+  "pipeline.identify.steamMatch": "Identificación segura mediante tu cuenta de Steam vinculada.",
+  "pipeline.identify.continue": "Continuar",
+  "pipeline.identify.notMe": "No soy yo",
+  "pipeline.identify.saveError":
+    "No pudimos guardar tu elección. Tu demo está segura; inténtalo de nuevo.",
+  "pipeline.identitySummary": "Jugador identificado",
   "pipeline.retry": "Reintentar",
   "pipeline.retrying": "Reintentando…",
   "pipeline.cancel": "Cancelar procesamiento",
@@ -863,6 +870,11 @@ export const es: Dictionary = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "No conectada",
+  "profile.nicknameHistory.title": "Nicknames usados",
+  "profile.nicknameHistory.subtitle": "Nombres confirmados en tus partidas analizadas",
+  "profile.nicknameHistory.empty": "Aún no hay ningún nickname confirmado.",
+  "profile.nicknameHistory.period": "Primera vez {first} · última vez {last}",
+  "profile.nicknameHistory.observations": "{count} observaciones confirmadas",
 
   /* FASE 2.5 — Steam identity */
   "steam.title": "Cuenta de Steam",

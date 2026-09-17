@@ -12,6 +12,7 @@ import { SteamPanel } from "@/components/integrations/SteamPanel";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
 import { PasswordCard } from "@/components/profile/PasswordCard";
 import { VerificationCard } from "@/components/profile/VerificationCard";
+import { NicknameHistoryCard } from "@/components/profile/NicknameHistoryCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -370,6 +371,9 @@ function ProfilePage() {
                 identities={profile?.identities ?? []}
                 connections={profile?.connections ?? []}
               />
+            </div>
+            <div className="lg:col-span-3">
+              <NicknameHistoryCard history={profile?.nicknameHistory ?? []} />
             </div>
           </div>
         )}

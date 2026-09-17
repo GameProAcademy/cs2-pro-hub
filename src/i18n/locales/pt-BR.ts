@@ -613,6 +613,13 @@ export const ptBR = {
   "pipeline.identify.reprocessing": "Jogador identificado. Gerando suas métricas desta partida…",
   "pipeline.identify.attached": "Esta partida está vinculada a você.",
   "pipeline.identify.empty": "Não conseguimos carregar os jogadores desta demo.",
+  "pipeline.identify.review": "Revisar jogador identificado",
+  "pipeline.identify.steamMatch": "Identificação segura pela conta Steam vinculada.",
+  "pipeline.identify.continue": "Continuar",
+  "pipeline.identify.notMe": "Não sou eu",
+  "pipeline.identify.saveError":
+    "Não foi possível salvar sua escolha. Sua demo está segura; tente novamente.",
+  "pipeline.identitySummary": "Jogador identificado",
   "pipeline.retry": "Tentar novamente",
   "pipeline.retrying": "Tentando novamente…",
   "pipeline.cancel": "Cancelar processamento",
@@ -658,9 +665,11 @@ export const ptBR = {
   "pipeline.processing.parsing.body":
     "Estamos lendo rounds, jogadores, eventos e informações da partida.",
   "pipeline.processing.rawAudit.title": "Auditando evidências da demo",
-  "pipeline.processing.rawAudit.body": "Estamos verificando a cobertura RAW antes de criar dados da partida.",
+  "pipeline.processing.rawAudit.body":
+    "Estamos verificando a cobertura RAW antes de criar dados da partida.",
   "pipeline.processing.rawAuditBlocked.title": "Análise retida para revisão",
-  "pipeline.processing.rawAuditBlocked.body": "As evidências RAW foram preservadas, mas não foram aprovadas para gerar dados da partida.",
+  "pipeline.processing.rawAuditBlocked.body":
+    "As evidências RAW foram preservadas, mas não foram aprovadas para gerar dados da partida.",
   "pipeline.processing.normalizing.title": "Organizando suas jogadas",
   "pipeline.processing.normalizing.body": "Estamos organizando as informações da sua partida.",
   "pipeline.processing.metrics.title": "Calculando suas métricas",
@@ -863,6 +872,11 @@ export const ptBR = {
   "identity.source.steam": "Steam",
   "identity.source.valve": "Valve / CS2",
   "identity.notConnected": "Não conectada",
+  "profile.nicknameHistory.title": "Nicknames usados",
+  "profile.nicknameHistory.subtitle": "Nomes confirmados nas suas partidas analisadas",
+  "profile.nicknameHistory.empty": "Nenhum nickname confirmado foi registrado ainda.",
+  "profile.nicknameHistory.period": "Primeiro uso em {first} · último em {last}",
+  "profile.nicknameHistory.observations": "{count} observações confirmadas",
 
   /* FASE 2.5 — Steam identity */
   "steam.title": "Conta Steam",
