@@ -1,5 +1,14 @@
 # Roadmap
 
+## FASE 2.7.2F — Player Identity + Player Data Integrity Closure — PLANEJADA
+
+- [ ] Fechar identidade, provenance, concorrência e histórico sem duplicar estruturas existentes.
+- [ ] Separar definitivamente `participantKey` das identidades externas em Canonical, métricas, features e projeção.
+- [ ] Formalizar e provar disponibilidade player-scoped de AIM, posição, economia e utility, preservando RAW integral.
+- [ ] Fazer o E2E administrativo usar exclusivamente o lifecycle oficial, com idempotência baseada no banco.
+- [ ] Executar suítes APP/parser, typecheck, build, segurança e documentação do marco.
+- [ ] Executar somente o job Cache reservado se todos os gates reais estiverem válidos; caso contrário manter F4 BLOCKED.
+
 ## FASES 2.7.2D.9–D.12 + início da 2.7.2E — IMPLEMENTADAS / E2E CACHE BLOQUEADO
 
 - [x] Vocabulários de método, fonte, confiança e confirmação separados, com decisão append-only e confirmação transacional idempotente.
