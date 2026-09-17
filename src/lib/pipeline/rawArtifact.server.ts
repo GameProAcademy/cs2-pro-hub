@@ -18,7 +18,7 @@ const RAW_BUCKET = "cs2-raw-evidence";
 const HEX_64 = /^[0-9a-f]{64}$/;
 const HOT_SECTIONS = ["players", "rounds", "combat_events", "utility_events", "objective_events",
   "aim_observations", "position_snapshots", "economy_snapshots", "warnings"] as const;
-const NOT_IMPLEMENTED_HOT_SECTIONS = new Set(["aim_observations", "position_snapshots", "economy_snapshots"]);
+const OPTIONAL_SEMANTIC_HOT_SECTIONS = new Set(["aim_observations", "position_snapshots", "economy_snapshots"]);
 
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!value || typeof value !== "object") throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT payload");
@@ -67,8 +67,8 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
         quality.observed_rows - quality.included_rows !== quality.overflow_rows) {
       throw new PipelineError("PARSER_INVALID_RESPONSE", `invalid HOT bound: ${name}`);
     }
-    if (quality.status === "not_implemented") {
-      if (!NOT_IMPLEMENTED_HOT_SECTIONS.has(name) || quality.observed_rows !== 0 || quality.included_rows !== 0) {
+    if (quality.status === "not_implemented" || quality.status === "unavailable") {
+      if (!OPTIONAL_SEMANTIC_HOT_SECTIONS.has(name) || quality.observed_rows !== 0 || quality.included_rows !== 0) {
         throw new PipelineError("PARSER_INVALID_RESPONSE", `invalid HOT implementation status: ${name}`);
       }
     } else if ((quality.overflow_rows > 0) !== (quality.status === "limited")) {
@@ -79,7 +79,8 @@ export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   const declaredLimited = [...hot.quality.limited_sections].sort();
   if (stableRawArtifactJson(expectedLimited) !== stableRawArtifactJson(declaredLimited) ||
       hot.quality.partial !== (unclassified > 0 || expectedLimited.length > 0 ||
-        HOT_SECTIONS.some((name) => hot.quality?.sections?.[name]?.status === "not_implemented"))) {
+        HOT_SECTIONS.some((name) => ["not_implemented", "unavailable"].includes(
+          hot.quality?.sections?.[name]?.status ?? "")))) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "inconsistent HOT quality summary");
   }
   return hot as HotDemoPayloadV1;
@@ -108,8 +109,7 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
     header: hot.header,
     players: hot.players,
     rounds: hot.rounds,
-    events: [...hot.combat_events, ...hot.utility_events, ...hot.objective_events,
-      ...hot.aim_observations, ...hot.position_snapshots, ...hot.economy_snapshots],
+    events: [...hot.combat_events, ...hot.utility_events, ...hot.objective_events],
     warnings: hot.warnings,
   };
 }

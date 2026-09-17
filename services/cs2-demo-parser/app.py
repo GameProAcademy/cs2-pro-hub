@@ -150,7 +150,8 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
     # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
     # already validated metadata but never sends or canonicalizes the full RAW.
     hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
-                            demo_sha256=body.demo_sha256, upload_id=body.upload_id)
+                            demo_sha256=body.demo_sha256, upload_id=body.upload_id,
+                            evidence=evidence)
     writer = RawArtifactWriter(
         context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
                                 attempt_number=attempt_number, demo_sha256=body.demo_sha256,

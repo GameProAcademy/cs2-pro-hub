@@ -23,7 +23,7 @@ function validHot(): HotDemoPayloadV1 {
   };
   const sections: Record<string, HotSectionQuality> = Object.fromEntries(Object.keys(rows).map((name) => [name, {
     status: ["aim_observations", "position_snapshots", "economy_snapshots"].includes(name)
-      ? "not_implemented" as const : "complete" as const,
+      ? "unavailable" as const : "complete" as const,
     observed_rows: 0, included_rows: 0, limit: limits[name] ?? 0, overflow_rows: 0,
   }]));
   return {
@@ -49,8 +49,17 @@ describe("durable HOT contract", () => {
     expect(hot.combat_events).toEqual([]);
   });
 
-  it("accepts explicitly not implemented AIM, position and economy sections", () => {
+  it("accepts explicitly unavailable AIM, position and economy sections", () => {
     expect(assertHotDemoPayload(validHot()).quality.partial).toBe(true);
+  });
+
+  it("accepts implemented semantic observations without mixing them into canonical events", () => {
+    const hot = validHot();
+    hot.aim_observations = [{ player: "76561198000000001", tick: 10, yaw: 45 }];
+    const quality = hot.quality.sections["aim_observations"];
+    if (!quality) throw new Error("missing aim quality fixture");
+    Object.assign(quality, { status: "complete", observed_rows: 1, included_rows: 1 });
+    expect(assertHotDemoPayload(hot).aim_observations).toHaveLength(1);
   });
 
   it("rejects silent overflow", () => {
