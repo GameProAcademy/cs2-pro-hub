@@ -3,8 +3,9 @@
 This process is intentionally separate from the FastAPI parser HTTP surface.
 The queue consumer must be an always-on background worker so a web-server
 restart/healthcheck lifecycle cannot silently leave demo jobs stuck in parsing.
-A tiny /health responder is retained because the existing Railway service uses
-an HTTP healthcheck before activating a deployment.
+A tiny /health and /version responder is retained because the existing Railway
+service uses an HTTP healthcheck and the APP uses /version as the authoritative
+worker identity preflight before a real E2E run.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import logging
 import os
 
 from parser_isolated import parse_demo_file_isolated
-from settings import load_settings
+from settings import PARSER_NAME, PARSER_VERSION, load_settings
 from worker import durable_consumer_loop
 
 logger = logging.getLogger("cs2-demo-parser-worker")
@@ -24,8 +25,31 @@ async def _health_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     try:
         request = await reader.read(2048)
         first_line = request.split(b"\r\n", 1)[0] if request else b""
+        settings = load_settings()
         if first_line.startswith(b"GET /health "):
             body = b'{"status":"ok","role":"durable-worker"}'
+            response = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"content-type: application/json\r\n"
+                b"content-length: " + str(len(body)).encode() + b"\r\n"
+                b"connection: close\r\n\r\n" + body
+            )
+        elif first_line.startswith(b"GET /version "):
+            import json
+
+            body = json.dumps(
+                {
+                    "parser": {
+                        "name": PARSER_NAME,
+                        "version": PARSER_VERSION,
+                        "revision": settings.revision,
+                        "semantic_revision": settings.revision,
+                        "build_revision": settings.build_revision,
+                    },
+                    "contract_version": settings.contract_version,
+                },
+                separators=(",", ":"),
+            ).encode("utf-8")
             response = (
                 b"HTTP/1.1 200 OK\r\n"
                 b"content-type: application/json\r\n"
