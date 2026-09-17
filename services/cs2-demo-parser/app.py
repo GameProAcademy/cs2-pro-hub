@@ -41,7 +41,7 @@ from errors import (
     WorkerError,
 )
 from parser import parse_demo_file
-from hot_payload import build_hot_payload
+from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
 from settings import (
@@ -160,11 +160,16 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
     )
     raw = await writer.write(evidence)
     encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
+    hot_metrics = hot_payload_measurements(hot)
     if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
-        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "HOT payload is too large.")
-    logger.info("hot_payload_ready bytes=%s limited=%s artifact=%s digest=%s",
-                len(encoded), hot["quality"]["limited_sections"], raw["artifact_id"],
-                str(raw["root_digest"])[:12])
+        largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
+        logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
+        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
+    logger.info("hot_payload_ready bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s",
+                len(encoded), hot_metrics["hot_payload_bytes"],
+                {key: value["rows"] for key, value in hot_metrics["sections"].items()},
+                {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
+                hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12])
     return {"hot": hot, "raw": raw}
 
 

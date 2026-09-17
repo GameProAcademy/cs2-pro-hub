@@ -171,16 +171,19 @@ class RawArtifactWriter:
         if artifact.get("recovered"):
             logger.info("raw_artifact_recovery artifact=%s", artifact_id)
         chunks: list[dict[str, Any]] = []
+        section_measurements: dict[str, dict[str, int]] = {}
         previous: str | None = None
         sections = _section_payloads(evidence)
         for section in SECTION_ORDER:
             logger.info("raw_section_start section=%s", section)
             pending: list[bytes] = []
             raw_bytes = 0
+            section_uncompressed_bytes = 0
             first_row = 0
             chunk_index = 0
             for row_number, record in enumerate(_records(sections[section])):
                 line = _stable(record) + b"\n"
+                section_uncompressed_bytes += len(line)
                 if len(gzip.compress(line, mtime=0)) > CHUNK_HARD_MAX_BYTES:
                     raise RuntimeError("RAW_RECORD_TOO_LARGE")
                 pending.append(line)
@@ -194,6 +197,18 @@ class RawArtifactWriter:
                 chunks.append(chunk); previous = chunk["sha256"]
             logger.info("raw_section_complete section=%s chunks=%s", section,
                         sum(1 for item in chunks if item["section"] == section))
+            own_chunks = [item for item in chunks if item["section"] == section]
+            section_measurements[section] = {
+                "rows": sum(item["row_count"] for item in own_chunks),
+                "uncompressed_bytes": section_uncompressed_bytes,
+                "compressed_bytes": sum(item["byte_size"] for item in own_chunks),
+                "chunks": len(own_chunks),
+                "largest_chunk_bytes": max((item["byte_size"] for item in own_chunks), default=0),
+            }
+            logger.info(
+                "raw_section_metrics section=%s rows=%s uncompressed_bytes=%s compressed_bytes=%s chunks=%s largest_chunk_bytes=%s",
+                section, *section_measurements[section].values(),
+            )
             raw_key = {"players": "raw_player_info", "rounds": "round_evidence",
                        "events": "raw_events", "ticks": "tick_samples",
                        "grenades": "grenade_samples", "player-info": "player_coverage",
@@ -222,6 +237,7 @@ class RawArtifactWriter:
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
                     "audit_evidence_digest": _audit_evidence_digest(evidence),
+                     "measurements": {"sections": section_measurements},
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,

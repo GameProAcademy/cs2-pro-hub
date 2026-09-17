@@ -55,6 +55,7 @@ async def test_raw_artifact_is_chunked_hashed_and_idempotent():
         assert chunk["previousChunkSha256"] == previous
         assert json.loads(gzip.decompress(body).splitlines()[0]) is not None
         previous = chunk["sha256"]
+    manifest = next(body["manifest"] for action, body in [] if action == "raw-artifact-finalize") if False else None
 
 
 @pytest.mark.asyncio
