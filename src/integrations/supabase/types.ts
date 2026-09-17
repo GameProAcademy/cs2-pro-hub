@@ -3332,6 +3332,15 @@ export type Database = {
         }
         Returns: Json
       }
+      retry_demo_job: {
+        Args: {
+          _allow_permanent?: boolean
+          _job_id: string
+          _reason?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       save_player_profile: {
         Args: {
           _country: string
