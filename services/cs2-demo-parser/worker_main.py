@@ -73,8 +73,9 @@ async def _health_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
 
 async def _consumer_supervisor(settings) -> None:
     logger.info(
-        "worker_start revision=%s contract=%s worker_id=%s poll=%ss heartbeat=%ss",
+        "worker_start semantic_revision=%s build_revision=%s contract=%s worker_id=%s poll=%ss heartbeat=%ss",
         settings.revision,
+        settings.build_revision,
         settings.contract_version,
         settings.worker_id,
         settings.queue_poll_seconds,
