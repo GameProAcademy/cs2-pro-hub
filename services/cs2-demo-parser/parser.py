@@ -196,7 +196,7 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
     if tickrate is None or tickrate <= 0:
         return
 
-    starts: dict[int, dict[str, Any]] = {}
+    starts: dict[float, int] = {}
     for row in raw.get("tick_rows") or []:
         round_index = row.get("total_rounds_played")
         tick = row.get("tick")
@@ -216,18 +216,18 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
         start_tick = round(float(tick) - (float(game_time) - float(round_start_time)) * tickrate)
         if start_tick < 0:
             continue
-        number = int(round_index) + 1
-        previous = starts.get(number)
-        if previous is None or start_tick < previous["tick"]:
-            starts[number] = {
-                "tick": start_tick,
-                "round": number,
-                "derived_from": "game_state.round_start_time",
-            }
+        key = float(round_start_time)
+        previous = starts.get(key)
+        if previous is None or start_tick < previous:
+            starts[key] = start_tick
 
     if not starts:
         return
-    derived = [starts[number] for number in sorted(starts)]
+    derived = [
+        {"tick": starts[start_time], "round": number,
+         "derived_from": "game_state.round_start_time"}
+        for number, start_time in enumerate(sorted(starts), start=1)
+    ]
     raw["round_starts"] = derived
     raw["warnings"].append("round_boundaries_derived_from_game_state: end ticks and winners unavailable")
 

@@ -28,6 +28,10 @@ def test_round_starts_are_derived_from_native_tick_context_when_events_are_absen
              "round_start_time": 2431.78125},
             {"tick": 4398, "total_rounds_played": 0, "game_time": 2474.125,
              "round_start_time": 2431.78125},
+            # The native completed-round counter may advance before the next
+            # round_start_time appears; the duplicate time must not add a round.
+            {"tick": 6068, "total_rounds_played": 1, "game_time": 2500.21875,
+             "round_start_time": 2431.78125},
             {"tick": 6890, "total_rounds_played": 1, "game_time": 2513.0625,
              "round_start_time": 2504.65625},
         ],
