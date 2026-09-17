@@ -130,7 +130,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             const input = identity
               .extend({
                 artifactId: z.string().uuid(),
-                section: z.string().min(1).max(32),
+                section: z.enum(RAW_ARTIFACT_SECTION_ORDER),
                 chunkIndex: z.number().int().nonnegative(),
               })
               .parse(body);

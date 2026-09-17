@@ -349,6 +349,11 @@ export async function prepareRawChunk(input: DurableJobClaim & { jobId: string; 
 export async function verifyRawChunk(input: DurableJobClaim & { jobId: string; artifactId: string;
   section: string; chunkIndex: number }) {
   const { db, job } = await currentRawJob(input);
+  if (!RAW_ARTIFACT_SECTION_ORDER.includes(input.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]) ||
+      !Number.isSafeInteger(input.chunkIndex) || input.chunkIndex < 0 ||
+      input.chunkIndex >= RAW_MAX_CHUNKS_PER_SECTION) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk coordinates");
+  }
   const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
   const { data: artifact } = await db.from("raw_evidence_artifacts").select("id, storage_prefix, status")
     .eq("id", input.artifactId).eq("job_id", input.jobId).maybeSingle();
