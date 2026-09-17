@@ -1,5 +1,14 @@
 # Roadmap
 
+## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
+
+- [ ] Auditar o estado real do job Cache, fila, RAW, Canonical, métricas e features sem alterar dados.
+- [ ] Obter os motivos concretos do bloqueio RAW e classificar cada gate/mapeamento sem enfraquecer o audit.
+- [ ] Corrigir somente incompatibilidades comprovadas entre parser, artifact, APP e lifecycle.
+- [ ] Validar Railway, contratos, segurança, testes e performance.
+- [ ] Executar Cache Run 1 pelo lifecycle oficial; Run 2 somente após Run 1 PASS.
+- [ ] Fechar relatório objetivo; manter Fase 2.8 bloqueada até todos os gates críticos passarem.
+
 ## FASE 2.7.2 FINAL — FOUNDATION BLOCKED NO RAW AUDIT REAL
 
 - [x] Railway preflight real PASS: `/health` e `/version` HTTP 200; parser `demoparser2@0.42.0`, contract `1`, semantic revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` e build `git:5d19890cdf8a018469761c597c650016791342d3`.
