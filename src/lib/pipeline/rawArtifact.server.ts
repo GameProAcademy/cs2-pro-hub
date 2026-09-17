@@ -103,7 +103,6 @@ export function assertRawArtifactReference(value: unknown): RawArtifactReference
 }
 
 export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
-  const semanticNames = ["aim_observations", "position_snapshots", "economy_snapshots"] as const;
   return {
     parser: hot.parser,
     contract_version: hot.contract_version,
@@ -117,9 +116,11 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
       aim_observations: hot.aim_observations,
       position_snapshots: hot.position_snapshots,
       economy_snapshots: hot.economy_snapshots,
-      quality: Object.fromEntries(
-        semanticNames.map((name) => [name, hot.quality.sections[name]]),
-      ) as HotDemoPayloadV1["quality"]["sections"],
+      quality: {
+        aim_observations: hot.quality.sections["aim_observations"],
+        position_snapshots: hot.quality.sections["position_snapshots"],
+        economy_snapshots: hot.quality.sections["economy_snapshots"],
+      },
     },
   };
 }
