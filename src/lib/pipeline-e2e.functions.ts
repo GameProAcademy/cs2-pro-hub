@@ -28,6 +28,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import type { RawDemoEvidence } from "@/lib/pipeline/rawEvidence";
+import { waitForTerminalExecution } from "@/lib/pipeline/e2eWaiting";
 import {
   EMPTY_EVIDENCE,
   evaluateE2ERun,
@@ -42,6 +43,8 @@ type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
 const FORBIDDEN = "ADMIN_FORBIDDEN";
 const UNAVAILABLE = "ADMIN_UNAVAILABLE";
+const DEFAULT_E2E_WAIT_TIMEOUT_MS = 20 * 60 * 1_000;
+const DEFAULT_E2E_POLL_INTERVAL_MS = 4_000;
 
 async function requireMaster(context: Ctx) {
   const { supabase, userId } = context;
@@ -261,13 +264,17 @@ async function readJobState(
       extractionConfidence: number | null;
       partialParse: boolean;
       errorMessage: string | null;
+       attemptNumber: number;
+       retryCount: number;
+       heartbeatAt: string | null;
+       leaseExpiresAt: string | null;
     })
   | null
 > {
   const { data } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, attachment_state, attachment_reason, uploads(file_name)",
+      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, attachment_state, attachment_reason, attempt_number, retry_count, heartbeat_at, lease_expires_at, uploads(file_name)",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -292,6 +299,10 @@ async function readJobState(
     durationMs: data.duration_ms,
     extractionConfidence: data.extraction_confidence,
     partialParse: data.partial_parse,
+    attemptNumber: data.attempt_number,
+    retryCount: data.retry_count,
+    heartbeatAt: data.heartbeat_at,
+    leaseExpiresAt: data.lease_expires_at,
   };
 }
 
@@ -307,6 +318,8 @@ export interface E2ERunReport {
     durationMs: number | null;
     extractionConfidence: number | null;
     partialParse: boolean;
+    attemptNumber: number;
+    dispatchAttempt: number;
   };
   worker: {
     ready: boolean;
@@ -325,6 +338,12 @@ export interface E2ERunReport {
   idempotency: E2EEvaluation | null;
   startedAt: string;
   elapsedMs: number;
+  wait: {
+    terminal: boolean;
+    observedExecution: boolean;
+    polls: number;
+    reason: string | null;
+  };
 }
 
 const runInput = z.object({
@@ -366,6 +385,8 @@ export const runDemoE2E = createServerFn({ method: "POST" })
     const startedMs = Date.now();
     const isRerun = before.status === "processed" || before.status === "failed";
 
+    let expectedRetryCount = before.retryCount;
+    let requestedExecution = false;
     if (workerReady) {
       // A terminal job is only re-armed on an explicit rerun request; this is
       // what makes the idempotency proof a deliberate, audited action.
@@ -385,10 +406,36 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         if (requeueError || (requeued as { queued?: boolean } | null)?.queued !== true) {
           throw new Error("JOB_REQUEUE_FAILED");
         }
+        const dispatch = (requeued as { dispatch_attempt?: unknown }).dispatch_attempt;
+        if (typeof dispatch !== "number" || dispatch <= before.retryCount) {
+          throw new Error("JOB_REQUEUE_UNPROVEN");
+        }
+        expectedRetryCount = dispatch;
+        requestedExecution = true;
+      } else if (before.status === "pending" || before.status === "processing") {
+        requestedExecution = true;
       }
     }
 
-    const after = await readJobState(db, data.jobId);
+    const timeoutFromEnv = Number(process.env["DEMO_E2E_WAIT_TIMEOUT_MS"]);
+    const timeoutMs = Number.isFinite(timeoutFromEnv) && timeoutFromEnv > 0
+      ? timeoutFromEnv
+      : DEFAULT_E2E_WAIT_TIMEOUT_MS;
+    const wait = requestedExecution
+      ? await waitForTerminalExecution({
+          read: () => readJobState(db, data.jobId),
+          expectedRetryCount,
+          timeoutMs,
+          pollIntervalMs: DEFAULT_E2E_POLL_INTERVAL_MS,
+        })
+      : {
+          state: await readJobState(db, data.jobId),
+          terminal: false,
+          observedExecution: false,
+          polls: 1,
+          reason: workerReady ? "E2E_EXECUTION_NOT_REQUESTED" : "E2E_PREFLIGHT_BLOCKED",
+        };
+    const after = wait.state;
     if (!after) throw new Error("JOB_NOT_FOUND");
     const evidenceAfter = await collectEvidence({
       db,
@@ -413,14 +460,23 @@ export const runDemoE2E = createServerFn({ method: "POST" })
 
     const evaluation = evaluateE2ERun({
       expectation: data.expectation,
-      workerReady,
-      workerError: probe.error,
+      workerReady: workerReady && wait.terminal && wait.observedExecution,
+      workerError: probe.error ?? wait.reason,
       job: jobState,
       evidence: evidenceAfter,
     });
 
+    // A real idempotency comparison requires a successful terminal Run 1 before
+    // this independently requeued and awaited Run 2. A historical failed row is
+    // never treated as Run 1 evidence.
     const idempotency =
-      isRerun && workerReady ? evaluateIdempotency(evidenceBefore, evidenceAfter) : null;
+      before.status === "processed" &&
+      isRerun &&
+      workerReady &&
+      wait.terminal &&
+      wait.observedExecution
+        ? evaluateIdempotency(evidenceBefore, evidenceAfter)
+        : null;
 
     const { error: auditError } = await (context as Ctx).supabase.from("admin_audit_logs").insert({
       admin_user_id: (context as Ctx).userId,
@@ -439,6 +495,11 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         attachment_reason: after.attachmentReason,
         projection: evaluation.projection ?? null,
         match_ids: evidenceAfter.matchIds,
+        attempt_number: after.attemptNumber,
+        dispatch_attempt: after.retryCount,
+        wait_terminal: wait.terminal,
+        wait_observed_execution: wait.observedExecution,
+        wait_reason: wait.reason,
       },
     });
     if (auditError) throw new Error("AUDIT_FAILED");
@@ -455,6 +516,8 @@ export const runDemoE2E = createServerFn({ method: "POST" })
         durationMs: after.durationMs,
         extractionConfidence: after.extractionConfidence,
         partialParse: after.partialParse,
+        attemptNumber: after.attemptNumber,
+        dispatchAttempt: after.retryCount,
       },
       worker: {
         ready: workerReady,
@@ -472,6 +535,12 @@ export const runDemoE2E = createServerFn({ method: "POST" })
       idempotency,
       startedAt,
       elapsedMs: Date.now() - startedMs,
+      wait: {
+        terminal: wait.terminal,
+        observedExecution: wait.observedExecution,
+        polls: wait.polls,
+        reason: wait.reason,
+      },
     };
   });
 

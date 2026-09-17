@@ -416,6 +416,12 @@ function AdminDemoE2EPage() {
 
             <div className="rounded-lg border border-border bg-background/40 px-4 py-3">
               <Row label="job status" value={report.job.status} />
+              <Row label="attempt number" value={String(report.job.attemptNumber)} />
+              <Row label="dispatch attempt" value={String(report.job.dispatchAttempt)} />
+              <Row
+                label="durable wait"
+                value={`${report.wait.terminal ? "terminal" : "blocked"} · polls=${report.wait.polls}${report.wait.reason ? ` · ${report.wait.reason}` : ""}`}
+              />
               <Row label="error code" value={report.job.errorCode ?? "none"} />
               <Row label="error detail" value={report.job.errorMessage ?? "—"} />
               <Row label="canonical match id" value={report.job.matchId ?? "—"} />
