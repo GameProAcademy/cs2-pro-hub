@@ -1,6 +1,6 @@
 # Roadmap
 
-## FASE 2.7.2D.8 — Player identity resolution — EM EXECUÇÃO
+## FASE 2.7.2D.8 — Player identity resolution — IMPLEMENTADA / E2E CACHE BLOQUEADO
 
 - [x] Consolidar auto-match forte, fallback manual, rejeição e conflitos no resolvedor existente.
 - [x] Implementar histórico contextual de nicknames com ownership, RLS e idempotência.
