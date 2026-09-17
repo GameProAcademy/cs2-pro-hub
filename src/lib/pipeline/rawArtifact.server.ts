@@ -103,6 +103,12 @@ export function assertRawArtifactReference(value: unknown): RawArtifactReference
 }
 
 export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
+  const aimQuality = hot.quality.sections["aim_observations"];
+  const positionQuality = hot.quality.sections["position_snapshots"];
+  const economyQuality = hot.quality.sections["economy_snapshots"];
+  if (!aimQuality || !positionQuality || !economyQuality) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT semantic quality");
+  }
   return {
     parser: hot.parser,
     contract_version: hot.contract_version,
@@ -117,9 +123,9 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
       position_snapshots: hot.position_snapshots,
       economy_snapshots: hot.economy_snapshots,
       quality: {
-        aim_observations: hot.quality.sections["aim_observations"],
-        position_snapshots: hot.quality.sections["position_snapshots"],
-        economy_snapshots: hot.quality.sections["economy_snapshots"],
+        aim_observations: aimQuality,
+        position_snapshots: positionQuality,
+        economy_snapshots: economyQuality,
       },
     },
   };
