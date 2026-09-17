@@ -204,13 +204,7 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
         tickrate: parsed.tickrate,
         legacy_schema_version: parsed.schemaVersion,
         quality_flags: parsed.quality.flags,
-        hot_semantic_data: parsed.hotSemanticData ?? {
-          schema_version: 1,
-          aim_observations: [],
-          position_snapshots: [],
-          economy_snapshots: [],
-          quality: {},
-        },
+        ...(parsed.hotSemanticData ? { hot_semantic_data: parsed.hotSemanticData } : {}),
       },
     },
     // A demo is a single map. It never proves a series exists.
