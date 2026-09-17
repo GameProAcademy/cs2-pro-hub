@@ -115,35 +115,35 @@ function teamOf(match: CanonicalMatch, eventPlayerKey: string): string | null {
  */
 export function sideInRound(
   match: CanonicalMatch,
-  steamId: string,
+  eventPlayerKey: string,
   roundNumber: number,
 ): Side | null {
   const round = match.rounds.find((r) => r.roundNumber === roundNumber);
-  return round?.sides[steamId] ?? null;
+  return round?.sides[eventPlayerKey] ?? null;
 }
 
 /** True when the resolved player is provably present in the round. */
 export function participatedInRound(
   match: CanonicalMatch,
-  steamId: string,
+  eventPlayerKey: string,
   roundNumber: number,
 ): boolean {
   const round = match.rounds.find((r) => r.roundNumber === roundNumber);
   if (!round) return false;
-  if (round.sides[steamId] != null) return true;
+  if (round.sides[eventPlayerKey] != null) return true;
   if (
-    round.moneyStart[steamId] != null ||
-    round.moneyEnd[steamId] != null ||
-    round.equipmentValue[steamId] != null
+    round.moneyStart[eventPlayerKey] != null ||
+    round.moneyEnd[eventPlayerKey] != null ||
+    round.equipmentValue[eventPlayerKey] != null
   ) {
     return true;
   }
   return match.events.some(
     (event) =>
       event.roundNumber === roundNumber &&
-      (event.actorSteamId === steamId ||
-        event.victimSteamId === steamId ||
-        event.assisterSteamId === steamId),
+      (event.actorSteamId === eventPlayerKey ||
+        event.victimSteamId === eventPlayerKey ||
+        event.assisterSteamId === eventPlayerKey),
   );
 }
 
@@ -166,7 +166,7 @@ export function roundHasEndEvidence(round: CanonicalMatch["rounds"][number]): bo
 
 export function playerSurvivedRound(
   match: CanonicalMatch,
-  steamId: string,
+  eventPlayerKey: string,
   roundNumber: number,
 ): boolean | null {
   const round = match.rounds.find((r) => r.roundNumber === roundNumber);
@@ -174,11 +174,11 @@ export function playerSurvivedRound(
 
   const died = match.events.some(
     (event) =>
-      event.type === "kill" && event.roundNumber === roundNumber && event.victimSteamId === steamId,
+      event.type === "kill" && event.roundNumber === roundNumber && event.victimSteamId === eventPlayerKey,
   );
   if (died) return false;
 
-  if (!participatedInRound(match, steamId, roundNumber)) return null;
+  if (!participatedInRound(match, eventPlayerKey, roundNumber)) return null;
   if (match.quality.partialParse) return null;
 
   if (!roundHasEndEvidence(round)) return null;
@@ -361,16 +361,16 @@ function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch
 function clutchStats(
   match: CanonicalMatch,
   kills: KillRecord[],
-  steamId: string,
+  eventPlayerKey: string,
 ): { attempts: number | null; wins: number | null } {
   if (kills.length === 0) return { attempts: null, wins: null };
 
-  const team = teamOf(match, steamId);
+  const team = teamOf(match, eventPlayerKey);
   let attempts = 0;
   let wins = 0;
 
   for (const round of match.rounds) {
-    if (!participatedInRound(match, steamId, round.roundNumber)) continue;
+    if (!participatedInRound(match, eventPlayerKey, round.roundNumber)) continue;
     const roundKills = kills.filter((k) => k.round === round.roundNumber);
     const participants = match.players.flatMap((player) => {
       const eventPlayerKey = player.steamId ?? player.participantKey;
@@ -384,7 +384,7 @@ function clutchStats(
     const enemies = participants
       .filter(({ player }) => player.team != null && team != null && player.team !== team)
       .map(({ eventPlayerKey }) => eventPlayerKey);
-    if (!teammates.includes(steamId) || enemies.length === 0) continue;
+    if (!teammates.includes(eventPlayerKey) || enemies.length === 0) continue;
 
     const dead = new Set<string>();
     let clutch = false;
@@ -392,7 +392,7 @@ function clutchStats(
       if (kill.victim) dead.add(kill.victim);
       const aliveMates = teammates.filter((id) => !dead.has(id));
       const aliveEnemies = enemies.filter((id) => !dead.has(id));
-      if (aliveMates.length === 1 && aliveMates[0] === steamId && aliveEnemies.length >= 1) {
+      if (aliveMates.length === 1 && aliveMates[0] === eventPlayerKey && aliveEnemies.length >= 1) {
         clutch = true;
         break;
       }
@@ -400,8 +400,8 @@ function clutchStats(
     if (!clutch) continue;
     attempts += 1;
 
-    const playerSide = sideInRound(match, steamId, round.roundNumber);
-    const survived = playerSurvivedRound(match, steamId, round.roundNumber) === true;
+    const playerSide = sideInRound(match, eventPlayerKey, round.roundNumber);
+    const survived = playerSurvivedRound(match, eventPlayerKey, round.roundNumber) === true;
     const wonRound =
       (round.winnerSide != null && playerSide != null && round.winnerSide === playerSide) ||
       (round.winnerTeam != null && team != null && round.winnerTeam === team);

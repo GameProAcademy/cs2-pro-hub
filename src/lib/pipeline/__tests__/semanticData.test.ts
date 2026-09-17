@@ -44,4 +44,28 @@ describe("player semantic data", () => {
     expect(scoped.economy).toEqual([]);
     expect(scoped.availability.aim).toBe("unavailable");
   });
+
+  it("keeps utility scoped to the selected participant while preserving coverage", () => {
+    const scoped = selectPlayerSemanticData(semanticMatch(), ENEMY_A);
+    expect(scoped.utility).toEqual([]);
+    expect(scoped.availability.utility).toBe("available");
+  });
+
+  it("supports a canonical participant without Steam when source keys correlate the evidence", () => {
+    const withoutSteam = semanticMatch();
+    withoutSteam.players = withoutSteam.players.map((player) =>
+      player.steamId === ME ? { ...player, participantKey: "participant-local", steamId: null } : player,
+    );
+    withoutSteam.hotSemanticData = {
+      ...withoutSteam.hotSemanticData!,
+      aim_observations: [{ player: "participant-local", tick: 1, yaw: 10 }],
+      position_snapshots: [{ player: "participant-local", tick: 1, x: 1 }],
+      economy_snapshots: [{ player: "participant-local", round: 1, balance: 800 }],
+    };
+    const scoped = selectPlayerSemanticData(withoutSteam, "participant-local");
+    expect(scoped.eventPlayerKey).toBe("participant-local");
+    expect(scoped.aim).toHaveLength(1);
+    expect(scoped.position).toHaveLength(1);
+    expect(scoped.economy).toHaveLength(1);
+  });
 });

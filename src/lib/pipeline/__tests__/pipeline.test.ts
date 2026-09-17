@@ -125,6 +125,42 @@ describe("metrics", () => {
     );
   });
 
+  it("computes correlated metrics for a canonical participant without Steam", () => {
+    const sourceKey = "participant-local";
+    const withoutSteam = {
+      ...match,
+      players: match.players.map((player) =>
+        player.steamId === ME ? { ...player, participantKey: sourceKey, steamId: null } : player,
+      ),
+      rounds: match.rounds.map((round) => ({
+        ...round,
+        sides: Object.fromEntries(
+          Object.entries(round.sides).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+        moneyStart: Object.fromEntries(
+          Object.entries(round.moneyStart).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+        moneyEnd: Object.fromEntries(
+          Object.entries(round.moneyEnd).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+        equipmentValue: Object.fromEntries(
+          Object.entries(round.equipmentValue).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+      })),
+      events: match.events.map((event) => ({
+        ...event,
+        actorSteamId: event.actorSteamId === ME ? sourceKey : event.actorSteamId,
+        victimSteamId: event.victimSteamId === ME ? sourceKey : event.victimSteamId,
+        assisterSteamId: event.assisterSteamId === ME ? sourceKey : event.assisterSteamId,
+      })),
+    };
+    const scoped = computeMetrics(withoutSteam, sourceKey);
+    expect(scoped.participantKey).toBe(sourceKey);
+    expect(scoped.steamId).toBeNull();
+    expect(scoped.kills).toBe(metrics.kills);
+    expect(scoped.roundsPlayed).toBe(metrics.roundsPlayed);
+  });
+
   it("produces a bounded source rating that is not the CS2 PRO Score", () => {
     expect(metrics.sourceRating).toBeGreaterThan(0);
     expect(metrics.sourceRating).toBeLessThan(3);
