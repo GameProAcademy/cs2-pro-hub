@@ -185,18 +185,14 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
 
     Some CS2 demos do not advertise ``round_start``/``round_end`` events even
     though ``parse_ticks`` returns ``total_rounds_played`` and
-    ``round_start_time``. The latter pair deterministically identifies the round
-    start tick at the verified header tickrate. End ticks remain unknown unless
-    observed; no winner, score, team identity, or false boundary is invented.
+    ``round_start_time``. Distinct observed start times identify the round
+    sequence. A start tick is accepted only when every row carrying that start
+    time yields the same tick offset; this avoids assuming any tickrate. End
+    ticks remain unknown unless observed; no winner, score, or team is invented.
     """
     if raw.get("round_starts") or raw.get("round_ends"):
         return
-    header = raw.get("header") or {}
-    tickrate = _finite_number(header.get("playback_ticks_per_second"))
-    if tickrate is None or tickrate <= 0:
-        return
-
-    starts: dict[float, int] = {}
+    candidates: dict[float, list[tuple[int, float]]] = {}
     for row in raw.get("tick_rows") or []:
         round_index = row.get("total_rounds_played")
         tick = row.get("tick")
@@ -213,20 +209,27 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
             or game_time < round_start_time
         ):
             continue
-        start_tick = round(float(tick) - (float(game_time) - float(round_start_time)) * tickrate)
-        if start_tick < 0:
-            continue
         key = float(round_start_time)
-        previous = starts.get(key)
-        if previous is None or start_tick < previous:
-            starts[key] = start_tick
+        candidates.setdefault(key, []).append((tick, float(game_time)))
+
+    starts: list[tuple[float, int]] = []
+    for start_time, rows in candidates.items():
+        # In Source 2 demo time, tick and game_time share a stable additive
+        # offset. Therefore tick - game_time + round_start_time is a tick-space
+        # boundary without dividing or multiplying by an assumed tickrate.
+        offsets = [tick - game_time for tick, game_time in rows]
+        if max(offsets) - min(offsets) > 1e-6:
+            continue
+        start_tick = round(offsets[0] + start_time)
+        if start_tick >= 0:
+            starts.append((start_time, start_tick))
 
     if not starts:
         return
     derived = [
-        {"tick": starts[start_time], "round": number,
+        {"tick": start_tick, "round": number,
          "derived_from": "game_state.round_start_time"}
-        for number, start_time in enumerate(sorted(starts), start=1)
+        for number, (start_time, start_tick) in enumerate(sorted(starts), start=1)
     ]
     raw["round_starts"] = derived
     raw["warnings"].append("round_boundaries_derived_from_game_state: end ticks and winners unavailable")
