@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import logging
+import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from itertools import chain
@@ -36,8 +37,33 @@ class ArtifactContext:
     contract_version: int
 
 
+def _json_safe(value: Any) -> Any:
+    """Recursively normalize values so strict JSON never receives NaN/Infinity."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    scalar = getattr(value, "item", None)
+    if callable(scalar):
+        try:
+            return _json_safe(scalar())
+        except Exception:
+            return None
+    return str(value)
+
+
 def _stable(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return json.dumps(
+        _json_safe(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
 
 
 def _records(value: Any) -> Iterable[Any]:
@@ -174,8 +200,8 @@ class RawArtifactWriter:
             if pending:
                 chunk = await self._store_chunk(artifact_id, section, chunk_index, pending, first_row, previous)
                 chunks.append(chunk); previous = chunk["sha256"]
-            logger.info("raw_section_complete section=%s chunks=%s", section,
-                        sum(1 for item in chunks if item["section"] == section))
+            logger.info("raw_section_complete section=%s chunks=%s",
+                        section, sum(1 for item in chunks if item["section"] == section))
             raw_key = {"players": "raw_player_info", "rounds": "round_evidence",
                        "events": "raw_events", "ticks": "tick_samples",
                        "grenades": "grenade_samples", "player-info": "player_coverage",
@@ -199,8 +225,6 @@ class RawArtifactWriter:
                     "contract_version": self.context.contract_version, "sections": summaries,
                     "root_digest": root_digest, "created_at": artifact.get("created_at"), "status": "ready",
                     "raw_status": "ready",
-                    # Informational only. The APP derives and persists the final
-                    # decision from audit_evidence instead of trusting this field.
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
                     "audit_evidence_digest": _audit_evidence_digest(evidence),
