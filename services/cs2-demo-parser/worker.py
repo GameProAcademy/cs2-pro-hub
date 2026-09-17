@@ -104,7 +104,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     identity["attempt"],
                                     complete_bytes,
                                     result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12],
-                                    result["raw"]["total_chunks"], result["raw"]["total_bytes"],
+                                    result["raw"].get("total_chunks"), result["raw"].get("total_bytes"),
                                     round((time.perf_counter() - execution_started) * 1000),
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await _bridge(client, settings, "complete", complete_body)
