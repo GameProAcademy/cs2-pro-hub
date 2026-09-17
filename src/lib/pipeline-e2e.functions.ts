@@ -188,7 +188,14 @@ async function collectEvidence(args: {
         .from("match_sources")
         .select("id, match_id, fingerprint, upload_id")
         .eq("fingerprint", demoSha256)
-    : { data: [] as { id: string; match_id: string | null }[] };
+    : {
+        data: [] as {
+          id: string;
+          match_id: string | null;
+          fingerprint: string | null;
+          upload_id: string | null;
+        }[],
+      };
 
   const sources = new Map<string, string | null>();
   const sourceFingerprints = new Set<string>();
@@ -227,7 +234,9 @@ async function collectEvidence(args: {
     ]);
     metricIds = (m.data ?? []).map((row) => row.id).sort();
     featureIds = (f.data ?? []).map((row) => row.id).sort();
-    for (const row of [...(m.data ?? []), ...(f.data ?? [])]) projectedPlayerIds.add(row.player_id);
+    for (const row of [...(m.data ?? []), ...(f.data ?? [])]) {
+      if (row.player_id) projectedPlayerIds.add(row.player_id);
+    }
     metrics = metricIds.length;
     features = featureIds.length;
   }
