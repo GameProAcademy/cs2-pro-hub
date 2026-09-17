@@ -88,13 +88,65 @@ export interface RawParserEvent {
   victim_position?: RawParserPosition | undefined;
 }
 
-export interface HotSemanticObservation {
+export interface HotSemanticObservationBase {
   player?: string | undefined;
   tick?: number | undefined;
   round?: number | undefined;
   time_seconds?: number | undefined;
   side?: Side | undefined;
-  [field: string]: unknown;
+}
+
+export interface HotAimObservation extends HotSemanticObservationBase {
+  pitch?: number | undefined;
+  yaw?: number | undefined;
+  shots_fired?: number | undefined;
+  health?: number | undefined;
+  armor_value?: number | undefined;
+  is_scoped?: boolean | undefined;
+  active_weapon?: unknown;
+  active_weapon_name?: unknown;
+  aim_punch_angle?: unknown;
+  aim_punch_angle_vel?: unknown;
+}
+
+export interface HotPositionSnapshot extends HotSemanticObservationBase {
+  x?: number | undefined;
+  y?: number | undefined;
+  z?: number | undefined;
+  velocity?: number | undefined;
+  velocity_x?: number | undefined;
+  velocity_y?: number | undefined;
+  velocity_z?: number | undefined;
+  last_place_name?: string | undefined;
+  move_state?: string | undefined;
+  is_alive?: boolean | undefined;
+  is_airborne?: boolean | undefined;
+  is_strafing?: boolean | undefined;
+  is_walking?: boolean | undefined;
+  ducked?: boolean | undefined;
+  ducking?: boolean | undefined;
+}
+
+export interface HotEconomySnapshot extends HotSemanticObservationBase {
+  balance?: number | undefined;
+  start_balance?: number | undefined;
+  total_cash_spent?: number | undefined;
+  cash_spent_this_round?: number | undefined;
+  round_start_equip_value?: number | undefined;
+  current_equip_value?: number | undefined;
+  weapon_purchases_this_round?: unknown;
+  weapon_purchases_this_match?: unknown;
+}
+
+export interface HotSemanticDataV1 {
+  schema_version: 1;
+  aim_observations: HotAimObservation[];
+  position_snapshots: HotPositionSnapshot[];
+  economy_snapshots: HotEconomySnapshot[];
+  quality: Pick<
+    Record<"aim_observations" | "position_snapshots" | "economy_snapshots", HotSectionQuality>,
+    "aim_observations" | "position_snapshots" | "economy_snapshots"
+  >;
 }
 
 export interface RawParserOutput {
@@ -121,6 +173,8 @@ export interface RawParserOutput {
   rounds: RawParserRound[];
   events: RawParserEvent[];
   warnings?: string[] | undefined;
+  /** Bounded semantic evidence from HOT. It remains separate from canonical events. */
+  hot_semantic_data?: HotSemanticDataV1 | undefined;
   /** Parser-native evidence, validated and persisted before normalization. */
   raw_evidence?: import("@/lib/pipeline/rawEvidence").RawDemoEvidence | undefined;
 }
@@ -161,9 +215,9 @@ export interface HotDemoPayloadV1 {
   combat_events: RawParserEvent[];
   utility_events: RawParserEvent[];
   objective_events: RawParserEvent[];
-  aim_observations: HotSemanticObservation[];
-  position_snapshots: HotSemanticObservation[];
-  economy_snapshots: HotSemanticObservation[];
+  aim_observations: HotAimObservation[];
+  position_snapshots: HotPositionSnapshot[];
+  economy_snapshots: HotEconomySnapshot[];
   quality: {
     partial: boolean;
     limited_sections: string[];
@@ -284,6 +338,8 @@ export interface CanonicalMatch {
   quality: ExtractionQuality;
   parser: { name: string; version: string; revision: string | null };
   schemaVersion: number;
+  /** Bounded source evidence retained for canonical-source persistence and future derivation. */
+  hotSemanticData?: HotSemanticDataV1 | undefined;
 }
 
 /* ------------------------------------------------------------------ *
