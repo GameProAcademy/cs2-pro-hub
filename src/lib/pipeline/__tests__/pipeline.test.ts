@@ -57,6 +57,29 @@ describe("normalizer", () => {
       normalizeParserOutput({ ...syntheticParserOutput, players: [], rounds: [] }),
     ).toThrow(PipelineError);
   });
+
+  it("preserves a source participant without fabricating a Steam ID", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [
+        ...syntheticParserOutput.players,
+        { participant_key: "source-player-5", name: "observed-name", team: "Team Alpha" },
+      ],
+    });
+    expect(normalized.players.at(-1)).toMatchObject({
+      participantKey: "source-player-5",
+      steamId: null,
+      name: "observed-name",
+    });
+  });
+
+  it("drops a player row that has neither a participant key nor Steam evidence", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [...syntheticParserOutput.players, { name: "nickname-is-not-identity" }],
+    });
+    expect(normalized.players).toHaveLength(syntheticParserOutput.players.length);
+  });
 });
 
 describe("metrics", () => {
@@ -123,6 +146,51 @@ describe("metrics", () => {
     expect(() => computeMetrics(match, "missing-participant")).toThrowError(
       expect.objectContaining({ code: "PLAYER_IDENTITY_UNRESOLVED" }),
     );
+  });
+
+  it("computes correlated metrics for a canonical participant without Steam", () => {
+    const sourceKey = "participant-local";
+    const withoutSteam = {
+      ...match,
+      players: match.players.map((player) =>
+        player.steamId === ME ? { ...player, participantKey: sourceKey, steamId: null } : player,
+      ),
+      rounds: match.rounds.map((round) => ({
+        ...round,
+        sides: Object.fromEntries(
+          Object.entries(round.sides).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+        moneyStart: Object.fromEntries(
+          Object.entries(round.moneyStart).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+        moneyEnd: Object.fromEntries(
+          Object.entries(round.moneyEnd).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+        equipmentValue: Object.fromEntries(
+          Object.entries(round.equipmentValue).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+      })),
+      events: match.events.map((event) => ({
+        ...event,
+        actorSteamId: event.actorSteamId === ME ? sourceKey : event.actorSteamId,
+        victimSteamId: event.victimSteamId === ME ? sourceKey : event.victimSteamId,
+        assisterSteamId: event.assisterSteamId === ME ? sourceKey : event.assisterSteamId,
+      })),
+    };
+    const scoped = computeMetrics(withoutSteam, sourceKey);
+    expect(scoped.participantKey).toBe(sourceKey);
+    expect(scoped.steamId).toBeNull();
+    expect(scoped.kills).toBe(metrics.kills);
+    expect(scoped.roundsPlayed).toBe(metrics.roundsPlayed);
   });
 
   it("produces a bounded source rating that is not the CS2 PRO Score", () => {

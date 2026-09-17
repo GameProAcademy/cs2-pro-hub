@@ -40,20 +40,25 @@ export function selectPlayerSemanticData(
   const belongsToTarget = (row: { player?: string | undefined }) =>
     row.player === target.eventPlayerKey || row.player === target.participantKey;
 
+  const utility = match.events.filter(
+    (event) => isUtilityEvent(event) && event.actorSteamId === target.eventPlayerKey,
+  );
+  const utilityCoverageAvailable = !match.quality.flags.includes("missing_utility");
+
   return {
     participantKey: target.participantKey,
     eventPlayerKey: target.eventPlayerKey,
     aim: (semantic?.aim_observations ?? []).filter(belongsToTarget),
     position: (semantic?.position_snapshots ?? []).filter(belongsToTarget),
     economy: (semantic?.economy_snapshots ?? []).filter(belongsToTarget),
-    utility: match.events.filter(
-      (event) => isUtilityEvent(event) && event.actorSteamId === target.eventPlayerKey,
-    ),
+    utility,
     availability: {
       aim: status(semantic?.quality.aim_observations),
       position: status(semantic?.quality.position_snapshots),
       economy: status(semantic?.quality.economy_snapshots),
-      utility: match.events.some(isUtilityEvent) ? "available" : "unavailable",
+      // Availability describes source coverage. An empty scoped list is a valid
+      // zero only when utility coverage exists for the match.
+      utility: utilityCoverageAvailable ? "available" : "unavailable",
     },
   };
 }

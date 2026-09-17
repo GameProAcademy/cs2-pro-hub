@@ -88,6 +88,13 @@ function mapSides(raw: Record<string, string> | undefined): Record<string, Side>
   return out;
 }
 
+function sourceParticipantKey(player: RawParserOutput["players"][number]): string | null {
+  const participantKey = player.participant_key?.trim();
+  if (participantKey) return participantKey;
+  const steamId = player.steam_id?.trim();
+  return steamId || null;
+}
+
 function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
   const alias = EVENT_ALIASES[raw.type] ?? raw.type;
   if (!EVENT_TYPES.has(alias)) return null;
@@ -194,15 +201,19 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
     throw new PipelineError("CORRUPTED_DEMO", "no players and no rounds");
   }
 
-  const players: CanonicalPlayer[] = raw.players
-    .filter((p) => typeof p.steam_id === "string" && p.steam_id.length > 0)
-    .map((p) => ({
-      participantKey: p.steam_id,
-      steamId: p.steam_id,
-      name: p.name ?? null,
-      team: p.team ?? null,
-      side: toSide(p.side),
-    }));
+  const players: CanonicalPlayer[] = raw.players.flatMap((player) => {
+    const participantKey = sourceParticipantKey(player);
+    if (!participantKey) return [];
+    return [
+      {
+        participantKey,
+        steamId: player.steam_id?.trim() || null,
+        name: player.name ?? null,
+        team: player.team ?? null,
+        side: toSide(player.side),
+      },
+    ];
+  });
 
   const rounds: CanonicalRound[] = [...raw.rounds]
     .filter((r) => Number.isInteger(r.number) && r.number > 0)
