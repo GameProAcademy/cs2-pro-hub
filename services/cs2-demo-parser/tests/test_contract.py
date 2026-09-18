@@ -212,6 +212,8 @@ def test_success_response_shape_has_no_invented_data(client_factory, ok_download
     assert payload["parser"]["name"] == "demoparser2"
     assert payload["parser"]["version"] == "0.42.0"
     assert payload["parser"]["revision"].startswith("git:")
+    assert payload["parser"]["semantic_revision"] == payload["parser"]["revision"]
+    assert payload["parser"]["build_revision"] is None
     for key in ("map", "game_version", "tickrate", "duration_seconds", "match_date"):
         assert payload["header"][key] is None
     assert payload["header"]["score"] == {}
