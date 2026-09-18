@@ -196,6 +196,18 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     }
   });
 
+  it("fails closed when the audit repeats a raw field", () => {
+    const evidence = {
+      raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }],
+      field_mappings: [
+        { raw_field: "event.tick", status: "MAPPED" },
+        { raw_field: "event.tick", status: "MAPPED" },
+      ],
+    };
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: evidence })).toBe("blocked");
+  });
+
   it.each([
     ["PARSE_FAILED mapping", { field_mappings: [{ raw_field: "event.bad", status: "PARSE_FAILED", reason: "parse error" }] }],
     ["unknown mapping status", { field_mappings: [{ raw_field: "event.future", status: "FUTURE_STATUS", reason: "unknown" }] }],
