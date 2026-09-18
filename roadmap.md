@@ -2,7 +2,7 @@
 
 ## FASE 2.7.2G.2 — RAW Coverage Closure — EM EXECUÇÃO
 
-- [ ] Extrair do manifest RAW preservado a lista exata dos 178 UNMAPPED_BUT_AVAILABLE e os 3 gates FAIL; não inferir nomes nem causas.
+- [x] Criar leitura server-only, master-admin, do manifest RAW preservado com validação do digest de audit_evidence; a extração efetiva depende do próximo build/deploy do APP.
 - [ ] Classificar cada campo individualmente como MAPPED, DERIVED, RAW_ONLY_INTENTIONAL, NOT_PRESENT_IN_DEMO ou UNAVAILABLE, somente com evidência do parser/manifest.
 - [ ] Para qualquer campo que deva alimentar Canonical/analytics, implementar o mapping no contrato correto e adicionar regressão; não promover campo a RAW-only apenas para liberar o gate.
 - [ ] Resolver individualmente os 3 gates FAIL e preservar fail-closed para qualquer evidência ainda desconhecida.
