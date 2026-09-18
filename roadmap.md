@@ -6,9 +6,9 @@
 - [x] Classificar o bloqueio preservado: 178 `UNMAPPED_BUT_AVAILABLE` e três gates FAIL; 176 `RAW_ONLY_INTENTIONAL` tinham justificativa presente.
 - [x] Alinhar a admissão APP ao contrato completo `reason` e à projeção compacta legada `reason_present`, mantendo `UNMAPPED_BUT_AVAILABLE` sempre fail-closed.
 - [x] Consolidar a decisão de finalize/verificação e rejeitar seções ou metadados físicos desconhecidos.
-- [ ] Validar Railway, contratos, segurança, testes e performance.
+- [x] Validar contratos locais: 51 testes RAW focados, 475 testes de pipeline, 916 testes APP, typecheck, diff check e build PASS; lint global segue bloqueado por dívida preexistente fora do escopo.
 - [ ] Executar Cache Run 1 pelo lifecycle oficial; Run 2 somente após Run 1 PASS.
-- [ ] Fechar relatório objetivo; manter Fase 2.8 bloqueada até todos os gates críticos passarem.
+- [x] Fechar diagnóstico G.1: artifact original preservado e nenhuma execução iniciada; estado BLOCKED até sincronização controlada do parser corrigido antes de um novo Run 1.
 
 ## FASE 2.7.2 FINAL — FOUNDATION BLOCKED NO RAW AUDIT REAL
 
