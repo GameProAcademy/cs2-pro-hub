@@ -19,6 +19,7 @@ def make_settings(**overrides: Any) -> Settings:
     base = dict(
         token=TOKEN,
         revision="git:" + "a" * 40,
+        build_revision=None,
         contract_version=1,
         environment="production",
         max_demo_bytes=1024 * 1024,

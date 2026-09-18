@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from parser import build_raw_evidence, enrich_rounds_from_tick_evidence
 from raw_evidence import build_gates, event_coverage, evidence_digest, finalize_evidence, raw_events
@@ -194,6 +195,60 @@ def test_reviewed_raw_only_field_has_reason_and_unknown_field_fails_gate():
     assert unknown["status"] == "UNMAPPED_BUT_AVAILABLE"
 
 
+def test_real_cache_reviewed_raw_fields_do_not_weaken_unknown_field_gate():
+    raw = material()
+    raw["header"]["patch_version"] = "1.40.8.1"
+    raw["event_inventory"].extend(["fire_bullets", "round_freeze_end"])
+    raw["event_tables"].update({
+        "fire_bullets": [{"tick": 30, "round": 1, "inaccuracy": 0.02, "seed": 9}],
+        "round_freeze_end": [{"tick": 10}],
+    })
+    raw["grenade_rows"] = [{
+        "tick": 15, "grenade_entity_id": 7, "grenade_type": "smoke",
+        "steamid": 76561198000000001, "name": "alpha", "x": 1.0, "y": 2.0, "z": 3.0,
+    }]
+    mappings = build_raw_evidence(raw, output())["field_mappings"]
+    by_field = {item["raw_field"]: item for item in mappings}
+    assert by_field["header.patch_version"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["grenade.grenade_entity_id"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["fire_bullets.inaccuracy"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert by_field["round_freeze_end.__event__"]["status"] == "RAW_ONLY_INTENTIONAL"
+    assert all(by_field[field]["reason"] for field in (
+        "header.patch_version", "grenade.grenade_entity_id",
+        "fire_bullets.inaccuracy", "round_freeze_end.__event__",
+    ))
+
+    raw["grenade_rows"][0]["future_grenade"] = "unknown"
+    blocked = build_raw_evidence(raw, output())["field_mappings"]
+    future = next(item for item in blocked if item["raw_field"] == "grenade.future_grenade")
+    assert future["status"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_game_state_identity_aliases_are_explicitly_catalogued():
+    raw = material()
+    raw["tick_rows"] = [{"tick": 100, "steamid": 76561198000000001, "name": "alpha"}]
+    mappings = build_raw_evidence(raw, output())["field_mappings"]
+    by_field = {item["raw_field"]: item for item in mappings}
+    assert by_field["game_state.tick"]["status"] == "MAPPED"
+    assert by_field["game_state.steamid"]["status"] == "MAPPED"
+    assert by_field["game_state.name"]["status"] == "MAPPED"
+
+
+def test_unknown_mapping_status_fails_closed():
+    evidence = build_raw_evidence(material(), output())
+    evidence["field_mappings"].append({
+        "raw_field": "future.status", "app_field": None, "canonical_field": None,
+        "status": "FUTURE_STATUS", "reason": None,
+    })
+    final = finalize_evidence(
+        evidence,
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+        contract_version=1, demo_sha256="a" * 64, file_size=99,
+    )
+    assert final["raw_status"] == "BLOCKED"
+    assert "unknown_mapping_status:future.status:FUTURE_STATUS" in final["raw_block_reasons"]
+
+
 def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
     final = finalize_evidence(build_raw_evidence(material(), output()),
                               parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
@@ -282,3 +337,53 @@ def test_tick_sampling_never_claims_complete_and_records_bounds():
     assert sampling["full_extraction"] is False
     assert sampling["sample_size"] == 1
     assert sampling["first_sampled_tick"] == sampling["last_sampled_tick"] == 10
+
+
+def test_cache_g2_legacy_unmapped_inventory_is_fully_and_explicitly_classified():
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "cache_raw_audit_g2.json").read_text(encoding="utf-8")
+    )
+    fields = fixture["legacy_unmapped_fields"]
+    assert len(fields) == fixture["expected_legacy_unmapped_count"] == 178
+    assert len(set(fields)) == len(fields)
+
+    raw = {
+        "header": {}, "players": [{}], "event_tables": {},
+        "tick_rows": [{}], "grenade_rows": [{}], "round_rows": [{}],
+    }
+    for field in fields:
+        family, native = field.split(".", 1)
+        if family == "header": raw["header"][native] = 1
+        elif family == "player": raw["players"][0][native] = 1
+        elif family == "game_state": raw["tick_rows"][0][native] = 1
+        elif family == "grenade": raw["grenade_rows"][0][native] = 1
+        elif family == "round": raw["round_rows"][0][native] = 1
+        else: raw["event_tables"].setdefault(family, [{}])[0][native] = 1
+
+    from raw_evidence import mapping_inventory
+    classified = {item["raw_field"]: item for item in mapping_inventory(raw)}
+    counts = {
+        status: sum(item["status"] == status for item in classified.values())
+        for status in fixture["expected_current_counts"]
+    }
+    assert counts == fixture["expected_current_counts"]
+    assert not [item for item in classified.values() if item["status"] == "UNMAPPED_BUT_AVAILABLE"]
+    assert all(item.get("reason") for item in classified.values() if item["status"] == "RAW_ONLY_INTENTIONAL")
+    assert {field for field, item in classified.items() if item["status"] == "MAPPED"} == {
+        "game_state.name", "game_state.steamid", "game_state.tick", "player_death.attackerblind",
+    }
+
+
+def test_raw_only_without_reason_and_parse_failed_are_fail_closed():
+    from raw_evidence import raw_audit_status
+    base = {"gates": [{"gate": "RAW", "status": "PASS"}], "forensic_inventory": {"present": True}}
+    missing_reason = {**base, "field_mappings": [
+        {"raw_field": "header.server_name", "status": "RAW_ONLY_INTENTIONAL", "reason": None},
+    ]}
+    assert raw_audit_status(missing_reason) == (
+        "BLOCKED", ["raw_only_reason_missing:header.server_name"],
+    )
+    parse_failed = {**base, "field_mappings": [
+        {"raw_field": "event.failed", "status": "PARSE_FAILED", "reason": "parser failure"},
+    ]}
+    assert raw_audit_status(parse_failed) == ("FAIL", ["parse_failed:event.failed"])

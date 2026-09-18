@@ -8,6 +8,32 @@ root directory `services/cs2-demo-parser`.
 * JSON contract version: `1` (different concept from the parser version)
 * framework: FastAPI + uvicorn, Docker build from this directory
 
+## Durable RAW boundary
+
+The authoritative surgical sync/deployment runbook is
+[`docs/PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md`](../../docs/PHASE-2.7.2D.4-RAILWAY-ALIGNMENT.md).
+Railway's production-only `parser_child.py` memory safeguards must be preserved
+when these files are synchronized; never replace the Railway branch wholesale.
+
+Durable jobs persist full evidence as verified JSONL-gzip chunks in the private
+`cs2-raw-evidence` bucket. Chunks target 4 MiB and fail closed above 8 MiB, carry
+a physical SHA-256 and a cross-section hash chain, and are described by a small
+manifest/root digest. The `/complete` callback contains only bounded `hot` data
+plus the READY `raw` artifact reference; full RAW arrays never cross that route.
+
+`dispatch_attempt` is used only for queue ownership and leases. The RAW identity
+and `attempt-N` path always use the logical `demo_jobs.attempt_number`, so a
+technical retry reuses one artifact while a new logical attempt creates another.
+The complete `{hot, raw}` body targets 4 MiB and fails closed above 8 MiB.
+Unclassified events remain in RAW and make HOT partial without invalidating its
+contract. AIM observations, position snapshots, and economy snapshots are
+projected only from parser-native, event-boundary tick evidence. Missing source
+fields are explicitly `unavailable`; no value or metric is inferred.
+
+The APP creates short-lived, object-scoped upload URLs. The Railway worker never
+receives a database or Storage credential. The worker transports a deterministic
+audit summary, but the APP derives and persists the final audit decision.
+
 ## Endpoints
 
 | Method | Path        | Purpose                                              |
@@ -20,12 +46,22 @@ root directory `services/cs2-demo-parser`.
 
 ```json
 {
-  "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "git:<full-commit-sha>" },
+  "parser": {
+    "name": "demoparser2",
+    "version": "0.42.0",
+    "revision": "git:<semantic-lock-sha>",
+    "semantic_revision": "git:<semantic-lock-sha>",
+    "build_revision": "git:<exact-build-sha>"
+  },
   "contract_version": 1
 }
 ```
 
-`POST /v1/parse` request (field names are frozen):
+`POST /v1/parse` is the legacy/non-durable endpoint. Production queue ingestion
+uses HOT + RAW Artifact; the legacy response may contain inline RAW evidence and
+must not be used to justify raising the durable 8 MiB ceiling.
+
+Request (field names are frozen):
 
 ```json
 {
@@ -153,16 +189,17 @@ Rules that are enforced by tests:
 
 ## Revision lock (GATE 1E.1)
 
-`PARSER_REVISION` identifies the deployed build immutably. Preferred form
-`git:<full-commit-sha>` of the commit actually deployed.
+`PARSER_REVISION` is the semantic compatibility lock retained during the
+coordinated rollout. `PARSER_BUILD_REVISION` is the optional exact deployed build
+identity. Both use `git:<full-commit-sha>`; neither is inferred from the other.
 
 * production (`ENVIRONMENT=production`, the Docker default): the revision is
-  **mandatory**. Missing, empty or invalid (including the retired
+  **mandatory** and must be `git:<40 lowercase hex>`. Missing, empty or invalid (including the retired
   `pypi-0.42.0`) makes the process fail closed at startup — it does not serve.
 * non-production: the revision may be absent and resolves to the explicit
   marker `dev:unpinned`, which is never a valid pinned build id.
-* `/version` returns exactly the revision the process runs with (one source, no
-  duplicated value that could drift).
+* `/version` preserves `revision`, mirrors it as `semantic_revision`, and returns
+  `build_revision` separately (`null` until configured).
 
 The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 `DEMO_PARSER_EXPECTED_VERSION`, `DEMO_PARSER_EXPECTED_REVISION` and
@@ -175,10 +212,11 @@ The APP pins the same identity through `DEMO_PARSER_EXPECTED_NAME`,
 | -------------------------- | ------------------- | ----------------------------------------- |
 | `PARSER_TOKEN`             | yes (secret)        | bearer token, never logged or returned    |
 | `PARSER_REVISION`          | yes in production   | `git:<full-commit-sha>` of the deployment |
+| `PARSER_BUILD_REVISION`    | optional during rollout | exact `git:<full-commit-sha>` deployed build; never inferred |
 | `PARSER_CONTRACT_VERSION`  | optional            | defaults to `1`; only `1` is supported    |
 | `ENVIRONMENT`              | optional            | `production` by default in the image      |
 | `MAX_DEMO_BYTES`           | optional            | download ceiling, default 1.5 GB          |
-| `MAX_PAYLOAD_BYTES`        | optional            | response ceiling, default 96 MB           |
+| `MAX_PAYLOAD_BYTES`        | optional            | HOT completion ceiling; hard-capped at 8 MiB |
 | `DOWNLOAD_TIMEOUT_SECONDS` | optional            | default 120                               |
 | `PARSE_TIMEOUT_SECONDS`    | optional            | default 240                               |
 | `DEMO_PIPELINE_BRIDGE_URL` | yes for queue worker | APP bridge ending in `/pipeline-worker`   |
@@ -222,6 +260,12 @@ uvicorn, download a demo, create and delete its temporary file, and serve
 call already in flight is **not** interrupted — Python cannot cancel it. The
 bounds that actually apply are `MAX_DEMO_BYTES`, `MAX_PAYLOAD_BYTES` and the
 container's own CPU/memory ceilings, plus the guaranteed temp-file cleanup.
+
+RAW chunking bounds transport and persistence memory, but the main parser still
+materializes native structures before the writer. It is not full parser
+streaming. The Railway branch additionally owns `parser_child.py`; its child
+isolation, bounded ticks, `parse_grenades(grenades=False)`, stage/RSS logs and
+safe-failure behavior are MUST PRESERVE during surgical synchronization.
 
 ## Tests
 

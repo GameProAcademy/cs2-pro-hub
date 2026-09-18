@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import resource
+import time
 from typing import Any, Callable
 
 import httpx
@@ -67,16 +69,12 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     "attempt": claim["attempt"],
                     "workerId": settings.worker_id,
                 }
+                execution_started = time.perf_counter()
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
                 try:
                     if claim["attempt_number"] < 1:
                         raise RuntimeError("invalid logical demo attempt")
-                    # Durable production ingestion must retain the Railway-specific
-                    # process-isolated native parser boundary. The callable passed by
-                    # app.py is retained for test injection/legacy compatibility, but
-                    # the durable queue always uses the isolated child.
-                    durable_parse = parse_demo_file_isolated
                     result = await _parse_durable_request(
                         ParseRequest(
                             contract_version=settings.contract_version,
@@ -86,7 +84,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                             file_size=claim["file_size"],
                         ),
                         settings,
-                        durable_parse,
+                        parse_demo_file_isolated,
                         job_id=identity["jobId"],
                         user_id=claim["user_id"],
                         attempt_number=claim["attempt_number"],
@@ -102,14 +100,19 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         complete_bytes = len(json.dumps(complete_body, separators=(",", ":")).encode())
                         if complete_bytes > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
                             raise WorkerError(413, "PAYLOAD_TOO_LARGE", "HOT completion payload is too large.")
-                        logger.info("job_complete_start bytes=%s artifact=%s digest=%s",
+                        logger.info("job_complete_start job=%s upload=%s attempt_number=%s dispatch_attempt=%s bytes=%s artifact=%s digest=%s chunks=%s raw_bytes=%s elapsed_ms=%s peak_rss_kib=%s",
+                                    identity["jobId"], claim["upload_id"], claim["attempt_number"],
+                                    identity["attempt"],
                                     complete_bytes,
-                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12])
+                                    result["raw"]["artifact_id"], str(result["raw"]["root_digest"])[:12],
+                                    result["raw"].get("total_chunks"), result["raw"].get("total_bytes"),
+                                    round((time.perf_counter() - execution_started) * 1000),
+                                    resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await _bridge(client, settings, "complete", complete_body)
                 except WorkerError as error:
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    logger.exception("durable job interrupted type=%s", type(error).__name__)
+                    logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()
                     heartbeat.cancel()
@@ -120,5 +123,5 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                logger.exception("queue poll failed type=%s", type(error).__name__)
+                logger.warning("queue poll failed type=%s", type(error).__name__)
                 await asyncio.sleep(settings.queue_poll_seconds)

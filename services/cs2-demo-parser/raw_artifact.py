@@ -7,6 +7,8 @@ import io
 import json
 import logging
 import math
+import resource
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from itertools import chain
@@ -20,6 +22,9 @@ RAW_BUCKET = "cs2-raw-evidence"
 RAW_SCHEMA_VERSION = 1
 CHUNK_TARGET_BYTES = 4 * 1024 * 1024
 CHUNK_HARD_MAX_BYTES = 8 * 1024 * 1024
+RAW_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024
+MAX_CHUNKS_PER_SECTION = 100_000
+MAX_CHUNKS_TOTAL = 200_000
 SECTION_ORDER = (
     "header", "players", "rounds", "events", "ticks", "grenades", "player-info",
     "game-state", "economy", "forensic",
@@ -38,22 +43,14 @@ class ArtifactContext:
 
 
 def _json_safe(value: Any) -> Any:
-    """Recursively normalize values so strict JSON never receives NaN/Infinity."""
+    """Normalize only values JSON cannot represent, without mutating parser data."""
     if isinstance(value, float):
         return value if math.isfinite(value) else None
-    if value is None or isinstance(value, (str, bool, int)):
-        return value
     if isinstance(value, dict):
-        return {str(key): _json_safe(item) for key, item in value.items()}
+        return {key: _json_safe(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
-    scalar = getattr(value, "item", None)
-    if callable(scalar):
-        try:
-            return _json_safe(scalar())
-        except Exception:
-            return None
-    return str(value)
+    return value
 
 
 def _stable(value: Any) -> bytes:
@@ -132,6 +129,26 @@ def _audit_evidence_digest(evidence: dict[str, Any]) -> str:
     return hashlib.sha256(_stable(_audit_evidence(evidence))).hexdigest()
 
 
+def _grenade_measurements(rows: Any) -> dict[str, Any]:
+    records = [row for row in (rows or []) if isinstance(row, dict)]
+    identity_field = next((field for field in ("entity_id", "grenade_id", "projectile_id")
+                           if any(row.get(field) is not None for row in records)), None)
+    result: dict[str, Any] = {"rows": len(records), "identity_field": identity_field}
+    if identity_field is not None:
+        counts: dict[str, int] = {}
+        for row in records:
+            value = row.get(identity_field)
+            if value is not None:
+                key = str(value)
+                counts[key] = counts.get(key, 0) + 1
+        result.update({
+            "distinct_projectiles": len(counts),
+            "average_rows_per_projectile": round(sum(counts.values()) / len(counts), 3) if counts else None,
+            "maximum_rows_per_projectile": max(counts.values(), default=None),
+        })
+    return result
+
+
 class RawArtifactWriter:
     def __init__(self, *, context: ArtifactContext, bridge, client: httpx.AsyncClient) -> None:
         self.context = context
@@ -171,7 +188,8 @@ class RawArtifactWriter:
                 "row_count": len(rows), "byte_size": len(body), "sha256": sha256,
                 "previous_chunk_sha256": previous}
 
-    async def write(self, evidence: dict[str, Any]) -> dict[str, Any]:
+    async def write(self, evidence: dict[str, Any], performance: dict[str, Any] | None = None) -> dict[str, Any]:
+        started = time.perf_counter()
         artifact = await self.bridge("raw-artifact-init", {})
         if artifact.get("status") == "ready":
             return self._reference(artifact)
@@ -179,29 +197,57 @@ class RawArtifactWriter:
         if artifact.get("recovered"):
             logger.info("raw_artifact_recovery artifact=%s", artifact_id)
         chunks: list[dict[str, Any]] = []
+        section_measurements: dict[str, dict[str, int]] = {}
+        grenade_measurements = _grenade_measurements(evidence.get("grenade_samples"))
         previous: str | None = None
         sections = _section_payloads(evidence)
         for section in SECTION_ORDER:
             logger.info("raw_section_start section=%s", section)
             pending: list[bytes] = []
             raw_bytes = 0
+            section_uncompressed_bytes = 0
             first_row = 0
             chunk_index = 0
             for row_number, record in enumerate(_records(sections[section])):
                 line = _stable(record) + b"\n"
+                section_uncompressed_bytes += len(line)
                 if len(gzip.compress(line, mtime=0)) > CHUNK_HARD_MAX_BYTES:
                     raise RuntimeError("RAW_RECORD_TOO_LARGE")
                 pending.append(line)
                 raw_bytes += len(line)
                 if raw_bytes >= CHUNK_TARGET_BYTES:
+                    if chunk_index >= MAX_CHUNKS_PER_SECTION or len(chunks) >= MAX_CHUNKS_TOTAL:
+                        raise RuntimeError("RAW_CHUNK_LIMIT_EXCEEDED")
                     chunk = await self._store_chunk(artifact_id, section, chunk_index, pending, first_row, previous)
                     chunks.append(chunk); previous = chunk["sha256"]
+                    if sum(item["byte_size"] for item in chunks) > RAW_ARTIFACT_MAX_BYTES:
+                        raise RuntimeError("RAW_ARTIFACT_TOO_LARGE")
                     first_row = row_number + 1; chunk_index += 1; pending = []; raw_bytes = 0
             if pending:
+                if chunk_index >= MAX_CHUNKS_PER_SECTION or len(chunks) >= MAX_CHUNKS_TOTAL:
+                    raise RuntimeError("RAW_CHUNK_LIMIT_EXCEEDED")
                 chunk = await self._store_chunk(artifact_id, section, chunk_index, pending, first_row, previous)
                 chunks.append(chunk); previous = chunk["sha256"]
-            logger.info("raw_section_complete section=%s chunks=%s",
-                        section, sum(1 for item in chunks if item["section"] == section))
+                if sum(item["byte_size"] for item in chunks) > RAW_ARTIFACT_MAX_BYTES:
+                    raise RuntimeError("RAW_ARTIFACT_TOO_LARGE")
+            logger.info("raw_section_complete section=%s chunks=%s", section,
+                        sum(1 for item in chunks if item["section"] == section))
+            own_chunks = [item for item in chunks if item["section"] == section]
+            section_measurements[section] = {
+                "rows": sum(item["row_count"] for item in own_chunks),
+                "uncompressed_bytes": section_uncompressed_bytes,
+                "compressed_bytes": sum(item["byte_size"] for item in own_chunks),
+                "chunks": len(own_chunks),
+                "largest_chunk_bytes": max((item["byte_size"] for item in own_chunks), default=0),
+            }
+            section_measurements[section]["average_chunk_bytes"] = (
+                round(section_measurements[section]["compressed_bytes"] / len(own_chunks))
+                if own_chunks else 0
+            )
+            logger.info(
+                "raw_section_metrics section=%s rows=%s uncompressed_bytes=%s compressed_bytes=%s chunks=%s largest_chunk_bytes=%s average_chunk_bytes=%s",
+                section, *section_measurements[section].values(),
+            )
             raw_key = {"players": "raw_player_info", "rounds": "round_evidence",
                        "events": "raw_events", "ticks": "tick_samples",
                        "grenades": "grenade_samples", "player-info": "player_coverage",
@@ -225,16 +271,23 @@ class RawArtifactWriter:
                     "contract_version": self.context.contract_version, "sections": summaries,
                     "root_digest": root_digest, "created_at": artifact.get("created_at"), "status": "ready",
                     "raw_status": "ready",
+                    # Informational only. The APP derives and persists the final
+                    # decision from audit_evidence instead of trusting this field.
                     "audit_status": "approved" if evidence.get("raw_audit_status") == "APPROVED" else "blocked",
                     "audit_evidence": audit_evidence,
                     "audit_evidence_digest": _audit_evidence_digest(evidence),
+                     "measurements": {"sections": section_measurements, "grenades": grenade_measurements},
                     "raw_block_reasons": evidence.get("raw_block_reasons") or []}
         ready = await self.bridge("raw-artifact-finalize", {
             "artifactId": artifact_id, "rootDigest": root_digest, "manifest": manifest,
         })
-        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s",
+        logger.info("raw_artifact_ready artifact=%s chunks=%s rows=%s bytes=%s digest=%s raw_write_ms=%s peak_rss_kib=%s download_ms=%s parser_ms=%s hot_ms=%s",
                     artifact_id, ready.get("total_chunks"), ready.get("total_rows"),
-                    ready.get("total_bytes"), root_digest[:12])
+                     ready.get("total_bytes"), root_digest[:12],
+                     round((time.perf_counter() - started) * 1000),
+                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                     (performance or {}).get("download_ms"), (performance or {}).get("parser_ms"),
+                     (performance or {}).get("hot_build_ms"))
         return self._reference(ready)
 
     def _reference(self, artifact: dict[str, Any]) -> dict[str, Any]:
