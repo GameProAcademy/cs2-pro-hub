@@ -169,7 +169,7 @@ export function rawPrefix(userId: string, uploadId: string, demoAttemptNumber: n
   return `${userId}/${uploadId}/attempt-${demoAttemptNumber}`;
 }
 
-export { deriveRawArtifactAuditStatus } from "@/lib/pipeline/rawArtifactContract";
+export { deriveRawArtifactAuditStatus };
 
 type VerifiedRawChunk = {
   section: string;

@@ -273,7 +273,6 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
       field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }] } })).toBe("blocked");
     expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
-      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("approved");
       field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("blocked");
   });
 
