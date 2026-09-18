@@ -56,7 +56,13 @@ export interface DemoJobView {
   replacementReason: ReplacementReason;
 }
 
-export type ReplacementReason = "stale" | "failed" | "cancelled" | "legacy_unvalidated" | null;
+export type ReplacementReason =
+  | "stale"
+  | "failed"
+  | "cancelled"
+  | "legacy_unvalidated"
+  | "raw_audit_blocked"
+  | null;
 
 const createSchema = z.object({
   fileName: z
@@ -129,7 +135,8 @@ export const createDemoUpload = createServerFn({ method: "POST" })
         result["replacement_reason"] === "stale" ||
         result["replacement_reason"] === "failed" ||
         result["replacement_reason"] === "cancelled" ||
-        result["replacement_reason"] === "legacy_unvalidated"
+        result["replacement_reason"] === "legacy_unvalidated" ||
+        result["replacement_reason"] === "raw_audit_blocked"
           ? result["replacement_reason"]
           : null,
     };
@@ -265,7 +272,8 @@ function toView(
       row.replacement_reason === "stale" ||
       row.replacement_reason === "failed" ||
       row.replacement_reason === "cancelled" ||
-      row.replacement_reason === "legacy_unvalidated"
+      row.replacement_reason === "legacy_unvalidated" ||
+      row.replacement_reason === "raw_audit_blocked"
         ? row.replacement_reason
         : null,
   };
