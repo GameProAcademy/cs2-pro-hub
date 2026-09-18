@@ -372,3 +372,18 @@ def test_cache_g2_legacy_unmapped_inventory_is_fully_and_explicitly_classified()
     assert {field for field, item in classified.items() if item["status"] == "MAPPED"} == {
         "game_state.name", "game_state.steamid", "game_state.tick", "player_death.attackerblind",
     }
+
+
+def test_raw_only_without_reason_and_parse_failed_are_fail_closed():
+    from raw_evidence import raw_audit_status
+    base = {"gates": [{"gate": "RAW", "status": "PASS"}], "forensic_inventory": {"present": True}}
+    missing_reason = {**base, "field_mappings": [
+        {"raw_field": "header.server_name", "status": "RAW_ONLY_INTENTIONAL", "reason": None},
+    ]}
+    assert raw_audit_status(missing_reason) == (
+        "BLOCKED", ["raw_only_reason_missing:header.server_name"],
+    )
+    parse_failed = {**base, "field_mappings": [
+        {"raw_field": "event.failed", "status": "PARSE_FAILED", "reason": "parser failure"},
+    ]}
+    assert raw_audit_status(parse_failed) == ("FAIL", ["parse_failed:event.failed"])

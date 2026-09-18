@@ -129,7 +129,7 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       throw new Error(UNAVAILABLE);
     }
 
-    const { deriveRawArtifactAuditStatus, rawArtifactSha256, stableRawArtifactJson } =
+    const { deriveRawArtifactAuditStatus, rawArtifactSha256, stableRawArtifactJson, validateRawAuditMappingInventory } =
       await import("@/lib/pipeline/rawArtifactContract");
     const auditEvidence = manifest["audit_evidence"];
     const auditEvidenceDigest = manifest["audit_evidence_digest"];
@@ -167,15 +167,15 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
           reasons: Array.isArray(v["reasons"]) ? v["reasons"].filter((r): r is string => typeof r === "string") : [],
         }))
       : [];
-    const mappingInventory = Array.isArray(evidence["field_mappings"])
-      ? evidence["field_mappings"].filter((v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v)).map((v) => ({
+    const validatedMappings = validateRawAuditMappingInventory(evidence["field_mappings"]);
+    if (validatedMappings.length === 0) throw new Error(UNAVAILABLE);
+    const mappingInventory = validatedMappings.map((v) => ({
           rawField: typeof v["raw_field"] === "string" ? v["raw_field"] : "",
           appField: typeof v["app_field"] === "string" ? v["app_field"] : null,
           canonicalField: typeof v["canonical_field"] === "string" ? v["canonical_field"] : null,
           status: typeof v["status"] === "string" ? v["status"] : "unknown",
           reason: typeof v["reason"] === "string" ? v["reason"] : null,
-        }))
-      : [];
+        }));
     const derivedAuditStatus = deriveRawArtifactAuditStatus(manifest);
     if (artifact.audit_status !== derivedAuditStatus) throw new Error(UNAVAILABLE);
     const parser =

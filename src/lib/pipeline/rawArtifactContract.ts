@@ -37,6 +37,30 @@ const RAW_MAPPING_STATUSES = new Set([
   "UNMAPPED_BUT_AVAILABLE",
 ]);
 
+export function validateRawAuditMappingInventory(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value) || value.length === 0) return [];
+  const seen = new Set<string>();
+  const mappings: Array<Record<string, unknown>> = [];
+  for (const mapping of value) {
+    if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) return [];
+    const item = mapping as Record<string, unknown>;
+    const rawField = item["raw_field"];
+    const status = item["status"];
+    if (
+      typeof rawField !== "string" ||
+      !rawField.trim() ||
+      seen.has(rawField) ||
+      typeof status !== "string" ||
+      !RAW_MAPPING_STATUSES.has(status)
+    ) {
+      return [];
+    }
+    seen.add(rawField);
+    mappings.push(item);
+  }
+  return mappings;
+}
+
 function hasMappingReason(mapping: Record<string, unknown>): boolean {
   const hasReasonField = Object.prototype.hasOwnProperty.call(mapping, "reason");
   const reason = mapping["reason"];
@@ -56,7 +80,7 @@ export function deriveRawArtifactAuditStatus(
   const evidence = value as Record<string, unknown>;
   const reasons = evidence["raw_block_reasons"];
   const gates = evidence["gates"];
-  const mappings = evidence["field_mappings"];
+  const mappings = validateRawAuditMappingInventory(evidence["field_mappings"]);
   if (
     evidence["raw_status"] !== "PASS" ||
     evidence["raw_audit_status"] !== "APPROVED" ||
@@ -64,7 +88,6 @@ export function deriveRawArtifactAuditStatus(
     reasons.length > 0 ||
     !Array.isArray(gates) ||
     gates.length === 0 ||
-    !Array.isArray(mappings) ||
     mappings.length === 0
   ) {
     return "blocked";
@@ -76,9 +99,7 @@ export function deriveRawArtifactAuditStatus(
       !Array.isArray(gate) &&
       (gate as Record<string, unknown>)["status"] === "PASS",
   );
-  const mappingsPass = mappings.every((mapping) => {
-    if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) return false;
-    const item = mapping as Record<string, unknown>;
+  const mappingsPass = mappings.every((item) => {
     const rawField = item["raw_field"];
     const status = item["status"];
     if (typeof rawField !== "string" || !rawField.trim()) return false;
