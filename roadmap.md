@@ -1,5 +1,13 @@
 # Roadmap
 
+## FASE 2.7.2G.2 — RAW Coverage Closure — EM EXECUÇÃO
+
+- [ ] Extrair do manifest RAW preservado a lista exata dos 178 UNMAPPED_BUT_AVAILABLE e os 3 gates FAIL; não inferir nomes nem causas.
+- [ ] Classificar cada campo individualmente como MAPPED, DERIVED, RAW_ONLY_INTENTIONAL, NOT_PRESENT_IN_DEMO ou UNAVAILABLE, somente com evidência do parser/manifest.
+- [ ] Para qualquer campo que deva alimentar Canonical/analytics, implementar o mapping no contrato correto e adicionar regressão; não promover campo a RAW-only apenas para liberar o gate.
+- [ ] Resolver individualmente os 3 gates FAIL e preservar fail-closed para qualquer evidência ainda desconhecida.
+- [ ] Revalidar o artifact Cache original sem mutá-lo; somente após cobertura fechada executar novo Cache Run 1 oficial.
+- [ ] Run 2/idempotência somente após Run 1 PASS; Fase 2.8 permanece bloqueada.
 ## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
 
 - [x] Auditar o estado real do job Cache e artifact sem alterar dados: tentativa lógica 7, dispatch 2, artifact READY/BLOCKED, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e zero Canonical.
