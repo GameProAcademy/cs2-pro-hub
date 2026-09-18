@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -96,7 +96,7 @@ export interface AdminRawAuditForensics {
     status: string;
     reason: string | null;
   }>;
-  forensicInventory: Record<string, unknown>;
+  forensicInventory: Json;
 }
 
 export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
@@ -212,7 +212,7 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       mappingInventory,
       forensicInventory:
         evidence["forensic_inventory"] && typeof evidence["forensic_inventory"] === "object" && !Array.isArray(evidence["forensic_inventory"])
-          ? evidence["forensic_inventory"] as Record<string, unknown>
+          ? evidence["forensic_inventory"] as Json
           : {},
     };
   });

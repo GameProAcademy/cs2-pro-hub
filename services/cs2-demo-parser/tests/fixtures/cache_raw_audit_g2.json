@@ -1,5 +1,5 @@
 {
-  "audit_evidence_digest": "6349c2cb79b14a1f8d9fa69eaef5dd940cbc3ceb6d39c15bb60f8e3cdc7f4c64",
+  "audit_evidence_digest": "6349c2cb79b14a1f8d9fa69ea5dd940cbc3ceb6d39c15bb60f8e3cdc7f4c64",
   "expected_fail_gates": ["RAW-EVIDENCE-01", "RAW→CANONICAL", "ROUND-COVERAGE"],
   "expected_legacy_unmapped_count": 178,
   "expected_current_counts": {"MAPPED": 4, "RAW_ONLY_INTENTIONAL": 174},
