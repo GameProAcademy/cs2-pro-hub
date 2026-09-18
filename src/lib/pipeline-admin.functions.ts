@@ -67,10 +67,21 @@ export interface AdminRawAuditForensics {
   auditStatus: string;
   auditEvidenceDigest: string;
   contractVersion: number;
-  parser: Record<string, unknown>;
+  parser: {
+    name: string | null;
+    version: string | null;
+    revision: string | null;
+    semanticRevision: string | null;
+    buildRevision: string | null;
+  };
   rawBlockReasons: string[];
   gates: Array<{ gate: string; status: string; reasons: string[] }>;
-  eventCoverage: Array<Record<string, unknown>>;
+  eventCoverage: Array<{
+    event: string;
+    status: string;
+    observedRows: number | null;
+    reason: string | null;
+  }>;
   unmapped: Array<{
     rawField: string;
     appField: string | null;
@@ -167,6 +178,10 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       : [];
     const derivedAuditStatus = deriveRawArtifactAuditStatus(manifest);
     if (artifact.audit_status !== derivedAuditStatus) throw new Error(UNAVAILABLE);
+    const parser =
+      manifest["parser"] && typeof manifest["parser"] === "object" && !Array.isArray(manifest["parser"])
+        ? manifest["parser"] as Record<string, unknown>
+        : {};
     return {
       jobId: artifact.job_id,
       artifactId: artifact.id,
@@ -174,16 +189,24 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       auditStatus: derivedAuditStatus,
       auditEvidenceDigest,
       contractVersion: typeof manifest["contract_version"] === "number" ? manifest["contract_version"] : 0,
-      parser:
-        manifest["parser"] && typeof manifest["parser"] === "object" && !Array.isArray(manifest["parser"])
-          ? manifest["parser"] as Record<string, unknown>
-          : {},
+      parser: {
+        name: typeof parser["name"] === "string" ? parser["name"] : null,
+        version: typeof parser["version"] === "string" ? parser["version"] : null,
+        revision: typeof parser["revision"] === "string" ? parser["revision"] : null,
+        semanticRevision: typeof parser["semantic_revision"] === "string" ? parser["semantic_revision"] : null,
+        buildRevision: typeof parser["build_revision"] === "string" ? parser["build_revision"] : null,
+      },
       rawBlockReasons,
       gates,
       eventCoverage: Array.isArray(evidence["event_coverage"])
         ? evidence["event_coverage"].filter(
             (v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v),
-          )
+          ).map((v) => ({
+            event: typeof v["event"] === "string" ? v["event"] : "unknown",
+            status: typeof v["status"] === "string" ? v["status"] : "unknown",
+            observedRows: typeof v["observed_rows"] === "number" ? v["observed_rows"] : null,
+            reason: typeof v["reason"] === "string" ? v["reason"] : null,
+          }))
         : [],
       unmapped: mappingInventory.filter((item) => item.status === "UNMAPPED_BUT_AVAILABLE"),
       mappingInventory,
