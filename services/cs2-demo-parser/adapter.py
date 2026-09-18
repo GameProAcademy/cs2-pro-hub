@@ -166,9 +166,9 @@ def _position(row: Record, prefix: str) -> dict[str, float] | None:
 def normalize_header(raw: Record, warnings: list[str]) -> Record:
     """demoparser2 header dict -> contract header.
 
-    Only `map` and `game_version` exist in the demoparser2 header. tickrate,
-    duration, match date, score and teams are NOT part of it and are therefore
-    absent instead of guessed.
+    Only `map` and `game_version` are guaranteed in the demoparser2 header.
+    Tickrate is used only when the parser provides it; duration, match date,
+    score and teams are absent instead of guessed.
     """
     source = {str(k): v for k, v in dict(raw or {}).items()}
     tickrate = _num(_pick(source, "tickrate", "tick_rate"))
@@ -270,19 +270,19 @@ def resolve_event_round(
 ) -> int | None:
     """Map a tick to a round number, deterministically, or None.
 
-    An event is assigned to the first round whose window contains its tick. The
-    window is `(previous_end, end]` — i.e. everything after the previous round
-    ended belongs to the round that ends next, which is exactly how freeze time
-    and post-plant events are ordered in a demo. Ticks after the last known end
-    (or an absent tick) resolve to None: no round is invented.
+    An event is assigned to the first round whose observed window contains its
+    tick. With ends, the window is `(previous_end, end]`. With starts only, it is
+    `[start, next_start)`, and the final observed start owns later events. An
+    absent tick, or a tick before the first observed start, resolves to None.
     """
     if tick is None or not intervals:
         return None
     previous_end: int | None = None
-    for number, start, end in intervals:
+    for index, (number, start, end) in enumerate(intervals):
         if end is None:
-            lower = previous_end if previous_end is not None else start
-            if lower is None or tick >= lower:
+            next_start = intervals[index + 1][1] if index + 1 < len(intervals) else None
+            lower = start if start is not None else previous_end
+            if (lower is None or tick >= lower) and (next_start is None or tick < next_start):
                 return number
             continue
         if previous_end is not None:
