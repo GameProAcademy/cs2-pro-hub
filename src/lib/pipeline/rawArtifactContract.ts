@@ -38,8 +38,9 @@ const RAW_MAPPING_STATUSES = new Set([
 ]);
 
 function hasMappingReason(mapping: Record<string, unknown>): boolean {
+  const hasReasonField = Object.prototype.hasOwnProperty.call(mapping, "reason");
   const reason = mapping["reason"];
-  if (typeof reason === "string") return reason.trim().length > 0;
+  if (hasReasonField) return typeof reason === "string" && reason.trim().length > 0;
   return mapping["reason_present"] === true;
 }
 
