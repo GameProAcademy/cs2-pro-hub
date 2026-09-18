@@ -308,15 +308,15 @@ PASS. Demo persistence requires an explicit RAW approval. Artifact identity, REA
 
 | File | Main blob SHA | Railway branch SHA | Status | Classification |
 |---|---|---|---|---|
-| `parser.py` | `7973203f` | unavailable | PENDING | MUST SYNC determination blocked |
-| `raw_evidence.py` | `faa48232` | unavailable | PENDING | MUST SYNC determination blocked |
-| `raw_artifact.py` | `062cabc5` | unavailable | PENDING | MUST SYNC determination blocked |
-| `hot_payload.py` | `041c66a3` | unavailable | PENDING | MUST SYNC determination blocked |
-| `settings.py` | `35eecfb0` | unavailable | PENDING | MUST SYNC determination blocked |
-| `adapter.py` | `49deee96` | unavailable | PENDING | MUST SYNC determination blocked |
-| `app.py` | `79956700` | unavailable | PENDING | MUST SYNC determination blocked |
-| `demo_integrity.py` | `3cb4291d` | unavailable | PENDING | MUST SYNC determination blocked |
-| `requirements.txt` | `c5caead7` | unavailable | PENDING | MUST SYNC determination blocked |
+| `parser.py` | `7973203fcd0fc86f08d444db22128fe0cc5311bb` | unavailable | PENDING | MUST SYNC determination blocked |
+| `raw_evidence.py` | `faa48232c9774a5ead5c58885731b4deb50d3644` | unavailable | PENDING | MUST SYNC determination blocked |
+| `raw_artifact.py` | `062cabc587a3504d04cab8297668c780d98feebd` | unavailable | PENDING | MUST SYNC determination blocked |
+| `hot_payload.py` | `041c66a30dde55d8237b4e6b07f02375b2e09817` | unavailable | PENDING | MUST SYNC determination blocked |
+| `settings.py` | `35eecfb06223812137a4a2f17114aae57cb7fe54` | unavailable | PENDING | MUST SYNC determination blocked |
+| `adapter.py` | `49deee965706066208ecd88fd2e0869c448ed92f` | unavailable | PENDING | MUST SYNC determination blocked |
+| `app.py` | `7995670c41ed743d98da34309546443de000cceb` | unavailable | PENDING | MUST SYNC determination blocked |
+| `demo_integrity.py` | `3cb4291d657b8cb23f12731c46742e810e01c597` | unavailable | PENDING | MUST SYNC determination blocked |
+| `requirements.txt` | `c5caead735f64450ecefb07b16ffa72808409962` | unavailable | PENDING | MUST SYNC determination blocked |
 | `worker_main.py` | `MISSING` | unavailable | PENDING | MUST SYNC determination blocked |
 
 The requested `infra/cs2-parser-worker-v8` ref is absent from all accessible local/origin refs. The secondary remote is inaccessible in this environment. No same/different or MUST PRESERVE conclusion is fabricated. Railway `/version` is observable, but it does not substitute for source-tree parity.
@@ -326,7 +326,7 @@ The requested `infra/cs2-parser-worker-v8` ref is absent from all accessible loc
 | Source | Identity |
 |---|---|
 | Immutable artifact | `demoparser2@0.42.0`; semantic/build `git:e3e98bed16a71b23b05f8b2742b1d92b6198efd4`; contract 1 |
-| Current main | `demoparser2@0.42.0`; contract 1; source HEAD captured during audit |
+| Current main | `demoparser2@0.42.0`; contract 1; source HEAD `35bb99b712b37079cab7a9bff309898ccc193e76` |
 | Running Railway | `demoparser2@0.42.0`; semantic `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`; build `git:41550d9a4bf5ef818fc1042c75946728084563f7`; contract 1 |
 
 Contract and parser package match. Semantic and build revisions do not match the immutable artifact; that is expected historical provenance, not artifact corruption. The running Railway build differs from the APP configured build pin and its source branch is unavailable, so the next E2E remains blocked pending controlled parity sync and a new `/version` proof.
@@ -334,9 +334,11 @@ Contract and parser package match. Semantic and build revisions do not match the
 ## 25. Tests
 
 - Independent physical manifest reconciliation: PASS (178/178).
-- Focused Python RAW tests: PASS.
-- TypeScript RAW/Canonical fail-closed tests: PASS.
-- Parser/pipeline/Canonical/typecheck/compileall/diff/build: see final validation record in the roadmap.
+- Python parser suite: 169 passed, 3 skipped, 1 deprecation warning.
+- TypeScript pipeline/Canonical: 554 passed.
+- APP suite: 918 passed.
+- Typecheck, compileall, and diff check: PASS.
+- Initial Python run without an exposed asyncio plugin failed only at test collection; rerun in an isolated complete environment passed.
 
 ## 26. Formal status
 
@@ -360,7 +362,7 @@ Contract and parser package match. Semantic and build revisions do not match the
 | G3-16 Canonical fail-closed | **PASS** |
 | G3-17 Parser identity | **PASS (mismatch documented)** |
 | G3-18 Railway parity | **PENDING — branch unavailable** |
-| G3-19 Test suite | **PENDING final run** |
+| G3-19 Test suite | **PASS** |
 | G3-20 Run 1 authorization | **BLOCKED** |
 
 ## 27. Open blockers and recommendation

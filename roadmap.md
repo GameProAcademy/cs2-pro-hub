@@ -1084,3 +1084,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Continuar somente o job Cache existente e observar os 20 gates até estado terminal, sem novo upload, mensagem, reset ou exclusão.
 - [ ] Medir parser, RAW, HOT e pipeline antes de qualquer otimização.
 - [ ] Ajustar somente os dois textos portugueses solicitados em “Analisar meu jogo” e validar em mobile.
+## FASE 2.7.2G.3 — Independent RAW manifest ↔ 178 closure + Railway parity gate — PARTIAL / OPERATIONALLY BLOCKED
+
+- [x] Re-read the immutable Cache manifest from private Storage and verify identity, contract 1, audit digest, root digest, 24 chunks, 373,754 rows, and 2,799,488 compressed bytes without mutation.
+- [x] Reconcile exactly 178/178 legacy `UNMAPPED_BUT_AVAILABLE` fields against the independent fixture: 4 `MAPPED`, 174 `RAW_ONLY_INTENTIONAL`, 0 unknown, 0 duplicates, and no set difference.
+- [x] Audit events, event fields, players, rounds, ticks, bombs, damage, deaths, grenades, teams/score, usercmd, and forensic inventories without inventing absent evidence.
+- [x] Preserve the historical artifact as READY/RAW READY/audit BLOCKED with its three stored FAIL gates; current-code projection does not retroactively approve it.
+- [x] Validate fail-closed RAW→Canonical admission and duplicate/empty/unknown mapping defenses.
+- [x] Validate parser 169 passed/3 skipped, pipeline+Canonical 554 passed, APP 918 passed, plus typecheck, compileall, and diff check.
+- [x] Publish the complete 178-row matrix and G3-01..G3-20 status in `services/cs2-demo-parser/docs/cache-g3-independent-raw-audit.md`.
+- [ ] G3-18 Railway parity remains PENDING/BLOCKED: `infra/cs2-parser-worker-v8` is unavailable in accessible refs and the secondary remote cannot be authenticated.
+- [ ] Cache Run 1, Run 2, Canonical persistence, Railway deploy, secrets, artifact, database, and Storage were not changed or executed.
+
