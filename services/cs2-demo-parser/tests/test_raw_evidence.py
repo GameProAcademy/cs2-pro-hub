@@ -233,6 +233,21 @@ def test_game_state_identity_aliases_are_explicitly_catalogued():
     assert by_field["game_state.name"]["status"] == "MAPPED"
 
 
+def test_unknown_mapping_status_fails_closed():
+    evidence = build_raw_evidence(material(), output())
+    evidence["field_mappings"].append({
+        "raw_field": "future.status", "app_field": None, "canonical_field": None,
+        "status": "FUTURE_STATUS", "reason": None,
+    })
+    final = finalize_evidence(
+        evidence,
+        parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+        contract_version=1, demo_sha256="a" * 64, file_size=99,
+    )
+    assert final["raw_status"] == "BLOCKED"
+    assert "unknown_mapping_status:future.status:FUTURE_STATUS" in final["raw_block_reasons"]
+
+
 def test_unknown_field_is_preserved_and_blocks_instead_of_disappearing():
     final = finalize_evidence(build_raw_evidence(material(), output()),
                               parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
