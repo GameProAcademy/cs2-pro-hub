@@ -102,7 +102,9 @@ describe("raw evidence contract", () => {
           },
         ],
       });
-    expect((await runRawForensicAudit(unexplained)).status).toBe("BLOCKED");
+    const unexplainedDecision = await runRawForensicAudit(unexplained);
+    expect(unexplainedDecision.status).toBe("BLOCKED");
+    expect(unexplainedDecision.reasons).toContain("raw_only_reason_missing:player.kills_total");
   });
 
   it("blocks empty audit evidence instead of treating absence as PASS", async () => {

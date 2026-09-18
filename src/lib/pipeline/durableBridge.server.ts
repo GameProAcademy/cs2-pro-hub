@@ -10,6 +10,7 @@ import {
 } from "@/lib/pipeline/types";
 import {
   RAW_ARTIFACT_SECTION_ORDER,
+  deriveRawArtifactAuditStatus,
   rawArtifactSha256,
   stableRawArtifactJson,
 } from "@/lib/pipeline/rawArtifactContract";
@@ -168,30 +169,7 @@ export function rawPrefix(userId: string, uploadId: string, demoAttemptNumber: n
   return `${userId}/${uploadId}/attempt-${demoAttemptNumber}`;
 }
 
-export function deriveRawArtifactAuditStatus(manifest: Record<string, unknown>): "approved" | "blocked" {
-  const value = manifest["audit_evidence"];
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "blocked";
-  const evidence = value as Record<string, unknown>;
-  const reasons = evidence["raw_block_reasons"];
-  const gates = evidence["gates"];
-  const mappings = evidence["field_mappings"];
-  if (evidence["raw_status"] !== "PASS" || evidence["raw_audit_status"] !== "APPROVED" ||
-      !Array.isArray(reasons) || reasons.length > 0 || !Array.isArray(gates) || gates.length === 0 ||
-      !Array.isArray(mappings) || mappings.length === 0) return "blocked";
-  const gatesPass = gates.every((item) => item && typeof item === "object" &&
-    (item as Record<string, unknown>)["status"] === "PASS");
-  const mappingsPass = mappings.every((item) => {
-    if (!item || typeof item !== "object") return false;
-    const mapping = item as Record<string, unknown>;
-    const status = mapping["status"];
-    if (status === "PARSE_FAILED") return false;
-    if (status === "UNMAPPED_BUT_AVAILABLE" || status === "RAW_ONLY_INTENTIONAL") {
-      return mapping["reason_present"] === true;
-    }
-    return true;
-  });
-  return gatesPass && mappingsPass ? "approved" : "blocked";
-}
+export { deriveRawArtifactAuditStatus } from "@/lib/pipeline/rawArtifactContract";
 
 type VerifiedRawChunk = {
   section: string;
@@ -227,6 +205,15 @@ export function computeRawArtifactIntegrity(chunks: VerifiedRawChunk[]) {
   const totalBytes = chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0);
   if (totalBytes > RAW_ARTIFACT_MAX_BYTES) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW artifact size limit exceeded");
+  }
+  if (chunks.some((chunk) =>
+    !RAW_ARTIFACT_SECTION_ORDER.includes(chunk.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]) ||
+    !Number.isSafeInteger(chunk.chunk_index) || chunk.chunk_index < 0 ||
+    !Number.isSafeInteger(chunk.row_count) || chunk.row_count <= 0 ||
+    !Number.isSafeInteger(chunk.byte_size) || chunk.byte_size <= 0 ||
+    chunk.byte_size > RAW_CHUNK_HARD_MAX_BYTES
+  )) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW chunk metadata");
   }
   let previous: string | null = null;
   const summaries = RAW_ARTIFACT_SECTION_ORDER.map((section) => {
