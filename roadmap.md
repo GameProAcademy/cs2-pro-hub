@@ -1096,3 +1096,13 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] G3-18 Railway parity remains PENDING/BLOCKED: `infra/cs2-parser-worker-v8` is unavailable in accessible refs and the secondary remote cannot be authenticated.
 - [ ] Cache Run 1, Run 2, Canonical persistence, Railway deploy, secrets, artifact, database, and Storage were not changed or executed.
 
+## FASE 2.7.2G.4 — Controlled Railway parity sync — BLOCKED ON SOURCE REFS
+
+- [x] Freeze MAIN baseline at `595e26badda495d6e4eb5be383681f4a535f7064` and record the required parser file hashes/classifications.
+- [x] Validate MAIN parser/RAW/HOT/worker contracts: Python 169 passed/3 skipped; pipeline+Canonical 554 passed; APP 918 passed; typecheck, compileall, diff check, and preview build PASS.
+- [x] Confirm the running Railway service read-only: health 200, durable-worker role, demoparser2 0.42.0, contract 1, valid semantic/build revisions.
+- [x] Publish the surgical sync design, security matrix, G4-01..G4-24 statuses, and exact blockers in `services/cs2-demo-parser/docs/cache-g4-railway-parity-audit.md`.
+- [ ] Obtain auditable refs for `infra/cs2-parser-worker-v8` and `infra/cs2-parser-worker-v8-parity-g4`; neither is exposed by the accessible remote.
+- [ ] Apply and audit the staging patch only after both refs are available, preserving `parser_isolated.py`, `parser_child.py`, `worker_main.py`, Railway worker lifecycle, and build identity.
+- [ ] G4 deployment readiness remains BLOCKED; no Cache run, retry/requeue, Canonical write, artifact mutation, data/config/secret change, or Railway deploy occurred.
+
