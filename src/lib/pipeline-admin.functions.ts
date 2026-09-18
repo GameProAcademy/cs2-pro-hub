@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -66,8 +66,22 @@ export interface AdminRawAuditForensics {
   manifestStoragePath: string;
   auditStatus: string;
   auditEvidenceDigest: string;
+  contractVersion: number;
+  parser: {
+    name: string | null;
+    version: string | null;
+    revision: string | null;
+    semanticRevision: string | null;
+    buildRevision: string | null;
+  };
   rawBlockReasons: string[];
   gates: Array<{ gate: string; status: string; reasons: string[] }>;
+  eventCoverage: Array<{
+    event: string;
+    status: string;
+    observedRows: number | null;
+    reason: string | null;
+  }>;
   unmapped: Array<{
     rawField: string;
     appField: string | null;
@@ -82,7 +96,7 @@ export interface AdminRawAuditForensics {
     status: string;
     reason: string | null;
   }>;
-  forensicInventory: Record<string, unknown>;
+  forensicInventory: Json;
 }
 
 export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
@@ -93,8 +107,10 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: artifact, error: artifactError } = await supabaseAdmin
       .from("raw_evidence_artifacts")
-      .select("id, job_id, manifest_storage_path, status, raw_status, audit_status")
+      .select("id, job_id, upload_id, attempt_number, demo_sha256, root_digest, manifest_storage_path, status, raw_status, audit_status")
       .eq("job_id", data.jobId)
+      .order("attempt_number", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (artifactError || !artifact) throw new Error(UNAVAILABLE);
     if (artifact.status !== "ready" || artifact.raw_status !== "ready") throw new Error(UNAVAILABLE);
@@ -126,9 +142,24 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
     }
 
     const evidence = auditEvidence as Record<string, unknown>;
-    const rawBlockReasons = Array.isArray(manifest["raw_block_reasons"])
+    if (
+      manifest["job_id"] !== artifact.job_id ||
+      manifest["upload_id"] !== artifact.upload_id ||
+      manifest["attempt_number"] !== artifact.attempt_number ||
+      manifest["demo_sha256"] !== artifact.demo_sha256 ||
+      manifest["root_digest"] !== artifact.root_digest
+    ) {
+      throw new Error(UNAVAILABLE);
+    }
+    const rawBlockReasons = Array.isArray(evidence["raw_block_reasons"])
+      ? evidence["raw_block_reasons"].filter((v): v is string => typeof v === "string")
+      : [];
+    const topLevelReasons = Array.isArray(manifest["raw_block_reasons"])
       ? manifest["raw_block_reasons"].filter((v): v is string => typeof v === "string")
       : [];
+    if (stableRawArtifactJson(rawBlockReasons) !== stableRawArtifactJson(topLevelReasons)) {
+      throw new Error(UNAVAILABLE);
+    }
     const gates = Array.isArray(evidence["gates"])
       ? evidence["gates"].filter((v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v)).map((v) => ({
           gate: typeof v["gate"] === "string" ? v["gate"] : "unknown",
@@ -145,19 +176,43 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
           reason: typeof v["reason"] === "string" ? v["reason"] : null,
         }))
       : [];
+    const derivedAuditStatus = deriveRawArtifactAuditStatus(manifest);
+    if (artifact.audit_status !== derivedAuditStatus) throw new Error(UNAVAILABLE);
+    const parser =
+      manifest["parser"] && typeof manifest["parser"] === "object" && !Array.isArray(manifest["parser"])
+        ? manifest["parser"] as Record<string, unknown>
+        : {};
     return {
       jobId: artifact.job_id,
       artifactId: artifact.id,
       manifestStoragePath: artifact.manifest_storage_path,
-      auditStatus: typeof artifact.audit_status === "string" ? artifact.audit_status : deriveRawArtifactAuditStatus(manifest),
+      auditStatus: derivedAuditStatus,
       auditEvidenceDigest,
+      contractVersion: typeof manifest["contract_version"] === "number" ? manifest["contract_version"] : 0,
+      parser: {
+        name: typeof parser["name"] === "string" ? parser["name"] : null,
+        version: typeof parser["version"] === "string" ? parser["version"] : null,
+        revision: typeof parser["revision"] === "string" ? parser["revision"] : null,
+        semanticRevision: typeof parser["semantic_revision"] === "string" ? parser["semantic_revision"] : null,
+        buildRevision: typeof parser["build_revision"] === "string" ? parser["build_revision"] : null,
+      },
       rawBlockReasons,
       gates,
+      eventCoverage: Array.isArray(evidence["event_coverage"])
+        ? evidence["event_coverage"].filter(
+            (v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v),
+          ).map((v) => ({
+            event: typeof v["event"] === "string" ? v["event"] : "unknown",
+            status: typeof v["status"] === "string" ? v["status"] : "unknown",
+            observedRows: typeof v["observed_rows"] === "number" ? v["observed_rows"] : null,
+            reason: typeof v["reason"] === "string" ? v["reason"] : null,
+          }))
+        : [],
       unmapped: mappingInventory.filter((item) => item.status === "UNMAPPED_BUT_AVAILABLE"),
       mappingInventory,
       forensicInventory:
         evidence["forensic_inventory"] && typeof evidence["forensic_inventory"] === "object" && !Array.isArray(evidence["forensic_inventory"])
-          ? evidence["forensic_inventory"] as Record<string, unknown>
+          ? evidence["forensic_inventory"] as Json
           : {},
     };
   });

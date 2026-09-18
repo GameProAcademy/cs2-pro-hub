@@ -3,11 +3,12 @@
 ## FASE 2.7.2G.2 — RAW Coverage Closure — EM EXECUÇÃO
 
 - [x] Criar leitura server-only, master-admin, do manifest RAW preservado com validação do digest de audit_evidence; a extração efetiva depende do próximo build/deploy do APP.
-- [ ] Classificar cada campo individualmente como MAPPED, DERIVED, RAW_ONLY_INTENTIONAL, NOT_PRESENT_IN_DEMO ou UNAVAILABLE, somente com evidência do parser/manifest.
-- [ ] Para qualquer campo que deva alimentar Canonical/analytics, implementar o mapping no contrato correto e adicionar regressão; não promover campo a RAW-only apenas para liberar o gate.
-- [ ] Resolver individualmente os 3 gates FAIL e preservar fail-closed para qualquer evidência ainda desconhecida.
+- [x] Classificar cada campo individualmente: corpus exato dos 178 campos preservado em fixture executável; projeção atual = 4 MAPPED, 174 RAW_ONLY_INTENTIONAL e 0 desconhecidos.
+- [x] Implementar e testar os quatro mappings semânticos comprovados (`game_state.name`, `game_state.steamid`, `game_state.tick`, `player_death.attackerblind`); os demais campos têm razões RAW-only explícitas, sem wildcard.
+- [x] Resolver localmente e documentar os 3 gates FAIL; campos futuros desconhecidos, parse failures, razões ausentes e evidência incompleta continuam fail-closed.
 - [ ] Revalidar o artifact Cache original sem mutá-lo; somente após cobertura fechada executar novo Cache Run 1 oficial.
 - [ ] Run 2/idempotência somente após Run 1 PASS; Fase 2.8 permanece bloqueada.
+- [x] Revalidar read-only os 24 chunks preservados: 373.754 linhas físicas e 25 estados de rodada derivados de ticks; detalhes em `services/cs2-demo-parser/docs/cache-g2-raw-coverage.md`.
 ## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
 
 - [x] Auditar o estado real do job Cache e artifact sem alterar dados: tentativa lógica 7, dispatch 2, artifact READY/BLOCKED, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e zero Canonical.

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from parser import build_raw_evidence, enrich_rounds_from_tick_evidence
 from raw_evidence import build_gates, event_coverage, evidence_digest, finalize_evidence, raw_events
@@ -336,3 +337,38 @@ def test_tick_sampling_never_claims_complete_and_records_bounds():
     assert sampling["full_extraction"] is False
     assert sampling["sample_size"] == 1
     assert sampling["first_sampled_tick"] == sampling["last_sampled_tick"] == 10
+
+
+def test_cache_g2_legacy_unmapped_inventory_is_fully_and_explicitly_classified():
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "cache_raw_audit_g2.json").read_text(encoding="utf-8")
+    )
+    fields = fixture["legacy_unmapped_fields"]
+    assert len(fields) == fixture["expected_legacy_unmapped_count"] == 178
+    assert len(set(fields)) == len(fields)
+
+    raw = {
+        "header": {}, "players": [{}], "event_tables": {},
+        "tick_rows": [{}], "grenade_rows": [{}], "round_rows": [{}],
+    }
+    for field in fields:
+        family, native = field.split(".", 1)
+        if family == "header": raw["header"][native] = 1
+        elif family == "player": raw["players"][0][native] = 1
+        elif family == "game_state": raw["tick_rows"][0][native] = 1
+        elif family == "grenade": raw["grenade_rows"][0][native] = 1
+        elif family == "round": raw["round_rows"][0][native] = 1
+        else: raw["event_tables"].setdefault(family, [{}])[0][native] = 1
+
+    from raw_evidence import mapping_inventory
+    classified = {item["raw_field"]: item for item in mapping_inventory(raw)}
+    counts = {
+        status: sum(item["status"] == status for item in classified.values())
+        for status in fixture["expected_current_counts"]
+    }
+    assert counts == fixture["expected_current_counts"]
+    assert not [item for item in classified.values() if item["status"] == "UNMAPPED_BUT_AVAILABLE"]
+    assert all(item.get("reason") for item in classified.values() if item["status"] == "RAW_ONLY_INTENTIONAL")
+    assert {field for field, item in classified.items() if item["status"] == "MAPPED"} == {
+        "game_state.name", "game_state.steamid", "game_state.tick", "player_death.attackerblind",
+    }
