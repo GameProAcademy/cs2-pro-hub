@@ -516,8 +516,11 @@ def raw_audit_status(evidence: dict[str, Any]) -> tuple[str, list[str]]:
         reasons.append("audit_mapping_inventory_empty")
     if not evidence.get("forensic_inventory"):
         reasons.append("audit_inventory_missing")
+    allowed_statuses = {"MAPPED", "DERIVED", "RAW_ONLY_INTENTIONAL", "NOT_PRESENT_IN_DEMO", "UNAVAILABLE", "PARSE_FAILED", "UNMAPPED_BUT_AVAILABLE"}
     for item in evidence["field_mappings"]:
-        if item["status"] == "PARSE_FAILED":
+        if item.get("status") not in allowed_statuses:
+            reasons.append(f"unknown_mapping_status:{item.get('raw_field', '[unknown]')}:{item.get('status')}")
+        elif item["status"] == "PARSE_FAILED":
             failed = True
             reasons.append(f"parse_failed:{item['raw_field']}")
         elif item["status"] == "UNMAPPED_BUT_AVAILABLE":
