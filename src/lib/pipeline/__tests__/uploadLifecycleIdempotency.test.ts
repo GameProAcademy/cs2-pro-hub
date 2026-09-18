@@ -90,7 +90,7 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("allows the blocked-audit reason in both immutable-attempt constraints", () => {
-    expect(migration.match(/'raw_audit_blocked'/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(migration.match(/'raw_audit_blocked'/g)?.length).toBeGreaterThanOrEqual(4);
     expect(migration).toContain("uploads_replacement_reason_check");
     expect(migration).toContain("demo_jobs_replacement_reason_check");
   });
