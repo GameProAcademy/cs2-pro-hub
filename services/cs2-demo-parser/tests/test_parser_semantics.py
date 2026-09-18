@@ -1,6 +1,6 @@
 """Semantic boundary tests for the demoparser2 -> RawParserOutput path."""
 
-from parser import _postprocess_contract, _contextualize_rows
+from parser import _postprocess_contract, _contextualize_rows, derive_round_streams_from_tick_evidence
 
 A = "76561198000000001"
 
@@ -15,6 +15,54 @@ def test_warmup_rows_are_not_allowed_into_contract_context():
     assert len(rows) == 1
     assert rows[0]["round"] == 1
     assert rows[0]["time_seconds"] == 12.5
+
+
+def test_round_starts_are_derived_from_native_tick_context_when_events_are_absent():
+    raw = {
+        "header": {},
+        "warnings": [],
+        "round_starts": [],
+        "round_ends": [],
+        "tick_rows": [
+            {"tick": 2227, "total_rounds_played": 0, "game_time": 2440.203125,
+             "round_start_time": 2431.78125},
+            {"tick": 4398, "total_rounds_played": 0, "game_time": 2474.125,
+             "round_start_time": 2431.78125},
+            # The native completed-round counter may advance before the next
+            # round_start_time appears; the duplicate time must not add a round.
+            {"tick": 6068, "total_rounds_played": 1, "game_time": 2500.21875,
+             "round_start_time": 2431.78125},
+            {"tick": 6890, "total_rounds_played": 1, "game_time": 2513.0625,
+             "round_start_time": 2504.65625},
+            {"tick": 6990, "total_rounds_played": 1, "game_time": 2514.625,
+             "round_start_time": 2504.65625},
+        ],
+    }
+    derive_round_streams_from_tick_evidence(raw)
+    assert raw["round_starts"] == [
+        {"tick": 1688, "round": 1, "derived_from": "game_state.round_start_time"},
+        {"tick": 6352, "round": 2, "derived_from": "game_state.round_start_time"},
+    ]
+    assert len(raw["warnings"]) == 1
+
+
+def test_round_derivation_never_overrides_native_streams_or_accepts_inconsistent_offsets():
+    native = {"header": {"playback_ticks_per_second": 64}, "warnings": [],
+              "round_starts": [{"tick": 100}], "round_ends": [], "tick_rows": []}
+    derive_round_streams_from_tick_evidence(native)
+    assert native["round_starts"] == [{"tick": 100}]
+
+    inconsistent = {"header": {}, "warnings": [], "round_starts": [], "round_ends": [],
+                    "tick_rows": [{"tick": 100, "total_rounds_played": 0,
+                                   "game_time": 10, "round_start_time": 9},
+                                  {"tick": 120, "total_rounds_played": 0,
+                                   "game_time": 11, "round_start_time": 9},
+                                  {"tick": 200, "total_rounds_played": 1,
+                                   "game_time": 20, "round_start_time": 19},
+                                  {"tick": 210, "total_rounds_played": 1,
+                                   "game_time": 21, "round_start_time": 19}]}
+    derive_round_streams_from_tick_evidence(inconsistent)
+    assert inconsistent["round_starts"] == []
 
 
 def test_team_number_is_not_promoted_to_team_identity():
