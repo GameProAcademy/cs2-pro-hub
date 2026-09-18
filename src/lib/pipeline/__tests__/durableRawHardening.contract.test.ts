@@ -176,6 +176,7 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     ["an empty reason", { reason: "" }, "blocked"],
     ["a whitespace reason", { reason: "   " }, "blocked"],
     ["a null reason", { reason: null }, "blocked"],
+    ["a malformed reason with compact flag", { reason: 123, reason_present: true }, "blocked"],
     ["a false compact reason flag", { reason_present: false }, "blocked"],
   ])("validates RAW_ONLY_INTENTIONAL with %s", (_label, reason, expected) => {
     const audit = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
