@@ -80,9 +80,13 @@ Process isolation is mandatory but not present in MAIN. The staging patch must r
 
 MAIN's durable worker proves claim, logical-attempt separation, heartbeat, final lease/cancellation check, bounded completion, failure reporting, and continued queue polling. Railway-specific stale/retry/bootstrap parity remains blocked until source comparison.
 
+MAIN intentionally invokes the parser with `asyncio.to_thread`; its timeout releases the waiter but cannot terminate a native call already running in-process. This is precisely why the Railway-only process boundary must be preserved rather than replaced by MAIN's caller. A second deployment risk is the static default worker id `railway-parser-1`: staging must prove each replica receives a unique `DEMO_PIPELINE_WORKER_ID`, because source and deployment configuration available here cannot establish that guarantee.
+
 ## 11. Dependency parity
 
 MAIN pins FastAPI 0.115.6, Uvicorn 0.34.0, HTTPX 0.28.1, and demoparser2 0.42.0. Exact Railway dependency and image parity cannot be established without the branch and image build.
+
+The MAIN image runs as non-root with a private temporary directory. It has no Docker `HEALTHCHECK`; current liveness depends on the platform probing `/health`. This is recorded as an operational limitation, not changed in this phase.
 
 ## 12. Security matrix
 
@@ -158,7 +162,8 @@ The first Python invocation lacked the declared `pytest-asyncio` plugin and prod
 2. Expose an auditable `infra/cs2-parser-worker-v8-parity-g4` ref at a precise SHA.
 3. Compare all listed files and direct imports; preserve the three isolation files and Railway lifecycle/build mechanics.
 4. Run isolation-specific tests in the staging tree, including child crash, timeout, malformed output, cleanup, RSS bounds, and supervisor survival.
-5. Build the candidate image and verify its `/health` and `/version` before any separately authorized deploy.
+5. Prove `DEMO_PIPELINE_WORKER_ID` uniqueness for every candidate replica.
+6. Build the candidate image and verify its `/health` and `/version` before any separately authorized deploy.
 
 No patch was applied because there was no auditable staging target. Applying MAIN changes to the current APP branch would not constitute Railway parity and could erase the required isolation design.
 
