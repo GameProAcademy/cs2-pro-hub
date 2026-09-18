@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import {
   computeRawArtifactIntegrity,
   decideRawChunkRecovery,
-  deriveRawArtifactAuditStatus,
   rawPrefix,
   validateDurableClaim,
   RAW_ARTIFACT_MAX_BYTES,
   RAW_MAX_CHUNKS_PER_SECTION,
   RAW_MAX_CHUNKS_TOTAL,
 } from "@/lib/pipeline/durableBridge.server";
+import { deriveRawArtifactAuditStatus } from "@/lib/pipeline/rawArtifactContract";
 import { rawArtifactApproval } from "@/lib/pipeline/rawArtifact.server";
 
 const queueMigration = readFileSync(
@@ -170,6 +170,52 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     } })).toBe("blocked");
   });
 
+  it.each([
+    ["a non-empty canonical reason", { reason: "Preserved forensic metadata" }, "approved"],
+    ["the compact durable reason flag", { reason_present: true }, "approved"],
+    ["an empty reason", { reason: "" }, "blocked"],
+    ["a whitespace reason", { reason: "   " }, "blocked"],
+    ["a null reason", { reason: null }, "blocked"],
+    ["a false compact reason flag", { reason_present: false }, "blocked"],
+  ])("validates RAW_ONLY_INTENTIONAL with %s", (_label, reason, expected) => {
+    const audit = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }], field_mappings: [
+        { raw_field: "header.server_name", status: "RAW_ONLY_INTENTIONAL", ...reason },
+      ] };
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: audit })).toBe(expected);
+  });
+
+  it("keeps unmapped available material blocked even when it has a reason", () => {
+    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }] };
+    for (const reason of [{ reason: "known coverage gap" }, { reason_present: true }]) {
+      expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base, field_mappings: [
+        { raw_field: "future.unknown", status: "UNMAPPED_BUT_AVAILABLE", ...reason },
+      ] } })).toBe("blocked");
+    }
+  });
+
+  it.each([
+    ["PARSE_FAILED mapping", { field_mappings: [{ raw_field: "event.bad", status: "PARSE_FAILED", reason: "parse error" }] }],
+    ["unknown mapping status", { field_mappings: [{ raw_field: "event.future", status: "FUTURE_STATUS", reason: "unknown" }] }],
+    ["FAIL gate", { gates: [{ gate: "RAW", status: "FAIL" }] }],
+    ["BLOCKED gate", { gates: [{ gate: "RAW", status: "BLOCKED" }] }],
+    ["reported block reason", { raw_block_reasons: ["gate:RAW"] }],
+    ["empty mapping inventory", { field_mappings: [] }],
+  ])("fails closed on %s", (_label, override) => {
+    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }],
+      field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason: null }] };
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base, ...override } })).toBe("blocked");
+  });
+
+  it.each([null, {}, { audit_evidence: null }, { audit_evidence: [] }])(
+    "fails closed on incomplete or legacy audit evidence %#",
+    (manifest) => {
+      expect(deriveRawArtifactAuditStatus((manifest ?? {}) as Record<string, unknown>)).toBe("blocked");
+    },
+  );
+
   it("fails closed on a broken physical chunk chain", () => {
     const sha = "a".repeat(64);
     try {
@@ -181,6 +227,15 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     } catch (error) {
       expect(error).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
     }
+  });
+
+  it("rejects unknown RAW sections and invalid physical metadata", () => {
+    const valid = { section: "events", chunk_index: 0, row_count: 1, byte_size: 10,
+      sha256: "a".repeat(64), previous_chunk_sha256: null };
+    expect(() => computeRawArtifactIntegrity([{ ...valid, section: "unknown" }]))
+      .toThrowError(expect.objectContaining({ detail: "invalid RAW chunk metadata" }));
+    expect(() => computeRawArtifactIntegrity([{ ...valid, row_count: 0 }]))
+      .toThrowError(expect.objectContaining({ detail: "invalid RAW chunk metadata" }));
   });
 
   it("changes the root digest when a verified chunk digest changes", () => {
@@ -212,13 +267,13 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
       .toThrowError(expect.objectContaining({ code: "PARSER_INVALID_RESPONSE" }));
   });
 
-  it("requires reasons for every intentionally RAW-only or unmapped available field", () => {
+  it("requires reasons for intentionally RAW-only fields and still blocks unmapped material", () => {
     const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
       gates: [{ gate: "RAW", status: "PASS" }] };
     expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
       field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }] } })).toBe("blocked");
     expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
-      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("approved");
+      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("blocked");
   });
 
   it("never constructs Canonical approval from a blocked decision", () => {

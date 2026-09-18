@@ -1,6 +1,7 @@
 import { PipelineError } from "@/lib/pipeline/errors";
 import {
   RAW_ARTIFACT_SECTION_ORDER,
+  deriveRawArtifactAuditStatus,
   rawArtifactSha256,
   stableRawArtifactJson,
 } from "@/lib/pipeline/rawArtifactContract";
@@ -299,7 +300,18 @@ export async function verifyRawArtifact(args: {
     chunksError ||
     !chunks ||
     chunks.length !== artifact.total_chunks ||
-    chunks.some((chunk) => chunk.status !== "verified")
+    chunks.some((chunk) =>
+      chunk.status !== "verified" ||
+      !RAW_ARTIFACT_SECTION_ORDER.includes(
+        chunk.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
+      ) ||
+      !Number.isSafeInteger(chunk.chunk_index) ||
+      chunk.chunk_index < 0 ||
+      !Number.isSafeInteger(chunk.row_count) ||
+      chunk.row_count <= 0 ||
+      !Number.isSafeInteger(chunk.byte_size) ||
+      chunk.byte_size <= 0
+    )
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunks are not verified");
   }
@@ -364,7 +376,7 @@ export async function verifyRawArtifact(args: {
     manifest["status"] === "ready" &&
     manifest["raw_status"] === "ready" &&
     manifest["audit_status"] === artifact.audit_status &&
-    derivePersistedAuditStatus(manifest) === artifact.audit_status &&
+    deriveRawArtifactAuditStatus(manifest) === artifact.audit_status &&
     auditEvidenceValid;
   if (!manifestMatches) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest mismatch");
@@ -384,41 +396,6 @@ export async function verifyRawArtifact(args: {
       total_bytes: artifact.total_bytes,
     },
   };
-}
-
-function derivePersistedAuditStatus(manifest: Record<string, unknown>): "approved" | "blocked" {
-  const evidence = manifest["audit_evidence"];
-  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return "blocked";
-  const item = evidence as Record<string, unknown>;
-  const reasons = item["raw_block_reasons"];
-  const gates = item["gates"];
-  const mappings = item["field_mappings"];
-  if (
-    item["raw_status"] !== "PASS" ||
-    item["raw_audit_status"] !== "APPROVED" ||
-    !Array.isArray(reasons) ||
-    reasons.length ||
-    !Array.isArray(gates) ||
-    !gates.length ||
-    !Array.isArray(mappings) ||
-    !mappings.length
-  )
-    return "blocked";
-  const gatesPass = gates.every(
-    (gate) =>
-      gate && typeof gate === "object" && (gate as Record<string, unknown>)["status"] === "PASS",
-  );
-  const mappingsPass = mappings.every((mapping) => {
-    if (!mapping || typeof mapping !== "object") return false;
-    const value = mapping as Record<string, unknown>;
-    const status = value["status"];
-    if (status === "PARSE_FAILED") return false;
-    if (status === "UNMAPPED_BUT_AVAILABLE" || status === "RAW_ONLY_INTENTIONAL") {
-      return value["reason_present"] === true;
-    }
-    return true;
-  });
-  return gatesPass && mappingsPass ? "approved" : "blocked";
 }
 
 export function rawArtifactApproval(

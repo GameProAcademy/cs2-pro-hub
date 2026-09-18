@@ -2,12 +2,13 @@
 
 ## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
 
-- [ ] Auditar o estado real do job Cache, fila, RAW, Canonical, métricas e features sem alterar dados.
-- [ ] Obter os motivos concretos do bloqueio RAW e classificar cada gate/mapeamento sem enfraquecer o audit.
-- [ ] Corrigir somente incompatibilidades comprovadas entre parser, artifact, APP e lifecycle.
-- [ ] Validar Railway, contratos, segurança, testes e performance.
+- [x] Auditar o estado real do job Cache e artifact sem alterar dados: tentativa lógica 7, dispatch 2, artifact READY/BLOCKED, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e zero Canonical.
+- [x] Classificar o bloqueio preservado: 178 `UNMAPPED_BUT_AVAILABLE` e três gates FAIL; 176 `RAW_ONLY_INTENTIONAL` tinham justificativa presente.
+- [x] Alinhar a admissão APP ao contrato completo `reason` e à projeção compacta legada `reason_present`, mantendo `UNMAPPED_BUT_AVAILABLE` sempre fail-closed.
+- [x] Consolidar a decisão de finalize/verificação e rejeitar seções ou metadados físicos desconhecidos.
+- [x] Validar contratos locais: 51 testes RAW focados, 475 testes de pipeline, 916 testes APP, typecheck, diff check e build PASS; lint global segue bloqueado por dívida preexistente fora do escopo.
 - [ ] Executar Cache Run 1 pelo lifecycle oficial; Run 2 somente após Run 1 PASS.
-- [ ] Fechar relatório objetivo; manter Fase 2.8 bloqueada até todos os gates críticos passarem.
+- [x] Fechar diagnóstico G.1: artifact original preservado e nenhuma execução iniciada; estado BLOCKED até sincronização controlada do parser corrigido antes de um novo Run 1.
 
 ## FASE 2.7.2 FINAL — FOUNDATION BLOCKED NO RAW AUDIT REAL
 
