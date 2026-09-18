@@ -1095,4 +1095,3 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Publish the complete 178-row matrix and G3-01..G3-20 status in `services/cs2-demo-parser/docs/cache-g3-independent-raw-audit.md`.
 - [ ] G3-18 Railway parity remains PENDING/BLOCKED: `infra/cs2-parser-worker-v8` is unavailable in accessible refs and the secondary remote cannot be authenticated.
 - [ ] Cache Run 1, Run 2, Canonical persistence, Railway deploy, secrets, artifact, database, and Storage were not changed or executed.
-
