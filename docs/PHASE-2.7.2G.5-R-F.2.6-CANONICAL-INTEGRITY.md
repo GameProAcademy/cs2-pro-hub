@@ -29,6 +29,14 @@ No historical attempt, RAW artifact, Canonical row, secret or Railway production
 
 Run 2 remains prohibited until the migration is applied, Railway is synced, focused tests pass, and a fresh controlled Run 1 reaches terminal processed with structurally valid Canonical data.
 
+## Production application and pre-run verification
+
+- The existing migration `20260919110000_g5_rf2_canonical_integrity.sql` was applied once to the production database.
+- Live definitions confirm JSONB `quality_flags`, Canonical postconditions, advisory locking, SHA validation, service-role-only execution and the future-row round interval constraint as `NOT VALID`.
+- Attempts 7 and 8 and both RAW artifacts remain unchanged; no attempt 9 exists and no Cache run was executed.
+- Railway health/version probes remain read-only and report parser `demoparser2 0.42.0`, contract 1 and the pinned semantic revision.
+- The first local gate exposed type-contract and stale-regression-test drift. Those checks must pass before the final gate can become `READY_FOR_CONTROLLED_RUN_1_RETRY`.
+
 ## Exit criteria
 
 - migration applied in production;

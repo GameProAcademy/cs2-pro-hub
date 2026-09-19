@@ -1,6 +1,6 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.6 — CANONICAL INTEGRITY REMEDIATION
 
-**Status:** IMPLEMENTED IN CODE / DB MIGRATION PENDING APPLICATION / RUN 2 STILL BLOCKED.
+**Status:** DB MIGRATION APPLIED / PRE-RUN REGRESSIONS IN PROGRESS / RUN 2 STILL BLOCKED.
 
 This section supersedes older execution notes below when they conflict with the latest forensic audit.
 
@@ -14,9 +14,9 @@ This section supersedes older execution notes below when they conflict with the 
 - [x] Prevented unapproved legacy demo Canonical matches from being identity-convergence targets.
 - [x] Made post-Canonical durable finalization retryable: if Canonical has already committed, the durable job is kept processing for lease/stale recovery instead of being terminalized as failed.
 - [x] Added regression tests for the round-boundary and Canonical semantic defects.
-- [ ] Apply the new Supabase migration to production.
+- [x] Applied the existing migration `20260919110000_g5_rf2_canonical_integrity.sql` to production without creating a duplicate.
 - [ ] Sync the corrected parser adapter to the Railway production branch and verify the deployment.
-- [ ] Re-run focused tests, typecheck/build and production read-only preflight.
+- [ ] Re-run focused tests, typecheck/build and production read-only preflight; initial verification exposed and is correcting type/test drift without executing Cache.
 - [ ] Perform a controlled Cache Run 1 retry using the same physical demo/SHA, with no Run 2.
 - [ ] Only declare G5-R-F.2 PASS after RAW approval, valid Canonical intervals, event containment, terminal job finalization, idempotency and historical immutability are all proven.
 - [ ] Run 2 / attempt 9 remains prohibited until the explicit PASS gate.

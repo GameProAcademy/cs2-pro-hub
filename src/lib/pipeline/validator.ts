@@ -15,6 +15,21 @@ import type {
   CanonicalRound,
 } from "@/lib/pipeline/types";
 
+interface CanonicalBundleMatchShape {
+  roundCount?: number | null;
+}
+
+interface CanonicalBundleRoundShape {
+  roundNumber: number;
+  startTick: number | null;
+  endTick: number | null;
+}
+
+interface CanonicalBundleEventShape {
+  roundNumber: number;
+  tick: number | null;
+}
+
 /** Structural check of the file name/size before any download or parse. */
 export function validateDemoFile(fileName: string, fileSize: number): void {
   if (!fileName.toLowerCase().endsWith(DEMO_EXTENSION)) {
@@ -57,7 +72,7 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
 }
 
 function roundIntervalContainsTick(
-  rounds: readonly CanonicalRound[],
+  rounds: readonly CanonicalBundleRoundShape[],
   roundNumber: number,
   tick: number,
 ): boolean {
@@ -85,9 +100,9 @@ function roundIntervalContainsTick(
  * mere row-count/existence checks.
  */
 export function validateCanonicalBundle(
-  match: CanonicalMatch,
-  rounds: readonly CanonicalRound[],
-  events: readonly CanonicalEvent[],
+  match: CanonicalBundleMatchShape,
+  rounds: readonly CanonicalBundleRoundShape[],
+  events: readonly CanonicalBundleEventShape[],
 ): void {
   if (match.roundCount != null && match.roundCount !== rounds.length) {
     throw new PipelineError("VALIDATION_ERROR", "round_count does not equal round rows");

@@ -53,6 +53,8 @@ interface Fixture {
   player_identities: Row[];
   match_participants: Row[];
   matches: Row[];
+  match_sources: Row[];
+  raw_demo_evidence_reports: Row[];
   failOn?: string;
 }
 
@@ -129,7 +131,13 @@ function graphFixture(linked = STEAM.length): Fixture {
       });
     }
   });
-  return { player_identities: identities, match_participants: [], matches: [] };
+  return {
+    player_identities: identities,
+    match_participants: [],
+    matches: [],
+    match_sources: [],
+    raw_demo_evidence_reports: [],
+  };
 }
 
 const DEMO_MATCH_ID = "demo-canonical-match";
@@ -161,6 +169,20 @@ function demoCanonicalFixture(roster: string[], overrides: Row = {}): Fixture {
       match_id: DEMO_MATCH_ID,
       steam_id64: steamId,
     })),
+    match_sources: [
+      {
+        match_id: DEMO_MATCH_ID,
+        source: "demo",
+        upload_id: "approved-demo-upload",
+      },
+    ],
+    raw_demo_evidence_reports: [
+      {
+        upload_id: "approved-demo-upload",
+        approved_for_canonical: true,
+        raw_audit_status: "APPROVED",
+      },
+    ],
   };
 }
 
@@ -308,7 +330,13 @@ describe("UNIT/MOCK cross-source closure (fakeDb — not a production E2E proof)
   });
 
   it("I — an empty graph is UNRESOLVED, with no invented identity", async () => {
-    const empty: Fixture = { player_identities: [], match_participants: [], matches: [] };
+    const empty: Fixture = {
+      player_identities: [],
+      match_participants: [],
+      matches: [],
+      match_sources: [],
+      raw_demo_evidence_reports: [],
+    };
     const graph = await resolveFaceitIdentities(fakeDb(empty), FACEIT_IDS);
     expect(graph.resolution).toBe("IDENTITY_UNRESOLVED");
     expect(graph.identities.size).toBe(0);
