@@ -308,12 +308,15 @@ export async function loadCandidates(
       .eq("approved_for_canonical", true)
       .eq("raw_audit_status", "APPROVED");
     if (rawError) throw new FaceitIdentityResolutionError(rawError.message);
-    for (const row of approvedReports ?? []) if (row.upload_id) approvedUploadIds.add(row.upload_id);
+    for (const row of approvedReports ?? [])
+      if (row.upload_id) approvedUploadIds.add(row.upload_id);
   }
 
   const eligibleDemoIds = new Set<string>(
     (sourceRows ?? [])
-      .filter((row) => row.source !== "demo" || (row.upload_id && approvedUploadIds.has(row.upload_id)))
+      .filter(
+        (row) => row.source !== "demo" || (row.upload_id && approvedUploadIds.has(row.upload_id)),
+      )
       .map((row) => row.match_id)
       .filter((id): id is string => Boolean(id)),
   );

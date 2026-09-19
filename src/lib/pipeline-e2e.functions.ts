@@ -220,10 +220,7 @@ async function collectEvidence(args: {
   let featureIds: string[] = [];
   const projectedPlayerIds = new Set<string>();
   if (matchIds.length > 0) {
-    const metricsQuery = db
-      .from("match_metrics")
-      .select("id, player_id")
-      .in("match_id", matchIds);
+    const metricsQuery = db.from("match_metrics").select("id, player_id").in("match_id", matchIds);
     const featuresQuery = db
       .from("match_features")
       .select("id, player_id")

@@ -233,11 +233,20 @@ describe("GATE 1E.1 — revision lock", () => {
   });
 
   it("rejects a mismatch between /version and the parse response", () => {
-    expect(thrown(() => assertParserIdentityConsistency(
-      { ...worker(), semanticRevision: "build-1", buildRevision: `git:${"a".repeat(40)}` },
-      { name: PARSER_NAME, version: PARSER_VERSION, revision: "build-1",
-        semantic_revision: "build-1", build_revision: `git:${"b".repeat(40)}` },
-      PARSER_CONTRACT_VERSION,
-    ))).toBe("PARSER_IDENTITY_MISMATCH");
+    expect(
+      thrown(() =>
+        assertParserIdentityConsistency(
+          { ...worker(), semanticRevision: "build-1", buildRevision: `git:${"a".repeat(40)}` },
+          {
+            name: PARSER_NAME,
+            version: PARSER_VERSION,
+            revision: "build-1",
+            semantic_revision: "build-1",
+            build_revision: `git:${"b".repeat(40)}`,
+          },
+          PARSER_CONTRACT_VERSION,
+        ),
+      ),
+    ).toBe("PARSER_IDENTITY_MISMATCH");
   });
 });

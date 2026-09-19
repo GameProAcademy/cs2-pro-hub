@@ -23,12 +23,12 @@ const base: DemoIdentityView = {
 
 describe("identity UX state machine", () => {
   it("keeps loading and errors explicit", () => {
-    expect(deriveIdentityUiState(undefined, { loading: true, error: false, manualMode: false })).toBe(
-      "loading",
-    );
-    expect(deriveIdentityUiState(undefined, { loading: false, error: true, manualMode: false })).toBe(
-      "error",
-    );
+    expect(
+      deriveIdentityUiState(undefined, { loading: true, error: false, manualMode: false }),
+    ).toBe("loading");
+    expect(
+      deriveIdentityUiState(undefined, { loading: false, error: true, manualMode: false }),
+    ).toBe("error");
   });
 
   it("requires review for a strong automatic Steam match", () => {

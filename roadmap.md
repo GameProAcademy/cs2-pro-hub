@@ -17,12 +17,13 @@ This section supersedes older execution notes below when they conflict with the 
 - [x] Applied the existing migration `20260919110000_g5_rf2_canonical_integrity.sql` to production without creating a duplicate.
 - [x] Verified Railway read-only: `/health` and `/version` return 200 with `demoparser2 0.42.0`, contract 1, pinned semantic revision and corrected build revision.
 - [x] Re-ran focused and complete gates after resolving type/test drift: APP 931/931, parser 165 PASS/10 skipped, typecheck, compileall, formatting and build PASS.
-- [ ] Perform a controlled Cache Run 1 retry using the same physical demo/SHA, with no Run 2. The authorized execution stopped before mutation because the mandatory lint gate failed on existing Prettier violations.
+- [x] Correct the repository lint blocker with scoped formatting only: ESLint now passes with 0 errors and 9 pre-existing warnings; APP 931/931, focused RAW contract 43/43, parser 165 PASS/10 skipped, critical parser contracts 66 PASS/7 skipped, typecheck, compileall and automatic build PASS.
+- [ ] Perform a controlled Cache Run 1 retry using the same physical demo/SHA, with no Run 2. The authorized execution stopped before mutation because the mandatory GitHub Quality Gates result was not independently available for the resulting commit.
 - [ ] Only declare G5-R-F.2 PASS after RAW approval, valid Canonical intervals, event containment, terminal job finalization, idempotency and historical immutability are all proven.
 - [ ] Run 2 / attempt 9 remains prohibited until the explicit PASS gate.
 - [ ] Fase 2.8 AI Coach remains blocked.
 
-**Current decision:** `BLOCKED_BEFORE_RETRY`. APP 931/931, parser 165 passed/10 skipped, compileall and build passed; repository lint failed. No Cache run, upload, enqueue, retry, attempt 9, historical mutation, Railway deployment or secret change occurred. Attempt 8 remains failed with retry_count 3/dispatch 2; attempts 7/8 and both RAW artifacts remain intact.
+**Current decision:** `BLOCKED_BEFORE_RETRY`. All local gates pass, including lint with 0 errors. The persistent GitHub workflow remains correctly defined, but its run/status could not be observed because this environment exposes no GitHub repository or Actions endpoint. Under the mandatory fail-closed rule, no Cache run, upload, enqueue, retry, attempt 9, historical mutation, Railway deployment or secret change occurred. Attempt 8 remains failed with retry_count 3/dispatch 2; attempts 7/8 and both RAW artifacts remain intact.
 
 **Historical data policy:** attempt 7, attempt 8 RAW artifacts and existing Canonical rows are not deleted or rewritten by this remediation. The failed Run 1 Canonical state remains forensic evidence and is not an AI source until a fresh controlled run produces a valid Canonical state.
 

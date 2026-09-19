@@ -1,10 +1,5 @@
 export type E2EWaitStatus =
-  | "pending"
-  | "processing"
-  | "processed"
-  | "failed"
-  | "blocked_raw_audit"
-  | "cancelled";
+  "pending" | "processing" | "processed" | "failed" | "blocked_raw_audit" | "cancelled";
 
 export interface E2EWaitState {
   status: E2EWaitStatus;

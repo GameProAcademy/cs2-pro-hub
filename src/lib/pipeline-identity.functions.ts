@@ -71,7 +71,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     const { data: job } = await supabase
       .from("demo_jobs")
       .select(
-         "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, declared_nickname, declared_participant_key, observed_nickname",
+        "id, match_id, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, declared_nickname, declared_participant_key, observed_nickname",
       )
       .eq("id", data.jobId)
       .maybeSingle();

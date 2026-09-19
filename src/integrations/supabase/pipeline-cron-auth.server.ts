@@ -5,9 +5,7 @@ import { supabaseAdmin } from "./client.server";
  * the browser. The existing Lovable cron secret remains valid; the database
  * backed secret is an additional path used by the native pg_cron scheduler.
  */
-export async function authenticatePipelineCronRequest(
-  request: Request,
-): Promise<Response | null> {
+export async function authenticatePipelineCronRequest(request: Request): Promise<Response | null> {
   const match = /^Bearer ([^\s,]+)$/.exec(request.headers.get("authorization") ?? "");
   const token = match?.[1];
   if (!token) return new Response("Unauthorized", { status: 401 });

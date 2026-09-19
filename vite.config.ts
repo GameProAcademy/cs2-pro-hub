@@ -38,10 +38,7 @@ export default defineConfig({
           // generated client intentionally uses bracket access, which otherwise
           // survives the production build as an empty import.meta.env object.
           return code
-            .replaceAll(
-              'import.meta.env["VITE_SUPABASE_URL"]',
-              "import.meta.env.VITE_SUPABASE_URL",
-            )
+            .replaceAll('import.meta.env["VITE_SUPABASE_URL"]', "import.meta.env.VITE_SUPABASE_URL")
             .replaceAll(
               'import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]',
               "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY",

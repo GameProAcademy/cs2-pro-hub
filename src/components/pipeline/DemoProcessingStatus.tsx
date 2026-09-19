@@ -88,12 +88,12 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const displayedStage = rawAuditBlocked
     ? "blocked_raw_audit"
     : failed
-    ? "failed"
-    : cancelled
-      ? "cancelled"
-      : cancelling
-        ? "cancel_requested"
-        : stage;
+      ? "failed"
+      : cancelled
+        ? "cancelled"
+        : cancelling
+          ? "cancel_requested"
+          : stage;
   const currentIndex = processingStageIndex(lastActiveStage.current, job.status);
 
   return (
@@ -109,9 +109,9 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
               ? "border-destructive/35 bg-destructive/10 text-destructive"
               : rawAuditBlocked
                 ? "border-warning/35 bg-warning/10 text-warning"
-              : cancelled || cancelling
-                ? "border-warning/35 bg-warning/10 text-warning"
-                : "border-primary/35 bg-primary/10 text-primary",
+                : cancelled || cancelling
+                  ? "border-warning/35 bg-warning/10 text-warning"
+                  : "border-primary/35 bg-primary/10 text-primary",
           )}
         >
           {failed ? (

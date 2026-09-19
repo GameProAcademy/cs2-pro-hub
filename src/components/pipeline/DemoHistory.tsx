@@ -110,9 +110,9 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
       {job.attachmentState === "attached" ? (
         <p className="mt-3 text-xs text-muted-foreground">
           {t("pipeline.identitySummary")}: {job.observedNickname ?? unavailable} ·{" "}
-           {job.attachmentMethod ?? unavailable} · {job.attachmentSource ?? unavailable} ·{" "}
-           {job.attachmentConfidence ?? unavailable} ·{" "}
-           {job.attachmentConfirmationStatus ?? unavailable}
+          {job.attachmentMethod ?? unavailable} · {job.attachmentSource ?? unavailable} ·{" "}
+          {job.attachmentConfidence ?? unavailable} ·{" "}
+          {job.attachmentConfirmationStatus ?? unavailable}
         </p>
       ) : null}
       {job.status === "pending" ||

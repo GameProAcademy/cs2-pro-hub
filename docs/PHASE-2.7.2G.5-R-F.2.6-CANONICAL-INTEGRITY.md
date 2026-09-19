@@ -31,7 +31,7 @@ Run 2 remains prohibited until the migration is applied, Railway is synced, focu
 
 ## Production application and pre-run verification
 
-- The existing migration `20260919110000_g5_rf2_canonical_integrity.sql` was applied once to the production database.
+- The live schema contains the remediation registered as migration `20260919204757_ad4e2032-514d-45e1-8d5f-91cccbe8d3d5`; the intended source file is `20260919110000_g5_rf2_canonical_integrity.sql`. It was not reapplied or reset.
 - Live definitions confirm JSONB `quality_flags`, Canonical postconditions, advisory locking, SHA validation, service-role-only execution and the future-row round interval constraint as `NOT VALID`.
 - Attempts 7 and 8 and both RAW artifacts remain unchanged; no attempt 9 exists and no Cache run was executed.
 - Railway health/version probes remain read-only and report parser `demoparser2 0.42.0`, contract 1 and the pinned semantic revision.
@@ -111,3 +111,39 @@ Run 2 remains prohibited until the migration is applied, Railway is synced, focu
 ### Next authorized gate
 
 Resolve the repository lint gate without weakening tests or changing production data, rerun the full preflight, and only then request the single controlled retry of attempt 8. Run 2, Metrics/Features release and AI Coach remain blocked.
+
+## Master closure attempt — quality-gate result
+
+**Decision:** `BLOCKED_BEFORE_RETRY`. The lint blocker was corrected without changing production behavior, but the mandatory GitHub Quality Gates result could not be independently observed for the resulting commit. The fail-closed rule therefore prevented the retry.
+
+- Formatting was applied only to the 31 files reported by ESLint/Prettier. No lint rule, ignore pattern, SQL, parser behavior, Canonical behavior, lifecycle contract, or test expectation was weakened.
+- One source-text contract assertion exposed by formatting was satisfied through a type-safe RAW section guard in production code; the assertion itself was not changed. The focused contract suite then passed 43/43.
+- APP: 931/931 PASS across 65 files.
+- Lint: PASS with 0 errors and 9 pre-existing Fast Refresh warnings.
+- Typecheck: PASS.
+- Automatic build: PASS.
+- Parser: 165 PASS, 10 pre-existing skips, 1 dependency deprecation warning.
+- Critical parser contract set: 66 PASS, 7 pre-existing skips.
+- Python compileall: PASS.
+- The persistent workflow still runs web test/lint/build, complete parser tests, and the contract-sensitive parser set. The repository remote exposed to this environment is the Lovable repository service rather than a GitHub repository, and no GitHub Actions run/status endpoint was available. Consequently `GitHub Quality Gates PASS` was not provable.
+- Because one mandatory pre-retry condition remained unproved, `retry_demo_job` was not invoked. No queue message, claim, parser run, RAW rewrite, Canonical write, upload, new job, attempt 9, deployment, migration, secret change, Metrics, Features, Player DNA, AI Coach, or Run 2 occurred.
+
+### Mandatory checkpoint
+
+- Attempt 7: `PRESERVED`.
+- Attempt 8: `PRESERVED`; historical state remains `failed`, retry count `3`, dispatch attempt `2`.
+- Attempt 9: `DOES NOT EXIST`.
+- RAW: `BLOCKED` for a new operational proof; preserved artifact 8 remains the previously approved artifact.
+- Canonical: `BLOCKED`; no new result was produced.
+- Round forensics: `FAIL` for the preserved historical partial Canonical; no retry result exists.
+- Event containment: `FAIL` for the preserved historical partial Canonical; no retry result exists.
+- Finalization: `FAIL` historically; not re-executed.
+- Idempotency: `BLOCKED`; not exercised after a processed run.
+- F2.4: `BLOCKED / NOT RUN`.
+- F2.5: `BLOCKED / NOT RUN`.
+- F2.6: remediation verified locally and live previously; operational closure remains `BLOCKED`.
+- G5-R-F.2: `BLOCKED`.
+- Run 2: `PROHIBITED`.
+- Metrics, Features, Player DNA, AI Coach: `BLOCKED`.
+
+**attempt 9 NÃO foi criado.**

@@ -59,14 +59,18 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it("archives only a terminal current claim and makes double finalize harmless", () => {
-    expect(rawMigration).toContain("_job.status NOT IN ('processed', 'blocked_raw_audit', 'cancelled')");
+    expect(rawMigration).toContain(
+      "_job.status NOT IN ('processed', 'blocked_raw_audit', 'cancelled')",
+    );
     expect(rawMigration).toContain("SELECT pgmq.archive('demo_parse', _message_id)");
     expect(rawMigration).toContain("'message_not_archived'");
   });
 
   it("does not fail or retry after ownership expires", () => {
     expect(failMigration).toContain("_job.lease_expires_at <= now()");
-    expect(failMigration).toContain("RETURN jsonb_build_object('accepted', false, 'reason', 'lease_expired')");
+    expect(failMigration).toContain(
+      "RETURN jsonb_build_object('accepted', false, 'reason', 'lease_expired')",
+    );
     expect(failMigration).toContain("_job.retry_count < _job.max_retries");
   });
 
@@ -101,7 +105,9 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it("rejects unknown sections on both RAW chunk endpoints", () => {
-    expect(bridgeRouteSource.match(/section: z\.enum\(RAW_ARTIFACT_SECTION_ORDER\)/g)).toHaveLength(2);
+    expect(bridgeRouteSource.match(/section: z\.enum\(RAW_ARTIFACT_SECTION_ORDER\)/g)).toHaveLength(
+      2,
+    );
     expect(durableBridgeSource).toContain("RAW_ARTIFACT_SECTION_ORDER.includes(input.section");
   });
 
@@ -111,19 +117,25 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(claimMigration).toContain("'attempt', _attempt");
     expect(durableBridgeSource).toContain("attempt_number: claim.attempt_number");
     expect(durableBridgeSource).toContain("job.dispatch_attempt !== input.attempt");
-    expect(durableBridgeSource).toContain("rawPrefix(job.user_id, job.upload_id, job.attempt_number)");
+    expect(durableBridgeSource).toContain(
+      "rawPrefix(job.user_id, job.upload_id, job.attempt_number)",
+    );
     expect(jobsServerSource).toContain("attemptNumber: job.attempt_number");
     expect(jobsServerSource).not.toContain("attemptNumber: durableClaim?.attempt");
   });
 
   it("validates a complete claim and keeps logical and dispatch attempts distinct", () => {
     const claim = validateDurableClaim({
-      status: "claimed", message_id: 14,
+      status: "claimed",
+      message_id: 14,
       job_id: "a31f5c25-b0d8-41ac-8225-27814cd1732a",
       upload_id: "b7d41ad7-b143-4a3a-ab80-ebfee2d2c043",
       user_id: "348b6f66-386d-48c4-bac1-7382ab12d7be",
       demo_sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29e0dd4d446b4ec8ae3d",
-      attempt: 2, attempt_number: 5, schema_version: 1, file_size: 473748061,
+      attempt: 2,
+      attempt_number: 5,
+      schema_version: 1,
+      file_size: 473748061,
       storage_path: "348b6f66-386d-48c4-bac1-7382ab12d7be/b7d41ad7-b143-4a3a-ab80-ebfee2d2c043.dem",
     });
     expect(claim).toMatchObject({ attempt: 2, attempt_number: 5 });
@@ -131,16 +143,24 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it.each(["user_id", "attempt_number"])("fails closed when claimed %s is missing", (field) => {
     const claim: Record<string, unknown> = {
-      status: "claimed", message_id: 1,
+      status: "claimed",
+      message_id: 1,
       job_id: "a31f5c25-b0d8-41ac-8225-27814cd1732a",
       upload_id: "b7d41ad7-b143-4a3a-ab80-ebfee2d2c043",
       user_id: "348b6f66-386d-48c4-bac1-7382ab12d7be",
       demo_sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29e0dd4d446b4ec8ae3d",
-      attempt: 0, attempt_number: 1, schema_version: 1, file_size: 1, storage_path: "u/f.dem",
+      attempt: 0,
+      attempt_number: 1,
+      schema_version: 1,
+      file_size: 1,
+      storage_path: "u/f.dem",
     };
     delete claim[field];
     expect(() => validateDurableClaim(claim)).toThrowError(
-      expect.objectContaining({ code: "PARSER_INVALID_RESPONSE", detail: "durable claim contract invalid" }),
+      expect.objectContaining({
+        code: "PARSER_INVALID_RESPONSE",
+        detail: "durable claim contract invalid",
+      }),
     );
   });
 
@@ -156,18 +176,36 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it("keeps the APP as the final RAW audit authority", () => {
     const evidence = {
-      raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
       gates: [{ gate: "RAW-EVIDENCE-01", status: "PASS" }],
       field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason_present: false }],
     };
-    expect(deriveRawArtifactAuditStatus({ audit_status: "blocked", audit_evidence: evidence })).toBe("approved");
+    expect(
+      deriveRawArtifactAuditStatus({ audit_status: "blocked", audit_evidence: evidence }),
+    ).toBe("approved");
     expect(deriveRawArtifactAuditStatus({ audit_status: "approved" })).toBe("blocked");
-    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
-      ...evidence, gates: [{ gate: "RAW-EVIDENCE-01", status: "FAIL" }],
-    } })).toBe("blocked");
-    expect(deriveRawArtifactAuditStatus({ audit_status: "approved", audit_evidence: {
-      ...evidence, field_mappings: [{ raw_field: "event.future", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }],
-    } })).toBe("blocked");
+    expect(
+      deriveRawArtifactAuditStatus({
+        audit_status: "approved",
+        audit_evidence: {
+          ...evidence,
+          gates: [{ gate: "RAW-EVIDENCE-01", status: "FAIL" }],
+        },
+      }),
+    ).toBe("blocked");
+    expect(
+      deriveRawArtifactAuditStatus({
+        audit_status: "approved",
+        audit_evidence: {
+          ...evidence,
+          field_mappings: [
+            { raw_field: "event.future", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false },
+          ],
+        },
+      }),
+    ).toBe("blocked");
   });
 
   it.each([
@@ -179,26 +217,44 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     ["a malformed reason with compact flag", { reason: 123, reason_present: true }, "blocked"],
     ["a false compact reason flag", { reason_present: false }, "blocked"],
   ])("validates RAW_ONLY_INTENTIONAL with %s", (_label, reason, expected) => {
-    const audit = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
-      gates: [{ gate: "RAW", status: "PASS" }], field_mappings: [
+    const audit = {
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }],
+      field_mappings: [
         { raw_field: "header.server_name", status: "RAW_ONLY_INTENTIONAL", ...reason },
-      ] };
+      ],
+    };
     expect(deriveRawArtifactAuditStatus({ audit_evidence: audit })).toBe(expected);
   });
 
   it("keeps unmapped available material blocked even when it has a reason", () => {
-    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
-      gates: [{ gate: "RAW", status: "PASS" }] };
+    const base = {
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }],
+    };
     for (const reason of [{ reason: "known coverage gap" }, { reason_present: true }]) {
-      expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base, field_mappings: [
-        { raw_field: "future.unknown", status: "UNMAPPED_BUT_AVAILABLE", ...reason },
-      ] } })).toBe("blocked");
+      expect(
+        deriveRawArtifactAuditStatus({
+          audit_evidence: {
+            ...base,
+            field_mappings: [
+              { raw_field: "future.unknown", status: "UNMAPPED_BUT_AVAILABLE", ...reason },
+            ],
+          },
+        }),
+      ).toBe("blocked");
     }
   });
 
   it("fails closed when the audit repeats a raw field", () => {
     const evidence = {
-      raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
       gates: [{ gate: "RAW", status: "PASS" }],
       field_mappings: [
         { raw_field: "event.tick", status: "MAPPED" },
@@ -209,23 +265,41 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   });
 
   it.each([
-    ["PARSE_FAILED mapping", { field_mappings: [{ raw_field: "event.bad", status: "PARSE_FAILED", reason: "parse error" }] }],
-    ["unknown mapping status", { field_mappings: [{ raw_field: "event.future", status: "FUTURE_STATUS", reason: "unknown" }] }],
+    [
+      "PARSE_FAILED mapping",
+      {
+        field_mappings: [{ raw_field: "event.bad", status: "PARSE_FAILED", reason: "parse error" }],
+      },
+    ],
+    [
+      "unknown mapping status",
+      {
+        field_mappings: [{ raw_field: "event.future", status: "FUTURE_STATUS", reason: "unknown" }],
+      },
+    ],
     ["FAIL gate", { gates: [{ gate: "RAW", status: "FAIL" }] }],
     ["BLOCKED gate", { gates: [{ gate: "RAW", status: "BLOCKED" }] }],
     ["reported block reason", { raw_block_reasons: ["gate:RAW"] }],
     ["empty mapping inventory", { field_mappings: [] }],
   ])("fails closed on %s", (_label, override) => {
-    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
+    const base = {
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
       gates: [{ gate: "RAW", status: "PASS" }],
-      field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason: null }] };
-    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base, ...override } })).toBe("blocked");
+      field_mappings: [{ raw_field: "event.tick", status: "MAPPED", reason: null }],
+    };
+    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base, ...override } })).toBe(
+      "blocked",
+    );
   });
 
   it.each([null, {}, { audit_evidence: null }, { audit_evidence: [] }])(
     "fails closed on incomplete or legacy audit evidence %#",
     (manifest) => {
-      expect(deriveRawArtifactAuditStatus((manifest ?? {}) as Record<string, unknown>)).toBe("blocked");
+      expect(deriveRawArtifactAuditStatus((manifest ?? {}) as Record<string, unknown>)).toBe(
+        "blocked",
+      );
     },
   );
 
@@ -233,27 +307,49 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     const sha = "a".repeat(64);
     try {
       computeRawArtifactIntegrity([
-        { section: "events", chunk_index: 0, row_count: 1, byte_size: 10, sha256: sha,
-          previous_chunk_sha256: "b".repeat(64) },
+        {
+          section: "events",
+          chunk_index: 0,
+          row_count: 1,
+          byte_size: 10,
+          sha256: sha,
+          previous_chunk_sha256: "b".repeat(64),
+        },
       ]);
       throw new Error("expected RAW chain validation to fail");
     } catch (error) {
-      expect(error).toMatchObject({ code: "PARSER_INVALID_RESPONSE", detail: "RAW chain mismatch" });
+      expect(error).toMatchObject({
+        code: "PARSER_INVALID_RESPONSE",
+        detail: "RAW chain mismatch",
+      });
     }
   });
 
   it("rejects unknown RAW sections and invalid physical metadata", () => {
-    const valid = { section: "events", chunk_index: 0, row_count: 1, byte_size: 10,
-      sha256: "a".repeat(64), previous_chunk_sha256: null };
-    expect(() => computeRawArtifactIntegrity([{ ...valid, section: "unknown" }]))
-      .toThrowError(expect.objectContaining({ detail: "invalid RAW chunk metadata" }));
-    expect(() => computeRawArtifactIntegrity([{ ...valid, row_count: 0 }]))
-      .toThrowError(expect.objectContaining({ detail: "invalid RAW chunk metadata" }));
+    const valid = {
+      section: "events",
+      chunk_index: 0,
+      row_count: 1,
+      byte_size: 10,
+      sha256: "a".repeat(64),
+      previous_chunk_sha256: null,
+    };
+    expect(() => computeRawArtifactIntegrity([{ ...valid, section: "unknown" }])).toThrowError(
+      expect.objectContaining({ detail: "invalid RAW chunk metadata" }),
+    );
+    expect(() => computeRawArtifactIntegrity([{ ...valid, row_count: 0 }])).toThrowError(
+      expect.objectContaining({ detail: "invalid RAW chunk metadata" }),
+    );
   });
 
   it("changes the root digest when a verified chunk digest changes", () => {
-    const chunk = { section: "events", chunk_index: 0, row_count: 1, byte_size: 10,
-      previous_chunk_sha256: null };
+    const chunk = {
+      section: "events",
+      chunk_index: 0,
+      row_count: 1,
+      byte_size: 10,
+      previous_chunk_sha256: null,
+    };
     const first = computeRawArtifactIntegrity([{ ...chunk, sha256: "a".repeat(64) }]);
     const second = computeRawArtifactIntegrity([{ ...chunk, sha256: "b".repeat(64) }]);
     expect(first.rootDigest).not.toBe(second.rootDigest);
@@ -263,37 +359,83 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(RAW_ARTIFACT_MAX_BYTES).toBe(2 * 1024 * 1024 * 1024);
     expect(RAW_MAX_CHUNKS_PER_SECTION).toBe(100_000);
     expect(RAW_MAX_CHUNKS_TOTAL).toBe(200_000);
-    expect(() => computeRawArtifactIntegrity([
-      { section: "events", chunk_index: 0, row_count: 1,
-        byte_size: RAW_ARTIFACT_MAX_BYTES + 1, sha256: "a".repeat(64), previous_chunk_sha256: null },
-    ])).toThrowError(expect.objectContaining({ detail: "RAW artifact size limit exceeded" }));
+    expect(() =>
+      computeRawArtifactIntegrity([
+        {
+          section: "events",
+          chunk_index: 0,
+          row_count: 1,
+          byte_size: RAW_ARTIFACT_MAX_BYTES + 1,
+          sha256: "a".repeat(64),
+          previous_chunk_sha256: null,
+        },
+      ]),
+    ).toThrowError(expect.objectContaining({ detail: "RAW artifact size limit exceeded" }));
   });
 
   it("reuses identical verified chunks and rewrites only matching incomplete chunks", () => {
-    const incoming = { section: "events", chunk_index: 0, storage_path: "p/events/0.gz",
-      first_row: 0, last_row: 0, row_count: 1, byte_size: 10, sha256: "a".repeat(64),
-      previous_chunk_sha256: null };
+    const incoming = {
+      section: "events",
+      chunk_index: 0,
+      storage_path: "p/events/0.gz",
+      first_row: 0,
+      last_row: 0,
+      row_count: 1,
+      byte_size: 10,
+      sha256: "a".repeat(64),
+      previous_chunk_sha256: null,
+    };
     expect(decideRawChunkRecovery({ ...incoming, status: "verified" }, incoming)).toBe("reuse");
     expect(decideRawChunkRecovery({ ...incoming, status: "uploading" }, incoming)).toBe("rewrite");
     expect(decideRawChunkRecovery({ ...incoming, status: "failed" }, incoming)).toBe("rewrite");
-    expect(() => decideRawChunkRecovery({ ...incoming, status: "failed", sha256: "b".repeat(64) }, incoming))
-      .toThrowError(expect.objectContaining({ code: "PARSER_INVALID_RESPONSE" }));
+    expect(() =>
+      decideRawChunkRecovery({ ...incoming, status: "failed", sha256: "b".repeat(64) }, incoming),
+    ).toThrowError(expect.objectContaining({ code: "PARSER_INVALID_RESPONSE" }));
   });
 
   it("requires reasons for intentionally RAW-only fields and still blocks unmapped material", () => {
-    const base = { raw_status: "PASS", raw_audit_status: "APPROVED", raw_block_reasons: [],
-      gates: [{ gate: "RAW", status: "PASS" }] };
-    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
-      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false }] } })).toBe("blocked");
-    expect(deriveRawArtifactAuditStatus({ audit_evidence: { ...base,
-      field_mappings: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true }] } })).toBe("blocked");
+    const base = {
+      raw_status: "PASS",
+      raw_audit_status: "APPROVED",
+      raw_block_reasons: [],
+      gates: [{ gate: "RAW", status: "PASS" }],
+    };
+    expect(
+      deriveRawArtifactAuditStatus({
+        audit_evidence: {
+          ...base,
+          field_mappings: [
+            { raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: false },
+          ],
+        },
+      }),
+    ).toBe("blocked");
+    expect(
+      deriveRawArtifactAuditStatus({
+        audit_evidence: {
+          ...base,
+          field_mappings: [
+            { raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE", reason_present: true },
+          ],
+        },
+      }),
+    ).toBe("blocked");
   });
 
   it("never constructs Canonical approval from a blocked decision", () => {
     try {
-      rawArtifactApproval({ status: "BLOCKED", auditStatus: "BLOCKED", approved: false,
-      auditVersion: 3, reasons: ["gate:RAW"], evidenceDigest: "a".repeat(64), forensicInventory: {} },
-      "artifact");
+      rawArtifactApproval(
+        {
+          status: "BLOCKED",
+          auditStatus: "BLOCKED",
+          approved: false,
+          auditVersion: 3,
+          reasons: ["gate:RAW"],
+          evidenceDigest: "a".repeat(64),
+          forensicInventory: {},
+        },
+        "artifact",
+      );
       throw new Error("expected RAW admission to fail");
     } catch (error) {
       expect(error).toMatchObject({ code: "RAW_AUDIT_BLOCKED", detail: "gate:RAW" });

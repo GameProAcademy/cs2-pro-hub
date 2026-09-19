@@ -218,7 +218,13 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "empty /version payload");
   }
   const raw = value as {
-    parser?: { name?: unknown; version?: unknown; revision?: unknown; semantic_revision?: unknown; build_revision?: unknown };
+    parser?: {
+      name?: unknown;
+      version?: unknown;
+      revision?: unknown;
+      semantic_revision?: unknown;
+      build_revision?: unknown;
+    };
     contract_version?: unknown;
   };
   const name = raw.parser?.name;
@@ -228,8 +234,10 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "/version is missing parser identity");
   }
   const revision = typeof raw.parser?.revision === "string" ? raw.parser.revision.trim() : "";
-  const semantic = typeof raw.parser?.semantic_revision === "string" ? raw.parser.semantic_revision.trim() : "";
-  const build = typeof raw.parser?.build_revision === "string" ? raw.parser.build_revision.trim() : "";
+  const semantic =
+    typeof raw.parser?.semantic_revision === "string" ? raw.parser.semantic_revision.trim() : "";
+  const build =
+    typeof raw.parser?.build_revision === "string" ? raw.parser.build_revision.trim() : "";
   if (semantic && revision && semantic !== revision) {
     throw new PipelineError("PARSER_IDENTITY_MISMATCH", "revision and semantic revision diverge");
   }
@@ -237,7 +245,7 @@ export function parseWorkerIdentity(value: unknown): ParserWorkerIdentity {
     name,
     version,
     revision: revision.length > 0 ? revision : null,
-    semanticRevision: (semantic || revision) || null,
+    semanticRevision: semantic || revision || null,
     buildRevision: build || null,
     contractVersion: contract,
   };
@@ -308,10 +316,16 @@ export function assertParserIdentity(
     );
   }
   if (expected.buildRevisionRequired && !expected.buildRevision) {
-    throw new PipelineError("PARSER_CONFIG_ERROR", "DEMO_PARSER_EXPECTED_BUILD_REVISION is required");
+    throw new PipelineError(
+      "PARSER_CONFIG_ERROR",
+      "DEMO_PARSER_EXPECTED_BUILD_REVISION is required",
+    );
   }
   if (expected.buildRevisionRequired && !worker.buildRevision) {
-    throw new PipelineError("PARSER_IDENTITY_MISMATCH", "worker did not report an exact build revision");
+    throw new PipelineError(
+      "PARSER_IDENTITY_MISMATCH",
+      "worker did not report an exact build revision",
+    );
   }
   if (expected.buildRevision != null && worker.buildRevision !== expected.buildRevision) {
     throw new PipelineError("PARSER_IDENTITY_MISMATCH", "parser build revision mismatch");
@@ -339,9 +353,14 @@ export function assertParserIdentityConsistency(
   const parsedRevision = parsed.revision?.trim() || null;
   const parsedSemantic = parsed.semantic_revision?.trim() || parsedRevision;
   const parsedBuild = parsed.build_revision?.trim() || null;
-  if (version.name !== parsed.name || version.version !== parsed.version ||
-      version.revision !== parsedRevision || version.semanticRevision !== parsedSemantic ||
-      version.buildRevision !== parsedBuild || version.contractVersion !== contractVersion) {
+  if (
+    version.name !== parsed.name ||
+    version.version !== parsed.version ||
+    version.revision !== parsedRevision ||
+    version.semanticRevision !== parsedSemantic ||
+    version.buildRevision !== parsedBuild ||
+    version.contractVersion !== contractVersion
+  ) {
     throw new PipelineError("PARSER_IDENTITY_MISMATCH", "/version and parse identity diverge");
   }
 }

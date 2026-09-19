@@ -68,8 +68,7 @@ export function estimatedStageProgress(args: {
   if (args.status === "processed" || args.stage === "done") return 100;
   if (args.status === "cancelled") return STAGE_PROGRESS.cleanup;
   if (args.status === "cancel_requested") return STAGE_PROGRESS.cleanup;
-  if (args.status === "blocked_raw_audit")
-    return Math.max(previous, STAGE_PROGRESS.raw_audit);
+  if (args.status === "blocked_raw_audit") return Math.max(previous, STAGE_PROGRESS.raw_audit);
   if (args.status === "failed" || args.stage === "failed") return previous || STAGE_PROGRESS.queued;
 
   const stage = safeProcessingStage(args.stage, args.status);
