@@ -3293,6 +3293,10 @@ export type Database = {
         Returns: string
       }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
+      reconcile_orphan_demo_uploads: {
+        Args: { _limit?: number; _older_than_minutes?: number }
+        Returns: number
+      }
       record_demo_identity_event: {
         Args: {
           _decision: Json

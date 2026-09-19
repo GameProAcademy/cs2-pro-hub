@@ -1,161 +1,108 @@
-# FASE 2.7.2G.5-R-F.2 — Cache Run 1
+# FASE 2.7.2G.5-R-F.2.1–2.5 — SHA hardening e Cache Run 1 controlado
 
-## A. Executive Summary
+## A. Decisão executiva
 
-O preflight obrigatório passou. A primeira mutação, porém, enviou à RPC oficial um SHA digitado com 67 caracteres, diferente do SHA físico de 64 caracteres. A RPC tratou o conteúdo como novo e criou somente o upload pendente `5c514921-d32d-4058-9d34-bbb57c361b53`, attempt 1. A validação imediata detectou a quebra do contrato esperado e interrompeu a execução antes de copiar bytes, enfileirar, acionar Railway ou criar RAW/Canonical. A evidência foi preservada e não houve retry.
+O hardening e a reconciliação passaram, e o único Cache Run 1 autorizado foi executado pelo lifecycle oficial. O attempt 8 real chegou a RAW READY/audit APPROVED e ao handoff canônico, mas terminou `failed` por `PERSISTENCE_ERROR`: a RPC instalada `finish_demo_job_processed` tenta atribuir `text[]` à coluna `demo_jobs.quality_flags`, cujo tipo real é `jsonb`.
 
-## B. Current Commit
+**Decisão:** `G5-R-F.2.1 = PASS`; `G5-R-F.2.2 = PASS`; `CACHE RUN 1 = FAIL`; `G5-R-F.2.3–2.5 = FAIL/PARTIAL`; `RUN 2 = NOT READY`.
 
-- Branch: `edit/edt-36996b32-2b4c-45a7-99d0-50e01300d82f`
-- Commit: `199f4e3c387d4ec4b4a23381ea6122ca47ea4bce`
-- Working tree estava limpo antes da documentação.
+Não houve Run 2, attempt 9, retry manual adicional, aprovação manual, inserção manual de job/Canonical, chamada direta a `processJob()`, deploy Railway ou alteração/rotação de secrets.
 
-## C. Database Migration State
+## B. Hardening de SHA e órfãos
 
-Migration `20260918235817` instalada. `reserve_demo_upload` e `enqueue_demo_job` são `SECURITY DEFINER`, têm `search_path=''`, advisory lock por usuário+SHA e execução negada a `anon`/`authenticated`, permitida a `service_role`.
+- Migration `20260919011719`: validação lowercase hex de 64 caracteres antes de mutação em reserve/enqueue; constraints equivalentes em `uploads` e `demo_jobs`; RPC `reconcile_orphan_demo_uploads` service-role-only, com advisory lock, janela mínima de 15 minutos e rechecagem de job/Storage.
+- A reserva inválida `5c514921-d32d-4058-9d34-bbb57c361b53` foi preservada como `failed/INVALID_DEMO_SHA256`, com SHA nulo e evidência do valor original de 67 caracteres no erro.
+- Dois órfãos antigos sem job/objeto foram reconciliados como `failed/UPLOAD_RESERVATION_ABANDONED`; registros e SHA válidos foram preservados.
+- Migration `20260919011805`: reservas job-less terminais podem ser substituídas; reservas ativas permanecem idempotentes.
+- A manutenção periódica passou a chamar a reconciliação de órfãos. O cliente também rejeita hash calculado malformado antes da reserva.
 
-## D. Preflight
+As três RPCs envolvidas são `SECURITY DEFINER`, `search_path=''` e executáveis por `service_role`, não por `anon/authenticated`.
 
-PASS: migration, RPCs, ACLs, constraints, índices, Railway, objeto físico, ausência de attempt 8, ausência de processed+RAW-approved e ausência de Canonical conflitante. O objeto histórico foi lido por stream: 473.748.061 bytes e SHA `0caa7c9744deec106095895d2dacd19cbfdae689f99e29e29b0dd4d446b4ec8ae3d`.
+## C. Provas pré-run
 
-## E. Historical Attempt 7
+- PostgreSQL descartável 17.9: 50/50 ciclos, duas conexões independentes, cenários A–J/N/O, zero falha, deadlock, timeout ou duplicação.
+- Pipeline APP: 487/487 testes focados PASS antes do run.
+- Parser/RAW/HOT: 162 PASS, 10 skips declarados.
+- Typecheck, compileall, marcadores de conflito, formatação escopada e build: PASS.
+- Railway: `/health` 200, `durable-worker`; demoparser2 `0.42.0`; contract `1`; semantic revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`; build revision `git:e0856de0879454219a9f33c70372a394b3c8b78b`.
+- Objeto histórico lido por streaming: 473.748.061 bytes; SHA físico e de banco `0caa7c9744deec106095895d2dacd19cbfdae689f99e29e29b0dd4d446b4ec8ae3d`.
 
-- Job: `a31f5c25-b0d8-41ac-8225-27814cd1732a`
-- Upload: `b7d41ad7-b143-4a3a-ab80-ebfee2d2c043`
-- Status/stage: `blocked_raw_audit` / `raw_audit`
-- Attempt/dispatch/retry: 7 / 2 / 2
-- `superseded_by_job_id`: NULL, inalterado
-- Artifact: `3a1e5225-f0f2-427a-97b8-c21dac936e7d`, READY/RAW ready/audit blocked, 24 chunks, 373.754 rows, 2.799.488 bytes, root `ccbcafe55e7eca0270d6fb85cdd996f0163b5d209367819fa11c71efd06328d2`
+## D. Lifecycle real
 
-## F. New Attempt 8
+- Upload 8: `d89b697f-c40d-42f4-ae51-040e4e8cabba`.
+- Job 8: `d1851c49-820a-426b-86c6-0ea4623b4f41`.
+- `attempt_number=8`, `supersedes_job_id=a31f5c25-b0d8-41ac-8225-27814cd1732a`, `replacement_reason=raw_audit_blocked`.
+- O objeto foi copiado pelo Storage privado para o path do novo upload e revalidado: mesmo SHA e 473.748.061 bytes.
+- Enqueue oficial criou mensagem 16. O retry automático configurado do mesmo attempt criou mensagens 17 e 18; as três foram lidas e arquivadas uma vez. Isso alterou somente `dispatch_attempt/retry_count`, nunca `attempt_number`.
+- Estado terminal: `failed/failed`, `PERSISTENCE_ERROR`, retry_count `3`, dispatch_attempt `2`, sem mensagem ativa.
 
-Não foi criado. A resposta da reserva foi `new_attempt=false`, `attempt_number=1`, `duplicate=false`, sem supersessão. Isso violou imediatamente o contrato esperado e encerrou a execução.
+## E. RAW/HOT
 
-## G. Upload
+Artifact 8 `62637627-3cfa-4e67-8734-75d5cc90966d`: READY/RAW ready/audit approved, 25/25 chunks verificados, 373.778 linhas, 2.799.506 bytes, root `341eb88e1c5b1c4f6af8fd74e7a7af39333ff0c4a2108a8d9e05a5e9a8297b1c`.
 
-A reserva criou a linha isolada `5c514921-d32d-4058-9d34-bbb57c361b53`, pending, sem job, usando o SHA incorreto `0caa7c9744deec106095895d2dacd19cbfdae689f99e29e29b0dd4d446b4ec8ae3d` (67 caracteres). Nenhum objeto foi copiado para seu path; consulta ao Storage confirmou zero objetos.
+O manifest físico tem 38.036 bytes, zero `raw_block_reasons` e oito gates PASS: RAW evidence, mapping RAW→Canonical, eventos, rounds, ticks, players, granadas e economia. Inventário: 22 MAPPED, 2 DERIVED e 341 RAW_ONLY_INTENTIONAL. O metadata HOT persistido no source mede 1.201.342 bytes, abaixo do alvo de 4 MiB e do hard limit de 8 MiB. O RAW integral permaneceu no bucket privado e não foi carregado no callback.
 
-## H. Queue
+## F. Falha e integridade pós-run
 
-Nenhum enqueue foi chamado. Não existe job para o upload isolado nem mensagem de fila correspondente.
+Root cause comprovada: `finish_demo_job_processed(uuid,jsonb)` executa `quality_flags = ARRAY(...)::text[]`, enquanto `demo_jobs.quality_flags` é `jsonb`. A mesma incompatibilidade aparece no caminho de finalização de projeção. Não foi corrigida neste ciclo porque a regra exigia parar e não reexecutar após falha crítica.
 
-## I. Railway
+O handoff anterior à finalização não foi atômico: existe `match_sources` do upload 8 para o match `a7b27f16-4c85-428b-a855-0f683bda48a2`, com 10 participantes, 25 rounds e 4.397 eventos; `round_players=0`, métricas=0 e features=0. Portanto não há Canonical completo nem projeção válida, e o gate é FAIL, não PASS.
 
-Preflight read-only PASS: `/health` 200, papel `durable-worker`; `/version` 200, demoparser2 0.42.0, contract 1, semantic `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`, build `git:e0856de0879454219a9f33c70372a394b3c8b78b`. Nenhum deploy ou parse foi disparado.
+O attempt 7 permaneceu terminal e seu artifact ficou intacto: 24/24 chunks, 373.754 linhas, 2.799.488 bytes, root `ccbcafe55e7eca0270d6fb85cdd996f0163b5d209367819fa11c71efd06328d2`. A única mudança esperada foi `superseded_by_job_id` apontar para o job 8. Não existe attempt 9.
 
-## J. RAW Artifact
+## G. Validação final
 
-Nenhum artifact novo. O artifact 7 permaneceu intacto.
+- APP completa: 928/928 testes PASS.
+- Parser: 162 PASS, 10 skips.
+- Build automático: PASS.
+- Working tree: limpa após as mudanças gerenciadas.
+- Os 15 findings do linter Supabase permanecem baseline anterior e não foram ampliados pelas RPCs novas.
 
-## K. RAW Audit
+## H. Matriz G5-R-F.2-01..40
 
-Não executado para nova tentativa. O relatório histórico não foi alterado e o bloqueio histórico permaneceu fail-closed.
+| Gate                        | Status  | Evidência                                  |
+| --------------------------- | ------- | ------------------------------------------ |
+| 01 projeto/revisão          | PASS    | revisão registrada, árvore limpa           |
+| 02 migrations               | PASS    | duas migrations incrementais instaladas    |
+| 03 SHA programático         | PASS    | stream físico, 64 hex                      |
+| 04 constraints SHA          | PASS    | checks em uploads/jobs                     |
+| 05 validação pré-mutation   | PASS    | reserve/enqueue/client                     |
+| 06 reserva inválida         | PASS    | evidência terminal preservada              |
+| 07 reconciliação órfã       | PASS    | dois órfãos reconciliados                  |
+| 08 janela segura            | PASS    | mínimo 15 minutos                          |
+| 09 Storage recheck          | PASS    | job e objeto rechecados sob lock           |
+| 10 advisory lock            | PASS    | owner+SHA                                  |
+| 11 ACL                      | PASS    | service-role-only                          |
+| 12 concorrência             | PASS    | 50/50, zero anomalia                       |
+| 13 Railway health           | PASS    | HTTP 200                                   |
+| 14 parser identity          | PASS    | 0.42.0/contract 1/revisions                |
+| 15 objeto histórico         | PASS    | SHA/tamanho coincidem                      |
+| 16 attempt 7 preservado     | PASS    | terminal; artifact intacto                 |
+| 17 reserve attempt 8        | PASS    | novo upload lógico                         |
+| 18 supersession             | PASS    | job 7 + reason correta                     |
+| 19 cópia privada            | PASS    | objeto 8 criado                            |
+| 20 integridade pós-cópia    | PASS    | SHA/tamanho coincidem                      |
+| 21 enqueue oficial          | PASS    | mensagem 16                                |
+| 22 durable claim            | PASS    | processing observado                       |
+| 23 attempt vs dispatch      | PASS    | attempt 8; dispatch 0–2                    |
+| 24 retry automático bounded | PASS    | mensagens 16–18; sem nova tentativa lógica |
+| 25 parser real              | PASS    | parse/normalização observados              |
+| 26 RAW artifact             | PASS    | READY                                      |
+| 27 chunks                   | PASS    | 25/25 verificados                          |
+| 28 root digest              | PASS    | digest registrado                          |
+| 29 RAW audit                | PASS    | APPROVED, zero blockers                    |
+| 30 cobertura semântica      | PASS    | oito gates RAW PASS                        |
+| 31 HOT bound                | PASS    | 1.201.342 bytes                            |
+| 32 Canonical handoff        | FAIL    | escrita parcial                            |
+| 33 round players            | FAIL    | zero                                       |
+| 34 metrics                  | FAIL    | zero                                       |
+| 35 features                 | FAIL    | zero                                       |
+| 36 finalização              | FAIL    | jsonb versus text[]                        |
+| 37 terminal job             | FAIL    | PERSISTENCE_ERROR                          |
+| 38 no attempt 9             | PASS    | zero                                       |
+| 39 Run 2                    | NOT RUN | proibido após Run 1 FAIL                   |
+| 40 decisão                  | FAIL    | pipeline não concluiu end-to-end           |
 
-## L. HOT
+## I. Próximo gate permitido
 
-Não executado.
-
-## M. Canonical
-
-Não executado. O preflight e a verificação posterior confirmaram zero fonte canônica vinculada ao upload 7.
-
-## N. Metrics
-
-Não executado.
-
-## O. Features
-
-Não executado.
-
-## P. Idempotency
-
-Não foi executada nova reserva: qualquer repetição seria retry proibido após a falha. O harness descartável anterior continua PASS, mas não substitui esta execução real.
-
-## Q. Concurrency
-
-Revalidação local: 30 testes focados PASS e harness PostgreSQL 17.9 com 50/50 corridas PASS, sem deadlock ou timeout.
-
-## R. Historical Immutability
-
-Attempt 7, upload 7 e artifact 7 permaneceram inalterados. Em especial, `superseded_by_job_id` continua NULL. Nenhum status histórico foi reaberto ou ajustado.
-
-## S. Test Matrix
-
-Os 30 testes lifecycle/concurrency passaram antes da execução. Não foram executadas suítes posteriores como substituto do E2E interrompido.
-
-## T. Frontend Smoke
-
-Não executado após a interrupção, pois não há estado de Run 1 a validar na interface.
-
-## U. Railway Health
-
-Saudável no preflight e não acionado pelo Run 1.
-
-## V. Roadmap
-
-Atualizado com esta fonte atual de verdade: tentativa 8 não criada, Run 1 falhou na primeira mutação e Run 2 permanece proibido.
-
-## W. Known Issues
-
-**ROOT CAUSE:** erro operacional de transcrição: o SHA enviado tinha 67 caracteres e divergia do SHA físico no índice 46.  
-**IMPACT:** criação de uma reserva pendente isolada para outro SHA; nenhuma tentativa 8, fila, parser ou dado derivado.  
-**AFFECTED COMPONENT:** invocação operacional da RPC, não a implementação do lifecycle.  
-**REPRODUCTION:** chamar a reserva com o mesmo usuário, nome e tamanho, mas SHA divergente.  
-**FIX REQUIRED:** uma futura execução deve obter o SHA diretamente da leitura verificada, sem transcrição manual.  
-**FIX APPLIED:** não; nenhum código ou dado foi alterado após a falha.  
-**RERUN SAFE:** tecnicamente possível somente em marco separado e explicitamente autorizado; não executado aqui.
-
-## X. Run 2 Readiness
-
-`RUN 2 = NOT READY`. Run 2 não foi executado e attempt 9 não existe.
-
-## Y. Final Decision
-
-`CACHE RUN 1 = FAIL`  
-`G5-R-F.2 = FAIL`  
-`RUN 2 = NOT READY`
-
-## Matriz G5-R-F.2-01..40
-
-| Gate | STATUS | EVIDENCE | NOTES |
-|---|---|---|---|
-| G5-R-F.2-01 projeto/commit | PASS | branch e commit registrados | preflight |
-| G5-R-F.2-02 migration | PASS | versão 20260918235817 instalada | read-only |
-| G5-R-F.2-03 RPC reserve | PASS | função real inspecionada | SECURITY DEFINER |
-| G5-R-F.2-04 RPC enqueue | PASS | função real inspecionada | SECURITY DEFINER |
-| G5-R-F.2-05 advisory lock | PASS | user+SHA na função instalada | comprovado também no harness |
-| G5-R-F.2-06 ACL | PASS | somente service_role executa | anon/auth negados |
-| G5-R-F.2-07 constraints | PASS | checks de reason presentes | inclui raw_audit_blocked |
-| G5-R-F.2-08 active SHA index | PASS | índice parcial presente | pending/processing/cancel_requested |
-| G5-R-F.2-09 supersession index | PASS | índice único presente | uma supersessão por job |
-| G5-R-F.2-10 historical state | PASS | job/upload/artifact 7 registrados | intactos |
-| G5-R-F.2-11 physical demo | PASS | 473.748.061 bytes | stream read-only |
-| G5-R-F.2-12 Railway preflight | PASS | health/version 200 | pins exatos |
-| G5-R-F.2-13 reserve | FAIL | SHA enviado divergente | resposta não foi replacement |
-| G5-R-F.2-14 attempt 8 | FAIL | não criado | reserva isolada attempt 1 |
-| G5-R-F.2-15 replacement reason | FAIL | NULL | esperado raw_audit_blocked |
-| G5-R-F.2-16 supersedes | FAIL | NULL | esperado job 7 |
-| G5-R-F.2-17 physical upload | NOT RUN | zero objeto no novo path | interrupção imediata |
-| G5-R-F.2-18 SHA verification | FAIL | parâmetro 67 chars versus físico 64 | detectado após RPC |
-| G5-R-F.2-19 enqueue | NOT RUN | zero job | proibido após mismatch |
-| G5-R-F.2-20 durable queue | NOT RUN | zero mensagem para upload isolado | sem bypass |
-| G5-R-F.2-21 worker claim | NOT RUN | nenhum job | — |
-| G5-R-F.2-22 Railway parser | NOT RUN | nenhum parse | serviço não alterado |
-| G5-R-F.2-23 parser identity | PASS | preflight version 200 | não é prova de parse |
-| G5-R-F.2-24 RAW artifact | NOT RUN | nenhum artifact novo | artifact 7 intacto |
-| G5-R-F.2-25 chunk integrity | NOT RUN | nenhum chunk novo | histórico 24/24 intacto |
-| G5-R-F.2-26 RAW audit | NOT RUN | nenhum report novo | histórico preservado |
-| G5-R-F.2-27 RAW approval | NOT RUN | nenhuma aprovação | fail-closed |
-| G5-R-F.2-28 HOT | NOT RUN | sem completion | — |
-| G5-R-F.2-29 Canonical | NOT RUN | zero vínculo novo | — |
-| G5-R-F.2-30 metrics | NOT RUN | nenhuma persistência | — |
-| G5-R-F.2-31 features | NOT RUN | nenhuma persistência | — |
-| G5-R-F.2-32 terminal state | FAIL | upload isolado pending sem job | evidência preservada |
-| G5-R-F.2-33 attempt 7 immutability | PASS | status/stage/superseded_by intactos | artifact intacto |
-| G5-R-F.2-34 no attempt 9 | PASS | zero para SHA correto | Run 2 não executado |
-| G5-R-F.2-35 enqueue idempotency | NOT RUN | execução real interrompida | prova local permanece PASS |
-| G5-R-F.2-36 SHA uniqueness | PASS | SHA correto não ganhou attempt novo | SHA incorreto criou outra chave |
-| G5-R-F.2-37 automated tests | PASS | 30 focados + harness 50/50 | antes da mutação |
-| G5-R-F.2-38 Railway post-run | NOT RUN | Railway não foi acionado | preflight saudável |
-| G5-R-F.2-39 documentation | PASS | este relatório + roadmap | evidência honesta |
-| G5-R-F.2-40 Run 2 readiness | FAIL | Run 1 não concluiu | NOT READY |
+Corrigir incrementalmente a incompatibilidade `quality_flags` e tornar Canonical/finalização atomicamente convergentes antes de autorizar qualquer nova execução. Run 2 e Fase 2.8 permanecem bloqueados.

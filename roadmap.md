@@ -1,5 +1,17 @@
 # Roadmap
 
+## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2.1–2.5 — CACHE RUN 1 FAIL
+
+- [x] SHA hardening e reconciliação de órfãos instalados; constraints, validação pré-mutation, lock e ACL service-role-only comprovados.
+- [x] PostgreSQL descartável: 50/50 corridas PASS; pipeline 487/487; APP 928/928; parser 162 PASS/10 skips; typecheck/compileall/build PASS.
+- [x] Attempt 8 real criado pelo lifecycle oficial: upload `d89b697f-c40d-42f4-ae51-040e4e8cabba`, job `d1851c49-820a-426b-86c6-0ea4623b4f41`, mesmo SHA/tamanho, supersedendo attempt 7 por `raw_audit_blocked`.
+- [x] RAW 8 READY/audit APPROVED: 25/25 chunks, 373.778 linhas, 2.799.506 bytes, root `341eb88e1c5b1c4f6af8fd74e7a7af39333ff0c4a2108a8d9e05a5e9a8297b1c`; oito gates RAW PASS; HOT ~1,20 MiB.
+- [ ] **CACHE RUN 1 FAIL:** terminal `PERSISTENCE_ERROR`; `finish_demo_job_processed` atribui `text[]` à coluna `demo_jobs.quality_flags jsonb`.
+- [ ] **ATOMICIDADE FAIL:** handoff deixou source canônico parcial (10 participantes, 25 rounds, 4.397 eventos), sem round_players, métricas ou features.
+- [x] Attempt 7/artifact 7 preservados; somente supersessão legítima registrada. Não existe attempt 9.
+- [ ] Run 2, attempt 9 e Fase 2.8 permanecem proibidos até correção incremental e novo gate explícito.
+- [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.2-CACHE-RUN-1.md`.
+
 ## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2 — CACHE RUN 1 FAIL
 
 - [x] Preflight completo PASS: migration/RPCs/ACLs/constraints, histórico, Storage e Railway foram comprovados sem mutação.
@@ -20,6 +32,7 @@
 - [ ] Revalidar o artifact Cache original sem mutá-lo; somente após cobertura fechada executar novo Cache Run 1 oficial.
 - [ ] Run 2/idempotência somente após Run 1 PASS; Fase 2.8 permanece bloqueada.
 - [x] Revalidar read-only os 24 chunks preservados: 373.754 linhas físicas e 25 estados de rodada derivados de ticks; detalhes em `services/cs2-demo-parser/docs/cache-g2-raw-coverage.md`.
+
 ## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
 
 - [x] Auditar o estado real do job Cache e artifact sem alterar dados: tentativa lógica 7, dispatch 2, artifact READY/BLOCKED, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e zero Canonical.
@@ -1095,6 +1108,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Continuar somente o job Cache existente e observar os 20 gates até estado terminal, sem novo upload, mensagem, reset ou exclusão.
 - [ ] Medir parser, RAW, HOT e pipeline antes de qualquer otimização.
 - [ ] Ajustar somente os dois textos portugueses solicitados em “Analisar meu jogo” e validar em mobile.
+
 ## FASE 2.7.2G.3 — Independent RAW manifest ↔ 178 closure + Railway parity gate — PARTIAL / OPERATIONALLY BLOCKED
 
 - [x] Re-read the immutable Cache manifest from private Storage and verify identity, contract 1, audit digest, root digest, 24 chunks, 373,754 rows, and 2,799,488 compressed bytes without mutation.
@@ -1157,4 +1171,3 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Confirmar Railway por probes read-only; nenhum deploy, secret ou staged change alterado.
 - [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.1-CONCURRENCY-HARDENING.md`.
 - [x] Decisão: `G5-R-F = CLOSED — READY FOR CACHE RUN 1`; Cache Run 1 NOT EXECUTED.
-

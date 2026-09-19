@@ -29,13 +29,18 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const { cleanupExpiredDemos, reconcileDurableDemoQueue, recoverStaleJobs } =
-          await import("@/lib/pipeline/jobs.server");
+        const {
+          cleanupExpiredDemos,
+          reconcileDurableDemoQueue,
+          reconcileOrphanDemoUploads,
+          recoverStaleJobs,
+        } = await import("@/lib/pipeline/jobs.server");
         const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
 
-        const [recovered, reconciled, deleted] = await Promise.all([
+        const [recovered, reconciled, orphansReconciled, deleted] = await Promise.all([
           recoverStaleJobs(),
           reconcileDurableDemoQueue(25),
+          reconcileOrphanDemoUploads(15, 25),
           cleanupExpiredDemos(50),
         ]);
 
@@ -65,6 +70,7 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         return Response.json({
           demoDispatch: "durable_queue",
           reconciled,
+          orphansReconciled,
           recovered,
           deleted,
           faceit,

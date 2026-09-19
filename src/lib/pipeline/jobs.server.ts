@@ -302,6 +302,23 @@ export async function reconcileDurableDemoQueue(limit = 25): Promise<number> {
   return Number(data ?? 0);
 }
 
+/** Fails old upload reservations only when no job or Storage object exists. */
+export async function reconcileOrphanDemoUploads(
+  olderThanMinutes = JOB_STALE_MINUTES,
+  limit = 25,
+): Promise<number> {
+  const db = await admin();
+  const { data, error } = await db.rpc(
+    "reconcile_orphan_demo_uploads" as never,
+    {
+      _older_than_minutes: olderThanMinutes,
+      _limit: limit,
+    } as never,
+  );
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  return Number(data ?? 0);
+}
+
 /** Deletes temporary demo files whose retention window has expired. */
 export async function cleanupExpiredDemos(limit = 25): Promise<number> {
   const db = await admin();
@@ -527,12 +544,14 @@ export async function processJob(
       participants: match.players.flatMap((demoPlayer) => {
         const participantKey = demoPlayer.participantKey ?? demoPlayer.steamId;
         return participantKey
-          ? [{
-              participantKey,
-              steamId: demoPlayer.steamId,
-              nickname: demoPlayer.name,
-              team: demoPlayer.team,
-            }]
+          ? [
+              {
+                participantKey,
+                steamId: demoPlayer.steamId,
+                nickname: demoPlayer.name,
+                team: demoPlayer.team,
+              },
+            ]
           : [];
       }),
       hasProfile: Boolean(player),
@@ -542,8 +561,7 @@ export async function processJob(
     });
     // Metrics target: the DEMO participant's own source-local key. Steam remains
     // optional evidence and is never substituted for the internal player id.
-    const participantKey =
-      attachment.state === "attached" ? attachment.participantKey : null;
+    const participantKey = attachment.state === "attached" ? attachment.participantKey : null;
     const steamId = attachment.state === "attached" ? attachment.steamId : null;
 
     // FASE 2.7 — after RAW evidence passes explicit admission, the canonical
@@ -663,7 +681,7 @@ export async function processJob(
       finished_at: finishedAt,
       duration_ms: durationMs,
       match_id: canonical.matchId,
-       player_id: participantKey ? (player?.id ?? null) : null,
+      player_id: participantKey ? (player?.id ?? null) : null,
       resolved_steam_id: steamId,
       identity_status: attachment.state === "attached" ? "resolved" : "unresolved",
       attachment_state: attachment.state,
@@ -671,12 +689,12 @@ export async function processJob(
       attachment_confidence: confidenceScore(attachment.confidence),
       attachment_confidence_label: attachment.confidence,
       attachment_source: attachment.source,
-       attachment_confirmation_status:
-         attachment.method === "steam_id_confirmed"
-           ? "pending_confirmation"
-           : attachment.state === "attached"
-             ? "manual_selected"
-             : "not_required",
+      attachment_confirmation_status:
+        attachment.method === "steam_id_confirmed"
+          ? "pending_confirmation"
+          : attachment.state === "attached"
+            ? "manual_selected"
+            : "not_required",
       attachment_participant_key: attachment.participantKey,
       observed_nickname: attachment.observedNickname,
       attachment_reason: attachment.reason,
