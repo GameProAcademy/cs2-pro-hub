@@ -57,10 +57,22 @@ O caminho idempotente `processed` continua exigindo RAW aprovado. A nova tentati
 
 ## Testes e limites
 
-Cobertura adicionada para o novo estado, motivo, incremento de tentativa, relação de supersessão, preservação do histórico e propagação do contrato TypeScript. As suítes e seus resultados finais são registrados no fechamento desta fase.
+Cobertura adicionada para o novo estado, motivo, incremento de tentativa, relação de supersessão, preservação do histórico e propagação do contrato TypeScript.
+
+Resultados:
+
+- lifecycle/RAW/HOT/Canonical focado: 157 testes PASS;
+- suíte TypeScript completa: 921 testes PASS;
+- parser/RAW/HOT/adapter/worker: 162 PASS e 10 SKIP;
+- `tsgo`, `compileall` e `git diff --check`: PASS;
+- lint global: BLOCKED pelo baseline preexistente de Prettier/Fast Refresh fora do escopo; os arquivos alterados nesta fase não aparecem nos erros reportados.
 
 O Cache Run 1 permanece não executado por desenho: esta fase apenas prepara e valida o lifecycle. A próxima fase poderá iniciar um novo ciclo somente após a decisão final dos gates G5-R.
 
 ## Gates
 
-Os estados finais G5-R-01 a G5-R-20 são registrados após todas as suítes e verificações de banco. Nenhum gate depende de aprovação retroativa do artifact histórico.
+- G5-R-01 a G5-R-18: PASS — auditoria, migration, contrato, locks, unicidade, idempotência, permissões, histórico, RAW e Canonical fail-closed cobertos.
+- G5-R-19: PARTIAL — testes estruturais e suítes completos passaram; race test concorrente em banco não foi executado para evitar dados reais.
+- G5-R-20: PASS — documentação e roadmap atualizados, sem Cache Run 1/Run 2.
+
+Nenhum gate depende de aprovação retroativa do artifact histórico. O gate operacional para executar o Cache continua separado desta correção.

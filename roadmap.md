@@ -1112,12 +1112,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] `/health` e `/version` responderam 200; processo isolado, durable worker e identidade de build preservados.
 - [x] Nenhum deploy Railway adicional faz parte da G.5-R.
 
-## FASE 2.7.2G.5-R — Lifecycle pós-RAW bloqueado — EM VALIDAÇÃO
+## FASE 2.7.2G.5-R — Lifecycle pós-RAW bloqueado — CONCLUÍDA / CACHE NOT RUN
 
 - [x] Auditar schema, constraints, índices, funções e tentativa Cache histórica por leitura.
 - [x] Aplicar migration incremental para `blocked_raw_audit → raw_audit_blocked`, sem reabrir a tentativa anterior.
 - [x] Preservar lock por usuário+SHA, incremento de `attempt_number`, `supersedes_job_id`, `superseded_by_job_id` e `ATTEMPT_ALREADY_SUPERSEDED`.
 - [x] Propagar o novo motivo no contrato TypeScript sem alterar o retorno público imutável de `submitDemo()`.
-- [ ] Concluir testes locais, verificação de permissões, documentação e decisão dos gates G5-R.
-- [ ] Cache Run 1 e Run 2 permanecem NOT RUN; Railway, Storage, secrets, artifact e Canonical permanecem intocados.
+- [x] Validar lifecycle/RAW/HOT/Canonical focado (157 PASS), APP completa (921 PASS), parser (162 PASS/10 SKIP), typecheck, compileall e diff check.
+- [x] Confirmar as RPCs como `SECURITY DEFINER`, `search_path=''` e executáveis somente por `service_role`; preservar o baseline de 15 achados legados do linter.
+- [x] Documentar riscos e gates em `docs/PHASE-2.7.2G.5-R-BLOCKED-RAW-ATTEMPT-LIFECYCLE.md`; concorrência real permanece PARTIAL por não criar dados de teste em produção.
+- [x] Cache Run 1 e Run 2 permanecem NOT RUN; Railway, Storage, secrets, artifact e Canonical permanecem intocados.
 
