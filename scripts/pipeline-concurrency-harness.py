@@ -105,7 +105,7 @@ def main() -> None:
         cmd += ["-c", sql]
         return run(cmd, env=clean_env, capture_output=True, timeout=15).stdout.strip()
 
-    def concurrent(sql_a: str, sql_b: str) -> tuple[str, str]:
+    def run_concurrently(sql_a: str, sql_b: str) -> tuple[str, str]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             a = pool.submit(psql, sql_a)
             b = pool.submit(psql, sql_b)
@@ -157,7 +157,7 @@ def main() -> None:
                 user, _, old_job, sha = seed("blocked_raw_audit")
                 upload_a, upload_b = str(uuid.uuid4()), str(uuid.uuid4())
                 debug("concurrent reserve")
-                result_a, result_b = concurrent(reserve(user, upload_a, sha), reserve(user, upload_b, sha))
+                result_a, result_b = run_concurrently(reserve(user, upload_a, sha), reserve(user, upload_b, sha))
                 payloads = [json.loads(result_a.splitlines()[-1]), json.loads(result_b.splitlines()[-1])]
                 new_ids = {p["upload_id"] for p in payloads}
                 if len(new_ids) != 1 or sum(p["new_attempt"] for p in payloads) != 1:
@@ -169,7 +169,7 @@ def main() -> None:
                     raise AssertionError("reserve-to-enqueue window contract mismatch")
                 enqueue_sql = f"SELECT public.enqueue_demo_job('{new_upload}','{user}')::text;"
                 debug("concurrent enqueue")
-                enq_a, enq_b = concurrent(enqueue_sql, enqueue_sql)
+                enq_a, enq_b = run_concurrently(enqueue_sql, enqueue_sql)
                 enqueued = [json.loads(enq_a.splitlines()[-1]), json.loads(enq_b.splitlines()[-1])]
                 debug("state")
                 state = json.loads(psql(f"""SELECT json_build_object(
@@ -200,7 +200,7 @@ def main() -> None:
         for status, reason, stale in [("failed", "failed", False), ("cancelled", "cancelled", False), ("processing", "stale", True)]:
             debug(f"terminal {status}")
             user, _, old_job, sha = seed(status, stale=stale)
-            a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
+            a, b = run_concurrently(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
             results = [json.loads(a.splitlines()[-1]), json.loads(b.splitlines()[-1])]
             if sum(row["new_attempt"] for row in results) != 1 or {row["replacement_reason"] for row in results} != {reason}:
                 raise AssertionError(f"{status} replacement mismatch")
@@ -210,14 +210,14 @@ def main() -> None:
         # I/J: approved processed is immutable; unapproved processed is replaced once.
         debug("processed approved")
         user, upload, job, sha = seed("processed", approved=True)
-        a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
+        a, b = run_concurrently(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
         if any(json.loads(value.splitlines()[-1])["job_id"] != job for value in (a, b)):
             raise AssertionError("approved processed idempotency mismatch")
         if psql(f"SELECT count(*) FROM public.uploads WHERE user_id='{user}';") != "1":
             raise AssertionError("approved processed created replacement")
         debug("legacy")
         user, _, _, sha = seed("processed")
-        a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
+        a, b = run_concurrently(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
         results = [json.loads(a.splitlines()[-1]), json.loads(b.splitlines()[-1])]
         if sum(row["new_attempt"] for row in results) != 1 or {row["replacement_reason"] for row in results} != {"legacy_unvalidated"}:
             raise AssertionError("legacy unvalidated mismatch")
