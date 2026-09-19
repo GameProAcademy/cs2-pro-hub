@@ -10,6 +10,7 @@ import { safeResetPasswordUrl } from "@/lib/safe-redirect";
 import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
 import {
   resolveOwnSteamId,
+  validateCanonicalBundle,
   validateCanonicalMatch,
   validateDemoFile,
 } from "@/lib/pipeline/validator";
@@ -243,6 +244,29 @@ describe("validation and identity", () => {
     expect(() => validateCanonicalMatch({ ...match, rounds: match.rounds.slice(0, 2) })).toThrow(
       PipelineError,
     );
+  });
+
+  it("rejects a canonical match whose round count disagrees with its rows", () => {
+    expect(() =>
+      validateCanonicalMatch({ ...match, roundCount: match.rounds.length - 1 }),
+    ).toThrow(/round count mismatch/);
+  });
+
+  it("rejects impossible round intervals before persistence", () => {
+    const rounds = match.rounds.map((round, index) =>
+      index === 0 ? { ...round, startTick: 100, endTick: 99 } : round,
+    );
+    expect(() => validateCanonicalBundle({ ...match, roundCount: rounds.length }, rounds, match.events))
+      .toThrow(/ends before it starts/);
+  });
+
+  it("rejects events outside their proven round interval", () => {
+    const rounds = match.rounds.map((round, index) =>
+      index === 0 ? { ...round, startTick: 100, endTick: 200 } : round,
+    );
+    const events = [{ ...match.events[0]!, roundNumber: 1, tick: 250 }];
+    expect(() => validateCanonicalBundle({ ...match, roundCount: rounds.length }, rounds, events))
+      .toThrow(/outside round/);
   });
 
   it("resolves the owning player only through an explicit Steam ID", () => {
