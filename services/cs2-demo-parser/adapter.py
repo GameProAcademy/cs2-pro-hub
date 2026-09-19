@@ -236,65 +236,73 @@ def build_round_intervals(
     round_starts: Sequence[Record],
     round_ends: Sequence[Record],
 ) -> list[tuple[int, int | None, int | None]]:
-    """Deterministic `(number, start_tick, end_tick)` list from real ticks.
+    """Pair observed round starts with the first valid later round end.
 
-    Only real ticks are reported. When one of the two streams is missing the
-    other still yields ordered rounds, with the unknown boundary left as None.
+    demoparser2 can expose a lifecycle round_end at tick 1 before the first
+    played round_start. That row is not the end of round 1. The old
+    cursor-by-end algorithm consumed it and shifted every subsequent boundary,
+    producing impossible intervals such as end_tick < start_tick.
+
+    The pairing rule is deliberately conservative:
+    * starts are the authoritative round sequence when present;
+    * an end before the first start is orphan lifecycle evidence and is ignored;
+    * each start may consume only an end at/after that start and before the next
+      observed start;
+    * an end that cannot be paired is left unconsumed rather than shifted;
+    * when starts are absent, ends still form evidence-only rounds with unknown starts.
     """
     starts = _sorted_ticks(round_starts)
     ends = _sorted_ticks(round_ends)
 
+    if not starts:
+        return [(index, None, end) for index, end in enumerate(ends, start=1)]
+
     intervals: list[tuple[int, int | None, int | None]] = []
-    if ends:
-        cursor = 0
-        previous_end: int | None = None
-        for index, end in enumerate(ends, start=1):
-            start: int | None = None
-            while cursor < len(starts) and starts[cursor] <= end:
-                candidate = starts[cursor]
-                if previous_end is None or candidate > previous_end:
-                    start = candidate if start is None else start
-                cursor += 1
-            intervals.append((index, start, end))
-            previous_end = end
-        return intervals
-
+    cursor = 0
     for index, start in enumerate(starts, start=1):
-        intervals.append((index, start, None))
-    return intervals
+        next_start = starts[index] if index < len(starts) else None
 
+        while cursor < len(ends) and ends[cursor] < start:
+            cursor += 1
+
+        end: int | None = None
+        if cursor < len(ends):
+            candidate = ends[cursor]
+            if next_start is None or candidate < next_start:
+                end = candidate
+                cursor += 1
+
+        intervals.append((index, start, end))
+
+    return intervals
 
 def resolve_event_round(
     tick: int | None,
     intervals: Sequence[tuple[int, int | None, int | None]],
 ) -> int | None:
-    """Map a tick to a round number, deterministically, or None.
+    """Map a tick to a round only when its observed window contains the tick.
 
-    An event is assigned to the first round whose observed window contains its
-    tick. With ends, the window is `(previous_end, end]`. With starts only, it is
-    `[start, next_start)`, and the final observed start owns later events. An
-    absent tick, or a tick before the first observed start, resolves to None.
+    Known gaps between a round end and the next round start are intentionally
+    not assigned to either round. This prevents lifecycle/intermission events
+    from being attached to the next round merely because it is next.
     """
     if tick is None or not intervals:
         return None
-    previous_end: int | None = None
+
     for index, (number, start, end) in enumerate(intervals):
-        if end is None:
-            next_start = intervals[index + 1][1] if index + 1 < len(intervals) else None
-            lower = start if start is not None else previous_end
-            if (lower is None or tick >= lower) and (next_start is None or tick < next_start):
+        next_start = intervals[index + 1][1] if index + 1 < len(intervals) else None
+
+        if end is not None:
+            if start is not None and start <= tick <= end:
+                return number
+            if start is None and tick <= end and (index == 0 or tick > (intervals[index - 1][2] or -1)):
                 return number
             continue
-        if previous_end is not None:
-            lower_ok = tick > previous_end
-        else:
-            lower_ok = start is None or tick >= start
-        if lower_ok and tick <= end:
+
+        if start is not None and tick >= start and (next_start is None or tick < next_start):
             return number
-        previous_end = end
+
     return None
-
-
 
 def normalize_rounds(
     round_starts: Sequence[Record],
@@ -422,8 +430,19 @@ def normalize_events(
                 dropped += 1
                 continue
             tick = _int(_pick(row, "tick"))
-            number = _int(_pick(row, "round", "round_number"))
-            if number is None or number <= 0:
+            explicit_number = _int(_pick(row, "round", "round_number"))
+            number = explicit_number if explicit_number is not None and explicit_number > 0 else None
+
+            # An explicit parser round is evidence only when structurally
+            # consistent with the observed interval. Never let a round number
+            # override an impossible tick/boundary relationship.
+            if number is not None:
+                interval = next((item for item in intervals if item[0] == number), None)
+                if interval is None or (tick is not None and resolve_event_round(tick, [interval]) != number):
+                    dropped += 1
+                    continue
+
+            if number is None:
                 number = resolve_event_round(tick, intervals)
             if number is None:
                 dropped += 1
