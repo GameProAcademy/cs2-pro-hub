@@ -60,48 +60,48 @@ O attempt 7 permaneceu terminal e seu artifact ficou intacto: 24/24 chunks, 373.
 
 ## H. Matriz G5-R-F.2-01..40
 
-| Gate | Status | Evidência |
-|---|---|---|
-| 01 projeto/revisão | PASS | revisão registrada, árvore limpa |
-| 02 migrations | PASS | duas migrations incrementais instaladas |
-| 03 SHA programático | PASS | stream físico, 64 hex |
-| 04 constraints SHA | PASS | checks em uploads/jobs |
-| 05 validação pré-mutation | PASS | reserve/enqueue/client |
-| 06 reserva inválida | PASS | evidência terminal preservada |
-| 07 reconciliação órfã | PASS | dois órfãos reconciliados |
-| 08 janela segura | PASS | mínimo 15 minutos |
-| 09 Storage recheck | PASS | job e objeto rechecados sob lock |
-| 10 advisory lock | PASS | owner+SHA |
-| 11 ACL | PASS | service-role-only |
-| 12 concorrência | PASS | 50/50, zero anomalia |
-| 13 Railway health | PASS | HTTP 200 |
-| 14 parser identity | PASS | 0.42.0/contract 1/revisions |
-| 15 objeto histórico | PASS | SHA/tamanho coincidem |
-| 16 attempt 7 preservado | PASS | terminal; artifact intacto |
-| 17 reserve attempt 8 | PASS | novo upload lógico |
-| 18 supersession | PASS | job 7 + reason correta |
-| 19 cópia privada | PASS | objeto 8 criado |
-| 20 integridade pós-cópia | PASS | SHA/tamanho coincidem |
-| 21 enqueue oficial | PASS | mensagem 16 |
-| 22 durable claim | PASS | processing observado |
-| 23 attempt vs dispatch | PASS | attempt 8; dispatch 0–2 |
-| 24 retry automático bounded | PASS | mensagens 16–18; sem nova tentativa lógica |
-| 25 parser real | PASS | parse/normalização observados |
-| 26 RAW artifact | PASS | READY |
-| 27 chunks | PASS | 25/25 verificados |
-| 28 root digest | PASS | digest registrado |
-| 29 RAW audit | PASS | APPROVED, zero blockers |
-| 30 cobertura semântica | PASS | oito gates RAW PASS |
-| 31 HOT bound | PASS | 1.201.342 bytes |
-| 32 Canonical handoff | FAIL | escrita parcial |
-| 33 round players | FAIL | zero |
-| 34 metrics | FAIL | zero |
-| 35 features | FAIL | zero |
-| 36 finalização | FAIL | jsonb versus text[] |
-| 37 terminal job | FAIL | PERSISTENCE_ERROR |
-| 38 no attempt 9 | PASS | zero |
-| 39 Run 2 | NOT RUN | proibido após Run 1 FAIL |
-| 40 decisão | FAIL | pipeline não concluiu end-to-end |
+| Gate                        | Status  | Evidência                                  |
+| --------------------------- | ------- | ------------------------------------------ |
+| 01 projeto/revisão          | PASS    | revisão registrada, árvore limpa           |
+| 02 migrations               | PASS    | duas migrations incrementais instaladas    |
+| 03 SHA programático         | PASS    | stream físico, 64 hex                      |
+| 04 constraints SHA          | PASS    | checks em uploads/jobs                     |
+| 05 validação pré-mutation   | PASS    | reserve/enqueue/client                     |
+| 06 reserva inválida         | PASS    | evidência terminal preservada              |
+| 07 reconciliação órfã       | PASS    | dois órfãos reconciliados                  |
+| 08 janela segura            | PASS    | mínimo 15 minutos                          |
+| 09 Storage recheck          | PASS    | job e objeto rechecados sob lock           |
+| 10 advisory lock            | PASS    | owner+SHA                                  |
+| 11 ACL                      | PASS    | service-role-only                          |
+| 12 concorrência             | PASS    | 50/50, zero anomalia                       |
+| 13 Railway health           | PASS    | HTTP 200                                   |
+| 14 parser identity          | PASS    | 0.42.0/contract 1/revisions                |
+| 15 objeto histórico         | PASS    | SHA/tamanho coincidem                      |
+| 16 attempt 7 preservado     | PASS    | terminal; artifact intacto                 |
+| 17 reserve attempt 8        | PASS    | novo upload lógico                         |
+| 18 supersession             | PASS    | job 7 + reason correta                     |
+| 19 cópia privada            | PASS    | objeto 8 criado                            |
+| 20 integridade pós-cópia    | PASS    | SHA/tamanho coincidem                      |
+| 21 enqueue oficial          | PASS    | mensagem 16                                |
+| 22 durable claim            | PASS    | processing observado                       |
+| 23 attempt vs dispatch      | PASS    | attempt 8; dispatch 0–2                    |
+| 24 retry automático bounded | PASS    | mensagens 16–18; sem nova tentativa lógica |
+| 25 parser real              | PASS    | parse/normalização observados              |
+| 26 RAW artifact             | PASS    | READY                                      |
+| 27 chunks                   | PASS    | 25/25 verificados                          |
+| 28 root digest              | PASS    | digest registrado                          |
+| 29 RAW audit                | PASS    | APPROVED, zero blockers                    |
+| 30 cobertura semântica      | PASS    | oito gates RAW PASS                        |
+| 31 HOT bound                | PASS    | 1.201.342 bytes                            |
+| 32 Canonical handoff        | FAIL    | escrita parcial                            |
+| 33 round players            | FAIL    | zero                                       |
+| 34 metrics                  | FAIL    | zero                                       |
+| 35 features                 | FAIL    | zero                                       |
+| 36 finalização              | FAIL    | jsonb versus text[]                        |
+| 37 terminal job             | FAIL    | PERSISTENCE_ERROR                          |
+| 38 no attempt 9             | PASS    | zero                                       |
+| 39 Run 2                    | NOT RUN | proibido após Run 1 FAIL                   |
+| 40 decisão                  | FAIL    | pipeline não concluiu end-to-end           |
 
 ## I. Próximo gate permitido
 

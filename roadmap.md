@@ -32,6 +32,7 @@
 - [ ] Revalidar o artifact Cache original sem mutá-lo; somente após cobertura fechada executar novo Cache Run 1 oficial.
 - [ ] Run 2/idempotência somente após Run 1 PASS; Fase 2.8 permanece bloqueada.
 - [x] Revalidar read-only os 24 chunks preservados: 373.754 linhas físicas e 25 estados de rodada derivados de ticks; detalhes em `services/cs2-demo-parser/docs/cache-g2-raw-coverage.md`.
+
 ## FASE 2.7.2G — RAW forensic audit + Cache E2E — EM AUDITORIA
 
 - [x] Auditar o estado real do job Cache e artifact sem alterar dados: tentativa lógica 7, dispatch 2, artifact READY/BLOCKED, 24 chunks verificados, 373.754 linhas, 2.799.488 bytes e zero Canonical.
@@ -1107,6 +1108,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Continuar somente o job Cache existente e observar os 20 gates até estado terminal, sem novo upload, mensagem, reset ou exclusão.
 - [ ] Medir parser, RAW, HOT e pipeline antes de qualquer otimização.
 - [ ] Ajustar somente os dois textos portugueses solicitados em “Analisar meu jogo” e validar em mobile.
+
 ## FASE 2.7.2G.3 — Independent RAW manifest ↔ 178 closure + Railway parity gate — PARTIAL / OPERATIONALLY BLOCKED
 
 - [x] Re-read the immutable Cache manifest from private Storage and verify identity, contract 1, audit digest, root digest, 24 chunks, 373,754 rows, and 2,799,488 compressed bytes without mutation.
@@ -1169,4 +1171,3 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Confirmar Railway por probes read-only; nenhum deploy, secret ou staged change alterado.
 - [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.1-CONCURRENCY-HARDENING.md`.
 - [x] Decisão: `G5-R-F = CLOSED — READY FOR CACHE RUN 1`; Cache Run 1 NOT EXECUTED.
-
