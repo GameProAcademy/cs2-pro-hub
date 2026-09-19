@@ -1,3 +1,29 @@
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.6 — CANONICAL INTEGRITY REMEDIATION
+
+**Status:** IMPLEMENTED IN CODE / DB MIGRATION PENDING APPLICATION / RUN 2 STILL BLOCKED.
+
+This section supersedes older execution notes below when they conflict with the latest forensic audit.
+
+- [x] Identified and corrected the concrete `finish_demo_job_processed` JSONB/text[] type mismatch.
+- [x] Added a postcondition: a demo job cannot become `processed` unless a committed demo `match_sources` row points to Canonical.
+- [x] Added processed-idempotency support for an approved immutable `raw_evidence_artifacts` path even when `raw_demo_evidence_reports` is absent.
+- [x] Corrected round reconstruction so lifecycle `round_end` rows before the first real `round_start` are ignored instead of shifting every round.
+- [x] Changed event mapping to fail closed in inter-round gaps and on explicit round/tick contradictions.
+- [x] Added Canonical bundle validation for round numbering, round count, tick ordering, overlap and event containment.
+- [x] Added a future-row database CHECK preventing `end_tick < start_tick`; historical invalid rows remain preserved by design.
+- [x] Prevented unapproved legacy demo Canonical matches from being identity-convergence targets.
+- [x] Made post-Canonical durable finalization retryable: if Canonical has already committed, the durable job is kept processing for lease/stale recovery instead of being terminalized as failed.
+- [x] Added regression tests for the round-boundary and Canonical semantic defects.
+- [ ] Apply the new Supabase migration to production.
+- [ ] Sync the corrected parser adapter to the Railway production branch and verify the deployment.
+- [ ] Re-run focused tests, typecheck/build and production read-only preflight.
+- [ ] Perform a controlled Cache Run 1 retry using the same physical demo/SHA, with no Run 2.
+- [ ] Only declare G5-R-F.2 PASS after RAW approval, valid Canonical intervals, event containment, terminal job finalization, idempotency and historical immutability are all proven.
+- [ ] Run 2 / attempt 9 remains prohibited until the explicit PASS gate.
+- [ ] Fase 2.8 AI Coach remains blocked.
+
+**Historical data policy:** attempt 7, attempt 8 RAW artifacts and existing Canonical rows are not deleted or rewritten by this remediation. The failed Run 1 Canonical state remains forensic evidence and is not an AI source until a fresh controlled run produces a valid Canonical state.
+
 # Roadmap
 
 ## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2.1–2.5 — CACHE RUN 1 FAIL
