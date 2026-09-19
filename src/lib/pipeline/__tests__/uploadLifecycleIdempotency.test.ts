@@ -7,6 +7,8 @@ const migration = [
   "supabase/migrations/20260915090000_phase_j_legacy_processing_and_processed_reconciliation.sql",
   "supabase/migrations/20260915100000_phase_j_lock_order_and_duplicate_contract.sql",
   "supabase/migrations/20260918235817_30712b60-cf57-4adc-89e5-3fbd7bdee5a4.sql",
+  "supabase/migrations/20260919011719_62c1c4a0-6f2a-4675-a744-380268b3c69e.sql",
+  "supabase/migrations/20260919011805_5beed5e8-e404-4d72-82d4-253fa8610171.sql",
 ]
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
@@ -148,5 +150,21 @@ describe("demo upload lifecycle idempotency", () => {
       'slot.duplicate && slot.duplicateStatus === "pending" && !slot.existingJobId',
     );
     expect(clientSource).toContain("dependencies.enqueue({ data: { uploadId: slot.uploadId } })");
+  });
+
+  it("rejects malformed SHA values before database mutation", () => {
+    expect(migration).toContain("RAISE EXCEPTION 'INVALID_DEMO_SHA256'");
+    expect(migration).toContain("uploads_demo_sha256_format_check");
+    expect(migration).toContain("demo_jobs_demo_sha256_format_check");
+    expect(functionsSource).toContain("demoSha256: z.string().regex(/^[a-f0-9]{64}$/)");
+    expect(clientSource).toContain("if (!isSha256Hex(demoSha256))");
+  });
+
+  it("reconciles only old job-less and object-less reservations under the same lock", () => {
+    expect(migration).toContain("public.reconcile_orphan_demo_uploads");
+    expect(migration).toContain("_older_than_minutes, 0) < 15");
+    expect(migration).toContain("NOT EXISTS (SELECT 1 FROM public.demo_jobs");
+    expect(migration).toContain("SELECT 1 FROM storage.objects");
+    expect(migration).toContain("UPLOAD_RESERVATION_ABANDONED");
   });
 });

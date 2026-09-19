@@ -27,6 +27,8 @@ SCHEMA = r"""
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN;
+CREATE SCHEMA storage;
+CREATE TABLE storage.objects (bucket_id text NOT NULL, name text NOT NULL, PRIMARY KEY(bucket_id,name));
 CREATE TYPE public.upload_status AS ENUM
   ('pending','processing','processed','failed','cancel_requested','cancelled','blocked_raw_audit');
 CREATE TABLE public.profiles (id uuid PRIMARY KEY);
@@ -149,6 +151,9 @@ def main() -> None:
         psql((ROOT / "supabase/migrations/20260915100000_phase_j_lock_order_and_duplicate_contract.sql").read_text(), tuples=False)
         debug("g5-r migration")
         psql((ROOT / "supabase/migrations/20260918235817_30712b60-cf57-4adc-89e5-3fbd7bdee5a4.sql").read_text(), tuples=False)
+        debug("sha and orphan hardening migrations")
+        psql((ROOT / "supabase/migrations/20260919011719_62c1c4a0-6f2a-4675-a744-380268b3c69e.sql").read_text(), tuples=False)
+        psql((ROOT / "supabase/migrations/20260919011805_5beed5e8-e404-4d72-82d4-253fa8610171.sql").read_text(), tuples=False)
 
         # A/C/D/E: simultaneous replacement, explicit no-job window, and concurrent enqueue.
         for _ in range(ITERATIONS):
@@ -242,6 +247,40 @@ def main() -> None:
         WHERE n.nspname='public' AND p.proname IN ('reserve_demo_upload','enqueue_demo_job');""")
         if attrs != "t":
             raise AssertionError("SECURITY DEFINER/search_path mismatch")
+
+        # N: old orphan without bytes is reconciled; a recent reservation and
+        # an old reservation with a physical object remain untouched.
+        debug("orphan reconciliation")
+        user = str(uuid.uuid4()); sha = uuid.uuid4().hex + uuid.uuid4().hex
+        recent, old_empty, old_stored = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
+        psql(f"""
+          INSERT INTO public.profiles VALUES ('{user}');
+          INSERT INTO public.uploads(id,user_id,type,source,file_name,status,demo_sha256,storage_path,created_at)
+          VALUES
+            ('{recent}','{user}','demo','manual','recent.dem','pending','{sha}','{user}/{recent}.dem',now()),
+            ('{old_empty}','{user}','demo','manual','old-empty.dem','pending','{'b' * 64}','{user}/{old_empty}.dem',now()-interval '20 minutes'),
+            ('{old_stored}','{user}','demo','manual','old-stored.dem','pending','{'c' * 64}','{user}/{old_stored}.dem',now()-interval '20 minutes');
+          INSERT INTO storage.objects(bucket_id,name) VALUES ('demos','{user}/{old_stored}.dem');
+        """)
+        if psql("SELECT public.reconcile_orphan_demo_uploads(15,25);") != "1":
+            raise AssertionError("orphan reconciliation count mismatch")
+        orphan_states = psql(f"SELECT string_agg(id::text||':'||status::text,',' ORDER BY id) FROM public.uploads WHERE id IN ('{recent}','{old_empty}','{old_stored}');")
+        if f"{old_empty}:failed" not in orphan_states or f"{recent}:pending" not in orphan_states or f"{old_stored}:pending" not in orphan_states:
+            raise AssertionError(f"orphan reconciliation state mismatch: {orphan_states}")
+
+        # O: malformed hashes fail before insert through the RPC and at the
+        # table constraint; no upload or job survives either transaction.
+        debug("invalid sha rejection")
+        invalid_user = str(uuid.uuid4()); invalid_upload = str(uuid.uuid4())
+        psql(f"INSERT INTO public.profiles VALUES ('{invalid_user}');")
+        try:
+            psql(reserve(invalid_user, invalid_upload, "d" * 67))
+            raise AssertionError("reserve accepted invalid SHA")
+        except subprocess.CalledProcessError as error:
+            if "INVALID_DEMO_SHA256" not in (error.stderr or ""):
+                raise
+        if psql(f"SELECT count(*) FROM public.uploads WHERE id='{invalid_upload}';") != "0":
+            raise AssertionError("invalid reserve persisted an upload")
     finally:
         if started:
             subprocess.run(as_user + ["pg_ctl", "-D", str(data), "-m", "immediate", "-w", "stop"], env=clean_env, capture_output=True)
@@ -251,7 +290,7 @@ def main() -> None:
         "database": "disposable-local-postgresql", "postgresVersion": "17.9",
         "independentConnections": True, "iterations": ITERATIONS, "successes": successes,
         "failures": failures, "deadlocks": deadlocks, "timeouts": timeouts,
-        "scenarios": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+        "scenarios": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "N", "O"],
         "teardown": not base.exists(), "productionConnectionsUsed": False,
     }, separators=(",", ":")))
 

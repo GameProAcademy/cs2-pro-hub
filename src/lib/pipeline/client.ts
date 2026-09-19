@@ -13,7 +13,7 @@ import {
   type DemoJobView,
   type ReplacementReason,
 } from "@/lib/pipeline.functions";
-import { sha256HexFromBlob } from "@/lib/pipeline/sha256";
+import { isSha256Hex, sha256HexFromBlob } from "@/lib/pipeline/sha256";
 import { uploadDemoResumably, type ResumableUploadOptions } from "@/lib/pipeline/resumableUpload";
 
 export type ClientUploadError =
@@ -117,6 +117,9 @@ export async function submitDemoWithDependencies(
   precheckDemo(file);
   options.onProgress?.({ state: "hashing", bytesSent: 0, bytesTotal: file.size, percent: 0 });
   const demoSha256 = await dependencies.hash(file);
+  if (!isSha256Hex(demoSha256)) {
+    throw new DemoUploadError("PROCESSING_ERROR", "INVALID_DEMO_SHA256");
+  }
 
   options.onProgress?.({ state: "registering", bytesSent: 0, bytesTotal: file.size, percent: 0 });
   const slot = await dependencies.create({

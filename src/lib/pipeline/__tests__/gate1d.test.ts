@@ -80,6 +80,19 @@ describe("Gate 1D upload boundaries", () => {
     expect(calls).toEqual(["hash", "create", "upload", "enqueue"]);
   });
 
+  it("rejects a malformed calculated SHA before registration", async () => {
+    const { calls, dependencies } = flow({
+      hash: async () => {
+        calls.push("hash");
+        return "a".repeat(67);
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).rejects.toMatchObject({ code: "PROCESSING_ERROR", detail: "INVALID_DEMO_SHA256" });
+    expect(calls).toEqual(["hash"]);
+  });
+
   it("does not enqueue after upload failure or cancellation", async () => {
     for (const error of [new Error("network"), new DOMException("cancelled", "AbortError")]) {
       const { calls, dependencies } = flow({

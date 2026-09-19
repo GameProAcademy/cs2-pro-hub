@@ -24,6 +24,12 @@ const K = new Uint32Array([
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ]);
 
+export const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/;
+
+export function isSha256Hex(value: string): boolean {
+  return SHA256_HEX_PATTERN.test(value);
+}
+
 const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n));
 
 /** Streaming SHA-256 accumulator. */
