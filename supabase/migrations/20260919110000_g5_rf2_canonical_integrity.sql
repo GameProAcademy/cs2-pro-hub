@@ -102,7 +102,7 @@ BEGIN
     ),
     -- IMPORTANT: quality_flags is JSONB. Never coerce it to text[].
     quality_flags = COALESCE(_result->'quality_flags', '[]'::jsonb),
-    retain_until = NULLIF(_result->>'retain_until', '')::timestamptz,
+    retain_until = COALESCE(NULLIF(_result->>'retain_until', '')::timestamptz, retain_until),
     error_code = NULL,
     error_message = NULL,
     heartbeat_at = NULL,
