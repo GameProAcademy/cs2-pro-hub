@@ -34,11 +34,7 @@ export type IdentitySource = "system" | "steam" | "faceit" | "gamersclub" | "use
 export type IdentityConfidence = "high" | "medium" | "low";
 
 export type IdentityConfirmationStatus =
-  | "pending_confirmation"
-  | "user_confirmed"
-  | "user_rejected"
-  | "not_required"
-  | "manual_selected";
+  "pending_confirmation" | "user_confirmed" | "user_rejected" | "not_required" | "manual_selected";
 
 /** WHY there is no attachment (or why it conflicts). Never a state. */
 export type AttachmentReason =
@@ -193,7 +189,9 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
 
   if (profileSteamId && steamParticipant) {
     if (automaticMatchRejected) {
-      return declaration ? resolveDeclaration(declaration, participants) : unattached("user_not_selected");
+      return declaration
+        ? resolveDeclaration(declaration, participants)
+        : unattached("user_not_selected");
     }
     // Steam ID has precedence. A declaration pointing elsewhere is contradictory
     // evidence and must be surfaced, never resolved automatically.

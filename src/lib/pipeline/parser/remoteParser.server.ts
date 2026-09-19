@@ -359,8 +359,7 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
       healthStatus: null,
       identity: null,
       error: error instanceof PipelineError ? error.code : "PARSER_UNAVAILABLE",
-      diagnostic:
-        error instanceof PipelineError ? error.code : parserTransportDiagnostic(error),
+      diagnostic: error instanceof PipelineError ? error.code : parserTransportDiagnostic(error),
     };
   }
 }

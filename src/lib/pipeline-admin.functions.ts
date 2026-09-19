@@ -107,13 +107,16 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: artifact, error: artifactError } = await supabaseAdmin
       .from("raw_evidence_artifacts")
-      .select("id, job_id, upload_id, attempt_number, demo_sha256, root_digest, manifest_storage_path, status, raw_status, audit_status")
+      .select(
+        "id, job_id, upload_id, attempt_number, demo_sha256, root_digest, manifest_storage_path, status, raw_status, audit_status",
+      )
       .eq("job_id", data.jobId)
       .order("attempt_number", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (artifactError || !artifact) throw new Error(UNAVAILABLE);
-    if (artifact.status !== "ready" || artifact.raw_status !== "ready") throw new Error(UNAVAILABLE);
+    if (artifact.status !== "ready" || artifact.raw_status !== "ready")
+      throw new Error(UNAVAILABLE);
 
     const { data: blob, error: blobError } = await supabaseAdmin.storage
       .from("cs2-raw-evidence")
@@ -123,18 +126,25 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
     let manifest: Record<string, unknown>;
     try {
       const parsed = JSON.parse(await blob.text());
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid manifest");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+        throw new Error("invalid manifest");
       manifest = parsed as Record<string, unknown>;
     } catch {
       throw new Error(UNAVAILABLE);
     }
 
-    const { deriveRawArtifactAuditStatus, rawArtifactSha256, stableRawArtifactJson, validateRawAuditMappingInventory } =
-      await import("@/lib/pipeline/rawArtifactContract");
+    const {
+      deriveRawArtifactAuditStatus,
+      rawArtifactSha256,
+      stableRawArtifactJson,
+      validateRawAuditMappingInventory,
+    } = await import("@/lib/pipeline/rawArtifactContract");
     const auditEvidence = manifest["audit_evidence"];
     const auditEvidenceDigest = manifest["audit_evidence_digest"];
     if (
-      !auditEvidence || typeof auditEvidence !== "object" || Array.isArray(auditEvidence) ||
+      !auditEvidence ||
+      typeof auditEvidence !== "object" ||
+      Array.isArray(auditEvidence) ||
       typeof auditEvidenceDigest !== "string" ||
       rawArtifactSha256(stableRawArtifactJson(auditEvidence)) !== auditEvidenceDigest
     ) {
@@ -161,26 +171,34 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       throw new Error(UNAVAILABLE);
     }
     const gates = Array.isArray(evidence["gates"])
-      ? evidence["gates"].filter((v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v)).map((v) => ({
-          gate: typeof v["gate"] === "string" ? v["gate"] : "unknown",
-          status: typeof v["status"] === "string" ? v["status"] : "unknown",
-          reasons: Array.isArray(v["reasons"]) ? v["reasons"].filter((r): r is string => typeof r === "string") : [],
-        }))
+      ? evidence["gates"]
+          .filter(
+            (v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v),
+          )
+          .map((v) => ({
+            gate: typeof v["gate"] === "string" ? v["gate"] : "unknown",
+            status: typeof v["status"] === "string" ? v["status"] : "unknown",
+            reasons: Array.isArray(v["reasons"])
+              ? v["reasons"].filter((r): r is string => typeof r === "string")
+              : [],
+          }))
       : [];
     const validatedMappings = validateRawAuditMappingInventory(evidence["field_mappings"]);
     if (validatedMappings.length === 0) throw new Error(UNAVAILABLE);
     const mappingInventory = validatedMappings.map((v) => ({
-          rawField: typeof v["raw_field"] === "string" ? v["raw_field"] : "",
-          appField: typeof v["app_field"] === "string" ? v["app_field"] : null,
-          canonicalField: typeof v["canonical_field"] === "string" ? v["canonical_field"] : null,
-          status: typeof v["status"] === "string" ? v["status"] : "unknown",
-          reason: typeof v["reason"] === "string" ? v["reason"] : null,
-        }));
+      rawField: typeof v["raw_field"] === "string" ? v["raw_field"] : "",
+      appField: typeof v["app_field"] === "string" ? v["app_field"] : null,
+      canonicalField: typeof v["canonical_field"] === "string" ? v["canonical_field"] : null,
+      status: typeof v["status"] === "string" ? v["status"] : "unknown",
+      reason: typeof v["reason"] === "string" ? v["reason"] : null,
+    }));
     const derivedAuditStatus = deriveRawArtifactAuditStatus(manifest);
     if (artifact.audit_status !== derivedAuditStatus) throw new Error(UNAVAILABLE);
     const parser =
-      manifest["parser"] && typeof manifest["parser"] === "object" && !Array.isArray(manifest["parser"])
-        ? manifest["parser"] as Record<string, unknown>
+      manifest["parser"] &&
+      typeof manifest["parser"] === "object" &&
+      !Array.isArray(manifest["parser"])
+        ? (manifest["parser"] as Record<string, unknown>)
         : {};
     return {
       jobId: artifact.job_id,
@@ -188,31 +206,39 @@ export const getAdminRawAuditForensics = createServerFn({ method: "GET" })
       manifestStoragePath: artifact.manifest_storage_path,
       auditStatus: derivedAuditStatus,
       auditEvidenceDigest,
-      contractVersion: typeof manifest["contract_version"] === "number" ? manifest["contract_version"] : 0,
+      contractVersion:
+        typeof manifest["contract_version"] === "number" ? manifest["contract_version"] : 0,
       parser: {
         name: typeof parser["name"] === "string" ? parser["name"] : null,
         version: typeof parser["version"] === "string" ? parser["version"] : null,
         revision: typeof parser["revision"] === "string" ? parser["revision"] : null,
-        semanticRevision: typeof parser["semantic_revision"] === "string" ? parser["semantic_revision"] : null,
-        buildRevision: typeof parser["build_revision"] === "string" ? parser["build_revision"] : null,
+        semanticRevision:
+          typeof parser["semantic_revision"] === "string" ? parser["semantic_revision"] : null,
+        buildRevision:
+          typeof parser["build_revision"] === "string" ? parser["build_revision"] : null,
       },
       rawBlockReasons,
       gates,
       eventCoverage: Array.isArray(evidence["event_coverage"])
-        ? evidence["event_coverage"].filter(
-            (v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v),
-          ).map((v) => ({
-            event: typeof v["event"] === "string" ? v["event"] : "unknown",
-            status: typeof v["status"] === "string" ? v["status"] : "unknown",
-            observedRows: typeof v["observed_rows"] === "number" ? v["observed_rows"] : null,
-            reason: typeof v["reason"] === "string" ? v["reason"] : null,
-          }))
+        ? evidence["event_coverage"]
+            .filter(
+              (v): v is Record<string, unknown> =>
+                !!v && typeof v === "object" && !Array.isArray(v),
+            )
+            .map((v) => ({
+              event: typeof v["event"] === "string" ? v["event"] : "unknown",
+              status: typeof v["status"] === "string" ? v["status"] : "unknown",
+              observedRows: typeof v["observed_rows"] === "number" ? v["observed_rows"] : null,
+              reason: typeof v["reason"] === "string" ? v["reason"] : null,
+            }))
         : [],
       unmapped: mappingInventory.filter((item) => item.status === "UNMAPPED_BUT_AVAILABLE"),
       mappingInventory,
       forensicInventory:
-        evidence["forensic_inventory"] && typeof evidence["forensic_inventory"] === "object" && !Array.isArray(evidence["forensic_inventory"])
-          ? evidence["forensic_inventory"] as Json
+        evidence["forensic_inventory"] &&
+        typeof evidence["forensic_inventory"] === "object" &&
+        !Array.isArray(evidence["forensic_inventory"])
+          ? (evidence["forensic_inventory"] as Json)
           : {},
     };
   });

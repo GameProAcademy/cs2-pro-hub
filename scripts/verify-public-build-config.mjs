@@ -1,7 +1,10 @@
 import fs from "node:fs";
 
 const viteConfig = fs.readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
-const supabaseClient = fs.readFileSync(new URL("../src/integrations/supabase/client.ts", import.meta.url), "utf8");
+const supabaseClient = fs.readFileSync(
+  new URL("../src/integrations/supabase/client.ts", import.meta.url),
+  "utf8",
+);
 
 const requiredViteContracts = [
   [/process\.env\s*\[\s*["']VITE_SUPABASE_URL["']\s*\]/, "process VITE_SUPABASE_URL"],
@@ -10,15 +13,9 @@ const requiredViteContracts = [
     "process VITE_SUPABASE_PUBLISHABLE_KEY",
   ],
   [/process\.env\s*\[\s*["']SUPABASE_URL["']\s*\]/, "process SUPABASE_URL"],
-  [
-    /process\.env\s*\[\s*["']SUPABASE_PUBLISHABLE_KEY["']\s*\]/,
-    "process SUPABASE_PUBLISHABLE_KEY",
-  ],
+  [/process\.env\s*\[\s*["']SUPABASE_PUBLISHABLE_KEY["']\s*\]/, "process SUPABASE_PUBLISHABLE_KEY"],
   [/import\.meta\.env\.VITE_SUPABASE_URL/, "defined VITE_SUPABASE_URL"],
-  [
-    /import\.meta\.env\.VITE_SUPABASE_PUBLISHABLE_KEY/,
-    "defined VITE_SUPABASE_PUBLISHABLE_KEY",
-  ],
+  [/import\.meta\.env\.VITE_SUPABASE_PUBLISHABLE_KEY/, "defined VITE_SUPABASE_PUBLISHABLE_KEY"],
 ];
 
 for (const [pattern, contract] of requiredViteContracts) {
@@ -41,7 +38,9 @@ if (!clientUrlFallback.test(supabaseClient)) {
 }
 
 if (!clientKeyFallback.test(supabaseClient)) {
-  throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: Supabase publishable-key fallback contract was removed");
+  throw new Error(
+    "PUBLIC_BUILD_CONFIG_REGRESSION: Supabase publishable-key fallback contract was removed",
+  );
 }
 
 if (!/Missing Supabase environment variable\(s\)/.test(supabaseClient)) {

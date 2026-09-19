@@ -16,8 +16,9 @@ export const RAW_ARTIFACT_SECTION_ORDER = [
 export function stableRawArtifactJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableRawArtifactJson).join(",")}]`;
   if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b));
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
     return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableRawArtifactJson(item)}`).join(",")}}`;
   }
   return JSON.stringify(value);

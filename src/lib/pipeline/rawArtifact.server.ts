@@ -181,8 +181,8 @@ export function assertRawArtifactReference(value: unknown): RawArtifactReference
     !Number.isInteger(raw.total_rows) ||
     Number(raw.total_rows) < 0 ||
     !Number.isInteger(raw.total_bytes) ||
-    Number(raw.total_bytes) <= 0
-    || Number(raw.total_bytes) > RAW_ARTIFACT_MAX_BYTES
+    Number(raw.total_bytes) <= 0 ||
+    Number(raw.total_bytes) > RAW_ARTIFACT_MAX_BYTES
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact reference");
   }
@@ -300,17 +300,18 @@ export async function verifyRawArtifact(args: {
     chunksError ||
     !chunks ||
     chunks.length !== artifact.total_chunks ||
-    chunks.some((chunk) =>
-      chunk.status !== "verified" ||
-      !RAW_ARTIFACT_SECTION_ORDER.includes(
-        chunk.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
-      ) ||
-      !Number.isSafeInteger(chunk.chunk_index) ||
-      chunk.chunk_index < 0 ||
-      !Number.isSafeInteger(chunk.row_count) ||
-      chunk.row_count <= 0 ||
-      !Number.isSafeInteger(chunk.byte_size) ||
-      chunk.byte_size <= 0
+    chunks.some(
+      (chunk) =>
+        chunk.status !== "verified" ||
+        !RAW_ARTIFACT_SECTION_ORDER.includes(
+          chunk.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
+        ) ||
+        !Number.isSafeInteger(chunk.chunk_index) ||
+        chunk.chunk_index < 0 ||
+        !Number.isSafeInteger(chunk.row_count) ||
+        chunk.row_count <= 0 ||
+        !Number.isSafeInteger(chunk.byte_size) ||
+        chunk.byte_size <= 0,
     )
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunks are not verified");

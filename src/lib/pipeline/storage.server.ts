@@ -44,15 +44,19 @@ export async function createRawEvidenceSignedUploadUrl(storagePath: string): Pro
 
 export async function uploadRawEvidenceManifest(storagePath: string, body: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.storage.from(RAW_EVIDENCE_BUCKET)
+  const { error } = await supabaseAdmin.storage
+    .from(RAW_EVIDENCE_BUCKET)
     .upload(storagePath, body, { contentType: "application/json", upsert: true });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
 }
 
 export async function rawEvidenceObjectSha256(storagePath: string): Promise<string> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.storage.from(RAW_EVIDENCE_BUCKET).download(storagePath);
-  if (error || !data) throw new PipelineError("PERSISTENCE_ERROR", error?.message ?? "raw object unavailable");
+  const { data, error } = await supabaseAdmin.storage
+    .from(RAW_EVIDENCE_BUCKET)
+    .download(storagePath);
+  if (error || !data)
+    throw new PipelineError("PERSISTENCE_ERROR", error?.message ?? "raw object unavailable");
   return sha256FromStream(data.stream() as ReadableStream<Uint8Array>);
 }
 

@@ -6,7 +6,8 @@ export const Route = createFileRoute("/")({
       { title: "GamePro | CS2 Pro AI Coach" },
       {
         name: "description",
-        content: "Entre na GamePro para analisar partidas de CS2 e evoluir com coaching orientado por dados.",
+        content:
+          "Entre na GamePro para analisar partidas de CS2 e evoluir com coaching orientado por dados.",
       },
       { property: "og:title", content: "GamePro | CS2 Pro AI Coach" },
       {

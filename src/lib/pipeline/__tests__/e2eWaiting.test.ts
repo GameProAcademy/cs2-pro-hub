@@ -72,7 +72,12 @@ describe("waitForTerminalExecution", () => {
       pollIntervalMs: 100,
       ...time,
     });
-    expect(result).toMatchObject({ terminal: true, observedExecution: true, polls: 2, reason: null });
+    expect(result).toMatchObject({
+      terminal: true,
+      observedExecution: true,
+      polls: 2,
+      reason: null,
+    });
     expect(result.state?.status).toBe("blocked_raw_audit");
   });
 
@@ -87,7 +92,12 @@ describe("waitForTerminalExecution", () => {
       pollIntervalMs: 100,
       ...time,
     });
-    expect(result).toMatchObject({ terminal: true, observedExecution: true, polls: 2, reason: null });
+    expect(result).toMatchObject({
+      terminal: true,
+      observedExecution: true,
+      polls: 2,
+      reason: null,
+    });
     expect(result.state?.status).toBe("cancelled");
   });
 

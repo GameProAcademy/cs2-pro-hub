@@ -128,10 +128,22 @@ export async function persistDemoProjection(args: {
   jobResult: Json;
 }): Promise<PersistResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { match, metrics, features, matchId, uploadId, playerId, participantKey, steamId, jobId, jobResult } = args;
+  const {
+    match,
+    metrics,
+    features,
+    matchId,
+    uploadId,
+    playerId,
+    participantKey,
+    steamId,
+    jobId,
+    jobResult,
+  } = args;
 
   const ownPlayer =
-    match.players.find((player) => (player.participantKey ?? player.steamId) === participantKey) ?? null;
+    match.players.find((player) => (player.participantKey ?? player.steamId) === participantKey) ??
+    null;
   const teamPlayer = ownPlayer?.team ?? null;
   const teamOpponent =
     teamPlayer == null

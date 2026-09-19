@@ -77,23 +77,25 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
   const participants: CanonicalParticipant[] = parsed.players.flatMap((player) => {
     const participantKey = player.participantKey ?? player.steamId;
     if (!participantKey) return [];
-    return [{
-      participantKey,
-      internalPlayerId:
-        targetParticipantKey && participantKey === targetParticipantKey
-          ? (input.internalPlayerId ?? null)
-          : null,
-      source: "demo" as const,
-      externalPlayerId: player.steamId,
-      steamId64: player.steamId,
-      nicknameSnapshot: player.name,
-      team: slotFor(player.team, teamA, teamB),
-      isTargetPlayer: Boolean(targetParticipantKey) && participantKey === targetParticipantKey,
-      // A demo proves who was in the server, not who OWNS the account.
-      identityStatus: "unlinked" as const,
-      identityConfidence: null,
-      metadata: {},
-    }];
+    return [
+      {
+        participantKey,
+        internalPlayerId:
+          targetParticipantKey && participantKey === targetParticipantKey
+            ? (input.internalPlayerId ?? null)
+            : null,
+        source: "demo" as const,
+        externalPlayerId: player.steamId,
+        steamId64: player.steamId,
+        nicknameSnapshot: player.name,
+        team: slotFor(player.team, teamA, teamB),
+        isTargetPlayer: Boolean(targetParticipantKey) && participantKey === targetParticipantKey,
+        // A demo proves who was in the server, not who OWNS the account.
+        identityStatus: "unlinked" as const,
+        identityConfidence: null,
+        metadata: {},
+      },
+    ];
   });
 
   const rounds: CanonicalRound[] = parsed.rounds.map((round) => ({

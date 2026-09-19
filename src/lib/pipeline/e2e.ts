@@ -43,13 +43,7 @@ export interface E2EEvidence {
 }
 
 export interface E2EJobState {
-  status:
-    | "pending"
-    | "processing"
-    | "processed"
-    | "failed"
-    | "blocked_raw_audit"
-    | "cancelled";
+  status: "pending" | "processing" | "processed" | "failed" | "blocked_raw_audit" | "cancelled";
   errorCode: string | null;
   matchId: string | null;
   roundsValid: number | null;

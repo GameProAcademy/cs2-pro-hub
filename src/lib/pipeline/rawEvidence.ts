@@ -164,9 +164,20 @@ export interface RawAdmissionApproval {
 }
 
 const DIGEST_KEYS = [
-  "evidence_version", "manifest", "event_coverage", "raw_events", "raw_player_info",
-  "player_coverage", "tick_coverage", "tick_samples", "grenade_coverage",
-  "grenade_samples", "round_evidence", "economy_coverage", "field_mappings", "gates",
+  "evidence_version",
+  "manifest",
+  "event_coverage",
+  "raw_events",
+  "raw_player_info",
+  "player_coverage",
+  "tick_coverage",
+  "tick_samples",
+  "grenade_coverage",
+  "grenade_samples",
+  "round_evidence",
+  "economy_coverage",
+  "field_mappings",
+  "gates",
 ] as const;
 
 function canonicalValue(value: unknown): string {
@@ -190,7 +201,9 @@ function canonicalValue(value: unknown): string {
 }
 
 /** Stable UTF-8 JSON used by both parser and APP for the persisted RAW sections. */
-export function canonicalizeRawEvidence(value: Pick<RawDemoEvidence, (typeof DIGEST_KEYS)[number]>): string {
+export function canonicalizeRawEvidence(
+  value: Pick<RawDemoEvidence, (typeof DIGEST_KEYS)[number]>,
+): string {
   return canonicalValue(Object.fromEntries(DIGEST_KEYS.map((key) => [key, value[key]])));
 }
 
@@ -242,27 +255,52 @@ function unique(values: string[]): string[] {
  * Server-side forensic admission decision. Unknown material is retained in RAW
  * and blocks Canonical; it is never discarded merely because mapping work is pending.
  */
-export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<RawAdmissionDecision> {
+export async function runRawForensicAudit(
+  evidence: RawDemoEvidence,
+): Promise<RawAdmissionDecision> {
   const reasons: string[] = [];
   let status: RawEvidenceStatus = "PASS";
   const requiredInventoryKeys = [
-    "header_inventory", "player_info_inventory", "game_state_inventory",
-    "round_inventory", "bomb_inventory", "damage_inventory", "death_inventory",
-    "weapon_inventory", "grenade_inventory", "usercmd_inventory", "teams_inventory",
-    "score_inventory", "aggregate_inventory", "movement_inventory", "all_event_inventory",
-    "selected_event_extraction", "actually_parsed_events", "mapping_inventory", "tick_sampling",
-    "event_returned_field_inventory", "event_preserved_field_inventory",
-    "event_non_null_field_inventory", "event_null_only_field_inventory",
-    "player_info_returned_fields", "player_info_preserved_fields", "usercmd_capability",
-    "game_state_capability", "game_state_requested", "game_state_returned",
-    "game_state_preserved", "game_state_observed_in_sample", "game_state_mapping_inventory",
+    "header_inventory",
+    "player_info_inventory",
+    "game_state_inventory",
+    "round_inventory",
+    "bomb_inventory",
+    "damage_inventory",
+    "death_inventory",
+    "weapon_inventory",
+    "grenade_inventory",
+    "usercmd_inventory",
+    "teams_inventory",
+    "score_inventory",
+    "aggregate_inventory",
+    "movement_inventory",
+    "all_event_inventory",
+    "selected_event_extraction",
+    "actually_parsed_events",
+    "mapping_inventory",
+    "tick_sampling",
+    "event_returned_field_inventory",
+    "event_preserved_field_inventory",
+    "event_non_null_field_inventory",
+    "event_null_only_field_inventory",
+    "player_info_returned_fields",
+    "player_info_preserved_fields",
+    "usercmd_capability",
+    "game_state_capability",
+    "game_state_requested",
+    "game_state_returned",
+    "game_state_preserved",
+    "game_state_observed_in_sample",
+    "game_state_mapping_inventory",
   ];
 
   if (!evidence.manifest) reasons.push("audit_manifest_missing");
   if (!evidence.deterministic_digest) reasons.push("raw_digest_missing");
-  else if (!/^[0-9a-f]{64}$/.test(evidence.deterministic_digest)) reasons.push("raw_digest_invalid");
+  else if (!/^[0-9a-f]{64}$/.test(evidence.deterministic_digest))
+    reasons.push("raw_digest_invalid");
   try {
-    if (await computeRawEvidenceDigest(evidence) !== evidence.deterministic_digest) {
+    if ((await computeRawEvidenceDigest(evidence)) !== evidence.deterministic_digest) {
       reasons.push("raw_digest_mismatch");
     }
   } catch {
@@ -302,17 +340,27 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
   }
 
   const manifest = evidence.manifest;
-  if (!manifest.parser_name || !manifest.parser_version || !manifest.demo_sha256 || !manifest.contract_version) {
+  if (
+    !manifest.parser_name ||
+    !manifest.parser_version ||
+    !manifest.demo_sha256 ||
+    !manifest.contract_version
+  ) {
     reasons.push("audit_identity_incomplete");
   }
   if (manifest.event_inventory_count !== manifest.event_inventory.length) {
     reasons.push("event_inventory_count_mismatch");
   }
-  if (manifest.events_count !== evidence.raw_events.length || manifest.event_rows !== evidence.raw_events.length) {
+  if (
+    manifest.events_count !== evidence.raw_events.length ||
+    manifest.event_rows !== evidence.raw_events.length
+  ) {
     reasons.push("event_content_count_mismatch");
   }
-  if (manifest.players_count !== evidence.raw_player_info.length) reasons.push("player_content_count_mismatch");
-  if (manifest.tick_sample_rows !== evidence.tick_samples.length) reasons.push("tick_sample_count_mismatch");
+  if (manifest.players_count !== evidence.raw_player_info.length)
+    reasons.push("player_content_count_mismatch");
+  if (manifest.tick_sample_rows !== evidence.tick_samples.length)
+    reasons.push("tick_sample_count_mismatch");
   const preservedEventFields = new Set(
     evidence.raw_events.flatMap((event) =>
       Object.keys(event.raw_fields).map((field) => `${event.event_name}.${field}`),
@@ -325,22 +373,35 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
   for (const coverage of evidence.event_coverage) {
     const rows = evidence.raw_events.filter((event) => event.event_name === coverage.event_name);
     const returned = unique(rows.flatMap((event) => Object.keys(event.raw_fields)));
-    const nonNull = unique(rows.flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)));
+    const nonNull = unique(
+      rows.flatMap((event) =>
+        Object.entries(event.raw_fields)
+          .filter(([, value]) => value !== null)
+          .map(([field]) => field),
+      ),
+    );
     const nullOnly = returned.filter((field) => !nonNull.includes(field));
     const advertisedReturned = unique(coverage.returned_fields ?? coverage.fields_available);
     const advertisedNonNull = unique(coverage.non_null_fields ?? coverage.fields_available);
     const advertisedNullOnly = unique(coverage.null_only_fields ?? []);
     const advertisedPreserved = unique(coverage.preserved_fields ?? returned);
-    if (JSON.stringify(returned) !== JSON.stringify(advertisedReturned)) reasons.push(`event_returned_inventory_mismatch:${coverage.event_name}`);
-    if (JSON.stringify(nonNull) !== JSON.stringify(advertisedNonNull)) reasons.push(`event_non_null_inventory_mismatch:${coverage.event_name}`);
-    if (JSON.stringify(nullOnly) !== JSON.stringify(advertisedNullOnly)) reasons.push(`event_null_only_inventory_mismatch:${coverage.event_name}`);
-    if (JSON.stringify(returned) !== JSON.stringify(advertisedPreserved)) reasons.push(`event_preserved_inventory_mismatch:${coverage.event_name}`);
-    if (coverage.row_count !== null && coverage.row_count !== rows.length) reasons.push(`event_row_count_mismatch:${coverage.event_name}`);
+    if (JSON.stringify(returned) !== JSON.stringify(advertisedReturned))
+      reasons.push(`event_returned_inventory_mismatch:${coverage.event_name}`);
+    if (JSON.stringify(nonNull) !== JSON.stringify(advertisedNonNull))
+      reasons.push(`event_non_null_inventory_mismatch:${coverage.event_name}`);
+    if (JSON.stringify(nullOnly) !== JSON.stringify(advertisedNullOnly))
+      reasons.push(`event_null_only_inventory_mismatch:${coverage.event_name}`);
+    if (JSON.stringify(returned) !== JSON.stringify(advertisedPreserved))
+      reasons.push(`event_preserved_inventory_mismatch:${coverage.event_name}`);
+    if (coverage.row_count !== null && coverage.row_count !== rows.length)
+      reasons.push(`event_row_count_mismatch:${coverage.event_name}`);
     for (const field of advertisedReturned) {
       const qualified = `${coverage.event_name}.${field}`;
-      if (!preservedEventFields.has(qualified)) reasons.push(`returned_field_not_preserved:${qualified}`);
+      if (!preservedEventFields.has(qualified))
+        reasons.push(`returned_field_not_preserved:${qualified}`);
     }
-    if (coverage.capability_state === "PARSE_FAILED") reasons.push(`parse_failed:event:${coverage.event_name}`);
+    if (coverage.capability_state === "PARSE_FAILED")
+      reasons.push(`parse_failed:event:${coverage.event_name}`);
   }
   const rawPlayerFields = new Set(evidence.raw_player_info.flatMap((row) => Object.keys(row)));
   const playerMappings = new Set(
@@ -351,19 +412,32 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
   for (const field of rawPlayerFields) {
     if (!playerMappings.has(field)) reasons.push(`returned_field_not_in_mapping:player.${field}`);
   }
-  for (const coverage of [...evidence.player_coverage, ...evidence.tick_coverage, ...evidence.grenade_coverage]) {
-    if (coverage.success === false || coverage.property === "__capability__") reasons.push(`parse_failed:property:${coverage.property}`);
+  for (const coverage of [
+    ...evidence.player_coverage,
+    ...evidence.tick_coverage,
+    ...evidence.grenade_coverage,
+  ]) {
+    if (coverage.success === false || coverage.property === "__capability__")
+      reasons.push(`parse_failed:property:${coverage.property}`);
   }
   const sampledStateFields = unique(evidence.tick_samples.flatMap((row) => Object.keys(row)));
-  const coveredStateFields = unique(evidence.tick_coverage.filter((row) => row.property !== "__capability__").map((row) => row.property));
+  const coveredStateFields = unique(
+    evidence.tick_coverage
+      .filter((row) => row.property !== "__capability__")
+      .map((row) => row.property),
+  );
   for (const field of sampledStateFields) {
-    if (!coveredStateFields.includes(field)) reasons.push(`game_state_returned_without_coverage:${field}`);
-    if (!mappedFields.has(`game_state.${field}`)) reasons.push(`returned_field_not_in_mapping:game_state.${field}`);
+    if (!coveredStateFields.includes(field))
+      reasons.push(`game_state_returned_without_coverage:${field}`);
+    if (!mappedFields.has(`game_state.${field}`))
+      reasons.push(`returned_field_not_in_mapping:game_state.${field}`);
   }
   const suppliedInventory = evidence.forensic_inventory;
   const inventoryList = (key: string): string[] => {
     const value = suppliedInventory?.[key];
-    return Array.isArray(value) ? unique(value.filter((item): item is string => typeof item === "string")) : [];
+    return Array.isArray(value)
+      ? unique(value.filter((item): item is string => typeof item === "string"))
+      : [];
   };
   for (const [key, computed] of [
     ["player_info_returned_fields", unique([...rawPlayerFields])],
@@ -372,17 +446,26 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
     ["game_state_preserved", sampledStateFields],
     ["game_state_observed_in_sample", sampledStateFields],
   ] as const) {
-    if (JSON.stringify(inventoryList(key)) !== JSON.stringify(computed)) reasons.push(`audit_inventory_inconsistent:${key}`);
+    if (JSON.stringify(inventoryList(key)) !== JSON.stringify(computed))
+      reasons.push(`audit_inventory_inconsistent:${key}`);
   }
   const eventInventoryObject = (key: string): Record<string, unknown> => {
     const value = suppliedInventory?.[key];
-    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
   };
   for (const coverage of evidence.event_coverage) {
     const name = coverage.event_name;
     const rows = evidence.raw_events.filter((event) => event.event_name === name);
     const returned = unique(rows.flatMap((event) => Object.keys(event.raw_fields)));
-    const nonNull = unique(rows.flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)));
+    const nonNull = unique(
+      rows.flatMap((event) =>
+        Object.entries(event.raw_fields)
+          .filter(([, value]) => value !== null)
+          .map(([field]) => field),
+      ),
+    );
     const nullOnly = returned.filter((field) => !nonNull.includes(field));
     for (const [key, computed] of [
       ["event_returned_field_inventory", returned],
@@ -391,11 +474,17 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
       ["event_null_only_field_inventory", nullOnly],
     ] as const) {
       const supplied = eventInventoryObject(key)[name];
-      const suppliedFields = Array.isArray(supplied) ? unique(supplied.filter((item): item is string => typeof item === "string")) : [];
-      if (JSON.stringify(suppliedFields) !== JSON.stringify(computed)) reasons.push(`audit_inventory_inconsistent:${key}:${name}`);
+      const suppliedFields = Array.isArray(supplied)
+        ? unique(supplied.filter((item): item is string => typeof item === "string"))
+        : [];
+      if (JSON.stringify(suppliedFields) !== JSON.stringify(computed))
+        reasons.push(`audit_inventory_inconsistent:${key}:${name}`);
     }
   }
-  if (manifest.tick_sampling?.coverage !== "SAMPLE" || manifest.tick_sampling.full_extraction !== false) {
+  if (
+    manifest.tick_sampling?.coverage !== "SAMPLE" ||
+    manifest.tick_sampling.full_extraction !== false
+  ) {
     reasons.push("tick_coverage_mischaracterized");
   }
   if (reasons.length > 0 && status !== "FAIL") status = "BLOCKED";
@@ -405,23 +494,83 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
     player_info_returned_fields: [...rawPlayerFields].sort(),
     player_info_preserved_fields: [...rawPlayerFields].sort(),
     game_state_inventory: coveredStateFields,
-    game_state_capability: unique((evidence.forensic_inventory?.["game_state_capability"] as string[] | undefined) ?? []),
-    game_state_requested: unique((evidence.forensic_inventory?.["game_state_requested"] as string[] | undefined) ?? []),
+    game_state_capability: unique(
+      (evidence.forensic_inventory?.["game_state_capability"] as string[] | undefined) ?? [],
+    ),
+    game_state_requested: unique(
+      (evidence.forensic_inventory?.["game_state_requested"] as string[] | undefined) ?? [],
+    ),
     game_state_returned: sampledStateFields,
     game_state_preserved: sampledStateFields,
     game_state_observed_in_sample: sampledStateFields,
-    game_state_mapping_inventory: evidence.field_mappings.filter((row) => row.raw_field.startsWith("game_state.")) as unknown as Json,
-    round_inventory: evidence.round_evidence.flatMap((row) => Object.keys(row)).filter(Boolean).sort(),
-    bomb_inventory: evidence.event_coverage.filter((row) => row.event_name.startsWith("bomb_")).map((row) => row.event_name).sort(),
-    damage_inventory: evidence.event_coverage.filter((row) => row.event_name.includes("damage") || row.event_name === "player_hurt").map((row) => row.event_name).sort(),
-    death_inventory: evidence.event_coverage.filter((row) => row.event_name === "player_death").map((row) => row.event_name),
-    weapon_inventory: evidence.event_coverage.filter((row) => row.event_name.includes("weapon") || row.event_name.startsWith("item_")).map((row) => row.event_name).sort(),
+    game_state_mapping_inventory: evidence.field_mappings.filter((row) =>
+      row.raw_field.startsWith("game_state."),
+    ) as unknown as Json,
+    round_inventory: evidence.round_evidence
+      .flatMap((row) => Object.keys(row))
+      .filter(Boolean)
+      .sort(),
+    bomb_inventory: evidence.event_coverage
+      .filter((row) => row.event_name.startsWith("bomb_"))
+      .map((row) => row.event_name)
+      .sort(),
+    damage_inventory: evidence.event_coverage
+      .filter((row) => row.event_name.includes("damage") || row.event_name === "player_hurt")
+      .map((row) => row.event_name)
+      .sort(),
+    death_inventory: evidence.event_coverage
+      .filter((row) => row.event_name === "player_death")
+      .map((row) => row.event_name),
+    weapon_inventory: evidence.event_coverage
+      .filter((row) => row.event_name.includes("weapon") || row.event_name.startsWith("item_"))
+      .map((row) => row.event_name)
+      .sort(),
     grenade_inventory: evidence.grenade_coverage.map((row) => row.property).sort(),
-    usercmd_inventory: evidence.tick_coverage.filter((row) => ["buttons", "view_angles", "aim_punch_angle", "aim_punch_angle_vel", "shots_fired"].includes(row.property)).map((row) => row.property).sort(),
-    teams_inventory: evidence.player_coverage.filter((row) => row.property.includes("team") || row.property === "team_num").map((row) => row.property).sort(),
-    score_inventory: evidence.player_coverage.filter((row) => row.property === "score" || row.property.includes("score") || row.property.includes("rounds_total")).map((row) => row.property).sort(),
-    aggregate_inventory: evidence.field_mappings.filter((row) => row.raw_field.includes("_total")).map((row) => row.raw_field).sort(),
-    movement_inventory: evidence.tick_coverage.filter((row) => ["X", "Y", "Z", "velocity", "velocity_X", "velocity_Y", "velocity_Z", "yaw", "pitch"].includes(row.property)).map((row) => row.property).sort(),
+    usercmd_inventory: evidence.tick_coverage
+      .filter((row) =>
+        [
+          "buttons",
+          "view_angles",
+          "aim_punch_angle",
+          "aim_punch_angle_vel",
+          "shots_fired",
+        ].includes(row.property),
+      )
+      .map((row) => row.property)
+      .sort(),
+    teams_inventory: evidence.player_coverage
+      .filter((row) => row.property.includes("team") || row.property === "team_num")
+      .map((row) => row.property)
+      .sort(),
+    score_inventory: evidence.player_coverage
+      .filter(
+        (row) =>
+          row.property === "score" ||
+          row.property.includes("score") ||
+          row.property.includes("rounds_total"),
+      )
+      .map((row) => row.property)
+      .sort(),
+    aggregate_inventory: evidence.field_mappings
+      .filter((row) => row.raw_field.includes("_total"))
+      .map((row) => row.raw_field)
+      .sort(),
+    movement_inventory: evidence.tick_coverage
+      .filter((row) =>
+        [
+          "X",
+          "Y",
+          "Z",
+          "velocity",
+          "velocity_X",
+          "velocity_Y",
+          "velocity_Z",
+          "yaw",
+          "pitch",
+        ].includes(row.property),
+      )
+      .map((row) => row.property)
+      .sort(),
     all_event_inventory: manifest.event_inventory,
     selected_event_extraction: manifest.selected_event_candidates,
     actually_parsed_events: manifest.parsed_event_tables,
@@ -431,17 +580,40 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
     event_preserved_field_inventory: Object.fromEntries(
       evidence.event_coverage.map((coverage) => [
         coverage.event_name,
-        unique(evidence.raw_events.filter((event) => event.event_name === coverage.event_name).flatMap((event) => Object.keys(event.raw_fields))),
+        unique(
+          evidence.raw_events
+            .filter((event) => event.event_name === coverage.event_name)
+            .flatMap((event) => Object.keys(event.raw_fields)),
+        ),
       ]),
     ) as Json,
     event_non_null_field_inventory: Object.fromEntries(
-      evidence.event_coverage.map((coverage) => [coverage.event_name, unique(evidence.raw_events.filter((event) => event.event_name === coverage.event_name).flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)))]),
+      evidence.event_coverage.map((coverage) => [
+        coverage.event_name,
+        unique(
+          evidence.raw_events
+            .filter((event) => event.event_name === coverage.event_name)
+            .flatMap((event) =>
+              Object.entries(event.raw_fields)
+                .filter(([, value]) => value !== null)
+                .map(([field]) => field),
+            ),
+        ),
+      ]),
     ) as Json,
     event_null_only_field_inventory: Object.fromEntries(
       evidence.event_coverage.map((coverage) => {
-        const rows = evidence.raw_events.filter((event) => event.event_name === coverage.event_name);
+        const rows = evidence.raw_events.filter(
+          (event) => event.event_name === coverage.event_name,
+        );
         const returned = unique(rows.flatMap((event) => Object.keys(event.raw_fields)));
-        const nonNull = new Set(rows.flatMap((event) => Object.entries(event.raw_fields).filter(([, value]) => value !== null).map(([field]) => field)));
+        const nonNull = new Set(
+          rows.flatMap((event) =>
+            Object.entries(event.raw_fields)
+              .filter(([, value]) => value !== null)
+              .map(([field]) => field),
+          ),
+        );
         return [coverage.event_name, returned.filter((field) => !nonNull.has(field))];
       }),
     ) as Json,
@@ -471,8 +643,14 @@ export async function runRawForensicAudit(evidence: RawDemoEvidence): Promise<Ra
 
 export function assertRawAdmissionApproved(
   decision: RawAdmissionDecision,
-): asserts decision is RawAdmissionDecision & { approved: true; status: "PASS"; auditStatus: "APPROVED" } {
+): asserts decision is RawAdmissionDecision & {
+  approved: true;
+  status: "PASS";
+  auditStatus: "APPROVED";
+} {
   if (!decision.approved || decision.status !== "PASS" || decision.auditStatus !== "APPROVED") {
-    throw new Error(`RAW forensic admission denied: ${decision.reasons.join(",") || decision.status}`);
+    throw new Error(
+      `RAW forensic admission denied: ${decision.reasons.join(",") || decision.status}`,
+    );
   }
 }
