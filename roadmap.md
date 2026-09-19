@@ -1,5 +1,17 @@
 # Roadmap
 
+## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2.1–2.5 — CACHE RUN 1 FAIL
+
+- [x] SHA hardening e reconciliação de órfãos instalados; constraints, validação pré-mutation, lock e ACL service-role-only comprovados.
+- [x] PostgreSQL descartável: 50/50 corridas PASS; pipeline 487/487; APP 928/928; parser 162 PASS/10 skips; typecheck/compileall/build PASS.
+- [x] Attempt 8 real criado pelo lifecycle oficial: upload `d89b697f-c40d-42f4-ae51-040e4e8cabba`, job `d1851c49-820a-426b-86c6-0ea4623b4f41`, mesmo SHA/tamanho, supersedendo attempt 7 por `raw_audit_blocked`.
+- [x] RAW 8 READY/audit APPROVED: 25/25 chunks, 373.778 linhas, 2.799.506 bytes, root `341eb88e1c5b1c4f6af8fd74e7a7af39333ff0c4a2108a8d9e05a5e9a8297b1c`; oito gates RAW PASS; HOT ~1,20 MiB.
+- [ ] **CACHE RUN 1 FAIL:** terminal `PERSISTENCE_ERROR`; `finish_demo_job_processed` atribui `text[]` à coluna `demo_jobs.quality_flags jsonb`.
+- [ ] **ATOMICIDADE FAIL:** handoff deixou source canônico parcial (10 participantes, 25 rounds, 4.397 eventos), sem round_players, métricas ou features.
+- [x] Attempt 7/artifact 7 preservados; somente supersessão legítima registrada. Não existe attempt 9.
+- [ ] Run 2, attempt 9 e Fase 2.8 permanecem proibidos até correção incremental e novo gate explícito.
+- [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.2-CACHE-RUN-1.md`.
+
 ## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2 — CACHE RUN 1 FAIL
 
 - [x] Preflight completo PASS: migration/RPCs/ACLs/constraints, histórico, Storage e Railway foram comprovados sem mutação.
