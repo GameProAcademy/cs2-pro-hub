@@ -9,11 +9,22 @@ import {
   MIN_VALID_ROUNDS,
 } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
-import type {
-  CanonicalEvent,
-  CanonicalMatch,
-  CanonicalRound,
-} from "@/lib/pipeline/types";
+import type { CanonicalEvent, CanonicalMatch, CanonicalRound } from "@/lib/pipeline/types";
+
+interface CanonicalBundleMatchShape {
+  roundCount?: number | null;
+}
+
+interface CanonicalBundleRoundShape {
+  roundNumber: number;
+  startTick: number | null;
+  endTick: number | null;
+}
+
+interface CanonicalBundleEventShape {
+  roundNumber: number;
+  tick: number | null;
+}
 
 /** Structural check of the file name/size before any download or parse. */
 export function validateDemoFile(fileName: string, fileSize: number): void {
@@ -45,10 +56,16 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
       `rounds=${match.rounds.length} < ${MIN_VALID_ROUNDS}`,
     );
   }
-  if (match.rounds.length > 0 && match.rounds.some((round) => !Number.isInteger(round.roundNumber) || round.roundNumber <= 0)) {
+  if (
+    match.rounds.length > 0 &&
+    match.rounds.some((round) => !Number.isInteger(round.roundNumber) || round.roundNumber <= 0)
+  ) {
     throw new PipelineError("VALIDATION_ERROR", "invalid round numbering");
   }
-  if (match.roundCount != null && (!Number.isInteger(match.roundCount) || match.roundCount !== match.rounds.length)) {
+  if (
+    match.roundCount != null &&
+    (!Number.isInteger(match.roundCount) || match.roundCount !== match.rounds.length)
+  ) {
     throw new PipelineError("VALIDATION_ERROR", "round count mismatch");
   }
   if (!match.events.some((event) => event.type === "kill")) {
@@ -57,7 +74,7 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
 }
 
 function roundIntervalContainsTick(
-  rounds: readonly CanonicalRound[],
+  rounds: readonly CanonicalBundleRoundShape[],
   roundNumber: number,
   tick: number,
 ): boolean {
@@ -85,9 +102,9 @@ function roundIntervalContainsTick(
  * mere row-count/existence checks.
  */
 export function validateCanonicalBundle(
-  match: CanonicalMatch,
-  rounds: readonly CanonicalRound[],
-  events: readonly CanonicalEvent[],
+  match: CanonicalBundleMatchShape,
+  rounds: readonly CanonicalBundleRoundShape[],
+  events: readonly CanonicalBundleEventShape[],
 ): void {
   if (match.roundCount != null && match.roundCount !== rounds.length) {
     throw new PipelineError("VALIDATION_ERROR", "round_count does not equal round rows");
@@ -98,19 +115,29 @@ export function validateCanonicalBundle(
   let previousEnd: number | null = null;
 
   for (const [index, round] of rounds.entries()) {
-    if (!Number.isInteger(round.roundNumber) || round.roundNumber !== index + 1 || seen.has(round.roundNumber)) {
+    if (
+      !Number.isInteger(round.roundNumber) ||
+      round.roundNumber !== index + 1 ||
+      seen.has(round.roundNumber)
+    ) {
       throw new PipelineError("VALIDATION_ERROR", "round numbering is not contiguous");
     }
     seen.add(round.roundNumber);
 
-    if (round.startTick != null && (!Number.isSafeInteger(round.startTick) || round.startTick < 0)) {
+    if (
+      round.startTick != null &&
+      (!Number.isSafeInteger(round.startTick) || round.startTick < 0)
+    ) {
       throw new PipelineError("VALIDATION_ERROR", `invalid round ${round.roundNumber} start_tick`);
     }
     if (round.endTick != null && (!Number.isSafeInteger(round.endTick) || round.endTick < 0)) {
       throw new PipelineError("VALIDATION_ERROR", `invalid round ${round.roundNumber} end_tick`);
     }
     if (round.startTick != null && round.endTick != null && round.endTick < round.startTick) {
-      throw new PipelineError("VALIDATION_ERROR", `round ${round.roundNumber} ends before it starts`);
+      throw new PipelineError(
+        "VALIDATION_ERROR",
+        `round ${round.roundNumber} ends before it starts`,
+      );
     }
     if (previousStart != null && round.startTick != null && round.startTick <= previousStart) {
       throw new PipelineError("VALIDATION_ERROR", "round starts are not strictly increasing");
@@ -125,7 +152,10 @@ export function validateCanonicalBundle(
 
   for (const event of events) {
     if (!seen.has(event.roundNumber)) {
-      throw new PipelineError("VALIDATION_ERROR", `event references unknown round ${event.roundNumber}`);
+      throw new PipelineError(
+        "VALIDATION_ERROR",
+        `event references unknown round ${event.roundNumber}`,
+      );
     }
     if (event.tick != null && !roundIntervalContainsTick(rounds, event.roundNumber, event.tick)) {
       throw new PipelineError(

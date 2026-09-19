@@ -128,10 +128,21 @@ def test_round_end_before_first_start_is_ignored_not_paired():
         bombs={"planted": [], "defused": [], "exploded": []},
         tickrate=None,
     )
-    assert rounds == [
-        {"number": 1, "start_tick": 1688, "end_tick": 4774},
-        {"number": 2, "start_tick": 9000, "end_tick": 12000},
+    assert [(r["number"], r["start_tick"], r["end_tick"]) for r in rounds] == [
+        (1, 1688, 4774),
+        (2, 9000, 12000),
     ]
+
+
+def test_round_without_valid_end_preserves_unknown_boundary():
+    rounds = _rounds(
+        round_starts=[{"tick": 100}, {"tick": 500}],
+        round_ends=[{"tick": 400}],
+        bombs={"planted": [], "defused": [], "exploded": []},
+        tickrate=None,
+    )
+    assert rounds[0]["end_tick"] == 400
+    assert "end_tick" not in rounds[1]
 
 
 def test_round_duration_only_with_real_tickrate():

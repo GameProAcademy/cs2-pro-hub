@@ -247,17 +247,26 @@ describe("validation and identity", () => {
   });
 
   it("rejects a canonical match whose round count disagrees with its rows", () => {
-    expect(() =>
-      validateCanonicalMatch({ ...match, roundCount: match.rounds.length - 1 }),
-    ).toThrow(/round count mismatch/);
+    try {
+      validateCanonicalMatch({ ...match, roundCount: match.rounds.length - 1 });
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/round count mismatch/);
+    }
   });
 
   it("rejects impossible round intervals before persistence", () => {
     const rounds = match.rounds.map((round, index) =>
       index === 0 ? { ...round, startTick: 100, endTick: 99 } : round,
     );
-    expect(() => validateCanonicalBundle({ ...match, roundCount: rounds.length }, rounds, match.events))
-      .toThrow(/ends before it starts/);
+    try {
+      validateCanonicalBundle({ roundCount: rounds.length }, rounds, match.events);
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/ends before it starts/);
+    }
   });
 
   it("rejects events outside their proven round interval", () => {
@@ -265,8 +274,13 @@ describe("validation and identity", () => {
       index === 0 ? { ...round, startTick: 100, endTick: 200 } : round,
     );
     const events = [{ ...match.events[0]!, roundNumber: 1, tick: 250 }];
-    expect(() => validateCanonicalBundle({ ...match, roundCount: rounds.length }, rounds, events))
-      .toThrow(/outside round/);
+    try {
+      validateCanonicalBundle({ roundCount: rounds.length }, rounds, events);
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/outside round/);
+    }
   });
 
   it("resolves the owning player only through an explicit Steam ID", () => {

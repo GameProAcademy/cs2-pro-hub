@@ -341,6 +341,8 @@ export interface CanonicalMatch {
   players: CanonicalPlayer[];
   rounds: CanonicalRound[];
   events: CanonicalEvent[];
+  /** Optional source-reported total; when present it must equal `rounds.length`. */
+  roundCount?: number | null;
   quality: ExtractionQuality;
   parser: { name: string; version: string; revision: string | null };
   schemaVersion: number;
