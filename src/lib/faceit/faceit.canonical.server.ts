@@ -279,12 +279,54 @@ export async function loadCandidates(
     .limit(200);
   if (error) throw new FaceitIdentityResolutionError(error.message);
 
-  const rosters = await loadCandidateRosters(
-    db,
-    (data ?? []).map((row) => row.id),
+  // A pre-RAW legacy demo match is historical evidence, not a safe convergence
+  // target. Cache Run 1 exposed why: an old processed demo without an approved
+  // RAW report can already contain structurally invalid Canonical rows. Keep
+  // those rows for history, but never let a new source attach to them.
+  const candidateRows = data ?? [];
+  const candidateIds = candidateRows
+    .filter((row) => row.data_source === "demo")
+    .map((row) => row.id);
+
+  const { data: sourceRows, error: sourceError } = candidateIds.length
+    ? await db
+        .from("match_sources")
+        .select("match_id, source, upload_id")
+        .in("match_id", candidateIds)
+    : { data: [], error: null };
+  if (sourceError) throw new FaceitIdentityResolutionError(sourceError.message);
+
+  const approvedUploadIds = new Set<string>();
+  const rawUploadIds = (sourceRows ?? [])
+    .filter((row) => row.source === "demo" && row.upload_id)
+    .map((row) => row.upload_id as string);
+  if (rawUploadIds.length > 0) {
+    const { data: approvedReports, error: rawError } = await db
+      .from("raw_demo_evidence_reports")
+      .select("upload_id")
+      .in("upload_id", rawUploadIds)
+      .eq("approved_for_canonical", true)
+      .eq("raw_audit_status", "APPROVED");
+    if (rawError) throw new FaceitIdentityResolutionError(rawError.message);
+    for (const row of approvedReports ?? []) if (row.upload_id) approvedUploadIds.add(row.upload_id);
+  }
+
+  const eligibleDemoIds = new Set<string>(
+    (sourceRows ?? [])
+      .filter((row) => row.source !== "demo" || (row.upload_id && approvedUploadIds.has(row.upload_id)))
+      .map((row) => row.match_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const filteredRows = candidateRows.filter(
+    (row) => row.data_source !== "demo" || eligibleDemoIds.has(row.id),
   );
 
-  return (data ?? []).map((row) => ({
+  const rosters = await loadCandidateRosters(
+    db,
+    filteredRows.map((row) => row.id),
+  );
+
+  return filteredRows.map((row) => ({
     canonicalMatchId: row.id,
     participantSteamIds: rosters.get(row.id) ?? [],
     source: row.data_source,
