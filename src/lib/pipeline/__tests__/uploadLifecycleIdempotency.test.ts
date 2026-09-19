@@ -142,4 +142,11 @@ describe("demo upload lifecycle idempotency", () => {
     expect(functionsSource).toContain('row.replacement_reason === "raw_audit_blocked"');
     expect(clientSource).toContain("replacementReason: ReplacementReason");
   });
+
+  it("resolves a job-less pending reservation before reporting completion", () => {
+    expect(clientSource).toContain(
+      'slot.duplicate && slot.duplicateStatus === "pending" && !slot.existingJobId',
+    );
+    expect(clientSource).toContain("dependencies.enqueue({ data: { uploadId: slot.uploadId } })");
+  });
 });
