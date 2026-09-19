@@ -1123,3 +1123,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Documentar riscos e gates em `docs/PHASE-2.7.2G.5-R-BLOCKED-RAW-ATTEMPT-LIFECYCLE.md`; concorrência real permanece PARTIAL por não criar dados de teste em produção.
 - [x] Cache Run 1 e Run 2 permanecem NOT RUN; Railway, Storage, secrets, artifact e Canonical permanecem intocados.
 
+## FASE 2.7.2G.5-R-F — Final verification — PARTIAL/BLOCKED
+
+- [x] Auditar migration, schema real, constraints, índices, RPCs, ACLs, diff e histórico Cache.
+- [x] Confirmar tentativa máxima 7, zero attempts posteriores e artifact histórico intacto com 24/24 chunks verificados.
+- [x] Validar frontend atual por auditoria estática e smoke público/autenticado em 13 rotas, sem erros críticos.
+- [x] Validar APP 921 PASS, foco lifecycle/RAW/HOT/Canonical/identity 179 PASS, parser 162 PASS/10 SKIP, typecheck, compileall, build e diff check.
+- [x] Confirmar lint dos arquivos G.5-R PASS; lint global permanece `BLOCKED_BY_BASELINE` fora do escopo.
+- [ ] G5-R-F-19 REAL CONCURRENCY TEST bloqueado: não há Postgres descartável nem sessões transacionais concorrentes com rollback; produção não será usada para criar fixtures.
+- [x] Railway permaneceu inalterado; Cache Run 1/Run 2 não executados; Fase 2.8 permanece bloqueada.
+- [x] Relatório: `docs/PHASE-2.7.2G.5-R-F-FINAL-VERIFICATION.md`.
+- [ ] Decisão: `G5-R-F = PARTIAL/BLOCKED — NOT READY FOR CACHE RUN 1` até a prova concorrente real segura.
+

@@ -57,12 +57,7 @@ export interface DemoJobView {
 }
 
 export type ReplacementReason =
-  | "stale"
-  | "failed"
-  | "cancelled"
-  | "legacy_unvalidated"
-  | "raw_audit_blocked"
-  | null;
+  "stale" | "failed" | "cancelled" | "legacy_unvalidated" | "raw_audit_blocked" | null;
 
 const createSchema = z.object({
   fileName: z

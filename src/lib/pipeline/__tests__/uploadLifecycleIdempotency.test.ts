@@ -39,10 +39,10 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("keeps the active SHA uniqueness fence limited to current attempts", () => {
-    expect(migration).toContain(
-      "status IN ('pending', 'processing', 'cancel_requested')",
+    expect(migration).toContain("status IN ('pending', 'processing', 'cancel_requested')");
+    expect(migration).not.toContain(
+      "status IN ('pending', 'processing', 'cancel_requested', 'processed')",
     );
-    expect(migration).not.toContain("status IN ('pending', 'processing', 'cancel_requested', 'processed')");
   });
 
   it("keeps healthy and processed attempts idempotent", () => {
@@ -63,7 +63,9 @@ describe("demo upload lifecycle idempotency", () => {
 
   it("uses one consistent advisory-lock order for reservation and enqueue", () => {
     expect(migration).toContain("SELECT u.demo_sha256 INTO _demo_sha256");
-    expect(migration).toContain("PERFORM pg_advisory_xact_lock(hashtextextended(_user_id::text || ':' || _demo_sha256, 0));");
+    expect(migration).toContain(
+      "PERFORM pg_advisory_xact_lock(hashtextextended(_user_id::text || ':' || _demo_sha256, 0));",
+    );
     expect(migration).toContain("SELECT * INTO _upload");
   });
 
@@ -84,9 +86,7 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain(
       "CASE WHEN _job.id IS NOT NULL THEN _job.id ELSE NULL END,\n    _replacement_reason",
     );
-    expect(migration).not.toMatch(
-      /status\s*=\s*'pending'[\s\S]{0,160}WHERE\s+id\s*=\s*_job\.id/,
-    );
+    expect(migration).not.toMatch(/status\s*=\s*'pending'[\s\S]{0,160}WHERE\s+id\s*=\s*_job\.id/);
   });
 
   it("allows the blocked-audit reason in both immutable-attempt constraints", () => {
