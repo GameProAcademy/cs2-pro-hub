@@ -28,7 +28,9 @@ export const RAW_MAX_CHUNKS_TOTAL = 200_000;
 function isRawArtifactSection(
   section: string,
 ): section is (typeof RAW_ARTIFACT_SECTION_ORDER)[number] {
-  return RAW_ARTIFACT_SECTION_ORDER.includes(section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]);
+  return RAW_ARTIFACT_SECTION_ORDER.includes(
+    section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
+  );
 }
 
 type Rpc = (
