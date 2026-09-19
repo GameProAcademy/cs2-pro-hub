@@ -141,4 +141,6 @@ G.5-R-F foi registrado como `PARTIAL/BLOCKED`; Cache Run 1 e Run 2 continuam nã
 
 ## 13. Decisão final
 
-**G5-R-F = PARTIAL/BLOCKED — NOT READY FOR CACHE RUN 1**
+**Atualização G5-R-F.1:** a lacuna de concorrência foi fechada por PostgreSQL 17.9 descartável, duas conexões independentes e 50/50 execuções sem duplicação, deadlock ou timeout. A janela `pending` sem job revelou e recebeu correção fail-closed no cliente, coberta por integração executável. Evidência completa: `docs/PHASE-2.7.2G.5-R-F.1-CONCURRENCY-HARDENING.md`.
+
+**G5-R-F = CLOSED — READY FOR CACHE RUN 1; CACHE RUN 1 NOT EXECUTED**
