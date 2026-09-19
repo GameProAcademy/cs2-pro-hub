@@ -25,6 +25,12 @@ export const RAW_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 export const RAW_MAX_CHUNKS_PER_SECTION = 100_000;
 export const RAW_MAX_CHUNKS_TOTAL = 200_000;
 
+function isRawArtifactSection(
+  section: string,
+): section is (typeof RAW_ARTIFACT_SECTION_ORDER)[number] {
+  return RAW_ARTIFACT_SECTION_ORDER.includes(section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number]);
+}
+
 type Rpc = (
   name: string,
   args?: Record<string, unknown>,
@@ -426,9 +432,7 @@ export async function prepareRawChunk(
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW section chunk limit exceeded");
   }
   if (
-    !RAW_ARTIFACT_SECTION_ORDER.includes(
-      input.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
-    ) ||
+    !isRawArtifactSection(input.section) ||
     input.rowCount <= 0 ||
     input.lastRow !== input.firstRow + input.rowCount - 1 ||
     (input.chunkIndex === 0 &&
@@ -509,9 +513,7 @@ export async function verifyRawChunk(
 ) {
   const { db, job } = await currentRawJob(input);
   if (
-    !RAW_ARTIFACT_SECTION_ORDER.includes(
-      input.section as (typeof RAW_ARTIFACT_SECTION_ORDER)[number],
-    ) ||
+    !isRawArtifactSection(input.section) ||
     !Number.isSafeInteger(input.chunkIndex) ||
     input.chunkIndex < 0 ||
     input.chunkIndex >= RAW_MAX_CHUNKS_PER_SECTION
