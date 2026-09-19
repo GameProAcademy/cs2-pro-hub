@@ -7,7 +7,7 @@ describe("demo lifecycle against disposable PostgreSQL", () => {
       cwd: process.cwd(),
       encoding: "utf8",
       timeout: 120_000,
-      env: { PATH: process.env.PATH, HOME: "/tmp", G5RF1_ITERATIONS: "25" },
+      env: { PATH: process.env["PATH"], HOME: "/tmp", G5RF1_ITERATIONS: "25" },
     });
     const result = JSON.parse(output.trim()) as Record<string, unknown>;
     expect(result).toMatchObject({
@@ -18,7 +18,7 @@ describe("demo lifecycle against disposable PostgreSQL", () => {
       timeouts: 0,
       teardown: true,
     });
-    expect(result.iterations).toBe(25);
-    expect(result.successes).toBe(25);
+    expect(result["iterations"]).toBe(25);
+    expect(result["successes"]).toBe(25);
   }, 130_000);
 });
