@@ -12,9 +12,16 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ITERATIONS = int(os.environ.get("G5RF1_ITERATIONS", "50"))
+DEBUG = os.environ.get("G5RF1_DEBUG") == "1"
+
+
+def debug(message: str) -> None:
+    if DEBUG:
+        print(message, file=sys.stderr, flush=True)
 
 SCHEMA = r"""
 CREATE ROLE anon NOLOGIN;
@@ -126,30 +133,40 @@ def main() -> None:
         return prefix + f"SELECT public.reserve_demo_upload('{user}','{new_upload}','fixture.dem',65536,'{sha}')::text;"
 
     try:
+        debug("initdb")
         run(as_user + ["initdb", "-D", str(data), "-A", "trust", "--no-locale"], env=clean_env, capture_output=True)
+        debug("start")
         run(as_user + ["pg_ctl", "-D", str(data), "-o", f"-k {base} -p {port} -h ''", "-w", "start"], env=clean_env, capture_output=True)
         started = True
+        debug("schema")
         psql(SCHEMA, tuples=False)
+        debug("phase-j migration")
         psql((ROOT / "supabase/migrations/20260915100000_phase_j_lock_order_and_duplicate_contract.sql").read_text(), tuples=False)
+        debug("g5-r migration")
         psql((ROOT / "supabase/migrations/20260918235817_30712b60-cf57-4adc-89e5-3fbd7bdee5a4.sql").read_text(), tuples=False)
 
         # A/C/D/E: simultaneous replacement, explicit no-job window, and concurrent enqueue.
         for _ in range(ITERATIONS):
             try:
+                debug("seed blocked")
                 user, _, old_job, sha = seed("blocked_raw_audit")
                 upload_a, upload_b = str(uuid.uuid4()), str(uuid.uuid4())
+                debug("concurrent reserve")
                 result_a, result_b = concurrent(reserve(user, upload_a, sha), reserve(user, upload_b, sha))
                 payloads = [json.loads(result_a.splitlines()[-1]), json.loads(result_b.splitlines()[-1])]
                 new_ids = {p["upload_id"] for p in payloads}
                 if len(new_ids) != 1 or sum(p["new_attempt"] for p in payloads) != 1:
                     raise AssertionError("concurrent reserve created an incoherent replacement")
                 new_upload = new_ids.pop()
+                debug("window")
                 window = json.loads(psql(reserve(user, str(uuid.uuid4()), sha)).splitlines()[-1])
                 if window != {**window, "job_id": None} or not window["duplicate"] or window["attempt_number"] != 8:
                     raise AssertionError("reserve-to-enqueue window contract mismatch")
                 enqueue_sql = f"SELECT public.enqueue_demo_job('{new_upload}','{user}')::text;"
+                debug("concurrent enqueue")
                 enq_a, enq_b = concurrent(enqueue_sql, enqueue_sql)
                 enqueued = [json.loads(enq_a.splitlines()[-1]), json.loads(enq_b.splitlines()[-1])]
+                debug("state")
                 state = json.loads(psql(f"""SELECT json_build_object(
                   'attempt8Uploads',(SELECT count(*) FROM public.uploads WHERE user_id='{user}' AND demo_sha256='{sha}' AND attempt_number=8),
                   'attempt9',(SELECT count(*) FROM public.uploads WHERE user_id='{user}' AND demo_sha256='{sha}' AND attempt_number=9),
@@ -176,6 +193,7 @@ def main() -> None:
 
         # F/G/H: terminal/stale replacement reasons under two real sessions.
         for status, reason, stale in [("failed", "failed", False), ("cancelled", "cancelled", False), ("processing", "stale", True)]:
+            debug(f"terminal {status}")
             user, _, old_job, sha = seed(status, stale=stale)
             a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
             results = [json.loads(a.splitlines()[-1]), json.loads(b.splitlines()[-1])]
@@ -185,12 +203,14 @@ def main() -> None:
                 raise AssertionError("stale job was not fenced")
 
         # I/J: approved processed is immutable; unapproved processed is replaced once.
+        debug("processed approved")
         user, upload, job, sha = seed("processed", approved=True)
         a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
         if any(json.loads(value.splitlines()[-1])["job_id"] != job for value in (a, b)):
             raise AssertionError("approved processed idempotency mismatch")
         if psql(f"SELECT count(*) FROM public.uploads WHERE user_id='{user}';") != "1":
             raise AssertionError("approved processed created replacement")
+        debug("legacy")
         user, _, _, sha = seed("processed")
         a, b = concurrent(reserve(user, str(uuid.uuid4()), sha), reserve(user, str(uuid.uuid4()), sha))
         results = [json.loads(a.splitlines()[-1]), json.loads(b.splitlines()[-1])]
@@ -198,6 +218,7 @@ def main() -> None:
             raise AssertionError("legacy unvalidated mismatch")
 
         # Active SHA fence and exact function ACL/security attributes.
+        debug("active fence")
         user = str(uuid.uuid4()); sha = uuid.uuid4().hex + uuid.uuid4().hex
         psql(f"INSERT INTO public.profiles VALUES ('{user}'); INSERT INTO public.uploads(id,user_id,type,source,file_name,status,demo_sha256) VALUES ('{uuid.uuid4()}','{user}','demo','manual','a.dem','pending','{sha}');")
         try:
@@ -206,6 +227,7 @@ def main() -> None:
         except subprocess.CalledProcessError as error:
             if "uploads_user_demo_sha_active_key" not in (error.stderr or ""):
                 raise
+        debug("acl")
         acl = psql("""SELECT string_agg(p||':'||has_function_privilege(p,'public.reserve_demo_upload(uuid,uuid,text,bigint,text)','EXECUTE')||':'||has_function_privilege(p,'public.enqueue_demo_job(uuid,uuid)','EXECUTE'),', ' ORDER BY p) FROM unnest(ARRAY['anon','authenticated','service_role']) p;""")
         if acl != "anon:false:false, authenticated:false:false, service_role:true:true":
             raise AssertionError(f"ACL mismatch: {acl}")
