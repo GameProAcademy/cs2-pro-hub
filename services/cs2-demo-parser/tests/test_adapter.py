@@ -117,7 +117,21 @@ def test_rounds_out_of_order_input_is_ordered():
         bombs={"planted": None, "defused": None, "exploded": None},
         tickrate=None,
     )
+    assert [r["start_tick"] for r in rounds] == [100, 500]
     assert [r["end_tick"] for r in rounds] == [400, 900]
+
+
+def test_round_end_before_first_start_is_ignored_not_paired():
+    rounds = _rounds(
+        round_starts=[{"tick": 1688}, {"tick": 9000}],
+        round_ends=[{"tick": 1}, {"tick": 4774}, {"tick": 12000}],
+        bombs={"planted": [], "defused": [], "exploded": []},
+        tickrate=None,
+    )
+    assert rounds == [
+        {"number": 1, "start_tick": 1688, "end_tick": 4774},
+        {"number": 2, "start_tick": 9000, "end_tick": 12000},
+    ]
 
 
 def test_round_duration_only_with_real_tickrate():
@@ -188,7 +202,7 @@ INTERVALS = [(1, 100, 400), (2, 500, 900)]
         (100, 1),  # first tick of round 1
         (250, 1),  # inside round 1
         (400, 1),  # last tick of round 1
-        (450, 2),  # between rounds -> next round to end
+        (450, None),  # known gap between rounds is not assigned
         (900, 2),
         (50, None),  # before any round
         (1200, None),  # after the last known end
@@ -272,6 +286,17 @@ def test_blind_hurt_and_bomb_event_fields():
     assert blind["flash_duration"] == 2.5 and blind["victim"] == B
     assert hurt["damage"] == 34 and hurt["armor_damage"] == 5
     assert bomb["type"] == "bomb_planted" and bomb["attacker"] == A
+
+
+def test_explicit_round_number_cannot_override_invalid_tick_boundary():
+    warnings: list[str] = []
+    events = normalize_events(
+        [("player_death", [{"tick": 450, "round": 2}])],
+        INTERVALS,
+        warnings,
+    )
+    assert events == []
+    assert any("deterministic round" in warning for warning in warnings)
 
 
 def test_events_are_sorted_by_round_then_tick_then_type():
