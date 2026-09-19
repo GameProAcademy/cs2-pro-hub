@@ -136,7 +136,12 @@ def main() -> None:
         debug("initdb")
         run(as_user + ["initdb", "-D", str(data), "-A", "trust", "--no-locale"], env=clean_env, capture_output=True)
         debug("start")
-        run(as_user + ["pg_ctl", "-D", str(data), "-o", f"-k {base} -p {port} -h ''", "-w", "start"], env=clean_env, capture_output=True)
+        run(
+            as_user
+            + ["pg_ctl", "-D", str(data), "-l", str(base / "postgres.log"), "-o", f"-k {base} -p {port} -h ''", "-w", "start"],
+            env=clean_env,
+            capture_output=True,
+        )
         started = True
         debug("schema")
         psql(SCHEMA, tuples=False)
