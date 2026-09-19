@@ -183,6 +183,36 @@ export async function submitDemoWithDependencies(
     };
   }
 
+  if (slot.duplicate && slot.duplicateStatus === "pending" && !slot.existingJobId) {
+    // Another request reserved this owner+SHA while its private object was
+    // still uploading. Never overwrite that path. Enqueue safely resolves an
+    // uploaded reservation, is idempotent if the first request already won,
+    // and fails closed while the object is unavailable.
+    try {
+      const job = await dependencies.enqueue({ data: { uploadId: slot.uploadId } });
+      options.onProgress?.({
+        state: "completed",
+        bytesSent: file.size,
+        bytesTotal: file.size,
+        percent: 100,
+      });
+      return {
+        jobId: job.jobId,
+        duplicate: true,
+        duplicateStatus: "pending",
+        newAttempt: false,
+        attemptNumber: slot.attemptNumber,
+        supersedesJobId: slot.supersedesJobId,
+        replacementReason: slot.replacementReason,
+      };
+    } catch (error) {
+      throw new DemoUploadError(
+        "PROCESSING_ERROR",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   if (slot.duplicate) {
     // Pending/processing duplicate: do not overwrite bytes or enqueue again.
     options.onProgress?.({

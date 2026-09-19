@@ -1135,3 +1135,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Relatório: `docs/PHASE-2.7.2G.5-R-F-FINAL-VERIFICATION.md`.
 - [ ] Decisão: `G5-R-F = PARTIAL/BLOCKED — NOT READY FOR CACHE RUN 1` até a prova concorrente real segura.
 
+## FASE 2.7.2G.5-R-F.1 — Concorrência descartável — CLOSED / PASS
+
+- [x] Executar PostgreSQL 17.9 descartável com duas sessões reais, estado persistido consultado e teardown.
+- [x] Provar 50/50 disputas `blocked_raw_audit → attempt 8`, sem attempt 9, duplicação, deadlock ou timeout.
+- [x] Provar enqueue concorrente idempotente, supersessão, stale fencing, estados terminal/processed e unicidade ativa.
+- [x] Corrigir o cliente para resolver `pending` sem job por enqueue idempotente, sem overwrite, ou falhar fechado.
+- [x] Confirmar ACL service-role-only e `SECURITY DEFINER`/`search_path` no banco local.
+- [x] Confirmar Cache histórico por leitura: attempt máximo 7, zero posteriores e artifact 24/24 intacto.
+- [x] Confirmar Railway por probes read-only; nenhum deploy, secret ou staged change alterado.
+- [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.1-CONCURRENCY-HARDENING.md`.
+- [x] Decisão: `G5-R-F = CLOSED — READY FOR CACHE RUN 1`; Cache Run 1 NOT EXECUTED.
+
