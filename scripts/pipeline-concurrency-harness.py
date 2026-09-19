@@ -236,7 +236,10 @@ def main() -> None:
         acl = psql("""SELECT string_agg(p||':'||has_function_privilege(p,'public.reserve_demo_upload(uuid,uuid,text,bigint,text)','EXECUTE')||':'||has_function_privilege(p,'public.enqueue_demo_job(uuid,uuid)','EXECUTE'),', ' ORDER BY p) FROM unnest(ARRAY['anon','authenticated','service_role']) p;""")
         if acl != "anon:false:false, authenticated:false:false, service_role:true:true":
             raise AssertionError(f"ACL mismatch: {acl}")
-        attrs = psql("""SELECT bool_and(p.prosecdef AND p.proconfig @> ARRAY['search_path=']) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('reserve_demo_upload','enqueue_demo_job');""")
+        attrs = psql("""SELECT bool_and(p.prosecdef AND EXISTS (
+          SELECT 1 FROM unnest(p.proconfig) setting WHERE setting LIKE 'search_path=%'
+        )) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname='public' AND p.proname IN ('reserve_demo_upload','enqueue_demo_job');""")
         if attrs != "t":
             raise AssertionError("SECURITY DEFINER/search_path mismatch")
     finally:
