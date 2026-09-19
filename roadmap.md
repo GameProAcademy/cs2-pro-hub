@@ -1,6 +1,6 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.6 — CANONICAL INTEGRITY REMEDIATION
 
-**Status:** DB MIGRATION APPLIED / PRE-RUN REGRESSIONS IN PROGRESS / RUN 2 STILL BLOCKED.
+**Status:** READY_FOR_CONTROLLED_RUN_1_RETRY / RUN 2 STILL BLOCKED.
 
 This section supersedes older execution notes below when they conflict with the latest forensic audit.
 
@@ -15,12 +15,14 @@ This section supersedes older execution notes below when they conflict with the 
 - [x] Made post-Canonical durable finalization retryable: if Canonical has already committed, the durable job is kept processing for lease/stale recovery instead of being terminalized as failed.
 - [x] Added regression tests for the round-boundary and Canonical semantic defects.
 - [x] Applied the existing migration `20260919110000_g5_rf2_canonical_integrity.sql` to production without creating a duplicate.
-- [ ] Sync the corrected parser adapter to the Railway production branch and verify the deployment.
-- [ ] Re-run focused tests, typecheck/build and production read-only preflight; initial verification exposed and is correcting type/test drift without executing Cache.
+- [x] Verified Railway read-only: `/health` and `/version` return 200 with `demoparser2 0.42.0`, contract 1, pinned semantic revision and corrected build revision.
+- [x] Re-ran focused and complete gates after resolving type/test drift: APP 931/931, parser 165 PASS/10 skipped, typecheck, compileall, formatting and build PASS.
 - [ ] Perform a controlled Cache Run 1 retry using the same physical demo/SHA, with no Run 2.
 - [ ] Only declare G5-R-F.2 PASS after RAW approval, valid Canonical intervals, event containment, terminal job finalization, idempotency and historical immutability are all proven.
 - [ ] Run 2 / attempt 9 remains prohibited until the explicit PASS gate.
 - [ ] Fase 2.8 AI Coach remains blocked.
+
+**Pre-run decision:** `READY_FOR_CONTROLLED_RUN_1_RETRY`. No Cache run, upload, enqueue, retry, attempt 9, historical mutation, Railway deployment or secret change occurred in this phase.
 
 **Historical data policy:** attempt 7, attempt 8 RAW artifacts and existing Canonical rows are not deleted or rewritten by this remediation. The failed Run 1 Canonical state remains forensic evidence and is not an AI source until a fresh controlled run produces a valid Canonical state.
 
