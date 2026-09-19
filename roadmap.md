@@ -1,5 +1,16 @@
 # Roadmap
 
+## CURRENT SOURCE OF TRUTH — FASE 2.7.2G.5-R-F.2 — CACHE RUN 1 FAIL
+
+- [x] Preflight completo PASS: migration/RPCs/ACLs/constraints, histórico, Storage e Railway foram comprovados sem mutação.
+- [x] Demo histórico comprovado por stream read-only: 473.748.061 bytes e SHA de 64 caracteres registrado no relatório.
+- [ ] **CACHE RUN 1 FAIL:** a primeira reserva recebeu por erro operacional um SHA digitado com 67 caracteres; criou somente o upload pendente isolado `5c514921-d32d-4058-9d34-bbb57c361b53`, attempt 1, sem job e sem objeto.
+- [x] Interrupção fail-closed imediata: nenhum upload físico, enqueue, mensagem, claim, parse, RAW, HOT, Canonical, métrica ou feature novos.
+- [x] Attempt 7 e artifact 7 permanecem intactos; `superseded_by_job_id` continua NULL e não existe attempt 8/9 para o SHA correto.
+- [x] Nenhum retry, Run 2, deploy Railway, alteração de secret ou ajuste manual de estado foi executado.
+- [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.2-CACHE-RUN-1.md`.
+- [ ] Decisão: `CACHE RUN 1 = FAIL`; `G5-R-F.2 = FAIL`; `RUN 2 = NOT READY`.
+
 ## FASE 2.7.2G.2 — RAW Coverage Closure — EM EXECUÇÃO
 
 - [x] Criar leitura server-only, master-admin, do manifest RAW preservado com validação do digest de audit_evidence; a extração efetiva depende do próximo build/deploy do APP.
