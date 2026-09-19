@@ -22,6 +22,7 @@ import {
   runRawForensicAudit,
   type RawAdmissionApproval,
 } from "@/lib/pipeline/rawEvidence";
+import { validateCanonicalBundle } from "@/lib/pipeline/validator";
 
 export interface CanonicalPersistResult {
   matchId: string;
@@ -79,6 +80,9 @@ export async function persistCanonicalObservation(args: {
   /** Required forensic admission proof for demo observations. */
   rawApproval?: RawAdmissionApproval;
 }): Promise<CanonicalPersistResult> {
+  // The persistence boundary is independently guarded; callers cannot bypass
+  // round/event semantic validation by invoking this server function directly.
+  validateCanonicalBundle(args.bundle.match, args.bundle.rounds, args.bundle.events);
   const payload = canonicalBundleToRpcPayload(args.bundle);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
