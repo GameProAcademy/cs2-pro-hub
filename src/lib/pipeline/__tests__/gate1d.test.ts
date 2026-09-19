@@ -120,6 +120,60 @@ describe("Gate 1D upload boundaries", () => {
     });
   }
 
+  it("recovers a reserved upload without overwriting its private object", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: true,
+          duplicateStatus: "pending",
+          existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 8,
+          supersedesJobId: "old-job",
+          replacementReason: "raw_audit_blocked",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        return { jobId: "recovered-job" };
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).resolves.toMatchObject({ jobId: "recovered-job", duplicate: true, attemptNumber: 8 });
+    expect(calls).toEqual(["hash", "create", "enqueue"]);
+  });
+
+  it("fails closed while a reservation has neither complete bytes nor a job", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: true,
+          duplicateStatus: "pending",
+          existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 8,
+          supersedesJobId: "old-job",
+          replacementReason: "raw_audit_blocked",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        throw new Error("DEMO_NOT_FOUND");
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).rejects.toMatchObject({ code: "PROCESSING_ERROR" });
+    expect(calls).toEqual(["hash", "create", "enqueue"]);
+  });
+
   it("uploads isolated bytes and polls the new job for a stale replacement", async () => {
     const { calls, dependencies } = flow({
       create: async () => {
