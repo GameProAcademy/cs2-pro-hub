@@ -59,7 +59,11 @@ import {
   demoExists,
   retainUntil,
 } from "@/lib/pipeline/storage.server";
-import { validateCanonicalMatch, validateDemoFile } from "@/lib/pipeline/validator";
+import {
+  validateCanonicalBundle,
+  validateCanonicalMatch,
+  validateDemoFile,
+} from "@/lib/pipeline/validator";
 
 import {
   confidenceScore,
@@ -375,6 +379,7 @@ export async function processJob(
 ): Promise<JobProcessResult> {
   const db = await admin();
   const startedAt = Date.now();
+  let canonicalPersisted = false;
 
   const { data: job } = await db
     .from("demo_jobs")
@@ -578,6 +583,7 @@ export async function processJob(
       targetParticipantKey: participantKey,
       internalPlayerId: participantKey ? (player?.id ?? null) : null,
     });
+    validateCanonicalBundle(bundle.match, bundle.rounds, bundle.events);
 
     // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as
     // FACEIT instead of persisting blind. Discovery is source-neutral; only an
@@ -634,6 +640,10 @@ export async function processJob(
         attachMatchId,
         rawApproval,
       });
+      // From this point on, Canonical has committed. A later finalization
+      // failure must be reconciled/retried, not converted into a fresh failed
+      // ingestion attempt that can fork the same evidence.
+      canonicalPersisted = true;
     } catch (error) {
       const detail = error instanceof Error ? error.message : undefined;
       throw new PipelineError(
@@ -782,6 +792,22 @@ export async function processJob(
     }
     const pipelineError = toPipelineError(error);
     if (durableClaim) {
+      if (canonicalPersisted) {
+        // Canonical and job finalization are separate database transactions.
+        // If the second transaction fails, keep the durable claim alive and let
+        // queue visibility/stale recovery retry the idempotent finalization.
+        await db
+          .from("demo_jobs")
+          .update({ stage: "persisting", heartbeat_at: new Date().toISOString() })
+          .eq("id", jobId)
+          .eq("status", "processing");
+        console.warn("[pipeline] canonical committed; durable finalization deferred", {
+          jobId,
+          code: pipelineError.code,
+        });
+        return { jobId, status: "failed", errorCode: pipelineError.code };
+      }
+
       const { error: failError } = await db.rpc(
         "fail_demo_parse_message" as never,
         {
