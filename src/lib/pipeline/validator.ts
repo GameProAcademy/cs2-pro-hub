@@ -9,7 +9,11 @@ import {
   MIN_VALID_ROUNDS,
 } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
-import type { CanonicalMatch } from "@/lib/pipeline/types";
+import type {
+  CanonicalEvent,
+  CanonicalMatch,
+  CanonicalRound,
+} from "@/lib/pipeline/types";
 
 /** Structural check of the file name/size before any download or parse. */
 export function validateDemoFile(fileName: string, fileSize: number): void {
@@ -41,8 +45,94 @@ export function validateCanonicalMatch(match: CanonicalMatch): void {
       `rounds=${match.rounds.length} < ${MIN_VALID_ROUNDS}`,
     );
   }
+  if (match.rounds.length > 0 && match.rounds.some((round) => !Number.isInteger(round.roundNumber) || round.roundNumber <= 0)) {
+    throw new PipelineError("VALIDATION_ERROR", "invalid round numbering");
+  }
+  if (match.roundCount != null && (!Number.isInteger(match.roundCount) || match.roundCount !== match.rounds.length)) {
+    throw new PipelineError("VALIDATION_ERROR", "round count mismatch");
+  }
   if (!match.events.some((event) => event.type === "kill")) {
     throw new PipelineError("VALIDATION_ERROR", "no kill events");
+  }
+}
+
+function roundIntervalContainsTick(
+  rounds: readonly CanonicalRound[],
+  roundNumber: number,
+  tick: number,
+): boolean {
+  const index = rounds.findIndex((round) => round.roundNumber === roundNumber);
+  if (index < 0) return false;
+  const round = rounds[index]!;
+  const nextStart = rounds[index + 1]?.startTick ?? null;
+
+  if (round.startTick != null && tick < round.startTick) return false;
+  if (round.endTick != null && tick > round.endTick) return false;
+  if (round.endTick == null && nextStart != null && tick >= nextStart) return false;
+
+  // When both boundaries are known, the interval is closed at both ends.
+  // When a boundary is unknown, only the observed side is enforced.
+  return true;
+}
+
+/**
+ * Strong bundle-level semantic gate. The CanonicalMatch object alone does not
+ * carry its round/event arrays, so this validator runs immediately before the
+ * Canonical persistence RPC.
+ *
+ * No event is allowed to escape its proven round interval, and no impossible
+ * round interval may reach the database. This is deliberately stricter than
+ * mere row-count/existence checks.
+ */
+export function validateCanonicalBundle(
+  match: CanonicalMatch,
+  rounds: readonly CanonicalRound[],
+  events: readonly CanonicalEvent[],
+): void {
+  if (match.roundCount != null && match.roundCount !== rounds.length) {
+    throw new PipelineError("VALIDATION_ERROR", "round_count does not equal round rows");
+  }
+
+  const seen = new Set<number>();
+  let previousStart: number | null = null;
+  let previousEnd: number | null = null;
+
+  for (const [index, round] of rounds.entries()) {
+    if (!Number.isInteger(round.roundNumber) || round.roundNumber !== index + 1 || seen.has(round.roundNumber)) {
+      throw new PipelineError("VALIDATION_ERROR", "round numbering is not contiguous");
+    }
+    seen.add(round.roundNumber);
+
+    if (round.startTick != null && (!Number.isSafeInteger(round.startTick) || round.startTick < 0)) {
+      throw new PipelineError("VALIDATION_ERROR", `invalid round ${round.roundNumber} start_tick`);
+    }
+    if (round.endTick != null && (!Number.isSafeInteger(round.endTick) || round.endTick < 0)) {
+      throw new PipelineError("VALIDATION_ERROR", `invalid round ${round.roundNumber} end_tick`);
+    }
+    if (round.startTick != null && round.endTick != null && round.endTick < round.startTick) {
+      throw new PipelineError("VALIDATION_ERROR", `round ${round.roundNumber} ends before it starts`);
+    }
+    if (previousStart != null && round.startTick != null && round.startTick <= previousStart) {
+      throw new PipelineError("VALIDATION_ERROR", "round starts are not strictly increasing");
+    }
+    if (previousEnd != null && round.startTick != null && round.startTick <= previousEnd) {
+      throw new PipelineError("VALIDATION_ERROR", "round intervals overlap or are out of order");
+    }
+
+    previousStart = round.startTick ?? previousStart;
+    previousEnd = round.endTick ?? previousEnd;
+  }
+
+  for (const event of events) {
+    if (!seen.has(event.roundNumber)) {
+      throw new PipelineError("VALIDATION_ERROR", `event references unknown round ${event.roundNumber}`);
+    }
+    if (event.tick != null && !roundIntervalContainsTick(rounds, event.roundNumber, event.tick)) {
+      throw new PipelineError(
+        "VALIDATION_ERROR",
+        `event tick ${event.tick} is outside round ${event.roundNumber}`,
+      );
+    }
   }
 }
 
