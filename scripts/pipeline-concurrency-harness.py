@@ -84,7 +84,10 @@ def main() -> None:
     as_user = ["setpriv", "--reuid=lovable", "--regid=lovable", "--clear-groups"] if os.geteuid() == 0 else []
     if os.geteuid() == 0:
         shutil.chown(base, user="lovable", group="lovable")
-    clean_env = {"PATH": os.environ.get("PATH", ""), "HOME": "/tmp", "LANG": "C"}
+    clean_env = {
+        "PATH": os.environ.get("PATH", ""), "HOME": "/tmp", "LANG": "C",
+        "PGOPTIONS": "-c statement_timeout=10000 -c lock_timeout=8000",
+    }
     started = False
     failures = deadlocks = timeouts = successes = 0
 
@@ -93,7 +96,7 @@ def main() -> None:
         if tuples:
             cmd += ["-A", "-t"]
         cmd += ["-c", sql]
-        return run(cmd, env=clean_env, capture_output=True).stdout.strip()
+        return run(cmd, env=clean_env, capture_output=True, timeout=15).stdout.strip()
 
     def concurrent(sql_a: str, sql_b: str) -> tuple[str, str]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
