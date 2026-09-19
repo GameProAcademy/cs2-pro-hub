@@ -6,6 +6,7 @@ const migration = [
   "supabase/migrations/20260915072009_eea13ab7-de20-4697-9428-b7c9e2391746.sql",
   "supabase/migrations/20260915090000_phase_j_legacy_processing_and_processed_reconciliation.sql",
   "supabase/migrations/20260915100000_phase_j_lock_order_and_duplicate_contract.sql",
+  "supabase/migrations/20260918235817_30712b60-cf57-4adc-89e5-3fbd7bdee5a4.sql",
 ]
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
@@ -24,6 +25,7 @@ describe("demo upload lifecycle idempotency", () => {
     expect(migration).toContain("_replacement_reason := 'stale'");
     expect(migration).toContain("_replacement_reason := 'failed'");
     expect(migration).toContain("_replacement_reason := 'cancelled'");
+    expect(migration).toContain("_replacement_reason := 'raw_audit_blocked'");
     expect(migration).toContain("INSERT INTO public.uploads");
     expect(migration).toContain("attempt_number, supersedes_job_id, replacement_reason");
   });
@@ -66,7 +68,31 @@ describe("demo upload lifecycle idempotency", () => {
   });
 
   it("keeps stale replacement represented as failed in the duplicate contract", () => {
-    expect(migration).toContain("WHEN _replacement_reason IN ('failed','stale') THEN 'failed'");
+    expect(migration).toContain(
+      "WHEN _replacement_reason IN ('failed', 'stale', 'raw_audit_blocked') THEN 'failed'",
+    );
+  });
+
+  it("creates a new logical attempt after a RAW audit block without reopening history", () => {
+    expect(migration).toContain(
+      "ELSIF _job.status = 'blocked_raw_audit' OR _upload.status = 'blocked_raw_audit' THEN",
+    );
+    expect(migration).toContain("_replacement_reason := 'raw_audit_blocked'");
+    expect(migration).toContain(
+      "GREATEST(COALESCE(_job.attempt_number, 1), COALESCE(_upload.attempt_number, 1)) + 1",
+    );
+    expect(migration).toContain(
+      "CASE WHEN _job.id IS NOT NULL THEN _job.id ELSE NULL END,\n    _replacement_reason",
+    );
+    expect(migration).not.toMatch(
+      /status\s*=\s*'pending'[\s\S]{0,160}WHERE\s+id\s*=\s*_job\.id/,
+    );
+  });
+
+  it("allows the blocked-audit reason in both immutable-attempt constraints", () => {
+    expect(migration.match(/'raw_audit_blocked'/g)?.length).toBeGreaterThanOrEqual(4);
+    expect(migration).toContain("uploads_replacement_reason_check");
+    expect(migration).toContain("demo_jobs_replacement_reason_check");
   });
 
   it("allows at most one replacement and keeps both directions of the relationship", () => {
@@ -108,5 +134,12 @@ describe("demo upload lifecycle idempotency", () => {
     expect(functionsSource).toContain('result["replacement_reason"] === "legacy_unvalidated"');
     expect(functionsSource).toContain('row.replacement_reason === "legacy_unvalidated"');
     expect(clientSource).toContain("type ReplacementReason");
+  });
+
+  it("preserves RAW-audit replacement reasons through server and client contracts", () => {
+    expect(functionsSource).toContain('| "raw_audit_blocked"');
+    expect(functionsSource).toContain('result["replacement_reason"] === "raw_audit_blocked"');
+    expect(functionsSource).toContain('row.replacement_reason === "raw_audit_blocked"');
+    expect(clientSource).toContain("replacementReason: ReplacementReason");
   });
 });

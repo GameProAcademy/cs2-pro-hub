@@ -1106,3 +1106,20 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Apply and audit the staging patch only after both refs are available, preserving `parser_isolated.py`, `parser_child.py`, `worker_main.py`, Railway worker lifecycle, and build identity.
 - [ ] G4 deployment readiness remains BLOCKED; no Cache run, retry/requeue, Canonical write, artifact mutation, data/config/secret change, or Railway deploy occurred.
 
+## FASE 2.7.2G.4-R — Railway controlled deployment — CONCLUÍDA
+
+- [x] Railway atualizado e validado no deployment `19e443dd-7e34-4b9d-82dd-463ef5ca9bdd`, com demoparser2 0.42.0, contract 1, semantic revision e build revision pinadas.
+- [x] `/health` e `/version` responderam 200; processo isolado, durable worker e identidade de build preservados.
+- [x] Nenhum deploy Railway adicional faz parte da G.5-R.
+
+## FASE 2.7.2G.5-R — Lifecycle pós-RAW bloqueado — CONCLUÍDA / CACHE NOT RUN
+
+- [x] Auditar schema, constraints, índices, funções e tentativa Cache histórica por leitura.
+- [x] Aplicar migration incremental para `blocked_raw_audit → raw_audit_blocked`, sem reabrir a tentativa anterior.
+- [x] Preservar lock por usuário+SHA, incremento de `attempt_number`, `supersedes_job_id`, `superseded_by_job_id` e `ATTEMPT_ALREADY_SUPERSEDED`.
+- [x] Propagar o novo motivo no contrato TypeScript sem alterar o retorno público imutável de `submitDemo()`.
+- [x] Validar lifecycle/RAW/HOT/Canonical focado (157 PASS), APP completa (921 PASS), parser (162 PASS/10 SKIP), typecheck, compileall e diff check.
+- [x] Confirmar as RPCs como `SECURITY DEFINER`, `search_path=''` e executáveis somente por `service_role`; preservar o baseline de 15 achados legados do linter.
+- [x] Documentar riscos e gates em `docs/PHASE-2.7.2G.5-R-BLOCKED-RAW-ATTEMPT-LIFECYCLE.md`; concorrência real permanece PARTIAL por não criar dados de teste em produção.
+- [x] Cache Run 1 e Run 2 permanecem NOT RUN; Railway, Storage, secrets, artifact e Canonical permanecem intocados.
+
