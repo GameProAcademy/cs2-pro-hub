@@ -73,19 +73,19 @@ The Python/Railway parser remains the only production parser and fallback. The p
 
 ## Evidências e quality gates
 
-| Gate | Resultado |
-| --- | --- |
-| Testes focados POC/RAW/Canonical | PASS — 31/31 |
-| Aplicação completa | PASS — 959/959 |
-| Parser Python | PASS — 171; SKIPPED — 10 condicionais |
-| Typecheck | PASS |
-| ESLint completo | PASS — 0 erros; 9 warnings preexistentes |
-| Compileall Python | PASS |
-| Diff check | PASS |
-| Build | DELEGATED — harness automático |
-| Browser real com DEM | NOT_RUN |
-| Teste real de 400 MB e memória | NOT_RUN |
-| Paridade real WASM↔Python | NOT_RUN |
+| Gate                             | Resultado                                |
+| -------------------------------- | ---------------------------------------- |
+| Testes focados POC/RAW/Canonical | PASS — 31/31                             |
+| Aplicação completa               | PASS — 959/959                           |
+| Parser Python                    | PASS — 171; SKIPPED — 10 condicionais    |
+| Typecheck                        | PASS                                     |
+| ESLint completo                  | PASS — 0 erros; 9 warnings preexistentes |
+| Compileall Python                | PASS                                     |
+| Diff check                       | PASS                                     |
+| Build                            | DELEGATED — harness automático           |
+| Browser real com DEM             | NOT_RUN                                  |
+| Teste real de 400 MB e memória   | NOT_RUN                                  |
+| Paridade real WASM↔Python        | NOT_RUN                                  |
 
 ## Restrições preservadas
 
@@ -94,6 +94,37 @@ Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, s
 ## Limitação bloqueante
 
 A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A POC não substitui a autoridade Python/Railway e permanece fail-closed até existir um runtime browser compatível e serem executados testes reais de navegador, memória e paridade.
+
+## Gate final
+
+`POC_NOT_READY`
+
+# FASE 2.10-A — RELATÓRIO FINAL
+
+## Provenance e runtime
+
+- Fonte auditada: `https://github.com/LaihoE/demoparser`, tag `v0.42.0`, commit `d3767705dc5846d73ed29db50eaeda58778dc934`.
+- Build upstream documentado: `wasm-pack build --out-dir www/pkg --target no-modules`.
+- Não existe release oficial/auditavelmente reproduzível do WASM 0.42.0; toolchain e `wasm-pack` não estão integralmente pinados.
+- Binding URL, WASM URL, binding SHA-256 e binary SHA-256 permanecem `UNAVAILABLE`; nenhum valor foi inventado.
+- A superfície WASM não exporta `parsePlayerInfo`; player inventory é `UNAVAILABLE`, sem inferência pelo header.
+
+## Hardening implementado
+
+- Worker classic alinhado ao binding wasm-bindgen `no-modules`, eliminando a incompatibilidade Module Worker + `importScripts`.
+- Binding e WASM restritos a same-origin, buscados e verificados por SHA-256 antes da execução.
+- `runtimeSurfaceDigest`, `wasmBindingSha256` e `wasmBinarySha256` são identidades independentes.
+- Exports são inspecionados em runtime; descoberta de eventos e eventos efetivamente parseados são inventários separados.
+- O tick probe é limitado e declara `fullTickDomain=false` e `authoritativeTickDomain=false`.
+- Limite conservador da POC: 128 MiB; não representa suporte a DEM de 400 MB.
+- Validator bounded recursivo rejeita forbidden keys em qualquer profundidade, ciclos, funções, buffers, typed arrays, Blob/File e objetos exóticos; recomputa os digests de resultado e manifest.
+- Feature flag permanece desligada por padrão; o validator nunca persiste e mantém Canonical bloqueado.
+
+## Evidência real e limitações
+
+`WASM_BROWSER_RUNTIME: NOT_RUN`. Não há artifact browser 0.42.0 reproduzível nem fixture `.dem` autorizada. Não houve teste real Browser → Worker → WASM → DEM, benchmark de memória, teste de 400 MB ou paridade WASM↔Python. Test doubles unitários comprovam apenas contratos, não o runtime.
+
+Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, secret, deploy Railway, Storage ou histórico de produção foi alterado.
 
 ## Gate final
 
