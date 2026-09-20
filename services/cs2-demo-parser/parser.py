@@ -37,6 +37,7 @@ from raw_evidence import (
     TICK_SAMPLE_LIMIT,
     build_gates,
     build_manifest,
+    build_forensic_contract_v2,
     event_coverage,
     field_coverage,
     mapping_inventory,
@@ -599,6 +600,7 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
     penalties += 0.1 if not economy_coverage or not any(item["available"] for item in economy_coverage) else 0.0
     evidence["manifest"]["extraction_confidence"] = round(max(0.0, 1.0 - penalties), 3)
     evidence["gates"] = build_gates(evidence)
+    evidence["forensic_contract_v2"] = build_forensic_contract_v2(evidence, raw)
     return evidence
 
 
