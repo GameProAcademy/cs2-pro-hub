@@ -62,12 +62,22 @@ def summarize_rows(rows: Iterable[dict[str, Any]], properties: Iterable[str], *,
 
 def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | None) -> dict[str, Any]:
     intervals=[]; rows=0; ticks=set(); players=set(); properties=set(); failures=[]
+    baseline_ticks: set[int] | None = None
+    gaps: set[int] = set()
+    overlaps: list[dict[str, Any]] = []
     for index, batch in enumerate(batches):
         batch_ticks=set(batch.get("ticks") or []); ticks.update(batch_ticks); rows += int(batch.get("row_count") or 0); players.update(batch.get("players") or []); properties.update(batch.get("properties") or [])
         if batch.get("error"): failures.append(str(batch["error"]))
+        if baseline_ticks is None and not batch.get("error"):
+            baseline_ticks = set(batch_ticks)
+        elif baseline_ticks is not None and not batch.get("error"):
+            gaps.update(baseline_ticks - batch_ticks)
+            unexpected = sorted(batch_ticks - baseline_ticks)
+            if unexpected:
+                overlaps.append({"batch": index, "unexpected_ticks": unexpected[:256], "total": len(unexpected)})
         intervals.append({"batch": index, "properties": sorted(batch.get("properties") or []), "first_tick": min(batch_ticks) if batch_ticks else None, "last_tick": max(batch_ticks) if batch_ticks else None, "distinct_ticks": len(batch_ticks), "rows": int(batch.get("row_count") or 0), "status": "FAIL" if batch.get("error") else "PASS"})
-    full = bool(batches) and not failures and all(item["status"] == "PASS" for item in intervals)
-    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if full else "SAMPLE_ONLY", "method": "demoparser2.parse_ticks(ticks=None), deterministic property batches", "first_tick": min(ticks) if ticks else None, "last_tick": max(ticks) if ticks else None, "total_ticks_observed": len(ticks), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": [], "overlaps": [], "failures": failures, "complete": full}
+    full = bool(batches) and not failures and not gaps and not overlaps and all(item["status"] == "PASS" for item in intervals)
+    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if full else "SAMPLE_ONLY", "method": "demoparser2.parse_ticks(ticks=None), deterministic property batches", "first_tick": min(ticks) if ticks else None, "last_tick": max(ticks) if ticks else None, "total_ticks_observed": len(ticks), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(gaps)[:4096], "gap_count": len(gaps), "overlaps": overlaps, "failures": failures, "complete": full}
 
 
 def deterministic_digest(value: Any) -> str:
