@@ -239,12 +239,10 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       lastModified: file.lastModified,
     },
     header,
-    playerInventory: playerRows
-      .slice(0, 128)
-      .map((row) => ({
-        steamId: safeString(row["steamid"] ?? row["steam_id"]),
-        name: safeString(row["name"] ?? row["player_name"]),
-      })),
+    playerInventory: playerRows.slice(0, 128).map((row) => ({
+      steamId: safeString(row["steamid"] ?? row["steam_id"]),
+      name: safeString(row["name"] ?? row["player_name"]),
+    })),
     eventInventory,
     selectedEventSamples,
     roundSummary: { status: "UNAVAILABLE", count: null },

@@ -65,8 +65,7 @@ function inspectShape(value: unknown, depth = 0): ClientParserErrorCode | null {
   const entries = Object.entries(value as Record<string, unknown>);
   if (entries.length > MAX_OBJECT_KEYS) return "CLIENT_RESULT_TOO_LARGE";
   for (const [key, item] of entries) {
-    if (FORBIDDEN_KEYS.has(key) && !(key === "fullTicks" || key === "rawEvents"))
-      return "CLIENT_RESULT_INVALID";
+    if (FORBIDDEN_KEYS.has(key)) return "CLIENT_RESULT_INVALID";
     const reason = inspectShape(item, depth + 1);
     if (reason) return reason;
   }
