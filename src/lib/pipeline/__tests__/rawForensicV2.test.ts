@@ -7,6 +7,7 @@ import {
 } from "@/lib/pipeline/rawArtifact.server";
 import {
   RAW_FORENSIC_V2_REQUIRED_GATES,
+  RAW_FORENSIC_RECONCILIATION_DIMENSIONS,
   rawArtifactBytesSha256,
   rawArtifactSha256,
   resolveRawForensicPhysicalGate,
@@ -15,10 +16,10 @@ import {
 } from "@/lib/pipeline/rawArtifactContract";
 
 function contract() {
-  return {
+  const value = {
     audit_contract_version: 2,
     parser: { name: "demoparser2", version: "0.42.0" },
-    capability_catalog: {},
+    capability_catalog: { catalog_digest: "c".repeat(64) },
     capability_reconciliation: {
       status: "PASS",
       unresolved_count: 0,
@@ -54,8 +55,16 @@ function contract() {
     physical_gate_status: "PENDING",
     final_gate_status: "BLOCKED",
     canonical_admission: "BLOCKED",
-    deterministic_digest: "a".repeat(64),
+    catalog_digest: "c".repeat(64),
+    tick_authority_digest: "t".repeat(64),
+    unsigned_contract_digest: "",
+    deterministic_digest: "",
   };
+  value.full_tick_audit.tick_domain_source = { authoritative: true, digest: "t".repeat(64) };
+  const digest = rawArtifactSha256(stableRawArtifactJson(value));
+  value.unsigned_contract_digest = digest;
+  value.deterministic_digest = digest;
+  return value;
 }
 
 describe("RAW forensic contract v2", () => {
@@ -79,7 +88,13 @@ describe("RAW forensic contract v2", () => {
   });
 
   it("resolves Gate 22 only after reconciliation and validates the final decision", () => {
-    const resolved = resolveRawForensicPhysicalGate(contract(), "b".repeat(64));
+    const resolved = resolveRawForensicPhysicalGate(contract(), {
+      reconciliationDigest: "b".repeat(64),
+      artifactRootDigest: "d".repeat(64),
+      dimensions: Object.fromEntries(
+        RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [name, "PASS" as const]),
+      ),
+    });
     expect(resolved["physical_gate_status"]).toBe("PASS");
     expect(resolved["final_gate_status"]).toBe("PASS");
     expect(resolved["canonical_admission"]).toBe("APPROVED");

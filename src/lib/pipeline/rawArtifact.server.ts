@@ -1,6 +1,7 @@
 import { PipelineError } from "@/lib/pipeline/errors";
 import {
   RAW_ARTIFACT_SECTION_ORDER,
+  RAW_FORENSIC_RECONCILIATION_DIMENSIONS,
   deriveRawArtifactAuditStatus,
   rawArtifactBytesSha256,
   rawArtifactSha256,
@@ -710,7 +711,13 @@ export async function verifyRawArtifact(args: {
   try {
     finalContract = resolveRawForensicPhysicalGate(
       forensicV2,
-      String(reconciliation["reconciliation_digest"] ?? ""),
+      {
+        reconciliationDigest: String(reconciliation["reconciliation_digest"] ?? ""),
+        artifactRootDigest: artifact.root_digest,
+        dimensions: Object.fromEntries(
+          RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [name, "PASS" as const]),
+        ),
+      },
     );
   } catch {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
@@ -751,5 +758,23 @@ export function rawArtifactApproval(
     auditVersion: decision.auditVersion,
     evidenceDigest: decision.evidenceDigest,
     artifactId,
+    finalContractDigest:
+      typeof decision.forensicInventory["final_forensic_contract"] === "object" &&
+      decision.forensicInventory["final_forensic_contract"] !== null
+        ? String(
+            (decision.forensicInventory["final_forensic_contract"] as Record<string, Json>)[
+              "final_contract_digest"
+            ] ?? "",
+          )
+        : undefined,
+    reconciliationDigest:
+      typeof decision.forensicInventory["reconciliation"] === "object" &&
+      decision.forensicInventory["reconciliation"] !== null
+        ? String(
+            (decision.forensicInventory["reconciliation"] as Record<string, Json>)[
+              "reconciliation_digest"
+            ] ?? "",
+          )
+        : undefined,
   };
 }

@@ -17,11 +17,7 @@
  */
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
 import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
-import {
-  assertRawDemoEvidence,
-  runRawForensicAudit,
-  type RawAdmissionApproval,
-} from "@/lib/pipeline/rawEvidence";
+import type { RawAdmissionApproval } from "@/lib/pipeline/rawEvidence";
 import { validateCanonicalBundle } from "@/lib/pipeline/validator";
 
 export interface CanonicalPersistResult {
@@ -89,7 +85,13 @@ export async function persistCanonicalObservation(args: {
   // Defense in depth: callers cannot write a demo Canonical observation merely
   // by skipping the pipeline gate. The persisted server audit must match.
   if (args.bundle.observation.source === "demo") {
-    if (!args.uploadId || !args.rawApproval?.approved) {
+    if (
+      !args.uploadId ||
+      !args.rawApproval?.approved ||
+      !args.rawApproval.artifactId ||
+      !/^[0-9a-f]{64}$/.test(args.rawApproval.finalContractDigest ?? "") ||
+      !/^[0-9a-f]{64}$/.test(args.rawApproval.reconciliationDigest ?? "")
+    ) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
     if (args.rawApproval.artifactId) {
@@ -108,34 +110,6 @@ export async function persistCanonicalObservation(args: {
         !artifact.ready_at ||
         artifact.root_digest !== args.rawApproval.evidenceDigest
       ) {
-        throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
-      }
-    } else {
-      const { data: audit, error: auditError } = await supabaseAdmin
-        .from("raw_demo_evidence_reports")
-        .select(
-          "raw_status, raw_audit_status, approved_for_canonical, audit_version, deterministic_digest, audited_evidence_digest, manifest, event_coverage, raw_events, raw_player_info, player_coverage, tick_coverage, tick_samples, grenade_coverage, grenade_samples, round_evidence, economy_coverage, field_mappings, gates, forensic_inventory, raw_block_reasons, evidence_version",
-        )
-        .eq("upload_id", args.uploadId)
-        .eq("deterministic_digest", args.rawApproval.evidenceDigest)
-        .maybeSingle();
-      if (
-        auditError ||
-        !audit ||
-        audit.raw_status !== "PASS" ||
-        audit.raw_audit_status !== "APPROVED" ||
-        audit.approved_for_canonical !== true ||
-        audit.audit_version !== args.rawApproval.auditVersion ||
-        audit.audited_evidence_digest !== audit.deterministic_digest ||
-        audit.audited_evidence_digest !== args.rawApproval.evidenceDigest
-      ) {
-        throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
-      }
-      const independent = await runRawForensicAudit(assertRawDemoEvidence(audit));
-      if (!independent.approved || independent.auditStatus !== "APPROVED") {
-        throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
-      }
-      if (independent.evidenceDigest !== audit.audited_evidence_digest) {
         throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
       }
     }
