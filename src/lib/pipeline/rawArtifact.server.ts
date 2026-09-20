@@ -586,7 +586,7 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
   if (!aimQuality || !positionQuality || !economyQuality) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT semantic quality");
   }
-  const approval: RawAdmissionApproval = {
+  return {
     parser: hot.parser,
     contract_version: hot.contract_version,
     header: hot.header,
@@ -856,7 +856,7 @@ export async function verifyRawArtifact(args: {
   } catch {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
-  return {
+  const approval: RawAdmissionApproval = {
     status: "PASS",
     auditStatus: "APPROVED",
     approved: true,
