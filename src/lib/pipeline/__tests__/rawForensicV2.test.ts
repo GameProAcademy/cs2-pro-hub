@@ -57,7 +57,11 @@ describe("RAW forensic contract v2", () => {
       ],
       download: async () => new Blob([bytes]),
     });
-    expect(physical).toMatchObject({ total_chunks: 1, total_rows: 2, total_bytes: bytes.byteLength });
+    expect(physical).toMatchObject({
+      total_chunks: 1,
+      total_rows: 2,
+      total_bytes: bytes.byteLength,
+    });
     expect(physical.sections).toEqual({
       ticks: { rows: 2, bytes: bytes.byteLength, fields: ["health", "tick"] },
     });

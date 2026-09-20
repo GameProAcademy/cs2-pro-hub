@@ -100,7 +100,10 @@ export async function auditPhysicalRawChunks(args: {
     try {
       decoded = await gunzipJsonLines(new Blob([bytes]));
     } catch {
-      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk is not valid gzip JSONL");
+      throw new PipelineError(
+        "PARSER_INVALID_RESPONSE",
+        "RAW physical chunk is not valid gzip JSONL",
+      );
     }
     if (decoded.rows !== chunk.row_count)
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk row count mismatch");
@@ -119,7 +122,10 @@ export async function auditPhysicalRawChunks(args: {
     sections: Object.fromEntries(
       Object.entries(sections)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, value]) => [name, { rows: value.rows, bytes: value.bytes, fields: [...value.fields].sort() }]),
+        .map(([name, value]) => [
+          name,
+          { rows: value.rows, bytes: value.bytes, fields: [...value.fields].sort() },
+        ]),
     ),
   };
 }
@@ -496,7 +502,9 @@ export async function verifyRawArtifact(args: {
     prefix: expectedPrefix,
     chunks,
     download: async (path) => {
-      const { data, error: downloadError } = await supabaseAdmin.storage.from(RAW_BUCKET).download(path);
+      const { data, error: downloadError } = await supabaseAdmin.storage
+        .from(RAW_BUCKET)
+        .download(path);
       if (downloadError || !data)
         throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk unavailable");
       return data;
