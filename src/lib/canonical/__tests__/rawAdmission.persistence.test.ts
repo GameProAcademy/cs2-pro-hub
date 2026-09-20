@@ -177,7 +177,7 @@ describe("Canonical RAW admission defense", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("allows Canonical only when persisted approval, version, and digest match", async () => {
+  it("rejects legacy sampled evidence even when legacy approval fields match", async () => {
     maybeSingle.mockResolvedValue({
       data: {
         ...auditEvidence,
@@ -210,7 +210,7 @@ describe("Canonical RAW admission defense", () => {
           evidenceDigest: auditEvidence.deterministic_digest,
         },
       }),
-    ).resolves.toMatchObject({ matchId: "match-1", matchSourceId: "source-1" });
-    expect(rpc).toHaveBeenCalledTimes(1);
+    ).rejects.toMatchObject({ code: "RAW_ADMISSION_REQUIRED" });
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

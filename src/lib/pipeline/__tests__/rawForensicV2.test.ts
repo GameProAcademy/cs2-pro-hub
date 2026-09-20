@@ -85,6 +85,9 @@ describe("RAW forensic contract v2", () => {
         ],
         download: async () => new Blob([bytes]),
       }),
-    ).rejects.toThrow("digest mismatch");
+    ).rejects.toMatchObject({
+      code: "PARSER_INVALID_RESPONSE",
+      detail: "RAW physical chunk digest mismatch",
+    });
   });
 });
