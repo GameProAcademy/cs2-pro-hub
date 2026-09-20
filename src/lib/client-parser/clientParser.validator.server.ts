@@ -81,7 +81,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   }
   if (encoded.byteLength > CLIENT_RESULT_MAX_BYTES) return fail("CLIENT_RESULT_TOO_LARGE");
   const shapeError = inspectShape(value);
-  if (shapeError) return fail(shapeError);
+  if (shapeError) { console.error("shapeError", shapeError); return fail(shapeError); }
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
