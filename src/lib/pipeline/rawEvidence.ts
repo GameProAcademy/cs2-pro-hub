@@ -197,6 +197,10 @@ export interface RawAdmissionApproval {
   artifactId?: string;
   finalContractDigest?: string;
   reconciliationDigest?: string;
+  /** Server-derived final proof retained so persistence can verify digest binding. */
+  finalForensicContract?: Record<string, Json>;
+  /** Server-derived reconciliation retained so persistence can verify its digest. */
+  reconciliationProof?: Record<string, Json>;
 }
 
 const DIGEST_KEYS = [

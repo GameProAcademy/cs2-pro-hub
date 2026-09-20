@@ -907,5 +907,7 @@ export function rawArtifactApproval(
     artifactId,
     finalContractDigest,
     reconciliationDigest,
+    finalForensicContract: finalContract as Record<string, Json>,
+    reconciliationProof: reconciliation as Record<string, Json>,
   };
 }

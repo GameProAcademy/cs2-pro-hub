@@ -18,6 +18,11 @@
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
 import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
 import type { RawAdmissionApproval } from "@/lib/pipeline/rawEvidence";
+import {
+  rawArtifactSha256,
+  stableRawArtifactJson,
+  validateRawForensicContractV2,
+} from "@/lib/pipeline/rawArtifactContract";
 import { validateCanonicalBundle } from "@/lib/pipeline/validator";
 
 export interface CanonicalPersistResult {
@@ -94,6 +99,24 @@ export async function persistCanonicalObservation(args: {
     ) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     }
+    const finalContract = args.rawApproval.finalForensicContract;
+    const reconciliation = args.rawApproval.reconciliationProof;
+    const finalProjection = finalContract
+      ? Object.fromEntries(
+          Object.entries(finalContract).filter(([key]) => key !== "final_contract_digest"),
+        )
+      : null;
+    const proofBound =
+      finalContract != null &&
+      reconciliation != null &&
+      validateRawForensicContractV2(finalContract, "final").length === 0 &&
+      finalContract["artifact_root_digest"] === args.rawApproval.evidenceDigest &&
+      finalContract["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
+      reconciliation["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
+      finalProjection != null &&
+      rawArtifactSha256(stableRawArtifactJson(finalProjection)) ===
+        args.rawApproval.finalContractDigest;
+    if (!proofBound) throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     if (args.rawApproval.artifactId) {
       const { data: artifact, error: artifactError } = await supabaseAdmin
         .from("raw_evidence_artifacts")

@@ -16,6 +16,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
+import { Route as AuthenticatedClientParserPocRouteImport } from './routes/_authenticated/client-parser-poc'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
@@ -68,6 +69,12 @@ const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
   path: '/analysis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedClientParserPocRoute =
+  AuthenticatedClientParserPocRouteImport.update({
+    id: '/client-parser-poc',
+    path: '/client-parser-poc',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
   id: '/coach',
   path: '/coach',
@@ -167,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/analysis': typeof AuthenticatedAnalysisRoute
+  '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -191,6 +199,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
+  '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -218,6 +227,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
+  '/_authenticated/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/analysis'
+    | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
     | '/matches'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/analysis'
+    | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
     | '/matches'
@@ -295,6 +307,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/analysis'
+    | '/_authenticated/client-parser-poc'
     | '/_authenticated/coach'
     | '/_authenticated/dashboard'
     | '/_authenticated/matches'
@@ -375,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/analysis'
       fullPath: '/analysis'
       preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/client-parser-poc': {
+      id: '/_authenticated/client-parser-poc'
+      path: '/client-parser-poc'
+      fullPath: '/client-parser-poc'
+      preLoaderRoute: typeof AuthenticatedClientParserPocRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/coach': {
@@ -524,6 +544,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
+  AuthenticatedClientParserPocRoute: typeof AuthenticatedClientParserPocRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
@@ -537,6 +558,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
+  AuthenticatedClientParserPocRoute: AuthenticatedClientParserPocRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,

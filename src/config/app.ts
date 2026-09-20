@@ -23,6 +23,8 @@ export const FEATURES = {
   demoIngestionUI: true,
   /** External .dem parser transport is configured; runtime status remains authoritative. */
   realDemoParser: true,
+  /** Isolated browser-only experiment. Disabled unless explicitly enabled at build time. */
+  clientDemParserPoc: import.meta.env["VITE_CLIENT_DEM_PARSER_POC_ENABLED"] === "true",
 
   faceitIntegration: true,
   /** No official API and the public site is behind an anti-bot challenge. */
