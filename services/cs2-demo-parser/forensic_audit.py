@@ -9,6 +9,7 @@ from typing import Any, Iterable
 
 AUDIT_CONTRACT_VERSION = 2
 TICK_PROPERTY_BATCH_SIZE = 12
+TICK_INTERVAL_SIZE = 8192
 TICK_DIAGNOSTIC_SAMPLE_LIMIT = 4096
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
 
@@ -60,24 +61,104 @@ def summarize_rows(rows: Iterable[dict[str, Any]], properties: Iterable[str], *,
     return out
 
 
-def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | None) -> dict[str, Any]:
-    intervals=[]; rows=0; ticks=set(); players=set(); properties=set(); failures=[]
-    baseline_ticks: set[int] | None = None
-    gaps: set[int] = set()
+def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
+    """Describe, but never overstate, the 0.42.0 source for an expected domain.
+
+    The installed package exposes ``parse_ticks(..., ticks=...)`` but no public
+    API that independently enumerates every valid demo tick. ``playback_ticks``
+    is not part of the documented 0.42.0 ``parse_header`` contract, so it is
+    retained as an observation and cannot authorize a full-domain claim.
+    """
+    source = {
+        "name": "demoparser2_header_playback_ticks",
+        "parser_version": "0.42.0",
+        "method": "parse_header",
+        "provenance": "installed demoparser2 0.42.0 runtime signature/docstring inspection",
+        "availability": "OBSERVED_UNVERIFIED" if isinstance(playback_ticks, int) and playback_ticks >= 0 else "UNAVAILABLE",
+        "observed_playback_ticks": playback_ticks,
+        "authoritative": False,
+        "reason": "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration",
+    }
+    source["digest"] = deterministic_digest(source)
+    return source
+
+
+def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: str) -> dict[str, Any]:
+    """Build an injectable authoritative domain for deterministic fixtures/probes."""
+    if first_tick < 0 or last_tick < first_tick:
+        raise ValueError("invalid authoritative tick domain")
+    source = {
+        "name": "explicit_tick_domain",
+        "parser_version": "0.42.0",
+        "method": "fixture_or_verified_runtime_probe",
+        "provenance": provenance,
+        "availability": "AVAILABLE",
+        "authoritative": True,
+        "expected_min_tick": first_tick,
+        "expected_max_tick": last_tick,
+        "expected_tick_count": last_tick - first_tick + 1,
+    }
+    source["digest"] = deterministic_digest(source)
+    return source
+
+
+def build_tick_intervals(source: dict[str, Any], interval_size: int = TICK_INTERVAL_SIZE) -> list[tuple[int, int]]:
+    if source.get("authoritative") is not True or interval_size <= 0:
+        return []
+    first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
+    if not isinstance(first, int) or not isinstance(last, int) or first < 0 or last < first:
+        return []
+    return [(start, min(last, start + interval_size - 1)) for start in range(first, last + 1, interval_size)]
+
+
+def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | None = None,
+                        tick_domain_source: dict[str, Any] | None = None) -> dict[str, Any]:
+    source = tick_domain_source or build_tick_domain_source(playback_ticks)
+    intervals=[]; rows=0; observed=set(); players=set(); properties=set(); failures=[]
+    duplicate_ticks: set[int] = set(); interval_keys: set[tuple[int, int, tuple[str, ...]]] = set()
     overlaps: list[dict[str, Any]] = []
     for index, batch in enumerate(batches):
-        batch_ticks=set(batch.get("ticks") or []); ticks.update(batch_ticks); rows += int(batch.get("row_count") or 0); players.update(batch.get("players") or []); properties.update(batch.get("properties") or [])
-        if batch.get("error"): failures.append(str(batch["error"]))
-        if baseline_ticks is None and not batch.get("error"):
-            baseline_ticks = set(batch_ticks)
-        elif baseline_ticks is not None and not batch.get("error"):
-            gaps.update(baseline_ticks - batch_ticks)
-            unexpected = sorted(batch_ticks - baseline_ticks)
-            if unexpected:
-                overlaps.append({"batch": index, "unexpected_ticks": unexpected[:256], "total": len(unexpected)})
-        intervals.append({"batch": index, "properties": sorted(batch.get("properties") or []), "first_tick": min(batch_ticks) if batch_ticks else None, "last_tick": max(batch_ticks) if batch_ticks else None, "distinct_ticks": len(batch_ticks), "rows": int(batch.get("row_count") or 0), "status": "FAIL" if batch.get("error") else "PASS"})
-    full = bool(batches) and not failures and not gaps and not overlaps and all(item["status"] == "PASS" for item in intervals)
-    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if full else "SAMPLE_ONLY", "method": "demoparser2.parse_ticks(ticks=None), deterministic property batches", "first_tick": min(ticks) if ticks else None, "last_tick": max(ticks) if ticks else None, "total_ticks_observed": len(ticks), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(gaps)[:4096], "gap_count": len(gaps), "overlaps": overlaps, "failures": failures, "complete": full}
+        batch_ticks = [tick for tick in (batch.get("ticks") or []) if isinstance(tick, int)]
+        batch_tick_set = set(batch_ticks); observed.update(batch_tick_set)
+        duplicate_ticks.update(tick for tick, count in Counter(batch_ticks).items() if count > 1)
+        rows += int(batch.get("row_count") or 0); players.update(batch.get("players") or []); properties.update(batch.get("properties") or [])
+        error = batch.get("error")
+        if error: failures.append(str(error))
+        requested = batch.get("requested_interval")
+        key = None
+        if isinstance(requested, (list, tuple)) and len(requested) == 2 and all(isinstance(v, int) for v in requested):
+            key = (requested[0], requested[1], tuple(sorted(batch.get("properties") or [])))
+            if key in interval_keys: overlaps.append({"batch": index, "requested_interval": list(requested), "reason": "duplicate_property_interval"})
+            interval_keys.add(key)
+            outside = sorted(t for t in batch_tick_set if t < requested[0] or t > requested[1])
+            if outside: overlaps.append({"batch": index, "unexpected_ticks": outside[:256], "total": len(outside)})
+        intervals.append({"batch": index, "properties": sorted(batch.get("properties") or []), "requested_interval": list(requested) if key else None, "first_tick": min(batch_tick_set) if batch_tick_set else None, "last_tick": max(batch_tick_set) if batch_tick_set else None, "distinct_ticks": len(batch_tick_set), "rows": int(batch.get("row_count") or 0), "digest": deterministic_digest({"properties": sorted(batch.get("properties") or []), "requested_interval": requested, "ticks": sorted(batch_tick_set), "rows": int(batch.get("row_count") or 0)}), "status": "FAIL" if error else "PASS"})
+    expected: set[int] = set()
+    if source.get("authoritative") is True:
+        first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
+        if isinstance(first, int) and isinstance(last, int) and last >= first:
+            expected = set(range(first, last + 1))
+    missing = expected - observed
+    unexpected = observed - expected if expected else set(observed)
+    complete = bool(batches) and bool(expected) and not failures and not missing and not unexpected and not duplicate_ticks and not overlaps and all(item["status"] == "PASS" for item in intervals)
+    proof = {
+        "status": "PASS" if complete else "BLOCKED",
+        "source": source,
+        "expected_min_tick": min(expected) if expected else None,
+        "expected_max_tick": max(expected) if expected else None,
+        "expected_tick_count": len(expected) if expected else None,
+        "observed_tick_count": len(observed),
+        "missing_tick_count": len(missing),
+        "unexpected_tick_count": len(unexpected),
+        "duplicate_tick_count": len(duplicate_ticks),
+        "gap_count": len(missing),
+        "overlap_count": len(overlaps),
+        "interval_count": len(intervals),
+        "completed_interval_count": sum(item["status"] == "PASS" for item in intervals),
+        "complete": complete,
+    }
+    proof["digest"] = deterministic_digest(proof)
+    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if complete else "BLOCKED", "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL", "tick_domain_source": source, "full_tick_domain_proof": proof, "expected_tick_domain": {"min_tick": proof["expected_min_tick"], "max_tick": proof["expected_max_tick"], "count": proof["expected_tick_count"]}, "observed_tick_domain": {"min_tick": min(observed) if observed else None, "max_tick": max(observed) if observed else None, "count": len(observed)}, "missing_ticks": sorted(missing)[:4096], "missing_tick_count": len(missing), "unexpected_ticks": sorted(unexpected)[:4096], "unexpected_tick_count": len(unexpected), "duplicate_ticks": sorted(duplicate_ticks)[:4096], "duplicate_tick_count": len(duplicate_ticks), "first_tick": min(observed) if observed else None, "last_tick": max(observed) if observed else None, "total_ticks_observed": len(observed), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(missing)[:4096], "gap_count": len(missing), "overlaps": overlaps, "failures": failures + ([] if source.get("authoritative") is True else ["expected_tick_domain_unavailable"]), "domain_proof_status": proof["status"], "complete": complete}
 
 
 def deterministic_digest(value: Any) -> str:
