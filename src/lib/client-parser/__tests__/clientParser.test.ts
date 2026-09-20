@@ -3,6 +3,7 @@ import { CLIENT_PARSER_CAPABILITY_CATALOG } from "../clientParser.capabilities";
 import { computeClientResultDigest, sha256Text } from "../clientParser.hash";
 import { buildClientParserManifest } from "../clientParser.manifest";
 import {
+  CLIENT_REQUIRED_RUNTIME_EXPORTS,
   compareClientVsPythonSemantic,
   compareClientVsServerReference,
 } from "../clientParser.parity";
@@ -31,10 +32,24 @@ function result(): ClientParseResult {
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
       runtimeSurface: {
-        observedExports: ["listGameEvents", "parseHeader"],
+        observedExports: ["listGameEvents", "parseEvent", "parseHeader", "parseTicks"],
         minimumReady: true,
-        runtimeSurfaceDigest: "a".repeat(64),
+        runtimeSurfaceDigest: inspectRuntimeSurface({
+          listGameEvents() {},
+          parseEvent() {},
+          parseHeader() {},
+          parseTicks() {},
+        }).runtimeSurfaceDigest,
       },
+      apiCalls: CLIENT_REQUIRED_RUNTIME_EXPORTS.map((api) => ({
+        api,
+        exportPresent: true,
+        callAttempted: true,
+        callSucceeded: true,
+        status: "CALL_SUCCEEDED" as const,
+        errorType: null,
+        errorMessage: null,
+      })),
       artifact: {
         status: "VERIFIED",
         sourceRepository: "https://github.com/LaihoE/demoparser",
@@ -293,16 +308,29 @@ describe("client parser compact contract", () => {
     const surface = inspectRuntimeSurface({
       parseHeader() {},
       listGameEvents() {},
+      parseEvent() {},
       parseTicks() {},
     });
     expect(surface.minimumReady).toBe(true);
-    expect(surface.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
+    expect(surface.observedExports).toEqual([
+      "listGameEvents",
+      "parseEvent",
+      "parseHeader",
+      "parseTicks",
+    ]);
     expect(
       capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo"),
     ).toMatchObject({
       available: false,
       classification: "UNAVAILABLE",
     });
+  });
+
+  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)("fails readiness when required export %s is absent", (missing) => {
+    const runtime = Object.fromEntries(
+      CLIENT_REQUIRED_RUNTIME_EXPORTS.filter((name) => name !== missing).map((name) => [name, () => {}]),
+    );
+    expect(inspectRuntimeSurface(runtime).minimumReady).toBe(false);
   });
 
   it("normalizes player inventory only through parsePlayerInfo", () => {

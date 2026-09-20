@@ -25,6 +25,7 @@ import {
   CLIENT_RESULT_MAX_BYTES,
   CLIENT_TICK_PROBE_LIMIT,
   type ClientEventSample,
+  type ClientApiCallEvidence,
   type ClientParseResult,
   type ClientParserErrorCode,
 } from "./clientParser.types";
@@ -53,6 +54,7 @@ type WasmInit = ((input?: string | ArrayBuffer | Uint8Array) => Promise<unknown>
 type WorkerScope = typeof globalThis & {
   importScripts: (...urls: string[]) => void;
   wasm_bindgen?: WasmInit;
+  __gameproWasmBindgen?: WasmInit;
 };
 
 const scope = globalThis as WorkerScope;
@@ -108,6 +110,31 @@ function safeNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function apiEvidence(
+  name: string,
+  exportPresent: boolean,
+  callAttempted: boolean,
+  callSucceeded: boolean,
+  error?: unknown,
+): ClientApiCallEvidence {
+  const rawMessage = error instanceof Error ? error.message : null;
+  return {
+    api: name,
+    exportPresent,
+    callAttempted,
+    callSucceeded,
+    status: callSucceeded
+      ? "CALL_SUCCEEDED"
+      : callAttempted
+        ? "CALL_FAILED"
+        : exportPresent
+          ? "EXPORT_PRESENT"
+          : "CALL_FAILED",
+    errorType: error instanceof Error ? error.name : error === undefined ? null : "UnknownError",
+    errorMessage: rawMessage ? rawMessage.slice(0, 160) : null,
+  };
+}
+
 async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }>) {
   const started = performance.now();
   progress(command.requestId, "LOADING_WASM", 0, started);
@@ -133,14 +160,16 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
   )
     throw new Error("CLIENT_WASM_INTEGRITY_MISMATCH");
   const bindingBlobUrl = URL.createObjectURL(
-    new Blob([bindingText], { type: "text/javascript;charset=utf-8" }),
+    new Blob([`${bindingText}\n;globalThis.__gameproWasmBindgen=wasm_bindgen;`], {
+      type: "text/javascript;charset=utf-8",
+    }),
   );
   try {
     scope.importScripts(bindingBlobUrl);
   } finally {
     URL.revokeObjectURL(bindingBlobUrl);
   }
-  const candidate = scope.wasm_bindgen;
+  const candidate = scope.__gameproWasmBindgen ?? scope.wasm_bindgen;
   if (typeof candidate !== "function") throw new Error("CLIENT_WASM_LOAD_FAILED");
   try {
     await candidate(wasmBytes);
@@ -188,8 +217,16 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   assertActive(command.requestId);
 
   const parseStarted = performance.now();
+  const apiCalls: ClientApiCallEvidence[] = [];
   progress(command.requestId, "PARSING_HEADER", 0.25, started);
-  const header = object(parser.parseHeader(bytes));
+  let header: Record<string, unknown>;
+  try {
+    header = object(parser.parseHeader(bytes));
+    apiCalls.push(apiEvidence("parseHeader", true, true, true));
+  } catch (error) {
+    apiCalls.push(apiEvidence("parseHeader", true, true, false, error));
+    throw new Error("CLIENT_DEMO_PARSE_FAILED");
+  }
   assertActive(command.requestId);
 
   progress(command.requestId, "DISCOVERING_EVENTS", 0.4, started);
@@ -197,7 +234,9 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let discoveredEvents: unknown;
   try {
     discoveredEvents = parser.listGameEvents(bytes);
-  } catch {
+    apiCalls.push(apiEvidence("listGameEvents", true, true, true));
+  } catch (error) {
+    apiCalls.push(apiEvidence("listGameEvents", true, true, false, error));
     discoveryStatus = "PARSE_FAILED";
     discoveredEvents = [];
   }
@@ -210,6 +249,8 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   progress(command.requestId, "PARSING_EVENTS", 0.55, started);
   const parsedEventInventory: ClientParseResult["parsedEventInventory"] = [];
   const selectedEventSamples: ClientEventSample[] = [];
+  let parseEventSucceeded = false;
+  let parseEventFailure: unknown;
   for (const name of CLIENT_PRIORITY_EVENTS) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
@@ -219,7 +260,9 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     let parsed: Array<Record<string, unknown>>;
     try {
       parsed = rows(parser.parseEvent(bytes, name, [], []));
-    } catch {
+      parseEventSucceeded = true;
+    } catch (error) {
+      parseEventFailure = error;
       parsedEventInventory.push({ name, status: "PRESENT_BUT_FAILED", count: null, fields: [] });
       continue;
     }
@@ -232,6 +275,9 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       selectedEventSamples.push({ eventName: name, tick: safeNumber(row["tick"]), fields: row });
     }
   }
+  apiCalls.push(
+    apiEvidence("parseEvent", true, names.some((name) => CLIENT_PRIORITY_EVENTS.includes(name as never)), parseEventSucceeded, parseEventFailure),
+  );
 
   progress(command.requestId, "PARSING_TICKS", 0.72, started);
   const playbackTicks = safeNumber(header["playback_ticks"] ?? header["playbackTicks"]);
@@ -251,9 +297,13 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   if (probeTicks.length) {
     try {
       tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, false));
-    } catch {
+      apiCalls.push(apiEvidence("parseTicks", true, true, true));
+    } catch (error) {
+      apiCalls.push(apiEvidence("parseTicks", true, true, false, error));
       tickStatus = "PARSE_FAILED";
     }
+  } else {
+    apiCalls.push(apiEvidence("parseTicks", true, false, false));
   }
   const observedTicks = tickRows
     .map((row) => safeNumber(row["tick"]))
@@ -267,6 +317,15 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     parser as unknown as Record<string, unknown>,
     bytes,
   );
+  apiCalls.push(
+    apiEvidence(
+      "parsePlayerInfo",
+      runtimeSurface.observedExports.includes("parsePlayerInfo"),
+      runtimeSurface.observedExports.includes("parsePlayerInfo"),
+      playerInventory.status === "AVAILABLE",
+      playerInventory.status === "PARSE_FAILED" ? new Error("parse_failed") : undefined,
+    ),
+  );
   const capabilities = capabilitiesForSurface(runtimeSurface);
   const base: ClientParseResult = {
     schemaVersion: CLIENT_PARSER_SCHEMA_VERSION,
@@ -276,6 +335,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
       runtimeSurface,
+      apiCalls,
       artifact,
     },
     demo: {

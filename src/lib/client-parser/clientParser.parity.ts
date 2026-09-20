@@ -46,6 +46,44 @@ export interface ClientFieldParityResult {
   reason: string;
 }
 
+export type ClientFieldParityStatus =
+  | ClientParityStatus
+  | "NOT_AVAILABLE_ON_PYTHON"
+  | "PARSE_FAILED";
+
+export interface ClientFieldParityMatrixRow {
+  category: string;
+  field: string;
+  pythonStatus: "AVAILABLE" | "NOT_AVAILABLE" | "PARSE_FAILED" | "NOT_RUN";
+  wasmStatus: "AVAILABLE" | "NOT_AVAILABLE" | "PARSE_FAILED" | "NOT_RUN";
+  pythonSample: unknown;
+  wasmSample: unknown;
+  pythonCount: number | null;
+  wasmCount: number | null;
+  pythonNullRate: number | null;
+  wasmNullRate: number | null;
+  parity: ClientFieldParityStatus;
+  tolerance: "EXACT" | "DOCUMENTED_NUMERIC" | "NONE";
+  reason: string;
+  canonicalEligibility: "BLOCKED";
+}
+
+export function normalizeForParity(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeForParity).sort((left, right) =>
+      stableClientJson(left).localeCompare(stableClientJson(right)),
+    );
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, normalizeForParity(item)]),
+    );
+  }
+  return value;
+}
+
 export interface ClientSemanticReference {
   dimensions: Partial<Record<ClientParityDimension, unknown>>;
 }

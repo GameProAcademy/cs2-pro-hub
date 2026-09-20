@@ -58,6 +58,22 @@ export interface ClientRuntimeSurface {
   runtimeSurfaceDigest: string;
 }
 
+export type ClientApiCallStatus =
+  | "EXPORT_PRESENT"
+  | "CALL_ATTEMPTED"
+  | "CALL_SUCCEEDED"
+  | "CALL_FAILED";
+
+export interface ClientApiCallEvidence {
+  api: string;
+  exportPresent: boolean;
+  callAttempted: boolean;
+  callSucceeded: boolean;
+  status: ClientApiCallStatus;
+  errorType: string | null;
+  errorMessage: string | null;
+}
+
 export interface ClientParserArtifactProvenance {
   status: "VERIFIED" | "UNAVAILABLE" | "INVALID" | "MISMATCH";
   sourceRepository: string | null;
@@ -84,6 +100,7 @@ export interface ClientParseResult {
     runtime: typeof CLIENT_PARSER_RUNTIME;
     buildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
     runtimeSurface: ClientRuntimeSurface;
+    apiCalls: ClientApiCallEvidence[];
     artifact: ClientParserArtifactProvenance;
   };
   demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };
