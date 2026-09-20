@@ -40,7 +40,8 @@ function inspectShape(value: unknown, depth = 0): ClientParserErrorCode | null {
   if (!value || typeof value !== "object") return null;
   if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return "CLIENT_RESULT_INVALID";
   if (Array.isArray(value)) {
-    if (value.length > CLIENT_EVENT_SAMPLE_LIMIT) return "CLIENT_RESULT_TOO_LARGE";
+    if (value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
+      return "CLIENT_RESULT_TOO_LARGE";
     for (const item of value) {
       const reason = inspectShape(item, depth + 1);
       if (reason) return reason;

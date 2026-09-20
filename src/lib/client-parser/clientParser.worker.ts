@@ -109,7 +109,8 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   assertActive(command.requestId);
 
   progress(command.requestId, "DISCOVERING_EVENTS", 0.4, started);
-  const names = (Array.isArray(api.listGameEvents(bytes)) ? api.listGameEvents(bytes) : [])
+  const discoveredEvents = api.listGameEvents(bytes);
+  const names = (Array.isArray(discoveredEvents) ? discoveredEvents : [])
     .filter((name): name is string => typeof name === "string")
     .slice(0, CLIENT_EVENT_INVENTORY_LIMIT)
     .sort();
