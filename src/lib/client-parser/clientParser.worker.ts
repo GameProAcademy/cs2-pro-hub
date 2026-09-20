@@ -90,6 +90,7 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
 async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   const started = performance.now();
   if (!api) throw new Error("CLIENT_PARSER_UNAVAILABLE");
+  const parser = api as WasmInit & Required<Pick<WasmApi, "parseHeader" | "listGameEvents" | "parseEvent" | "parseTicks">>;
   const { file } = command;
   if (!file.name.toLowerCase().endsWith(".dem") || file.size < 1 || file.bytes.byteLength !== file.size) throw new Error("CLIENT_DEMO_INVALID");
   if (file.size > CLIENT_DEMO_MAX_BYTES) throw new Error("CLIENT_DEMO_TOO_LARGE");
@@ -105,11 +106,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
 
   const parseStarted = performance.now();
   progress(command.requestId, "PARSING_HEADER", 0.25, started);
-  const header = object(api.parseHeader(bytes));
+  const header = object(parser.parseHeader(bytes));
   assertActive(command.requestId);
 
   progress(command.requestId, "DISCOVERING_EVENTS", 0.4, started);
-  const discoveredEvents = api.listGameEvents(bytes);
+  const discoveredEvents = parser.listGameEvents(bytes);
   const names = (Array.isArray(discoveredEvents) ? discoveredEvents : [])
     .filter((name): name is string => typeof name === "string")
     .slice(0, CLIENT_EVENT_INVENTORY_LIMIT)
@@ -122,7 +123,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   const selectedEventSamples: ClientEventSample[] = [];
   for (const name of preferred) {
     assertActive(command.requestId);
-    const parsed = rows(api.parseEvent(bytes, name, [], []));
+    const parsed = rows(parser.parseEvent(bytes, name, [], []));
     const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort();
     eventInventory.push({ name, count: parsed.length, fields });
     for (const row of parsed.slice(0, Math.max(0, CLIENT_EVENT_SAMPLE_LIMIT - selectedEventSamples.length))) {
@@ -138,7 +139,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let tickStatus: ClientParseResult["tickProbe"]["status"] = probeTicks.length ? "AVAILABLE" : "UNAVAILABLE";
   let tickRows: Array<Record<string, unknown>> = [];
   if (probeTicks.length) {
-    try { tickRows = rows(api.parseTicks(bytes, ["tick"], probeTicks, false)); }
+    try { tickRows = rows(parser.parseTicks(bytes, ["tick"], probeTicks, false)); }
     catch { tickStatus = "PARSE_FAILED"; }
   }
   const observedTicks = tickRows.map((row) => safeNumber(row["tick"])).filter((tick): tick is number => tick !== null);

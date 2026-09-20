@@ -21,7 +21,10 @@ export function sha256Text(value: string): string {
   return sha256Hex(new TextEncoder().encode(value));
 }
 
-export function computeClientResultDigest(result: { resultDigest?: string; performance?: unknown; [key: string]: unknown }): string {
-  const { resultDigest: _digest, performance: _performance, ...deterministic } = result;
+export function computeClientResultDigest<T extends object>(result: T): string {
+  const { resultDigest: _digest, performance: _performance, ...deterministic } = result as T & {
+    resultDigest?: string;
+    performance?: unknown;
+  };
   return sha256Text(stableClientJson(deterministic));
 }
