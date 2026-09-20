@@ -152,7 +152,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         !CLIENT_CAPABILITY_CLASSIFICATIONS.some((value) => value === capability.classification),
     )
   )
-    return fail("CLIENT_RESULT_INVALID");
+    { console.error("classes", result.capabilities.map((c) => c.classification), CLIENT_CAPABILITY_CLASSIFICATIONS); return fail("CLIENT_RESULT_INVALID"); }
   if (
     !HEX_64.test(result.resultDigest) ||
     computeClientResultDigest(result) !== result.resultDigest ||
