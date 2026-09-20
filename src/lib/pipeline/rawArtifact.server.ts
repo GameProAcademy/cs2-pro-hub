@@ -301,9 +301,7 @@ function physicalSemanticProjection(
     ].sort(),
     parser_identity: contract["parser"] ?? null,
     catalog_digest: contract["catalog_digest"] ?? null,
-    capability_count: Array.isArray(catalog["capabilities"])
-      ? catalog["capabilities"].length
-      : 0,
+    capability_count: Array.isArray(catalog["capabilities"]) ? catalog["capabilities"].length : 0,
     capability_digest: rawArtifactSha256(
       stableRawArtifactJson(Array.isArray(catalog["capabilities"]) ? catalog["capabilities"] : []),
     ),
@@ -373,16 +371,35 @@ function successfulReconciliationDimensions(args: {
 }): Record<string, "PASS" | "FAIL"> {
   const reconciled = args.reconciliation["status"] === "PASS";
   const semanticDimensions = new Set([
-    "catalog_digest", "capability_count", "capability_digest", "classifications", "mappings",
-    "derivations", "raw_only_reasons", "event_inventory", "event_counts", "event_fields",
-    "player_inventory", "round_inventory", "tick_domain", "tick_coverage", "property_inventory",
+    "catalog_digest",
+    "capability_count",
+    "capability_digest",
+    "classifications",
+    "mappings",
+    "derivations",
+    "raw_only_reasons",
+    "event_inventory",
+    "event_counts",
+    "event_fields",
+    "player_inventory",
+    "round_inventory",
+    "tick_domain",
+    "tick_coverage",
+    "property_inventory",
     "semantic_inventories",
   ]);
   const identityDimensions = new Set([
-    "artifact_identity", "job_identity", "upload_identity", "attempt_number", "demo_sha",
+    "artifact_identity",
+    "job_identity",
+    "upload_identity",
+    "attempt_number",
+    "demo_sha",
   ]);
   const parserDimensions = new Set([
-    "parser_identity", "parser_version", "parser_revision", "contract_version",
+    "parser_identity",
+    "parser_version",
+    "parser_revision",
+    "contract_version",
   ]);
   const chainDimensions = new Set(["chunk_indexes", "chunk_sha", "previous_chunk_sha"]);
   const totalDimensions = new Set(["chunk_count", "byte_sizes", "row_counts", "section_counts"]);
@@ -402,7 +419,10 @@ function successfulReconciliationDimensions(args: {
                 : name === "forensic_contract_digest"
                   ? args.contractVerified
                   : name === "reconciliation_digest"
-                    ? reconciled && /^[0-9a-f]{64}$/.test(String(args.reconciliation["reconciliation_digest"] ?? ""))
+                    ? reconciled &&
+                      /^[0-9a-f]{64}$/.test(
+                        String(args.reconciliation["reconciliation_digest"] ?? ""),
+                      )
                     : semanticDimensions.has(name) && reconciled;
       return [name, pass ? "PASS" : "FAIL"];
     }),
@@ -828,14 +848,11 @@ export async function verifyRawArtifact(args: {
       rootVerified: true,
       contractVerified: true,
     });
-    finalContract = resolveRawForensicPhysicalGate(
-      forensicV2,
-      {
-        reconciliationDigest: String(reconciliation["reconciliation_digest"] ?? ""),
-        artifactRootDigest: artifact.root_digest,
-        dimensions,
-      },
-    );
+    finalContract = resolveRawForensicPhysicalGate(forensicV2, {
+      reconciliationDigest: String(reconciliation["reconciliation_digest"] ?? ""),
+      artifactRootDigest: artifact.root_digest,
+      dimensions,
+    });
   } catch {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
