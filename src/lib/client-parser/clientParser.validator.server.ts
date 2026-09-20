@@ -81,10 +81,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   }
   if (encoded.byteLength > CLIENT_RESULT_MAX_BYTES) return fail("CLIENT_RESULT_TOO_LARGE");
   const shapeError = inspectShape(value);
-  if (shapeError) {
-    console.error("shapeError", shapeError);
-    return fail(shapeError);
-  }
+  if (shapeError) return fail(shapeError);
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
@@ -152,7 +149,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         !CLIENT_CAPABILITY_CLASSIFICATIONS.some((value) => value === capability.classification),
     )
   )
-    { console.error("classes", result.capabilities.map((c) => c.classification), CLIENT_CAPABILITY_CLASSIFICATIONS); return fail("CLIENT_RESULT_INVALID"); }
+    return fail("CLIENT_RESULT_INVALID");
   if (
     !HEX_64.test(result.resultDigest) ||
     computeClientResultDigest(result) !== result.resultDigest ||
