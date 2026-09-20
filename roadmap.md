@@ -1232,3 +1232,11 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Confirmar Railway por probes read-only; nenhum deploy, secret ou staged change alterado.
 - [x] Relatório: `docs/PHASE-2.7.2G.5-R-F.1-CONCURRENCY-HARDENING.md`.
 - [x] Decisão: `G5-R-F = CLOSED — READY FOR CACHE RUN 1`; Cache Run 1 NOT EXECUTED.
+
+## FASE 2.7.2G.5-R-F.2.10 — Client-side parser POC
+
+- `POC_IMPLEMENTED`: isolated Worker protocol, transferable local DEM, compact result/manifest, deterministic SHA-256/digest, dry-run authenticated validation, parity comparator, feature-gated UI, and fail-closed Canonical proof binding.
+- `BLOCKED`: official `demoparser2@0.42.0` browser/WASM artifact is unavailable from npm; no incompatible package or invented runtime was installed.
+- `NOT_EXECUTED`: real browser/WASM test, real ~400 MB DEM, memory benchmark, and WASM↔Python corpus parity.
+- Production Python/Railway ingestion remains unchanged. No Cache run, retry, Attempt 9, enqueue, Canonical write, Storage mutation, migration, Railway deploy, secret change, or historical mutation occurred.
+- Final gate: `POC_NOT_READY`.

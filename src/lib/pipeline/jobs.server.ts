@@ -515,7 +515,7 @@ export async function processJob(
     }
     assertRawAdmissionApproved(rawAudit);
     const rawApproval: RawAdmissionApproval = artifactCompletion
-      ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id)
+      ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id, job.upload_id)
       : {
           approved: true,
           auditStatus: "APPROVED",
