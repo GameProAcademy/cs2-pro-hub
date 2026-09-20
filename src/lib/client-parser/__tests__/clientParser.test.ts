@@ -184,7 +184,7 @@ describe("client parser compact contract", () => {
     [
       "contract version",
       mutate((v) => {
-          (v.manifest as { contractVersion: number }).contractVersion = 999;
+        (v.manifest as { contractVersion: number }).contractVersion = 999;
       }),
     ],
     [
