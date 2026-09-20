@@ -8,6 +8,7 @@ import {
 } from "../clientParser.parity";
 import {
   capabilitiesForSurface,
+  CLIENT_REQUIRED_RUNTIME_EXPORTS,
   inspectRuntimeSurface,
   playerInventoryFromRuntime,
   trustedRuntimeUrl,
@@ -31,7 +32,7 @@ function result(): ClientParseResult {
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
       runtimeSurface: {
-        observedExports: ["listGameEvents", "parseHeader"],
+        observedExports: ["listGameEvents", "parseHeader", "parseEvent", "parseTicks"],
         minimumReady: true,
         runtimeSurfaceDigest: "a".repeat(64),
       },
@@ -289,16 +290,26 @@ describe("client parser compact contract", () => {
     );
   });
 
-  it("discovers the observed runtime surface instead of trusting declarations", () => {
-    const surface = inspectRuntimeSurface({
+  it("requires every worker execution export for minimum readiness", () => {
+    const incomplete = inspectRuntimeSurface({
       parseHeader() {},
       listGameEvents() {},
       parseTicks() {},
     });
-    expect(surface.minimumReady).toBe(true);
-    expect(surface.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
+    expect(incomplete.minimumReady).toBe(false);
+    expect(incomplete.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
+    expect(CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) => incomplete.observedExports.includes(name))).toBe(false);
+
+    const complete = inspectRuntimeSurface({
+      parseHeader() {},
+      listGameEvents() {},
+      parseEvent() {},
+      parseTicks() {},
+    });
+    expect(complete.minimumReady).toBe(true);
+
     expect(
-      capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo"),
+      capabilitiesForSurface(incomplete).find((item) => item.id === "parsePlayerInfo"),
     ).toMatchObject({
       available: false,
       classification: "UNAVAILABLE",
