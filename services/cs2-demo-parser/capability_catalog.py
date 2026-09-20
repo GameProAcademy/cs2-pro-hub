@@ -15,7 +15,7 @@ from typing import Any, Iterable
 PARSER_NAME = "demoparser2"
 PARSER_VERSION = "0.42.0"
 CATALOG_VERSION = 1
-CATALOG_SOURCE = "demoparser2-0.42.0-stubs+runtime-list_updated_fields+reviewed-gamepro-mappings"
+CATALOG_SOURCE = "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
 
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
 
@@ -79,6 +79,7 @@ USERCMD_FIELDS = (
 )
 GRENADE_FIELDS = ("entity_id", "grenade_entity_id", "grenade_type", "name", "steamid", "thrower_steamid", "tick", "x", "y", "z", "X", "Y", "Z")
 ROUND_FIELDS = ("number", "start_tick", "end_tick", "winner", "winner_side", "winner_team", "duration_seconds", "bomb_planted", "bomb_defused", "bomb_exploded")
+PARSER_APIS = ("parse_header", "list_updated_fields", "list_game_events", "parse_event", "parse_events", "parse_grenades", "parse_item_drops", "parse_player_info", "parse_skins", "parse_ticks", "parse_voice")
 
 EVENT_TYPES = (
     "round_start", "round_end", "round_mvp", "bomb_abortdefuse", "bomb_abortplant",
@@ -103,21 +104,28 @@ EVENT_NATIVE_FIELDS = (
 CATEGORY_FIELDS = {
     "header": HEADER_FIELDS,
     "player_info": PLAYER_INFO_FIELDS,
-    "position": POSITION_FIELDS,
-    "aim": AIM_FIELDS,
-    "movement": MOVEMENT_FIELDS,
-    "combat": COMBAT_FIELDS,
-    "economy": ECONOMY_FIELDS,
-    "weapon": WEAPON_FIELDS,
-    "game_state": GAME_STATE_FIELDS,
-    "team_score": TEAM_SCORE_FIELDS,
-    "aggregate": AGGREGATE_FIELDS,
+    "player_properties": POSITION_FIELDS + AIM_FIELDS + MOVEMENT_FIELDS + COMBAT_FIELDS,
     "buttons": BUTTON_FIELDS,
-    "usercmd": USERCMD_FIELDS,
-    "grenade": GRENADE_FIELDS,
-    "round": ROUND_FIELDS,
-    "event_type": EVENT_TYPES,
-    "event_field": EVENT_NATIVE_FIELDS,
+    "game_state": GAME_STATE_FIELDS,
+    "weapons": WEAPON_FIELDS,
+    "inventory_econ": ECONOMY_FIELDS + ("inventory_position", "item_def_idx"),
+    "usercommands": USERCMD_FIELDS,
+    "aggregate_stats": AGGREGATE_FIELDS,
+    "events": EVENT_TYPES,
+    "event_fields": EVENT_NATIVE_FIELDS,
+    "grenades": GRENADE_FIELDS,
+    "bomb": tuple(field for field in GAME_STATE_FIELDS if "bomb" in field or "defuse" in field),
+    "rounds": ROUND_FIELDS,
+    "teams": tuple(field for field in TEAM_SCORE_FIELDS if "score" not in field),
+    "score": tuple(field for field in TEAM_SCORE_FIELDS if "score" in field or "rounds" in field),
+    "combat": COMBAT_FIELDS,
+    "damage": ("attacker", "victim", "damage", "armor_damage", "weapon", "hitgroup", "tick", "round", "position", "distance", "blind", "headshot"),
+    "death": ("attacker", "victim", "assister", "weapon", "headshot", "wallbang", "blind", "penetration", "distance", "position", "tick", "round", "team_context"),
+    "movement": MOVEMENT_FIELDS,
+    "aim_view": AIM_FIELDS + ("viewangle_x", "viewangle_y", "viewangle_z"),
+    "economy": ECONOMY_FIELDS,
+    "objective": ("bomb_planted", "bomb_defused", "bomb_exploded", "in_bomb_zone", "which_bomb_zone", "objective_total"),
+    "parser_apis": PARSER_APIS,
 }
 
 CANONICAL_MAPPINGS = {
@@ -127,11 +135,12 @@ CANONICAL_MAPPINGS = {
     "player_info.steamid": ("players[].steam_id", "CanonicalPlayer.steamId"),
     "player_info.name": ("players[].name", "CanonicalPlayer.name"),
     "player_info.team_number": ("players[].side", "CanonicalPlayer.side"),
+    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winnerSide"),
 }
 DERIVATIONS = {
-    "round.start_tick": "ordered parser-native round_start.tick",
-    "round.end_tick": "first parser-native round_end.tick within the observed start interval",
-    "game_state.total_rounds_played": "positive parser-native completed-round counter",
+    "rounds.start_tick": "ordered parser-native round_start.tick",
+    "rounds.end_tick": "first parser-native round_end.tick within the observed start interval",
+    "rounds.number": "positive parser-native completed-round counter",
     "game_state.round_start_time": "tick - (game_time - round_start_time) * verified_tickrate",
 }
 
@@ -141,6 +150,11 @@ class Capability:
     category: str
     name: str
     parser_api: str
+    parser_version: str
+    source: str
+    source_kind: str
+    provenance: str
+    availability: str
     classification: str
     app_field: str | None = None
     canonical_field: str | None = None
@@ -151,8 +165,9 @@ class Capability:
 def _api(category: str) -> str:
     if category == "header": return "parse_header"
     if category == "player_info": return "parse_player_info"
-    if category == "grenade": return "parse_grenades"
-    if category in {"event_type", "event_field"}: return "list_game_events+parse_event"
+    if category == "grenades": return "parse_grenades"
+    if category in {"events", "event_fields", "damage", "death"}: return "list_game_events+parse_event"
+    if category == "parser_apis": return "installed_runtime_introspection"
     return "list_updated_fields+parse_ticks"
 
 
@@ -160,10 +175,12 @@ def _entry(category: str, name: str) -> Capability:
     key = f"{category}.{name}"
     if key in CANONICAL_MAPPINGS:
         app, canonical = CANONICAL_MAPPINGS[key]
-        return Capability(key, category, name, _api(category), "CANONICAL", app, canonical)
+        return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", "CANONICAL", app, canonical)
     if key in DERIVATIONS:
-        return Capability(key, category, name, _api(category), "DERIVED", derivation_rule=DERIVATIONS[key])
-    return Capability(key, category, name, _api(category), "RAW_ONLY", reason="Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.")
+        return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", "DERIVED", derivation_rule=DERIVATIONS[key])
+    classification = "UNAVAILABLE" if category == "parser_apis" and name not in PARSER_APIS else "RAW_ONLY"
+    reason = "Installed runtime API is unavailable." if classification == "UNAVAILABLE" else "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical."
+    return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", classification, reason=reason)
 
 
 def static_capabilities() -> tuple[Capability, ...]:
@@ -180,15 +197,48 @@ def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable
     for name in sorted(set(str(v) for v in runtime_fields if str(v).strip())):
         key = f"runtime_field.{name}"
         if key not in known:
-            rows.append(asdict(Capability(key, "runtime_field", name, "list_updated_fields", "RAW_ONLY", reason="Runtime-discovered parser field; preserved and requires explicit semantic review before Canonical.")))
+            rows.append(asdict(Capability(key, "runtime_field", name, "list_updated_fields", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_updated_fields", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered parser field; preserved and requires explicit semantic review before Canonical.")))
     for name in sorted(set(str(v) for v in runtime_events if str(v).strip())):
-        key = f"event_type.{name}"
+        key = f"events.{name}"
         if key not in known:
-            rows.append(asdict(Capability(key, "event_type", name, "list_game_events+parse_event", "RAW_ONLY", reason="Runtime-discovered event; preserved and requires explicit semantic review before Canonical.")))
+            rows.append(asdict(Capability(key, "event_type", name, "list_game_events+parse_event", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_game_events", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered event; preserved and requires explicit semantic review before Canonical.")))
     rows.sort(key=lambda row: row["capability_id"])
     projection = {"parser_name": PARSER_NAME, "parser_version": PARSER_VERSION, "catalog_version": CATALOG_VERSION, "catalog_source": CATALOG_SOURCE, "capabilities": rows}
     digest = hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
     return {**projection, "catalog_digest": digest, "complete": discovery_error is None, "discovery_error": discovery_error}
+
+
+def reconcile_capabilities(catalog: dict[str, Any]) -> dict[str, Any]:
+    rows = [row for row in catalog.get("capabilities") or [] if isinstance(row, dict)]
+    ids = [str(row.get("capability_id") or "") for row in rows]
+    duplicates = sorted({capability_id for capability_id in ids if ids.count(capability_id) > 1})
+    unresolved = sorted(
+        capability_id for capability_id, row in zip(ids, rows)
+        if row.get("classification") not in CLASSIFICATIONS
+        or (row.get("classification") == "CANONICAL" and (not row.get("app_field") or not row.get("canonical_field")))
+        or (row.get("classification") == "DERIVED" and not row.get("derivation_rule"))
+        or (row.get("classification") == "RAW_ONLY" and not row.get("reason"))
+    )
+    runtime_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("source_kind") == "RUNTIME_DISCOVERY")
+    mapped_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("classification") in CLASSIFICATIONS)
+    orphan = sorted(set(runtime_ids) - set(ids))
+    missing = sorted(set(ids) - set(mapped_ids))
+    result = {
+        "status": "PASS" if not duplicates and not unresolved and not orphan and not missing else "BLOCKED",
+        "catalog_count": len(ids),
+        "runtime_count": len(runtime_ids),
+        "mapping_count": len(mapped_ids),
+        "unresolved_count": len(unresolved),
+        "duplicate_count": len(duplicates),
+        "orphan_count": len(orphan),
+        "set_difference_count": len(missing),
+        "missing_from_inventory": missing,
+        "runtime_orphans": orphan,
+        "duplicates": duplicates,
+        "unresolved": unresolved,
+    }
+    result["digest"] = hashlib.sha256(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    return result
 
 
 def validate_catalog(catalog: dict[str, Any]) -> list[str]:
@@ -204,6 +254,8 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
         if row["classification"] == "CANONICAL" and (not row.get("app_field") or not row.get("canonical_field")): reasons.append(f"canonical_mapping_missing:{row.get('capability_id')}")
         if row["classification"] == "DERIVED" and not row.get("derivation_rule"): reasons.append(f"derivation_rule_missing:{row.get('capability_id')}")
         if row["classification"] == "RAW_ONLY" and not row.get("reason"): reasons.append(f"raw_only_reason_missing:{row.get('capability_id')}")
+        for required in ("capability_id", "category", "name", "parser_version", "source", "source_kind", "provenance", "availability"):
+            if not str(row.get(required) or "").strip(): reasons.append(f"capability_metadata_missing:{row.get('capability_id')}:{required}")
     projection = {key: catalog.get(key) for key in ("parser_name", "parser_version", "catalog_version", "catalog_source", "capabilities")}
     actual = hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
     if catalog.get("catalog_digest") != actual: reasons.append("capability_catalog_digest_mismatch")

@@ -30,7 +30,15 @@ from adapter import build_raw_parser_output
 from capability_catalog import catalog_payload
 from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
-from forensic_audit import TICK_PROPERTY_BATCH_SIZE, build_tick_coverage, summarize_rows
+from forensic_audit import (
+    TICK_INTERVAL_SIZE,
+    TICK_PROPERTY_BATCH_SIZE,
+    build_tick_coverage,
+    build_tick_domain_source,
+    build_tick_intervals,
+    merge_property_summaries,
+    summarize_rows,
+)
 from raw_evidence import (
     EVENT_CANDIDATES,
     PLAYER_PROPERTIES,
@@ -173,34 +181,52 @@ def _discover_updated_fields(demo: Any) -> tuple[list[str], BaseException | None
 
 
 def _audit_full_tick_domain(
-    demo: Any, properties: list[str], playback_ticks: int | None
+    demo: Any, properties: list[str], playback_ticks: int | None,
+    *, tick_domain_source: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Audit every tick for deterministic property batches with bounded DataFrames.
 
-    ``ticks=None`` is the demoparser2 0.42.0 full-domain API. Rows are reduced to
-    statistics before the next batch, so the audit never accumulates all batches.
-    The existing 4096 rows remain diagnostics/HOT input and are not evidence of
-    completeness.
+    The API is invoked only with explicit bounded tick intervals. When the
+    installed runtime cannot provide an independently authoritative expected
+    domain, the proof is BLOCKED and no unbounded fallback is attempted.
     """
     method = getattr(demo, "parse_ticks", None)
+    source = tick_domain_source or build_tick_domain_source(playback_ticks)
     if not callable(method):
         error = AttributeError("parse_ticks is unavailable")
-        return build_tick_coverage(batches=[{"properties": properties, "error": str(error)}], playback_ticks=playback_ticks), summarize_rows([], properties, error=error)
+        unavailable = summarize_rows([], properties, attempted=False)
+        for item in unavailable:
+            item.update({"classification": "UNAVAILABLE", "parse_success": False, "reason": "demoparser2.parse_ticks API is unavailable."})
+        return build_tick_coverage(batches=[], playback_ticks=playback_ticks, tick_domain_source=source), unavailable
+    intervals = build_tick_intervals(source, TICK_INTERVAL_SIZE)
+    if not intervals:
+        unavailable = summarize_rows([], properties, attempted=False)
+        for item in unavailable:
+            item.update({"classification": "UNAVAILABLE", "parse_success": False, "reason": "Authoritative expected tick domain is unavailable."})
+        return build_tick_coverage(batches=[], playback_ticks=playback_ticks, tick_domain_source=source), unavailable
     batches: list[dict[str, Any]] = []
-    summaries: list[dict[str, Any]] = []
+    interval_summaries: list[dict[str, Any]] = []
     for start in range(0, len(properties), TICK_PROPERTY_BATCH_SIZE):
         requested = properties[start:start + TICK_PROPERTY_BATCH_SIZE]
-        try:
-            rows = _records(method(requested, ticks=None))
-            tick_values = sorted({row.get("tick") for row in rows if isinstance(row.get("tick"), int)})
-            players = sorted({str(value) for row in rows for value in [row.get("steamid", row.get("player_steamid"))] if value is not None})
-            batches.append({"properties": requested, "row_count": len(rows), "ticks": tick_values, "players": players})
-            summaries.extend(summarize_rows(rows, requested))
-        except BaseException as exc:  # noqa: BLE001 - fail-closed evidence
-            kind, message = safe_error(exc)
-            batches.append({"properties": requested, "row_count": 0, "ticks": [], "players": [], "error": f"{kind}: {message}"})
-            summaries.extend(summarize_rows([], requested, error=exc))
-    return build_tick_coverage(batches=batches, playback_ticks=playback_ticks), summaries
+        for first_tick, last_tick in intervals:
+            try:
+                requested_ticks = list(range(first_tick, last_tick + 1))
+                rows = _records(method(requested, ticks=requested_ticks))
+                tick_values = sorted({row.get("tick") for row in rows if isinstance(row.get("tick"), int)})
+                players = sorted({str(value) for row in rows for value in [row.get("steamid", row.get("player_steamid"))] if value is not None})
+                batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": len(rows), "ticks": tick_values, "players": players})
+                for summary in summarize_rows(rows, requested):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
+                del rows
+            except BaseException as exc:  # noqa: BLE001 - fail-closed evidence
+                kind, message = safe_error(exc)
+                batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": 0, "ticks": [], "players": [], "error": f"{kind}: {message}"})
+                for summary in summarize_rows([], requested, error=exc):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
+    summaries = merge_property_summaries(interval_summaries)
+    return build_tick_coverage(batches=batches, playback_ticks=playback_ticks, tick_domain_source=source), summaries
 
 
 def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:

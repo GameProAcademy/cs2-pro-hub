@@ -1,7 +1,7 @@
 import copy
 
 from capability_catalog import CATALOG_VERSION, catalog_payload, validate_catalog
-from forensic_audit import build_tick_coverage, summarize_rows
+from forensic_audit import authoritative_tick_domain, build_tick_coverage, summarize_rows
 from parser import _audit_full_tick_domain
 from raw_evidence import build_forensic_contract_v2
 
@@ -21,7 +21,7 @@ def test_catalog_is_version_locked_deterministic_and_classified():
     assert "capability_catalog_digest_mismatch" in validate_catalog(changed)
 
 
-def test_full_tick_audit_uses_none_and_deterministic_property_batches():
+def test_full_tick_audit_uses_explicit_intervals_and_deterministic_property_batches():
     class Demo:
         def __init__(self):
             self.calls = []
@@ -34,10 +34,12 @@ def test_full_tick_audit_uses_none_and_deterministic_property_batches():
             ]
 
     demo = Demo()
-    coverage, properties = _audit_full_tick_domain(demo, [f"p{i:02}" for i in range(25)], 100)
+    source = authoritative_tick_domain(1, 2, provenance="fixture")
+    coverage, properties = _audit_full_tick_domain(demo, [f"p{i:02}" for i in range(25)], 2, tick_domain_source=source)
     assert len(demo.calls) == 3
-    assert all(ticks is None for _, ticks in demo.calls)
+    assert all(ticks == [1, 2] for _, ticks in demo.calls)
     assert coverage["coverage"] == "FULL_TICK_DOMAIN_AUDIT"
+    assert coverage["domain_proof_status"] == "PASS"
     assert coverage["complete"] is True
     assert coverage["total_rows_audited"] == 6
     assert len(properties) == 25
@@ -49,10 +51,34 @@ def test_tick_audit_failure_is_explicit_and_never_full():
         batches=[{"properties": ["health"], "row_count": 0, "ticks": [], "error": "boom"}],
         playback_ticks=10,
     )
-    assert coverage["coverage"] == "SAMPLE_ONLY"
+    assert coverage["coverage"] == "BLOCKED"
     assert coverage["complete"] is False
     summary = summarize_rows([], ["health"], error=RuntimeError("boom"))[0]
     assert summary["classification"] == "PARSE_FAILED"
+
+
+def test_equal_truncated_batches_never_prove_an_unknown_domain():
+    coverage = build_tick_coverage(
+        batches=[
+            {"properties": ["health"], "row_count": 2, "ticks": [1, 2]},
+            {"properties": ["armor"], "row_count": 2, "ticks": [1, 2]},
+        ],
+        playback_ticks=100_000,
+    )
+    assert coverage["domain_proof_status"] == "BLOCKED"
+    assert coverage["complete"] is False
+    assert "expected_tick_domain_unavailable" in coverage["failures"]
+
+
+def test_authoritative_domain_detects_missing_and_unexpected_ticks():
+    source = authoritative_tick_domain(1, 3, provenance="fixture")
+    coverage = build_tick_coverage(
+        batches=[{"properties": ["health"], "requested_interval": [1, 3], "row_count": 3, "ticks": [1, 2, 4]}],
+        tick_domain_source=source,
+    )
+    assert coverage["missing_ticks"] == [3]
+    assert coverage["unexpected_ticks"] == [4]
+    assert coverage["domain_proof_status"] == "BLOCKED"
 
 
 def test_contract_has_exactly_22_gates_and_waits_for_independent_physical_audit():
@@ -69,7 +95,7 @@ def test_contract_has_exactly_22_gates_and_waits_for_independent_physical_audit(
     }
     raw = {
         "capability_catalog": catalog_payload([], []),
-        "full_tick_audit": build_tick_coverage(batches=[{"properties": ["health"], "row_count": 1, "ticks": [1], "players": ["7"]}], playback_ticks=1),
+        "full_tick_audit": build_tick_coverage(batches=[{"properties": ["health"], "requested_interval": [1, 1], "row_count": 1, "ticks": [1], "players": ["7"]}], playback_ticks=1, tick_domain_source=authoritative_tick_domain(1, 1, provenance="fixture")),
         "full_tick_properties": summarize_rows([{"tick": 1, "health": 100}], ["health"]),
     }
     contract = build_forensic_contract_v2(evidence, raw)
@@ -80,3 +106,6 @@ def test_contract_has_exactly_22_gates_and_waits_for_independent_physical_audit(
         "reasons": ["physical_chunk_reaudit_pending_app"],
     }
     assert contract["canonical_admission"] == "BLOCKED"
+    assert contract["producer_gate_status"] in {"PASS", "BLOCKED"}
+    assert contract["physical_gate_status"] == "PENDING"
+    assert contract["final_gate_status"] == "BLOCKED"
