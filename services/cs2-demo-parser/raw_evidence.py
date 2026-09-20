@@ -625,6 +625,10 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
     forensic_v2 = evidence.get("forensic_contract_v2")
     if isinstance(forensic_v2, dict):
         forensic_v2["parser"] = {"name": parser.get("name"), "version": parser.get("version")}
+        for gate in forensic_v2.get("gates") or []:
+            if gate.get("gate") == "RAW-V2-01-parser-identity":
+                passed = parser.get("name") == "demoparser2" and parser.get("version") == "0.42.0" and contract_version == 1
+                gate.update({"status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else ["parser_identity_mismatch"]})
         unsigned = {key: value for key, value in forensic_v2.items() if key != "deterministic_digest"}
         forensic_v2["deterministic_digest"] = deterministic_digest(unsigned)
     return evidence

@@ -283,6 +283,14 @@ export async function runRawForensicAudit(
 ): Promise<RawAdmissionDecision> {
   const reasons: string[] = [];
   let status: RawEvidenceStatus = "PASS";
+  // Legacy evidence remains auditable but cannot satisfy the new exhaustive
+  // Canonical gate. No historical artifact is rewritten or retro-approved.
+  if (!evidence.forensic_contract_v2) {
+    reasons.push("forensic_v2_missing");
+  } else {
+    const { validateRawForensicContractV2 } = await import("@/lib/pipeline/rawArtifactContract");
+    reasons.push(...validateRawForensicContractV2(evidence.forensic_contract_v2));
+  }
   const requiredInventoryKeys = [
     "header_inventory",
     "player_info_inventory",
