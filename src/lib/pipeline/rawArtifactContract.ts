@@ -121,8 +121,7 @@ export function validateRawForensicContractV2(
   const mappings = Array.isArray(contract["mapping_inventory"])
     ? (contract["mapping_inventory"] as Array<Record<string, unknown>>)
     : [];
-  if (mappings.length === 0)
-    reasons.push("forensic_v2_mapping_invalid");
+  if (mappings.length === 0) reasons.push("forensic_v2_mapping_invalid");
   const seenMappings = new Set<string>();
   for (const mapping of mappings) {
     const rawField = mapping?.["raw_field"];
@@ -142,14 +141,12 @@ export function validateRawForensicContractV2(
       reasons.push(`forensic_v2_raw_only_reason_missing:${rawField}`);
     if (
       classification === "CANONICAL" &&
-      (typeof mapping["app_field"] !== "string" ||
-        typeof mapping["canonical_field"] !== "string")
+      (typeof mapping["app_field"] !== "string" || typeof mapping["canonical_field"] !== "string")
     )
       reasons.push(`forensic_v2_canonical_mapping_missing:${rawField}`);
   }
   const reconciliation = contract["capability_reconciliation"] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (
     reconciliation?.["status"] !== "PASS" ||
     reconciliation?.["unresolved_count"] !== 0 ||
