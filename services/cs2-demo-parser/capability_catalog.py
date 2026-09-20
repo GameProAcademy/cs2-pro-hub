@@ -137,8 +137,8 @@ CANONICAL_MAPPINGS = {
     "player_info.team_number": ("players[].side", "CanonicalPlayer.side"),
 }
 DERIVATIONS = {
-    "round.start_tick": "ordered parser-native round_start.tick",
-    "round.end_tick": "first parser-native round_end.tick within the observed start interval",
+    "rounds.start_tick": "ordered parser-native round_start.tick",
+    "rounds.end_tick": "first parser-native round_end.tick within the observed start interval",
     "game_state.total_rounds_played": "positive parser-native completed-round counter",
     "game_state.round_start_time": "tick - (game_time - round_start_time) * verified_tickrate",
 }
@@ -205,6 +205,39 @@ def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable
     projection = {"parser_name": PARSER_NAME, "parser_version": PARSER_VERSION, "catalog_version": CATALOG_VERSION, "catalog_source": CATALOG_SOURCE, "capabilities": rows}
     digest = hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
     return {**projection, "catalog_digest": digest, "complete": discovery_error is None, "discovery_error": discovery_error}
+
+
+def reconcile_capabilities(catalog: dict[str, Any]) -> dict[str, Any]:
+    rows = [row for row in catalog.get("capabilities") or [] if isinstance(row, dict)]
+    ids = [str(row.get("capability_id") or "") for row in rows]
+    duplicates = sorted({capability_id for capability_id in ids if ids.count(capability_id) > 1})
+    unresolved = sorted(
+        capability_id for capability_id, row in zip(ids, rows)
+        if row.get("classification") not in CLASSIFICATIONS
+        or (row.get("classification") == "CANONICAL" and (not row.get("app_field") or not row.get("canonical_field")))
+        or (row.get("classification") == "DERIVED" and not row.get("derivation_rule"))
+        or (row.get("classification") == "RAW_ONLY" and not row.get("reason"))
+    )
+    runtime_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("source_kind") == "RUNTIME_DISCOVERY")
+    mapped_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("classification") in CLASSIFICATIONS)
+    orphan = sorted(set(runtime_ids) - set(ids))
+    missing = sorted(set(ids) - set(mapped_ids))
+    result = {
+        "status": "PASS" if not duplicates and not unresolved and not orphan and not missing else "BLOCKED",
+        "catalog_count": len(ids),
+        "runtime_count": len(runtime_ids),
+        "mapping_count": len(mapped_ids),
+        "unresolved_count": len(unresolved),
+        "duplicate_count": len(duplicates),
+        "orphan_count": len(orphan),
+        "set_difference_count": len(missing),
+        "missing_from_inventory": missing,
+        "runtime_orphans": orphan,
+        "duplicates": duplicates,
+        "unresolved": unresolved,
+    }
+    result["digest"] = hashlib.sha256(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    return result
 
 
 def validate_catalog(catalog: dict[str, Any]) -> list[str]:
