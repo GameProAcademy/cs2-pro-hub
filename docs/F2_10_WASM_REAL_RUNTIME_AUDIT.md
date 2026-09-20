@@ -24,11 +24,11 @@ Artifact identity is `PASS` as an exact artifact stored by the pinned upstream s
 
 Upstream declares `wasm-pack build --out-dir www/pkg --target no-modules`, disables `wasm-opt` for release, and resolves `wasm-bindgen 0.2.100` in `Cargo.lock`. It does not pin Rust, wasm-pack or protoc.
 
-A local isolated build succeeded with Rust 1.91.1, Cargo 1.91.0, wasm-pack 0.13.1, protoc 32.1 and lld 21.1.7. It produced a different binding (`8eeeabbc…`, 21,429 bytes) and WASM (`abe693c7…`, 3,133,549 bytes). Therefore it proves build feasibility from the commit, but not bit-for-bit reproducibility. `scripts/build-demoparser2-wasm.mjs` records future attempts and fails closed on source, tool, target, output or export failures.
+A local isolated build succeeded with Rust 1.91.1, Cargo 1.91.0, wasm-pack 0.13.1, protoc 32.1 and lld 21.1.7. It produced a different binding (`8eeeabbc…`, 21,429 bytes) and WASM (`abe693c7…`, 3,133,549 bytes). Therefore it proves build feasibility from the commit, but not bit-for-bit reproducibility. `scripts/build-demoparser2-wasm.mjs` fails closed on source, tool, target, output, export or expected-hash mismatch. With an unpinned toolchain producing different bytes, failure is the honest result.
 
 ## 4. Runtime surface
 
-Chromium loaded the upstream binding as a Classic Worker-compatible `no-modules` global and initialized the 3,056,821-byte WASM successfully. Observed callable exports:
+Chromium loaded the upstream binding as a Classic Worker-compatible `no-modules` global and initialized the 3,056,821-byte WASM successfully. This proves artifact initialization and runtime-surface observation, not parser-call functionality. Observed callable exports:
 
 - `parseHeader`
 - `listGameEvents`
@@ -38,7 +38,7 @@ Chromium loaded the upstream binding as a Classic Worker-compatible `no-modules`
 - `parseTicks`
 - `listUpdatedFields`
 
-`parsePlayerInfo` and `parseChatMessages` were not observed and remain `NOT_AVAILABLE`. Minimum readiness now requires all four execution-path APIs: `parseHeader`, `listGameEvents`, `parseEvent`, and `parseTicks`.
+`parsePlayerInfo` and `parseChatMessages` were not observed and remain `NOT_AVAILABLE`. Minimum readiness now requires all four execution-path APIs: `parseHeader`, `listGameEvents`, `parseEvent`, and `parseTicks`. Calls to those APIs with real DEM bytes are `NOT_RUN`, so the formal real-runtime gate remains `BLOCKED` rather than PASS.
 
 ## 5. Real DEM identity
 
@@ -81,7 +81,7 @@ The 128 MiB ceiling remains unchanged. Boundary execution is `NOT_RUN`. The 400 
 ## Formal status
 
 - F.2.10-E REAL WASM ARTIFACT: `PASS`
-- F.2.10-F REAL RUNTIME: `PASS`
+- F.2.10-F REAL RUNTIME: `BLOCKED` (initialization PASS; real API execution NOT_RUN)
 - F.2.10-G REAL DEM: `NOT_RUN`
 - F.2.10-H FIELD AUDIT: `NOT_RUN`
 - PYTHON_WASM_PARITY: `NOT_RUN`

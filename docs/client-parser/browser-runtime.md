@@ -14,8 +14,8 @@ The contract records file/result bytes and startup, load, hashing, parsing, tota
 
 | Browser | Real 0.42 WASM | Real DEM | 128 MiB boundary | Memory profile | Result  |
 | ------- | -------------- | -------- | ---------------- | -------------- | ------- |
-| Chrome  | PASS           | NOT_RUN  | NOT_RUN          | NOT_RUN        | PARTIAL |
+| Chrome  | PARTIAL        | NOT_RUN  | NOT_RUN          | NOT_RUN        | PARTIAL |
 | Firefox | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
 | Safari  | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
 
-Chromium loaded and initialized the exact upstream-commit artifact and exposed all four required APIs. No `.dem` was provided, so parsing and validation remain `NOT_RUN`. The requested ~400 MB gate cannot be run under the current conservative 128 MiB POC ceiling and remains `NOT_RUN`. No universal browser support claim follows from the Chromium runtime check.
+Chromium loaded and initialized the exact upstream-commit artifact and exposed all four required APIs. No `.dem` was provided, so call execution, parsing and validation remain `NOT_RUN`; the formal real-runtime gate is `BLOCKED`. The requested ~400 MB gate cannot be run under the current conservative 128 MiB POC ceiling and remains `NOT_RUN`. No universal browser support claim follows from the Chromium initialization check.

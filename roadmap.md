@@ -1,17 +1,18 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-E–H — REAL WASM + PARITY
 
-**Status:** artifact/runtime comprovados; DEM e paridade permanecem não executados.
+**Status:** artifact e inicialização comprovados; execução das APIs, DEM e paridade permanecem não executados.
 
 - [x] Verificar artifact browser real no commit/tag exatos, registrar binding/WASM, hashes, tamanhos, licença e manifest independente.
 - [x] Executar build isolado com lockfile; build concluiu, mas diferiu do artifact upstream porque Rust/wasm-pack/protoc não são pinados — reprodutibilidade `PARTIAL`.
 - [x] Corrigir o gate mínimo para exigir `parseHeader`, `listGameEvents`, `parseEvent` e `parseTicks`.
 - [x] Inicializar o artifact real em Chromium e observar sete exports reais; `parsePlayerInfo` e chat permanecem indisponíveis.
+- [ ] F.2.10-F formal: `BLOCKED`, porque nenhum DEM autorizado permitiu provar chamadas reais das quatro APIs mínimas.
 - [x] Preparar status por API, matriz campo a campo, normalização explícita e taxonomia completa de paridade sem liberar Canonical.
 - [ ] F.2.10-G: `NOT_RUN`, pois não existe `.dem` real autorizado no repositório.
 - [ ] F.2.10-H/paridade/determinismo: `NOT_RUN`, pois dependem do mesmo DEM real no Python e no WASM.
 - [ ] Firefox/Safari, limite 128 MiB e 400 MB: `NOT_RUN`.
 
-**Decisão:** F.2.10-E `PASS`; F.2.10-F `PASS`; F.2.10-G/H `NOT_RUN`; `CANONICAL_ADMISSION` e `AI_DATA_READINESS` permanecem bloqueados.
+**Decisão:** F.2.10-E `PASS`; F.2.10-F `BLOCKED`; F.2.10-G/H `NOT_RUN`; `CANONICAL_ADMISSION` e `AI_DATA_READINESS` permanecem bloqueados.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-A — WASM RUNTIME HARDENING
 

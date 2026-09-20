@@ -29,6 +29,22 @@
     "parseHeader",
     "parseTicks"
   ],
+  "observedRuntime": {
+    "browser": "Chromium",
+    "initialization": "PASS",
+    "wasmBytesLoaded": 3056821,
+    "exports": [
+      "parseHeader",
+      "listGameEvents",
+      "parseEvent",
+      "parseEvents",
+      "parseGrenades",
+      "parseTicks",
+      "listUpdatedFields"
+    ],
+    "apiCallsWithRealDemo": "NOT_RUN",
+    "realDemo": "NOT_AVAILABLE"
+  },
   "reproducibility": {
     "status": "PARTIAL",
     "reason": "upstream_rust_and_wasm_pack_versions_are_unpinned",
