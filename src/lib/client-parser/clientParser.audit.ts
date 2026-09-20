@@ -139,3 +139,18 @@ export const CLIENT_AUDIT_CATALOG_DIGEST = sha256Text(
     parityDimensions: CLIENT_PARITY_DIMENSIONS,
   }),
 );
+
+export const CLIENT_PARSER_CONTRACT_DIGEST = sha256Text(
+  stableClientJson({
+    contractVersion: 2,
+    maxDemoBytes: 128 * 1024 * 1024,
+    maxResultBytes: 2 * 1024 * 1024,
+    maxEventSamples: 1_000,
+    maxEventInventory: 1_024,
+    maxPlayers: 128,
+    maxTickProbe: 4_096,
+    auditCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+    canonicalAdmission: "BLOCKED",
+    persisted: false,
+  }),
+);

@@ -61,7 +61,9 @@ function result(): ClientParseResult {
       players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
     },
     eventDiscovery: { status: "AVAILABLE", count: 1, names: ["round_end"] },
-    parsedEventInventory: [{ name: "round_end", status: "AVAILABLE", count: 1, fields: ["tick"] }],
+    parsedEventInventory: [
+      { name: "round_end", status: "PRESENT_AND_PARSED", count: 1, fields: ["tick"] },
+    ],
     selectedEventSamples: [{ eventName: "round_end", tick: 64, fields: { tick: 64 } }],
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -182,7 +184,7 @@ describe("client parser compact contract", () => {
     [
       "contract version",
       mutate((v) => {
-        (v.manifest as { contractVersion: number }).contractVersion = 2;
+          (v.manifest as { contractVersion: number }).contractVersion = 999;
       }),
     ],
     [

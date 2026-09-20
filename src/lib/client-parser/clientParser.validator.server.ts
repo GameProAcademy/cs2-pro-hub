@@ -22,6 +22,7 @@ import {
 } from "./clientParser.capabilities";
 import { computeClientResultDigest } from "./clientParser.hash";
 import { computeClientManifestDigest } from "./clientParser.manifest";
+import { CLIENT_PARSER_CONTRACT_DIGEST } from "./clientParser.audit";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -159,6 +160,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     result.parser.artifact.wasmBinarySha256 !== manifest.artifactProvenance.wasmBinarySha256 ||
     result.parser.artifact.wasmBindingSha256 !== manifest.artifactProvenance.wasmBindingSha256 ||
     manifest.catalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||
+    manifest.contractDigest !== CLIENT_PARSER_CONTRACT_DIGEST ||
     manifest.capabilityDigest !== CLIENT_PARSER_CAPABILITY_DIGEST
   )
     return fail("CLIENT_CONTRACT_MISMATCH");
@@ -189,8 +191,8 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
       (item) =>
         typeof item.name !== "string" ||
         !Array.isArray(item.fields) ||
-        (item.status === "AVAILABLE" && (item.count === null || item.count < 0)) ||
-        (item.status !== "AVAILABLE" && item.count !== null),
+        (item.status === "PRESENT_AND_PARSED" && (item.count === null || item.count < 0)) ||
+        (item.status !== "PRESENT_AND_PARSED" && item.count !== null),
     )
   )
     return fail("CLIENT_RESULT_INVALID");

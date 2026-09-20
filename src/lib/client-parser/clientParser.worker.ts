@@ -220,11 +220,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     try {
       parsed = rows(parser.parseEvent(bytes, name, [], []));
     } catch {
-      parsedEventInventory.push({ name, status: "PARSE_FAILED", count: null, fields: [] });
+      parsedEventInventory.push({ name, status: "PRESENT_BUT_FAILED", count: null, fields: [] });
       continue;
     }
     const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort().slice(0, 256);
-    parsedEventInventory.push({ name, status: "AVAILABLE", count: parsed.length, fields });
+    parsedEventInventory.push({ name, status: "PRESENT_AND_PARSED", count: parsed.length, fields });
     for (const row of parsed.slice(
       0,
       Math.max(0, CLIENT_EVENT_SAMPLE_LIMIT - selectedEventSamples.length),
@@ -291,13 +291,13 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     selectedEventSamples,
     roundSummary: {
       status: parsedEventInventory.some(
-        (item) => item.name === "round_start" && item.status === "AVAILABLE",
+        (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",
       )
         ? "DERIVED"
         : "UNAVAILABLE",
       count:
         parsedEventInventory.find(
-          (item) => item.name === "round_start" && item.status === "AVAILABLE",
+          (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",
         )?.count ?? null,
     },
     tickProbe: {

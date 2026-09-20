@@ -43,6 +43,11 @@ export interface ClientEventSample {
 }
 
 export type ClientObservationStatus = "AVAILABLE" | "UNAVAILABLE" | "NOT_PRESENT" | "PARSE_FAILED";
+export type ClientParsedEventStatus =
+  | "PRESENT_AND_PARSED"
+  | "PRESENT_BUT_FAILED"
+  | "NOT_PRESENT"
+  | "UNAVAILABLE";
 
 export interface ClientPlayerInventory {
   status: Exclude<ClientObservationStatus, "NOT_PRESENT">;
@@ -90,7 +95,7 @@ export interface ClientParseResult {
   eventDiscovery: { status: "AVAILABLE" | "PARSE_FAILED"; count: number; names: string[] };
   parsedEventInventory: Array<{
     name: string;
-    status: ClientObservationStatus;
+    status: ClientParsedEventStatus;
     count: number | null;
     fields: string[];
   }>;
@@ -144,6 +149,7 @@ export interface ClientParserManifest {
   contractVersion: typeof CLIENT_PARSER_CONTRACT_VERSION;
   catalogVersion: typeof CLIENT_PARSER_CATALOG_VERSION;
   catalogDigest: string;
+  contractDigest: string;
   capabilityDigest: string;
   capabilityClassifications: ClientCapabilityClassification[];
   coverage: ClientParseResult["coverage"];
