@@ -1,15 +1,12 @@
 /// <reference lib="webworker" />
 import {
-  CLIENT_PARSER_CAPABILITY_DIGEST,
-  CLIENT_PARSER_CATALOG_DIGEST,
-  CLIENT_PARSER_CAPABILITY_CATALOG,
-} from "./clientParser.capabilities";
-import {
-  sha256Hex,
-  sha256Text,
-  stableClientJson,
-  computeClientResultDigest,
-} from "./clientParser.hash";
+  capabilitiesForSurface,
+  CLIENT_PARSER_ARTIFACT_PROVENANCE,
+  inspectRuntimeSurface,
+  playerInventoryFromRuntime,
+  trustedRuntimeUrl,
+} from "./clientParser.runtime";
+import { sha256Hex, sha256Text, computeClientResultDigest } from "./clientParser.hash";
 import { buildClientParserManifest } from "./clientParser.manifest";
 import type {
   ClientParserCommand,
@@ -44,6 +41,7 @@ type WasmApi = {
   ) => unknown;
   parseTicks: (file: Uint8Array, props?: unknown[], ticks?: Int32Array, soa?: boolean) => unknown;
   parseGrenades?: (file: Uint8Array) => unknown;
+  parsePlayerInfo?: (file: Uint8Array) => unknown;
 };
 type WasmInit = ((input?: string) => Promise<unknown>) & Partial<WasmApi>;
 type WorkerScope = typeof globalThis & {
@@ -54,6 +52,8 @@ type WorkerScope = typeof globalThis & {
 const scope = globalThis as WorkerScope;
 let api: WasmInit | null = null;
 let wasmLoadMs = 0;
+let runtimeSurface: ReturnType<typeof inspectRuntimeSurface> | null = null;
+let artifact = CLIENT_PARSER_ARTIFACT_PROVENANCE;
 const cancelled = new Set<string>();
 
 function emit(event: ClientParserWorkerEvent) {
@@ -77,7 +77,10 @@ function errorCode(error: unknown): ClientParserErrorCode {
   if (
     message === "CLIENT_DEMO_INVALID" ||
     message === "CLIENT_DEMO_TOO_LARGE" ||
-    message === "CLIENT_RESULT_TOO_LARGE"
+    message === "CLIENT_RESULT_TOO_LARGE" ||
+    message === "CLIENT_WASM_LOAD_FAILED" ||
+    message === "CLIENT_WASM_INTEGRITY_MISMATCH" ||
+    message === "CLIENT_WASM_EXPORTS_MISSING"
   )
     return message;
   return api ? "CLIENT_PARSE_FAILED" : "CLIENT_PARSER_UNAVAILABLE";
@@ -94,9 +97,6 @@ function object(value: unknown): Record<string, unknown> {
     ? (value as Record<string, unknown>)
     : {};
 }
-function safeString(value: unknown): string | null {
-  return typeof value === "string" || typeof value === "number" ? String(value) : null;
-}
 function safeNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -104,21 +104,47 @@ function safeNumber(value: unknown): number | null {
 async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }>) {
   const started = performance.now();
   progress(command.requestId, "LOADING_WASM", 0, started);
-  if (!command.scriptUrl || !command.wasmUrl) throw new Error("CLIENT_PARSER_UNAVAILABLE");
-  scope.importScripts(command.scriptUrl);
+  const baseUrl = scope.location.href;
+  const scriptUrl = trustedRuntimeUrl(command.scriptUrl, baseUrl);
+  const wasmUrl = trustedRuntimeUrl(command.wasmUrl, baseUrl);
+  if (!scriptUrl || !wasmUrl) throw new Error("CLIENT_PARSER_UNAVAILABLE");
+  if (!/^[0-9a-f]{64}$/.test(command.expectedBindingSha256 ?? ""))
+    throw new Error("CLIENT_WASM_INTEGRITY_MISMATCH");
+  if (!/^[0-9a-f]{64}$/.test(command.expectedWasmSha256 ?? ""))
+    throw new Error("CLIENT_WASM_INTEGRITY_MISMATCH");
+  const [bindingResponse, wasmResponse] = await Promise.all([fetch(scriptUrl), fetch(wasmUrl)]);
+  if (!bindingResponse.ok || !wasmResponse.ok) throw new Error("CLIENT_WASM_LOAD_FAILED");
+  const [bindingText, wasmBytes] = await Promise.all([
+    bindingResponse.text(),
+    wasmResponse.arrayBuffer(),
+  ]);
+  const bindingSha256 = sha256Text(bindingText);
+  const wasmBinarySha256 = sha256Hex(new Uint8Array(wasmBytes));
+  if (
+    bindingSha256 !== command.expectedBindingSha256 ||
+    wasmBinarySha256 !== command.expectedWasmSha256
+  )
+    throw new Error("CLIENT_WASM_INTEGRITY_MISMATCH");
+  const bindingBlobUrl = URL.createObjectURL(
+    new Blob([bindingText], { type: "text/javascript;charset=utf-8" }),
+  );
+  try {
+    scope.importScripts(bindingBlobUrl);
+  } finally {
+    URL.revokeObjectURL(bindingBlobUrl);
+  }
   const candidate = scope.wasm_bindgen;
   if (typeof candidate !== "function") throw new Error("CLIENT_WASM_LOAD_FAILED");
-  await candidate(command.wasmUrl);
-  if (
-    ![
-      candidate.parseHeader,
-      candidate.listGameEvents,
-      candidate.parseEvent,
-      candidate.parseTicks,
-    ].every((fn) => typeof fn === "function")
-  ) {
-    throw new Error("CLIENT_WASM_LOAD_FAILED");
-  }
+  await candidate(wasmBytes);
+  runtimeSurface = inspectRuntimeSurface(candidate as unknown as Record<string, unknown>);
+  if (!runtimeSurface.minimumReady) throw new Error("CLIENT_WASM_EXPORTS_MISSING");
+  artifact = {
+    ...CLIENT_PARSER_ARTIFACT_PROVENANCE,
+    bindingUrl: scriptUrl,
+    wasmUrl,
+    wasmBindingSha256: bindingSha256,
+    wasmBinarySha256,
+  };
   api = candidate;
   wasmLoadMs = performance.now() - started;
   emit({ type: "READY", requestId: command.requestId, wasmLoadMs });
@@ -126,7 +152,7 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
 
 async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   const started = performance.now();
-  if (!api) throw new Error("CLIENT_PARSER_UNAVAILABLE");
+  if (!api || !runtimeSurface) throw new Error("CLIENT_PARSER_UNAVAILABLE");
   const parser = api as WasmInit &
     Required<Pick<WasmApi, "parseHeader" | "listGameEvents" | "parseEvent" | "parseTicks">>;
   const { file } = command;
@@ -153,7 +179,14 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   assertActive(command.requestId);
 
   progress(command.requestId, "DISCOVERING_EVENTS", 0.4, started);
-  const discoveredEvents = parser.listGameEvents(bytes);
+  let discoveryStatus: ClientParseResult["eventDiscovery"]["status"] = "AVAILABLE";
+  let discoveredEvents: unknown;
+  try {
+    discoveredEvents = parser.listGameEvents(bytes);
+  } catch {
+    discoveryStatus = "PARSE_FAILED";
+    discoveredEvents = [];
+  }
   const names = (Array.isArray(discoveredEvents) ? discoveredEvents : [])
     .filter((name): name is string => typeof name === "string")
     .slice(0, CLIENT_EVENT_INVENTORY_LIMIT)
@@ -164,13 +197,23 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   const preferred = ["player_death", "round_end", "round_start"].filter((name) =>
     names.includes(name),
   );
-  const eventInventory: ClientParseResult["eventInventory"] = [];
+  const parsedEventInventory: ClientParseResult["parsedEventInventory"] = [];
   const selectedEventSamples: ClientEventSample[] = [];
-  for (const name of preferred) {
+  for (const name of ["player_death", "round_end", "round_start"]) {
     assertActive(command.requestId);
-    const parsed = rows(parser.parseEvent(bytes, name, [], []));
-    const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort();
-    eventInventory.push({ name, count: parsed.length, fields });
+    if (!names.includes(name)) {
+      parsedEventInventory.push({ name, status: "NOT_PRESENT", count: 0, fields: [] });
+      continue;
+    }
+    let parsed: Array<Record<string, unknown>>;
+    try {
+      parsed = rows(parser.parseEvent(bytes, name, [], []));
+    } catch {
+      parsedEventInventory.push({ name, status: "PARSE_FAILED", count: null, fields: [] });
+      continue;
+    }
+    const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort().slice(0, 256);
+    parsedEventInventory.push({ name, status: "AVAILABLE", count: parsed.length, fields });
     for (const row of parsed.slice(
       0,
       Math.max(0, CLIENT_EVENT_SAMPLE_LIMIT - selectedEventSamples.length),
@@ -209,20 +252,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   assertActive(command.requestId);
 
   progress(command.requestId, "BUILDING_RESULT", 0.88, started);
-  const playerRows = rows(header["players"]);
-  const runtimeDigest = sha256Text(
-    stableClientJson({
-      parser: CLIENT_PARSER_BUILD_IDENTITY,
-      exports: [
-        "listGameEvents",
-        "parseEvent",
-        "parseEvents",
-        "parseGrenades",
-        "parseHeader",
-        "parseTicks",
-      ],
-    }),
+  const playerInventory = playerInventoryFromRuntime(
+    parser as unknown as Record<string, unknown>,
+    bytes,
   );
+  const capabilities = capabilitiesForSurface(runtimeSurface);
   const base: ClientParseResult = {
     schemaVersion: CLIENT_PARSER_SCHEMA_VERSION,
     parser: {
@@ -230,7 +264,8 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       version: CLIENT_PARSER_VERSION,
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
-      runtimeDigest,
+      runtimeSurface,
+      artifact,
     },
     demo: {
       sha256: demoSha,
@@ -239,11 +274,9 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       lastModified: file.lastModified,
     },
     header,
-    playerInventory: playerRows.slice(0, 128).map((row) => ({
-      steamId: safeString(row["steamid"] ?? row["steam_id"]),
-      name: safeString(row["name"] ?? row["player_name"]),
-    })),
-    eventInventory,
+    playerInventory,
+    eventDiscovery: { status: discoveryStatus, count: names.length, names },
+    parsedEventInventory,
     selectedEventSamples,
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -258,10 +291,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     },
     coverage: {
       fullTickDomain: false,
+      authoritativeTickDomain: false,
       fullRawEvents: false,
       sampledEvents: selectedEventSamples.length > 0,
     },
-    capabilities: CLIENT_PARSER_CAPABILITY_CATALOG,
+    capabilities,
     semanticStatus: "BLOCKED",
     performance: {
       fileSizeBytes: file.size,
