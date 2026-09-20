@@ -1,3 +1,18 @@
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.7 — EXHAUSTIVE RAW FORENSIC AUDIT
+
+**Status:** BLOCKED / INCOMPLETE FOR CACHE RETRY. Implementation and local quality gates PASS; real v2 artifact reconciliation NOT RUN.
+
+- [x] Catalogar 268 capabilities do demoparser2 0.42.0 em 17 categorias, com provenance e digest determinístico.
+- [x] Implementar audit contract v2, seis classificações e auditoria integral de ticks por `ticks=None`, mantendo 4096 apenas como amostra diagnóstica.
+- [x] Implementar reauditoria independente de todos os chunks gzip JSONL, incluindo bytes/SHA, parse físico e reconciliação de totais/campos.
+- [x] Exigir os 22 gates fail-closed antes de qualquer admissão Canonical; o gate físico é satisfeito somente pelo verificador APP.
+- [x] Executar testes APP/parser/contratos, typecheck, lint, build e compileall: APP 934/934, parser 169 PASS/10 skips, typecheck/build/compileall PASS, lint 0 erros/9 warnings preexistentes.
+- [x] Documentar catálogo, semântica do gate físico, limitações e decisão em `docs/PHASE-2.7.2G.5-R-F.2.7-RAW-FORENSIC-AUDIT.md`.
+- [ ] Produzir e reconciliar um artifact v2 real da demo Cache; sem essa prova, contagens concretas e os 22 gates do demo permanecem NOT RUN.
+- [x] Preservar produção: sem retry, attempt 9, Cache Run 1/2, escrita Canonical, mutation histórica, secrets ou deploy Railway.
+
+**Decisão:** `BLOCKED / INCOMPLETE`. O código e os gates locais passaram, mas fixtures não substituem evidência real. Cache Run 1, Run 2, attempt 9, Canonical operacional e Fase 2.8 permanecem bloqueados.
+
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.6 — CANONICAL INTEGRITY REMEDIATION
 
 **Status:** BLOCKED_BEFORE_RETRY / RUN 2 STILL BLOCKED.
