@@ -54,5 +54,6 @@ export function computeClientManifestDigest(manifest: ClientParserManifest): str
     manifestDigest: _manifestDigest,
     ...deterministic
   } = manifest;
-  return sha256Text(stableClientJson(deterministic));
+  const normalized = { ...deterministic, demoName: undefined, demoLastModified: undefined };
+  return sha256Text(stableClientJson(normalized));
 }
