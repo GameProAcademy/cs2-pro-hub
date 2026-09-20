@@ -89,7 +89,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_INVALID");
   const result = envelope.result;
   const manifest = envelope.manifest;
-  if (!result || !manifest) return fail("CLIENT_RESULT_INVALID");
+  if (!result || !manifest) { console.error("invalid:missing"); return fail("CLIENT_RESULT_INVALID"); }
   if (
     result.schemaVersion !== CLIENT_PARSER_SCHEMA_VERSION ||
     manifest.manifestVersion !== CLIENT_PARSER_MANIFEST_VERSION ||
@@ -141,14 +141,12 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     result.coverage.fullTickDomain !== false ||
     result.coverage.fullRawEvents !== false ||
     result.semanticStatus !== "BLOCKED"
-  )
-    return fail("CLIENT_RESULT_INVALID");
+  ) { console.error("invalid:coverage", result.coverage, result.semanticStatus); return fail("CLIENT_RESULT_INVALID"); }
   if (
     result.capabilities.some(
       (capability) => !CLIENT_CAPABILITY_CLASSIFICATIONS.includes(capability.classification),
     )
-  )
-    return fail("CLIENT_RESULT_INVALID");
+  ) { console.error("invalid:classification"); return fail("CLIENT_RESULT_INVALID"); }
   if (
     !HEX_64.test(result.resultDigest) ||
     computeClientResultDigest(result) !== result.resultDigest ||
