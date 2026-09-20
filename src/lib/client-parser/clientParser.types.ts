@@ -42,11 +42,7 @@ export interface ClientEventSample {
   fields: Record<string, unknown>;
 }
 
-export type ClientObservationStatus =
-  | "AVAILABLE"
-  | "UNAVAILABLE"
-  | "NOT_PRESENT"
-  | "PARSE_FAILED";
+export type ClientObservationStatus = "AVAILABLE" | "UNAVAILABLE" | "NOT_PRESENT" | "PARSE_FAILED";
 
 export interface ClientPlayerInventory {
   status: Exclude<ClientObservationStatus, "NOT_PRESENT">;

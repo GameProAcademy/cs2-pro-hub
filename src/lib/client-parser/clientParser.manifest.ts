@@ -43,8 +43,12 @@ export function buildClientParserManifest(result: ClientParseResult): ClientPars
     generatedAt: new Date().toISOString(),
     performance: result.performance,
   } satisfies ClientParserManifest;
-  const { generatedAt: _generatedAt, performance: _performance, manifestDigest: _digest, ...stable } =
-    manifest;
+  const {
+    generatedAt: _generatedAt,
+    performance: _performance,
+    manifestDigest: _digest,
+    ...stable
+  } = manifest;
   manifest.manifestDigest = sha256Text(stableClientJson(stable));
   return manifest;
 }

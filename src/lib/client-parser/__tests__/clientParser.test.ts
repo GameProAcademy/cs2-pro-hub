@@ -54,9 +54,7 @@ function result(): ClientParseResult {
       players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
     },
     eventDiscovery: { status: "AVAILABLE", count: 1, names: ["round_end"] },
-    parsedEventInventory: [
-      { name: "round_end", status: "AVAILABLE", count: 1, fields: ["tick"] },
-    ],
+    parsedEventInventory: [{ name: "round_end", status: "AVAILABLE", count: 1, fields: ["tick"] }],
     selectedEventSamples: [{ eventName: "round_end", tick: 64, fields: { tick: 64 } }],
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -257,10 +255,16 @@ describe("client parser compact contract", () => {
   });
 
   it("discovers the observed runtime surface instead of trusting declarations", () => {
-    const surface = inspectRuntimeSurface({ parseHeader() {}, listGameEvents() {}, parseTicks() {} });
+    const surface = inspectRuntimeSurface({
+      parseHeader() {},
+      listGameEvents() {},
+      parseTicks() {},
+    });
     expect(surface.minimumReady).toBe(true);
     expect(surface.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
-    expect(capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo")).toMatchObject({
+    expect(
+      capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo"),
+    ).toMatchObject({
       available: false,
       classification: "UNAVAILABLE",
     });
@@ -269,9 +273,7 @@ describe("client parser compact contract", () => {
   it("normalizes player inventory only through parsePlayerInfo", () => {
     const inventory = playerInventoryFromRuntime(
       {
-        parsePlayerInfo: () => [
-          { steamid: 76561198000000000, name: "Player", team_number: 2 },
-        ],
+        parsePlayerInfo: () => [{ steamid: 76561198000000000, name: "Player", team_number: 2 }],
       },
       new Uint8Array([1]),
     );
@@ -297,7 +299,9 @@ describe("client parser compact contract", () => {
     expect(trustedRuntimeUrl("/wasm/parser.js", "https://gamepro.network/poc")).toBe(
       "https://gamepro.network/wasm/parser.js",
     );
-    expect(trustedRuntimeUrl("https://evil.example/parser.js", "https://gamepro.network/poc")).toBeNull();
+    expect(
+      trustedRuntimeUrl("https://evil.example/parser.js", "https://gamepro.network/poc"),
+    ).toBeNull();
     expect(trustedRuntimeUrl("javascript:alert(1)", "https://gamepro.network/poc")).toBeNull();
   });
 

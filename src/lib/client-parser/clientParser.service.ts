@@ -38,12 +38,10 @@ export class ClientParserService {
       import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_URL"] as string | undefined,
       baseUrl,
     );
-    const expectedBindingSha256 = import.meta.env[
-      "VITE_CLIENT_DEM_PARSER_WASM_BINDING_SHA256"
-    ] as string | undefined;
+    const expectedBindingSha256 = import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINDING_SHA256"] as
+      string | undefined;
     const expectedWasmSha256 = import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_SHA256"] as
-      | string
-      | undefined;
+      string | undefined;
 
     return new Promise<ClientParserEnvelope>((resolve, reject) => {
       const finish = () => {
