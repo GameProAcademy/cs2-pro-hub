@@ -21,7 +21,17 @@ export const CLIENT_RUNTIME_EXPORT_NAMES = [
   "parseTicks",
 ] as const;
 
-export const CLIENT_REQUIRED_RUNTIME_EXPORTS = ["parseHeader", "listGameEvents"] as const;
+/**
+ * A runtime is only minimum-ready when every API used by the browser POC
+ * execution path is actually exported by the loaded runtime. Declared
+ * candidates are never treated as evidence.
+ */
+export const CLIENT_REQUIRED_RUNTIME_EXPORTS = [
+  "parseHeader",
+  "listGameEvents",
+  "parseEvent",
+  "parseTicks",
+] as const;
 
 export const CLIENT_PARSER_ARTIFACT_PROVENANCE: ClientParserArtifactProvenance = {
   status: "UNAVAILABLE",
