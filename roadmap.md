@@ -1,4 +1,16 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.8–F.2.9 — FORENSIC CLOSURE
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-A — WASM RUNTIME HARDENING
+
+**Status:** em validação; produção permanece congelada.
+
+- [x] Corrigir a arquitetura Worker para o binding upstream `no-modules`, sem `importScripts` em Module Worker.
+- [x] Separar runtime surface digest de hashes reais de binding/binário e registrar provenance upstream auditável sem fabricar artifact.
+- [x] Derivar capabilities dos exports observados, usar `parsePlayerInfo` somente quando exportado e separar descoberta de eventos do inventário parseado.
+- [x] Endurecer URLs same-origin, integridade SHA-256 e validator recursivo bounded contra payloads proibidos e objetos exóticos.
+- [x] Reduzir o limite da POC para 128 MiB, sem claim de 400 MB, e preservar feature flag desligada.
+- [ ] Executar Browser → Worker → WASM → DEM real: bloqueado pela ausência de artifact oficial/reprodutível 0.42.0 e fixture DEM autorizada.
+- [ ] Gate final após quality gates: `POC_NOT_READY` ou `POC_RUNTIME_READY_FOR_F.2.10-B`.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.5-R-F.2.8–F.2.9 — FORENSIC CLOSURE
 
 **Status:** `PASS_FOR_CODE_HARDENING` / operationally `BLOCKED`. No real v2 artifact was executed.
 
