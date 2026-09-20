@@ -5,7 +5,8 @@ export const CLIENT_PARSER_CATALOG_VERSION = 3 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
-export const CLIENT_PARSER_BUILD_IDENTITY = "source-build:demoparser2@0.42.0-unverified" as const;
+export const CLIENT_PARSER_BUILD_IDENTITY =
+  "upstream-source-artifact:demoparser2@0.42.0:d3767705dc5846d73ed29db50eaeda58778dc934" as const;
 
 export const CLIENT_EVENT_SAMPLE_LIMIT = 1_000;
 export const CLIENT_TICK_PROBE_LIMIT = 4_096;
