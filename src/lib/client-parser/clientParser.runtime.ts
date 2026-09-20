@@ -25,15 +25,15 @@ export const CLIENT_REQUIRED_RUNTIME_EXPORTS = ["parseHeader", "listGameEvents"]
 export const CLIENT_PARSER_ARTIFACT_PROVENANCE: ClientParserArtifactProvenance = {
   status: "UNAVAILABLE",
   sourceRepository: "https://github.com/LaihoE/demoparser",
-  sourceCommit: null,
-  sourceTag: null,
-  buildTool: null,
-  buildCommand: null,
+  sourceCommit: "d3767705dc5846d73ed29db50eaeda58778dc934",
+  sourceTag: "v0.42.0",
+  buildTool: "wasm-pack (upstream version unpinned)",
+  buildCommand: "wasm-pack build --out-dir www/pkg --target no-modules",
   bindingUrl: null,
   wasmUrl: null,
   wasmBindingSha256: null,
   wasmBinarySha256: null,
-  reason: "exact_0_42_0_browser_artifact_not_auditable",
+  reason: "upstream_0_42_0_has_no_published_or_reproducibly_pinned_browser_artifact",
 };
 
 export function inspectRuntimeSurface(runtime: Record<string, unknown>): ClientRuntimeSurface {

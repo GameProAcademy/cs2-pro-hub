@@ -4,6 +4,12 @@ import { computeClientResultDigest, sha256Text } from "../clientParser.hash";
 import { buildClientParserManifest } from "../clientParser.manifest";
 import { compareClientVsServerReference } from "../clientParser.parity";
 import {
+  capabilitiesForSurface,
+  inspectRuntimeSurface,
+  playerInventoryFromRuntime,
+  trustedRuntimeUrl,
+} from "../clientParser.runtime";
+import {
   CLIENT_PARSER_BUILD_IDENTITY,
   CLIENT_PARSER_NAME,
   CLIENT_PARSER_RUNTIME,
@@ -21,12 +27,36 @@ function result(): ClientParseResult {
       version: CLIENT_PARSER_VERSION,
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
-      runtimeDigest: "a".repeat(64),
+      runtimeSurface: {
+        observedExports: ["listGameEvents", "parseHeader"],
+        minimumReady: true,
+        runtimeSurfaceDigest: "a".repeat(64),
+      },
+      artifact: {
+        status: "VERIFIED",
+        sourceRepository: "https://github.com/LaihoE/demoparser",
+        sourceCommit: "d3767705dc5846d73ed29db50eaeda58778dc934",
+        sourceTag: "v0.42.0",
+        buildTool: "wasm-pack 0.13.1",
+        buildCommand: "wasm-pack build --target no-modules",
+        bindingUrl: "https://example.test/pkg/demoparser2.js",
+        wasmUrl: "https://example.test/pkg/demoparser2_bg.wasm",
+        wasmBindingSha256: "c".repeat(64),
+        wasmBinarySha256: "d".repeat(64),
+        reason: null,
+      },
     },
     demo: { sha256: "b".repeat(64), sizeBytes: 42, name: "local.dem", lastModified: 1 },
     header: { map_name: "de_cache" },
-    playerInventory: [{ steamId: "76561198000000000", name: "Player" }],
-    eventInventory: [{ name: "round_end", count: 1, fields: ["tick"] }],
+    playerInventory: {
+      status: "AVAILABLE",
+      count: 1,
+      players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
+    },
+    eventDiscovery: { status: "AVAILABLE", count: 1, names: ["round_end"] },
+    parsedEventInventory: [
+      { name: "round_end", status: "AVAILABLE", count: 1, fields: ["tick"] },
+    ],
     selectedEventSamples: [{ eventName: "round_end", tick: 64, fields: { tick: 64 } }],
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -39,7 +69,12 @@ function result(): ClientParseResult {
       duplicates: 0,
       missingWithinProbe: 0,
     },
-    coverage: { fullTickDomain: false, fullRawEvents: false, sampledEvents: true },
+    coverage: {
+      fullTickDomain: false,
+      authoritativeTickDomain: false,
+      fullRawEvents: false,
+      sampledEvents: true,
+    },
     capabilities: CLIENT_PARSER_CAPABILITY_CATALOG,
     semanticStatus: "BLOCKED",
     performance: {
@@ -207,7 +242,8 @@ describe("client parser compact contract", () => {
       [
         "header",
         "playerInventory",
-        "eventInventory",
+        "eventDiscovery",
+        "parsedEventInventory",
         "selectedEventSamples",
         "tickProbe",
         "capabilities",
@@ -218,5 +254,77 @@ describe("client parser compact contract", () => {
       equal: true,
       mismatches: [],
     });
+  });
+
+  it("discovers the observed runtime surface instead of trusting declarations", () => {
+    const surface = inspectRuntimeSurface({ parseHeader() {}, listGameEvents() {}, parseTicks() {} });
+    expect(surface.minimumReady).toBe(true);
+    expect(surface.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
+    expect(capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo")).toMatchObject({
+      available: false,
+      classification: "UNAVAILABLE",
+    });
+  });
+
+  it("normalizes player inventory only through parsePlayerInfo", () => {
+    const inventory = playerInventoryFromRuntime(
+      {
+        parsePlayerInfo: () => [
+          { steamid: 76561198000000000, name: "Player", team_number: 2 },
+        ],
+      },
+      new Uint8Array([1]),
+    );
+    expect(inventory).toEqual({
+      status: "AVAILABLE",
+      count: 1,
+      players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
+    });
+    expect(playerInventoryFromRuntime({}, new Uint8Array([1])).status).toBe("UNAVAILABLE");
+    expect(
+      playerInventoryFromRuntime(
+        {
+          parsePlayerInfo: () => {
+            throw new Error("parse failed");
+          },
+        },
+        new Uint8Array([1]),
+      ).status,
+    ).toBe("PARSE_FAILED");
+  });
+
+  it("accepts only same-origin runtime assets", () => {
+    expect(trustedRuntimeUrl("/wasm/parser.js", "https://gamepro.network/poc")).toBe(
+      "https://gamepro.network/wasm/parser.js",
+    );
+    expect(trustedRuntimeUrl("https://evil.example/parser.js", "https://gamepro.network/poc")).toBeNull();
+    expect(trustedRuntimeUrl("javascript:alert(1)", "https://gamepro.network/poc")).toBeNull();
+  });
+
+  it.each(["rawPayload", "raw_rows", "binary", "buffers"])(
+    "rejects nested forbidden key %s",
+    (key) => {
+      const value = envelope();
+      (value.result.header as Record<string, unknown>)["nested"] = { [key]: [] };
+      expect(validateClientParserResult(value).accepted).toBe(false);
+    },
+  );
+
+  it("rejects cycles, functions, ArrayBuffer and Blob", () => {
+    const cyclic: Record<string, unknown> = {};
+    cyclic["self"] = cyclic;
+    expect(validateClientParserResult(cyclic).accepted).toBe(false);
+    expect(validateClientParserResult({ value: () => true }).accepted).toBe(false);
+    expect(validateClientParserResult({ value: new ArrayBuffer(1) }).accepted).toBe(false);
+    expect(validateClientParserResult({ value: new Blob(["x"]) }).accepted).toBe(false);
+  });
+
+  it("changes manifest identity when a WASM binary hash changes", () => {
+    const left = envelope();
+    const changed = result();
+    changed.parser.artifact = { ...changed.parser.artifact, wasmBinarySha256: "e".repeat(64) };
+    changed.resultDigest = computeClientResultDigest(changed);
+    const right = buildClientParserManifest(changed);
+    expect(left.manifest.manifestDigest).not.toBe(right.manifestDigest);
   });
 });

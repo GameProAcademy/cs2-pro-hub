@@ -173,7 +173,7 @@ export function ClientParserPoc() {
           />
           <Metric
             label="Eventos amostrados"
-            value={String(result.result.selectedEventSamples.length)}
+            value={`${result.result.selectedEventSamples.length} / ${result.result.eventDiscovery.count} descobertos`}
           />
           <Metric
             label="Resultado compacto"
@@ -188,6 +188,10 @@ export function ClientParserPoc() {
             value={`${result.result.performance.parseDurationMs.toFixed(1)} ms`}
           />
           <Metric label="Digest" value={result.result.resultDigest} mono />
+          <Metric
+            label="Jogadores"
+            value={`${result.result.playerInventory.status} · ${result.result.playerInventory.count ?? "—"}`}
+          />
           <Metric
             label="Tick probe"
             value={`${result.result.tickProbe.status} · ${result.result.tickProbe.returnedTickCount}/${result.result.tickProbe.requestedTickCount}`}
