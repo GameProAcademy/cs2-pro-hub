@@ -206,7 +206,7 @@ export async function auditPhysicalRawChunks(args: {
     totalRows += decoded.rows;
     totalBytes += bytes.byteLength;
   }
-  const approval: RawAdmissionApproval = {
+  return {
     bucket: args.bucket,
     total_chunks: args.chunks.length,
     total_rows: totalRows,
@@ -586,7 +586,7 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
   if (!aimQuality || !positionQuality || !economyQuality) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT semantic quality");
   }
-  return {
+  const approval: RawAdmissionApproval = {
     parser: hot.parser,
     contract_version: hot.contract_version,
     header: hot.header,
