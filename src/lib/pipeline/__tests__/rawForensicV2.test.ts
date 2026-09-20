@@ -62,7 +62,7 @@ describe("RAW forensic contract v2", () => {
       total_rows: 2,
       total_bytes: bytes.byteLength,
     });
-    expect(physical.sections).toEqual({
+    expect(physical["sections"]).toEqual({
       ticks: { rows: 2, bytes: bytes.byteLength, fields: ["health", "tick"] },
     });
   });

@@ -14,6 +14,7 @@ import {
   type RawParserOutput,
 } from "@/lib/pipeline/types";
 import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/rawEvidence";
+import type { Json } from "@/integrations/supabase/types";
 import { expectedParserContract } from "@/lib/pipeline/parser/adapter";
 import { assertParserIdentity } from "@/lib/pipeline/parser/parserEndpoint";
 import {
@@ -530,7 +531,7 @@ export async function verifyRawArtifact(args: {
       total_chunks: artifact.total_chunks,
       total_rows: artifact.total_rows,
       total_bytes: artifact.total_bytes,
-      physical_reaudit: physical,
+      physical_reaudit: physical as Json,
     },
   };
 }
