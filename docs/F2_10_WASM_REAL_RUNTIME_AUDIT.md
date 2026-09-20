@@ -13,9 +13,9 @@
 
 The exact source commit contains a checked-in `no-modules` browser binding and WASM binary. They are preserved under `public/client-parser/demoparser2/0.42.0/` with the upstream license and an evidence manifest.
 
-| File | Bytes | SHA-256 |
-| --- | ---: | --- |
-| `demoparser2.js` | 20,784 | `d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756` |
+| File                  |     Bytes | SHA-256                                                            |
+| --------------------- | --------: | ------------------------------------------------------------------ |
+| `demoparser2.js`      |    20,784 | `d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756` |
 | `demoparser2_bg.wasm` | 3,056,821 | `43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f` |
 
 Artifact identity is `PASS` as an exact artifact stored by the pinned upstream source commit. Bit-reproducibility is `PARTIAL`, not PASS.
@@ -58,11 +58,11 @@ Header, player, event, round, tick, timing, bomb, grenade, weapon, economy, posi
 
 ## 23. Browser matrix
 
-| Browser | Runtime | Real DEM | Validator |
-| --- | --- | --- | --- |
-| Chromium | PASS | NOT_RUN | NOT_RUN |
-| Firefox | NOT_RUN | NOT_RUN | NOT_RUN |
-| Safari | NOT_RUN | NOT_RUN | NOT_RUN |
+| Browser  | Runtime | Real DEM | Validator |
+| -------- | ------- | -------- | --------- |
+| Chromium | PASS    | NOT_RUN  | NOT_RUN   |
+| Firefox  | NOT_RUN | NOT_RUN  | NOT_RUN   |
+| Safari   | NOT_RUN | NOT_RUN  | NOT_RUN   |
 
 Universal browser compatibility is not claimed.
 

@@ -47,9 +47,7 @@ export interface ClientFieldParityResult {
 }
 
 export type ClientFieldParityStatus =
-  | ClientParityStatus
-  | "NOT_AVAILABLE_ON_PYTHON"
-  | "PARSE_FAILED";
+  ClientParityStatus | "NOT_AVAILABLE_ON_PYTHON" | "PARSE_FAILED";
 
 export interface ClientFieldParityMatrixRow {
   category: string;
@@ -70,9 +68,9 @@ export interface ClientFieldParityMatrixRow {
 
 export function normalizeForParity(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return value.map(normalizeForParity).sort((left, right) =>
-      stableClientJson(left).localeCompare(stableClientJson(right)),
-    );
+    return value
+      .map(normalizeForParity)
+      .sort((left, right) => stableClientJson(left).localeCompare(stableClientJson(right)));
   }
   if (value && typeof value === "object") {
     return Object.fromEntries(

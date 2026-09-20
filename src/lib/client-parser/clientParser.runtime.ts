@@ -29,8 +29,7 @@ export const CLIENT_REQUIRED_RUNTIME_EXPORTS = [
   "parseTicks",
 ] as const;
 
-export const CLIENT_WASM_BINDING_URL =
-  "/client-parser/demoparser2/0.42.0/demoparser2.js" as const;
+export const CLIENT_WASM_BINDING_URL = "/client-parser/demoparser2/0.42.0/demoparser2.js" as const;
 export const CLIENT_WASM_BINARY_URL =
   "/client-parser/demoparser2/0.42.0/demoparser2_bg.wasm" as const;
 export const CLIENT_WASM_BINDING_SHA256 =

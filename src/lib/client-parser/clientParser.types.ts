@@ -60,10 +60,7 @@ export interface ClientRuntimeSurface {
 }
 
 export type ClientApiCallStatus =
-  | "EXPORT_PRESENT"
-  | "CALL_ATTEMPTED"
-  | "CALL_SUCCEEDED"
-  | "CALL_FAILED";
+  "EXPORT_PRESENT" | "CALL_ATTEMPTED" | "CALL_SUCCEEDED" | "CALL_FAILED";
 
 export interface ClientApiCallEvidence {
   api: string;

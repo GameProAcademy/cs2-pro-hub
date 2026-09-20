@@ -161,7 +161,9 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
       result.parser.runtimeSurface.observedExports.includes(name),
     ) ||
     inspectRuntimeSurface(
-      Object.fromEntries(result.parser.runtimeSurface.observedExports.map((name) => [name, () => {}])),
+      Object.fromEntries(
+        result.parser.runtimeSurface.observedExports.map((name) => [name, () => {}]),
+      ),
     ).runtimeSurfaceDigest !== result.parser.runtimeSurface.runtimeSurfaceDigest ||
     !Array.isArray(result.parser.apiCalls) ||
     !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>

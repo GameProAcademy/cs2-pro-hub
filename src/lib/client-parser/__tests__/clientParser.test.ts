@@ -315,12 +315,18 @@ describe("client parser compact contract", () => {
     });
   });
 
-  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)("fails readiness when required export %s is absent", (missing) => {
-    const runtime = Object.fromEntries(
-      CLIENT_REQUIRED_RUNTIME_EXPORTS.filter((name) => name !== missing).map((name) => [name, () => {}]),
-    );
-    expect(inspectRuntimeSurface(runtime).minimumReady).toBe(false);
-  });
+  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)(
+    "fails readiness when required export %s is absent",
+    (missing) => {
+      const runtime = Object.fromEntries(
+        CLIENT_REQUIRED_RUNTIME_EXPORTS.filter((name) => name !== missing).map((name) => [
+          name,
+          () => {},
+        ]),
+      );
+      expect(inspectRuntimeSurface(runtime).minimumReady).toBe(false);
+    },
+  );
 
   it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)(
     "rejects a result without successful call evidence for %s",

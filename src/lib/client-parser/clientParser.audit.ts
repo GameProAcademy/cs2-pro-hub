@@ -53,13 +53,7 @@ export const CLIENT_EVENT_CATALOG = {
     "enter_buyzone",
     "exit_buyzone",
   ],
-  economy: [
-    "item_purchase",
-    "item_pickup",
-    "item_equip",
-    "item_remove",
-    "weapon_zoom_rifle",
-  ],
+  economy: ["item_purchase", "item_pickup", "item_equip", "item_remove", "weapon_zoom_rifle"],
 } as const;
 
 export const CLIENT_PRIORITY_EVENTS = Object.values(CLIENT_EVENT_CATALOG).flat();

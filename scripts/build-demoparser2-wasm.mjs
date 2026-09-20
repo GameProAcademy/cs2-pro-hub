@@ -15,7 +15,11 @@ const crate = resolve(source, "src/wasm");
 const generated = resolve(crate, "www/pkg");
 
 function run(command, args, options = {}) {
-  return execFileSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options }).trim();
+  return execFileSync(command, args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    ...options,
+  }).trim();
 }
 
 function sha256(path) {
@@ -55,11 +59,9 @@ if (Object.values(tools).some((value) => value === null)) fail("required_build_t
 rmSync(generated, { recursive: true, force: true });
 mkdirSync(generated, { recursive: true });
 try {
-  run(
-    "wasm-pack",
-    ["build", "--locked", "--release", "--out-dir", "www/pkg", "--target", TARGET],
-    { cwd: crate },
-  );
+  run("wasm-pack", ["build", "--locked", "--release", "--out-dir", "www/pkg", "--target", TARGET], {
+    cwd: crate,
+  });
 } catch (error) {
   fail(`build_failed:${error instanceof Error ? error.message.slice(0, 240) : "unknown"}`);
 }
@@ -88,7 +90,8 @@ console.log(
       tools,
       binding: { bytes: statSync(binding).size, sha256: sha256(binding) },
       wasm: { bytes: statSync(wasm).size, sha256: sha256(wasm) },
-      reason: "upstream Rust and wasm-pack versions are not pinned; compare separately with the checked-in source artifact",
+      reason:
+        "upstream Rust and wasm-pack versions are not pinned; compare separately with the checked-in source artifact",
     },
     null,
     2,
