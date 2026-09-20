@@ -43,7 +43,7 @@ type WasmApi = {
   parseGrenades?: (file: Uint8Array) => unknown;
   parsePlayerInfo?: (file: Uint8Array) => unknown;
 };
-type WasmInit = ((input?: string) => Promise<unknown>) & Partial<WasmApi>;
+type WasmInit = ((input?: string | ArrayBuffer | Uint8Array) => Promise<unknown>) & Partial<WasmApi>;
 type WorkerScope = typeof globalThis & {
   importScripts: (...urls: string[]) => void;
   wasm_bindgen?: WasmInit;
