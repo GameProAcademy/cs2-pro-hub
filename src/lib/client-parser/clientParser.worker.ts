@@ -252,6 +252,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   const selectedEventSamples: ClientEventSample[] = [];
   let parseEventSucceeded = false;
   let parseEventFailure: unknown;
+  let parseEventAttempted = false;
   for (const name of CLIENT_PRIORITY_EVENTS) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
@@ -260,6 +261,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     }
     let parsed: Array<Record<string, unknown>>;
     try {
+      parseEventAttempted = true;
       parsed = rows(parser.parseEvent(bytes, name, [], []));
       parseEventSucceeded = true;
     } catch (error) {
@@ -276,11 +278,20 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       selectedEventSamples.push({ eventName: name, tick: safeNumber(row["tick"]), fields: row });
     }
   }
+  if (!parseEventAttempted) {
+    try {
+      parseEventAttempted = true;
+      parser.parseEvent(bytes, names[0] ?? "player_death", [], []);
+      parseEventSucceeded = true;
+    } catch (error) {
+      parseEventFailure = error;
+    }
+  }
   apiCalls.push(
     apiEvidence(
       "parseEvent",
       true,
-      names.some((name) => CLIENT_PRIORITY_EVENTS.includes(name as never)),
+      parseEventAttempted,
       parseEventSucceeded,
       parseEventFailure,
     ),
