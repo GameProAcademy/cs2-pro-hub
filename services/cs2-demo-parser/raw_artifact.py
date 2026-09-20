@@ -89,6 +89,7 @@ def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
         "economy": evidence.get("economy_coverage") or [],
         "forensic": [
             {
+                "forensic_contract_v2": evidence.get("forensic_contract_v2"),
                 "event_coverage": evidence.get("event_coverage") or [],
                 "field_mappings": evidence.get("field_mappings") or [],
                 "gates": evidence.get("gates") or [],
@@ -108,6 +109,7 @@ def _now() -> str:
 def _audit_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     """Small, deterministic evidence summary; the APP owns the final decision."""
     return {
+        "forensic_contract_v2": evidence.get("forensic_contract_v2"),
         "raw_status": evidence.get("raw_status"),
         "raw_audit_status": evidence.get("raw_audit_status"),
         "raw_block_reasons": sorted(str(item) for item in (evidence.get("raw_block_reasons") or [])),

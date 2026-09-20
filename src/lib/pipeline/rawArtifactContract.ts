@@ -38,6 +38,63 @@ const RAW_MAPPING_STATUSES = new Set([
   "UNMAPPED_BUT_AVAILABLE",
 ]);
 
+export const RAW_FORENSIC_V2_REQUIRED_GATES = [
+  "RAW-V2-01-parser-identity",
+  "RAW-V2-02-capability-catalog",
+  "RAW-V2-03-event-discovery",
+  "RAW-V2-04-all-events-attempted",
+  "RAW-V2-05-full-tick-domain",
+  "RAW-V2-06-tick-batches",
+  "RAW-V2-07-tick-gaps",
+  "RAW-V2-08-tick-overlaps",
+  "RAW-V2-09-properties-classified",
+  "RAW-V2-10-header",
+  "RAW-V2-11-player-info",
+  "RAW-V2-12-rounds",
+  "RAW-V2-13-bomb",
+  "RAW-V2-14-combat",
+  "RAW-V2-15-grenades",
+  "RAW-V2-16-teams-score",
+  "RAW-V2-17-usercmd",
+  "RAW-V2-18-weapons-inventory",
+  "RAW-V2-19-aggregates",
+  "RAW-V2-20-mapping-complete",
+  "RAW-V2-21-no-parse-failures",
+  "RAW-V2-22-physical-reaudit",
+] as const;
+
+export function validateRawForensicContractV2(value: unknown): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return ["forensic_v2_missing"];
+  const contract = value as Record<string, unknown>;
+  const reasons: string[] = [];
+  if (contract["audit_contract_version"] !== 2) reasons.push("forensic_v2_version_invalid");
+  const parser = contract["parser"] as Record<string, unknown> | undefined;
+  if (parser?.["name"] !== "demoparser2" || parser?.["version"] !== "0.42.0")
+    reasons.push("forensic_v2_parser_invalid");
+  const tick = contract["full_tick_audit"] as Record<string, unknown> | undefined;
+  if (tick?.["coverage"] !== "FULL_TICK_DOMAIN_AUDIT" || tick?.["complete"] !== true)
+    reasons.push("forensic_v2_full_tick_unproven");
+  const gates = Array.isArray(contract["gates"])
+    ? (contract["gates"] as Array<Record<string, unknown>>)
+    : [];
+  const byName = new Map(gates.map((gate) => [gate["gate"], gate]));
+  for (const required of RAW_FORENSIC_V2_REQUIRED_GATES) {
+    const gate = byName.get(required);
+    if (!gate) reasons.push(`forensic_v2_gate_missing:${required}`);
+    else if (required !== "RAW-V2-22-physical-reaudit" && gate["status"] !== "PASS")
+      reasons.push(`forensic_v2_gate_blocked:${required}`);
+  }
+  if (gates.length !== RAW_FORENSIC_V2_REQUIRED_GATES.length)
+    reasons.push("forensic_v2_gate_count_invalid");
+  if (contract["physical_reaudit_required"] !== true)
+    reasons.push("forensic_v2_physical_reaudit_not_required");
+  if (!Array.isArray(contract["property_inventory"]) || !Array.isArray(contract["event_inventory"]))
+    reasons.push("forensic_v2_inventory_invalid");
+  if (!Array.isArray(contract["mapping_inventory"]) || contract["mapping_inventory"].length === 0)
+    reasons.push("forensic_v2_mapping_invalid");
+  return [...new Set(reasons)].sort();
+}
+
 export function validateRawAuditMappingInventory(value: unknown): Array<Record<string, unknown>> {
   if (!Array.isArray(value) || value.length === 0) return [];
   const seen = new Set<string>();
