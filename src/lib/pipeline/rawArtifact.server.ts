@@ -206,7 +206,7 @@ export async function auditPhysicalRawChunks(args: {
     totalRows += decoded.rows;
     totalBytes += bytes.byteLength;
   }
-  return {
+  const approval: RawAdmissionApproval = {
     bucket: args.bucket,
     total_chunks: args.chunks.length,
     total_rows: totalRows,
@@ -910,8 +910,13 @@ export function rawArtifactApproval(
     reconciliationDigest,
     finalForensicContract: finalContract as Record<string, Json>,
     reconciliationProof: reconciliation as Record<string, Json>,
-    proofIdentity: uploadId
-      ? { artifactId, uploadId, artifactRootDigest: decision.evidenceDigest }
-      : undefined,
   };
+  if (uploadId) {
+    approval.proofIdentity = {
+      artifactId,
+      uploadId,
+      artifactRootDigest: decision.evidenceDigest,
+    };
+  }
+  return approval;
 }
