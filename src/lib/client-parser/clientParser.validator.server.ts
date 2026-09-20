@@ -33,7 +33,13 @@ const FORBIDDEN_KEYS = new Set([
   "rawArtifact",
   "raw_artifact",
 ]);
-const FORBIDDEN_PAYLOAD_KEYS = new Set(FORBIDDEN_KEYS);
+const FORBIDDEN_PAYLOAD_KEYS = new Set([
+  ...FORBIDDEN_KEYS,
+  "rawEvents",
+  "raw_events",
+  "fullTicks",
+  "full_ticks",
+]);
 const MAX_DEPTH = 12;
 const MAX_OBJECT_KEYS = 256;
 
