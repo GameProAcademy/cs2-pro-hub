@@ -97,9 +97,48 @@ def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
                 "raw_status": evidence.get("raw_status"),
                 "raw_audit_status": evidence.get("raw_audit_status"),
                 "raw_block_reasons": evidence.get("raw_block_reasons") or [],
+                "producer_reconciliation_projection": _producer_reconciliation_projection(evidence),
             }
         ],
     }
+
+
+def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, Any]:
+    events = [row for row in evidence.get("raw_events") or [] if isinstance(row, dict)]
+    players = [row for row in evidence.get("raw_player_info") or [] if isinstance(row, dict)]
+    rounds = [row for row in evidence.get("round_evidence") or [] if isinstance(row, dict)]
+    ticks = [row for row in evidence.get("tick_samples") or [] if isinstance(row, dict)]
+    event_names = sorted({str(row.get("event_name")) for row in events})
+    event_counts = {name: sum(row.get("event_name") == name for row in events) for name in event_names}
+    event_fields = {
+        name: sorted({str(field) for row in events if row.get("event_name") == name for field in (row.get("raw_fields") or {})})
+        for name in event_names
+    }
+    player_ids = sorted({str(row.get("steamid", row.get("player_steamid"))) for row in players if row.get("steamid", row.get("player_steamid")) is not None})
+    round_ids = sorted({_safe_int(row.get("number")) for row in rounds if _safe_int(row.get("number")) is not None})
+    tick_values = sorted({_safe_int(row.get("tick")) for row in ticks if _safe_int(row.get("tick")) is not None})
+    mappings = sorted(
+        ({key: row.get(key) for key in ("raw_field", "app_field", "canonical_field", "status", "reason")} for row in evidence.get("field_mappings") or [] if isinstance(row, dict)),
+        key=lambda row: str(row.get("raw_field")),
+    )
+    projection = {
+        "event_inventory": event_names,
+        "event_counts": event_counts,
+        "event_fields": event_fields,
+        "player_inventory": player_ids,
+        "player_fields": sorted({str(field) for row in players for field in row}),
+        "round_inventory": round_ids,
+        "round_fields": sorted({str(field) for row in rounds for field in row}),
+        "tick_sample_domain": {"min_tick": min(tick_values) if tick_values else None, "max_tick": max(tick_values) if tick_values else None, "count": len(tick_values)},
+        "tick_fields": sorted({str(field) for row in ticks for field in row}),
+        "mappings": mappings,
+    }
+    projection["digest"] = hashlib.sha256(_stable(projection)).hexdigest()
+    return projection
+
+
+def _safe_int(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def _now() -> str:

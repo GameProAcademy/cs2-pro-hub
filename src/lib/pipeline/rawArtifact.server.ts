@@ -4,6 +4,7 @@ import {
   deriveRawArtifactAuditStatus,
   rawArtifactBytesSha256,
   rawArtifactSha256,
+  resolveRawForensicPhysicalGate,
   stableRawArtifactJson,
   validateRawForensicContractV2,
 } from "@/lib/pipeline/rawArtifactContract";
@@ -51,17 +52,61 @@ type PhysicalChunk = {
   storage_path: string;
 };
 
-async function gunzipJsonLines(blob: Blob): Promise<{ rows: number; fields: string[] }> {
+type PhysicalSemanticAccumulator = {
+  eventNames: Set<string>;
+  eventCounts: Map<string, number>;
+  eventFields: Map<string, Set<string>>;
+  playerIds: Set<string>;
+  playerFields: Set<string>;
+  roundIds: Set<number>;
+  roundFields: Set<string>;
+  tickValues: Set<number>;
+  tickFields: Set<string>;
+  forensicRows: Array<Record<string, unknown>>;
+};
+
+async function gunzipJsonLines(
+  blob: Blob,
+  section: string,
+  semantic: PhysicalSemanticAccumulator,
+): Promise<{ rows: number; fields: string[]; decompressedBytes: number }> {
   const stream = blob.stream().pipeThrough(new DecompressionStream("gzip"));
   const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
   let pending = "";
   let rows = 0;
   const fields = new Set<string>();
+  let decompressedBytes = 0;
   const accept = (line: string) => {
     if (!line) return;
+    decompressedBytes += new TextEncoder().encode(`${line}\n`).byteLength;
     const value: unknown = JSON.parse(line);
     if (value && typeof value === "object" && !Array.isArray(value)) {
-      Object.keys(value).forEach((key) => fields.add(key));
+      const row = value as Record<string, unknown>;
+      Object.keys(row).forEach((key) => fields.add(key));
+      if (section === "events") {
+        const name = row["event_name"];
+        if (typeof name === "string") {
+          semantic.eventNames.add(name);
+          semantic.eventCounts.set(name, (semantic.eventCounts.get(name) ?? 0) + 1);
+          const rawFields = row["raw_fields"];
+          const fieldSet = semantic.eventFields.get(name) ?? new Set<string>();
+          if (rawFields && typeof rawFields === "object" && !Array.isArray(rawFields))
+            Object.keys(rawFields as Record<string, unknown>).forEach((field) => fieldSet.add(field));
+          semantic.eventFields.set(name, fieldSet);
+        }
+      } else if (section === "players") {
+        Object.keys(row).forEach((field) => semantic.playerFields.add(field));
+        const id = row["steamid"] ?? row["player_steamid"];
+        if (typeof id === "string" || typeof id === "number") semantic.playerIds.add(String(id));
+      } else if (section === "rounds") {
+        Object.keys(row).forEach((field) => semantic.roundFields.add(field));
+        if (typeof row["number"] === "number" && Number.isSafeInteger(row["number"]))
+          semantic.roundIds.add(row["number"]);
+      } else if (section === "ticks") {
+        Object.keys(row).forEach((field) => semantic.tickFields.add(field));
+        if (typeof row["tick"] === "number" && Number.isSafeInteger(row["tick"]))
+          semantic.tickValues.add(row["tick"]);
+      } else if (section === "forensic") semantic.forensicRows.push(row);
     }
     rows += 1;
   };
@@ -77,7 +122,7 @@ async function gunzipJsonLines(blob: Blob): Promise<{ rows: number; fields: stri
     }
   }
   accept(pending);
-  return { rows, fields: [...fields].sort() };
+  return { rows, fields: [...fields].sort(), decompressedBytes };
 }
 
 /** Re-reads every private object; database metadata alone is never physical proof. */
@@ -87,7 +132,15 @@ export async function auditPhysicalRawChunks(args: {
   chunks: PhysicalChunk[];
   download: (path: string) => Promise<Blob>;
 }): Promise<Record<string, unknown>> {
-  const sections: Record<string, { rows: number; bytes: number; fields: Set<string> }> = {};
+  const sections: Record<
+    string,
+    { rows: number; bytes: number; decompressedBytes: number; fields: Set<string>; chunkIndexes: number[]; chunkShas: string[] }
+  > = {};
+  const semantic: PhysicalSemanticAccumulator = {
+    eventNames: new Set(), eventCounts: new Map(), eventFields: new Map(), playerIds: new Set(),
+    playerFields: new Set(), roundIds: new Set(), roundFields: new Set(), tickValues: new Set(),
+    tickFields: new Set(), forensicRows: [],
+  };
   let totalRows = 0;
   let totalBytes = 0;
   for (const chunk of args.chunks) {
@@ -99,7 +152,7 @@ export async function auditPhysicalRawChunks(args: {
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk digest mismatch");
     let decoded: { rows: number; fields: string[] };
     try {
-      decoded = await gunzipJsonLines(new Blob([bytes]));
+      decoded = await gunzipJsonLines(new Blob([bytes]), chunk.section, semantic);
     } catch {
       throw new PipelineError(
         "PARSER_INVALID_RESPONSE",
@@ -108,9 +161,12 @@ export async function auditPhysicalRawChunks(args: {
     }
     if (decoded.rows !== chunk.row_count)
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk row count mismatch");
-    const section = (sections[chunk.section] ??= { rows: 0, bytes: 0, fields: new Set() });
+    const section = (sections[chunk.section] ??= { rows: 0, bytes: 0, decompressedBytes: 0, fields: new Set(), chunkIndexes: [], chunkShas: [] });
     section.rows += decoded.rows;
     section.bytes += bytes.byteLength;
+    section.decompressedBytes += decoded.decompressedBytes;
+    section.chunkIndexes.push(chunk.chunk_index);
+    section.chunkShas.push(chunk.sha256);
     decoded.fields.forEach((field) => section.fields.add(field));
     totalRows += decoded.rows;
     totalBytes += bytes.byteLength;
@@ -125,10 +181,55 @@ export async function auditPhysicalRawChunks(args: {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([name, value]) => [
           name,
-          { rows: value.rows, bytes: value.bytes, fields: [...value.fields].sort() },
+          { rows: value.rows, bytes: value.bytes, decompressed_bytes: value.decompressedBytes, fields: [...value.fields].sort(), chunk_indexes: value.chunkIndexes, chunk_shas: value.chunkShas },
         ]),
     ),
+    semantic: physicalSemanticProjection(semantic),
   };
+}
+
+function physicalSemanticProjection(semantic: PhysicalSemanticAccumulator): Record<string, unknown> {
+  const ticks = [...semantic.tickValues].sort((a, b) => a - b);
+  const projection: Record<string, unknown> = {
+    event_inventory: [...semantic.eventNames].sort(),
+    event_counts: Object.fromEntries([...semantic.eventCounts].sort(([a], [b]) => a.localeCompare(b))),
+    event_fields: Object.fromEntries([...semantic.eventFields].sort(([a], [b]) => a.localeCompare(b)).map(([name, fields]) => [name, [...fields].sort()])),
+    player_inventory: [...semantic.playerIds].sort(),
+    player_fields: [...semantic.playerFields].sort(),
+    round_inventory: [...semantic.roundIds].sort((a, b) => a - b),
+    round_fields: [...semantic.roundFields].sort(),
+    tick_sample_domain: { min_tick: ticks[0] ?? null, max_tick: ticks.at(-1) ?? null, count: ticks.length },
+    tick_fields: [...semantic.tickFields].sort(),
+  };
+  projection["digest"] = rawArtifactSha256(stableRawArtifactJson(projection));
+  return projection;
+}
+
+export function reconcileProducerAndPhysical(
+  producer: unknown,
+  physical: unknown,
+): Record<string, unknown> {
+  const expected = producer && typeof producer === "object" && !Array.isArray(producer) ? producer as Record<string, unknown> : {};
+  const observed = physical && typeof physical === "object" && !Array.isArray(physical) ? physical as Record<string, unknown> : {};
+  const keys = new Set([...Object.keys(expected), ...Object.keys(observed)]);
+  keys.delete("digest");
+  const missing: string[] = []; const extra: string[] = []; const different: string[] = [];
+  for (const key of [...keys].sort()) {
+    if (!(key in observed)) missing.push(key);
+    else if (!(key in expected)) extra.push(key);
+    else if (stableRawArtifactJson(expected[key]) !== stableRawArtifactJson(observed[key])) different.push(key);
+  }
+  const producerDigest = typeof expected["digest"] === "string" ? expected["digest"] : "";
+  const physicalDigest = typeof observed["digest"] === "string" ? observed["digest"] : "";
+  const result = {
+    status: missing.length === 0 && extra.length === 0 && different.length === 0 && producerDigest === physicalDigest ? "PASS" : "FAIL",
+    missing_from_artifact: missing,
+    extra_in_artifact: extra,
+    different_in_artifact: different,
+    producer_digest: producerDigest,
+    physical_digest: physicalDigest,
+  };
+  return { ...result, reconciliation_digest: rawArtifactSha256(stableRawArtifactJson(result)) };
 }
 
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
@@ -475,7 +576,7 @@ export async function verifyRawArtifact(args: {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest mismatch");
   }
   const forensicV2 = (auditEvidence as Record<string, unknown>)["forensic_contract_v2"];
-  const v2Reasons = validateRawForensicContractV2(forensicV2);
+  const v2Reasons = validateRawForensicContractV2(forensicV2, "producer");
   if (v2Reasons.length > 0) {
     return {
       status: "BLOCKED",
@@ -497,6 +598,28 @@ export async function verifyRawArtifact(args: {
     rawArtifactSha256(stableRawArtifactJson(unsignedContract)) !== declaredDigest
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic v2 digest mismatch");
+  }
+  const physicalSemantic = physical["semantic"];
+  const physicalSections = physical["sections"] as Record<string, unknown> | undefined;
+  const forensicSection = physicalSections?.["forensic"] as Record<string, unknown> | undefined;
+  if (!forensicSection || Number(forensicSection["rows"]) !== 1)
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic section cardinality mismatch");
+  // The forensic row was parsed independently from the physical gzip JSONL.
+  const physicalForensicRows = (physical as Record<string, unknown>)["forensic_rows"];
+  const forensicRows = Array.isArray(physicalForensicRows) ? physicalForensicRows : [];
+  const physicalForensic = forensicRows[0] as Record<string, unknown> | undefined;
+  const producerProjection = physicalForensic?.["producer_reconciliation_projection"];
+  const reconciliation = reconcileProducerAndPhysical(producerProjection, physicalSemantic);
+  if (reconciliation["status"] !== "PASS")
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW producer/artifact reconciliation failed");
+  let finalContract: Record<string, unknown>;
+  try {
+    finalContract = resolveRawForensicPhysicalGate(
+      forensicV2,
+      String(reconciliation["reconciliation_digest"] ?? ""),
+    );
+  } catch {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
   const physical = await auditPhysicalRawChunks({
     bucket: RAW_BUCKET,
@@ -532,6 +655,8 @@ export async function verifyRawArtifact(args: {
       total_rows: artifact.total_rows,
       total_bytes: artifact.total_bytes,
       physical_reaudit: physical as Json,
+      reconciliation: reconciliation as Json,
+      final_forensic_contract: finalContract as Json,
     },
   };
 }
