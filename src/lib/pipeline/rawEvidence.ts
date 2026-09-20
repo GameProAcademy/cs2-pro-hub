@@ -169,6 +169,13 @@ export interface RawForensicContractV2 {
   final_gate_status: "PASS" | "BLOCKED";
   physical_reaudit_required: true;
   canonical_admission: "BLOCKED" | "APPROVED";
+  catalog_digest: string;
+  tick_authority_digest: string;
+  unsigned_contract_digest: string;
+  artifact_root_digest?: string;
+  reconciliation_digest?: string;
+  reconciliation_dimensions?: Record<string, "PASS" | "FAIL">;
+  final_contract_digest?: string;
   deterministic_digest: string;
 }
 
@@ -188,6 +195,8 @@ export interface RawAdmissionApproval {
   auditVersion: number;
   evidenceDigest: string;
   artifactId?: string;
+  finalContractDigest?: string;
+  reconciliationDigest?: string;
 }
 
 const DIGEST_KEYS = [

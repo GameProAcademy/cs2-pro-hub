@@ -75,6 +75,17 @@ export const RAW_FORENSIC_V2_REQUIRED_GATES = [
   "RAW-V2-22-physical-reaudit",
 ] as const;
 
+export const RAW_FORENSIC_RECONCILIATION_DIMENSIONS = [
+  "artifact_identity", "job_identity", "upload_identity", "attempt_number", "demo_sha",
+  "parser_identity", "parser_version", "parser_revision", "contract_version", "catalog_digest",
+  "capability_count", "capability_digest", "classifications", "mappings", "derivations",
+  "raw_only_reasons", "event_inventory", "event_counts", "event_fields", "player_inventory",
+  "round_inventory", "tick_domain", "tick_coverage", "property_inventory", "semantic_inventories",
+  "chunk_count", "chunk_indexes", "chunk_sha", "previous_chunk_sha", "byte_sizes", "row_counts",
+  "section_counts", "section_digests", "artifact_root_digest", "forensic_contract_digest",
+  "reconciliation_digest",
+] as const;
+
 export type RawForensicValidationStage = "producer" | "final";
 
 export function validateRawForensicContractV2(
@@ -155,6 +166,33 @@ export function validateRawForensicContractV2(
     reconciliation?.["set_difference_count"] !== 0
   )
     reasons.push("forensic_v2_capability_reconciliation_failed");
+  const declaredDigest = contract["deterministic_digest"];
+  const unsigned = Object.fromEntries(
+    Object.entries(contract).filter(
+      ([key]) => key !== "deterministic_digest" && key !== "unsigned_contract_digest" && key !== "final_contract_digest",
+    ),
+  );
+  const unsignedDigest = rawArtifactSha256(stableRawArtifactJson(unsigned));
+  if (
+    typeof declaredDigest !== "string" ||
+    declaredDigest !== unsignedDigest ||
+    contract["unsigned_contract_digest"] !== unsignedDigest
+  ) reasons.push("forensic_v2_contract_digest_invalid");
+  const catalog = contract["capability_catalog"] as Record<string, unknown> | undefined;
+  if (typeof contract["catalog_digest"] !== "string" || contract["catalog_digest"] !== catalog?.["catalog_digest"])
+    reasons.push("forensic_v2_catalog_digest_invalid");
+  if (typeof contract["tick_authority_digest"] !== "string" || contract["tick_authority_digest"] !== domainSource?.["digest"])
+    reasons.push("forensic_v2_tick_authority_digest_invalid");
+  if (stage === "final") {
+    const dimensions = contract["reconciliation_dimensions"] as Record<string, unknown> | undefined;
+    if (!dimensions || RAW_FORENSIC_RECONCILIATION_DIMENSIONS.some((name) => dimensions[name] !== "PASS"))
+      reasons.push("forensic_v2_reconciliation_dimensions_invalid");
+    if (typeof contract["reconciliation_digest"] !== "string" || typeof contract["artifact_root_digest"] !== "string")
+      reasons.push("forensic_v2_final_digest_inputs_missing");
+    const finalProjection = Object.fromEntries(Object.entries(contract).filter(([key]) => key !== "final_contract_digest"));
+    if (contract["final_contract_digest"] !== rawArtifactSha256(stableRawArtifactJson(finalProjection)))
+      reasons.push("forensic_v2_final_digest_invalid");
+  }
   const expectedStatuses =
     stage === "final"
       ? ["PASS", "PASS", "PASS", "APPROVED"]
@@ -172,7 +210,7 @@ export function validateRawForensicContractV2(
 
 export function resolveRawForensicPhysicalGate(
   value: unknown,
-  reconciliationDigest: string,
+  proof: { reconciliationDigest: string; artifactRootDigest: string; dimensions: Record<string, "PASS" | "FAIL"> },
 ): Record<string, unknown> {
   const producerReasons = validateRawForensicContractV2(value, "producer");
   if (producerReasons.length > 0) throw new Error(producerReasons.join(","));
@@ -182,14 +220,24 @@ export function resolveRawForensicPhysicalGate(
   if (!physicalGate) throw new Error("forensic_v2_gate_missing:RAW-V2-22-physical-reaudit");
   physicalGate["status"] = "PASS";
   physicalGate["reasons"] = [];
-  physicalGate["reconciliation_digest"] = reconciliationDigest;
+  if (!/^[0-9a-f]{64}$/.test(proof.reconciliationDigest) || !/^[0-9a-f]{64}$/.test(proof.artifactRootDigest))
+    throw new Error("forensic_v2_final_digest_inputs_missing");
+  if (RAW_FORENSIC_RECONCILIATION_DIMENSIONS.some((name) => proof.dimensions[name] !== "PASS"))
+    throw new Error("forensic_v2_reconciliation_dimensions_invalid");
+  physicalGate["reconciliation_digest"] = proof.reconciliationDigest;
   contract["physical_gate_status"] = "PASS";
   contract["final_gate_status"] = "PASS";
   contract["canonical_admission"] = "APPROVED";
+  contract["reconciliation_digest"] = proof.reconciliationDigest;
+  contract["artifact_root_digest"] = proof.artifactRootDigest;
+  contract["reconciliation_dimensions"] = proof.dimensions;
   const unsigned = Object.fromEntries(
-    Object.entries(contract).filter(([key]) => key !== "deterministic_digest"),
+    Object.entries(contract).filter(([key]) => key !== "deterministic_digest" && key !== "unsigned_contract_digest" && key !== "final_contract_digest"),
   );
-  contract["deterministic_digest"] = rawArtifactSha256(stableRawArtifactJson(unsigned));
+  const digest = rawArtifactSha256(stableRawArtifactJson(unsigned));
+  contract["unsigned_contract_digest"] = digest;
+  contract["deterministic_digest"] = digest;
+  contract["final_contract_digest"] = rawArtifactSha256(stableRawArtifactJson(contract));
   const finalReasons = validateRawForensicContractV2(contract, "final");
   if (finalReasons.length > 0) throw new Error(finalReasons.join(","));
   return contract;
