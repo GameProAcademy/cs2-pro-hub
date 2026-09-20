@@ -856,7 +856,7 @@ export async function verifyRawArtifact(args: {
   } catch {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
-  const approval: RawAdmissionApproval = {
+  return {
     status: "PASS",
     auditStatus: "APPROVED",
     approved: true,
@@ -900,7 +900,7 @@ export function rawArtifactApproval(
   if (!HEX_64.test(finalContractDigest) || !HEX_64.test(reconciliationDigest)) {
     throw new PipelineError("RAW_AUDIT_BLOCKED", "RAW final forensic proof is incomplete");
   }
-  return {
+  const approval: RawAdmissionApproval = {
     approved: true,
     auditStatus: "APPROVED",
     auditVersion: decision.auditVersion,

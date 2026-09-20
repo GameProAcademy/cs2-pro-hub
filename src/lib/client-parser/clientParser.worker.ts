@@ -54,7 +54,7 @@ type WorkerScope = typeof globalThis & {
 const scope = globalThis as WorkerScope;
 let api: WasmInit | null = null;
 let wasmLoadMs = 0;
-let cancelled = new Set<string>();
+const cancelled = new Set<string>();
 
 function emit(event: ClientParserWorkerEvent) {
   scope.postMessage(event);
