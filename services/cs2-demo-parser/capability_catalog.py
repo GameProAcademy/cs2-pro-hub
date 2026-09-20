@@ -126,22 +126,6 @@ CATEGORY_FIELDS = {
     "economy": ECONOMY_FIELDS,
     "objective": ("bomb_planted", "bomb_defused", "bomb_exploded", "in_bomb_zone", "which_bomb_zone", "objective_total"),
     "parser_apis": PARSER_APIS,
-    # Legacy category aliases remain catalogued for historical readability.
-    "position": POSITION_FIELDS,
-    "aim": AIM_FIELDS,
-    "movement": MOVEMENT_FIELDS,
-    "combat": COMBAT_FIELDS,
-    "economy": ECONOMY_FIELDS,
-    "weapon": WEAPON_FIELDS,
-    "game_state": GAME_STATE_FIELDS,
-    "team_score": TEAM_SCORE_FIELDS,
-    "aggregate": AGGREGATE_FIELDS,
-    "buttons": BUTTON_FIELDS,
-    "usercmd": USERCMD_FIELDS,
-    "grenade": GRENADE_FIELDS,
-    "round": ROUND_FIELDS,
-    "event_type": EVENT_TYPES,
-    "event_field": EVENT_NATIVE_FIELDS,
 }
 
 CANONICAL_MAPPINGS = {
@@ -180,8 +164,8 @@ class Capability:
 def _api(category: str) -> str:
     if category == "header": return "parse_header"
     if category == "player_info": return "parse_player_info"
-    if category == "grenade": return "parse_grenades"
-    if category in {"event_type", "event_field", "events", "event_fields", "damage", "death"}: return "list_game_events+parse_event"
+    if category == "grenades": return "parse_grenades"
+    if category in {"events", "event_fields", "damage", "death"}: return "list_game_events+parse_event"
     if category == "parser_apis": return "installed_runtime_introspection"
     return "list_updated_fields+parse_ticks"
 
@@ -214,7 +198,7 @@ def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable
         if key not in known:
             rows.append(asdict(Capability(key, "runtime_field", name, "list_updated_fields", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_updated_fields", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered parser field; preserved and requires explicit semantic review before Canonical.")))
     for name in sorted(set(str(v) for v in runtime_events if str(v).strip())):
-        key = f"event_type.{name}"
+        key = f"events.{name}"
         if key not in known:
             rows.append(asdict(Capability(key, "event_type", name, "list_game_events+parse_event", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_game_events", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered event; preserved and requires explicit semantic review before Canonical.")))
     rows.sort(key=lambda row: row["capability_id"])

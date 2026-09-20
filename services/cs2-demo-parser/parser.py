@@ -36,6 +36,7 @@ from forensic_audit import (
     build_tick_coverage,
     build_tick_domain_source,
     build_tick_intervals,
+    merge_property_summaries,
     summarize_rows,
 )
 from raw_evidence import (
@@ -204,24 +205,27 @@ def _audit_full_tick_domain(
             item.update({"classification": "UNAVAILABLE", "parse_success": False, "reason": "Authoritative expected tick domain is unavailable."})
         return build_tick_coverage(batches=[], playback_ticks=playback_ticks, tick_domain_source=source), unavailable
     batches: list[dict[str, Any]] = []
-    summary_rows: dict[str, list[dict[str, Any]]] = {prop: [] for prop in properties}
+    interval_summaries: list[dict[str, Any]] = []
     for start in range(0, len(properties), TICK_PROPERTY_BATCH_SIZE):
         requested = properties[start:start + TICK_PROPERTY_BATCH_SIZE]
         for first_tick, last_tick in intervals:
             try:
                 requested_ticks = list(range(first_tick, last_tick + 1))
                 rows = _records(method(requested, ticks=requested_ticks))
-                tick_values = [row.get("tick") for row in rows if isinstance(row.get("tick"), int)]
+                tick_values = sorted({row.get("tick") for row in rows if isinstance(row.get("tick"), int)})
                 players = sorted({str(value) for row in rows for value in [row.get("steamid", row.get("player_steamid"))] if value is not None})
                 batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": len(rows), "ticks": tick_values, "players": players})
-                for row in rows:
-                    for prop in requested:
-                        summary_rows[prop].append({"tick": row.get("tick"), "steamid": row.get("steamid", row.get("player_steamid")), prop: row.get(prop)})
+                for summary in summarize_rows(rows, requested):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
                 del rows
             except BaseException as exc:  # noqa: BLE001 - fail-closed evidence
                 kind, message = safe_error(exc)
                 batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": 0, "ticks": [], "players": [], "error": f"{kind}: {message}"})
-    summaries = [item for prop in properties for item in summarize_rows(summary_rows[prop], [prop])]
+                for summary in summarize_rows([], requested, error=exc):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
+    summaries = merge_property_summaries(interval_summaries)
     return build_tick_coverage(batches=batches, playback_ticks=playback_ticks, tick_domain_source=source), summaries
 
 

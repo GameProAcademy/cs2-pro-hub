@@ -61,6 +61,49 @@ def summarize_rows(rows: Iterable[dict[str, Any]], properties: Iterable[str], *,
     return out
 
 
+def merge_property_summaries(parts: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge interval summaries without retaining their source rows."""
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for part in parts:
+        grouped.setdefault(str(part.get("property")), []).append(part)
+    merged: list[dict[str, Any]] = []
+    for prop, rows in sorted(grouped.items()):
+        failures = [row for row in rows if row.get("classification") == "PARSE_FAILED"]
+        unavailable = rows and all(row.get("classification") == "UNAVAILABLE" for row in rows)
+        non_null = sum(int(row.get("non_null_count") or 0) for row in rows)
+        classification = "PARSE_FAILED" if failures else "UNAVAILABLE" if unavailable else "NOT_PRESENT" if non_null == 0 else "RAW_ONLY"
+        numeric_mins = [row["min"] for row in rows if isinstance(row.get("min"), (int, float))]
+        numeric_maxs = [row["max"] for row in rows if isinstance(row.get("max"), (int, float))]
+        first_ticks = [row["first_tick"] for row in rows if isinstance(row.get("first_tick"), int)]
+        last_ticks = [row["last_tick"] for row in rows if isinstance(row.get("last_tick"), int)]
+        players = sorted({str(player) for row in rows for player in row.get("players_observed") or []})
+        merged.append({
+            "property": prop,
+            "attempted": any(row.get("attempted") is True for row in rows),
+            "parse_success": not failures and not unavailable,
+            "row_count": sum(int(row.get("row_count") or 0) for row in rows),
+            "non_null_count": non_null,
+            "null_count": sum(int(row.get("null_count") or 0) for row in rows),
+            "distinct_count": None,
+            "first_non_null_value": next((row.get("first_non_null_value") for row in rows if row.get("first_non_null_value") is not None), None),
+            "last_non_null_value": next((row.get("last_non_null_value") for row in reversed(rows) if row.get("last_non_null_value") is not None), None),
+            "type_signature": sorted({kind for row in rows for kind in row.get("type_signature") or []}),
+            "min": min(numeric_mins) if numeric_mins else None,
+            "max": max(numeric_maxs) if numeric_maxs else None,
+            "players_observed": players[:128],
+            "distinct_player_count": len(players),
+            "first_tick": min(first_ticks) if first_ticks else None,
+            "last_tick": max(last_ticks) if last_ticks else None,
+            "classification": classification,
+            "reason": "Observed parser-native field retained in RAW." if classification == "RAW_ONLY" else "Known capability absent from this demo." if classification == "NOT_PRESENT" else "Parser raised while querying this capability." if classification == "PARSE_FAILED" else "Capability could not be audited by the installed runtime.",
+            "error_type": next((row.get("error_type") for row in rows if row.get("error_type")), None),
+            "error_message": next((row.get("error_message") for row in rows if row.get("error_message")), None),
+            "provenance": "demoparser2.parse_ticks",
+            "interval_digest": deterministic_digest([row.get("interval_digest") for row in rows]),
+        })
+    return merged
+
+
 def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
     """Describe, but never overstate, the 0.42.0 source for an expected domain.
 
