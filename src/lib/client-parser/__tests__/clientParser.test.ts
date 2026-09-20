@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { CLIENT_PARSER_CAPABILITY_CATALOG } from "../clientParser.capabilities";
 import { computeClientResultDigest, sha256Text } from "../clientParser.hash";
 import { buildClientParserManifest } from "../clientParser.manifest";
-import { compareClientVsServerReference } from "../clientParser.parity";
+import {
+  compareClientVsPythonSemantic,
+  compareClientVsServerReference,
+} from "../clientParser.parity";
 import {
   capabilitiesForSurface,
   inspectRuntimeSurface,
@@ -38,7 +41,11 @@ function result(): ClientParseResult {
         sourceCommit: "d3767705dc5846d73ed29db50eaeda58778dc934",
         sourceTag: "v0.42.0",
         buildTool: "wasm-pack 0.13.1",
+        buildTarget: "wasm32-unknown-unknown",
+        wasmBindgenTarget: "no-modules",
+        buildToolchain: "rustc test fixture",
         buildCommand: "wasm-pack build --target no-modules",
+        artifactSize: 1024,
         bindingUrl: "https://example.test/pkg/demoparser2.js",
         wasmUrl: "https://example.test/pkg/demoparser2_bg.wasm",
         wasmBindingSha256: "c".repeat(64),
@@ -54,7 +61,9 @@ function result(): ClientParseResult {
       players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
     },
     eventDiscovery: { status: "AVAILABLE", count: 1, names: ["round_end"] },
-    parsedEventInventory: [{ name: "round_end", status: "AVAILABLE", count: 1, fields: ["tick"] }],
+    parsedEventInventory: [
+      { name: "round_end", status: "PRESENT_AND_PARSED", count: 1, fields: ["tick"] },
+    ],
     selectedEventSamples: [{ eventName: "round_end", tick: 64, fields: { tick: 64 } }],
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -66,6 +75,7 @@ function result(): ClientParseResult {
       lastTick: 64,
       duplicates: 0,
       missingWithinProbe: 0,
+      samples: [{ tick: 64 }],
     },
     coverage: {
       fullTickDomain: false,
@@ -116,6 +126,17 @@ describe("client parser compact contract", () => {
     const right = { ...left, performance: { ...left.performance, totalDurationMs: 99 } };
     expect(computeClientResultDigest(left)).toBe(computeClientResultDigest(right));
   });
+  it("keeps deterministic digest independent from local filename metadata", () => {
+    const left = result();
+    const right = {
+      ...left,
+      demo: { ...left.demo, name: "renamed.dem", lastModified: 999 },
+    };
+    expect(computeClientResultDigest(left)).toBe(computeClientResultDigest(right));
+    expect(buildClientParserManifest(left).manifestDigest).toBe(
+      buildClientParserManifest(right).manifestDigest,
+    );
+  });
   it("accepts a bounded untrusted envelope while keeping Canonical blocked", () =>
     expect(validateClientParserResult(envelope())).toEqual({
       accepted: true,
@@ -163,7 +184,7 @@ describe("client parser compact contract", () => {
     [
       "contract version",
       mutate((v) => {
-        (v.manifest as { contractVersion: number }).contractVersion = 2;
+        (v.manifest as { contractVersion: number }).contractVersion = 999;
       }),
     ],
     [
@@ -253,6 +274,20 @@ describe("client parser compact contract", () => {
       mismatches: [],
     });
   });
+  it("reports all semantic parity dimensions without hiding mismatches", () => {
+    const report = compareClientVsPythonSemantic(
+      { map: "de_cache", tickrate: 64 },
+      { dimensions: { map: "de_cache", tickrate: 128, header: { map_name: "de_cache" } } },
+      { player_identities: false },
+    );
+    expect(report).toHaveLength(22);
+    expect(report.find((item) => item.dimension === "map")?.status).toBe("PASS");
+    expect(report.find((item) => item.dimension === "tickrate")?.status).toBe("FAIL");
+    expect(report.find((item) => item.dimension === "header")?.status).toBe("NOT_RUN");
+    expect(report.find((item) => item.dimension === "player_identities")?.status).toBe(
+      "NOT_AVAILABLE_ON_WASM",
+    );
+  });
 
   it("discovers the observed runtime surface instead of trusting declarations", () => {
     const surface = inspectRuntimeSurface({
@@ -339,5 +374,42 @@ describe("client parser compact contract", () => {
       accepted: false,
       reasonCode: "CLIENT_RESULT_DIGEST_MISMATCH",
     });
+  });
+  it.each([
+    [
+      "WASM hash",
+      (v: ReturnType<typeof envelope>) =>
+        (v.result.parser.artifact.wasmBinarySha256 = "e".repeat(64)),
+    ],
+    [
+      "binding hash",
+      (v: ReturnType<typeof envelope>) =>
+        (v.result.parser.artifact.wasmBindingSha256 = "e".repeat(64)),
+    ],
+    [
+      "source revision",
+      (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.sourceCommit = "e".repeat(40)),
+    ],
+    [
+      "artifact status",
+      (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.status = "INVALID"),
+    ],
+    ["player inventory", (v: ReturnType<typeof envelope>) => (v.result.playerInventory.count = 99)],
+    ["event inventory", (v: ReturnType<typeof envelope>) => (v.result.eventDiscovery.count = 99)],
+    [
+      "full tick claim",
+      (v: ReturnType<typeof envelope>) =>
+        ((v.result.coverage as { fullTickDomain: boolean }).fullTickDomain = true),
+    ],
+    [
+      "authoritative tick claim",
+      (v: ReturnType<typeof envelope>) =>
+        ((v.result.coverage as { authoritativeTickDomain: boolean }).authoritativeTickDomain =
+          true),
+    ],
+  ])("rejects forged %s", (_name, change) => {
+    const value = envelope();
+    change(value);
+    expect(validateClientParserResult(value).accepted).toBe(false);
   });
 });

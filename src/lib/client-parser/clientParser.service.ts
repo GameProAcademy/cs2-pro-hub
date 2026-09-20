@@ -12,6 +12,7 @@ export interface ClientParserProgress {
 export class ClientParserService {
   private worker: Worker | null = null;
   private requestId: string | null = null;
+  private rejectCurrent: ((reason: ClientParserError) => void) | null = null;
 
   async parse(
     file: File,
@@ -47,7 +48,10 @@ export class ClientParserService {
       const finish = () => {
         worker.terminate();
         if (this.worker === worker) this.worker = null;
+        if (this.requestId === requestId) this.requestId = null;
+        this.rejectCurrent = null;
       };
+      this.rejectCurrent = reject;
       worker.onerror = () => {
         finish();
         reject(new ClientParserError("CLIENT_WORKER_FAILED"));
@@ -103,9 +107,12 @@ export class ClientParserService {
     const requestId = this.requestId;
     this.worker = null;
     this.requestId = null;
+    const rejectCurrent = this.rejectCurrent;
+    this.rejectCurrent = null;
     if (worker) {
       if (requestId) worker.postMessage({ type: "CANCEL", requestId });
       worker.terminate();
+      rejectCurrent?.(new ClientParserError("CLIENT_CANCELLED"));
     }
   }
 }

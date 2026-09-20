@@ -1,7 +1,7 @@
 export const CLIENT_PARSER_SCHEMA_VERSION = 1 as const;
 export const CLIENT_PARSER_MANIFEST_VERSION = 1 as const;
-export const CLIENT_PARSER_CONTRACT_VERSION = 1 as const;
-export const CLIENT_PARSER_CATALOG_VERSION = 2 as const;
+export const CLIENT_PARSER_CONTRACT_VERSION = 2 as const;
+export const CLIENT_PARSER_CATALOG_VERSION = 3 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
@@ -43,6 +43,8 @@ export interface ClientEventSample {
 }
 
 export type ClientObservationStatus = "AVAILABLE" | "UNAVAILABLE" | "NOT_PRESENT" | "PARSE_FAILED";
+export type ClientParsedEventStatus =
+  "PRESENT_AND_PARSED" | "PRESENT_BUT_FAILED" | "NOT_PRESENT" | "UNAVAILABLE";
 
 export interface ClientPlayerInventory {
   status: Exclude<ClientObservationStatus, "NOT_PRESENT">;
@@ -57,12 +59,16 @@ export interface ClientRuntimeSurface {
 }
 
 export interface ClientParserArtifactProvenance {
-  status: "VERIFIED" | "UNAVAILABLE";
+  status: "VERIFIED" | "UNAVAILABLE" | "INVALID" | "MISMATCH";
   sourceRepository: string | null;
   sourceCommit: string | null;
   sourceTag: string | null;
   buildTool: string | null;
+  buildTarget: string | null;
+  wasmBindgenTarget: string | null;
+  buildToolchain: string | null;
   buildCommand: string | null;
+  artifactSize: number | null;
   bindingUrl: string | null;
   wasmUrl: string | null;
   wasmBindingSha256: string | null;
@@ -86,7 +92,7 @@ export interface ClientParseResult {
   eventDiscovery: { status: "AVAILABLE" | "PARSE_FAILED"; count: number; names: string[] };
   parsedEventInventory: Array<{
     name: string;
-    status: ClientObservationStatus;
+    status: ClientParsedEventStatus;
     count: number | null;
     fields: string[];
   }>;
@@ -101,6 +107,7 @@ export interface ClientParseResult {
     lastTick: number | null;
     duplicates: number;
     missingWithinProbe: number;
+    samples: Array<Record<string, unknown>>;
   };
   coverage: {
     fullTickDomain: false;
@@ -139,6 +146,7 @@ export interface ClientParserManifest {
   contractVersion: typeof CLIENT_PARSER_CONTRACT_VERSION;
   catalogVersion: typeof CLIENT_PARSER_CATALOG_VERSION;
   catalogDigest: string;
+  contractDigest: string;
   capabilityDigest: string;
   capabilityClassifications: ClientCapabilityClassification[];
   coverage: ClientParseResult["coverage"];
@@ -156,14 +164,24 @@ export interface ClientParserEnvelope {
 
 export type ClientParserErrorCode =
   | "CLIENT_PARSER_UNAVAILABLE"
+  | "CLIENT_WASM_ARTIFACT_UNAVAILABLE"
+  | "CLIENT_WASM_ARTIFACT_INVALID"
   | "CLIENT_WASM_LOAD_FAILED"
   | "CLIENT_WASM_INTEGRITY_MISMATCH"
   | "CLIENT_WASM_EXPORTS_MISSING"
+  | "CLIENT_WASM_INIT_FAILED"
+  | "CLIENT_WASM_RUNTIME_ERROR"
   | "CLIENT_WORKER_FAILED"
   | "CLIENT_DEMO_INVALID"
   | "CLIENT_DEMO_TOO_LARGE"
   | "CLIENT_HASH_FAILED"
   | "CLIENT_PARSE_FAILED"
+  | "CLIENT_DEMO_PARSE_FAILED"
+  | "CLIENT_DEMO_UNSUPPORTED"
+  | "CLIENT_DEMO_CORRUPTED"
+  | "CLIENT_PAYLOAD_TOO_LARGE"
+  | "CLIENT_PARITY_MISMATCH"
+  | "CLIENT_PARITY_NOT_AVAILABLE"
   | "CLIENT_RESULT_INVALID"
   | "CLIENT_RESULT_TOO_LARGE"
   | "CLIENT_CONTRACT_MISMATCH"

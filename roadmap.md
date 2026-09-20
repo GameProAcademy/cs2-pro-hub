@@ -1252,3 +1252,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - `NOT_EXECUTED`: real browser/WASM test, real ~400 MB DEM, memory benchmark, and WASM↔Python corpus parity.
 - Production Python/Railway ingestion remains unchanged. No Cache run, retry, Attempt 9, enqueue, Canonical write, Storage mutation, migration, Railway deploy, secret change, or historical mutation occurred.
 - Final gate: `POC_NOT_READY`.
+
+### Consolidated F.2.10 A–D closure
+
+- [x] Added separate source, binding, binary, runtime-surface, capability, audit-catalog, contract, result, and manifest identities.
+- [x] Hardened Classic Worker initialization, same-origin/hash checks, explicit event outcomes, bounded tick samples, cancellation cleanup, and validator invariants.
+- [x] Added 22-dimension Python×WASM parity reporting and the browser/provenance/admission documentation set.
+- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: BLOCKED` — no auditable 0.42.0 browser artifact.
+- `F.2.10-B REAL BROWSER DEM: NOT_RUN`.
+- `F.2.10-C PYTHON × WASM PARITY: NOT_RUN`.
+- `F.2.10-D 400MB MEMORY: NOT_RUN`.
+- `CANONICAL ADMISSION: MUST REMAIN BLOCKED`; `HOT READINESS: PARTIAL`; `AI DATA READINESS: BLOCKED`.
+- No production, Railway, Cache, retry, Attempt 9, RAW, Canonical, Storage, migration, secret, deployment, or historical mutation occurred.

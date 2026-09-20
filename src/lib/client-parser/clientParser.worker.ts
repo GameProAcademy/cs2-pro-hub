@@ -28,6 +28,11 @@ import {
   type ClientParseResult,
   type ClientParserErrorCode,
 } from "./clientParser.types";
+import {
+  CLIENT_PRIORITY_EVENTS,
+  CLIENT_TICK_PROPERTIES,
+  headerEvidence,
+} from "./clientParser.audit";
 
 type WasmApi = {
   parseHeader: (file: Uint8Array) => unknown;
@@ -81,7 +86,8 @@ function errorCode(error: unknown): ClientParserErrorCode {
     message === "CLIENT_RESULT_TOO_LARGE" ||
     message === "CLIENT_WASM_LOAD_FAILED" ||
     message === "CLIENT_WASM_INTEGRITY_MISMATCH" ||
-    message === "CLIENT_WASM_EXPORTS_MISSING"
+    message === "CLIENT_WASM_EXPORTS_MISSING" ||
+    message === "CLIENT_WASM_INIT_FAILED"
   )
     return message;
   return api ? "CLIENT_PARSE_FAILED" : "CLIENT_PARSER_UNAVAILABLE";
@@ -136,7 +142,11 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
   }
   const candidate = scope.wasm_bindgen;
   if (typeof candidate !== "function") throw new Error("CLIENT_WASM_LOAD_FAILED");
-  await candidate(wasmBytes);
+  try {
+    await candidate(wasmBytes);
+  } catch {
+    throw new Error("CLIENT_WASM_INIT_FAILED");
+  }
   runtimeSurface = inspectRuntimeSurface(candidate as unknown as Record<string, unknown>);
   if (!runtimeSurface.minimumReady) throw new Error("CLIENT_WASM_EXPORTS_MISSING");
   artifact = {
@@ -145,6 +155,9 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
     wasmUrl,
     wasmBindingSha256: bindingSha256,
     wasmBinarySha256,
+    artifactSize: wasmBytes.byteLength,
+    status: "VERIFIED",
+    reason: null,
   };
   api = candidate;
   wasmLoadMs = performance.now() - started;
@@ -195,26 +208,23 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   assertActive(command.requestId);
 
   progress(command.requestId, "PARSING_EVENTS", 0.55, started);
-  const preferred = ["player_death", "round_end", "round_start"].filter((name) =>
-    names.includes(name),
-  );
   const parsedEventInventory: ClientParseResult["parsedEventInventory"] = [];
   const selectedEventSamples: ClientEventSample[] = [];
-  for (const name of ["player_death", "round_end", "round_start"]) {
+  for (const name of CLIENT_PRIORITY_EVENTS) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
-      parsedEventInventory.push({ name, status: "NOT_PRESENT", count: 0, fields: [] });
+      parsedEventInventory.push({ name, status: "NOT_PRESENT", count: null, fields: [] });
       continue;
     }
     let parsed: Array<Record<string, unknown>>;
     try {
       parsed = rows(parser.parseEvent(bytes, name, [], []));
     } catch {
-      parsedEventInventory.push({ name, status: "PARSE_FAILED", count: null, fields: [] });
+      parsedEventInventory.push({ name, status: "PRESENT_BUT_FAILED", count: null, fields: [] });
       continue;
     }
     const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort().slice(0, 256);
-    parsedEventInventory.push({ name, status: "AVAILABLE", count: parsed.length, fields });
+    parsedEventInventory.push({ name, status: "PRESENT_AND_PARSED", count: parsed.length, fields });
     for (const row of parsed.slice(
       0,
       Math.max(0, CLIENT_EVENT_SAMPLE_LIMIT - selectedEventSamples.length),
@@ -240,7 +250,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let tickRows: Array<Record<string, unknown>> = [];
   if (probeTicks.length) {
     try {
-      tickRows = rows(parser.parseTicks(bytes, ["tick"], probeTicks, false));
+      tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, false));
     } catch {
       tickStatus = "PARSE_FAILED";
     }
@@ -274,21 +284,32 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       name: file.name,
       lastModified: file.lastModified,
     },
-    header,
+    header: { values: header, evidence: headerEvidence(header) },
     playerInventory,
     eventDiscovery: { status: discoveryStatus, count: names.length, names },
     parsedEventInventory,
     selectedEventSamples,
-    roundSummary: { status: "UNAVAILABLE", count: null },
+    roundSummary: {
+      status: parsedEventInventory.some(
+        (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",
+      )
+        ? "DERIVED"
+        : "UNAVAILABLE",
+      count:
+        parsedEventInventory.find(
+          (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",
+        )?.count ?? null,
+    },
     tickProbe: {
       status: tickStatus,
       requestedTickCount: probeTicks.length,
       returnedTickCount: tickRows.length,
-      propertiesRequested: ["tick"],
+      propertiesRequested: [...CLIENT_TICK_PROPERTIES],
       firstTick: observedTicks[0] ?? null,
       lastTick: observedTicks.at(-1) ?? null,
       duplicates: observedTicks.length - uniqueTicks.size,
       missingWithinProbe: Math.max(0, probeTicks.length - uniqueTicks.size),
+      samples: tickRows,
     },
     coverage: {
       fullTickDomain: false,
@@ -317,6 +338,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   progress(command.requestId, "BUILDING_MANIFEST", 0.96, started);
   const manifest = buildClientParserManifest(base);
   emit({ type: "COMPLETE", requestId: command.requestId, envelope: { result: base, manifest } });
+  cancelled.delete(command.requestId);
 }
 
 scope.addEventListener("message", (event: MessageEvent<ClientParserCommand>) => {
@@ -340,5 +362,6 @@ scope.addEventListener("message", (event: MessageEvent<ClientParserCommand>) => 
         ? { type: "CANCELLED", requestId: command.requestId }
         : { type: "ERROR", requestId: command.requestId, code },
     );
+    cancelled.delete(command.requestId);
   });
 });

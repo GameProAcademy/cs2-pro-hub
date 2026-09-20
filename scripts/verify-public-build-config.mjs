@@ -5,6 +5,7 @@ const supabaseClient = fs.readFileSync(
   new URL("../src/integrations/supabase/client.ts", import.meta.url),
   "utf8",
 );
+const appConfig = fs.readFileSync(new URL("../src/config/app.ts", import.meta.url), "utf8");
 
 const requiredViteContracts = [
   [/process\.env\s*\[\s*["']VITE_SUPABASE_URL["']\s*\]/, "process VITE_SUPABASE_URL"],
@@ -45,6 +46,10 @@ if (!clientKeyFallback.test(supabaseClient)) {
 
 if (!/Missing Supabase environment variable\(s\)/.test(supabaseClient)) {
   throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: fail-closed client initialization was removed");
+}
+
+if (!/VITE_CLIENT_DEM_PARSER_POC_ENABLED["']\]\s*===\s*["']true["']/.test(appConfig)) {
+  throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: client parser POC is no longer default-off");
 }
 
 console.log("PUBLIC_BUILD_CONFIG_OK");

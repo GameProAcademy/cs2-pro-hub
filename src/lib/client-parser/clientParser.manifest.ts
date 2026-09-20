@@ -14,6 +14,7 @@ import {
   CLIENT_PARSER_CAPABILITY_DIGEST,
   CLIENT_PARSER_CATALOG_DIGEST,
 } from "./clientParser.capabilities";
+import { CLIENT_PARSER_CONTRACT_DIGEST } from "./clientParser.audit";
 
 export function buildClientParserManifest(result: ClientParseResult): ClientParserManifest {
   const manifest = {
@@ -32,6 +33,7 @@ export function buildClientParserManifest(result: ClientParseResult): ClientPars
     contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
     catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
     catalogDigest: CLIENT_PARSER_CATALOG_DIGEST,
+    contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
     capabilityDigest: CLIENT_PARSER_CAPABILITY_DIGEST,
     capabilityClassifications: [
       ...new Set(result.capabilities.map((item) => item.classification)),
@@ -54,5 +56,6 @@ export function computeClientManifestDigest(manifest: ClientParserManifest): str
     manifestDigest: _manifestDigest,
     ...deterministic
   } = manifest;
-  return sha256Text(stableClientJson(deterministic));
+  const normalized = { ...deterministic, demoName: undefined, demoLastModified: undefined };
+  return sha256Text(stableClientJson(normalized));
 }

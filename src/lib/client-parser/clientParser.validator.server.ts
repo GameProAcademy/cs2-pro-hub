@@ -22,6 +22,7 @@ import {
 } from "./clientParser.capabilities";
 import { computeClientResultDigest } from "./clientParser.hash";
 import { computeClientManifestDigest } from "./clientParser.manifest";
+import { CLIENT_PARSER_CONTRACT_DIGEST } from "./clientParser.audit";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -152,11 +153,14 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     result.parser.runtimeSurface.runtimeSurfaceDigest !== manifest.runtimeSurfaceDigest ||
     result.parser.runtimeSurface.minimumReady !== true ||
     result.parser.artifact?.status !== "VERIFIED" ||
+    result.parser.artifact.sourceCommit !== "d3767705dc5846d73ed29db50eaeda58778dc934" ||
+    result.parser.artifact.sourceTag !== "v0.42.0" ||
     !HEX_64.test(result.parser.artifact.wasmBinarySha256 ?? "") ||
     !HEX_64.test(result.parser.artifact.wasmBindingSha256 ?? "") ||
     result.parser.artifact.wasmBinarySha256 !== manifest.artifactProvenance.wasmBinarySha256 ||
     result.parser.artifact.wasmBindingSha256 !== manifest.artifactProvenance.wasmBindingSha256 ||
     manifest.catalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||
+    manifest.contractDigest !== CLIENT_PARSER_CONTRACT_DIGEST ||
     manifest.capabilityDigest !== CLIENT_PARSER_CAPABILITY_DIGEST
   )
     return fail("CLIENT_CONTRACT_MISMATCH");
@@ -177,11 +181,35 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     result.tickProbe.returnedTickCount > CLIENT_TICK_PROBE_LIMIT
   )
     return fail("CLIENT_RESULT_TOO_LARGE");
+  if (!Array.isArray(result.tickProbe.samples)) return fail("CLIENT_RESULT_INVALID");
+  if (result.tickProbe.samples.length > CLIENT_TICK_PROBE_LIMIT)
+    return fail("CLIENT_RESULT_TOO_LARGE");
+  if (
+    result.playerInventory.count !== result.playerInventory.players.length ||
+    result.eventDiscovery.count !== result.eventDiscovery.names.length ||
+    result.parsedEventInventory.some(
+      (item) =>
+        typeof item.name !== "string" ||
+        !Array.isArray(item.fields) ||
+        (item.status === "PRESENT_AND_PARSED" && (item.count === null || item.count < 0)) ||
+        (item.status !== "PRESENT_AND_PARSED" && item.count !== null),
+    )
+  )
+    return fail("CLIENT_RESULT_INVALID");
   if (
     result.coverage.fullTickDomain !== false ||
     result.coverage.authoritativeTickDomain !== false ||
     result.coverage.fullRawEvents !== false ||
     result.semanticStatus !== "BLOCKED"
+  )
+    return fail("CLIENT_RESULT_INVALID");
+  if (
+    Object.values(result.performance).some(
+      (value) => typeof value === "number" && (!Number.isFinite(value) || value < 0),
+    ) ||
+    (result.performance.memory.usedBytes !== null &&
+      (!Number.isFinite(result.performance.memory.usedBytes) ||
+        result.performance.memory.usedBytes < 0))
   )
     return fail("CLIENT_RESULT_INVALID");
   if (
