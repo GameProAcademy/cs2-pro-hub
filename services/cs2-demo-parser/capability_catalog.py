@@ -135,11 +135,12 @@ CANONICAL_MAPPINGS = {
     "player_info.steamid": ("players[].steam_id", "CanonicalPlayer.steamId"),
     "player_info.name": ("players[].name", "CanonicalPlayer.name"),
     "player_info.team_number": ("players[].side", "CanonicalPlayer.side"),
+    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winnerSide"),
 }
 DERIVATIONS = {
     "rounds.start_tick": "ordered parser-native round_start.tick",
     "rounds.end_tick": "first parser-native round_end.tick within the observed start interval",
-    "game_state.total_rounds_played": "positive parser-native completed-round counter",
+    "rounds.number": "positive parser-native completed-round counter",
     "game_state.round_start_time": "tick - (game_time - round_start_time) * verified_tickrate",
 }
 

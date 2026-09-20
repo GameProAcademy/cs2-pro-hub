@@ -185,6 +185,7 @@ export async function auditPhysicalRawChunks(args: {
         ]),
     ),
     semantic: physicalSemanticProjection(semantic),
+    forensic_rows: semantic.forensicRows,
   };
 }
 
