@@ -57,8 +57,10 @@ export interface ClientParserValidationDecision {
 }
 
 function inspectShape(value: unknown): ClientParserErrorCode | null {
-  const pending: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
-  const seen = new WeakSet<object>();
+  const pending: Array<{ value: unknown; depth: number; leaving?: boolean }> = [
+    { value, depth: 0 },
+  ];
+  const activePath = new WeakSet<object>();
   let nodes = 0;
   while (pending.length) {
     const current = pending.pop();
@@ -68,14 +70,19 @@ function inspectShape(value: unknown): ClientParserErrorCode | null {
     if (current.depth > MAX_DEPTH) return "CLIENT_RESULT_INVALID";
     if (typeof current.value === "function") return "CLIENT_RESULT_INVALID";
     if (!current.value || typeof current.value !== "object") continue;
+    if (current.leaving) {
+      activePath.delete(current.value);
+      continue;
+    }
     if (
       current.value instanceof ArrayBuffer ||
       ArrayBuffer.isView(current.value) ||
       (typeof Blob !== "undefined" && current.value instanceof Blob)
     )
       return "CLIENT_RESULT_INVALID";
-    if (seen.has(current.value)) return "CLIENT_RESULT_INVALID";
-    seen.add(current.value);
+    if (activePath.has(current.value)) return "CLIENT_RESULT_INVALID";
+    activePath.add(current.value);
+    pending.push({ value: current.value, depth: current.depth, leaving: true });
     if (Array.isArray(current.value)) {
       if (current.value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
         return "CLIENT_RESULT_TOO_LARGE";
