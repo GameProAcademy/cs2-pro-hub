@@ -9,7 +9,7 @@
 - [x] Reconstruct physical gzip JSONL evidence and reconcile producer↔artifact fields, classifications, mappings, catalog, tick and semantic projections.
 - [x] Add the named 36-dimension reconciliation registry, independent unsigned/final digests and strict Gate 22 finalization.
 - [x] Remove legacy report fallback from demo Canonical persistence; an artifact-backed final v2 proof is mandatory.
-- [x] Validate focused tests, full parser suite, typecheck and Python compilation without production, Railway, Storage, queue or historical mutation.
+- [x] Validate 939 APP tests, 171 parser tests (10 explicit skips), typecheck, lint (0 errors/9 baseline warnings), Python compilation and whitespace integrity without production, Railway, Storage, queue or historical mutation.
 - [ ] Obtain an authoritative real tick-domain source and produce a real v2 artifact before any operational approval.
 
 **Decision:** `PASS_FOR_CODE_HARDENING`; not `READY_FOR_CONTROLLED_V2_ARTIFACT`. Cache Run 1/2, retry, attempt 9 and Canonical execution remain prohibited.

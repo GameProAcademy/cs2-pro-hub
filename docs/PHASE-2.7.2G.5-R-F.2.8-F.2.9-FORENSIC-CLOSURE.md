@@ -40,11 +40,14 @@ This is integrity against accidental/cross-path corruption under the existing se
 
 - Parser suite: 171 passed, 10 explicitly skipped.
 - Focused APP forensic, durable RAW and Canonical admission tests: 54 passed.
+- Complete APP suite: 939 passed across 66 files.
 - TypeScript typecheck: PASS.
+- ESLint: PASS with 0 errors and 9 pre-existing Fast Refresh warnings.
 - Python compileall: PASS.
+- Whitespace integrity: PASS. The repository does not define a `check:diff` script.
 - Runtime inspection: package/version/path/signatures recorded; completeness remains UNAVAILABLE.
 
-The complete APP suite, lint and build are run as final quality gates separately. Operational readiness remains blocked regardless of local success because tick authority and a real v2 artifact are absent.
+The build is delegated to the automatic project harness. Operational readiness remains blocked regardless of local success because tick authority and a real v2 artifact are absent.
 
 ## Remaining blockers
 
