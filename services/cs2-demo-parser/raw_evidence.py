@@ -7,6 +7,9 @@ import math
 import struct
 from typing import Any, Iterable, Sequence
 
+from capability_catalog import validate_catalog
+from forensic_audit import AUDIT_CONTRACT_VERSION, deterministic_digest
+
 EVIDENCE_VERSION = 1
 TICK_SAMPLE_LIMIT = 4096
 AUDIT_SURFACE_VERSION = 2
@@ -446,6 +449,81 @@ def build_gates(evidence: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
+    """Create additive exhaustive evidence without changing historical v1 semantics."""
+    catalog = raw.get("capability_catalog") or {}
+    tick_audit = raw.get("full_tick_audit") or {}
+    property_inventory = list(raw.get("full_tick_properties") or [])
+    event_inventory = list(evidence.get("event_coverage") or [])
+    mappings = list(evidence.get("field_mappings") or [])
+    inventory = evidence.get("forensic_inventory") or forensic_inventory(evidence)
+    catalog_reasons = validate_catalog(catalog) if isinstance(catalog, dict) else ["capability_catalog_missing"]
+    parse_failures = sorted(
+        [f"event:{row.get('event_name')}" for row in event_inventory if row.get("capability_state") in {"PARSE_FAILED", "API_UNAVAILABLE"}]
+        + [f"property:{row.get('property')}" for row in property_inventory if row.get("classification") == "PARSE_FAILED"]
+    )
+    mapping_failures = sorted(
+        str(row.get("raw_field")) for row in mappings
+        if row.get("status") in {"UNMAPPED_BUT_AVAILABLE", "PARSE_FAILED"}
+        or (row.get("status") == "RAW_ONLY_INTENTIONAL" and not str(row.get("reason") or "").strip())
+    )
+    required_families = {
+        "header_inventory", "player_info_inventory", "game_state_inventory", "round_inventory",
+        "bomb_inventory", "damage_inventory", "death_inventory", "weapon_inventory",
+        "grenade_inventory", "usercmd_inventory", "teams_inventory", "score_inventory",
+        "aggregate_inventory", "movement_inventory", "all_event_inventory",
+    }
+    missing_families = sorted(required_families - set(inventory))
+    identity_ok = (
+        evidence.get("manifest", {}).get("parser_name") == "demoparser2"
+        and evidence.get("manifest", {}).get("parser_version") == "0.42.0"
+        and evidence.get("manifest", {}).get("contract_version") == 1
+    )
+    checks = {
+        "01-parser-identity": (identity_ok, ["parser_identity_mismatch"]),
+        "02-capability-catalog": (not catalog_reasons, catalog_reasons),
+        "03-event-discovery": (evidence.get("manifest", {}).get("event_inventory_success") is True, ["event_inventory_incomplete"]),
+        "04-all-events-attempted": (all(row.get("capability_state") not in {"PARSE_FAILED", "API_UNAVAILABLE"} for row in event_inventory), parse_failures),
+        "05-full-tick-domain": (tick_audit.get("coverage") == "FULL_TICK_DOMAIN_AUDIT" and tick_audit.get("complete") is True, list(tick_audit.get("failures") or ["full_tick_domain_unproven"])),
+        "06-tick-batches": (bool(tick_audit.get("batches")) and all(row.get("status") == "PASS" for row in tick_audit.get("batches") or []), ["tick_batch_failed"]),
+        "07-tick-gaps": (not tick_audit.get("gaps"), ["tick_gap_detected"]),
+        "08-tick-overlaps": (not tick_audit.get("overlaps"), ["tick_overlap_detected"]),
+        "09-properties-classified": (bool(property_inventory) and all(row.get("classification") in {"RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"} for row in property_inventory), ["property_classification_incomplete"]),
+        "10-header": ("header_inventory" in inventory, ["header_inventory_missing"]),
+        "11-player-info": ("player_info_inventory" in inventory, ["player_info_inventory_missing"]),
+        "12-rounds": ("round_inventory" in inventory, ["round_inventory_missing"]),
+        "13-bomb": ("bomb_inventory" in inventory, ["bomb_inventory_missing"]),
+        "14-combat": (all(key in inventory for key in ("damage_inventory", "death_inventory")), ["combat_inventory_missing"]),
+        "15-grenades": ("grenade_inventory" in inventory, ["grenade_inventory_missing"]),
+        "16-teams-score": (all(key in inventory for key in ("teams_inventory", "score_inventory")), ["team_score_inventory_missing"]),
+        "17-usercmd": ("usercmd_inventory" in inventory, ["usercmd_inventory_missing"]),
+        "18-weapons-inventory": ("weapon_inventory" in inventory, ["weapon_inventory_missing"]),
+        "19-aggregates": ("aggregate_inventory" in inventory, ["aggregate_inventory_missing"]),
+        "20-mapping-complete": (bool(mappings) and not mapping_failures, mapping_failures or ["mapping_inventory_empty"]),
+        "21-no-parse-failures": (not parse_failures, parse_failures),
+        "22-physical-reaudit": (False, ["physical_chunk_reaudit_pending_app"]),
+    }
+    gates = [
+        {"gate": f"RAW-V2-{name}", "status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else sorted(set(reasons))}
+        for name, (passed, reasons) in checks.items()
+    ]
+    contract = {
+        "audit_contract_version": AUDIT_CONTRACT_VERSION,
+        "parser": {"name": evidence.get("manifest", {}).get("parser_name"), "version": evidence.get("manifest", {}).get("parser_version")},
+        "capability_catalog": catalog,
+        "full_tick_audit": tick_audit,
+        "property_inventory": property_inventory,
+        "event_inventory": event_inventory,
+        "semantic_inventories": inventory,
+        "mapping_inventory": mappings,
+        "gates": gates,
+        "physical_reaudit_required": True,
+        "canonical_admission": "BLOCKED",
+    }
+    contract["deterministic_digest"] = deterministic_digest(contract)
+    return contract
+
+
 def forensic_inventory(evidence: dict[str, Any]) -> dict[str, Any]:
     """Separate discovery, extraction selection and parsed material explicitly."""
     manifest = evidence["manifest"]
@@ -544,6 +622,11 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
     evidence["raw_status"], evidence["raw_block_reasons"] = raw_audit_status(evidence)
     evidence["raw_audit_status"] = "APPROVED" if evidence["raw_status"] == "PASS" else "BLOCKED"
     evidence["audit_surface_version"] = AUDIT_SURFACE_VERSION
+    forensic_v2 = evidence.get("forensic_contract_v2")
+    if isinstance(forensic_v2, dict):
+        forensic_v2["parser"] = {"name": parser.get("name"), "version": parser.get("version")}
+        unsigned = {key: value for key, value in forensic_v2.items() if key != "deterministic_digest"}
+        forensic_v2["deterministic_digest"] = deterministic_digest(unsigned)
     return evidence
 
 
