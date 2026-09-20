@@ -157,12 +157,16 @@ export interface RawForensicContractV2 {
   audit_contract_version: 2;
   parser: { name: string | null; version: string | null };
   capability_catalog: Record<string, Json>;
+  capability_reconciliation: Record<string, Json>;
   full_tick_audit: Record<string, Json>;
   property_inventory: Array<Record<string, Json>>;
   event_inventory: Array<Record<string, Json>>;
   semantic_inventories: Record<string, Json>;
   mapping_inventory: RawFieldMapping[];
   gates: RawForensicGateV2[];
+  producer_gate_status: "PASS" | "BLOCKED";
+  physical_gate_status: "PENDING" | "PASS" | "FAIL";
+  final_gate_status: "PASS" | "BLOCKED";
   physical_reaudit_required: true;
   canonical_admission: "BLOCKED" | "APPROVED";
   deterministic_digest: string;
