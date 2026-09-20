@@ -161,7 +161,18 @@ export async function auditPhysicalRawChunks(args: {
   let totalRows = 0;
   let totalBytes = 0;
   for (const chunk of args.chunks) {
-    if (!chunk.storage_path.startsWith(`${args.prefix}/`))
+    let decodedPath = "";
+    try {
+      decodedPath = decodeURIComponent(chunk.storage_path);
+    } catch {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk path escaped artifact prefix");
+    }
+    const suffix = decodedPath.slice(args.prefix.length + 1);
+    if (
+      !decodedPath.startsWith(`${args.prefix}/`) ||
+      decodedPath.includes("\\") ||
+      suffix.split("/").some((part) => part === "" || part === "." || part === "..")
+    )
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk path escaped artifact prefix");
     const blob = await args.download(chunk.storage_path);
     const bytes = new Uint8Array(await blob.arrayBuffer());
