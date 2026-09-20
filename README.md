@@ -1,82 +1,60 @@
-# Welcome to your Lovable project
+# CS2 PRO AI COACH — GamePro
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+This repository is the source of truth for the application code. Lovable is used for product development; GitHub CI and Railway are authoritative for committed/deployed runtime state.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+This project uses Bun and the committed \`bun.lock\` as the reproducible JavaScript dependency lockfile.
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
 
 ## Current state (September 2026)
 
-Implemented and proven against the real database:
+### Real foundations
 
-- **Steam Identity Foundation** — OpenID 2.0 account linking. Steam is an **identity
-  source only**; Valve publishes no CS2 match history, so no match data comes from it.
-- **FACEIT integration + hardening** — OAuth connection, bounded history pagination,
-  job lifecycle with heartbeat/stale recovery, API call budget and worker deadline.
-- **Player Identity Graph** — `player_identities` + `identity_correlation_evidence`
-  with an evidence hierarchy; identities are server-controlled and never self-promoted.
-- **Canonical Match Engine** — source-neutral `match_series` / `matches` /
-  `match_sources` / `match_participants` / `match_rounds` / `round_players`, a Match
-  Identity Resolver (only `EXACT_MATCH` attaches automatically) and transactional
-  persistence (`persist_canonical_observation_attached`).
-- **Production FACEIT pipeline** — a FACEIT payload becomes canonical data only through
-  `persistFaceitObservation()`. Proof: `bun scripts/faceit-pipeline-proof.ts`.
-- **Demo ingestion pipeline** — uploads, jobs, cron worker and canonical projection.
-  The real `.dem` parser worker itself is behind `FEATURES.realDemoParser = false`.
+- **Steam Identity Foundation** — OpenID 2.0 account linking. Steam is an identity source only; Valve publishes no CS2 match history.
+- **FACEIT integration + hardening** — OAuth connection, bounded history pagination, job lifecycle with heartbeat/stale recovery, API call budget and worker deadline.
+- **Player Identity Graph** — \`player_identities\` + \`identity_correlation_evidence\` with server-controlled promotion.
+- **Canonical Match Engine** — source-neutral match/match-series/participant/round structures, Match Identity Resolver, and transactional server-side persistence.
+- **Production FACEIT pipeline** — FACEIT observations reach Canonical only through the reviewed persistence boundary.
+- **Demo ingestion infrastructure** — uploads, jobs, queue/cron, Railway parser worker, RAW artifact/evidence, HOT projection and reconciliation controls.
+- **Python demoparser2 0.42.0** — the Railway parser is pinned to 0.42.0 and is the current real DEM parsing runtime.
+- **Browser/WASM parser POC** — isolated, authenticated, feature-flagged and fail-closed; it remains untrusted and cannot write Canonical.
 
-Not implemented yet (do not read the UI as real): **Pro Score**, **Player DNA**,
-**diagnosis/analysis**, **AI Coach** and **training plans** still render mock content
-gated by `DEMO_DATA`. There are no payments.
+### Current demo/browser gate
 
-**Gamers Club — UNAVAILABLE (blocked externally).** There is no official public API and
-unauthenticated requests answer `HTTP 403` with a Cloudflare challenge. No collector is
-implemented, and no anti-bot circumvention will be.
+The browser POC is **not production-ready**.
 
-## Security & data model notes
+- \`F.2.10-A\` — browser runtime/Worker contracts hardened, but the auditable demoparser2 0.42.0 WASM artifact is still \`UNAVAILABLE\`.
+- \`F.2.10-B\` — real browser/WASM DEM execution is \`NOT_RUN\`.
+- \`F.2.10-C\` — Python × WASM same-DEM parity is \`NOT_RUN\`.
+- \`F.2.10-D\` — large-demo/memory testing is \`NOT_RUN\`; the conservative browser POC ceiling is 128 MiB.
+- **Canonical admission from browser output remains BLOCKED.**
+- **AI-data readiness from the browser path remains BLOCKED.**
 
-- **Single administrator**: only `ia@gamepro.academy` holds `admin_master`. The legacy
-  `admin` enum value is retained for history but grants no access anywhere.
-- **Roles** live exclusively in `public.user_roles` and are evaluated through
-  `SECURITY DEFINER` helpers (`is_admin_master`, `is_staff`, `owns_*`). Those helpers
-  must stay executable by authenticated users because RLS policies call them — this is
-  the source of the known "signed-in users can execute SECURITY DEFINER function"
-  linter warnings, which are expected for this design.
-- **Players cannot write generated data**: matches, metrics, analyses, findings,
-  Player DNA, score snapshots and training plans are read-own only. Uploads are
-  insert/read-own; pipeline fields (`status`, `processed_at`, `error_message`) are
-  backend-controlled.
-- **Canonical data is server-written only**: canonical persistence routines are
-  `SECURITY DEFINER` with `search_path = ''` and executable only by
-  `postgres` / `service_role`; `anon` has no access to canonical tables.
-- **Audit log** (`admin_audit_logs`) is administrator-only, append-only and written in
-  the administrator's own name.
-- **Avatars are the only real Storage feature**: private `avatars` bucket, path
-  `{user_id}/avatar.webp`, JPEG/PNG/WebP input, resized and compressed to ≤ 200 KB,
-  owner-scoped RLS, `profiles.avatar_url` stores the stable path (never a signed URL),
-  fallback `src/assets/gamepro-symbol.png`.
-- **Persistent security suite**: `supabase/tests/security_checks.sql` — every row must
-  report `PASS`.
+### Product-data readiness
 
+The following product layers still use demonstration data and must not be presented as real player analysis until their upstream data contracts are live:
+
+- Pro Score
+- Player DNA
+- diagnosis/analysis
+- AI Coach
+- training plans
+
+Payments are not implemented.
+
+**Gamers Club — UNAVAILABLE (blocked externally).** No official public API is available to the project; unauthenticated access is challenged. No anti-bot circumvention is implemented or planned.
+
+## Security and data model
+
+- Canonical data is server-written only.
+- Player clients cannot self-write generated metrics/analyses/score/training data.
+- Canonical persistence uses reviewed server-side security boundaries.
+- Browser DEM parsing is isolated and untrusted; it has no direct Canonical write path.
+- Historical parser/reconciliation evidence remains forensic unless it passes the current admission gates.
