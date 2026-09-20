@@ -8,13 +8,15 @@ therefore blocks Canonical admission.
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
+import inspect
 import json
 from dataclasses import dataclass, asdict
 from typing import Any, Iterable
 
 PARSER_NAME = "demoparser2"
 PARSER_VERSION = "0.42.0"
-CATALOG_VERSION = 1
+CATALOG_VERSION = 2
 CATALOG_SOURCE = "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
 
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
@@ -153,13 +155,35 @@ class Capability:
     parser_version: str
     source: str
     source_kind: str
+    source_reference: str
     provenance: str
+    runtime_presence: str
+    runtime_signature: str | None
+    demo_presence: str
     availability: str
     classification: str
+    mapping_status: str
     app_field: str | None = None
     canonical_field: str | None = None
     derivation_rule: str | None = None
     reason: str | None = None
+    raw_only_reason: str | None = None
+    unavailable_reason: str | None = None
+    parse_failed_reason: str | None = None
+    deterministic_identity: str = ""
+    deterministic_digest: str = ""
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+
+
+def _with_identity(row: Capability) -> Capability:
+    payload = asdict(row)
+    payload["deterministic_identity"] = f"{row.parser_version}:{row.capability_id}"
+    payload["deterministic_digest"] = ""
+    payload["deterministic_digest"] = _digest(payload)
+    return Capability(**payload)
 
 
 def _api(category: str) -> str:
@@ -173,14 +197,48 @@ def _api(category: str) -> str:
 
 def _entry(category: str, name: str) -> Capability:
     key = f"{category}.{name}"
+    base = (key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE,
+            "DECLARED_CATALOG", f"project_catalog:{category}:{name}",
+            f"demoparser2=={PARSER_VERSION}:{_api(category)}", "UNKNOWN", None,
+            "UNKNOWN", "DECLARED")
     if key in CANONICAL_MAPPINGS:
         app, canonical = CANONICAL_MAPPINGS[key]
-        return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", "CANONICAL", app, canonical)
+        return _with_identity(Capability(*base, "CANONICAL", "MAPPED", app, canonical))
     if key in DERIVATIONS:
-        return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", "DERIVED", derivation_rule=DERIVATIONS[key])
+        return _with_identity(Capability(*base, "DERIVED", "DERIVED", derivation_rule=DERIVATIONS[key]))
     classification = "UNAVAILABLE" if category == "parser_apis" and name not in PARSER_APIS else "RAW_ONLY"
     reason = "Installed runtime API is unavailable." if classification == "UNAVAILABLE" else "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical."
-    return Capability(key, category, name, _api(category), PARSER_VERSION, CATALOG_SOURCE, "INSTALLED_RUNTIME_AND_REVIEW", f"demoparser2=={PARSER_VERSION}:{_api(category)}", "DECLARED", classification, reason=reason)
+    return _with_identity(Capability(*base, classification, "REVIEWED_RAW_ONLY" if classification == "RAW_ONLY" else "UNAVAILABLE", reason=reason, raw_only_reason=reason if classification == "RAW_ONLY" else None, unavailable_reason=reason if classification == "UNAVAILABLE" else None))
+
+
+def inspect_installed_runtime_surface(parser_class: Any | None = None) -> dict[str, Any]:
+    """Inspect runtime methods independently; this cannot claim field completeness."""
+    errors: list[str] = []
+    module_path: str | None = None
+    version: str | None = None
+    if parser_class is None:
+        try:
+            from demoparser2 import DemoParser as parser_class  # type: ignore[assignment]
+            import demoparser2
+            module_path = str(getattr(demoparser2, "__file__", "")) or None
+            version = importlib.metadata.version("demoparser2")
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{type(exc).__name__}: {' '.join(str(exc).split())[:160]}")
+    else:
+        module_path = inspect.getsourcefile(parser_class)
+        version = PARSER_VERSION
+    symbols = []
+    if parser_class is not None:
+        for name in sorted(item for item in dir(parser_class) if not item.startswith("_")):
+            value = getattr(parser_class, name, None)
+            if not callable(value): continue
+            try: signature = str(inspect.signature(value))
+            except (TypeError, ValueError): signature = None
+            symbols.append({"symbol": name, "callable": True, "signature": signature, "has_docstring": bool(inspect.getdoc(value))})
+    projection = {"parser_name": PARSER_NAME, "parser_version": version, "module_path": module_path,
+                  "symbols": symbols, "complete": False, "status": "UNAVAILABLE",
+                  "reason": "installed runtime exposes methods but no exhaustive independent capability enumeration", "errors": errors}
+    return {**projection, "runtime_surface_digest": _digest(projection)}
 
 
 def static_capabilities() -> tuple[Capability, ...]:
@@ -191,21 +249,29 @@ def static_capabilities() -> tuple[Capability, ...]:
     return tuple(sorted(rows, key=lambda row: row.capability_id))
 
 
-def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable[str] = (), *, discovery_error: str | None = None) -> dict[str, Any]:
+def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable[str] = (), *, discovery_error: str | None = None,
+                    installed_runtime_surface: dict[str, Any] | None = None) -> dict[str, Any]:
     rows = [asdict(row) for row in static_capabilities()]
     known = {row["capability_id"] for row in rows}
     for name in sorted(set(str(v) for v in runtime_fields if str(v).strip())):
         key = f"runtime_field.{name}"
         if key not in known:
-            rows.append(asdict(Capability(key, "runtime_field", name, "list_updated_fields", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_updated_fields", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered parser field; preserved and requires explicit semantic review before Canonical.")))
+            reason = "Runtime-discovered parser field; preserved and requires explicit semantic review before Canonical."
+            base = (key, "runtime_field", name, "list_updated_fields", PARSER_VERSION, CATALOG_SOURCE, "DEMO_OBSERVATION", "demo:list_updated_fields", "demoparser2.list_updated_fields", "PRESENT", None, "PRESENT", "AVAILABLE")
+            rows.append(asdict(_with_identity(Capability(*base, "RAW_ONLY", "REVIEW_REQUIRED", reason=reason, raw_only_reason=reason))))
     for name in sorted(set(str(v) for v in runtime_events if str(v).strip())):
         key = f"events.{name}"
         if key not in known:
-            rows.append(asdict(Capability(key, "event_type", name, "list_game_events+parse_event", PARSER_VERSION, CATALOG_SOURCE, "RUNTIME_DISCOVERY", "demoparser2.list_game_events", "AVAILABLE", "RAW_ONLY", reason="Runtime-discovered event; preserved and requires explicit semantic review before Canonical.")))
+            reason = "Runtime-discovered event; preserved and requires explicit semantic review before Canonical."
+            base = (key, "event_type", name, "list_game_events+parse_event", PARSER_VERSION, CATALOG_SOURCE, "DEMO_OBSERVATION", "demo:list_game_events", "demoparser2.list_game_events", "PRESENT", None, "PRESENT", "AVAILABLE")
+            rows.append(asdict(_with_identity(Capability(*base, "RAW_ONLY", "REVIEW_REQUIRED", reason=reason, raw_only_reason=reason))))
     rows.sort(key=lambda row: row["capability_id"])
-    projection = {"parser_name": PARSER_NAME, "parser_version": PARSER_VERSION, "catalog_version": CATALOG_VERSION, "catalog_source": CATALOG_SOURCE, "capabilities": rows}
-    digest = hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
-    return {**projection, "catalog_digest": digest, "complete": discovery_error is None, "discovery_error": discovery_error}
+    runtime_surface = installed_runtime_surface or inspect_installed_runtime_surface()
+    mapping_surface = sorted(row["capability_id"] for row in rows if row.get("mapping_status") not in {None, "UNRESOLVED"})
+    projection = {"parser_name": PARSER_NAME, "parser_version": PARSER_VERSION, "catalog_version": CATALOG_VERSION,
+                  "catalog_source": CATALOG_SOURCE, "capabilities": rows, "installed_runtime_surface": runtime_surface,
+                  "mapping_surface": mapping_surface}
+    return {**projection, "catalog_digest": _digest(projection), "complete": discovery_error is None, "discovery_error": discovery_error}
 
 
 def reconcile_capabilities(catalog: dict[str, Any]) -> dict[str, Any]:
@@ -219,25 +285,33 @@ def reconcile_capabilities(catalog: dict[str, Any]) -> dict[str, Any]:
         or (row.get("classification") == "DERIVED" and not row.get("derivation_rule"))
         or (row.get("classification") == "RAW_ONLY" and not row.get("reason"))
     )
-    runtime_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("source_kind") == "RUNTIME_DISCOVERY")
-    mapped_ids = sorted(capability_id for capability_id, row in zip(ids, rows) if row.get("classification") in CLASSIFICATIONS)
-    orphan = sorted(set(runtime_ids) - set(ids))
-    missing = sorted(set(ids) - set(mapped_ids))
+    runtime = catalog.get("installed_runtime_surface") if isinstance(catalog.get("installed_runtime_surface"), dict) else {}
+    runtime_ids = [f"parser_apis.{row.get('symbol')}" for row in runtime.get("symbols") or [] if isinstance(row, dict)]
+    mapped_ids = [str(value) for value in catalog.get("mapping_surface") or []]
+    runtime_orphans = sorted(set(runtime_ids) - set(ids)); mapping_orphans = sorted(set(mapped_ids) - set(ids))
+    catalog_missing_runtime = sorted(key for key in ids if key.startswith("parser_apis.") and key not in runtime_ids)
+    duplicate_runtime = sorted({item for item in runtime_ids if runtime_ids.count(item) > 1})
+    duplicate_mappings = sorted({item for item in mapped_ids if mapped_ids.count(item) > 1})
+    without_provenance = sorted(capability_id for capability_id, row in zip(ids, rows) if not row.get("source_reference") or not row.get("deterministic_digest"))
+    runtime_complete = runtime.get("complete") is True and runtime.get("status") == "AVAILABLE"
+    blocked = bool(duplicates or unresolved or runtime_orphans or mapping_orphans or catalog_missing_runtime or duplicate_runtime or duplicate_mappings or without_provenance or not runtime_complete)
     result = {
-        "status": "PASS" if not duplicates and not unresolved and not orphan and not missing else "BLOCKED",
+        "status": "BLOCKED" if blocked else "PASS", "runtime_surface_status": "AVAILABLE" if runtime_complete else "UNAVAILABLE",
         "catalog_count": len(ids),
         "runtime_count": len(runtime_ids),
         "mapping_count": len(mapped_ids),
         "unresolved_count": len(unresolved),
         "duplicate_count": len(duplicates),
-        "orphan_count": len(orphan),
-        "set_difference_count": len(missing),
-        "missing_from_inventory": missing,
-        "runtime_orphans": orphan,
+        "orphan_count": len(runtime_orphans) + len(mapping_orphans),
+        "set_difference_count": len(catalog_missing_runtime) + len(runtime_orphans) + len(mapping_orphans),
+        "catalog_missing_from_runtime": catalog_missing_runtime, "runtime_missing_from_catalog": runtime_orphans,
+        "mapping_missing_from_catalog": mapping_orphans, "mapping_orphans": mapping_orphans,
+        "runtime_orphans": runtime_orphans, "duplicate_runtime_symbols": duplicate_runtime,
+        "duplicate_mapping_entries": duplicate_mappings, "capabilities_without_provenance": without_provenance,
         "duplicates": duplicates,
         "unresolved": unresolved,
     }
-    result["digest"] = hashlib.sha256(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    result["digest"] = _digest(result)
     return result
 
 
@@ -254,10 +328,11 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
         if row["classification"] == "CANONICAL" and (not row.get("app_field") or not row.get("canonical_field")): reasons.append(f"canonical_mapping_missing:{row.get('capability_id')}")
         if row["classification"] == "DERIVED" and not row.get("derivation_rule"): reasons.append(f"derivation_rule_missing:{row.get('capability_id')}")
         if row["classification"] == "RAW_ONLY" and not row.get("reason"): reasons.append(f"raw_only_reason_missing:{row.get('capability_id')}")
-        for required in ("capability_id", "category", "name", "parser_version", "source", "source_kind", "provenance", "availability"):
+        for required in ("capability_id", "category", "name", "parser_version", "source", "source_kind", "source_reference", "provenance", "runtime_presence", "demo_presence", "availability", "mapping_status", "deterministic_identity", "deterministic_digest"):
             if not str(row.get(required) or "").strip(): reasons.append(f"capability_metadata_missing:{row.get('capability_id')}:{required}")
-    projection = {key: catalog.get(key) for key in ("parser_name", "parser_version", "catalog_version", "catalog_source", "capabilities")}
-    actual = hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+        if row.get("deterministic_digest") != _digest({**row, "deterministic_digest": ""}): reasons.append(f"capability_digest_mismatch:{row.get('capability_id')}")
+    projection = {key: catalog.get(key) for key in ("parser_name", "parser_version", "catalog_version", "catalog_source", "capabilities", "installed_runtime_surface", "mapping_surface")}
+    actual = _digest(projection)
     if catalog.get("catalog_digest") != actual: reasons.append("capability_catalog_digest_mismatch")
     if catalog.get("complete") is not True: reasons.append("capability_catalog_incomplete")
     return sorted(set(reasons))
