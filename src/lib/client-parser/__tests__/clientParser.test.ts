@@ -3,11 +3,11 @@ import { CLIENT_PARSER_CAPABILITY_CATALOG } from "../clientParser.capabilities";
 import { computeClientResultDigest, sha256Text } from "../clientParser.hash";
 import { buildClientParserManifest } from "../clientParser.manifest";
 import {
-  CLIENT_REQUIRED_RUNTIME_EXPORTS,
   compareClientVsPythonSemantic,
   compareClientVsServerReference,
 } from "../clientParser.parity";
 import {
+  CLIENT_REQUIRED_RUNTIME_EXPORTS,
   capabilitiesForSurface,
   inspectRuntimeSurface,
   playerInventoryFromRuntime,
