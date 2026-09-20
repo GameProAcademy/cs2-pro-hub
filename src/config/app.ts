@@ -1,13 +1,9 @@
 /**
  * Global application configuration.
  *
- * DEMO_DATA = true means EVERY number, chart, diagnosis, training plan and
- * coach message rendered by the app comes from `src/data/*` and is a
- * DEMONSTRATION value. There is no parser, no database, no AI connection yet.
- *
- * When the real pipeline (DEMO -> PARSER -> DATABASE -> METRICS -> SCORE ->
- * DIAGNOSIS -> AI COACH -> TRAINING) is implemented, flip this to false and
- * feed the same component props from the services layer.
+ * DEMO_DATA = true means product-facing score/analysis/coach surfaces still use
+ * demonstration data. The real ingestion/parser foundations exist, but these
+ * product layers are not yet wired to trusted live analysis data.
  */
 export const DEMO_DATA = true;
 
