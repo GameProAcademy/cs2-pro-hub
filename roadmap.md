@@ -1,3 +1,15 @@
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.7 — EXHAUSTIVE RAW FORENSIC AUDIT
+
+**Status:** IN PROGRESS.
+
+- [ ] Catalogar exaustivamente as capabilities do demoparser2 0.42.0 com provenance e digest determinístico.
+- [ ] Implementar audit contract v2, classificação exaustiva e cobertura integral de ticks sem aprovação por sampling.
+- [ ] Reauditar artifacts persistidos por caminho independente e reconciliar producer versus artifact.
+- [ ] Exigir os 22 gates fail-closed antes de qualquer admissão Canonical.
+- [ ] Executar testes APP/parser/contratos, typecheck, lint, build e compileall.
+- [ ] Documentar contagens, limitações e decisão final honesta.
+- [x] Preservar produção: sem retry, attempt 9, Cache Run 1/2, escrita Canonical, mutation histórica, secrets ou deploy Railway.
+
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.6 — CANONICAL INTEGRITY REMEDIATION
 
 **Status:** BLOCKED_BEFORE_RETRY / RUN 2 STILL BLOCKED.
