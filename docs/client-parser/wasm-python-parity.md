@@ -1,6 +1,6 @@
 # demoparser2 WASM × Python parity
 
-Parity is field-level and fail-closed. A matching parser name/version is necessary but not sufficient. A comparison may return only `PASS`, `FAIL`, `NOT_RUN`, `BLOCKED`, or `NOT_AVAILABLE_ON_WASM`; absence is never converted into equality.
+Parity is field-level and fail-closed. A matching parser name/version is necessary but not sufficient. A comparison may return only `PASS`, `FAIL`, `NOT_RUN`, `BLOCKED`, `NOT_AVAILABLE_ON_WASM`, `NOT_AVAILABLE_ON_PYTHON`, or `PARSE_FAILED`; absence is never converted into equality.
 
 | Dimension                                          | Status                | Reason                                                    |
 | -------------------------------------------------- | --------------------- | --------------------------------------------------------- |

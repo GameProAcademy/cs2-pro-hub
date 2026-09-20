@@ -23,6 +23,11 @@ import {
 import { computeClientResultDigest } from "./clientParser.hash";
 import { computeClientManifestDigest } from "./clientParser.manifest";
 import { CLIENT_PARSER_CONTRACT_DIGEST } from "./clientParser.audit";
+import {
+  CLIENT_PARSER_ARTIFACT_PROVENANCE,
+  CLIENT_REQUIRED_RUNTIME_EXPORTS,
+  inspectRuntimeSurface,
+} from "./clientParser.runtime";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -152,11 +157,35 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     !HEX_64.test(result.parser.runtimeSurface?.runtimeSurfaceDigest ?? "") ||
     result.parser.runtimeSurface.runtimeSurfaceDigest !== manifest.runtimeSurfaceDigest ||
     result.parser.runtimeSurface.minimumReady !== true ||
+    !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
+      result.parser.runtimeSurface.observedExports.includes(name),
+    ) ||
+    inspectRuntimeSurface(
+      Object.fromEntries(
+        result.parser.runtimeSurface.observedExports.map((name) => [name, () => {}]),
+      ),
+    ).runtimeSurfaceDigest !== result.parser.runtimeSurface.runtimeSurfaceDigest ||
+    !Array.isArray(result.parser.apiCalls) ||
+    !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
+      result.parser.apiCalls.some(
+        (call) =>
+          call.api === name &&
+          call.exportPresent === true &&
+          call.callAttempted === true &&
+          call.callSucceeded === true &&
+          call.status === "CALL_SUCCEEDED" &&
+          call.errorType === null &&
+          call.errorMessage === null,
+      ),
+    ) ||
     result.parser.artifact?.status !== "VERIFIED" ||
     result.parser.artifact.sourceCommit !== "d3767705dc5846d73ed29db50eaeda58778dc934" ||
     result.parser.artifact.sourceTag !== "v0.42.0" ||
-    !HEX_64.test(result.parser.artifact.wasmBinarySha256 ?? "") ||
-    !HEX_64.test(result.parser.artifact.wasmBindingSha256 ?? "") ||
+    result.parser.artifact.artifactSize !== CLIENT_PARSER_ARTIFACT_PROVENANCE.artifactSize ||
+    result.parser.artifact.wasmBinarySha256 !==
+      CLIENT_PARSER_ARTIFACT_PROVENANCE.wasmBinarySha256 ||
+    result.parser.artifact.wasmBindingSha256 !==
+      CLIENT_PARSER_ARTIFACT_PROVENANCE.wasmBindingSha256 ||
     result.parser.artifact.wasmBinarySha256 !== manifest.artifactProvenance.wasmBinarySha256 ||
     result.parser.artifact.wasmBindingSha256 !== manifest.artifactProvenance.wasmBindingSha256 ||
     manifest.catalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||

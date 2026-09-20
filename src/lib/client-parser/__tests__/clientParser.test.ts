@@ -7,6 +7,8 @@ import {
   compareClientVsServerReference,
 } from "../clientParser.parity";
 import {
+  CLIENT_PARSER_ARTIFACT_PROVENANCE,
+  CLIENT_REQUIRED_RUNTIME_EXPORTS,
   capabilitiesForSurface,
   inspectRuntimeSurface,
   playerInventoryFromRuntime,
@@ -31,26 +33,28 @@ function result(): ClientParseResult {
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
       runtimeSurface: {
-        observedExports: ["listGameEvents", "parseHeader"],
+        observedExports: ["listGameEvents", "parseEvent", "parseHeader", "parseTicks"],
         minimumReady: true,
-        runtimeSurfaceDigest: "a".repeat(64),
+        runtimeSurfaceDigest: inspectRuntimeSurface({
+          listGameEvents() {},
+          parseEvent() {},
+          parseHeader() {},
+          parseTicks() {},
+        }).runtimeSurfaceDigest,
       },
+      apiCalls: CLIENT_REQUIRED_RUNTIME_EXPORTS.map((api) => ({
+        api,
+        exportPresent: true,
+        callAttempted: true,
+        callSucceeded: true,
+        status: "CALL_SUCCEEDED" as const,
+        errorType: null,
+        errorMessage: null,
+      })),
       artifact: {
-        status: "VERIFIED",
-        sourceRepository: "https://github.com/LaihoE/demoparser",
-        sourceCommit: "d3767705dc5846d73ed29db50eaeda58778dc934",
-        sourceTag: "v0.42.0",
-        buildTool: "wasm-pack 0.13.1",
-        buildTarget: "wasm32-unknown-unknown",
-        wasmBindgenTarget: "no-modules",
-        buildToolchain: "rustc test fixture",
-        buildCommand: "wasm-pack build --target no-modules",
-        artifactSize: 1024,
+        ...CLIENT_PARSER_ARTIFACT_PROVENANCE,
         bindingUrl: "https://example.test/pkg/demoparser2.js",
         wasmUrl: "https://example.test/pkg/demoparser2_bg.wasm",
-        wasmBindingSha256: "c".repeat(64),
-        wasmBinarySha256: "d".repeat(64),
-        reason: null,
       },
     },
     demo: { sha256: "b".repeat(64), sizeBytes: 42, name: "local.dem", lastModified: 1 },
@@ -293,15 +297,61 @@ describe("client parser compact contract", () => {
     const surface = inspectRuntimeSurface({
       parseHeader() {},
       listGameEvents() {},
+      parseEvent() {},
       parseTicks() {},
     });
     expect(surface.minimumReady).toBe(true);
-    expect(surface.observedExports).toEqual(["listGameEvents", "parseHeader", "parseTicks"]);
+    expect(surface.observedExports).toEqual([
+      "listGameEvents",
+      "parseEvent",
+      "parseHeader",
+      "parseTicks",
+    ]);
     expect(
       capabilitiesForSurface(surface).find((item) => item.id === "parsePlayerInfo"),
     ).toMatchObject({
       available: false,
       classification: "UNAVAILABLE",
+    });
+  });
+
+  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)(
+    "fails readiness when required export %s is absent",
+    (missing) => {
+      const runtime = Object.fromEntries(
+        CLIENT_REQUIRED_RUNTIME_EXPORTS.filter((name) => name !== missing).map((name) => [
+          name,
+          () => {},
+        ]),
+      );
+      expect(inspectRuntimeSurface(runtime).minimumReady).toBe(false);
+    },
+  );
+
+  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)(
+    "rejects a result without successful call evidence for %s",
+    (missing) => {
+      const value = envelope();
+      const call = value.result.parser.apiCalls.find((item) => item.api === missing);
+      if (!call) throw new Error("fixture_call_missing");
+      call.callSucceeded = false;
+      call.status = "CALL_FAILED";
+      resign(value);
+      expect(validateClientParserResult(value)).toMatchObject({
+        accepted: false,
+        reasonCode: "CLIENT_CONTRACT_MISMATCH",
+      });
+    },
+  );
+
+  it("rejects a self-consistent but unknown WASM hash", () => {
+    const value = envelope();
+    value.result.parser.artifact.wasmBinarySha256 = "e".repeat(64);
+    value.manifest.artifactProvenance.wasmBinarySha256 = "e".repeat(64);
+    resign(value);
+    expect(validateClientParserResult(value)).toMatchObject({
+      accepted: false,
+      reasonCode: "CLIENT_CONTRACT_MISMATCH",
     });
   });
 

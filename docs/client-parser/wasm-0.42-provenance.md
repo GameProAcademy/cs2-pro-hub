@@ -11,12 +11,14 @@
 
 ## Artifact status
 
-`UNAVAILABLE`. The repository contains no reviewed browser binding or WASM binary for 0.42.0, no binary or binding hash, no artifact size, and no fully pinned Rust/wasm-pack toolchain. The npm browser package does not publish 0.42.0. The Node/native binding is not a browser substitute.
+`VERIFIED_UPSTREAM_SOURCE_ARTIFACT`. The exact pinned commit contains a browser binding and WASM binary under `src/wasm/www/pkg`. Their verified identities are binding `d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756` (20,784 bytes) and WASM `43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f` (3,056,821 bytes).
 
-The POC therefore accepts only same-origin URLs with independently configured lowercase SHA-256 hashes. It hashes both files before initialization, inspects exports after initialization, and records binary, binding, runtime-surface, capability-catalog, audit-catalog, contract, result, and manifest identities separately. Missing or mismatched evidence fails closed.
+Reproducibility remains `PARTIAL`: upstream does not pin Rust, wasm-pack or protoc. A local isolated build succeeded but differed byte-for-byte, so its hashes are recorded separately and are not substituted for the upstream artifact. The npm browser package still does not publish 0.42.0, and the Node/native binding is not a browser substitute.
+
+The POC accepts only same-origin URLs and verifies fixed lowercase SHA-256 hashes before initialization. It records binary, binding, runtime-surface, capability-catalog, audit-catalog, contract, result, and manifest identities separately. Missing or mismatched evidence fails closed.
 
 ## Runtime surface
 
-Declared candidates are not treated as observed. Runtime inspection recognizes `parseHeader`, `listGameEvents`, `parseEvent`, `parseEvents`, `parseTicks`, `parseGrenades`, `parsePlayerInfo`, and `parseChatMessages`. Minimum readiness requires the core header/event/tick functions. `parsePlayerInfo` is used only when observed; otherwise players remain `UNAVAILABLE`.
+Declared candidates are not treated as observed. Chromium observed `parseHeader`, `listGameEvents`, `parseEvent`, `parseEvents`, `parseTicks`, `parseGrenades`, and `listUpdatedFields`. Minimum readiness requires `parseHeader`, `listGameEvents`, `parseEvent`, and `parseTicks`. `parsePlayerInfo` and `parseChatMessages` were not observed; players and chat remain `UNAVAILABLE`.
 
-No artifact, hash, export, DEM result, or reproducibility claim was fabricated during this phase.
+No DEM result or bit-reproducibility claim was fabricated during this phase.

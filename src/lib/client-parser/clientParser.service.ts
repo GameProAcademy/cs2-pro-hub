@@ -1,5 +1,11 @@
 import { ClientParserError } from "./clientParser.errors";
-import { trustedRuntimeUrl } from "./clientParser.runtime";
+import {
+  CLIENT_WASM_BINARY_SHA256,
+  CLIENT_WASM_BINARY_URL,
+  CLIENT_WASM_BINDING_SHA256,
+  CLIENT_WASM_BINDING_URL,
+  trustedRuntimeUrl,
+} from "./clientParser.runtime";
 import type { ClientParserWorkerEvent, ClientParserStage } from "./clientParser.protocol";
 import { CLIENT_DEMO_MAX_BYTES, type ClientParserEnvelope } from "./clientParser.types";
 
@@ -32,17 +38,21 @@ export class ClientParserService {
     this.requestId = requestId;
     const baseUrl = window.location.href;
     const scriptUrl = trustedRuntimeUrl(
-      import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_SCRIPT_URL"] as string | undefined,
+      (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_SCRIPT_URL"] as string | undefined) ??
+        CLIENT_WASM_BINDING_URL,
       baseUrl,
     );
     const wasmUrl = trustedRuntimeUrl(
-      import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_URL"] as string | undefined,
+      (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_URL"] as string | undefined) ??
+        CLIENT_WASM_BINARY_URL,
       baseUrl,
     );
-    const expectedBindingSha256 = import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINDING_SHA256"] as
-      string | undefined;
-    const expectedWasmSha256 = import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_SHA256"] as
-      string | undefined;
+    const expectedBindingSha256 =
+      (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINDING_SHA256"] as string | undefined) ??
+      CLIENT_WASM_BINDING_SHA256;
+    const expectedWasmSha256 =
+      (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_SHA256"] as string | undefined) ??
+      CLIENT_WASM_BINARY_SHA256;
 
     return new Promise<ClientParserEnvelope>((resolve, reject) => {
       const finish = () => {

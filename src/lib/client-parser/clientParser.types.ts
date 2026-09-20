@@ -1,11 +1,12 @@
-export const CLIENT_PARSER_SCHEMA_VERSION = 1 as const;
-export const CLIENT_PARSER_MANIFEST_VERSION = 1 as const;
-export const CLIENT_PARSER_CONTRACT_VERSION = 2 as const;
-export const CLIENT_PARSER_CATALOG_VERSION = 3 as const;
+export const CLIENT_PARSER_SCHEMA_VERSION = 2 as const;
+export const CLIENT_PARSER_MANIFEST_VERSION = 2 as const;
+export const CLIENT_PARSER_CONTRACT_VERSION = 3 as const;
+export const CLIENT_PARSER_CATALOG_VERSION = 4 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
-export const CLIENT_PARSER_BUILD_IDENTITY = "source-build:demoparser2@0.42.0-unverified" as const;
+export const CLIENT_PARSER_BUILD_IDENTITY =
+  "upstream-source-artifact:demoparser2@0.42.0:d3767705dc5846d73ed29db50eaeda58778dc934" as const;
 
 export const CLIENT_EVENT_SAMPLE_LIMIT = 1_000;
 export const CLIENT_TICK_PROBE_LIMIT = 4_096;
@@ -58,6 +59,19 @@ export interface ClientRuntimeSurface {
   runtimeSurfaceDigest: string;
 }
 
+export type ClientApiCallStatus =
+  "EXPORT_PRESENT" | "CALL_ATTEMPTED" | "CALL_SUCCEEDED" | "CALL_FAILED";
+
+export interface ClientApiCallEvidence {
+  api: string;
+  exportPresent: boolean;
+  callAttempted: boolean;
+  callSucceeded: boolean;
+  status: ClientApiCallStatus;
+  errorType: string | null;
+  errorMessage: string | null;
+}
+
 export interface ClientParserArtifactProvenance {
   status: "VERIFIED" | "UNAVAILABLE" | "INVALID" | "MISMATCH";
   sourceRepository: string | null;
@@ -84,6 +98,7 @@ export interface ClientParseResult {
     runtime: typeof CLIENT_PARSER_RUNTIME;
     buildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
     runtimeSurface: ClientRuntimeSurface;
+    apiCalls: ClientApiCallEvidence[];
     artifact: ClientParserArtifactProvenance;
   };
   demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };

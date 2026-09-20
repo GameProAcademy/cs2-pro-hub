@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED_UPSTREAM_SOURCE_ARTIFACT",
+  "repository": "https://github.com/LaihoE/demoparser",
+  "sourceTag": "v0.42.0",
+  "sourceCommit": "d3767705dc5846d73ed29db50eaeda58778dc934",
+  "sourceArchiveSha256": "09e9ed89f7a6955da2f4428030bec2df8d0b72a430963e780f67d6f8a1a41168",
+  "tagObject": "80eadb90cd0a42c4c4b9e5557c9f1b96815ea448",
+  "tagSigned": false,
+  "target": "wasm32-unknown-unknown",
+  "wasmBindgenTarget": "no-modules",
+  "upstreamBuildCommand": "wasm-pack build --out-dir www/pkg --target no-modules",
+  "binding": {
+    "file": "demoparser2.js",
+    "bytes": 20784,
+    "sha256": "d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756"
+  },
+  "wasm": {
+    "file": "demoparser2_bg.wasm",
+    "bytes": 3056821,
+    "sha256": "43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f"
+  },
+  "declaredExports": [
+    "listGameEvents",
+    "listUpdatedFields",
+    "parseEvent",
+    "parseEvents",
+    "parseGrenades",
+    "parseHeader",
+    "parseTicks"
+  ],
+  "observedRuntime": {
+    "browser": "Chromium",
+    "initialization": "PASS",
+    "wasmBytesLoaded": 3056821,
+    "exports": [
+      "parseHeader",
+      "listGameEvents",
+      "parseEvent",
+      "parseEvents",
+      "parseGrenades",
+      "parseTicks",
+      "listUpdatedFields"
+    ],
+    "apiCallsWithRealDemo": "NOT_RUN",
+    "realDemo": "NOT_AVAILABLE"
+  },
+  "reproducibility": {
+    "status": "PARTIAL",
+    "reason": "upstream_rust_and_wasm_pack_versions_are_unpinned",
+    "localAttempt": {
+      "rustc": "1.91.1",
+      "cargo": "1.91.0",
+      "wasmPack": "0.13.1",
+      "protoc": "32.1",
+      "wasmBindgenDependency": "0.2.100",
+      "bindingBytes": 21429,
+      "bindingSha256": "8eeeabbccd55c5711bafff6faade0ecf36ef65df58c03f9013db17ddc29ad202",
+      "wasmBytes": 3133549,
+      "wasmSha256": "abe693c77fb8d0459cf4646c7b5f779b94e29dbd22edddc0c4c3bb53c184c630",
+      "matchesUpstreamArtifact": false
+    }
+  },
+  "license": "MIT"
+}

@@ -19,26 +19,40 @@ export const CLIENT_RUNTIME_EXPORT_NAMES = [
   "parseHeader",
   "parsePlayerInfo",
   "parseTicks",
+  "listUpdatedFields",
 ] as const;
 
-export const CLIENT_REQUIRED_RUNTIME_EXPORTS = ["parseHeader", "listGameEvents"] as const;
+export const CLIENT_REQUIRED_RUNTIME_EXPORTS = [
+  "parseHeader",
+  "listGameEvents",
+  "parseEvent",
+  "parseTicks",
+] as const;
+
+export const CLIENT_WASM_BINDING_URL = "/client-parser/demoparser2/0.42.0/demoparser2.js" as const;
+export const CLIENT_WASM_BINARY_URL =
+  "/client-parser/demoparser2/0.42.0/demoparser2_bg.wasm" as const;
+export const CLIENT_WASM_BINDING_SHA256 =
+  "d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756" as const;
+export const CLIENT_WASM_BINARY_SHA256 =
+  "43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f" as const;
 
 export const CLIENT_PARSER_ARTIFACT_PROVENANCE: ClientParserArtifactProvenance = {
-  status: "UNAVAILABLE",
+  status: "VERIFIED",
   sourceRepository: "https://github.com/LaihoE/demoparser",
   sourceCommit: "d3767705dc5846d73ed29db50eaeda58778dc934",
   sourceTag: "v0.42.0",
-  buildTool: "wasm-pack (upstream version unpinned)",
+  buildTool: "wasm-pack (upstream version unpinned; checked-in source artifact)",
   buildTarget: "wasm32-unknown-unknown",
   wasmBindgenTarget: "no-modules",
-  buildToolchain: null,
+  buildToolchain: "upstream toolchain unpinned; Cargo.lock resolves wasm-bindgen 0.2.100",
   buildCommand: "wasm-pack build --out-dir www/pkg --target no-modules",
-  artifactSize: null,
-  bindingUrl: null,
-  wasmUrl: null,
-  wasmBindingSha256: null,
-  wasmBinarySha256: null,
-  reason: "upstream_0_42_0_has_no_published_or_reproducibly_pinned_browser_artifact",
+  artifactSize: 3_056_821,
+  bindingUrl: CLIENT_WASM_BINDING_URL,
+  wasmUrl: CLIENT_WASM_BINARY_URL,
+  wasmBindingSha256: CLIENT_WASM_BINDING_SHA256,
+  wasmBinarySha256: CLIENT_WASM_BINARY_SHA256,
+  reason: "verified_from_exact_upstream_commit; bit_reproducibility_partial_due_unpinned_toolchain",
 };
 
 export function inspectRuntimeSurface(runtime: Record<string, unknown>): ClientRuntimeSurface {
