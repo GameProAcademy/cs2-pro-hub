@@ -4,7 +4,7 @@ This repository is the source of truth for the application code. Lovable is used
 
 ## Development
 
-This project uses Bun and the committed \`bun.lock\` as the reproducible JavaScript dependency lockfile.
+This project uses Bun and the committed `bun.lock` as the reproducible JavaScript dependency lockfile.
 
 ```sh
 git clone <this-repository-url>
@@ -19,7 +19,7 @@ bun run dev
 
 - **Steam Identity Foundation** — OpenID 2.0 account linking. Steam is an identity source only; Valve publishes no CS2 match history.
 - **FACEIT integration + hardening** — OAuth connection, bounded history pagination, job lifecycle with heartbeat/stale recovery, API call budget and worker deadline.
-- **Player Identity Graph** — \`player_identities\` + \`identity_correlation_evidence\` with server-controlled promotion.
+- **Player Identity Graph** — `player_identities` + `identity_correlation_evidence` with server-controlled promotion.
 - **Canonical Match Engine** — source-neutral match/match-series/participant/round structures, Match Identity Resolver, and transactional server-side persistence.
 - **Production FACEIT pipeline** — FACEIT observations reach Canonical only through the reviewed persistence boundary.
 - **Demo ingestion infrastructure** — uploads, jobs, queue/cron, Railway parser worker, RAW artifact/evidence, HOT projection and reconciliation controls.
@@ -30,10 +30,10 @@ bun run dev
 
 The browser POC is **not production-ready**.
 
-- \`F.2.10-A\` — browser runtime/Worker contracts hardened, but the auditable demoparser2 0.42.0 WASM artifact is still \`UNAVAILABLE\`.
-- \`F.2.10-B\` — real browser/WASM DEM execution is \`NOT_RUN\`.
-- \`F.2.10-C\` — Python × WASM same-DEM parity is \`NOT_RUN\`.
-- \`F.2.10-D\` — large-demo/memory testing is \`NOT_RUN\`; the conservative browser POC ceiling is 128 MiB.
+- `F.2.10-A` — browser runtime/Worker contracts hardened, but the auditable demoparser2 0.42.0 WASM artifact is still `UNAVAILABLE`.
+- `F.2.10-B` — real browser/WASM DEM execution is `NOT_RUN`.
+- `F.2.10-C` — Python × WASM same-DEM parity is `NOT_RUN`.
+- `F.2.10-D` — large-demo/memory testing is `NOT_RUN`; the conservative browser POC ceiling is 128 MiB.
 - **Canonical admission from browser output remains BLOCKED.**
 - **AI-data readiness from the browser path remains BLOCKED.**
 
