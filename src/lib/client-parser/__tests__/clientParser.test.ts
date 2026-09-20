@@ -181,7 +181,11 @@ describe("client parser compact contract", () => {
       "classification",
       resign(
         mutate((v) => {
-          (v.result.capabilities[0] as { classification: string }).classification = "UNKNOWN";
+          v.result.capabilities = v.result.capabilities.map((capability, index) =>
+            index === 0
+              ? { ...capability, classification: "UNKNOWN" as "RAW_ONLY" }
+              : capability,
+          );
         }),
       ),
     ],
