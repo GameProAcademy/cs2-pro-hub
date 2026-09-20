@@ -61,3 +61,40 @@ Deterministic JSON ordering and digest tests exist. Filename, last-modified, tim
 ## Production migration and fallback
 
 The Python/Railway parser remains the only production parser and fallback. The production upload flow is unchanged. A future phase may source and pin an auditable 0.42.0 WASM build, run real browser and ~400 MB tests, compare against Python, and design a server-authoritative admission protocol. This POC must not be used for production ingestion until those gates pass.
+
+# FASE 2.10 — RELATÓRIO
+
+## Escopo executado
+
+- POC isolada e desligada por padrão: seleção local de `.dem`, Web Worker, SHA-256 incremental, protocolo cancelável, resultado compacto e manifest não confiável.
+- Validator server-side dry-run com limites, identidade/versionamento, digest determinístico e bloqueio permanente da admissão Canonical.
+- Preparação de paridade cliente versus referência Python sem upload de DEM, ticks completos ou RAW completo.
+- Binding adicional entre aprovação RAW, artifact, upload, root digest e provas finais antes da persistência Canonical.
+
+## Evidências e quality gates
+
+| Gate | Resultado |
+| --- | --- |
+| Testes focados POC/RAW/Canonical | PASS — 31/31 |
+| Aplicação completa | PASS — 959/959 |
+| Parser Python | PASS — 171; SKIPPED — 10 condicionais |
+| Typecheck | PASS |
+| ESLint completo | PASS — 0 erros; 9 warnings preexistentes |
+| Compileall Python | PASS |
+| Diff check | PASS |
+| Build | DELEGATED — harness automático |
+| Browser real com DEM | NOT_RUN |
+| Teste real de 400 MB e memória | NOT_RUN |
+| Paridade real WASM↔Python | NOT_RUN |
+
+## Restrições preservadas
+
+Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, secret, deploy Railway, Storage ou histórico de produção foi alterado.
+
+## Limitação bloqueante
+
+A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A POC não substitui a autoridade Python/Railway e permanece fail-closed até existir um runtime browser compatível e serem executados testes reais de navegador, memória e paridade.
+
+## Gate final
+
+`POC_NOT_READY`
