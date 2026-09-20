@@ -752,29 +752,26 @@ export function rawArtifactApproval(
       decision.reasons.join(",") || "RAW artifact admission denied",
     );
   }
+  const finalContract = decision.forensicInventory["final_forensic_contract"];
+  const reconciliation = decision.forensicInventory["reconciliation"];
+  const finalContractDigest =
+    typeof finalContract === "object" && finalContract !== null
+      ? String((finalContract as Record<string, Json>)["final_contract_digest"] ?? "")
+      : "";
+  const reconciliationDigest =
+    typeof reconciliation === "object" && reconciliation !== null
+      ? String((reconciliation as Record<string, Json>)["reconciliation_digest"] ?? "")
+      : "";
+  if (!HEX_64.test(finalContractDigest) || !HEX_64.test(reconciliationDigest)) {
+    throw new PipelineError("RAW_AUDIT_BLOCKED", "RAW final forensic proof is incomplete");
+  }
   return {
     approved: true,
     auditStatus: "APPROVED",
     auditVersion: decision.auditVersion,
     evidenceDigest: decision.evidenceDigest,
     artifactId,
-    finalContractDigest:
-      typeof decision.forensicInventory["final_forensic_contract"] === "object" &&
-      decision.forensicInventory["final_forensic_contract"] !== null
-        ? String(
-            (decision.forensicInventory["final_forensic_contract"] as Record<string, Json>)[
-              "final_contract_digest"
-            ] ?? "",
-          )
-        : undefined,
-    reconciliationDigest:
-      typeof decision.forensicInventory["reconciliation"] === "object" &&
-      decision.forensicInventory["reconciliation"] !== null
-        ? String(
-            (decision.forensicInventory["reconciliation"] as Record<string, Json>)[
-              "reconciliation_digest"
-            ] ?? "",
-          )
-        : undefined,
+    finalContractDigest,
+    reconciliationDigest,
   };
 }

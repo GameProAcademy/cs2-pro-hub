@@ -60,8 +60,20 @@ function contract() {
     unsigned_contract_digest: "",
     deterministic_digest: "",
   };
-  value.full_tick_audit.tick_domain_source = { authoritative: true, digest: "t".repeat(64) };
-  const digest = rawArtifactSha256(stableRawArtifactJson(value));
+  const fullTickAudit = value.full_tick_audit as Record<string, unknown>;
+  fullTickAudit["tick_domain_source"] = { authoritative: true, digest: "t".repeat(64) };
+  const digest = rawArtifactSha256(
+    stableRawArtifactJson(
+      Object.fromEntries(
+        Object.entries(value).filter(
+          ([key]) =>
+            key !== "deterministic_digest" &&
+            key !== "unsigned_contract_digest" &&
+            key !== "final_contract_digest",
+        ),
+      ),
+    ),
+  );
   value.unsigned_contract_digest = digest;
   value.deterministic_digest = digest;
   return value;
