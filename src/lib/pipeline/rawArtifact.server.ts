@@ -191,6 +191,18 @@ export async function auditPhysicalRawChunks(args: {
 
 function physicalSemanticProjection(semantic: PhysicalSemanticAccumulator): Record<string, unknown> {
   const ticks = [...semantic.tickValues].sort((a, b) => a - b);
+  const forensic = semantic.forensicRows[0];
+  const mappings = Array.isArray(forensic?.["field_mappings"])
+    ? (forensic["field_mappings"] as Array<Record<string, unknown>>)
+        .map((row) => ({
+          raw_field: row["raw_field"] ?? null,
+          app_field: row["app_field"] ?? null,
+          canonical_field: row["canonical_field"] ?? null,
+          status: row["status"] ?? null,
+          reason: row["reason"] ?? null,
+        }))
+        .sort((a, b) => String(a.raw_field).localeCompare(String(b.raw_field)))
+    : [];
   const projection: Record<string, unknown> = {
     event_inventory: [...semantic.eventNames].sort(),
     event_counts: Object.fromEntries([...semantic.eventCounts].sort(([a], [b]) => a.localeCompare(b))),
@@ -201,6 +213,7 @@ function physicalSemanticProjection(semantic: PhysicalSemanticAccumulator): Reco
     round_fields: [...semantic.roundFields].sort(),
     tick_sample_domain: { min_tick: ticks[0] ?? null, max_tick: ticks.at(-1) ?? null, count: ticks.length },
     tick_fields: [...semantic.tickFields].sort(),
+    mappings,
   };
   projection["digest"] = rawArtifactSha256(stableRawArtifactJson(projection));
   return projection;

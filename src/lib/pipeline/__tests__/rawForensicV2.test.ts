@@ -1,10 +1,16 @@
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
-import { auditPhysicalRawChunks } from "@/lib/pipeline/rawArtifact.server";
+import {
+  auditPhysicalRawChunks,
+  reconcileProducerAndPhysical,
+} from "@/lib/pipeline/rawArtifact.server";
 import {
   RAW_FORENSIC_V2_REQUIRED_GATES,
   rawArtifactBytesSha256,
+  rawArtifactSha256,
+  resolveRawForensicPhysicalGate,
+  stableRawArtifactJson,
   validateRawForensicContractV2,
 } from "@/lib/pipeline/rawArtifactContract";
 
@@ -13,17 +19,40 @@ function contract() {
     audit_contract_version: 2,
     parser: { name: "demoparser2", version: "0.42.0" },
     capability_catalog: {},
-    full_tick_audit: { coverage: "FULL_TICK_DOMAIN_AUDIT", complete: true },
+    capability_reconciliation: {
+      status: "PASS",
+      unresolved_count: 0,
+      duplicate_count: 0,
+      orphan_count: 0,
+      set_difference_count: 0,
+    },
+    full_tick_audit: {
+      coverage: "FULL_TICK_DOMAIN_AUDIT",
+      domain_proof_status: "PASS",
+      complete: true,
+      tick_domain_source: { authoritative: true },
+      full_tick_domain_proof: { status: "PASS", complete: true },
+    },
     property_inventory: [{}],
     event_inventory: [{}],
     semantic_inventories: {},
-    mapping_inventory: [{ raw_field: "header.map_name", status: "CANONICAL" }],
+    mapping_inventory: [
+      {
+        raw_field: "header.map_name",
+        status: "CANONICAL",
+        app_field: "header.map",
+        canonical_field: "CanonicalMatch.map",
+      },
+    ],
     gates: RAW_FORENSIC_V2_REQUIRED_GATES.map((gate) => ({
       gate,
       status: gate === "RAW-V2-22-physical-reaudit" ? "BLOCKED" : "PASS",
       reasons: [],
     })),
     physical_reaudit_required: true,
+    producer_gate_status: "PASS",
+    physical_gate_status: "PENDING",
+    final_gate_status: "BLOCKED",
     canonical_admission: "BLOCKED",
     deterministic_digest: "a".repeat(64),
   };
@@ -38,6 +67,41 @@ describe("RAW forensic contract v2", () => {
         full_tick_audit: { coverage: "SAMPLE", complete: false },
       }),
     ).toContain("forensic_v2_full_tick_unproven");
+  });
+
+  it("rejects legacy unmapped classifications from v2", () => {
+    expect(
+      validateRawForensicContractV2({
+        ...contract(),
+        mapping_inventory: [{ raw_field: "x", status: "UNMAPPED_BUT_AVAILABLE" }],
+      }),
+    ).toContain("forensic_v2_mapping_invalid");
+  });
+
+  it("resolves Gate 22 only after reconciliation and validates the final decision", () => {
+    const resolved = resolveRawForensicPhysicalGate(contract(), "b".repeat(64));
+    expect(resolved["physical_gate_status"]).toBe("PASS");
+    expect(resolved["final_gate_status"]).toBe("PASS");
+    expect(resolved["canonical_admission"]).toBe("APPROVED");
+    expect(validateRawForensicContractV2(resolved, "final")).toEqual([]);
+  });
+
+  it("fails set reconciliation on missing, extra or different semantic evidence", () => {
+    const base = { event_inventory: ["player_death"], event_counts: { player_death: 1 } };
+    const producer = {
+      ...base,
+      digest: rawArtifactSha256(stableRawArtifactJson(base)),
+    };
+    const pass = reconcileProducerAndPhysical(producer, producer);
+    expect(pass["status"]).toBe("PASS");
+    const fail = reconcileProducerAndPhysical(producer, {
+      event_inventory: ["player_hurt"],
+      event_counts: { player_hurt: 1 },
+      extra: true,
+      digest: "0".repeat(64),
+    });
+    expect(fail).toMatchObject({ status: "FAIL", extra_in_artifact: ["extra"] });
+    expect(fail["different_in_artifact"]).toEqual(["event_counts", "event_inventory"]);
   });
 
   it("independently downloads, hashes, decompresses and inventories every chunk", async () => {
