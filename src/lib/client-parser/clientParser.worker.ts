@@ -84,6 +84,7 @@ function errorCode(error: unknown): ClientParserErrorCode {
   if (message === "CLIENT_CANCELLED") return "CLIENT_CANCELLED";
   if (
     message === "CLIENT_DEMO_INVALID" ||
+    message === "CLIENT_DEMO_PARSE_FAILED" ||
     message === "CLIENT_DEMO_TOO_LARGE" ||
     message === "CLIENT_RESULT_TOO_LARGE" ||
     message === "CLIENT_WASM_LOAD_FAILED" ||
@@ -186,7 +187,7 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
     wasmBinarySha256,
     artifactSize: wasmBytes.byteLength,
     status: "VERIFIED",
-    reason: null,
+    reason: CLIENT_PARSER_ARTIFACT_PROVENANCE.reason,
   };
   api = candidate;
   wasmLoadMs = performance.now() - started;

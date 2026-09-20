@@ -1,7 +1,7 @@
-export const CLIENT_PARSER_SCHEMA_VERSION = 1 as const;
-export const CLIENT_PARSER_MANIFEST_VERSION = 1 as const;
-export const CLIENT_PARSER_CONTRACT_VERSION = 2 as const;
-export const CLIENT_PARSER_CATALOG_VERSION = 3 as const;
+export const CLIENT_PARSER_SCHEMA_VERSION = 2 as const;
+export const CLIENT_PARSER_MANIFEST_VERSION = 2 as const;
+export const CLIENT_PARSER_CONTRACT_VERSION = 3 as const;
+export const CLIENT_PARSER_CATALOG_VERSION = 4 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;

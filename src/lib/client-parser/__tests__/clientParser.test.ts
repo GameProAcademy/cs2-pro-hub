@@ -333,6 +333,33 @@ describe("client parser compact contract", () => {
     expect(inspectRuntimeSurface(runtime).minimumReady).toBe(false);
   });
 
+  it.each(CLIENT_REQUIRED_RUNTIME_EXPORTS)(
+    "rejects a result without successful call evidence for %s",
+    (missing) => {
+      const value = envelope();
+      const call = value.result.parser.apiCalls.find((item) => item.api === missing);
+      if (!call) throw new Error("fixture_call_missing");
+      call.callSucceeded = false;
+      call.status = "CALL_FAILED";
+      resign(value);
+      expect(validateClientParserResult(value)).toMatchObject({
+        accepted: false,
+        reasonCode: "CLIENT_CONTRACT_MISMATCH",
+      });
+    },
+  );
+
+  it("rejects a self-consistent but unknown WASM hash", () => {
+    const value = envelope();
+    value.result.parser.artifact.wasmBinarySha256 = "e".repeat(64);
+    value.manifest.artifactProvenance.wasmBinarySha256 = "e".repeat(64);
+    resign(value);
+    expect(validateClientParserResult(value)).toMatchObject({
+      accepted: false,
+      reasonCode: "CLIENT_CONTRACT_MISMATCH",
+    });
+  });
+
   it("normalizes player inventory only through parsePlayerInfo", () => {
     const inventory = playerInventoryFromRuntime(
       {

@@ -13,8 +13,9 @@ export const CLIENT_PARSER_CAPABILITY_CATALOG: ClientCapability[] = [
   ["parseEvents", "RAW_ONLY"],
   ["parsePlayerInfo", "UNAVAILABLE"],
   ["parseGrenades", "RAW_ONLY"],
-  ["parseChatMessages", "RAW_ONLY"],
+  ["parseChatMessages", "UNAVAILABLE"],
   ["parseTicks", "RAW_ONLY"],
+  ["listUpdatedFields", "RAW_ONLY"],
 ].map(([id, classification]) => ({
   id: String(id),
   classification: classification as ClientCapability["classification"],
