@@ -52,7 +52,7 @@ SHA-256 uses the existing incremental project implementation over the actual DEM
 
 ## Performance, large files, and memory
 
-Infrastructure accepts files up to 1.5 GiB and transfers the buffer to a worker. This is not evidence that a ~400 MB DEM works. No real large DEM, browser memory profile, or browser compatibility matrix was executed. `performance.memory` is non-standard, so memory remains `UNAVAILABLE` rather than estimated. Hash, parse, total, WASM load, result byte size, and file size are measured when a real parser runs.
+The POC accepts files only up to 128 MiB and transfers the buffer to a worker. This is not evidence that a ~400 MB DEM works. No real large DEM, browser memory profile, or browser compatibility matrix was executed. `performance.memory` is non-standard, so memory remains `UNAVAILABLE` rather than estimated. Hash, parse, total, WASM load, result byte size, and file size are measured when a real parser runs.
 
 ## Determinism and parity
 
@@ -98,6 +98,16 @@ A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A PO
 ## Gate final
 
 `POC_NOT_READY`
+
+## Marco consolidado F.2.10-A → F.2.10-D
+
+- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: BLOCKED` — contracts and fail-closed loading are hardened, but no auditable 0.42.0 browser artifact exists.
+- `F.2.10-B REAL BROWSER DEM: NOT_RUN` — no artifact or authorized real DEM fixture.
+- `F.2.10-C PYTHON × WASM PARITY: NOT_RUN` — the 22-dimension comparator is prepared; no same-DEM corpus was executed.
+- `F.2.10-D 400MB MEMORY: NOT_RUN` — the POC ceiling is 128 MiB and no browser memory run occurred.
+- `CANONICAL ADMISSION: MUST REMAIN BLOCKED`.
+- `HOT READINESS: PARTIAL` — compact/bounded contracts exist, but no real runtime output is proven.
+- `AI DATA READINESS: BLOCKED` — no trusted, parity-validated semantic data was produced.
 
 # FASE 2.10-A — RELATÓRIO FINAL
 
