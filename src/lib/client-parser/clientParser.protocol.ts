@@ -28,7 +28,13 @@ export type ClientParserCommand =
   | { type: "CANCEL"; requestId: string };
 
 export type ClientParserWorkerEvent =
-  | { type: "PROGRESS"; requestId: string; stage: ClientParserStage; progress: number; elapsedMs: number }
+  | {
+      type: "PROGRESS";
+      requestId: string;
+      stage: ClientParserStage;
+      progress: number;
+      elapsedMs: number;
+    }
   | { type: "READY"; requestId: string; wasmLoadMs: number }
   | { type: "COMPLETE"; requestId: string; envelope: ClientParserEnvelope }
   | { type: "ERROR"; requestId: string; code: ClientParserErrorCode }

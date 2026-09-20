@@ -30,7 +30,9 @@ export function buildClientParserManifest(result: ClientParseResult): ClientPars
     catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
     catalogDigest: CLIENT_PARSER_CATALOG_DIGEST,
     capabilityDigest: CLIENT_PARSER_CAPABILITY_DIGEST,
-    capabilityClassifications: [...new Set(result.capabilities.map((item) => item.classification))].sort(),
+    capabilityClassifications: [
+      ...new Set(result.capabilities.map((item) => item.classification)),
+    ].sort(),
     coverage: result.coverage,
     semanticStatus: result.semanticStatus,
     resultDigest: result.resultDigest,

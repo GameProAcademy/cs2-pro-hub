@@ -28,7 +28,9 @@ export const CLIENT_PARSER_CAPABILITY_CATALOG: ClientCapability[] = [
   parserVersion: CLIENT_PARSER_VERSION,
 }));
 
-export const CLIENT_PARSER_CATALOG_DIGEST = sha256Text(stableClientJson(CLIENT_PARSER_CAPABILITY_CATALOG));
+export const CLIENT_PARSER_CATALOG_DIGEST = sha256Text(
+  stableClientJson(CLIENT_PARSER_CAPABILITY_CATALOG),
+);
 export const CLIENT_PARSER_CAPABILITY_DIGEST = sha256Text(
   stableClientJson({
     classifications: CLIENT_CAPABILITY_CLASSIFICATIONS,

@@ -22,7 +22,11 @@ export function sha256Text(value: string): string {
 }
 
 export function computeClientResultDigest<T extends object>(result: T): string {
-  const { resultDigest: _digest, performance: _performance, ...deterministic } = result as T & {
+  const {
+    resultDigest: _digest,
+    performance: _performance,
+    ...deterministic
+  } = result as T & {
     resultDigest?: string;
     performance?: unknown;
   };
