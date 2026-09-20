@@ -331,4 +331,13 @@ describe("client parser compact contract", () => {
     const right = buildClientParserManifest(changed);
     expect(left.manifest.manifestDigest).not.toBe(right.manifestDigest);
   });
+
+  it("rejects a forged manifest digest", () => {
+    const value = envelope();
+    value.manifest.manifestDigest = "0".repeat(64);
+    expect(validateClientParserResult(value)).toMatchObject({
+      accepted: false,
+      reasonCode: "CLIENT_RESULT_DIGEST_MISMATCH",
+    });
+  });
 });

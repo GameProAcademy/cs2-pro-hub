@@ -21,6 +21,7 @@ import {
   CLIENT_PARSER_CATALOG_DIGEST,
 } from "./clientParser.capabilities";
 import { computeClientResultDigest } from "./clientParser.hash";
+import { computeClientManifestDigest } from "./clientParser.manifest";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -193,7 +194,9 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   if (
     !HEX_64.test(result.resultDigest) ||
     computeClientResultDigest(result) !== result.resultDigest ||
-    manifest.resultDigest !== result.resultDigest
+    manifest.resultDigest !== result.resultDigest ||
+    !HEX_64.test(manifest.manifestDigest) ||
+    computeClientManifestDigest(manifest) !== manifest.manifestDigest
   )
     return fail("CLIENT_RESULT_DIGEST_MISMATCH");
   return {
