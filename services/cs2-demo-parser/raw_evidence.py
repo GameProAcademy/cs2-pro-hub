@@ -739,8 +739,11 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
             if gate.get("gate") == "RAW-V2-01-parser-identity":
                 passed = parser.get("name") == "demoparser2" and parser.get("version") == "0.42.0" and contract_version == 1
                 gate.update({"status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else ["parser_identity_mismatch"]})
-        unsigned = {key: value for key, value in forensic_v2.items() if key != "deterministic_digest"}
-        forensic_v2["deterministic_digest"] = deterministic_digest(unsigned)
+        unsigned = {key: value for key, value in forensic_v2.items()
+                    if key not in {"deterministic_digest", "unsigned_contract_digest", "final_contract_digest"}}
+        digest = deterministic_digest(unsigned)
+        forensic_v2["unsigned_contract_digest"] = digest
+        forensic_v2["deterministic_digest"] = digest
     return evidence
 
 

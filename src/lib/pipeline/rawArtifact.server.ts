@@ -236,6 +236,23 @@ function physicalSemanticProjection(
         }))
         .sort((a, b) => String(a.raw_field).localeCompare(String(b.raw_field)))
     : [];
+  const contract =
+    forensic?.["forensic_contract_v2"] &&
+    typeof forensic["forensic_contract_v2"] === "object" &&
+    !Array.isArray(forensic["forensic_contract_v2"])
+      ? (forensic["forensic_contract_v2"] as Record<string, unknown>)
+      : {};
+  const catalog =
+    contract["capability_catalog"] &&
+    typeof contract["capability_catalog"] === "object" &&
+    !Array.isArray(contract["capability_catalog"])
+      ? (contract["capability_catalog"] as Record<string, unknown>)
+      : {};
+  const classifications: Record<string, number> = {};
+  for (const row of mappings) {
+    const status = String(row.status);
+    classifications[status] = (classifications[status] ?? 0) + 1;
+  }
   const projection: Record<string, unknown> = {
     event_inventory: [...semantic.eventNames].sort(),
     event_counts: Object.fromEntries(
@@ -257,6 +274,36 @@ function physicalSemanticProjection(
     },
     tick_fields: [...semantic.tickFields].sort(),
     mappings,
+    classifications: Object.fromEntries(
+      Object.entries(classifications).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+    derivations: mappings
+      .filter((row) => row.status === "DERIVED")
+      .map((row) => String(row.raw_field))
+      .sort(),
+    raw_only_reasons: [
+      ...new Set(
+        mappings
+          .filter((row) => row.status === "RAW_ONLY" && row.reason)
+          .map((row) => String(row.reason)),
+      ),
+    ].sort(),
+    parser_identity: contract["parser"] ?? null,
+    catalog_digest: contract["catalog_digest"] ?? null,
+    capability_count: Array.isArray(catalog["capabilities"])
+      ? catalog["capabilities"].length
+      : 0,
+    capability_digest: rawArtifactSha256(
+      stableRawArtifactJson(Array.isArray(catalog["capabilities"]) ? catalog["capabilities"] : []),
+    ),
+    tick_domain:
+      (contract["full_tick_audit"] as Record<string, unknown> | undefined)?.[
+        "tick_domain_source"
+      ] ?? null,
+    tick_coverage: contract["full_tick_audit"] ?? null,
+    property_inventory: contract["property_inventory"] ?? null,
+    semantic_inventories: contract["semantic_inventories"] ?? null,
+    forensic_contract_digest: contract["deterministic_digest"] ?? null,
   };
   projection["digest"] = rawArtifactSha256(stableRawArtifactJson(projection));
   return projection;
@@ -663,7 +710,12 @@ export async function verifyRawArtifact(args: {
   const forensicContract = forensicV2 as Record<string, unknown>;
   const declaredDigest = forensicContract["deterministic_digest"];
   const unsignedContract = Object.fromEntries(
-    Object.entries(forensicContract).filter(([key]) => key !== "deterministic_digest"),
+    Object.entries(forensicContract).filter(
+      ([key]) =>
+        key !== "deterministic_digest" &&
+        key !== "unsigned_contract_digest" &&
+        key !== "final_contract_digest",
+    ),
   );
   if (
     typeof declaredDigest !== "string" ||
