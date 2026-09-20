@@ -351,6 +351,53 @@ export function reconcileProducerAndPhysical(
   return { ...result, reconciliation_digest: rawArtifactSha256(stableRawArtifactJson(result)) };
 }
 
+function successfulReconciliationDimensions(args: {
+  reconciliation: Record<string, unknown>;
+  identityMatches: boolean;
+  parserMatches: boolean;
+  chainVerified: boolean;
+  totalsVerified: boolean;
+  rootVerified: boolean;
+  contractVerified: boolean;
+}): Record<string, "PASS" | "FAIL"> {
+  const reconciled = args.reconciliation["status"] === "PASS";
+  const semanticDimensions = new Set([
+    "catalog_digest", "capability_count", "capability_digest", "classifications", "mappings",
+    "derivations", "raw_only_reasons", "event_inventory", "event_counts", "event_fields",
+    "player_inventory", "round_inventory", "tick_domain", "tick_coverage", "property_inventory",
+    "semantic_inventories",
+  ]);
+  const identityDimensions = new Set([
+    "artifact_identity", "job_identity", "upload_identity", "attempt_number", "demo_sha",
+  ]);
+  const parserDimensions = new Set([
+    "parser_identity", "parser_version", "parser_revision", "contract_version",
+  ]);
+  const chainDimensions = new Set(["chunk_indexes", "chunk_sha", "previous_chunk_sha"]);
+  const totalDimensions = new Set(["chunk_count", "byte_sizes", "row_counts", "section_counts"]);
+  const rootDimensions = new Set(["section_digests", "artifact_root_digest"]);
+  return Object.fromEntries(
+    RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => {
+      const pass = identityDimensions.has(name)
+        ? args.identityMatches
+        : parserDimensions.has(name)
+          ? args.parserMatches
+          : chainDimensions.has(name)
+            ? args.chainVerified
+            : totalDimensions.has(name)
+              ? args.totalsVerified
+              : rootDimensions.has(name)
+                ? args.rootVerified
+                : name === "forensic_contract_digest"
+                  ? args.contractVerified
+                  : name === "reconciliation_digest"
+                    ? reconciled && /^[0-9a-f]{64}$/.test(String(args.reconciliation["reconciliation_digest"] ?? ""))
+                    : semanticDimensions.has(name) && reconciled;
+      return [name, pass ? "PASS" : "FAIL"];
+    }),
+  );
+}
+
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!value || typeof value !== "object")
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing HOT payload");
@@ -761,14 +808,21 @@ export async function verifyRawArtifact(args: {
     );
   let finalContract: Record<string, unknown>;
   try {
+    const dimensions = successfulReconciliationDimensions({
+      reconciliation,
+      identityMatches,
+      parserMatches: true,
+      chainVerified: true,
+      totalsVerified: true,
+      rootVerified: true,
+      contractVerified: true,
+    });
     finalContract = resolveRawForensicPhysicalGate(
       forensicV2,
       {
         reconciliationDigest: String(reconciliation["reconciliation_digest"] ?? ""),
         artifactRootDigest: artifact.root_digest,
-        dimensions: Object.fromEntries(
-          RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [name, "PASS" as const]),
-        ),
+        dimensions,
       },
     );
   } catch {

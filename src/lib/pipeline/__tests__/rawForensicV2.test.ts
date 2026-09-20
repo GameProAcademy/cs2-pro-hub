@@ -113,6 +113,24 @@ describe("RAW forensic contract v2", () => {
     expect(validateRawForensicContractV2(resolved, "final")).toEqual([]);
   });
 
+  it("rejects forged digests and incomplete named reconciliation dimensions", () => {
+    expect(
+      validateRawForensicContractV2({ ...contract(), deterministic_digest: "0".repeat(64) }),
+    ).toContain("forensic_v2_contract_digest_invalid");
+    expect(() =>
+      resolveRawForensicPhysicalGate(contract(), {
+        reconciliationDigest: "b".repeat(64),
+        artifactRootDigest: "d".repeat(64),
+        dimensions: Object.fromEntries(
+          RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [
+            name,
+            name === "tick_domain" ? "FAIL" : "PASS",
+          ]),
+        ),
+      }),
+    ).toThrow("forensic_v2_reconciliation_dimensions_invalid");
+  });
+
   it("fails set reconciliation on missing, extra or different semantic evidence", () => {
     const base = { event_inventory: ["player_death"], event_counts: { player_death: 1 } };
     const producer = {
@@ -180,5 +198,27 @@ describe("RAW forensic contract v2", () => {
       code: "PARSER_INVALID_RESPONSE",
       detail: "RAW physical chunk digest mismatch",
     });
+  });
+
+  it("rejects traversal and sibling-prefix chunk paths before downloading", async () => {
+    for (const path of ["u/up/attempt-1/../secret.gz", "u/up/attempt-10/ticks/0.gz"]) {
+      await expect(
+        auditPhysicalRawChunks({
+          bucket: "cs2-raw-evidence",
+          prefix: "u/up/attempt-1",
+          chunks: [
+            {
+              section: "ticks",
+              chunk_index: 0,
+              row_count: 1,
+              byte_size: 1,
+              sha256: "0".repeat(64),
+              storage_path: path,
+            },
+          ],
+          download: async () => new Blob(),
+        }),
+      ).rejects.toMatchObject({ detail: "RAW chunk path escaped artifact prefix" });
+    }
   });
 });
