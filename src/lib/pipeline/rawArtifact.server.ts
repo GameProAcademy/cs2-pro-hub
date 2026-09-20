@@ -150,7 +150,7 @@ export async function auditPhysicalRawChunks(args: {
     const bytes = new Uint8Array(await blob.arrayBuffer());
     if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256)
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk digest mismatch");
-    let decoded: { rows: number; fields: string[] };
+    let decoded: { rows: number; fields: string[]; decompressedBytes: number };
     try {
       decoded = await gunzipJsonLines(new Blob([bytes]), chunk.section, semantic);
     } catch {
@@ -613,28 +613,6 @@ export async function verifyRawArtifact(args: {
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic v2 digest mismatch");
   }
-  const physicalSemantic = physical["semantic"];
-  const physicalSections = physical["sections"] as Record<string, unknown> | undefined;
-  const forensicSection = physicalSections?.["forensic"] as Record<string, unknown> | undefined;
-  if (!forensicSection || Number(forensicSection["rows"]) !== 1)
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic section cardinality mismatch");
-  // The forensic row was parsed independently from the physical gzip JSONL.
-  const physicalForensicRows = (physical as Record<string, unknown>)["forensic_rows"];
-  const forensicRows = Array.isArray(physicalForensicRows) ? physicalForensicRows : [];
-  const physicalForensic = forensicRows[0] as Record<string, unknown> | undefined;
-  const producerProjection = physicalForensic?.["producer_reconciliation_projection"];
-  const reconciliation = reconcileProducerAndPhysical(producerProjection, physicalSemantic);
-  if (reconciliation["status"] !== "PASS")
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW producer/artifact reconciliation failed");
-  let finalContract: Record<string, unknown>;
-  try {
-    finalContract = resolveRawForensicPhysicalGate(
-      forensicV2,
-      String(reconciliation["reconciliation_digest"] ?? ""),
-    );
-  } catch {
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
-  }
   const physical = await auditPhysicalRawChunks({
     bucket: RAW_BUCKET,
     prefix: expectedPrefix,
@@ -654,6 +632,28 @@ export async function verifyRawArtifact(args: {
     physical["total_bytes"] !== artifact.total_bytes
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical artifact totals mismatch");
+  }
+  const physicalSemantic = physical["semantic"];
+  const physicalSections = physical["sections"] as Record<string, unknown> | undefined;
+  const forensicSection = physicalSections?.["forensic"] as Record<string, unknown> | undefined;
+  if (!forensicSection || Number(forensicSection["rows"]) !== 1)
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic section cardinality mismatch");
+  // The forensic row was parsed independently from the physical gzip JSONL.
+  const physicalForensicRows = physical["forensic_rows"];
+  const forensicRows = Array.isArray(physicalForensicRows) ? physicalForensicRows : [];
+  const physicalForensic = forensicRows[0] as Record<string, unknown> | undefined;
+  const producerProjection = physicalForensic?.["producer_reconciliation_projection"];
+  const reconciliation = reconcileProducerAndPhysical(producerProjection, physicalSemantic);
+  if (reconciliation["status"] !== "PASS")
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW producer/artifact reconciliation failed");
+  let finalContract: Record<string, unknown>;
+  try {
+    finalContract = resolveRawForensicPhysicalGate(
+      forensicV2,
+      String(reconciliation["reconciliation_digest"] ?? ""),
+    );
+  } catch {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
   return {
     status: "PASS",
