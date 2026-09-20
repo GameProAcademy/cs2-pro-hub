@@ -2,8 +2,10 @@ import { PipelineError } from "@/lib/pipeline/errors";
 import {
   RAW_ARTIFACT_SECTION_ORDER,
   deriveRawArtifactAuditStatus,
+  rawArtifactBytesSha256,
   rawArtifactSha256,
   stableRawArtifactJson,
+  validateRawForensicContractV2,
 } from "@/lib/pipeline/rawArtifactContract";
 import {
   DURABLE_HOT_HARD_MAX_BYTES,
@@ -38,6 +40,89 @@ const OPTIONAL_SEMANTIC_HOT_SECTIONS = new Set([
   "position_snapshots",
   "economy_snapshots",
 ]);
+
+type PhysicalChunk = {
+  section: string;
+  chunk_index: number;
+  row_count: number;
+  byte_size: number;
+  sha256: string;
+  storage_path: string;
+};
+
+async function gunzipJsonLines(blob: Blob): Promise<{ rows: number; fields: string[] }> {
+  const stream = blob.stream().pipeThrough(new DecompressionStream("gzip"));
+  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+  let pending = "";
+  let rows = 0;
+  const fields = new Set<string>();
+  const accept = (line: string) => {
+    if (!line) return;
+    const value: unknown = JSON.parse(line);
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      Object.keys(value).forEach((key) => fields.add(key));
+    }
+    rows += 1;
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    pending += value;
+    let newline = pending.indexOf("\n");
+    while (newline >= 0) {
+      accept(pending.slice(0, newline));
+      pending = pending.slice(newline + 1);
+      newline = pending.indexOf("\n");
+    }
+  }
+  accept(pending);
+  return { rows, fields: [...fields].sort() };
+}
+
+/** Re-reads every private object; database metadata alone is never physical proof. */
+export async function auditPhysicalRawChunks(args: {
+  bucket: string;
+  prefix: string;
+  chunks: PhysicalChunk[];
+  download: (path: string) => Promise<Blob>;
+}): Promise<Record<string, unknown>> {
+  const sections: Record<string, { rows: number; bytes: number; fields: Set<string> }> = {};
+  let totalRows = 0;
+  let totalBytes = 0;
+  for (const chunk of args.chunks) {
+    if (!chunk.storage_path.startsWith(`${args.prefix}/`))
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk path escaped artifact prefix");
+    const blob = await args.download(chunk.storage_path);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256)
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk digest mismatch");
+    let decoded: { rows: number; fields: string[] };
+    try {
+      decoded = await gunzipJsonLines(new Blob([bytes]));
+    } catch {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk is not valid gzip JSONL");
+    }
+    if (decoded.rows !== chunk.row_count)
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk row count mismatch");
+    const section = (sections[chunk.section] ??= { rows: 0, bytes: 0, fields: new Set() });
+    section.rows += decoded.rows;
+    section.bytes += bytes.byteLength;
+    decoded.fields.forEach((field) => section.fields.add(field));
+    totalRows += decoded.rows;
+    totalBytes += bytes.byteLength;
+  }
+  return {
+    bucket: args.bucket,
+    total_chunks: args.chunks.length,
+    total_rows: totalRows,
+    total_bytes: totalBytes,
+    sections: Object.fromEntries(
+      Object.entries(sections)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, value]) => [name, { rows: value.rows, bytes: value.bytes, fields: [...value.fields].sort() }]),
+    ),
+  };
+}
 
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
   if (!value || typeof value !== "object")
@@ -382,11 +467,53 @@ export async function verifyRawArtifact(args: {
   if (!manifestMatches) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW manifest mismatch");
   }
+  const forensicV2 = (auditEvidence as Record<string, unknown>)["forensic_contract_v2"];
+  const v2Reasons = validateRawForensicContractV2(forensicV2);
+  if (v2Reasons.length > 0) {
+    return {
+      status: "BLOCKED",
+      auditStatus: "BLOCKED",
+      approved: false,
+      auditVersion: 4,
+      reasons: v2Reasons,
+      evidenceDigest: artifact.root_digest,
+      forensicInventory: {},
+    };
+  }
+  const forensicContract = forensicV2 as Record<string, unknown>;
+  const declaredDigest = forensicContract["deterministic_digest"];
+  const unsignedContract = Object.fromEntries(
+    Object.entries(forensicContract).filter(([key]) => key !== "deterministic_digest"),
+  );
+  if (
+    typeof declaredDigest !== "string" ||
+    rawArtifactSha256(stableRawArtifactJson(unsignedContract)) !== declaredDigest
+  ) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic v2 digest mismatch");
+  }
+  const physical = await auditPhysicalRawChunks({
+    bucket: RAW_BUCKET,
+    prefix: expectedPrefix,
+    chunks,
+    download: async (path) => {
+      const { data, error: downloadError } = await supabaseAdmin.storage.from(RAW_BUCKET).download(path);
+      if (downloadError || !data)
+        throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk unavailable");
+      return data;
+    },
+  });
+  if (
+    physical["total_chunks"] !== artifact.total_chunks ||
+    physical["total_rows"] !== artifact.total_rows ||
+    physical["total_bytes"] !== artifact.total_bytes
+  ) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical artifact totals mismatch");
+  }
   return {
     status: "PASS",
     auditStatus: "APPROVED",
     approved: true,
-    auditVersion: 3,
+    auditVersion: 4,
     reasons: [],
     evidenceDigest: artifact.root_digest,
     forensicInventory: {
@@ -395,6 +522,7 @@ export async function verifyRawArtifact(args: {
       total_chunks: artifact.total_chunks,
       total_rows: artifact.total_rows,
       total_bytes: artifact.total_bytes,
+      physical_reaudit: physical,
     },
   };
 }

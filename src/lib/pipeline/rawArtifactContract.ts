@@ -28,6 +28,10 @@ export function rawArtifactSha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+export function rawArtifactBytesSha256(value: Uint8Array): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 const RAW_MAPPING_STATUSES = new Set([
   "MAPPED",
   "DERIVED",
