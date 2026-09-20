@@ -1,3 +1,4 @@
+import { sha256Text, stableClientJson } from "./clientParser.hash";
 import {
   CLIENT_PARSER_BUILD_IDENTITY,
   CLIENT_PARSER_CATALOG_VERSION,
@@ -15,7 +16,7 @@ import {
 } from "./clientParser.capabilities";
 
 export function buildClientParserManifest(result: ClientParseResult): ClientParserManifest {
-  return {
+  const manifest = {
     manifestVersion: CLIENT_PARSER_MANIFEST_VERSION,
     demoSha256: result.demo.sha256,
     demoSizeBytes: result.demo.sizeBytes,
@@ -25,7 +26,9 @@ export function buildClientParserManifest(result: ClientParseResult): ClientPars
     parserVersion: CLIENT_PARSER_VERSION,
     parserRuntime: CLIENT_PARSER_RUNTIME,
     parserBuildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
-    parserRuntimeDigest: result.parser.runtimeDigest,
+    runtimeSurfaceDigest: result.parser.runtimeSurface.runtimeSurfaceDigest,
+    observedExports: result.parser.runtimeSurface.observedExports,
+    artifactProvenance: result.parser.artifact,
     contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
     catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
     catalogDigest: CLIENT_PARSER_CATALOG_DIGEST,
@@ -36,7 +39,12 @@ export function buildClientParserManifest(result: ClientParseResult): ClientPars
     coverage: result.coverage,
     semanticStatus: result.semanticStatus,
     resultDigest: result.resultDigest,
+    manifestDigest: "",
     generatedAt: new Date().toISOString(),
     performance: result.performance,
-  };
+  } satisfies ClientParserManifest;
+  const { generatedAt: _generatedAt, performance: _performance, manifestDigest: _digest, ...stable } =
+    manifest;
+  manifest.manifestDigest = sha256Text(stableClientJson(stable));
+  return manifest;
 }

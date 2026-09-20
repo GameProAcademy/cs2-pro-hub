@@ -19,7 +19,14 @@ export const CLIENT_PARSER_STAGES = [
 export type ClientParserStage = (typeof CLIENT_PARSER_STAGES)[number];
 
 export type ClientParserCommand =
-  | { type: "INIT"; requestId: string; scriptUrl?: string; wasmUrl?: string }
+  | {
+      type: "INIT";
+      requestId: string;
+      scriptUrl?: string;
+      wasmUrl?: string;
+      expectedBindingSha256?: string;
+      expectedWasmSha256?: string;
+    }
   | {
       type: "PARSE";
       requestId: string;

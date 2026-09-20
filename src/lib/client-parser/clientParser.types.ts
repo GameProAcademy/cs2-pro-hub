@@ -5,14 +5,15 @@ export const CLIENT_PARSER_CATALOG_VERSION = 2 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
-export const CLIENT_PARSER_BUILD_IDENTITY = "npm:demoparser2@0.42.0" as const;
+export const CLIENT_PARSER_BUILD_IDENTITY = "source-build:demoparser2@0.42.0-unverified" as const;
 
 export const CLIENT_EVENT_SAMPLE_LIMIT = 1_000;
 export const CLIENT_TICK_PROBE_LIMIT = 4_096;
 export const CLIENT_PLAYER_LIMIT = 128;
 export const CLIENT_EVENT_INVENTORY_LIMIT = 1_024;
 export const CLIENT_RESULT_MAX_BYTES = 2 * 1024 * 1024;
-export const CLIENT_DEMO_MAX_BYTES = 1_500 * 1024 * 1024;
+/** Conservative POC ceiling; this is not a production or 400 MB support claim. */
+export const CLIENT_DEMO_MAX_BYTES = 128 * 1024 * 1024;
 
 export const CLIENT_CAPABILITY_CLASSIFICATIONS = [
   "CANONICAL",
@@ -41,6 +42,38 @@ export interface ClientEventSample {
   fields: Record<string, unknown>;
 }
 
+export type ClientObservationStatus =
+  | "AVAILABLE"
+  | "UNAVAILABLE"
+  | "NOT_PRESENT"
+  | "PARSE_FAILED";
+
+export interface ClientPlayerInventory {
+  status: Exclude<ClientObservationStatus, "NOT_PRESENT">;
+  count: number | null;
+  players: Array<{ steamId: string | null; name: string | null; teamNumber: number | null }>;
+}
+
+export interface ClientRuntimeSurface {
+  observedExports: string[];
+  minimumReady: boolean;
+  runtimeSurfaceDigest: string;
+}
+
+export interface ClientParserArtifactProvenance {
+  status: "VERIFIED" | "UNAVAILABLE";
+  sourceRepository: string | null;
+  sourceCommit: string | null;
+  sourceTag: string | null;
+  buildTool: string | null;
+  buildCommand: string | null;
+  bindingUrl: string | null;
+  wasmUrl: string | null;
+  wasmBindingSha256: string | null;
+  wasmBinarySha256: string | null;
+  reason: string | null;
+}
+
 export interface ClientParseResult {
   schemaVersion: typeof CLIENT_PARSER_SCHEMA_VERSION;
   parser: {
@@ -48,12 +81,19 @@ export interface ClientParseResult {
     version: typeof CLIENT_PARSER_VERSION;
     runtime: typeof CLIENT_PARSER_RUNTIME;
     buildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
-    runtimeDigest: string;
+    runtimeSurface: ClientRuntimeSurface;
+    artifact: ClientParserArtifactProvenance;
   };
   demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };
   header: Record<string, unknown>;
-  playerInventory: Array<{ steamId: string | null; name: string | null }>;
-  eventInventory: Array<{ name: string; count: number; fields: string[] }>;
+  playerInventory: ClientPlayerInventory;
+  eventDiscovery: { status: "AVAILABLE" | "PARSE_FAILED"; count: number; names: string[] };
+  parsedEventInventory: Array<{
+    name: string;
+    status: ClientObservationStatus;
+    count: number | null;
+    fields: string[];
+  }>;
   selectedEventSamples: ClientEventSample[];
   roundSummary: { status: "DERIVED" | "UNAVAILABLE"; count: number | null };
   tickProbe: {
@@ -66,7 +106,12 @@ export interface ClientParseResult {
     duplicates: number;
     missingWithinProbe: number;
   };
-  coverage: { fullTickDomain: false; fullRawEvents: false; sampledEvents: boolean };
+  coverage: {
+    fullTickDomain: false;
+    authoritativeTickDomain: false;
+    fullRawEvents: false;
+    sampledEvents: boolean;
+  };
   capabilities: ClientCapability[];
   semanticStatus: "PARTIAL" | "BLOCKED";
   performance: {
@@ -92,7 +137,9 @@ export interface ClientParserManifest {
   parserVersion: typeof CLIENT_PARSER_VERSION;
   parserRuntime: typeof CLIENT_PARSER_RUNTIME;
   parserBuildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
-  parserRuntimeDigest: string;
+  runtimeSurfaceDigest: string;
+  observedExports: string[];
+  artifactProvenance: ClientParserArtifactProvenance;
   contractVersion: typeof CLIENT_PARSER_CONTRACT_VERSION;
   catalogVersion: typeof CLIENT_PARSER_CATALOG_VERSION;
   catalogDigest: string;
@@ -101,6 +148,7 @@ export interface ClientParserManifest {
   coverage: ClientParseResult["coverage"];
   semanticStatus: ClientParseResult["semanticStatus"];
   resultDigest: string;
+  manifestDigest: string;
   generatedAt: string;
   performance: ClientParseResult["performance"];
 }

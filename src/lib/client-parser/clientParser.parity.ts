@@ -11,7 +11,8 @@ export interface ClientParserParityMismatch {
 const PATHS = [
   "header",
   "playerInventory",
-  "eventInventory",
+  "eventDiscovery",
+  "parsedEventInventory",
   "selectedEventSamples",
   "tickProbe",
   "capabilities",
