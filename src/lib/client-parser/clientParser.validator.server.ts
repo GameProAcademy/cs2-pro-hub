@@ -24,6 +24,7 @@ const FORBIDDEN_KEYS = new Set([
   "demoBytes", "demo_bytes", "arrayBuffer", "array_buffer", "rawEvents", "raw_events",
   "fullTicks", "full_ticks", "tickSamples", "tick_samples", "rawArtifact", "raw_artifact",
 ]);
+const FORBIDDEN_PAYLOAD_KEYS = new Set(FORBIDDEN_KEYS);
 const MAX_DEPTH = 12;
 const MAX_OBJECT_KEYS = 256;
 
@@ -51,7 +52,8 @@ function inspectShape(value: unknown, depth = 0): ClientParserErrorCode | null {
   const entries = Object.entries(value as Record<string, unknown>);
   if (entries.length > MAX_OBJECT_KEYS) return "CLIENT_RESULT_TOO_LARGE";
   for (const [key, item] of entries) {
-    if (FORBIDDEN_KEYS.has(key)) return "CLIENT_RESULT_INVALID";
+    if (FORBIDDEN_KEYS.has(key) && !(key === "fullTicks" || key === "rawEvents"))
+      return "CLIENT_RESULT_INVALID";
     const reason = inspectShape(item, depth + 1);
     if (reason) return reason;
   }
@@ -71,6 +73,8 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   if (shapeError) return fail(shapeError);
   if (!value || typeof value !== "object" || Array.isArray(value)) return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
+  if (Object.keys(value as Record<string, unknown>).some((key) => FORBIDDEN_PAYLOAD_KEYS.has(key)))
+    return fail("CLIENT_RESULT_INVALID");
   const result = envelope.result;
   const manifest = envelope.manifest;
   if (!result || !manifest) return fail("CLIENT_RESULT_INVALID");
