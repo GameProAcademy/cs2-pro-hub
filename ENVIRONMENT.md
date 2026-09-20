@@ -40,6 +40,18 @@ Rules that apply to every variable below:
 The official endpoint value is the canonical parse URL, never the bare origin:
 `https://cs2-demo-parser-production.up.railway.app/v1/parse`.
 
+### Experimental browser parser POC
+
+`VITE_CLIENT_DEM_PARSER_POC_ENABLED` is `false` by default. The four optional
+runtime variables select same-origin, reviewed browser assets and pin their
+lowercase SHA-256 values: `VITE_CLIENT_DEM_PARSER_WASM_SCRIPT_URL`,
+`VITE_CLIENT_DEM_PARSER_WASM_BINARY_URL`,
+`VITE_CLIENT_DEM_PARSER_WASM_BINDING_SHA256`, and
+`VITE_CLIENT_DEM_PARSER_WASM_BINARY_SHA256`. The POC fails closed if any value
+is absent, cross-origin, malformed, or does not match the fetched bytes. These
+public values are integrity metadata, not secrets, and do not enable production
+ingestion.
+
 All values are read server-side. None may use the `VITE_` prefix. A missing
 or insecure URL, or a missing token, keeps the adapter unavailable.
 

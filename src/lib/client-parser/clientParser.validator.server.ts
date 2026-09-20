@@ -32,16 +32,21 @@ const FORBIDDEN_KEYS = new Set([
   "tick_samples",
   "rawArtifact",
   "raw_artifact",
-]);
-const FORBIDDEN_PAYLOAD_KEYS = new Set([
-  ...FORBIDDEN_KEYS,
   "rawEvents",
   "raw_events",
   "fullTicks",
   "full_ticks",
+  "rawPayload",
+  "raw_payload",
+  "rawRows",
+  "raw_rows",
+  "binary",
+  "buffer",
+  "buffers",
 ]);
 const MAX_DEPTH = 12;
 const MAX_OBJECT_KEYS = 256;
+const MAX_NODES = 20_000;
 
 export interface ClientParserValidationDecision {
   accepted: boolean;
@@ -51,25 +56,40 @@ export interface ClientParserValidationDecision {
   reasonCode?: ClientParserErrorCode;
 }
 
-function inspectShape(value: unknown, depth = 0): ClientParserErrorCode | null {
-  if (depth > MAX_DEPTH) return "CLIENT_RESULT_INVALID";
-  if (!value || typeof value !== "object") return null;
-  if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return "CLIENT_RESULT_INVALID";
-  if (Array.isArray(value)) {
-    if (value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
-      return "CLIENT_RESULT_TOO_LARGE";
-    for (const item of value) {
-      const reason = inspectShape(item, depth + 1);
-      if (reason) return reason;
+function inspectShape(value: unknown): ClientParserErrorCode | null {
+  const pending: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+  const seen = new WeakSet<object>();
+  let nodes = 0;
+  while (pending.length) {
+    const current = pending.pop();
+    if (!current) break;
+    nodes += 1;
+    if (nodes > MAX_NODES) return "CLIENT_RESULT_TOO_LARGE";
+    if (current.depth > MAX_DEPTH) return "CLIENT_RESULT_INVALID";
+    if (typeof current.value === "function") return "CLIENT_RESULT_INVALID";
+    if (!current.value || typeof current.value !== "object") continue;
+    if (
+      current.value instanceof ArrayBuffer ||
+      ArrayBuffer.isView(current.value) ||
+      (typeof Blob !== "undefined" && current.value instanceof Blob)
+    )
+      return "CLIENT_RESULT_INVALID";
+    if (seen.has(current.value)) return "CLIENT_RESULT_INVALID";
+    seen.add(current.value);
+    if (Array.isArray(current.value)) {
+      if (current.value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
+        return "CLIENT_RESULT_TOO_LARGE";
+      for (const item of current.value) pending.push({ value: item, depth: current.depth + 1 });
+      continue;
     }
-    return null;
-  }
-  const entries = Object.entries(value as Record<string, unknown>);
-  if (entries.length > MAX_OBJECT_KEYS) return "CLIENT_RESULT_TOO_LARGE";
-  for (const [key, item] of entries) {
-    if (FORBIDDEN_KEYS.has(key)) return "CLIENT_RESULT_INVALID";
-    const reason = inspectShape(item, depth + 1);
-    if (reason) return reason;
+    const prototype = Object.getPrototypeOf(current.value);
+    if (prototype !== Object.prototype && prototype !== null) return "CLIENT_RESULT_INVALID";
+    const entries = Object.entries(current.value as Record<string, unknown>);
+    if (entries.length > MAX_OBJECT_KEYS) return "CLIENT_RESULT_TOO_LARGE";
+    for (const [key, item] of entries) {
+      if (FORBIDDEN_KEYS.has(key)) return "CLIENT_RESULT_INVALID";
+      pending.push({ value: item, depth: current.depth + 1 });
+    }
   }
   return null;
 }
@@ -91,8 +111,6 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
-  if (Object.keys(value as Record<string, unknown>).some((key) => FORBIDDEN_PAYLOAD_KEYS.has(key)))
-    return fail("CLIENT_RESULT_INVALID");
   const result = envelope.result;
   const manifest = envelope.manifest;
   if (!result || !manifest) return fail("CLIENT_RESULT_INVALID");
@@ -122,17 +140,25 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   )
     return fail("CLIENT_DEMO_INVALID");
   if (
-    !HEX_64.test(result.parser.runtimeDigest) ||
-    result.parser.runtimeDigest !== manifest.parserRuntimeDigest ||
+    !HEX_64.test(result.parser.runtimeSurface?.runtimeSurfaceDigest ?? "") ||
+    result.parser.runtimeSurface.runtimeSurfaceDigest !== manifest.runtimeSurfaceDigest ||
+    result.parser.runtimeSurface.minimumReady !== true ||
+    result.parser.artifact?.status !== "VERIFIED" ||
+    !HEX_64.test(result.parser.artifact.wasmBinarySha256 ?? "") ||
+    !HEX_64.test(result.parser.artifact.wasmBindingSha256 ?? "") ||
+    result.parser.artifact.wasmBinarySha256 !== manifest.artifactProvenance.wasmBinarySha256 ||
+    result.parser.artifact.wasmBindingSha256 !== manifest.artifactProvenance.wasmBindingSha256 ||
     manifest.catalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||
     manifest.capabilityDigest !== CLIENT_PARSER_CAPABILITY_DIGEST
   )
     return fail("CLIENT_CONTRACT_MISMATCH");
   if (
-    !Array.isArray(result.playerInventory) ||
-    result.playerInventory.length > CLIENT_PLAYER_LIMIT ||
-    !Array.isArray(result.eventInventory) ||
-    result.eventInventory.length > CLIENT_EVENT_INVENTORY_LIMIT ||
+    !Array.isArray(result.playerInventory?.players) ||
+    result.playerInventory.players.length > CLIENT_PLAYER_LIMIT ||
+    !Array.isArray(result.eventDiscovery?.names) ||
+    result.eventDiscovery.names.length > CLIENT_EVENT_INVENTORY_LIMIT ||
+    !Array.isArray(result.parsedEventInventory) ||
+    result.parsedEventInventory.length > CLIENT_EVENT_INVENTORY_LIMIT ||
     !Array.isArray(result.selectedEventSamples) ||
     result.selectedEventSamples.length > CLIENT_EVENT_SAMPLE_LIMIT ||
     !Array.isArray(result.capabilities)
@@ -145,6 +171,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_TOO_LARGE");
   if (
     result.coverage.fullTickDomain !== false ||
+    result.coverage.authoritativeTickDomain !== false ||
     result.coverage.fullRawEvents !== false ||
     result.semanticStatus !== "BLOCKED"
   )
