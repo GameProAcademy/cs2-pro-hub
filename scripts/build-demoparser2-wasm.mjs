@@ -8,10 +8,8 @@ const SOURCE_COMMIT = "d3767705dc5846d73ed29db50eaeda58778dc934";
 const SOURCE_TAG = "v0.42.0";
 const TARGET = "no-modules";
 const EXPECTED_EXPORTS = ["parseHeader", "listGameEvents", "parseEvent", "parseTicks"];
-const EXPECTED_BINDING_SHA256 =
-  "d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756";
-const EXPECTED_WASM_SHA256 =
-  "43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f";
+const EXPECTED_BINDING_SHA256 = "d59a85ff33d36387f0fb814991f3b83bd0166eee7b7f4e761aa34ee05d9af756";
+const EXPECTED_WASM_SHA256 = "43c57d499e0acf126bc318b6b552082bf3dfe476b1208efadd922ef2326e8c4f";
 
 const source = resolve(process.env["DEMOPARSER2_SOURCE_DIR"] ?? "/tmp/demoparser-v0.42.0");
 const output = resolve(process.env["DEMOPARSER2_OUTPUT_DIR"] ?? "/tmp/demoparser2-wasm-0.42.0");

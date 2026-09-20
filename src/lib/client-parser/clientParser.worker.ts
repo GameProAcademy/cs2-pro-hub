@@ -288,13 +288,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     }
   }
   apiCalls.push(
-    apiEvidence(
-      "parseEvent",
-      true,
-      parseEventAttempted,
-      parseEventSucceeded,
-      parseEventFailure,
-    ),
+    apiEvidence("parseEvent", true, parseEventAttempted, parseEventSucceeded, parseEventFailure),
   );
 
   progress(command.requestId, "PARSING_TICKS", 0.72, started);
