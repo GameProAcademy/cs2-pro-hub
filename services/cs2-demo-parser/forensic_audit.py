@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any, Iterable
 
 AUDIT_CONTRACT_VERSION = 2
@@ -12,6 +13,35 @@ TICK_PROPERTY_BATCH_SIZE = 12
 TICK_INTERVAL_SIZE = 8192
 TICK_DIAGNOSTIC_SAMPLE_LIMIT = 4096
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
+REAL_AUTHORITY_KINDS = frozenset({"VERIFIED_RUNTIME_NATIVE", "VERIFIED_DEMO_METADATA", "VERIFIED_EXTERNAL_METADATA"})
+
+
+@dataclass(frozen=True)
+class TickDomainAuthority:
+    status: str
+    source_kind: str
+    source_reference: str
+    parser_version: str
+    authoritative: bool
+    expected_min_tick: int | None
+    expected_max_tick: int | None
+    expected_tick_count: int | None
+    expected_intervals: tuple[tuple[int, int], ...]
+    reason: str
+
+    def payload(self) -> dict[str, Any]:
+        value = {**self.__dict__, "expected_intervals": [list(row) for row in self.expected_intervals]}
+        value["digest"] = deterministic_digest(value)
+        return value
+
+
+def classify_capability_failure(*, api_available: bool, attempted: bool,
+                                stage: str, error: BaseException | None = None) -> dict[str, Any]:
+    kind = "UNAVAILABLE" if not api_available else "PARSE_FAILED" if attempted and error else "NOT_PRESENT"
+    return {"classification": kind, "failure_kind": kind, "failure_stage": stage,
+            "exception_type": type(error).__name__ if error else None,
+            "exception_message_safe": " ".join(str(error).split())[:240] if error else None,
+            "api_available": api_available, "attempted": attempted}
 
 
 def _safe_scalar(value: Any) -> Any:
@@ -36,11 +66,12 @@ def type_signature(value: Any) -> str:
 
 
 def summarize_rows(rows: Iterable[dict[str, Any]], properties: Iterable[str], *, attempted: bool = True, error: BaseException | None = None) -> list[dict[str, Any]]:
-    props = sorted(set(properties)); stats = {p: {"rows": 0, "non_null": 0, "null": 0, "types": Counter(), "distinct": set(), "first": None, "last": None, "min": None, "max": None, "players": set(), "first_tick": None, "last_tick": None} for p in props}
+    props = sorted(set(properties)); stats = {p: {"rows": 0, "returned": 0, "non_null": 0, "null": 0, "types": Counter(), "distinct": set(), "first": None, "last": None, "min": None, "max": None, "players": set(), "first_tick": None, "last_tick": None} for p in props}
     for row in rows:
         tick = row.get("tick"); player = row.get("steamid", row.get("player_steamid"))
         for prop in props:
             s = stats[prop]; s["rows"] += 1
+            if prop in row: s["returned"] += 1
             value = row.get(prop)
             if value is None: s["null"] += 1; continue
             safe = _safe_scalar(value); s["non_null"] += 1; s["types"][type_signature(value)] += 1
@@ -56,8 +87,8 @@ def summarize_rows(rows: Iterable[dict[str, Any]], properties: Iterable[str], *,
     out=[]
     for prop in props:
         s=stats[prop]
-        classification = "PARSE_FAILED" if error else "NOT_PRESENT" if s["non_null"] == 0 else "RAW_ONLY"
-        out.append({"property": prop, "attempted": attempted, "parse_success": error is None, "row_count": s["rows"], "non_null_count": s["non_null"], "null_count": s["null"], "distinct_count": len(s["distinct"]), "first_non_null_value": s["first"], "last_non_null_value": s["last"], "type_signature": sorted(s["types"]), "min": s["min"], "max": s["max"], "players_observed": sorted(s["players"]), "first_tick": s["first_tick"], "last_tick": s["last_tick"], "classification": classification, "reason": "Observed parser-native field retained in RAW." if classification == "RAW_ONLY" else "Known capability absent from this demo." if classification == "NOT_PRESENT" else "Parser raised while querying this capability.", "error_type": error_type, "error_message": error_message, "provenance": "demoparser2.parse_ticks"})
+        classification = "PARSE_FAILED" if error else "NOT_PRESENT" if s["returned"] == 0 else "RAW_ONLY"
+        out.append({"property": prop, "attempted": attempted, "api_available": True, "parse_success": error is None, "row_count": s["rows"], "returned_count": s["returned"], "non_null_count": s["non_null"], "null_count": s["null"], "null_only": s["returned"] > 0 and s["non_null"] == 0, "distinct_count": len(s["distinct"]), "first_non_null_value": s["first"], "last_non_null_value": s["last"], "type_signature": sorted(s["types"]), "min": s["min"], "max": s["max"], "players_observed": sorted(s["players"]), "first_tick": s["first_tick"], "last_tick": s["last_tick"], "classification": classification, "reason": "Observed parser-native field retained in RAW." if classification == "RAW_ONLY" else "Known capability absent from this demo." if classification == "NOT_PRESENT" else "Parser raised while querying this capability.", "failure_kind": "PARSE_FAILED" if error else None, "failure_stage": "parse_ticks", "error_type": error_type, "error_message": error_message, "provenance": "demoparser2.parse_ticks"})
     return out
 
 
@@ -82,6 +113,7 @@ def merge_property_summaries(parts: Iterable[dict[str, Any]]) -> list[dict[str, 
             "attempted": any(row.get("attempted") is True for row in rows),
             "parse_success": not failures and not unavailable,
             "row_count": sum(int(row.get("row_count") or 0) for row in rows),
+            "returned_count": sum(int(row.get("returned_count") or 0) for row in rows),
             "non_null_count": non_null,
             "null_count": sum(int(row.get("null_count") or 0) for row in rows),
             "distinct_count": None,
@@ -95,6 +127,7 @@ def merge_property_summaries(parts: Iterable[dict[str, Any]]) -> list[dict[str, 
             "first_tick": min(first_ticks) if first_ticks else None,
             "last_tick": max(last_ticks) if last_ticks else None,
             "classification": classification,
+            "null_only": classification == "RAW_ONLY" and non_null == 0,
             "reason": "Observed parser-native field retained in RAW." if classification == "RAW_ONLY" else "Known capability absent from this demo." if classification == "NOT_PRESENT" else "Parser raised while querying this capability." if classification == "PARSE_FAILED" else "Capability could not be audited by the installed runtime.",
             "error_type": next((row.get("error_type") for row in rows if row.get("error_type")), None),
             "error_message": next((row.get("error_message") for row in rows if row.get("error_message")), None),
@@ -112,17 +145,11 @@ def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
     is not part of the documented 0.42.0 ``parse_header`` contract, so it is
     retained as an observation and cannot authorize a full-domain claim.
     """
-    source = {
-        "name": "demoparser2_header_playback_ticks",
-        "parser_version": "0.42.0",
-        "method": "parse_header",
-        "provenance": "installed demoparser2 0.42.0 runtime signature/docstring inspection",
-        "availability": "OBSERVED_UNVERIFIED" if isinstance(playback_ticks, int) and playback_ticks >= 0 else "UNAVAILABLE",
-        "observed_playback_ticks": playback_ticks,
-        "authoritative": False,
-        "reason": "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration",
-    }
-    source["digest"] = deterministic_digest(source)
+    source = TickDomainAuthority("UNAVAILABLE", "UNAVAILABLE", "demoparser2.parse_header.playback_ticks",
+        "0.42.0", False, None, None, None, (),
+        "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration").payload()
+    source["observed_playback_ticks"] = playback_ticks
+    source["digest"] = deterministic_digest({key: value for key, value in source.items() if key != "digest"})
     return source
 
 
@@ -130,19 +157,10 @@ def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: st
     """Build an injectable authoritative domain for deterministic fixtures/probes."""
     if first_tick < 0 or last_tick < first_tick:
         raise ValueError("invalid authoritative tick domain")
-    source = {
-        "name": "explicit_tick_domain",
-        "parser_version": "0.42.0",
-        "method": "fixture_or_verified_runtime_probe",
-        "provenance": provenance,
-        "availability": "AVAILABLE",
-        "authoritative": True,
-        "expected_min_tick": first_tick,
-        "expected_max_tick": last_tick,
-        "expected_tick_count": last_tick - first_tick + 1,
-    }
-    source["digest"] = deterministic_digest(source)
-    return source
+    source_kind = "FIXTURE_AUTHORITY" if provenance.startswith("fixture") else "VERIFIED_RUNTIME_NATIVE"
+    return TickDomainAuthority("AVAILABLE", source_kind, provenance, "0.42.0", True,
+        first_tick, last_tick, last_tick - first_tick + 1, ((first_tick, last_tick),),
+        "Explicit bounded domain supplied by the test fixture." if source_kind == "FIXTURE_AUTHORITY" else "Verified independent runtime domain.").payload()
 
 
 def build_tick_intervals(source: dict[str, Any], interval_size: int = TICK_INTERVAL_SIZE) -> list[tuple[int, int]]:
@@ -183,7 +201,8 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
             expected = set(range(first, last + 1))
     missing = expected - observed
     unexpected = observed - expected if expected else set(observed)
-    complete = bool(batches) and bool(expected) and not failures and not missing and not unexpected and not duplicate_ticks and not overlaps and all(item["status"] == "PASS" for item in intervals)
+    authority_allowed = source.get("source_kind") in REAL_AUTHORITY_KINDS or source.get("source_kind") == "FIXTURE_AUTHORITY"
+    complete = bool(batches) and bool(expected) and source.get("authoritative") is True and authority_allowed and not failures and not missing and not unexpected and not duplicate_ticks and not overlaps and all(item["status"] == "PASS" for item in intervals)
     proof = {
         "status": "PASS" if complete else "BLOCKED",
         "source": source,
@@ -198,6 +217,7 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
         "overlap_count": len(overlaps),
         "interval_count": len(intervals),
         "completed_interval_count": sum(item["status"] == "PASS" for item in intervals),
+        "coverage_ratio": len(observed & expected) / len(expected) if expected else 0.0,
         "complete": complete,
     }
     proof["digest"] = deterministic_digest(proof)

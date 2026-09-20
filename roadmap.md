@@ -1,4 +1,20 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.7 — EXHAUSTIVE RAW FORENSIC AUDIT
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.8–F.2.9 — FORENSIC CLOSURE
+
+**Status:** `PASS_FOR_CODE_HARDENING` / operationally `BLOCKED`. No real v2 artifact was executed.
+
+- [x] Separate the declared catalog, installed runtime surface and mapping surface, with independent provenance and digests.
+- [x] Version the catalog as v2; retain exactly six v2 classifications and distinguish null-only observations, absence, unavailability and parse failure.
+- [x] Keep tick-domain proof fail-closed: the installed `demoparser2==0.42.0` exposes no authoritative complete-domain API, so runtime status remains `UNAVAILABLE`.
+- [x] Strengthen semantic gates for header, identities, rounds, bomb lifecycle, combat references, grenades, teams/score, usercmd, weapons/economy and aggregates.
+- [x] Reconstruct physical gzip JSONL evidence and reconcile producer↔artifact fields, classifications, mappings, catalog, tick and semantic projections.
+- [x] Add the named 36-dimension reconciliation registry, independent unsigned/final digests and strict Gate 22 finalization.
+- [x] Remove legacy report fallback from demo Canonical persistence; an artifact-backed final v2 proof is mandatory.
+- [x] Validate 939 APP tests, 171 parser tests (10 explicit skips), typecheck, lint (0 errors/9 baseline warnings), Python compilation and whitespace integrity without production, Railway, Storage, queue or historical mutation.
+- [ ] Obtain an authoritative real tick-domain source and produce a real v2 artifact before any operational approval.
+
+**Decision:** `PASS_FOR_CODE_HARDENING`; not `READY_FOR_CONTROLLED_V2_ARTIFACT`. Cache Run 1/2, retry, attempt 9 and Canonical execution remain prohibited.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.5-R-F.2.7 — EXHAUSTIVE RAW FORENSIC AUDIT
 
 **Status:** PASS_FOR_CODE_HARDENING / BLOCKED FOR CACHE EXECUTION. Local gates PASS; authoritative real tick-domain source is unavailable and artifact v2 reconciliation was NOT RUN.
 

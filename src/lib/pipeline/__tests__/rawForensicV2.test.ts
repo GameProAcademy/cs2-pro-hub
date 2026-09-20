@@ -7,6 +7,7 @@ import {
 } from "@/lib/pipeline/rawArtifact.server";
 import {
   RAW_FORENSIC_V2_REQUIRED_GATES,
+  RAW_FORENSIC_RECONCILIATION_DIMENSIONS,
   rawArtifactBytesSha256,
   rawArtifactSha256,
   resolveRawForensicPhysicalGate,
@@ -15,10 +16,10 @@ import {
 } from "@/lib/pipeline/rawArtifactContract";
 
 function contract() {
-  return {
+  const value = {
     audit_contract_version: 2,
     parser: { name: "demoparser2", version: "0.42.0" },
-    capability_catalog: {},
+    capability_catalog: { catalog_digest: "c".repeat(64) },
     capability_reconciliation: {
       status: "PASS",
       unresolved_count: 0,
@@ -54,8 +55,28 @@ function contract() {
     physical_gate_status: "PENDING",
     final_gate_status: "BLOCKED",
     canonical_admission: "BLOCKED",
-    deterministic_digest: "a".repeat(64),
+    catalog_digest: "c".repeat(64),
+    tick_authority_digest: "t".repeat(64),
+    unsigned_contract_digest: "",
+    deterministic_digest: "",
   };
+  const fullTickAudit = value.full_tick_audit as Record<string, unknown>;
+  fullTickAudit["tick_domain_source"] = { authoritative: true, digest: "t".repeat(64) };
+  const digest = rawArtifactSha256(
+    stableRawArtifactJson(
+      Object.fromEntries(
+        Object.entries(value).filter(
+          ([key]) =>
+            key !== "deterministic_digest" &&
+            key !== "unsigned_contract_digest" &&
+            key !== "final_contract_digest",
+        ),
+      ),
+    ),
+  );
+  value.unsigned_contract_digest = digest;
+  value.deterministic_digest = digest;
+  return value;
 }
 
 describe("RAW forensic contract v2", () => {
@@ -79,11 +100,35 @@ describe("RAW forensic contract v2", () => {
   });
 
   it("resolves Gate 22 only after reconciliation and validates the final decision", () => {
-    const resolved = resolveRawForensicPhysicalGate(contract(), "b".repeat(64));
+    const resolved = resolveRawForensicPhysicalGate(contract(), {
+      reconciliationDigest: "b".repeat(64),
+      artifactRootDigest: "d".repeat(64),
+      dimensions: Object.fromEntries(
+        RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [name, "PASS" as const]),
+      ),
+    });
     expect(resolved["physical_gate_status"]).toBe("PASS");
     expect(resolved["final_gate_status"]).toBe("PASS");
     expect(resolved["canonical_admission"]).toBe("APPROVED");
     expect(validateRawForensicContractV2(resolved, "final")).toEqual([]);
+  });
+
+  it("rejects forged digests and incomplete named reconciliation dimensions", () => {
+    expect(
+      validateRawForensicContractV2({ ...contract(), deterministic_digest: "0".repeat(64) }),
+    ).toContain("forensic_v2_contract_digest_invalid");
+    expect(() =>
+      resolveRawForensicPhysicalGate(contract(), {
+        reconciliationDigest: "b".repeat(64),
+        artifactRootDigest: "d".repeat(64),
+        dimensions: Object.fromEntries(
+          RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => [
+            name,
+            name === "tick_domain" ? "FAIL" : "PASS",
+          ]),
+        ),
+      }),
+    ).toThrow("forensic_v2_reconciliation_dimensions_invalid");
   });
 
   it("fails set reconciliation on missing, extra or different semantic evidence", () => {
@@ -153,5 +198,27 @@ describe("RAW forensic contract v2", () => {
       code: "PARSER_INVALID_RESPONSE",
       detail: "RAW physical chunk digest mismatch",
     });
+  });
+
+  it("rejects traversal and sibling-prefix chunk paths before downloading", async () => {
+    for (const path of ["u/up/attempt-1/../secret.gz", "u/up/attempt-10/ticks/0.gz"]) {
+      await expect(
+        auditPhysicalRawChunks({
+          bucket: "cs2-raw-evidence",
+          prefix: "u/up/attempt-1",
+          chunks: [
+            {
+              section: "ticks",
+              chunk_index: 0,
+              row_count: 1,
+              byte_size: 1,
+              sha256: "0".repeat(64),
+              storage_path: path,
+            },
+          ],
+          download: async () => new Blob(),
+        }),
+      ).rejects.toMatchObject({ detail: "RAW chunk path escaped artifact prefix" });
+    }
   });
 });

@@ -121,6 +121,12 @@ def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, A
         ({key: row.get(key) for key in ("raw_field", "app_field", "canonical_field", "status", "reason")} for row in evidence.get("field_mappings") or [] if isinstance(row, dict)),
         key=lambda row: str(row.get("raw_field")),
     )
+    contract = evidence.get("forensic_contract_v2") if isinstance(evidence.get("forensic_contract_v2"), dict) else {}
+    catalog = contract.get("capability_catalog") if isinstance(contract.get("capability_catalog"), dict) else {}
+    classifications: dict[str, int] = {}
+    for row in mappings:
+        status = str(row.get("status"))
+        classifications[status] = classifications.get(status, 0) + 1
     projection = {
         "event_inventory": event_names,
         "event_counts": event_counts,
@@ -132,6 +138,18 @@ def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, A
         "tick_sample_domain": {"min_tick": min(tick_values) if tick_values else None, "max_tick": max(tick_values) if tick_values else None, "count": len(tick_values)},
         "tick_fields": sorted({str(field) for row in ticks for field in row}),
         "mappings": mappings,
+        "classifications": dict(sorted(classifications.items())),
+        "derivations": sorted(str(row.get("raw_field")) for row in mappings if row.get("status") == "DERIVED"),
+        "raw_only_reasons": sorted({str(row.get("reason")) for row in mappings if row.get("status") == "RAW_ONLY" and row.get("reason")}),
+        "parser_identity": contract.get("parser"),
+        "catalog_digest": contract.get("catalog_digest"),
+        "capability_count": len(catalog.get("capabilities") or []),
+        "capability_digest": hashlib.sha256(_stable(catalog.get("capabilities") or [])).hexdigest(),
+        "tick_domain": (contract.get("full_tick_audit") or {}).get("tick_domain_source"),
+        "tick_coverage": contract.get("full_tick_audit"),
+        "property_inventory": contract.get("property_inventory"),
+        "semantic_inventories": contract.get("semantic_inventories"),
+        "forensic_contract_digest": contract.get("deterministic_digest"),
     }
     projection["digest"] = hashlib.sha256(_stable(projection)).hexdigest()
     return projection

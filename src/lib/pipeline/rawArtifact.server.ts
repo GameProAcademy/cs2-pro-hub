@@ -1,6 +1,7 @@
 import { PipelineError } from "@/lib/pipeline/errors";
 import {
   RAW_ARTIFACT_SECTION_ORDER,
+  RAW_FORENSIC_RECONCILIATION_DIMENSIONS,
   deriveRawArtifactAuditStatus,
   rawArtifactBytesSha256,
   rawArtifactSha256,
@@ -160,7 +161,18 @@ export async function auditPhysicalRawChunks(args: {
   let totalRows = 0;
   let totalBytes = 0;
   for (const chunk of args.chunks) {
-    if (!chunk.storage_path.startsWith(`${args.prefix}/`))
+    let decodedPath = "";
+    try {
+      decodedPath = decodeURIComponent(chunk.storage_path);
+    } catch {
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk path escaped artifact prefix");
+    }
+    const suffix = decodedPath.slice(args.prefix.length + 1);
+    if (
+      !decodedPath.startsWith(`${args.prefix}/`) ||
+      decodedPath.includes("\\") ||
+      suffix.split("/").some((part) => part === "" || part === "." || part === "..")
+    )
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk path escaped artifact prefix");
     const blob = await args.download(chunk.storage_path);
     const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -235,6 +247,23 @@ function physicalSemanticProjection(
         }))
         .sort((a, b) => String(a.raw_field).localeCompare(String(b.raw_field)))
     : [];
+  const contract =
+    forensic?.["forensic_contract_v2"] &&
+    typeof forensic["forensic_contract_v2"] === "object" &&
+    !Array.isArray(forensic["forensic_contract_v2"])
+      ? (forensic["forensic_contract_v2"] as Record<string, unknown>)
+      : {};
+  const catalog =
+    contract["capability_catalog"] &&
+    typeof contract["capability_catalog"] === "object" &&
+    !Array.isArray(contract["capability_catalog"])
+      ? (contract["capability_catalog"] as Record<string, unknown>)
+      : {};
+  const classifications: Record<string, number> = {};
+  for (const row of mappings) {
+    const status = String(row.status);
+    classifications[status] = (classifications[status] ?? 0) + 1;
+  }
   const projection: Record<string, unknown> = {
     event_inventory: [...semantic.eventNames].sort(),
     event_counts: Object.fromEntries(
@@ -256,6 +285,34 @@ function physicalSemanticProjection(
     },
     tick_fields: [...semantic.tickFields].sort(),
     mappings,
+    classifications: Object.fromEntries(
+      Object.entries(classifications).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+    derivations: mappings
+      .filter((row) => row.status === "DERIVED")
+      .map((row) => String(row.raw_field))
+      .sort(),
+    raw_only_reasons: [
+      ...new Set(
+        mappings
+          .filter((row) => row.status === "RAW_ONLY" && row.reason)
+          .map((row) => String(row.reason)),
+      ),
+    ].sort(),
+    parser_identity: contract["parser"] ?? null,
+    catalog_digest: contract["catalog_digest"] ?? null,
+    capability_count: Array.isArray(catalog["capabilities"]) ? catalog["capabilities"].length : 0,
+    capability_digest: rawArtifactSha256(
+      stableRawArtifactJson(Array.isArray(catalog["capabilities"]) ? catalog["capabilities"] : []),
+    ),
+    tick_domain:
+      (contract["full_tick_audit"] as Record<string, unknown> | undefined)?.[
+        "tick_domain_source"
+      ] ?? null,
+    tick_coverage: contract["full_tick_audit"] ?? null,
+    property_inventory: contract["property_inventory"] ?? null,
+    semantic_inventories: contract["semantic_inventories"] ?? null,
+    forensic_contract_digest: contract["deterministic_digest"] ?? null,
   };
   projection["digest"] = rawArtifactSha256(stableRawArtifactJson(projection));
   return projection;
@@ -301,6 +358,75 @@ export function reconcileProducerAndPhysical(
     physical_digest: physicalDigest,
   };
   return { ...result, reconciliation_digest: rawArtifactSha256(stableRawArtifactJson(result)) };
+}
+
+function successfulReconciliationDimensions(args: {
+  reconciliation: Record<string, unknown>;
+  identityMatches: boolean;
+  parserMatches: boolean;
+  chainVerified: boolean;
+  totalsVerified: boolean;
+  rootVerified: boolean;
+  contractVerified: boolean;
+}): Record<string, "PASS" | "FAIL"> {
+  const reconciled = args.reconciliation["status"] === "PASS";
+  const semanticDimensions = new Set([
+    "catalog_digest",
+    "capability_count",
+    "capability_digest",
+    "classifications",
+    "mappings",
+    "derivations",
+    "raw_only_reasons",
+    "event_inventory",
+    "event_counts",
+    "event_fields",
+    "player_inventory",
+    "round_inventory",
+    "tick_domain",
+    "tick_coverage",
+    "property_inventory",
+    "semantic_inventories",
+  ]);
+  const identityDimensions = new Set([
+    "artifact_identity",
+    "job_identity",
+    "upload_identity",
+    "attempt_number",
+    "demo_sha",
+  ]);
+  const parserDimensions = new Set([
+    "parser_identity",
+    "parser_version",
+    "parser_revision",
+    "contract_version",
+  ]);
+  const chainDimensions = new Set(["chunk_indexes", "chunk_sha", "previous_chunk_sha"]);
+  const totalDimensions = new Set(["chunk_count", "byte_sizes", "row_counts", "section_counts"]);
+  const rootDimensions = new Set(["section_digests", "artifact_root_digest"]);
+  return Object.fromEntries(
+    RAW_FORENSIC_RECONCILIATION_DIMENSIONS.map((name) => {
+      const pass = identityDimensions.has(name)
+        ? args.identityMatches
+        : parserDimensions.has(name)
+          ? args.parserMatches
+          : chainDimensions.has(name)
+            ? args.chainVerified
+            : totalDimensions.has(name)
+              ? args.totalsVerified
+              : rootDimensions.has(name)
+                ? args.rootVerified
+                : name === "forensic_contract_digest"
+                  ? args.contractVerified
+                  : name === "reconciliation_digest"
+                    ? reconciled &&
+                      /^[0-9a-f]{64}$/.test(
+                        String(args.reconciliation["reconciliation_digest"] ?? ""),
+                      )
+                    : semanticDimensions.has(name) && reconciled;
+      return [name, pass ? "PASS" : "FAIL"];
+    }),
+  );
 }
 
 export function assertHotDemoPayload(value: unknown): HotDemoPayloadV1 {
@@ -662,7 +788,12 @@ export async function verifyRawArtifact(args: {
   const forensicContract = forensicV2 as Record<string, unknown>;
   const declaredDigest = forensicContract["deterministic_digest"];
   const unsignedContract = Object.fromEntries(
-    Object.entries(forensicContract).filter(([key]) => key !== "deterministic_digest"),
+    Object.entries(forensicContract).filter(
+      ([key]) =>
+        key !== "deterministic_digest" &&
+        key !== "unsigned_contract_digest" &&
+        key !== "final_contract_digest",
+    ),
   );
   if (
     typeof declaredDigest !== "string" ||
@@ -708,10 +839,20 @@ export async function verifyRawArtifact(args: {
     );
   let finalContract: Record<string, unknown>;
   try {
-    finalContract = resolveRawForensicPhysicalGate(
-      forensicV2,
-      String(reconciliation["reconciliation_digest"] ?? ""),
-    );
+    const dimensions = successfulReconciliationDimensions({
+      reconciliation,
+      identityMatches,
+      parserMatches: true,
+      chainVerified: true,
+      totalsVerified: true,
+      rootVerified: true,
+      contractVerified: true,
+    });
+    finalContract = resolveRawForensicPhysicalGate(forensicV2, {
+      reconciliationDigest: String(reconciliation["reconciliation_digest"] ?? ""),
+      artifactRootDigest: artifact.root_digest,
+      dimensions,
+    });
   } catch {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW forensic final gate invalid");
   }
@@ -745,11 +886,26 @@ export function rawArtifactApproval(
       decision.reasons.join(",") || "RAW artifact admission denied",
     );
   }
+  const finalContract = decision.forensicInventory["final_forensic_contract"];
+  const reconciliation = decision.forensicInventory["reconciliation"];
+  const finalContractDigest =
+    typeof finalContract === "object" && finalContract !== null
+      ? String((finalContract as Record<string, Json>)["final_contract_digest"] ?? "")
+      : "";
+  const reconciliationDigest =
+    typeof reconciliation === "object" && reconciliation !== null
+      ? String((reconciliation as Record<string, Json>)["reconciliation_digest"] ?? "")
+      : "";
+  if (!HEX_64.test(finalContractDigest) || !HEX_64.test(reconciliationDigest)) {
+    throw new PipelineError("RAW_AUDIT_BLOCKED", "RAW final forensic proof is incomplete");
+  }
   return {
     approved: true,
     auditStatus: "APPROVED",
     auditVersion: decision.auditVersion,
     evidenceDigest: decision.evidenceDigest,
     artifactId,
+    finalContractDigest,
+    reconciliationDigest,
   };
 }

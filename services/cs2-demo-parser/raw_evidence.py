@@ -296,7 +296,7 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
     classification = "UNAVAILABLE" if not api_available else "PARSE_FAILED" if error is not None else "NOT_PRESENT" if not available else "RAW_ONLY"
     result = {
         "event_name": name, "discovered": available, "available": available, "attempted": available or error is not None, "parse_attempted": available or error is not None,
-        "parse_status": state, "classification": classification,
+        "parse_status": state, "classification": classification, "null_only": bool(safe_rows) and not non_null_fields,
         "parse_success": available and error is None, "row_count": len(safe_rows) if error is None and available else None,
         "first_tick": first_tick, "last_tick": last_tick,
         "first_round": min(rounds) if rounds else None, "last_round": max(rounds) if rounds else None,
@@ -310,6 +310,8 @@ def event_coverage(name: str, available: bool, rows: Sequence[dict[str, Any]] | 
         "round_refs": sorted(set(rounds)),
         "extra_fields": [],
         "failure_reason": error_message,
+        "failure_kind": classification if classification in {"UNAVAILABLE", "PARSE_FAILED", "NOT_PRESENT"} else None,
+        "failure_stage": "parse_event", "api_available": api_available,
     }
     result["deterministic_digest"] = deterministic_digest(result)
     return result
@@ -505,26 +507,28 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
         and evidence.get("manifest", {}).get("parser_version") == "0.42.0"
         and evidence.get("manifest", {}).get("contract_version") == 1
     )
+    semantic = _semantic_gate_results(evidence, inventory)
+    discovered_not_attempted = sorted(str(row.get("event_name")) for row in event_inventory if row.get("discovered") is True and row.get("attempted") is not True)
     checks = {
         "01-parser-identity": (identity_ok, ["parser_identity_mismatch"]),
         "02-capability-catalog": (not catalog_reasons and capability_reconciliation.get("status") == "PASS", catalog_reasons + ([] if capability_reconciliation.get("status") == "PASS" else ["capability_reconciliation_failed"])),
         "03-event-discovery": (evidence.get("manifest", {}).get("event_inventory_success") is True, ["event_inventory_incomplete"]),
-        "04-all-events-attempted": (all(row.get("capability_state") not in {"PARSE_FAILED", "API_UNAVAILABLE"} for row in event_inventory), parse_failures),
+        "04-all-events-attempted": (not discovered_not_attempted and all(row.get("capability_state") not in {"PARSE_FAILED", "API_UNAVAILABLE"} for row in event_inventory), discovered_not_attempted + parse_failures),
         "05-full-tick-domain": (tick_audit.get("domain_proof_status") == "PASS" and tick_audit.get("coverage") == "FULL_TICK_DOMAIN_AUDIT" and tick_audit.get("complete") is True, list(tick_audit.get("failures") or ["full_tick_domain_unproven"])),
         "06-tick-batches": (bool(tick_audit.get("batches")) and all(row.get("status") == "PASS" for row in tick_audit.get("batches") or []), ["tick_batch_failed"]),
         "07-tick-gaps": (not tick_audit.get("missing_tick_count"), ["tick_gap_detected"]),
         "08-tick-overlaps": (not tick_audit.get("overlap_count") and not tick_audit.get("unexpected_tick_count") and not tick_audit.get("duplicate_tick_count"), ["tick_overlap_or_unexpected_detected"]),
         "09-properties-classified": (bool(property_inventory) and all(row.get("classification") in CLASSIFICATIONS for row in property_inventory), ["property_classification_incomplete"]),
-        "10-header": (bool(inventory.get("header_inventory")), ["header_inventory_missing"]),
-        "11-player-info": (bool(inventory.get("player_info_inventory")) and evidence.get("manifest", {}).get("players_count", 0) > 0, ["player_info_inventory_missing"]),
-        "12-rounds": (bool(inventory.get("round_inventory")) and evidence.get("manifest", {}).get("rounds_count", 0) > 0 and _round_invariants_pass(evidence.get("round_evidence") or [], evidence.get("raw_events") or []), ["round_invariants_failed"]),
-        "13-bomb": ("bomb_inventory" in inventory, ["bomb_inventory_missing"]),
-        "14-combat": (all(key in inventory for key in ("damage_inventory", "death_inventory")), ["combat_inventory_missing"]),
-        "15-grenades": ("grenade_inventory" in inventory, ["grenade_inventory_missing"]),
-        "16-teams-score": (all(key in inventory for key in ("teams_inventory", "score_inventory")), ["team_score_inventory_missing"]),
-        "17-usercmd": ("usercmd_inventory" in inventory, ["usercmd_inventory_missing"]),
-        "18-weapons-inventory": ("weapon_inventory" in inventory, ["weapon_inventory_missing"]),
-        "19-aggregates": ("aggregate_inventory" in inventory, ["aggregate_inventory_missing"]),
+        "10-header": semantic["header"],
+        "11-player-info": semantic["players"],
+        "12-rounds": semantic["rounds"],
+        "13-bomb": semantic["bomb"],
+        "14-combat": semantic["combat"],
+        "15-grenades": semantic["grenades"],
+        "16-teams-score": semantic["teams_score"],
+        "17-usercmd": semantic["usercmd"],
+        "18-weapons-inventory": semantic["weapons_economy"],
+        "19-aggregates": semantic["aggregates"],
         "20-mapping-complete": (bool(mappings) and not mapping_failures, mapping_failures or ["mapping_inventory_empty"]),
         "21-no-parse-failures": (not parse_failures, parse_failures),
         "22-physical-reaudit": (False, ["physical_chunk_reaudit_pending_app"]),
@@ -542,6 +546,8 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
         "property_inventory": property_inventory,
         "event_inventory": event_inventory,
         "semantic_inventories": inventory,
+        "semantic_gate_evidence": {name: {"status": "PASS" if passed else "BLOCKED", "reasons": reasons}
+                                   for name, (passed, reasons) in semantic.items()},
         "mapping_inventory": mappings,
         "gates": gates,
         "producer_gate_status": "PASS" if all(gate["status"] == "PASS" for gate in gates[:-1]) else "BLOCKED",
@@ -550,8 +556,58 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
         "physical_reaudit_required": True,
         "canonical_admission": "BLOCKED",
     }
-    contract["deterministic_digest"] = deterministic_digest(contract)
+    contract["catalog_digest"] = catalog.get("catalog_digest") if isinstance(catalog, dict) else None
+    contract["tick_authority_digest"] = (tick_audit.get("tick_domain_source") or {}).get("digest")
+    contract["unsigned_contract_digest"] = deterministic_digest(contract)
+    contract["deterministic_digest"] = contract["unsigned_contract_digest"]
     return contract
+
+
+def _semantic_gate_results(evidence: dict[str, Any], inventory: dict[str, Any]) -> dict[str, tuple[bool, list[str]]]:
+    """Validate evidence relationships; key presence alone never constitutes proof."""
+    manifest = evidence.get("manifest") or {}; players = evidence.get("raw_player_info") or []
+    rounds = evidence.get("round_evidence") or []; events = evidence.get("raw_events") or []
+    player_ids = [str(row.get("steamid", row.get("player_steamid"))) for row in players if row.get("steamid", row.get("player_steamid")) is not None]
+    header_ok = isinstance(manifest.get("raw_header"), dict) and bool(manifest.get("map")) and bool(manifest.get("demo_version_name")) and bool(manifest.get("parser_name"))
+    player_ok = bool(players) and len(player_ids) == len(players) and len(player_ids) == len(set(player_ids)) and all(isinstance(row.get("name"), str) and row.get("name") for row in players)
+    rounds_ok = _round_invariants_pass(rounds, events)
+    round_by_number = {_int(row.get("number")): row for row in rounds}
+    known_players = set(player_ids)
+    def event_refs_valid(names: set[str], required: tuple[str, ...]) -> bool:
+        selected = [row for row in events if row.get("event_name") in names]
+        for event in selected:
+            raw = event.get("raw_fields") or {}; number = _int(event.get("round")); tick = _int(event.get("tick"))
+            if not isinstance(raw, dict) or any(raw.get(field) is None for field in required): return False
+            if number not in round_by_number or tick is None: return False
+            for key, value in raw.items():
+                if "steamid" in key and value is not None and known_players and str(value) not in known_players: return False
+        return bool(selected)
+    bomb_names = {"bomb_planted", "bomb_defused", "bomb_exploded"}
+    bomb_rows = sorted((row for row in events if row.get("event_name") in bomb_names), key=lambda row: _int(row.get("tick")) or -1)
+    bomb_ok = bool(bomb_rows) and all(_int(row.get("tick")) is not None and _int(row.get("round")) in round_by_number for row in bomb_rows)
+    for index, row in enumerate(bomb_rows):
+        if row.get("event_name") in {"bomb_defused", "bomb_exploded"} and not any(prior.get("event_name") == "bomb_planted" and prior.get("round") == row.get("round") for prior in bomb_rows[:index]): bomb_ok = False
+    combat_ok = event_refs_valid({"player_hurt"}, ("attacker_steamid", "user_steamid", "dmg_health")) and event_refs_valid({"player_death"}, ("attacker_steamid", "user_steamid", "weapon"))
+    grenades = evidence.get("grenade_samples") or []
+    grenade_ok = bool(grenades) and all(_int(row.get("tick")) is not None and row.get("grenade_type") is not None and str(row.get("steamid", row.get("thrower_steamid"))) in known_players for row in grenades)
+    team_fields = set(inventory.get("teams_inventory") or []); score_fields = set(inventory.get("score_inventory") or [])
+    teams_ok = bool(team_fields) and bool(score_fields) and all(row.get("score") is not None for row in players if "score" in row)
+    usercmd = inventory.get("usercmd_capability") or {}; usercmd_ok = isinstance(usercmd, dict) and usercmd.get("coverage") == "AVAILABLE" and bool(inventory.get("usercmd_inventory"))
+    weapons_ok = bool(inventory.get("weapon_inventory")) and any(row.get("available") is True for row in evidence.get("economy_coverage") or [])
+    aggregate_fields = inventory.get("aggregate_inventory") or []
+    aggregates_ok = bool(aggregate_fields) and all(any(token in field for token in ("player.", "game_state.")) for field in aggregate_fields)
+    return {
+        "header": (header_ok, [] if header_ok else ["header_semantics_unproven"]),
+        "players": (player_ok, [] if player_ok else ["player_identity_or_uniqueness_unproven"]),
+        "rounds": (rounds_ok, [] if rounds_ok else ["round_lifecycle_or_containment_invalid"]),
+        "bomb": (bomb_ok, [] if bomb_ok else ["bomb_lifecycle_unproven"]),
+        "combat": (combat_ok, [] if combat_ok else ["combat_relationships_unproven"]),
+        "grenades": (grenade_ok, [] if grenade_ok else ["grenade_identity_or_lifecycle_unproven"]),
+        "teams_score": (teams_ok, [] if teams_ok else ["team_score_provenance_unproven"]),
+        "usercmd": (usercmd_ok, [] if usercmd_ok else ["usercmd_unavailable_or_unproven"]),
+        "weapons_economy": (weapons_ok, [] if weapons_ok else ["weapon_economy_semantics_unproven"]),
+        "aggregates": (aggregates_ok, [] if aggregates_ok else ["aggregate_scope_unproven"]),
+    }
 
 
 def _round_invariants_pass(rounds: Sequence[dict[str, Any]], events: Sequence[dict[str, Any]]) -> bool:
@@ -683,8 +739,11 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
             if gate.get("gate") == "RAW-V2-01-parser-identity":
                 passed = parser.get("name") == "demoparser2" and parser.get("version") == "0.42.0" and contract_version == 1
                 gate.update({"status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else ["parser_identity_mismatch"]})
-        unsigned = {key: value for key, value in forensic_v2.items() if key != "deterministic_digest"}
-        forensic_v2["deterministic_digest"] = deterministic_digest(unsigned)
+        unsigned = {key: value for key, value in forensic_v2.items()
+                    if key not in {"deterministic_digest", "unsigned_contract_digest", "final_contract_digest"}}
+        digest = deterministic_digest(unsigned)
+        forensic_v2["unsigned_contract_digest"] = digest
+        forensic_v2["deterministic_digest"] = digest
     return evidence
 
 
