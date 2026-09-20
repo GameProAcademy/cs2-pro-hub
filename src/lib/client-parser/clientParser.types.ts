@@ -1,0 +1,126 @@
+export const CLIENT_PARSER_SCHEMA_VERSION = 1 as const;
+export const CLIENT_PARSER_MANIFEST_VERSION = 1 as const;
+export const CLIENT_PARSER_CONTRACT_VERSION = 1 as const;
+export const CLIENT_PARSER_CATALOG_VERSION = 2 as const;
+export const CLIENT_PARSER_NAME = "demoparser2" as const;
+export const CLIENT_PARSER_VERSION = "0.42.0" as const;
+export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
+export const CLIENT_PARSER_BUILD_IDENTITY = "npm:demoparser2@0.42.0" as const;
+
+export const CLIENT_EVENT_SAMPLE_LIMIT = 1_000;
+export const CLIENT_TICK_PROBE_LIMIT = 4_096;
+export const CLIENT_PLAYER_LIMIT = 128;
+export const CLIENT_EVENT_INVENTORY_LIMIT = 1_024;
+export const CLIENT_RESULT_MAX_BYTES = 2 * 1024 * 1024;
+export const CLIENT_DEMO_MAX_BYTES = 1_500 * 1024 * 1024;
+
+export const CLIENT_CAPABILITY_CLASSIFICATIONS = [
+  "CANONICAL",
+  "DERIVED",
+  "RAW_ONLY",
+  "NOT_PRESENT",
+  "UNAVAILABLE",
+  "PARSE_FAILED",
+] as const;
+export type ClientCapabilityClassification = (typeof CLIENT_CAPABILITY_CLASSIFICATIONS)[number];
+
+export interface ClientCapability {
+  id: string;
+  classification: ClientCapabilityClassification;
+  available: boolean;
+  nullOnly: boolean;
+  reason: string;
+  source: "demoparser2-wasm";
+  parserName: typeof CLIENT_PARSER_NAME;
+  parserVersion: typeof CLIENT_PARSER_VERSION;
+}
+
+export interface ClientEventSample {
+  eventName: string;
+  tick: number | null;
+  fields: Record<string, unknown>;
+}
+
+export interface ClientParseResult {
+  schemaVersion: typeof CLIENT_PARSER_SCHEMA_VERSION;
+  parser: {
+    name: typeof CLIENT_PARSER_NAME;
+    version: typeof CLIENT_PARSER_VERSION;
+    runtime: typeof CLIENT_PARSER_RUNTIME;
+    buildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
+    runtimeDigest: string;
+  };
+  demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };
+  header: Record<string, unknown>;
+  playerInventory: Array<{ steamId: string | null; name: string | null }>;
+  eventInventory: Array<{ name: string; count: number; fields: string[] }>;
+  selectedEventSamples: ClientEventSample[];
+  roundSummary: { status: "DERIVED" | "UNAVAILABLE"; count: number | null };
+  tickProbe: {
+    status: "AVAILABLE" | "UNAVAILABLE" | "PARSE_FAILED";
+    requestedTickCount: number;
+    returnedTickCount: number;
+    propertiesRequested: string[];
+    firstTick: number | null;
+    lastTick: number | null;
+    duplicates: number;
+    missingWithinProbe: number;
+  };
+  coverage: { fullTickDomain: false; fullRawEvents: false; sampledEvents: boolean };
+  capabilities: ClientCapability[];
+  semanticStatus: "PARTIAL" | "BLOCKED";
+  performance: {
+    fileSizeBytes: number;
+    hashDurationMs: number;
+    parseDurationMs: number;
+    totalDurationMs: number;
+    resultBytes: number;
+    workerStartupMs: number;
+    wasmLoadMs: number;
+    memory: { status: "OBSERVED" | "UNAVAILABLE"; usedBytes: number | null };
+  };
+  resultDigest: string;
+}
+
+export interface ClientParserManifest {
+  manifestVersion: typeof CLIENT_PARSER_MANIFEST_VERSION;
+  demoSha256: string;
+  demoSizeBytes: number;
+  demoName: string;
+  demoLastModified: number;
+  parserName: typeof CLIENT_PARSER_NAME;
+  parserVersion: typeof CLIENT_PARSER_VERSION;
+  parserRuntime: typeof CLIENT_PARSER_RUNTIME;
+  parserBuildIdentity: typeof CLIENT_PARSER_BUILD_IDENTITY;
+  parserRuntimeDigest: string;
+  contractVersion: typeof CLIENT_PARSER_CONTRACT_VERSION;
+  catalogVersion: typeof CLIENT_PARSER_CATALOG_VERSION;
+  catalogDigest: string;
+  capabilityDigest: string;
+  capabilityClassifications: ClientCapabilityClassification[];
+  coverage: ClientParseResult["coverage"];
+  semanticStatus: ClientParseResult["semanticStatus"];
+  resultDigest: string;
+  generatedAt: string;
+  performance: ClientParseResult["performance"];
+}
+
+export interface ClientParserEnvelope {
+  result: ClientParseResult;
+  manifest: ClientParserManifest;
+}
+
+export type ClientParserErrorCode =
+  | "CLIENT_PARSER_UNAVAILABLE"
+  | "CLIENT_WASM_LOAD_FAILED"
+  | "CLIENT_WORKER_FAILED"
+  | "CLIENT_DEMO_INVALID"
+  | "CLIENT_DEMO_TOO_LARGE"
+  | "CLIENT_HASH_FAILED"
+  | "CLIENT_PARSE_FAILED"
+  | "CLIENT_RESULT_INVALID"
+  | "CLIENT_RESULT_TOO_LARGE"
+  | "CLIENT_CONTRACT_MISMATCH"
+  | "CLIENT_PARSER_IDENTITY_MISMATCH"
+  | "CLIENT_RESULT_DIGEST_MISMATCH"
+  | "CLIENT_CANCELLED";
