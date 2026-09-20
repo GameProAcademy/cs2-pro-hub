@@ -12,10 +12,10 @@ Worker cancellation is terminal for the pending promise. Worker state and cancel
 
 The contract records file/result bytes and startup, load, hashing, parsing, total duration, and memory only when observable. `performance.memory` is non-standard; unavailable memory is not estimated.
 
-| Browser | Real 0.42 WASM | Real DEM | 128 MiB boundary | Memory profile | Result |
-| --- | --- | --- | --- | --- | --- |
-| Chrome | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | BLOCKED |
-| Firefox | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | BLOCKED |
-| Safari | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | BLOCKED |
+| Browser | Real 0.42 WASM | Real DEM | 128 MiB boundary | Memory profile | Result  |
+| ------- | -------------- | -------- | ---------------- | -------------- | ------- |
+| Chrome  | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
+| Firefox | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
+| Safari  | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
 
 The requested ~400 MB gate cannot be run under the current conservative 128 MiB POC ceiling and remains `NOT_RUN`. No browser support claim follows from unit tests.
