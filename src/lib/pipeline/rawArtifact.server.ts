@@ -879,6 +879,7 @@ export async function verifyRawArtifact(args: {
 export function rawArtifactApproval(
   decision: RawAdmissionDecision,
   artifactId: string,
+  uploadId?: string,
 ): RawAdmissionApproval {
   if (!decision.approved || decision.auditStatus !== "APPROVED" || decision.status !== "PASS") {
     throw new PipelineError(
@@ -909,5 +910,8 @@ export function rawArtifactApproval(
     reconciliationDigest,
     finalForensicContract: finalContract as Record<string, Json>,
     reconciliationProof: reconciliation as Record<string, Json>,
+    proofIdentity: uploadId
+      ? { artifactId, uploadId, artifactRootDigest: decision.evidenceDigest }
+      : undefined,
   };
 }

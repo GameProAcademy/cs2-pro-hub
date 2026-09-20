@@ -113,6 +113,9 @@ export async function persistCanonicalObservation(args: {
       finalContract["artifact_root_digest"] === args.rawApproval.evidenceDigest &&
       finalContract["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
       reconciliation["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
+      args.rawApproval.proofIdentity?.artifactId === args.rawApproval.artifactId &&
+      args.rawApproval.proofIdentity.uploadId === args.uploadId &&
+      args.rawApproval.proofIdentity.artifactRootDigest === args.rawApproval.evidenceDigest &&
       finalProjection != null &&
       rawArtifactSha256(stableRawArtifactJson(finalProjection)) ===
         args.rawApproval.finalContractDigest;
