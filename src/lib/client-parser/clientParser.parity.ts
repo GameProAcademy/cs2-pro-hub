@@ -86,7 +86,8 @@ export function compareClientVsPythonSemantic(
         reason: "wasm_observation_not_executed",
       };
     }
-    const equal = stableClientJson(wasm[dimension]) === stableClientJson(python.dimensions[dimension]);
+    const equal =
+      stableClientJson(wasm[dimension]) === stableClientJson(python.dimensions[dimension]);
     return {
       dimension,
       field: dimension,

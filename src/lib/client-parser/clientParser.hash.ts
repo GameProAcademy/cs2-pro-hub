@@ -33,10 +33,11 @@ export function computeClientResultDigest<T extends object>(result: T): string {
   const normalized = { ...deterministic } as Record<string, unknown>;
   const demo = normalized["demo"];
   if (demo && typeof demo === "object" && !Array.isArray(demo)) {
-    const { name: _name, lastModified: _lastModified, ...semanticDemo } = demo as Record<
-      string,
-      unknown
-    >;
+    const {
+      name: _name,
+      lastModified: _lastModified,
+      ...semanticDemo
+    } = demo as Record<string, unknown>;
     normalized["demo"] = semanticDemo;
   }
   return sha256Text(stableClientJson(normalized));

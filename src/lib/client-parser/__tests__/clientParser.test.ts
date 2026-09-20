@@ -374,14 +374,37 @@ describe("client parser compact contract", () => {
     });
   });
   it.each([
-    ["WASM hash", (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.wasmBinarySha256 = "e".repeat(64))],
-    ["binding hash", (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.wasmBindingSha256 = "e".repeat(64))],
-    ["source revision", (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.sourceCommit = "e".repeat(40))],
-    ["artifact status", (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.status = "INVALID")],
+    [
+      "WASM hash",
+      (v: ReturnType<typeof envelope>) =>
+        (v.result.parser.artifact.wasmBinarySha256 = "e".repeat(64)),
+    ],
+    [
+      "binding hash",
+      (v: ReturnType<typeof envelope>) =>
+        (v.result.parser.artifact.wasmBindingSha256 = "e".repeat(64)),
+    ],
+    [
+      "source revision",
+      (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.sourceCommit = "e".repeat(40)),
+    ],
+    [
+      "artifact status",
+      (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.status = "INVALID"),
+    ],
     ["player inventory", (v: ReturnType<typeof envelope>) => (v.result.playerInventory.count = 99)],
     ["event inventory", (v: ReturnType<typeof envelope>) => (v.result.eventDiscovery.count = 99)],
-    ["full tick claim", (v: ReturnType<typeof envelope>) => ((v.result.coverage as { fullTickDomain: boolean }).fullTickDomain = true)],
-    ["authoritative tick claim", (v: ReturnType<typeof envelope>) => ((v.result.coverage as { authoritativeTickDomain: boolean }).authoritativeTickDomain = true)],
+    [
+      "full tick claim",
+      (v: ReturnType<typeof envelope>) =>
+        ((v.result.coverage as { fullTickDomain: boolean }).fullTickDomain = true),
+    ],
+    [
+      "authoritative tick claim",
+      (v: ReturnType<typeof envelope>) =>
+        ((v.result.coverage as { authoritativeTickDomain: boolean }).authoritativeTickDomain =
+          true),
+    ],
   ])("rejects forged %s", (_name, change) => {
     const value = envelope();
     change(value);

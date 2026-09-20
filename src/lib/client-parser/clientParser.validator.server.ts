@@ -205,9 +205,9 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     Object.values(result.performance).some(
       (value) => typeof value === "number" && (!Number.isFinite(value) || value < 0),
     ) ||
-    result.performance.memory.usedBytes !== null &&
+    (result.performance.memory.usedBytes !== null &&
       (!Number.isFinite(result.performance.memory.usedBytes) ||
-        result.performance.memory.usedBytes < 0)
+        result.performance.memory.usedBytes < 0))
   )
     return fail("CLIENT_RESULT_INVALID");
   if (
