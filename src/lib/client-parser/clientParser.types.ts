@@ -70,6 +70,54 @@ export interface ClientApiCallEvidence {
   status: ClientApiCallStatus;
   errorType: string | null;
   errorMessage: string | null;
+  durationMs: number | null;
+  resultBytes: number | null;
+  normalizedDigest: string | null;
+}
+
+export type ClientFieldAuditStatus =
+  | "PASS"
+  | "FAIL"
+  | "NOT_RUN"
+  | "NOT_PRESENT"
+  | "UNAVAILABLE"
+  | "PARSE_FAILED"
+  | "TYPE_MISMATCH"
+  | "VALUE_MISMATCH"
+  | "NORMALIZATION_REQUIRED";
+
+export interface ClientFieldAuditRow {
+  category: string;
+  eventOrEntity: string;
+  field: string;
+  pythonAvailable: boolean | null;
+  wasmExportAvailable: boolean | null;
+  pythonParsed: boolean;
+  wasmParsed: boolean;
+  pythonValueType: string | null;
+  wasmValueType: string | null;
+  pythonNull: boolean | null;
+  wasmNull: boolean | null;
+  pythonSample: unknown;
+  wasmSample: unknown;
+  normalizedPython: unknown;
+  normalizedWasm: unknown;
+  equal: boolean | null;
+  status: ClientFieldAuditStatus;
+  classification: string;
+  canonicalEligible: false;
+  reason: string;
+  evidenceRef: string | null;
+}
+
+export interface ClientDeterminismReport {
+  demoSha256: string | null;
+  pythonRunDigests: string[];
+  wasmRunDigests: string[];
+  pythonDeterministic: boolean | null;
+  wasmDeterministic: boolean | null;
+  status: "PASS" | "FAIL" | "NOT_RUN";
+  reason: string;
 }
 
 export interface ClientParserArtifactProvenance {

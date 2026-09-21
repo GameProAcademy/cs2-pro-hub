@@ -6,7 +6,12 @@ import {
   playerInventoryFromRuntime,
   trustedRuntimeUrl,
 } from "./clientParser.runtime";
-import { sha256Hex, sha256Text, computeClientResultDigest } from "./clientParser.hash";
+import {
+  sha256Hex,
+  sha256Text,
+  computeClientResultDigest,
+  stableClientJson,
+} from "./clientParser.hash";
 import { buildClientParserManifest } from "./clientParser.manifest";
 import type {
   ClientParserCommand,
@@ -117,6 +122,8 @@ function apiEvidence(
   callAttempted: boolean,
   callSucceeded: boolean,
   error?: unknown,
+  durationMs: number | null = null,
+  result?: unknown,
 ): ClientApiCallEvidence {
   const rawMessage = error instanceof Error ? error.message : null;
   return {
@@ -133,6 +140,11 @@ function apiEvidence(
           : "CALL_FAILED",
     errorType: error instanceof Error ? error.name : error === undefined ? null : "UnknownError",
     errorMessage: rawMessage ? rawMessage.slice(0, 160) : null,
+    durationMs,
+    resultBytes: callSucceeded
+      ? new TextEncoder().encode(stableClientJson(result ?? null)).byteLength
+      : null,
+    normalizedDigest: callSucceeded ? sha256Text(stableClientJson(result ?? null)) : null,
   };
 }
 
@@ -222,8 +234,19 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   progress(command.requestId, "PARSING_HEADER", 0.25, started);
   let header: Record<string, unknown>;
   try {
+    const callStarted = performance.now();
     header = object(parser.parseHeader(bytes));
-    apiCalls.push(apiEvidence("parseHeader", true, true, true));
+    apiCalls.push(
+      apiEvidence(
+        "parseHeader",
+        true,
+        true,
+        true,
+        undefined,
+        performance.now() - callStarted,
+        header,
+      ),
+    );
   } catch (error) {
     apiCalls.push(apiEvidence("parseHeader", true, true, false, error));
     throw new Error("CLIENT_DEMO_PARSE_FAILED");
@@ -234,8 +257,19 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let discoveryStatus: ClientParseResult["eventDiscovery"]["status"] = "AVAILABLE";
   let discoveredEvents: unknown;
   try {
+    const callStarted = performance.now();
     discoveredEvents = parser.listGameEvents(bytes);
-    apiCalls.push(apiEvidence("listGameEvents", true, true, true));
+    apiCalls.push(
+      apiEvidence(
+        "listGameEvents",
+        true,
+        true,
+        true,
+        undefined,
+        performance.now() - callStarted,
+        discoveredEvents,
+      ),
+    );
   } catch (error) {
     apiCalls.push(apiEvidence("listGameEvents", true, true, false, error));
     discoveryStatus = "PARSE_FAILED";
@@ -253,7 +287,14 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let parseEventSucceeded = false;
   let parseEventFailure: unknown;
   let parseEventAttempted = false;
-  for (const name of CLIENT_PRIORITY_EVENTS) {
+  let parseEventDurationMs = 0;
+  let parseEventResultBytes = 0;
+  const parsedEventDigests: string[] = [];
+  const eventsToAudit = [...new Set([...CLIENT_PRIORITY_EVENTS, ...names])].slice(
+    0,
+    CLIENT_EVENT_INVENTORY_LIMIT,
+  );
+  for (const name of eventsToAudit) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
       parsedEventInventory.push({ name, status: "NOT_PRESENT", count: null, fields: [] });
@@ -262,7 +303,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     let parsed: Array<Record<string, unknown>>;
     try {
       parseEventAttempted = true;
+      const callStarted = performance.now();
       parsed = rows(parser.parseEvent(bytes, name, [], []));
+      parseEventDurationMs += performance.now() - callStarted;
+      const encoded = stableClientJson(parsed);
+      parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
+      parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
     } catch (error) {
       parseEventFailure = error;
@@ -281,15 +327,29 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   if (!parseEventAttempted) {
     try {
       parseEventAttempted = true;
-      parser.parseEvent(bytes, names[0] ?? "player_death", [], []);
+      const callStarted = performance.now();
+      const fallbackResult = parser.parseEvent(bytes, names[0] ?? "player_death", [], []);
+      parseEventDurationMs += performance.now() - callStarted;
+      const encoded = stableClientJson(fallbackResult ?? null);
+      parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
+      parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
     } catch (error) {
       parseEventFailure = error;
     }
   }
-  apiCalls.push(
-    apiEvidence("parseEvent", true, parseEventAttempted, parseEventSucceeded, parseEventFailure),
-  );
+  apiCalls.push({
+    ...apiEvidence(
+      "parseEvent",
+      true,
+      parseEventAttempted,
+      parseEventSucceeded,
+      parseEventFailure,
+      parseEventAttempted ? parseEventDurationMs : null,
+      parsedEventDigests,
+    ),
+    resultBytes: parseEventSucceeded ? parseEventResultBytes : null,
+  });
 
   progress(command.requestId, "PARSING_TICKS", 0.72, started);
   const playbackTicks = safeNumber(header["playback_ticks"] ?? header["playbackTicks"]);
@@ -308,8 +368,19 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let tickRows: Array<Record<string, unknown>> = [];
   if (probeTicks.length) {
     try {
+      const callStarted = performance.now();
       tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, false));
-      apiCalls.push(apiEvidence("parseTicks", true, true, true));
+      apiCalls.push(
+        apiEvidence(
+          "parseTicks",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          tickRows,
+        ),
+      );
     } catch (error) {
       apiCalls.push(apiEvidence("parseTicks", true, true, false, error));
       tickStatus = "PARSE_FAILED";
@@ -338,6 +409,29 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       playerInventory.status === "PARSE_FAILED" ? new Error("parse_failed") : undefined,
     ),
   );
+  if (typeof parser.parseGrenades === "function") {
+    const callStarted = performance.now();
+    try {
+      const grenades = parser.parseGrenades(bytes);
+      apiCalls.push(
+        apiEvidence(
+          "parseGrenades",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          grenades,
+        ),
+      );
+    } catch (error) {
+      apiCalls.push(
+        apiEvidence("parseGrenades", true, true, false, error, performance.now() - callStarted),
+      );
+    }
+  } else {
+    apiCalls.push(apiEvidence("parseGrenades", false, false, false));
+  }
   const capabilities = capabilitiesForSurface(runtimeSurface);
   const base: ClientParseResult = {
     schemaVersion: CLIENT_PARSER_SCHEMA_VERSION,

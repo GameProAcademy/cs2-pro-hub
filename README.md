@@ -30,6 +30,10 @@ npm run dev
 
 ## Current state (September 2026)
 
+### Client-side parser audit
+
+The isolated, authenticated client-parser POC contains the exact upstream demoparser2 0.42.0 browser artifact and a bounded, fail-closed field/parity/determinism harness. No authorized real `.dem` is present, so real API execution, Python×WASM parity and determinism are `NOT_RUN`; overall status is `POC_NOT_READY`. Browser Canonical admission remains blocked and the feature flag remains off by default.
+
 Implemented and proven against the real database:
 
 - **Steam Identity Foundation** — OpenID 2.0 account linking. Steam is an **identity
@@ -79,4 +83,3 @@ implemented, and no anti-bot circumvention will be.
   fallback `src/assets/gamepro-symbol.png`.
 - **Persistent security suite**: `supabase/tests/security_checks.sql` — every row must
   report `PASS`.
-

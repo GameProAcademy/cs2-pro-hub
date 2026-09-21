@@ -1,4 +1,20 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-E–H — REAL WASM + PARITY
+# CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-F–H — REAL DEM + FIELD PARITY
+
+**Status:** `POC_NOT_READY`; `NOT_RUN — NO_AUTHORIZED_REAL_DEM_FIXTURE`.
+
+- [x] Confirmar por busca no projeto, fixtures e uploads que nenhum DEM real autorizado está disponível.
+- [x] Registrar duração, bytes e digest normalizado por chamada de API, além de presença/tentativa/sucesso/erro.
+- [x] Auditar todos os eventos descobertos dentro dos limites existentes e registrar `parseGrenades` separadamente.
+- [x] Expandir o catálogo executável para linhas individuais de header, state/ticks, combat, blind, rounds, bomb e grenades.
+- [x] Preparar comparação field-by-field que preserva null, zero, tipos, valores divergentes e evidence refs.
+- [x] Preparar determinismo com dois digests Python e dois WASM do mesmo SHA, retornando `NOT_RUN` sem execuções reais.
+- [ ] F.2.10-F execução real: `BLOCKED`, sem DEM autorizado.
+- [ ] F.2.10-G auditoria real: `NOT_RUN`.
+- [ ] F.2.10-H paridade/determinismo: `NOT_RUN`.
+
+**Decisão:** nenhum claim de parsing real; Canonical e AI Data Readiness permanecem bloqueados; nenhuma mutação de produção, Railway, Storage, histórico, fila ou migration.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-E–H — REAL WASM + PARITY
 
 **Status:** artifact e inicialização comprovados; execução das APIs, DEM e paridade permanecem não executados.
 

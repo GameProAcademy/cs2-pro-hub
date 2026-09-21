@@ -14,3 +14,5 @@ Parity is field-level and fail-closed. A matching parser name/version is necessa
 | round boundaries                                   | NOT_RUN               | No same-DEM Python/WASM corpus result                     |
 
 The comparator emits all 22 dimensions independently and does not hide mismatches. Promotion requires an authorized corpus, exact artifact provenance, independent Python output, documented numeric tolerances, deterministic reruns, and zero unexplained semantic failures.
+
+The field comparator preserves runtime availability, parse success, type, null state, original samples, normalized samples and exact evidence references. It never converts `0` to missing, `null` to zero, player slot/side to team identity, or a documented upstream field into runtime evidence. Determinism requires two normalized Python digests and two normalized WASM digests for the same DEM SHA; otherwise it returns `NOT_RUN`.

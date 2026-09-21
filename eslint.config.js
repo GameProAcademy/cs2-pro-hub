@@ -15,6 +15,7 @@ export default tseslint.config(
       "src/integrations/supabase/types.ts",
       "src/integrations/supabase/previewAuthStorage.ts",
       "src/routeTree.gen.ts",
+      "public/client-parser/demoparser2/0.42.0/demoparser2.js",
     ],
   },
   {
