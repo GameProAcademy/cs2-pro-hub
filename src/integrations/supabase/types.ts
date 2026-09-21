@@ -3171,6 +3171,10 @@ export type Database = {
         Args: { _source: Database["public"]["Enums"]["data_source"] }
         Returns: number
       }
+      claim_demo_cleanup_job: {
+        Args: { _claim_seconds?: number; _job_id: string }
+        Returns: Json
+      }
       claim_demo_cleanup_jobs: {
         Args: { _claim_seconds?: number; _limit?: number }
         Returns: Json
