@@ -43,7 +43,9 @@ import {
 } from "./clientParser.audit";
 
 function sortedRecord(row: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(row).sort(([left], [right]) => left.localeCompare(right)));
+  return Object.fromEntries(
+    Object.entries(row).sort(([left], [right]) => left.localeCompare(right)),
+  );
 }
 
 function roundEvidenceFromSamples(
@@ -52,7 +54,9 @@ function roundEvidenceFromSamples(
   const starts = samples.filter((sample) => sample.eventName === "round_start");
   const ends = samples.filter((sample) => sample.eventName === "round_end");
   return starts.map((start, index) => {
-    const end = ends.find((candidate) => candidate.tick !== null && candidate.tick >= (start.tick ?? 0));
+    const end = ends.find(
+      (candidate) => candidate.tick !== null && candidate.tick >= (start.tick ?? 0),
+    );
     const startTick = start.tick ?? 0;
     const endTick = end?.tick ?? null;
     const winnerSlot = safeNumber(end?.fields["winner"] ?? end?.fields["winner_slot"]);
@@ -638,9 +642,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
             ? "PARSE_FAILED"
             : "UNAVAILABLE",
       authoritative: false,
-      evidenceRef: tickRows.length
-        ? `tick-probe:${sha256Text(stableClientJson(tickRows))}`
-        : null,
+      evidenceRef: tickRows.length ? `tick-probe:${sha256Text(stableClientJson(tickRows))}` : null,
     },
     roundSummary: {
       status: parsedEventInventory.some(
