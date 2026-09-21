@@ -30,12 +30,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql
-          command -v initdb
-          command -v pg_ctl
-          command -v psql
-          initdb --version
-          pg_ctl --version
-          psql --version
+          PG_BIN="$(dirname "$(find /usr/lib/postgresql -name initdb -type f | head -n1)")"
+          test -x "$PG_BIN/initdb"
+          echo "$PG_BIN" >> "$GITHUB_PATH"
+          "$PG_BIN/initdb" --version
+          "$PG_BIN/pg_ctl" --version
+          "$PG_BIN/psql" --version
 
       - name: Test
         run: bun run test
@@ -76,7 +76,7 @@ jobs:
         working-directory: services/cs2-demo-parser
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
