@@ -447,7 +447,13 @@ describe("client parser compact contract", () => {
   });
 
   it("preserves array order and duplicates while normalizing object keys", () => {
-    expect(normalizeForParity([{ z: 1, a: 2 }, { a: 2, z: 1 }, { z: 1, a: 2 }])).toEqual([
+    expect(
+      normalizeForParity([
+        { z: 1, a: 2 },
+        { a: 2, z: 1 },
+        { z: 1, a: 2 },
+      ]),
+    ).toEqual([
       { a: 2, z: 1 },
       { a: 2, z: 1 },
       { a: 2, z: 1 },
