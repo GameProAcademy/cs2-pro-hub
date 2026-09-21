@@ -169,8 +169,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     result.parser.apiCalls.some(
       (call) =>
         typeof call.api !== "string" ||
-        (call.durationMs !== null &&
-          (!Number.isFinite(call.durationMs) || call.durationMs < 0)) ||
+        (call.durationMs !== null && (!Number.isFinite(call.durationMs) || call.durationMs < 0)) ||
         (call.resultBytes !== null &&
           (!Number.isSafeInteger(call.resultBytes) || call.resultBytes < 0)) ||
         (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)),
