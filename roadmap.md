@@ -1280,7 +1280,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 ## FASE 2.7.2G.5-R-F.2.10 — Client-side parser POC
 
 - `POC_IMPLEMENTED`: isolated Worker protocol, transferable local DEM, compact result/manifest, deterministic SHA-256/digest, dry-run authenticated validation, parity comparator, feature-gated UI, and fail-closed Canonical proof binding.
-- `BLOCKED`: official `demoparser2@0.42.0` browser/WASM artifact is unavailable from npm; no incompatible package or invented runtime was installed.
+- `ARTIFACT VERIFIED`: the exact browser/WASM files checked into upstream v0.42.0 are pinned and hash-verified; bit-reproducibility remains partial because the upstream toolchain is not fully pinned.
 - `NOT_EXECUTED`: real browser/WASM test, real ~400 MB DEM, memory benchmark, and WASM↔Python corpus parity.
 - Production Python/Railway ingestion remains unchanged. No Cache run, retry, Attempt 9, enqueue, Canonical write, Storage mutation, migration, Railway deploy, secret change, or historical mutation occurred.
 - Final gate: `POC_NOT_READY`.
@@ -1290,7 +1290,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Added separate source, binding, binary, runtime-surface, capability, audit-catalog, contract, result, and manifest identities.
 - [x] Hardened Classic Worker initialization, same-origin/hash checks, explicit event outcomes, bounded tick samples, cancellation cleanup, and validator invariants.
 - [x] Added 22-dimension Python×WASM parity reporting and the browser/provenance/admission documentation set.
-- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: BLOCKED` — no auditable 0.42.0 browser artifact.
+- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: PASS` — exact source artifact, hashes and Chromium initialization verified; bit-reproducibility remains partial.
 - `F.2.10-B REAL BROWSER DEM: NOT_RUN`.
 - `F.2.10-C PYTHON × WASM PARITY: NOT_RUN`.
 - `F.2.10-D 400MB MEMORY: NOT_RUN`.
