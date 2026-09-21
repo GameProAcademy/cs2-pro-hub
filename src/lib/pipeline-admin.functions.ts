@@ -396,6 +396,7 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
     }
 
     const requestedUploadId = crypto.randomUUID();
+    const requestedReservationId = crypto.randomUUID();
     const { data: reservation, error: reserveError } = await supabaseAdmin.rpc(
       "reserve_controlled_demo_replay_attempt_9",
       {
@@ -408,6 +409,8 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
         _replay_reason: "g6r-real-demo-replay",
         _new_upload_id: requestedUploadId,
         _provenance_id: data.provenanceId,
+        _admin_user_id: (context as Ctx).userId,
+        _reservation_id: requestedReservationId,
       },
     );
     if (reserveError || !reservation || typeof reservation !== "object" || Array.isArray(reservation)) {
@@ -417,9 +420,12 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
     const uploadId = typeof reserved["upload_id"] === "string" ? reserved["upload_id"] : null;
     const destinationPath =
       typeof reserved["storage_path"] === "string" ? reserved["storage_path"] : null;
+    const reservationId =
+      typeof reserved["reservation_id"] === "string" ? reserved["reservation_id"] : null;
     if (
       !uploadId ||
       !destinationPath ||
+      !reservationId ||
       Number(reserved["attempt_number"]) !== 9 ||
       reserved["supersedes_job_id"] !== sourceJob.id ||
       reserved["replacement_reason"] !== "g6r-real-demo-replay"
@@ -460,6 +466,7 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
         _source_job_id: sourceJob.id,
         _admin_user_id: (context as Ctx).userId,
         _provenance_id: data.provenanceId,
+        _reservation_id: reservationId,
         _source_sha256: copyOutcome.sourceSha256,
         _destination_sha256: copyOutcome.destinationSha256,
         _source_size: copyOutcome.sourceSize,
