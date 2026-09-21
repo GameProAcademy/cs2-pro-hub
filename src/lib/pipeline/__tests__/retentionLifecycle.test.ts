@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEMO_CLEANUP_CLAIM_SECONDS,
+  DEMO_CLEANUP_AUTHORITY,
+  DEMO_CLEANUP_EXECUTION_ENABLED,
   DEMO_RETENTION_HOURS,
   DEMO_RETENTION_POLICY_VERSION,
   FAILED_DEMO_RETENTION_HOURS,
@@ -14,11 +16,16 @@ const migration = [
   "supabase/migrations/20260921055331_3b3c9cb0-0872-49be-9693-1e60aa6d51c7.sql",
   "supabase/migrations/20260921055439_ca002969-0569-4016-9fd1-9b0959e2616a.sql",
   "supabase/migrations/20260921055555_202993af-f5e4-4908-bc94-54882472b68d.sql",
+  "supabase/migrations/20260921055737_d98f6d41-6db2-4d89-8d13-22cfdf2d51c6.sql",
+  "supabase/migrations/20260921065045_3e6e67cc-9bef-4405-9ed1-a4d334874526.sql",
 ]
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
 const jobs = readFileSync("src/lib/pipeline/jobs.server.ts", "utf8");
 const storage = readFileSync("src/lib/pipeline/storage.server.ts", "utf8");
+const cron = readFileSync("src/routes/api/public/pipeline-cron.ts", "utf8");
+const admin = readFileSync("src/lib/pipeline-admin.functions.ts", "utf8");
+const pipelineFunctions = readFileSync("src/lib/pipeline.functions.ts", "utf8");
 
 describe("G.6 DEM retention and verified deletion A-Q", () => {
   it("A-C versions exact success/failure windows", () => {
@@ -111,5 +118,38 @@ describe("G.6 DEM retention and verified deletion A-Q", () => {
       expect(migration).toContain(`GRANT EXECUTE ON FUNCTION public.${name}`);
     }
     expect(migration.match(/SET search_path = ''/g)?.length).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe("G.6-R legacy shutdown and single authority R-T", () => {
+  it("R disables every automatic and administrative deletion trigger", () => {
+    expect(DEMO_CLEANUP_AUTHORITY).toBe("G6_VERIFIED_DELETE_ONLY");
+    expect(DEMO_CLEANUP_EXECUTION_ENABLED).toBe(false);
+    expect(cron).not.toContain("cleanupExpiredDemos(");
+    expect(admin).not.toContain("cleanupExpiredDemos(");
+    expect(pipelineFunctions).not.toContain("cleanupExpiredDemos(");
+    expect(jobs.match(/cleanupExpiredDemos\(5\)/g)).toBeNull();
+  });
+
+  it("S records the database authority as service-role-only and fail-closed", () => {
+    expect(migration).toContain("public.get_demo_cleanup_authority()");
+    expect(migration).toContain("'authority', 'G6_VERIFIED_DELETE_ONLY'");
+    expect(migration).toContain("'execution_enabled', false");
+    expect(migration).toContain(
+      "REVOKE ALL ON FUNCTION public.get_demo_cleanup_authority() FROM PUBLIC, anon, authenticated",
+    );
+    expect(migration).toContain(
+      "GRANT EXECUTE ON FUNCTION public.get_demo_cleanup_authority() TO service_role",
+    );
+  });
+
+  it("T preserves quarantine/backfill and mismatch evidence without deleting Storage", () => {
+    expect(migration).toContain("GREATEST(j.retain_until, now() + interval '24 hours')");
+    expect(migration).toContain(
+      "WHEN storage_deleted_at IS NOT NULL THEN 'DELETION_METADATA_MISMATCH'",
+    );
+    expect(migration).not.toMatch(/DELETE\s+FROM\s+storage\.objects/i);
+    expect(migration).not.toMatch(/storage\.from\([^)]*\)\.remove/i);
+    expect(storage.match(/\.remove\(\[storagePath\]\)/g)).toHaveLength(1);
   });
 });

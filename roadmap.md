@@ -1,4 +1,23 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6 — DEM RETENTION & VERIFIED DELETION
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R — LEGACY CLEANUP SHUTDOWN + RAILWAY RUNTIME PARITY
+
+**Status:** `BLOCKED` — contenção local PASS; paridade do runtime Railway não comprovável.
+
+- [x] Incidente preservado: nove objetos/3.789.985.512 bytes passaram a três objetos/947.497.146 bytes por execução concorrente externa ao G.6.
+- [x] `DEMO_CLEANUP_AUTHORITY = G6_VERIFIED_DELETE_ONLY` registrado no APP e no banco; execução física permanece fail-closed.
+- [x] Cron, cancelamento, conclusão de job e ação administrativa não iniciam cleanup durante G.6-R.
+- [x] Migration incremental preserva mismatch histórico, ACL service-role-only e `search_path=''`; baseline do linter permanece em 15 findings preexistentes.
+- [x] Retenção `demo-retention-v1`, claims, ownership, pós-delete verification, RAW/Canonical gates e órfãos read-only preservados.
+- [x] Candidato MAIN fixado em `2f8a76645c6030659f2ed0480469b1452e75f72e`, parser `demoparser2@0.42.0`, contrato `1`, com manifest SHA por arquivo.
+- [ ] `RAILWAY_RUNTIME_PARITY`: BLOCKED — branch `infra/cs2-parser-worker-v8`, source tree, arquivos de isolamento, imagem e conexão Railway indisponíveis.
+- [x] `/health` e `/version` respondem 200; runtime observado em semantic `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` / build `git:684da207d6a35d14d5663b011966561b09d55703`.
+- [ ] Identidade Railway alinhada ao candidato `2f8a76645c6030659f2ed0480469b1452e75f72e`: FAIL; source/deploy continuam indisponíveis.
+- [x] Nenhum DEM, parsing, retry, Cache Run 2, attempt 9, cleanup físico, Canonical, AI, deploy, secret ou reescrita histórica.
+- [x] Snapshot read-only final: 3 objetos/947.497.146 bytes; 2 vinculados/947.496.122 bytes; 1 órfão/1.024 bytes, sem delete.
+- [x] Quality gates locais: APP 1.021/1.021, retenção 14/14, typecheck, lint (0 erros/9 warnings), compileall, formatting, diff check e preview build PASS; pytest `NOT_RUN — PYTEST_NOT_INSTALLED`.
+
+**Decisão:** `BLOCKED`. `LEGACY_CLEANUP_DISABLED`, `RETENTION_CONTRACT`, `CLEANUP_AUTHORITY_SINGLE` e `NO_DESTRUCTIVE_EXECUTION` passam no candidato local; `RAILWAY_RUNTIME_PARITY` não passa sem acesso auditável ao runtime. Real DEM, Python×WASM, determinismo, Canonical e AI permanecem `NOT_RUN/BLOCKED`.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6 — DEM RETENTION & VERIFIED DELETION
 
 **Status:** `BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP`; nenhum cleanup G.6 foi invocado pelo agente.
 

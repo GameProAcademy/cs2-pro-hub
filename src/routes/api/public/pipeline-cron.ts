@@ -5,7 +5,7 @@
  * Bearer-secret authenticated with the existing Lovable cron helper or the
  * database-backed scheduler secret used by native pg_cron. It:
  *  - re-queues demo jobs stuck in `processing` past the stale window;
- *  - deletes temporary demo files whose retention window expired;
+ *  - reports that DEM deletion is disabled during the G.6-R safety closure;
  *  - advances at most one queued demo job (concurrency-limited) when the
  *    parser preflight gate is fully ready;
  *  - runs the FACEIT worker: stale recovery, atomic claim, execution and state
@@ -29,19 +29,14 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         const unauthorized = await authenticatePipelineCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const {
-          cleanupExpiredDemos,
-          reconcileDurableDemoQueue,
-          reconcileOrphanDemoUploads,
-          recoverStaleJobs,
-        } = await import("@/lib/pipeline/jobs.server");
+        const { reconcileDurableDemoQueue, reconcileOrphanDemoUploads, recoverStaleJobs } =
+          await import("@/lib/pipeline/jobs.server");
         const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
 
-        const [recovered, reconciled, orphansReconciled, demoCleanup] = await Promise.all([
+        const [recovered, reconciled, orphansReconciled] = await Promise.all([
           recoverStaleJobs(),
           reconcileDurableDemoQueue(25),
           reconcileOrphanDemoUploads(15, 25),
-          cleanupExpiredDemos(50),
         ]);
 
         // FACEIT synchronisation shares the scheduler but not the demo queue.
@@ -72,7 +67,11 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
           reconciled,
           orphansReconciled,
           recovered,
-          demoCleanup,
+          demoCleanup: {
+            authority: "G6_VERIFIED_DELETE_ONLY",
+            executionEnabled: false,
+            reason: "G6_R_RELEASE_GATE",
+          },
           faceit,
         });
       },

@@ -10,7 +10,9 @@
  */
 import {
   ANALYSIS_VERSION,
+  DEMO_CLEANUP_AUTHORITY,
   DEMO_CLEANUP_CLAIM_SECONDS,
+  DEMO_CLEANUP_EXECUTION_ENABLED,
   JOB_STALE_MINUTES,
   MAX_CONCURRENT_DEMO_JOBS,
   MAX_JOB_RETRIES,
@@ -139,6 +141,8 @@ type CleanupClaim = {
 };
 
 export type DemoCleanupSummary = {
+  authority: typeof DEMO_CLEANUP_AUTHORITY;
+  executionEnabled: boolean;
   candidates: number;
   verified: number;
   alreadyAbsent: number;
@@ -209,22 +213,6 @@ async function executeCleanupClaim(claim: CleanupClaim): Promise<"verified" | "a
 async function finishCancellation(jobId: string, _storagePath: string | null) {
   const db = await admin();
   await db.rpc("finish_demo_job_cancelled", { _job_id: jobId });
-  const { data, error } = await db.rpc(
-    "claim_demo_cleanup_job" as never,
-    {
-      _job_id: jobId,
-      _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
-    } as never,
-  );
-  const result = data as Record<string, unknown> | null;
-  if (error || result?.["claimed"] !== true) return;
-  const claim = cleanupClaim(result);
-  if (!claim) return;
-  try {
-    await executeCleanupClaim(claim);
-  } catch {
-    // Cancellation remains terminal; the next maintenance pass retries cleanup.
-  }
 }
 
 async function persistRawEvidence(args: {
@@ -404,6 +392,17 @@ export async function reconcileOrphanDemoUploads(
 
 /** Claims, deletes and physically verifies eligible temporary demo files. */
 export async function cleanupExpiredDemos(limit = 25): Promise<DemoCleanupSummary> {
+  if (!DEMO_CLEANUP_EXECUTION_ENABLED) {
+    return {
+      authority: DEMO_CLEANUP_AUTHORITY,
+      executionEnabled: false,
+      candidates: 0,
+      verified: 0,
+      alreadyAbsent: 0,
+      failed: 0,
+      metadataMismatches: 0,
+    };
+  }
   const db = await admin();
   const { data, error } = await db.rpc(
     "claim_demo_cleanup_jobs" as never,
@@ -416,6 +415,8 @@ export async function cleanupExpiredDemos(limit = 25): Promise<DemoCleanupSummar
   const payload = data as { items?: unknown[] } | null;
   const claims = (payload?.items ?? []).map(cleanupClaim).filter((claim) => claim !== null);
   const summary: DemoCleanupSummary = {
+    authority: DEMO_CLEANUP_AUTHORITY,
+    executionEnabled: true,
     candidates: claims.length,
     verified: 0,
     alreadyAbsent: 0,
@@ -856,7 +857,6 @@ export async function processJob(
       return { jobId, status: "cancelled", matchId: projectedMatchId };
     }
 
-    await cleanupExpiredDemos(5);
     return {
       jobId,
       status: "processed",

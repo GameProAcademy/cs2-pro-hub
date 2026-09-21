@@ -71,6 +71,12 @@ export const FAILED_DEMO_RETENTION_HOURS = 72;
 /** Auditable identity of the centralized original-DEMO retention policy. */
 export const DEMO_RETENTION_POLICY_VERSION = "demo-retention-v1";
 
+/** The only architecture allowed to remove an original DEM. */
+export const DEMO_CLEANUP_AUTHORITY = "G6_VERIFIED_DELETE_ONLY" as const;
+
+/** Fail-closed during G.6-R; enabling deletion requires a separate approved gate. */
+export const DEMO_CLEANUP_EXECUTION_ENABLED = false;
+
 /** Short lease used to serialize Storage cleanup against retry/recovery. */
 export const DEMO_CLEANUP_CLAIM_SECONDS = 300;
 

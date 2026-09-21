@@ -17,3 +17,7 @@ The comparator preserves array order and duplicates, sorts object keys only, and
 Python and WASM consume the same catalog/contract identity from `upstream-surface-manifest.json`. `CATALOG_MISMATCH` or `CONTRACT_MISMATCH` stops comparison before field values are compared. Every event request is explicit and carries its event, field, kind, request reason, semantic purpose, upstream evidence, catalog version/digest, parser version/revision, and DEM SHA.
 
 Grenade evidence preserves bounded raw values and emits a separate conservative normalized record. Identity and lifecycle remain `UNRESOLVED / RAW_ONLY`; key sorting is not semantic normalization. Rounds separate `observedRoundNumber` from `derivedRoundIndex` and declare sample limits. Tick evidence remains `FIRST_MIDDLE_LAST / PROBE_ONLY / authoritativeDomain=false`.
+
+## G.6-R status
+
+No Python or WASM execution occurred. Railway runtime parity is also `BLOCKED`: the approved MAIN candidate has a machine-readable hash baseline, but the Railway branch/source, isolation layer and candidate image are unavailable for comparison. This does not change the report status: Python×WASM parity and real determinism remain `NOT_RUN`.

@@ -130,38 +130,39 @@ Nenhuma migration foi criada nesta rodada — nenhuma tabela nova foi necessári
 
 ## 6. Gates
 
-| Gate                           | Status                               | Nota                                                                                                                             |
-| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| 01 upload real                 | PARTIAL                              | upload/registro funcionam; sem parser não há ciclo completo                                                                      |
-| 02 parser real                 | **BLOCKED**                          | worker externo não provisionado                                                                                                  |
-| 03 determinismo                | BLOCKED                              | depende de 02                                                                                                                    |
-| 04 arquivo inválido            | PASS                                 | validação de extensão/tamanho/vazio, códigos precisos                                                                            |
-| 05 limite de recurso           | PARTIAL                              | tamanho e timeout de transporte sim; CPU/memória no worker                                                                       |
-| 06/07 identidade real          | PASS                                 | só SteamID explícito; nada derivado de nickname                                                                                  |
-| 08 identity graph              | PARTIAL                              | caminho preservado; prova real depende de 02                                                                                     |
-| 09 adapter canônico            | PASS                                 | demo passa por `demoToCanonicalBundle`                                                                                           |
-| 10 persistência canônica       | PASS                                 | escrita canônica só pela rotina transacional                                                                                     |
-| 11 neutralidade de player      | PASS                                 | projeção nunca sobrescreve outro jogador                                                                                         |
-| 12/13 idempotência/atomicidade | PASS (canônico)                      | provado na 2.6.11.5A; demo agora usa o mesmo caminho                                                                             |
-| 14/15/16 convergência          | BLOCKED (demo real)                  | provas existentes usam fixture canônica                                                                                          |
-| 17 parse parcial               | PARTIAL                              | tratamento implementado; prova real depende de 02                                                                                |
-| 18/19 métricas/features        | PASS (fixture)                       | 500 testes; sobre demo real: BLOCKED                                                                                             |
-| 20 semântica de features       | PASS                                 | catálogo + testes                                                                                                                |
-| 21 data quality                | PASS                                 | quality/coverage/confidence derivados de cobertura real                                                                          |
-| 22 linhagem                    | PASS                                 | versões e ids gravados                                                                                                           |
-| 23/24 recuperação/concorrência | NOT_PROVEN                           | claim atômico e stale recovery existem; prova E2E depende de 02                                                                  |
-| 25/26 RLS/storage              | PASS (herdado, sem alteração)        | suíte de segurança inalterada                                                                                                    |
-| 27 cleanup                     | BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP | G.6: contrato endurecido; seis objetos foram removidos pela rotina legada publicada após o backfill; remanescentes em quarentena |
-| 28 fim da dupla persistência   | **PASS**                             | ver §4.1                                                                                                                         |
-| 29/30 sem regressão            | PASS                                 | 500/500 testes, typecheck, lint, build                                                                                           |
+| Gate                           | Status                        | Nota                                                                                                    |
+| ------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 01 upload real                 | PARTIAL                       | upload/registro funcionam; sem parser não há ciclo completo                                             |
+| 02 parser real                 | **BLOCKED**                   | worker externo não provisionado                                                                         |
+| 03 determinismo                | BLOCKED                       | depende de 02                                                                                           |
+| 04 arquivo inválido            | PASS                          | validação de extensão/tamanho/vazio, códigos precisos                                                   |
+| 05 limite de recurso           | PARTIAL                       | tamanho e timeout de transporte sim; CPU/memória no worker                                              |
+| 06/07 identidade real          | PASS                          | só SteamID explícito; nada derivado de nickname                                                         |
+| 08 identity graph              | PARTIAL                       | caminho preservado; prova real depende de 02                                                            |
+| 09 adapter canônico            | PASS                          | demo passa por `demoToCanonicalBundle`                                                                  |
+| 10 persistência canônica       | PASS                          | escrita canônica só pela rotina transacional                                                            |
+| 11 neutralidade de player      | PASS                          | projeção nunca sobrescreve outro jogador                                                                |
+| 12/13 idempotência/atomicidade | PASS (canônico)               | provado na 2.6.11.5A; demo agora usa o mesmo caminho                                                    |
+| 14/15/16 convergência          | BLOCKED (demo real)           | provas existentes usam fixture canônica                                                                 |
+| 17 parse parcial               | PARTIAL                       | tratamento implementado; prova real depende de 02                                                       |
+| 18/19 métricas/features        | PASS (fixture)                | 500 testes; sobre demo real: BLOCKED                                                                    |
+| 20 semântica de features       | PASS                          | catálogo + testes                                                                                       |
+| 21 data quality                | PASS                          | quality/coverage/confidence derivados de cobertura real                                                 |
+| 22 linhagem                    | PASS                          | versões e ids gravados                                                                                  |
+| 23/24 recuperação/concorrência | NOT_PROVEN                    | claim atômico e stale recovery existem; prova E2E depende de 02                                         |
+| 25/26 RLS/storage              | PASS (herdado, sem alteração) | suíte de segurança inalterada                                                                           |
+| 27 cleanup                     | BLOCKED                       | G.6-R: autoridade única e acionadores contidos; execução desligada; Railway runtime parity indisponível |
+| 28 fim da dupla persistência   | **PASS**                      | ver §4.1                                                                                                |
+| 29/30 sem regressão            | PASS                          | 500/500 testes, typecheck, lint, build                                                                  |
 
 ## 7. Próximos passos
 
 1. Provisionar o worker de parse e cadastrar `DEMO_PARSER_URL` e
    `DEMO_PARSER_TOKEN`; então executar GATE 01–03, 05, 08, 14–19, 22–24 com
    arquivo `.dem` real e fixtures A–G.
-2. Configurar o agendamento externo de `/api/public/pipeline-cron`
-   (pendência de infraestrutura, não de código).
+2. Expor o source e a imagem do runtime Railway em SHA auditável, preservar o
+   isolamento de processo e provar `/health`/`/version` antes de qualquer gate
+   operacional de cleanup ou DEM.
 3. Somente depois: Pro Score.
 
 ## 8. Rodada de hardening P1–P2 (fase segue ABERTA)
