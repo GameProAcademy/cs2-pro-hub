@@ -3272,6 +3272,7 @@ export type Database = {
         Args: { _job_id: string; _result: Json }
         Returns: boolean
       }
+      get_demo_cleanup_authority: { Args: never; Returns: Json }
       get_demo_orphan_report: {
         Args: { _older_than_hours?: number }
         Returns: Json
