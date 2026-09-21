@@ -501,7 +501,16 @@ describe("client parser compact contract", () => {
     expect(inventory).toEqual({
       status: "AVAILABLE",
       count: 1,
-      players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
+      players: [
+        {
+          steamId: "76561198000000000",
+          name: "Player",
+          internalSlot: null,
+          userId: null,
+          participantId: null,
+          teamNumber: 2,
+        },
+      ],
     });
     expect(playerInventoryFromRuntime({}, new Uint8Array([1])).status).toBe("UNAVAILABLE");
     expect(
