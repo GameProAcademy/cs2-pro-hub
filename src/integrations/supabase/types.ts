@@ -1746,6 +1746,66 @@ export type Database = {
         }
         Relationships: []
       }
+      parser_runtime_provenance: {
+        Row: {
+          build_revision: string
+          contract_version: number
+          created_at: string
+          critical_source_hashes: Json
+          deployment_commit: string
+          deployment_id: string
+          id: string
+          parser_name: string
+          parser_version: string
+          railway_branch: string
+          railway_environment_id: string
+          railway_project_id: string
+          railway_service_id: string
+          semantic_revision: string
+          status: string
+          verification_method: string
+          verification_timestamp: string
+        }
+        Insert: {
+          build_revision: string
+          contract_version: number
+          created_at?: string
+          critical_source_hashes: Json
+          deployment_commit: string
+          deployment_id: string
+          id?: string
+          parser_name: string
+          parser_version: string
+          railway_branch: string
+          railway_environment_id: string
+          railway_project_id: string
+          railway_service_id: string
+          semantic_revision: string
+          status: string
+          verification_method: string
+          verification_timestamp: string
+        }
+        Update: {
+          build_revision?: string
+          contract_version?: number
+          created_at?: string
+          critical_source_hashes?: Json
+          deployment_commit?: string
+          deployment_id?: string
+          id?: string
+          parser_name?: string
+          parser_version?: string
+          railway_branch?: string
+          railway_environment_id?: string
+          railway_project_id?: string
+          railway_service_id?: string
+          semantic_revision?: string
+          status?: string
+          verification_method?: string
+          verification_timestamp?: string
+        }
+        Relationships: []
+      }
       player_connections: {
         Row: {
           connected_at: string | null
@@ -3147,6 +3207,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_verified_parser_provenance: {
+        Args: { _provenance_id: string }
+        Returns: Json
+      }
       block_demo_job_raw_audit: {
         Args: {
           _attempt: number
@@ -3248,6 +3312,21 @@ export type Database = {
           _message_id: number
           _permanent?: boolean
           _worker_id: string
+        }
+        Returns: Json
+      }
+      finalize_controlled_demo_replay_attempt_9: {
+        Args: {
+          _admin_user_id: string
+          _copy_outcome: string
+          _destination_sha256: string
+          _destination_size: number
+          _provenance_id: string
+          _source_job_id: string
+          _source_sha256: string
+          _source_size: number
+          _upload_id: string
+          _user_id: string
         }
         Returns: Json
       }
@@ -3375,6 +3454,20 @@ export type Database = {
       requeue_demo_job_after_attachment: {
         Args: { _attachment: Json; _job_id: string; _user_id: string }
         Returns: boolean
+      }
+      reserve_controlled_demo_replay_attempt_9: {
+        Args: {
+          _expected_attempt: number
+          _expected_sha256: string
+          _expected_size: number
+          _new_upload_id: string
+          _provenance_id: string
+          _replay_reason: string
+          _source_job_id: string
+          _source_upload_id: string
+          _user_id: string
+        }
+        Returns: Json
       }
       reserve_demo_upload: {
         Args: {

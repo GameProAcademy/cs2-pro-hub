@@ -1,20 +1,20 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.3 — CONTROLLED REAL DEM REPLAY
 
-**Status:** `BLOCKED_BEFORE_ATTEMPT_9` — hardening local implementado; replay não iniciado.
+**Status:** `BLOCKED_BEFORE_ATTEMPT_9` — reserva atômica e provenance fail-closed aplicadas; replay não iniciado.
 
 - [x] Confirmar read-only que o objeto do attempt 8 existe no bucket `demos` com 473.748.061 bytes.
 - [x] Confirmar ausência de attempt 9 para o mesmo usuário/SHA e preservação dos attempts 7/8.
 - [x] Confirmar `demo_jobs.quality_flags` como JSONB e a função publicada usando `_result->'quality_flags'`.
 - [x] Confirmar `/health` e `/version` HTTP 200 com `demoparser2 0.42.0`, contrato 1 e revision/semantic/build `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`.
 - [x] Aplicar migration incremental e validar no PostgreSQL real `quality_flags` vazio e preenchido como `jsonb`, sem conversão para `text[]`; ACL permanece service-role-only.
-- [x] Implementar reserva administrativa controlada do attempt 9 e cópia server-side validada, preservando o objeto-fonte; retry admin agora usa o lifecycle oficial.
+- [x] Implementar RPC exclusiva e atômica do attempt 9, defesa de banco contra attempt 10, provenance fail-closed e cópia server-side validada; retry admin usa o lifecycle oficial.
 - [ ] Executar gates locais e preflight final imediatamente antes da mutação.
 - [ ] Criar upload 9, copiar/verificar o objeto, enfileirar pelo lifecycle oficial e observar o E2E real até terminal.
 - [ ] Auditar RAW/HOT/Canonical/fila, comparar attempts 8×9 e documentar evidência integral sem cleanup.
 
 **Stop conditions:** qualquer divergência de objeto, tamanho, SHA, attempt, claim, parser, contrato, RAW, HOT, Canonical, fila ou cleanup interrompe a fase sem attempt 10.
 
-**Blocker atual:** o lock APP agora exige revision/semantic/build `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`, igual ao runtime observado. Porém esse commit externo continua ausente da árvore local, sem provenance source/image independente; por isso o attempt 9 permanece bloqueado antes de qualquer mutação.
+**Blocker atual:** não existe registro `VERIFIED` de provenance com deployment/branch/commit/hashes independentes. A RPC bloqueia com `PARSER_PROVENANCE_UNVERIFIED`; por isso o attempt 9 permanece em contagem zero, antes de copy/enqueue.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.6-R — LEGACY CLEANUP SHUTDOWN + RAILWAY RUNTIME PARITY
 
