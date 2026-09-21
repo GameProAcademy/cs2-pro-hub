@@ -129,8 +129,22 @@ def test_round_end_before_first_start_is_ignored_not_paired():
         tickrate=None,
     )
     assert rounds == [
-        {"number": 1, "start_tick": 1688, "end_tick": 4774},
-        {"number": 2, "start_tick": 9000, "end_tick": 12000},
+        {
+            "number": 1,
+            "start_tick": 1688,
+            "end_tick": 4774,
+            "bomb_planted": False,
+            "bomb_defused": False,
+            "bomb_exploded": False,
+        },
+        {
+            "number": 2,
+            "start_tick": 9000,
+            "end_tick": 12000,
+            "bomb_planted": False,
+            "bomb_defused": False,
+            "bomb_exploded": False,
+        },
     ]
 
 
