@@ -37,7 +37,10 @@ export interface ClientEventFieldRequest {
 export const EVENT_FIELD_REQUEST_CATALOG: Readonly<Record<string, ClientEventFieldRequest>> =
   Object.fromEntries(
     surfaceManifest.events.map((entry) => {
-      const fieldMetadata = [...entry.playerFields, ...entry.otherFields];
+      const fieldMetadata: ClientEventFieldRequestMetadata[] = [
+        ...entry.playerFields,
+        ...entry.otherFields,
+      ].map((field) => ({ ...field, kind: field.kind as "player" | "other" }));
       return [
         entry.eventName,
         {

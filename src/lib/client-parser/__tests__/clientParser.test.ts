@@ -28,6 +28,14 @@ import {
   type ClientParseResult,
 } from "../clientParser.types";
 import { validateClientParserResult } from "../clientParser.validator.server";
+import {
+  CLIENT_AUDIT_CATALOG_DIGEST,
+  CLIENT_PARSER_CONTRACT_DIGEST,
+} from "../clientParser.audit";
+import {
+  CLIENT_PARSER_CATALOG_VERSION,
+  CLIENT_PARSER_CONTRACT_VERSION,
+} from "../clientParser.types";
 
 function result(): ClientParseResult {
   const value: ClientParseResult = {
@@ -67,6 +75,12 @@ function result(): ClientParseResult {
         inputDigest: null,
         outputDigest: "c".repeat(64),
         evidenceRef: null,
+        requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+        requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+        eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+        parserVersion: CLIENT_PARSER_VERSION,
+        parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+        demoSha256: "b".repeat(64),
       })),
       artifact: {
         ...CLIENT_PARSER_ARTIFACT_PROVENANCE,
@@ -74,7 +88,22 @@ function result(): ClientParseResult {
         wasmUrl: "https://example.test/pkg/demoparser2_bg.wasm",
       },
     },
-    demo: { sha256: "b".repeat(64), sizeBytes: 42, name: "local.dem", lastModified: 1 },
+    demo: {
+      sha256: "b".repeat(64),
+      sizeBytes: 42,
+      name: "local.dem",
+      lastModified: 1,
+      authorization: {
+        authorizedDemo: true,
+        provenance: "LOCAL_USER_SELECTION",
+        filename: "local.dem",
+        sha256: "b".repeat(64),
+        sizeBytes: 42,
+        source: "LOCAL_FILE",
+        authorizationRef: "local-selection:test",
+        receivedAt: "2026-09-21T00:00:00.000Z",
+      },
+    },
     header: {
       values: { map_name: "de_cache" },
       evidence: [],
@@ -141,6 +170,8 @@ function result(): ClientParseResult {
           z: 0,
         },
       ],
+      normalization: "RAW_ONLY",
+      lifecycleStatus: "UNRESOLVED",
       normalizedDigest: "d".repeat(64),
       rawFieldInventory: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
       semanticStatus: "PASS",
@@ -154,6 +185,10 @@ function result(): ClientParseResult {
       lastTick: 64,
       tickCount: 64,
       probeTicks: [64],
+      probeType: "FIRST_MIDDLE_LAST",
+      headerPlaybackTicks: 64,
+      authoritativeDomain: false,
+      domainEvidenceRef: `tick-probe:${"e".repeat(64)}`,
       coverageStatus: "PROBE_ONLY",
       authoritative: false,
       evidenceRef: `tick-probe:${"e".repeat(64)}`,
@@ -480,6 +515,10 @@ describe("client parser compact contract", () => {
       parserVersion: "0.42.0",
       parserRevision: "revision",
       artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
       normalizedDigest,
       startedAt: "2026-09-21T00:00:00.000Z",
       durationMs: 1,

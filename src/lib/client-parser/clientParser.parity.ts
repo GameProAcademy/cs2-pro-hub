@@ -165,7 +165,9 @@ export function summarizeFieldMatrix(rows: ClientFieldAuditRow[]): ClientFieldMa
     unavailable: count((row) => row.status === "UNAVAILABLE"),
     parseFailed: count((row) => row.status === "PARSE_FAILED"),
     notRun: count((row) => row.status === "NOT_RUN"),
-    valueMismatch: count((row) => row.status === "VALUE_MISMATCH"),
+    valueMismatch: count(
+      (row) => row.status === "VALUE_MISMATCH" || row.status === "SEMANTIC_MISMATCH",
+    ),
     typeMismatch: count((row) => row.status === "TYPE_MISMATCH"),
     blocked: count((row) => row.status !== "PASS" || !row.canonicalEligible),
   };
@@ -256,7 +258,7 @@ export function compareFieldObservation(input: {
       "TOLERANCE_MATCH",
     ].includes(status)
       ? true
-      : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" || status === "SEMANTIC_MISMATCH"
+      : status === "TYPE_MISMATCH" || status === "SEMANTIC_MISMATCH"
         ? false
         : null,
     status,
