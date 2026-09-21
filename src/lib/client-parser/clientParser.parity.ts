@@ -5,6 +5,12 @@ import {
   type ClientParityStatus,
 } from "./clientParser.audit";
 import type { ClientParseResult } from "./clientParser.types";
+import type {
+  ClientDeterminismReport,
+  ClientFieldAuditRow,
+  ClientFieldAuditStatus,
+} from "./clientParser.types";
+import { CLIENT_FIELD_AUDIT_CATALOG } from "./clientParser.audit";
 
 export interface ClientParserParityMismatch {
   path: string;
@@ -80,6 +86,114 @@ export function normalizeForParity(value: unknown): unknown {
     );
   }
   return value;
+}
+
+function valueType(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
+export function buildNotRunFieldMatrix(): ClientFieldAuditRow[] {
+  return CLIENT_FIELD_AUDIT_CATALOG.map((entry) => ({
+    category: entry.category,
+    eventOrEntity: entry.eventOrEntity,
+    field: entry.field,
+    pythonAvailable: null,
+    wasmExportAvailable: null,
+    pythonParsed: false,
+    wasmParsed: false,
+    pythonValueType: null,
+    wasmValueType: null,
+    pythonNull: null,
+    wasmNull: null,
+    pythonSample: null,
+    wasmSample: null,
+    normalizedPython: null,
+    normalizedWasm: null,
+    equal: null,
+    status: "NOT_RUN",
+    classification: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
+    canonicalEligible: false,
+    reason: "runtime_evidence_not_executed",
+    evidenceRef: null,
+  }));
+}
+
+export function compareFieldObservation(input: {
+  category: string;
+  eventOrEntity: string;
+  field: string;
+  pythonAvailable: boolean;
+  wasmExportAvailable: boolean;
+  pythonParsed: boolean;
+  wasmParsed: boolean;
+  pythonValue: unknown;
+  wasmValue: unknown;
+  evidenceRef: string;
+}): ClientFieldAuditRow {
+  const normalizedPython = normalizeForParity(input.pythonValue);
+  const normalizedWasm = normalizeForParity(input.wasmValue);
+  let status: ClientFieldAuditStatus;
+  let reason: string;
+  if (!input.pythonAvailable || !input.wasmExportAvailable) {
+    status = "UNAVAILABLE";
+    reason = !input.pythonAvailable ? "python_field_unavailable" : "wasm_field_unavailable";
+  } else if (!input.pythonParsed || !input.wasmParsed) {
+    status = "PARSE_FAILED";
+    reason = !input.pythonParsed ? "python_parse_failed" : "wasm_parse_failed";
+  } else if (valueType(input.pythonValue) !== valueType(input.wasmValue)) {
+    status = "TYPE_MISMATCH";
+    reason = "runtime_value_types_differ";
+  } else if (stableClientJson(normalizedPython) !== stableClientJson(normalizedWasm)) {
+    status = "VALUE_MISMATCH";
+    reason = "normalized_values_differ";
+  } else {
+    status = "PASS";
+    reason = "normalized_values_equal";
+  }
+  return {
+    category: input.category,
+    eventOrEntity: input.eventOrEntity,
+    field: input.field,
+    pythonAvailable: input.pythonAvailable,
+    wasmExportAvailable: input.wasmExportAvailable,
+    pythonParsed: input.pythonParsed,
+    wasmParsed: input.wasmParsed,
+    pythonValueType: input.pythonParsed ? valueType(input.pythonValue) : null,
+    wasmValueType: input.wasmParsed ? valueType(input.wasmValue) : null,
+    pythonNull: input.pythonParsed ? input.pythonValue === null : null,
+    wasmNull: input.wasmParsed ? input.wasmValue === null : null,
+    pythonSample: input.pythonValue,
+    wasmSample: input.wasmValue,
+    normalizedPython,
+    normalizedWasm,
+    equal: status === "PASS" ? true : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" ? false : null,
+    status,
+    classification: status === "PASS" ? "CANONICAL_CANDIDATE" : "BLOCKED",
+    canonicalEligible: false,
+    reason,
+    evidenceRef: input.evidenceRef,
+  };
+}
+
+export function evaluateDeterminism(input: {
+  demoSha256: string | null;
+  pythonRunDigests: string[];
+  wasmRunDigests: string[];
+}): ClientDeterminismReport {
+  if (!input.demoSha256 || input.pythonRunDigests.length < 2 || input.wasmRunDigests.length < 2) {
+    return { ...input, pythonDeterministic: null, wasmDeterministic: null, status: "NOT_RUN", reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE" };
+  }
+  const pythonDeterministic = new Set(input.pythonRunDigests).size === 1;
+  const wasmDeterministic = new Set(input.wasmRunDigests).size === 1;
+  return {
+    ...input,
+    pythonDeterministic,
+    wasmDeterministic,
+    status: pythonDeterministic && wasmDeterministic ? "PASS" : "FAIL",
+    reason: pythonDeterministic && wasmDeterministic ? "repeated_normalized_digests_equal" : "DETERMINISM_FAIL",
+  };
 }
 
 export interface ClientSemanticReference {
