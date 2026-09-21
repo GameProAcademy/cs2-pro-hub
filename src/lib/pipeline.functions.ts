@@ -409,10 +409,6 @@ export const cancelMyDemoJob = createServerFn({ method: "POST" })
     if (error) throw new Error("JOB_CANCEL_FAILED");
 
     const outcome = result as { status?: string; changed?: boolean } | null;
-    if (outcome?.status === "cancelled") {
-      const { cleanupExpiredDemos } = await import("@/lib/pipeline/jobs.server");
-      await cleanupExpiredDemos(5);
-    }
     return {
       jobId: owned.id,
       status: (outcome?.status ?? owned.status) as DemoJobView["status"],

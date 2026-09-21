@@ -360,13 +360,19 @@ export const getAdminParserWorkerStatus = createServerFn({ method: "GET" })
     return { ...probe, appContractVersion: PARSER_CONTRACT_VERSION };
   });
 
-/** Master-triggered retention cleanup of expired temporary demo files. */
+/** Reports the fail-closed G.6-R cleanup gate; it never removes a DEM. */
 export const adminCleanupDemos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireMaster(context as Ctx);
-    const { cleanupExpiredDemos, recoverStaleJobs } = await import("@/lib/pipeline/jobs.server");
+    const { recoverStaleJobs } = await import("@/lib/pipeline/jobs.server");
     const recovered = await recoverStaleJobs();
-    const demoCleanup = await cleanupExpiredDemos(50);
-    return { recovered, demoCleanup };
+    return {
+      recovered,
+      demoCleanup: {
+        authority: "G6_VERIFIED_DELETE_ONLY" as const,
+        executionEnabled: false,
+        reason: "G6_R_RELEASE_GATE" as const,
+      },
+    };
   });
