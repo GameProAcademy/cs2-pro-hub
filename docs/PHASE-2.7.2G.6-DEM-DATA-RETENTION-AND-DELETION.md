@@ -2,7 +2,13 @@
 
 ## Decisão
 
-`DEM_RETENTION_POLICY = BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP`
+`G.6-R = BLOCKED`
+
+O blocker de cleanup concorrente foi contido no candidato: a única autoridade
+permitida é `G6_VERIFIED_DELETE_ONLY`, mas sua execução física está desligada.
+Cron, cancelamento, conclusão de processamento e ação administrativa não iniciam
+remoção. A fase continua bloqueada exclusivamente porque o source/runtime Railway
+não está acessível para sincronização e prova de paridade.
 
 O `.dem` original do bucket privado `demos` é temporário. Jobs processados usam
 retenção de 24 horas; falhas terminais e `blocked_raw_audit`, 72 horas;
@@ -93,3 +99,54 @@ sem retornar paths ou PII.
 - `REAL_DEM_EXECUTION`, paridade Python×WASM e determinismo: `NOT_RUN`.
 - Canonical admission e AI Data Readiness permanecem bloqueados pelos gates
   próprios; esta política de retenção não os libera.
+
+## Fechamento G.6-R
+
+### Autoridades auditadas
+
+| Caminho | Classe | Estado G.6-R |
+| --- | --- | --- |
+| `deleteDemoVerified` | `NEW_G6_CLEANUP` | implementação única preservada, execução desligada |
+| `cleanupExpiredDemos` | `NEW_G6_CLEANUP` | no-op explícito com autoridade e status |
+| cron de pipeline | automático | chamada destrutiva removida |
+| cancelamento/conclusão | automático | chamada destrutiva removida |
+| ação master | manual | somente recovery e status fail-closed |
+| RPCs de claim/finalização | service-role-only | preservadas para gate operacional futuro |
+| relatório de órfãos/métricas | read-only | preservado, sem delete |
+| cleanup legado publicado | `LEGACY_CLEANUP` | nenhum caminho executável permanece no candidato |
+
+### Matriz A–T
+
+A–Q permanecem cobertos pelo contrato G.6. R comprova que nenhum acionador
+automático chama cleanup; S comprova autoridade única e execução desligada no
+banco; T comprova quarentena/backfill preservadores e um único ponto de remoção
+física no código. A evidência de concorrência produtiva não foi fabricada: nenhum
+claim ou delete foi executado nesta fase.
+
+### Migration G.6-R
+
+`20260921065045_3e6e67cc-9bef-4405-9ed1-a4d334874526.sql` adiciona a leitura
+service-role-only da autoridade, mantém execução desligada, corrige a guarda de
+retry para depender de ausência fisicamente verificada e preserva o rastro de
+`DELETION_METADATA_MISMATCH` após falha. O linter permaneceu no baseline de 15
+findings preexistentes, sem finding novo da fase.
+
+### Railway
+
+O candidato MAIN é `2f8a76645c6030659f2ed0480469b1452e75f72e`. O branch
+`infra/cs2-parser-worker-v8`, os arquivos de isolamento, a imagem e uma conexão
+Railway não estão disponíveis. Logo, `RAILWAY_RUNTIME_PARITY = BLOCKED`; hashes e
+surface do candidato constam em `docs/G6_R_RUNTIME_MANIFEST.md`.
+
+### Classificação final
+
+- `LEGACY_CLEANUP_DISABLED = PASS`
+- `RETENTION_CONTRACT = PASS`
+- `CLEANUP_AUTHORITY_SINGLE = PASS`
+- `NO_DESTRUCTIVE_EXECUTION = PASS`
+- `RAILWAY_RUNTIME_PARITY = BLOCKED`
+- `REAL_DEM = NOT_RUN`
+- `PYTHON_WASM_PARITY = NOT_RUN`
+- `DETERMINISM_REAL = NOT_RUN`
+- `CANONICAL = BLOCKED`
+- `AI = BLOCKED`

@@ -21,3 +21,7 @@ An authorized real `.dem` with documented provenance must be supplied to both th
 A browser run now requires structured authorization metadata bound to the selected local file: `authorizedDemo=true`, local provenance/source, filename, byte size, computed SHA-256, authorization reference, and receipt time. The Worker recomputes the SHA after transfer and rejects any mismatch. The Python producer requires the equivalent explicit metadata and verifies filename, size and SHA before parsing.
 
 No DEM was supplied or executed in this phase. Therefore real parsing, parity and determinism remain `NOT_RUN`.
+
+## G.6-R runtime prerequisite
+
+The MAIN parser candidate is frozen at `2f8a76645c6030659f2ed0480469b1452e75f72e`, but the Railway source ref, process-isolation files and candidate image are unavailable. `RAILWAY_RUNTIME_PARITY = BLOCKED`; therefore no real DEM execution is authorized. The candidate file hashes and required runtime surface are recorded in `docs/G6_R_RUNTIME_MANIFEST.md`.
