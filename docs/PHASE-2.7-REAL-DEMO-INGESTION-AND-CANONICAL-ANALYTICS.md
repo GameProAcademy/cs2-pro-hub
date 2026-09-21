@@ -151,7 +151,7 @@ Nenhuma migration foi criada nesta rodada — nenhuma tabela nova foi necessári
 | 22 linhagem                    | PASS                          | versões e ids gravados                                                                                               |
 | 23/24 recuperação/concorrência | NOT_PROVEN                    | claim atômico e stale recovery existem; prova E2E depende de 02                                                      |
 | 25/26 RLS/storage              | PASS (herdado, sem alteração) | suíte de segurança inalterada                                                                                        |
-| 27 cleanup                     | PASS_FOR_CODE_AND_SCHEMA      | G.6: retenção central, claim concorrente, ownership e ausência física verificada; nenhum cleanup produtivo executado |
+| 27 cleanup                     | BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP | G.6: contrato endurecido; seis objetos foram removidos pela rotina legada publicada após o backfill; remanescentes em quarentena |
 | 28 fim da dupla persistência   | **PASS**                      | ver §4.1                                                                                                             |
 | 29/30 sem regressão            | PASS                          | 500/500 testes, typecheck, lint, build                                                                               |
 
