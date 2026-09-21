@@ -103,7 +103,18 @@ function result(): ClientParseResult {
     grenadeEvidence: {
       status: "AVAILABLE",
       count: 1,
-      samples: [{ entity_id: 1, grenade_type: "smoke", name: "Player", steamid: "1", tick: 1, x: 0, y: 0, z: 0 }],
+      samples: [
+        {
+          entity_id: 1,
+          grenade_type: "smoke",
+          name: "Player",
+          steamid: "1",
+          tick: 1,
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+      ],
       normalizedDigest: "d".repeat(64),
       rawFieldInventory: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
       semanticStatus: "PASS",
@@ -399,11 +410,7 @@ describe("client parser compact contract", () => {
       status: "NOT_RUN",
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
     });
-    const run = (
-      runtime: "PYTHON" | "WASM",
-      runId: string,
-      normalizedDigest: string,
-    ) => ({
+    const run = (runtime: "PYTHON" | "WASM", runId: string, normalizedDigest: string) => ({
       runId,
       runtime,
       demoSha256: "b".repeat(64),

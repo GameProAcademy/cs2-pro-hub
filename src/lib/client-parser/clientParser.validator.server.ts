@@ -234,7 +234,8 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_TOO_LARGE");
   if (
     result.playerInventory.count !== result.playerInventory.players.length ||
-    result.eventDiscovery.discoveredEventCount !== result.eventDiscovery.discoveredEventsRaw.length ||
+    result.eventDiscovery.discoveredEventCount !==
+      result.eventDiscovery.discoveredEventsRaw.length ||
     result.eventDiscovery.discoveredEventCount !==
       result.eventDiscovery.discoveredEventNamesInOrder.length ||
     result.eventDiscovery.duplicateEventCount !==

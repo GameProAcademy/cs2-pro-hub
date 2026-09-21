@@ -341,7 +341,9 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     }
     const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort().slice(0, 256);
     const requestedFields = [...request.playerFields, ...request.otherFields];
-    const semanticStatus = requestedFields.every((field) => fields.includes(field)) ? "PASS" : "FAIL";
+    const semanticStatus = requestedFields.every((field) => fields.includes(field))
+      ? "PASS"
+      : "FAIL";
     parsedEventInventory.push({
       name,
       status: "PRESENT_AND_PARSED",
@@ -472,23 +474,26 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
         samples,
         normalizedDigest,
         rawFieldInventory,
-        semanticStatus: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"].every(
-          (field) => rawFieldInventory.includes(field),
-        )
+        semanticStatus: [
+          "entity_id",
+          "grenade_type",
+          "name",
+          "steamid",
+          "tick",
+          "x",
+          "y",
+          "z",
+        ].every((field) => rawFieldInventory.includes(field))
           ? "PASS"
           : "FAIL",
         evidenceRef: `grenades:${normalizedDigest}`,
       };
       apiCalls.push(
-        apiEvidence(
-          "parseGrenades",
-          true,
-          true,
-          true,
-          undefined,
-          performance.now() - callStarted,
-          { count: grenadeRows.length, rawFieldInventory, normalizedDigest },
-        ),
+        apiEvidence("parseGrenades", true, true, true, undefined, performance.now() - callStarted, {
+          count: grenadeRows.length,
+          rawFieldInventory,
+          normalizedDigest,
+        }),
       );
     } catch (error) {
       grenadeEvidence = { ...grenadeEvidence, status: "PARSE_FAILED", semanticStatus: "FAIL" };

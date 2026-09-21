@@ -248,17 +248,63 @@ export function eventFieldRequest(name: string): ClientEventFieldRequest {
 }
 
 function tickCategory(field: string): string {
-  if (["player_name", "player_steamid", "internal_slot", "user_id", "participant_id"].includes(field))
+  if (
+    ["player_name", "player_steamid", "internal_slot", "user_id", "participant_id"].includes(field)
+  )
     return "IDENTITY";
-  if (["team_num", "team_name", "score", "team_rounds_total", "team_score_first_half", "team_score_second_half", "team_score_overtime", "ct_losing_streak", "t_losing_streak"].includes(field))
+  if (
+    [
+      "team_num",
+      "team_name",
+      "score",
+      "team_rounds_total",
+      "team_score_first_half",
+      "team_score_second_half",
+      "team_score_overtime",
+      "ct_losing_streak",
+      "t_losing_streak",
+    ].includes(field)
+  )
     return "TEAM_SCORE";
-  if (["X", "Y", "Z", "velocity", "velocity_X", "velocity_Y", "velocity_Z", "last_place_name"].includes(field))
+  if (
+    [
+      "X",
+      "Y",
+      "Z",
+      "velocity",
+      "velocity_X",
+      "velocity_Y",
+      "velocity_Z",
+      "last_place_name",
+    ].includes(field)
+  )
     return "POSITION";
-  if (["pitch", "yaw", "aim_punch_angle", "aim_punch_angle_vel", "shots_fired", "is_scoped"].includes(field))
+  if (
+    ["pitch", "yaw", "aim_punch_angle", "aim_punch_angle_vel", "shots_fired", "is_scoped"].includes(
+      field,
+    )
+  )
     return "AIM";
-  if (["balance", "start_balance", "total_cash_spent", "cash_spent_this_round", "current_equip_value", "round_start_equip_value", "weapon_purchases_this_match", "weapon_purchases_this_round", "equipment_value_total", "money_saved_total", "kill_reward_total", "cash_earned_total"].includes(field))
+  if (
+    [
+      "balance",
+      "start_balance",
+      "total_cash_spent",
+      "cash_spent_this_round",
+      "current_equip_value",
+      "round_start_equip_value",
+      "weapon_purchases_this_match",
+      "weapon_purchases_this_round",
+      "equipment_value_total",
+      "money_saved_total",
+      "kill_reward_total",
+      "cash_earned_total",
+    ].includes(field)
+  )
     return "ECONOMY";
-  if (["active_weapon", "active_weapon_name", "active_weapon_ammo", "total_ammo_left"].includes(field))
+  if (
+    ["active_weapon", "active_weapon_name", "active_weapon_ammo", "total_ammo_left"].includes(field)
+  )
     return "WEAPONS";
   if (field.endsWith("_total")) return "AGGREGATES";
   return "PLAYER_STATE";
