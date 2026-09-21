@@ -237,15 +237,51 @@ const request = (
 });
 
 export const EVENT_FIELD_REQUEST_CATALOG: Readonly<Record<string, ClientEventFieldRequest>> =
-  Object.fromEntries([
-    ...CLIENT_PRIORITY_EVENTS.map((name) => [name, request()]),
-    ["player_hurt", request([...PLAYER_CONTEXT, "health", "armor_value"])],
-    ["bomb_planted", request(PLAYER_CONTEXT, [...GAME_CONTEXT, "which_bomb_zone"])],
-  ]);
+  Object.fromEntries(
+    CLIENT_PRIORITY_EVENTS.map((name) => {
+      const combat = ["player_death", "player_hurt", "player_blind"].includes(name);
+      const bomb = name.startsWith("bomb_") || name.endsWith("bombzone");
+      const economy = name.startsWith("item_");
+      const weapon = name.startsWith("weapon_");
+      const round = name.startsWith("round_");
+      const utility = CLIENT_EVENT_CATALOG.utility.includes(
+        name as (typeof CLIENT_EVENT_CATALOG.utility)[number],
+      );
+      const playerFields = combat
+        ? [...PLAYER_CONTEXT, "health", "armor_value", "active_weapon", "is_alive"]
+        : economy
+          ? [...PLAYER_CONTEXT, "balance", "current_equip_value", "active_weapon"]
+          : weapon
+            ? [...PLAYER_CONTEXT, "active_weapon", "active_weapon_ammo", "shots_fired"]
+            : utility
+              ? [...PLAYER_CONTEXT, "health", "is_alive"]
+              : [...PLAYER_CONTEXT];
+      const otherFields = bomb
+        ? [...GAME_CONTEXT, "which_bomb_zone", "is_bomb_planted", "is_bomb_dropped"]
+        : round
+          ? [...GAME_CONTEXT, "round_in_progress", "round_win_status", "round_win_reason"]
+          : [...GAME_CONTEXT];
+      return [name, request(playerFields, otherFields)];
+    }),
+  );
 
 export function eventFieldRequest(name: string): ClientEventFieldRequest {
-  return EVENT_FIELD_REQUEST_CATALOG[name] ?? request();
+  return EVENT_FIELD_REQUEST_CATALOG[name] ?? request([], []);
 }
+
+export const CLIENT_UPSTREAM_SURFACE = CLIENT_FIELD_AUDIT_CATALOG.map((entry) => ({
+  field: entry.field,
+  category: entry.category,
+  eventOrEntity: entry.eventOrEntity,
+  sourceAPI: entry.source,
+  upstreamSupported: null as boolean | null,
+  upstreamVerification: "UPSTREAM_NOT_VERIFIED" as const,
+  projectCatalogued: true as const,
+  requestable: entry.requestable,
+  wasmExportAvailable: null as boolean | null,
+  canonicalEligible: false as const,
+  reasonIfUnavailable: "requires_authorized_real_dem_runtime_observation",
+}));
 
 function tickCategory(field: string): string {
   if (
