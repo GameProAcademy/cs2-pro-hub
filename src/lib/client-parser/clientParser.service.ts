@@ -8,6 +8,7 @@ import {
 } from "./clientParser.runtime";
 import type { ClientParserWorkerEvent, ClientParserStage } from "./clientParser.protocol";
 import { CLIENT_DEMO_MAX_BYTES, type ClientParserEnvelope } from "./clientParser.types";
+import { sha256Hex } from "./clientParser.hash";
 
 export interface ClientParserProgress {
   stage: ClientParserStage;
@@ -78,11 +79,22 @@ export class ClientParserService {
         else if (event.type === "READY") {
           try {
             const bytes = await file.arrayBuffer();
+            const sha256 = sha256Hex(new Uint8Array(bytes));
             worker.postMessage(
               {
                 type: "PARSE",
                 requestId,
                 file: { bytes, name: file.name, size: file.size, lastModified: file.lastModified },
+                authorization: {
+                  authorizedDemo: true,
+                  provenance: "LOCAL_USER_SELECTION",
+                  filename: file.name,
+                  sha256,
+                  sizeBytes: file.size,
+                  source: "LOCAL_FILE",
+                  authorizationRef: `local-selection:${requestId}`,
+                  receivedAt: new Date().toISOString(),
+                },
               },
               [bytes],
             );

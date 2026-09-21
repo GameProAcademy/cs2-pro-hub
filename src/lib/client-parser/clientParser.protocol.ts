@@ -1,4 +1,8 @@
-import type { ClientParserEnvelope, ClientParserErrorCode } from "./clientParser.types";
+import type {
+  ClientDemoAuthorization,
+  ClientParserEnvelope,
+  ClientParserErrorCode,
+} from "./clientParser.types";
 
 export const CLIENT_PARSER_STAGES = [
   "INIT",
@@ -31,6 +35,7 @@ export type ClientParserCommand =
       type: "PARSE";
       requestId: string;
       file: { bytes: ArrayBuffer; name: string; size: number; lastModified: number };
+      authorization: ClientDemoAuthorization;
     }
   | { type: "CANCEL"; requestId: string };
 
