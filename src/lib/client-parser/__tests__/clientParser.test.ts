@@ -534,6 +534,80 @@ describe("client parser compact contract", () => {
     ).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
   });
 
+  it("fails determinism before comparison for duplicate run identities", () => {
+    const run = (runtime: "PYTHON" | "WASM", runId: string) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
+      normalizedDigest: "a".repeat(64),
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
+    });
+    expect(
+      evaluateDeterminism({
+        demoSha256: "b".repeat(64),
+        runs: [run("PYTHON", "duplicate"), run("PYTHON", "duplicate"), run("WASM", "w1"), run("WASM", "w2")],
+      }),
+    ).toMatchObject({ status: "FAIL", reason: "DUPLICATE_RUN_IDENTITY" });
+  });
+
+  it("fails determinism before comparison for a catalog mismatch", () => {
+    const run = (runtime: "PYTHON" | "WASM", runId: string) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
+      normalizedDigest: "a".repeat(64),
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
+    });
+    const runs = [run("PYTHON", "p1"), run("PYTHON", "p2"), run("WASM", "w1"), run("WASM", "w2")];
+    runs[0].catalogDigest = "0".repeat(64);
+    expect(evaluateDeterminism({ demoSha256: "b".repeat(64), runs })).toMatchObject({
+      status: "FAIL",
+      reason: "CATALOG_MISMATCH",
+    });
+  });
+
+  it.each([
+    [null, "NULL_MATCH"],
+    [0, "ZERO_MATCH"],
+    [false, "FALSE_MATCH"],
+    ["", "EMPTY_STRING_MATCH"],
+  ])("preserves semantic equality for %p", (sample, status) => {
+    expect(
+      compareFieldObservation({
+        category: "test",
+        eventOrEntity: "test",
+        field: "value",
+        pythonAvailable: true,
+        wasmExportAvailable: true,
+        pythonParsed: true,
+        wasmParsed: true,
+        pythonValue: sample,
+        wasmValue: sample,
+        evidenceRef: "test",
+      }).status,
+    ).toBe(status);
+  });
+
   it("discovers the observed runtime surface instead of trusting declarations", () => {
     const surface = inspectRuntimeSurface({
       parseHeader() {},
@@ -640,7 +714,7 @@ describe("client parser compact contract", () => {
     expect(trustedRuntimeUrl("javascript:alert(1)", "https://gamepro.network/poc")).toBeNull();
   });
 
-  it.each(["rawPayload", "raw_rows", "binary", "buffers"])(
+  it.each(["rawPayload", "raw_rows", "binary", "buffers", "constructor", "prototype"])(
     "rejects nested forbidden key %s",
     (key) => {
       const value = envelope();
