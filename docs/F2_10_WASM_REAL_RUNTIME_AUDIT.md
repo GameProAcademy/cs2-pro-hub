@@ -46,7 +46,9 @@ Chromium loaded the upstream binding as a Classic Worker-compatible `no-modules`
 
 ## 6–20. Field audits
 
-Header, player, event, round, tick, timing, bomb, grenade, weapon, economy, position, aim, score and team execution audits are `NOT_RUN`. The code catalogs these fields and preserves `NOT_PRESENT`, `UNAVAILABLE` and `PARSE_FAILED`, but synthetic tests are not runtime evidence. `team_number` remains side/slot evidence, never team identity. Zero remains a valid timing value. Tick probing remains bounded and does not claim an authoritative or full domain.
+Header, player, event, round, tick, timing, bomb, grenade, weapon, economy, position, movement, aim, health, armor, aggregates, score and team execution audits are `NOT_RUN — NO_AUTHORIZED_REAL_DEM_FIXTURE`. The executable catalog emits one row per field with availability, parse status, type, null state, samples, normalized values, equality, classification, reason, evidence reference and blocked Canonical eligibility. Synthetic tests prove only harness behavior. `team_number` remains side/slot evidence, never team identity. Zero remains valid. Tick probing remains bounded and does not claim an authoritative or full domain.
+
+Runtime API evidence now records export presence, attempted/succeeded status, bounded error, duration, serialized result size and normalized digest. The Worker audits every discovered event subject to the existing bounded inventory and sample limits; discovery, parsing and semantic validation remain distinct states. `parseGrenades` has independent call evidence when exported.
 
 ## 21. Python × WASM parity
 
@@ -54,7 +56,7 @@ Header, player, event, round, tick, timing, bomb, grenade, weapon, economy, posi
 
 ## 22. Determinism
 
-`NOT_RUN` for DEM results. Artifact hashes and catalog/contract digests are deterministic; those facts do not substitute for two same-DEM parser runs.
+`NOT_RUN — NO_AUTHORIZED_REAL_DEM_FIXTURE` for DEM results. The evaluator requires one DEM SHA plus at least two Python and two WASM normalized-result digests. Artifact hashes and catalog/contract digests do not substitute for repeated parser runs.
 
 ## 23. Browser matrix
 
@@ -90,3 +92,5 @@ The 128 MiB ceiling remains unchanged. Boundary execution is `NOT_RUN`. The 400 
 - LARGE_DEMO: `NOT_RUN`
 - CANONICAL_ADMISSION: `MUST REMAIN BLOCKED`
 - AI_DATA_READINESS: `MUST REMAIN BLOCKED`
+- OVERALL: `POC_NOT_READY`
+- PRODUCTION_MUTATION: `NONE`

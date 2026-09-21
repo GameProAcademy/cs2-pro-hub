@@ -12,6 +12,8 @@ Worker cancellation is terminal for the pending promise. Worker state and cancel
 
 The contract records file/result bytes and startup, load, hashing, parsing, total duration, and memory only when observable. `performance.memory` is non-standard; unavailable memory is not estimated.
 
+Each parser API call also records whether the export exists, whether the call was attempted and succeeded, a bounded error, duration, normalized result bytes and normalized digest. Event discovery is not parsing: every discovered event is attempted within the bounded inventory, while samples remain capped. `parseGrenades` is recorded independently when the runtime exports it.
+
 | Browser | Real 0.42 WASM | Real DEM | 128 MiB boundary | Memory profile | Result  |
 | ------- | -------------- | -------- | ---------------- | -------------- | ------- |
 | Chrome  | PARTIAL        | NOT_RUN  | NOT_RUN          | NOT_RUN        | PARTIAL |
