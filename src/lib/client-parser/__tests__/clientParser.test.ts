@@ -584,7 +584,7 @@ describe("client parser compact contract", () => {
       status: "SUCCEEDED" as const,
     });
     const runs = [run("PYTHON", "p1"), run("PYTHON", "p2"), run("WASM", "w1"), run("WASM", "w2")];
-    runs[0].catalogDigest = "0".repeat(64);
+    runs[0]!.catalogDigest = "0".repeat(64);
     expect(evaluateDeterminism({ demoSha256: "b".repeat(64), runs })).toMatchObject({
       status: "FAIL",
       reason: "CATALOG_MISMATCH",
