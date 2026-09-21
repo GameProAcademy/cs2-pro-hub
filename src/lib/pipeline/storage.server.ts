@@ -84,6 +84,57 @@ export function assertDemoStoragePath(storagePath: string, userId: string, uploa
   }
 }
 
+/** Copies an owned DEM inside private storage and verifies the destination bytes. */
+export async function copyDemoVerified(args: {
+  sourcePath: string;
+  sourceUserId: string;
+  sourceUploadId: string;
+  destinationPath: string;
+  destinationUserId: string;
+  destinationUploadId: string;
+  expectedSize: number;
+  expectedSha256: string;
+}): Promise<"COPIED" | "ALREADY_COPIED"> {
+  assertDemoStoragePath(args.sourcePath, args.sourceUserId, args.sourceUploadId);
+  assertDemoStoragePath(
+    args.destinationPath,
+    args.destinationUserId,
+    args.destinationUploadId,
+  );
+  if (args.sourcePath === args.destinationPath) {
+    throw new PipelineError("PERSISTENCE_ERROR", "COPY_PATH_COLLISION");
+  }
+
+  const source = await demoExists(args.sourcePath);
+  if (!source || source.size !== args.expectedSize) {
+    throw new PipelineError("DEMO_NOT_FOUND", "SOURCE_SIZE_MISMATCH");
+  }
+  const existing = await demoExists(args.destinationPath);
+  let outcome: "COPIED" | "ALREADY_COPIED" = "ALREADY_COPIED";
+  if (!existing) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.storage
+      .from(DEMO_BUCKET)
+      .copy(args.sourcePath, args.destinationPath);
+    if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+    outcome = "COPIED";
+  } else if (existing.size !== args.expectedSize) {
+    throw new PipelineError("PERSISTENCE_ERROR", "DESTINATION_ALREADY_EXISTS_MISMATCH");
+  }
+
+  const destination = await demoExists(args.destinationPath);
+  if (!destination || destination.size !== args.expectedSize) {
+    throw new PipelineError("PERSISTENCE_ERROR", "COPY_SIZE_NOT_VERIFIED");
+  }
+  const destinationSha256 = await computeStoredDemoSha256(args.destinationPath);
+  assertDemoIntegrity(destinationSha256, args.expectedSha256);
+  const preservedSource = await demoExists(args.sourcePath);
+  if (!preservedSource || preservedSource.size !== args.expectedSize) {
+    throw new PipelineError("PERSISTENCE_ERROR", "SOURCE_NOT_PRESERVED");
+  }
+  return outcome;
+}
+
 /** Removes only an owned temporary DEM and proves physical absence afterwards. */
 export async function deleteDemoVerified(
   storagePath: string,
