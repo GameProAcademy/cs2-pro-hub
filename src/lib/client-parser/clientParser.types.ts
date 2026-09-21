@@ -1,7 +1,7 @@
 export const CLIENT_PARSER_SCHEMA_VERSION = 2 as const;
 export const CLIENT_PARSER_MANIFEST_VERSION = 2 as const;
-export const CLIENT_PARSER_CONTRACT_VERSION = 3 as const;
-export const CLIENT_PARSER_CATALOG_VERSION = 4 as const;
+export const CLIENT_PARSER_CONTRACT_VERSION = 4 as const;
+export const CLIENT_PARSER_CATALOG_VERSION = 5 as const;
 export const CLIENT_PARSER_NAME = "demoparser2" as const;
 export const CLIENT_PARSER_VERSION = "0.42.0" as const;
 export const CLIENT_PARSER_RUNTIME = "wasm-browser-worker" as const;
@@ -90,6 +90,23 @@ export interface ClientApiCallEvidence {
   inputDigest: string | null;
   outputDigest: string | null;
   evidenceRef: string | null;
+  requestCatalogVersion: number;
+  requestCatalogDigest: string;
+  eventCatalogDigest: string;
+  parserVersion: string;
+  parserRevision: string;
+  demoSha256: string;
+}
+
+export interface ClientDemoAuthorization {
+  authorizedDemo: true;
+  provenance: "LOCAL_USER_SELECTION";
+  filename: string;
+  sha256: string;
+  sizeBytes: number;
+  source: "LOCAL_FILE";
+  authorizationRef: string;
+  receivedAt: string;
 }
 
 export type ClientFieldAuditStatus =
@@ -128,6 +145,8 @@ export interface ClientFieldAuditRow {
   wasmSample: unknown;
   normalizedPython: unknown;
   normalizedWasm: unknown;
+  pythonEvidenceRef: string | null;
+  wasmEvidenceRef: string | null;
   equal: boolean | null;
   status: ClientFieldAuditStatus;
   classification: string;
@@ -153,6 +172,10 @@ export interface ClientParserRunEvidence {
   parserVersion: string;
   parserRevision: string;
   artifactIdentity: string | null;
+  catalogVersion: number;
+  catalogDigest: string;
+  contractVersion: number;
+  contractDigest: string;
   normalizedDigest: string;
   startedAt: string;
   durationMs: number;
@@ -164,6 +187,8 @@ export interface ClientGrenadeEvidence {
   count: number | null;
   samples: Array<Record<string, unknown>>;
   normalizedSamples: Array<Record<string, unknown>>;
+  normalization: "RAW_ONLY" | "STRUCTURAL_KEYS_ONLY";
+  lifecycleStatus: "RAW_ONLY" | "UNRESOLVED";
   normalizedDigest: string | null;
   rawFieldInventory: string[];
   semanticStatus: "NOT_RUN" | "PASS" | "FAIL";
@@ -171,7 +196,8 @@ export interface ClientGrenadeEvidence {
 }
 
 export interface ClientRoundEvidence {
-  roundIndex: number;
+  derivedRoundIndex: number;
+  observedRoundNumber: number | null;
   startTick: number;
   endTick: number | null;
   duration: number | null;
@@ -181,6 +207,10 @@ export interface ClientRoundEvidence {
   eventsCount: number;
   completeness: "COMPLETE" | "MISSING_END" | "AMBIGUOUS";
   source: "round_start+round_end";
+  evidenceScope: "BOUNDED_REFERENCE";
+  sampleLimit: typeof CLIENT_EVENT_SAMPLE_LIMIT;
+  sampled: true;
+  complete: false;
   evidenceRef: string;
 }
 
@@ -191,6 +221,10 @@ export interface ClientTickDomainEvidence {
   lastTick: number | null;
   tickCount: number | null;
   probeTicks: number[];
+  probeType: "FIRST_MIDDLE_LAST";
+  headerPlaybackTicks: number | null;
+  authoritativeDomain: false;
+  domainEvidenceRef: string | null;
   coverageStatus: "PROBE_ONLY" | "UNAVAILABLE" | "PARSE_FAILED";
   authoritative: false;
   evidenceRef: string | null;
@@ -225,14 +259,25 @@ export interface ClientEventDiscoveryEvidence {
 }
 
 export interface PythonReferenceArtifact {
+  artifactVersion: number;
   runId: string;
   runtime: "PYTHON";
   demoSha256: string;
+  demoSizeBytes: number;
   parserName: string;
   parserVersion: string;
   parserRevision: string;
+  catalogVersion: number;
   contractVersion: number;
   catalogDigest: string;
+  contractDigest: string;
+  generatedAt: string;
+  sections: string[];
+  fieldEvidence: Array<Record<string, unknown>>;
+  eventEvidence: Array<Record<string, unknown>>;
+  roundEvidence: Array<Record<string, unknown>>;
+  grenadeEvidence: Array<Record<string, unknown>>;
+  tickEvidence: Record<string, unknown>;
   fieldInventory: string[];
   eventInventory: string[];
   playerInventory: Array<Record<string, unknown>>;
@@ -253,6 +298,7 @@ export interface PythonReferenceArtifact {
   aimEvidence: Record<string, unknown>;
   normalizedResult: Record<string, unknown>;
   normalizedResultDigest: string;
+  resultDigest: string;
   runIdentity: ClientParserRunEvidence;
   startedAt: string;
   durationMs: number;
@@ -291,7 +337,13 @@ export interface ClientParseResult {
     apiCalls: ClientApiCallEvidence[];
     artifact: ClientParserArtifactProvenance;
   };
-  demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };
+  demo: {
+    sha256: string;
+    sizeBytes: number;
+    name: string;
+    lastModified: number;
+    authorization: ClientDemoAuthorization;
+  };
   header: Record<string, unknown>;
   playerInventory: ClientPlayerInventory;
   eventDiscovery: ClientEventDiscoveryEvidence;
