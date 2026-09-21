@@ -8,6 +8,7 @@ import {
   compareClientVsPythonSemantic,
   compareClientVsServerReference,
   evaluateDeterminism,
+  summarizeFieldMatrix,
 } from "../clientParser.parity";
 import {
   CLIENT_PARSER_ARTIFACT_PROVENANCE,
@@ -56,6 +57,15 @@ function result(): ClientParseResult {
         durationMs: 1,
         resultBytes: 2,
         normalizedDigest: "c".repeat(64),
+        eventName: null,
+        requestedPlayerFields: [],
+        requestedOtherFields: [],
+        actualReturnedFields: [],
+        missingRequestedFields: [],
+        unexpectedReturnedFields: [],
+        inputDigest: null,
+        outputDigest: "c".repeat(64),
+        evidenceRef: null,
       })),
       artifact: {
         ...CLIENT_PARSER_ARTIFACT_PROVENANCE,
@@ -64,7 +74,10 @@ function result(): ClientParseResult {
       },
     },
     demo: { sha256: "b".repeat(64), sizeBytes: 42, name: "local.dem", lastModified: 1 },
-    header: { map_name: "de_cache" },
+    header: {
+      values: { map_name: "de_cache" },
+      evidence: [],
+    },
     playerInventory: {
       status: "AVAILABLE",
       count: 1,
@@ -115,10 +128,34 @@ function result(): ClientParseResult {
           z: 0,
         },
       ],
+      normalizedSamples: [
+        {
+          entity_id: 1,
+          grenade_type: "smoke",
+          name: "Player",
+          steamid: "1",
+          tick: 1,
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+      ],
       normalizedDigest: "d".repeat(64),
       rawFieldInventory: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
       semanticStatus: "PASS",
       evidenceRef: `grenades:${"d".repeat(64)}`,
+    },
+    roundEvidence: [],
+    tickDomainEvidence: {
+      source: "header_probe",
+      provenance: "demoparser2.parseHeader+parseTicks",
+      firstTick: 64,
+      lastTick: 64,
+      tickCount: 64,
+      probeTicks: [64],
+      coverageStatus: "PROBE_ONLY",
+      authoritative: false,
+      evidenceRef: `tick-probe:${"e".repeat(64)}`,
     },
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
@@ -366,12 +403,15 @@ describe("client parser compact contract", () => {
 
   it("builds an individual fail-closed matrix when no real DEM is authorized", () => {
     const matrix = buildNotRunFieldMatrix();
+    const summary = summarizeFieldMatrix(matrix);
     expect(matrix.length).toBeGreaterThan(100);
     expect(matrix.every((row) => row.status === "NOT_RUN")).toBe(true);
     expect(matrix.every((row) => row.canonicalEligible === false)).toBe(true);
     expect(matrix.some((row) => row.field === "map_name")).toBe(true);
     expect(matrix.some((row) => row.field === "dmg_health")).toBe(true);
     expect(matrix.some((row) => row.field === "balance")).toBe(true);
+    expect(summary).toMatchObject({ total: matrix.length, notRun: matrix.length });
+    expect(summary.blocked).toBe(matrix.length);
   });
 
   it("preserves null, type and value mismatches in field parity", () => {
@@ -558,6 +598,20 @@ describe("client parser compact contract", () => {
     expect(validateClientParserResult({ value: () => true }).accepted).toBe(false);
     expect(validateClientParserResult({ value: new ArrayBuffer(1) }).accepted).toBe(false);
     expect(validateClientParserResult({ value: new Blob(["x"]) }).accepted).toBe(false);
+  });
+
+  it.each([
+    ["top-level", { value: Number.NaN }],
+    ["nested", { value: { measurement: Number.POSITIVE_INFINITY } }],
+    ["array", { value: [1, Number.NEGATIVE_INFINITY] }],
+    ["deep", { value: { a: { b: { c: Number.NaN } } } }],
+  ])("rejects non-finite numbers before JSON conversion: %s", (_name, value) => {
+    expect(validateClientParserResult(value)).toMatchObject({
+      accepted: false,
+      reasonCode: "CLIENT_RESULT_INVALID",
+      canonicalAdmission: "BLOCKED",
+      persisted: false,
+    });
   });
 
   it("changes manifest identity when a WASM binary hash changes", () => {
