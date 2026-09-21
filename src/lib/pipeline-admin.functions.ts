@@ -320,17 +320,19 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
     await requireMaster(context as Ctx);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    await supabaseAdmin
+    const { data: job, error: jobError } = await supabaseAdmin
       .from("demo_jobs")
-      .update({
-        status: "pending",
-        stage: "queued",
-        error_code: null,
-        error_message: null,
-        started_at: null,
-        finished_at: null,
-      })
-      .eq("id", data.jobId);
+      .select("id, user_id")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (jobError || !job) throw new Error(UNAVAILABLE);
+    const { data: retryResult, error: retryError } = await supabaseAdmin.rpc("retry_demo_job", {
+      _job_id: job.id,
+      _user_id: job.user_id,
+      _allow_permanent: false,
+      _reason: "admin_e2e",
+    });
+    if (retryError || !retryResult) throw new Error(retryError?.message ?? UNAVAILABLE);
 
     const { error: auditError } = await (context as Ctx).supabase.from("admin_audit_logs").insert({
       admin_user_id: (context as Ctx).userId,
@@ -341,7 +343,134 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
     if (auditError) throw new Error("AUDIT_FAILED");
 
     // Re-queue only: the worker/cron layer performs the processing.
-    return { status: "queued" as const, errorCode: null };
+    return { status: "queued" as const, errorCode: null, lifecycle: retryResult };
+  });
+
+const controlledReplayInput = z.object({
+  sourceJobId: z.string().uuid(),
+  expectedAttempt: z.literal(8),
+  expectedSize: z.literal(473_748_061),
+  expectedSha256: z.literal("0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"),
+});
+
+/** Reserves attempt 9, copies the preserved attempt-8 DEM, verifies it, then enqueues. */
+export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => controlledReplayInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await requireMaster(context as Ctx);
+    const { assertParserWorkerReady } = await import("@/lib/pipeline/parser/remoteParser.server");
+    await assertParserWorkerReady();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: sourceJob, error: sourceError } = await supabaseAdmin
+      .from("demo_jobs")
+      .select("id, upload_id, user_id, status, attempt_number, demo_sha256, file_size, storage_path")
+      .eq("id", data.sourceJobId)
+      .maybeSingle();
+    if (sourceError || !sourceJob) throw new Error("SOURCE_JOB_NOT_FOUND");
+    if (
+      sourceJob.attempt_number !== data.expectedAttempt ||
+      sourceJob.demo_sha256 !== data.expectedSha256 ||
+      sourceJob.file_size !== data.expectedSize ||
+      sourceJob.status !== "failed"
+    ) {
+      throw new Error("SOURCE_JOB_MISMATCH");
+    }
+
+    const { data: sourceUpload, error: uploadError } = await supabaseAdmin
+      .from("uploads")
+      .select("id, file_name, file_size, storage_path, status, attempt_number, demo_sha256")
+      .eq("id", sourceJob.upload_id)
+      .eq("user_id", sourceJob.user_id)
+      .maybeSingle();
+    if (uploadError || !sourceUpload) throw new Error("SOURCE_UPLOAD_NOT_FOUND");
+    if (
+      sourceUpload.attempt_number !== data.expectedAttempt ||
+      sourceUpload.demo_sha256 !== data.expectedSha256 ||
+      sourceUpload.file_size !== data.expectedSize ||
+      sourceUpload.storage_path !== sourceJob.storage_path
+    ) {
+      throw new Error("SOURCE_UPLOAD_MISMATCH");
+    }
+
+    const { data: attempts, error: attemptsError } = await supabaseAdmin
+      .from("uploads")
+      .select("id, attempt_number")
+      .eq("user_id", sourceJob.user_id)
+      .eq("demo_sha256", data.expectedSha256)
+      .gte("attempt_number", 9);
+    if (attemptsError) throw new Error(UNAVAILABLE);
+    if ((attempts ?? []).some((attempt) => attempt.attempt_number > 9)) {
+      throw new Error("ATTEMPT_10_FORBIDDEN");
+    }
+
+    const existingAttempt9 = (attempts ?? []).find((attempt) => attempt.attempt_number === 9);
+    const requestedUploadId = existingAttempt9?.id ?? crypto.randomUUID();
+    const { data: reservation, error: reserveError } = await supabaseAdmin.rpc(
+      "reserve_demo_upload",
+      {
+        _user_id: sourceJob.user_id,
+        _upload_id: requestedUploadId,
+        _file_name: sourceUpload.file_name,
+        _file_size: data.expectedSize,
+        _demo_sha256: data.expectedSha256,
+      },
+    );
+    if (reserveError || !reservation || typeof reservation !== "object" || Array.isArray(reservation)) {
+      throw new Error(reserveError?.message ?? "RESERVATION_FAILED");
+    }
+    const reserved = reservation as Record<string, Json | undefined>;
+    const uploadId = typeof reserved["upload_id"] === "string" ? reserved["upload_id"] : null;
+    const destinationPath =
+      typeof reserved["storage_path"] === "string" ? reserved["storage_path"] : null;
+    if (
+      !uploadId ||
+      !destinationPath ||
+      Number(reserved["attempt_number"]) !== 9 ||
+      uploadId !== requestedUploadId
+    ) {
+      throw new Error("ATTEMPT_9_RESERVATION_MISMATCH");
+    }
+
+    const { copyDemoVerified } = await import("@/lib/pipeline/storage.server");
+    const copyOutcome = await copyDemoVerified({
+      sourcePath: sourceJob.storage_path,
+      sourceUserId: sourceJob.user_id,
+      sourceUploadId: sourceJob.upload_id,
+      destinationPath,
+      destinationUserId: sourceJob.user_id,
+      destinationUploadId: uploadId,
+      expectedSize: data.expectedSize,
+      expectedSha256: data.expectedSha256,
+    });
+    const { data: enqueue, error: enqueueError } = await supabaseAdmin.rpc("enqueue_demo_job", {
+      _upload_id: uploadId,
+      _user_id: sourceJob.user_id,
+    });
+    if (enqueueError || !enqueue || typeof enqueue !== "object" || Array.isArray(enqueue)) {
+      throw new Error(enqueueError?.message ?? "ENQUEUE_FAILED");
+    }
+    const queued = enqueue as Record<string, Json | undefined>;
+    const jobId = typeof queued["job_id"] === "string" ? queued["job_id"] : null;
+    if (!jobId || Number(queued["attempt_number"]) !== 9) {
+      throw new Error("ATTEMPT_9_ENQUEUE_MISMATCH");
+    }
+
+    const { error: auditError } = await (context as Ctx).supabase.from("admin_audit_logs").insert({
+      admin_user_id: (context as Ctx).userId,
+      action: "DEMO_CONTROLLED_REPLAY_CREATED",
+      target_user_id: sourceJob.user_id,
+      metadata: {
+        source_job_id: sourceJob.id,
+        source_upload_id: sourceJob.upload_id,
+        upload_id: uploadId,
+        job_id: jobId,
+        attempt_number: 9,
+        copy_outcome: copyOutcome,
+      },
+    });
+    if (auditError) throw new Error("AUDIT_FAILED");
+    return { status: "queued" as const, uploadId, jobId, attemptNumber: 9, copyOutcome };
   });
 
 /**

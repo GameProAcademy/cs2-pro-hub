@@ -71,6 +71,8 @@ export interface E2EPreflight {
     name: string | null;
     version: string | null;
     revision: string | null;
+    semanticRevision: string | null;
+    buildRevision: string | null;
     contractVersion: number | null;
   } | null;
   error: string | null;
@@ -80,6 +82,8 @@ export interface E2EPreflight {
     contractVersion: number;
     revision: string | null;
     revisionRequired: boolean;
+    buildRevision: string | null;
+    buildRevisionRequired: boolean;
   };
   versions: {
     ingestionSchema: number;
@@ -89,6 +93,7 @@ export interface E2EPreflight {
     analysis: string;
   };
   parserAvailable: boolean;
+  identityGatePassed: boolean;
 }
 
 /** GATE 1E.1 preflight, reported exactly as the parse path would enforce it. */
@@ -120,6 +125,8 @@ export const getDemoE2EPreflight = createServerFn({ method: "GET" })
             name: probe.identity.name,
             version: probe.identity.version,
             revision: probe.identity.revision,
+            semanticRevision: probe.identity.semanticRevision,
+            buildRevision: probe.identity.buildRevision,
             contractVersion: probe.identity.contractVersion,
           }
         : null,
@@ -130,6 +137,8 @@ export const getDemoE2EPreflight = createServerFn({ method: "GET" })
         contractVersion: PARSER_CONTRACT_VERSION,
         revision: expected.revision ?? null,
         revisionRequired: expected.revisionRequired === true,
+        buildRevision: expected.buildRevision ?? null,
+        buildRevisionRequired: expected.buildRevisionRequired === true,
       },
       versions: {
         ingestionSchema: SCHEMA_VERSION,
@@ -139,6 +148,7 @@ export const getDemoE2EPreflight = createServerFn({ method: "GET" })
         analysis: ANALYSIS_VERSION,
       },
       parserAvailable: resolveParserAdapter().isAvailable(),
+      identityGatePassed: probe.healthy && probe.identity !== null && probe.error === null,
     };
   });
 

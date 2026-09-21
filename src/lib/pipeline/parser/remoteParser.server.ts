@@ -337,6 +337,8 @@ export async function probeParserWorker(): Promise<ParserWorkerProbe> {
           name: identity.name,
           version: identity.version,
           revision: identity.revision,
+          semanticRevision: identity.semanticRevision,
+          buildRevision: identity.buildRevision,
           contractVersion: identity.contractVersion,
         },
         expectedParserContract(),
