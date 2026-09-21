@@ -9,6 +9,7 @@ export const CLIENT_PARSER_BUILD_IDENTITY =
   "upstream-source-artifact:demoparser2@0.42.0:d3767705dc5846d73ed29db50eaeda58778dc934" as const;
 
 export const CLIENT_EVENT_SAMPLE_LIMIT = 1_000;
+export const CLIENT_GRENADE_SAMPLE_LIMIT = 256;
 export const CLIENT_TICK_PROBE_LIMIT = 4_096;
 export const CLIENT_PLAYER_LIMIT = 128;
 export const CLIENT_EVENT_INVENTORY_LIMIT = 1_024;
@@ -90,10 +91,18 @@ export interface ClientFieldAuditRow {
   category: string;
   eventOrEntity: string;
   field: string;
+  upstreamSupported: boolean | null;
+  projectCatalogued: true;
+  runtimeExportAvailable: boolean | null;
+  requestable: boolean;
+  pythonRequested: boolean;
+  wasmRequested: boolean;
   pythonAvailable: boolean | null;
   wasmExportAvailable: boolean | null;
   pythonParsed: boolean;
   wasmParsed: boolean;
+  pythonSemanticStatus: "PASS" | "FAIL" | "NOT_RUN";
+  wasmSemanticStatus: "PASS" | "FAIL" | "NOT_RUN";
   pythonValueType: string | null;
   wasmValueType: string | null;
   pythonNull: boolean | null;
@@ -112,12 +121,64 @@ export interface ClientFieldAuditRow {
 
 export interface ClientDeterminismReport {
   demoSha256: string | null;
-  pythonRunDigests: string[];
-  wasmRunDigests: string[];
+  runs: ClientParserRunEvidence[];
   pythonDeterministic: boolean | null;
   wasmDeterministic: boolean | null;
   status: "PASS" | "FAIL" | "NOT_RUN";
   reason: string;
+}
+
+export interface ClientParserRunEvidence {
+  runId: string;
+  runtime: "PYTHON" | "WASM";
+  demoSha256: string;
+  parserIdentity: string;
+  parserVersion: string;
+  parserRevision: string;
+  artifactIdentity: string | null;
+  normalizedDigest: string;
+  startedAt: string;
+  durationMs: number;
+  status: "SUCCEEDED" | "FAILED";
+}
+
+export interface ClientGrenadeEvidence {
+  status: "AVAILABLE" | "UNAVAILABLE" | "PARSE_FAILED";
+  count: number | null;
+  samples: Array<Record<string, unknown>>;
+  normalizedDigest: string | null;
+  rawFieldInventory: string[];
+  semanticStatus: "NOT_RUN" | "PASS" | "FAIL";
+  evidenceRef: string | null;
+}
+
+export interface ClientEventDiscoveryEvidence {
+  status: "AVAILABLE" | "PARSE_FAILED";
+  discoveredEventsRaw: string[];
+  discoveredEventCount: number;
+  discoveredEventNamesInOrder: string[];
+  duplicateEventCount: number;
+  uniqueEventNames: string[];
+  normalizedEventInventory: string[];
+}
+
+export interface PythonReferenceArtifact {
+  demoSha256: string;
+  parserName: string;
+  parserVersion: string;
+  parserRevision: string;
+  contractVersion: number;
+  catalogDigest: string;
+  fieldInventory: string[];
+  eventInventory: string[];
+  playerInventory: Array<Record<string, unknown>>;
+  roundInventory: Array<Record<string, unknown>>;
+  grenadeInventory: ClientGrenadeEvidence;
+  tickDomainEvidence: Record<string, unknown>;
+  normalizedResult: Record<string, unknown>;
+  normalizedResultDigest: string;
+  runIdentity: ClientParserRunEvidence;
+  evidenceStatus: "BOUNDED_REFERENCE";
 }
 
 export interface ClientParserArtifactProvenance {
@@ -152,7 +213,7 @@ export interface ClientParseResult {
   demo: { sha256: string; sizeBytes: number; name: string; lastModified: number };
   header: Record<string, unknown>;
   playerInventory: ClientPlayerInventory;
-  eventDiscovery: { status: "AVAILABLE" | "PARSE_FAILED"; count: number; names: string[] };
+  eventDiscovery: ClientEventDiscoveryEvidence;
   parsedEventInventory: Array<{
     name: string;
     status: ClientParsedEventStatus;
@@ -160,6 +221,7 @@ export interface ClientParseResult {
     fields: string[];
   }>;
   selectedEventSamples: ClientEventSample[];
+  grenadeEvidence: ClientGrenadeEvidence;
   roundSummary: { status: "DERIVED" | "UNAVAILABLE"; count: number | null };
   tickProbe: {
     status: "AVAILABLE" | "UNAVAILABLE" | "PARSE_FAILED";
