@@ -42,6 +42,42 @@ import {
   headerEvidence,
 } from "./clientParser.audit";
 
+function sortedRecord(row: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function roundEvidenceFromSamples(
+  samples: ClientEventSample[],
+): ClientParseResult["roundEvidence"] {
+  const starts = samples.filter((sample) => sample.eventName === "round_start");
+  const ends = samples.filter((sample) => sample.eventName === "round_end");
+  return starts.map((start, index) => {
+    const end = ends.find((candidate) => candidate.tick !== null && candidate.tick >= (start.tick ?? 0));
+    const startTick = start.tick ?? 0;
+    const endTick = end?.tick ?? null;
+    const winnerSlot = safeNumber(end?.fields["winner"] ?? end?.fields["winner_slot"]);
+    const winnerSideValue = end?.fields["winner_side"] ?? end?.fields["winner_team"];
+    return {
+      roundIndex: index + 1,
+      startTick,
+      endTick,
+      duration: endTick === null ? null : endTick - startTick,
+      winnerSlot,
+      winnerSide: typeof winnerSideValue === "string" ? winnerSideValue : null,
+      reason: typeof end?.fields["reason"] === "string" ? end.fields["reason"] : null,
+      eventsCount: samples.filter(
+        (sample) =>
+          sample.tick !== null &&
+          sample.tick >= startTick &&
+          (endTick === null || sample.tick <= endTick),
+      ).length,
+      completeness: endTick === null ? "MISSING_END" : "COMPLETE",
+      source: "round_start+round_end",
+      evidenceRef: `round:${index + 1}:${startTick}:${endTick ?? "missing"}`,
+    };
+  });
+}
+
 type WasmApi = {
   parseHeader: (file: Uint8Array) => unknown;
   listGameEvents: (file: Uint8Array) => unknown;
@@ -126,6 +162,7 @@ function apiEvidence(
   error?: unknown,
   durationMs: number | null = null,
   result?: unknown,
+  detail: Partial<ClientApiCallEvidence> = {},
 ): ClientApiCallEvidence {
   const rawMessage = error instanceof Error ? error.message : null;
   return {
@@ -147,6 +184,16 @@ function apiEvidence(
       ? new TextEncoder().encode(stableClientJson(result ?? null)).byteLength
       : null,
     normalizedDigest: callSucceeded ? sha256Text(stableClientJson(result ?? null)) : null,
+    eventName: null,
+    requestedPlayerFields: [],
+    requestedOtherFields: [],
+    actualReturnedFields: [],
+    missingRequestedFields: [],
+    unexpectedReturnedFields: [],
+    inputDigest: null,
+    outputDigest: callSucceeded ? sha256Text(stableClientJson(result ?? null)) : null,
+    evidenceRef: null,
+    ...detail,
   };
 }
 
@@ -326,8 +373,45 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
       parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
+      const actualReturnedFields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort();
+      const requestedFields = [...request.playerFields, ...request.otherFields];
+      apiCalls.push(
+        apiEvidence(
+          "parseEvent",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          parsed,
+          {
+            eventName: name,
+            requestedPlayerFields: [...request.playerFields],
+            requestedOtherFields: [...request.otherFields],
+            actualReturnedFields,
+            missingRequestedFields: requestedFields.filter(
+              (field) => !actualReturnedFields.includes(field),
+            ),
+            unexpectedReturnedFields: actualReturnedFields.filter(
+              (field) => !requestedFields.includes(field),
+            ),
+            inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
+            outputDigest: sha256Text(encoded),
+            evidenceRef: `parseEvent:${name}:${sha256Text(encoded)}`,
+          },
+        ),
+      );
     } catch (error) {
       parseEventFailure = error;
+      apiCalls.push(
+        apiEvidence("parseEvent", true, true, false, error, null, undefined, {
+          eventName: name,
+          requestedPlayerFields: [...request.playerFields],
+          requestedOtherFields: [...request.otherFields],
+          inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
+          evidenceRef: `parseEvent:${name}:failed`,
+        }),
+      );
       parsedEventInventory.push({
         name,
         status: "PRESENT_BUT_FAILED",
@@ -456,6 +540,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     status: "UNAVAILABLE",
     count: null,
     samples: [],
+    normalizedSamples: [],
     normalizedDigest: null,
     rawFieldInventory: [],
     semanticStatus: "NOT_RUN",
@@ -467,11 +552,13 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       const grenadeRows = rows(parser.parseGrenades(bytes));
       const rawFieldInventory = [...new Set(grenadeRows.flatMap((row) => Object.keys(row)))].sort();
       const samples = grenadeRows.slice(0, CLIENT_GRENADE_SAMPLE_LIMIT);
+      const normalizedSamples = samples.map(sortedRecord);
       const normalizedDigest = sha256Text(stableClientJson(grenadeRows));
       grenadeEvidence = {
         status: "AVAILABLE",
         count: grenadeRows.length,
         samples,
+        normalizedSamples,
         normalizedDigest,
         rawFieldInventory,
         semanticStatus: [
@@ -536,6 +623,25 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     parsedEventInventory,
     selectedEventSamples,
     grenadeEvidence,
+    roundEvidence: roundEvidenceFromSamples(selectedEventSamples),
+    tickDomainEvidence: {
+      source: "header_probe",
+      provenance: "demoparser2.parseHeader+parseTicks",
+      firstTick: observedTicks[0] ?? null,
+      lastTick: observedTicks.at(-1) ?? null,
+      tickCount: playbackTicks,
+      probeTicks: [...probeTicks],
+      coverageStatus:
+        tickStatus === "AVAILABLE"
+          ? "PROBE_ONLY"
+          : tickStatus === "PARSE_FAILED"
+            ? "PARSE_FAILED"
+            : "UNAVAILABLE",
+      authoritative: false,
+      evidenceRef: tickRows.length
+        ? `tick-probe:${sha256Text(stableClientJson(tickRows))}`
+        : null,
+    },
     roundSummary: {
       status: parsedEventInventory.some(
         (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",
