@@ -1,18 +1,20 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.3 — CONTROLLED REAL DEM REPLAY
 
-**Status:** `PRECHECK_PASS / IMPLEMENTATION_PENDING` — nenhuma mutação executada.
+**Status:** `BLOCKED_BEFORE_ATTEMPT_9` — correção JSONB aplicada; replay não iniciado.
 
 - [x] Confirmar read-only que o objeto do attempt 8 existe no bucket `demos` com 473.748.061 bytes.
 - [x] Confirmar ausência de attempt 9 para o mesmo usuário/SHA e preservação dos attempts 7/8.
 - [x] Confirmar `demo_jobs.quality_flags` como JSONB e a função publicada usando `_result->'quality_flags'`.
 - [x] Confirmar `/health` e `/version` HTTP 200 com `demoparser2 0.42.0`, contrato 1 e revision/semantic/build `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`.
-- [ ] Adicionar regressão de schema real para `quality_flags` vazio e preenchido, sem conversão para `text[]`.
+- [x] Aplicar migration incremental e validar no PostgreSQL real `quality_flags` vazio e preenchido como `jsonb`, sem conversão para `text[]`; ACL permanece service-role-only.
 - [ ] Implementar reserva administrativa controlada do attempt 9 e cópia server-side validada, preservando o objeto-fonte.
 - [ ] Executar gates locais e preflight final imediatamente antes da mutação.
 - [ ] Criar upload 9, copiar/verificar o objeto, enfileirar pelo lifecycle oficial e observar o E2E real até terminal.
 - [ ] Auditar RAW/HOT/Canonical/fila, comparar attempts 8×9 e documentar evidência integral sem cleanup.
 
 **Stop conditions:** qualquer divergência de objeto, tamanho, SHA, attempt, claim, parser, contrato, RAW, HOT, Canonical, fila ou cleanup interrompe a fase sem attempt 10.
+
+**Blocker atual:** o runtime externo declara revision/semantic/build `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`, mas o código auditável fixa revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` e build `git:5d19890cdf8a018469761c597c650016791342d3`. O commit externo não existe na árvore local; portanto o preflight fail-closed impede criar ou enfileirar o attempt 9.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.6-R — LEGACY CLEANUP SHUTDOWN + RAILWAY RUNTIME PARITY
 
