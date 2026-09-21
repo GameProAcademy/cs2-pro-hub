@@ -166,6 +166,15 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
       ),
     ).runtimeSurfaceDigest !== result.parser.runtimeSurface.runtimeSurfaceDigest ||
     !Array.isArray(result.parser.apiCalls) ||
+    result.parser.apiCalls.some(
+      (call) =>
+        typeof call.api !== "string" ||
+        (call.durationMs !== null &&
+          (!Number.isFinite(call.durationMs) || call.durationMs < 0)) ||
+        (call.resultBytes !== null &&
+          (!Number.isSafeInteger(call.resultBytes) || call.resultBytes < 0)) ||
+        (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)),
+    ) ||
     !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
       result.parser.apiCalls.some(
         (call) =>
@@ -175,7 +184,10 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
           call.callSucceeded === true &&
           call.status === "CALL_SUCCEEDED" &&
           call.errorType === null &&
-          call.errorMessage === null,
+          call.errorMessage === null &&
+          call.durationMs !== null &&
+          call.resultBytes !== null &&
+          call.normalizedDigest !== null,
       ),
     ) ||
     result.parser.artifact?.status !== "VERIFIED" ||

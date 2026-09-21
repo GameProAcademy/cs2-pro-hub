@@ -251,6 +251,22 @@ describe("client parser compact contract", () => {
         }),
       ),
     ],
+    [
+      "missing API evidence digest",
+      resign(
+        mutate((v) => {
+          v.result.parser.apiCalls[0].normalizedDigest = null;
+        }),
+      ),
+    ],
+    [
+      "negative API duration",
+      resign(
+        mutate((v) => {
+          v.result.parser.apiCalls[0].durationMs = -1;
+        }),
+      ),
+    ],
     ["missing result", { manifest: envelope().manifest }],
     ["wrong types", { result: "x", manifest: [] }],
   ])("rejects %s", (_name, value) =>
