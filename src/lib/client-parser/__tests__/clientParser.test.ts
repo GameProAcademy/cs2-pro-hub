@@ -475,7 +475,7 @@ describe("client parser compact contract", () => {
         wasmValue: "de_mirage",
         evidenceRef: "same-dem",
       }).status,
-    ).toBe("VALUE_MISMATCH");
+    ).toBe("SEMANTIC_MISMATCH");
   });
 
   it("preserves array order and duplicates while normalizing object keys", () => {
