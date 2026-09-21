@@ -81,6 +81,15 @@ export interface ClientApiCallEvidence {
   durationMs: number | null;
   resultBytes: number | null;
   normalizedDigest: string | null;
+  eventName: string | null;
+  requestedPlayerFields: string[];
+  requestedOtherFields: string[];
+  actualReturnedFields: string[];
+  missingRequestedFields: string[];
+  unexpectedReturnedFields: string[];
+  inputDigest: string | null;
+  outputDigest: string | null;
+  evidenceRef: string | null;
 }
 
 export type ClientFieldAuditStatus =
@@ -92,7 +101,8 @@ export type ClientFieldAuditStatus =
   | "PARSE_FAILED"
   | "TYPE_MISMATCH"
   | "VALUE_MISMATCH"
-  | "NORMALIZATION_REQUIRED";
+  | "NORMALIZATION_REQUIRED"
+  | "BLOCKED";
 
 export interface ClientFieldAuditRow {
   category: string;
@@ -153,10 +163,55 @@ export interface ClientGrenadeEvidence {
   status: "AVAILABLE" | "UNAVAILABLE" | "PARSE_FAILED";
   count: number | null;
   samples: Array<Record<string, unknown>>;
+  normalizedSamples: Array<Record<string, unknown>>;
   normalizedDigest: string | null;
   rawFieldInventory: string[];
   semanticStatus: "NOT_RUN" | "PASS" | "FAIL";
   evidenceRef: string | null;
+}
+
+export interface ClientRoundEvidence {
+  roundIndex: number;
+  startTick: number;
+  endTick: number | null;
+  duration: number | null;
+  winnerSlot: number | null;
+  winnerSide: string | null;
+  reason: string | null;
+  eventsCount: number;
+  completeness: "COMPLETE" | "MISSING_END" | "AMBIGUOUS";
+  source: "round_start+round_end";
+  evidenceRef: string;
+}
+
+export interface ClientTickDomainEvidence {
+  source: "header_probe";
+  provenance: "demoparser2.parseHeader+parseTicks";
+  firstTick: number | null;
+  lastTick: number | null;
+  tickCount: number | null;
+  probeTicks: number[];
+  coverageStatus: "PROBE_ONLY" | "UNAVAILABLE" | "PARSE_FAILED";
+  authoritative: false;
+  evidenceRef: string | null;
+}
+
+export interface ClientFieldMatrixSummary {
+  total: number;
+  upstreamIdentified: number;
+  projectCatalogued: number;
+  runtimeExportAvailable: number;
+  requestable: number;
+  requested: number;
+  parsed: number;
+  semanticallyValidated: number;
+  parityPass: number;
+  unavailable: number;
+  parseFailed: number;
+  notRun: number;
+  valueMismatch: number;
+  typeMismatch: number;
+  blocked: number;
 }
 
 export interface ClientEventDiscoveryEvidence {
@@ -170,6 +225,8 @@ export interface ClientEventDiscoveryEvidence {
 }
 
 export interface PythonReferenceArtifact {
+  runId: string;
+  runtime: "PYTHON";
   demoSha256: string;
   parserName: string;
   parserVersion: string;
@@ -180,12 +237,29 @@ export interface PythonReferenceArtifact {
   eventInventory: string[];
   playerInventory: Array<Record<string, unknown>>;
   roundInventory: Array<Record<string, unknown>>;
-  grenadeInventory: ClientGrenadeEvidence;
+  grenadeInventory: Array<Record<string, unknown>>;
   tickDomainEvidence: Record<string, unknown>;
+  headerEvidence: Record<string, unknown>;
+  timingEvidence: Record<string, unknown>;
+  mapEvidence: Record<string, unknown>;
+  scoreEvidence: Record<string, unknown>;
+  teamEvidence: Record<string, unknown>;
+  bombEvidence: Record<string, unknown>;
+  deathEvidence: Record<string, unknown>;
+  damageEvidence: Record<string, unknown>;
+  economyEvidence: Record<string, unknown>;
+  weaponEvidence: Record<string, unknown>;
+  positionEvidence: Record<string, unknown>;
+  aimEvidence: Record<string, unknown>;
   normalizedResult: Record<string, unknown>;
   normalizedResultDigest: string;
   runIdentity: ClientParserRunEvidence;
+  startedAt: string;
+  durationMs: number;
+  status: "SUCCEEDED";
   evidenceStatus: "BOUNDED_REFERENCE";
+  canonicalEligible: false;
+  persisted: false;
 }
 
 export interface ClientParserArtifactProvenance {
@@ -232,6 +306,8 @@ export interface ClientParseResult {
   }>;
   selectedEventSamples: ClientEventSample[];
   grenadeEvidence: ClientGrenadeEvidence;
+  roundEvidence: ClientRoundEvidence[];
+  tickDomainEvidence: ClientTickDomainEvidence;
   roundSummary: { status: "DERIVED" | "UNAVAILABLE"; count: number | null };
   tickProbe: {
     status: "AVAILABLE" | "UNAVAILABLE" | "PARSE_FAILED";

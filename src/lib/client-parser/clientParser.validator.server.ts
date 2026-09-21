@@ -77,6 +77,8 @@ function inspectShape(value: unknown): ClientParserErrorCode | null {
     if (nodes > MAX_NODES) return "CLIENT_RESULT_TOO_LARGE";
     if (current.depth > MAX_DEPTH) return "CLIENT_RESULT_INVALID";
     if (typeof current.value === "function") return "CLIENT_RESULT_INVALID";
+    if (typeof current.value === "number" && !Number.isFinite(current.value))
+      return "CLIENT_RESULT_INVALID";
     if (!current.value || typeof current.value !== "object") continue;
     if (current.leaving) {
       activePath.delete(current.value);
@@ -92,7 +94,10 @@ function inspectShape(value: unknown): ClientParserErrorCode | null {
     activePath.add(current.value);
     pending.push({ value: current.value, depth: current.depth, leaving: true });
     if (Array.isArray(current.value)) {
-      if (current.value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
+      if (
+        current.value.length >
+        Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT, CLIENT_TICK_PROBE_LIMIT)
+      )
         return "CLIENT_RESULT_TOO_LARGE";
       for (const item of current.value) pending.push({ value: item, depth: current.depth + 1 });
       continue;
@@ -114,6 +119,8 @@ function fail(reasonCode: ClientParserErrorCode): ClientParserValidationDecision
 }
 
 export function validateClientParserResult(value: unknown): ClientParserValidationDecision {
+  const shapeError = inspectShape(value);
+  if (shapeError) return fail(shapeError);
   let encoded: Uint8Array;
   try {
     encoded = new TextEncoder().encode(JSON.stringify(value));
@@ -121,8 +128,6 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_INVALID");
   }
   if (encoded.byteLength > CLIENT_RESULT_MAX_BYTES) return fail("CLIENT_RESULT_TOO_LARGE");
-  const shapeError = inspectShape(value);
-  if (shapeError) return fail(shapeError);
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
@@ -173,7 +178,17 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         (call.durationMs !== null && (!Number.isFinite(call.durationMs) || call.durationMs < 0)) ||
         (call.resultBytes !== null &&
           (!Number.isSafeInteger(call.resultBytes) || call.resultBytes < 0)) ||
-        (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)),
+        (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)) ||
+        (call.inputDigest !== null && !HEX_64.test(call.inputDigest)) ||
+        (call.outputDigest !== null && !HEX_64.test(call.outputDigest)) ||
+        !Array.isArray(call.requestedPlayerFields) ||
+        !Array.isArray(call.requestedOtherFields) ||
+        !Array.isArray(call.actualReturnedFields) ||
+        !Array.isArray(call.missingRequestedFields) ||
+        !Array.isArray(call.unexpectedReturnedFields) ||
+        call.requestedPlayerFields.length > MAX_OBJECT_KEYS ||
+        call.requestedOtherFields.length > MAX_OBJECT_KEYS ||
+        call.actualReturnedFields.length > MAX_OBJECT_KEYS,
     ) ||
     !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
       result.parser.apiCalls.some(
@@ -218,9 +233,16 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     !Array.isArray(result.selectedEventSamples) ||
     result.selectedEventSamples.length > CLIENT_EVENT_SAMPLE_LIMIT ||
     !Array.isArray(result.grenadeEvidence?.samples) ||
+    !Array.isArray(result.grenadeEvidence?.normalizedSamples) ||
     result.grenadeEvidence.samples.length > CLIENT_GRENADE_SAMPLE_LIMIT ||
+    result.grenadeEvidence.normalizedSamples.length > CLIENT_GRENADE_SAMPLE_LIMIT ||
     !Array.isArray(result.grenadeEvidence?.rawFieldInventory) ||
     result.grenadeEvidence.rawFieldInventory.length > MAX_OBJECT_KEYS ||
+    !Array.isArray(result.roundEvidence) ||
+    result.roundEvidence.length > CLIENT_EVENT_SAMPLE_LIMIT ||
+    !Array.isArray(result.tickDomainEvidence?.probeTicks) ||
+    result.tickDomainEvidence.probeTicks.length > CLIENT_TICK_PROBE_LIMIT ||
+    result.tickDomainEvidence.authoritative !== false ||
     !Array.isArray(result.capabilities)
   )
     return fail("CLIENT_RESULT_TOO_LARGE");
@@ -247,8 +269,23 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     (result.grenadeEvidence.status === "AVAILABLE" &&
       (result.grenadeEvidence.count === null ||
         result.grenadeEvidence.count < result.grenadeEvidence.samples.length ||
+        result.grenadeEvidence.samples.length !== result.grenadeEvidence.normalizedSamples.length ||
         !HEX_64.test(result.grenadeEvidence.normalizedDigest ?? ""))) ||
     (result.grenadeEvidence.status !== "AVAILABLE" && result.grenadeEvidence.count !== null) ||
+    result.roundEvidence.some(
+      (round) =>
+        !Number.isSafeInteger(round.roundIndex) ||
+        round.roundIndex < 1 ||
+        !Number.isSafeInteger(round.startTick) ||
+        round.startTick < 0 ||
+        (round.endTick !== null &&
+          (!Number.isSafeInteger(round.endTick) || round.endTick < round.startTick)) ||
+        (round.duration !== null && (!Number.isFinite(round.duration) || round.duration < 0)) ||
+        round.eventsCount < 0 ||
+        round.source !== "round_start+round_end",
+    ) ||
+    result.tickDomainEvidence.provenance !== "demoparser2.parseHeader+parseTicks" ||
+    result.tickDomainEvidence.source !== "header_probe" ||
     result.parsedEventInventory.some(
       (item) =>
         typeof item.name !== "string" ||

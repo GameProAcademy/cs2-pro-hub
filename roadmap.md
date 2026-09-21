@@ -1280,7 +1280,7 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 ## FASE 2.7.2G.5-R-F.2.10 — Client-side parser POC
 
 - `POC_IMPLEMENTED`: isolated Worker protocol, transferable local DEM, compact result/manifest, deterministic SHA-256/digest, dry-run authenticated validation, parity comparator, feature-gated UI, and fail-closed Canonical proof binding.
-- `BLOCKED`: official `demoparser2@0.42.0` browser/WASM artifact is unavailable from npm; no incompatible package or invented runtime was installed.
+- `ARTIFACT VERIFIED`: the exact browser/WASM files checked into upstream v0.42.0 are pinned and hash-verified; bit-reproducibility remains partial because the upstream toolchain is not fully pinned.
 - `NOT_EXECUTED`: real browser/WASM test, real ~400 MB DEM, memory benchmark, and WASM↔Python corpus parity.
 - Production Python/Railway ingestion remains unchanged. No Cache run, retry, Attempt 9, enqueue, Canonical write, Storage mutation, migration, Railway deploy, secret change, or historical mutation occurred.
 - Final gate: `POC_NOT_READY`.
@@ -1290,9 +1290,20 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Added separate source, binding, binary, runtime-surface, capability, audit-catalog, contract, result, and manifest identities.
 - [x] Hardened Classic Worker initialization, same-origin/hash checks, explicit event outcomes, bounded tick samples, cancellation cleanup, and validator invariants.
 - [x] Added 22-dimension Python×WASM parity reporting and the browser/provenance/admission documentation set.
-- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: BLOCKED` — no auditable 0.42.0 browser artifact.
+- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: PASS` — exact source artifact, hashes and Chromium initialization verified; bit-reproducibility remains partial.
 - `F.2.10-B REAL BROWSER DEM: NOT_RUN`.
 - `F.2.10-C PYTHON × WASM PARITY: NOT_RUN`.
 - `F.2.10-D 400MB MEMORY: NOT_RUN`.
 - `CANONICAL ADMISSION: MUST REMAIN BLOCKED`; `HOT READINESS: PARTIAL`; `AI DATA READINESS: BLOCKED`.
 - No production, Railway, Cache, retry, Attempt 9, RAW, Canonical, Storage, migration, secret, deployment, or historical mutation occurred.
+
+### F.2.10-I/J/K — Harness ready for an authorized real DEM
+
+- [x] Separated upstream support, project catalog, runtime export, requestability, execution, semantic validation, normalization, parity and Canonical eligibility.
+- [x] Added 38 event-specific request definitions and per-call evidence for actual `parseEvent` arguments, returned/missing/unexpected fields and digests while preserving discovery order and duplicates.
+- [x] Added bounded grenade raw/normalized evidence, observed round pairing, explicitly non-authoritative tick-domain evidence and recursive rejection of `NaN`/`Infinity` before serialization.
+- [x] Added executable Python reference producer requiring an explicit authorized `.dem`; with no input it returns `NOT_RUN — NO_AUTHORIZED_REAL_DEM_FIXTURE` and performs no discovery or persistence.
+- [x] Added SHA-bound 2×Python + 2×WASM determinism contracts, field-matrix summaries and negative tests preserving null, zero, false, types, array order and duplicates.
+- [x] Calculated matrix: 175 fields, 151 requestable, 0 executed, 0 parity PASS, 175 blocked/NOT_RUN; 22 parity dimensions.
+- [ ] `REAL DEM VERIFIED = NO`; `PYTHON × WASM VERIFIED = NO`; `DETERMINISM VERIFIED = NO`; `CANONICAL READY = NO`; `AI DATA READY = NO`.
+- Final implementation status: `HARNESS READY FOR AUTHORIZED REAL DEM`; evidence status remains `POC_NOT_READY / NO_AUTHORIZED_REAL_DEM_FIXTURE`.

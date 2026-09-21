@@ -2,7 +2,7 @@
 
 ## Status
 
-`POC_IMPLEMENTED`, but **POC_NOT_READY** for a real browser test. The required official `demoparser2@0.42.0` browser/WASM distribution is not published in npm. The published browser package stops at `0.15.0`; `@laihoe/demoparser2` is a Node/native binding and was intentionally not installed. Runtime loading therefore fails closed as `CLIENT_PARSER_UNAVAILABLE` unless an exact, reviewed 0.42.0 WASM asset is explicitly configured.
+`POC_IMPLEMENTED`, but **POC_NOT_READY** for a real DEM test. The exact browser binding and WASM checked into the pinned upstream `demoparser2` v0.42.0 source are present and hash-verified. The artifact initializes in Chromium, but no authorized real `.dem` exists, so parser calls, parity and determinism remain `NOT_RUN`.
 
 ## Architecture and flow
 
@@ -44,7 +44,7 @@ Canonical persistence separately requires server-derived physical RAW evidence. 
 
 The real inspected published browser surface is the classic wasm-bindgen global with `parseHeader`, `listGameEvents`, `parseEvent`, `parseEvents`, `parseTicks`, and `parseGrenades`. `parsePlayerInfo` is not exported there and is classified `UNAVAILABLE`. The worker supports INIT, load progress, PARSE, bounded event sampling, a controlled three-point tick probe, manifest creation, COMPLETE, structured ERROR, and CANCEL. It never claims full tick-domain authority.
 
-Because the exact 0.42.0 asset is unavailable, no dependency or fake implementation was added. Script and binary URLs are optional public build variables; absent URLs intentionally block before parsing.
+No incompatible package or fake implementation was added. The exact 0.42.0 source artifact is served from the project and verified before initialization; any URL or hash mismatch blocks before parsing.
 
 ## Hash, compact result, and manifest
 
@@ -93,7 +93,7 @@ Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, s
 
 ## Limitação bloqueante
 
-A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A POC não substitui a autoridade Python/Railway e permanece fail-closed até existir um runtime browser compatível e serem executados testes reais de navegador, memória e paridade.
+O artifact browser/WASM 0.42.0 pinado inicializa em Chromium, mas não existe `.dem` real autorizado para executar o parser. A POC não substitui a autoridade Python/Railway e permanece fail-closed até os testes reais de navegador, memória, paridade e determinismo.
 
 ## Gate final
 
@@ -101,7 +101,7 @@ A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A PO
 
 ## Marco consolidado F.2.10-A → F.2.10-D
 
-- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: BLOCKED` — contracts and fail-closed loading are hardened, but no auditable 0.42.0 browser artifact exists.
+- `F.2.10-A WASM ARTIFACT & WORKER HARDENING: PASS` — exact checked-in upstream artifact, hashes and runtime initialization verified; bit-reproducibility remains partial.
 - `F.2.10-B REAL BROWSER DEM: NOT_RUN` — no artifact or authorized real DEM fixture.
 - `F.2.10-C PYTHON × WASM PARITY: NOT_RUN` — the 22-dimension comparator is prepared; no same-DEM corpus was executed.
 - `F.2.10-D 400MB MEMORY: NOT_RUN` — the POC ceiling is 128 MiB and no browser memory run occurred.
@@ -115,8 +115,8 @@ A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A PO
 
 - Fonte auditada: `https://github.com/LaihoE/demoparser`, tag `v0.42.0`, commit `d3767705dc5846d73ed29db50eaeda58778dc934`.
 - Build upstream documentado: `wasm-pack build --out-dir www/pkg --target no-modules`.
-- Não existe release oficial/auditavelmente reproduzível do WASM 0.42.0; toolchain e `wasm-pack` não estão integralmente pinados.
-- Binding URL, WASM URL, binding SHA-256 e binary SHA-256 permanecem `UNAVAILABLE`; nenhum valor foi inventado.
+- O source upstream contém binding/WASM 0.42.0 versionado e preservado com hashes; toolchain e `wasm-pack` não estão integralmente pinados, portanto bit-reprodutibilidade permanece `PARTIAL`.
+- Binding e WASM foram identificados e verificados contra `artifact-manifest.json`; nenhum valor foi inventado.
 - A superfície WASM não exporta `parsePlayerInfo`; player inventory é `UNAVAILABLE`, sem inferência pelo header.
 
 ## Hardening implementado
@@ -132,7 +132,7 @@ A distribuição browser/WASM publicada não fornece `demoparser2==0.42.0`. A PO
 
 ## Evidência real e limitações
 
-`WASM_BROWSER_RUNTIME: NOT_RUN`. Não há artifact browser 0.42.0 reproduzível nem fixture `.dem` autorizada. Não houve teste real Browser → Worker → WASM → DEM, benchmark de memória, teste de 400 MB ou paridade WASM↔Python. Test doubles unitários comprovam apenas contratos, não o runtime.
+`WASM_BROWSER_INITIALIZATION: PASS`; `REAL_DEM_RUNTIME: NOT_RUN`. Não há fixture `.dem` autorizada. Não houve teste real Browser → Worker → WASM → DEM, benchmark de memória, teste de 400 MB ou paridade WASM↔Python. Test doubles unitários comprovam apenas contratos, não a execução de DEM.
 
 Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, secret, deploy Railway, Storage ou histórico de produção foi alterado.
 

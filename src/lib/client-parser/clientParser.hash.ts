@@ -9,7 +9,8 @@ export function stableClientJson(value: unknown): string {
       .sort(([a], [b]) => a.localeCompare(b));
     return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableClientJson(item)}`).join(",")}}`;
   }
-  if (typeof value === "number" && !Number.isFinite(value)) return "null";
+  if (typeof value === "number" && !Number.isFinite(value))
+    throw new TypeError("non_finite_number_is_not_serializable");
   return JSON.stringify(value);
 }
 
