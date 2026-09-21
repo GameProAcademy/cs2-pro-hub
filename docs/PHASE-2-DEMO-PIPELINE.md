@@ -67,6 +67,16 @@ Permanentes: `matches`, `match_metrics`, `match_rounds`, `round_events`,
 Temporário: o arquivo `.dem` no bucket privado `demos`, em
 `{user_id}/{upload_id}.dem`, removido após 24h (sucesso) ou 72h (falha).
 
+### FASE 2.7.2G.6 — retenção e deleção verificada
+
+A política `demo-retention-v1` centraliza 24h para sucesso, 72h para falha
+terminal/`blocked_raw_audit` e elegibilidade imediata no cancelamento. O cleanup
+reivindica o job sob lock, valida estado, lease, ownership, RAW/Canonical quando
+aplicável e remove somente o `.dem` original via API de Storage. O marcador de
+deleção só é gravado após uma segunda consulta provar ausência física. Jobs,
+uploads, SHA, RAW evidence, Canonical e derivados nunca são apagados pelo
+cleanup. Ver `PHASE-2.7.2G.6-DEM-DATA-RETENTION-AND-DELETION.md`.
+
 Idempotência: `uploads.demo_sha256` por usuário e `matches.upload_id` único —
 reprocessar substitui os derivados, nunca duplica.
 
