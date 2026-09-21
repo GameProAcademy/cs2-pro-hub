@@ -1,0 +1,73 @@
+name: CS2 Parser Worker CI
+
+on:
+  push:
+    branches:
+      - infra/cs2-demo-parser-worker-v8
+      - infra/cs2-demo-parser-worker-v8-**
+      - infra/cs2-parser-worker-v8
+      - infra/cs2-parser-worker-v8-**
+    paths:
+      - "services/cs2-demo-parser/**"
+      - ".github/workflows/cs2-parser-worker-ci.yml"
+  pull_request:
+    paths:
+      - "services/cs2-demo-parser/**"
+      - ".github/workflows/cs2-parser-worker-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  parser-worker-tests:
+    name: Parser worker tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/cs2-demo-parser
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/cs2-demo-parser/requirements*.txt
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements-dev.txt
+
+      - name: Compile Python sources
+        run: python -m compileall -q .
+
+      - name: Run pytest
+        run: python -m pytest -q
+
+      - name: Verify production revision guard
+        run: |
+          python - <<'PY'
+          from settings import load_settings, WorkerConfigurationError
+
+          env = {
+              "ENVIRONMENT": "production",
+              "PARSER_TOKEN": "ci-token",
+              "PARSER_CONTRACT_VERSION": "1",
+              "PARSER_REVISION": "git:" + "a" * 40,
+              "PARSER_BUILD_REVISION": "git:" + "a" * 40,
+          }
+          settings = load_settings(env)
+          assert settings.revision == env["PARSER_REVISION"]
+          assert settings.build_revision == env["PARSER_BUILD_REVISION"]
+
+          bad = dict(env)
+          bad["PARSER_REVISION"] = "pypi-0.42.0"
+          try:
+              load_settings(bad)
+          except WorkerConfigurationError:
+              pass
+          else:
+              raise AssertionError("forbidden production revision was accepted")
+          PY
