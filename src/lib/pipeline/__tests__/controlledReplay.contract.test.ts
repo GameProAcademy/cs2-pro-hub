@@ -39,6 +39,7 @@ describe("G.6-R.3 controlled replay contract", () => {
     expect(copyBlock).toContain("assertDemoStoragePath(");
     expect(copyBlock).toContain(".copy(args.sourcePath, args.destinationPath)");
     expect(copyBlock).toContain("computeStoredDemoSha256(args.destinationPath)");
+    expect(copyBlock).toContain("computeStoredDemoSha256(args.sourcePath)");
     expect(copyBlock).toContain("SOURCE_NOT_PRESERVED");
     expect(copyBlock).not.toContain(".remove(");
   });

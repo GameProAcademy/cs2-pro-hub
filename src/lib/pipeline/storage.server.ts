@@ -94,7 +94,13 @@ export async function copyDemoVerified(args: {
   destinationUploadId: string;
   expectedSize: number;
   expectedSha256: string;
-}): Promise<"COPIED" | "ALREADY_COPIED"> {
+}): Promise<{
+  outcome: "COPIED" | "ALREADY_COPIED";
+  sourceSize: number;
+  destinationSize: number;
+  sourceSha256: string;
+  destinationSha256: string;
+}> {
   assertDemoStoragePath(args.sourcePath, args.sourceUserId, args.sourceUploadId);
   assertDemoStoragePath(
     args.destinationPath,
@@ -109,6 +115,8 @@ export async function copyDemoVerified(args: {
   if (!source || source.size !== args.expectedSize) {
     throw new PipelineError("DEMO_NOT_FOUND", "SOURCE_SIZE_MISMATCH");
   }
+  const sourceSha256 = await computeStoredDemoSha256(args.sourcePath);
+  assertDemoIntegrity(sourceSha256, args.expectedSha256);
   const existing = await demoExists(args.destinationPath);
   let outcome: "COPIED" | "ALREADY_COPIED" = "ALREADY_COPIED";
   if (!existing) {
@@ -132,7 +140,13 @@ export async function copyDemoVerified(args: {
   if (!preservedSource || preservedSource.size !== args.expectedSize) {
     throw new PipelineError("PERSISTENCE_ERROR", "SOURCE_NOT_PRESERVED");
   }
-  return outcome;
+  return {
+    outcome,
+    sourceSize: preservedSource.size,
+    destinationSize: destination.size,
+    sourceSha256,
+    destinationSha256,
+  };
 }
 
 /** Removes only an owned temporary DEM and proves physical absence afterwards. */

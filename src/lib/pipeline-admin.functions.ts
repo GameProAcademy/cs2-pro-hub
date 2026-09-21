@@ -446,11 +446,11 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
         _source_job_id: sourceJob.id,
         _admin_user_id: (context as Ctx).userId,
         _provenance_id: data.provenanceId,
-        _source_sha256: data.expectedSha256,
-        _destination_sha256: data.expectedSha256,
-        _source_size: data.expectedSize,
-        _destination_size: data.expectedSize,
-        _copy_outcome: copyOutcome,
+        _source_sha256: copyOutcome.sourceSha256,
+        _destination_sha256: copyOutcome.destinationSha256,
+        _source_size: copyOutcome.sourceSize,
+        _destination_size: copyOutcome.destinationSize,
+        _copy_outcome: copyOutcome.outcome,
       },
     );
     if (enqueueError || !enqueue || typeof enqueue !== "object" || Array.isArray(enqueue)) {
