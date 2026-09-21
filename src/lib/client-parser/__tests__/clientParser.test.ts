@@ -555,7 +555,12 @@ describe("client parser compact contract", () => {
     expect(
       evaluateDeterminism({
         demoSha256: "b".repeat(64),
-        runs: [run("PYTHON", "duplicate"), run("PYTHON", "duplicate"), run("WASM", "w1"), run("WASM", "w2")],
+        runs: [
+          run("PYTHON", "duplicate"),
+          run("PYTHON", "duplicate"),
+          run("WASM", "w1"),
+          run("WASM", "w2"),
+        ],
       }),
     ).toMatchObject({ status: "FAIL", reason: "DUPLICATE_RUN_IDENTITY" });
   });
