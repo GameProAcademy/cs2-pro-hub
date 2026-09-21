@@ -426,6 +426,20 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
     ) {
       throw new Error("ATTEMPT_9_RESERVATION_MISMATCH");
     }
+    const reservationStatus = reserved["reservation_status"];
+    const existingJobId = typeof reserved["job_id"] === "string" ? reserved["job_id"] : null;
+    if (reservationStatus === "ENQUEUED" && existingJobId) {
+      return {
+        status: "queued" as const,
+        uploadId,
+        jobId: existingJobId,
+        attemptNumber: 9,
+        copyOutcome: "ALREADY_VERIFIED" as const,
+      };
+    }
+    if (reservationStatus !== "CREATED" && reservationStatus !== "RESERVED") {
+      throw new Error("ATTEMPT_9_RESERVATION_STATE_MISMATCH");
+    }
 
     const { copyDemoVerified } = await import("@/lib/pipeline/storage.server");
     const copyOutcome = await copyDemoVerified({
