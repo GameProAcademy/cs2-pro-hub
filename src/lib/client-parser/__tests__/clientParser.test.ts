@@ -28,6 +28,11 @@ import {
   type ClientParseResult,
 } from "../clientParser.types";
 import { validateClientParserResult } from "../clientParser.validator.server";
+import { CLIENT_AUDIT_CATALOG_DIGEST, CLIENT_PARSER_CONTRACT_DIGEST } from "../clientParser.audit";
+import {
+  CLIENT_PARSER_CATALOG_VERSION,
+  CLIENT_PARSER_CONTRACT_VERSION,
+} from "../clientParser.types";
 
 function result(): ClientParseResult {
   const value: ClientParseResult = {
@@ -67,6 +72,12 @@ function result(): ClientParseResult {
         inputDigest: null,
         outputDigest: "c".repeat(64),
         evidenceRef: null,
+        requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+        requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+        eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+        parserVersion: CLIENT_PARSER_VERSION,
+        parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+        demoSha256: "b".repeat(64),
       })),
       artifact: {
         ...CLIENT_PARSER_ARTIFACT_PROVENANCE,
@@ -74,7 +85,22 @@ function result(): ClientParseResult {
         wasmUrl: "https://example.test/pkg/demoparser2_bg.wasm",
       },
     },
-    demo: { sha256: "b".repeat(64), sizeBytes: 42, name: "local.dem", lastModified: 1 },
+    demo: {
+      sha256: "b".repeat(64),
+      sizeBytes: 42,
+      name: "local.dem",
+      lastModified: 1,
+      authorization: {
+        authorizedDemo: true,
+        provenance: "LOCAL_USER_SELECTION",
+        filename: "local.dem",
+        sha256: "b".repeat(64),
+        sizeBytes: 42,
+        source: "LOCAL_FILE",
+        authorizationRef: "local-selection:test",
+        receivedAt: "2026-09-21T00:00:00.000Z",
+      },
+    },
     header: {
       values: { map_name: "de_cache" },
       evidence: [],
@@ -141,6 +167,8 @@ function result(): ClientParseResult {
           z: 0,
         },
       ],
+      normalization: "RAW_ONLY",
+      lifecycleStatus: "UNRESOLVED",
       normalizedDigest: "d".repeat(64),
       rawFieldInventory: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
       semanticStatus: "PASS",
@@ -154,6 +182,10 @@ function result(): ClientParseResult {
       lastTick: 64,
       tickCount: 64,
       probeTicks: [64],
+      probeType: "FIRST_MIDDLE_LAST",
+      headerPlaybackTicks: 64,
+      authoritativeDomain: false,
+      domainEvidenceRef: `tick-probe:${"e".repeat(64)}`,
       coverageStatus: "PROBE_ONLY",
       authoritative: false,
       evidenceRef: `tick-probe:${"e".repeat(64)}`,
@@ -443,7 +475,7 @@ describe("client parser compact contract", () => {
         wasmValue: "de_mirage",
         evidenceRef: "same-dem",
       }).status,
-    ).toBe("VALUE_MISMATCH");
+    ).toBe("SEMANTIC_MISMATCH");
   });
 
   it("preserves array order and duplicates while normalizing object keys", () => {
@@ -480,6 +512,10 @@ describe("client parser compact contract", () => {
       parserVersion: "0.42.0",
       parserRevision: "revision",
       artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
       normalizedDigest,
       startedAt: "2026-09-21T00:00:00.000Z",
       durationMs: 1,
@@ -496,6 +532,85 @@ describe("client parser compact contract", () => {
         ],
       }),
     ).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
+  });
+
+  it("fails determinism before comparison for duplicate run identities", () => {
+    const run = (runtime: "PYTHON" | "WASM", runId: string) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
+      normalizedDigest: "a".repeat(64),
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
+    });
+    expect(
+      evaluateDeterminism({
+        demoSha256: "b".repeat(64),
+        runs: [
+          run("PYTHON", "duplicate"),
+          run("PYTHON", "duplicate"),
+          run("WASM", "w1"),
+          run("WASM", "w2"),
+        ],
+      }),
+    ).toMatchObject({ status: "FAIL", reason: "DUPLICATE_RUN_IDENTITY" });
+  });
+
+  it("fails determinism before comparison for a catalog mismatch", () => {
+    const run = (runtime: "PYTHON" | "WASM", runId: string) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      catalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+      catalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+      contractVersion: CLIENT_PARSER_CONTRACT_VERSION,
+      contractDigest: CLIENT_PARSER_CONTRACT_DIGEST,
+      normalizedDigest: "a".repeat(64),
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
+    });
+    const runs = [run("PYTHON", "p1"), run("PYTHON", "p2"), run("WASM", "w1"), run("WASM", "w2")];
+    runs[0]!.catalogDigest = "0".repeat(64);
+    expect(evaluateDeterminism({ demoSha256: "b".repeat(64), runs })).toMatchObject({
+      status: "FAIL",
+      reason: "CATALOG_MISMATCH",
+    });
+  });
+
+  it.each([
+    [null, "NULL_MATCH"],
+    [0, "ZERO_MATCH"],
+    [false, "FALSE_MATCH"],
+    ["", "EMPTY_STRING_MATCH"],
+  ])("preserves semantic equality for %p", (sample, status) => {
+    expect(
+      compareFieldObservation({
+        category: "test",
+        eventOrEntity: "test",
+        field: "value",
+        pythonAvailable: true,
+        wasmExportAvailable: true,
+        pythonParsed: true,
+        wasmParsed: true,
+        pythonValue: sample,
+        wasmValue: sample,
+        evidenceRef: "test",
+      }).status,
+    ).toBe(status);
   });
 
   it("discovers the observed runtime surface instead of trusting declarations", () => {
@@ -604,7 +719,7 @@ describe("client parser compact contract", () => {
     expect(trustedRuntimeUrl("javascript:alert(1)", "https://gamepro.network/poc")).toBeNull();
   });
 
-  it.each(["rawPayload", "raw_rows", "binary", "buffers"])(
+  it.each(["rawPayload", "raw_rows", "binary", "buffers", "constructor", "prototype"])(
     "rejects nested forbidden key %s",
     (key) => {
       const value = envelope();

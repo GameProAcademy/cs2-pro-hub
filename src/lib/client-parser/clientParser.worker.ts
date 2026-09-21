@@ -27,6 +27,7 @@ import {
   CLIENT_PARSER_NAME,
   CLIENT_PARSER_RUNTIME,
   CLIENT_PARSER_SCHEMA_VERSION,
+  CLIENT_PARSER_CATALOG_VERSION,
   CLIENT_PARSER_VERSION,
   CLIENT_RESULT_MAX_BYTES,
   CLIENT_TICK_PROBE_LIMIT,
@@ -36,17 +37,13 @@ import {
   type ClientParserErrorCode,
 } from "./clientParser.types";
 import {
+  CLIENT_AUDIT_CATALOG_DIGEST,
+  CLIENT_PARSER_CONTRACT_DIGEST,
   CLIENT_PRIORITY_EVENTS,
   CLIENT_TICK_PROPERTIES,
   eventFieldRequest,
   headerEvidence,
 } from "./clientParser.audit";
-
-function sortedRecord(row: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(row).sort(([left], [right]) => left.localeCompare(right)),
-  );
-}
 
 function roundEvidenceFromSamples(
   samples: ClientEventSample[],
@@ -70,7 +67,10 @@ function roundEvidenceFromSamples(
     const winnerSlot = safeNumber(end?.fields["winner"] ?? end?.fields["winner_slot"]);
     const winnerSideValue = end?.fields["winner_side"] ?? end?.fields["winner_team"];
     return {
-      roundIndex: index + 1,
+      derivedRoundIndex: index + 1,
+      observedRoundNumber: safeNumber(
+        start.fields["round"] ?? start.fields["round_number"] ?? start.fields["round_number_real"],
+      ),
       startTick,
       endTick,
       duration: endTick === null ? null : endTick - startTick,
@@ -90,6 +90,10 @@ function roundEvidenceFromSamples(
             ? "AMBIGUOUS"
             : "COMPLETE",
       source: "round_start+round_end",
+      evidenceScope: "BOUNDED_REFERENCE",
+      sampleLimit: CLIENT_EVENT_SAMPLE_LIMIT,
+      sampled: true,
+      complete: false,
       evidenceRef: `round:${index + 1}:${startTick}:${endTick ?? "missing"}`,
     };
   });
@@ -180,6 +184,7 @@ function apiEvidence(
   durationMs: number | null = null,
   result?: unknown,
   detail: Partial<ClientApiCallEvidence> = {},
+  demoSha256 = "",
 ): ClientApiCallEvidence {
   const rawMessage = error instanceof Error ? error.message : null;
   return {
@@ -210,6 +215,12 @@ function apiEvidence(
     inputDigest: null,
     outputDigest: callSucceeded ? sha256Text(stableClientJson(result ?? null)) : null,
     evidenceRef: null,
+    requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+    requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+    eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+    parserVersion: CLIENT_PARSER_VERSION,
+    parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+    demoSha256,
     ...detail,
   };
 }
@@ -292,6 +303,17 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   progress(command.requestId, "HASHING", 0.08, started);
   const hashStarted = performance.now();
   const demoSha = sha256Hex(bytes);
+  if (
+    command.authorization.authorizedDemo !== true ||
+    command.authorization.provenance !== "LOCAL_USER_SELECTION" ||
+    command.authorization.source !== "LOCAL_FILE" ||
+    command.authorization.filename !== file.name ||
+    command.authorization.sizeBytes !== file.size ||
+    command.authorization.sha256 !== demoSha ||
+    !command.authorization.authorizationRef ||
+    !command.authorization.receivedAt
+  )
+    throw new Error("CLIENT_DEMO_INVALID");
   const hashDurationMs = performance.now() - hashStarted;
   assertActive(command.requestId);
 
@@ -415,6 +437,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
             inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
             outputDigest: sha256Text(encoded),
             evidenceRef: `parseEvent:${name}:${sha256Text(encoded)}`,
+            requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+            requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+            eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+            parserVersion: CLIENT_PARSER_VERSION,
+            parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+            demoSha256: demoSha,
           },
         ),
       );
@@ -427,6 +455,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
           requestedOtherFields: [...request.otherFields],
           inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
           evidenceRef: `parseEvent:${name}:failed`,
+          requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+          requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+          eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+          parserVersion: CLIENT_PARSER_VERSION,
+          parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+          demoSha256: demoSha,
         }),
       );
       parsedEventInventory.push({
@@ -558,6 +592,8 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     count: null,
     samples: [],
     normalizedSamples: [],
+    normalization: "RAW_ONLY",
+    lifecycleStatus: "RAW_ONLY",
     normalizedDigest: null,
     rawFieldInventory: [],
     semanticStatus: "NOT_RUN",
@@ -569,13 +605,28 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       const grenadeRows = rows(parser.parseGrenades(bytes));
       const rawFieldInventory = [...new Set(grenadeRows.flatMap((row) => Object.keys(row)))].sort();
       const samples = grenadeRows.slice(0, CLIENT_GRENADE_SAMPLE_LIMIT);
-      const normalizedSamples = samples.map(sortedRecord);
-      const normalizedDigest = sha256Text(stableClientJson(grenadeRows));
+      const normalizedSamples = samples.map((row) => ({
+        rawGrenadeName: row["name"] ?? null,
+        rawGrenadeType: row["grenade_type"] ?? null,
+        rawEntityId: row["entity_id"] ?? null,
+        rawSteamId: row["steamid"] ?? null,
+        rawTick: row["tick"] ?? null,
+        rawX: row["x"] ?? null,
+        rawY: row["y"] ?? null,
+        rawZ: row["z"] ?? null,
+        normalizedGrenadeType: null,
+        normalizedGrenadeIdentity: null,
+        normalizedPosition: null,
+        lifecycle: "UNRESOLVED",
+      }));
+      const normalizedDigest = sha256Text(stableClientJson(normalizedSamples));
       grenadeEvidence = {
         status: "AVAILABLE",
         count: grenadeRows.length,
         samples,
         normalizedSamples,
+        normalization: "RAW_ONLY",
+        lifecycleStatus: "UNRESOLVED",
         normalizedDigest,
         rawFieldInventory,
         semanticStatus: [
@@ -625,6 +676,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       sizeBytes: file.size,
       name: file.name,
       lastModified: file.lastModified,
+      authorization: command.authorization,
     },
     header: { values: header, evidence: headerEvidence(header) },
     playerInventory,
@@ -648,6 +700,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       lastTick: observedTicks.at(-1) ?? null,
       tickCount: playbackTicks,
       probeTicks: [...probeTicks],
+      probeType: "FIRST_MIDDLE_LAST",
+      headerPlaybackTicks: playbackTicks,
+      authoritativeDomain: false,
+      domainEvidenceRef: tickRows.length
+        ? `tick-probe:${sha256Text(stableClientJson(tickRows))}`
+        : null,
       coverageStatus:
         tickStatus === "AVAILABLE"
           ? "PROBE_ONLY"

@@ -1,10 +1,10 @@
-import { sha256Text, stableClientJson } from "./clientParser.hash";
 import {
   CLIENT_CAPABILITY_CLASSIFICATIONS,
   CLIENT_PARSER_NAME,
   CLIENT_PARSER_VERSION,
   type ClientCapability,
 } from "./clientParser.types";
+import { sha256Text, stableClientJson } from "./clientParser.hash";
 
 export const CLIENT_PARSER_CAPABILITY_CATALOG: ClientCapability[] = [
   ["parseHeader", "RAW_ONLY"],
@@ -30,9 +30,8 @@ export const CLIENT_PARSER_CAPABILITY_CATALOG: ClientCapability[] = [
   parserVersion: CLIENT_PARSER_VERSION,
 }));
 
-export const CLIENT_PARSER_CATALOG_DIGEST = sha256Text(
-  stableClientJson(CLIENT_PARSER_CAPABILITY_CATALOG),
-);
+export { CLIENT_AUDIT_CATALOG_DIGEST as CLIENT_PARSER_CATALOG_DIGEST } from "./clientParser.audit";
+
 export const CLIENT_PARSER_CAPABILITY_DIGEST = sha256Text(
   stableClientJson({
     classifications: CLIENT_CAPABILITY_CLASSIFICATIONS,
