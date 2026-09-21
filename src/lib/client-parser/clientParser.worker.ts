@@ -51,13 +51,21 @@ function sortedRecord(row: Record<string, unknown>): Record<string, unknown> {
 function roundEvidenceFromSamples(
   samples: ClientEventSample[],
 ): ClientParseResult["roundEvidence"] {
-  const starts = samples.filter((sample) => sample.eventName === "round_start");
-  const ends = samples.filter((sample) => sample.eventName === "round_end");
+  const starts = samples.filter(
+    (sample): sample is ClientEventSample & { tick: number } =>
+      sample.eventName === "round_start" && sample.tick !== null,
+  );
+  const ends = samples.filter(
+    (sample): sample is ClientEventSample & { tick: number } =>
+      sample.eventName === "round_end" && sample.tick !== null,
+  );
   return starts.map((start, index) => {
+    const nextStartTick = starts[index + 1]?.tick ?? null;
     const end = ends.find(
-      (candidate) => candidate.tick !== null && candidate.tick >= (start.tick ?? 0),
+      (candidate) =>
+        candidate.tick >= start.tick && (nextStartTick === null || candidate.tick < nextStartTick),
     );
-    const startTick = start.tick ?? 0;
+    const startTick = start.tick;
     const endTick = end?.tick ?? null;
     const winnerSlot = safeNumber(end?.fields["winner"] ?? end?.fields["winner_slot"]);
     const winnerSideValue = end?.fields["winner_side"] ?? end?.fields["winner_team"];
@@ -75,7 +83,12 @@ function roundEvidenceFromSamples(
           sample.tick >= startTick &&
           (endTick === null || sample.tick <= endTick),
       ).length,
-      completeness: endTick === null ? "MISSING_END" : "COMPLETE",
+      completeness:
+        endTick === null
+          ? "MISSING_END"
+          : ends.filter((item) => item.tick === endTick).length > 1
+            ? "AMBIGUOUS"
+            : "COMPLETE",
       source: "round_start+round_end",
       evidenceRef: `round:${index + 1}:${startTick}:${endTick ?? "missing"}`,
     };
