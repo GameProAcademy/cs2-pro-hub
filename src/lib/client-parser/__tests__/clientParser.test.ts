@@ -28,10 +28,7 @@ import {
   type ClientParseResult,
 } from "../clientParser.types";
 import { validateClientParserResult } from "../clientParser.validator.server";
-import {
-  CLIENT_AUDIT_CATALOG_DIGEST,
-  CLIENT_PARSER_CONTRACT_DIGEST,
-} from "../clientParser.audit";
+import { CLIENT_AUDIT_CATALOG_DIGEST, CLIENT_PARSER_CONTRACT_DIGEST } from "../clientParser.audit";
 import {
   CLIENT_PARSER_CATALOG_VERSION,
   CLIENT_PARSER_CONTRACT_VERSION,
