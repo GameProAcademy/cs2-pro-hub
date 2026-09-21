@@ -21,7 +21,13 @@ Segredos necessários (servidor):
 `POST DEMO_PARSER_URL` com `Authorization: Bearer <DEMO_PARSER_TOKEN>` e corpo:
 
 ```json
-{ "contract_version": 1, "upload_id": "uuid", "demo_url": "signed-url", "demo_sha256": "hex", "file_size": 123 }
+{
+  "contract_version": 1,
+  "upload_id": "uuid",
+  "demo_url": "signed-url",
+  "demo_sha256": "hex",
+  "file_size": 123
+}
 ```
 
 Resposta: `RawParserOutput` (`src/lib/pipeline/types.ts`) com
@@ -42,22 +48,22 @@ Estados: `pending -> processing -> processed | failed`.
 
 ## Camadas
 
-| Módulo | Responsabilidade |
-| --- | --- |
-| `src/config/pipeline.ts` | versões, limites, retenção, janelas, concorrência |
-| `src/lib/pipeline/errors.ts` | taxonomia estruturada; permanente vs transitório |
-| `src/lib/pipeline/types.ts` | contrato do parser + schema canônico |
-| `src/lib/pipeline/parser/adapter.ts` | abstração `DemoParserAdapter` |
-| `src/lib/pipeline/parser/remoteParser.server.ts` | transporte HTTP para o worker |
-| `src/lib/pipeline/validator.ts` | validação de arquivo, canônica e identidade |
-| `src/lib/pipeline/normalizer.ts` | parser -> canônico (puro) |
-| `src/lib/pipeline/metrics.ts` | KAST, trades, opening, clutch, utility (puro) |
-| `src/lib/pipeline/features.ts` | sinais das dez dimensões DNA (puro) |
-| `src/lib/pipeline/persistence.server.ts` | escrita permanente (service role) |
-| `src/lib/pipeline/jobs.server.ts` | ciclo de vida, retries, stale, cleanup |
-| `src/lib/pipeline.functions.ts` | API do jogador |
-| `src/lib/pipeline-admin.functions.ts` | observabilidade master |
-| `src/routes/api/public/pipeline-cron.ts` | manutenção agendada (bearer secret) |
+| Módulo                                           | Responsabilidade                                  |
+| ------------------------------------------------ | ------------------------------------------------- |
+| `src/config/pipeline.ts`                         | versões, limites, retenção, janelas, concorrência |
+| `src/lib/pipeline/errors.ts`                     | taxonomia estruturada; permanente vs transitório  |
+| `src/lib/pipeline/types.ts`                      | contrato do parser + schema canônico              |
+| `src/lib/pipeline/parser/adapter.ts`             | abstração `DemoParserAdapter`                     |
+| `src/lib/pipeline/parser/remoteParser.server.ts` | transporte HTTP para o worker                     |
+| `src/lib/pipeline/validator.ts`                  | validação de arquivo, canônica e identidade       |
+| `src/lib/pipeline/normalizer.ts`                 | parser -> canônico (puro)                         |
+| `src/lib/pipeline/metrics.ts`                    | KAST, trades, opening, clutch, utility (puro)     |
+| `src/lib/pipeline/features.ts`                   | sinais das dez dimensões DNA (puro)               |
+| `src/lib/pipeline/persistence.server.ts`         | escrita permanente (service role)                 |
+| `src/lib/pipeline/jobs.server.ts`                | ciclo de vida, retries, stale, cleanup            |
+| `src/lib/pipeline.functions.ts`                  | API do jogador                                    |
+| `src/lib/pipeline-admin.functions.ts`            | observabilidade master                            |
+| `src/routes/api/public/pipeline-cron.ts`         | manutenção agendada (bearer secret)               |
 
 ## Dados
 
@@ -66,6 +72,16 @@ Permanentes: `matches`, `match_metrics`, `match_rounds`, `round_events`,
 
 Temporário: o arquivo `.dem` no bucket privado `demos`, em
 `{user_id}/{upload_id}.dem`, removido após 24h (sucesso) ou 72h (falha).
+
+### FASE 2.7.2G.6 — retenção e deleção verificada
+
+A política `demo-retention-v1` centraliza 24h para sucesso, 72h para falha
+terminal/`blocked_raw_audit` e elegibilidade imediata no cancelamento. O cleanup
+reivindica o job sob lock, valida estado, lease, ownership, RAW/Canonical quando
+aplicável e remove somente o `.dem` original via API de Storage. O marcador de
+deleção só é gravado após uma segunda consulta provar ausência física. Jobs,
+uploads, SHA, RAW evidence, Canonical e derivados nunca são apagados pelo
+cleanup. Ver `PHASE-2.7.2G.6-DEM-DATA-RETENTION-AND-DELETION.md`.
 
 Idempotência: `uploads.demo_sha256` por usuário e `matches.upload_id` único —
 reprocessar substitui os derivados, nunca duplica.

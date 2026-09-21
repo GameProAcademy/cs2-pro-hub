@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
         } = await import("@/lib/pipeline/jobs.server");
         const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
 
-        const [recovered, reconciled, orphansReconciled, deleted] = await Promise.all([
+        const [recovered, reconciled, orphansReconciled, demoCleanup] = await Promise.all([
           recoverStaleJobs(),
           reconcileDurableDemoQueue(25),
           reconcileOrphanDemoUploads(15, 25),
@@ -72,7 +72,7 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
           reconciled,
           orphansReconciled,
           recovered,
-          deleted,
+          demoCleanup,
           faceit,
         });
       },

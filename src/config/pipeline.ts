@@ -68,6 +68,12 @@ export const DEMO_RETENTION_HOURS = 24;
 /** How long a failed demo is kept for retry/debug purposes. */
 export const FAILED_DEMO_RETENTION_HOURS = 72;
 
+/** Auditable identity of the centralized original-DEMO retention policy. */
+export const DEMO_RETENTION_POLICY_VERSION = "demo-retention-v1";
+
+/** Short lease used to serialize Storage cleanup against retry/recovery. */
+export const DEMO_CLEANUP_CLAIM_SECONDS = 300;
+
 /** Trade detection window. Documented, configurable, never inlined. */
 export const TRADE_WINDOW_SECONDS = 5;
 

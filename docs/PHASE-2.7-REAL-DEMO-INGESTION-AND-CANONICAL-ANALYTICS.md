@@ -80,13 +80,13 @@ exatamente o mesmo conjunto e que cada feature declara direção.
 
 Inversões semânticas corrigidas em `src/lib/pipeline/features.ts`:
 
-| feature | antes | agora | direção |
-|---|---|---|---|
-| `early_death_rate` | `1 - earlyDeaths/deaths` (era avoidance) | `earlyDeaths/deaths` | ↓ |
-| `early_death_avoidance` | inexistente aqui | `1 - earlyDeaths/deaths` | ↑ |
-| `untraded_death_rate` | `1 - untraded/deaths` | `untraded/deaths` | ↓ |
-| `damage_taken_per_round` | `1 - dano/round/120` | `dano/round/120` | ↓ |
-| `decision_making.early_death_avoidance` | mesmo nome, outro denominador | renomeado `early_death_free_rate` (`1 - earlyDeaths/rounds`) | ↑ |
+| feature                                 | antes                                    | agora                                                        | direção |
+| --------------------------------------- | ---------------------------------------- | ------------------------------------------------------------ | ------- |
+| `early_death_rate`                      | `1 - earlyDeaths/deaths` (era avoidance) | `earlyDeaths/deaths`                                         | ↓       |
+| `early_death_avoidance`                 | inexistente aqui                         | `1 - earlyDeaths/deaths`                                     | ↑       |
+| `untraded_death_rate`                   | `1 - untraded/deaths`                    | `untraded/deaths`                                            | ↓       |
+| `damage_taken_per_round`                | `1 - dano/round/120`                     | `dano/round/120`                                             | ↓       |
+| `decision_making.early_death_avoidance` | mesmo nome, outro denominador            | renomeado `early_death_free_rate` (`1 - earlyDeaths/rounds`) | ↑       |
 
 Semântica NULL endurecida: todo `ratio()` com denominador zero agora retorna
 `null`. Antes, `Math.max(x, 1)` transformava ausência de amostra em `0` —
@@ -130,30 +130,30 @@ Nenhuma migration foi criada nesta rodada — nenhuma tabela nova foi necessári
 
 ## 6. Gates
 
-| Gate | Status | Nota |
-|---|---|---|
-| 01 upload real | PARTIAL | upload/registro funcionam; sem parser não há ciclo completo |
-| 02 parser real | **BLOCKED** | worker externo não provisionado |
-| 03 determinismo | BLOCKED | depende de 02 |
-| 04 arquivo inválido | PASS | validação de extensão/tamanho/vazio, códigos precisos |
-| 05 limite de recurso | PARTIAL | tamanho e timeout de transporte sim; CPU/memória no worker |
-| 06/07 identidade real | PASS | só SteamID explícito; nada derivado de nickname |
-| 08 identity graph | PARTIAL | caminho preservado; prova real depende de 02 |
-| 09 adapter canônico | PASS | demo passa por `demoToCanonicalBundle` |
-| 10 persistência canônica | PASS | escrita canônica só pela rotina transacional |
-| 11 neutralidade de player | PASS | projeção nunca sobrescreve outro jogador |
-| 12/13 idempotência/atomicidade | PASS (canônico) | provado na 2.6.11.5A; demo agora usa o mesmo caminho |
-| 14/15/16 convergência | BLOCKED (demo real) | provas existentes usam fixture canônica |
-| 17 parse parcial | PARTIAL | tratamento implementado; prova real depende de 02 |
-| 18/19 métricas/features | PASS (fixture) | 500 testes; sobre demo real: BLOCKED |
-| 20 semântica de features | PASS | catálogo + testes |
-| 21 data quality | PASS | quality/coverage/confidence derivados de cobertura real |
-| 22 linhagem | PASS | versões e ids gravados |
-| 23/24 recuperação/concorrência | NOT_PROVEN | claim atômico e stale recovery existem; prova E2E depende de 02 |
-| 25/26 RLS/storage | PASS (herdado, sem alteração) | suíte de segurança inalterada |
-| 27 cleanup | PASS | provas anteriores mantidas |
-| 28 fim da dupla persistência | **PASS** | ver §4.1 |
-| 29/30 sem regressão | PASS | 500/500 testes, typecheck, lint, build |
+| Gate                           | Status                               | Nota                                                                                                                             |
+| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| 01 upload real                 | PARTIAL                              | upload/registro funcionam; sem parser não há ciclo completo                                                                      |
+| 02 parser real                 | **BLOCKED**                          | worker externo não provisionado                                                                                                  |
+| 03 determinismo                | BLOCKED                              | depende de 02                                                                                                                    |
+| 04 arquivo inválido            | PASS                                 | validação de extensão/tamanho/vazio, códigos precisos                                                                            |
+| 05 limite de recurso           | PARTIAL                              | tamanho e timeout de transporte sim; CPU/memória no worker                                                                       |
+| 06/07 identidade real          | PASS                                 | só SteamID explícito; nada derivado de nickname                                                                                  |
+| 08 identity graph              | PARTIAL                              | caminho preservado; prova real depende de 02                                                                                     |
+| 09 adapter canônico            | PASS                                 | demo passa por `demoToCanonicalBundle`                                                                                           |
+| 10 persistência canônica       | PASS                                 | escrita canônica só pela rotina transacional                                                                                     |
+| 11 neutralidade de player      | PASS                                 | projeção nunca sobrescreve outro jogador                                                                                         |
+| 12/13 idempotência/atomicidade | PASS (canônico)                      | provado na 2.6.11.5A; demo agora usa o mesmo caminho                                                                             |
+| 14/15/16 convergência          | BLOCKED (demo real)                  | provas existentes usam fixture canônica                                                                                          |
+| 17 parse parcial               | PARTIAL                              | tratamento implementado; prova real depende de 02                                                                                |
+| 18/19 métricas/features        | PASS (fixture)                       | 500 testes; sobre demo real: BLOCKED                                                                                             |
+| 20 semântica de features       | PASS                                 | catálogo + testes                                                                                                                |
+| 21 data quality                | PASS                                 | quality/coverage/confidence derivados de cobertura real                                                                          |
+| 22 linhagem                    | PASS                                 | versões e ids gravados                                                                                                           |
+| 23/24 recuperação/concorrência | NOT_PROVEN                           | claim atômico e stale recovery existem; prova E2E depende de 02                                                                  |
+| 25/26 RLS/storage              | PASS (herdado, sem alteração)        | suíte de segurança inalterada                                                                                                    |
+| 27 cleanup                     | BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP | G.6: contrato endurecido; seis objetos foram removidos pela rotina legada publicada após o backfill; remanescentes em quarentena |
+| 28 fim da dupla persistência   | **PASS**                             | ver §4.1                                                                                                                         |
+| 29/30 sem regressão            | PASS                                 | 500/500 testes, typecheck, lint, build                                                                                           |
 
 ## 7. Próximos passos
 
@@ -175,7 +175,7 @@ demo; o parser real continua não provisionado.
    `canConvergeCrossSource()` autoriza (EXACT_MATCH inequívoco). `CONFLICT` falha o
    job (`CANONICAL_RESOLUTION_CONFLICT`) em vez de fundir históricos.
 2. **Fingerprint ≠ identidade canônica.** O SHA-256 do arquivo é evidência de
-   identidade do *arquivo*; o demo não tem `external_match_id`. A persistência
+   identidade do _arquivo_; o demo não tem `external_match_id`. A persistência
    canônica deixou de exigir `externalMatchId` para aceitar `_attach_match_id`, o
    que antes descartava silenciosamente todo attach de demo.
 3. **`NULL ≠ FALSE`.** Flags de bomba (`bombPlanted/Defused/Exploded`) são
@@ -266,23 +266,23 @@ utility não observável ⇒ `null`.
 
 ### 9.6. Provas executadas
 
-| item | estado | evidência |
-| --- | --- | --- |
-| attach demo com `external_match_id` NULL | **PASS (banco real)** | `fp_attach=t` |
-| idempotência do mesmo fingerprint | **PASS (banco real)** | `idempotent=t` (1 linha em `match_sources`) |
-| mesmo fingerprint apontado a outra partida | **PASS (banco real)** | `CANONICAL_ATTACH_CONFLICT` |
-| ambos identificadores ausentes | **PASS (banco real)** | `CANONICAL_ATTACH_INVALID` |
-| FACEIT por `external_match_id` | **PASS (banco real)** | `faceit=t` |
-| EXACT/NO_MATCH/CONFLICT do resolver | PASS (unitário) | `hardening271.test.ts` A–F |
-| isolamento de projeção | PASS (unitário) | G1–G3 |
-| NULL vs ZERO / utility | PASS (unitário) | H1–H2, I1–I3 |
-| tickrate 64 / 128 / timestamp / ausente | PASS (unitário) | J, K, L, L2 |
-| clutch 1v1, 1v2 e participante fantasma | PASS (unitário) | M1, M2, N, N2 |
-| amostra insuficiente | PASS (unitário) | O |
-| ausência de segunda persistência | PASS (estrutural) | projeção não escreve fatos canônicos |
-| atomicidade attach+persistência | **NOT PROVEN em runtime** | verificada estruturalmente (mesma transação); falha proposital não executada |
-| concorrência real de attach | **NOT PROVEN** | concurrency real not proven in this environment |
-| pipeline E2E com `.dem` real | **BLOCKED** | parser não provisionado |
+| item                                       | estado                    | evidência                                                                    |
+| ------------------------------------------ | ------------------------- | ---------------------------------------------------------------------------- |
+| attach demo com `external_match_id` NULL   | **PASS (banco real)**     | `fp_attach=t`                                                                |
+| idempotência do mesmo fingerprint          | **PASS (banco real)**     | `idempotent=t` (1 linha em `match_sources`)                                  |
+| mesmo fingerprint apontado a outra partida | **PASS (banco real)**     | `CANONICAL_ATTACH_CONFLICT`                                                  |
+| ambos identificadores ausentes             | **PASS (banco real)**     | `CANONICAL_ATTACH_INVALID`                                                   |
+| FACEIT por `external_match_id`             | **PASS (banco real)**     | `faceit=t`                                                                   |
+| EXACT/NO_MATCH/CONFLICT do resolver        | PASS (unitário)           | `hardening271.test.ts` A–F                                                   |
+| isolamento de projeção                     | PASS (unitário)           | G1–G3                                                                        |
+| NULL vs ZERO / utility                     | PASS (unitário)           | H1–H2, I1–I3                                                                 |
+| tickrate 64 / 128 / timestamp / ausente    | PASS (unitário)           | J, K, L, L2                                                                  |
+| clutch 1v1, 1v2 e participante fantasma    | PASS (unitário)           | M1, M2, N, N2                                                                |
+| amostra insuficiente                       | PASS (unitário)           | O                                                                            |
+| ausência de segunda persistência           | PASS (estrutural)         | projeção não escreve fatos canônicos                                         |
+| atomicidade attach+persistência            | **NOT PROVEN em runtime** | verificada estruturalmente (mesma transação); falha proposital não executada |
+| concorrência real de attach                | **NOT PROVEN**            | concurrency real not proven in this environment                              |
+| pipeline E2E com `.dem` real               | **BLOCKED**               | parser não provisionado                                                      |
 
 A verificação de banco real rodou em transação abortada de propósito
 (`RAISE EXCEPTION` final): nenhuma linha permaneceu (`leftover_fp=0`,
@@ -325,14 +325,14 @@ utility" para a outra.
 
 Semântica: a classe descreve **o dataset**, nunca a atividade do jogador.
 
-| classe | ausente | presente + zero observado |
-| --- | --- | --- |
-| `killEvents` | k/d, KAST, opening, clutch, multi-kill, survival = `NULL` | `0` (ou `1` em complementos como `survival_rate`) |
-| `damageEvents` | ADR, dano sofrido, eficiência = `NULL` | `0` |
-| `utilityEvents` | utility damage/flash/granadas = `NULL` | `0` |
-| `timing` | trades, early deaths, KAST = `NULL` | `0` |
-| `roundEndEvidence` | `survival_rate` = `NULL` | valor real |
-| `economy` | `buy_discipline`, `damage_per_dollar` = `NULL`; `economy_data_available` = `0` | `economy_data_available` = `1` |
+| classe             | ausente                                                                        | presente + zero observado                         |
+| ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------- |
+| `killEvents`       | k/d, KAST, opening, clutch, multi-kill, survival = `NULL`                      | `0` (ou `1` em complementos como `survival_rate`) |
+| `damageEvents`     | ADR, dano sofrido, eficiência = `NULL`                                         | `0`                                               |
+| `utilityEvents`    | utility damage/flash/granadas = `NULL`                                         | `0`                                               |
+| `timing`           | trades, early deaths, KAST = `NULL`                                            | `0`                                               |
+| `roundEndEvidence` | `survival_rate` = `NULL`                                                       | valor real                                        |
+| `economy`          | `buy_discipline`, `damage_per_dollar` = `NULL`; `economy_data_available` = `0` | `economy_data_available` = `1`                    |
 
 Denominador ausente continua `NULL` (ex.: `hs_rate` sem nenhuma kill,
 `clutch_win_rate` sem tentativas, `damage_efficiency` sem dano sofrido) — nunca `0`.
@@ -383,12 +383,12 @@ STATUS DA FASE 2.7: **IN PROGRESS — NOT CLOSED** (parser real continua bloquea
 
 Fórmula e pesos do `compositeRating()` INALTERADOS. O que mudou é quando ele pode ser publicado:
 
-| valor | evidência exigida | NULL quando |
-| --- | --- | --- |
-| `sourceRating` | kill events + damage events + cobertura completa + `roundsPlayed > 0` | falta qualquer uma |
-| `ctRating` / `tRating` | as mesmas + existir round do lado | falta qualquer uma |
-| `consistency.side_balance` | ambos os side ratings | qualquer lado NULL (herdado) |
-| `kast` | kill events + timing + cobertura completa + rounds | falta qualquer uma |
+| valor                      | evidência exigida                                                     | NULL quando                  |
+| -------------------------- | --------------------------------------------------------------------- | ---------------------------- |
+| `sourceRating`             | kill events + damage events + cobertura completa + `roundsPlayed > 0` | falta qualquer uma           |
+| `ctRating` / `tRating`     | as mesmas + existir round do lado                                     | falta qualquer uma           |
+| `consistency.side_balance` | ambos os side ratings                                                 | qualquer lado NULL (herdado) |
+| `kast`                     | kill events + timing + cobertura completa + rounds                    | falta qualquer uma           |
 
 Antes, apenas `damageEvents` era exigido: kills/deaths ausentes entravam na fórmula como zero implícito
 e produziam um número fabricado. Casos A–D cobertos em `src/lib/pipeline/__tests__/quality271c.test.ts`.
@@ -502,6 +502,7 @@ A regra agora vive em um único helper `hasRoundEndEvidence()`, que aceita `winn
 evidência válida, nunca ausência.
 
 Consumidores unificados:
+
 - `normalizer.assessQuality()` → `roundsValid` (antes só `winnerSide`/`endTick`);
 - `metrics.metricsAvailability().roundEndEvidence` (antes sem `durationSeconds`);
 - `playerSurvivedRound()` e o denominador de sobrevivência, via re-export
@@ -550,7 +551,7 @@ Training, UI ou dependências.
 ### O que foi alinhado
 
 1. **`survivalRounds` documentado pelo que realmente é** (`src/lib/pipeline/types.ts`):
-   denominador de *determinabilidade* — rounds participados com evidência de fim
+   denominador de _determinabilidade_ — rounds participados com evidência de fim
    **e** decisão não nula de `playerSurvivedRound()` (`true` = sobrevivência
    provada, `false` = morte provada). Round terminado não implica sobrevivência
    determinável. `NULL` = desconhecido, `0` = zero observado.
@@ -566,7 +567,7 @@ Training, UI ou dependências.
    com a fórmula composta explícita, `side_balance` com clamp explícito.
 4. **Identidade do parser separada por conceito** (`src/config/pipeline.ts`):
    `PARSER_NAME` / `PARSER_VERSION` (placeholder, `PARSER_VERSION_CONFIRMED =
-   false`) / revisão de build / `PARSER_CONTRACT_VERSION` nunca se confundem, e
+false`) / revisão de build / `PARSER_CONTRACT_VERSION` nunca se confundem, e
    nada aqui descreve um worker provisionado.
 5. **Testes numéricos de contrato** (`quality271f.test.ts`, 23 testes sintéticos):
    valores reais de `survival_rate`, `kills_per_round`, `damage_per_round`,
@@ -628,7 +629,7 @@ docs/build):
   `rating` ficam `NULL`; contadores observados permanecem numéricos.
 - Parser identity: **PASS** — nome / versão / revisão / versão de contrato /
   schema / analysis separados; `0.31.4` continua `PARSER_VERSION_CONFIRMED =
-  false`.
+false`.
 
 **GATE 0 RESULT: PASS** (sem BLOCKER, sem FAIL; dívida remanescente apenas de
 cobertura de prova, registrada como NOT PROVEN).
@@ -730,20 +731,20 @@ O formato plano `{ "error_code": ... }` continua aceito por compatibilidade.
 
 ### Matriz de classificação (uma única matriz)
 
-| Origem | Código do pipeline | Permanente |
-| --- | --- | --- |
-| 401 | `PARSER_UNAUTHORIZED` | sim |
-| 403 | `PARSER_FORBIDDEN` | sim |
-| 409 / `CONTRACT_MISMATCH` | `PARSER_CONTRACT_MISMATCH` | sim |
-| 413 | `DEMO_TOO_LARGE` | sim |
-| 408 / 504 / abort | `PARSER_TIMEOUT` | não |
-| 502 / 503 / falha de rede | `PARSER_UNAVAILABLE` | não |
-| `INVALID_DEMO_FORMAT` / `CORRUPTED_DEMO` / `UNSUPPORTED_DEMO` | idem | sim |
-| `HASH_MISMATCH` | `PARSER_HASH_MISMATCH` | sim |
-| `FILE_SIZE_MISMATCH` | `PARSER_FILE_SIZE_MISMATCH` | sim |
-| `DOWNLOAD_ERROR` | `PARSER_DOWNLOAD_ERROR` | não |
-| corpo não-JSON / estrutura inválida | `PARSER_INVALID_RESPONSE` | sim |
-| 5xx genérico | `PARSER_ERROR` | não |
+| Origem                                                        | Código do pipeline          | Permanente |
+| ------------------------------------------------------------- | --------------------------- | ---------- |
+| 401                                                           | `PARSER_UNAUTHORIZED`       | sim        |
+| 403                                                           | `PARSER_FORBIDDEN`          | sim        |
+| 409 / `CONTRACT_MISMATCH`                                     | `PARSER_CONTRACT_MISMATCH`  | sim        |
+| 413                                                           | `DEMO_TOO_LARGE`            | sim        |
+| 408 / 504 / abort                                             | `PARSER_TIMEOUT`            | não        |
+| 502 / 503 / falha de rede                                     | `PARSER_UNAVAILABLE`        | não        |
+| `INVALID_DEMO_FORMAT` / `CORRUPTED_DEMO` / `UNSUPPORTED_DEMO` | idem                        | sim        |
+| `HASH_MISMATCH`                                               | `PARSER_HASH_MISMATCH`      | sim        |
+| `FILE_SIZE_MISMATCH`                                          | `PARSER_FILE_SIZE_MISMATCH` | sim        |
+| `DOWNLOAD_ERROR`                                              | `PARSER_DOWNLOAD_ERROR`     | não        |
+| corpo não-JSON / estrutura inválida                           | `PARSER_INVALID_RESPONSE`   | sim        |
+| 5xx genérico                                                  | `PARSER_ERROR`              | não        |
 
 Falha de transporte NUNCA é classificada como demo inválida.
 `mapParserErrorCode()` delega a `classifyWorkerFailure()`: matriz única.
@@ -781,14 +782,14 @@ implementado e testado (42 testes em `src/lib/pipeline/__tests__/gate1e.test.ts`
 `assertParserIdentity()` é a ÚNICA autoridade de identidade e vale igualmente
 para a resposta de `/v1/parse` e para o probe de `/version`:
 
-| divergência | erro | permanência |
-| --- | --- | --- |
-| `parser.name` diferente | `PARSER_IDENTITY_MISMATCH` | permanente |
-| `parser.version` (major.minor) diferente | `PARSER_IDENTITY_MISMATCH` | permanente |
-| `parser.revision` diferente da esperada | `PARSER_IDENTITY_MISMATCH` | permanente |
-| revision exigida e não reportada | `PARSER_IDENTITY_MISMATCH` | permanente |
-| revision exigida e não configurada | `PARSER_CONFIG_ERROR` | permanente |
-| `contract_version` diferente de 1 | `PARSER_CONTRACT_MISMATCH` | permanente |
+| divergência                              | erro                       | permanência |
+| ---------------------------------------- | -------------------------- | ----------- |
+| `parser.name` diferente                  | `PARSER_IDENTITY_MISMATCH` | permanente  |
+| `parser.version` (major.minor) diferente | `PARSER_IDENTITY_MISMATCH` | permanente  |
+| `parser.revision` diferente da esperada  | `PARSER_IDENTITY_MISMATCH` | permanente  |
+| revision exigida e não reportada         | `PARSER_IDENTITY_MISMATCH` | permanente  |
+| revision exigida e não configurada       | `PARSER_CONFIG_ERROR`      | permanente  |
+| `contract_version` diferente de 1        | `PARSER_CONTRACT_MISMATCH` | permanente  |
 
 Revision vazia é ABSENTE — nunca inventada. Em produção o lock é obrigatório por
 padrão (`DEMO_PARSER_REVISION_REQUIRED` torna a decisão explícita). Identidade
@@ -800,21 +801,21 @@ Os códigos do protocolo estão declarados em `WORKER_ERROR_CODES`
 (`parserEndpoint.ts`) e classificados por `classifyWorkerFailure()`; nenhum
 segundo switch existe (`mapParserErrorCode()` delega).
 
-| HTTP | worker `error_code` | PipelineError | retry |
-| --- | --- | --- | --- |
-| 401 | `UNAUTHORIZED` | `PARSER_UNAUTHORIZED` | permanente |
-| 403 | `FORBIDDEN` | `PARSER_FORBIDDEN` | permanente |
-| 409 | `CONTRACT_MISMATCH` / `UNSUPPORTED_CONTRACT_VERSION` | `PARSER_CONTRACT_MISMATCH` | permanente |
-| 422 | `INVALID_DEMO_FORMAT` | `INVALID_DEMO_FORMAT` | permanente |
-| 422 | `CORRUPTED_DEMO` | `CORRUPTED_DEMO` | permanente |
-| 422 | `UNSUPPORTED_DEMO` | `UNSUPPORTED_DEMO` | permanente |
-| 422 | `HASH_MISMATCH` | `PARSER_HASH_MISMATCH` | permanente |
-| 422 | `FILE_SIZE_MISMATCH` | `PARSER_FILE_SIZE_MISMATCH` | permanente |
-| 413 | `DEMO_TOO_LARGE` | `DEMO_TOO_LARGE` | permanente |
-| 413 | `PAYLOAD_TOO_LARGE` | `PARSER_PAYLOAD_TOO_LARGE` | permanente |
-| 502/503 | `DOWNLOAD_ERROR` / `DOWNLOAD_FAILED` | `PARSER_DOWNLOAD_ERROR` | transiente |
-| 504 | `TIMEOUT` / `PARSE_TIMEOUT` / `DOWNLOAD_TIMEOUT` | `PARSER_TIMEOUT` | transiente |
-| 500 | `PARSER_ERROR` | `PARSER_ERROR` | transiente |
+| HTTP    | worker `error_code`                                  | PipelineError               | retry      |
+| ------- | ---------------------------------------------------- | --------------------------- | ---------- |
+| 401     | `UNAUTHORIZED`                                       | `PARSER_UNAUTHORIZED`       | permanente |
+| 403     | `FORBIDDEN`                                          | `PARSER_FORBIDDEN`          | permanente |
+| 409     | `CONTRACT_MISMATCH` / `UNSUPPORTED_CONTRACT_VERSION` | `PARSER_CONTRACT_MISMATCH`  | permanente |
+| 422     | `INVALID_DEMO_FORMAT`                                | `INVALID_DEMO_FORMAT`       | permanente |
+| 422     | `CORRUPTED_DEMO`                                     | `CORRUPTED_DEMO`            | permanente |
+| 422     | `UNSUPPORTED_DEMO`                                   | `UNSUPPORTED_DEMO`          | permanente |
+| 422     | `HASH_MISMATCH`                                      | `PARSER_HASH_MISMATCH`      | permanente |
+| 422     | `FILE_SIZE_MISMATCH`                                 | `PARSER_FILE_SIZE_MISMATCH` | permanente |
+| 413     | `DEMO_TOO_LARGE`                                     | `DEMO_TOO_LARGE`            | permanente |
+| 413     | `PAYLOAD_TOO_LARGE`                                  | `PARSER_PAYLOAD_TOO_LARGE`  | permanente |
+| 502/503 | `DOWNLOAD_ERROR` / `DOWNLOAD_FAILED`                 | `PARSER_DOWNLOAD_ERROR`     | transiente |
+| 504     | `TIMEOUT` / `PARSE_TIMEOUT` / `DOWNLOAD_TIMEOUT`     | `PARSER_TIMEOUT`            | transiente |
+| 500     | `PARSER_ERROR`                                       | `PARSER_ERROR`              | transiente |
 
 Falha de rede/TLS/DNS → `PARSER_UNAVAILABLE`; abort/deadline → `PARSER_TIMEOUT`.
 Nenhuma falha de transporte, integridade ou configuração vira "demo inválida".
@@ -828,7 +829,10 @@ Nenhuma falha de transporte, integridade ou configuração vira "demo inválida"
 `/version`:
 
 ```json
-{ "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "..." }, "contract_version": 1 }
+{
+  "parser": { "name": "demoparser2", "version": "0.42.0", "revision": "..." },
+  "contract_version": 1
+}
 ```
 
 ### Worker — `services/cs2-demo-parser`
@@ -898,12 +902,12 @@ Nenhum `.dem` real foi processado. GATE 02 não foi iniciado.
 
 ### Matriz semântica player-scoped
 
-| DATA CLASS | RAW SOURCE | HOT SOURCE | CANONICAL / PROJECTION | PLAYER SCOPED | AVAILABILITY | NULL RULE | QUALITY |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| AIM | `tick_samples` íntegros em JSONL gzip | `aim_observations` limitado | metadata sem virar evento | `player` = chave resolvida | `complete`, `limited`, `unavailable` | ausência não vira observação zero | HOT declara rows incluídas, observadas, limite e overflow |
-| POSITION | `tick_samples` íntegros | `position_snapshots` limitado | metadata sem virar evento | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | coordenada ausente permanece ausente | qualidade vem da seção HOT |
-| ECONOMY | rounds/ticks/economia íntegros | `economy_snapshots` limitado | metadata e economia canônica por round | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | saldo/equipamento ausente não vira zero | qualidade vem da seção HOT |
-| UTILITY | eventos e trajetórias integrais; trajectory points não são grenade events | eventos compactos HOT | eventos canônicos + contagem player-scoped | ator deve ser a chave resolvida | `available`, `unavailable` | sem cobertura = NULL; cobertura com zero eventos do jogador = zero observável | `missing_utility` distingue ausência de cobertura |
+| DATA CLASS | RAW SOURCE                                                                | HOT SOURCE                    | CANONICAL / PROJECTION                     | PLAYER SCOPED                       | AVAILABILITY                         | NULL RULE                                                                     | QUALITY                                                   |
+| ---------- | ------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------ | ----------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------- |
+| AIM        | `tick_samples` íntegros em JSONL gzip                                     | `aim_observations` limitado   | metadata sem virar evento                  | `player` = chave resolvida          | `complete`, `limited`, `unavailable` | ausência não vira observação zero                                             | HOT declara rows incluídas, observadas, limite e overflow |
+| POSITION   | `tick_samples` íntegros                                                   | `position_snapshots` limitado | metadata sem virar evento                  | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | coordenada ausente permanece ausente                                          | qualidade vem da seção HOT                                |
+| ECONOMY    | rounds/ticks/economia íntegros                                            | `economy_snapshots` limitado  | metadata e economia canônica por round     | filtro exclusivo da chave resolvida | `complete`, `limited`, `unavailable` | saldo/equipamento ausente não vira zero                                       | qualidade vem da seção HOT                                |
+| UTILITY    | eventos e trajetórias integrais; trajectory points não são grenade events | eventos compactos HOT         | eventos canônicos + contagem player-scoped | ator deve ser a chave resolvida     | `available`, `unavailable`           | sem cobertura = NULL; cobertura com zero eventos do jogador = zero observável | `missing_utility` distingue ausência de cobertura         |
 
 O RAW continua integral, privado e separado do callback `/complete`. O HOT continua alvo 4 MiB e hard limit 8 MiB. JSON não-finito é convertido para `null` antes de `allow_nan=False`. Chunks mantêm SHA-256 físico, `previousChunkSha256`, digest por seção, root digest e manifest determinísticos; timestamps ficam fora do conteúdo determinístico.
 

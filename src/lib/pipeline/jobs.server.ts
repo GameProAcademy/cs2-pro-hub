@@ -10,6 +10,7 @@
  */
 import {
   ANALYSIS_VERSION,
+  DEMO_CLEANUP_CLAIM_SECONDS,
   JOB_STALE_MINUTES,
   MAX_CONCURRENT_DEMO_JOBS,
   MAX_JOB_RETRIES,
@@ -55,7 +56,7 @@ import {
   assertDemoIntegrity,
   computeStoredDemoSha256,
   createDemoSignedUrl,
-  deleteDemo,
+  deleteDemoVerified,
   demoExists,
   retainUntil,
 } from "@/lib/pipeline/storage.server";
@@ -128,24 +129,102 @@ async function assertNotCancelled(jobId: string) {
   }
 }
 
-async function finishCancellation(jobId: string, storagePath: string | null) {
-  const db = await admin();
-  let cleanupError: string | null = null;
-  if (storagePath) {
-    try {
-      await deleteDemo(storagePath);
-      await db
-        .from("demo_jobs")
-        .update({ storage_deleted_at: new Date().toISOString() })
-        .eq("id", jobId);
-    } catch (error) {
-      cleanupError = toPipelineError(error).code;
-    }
+type CleanupClaim = {
+  job_id: string;
+  upload_id: string;
+  user_id: string;
+  storage_path: string;
+  claim_token: string;
+  metadata_mismatch: boolean;
+};
+
+export type DemoCleanupSummary = {
+  candidates: number;
+  verified: number;
+  alreadyAbsent: number;
+  failed: number;
+  metadataMismatches: number;
+};
+
+function cleanupClaim(value: unknown): CleanupClaim | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row["job_id"] !== "string" ||
+    typeof row["upload_id"] !== "string" ||
+    typeof row["user_id"] !== "string" ||
+    typeof row["storage_path"] !== "string" ||
+    typeof row["claim_token"] !== "string"
+  ) {
+    return null;
   }
-  await db.rpc(
-    "finish_demo_job_cancelled",
-    cleanupError ? { _job_id: jobId, _cleanup_error: cleanupError } : { _job_id: jobId },
+  return {
+    job_id: row["job_id"],
+    upload_id: row["upload_id"],
+    user_id: row["user_id"],
+    storage_path: row["storage_path"],
+    claim_token: row["claim_token"],
+    metadata_mismatch: row["metadata_mismatch"] === true,
+  };
+}
+
+function cleanupErrorCode(error: unknown): string {
+  const detail = error instanceof PipelineError ? error.detail : undefined;
+  if (detail === "PATH_OWNERSHIP_MISMATCH") return "PATH_OWNERSHIP_MISMATCH";
+  if (detail === "DELETE_NOT_VERIFIED") return "DELETE_NOT_VERIFIED";
+  return "DELETE_FAILED";
+}
+
+async function executeCleanupClaim(claim: CleanupClaim): Promise<"verified" | "alreadyAbsent"> {
+  const db = await admin();
+  try {
+    const outcome = await deleteDemoVerified(claim.storage_path, claim.user_id, claim.upload_id);
+    const { data, error } = await db.rpc(
+      "finish_demo_cleanup_verified" as never,
+      {
+        _job_id: claim.job_id,
+        _claim_token: claim.claim_token,
+        _outcome: outcome,
+      } as never,
+    );
+    if (error || data !== true) {
+      throw new PipelineError("CLEANUP_ERROR", error?.message ?? "CLEANUP_CLAIM_STALE");
+    }
+    return outcome === "ALREADY_ABSENT" ? "alreadyAbsent" : "verified";
+  } catch (error) {
+    const code = cleanupErrorCode(error);
+    await db.rpc(
+      "fail_demo_cleanup" as never,
+      {
+        _job_id: claim.job_id,
+        _claim_token: claim.claim_token,
+        _error_code: code,
+      } as never,
+    );
+    console.error(`[demo-cleanup] job=${claim.job_id} code=${code}`);
+    throw error;
+  }
+}
+
+async function finishCancellation(jobId: string, _storagePath: string | null) {
+  const db = await admin();
+  await db.rpc("finish_demo_job_cancelled", { _job_id: jobId });
+  const { data, error } = await db.rpc(
+    "claim_demo_cleanup_job" as never,
+    {
+      _job_id: jobId,
+      _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
+    } as never,
   );
+  const result = data as Record<string, unknown> | null;
+  if (error || result?.["claimed"] !== true) return;
+  const claim = cleanupClaim(result);
+  if (!claim) return;
+  try {
+    await executeCleanupClaim(claim);
+  } catch {
+    // Cancellation remains terminal; the next maintenance pass retries cleanup.
+  }
 }
 
 async function persistRawEvidence(args: {
@@ -323,35 +402,35 @@ export async function reconcileOrphanDemoUploads(
   return Number(data ?? 0);
 }
 
-/** Deletes temporary demo files whose retention window has expired. */
-export async function cleanupExpiredDemos(limit = 25): Promise<number> {
+/** Claims, deletes and physically verifies eligible temporary demo files. */
+export async function cleanupExpiredDemos(limit = 25): Promise<DemoCleanupSummary> {
   const db = await admin();
-  const { data } = await db
-    .from("demo_jobs")
-    .select("id, storage_path")
-    .not("storage_path", "is", null)
-    .is("storage_deleted_at", null)
-    .lt("retain_until", new Date().toISOString())
-    .limit(limit);
-
-  let deleted = 0;
-  for (const job of data ?? []) {
-    if (!job.storage_path) continue;
+  const { data, error } = await db.rpc(
+    "claim_demo_cleanup_jobs" as never,
+    {
+      _limit: limit,
+      _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
+    } as never,
+  );
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  const payload = data as { items?: unknown[] } | null;
+  const claims = (payload?.items ?? []).map(cleanupClaim).filter((claim) => claim !== null);
+  const summary: DemoCleanupSummary = {
+    candidates: claims.length,
+    verified: 0,
+    alreadyAbsent: 0,
+    failed: 0,
+    metadataMismatches: claims.filter((claim) => claim.metadata_mismatch).length,
+  };
+  for (const claim of claims) {
     try {
-      await deleteDemo(job.storage_path);
-      await db
-        .from("demo_jobs")
-        .update({ storage_deleted_at: new Date().toISOString(), cleanup_error: null })
-        .eq("id", job.id);
-      deleted += 1;
-    } catch (error) {
-      await db
-        .from("demo_jobs")
-        .update({ cleanup_error: toPipelineError(error).code })
-        .eq("id", job.id);
+      const outcome = await executeCleanupClaim(claim);
+      summary[outcome] += 1;
+    } catch {
+      summary.failed += 1;
     }
   }
-  return deleted;
+  return summary;
 }
 
 /**
@@ -836,7 +915,7 @@ export async function processJob(
         error_message: pipelineError.detail ?? null,
         finished_at: canRetry ? null : new Date().toISOString(),
         duration_ms: Date.now() - startedAt,
-        retain_until: retainUntil(false),
+        retain_until: canRetry ? null : retainUntil(false),
       })
       .eq("id", jobId)
       .eq("status", "processing")

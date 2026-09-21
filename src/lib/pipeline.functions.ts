@@ -409,22 +409,9 @@ export const cancelMyDemoJob = createServerFn({ method: "POST" })
     if (error) throw new Error("JOB_CANCEL_FAILED");
 
     const outcome = result as { status?: string; changed?: boolean } | null;
-    if (outcome?.status === "cancelled" && owned.storage_path) {
-      const { deleteDemo } = await import("@/lib/pipeline/storage.server");
-      try {
-        await deleteDemo(owned.storage_path);
-        await supabaseAdmin
-          .from("demo_jobs")
-          .update({ storage_deleted_at: new Date().toISOString(), cleanup_error: null })
-          .eq("id", owned.id)
-          .eq("status", "cancelled");
-      } catch {
-        await supabaseAdmin
-          .from("demo_jobs")
-          .update({ cleanup_error: "STORAGE_ERROR" })
-          .eq("id", owned.id)
-          .eq("status", "cancelled");
-      }
+    if (outcome?.status === "cancelled") {
+      const { cleanupExpiredDemos } = await import("@/lib/pipeline/jobs.server");
+      await cleanupExpiredDemos(5);
     }
     return {
       jobId: owned.id,

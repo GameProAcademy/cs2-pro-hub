@@ -367,6 +367,6 @@ export const adminCleanupDemos = createServerFn({ method: "POST" })
     await requireMaster(context as Ctx);
     const { cleanupExpiredDemos, recoverStaleJobs } = await import("@/lib/pipeline/jobs.server");
     const recovered = await recoverStaleJobs();
-    const deleted = await cleanupExpiredDemos(50);
-    return { recovered, deleted };
+    const demoCleanup = await cleanupExpiredDemos(50);
+    return { recovered, demoCleanup };
   });
