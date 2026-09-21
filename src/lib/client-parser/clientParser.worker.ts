@@ -6,7 +6,12 @@ import {
   playerInventoryFromRuntime,
   trustedRuntimeUrl,
 } from "./clientParser.runtime";
-import { sha256Hex, sha256Text, computeClientResultDigest } from "./clientParser.hash";
+import {
+  sha256Hex,
+  sha256Text,
+  computeClientResultDigest,
+  stableClientJson,
+} from "./clientParser.hash";
 import { buildClientParserManifest } from "./clientParser.manifest";
 import type {
   ClientParserCommand,
@@ -137,9 +142,9 @@ function apiEvidence(
     errorMessage: rawMessage ? rawMessage.slice(0, 160) : null,
     durationMs,
     resultBytes: callSucceeded
-      ? new TextEncoder().encode(JSON.stringify(result ?? null)).byteLength
+      ? new TextEncoder().encode(stableClientJson(result ?? null)).byteLength
       : null,
-    normalizedDigest: callSucceeded ? sha256Text(JSON.stringify(result ?? null)) : null,
+    normalizedDigest: callSucceeded ? sha256Text(stableClientJson(result ?? null)) : null,
   };
 }
 
@@ -265,7 +270,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let parseEventDurationMs = 0;
   let parseEventResultBytes = 0;
   const parsedEventDigests: string[] = [];
-  for (const name of CLIENT_PRIORITY_EVENTS) {
+  const eventsToAudit = [...new Set([...CLIENT_PRIORITY_EVENTS, ...names])].slice(
+    0,
+    CLIENT_EVENT_INVENTORY_LIMIT,
+  );
+  for (const name of eventsToAudit) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
       parsedEventInventory.push({ name, status: "NOT_PRESENT", count: null, fields: [] });
@@ -277,7 +286,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       const callStarted = performance.now();
       parsed = rows(parser.parseEvent(bytes, name, [], []));
       parseEventDurationMs += performance.now() - callStarted;
-      const encoded = JSON.stringify(parsed);
+      const encoded = stableClientJson(parsed);
       parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
       parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
@@ -301,7 +310,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       const callStarted = performance.now();
       const fallbackResult = parser.parseEvent(bytes, names[0] ?? "player_death", [], []);
       parseEventDurationMs += performance.now() - callStarted;
-      const encoded = JSON.stringify(fallbackResult ?? null);
+      const encoded = stableClientJson(fallbackResult ?? null);
       parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
       parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
