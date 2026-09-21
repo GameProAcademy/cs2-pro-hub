@@ -269,20 +269,6 @@ export function eventFieldRequest(name: string): ClientEventFieldRequest {
   return EVENT_FIELD_REQUEST_CATALOG[name] ?? request([], []);
 }
 
-export const CLIENT_UPSTREAM_SURFACE = CLIENT_FIELD_AUDIT_CATALOG.map((entry) => ({
-  field: entry.field,
-  category: entry.category,
-  eventOrEntity: entry.eventOrEntity,
-  sourceAPI: entry.source,
-  upstreamSupported: null as boolean | null,
-  upstreamVerification: "UPSTREAM_NOT_VERIFIED" as const,
-  projectCatalogued: true as const,
-  requestable: entry.requestable,
-  wasmExportAvailable: null as boolean | null,
-  canonicalEligible: false as const,
-  reasonIfUnavailable: "requires_authorized_real_dem_runtime_observation",
-}));
-
 function tickCategory(field: string): string {
   if (
     ["player_name", "player_steamid", "internal_slot", "user_id", "participant_id"].includes(field)
@@ -372,6 +358,20 @@ export const CLIENT_FIELD_AUDIT_CATALOG = [
     })),
   ),
 ] as const;
+
+export const CLIENT_UPSTREAM_SURFACE = CLIENT_FIELD_AUDIT_CATALOG.map((entry) => ({
+  field: entry.field,
+  category: entry.category,
+  eventOrEntity: entry.eventOrEntity,
+  sourceAPI: entry.source,
+  upstreamSupported: null as boolean | null,
+  upstreamVerification: "UPSTREAM_NOT_VERIFIED" as const,
+  projectCatalogued: true as const,
+  requestable: entry.requestable,
+  wasmExportAvailable: null as boolean | null,
+  canonicalEligible: false as const,
+  reasonIfUnavailable: "requires_authorized_real_dem_runtime_observation",
+}));
 
 export const CLIENT_PARITY_DIMENSIONS = [
   "header",
