@@ -8,7 +8,9 @@ No real `.dem` exists in the repository, test fixtures or uploaded artifacts. No
 
 ## Prepared execution evidence
 
-For `parseHeader`, `listGameEvents`, `parseEvent`, `parseTicks`, and optional `parseGrenades`, the Worker records export presence, call attempt, success, bounded error, duration, normalized result size and normalized digest. The DEM identity is a lowercase SHA-256 calculated from the exact browser bytes.
+For `parseHeader`, `listGameEvents`, `parseEvent`, `parseTicks`, and optional `parseGrenades`, the Worker records export presence, call attempt, success, bounded error, duration, normalized result size and normalized digest. Every `parseEvent` call additionally records the event name, actual player/other field arrays passed to the parser, returned fields, missing requested fields, unexpected fields, input/output digests and an evidence reference. The DEM identity is a lowercase SHA-256 calculated from the exact browser bytes.
+
+Discovered-event order and duplicates are retained independently from the normalized inventory. Grenade evidence retains bounded raw samples, separately normalized samples, field inventory, count and digest. Round evidence pairs only observed `round_start`/`round_end` samples and marks missing ends; tick-domain evidence is explicitly a non-authoritative header-derived probe.
 
 ## Required before execution
 
