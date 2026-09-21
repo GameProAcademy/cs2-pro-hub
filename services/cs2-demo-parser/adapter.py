@@ -280,7 +280,12 @@ def resolve_event_round(
     tick: int | None,
     intervals: Sequence[tuple[int, int | None, int | None]],
 ) -> int | None:
-    """Map a tick to a round only when its observed window contains the tick."""
+    """Map a tick to a round only when its observed window contains the tick.
+
+    Known gaps between a round end and the next round start are intentionally
+    not assigned to either round. This prevents lifecycle/intermission events
+    from being attached to the next round merely because it is next.
+    """
     if tick is None or not intervals:
         return None
 
@@ -427,11 +432,16 @@ def normalize_events(
             tick = _int(_pick(row, "tick"))
             explicit_number = _int(_pick(row, "round", "round_number"))
             number = explicit_number if explicit_number is not None and explicit_number > 0 else None
+
+            # An explicit parser round is evidence only when structurally
+            # consistent with the observed interval. Never let a round number
+            # override an impossible tick/boundary relationship.
             if number is not None:
                 interval = next((item for item in intervals if item[0] == number), None)
                 if interval is None or (tick is not None and resolve_event_round(tick, [interval]) != number):
                     dropped += 1
                     continue
+
             if number is None:
                 number = resolve_event_round(tick, intervals)
             if number is None:

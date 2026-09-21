@@ -89,6 +89,7 @@ def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
         "economy": evidence.get("economy_coverage") or [],
         "forensic": [
             {
+                "forensic_contract_v2": evidence.get("forensic_contract_v2"),
                 "event_coverage": evidence.get("event_coverage") or [],
                 "field_mappings": evidence.get("field_mappings") or [],
                 "gates": evidence.get("gates") or [],
@@ -96,9 +97,66 @@ def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
                 "raw_status": evidence.get("raw_status"),
                 "raw_audit_status": evidence.get("raw_audit_status"),
                 "raw_block_reasons": evidence.get("raw_block_reasons") or [],
+                "producer_reconciliation_projection": _producer_reconciliation_projection(evidence),
             }
         ],
     }
+
+
+def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, Any]:
+    events = [row for row in evidence.get("raw_events") or [] if isinstance(row, dict)]
+    players = [row for row in evidence.get("raw_player_info") or [] if isinstance(row, dict)]
+    rounds = [row for row in evidence.get("round_evidence") or [] if isinstance(row, dict)]
+    ticks = [row for row in evidence.get("tick_samples") or [] if isinstance(row, dict)]
+    event_names = sorted({str(row.get("event_name")) for row in events})
+    event_counts = {name: sum(row.get("event_name") == name for row in events) for name in event_names}
+    event_fields = {
+        name: sorted({str(field) for row in events if row.get("event_name") == name for field in (row.get("raw_fields") or {})})
+        for name in event_names
+    }
+    player_ids = sorted({str(row.get("steamid", row.get("player_steamid"))) for row in players if row.get("steamid", row.get("player_steamid")) is not None})
+    round_ids = sorted({_safe_int(row.get("number")) for row in rounds if _safe_int(row.get("number")) is not None})
+    tick_values = sorted({_safe_int(row.get("tick")) for row in ticks if _safe_int(row.get("tick")) is not None})
+    mappings = sorted(
+        ({key: row.get(key) for key in ("raw_field", "app_field", "canonical_field", "status", "reason")} for row in evidence.get("field_mappings") or [] if isinstance(row, dict)),
+        key=lambda row: str(row.get("raw_field")),
+    )
+    contract = evidence.get("forensic_contract_v2") if isinstance(evidence.get("forensic_contract_v2"), dict) else {}
+    catalog = contract.get("capability_catalog") if isinstance(contract.get("capability_catalog"), dict) else {}
+    classifications: dict[str, int] = {}
+    for row in mappings:
+        status = str(row.get("status"))
+        classifications[status] = classifications.get(status, 0) + 1
+    projection = {
+        "event_inventory": event_names,
+        "event_counts": event_counts,
+        "event_fields": event_fields,
+        "player_inventory": player_ids,
+        "player_fields": sorted({str(field) for row in players for field in row}),
+        "round_inventory": round_ids,
+        "round_fields": sorted({str(field) for row in rounds for field in row}),
+        "tick_sample_domain": {"min_tick": min(tick_values) if tick_values else None, "max_tick": max(tick_values) if tick_values else None, "count": len(tick_values)},
+        "tick_fields": sorted({str(field) for row in ticks for field in row}),
+        "mappings": mappings,
+        "classifications": dict(sorted(classifications.items())),
+        "derivations": sorted(str(row.get("raw_field")) for row in mappings if row.get("status") == "DERIVED"),
+        "raw_only_reasons": sorted({str(row.get("reason")) for row in mappings if row.get("status") == "RAW_ONLY" and row.get("reason")}),
+        "parser_identity": contract.get("parser"),
+        "catalog_digest": contract.get("catalog_digest"),
+        "capability_count": len(catalog.get("capabilities") or []),
+        "capability_digest": hashlib.sha256(_stable(catalog.get("capabilities") or [])).hexdigest(),
+        "tick_domain": (contract.get("full_tick_audit") or {}).get("tick_domain_source"),
+        "tick_coverage": contract.get("full_tick_audit"),
+        "property_inventory": contract.get("property_inventory"),
+        "semantic_inventories": contract.get("semantic_inventories"),
+        "forensic_contract_digest": contract.get("deterministic_digest"),
+    }
+    projection["digest"] = hashlib.sha256(_stable(projection)).hexdigest()
+    return projection
+
+
+def _safe_int(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def _now() -> str:
@@ -108,6 +166,7 @@ def _now() -> str:
 def _audit_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     """Small, deterministic evidence summary; the APP owns the final decision."""
     return {
+        "forensic_contract_v2": evidence.get("forensic_contract_v2"),
         "raw_status": evidence.get("raw_status"),
         "raw_audit_status": evidence.get("raw_audit_status"),
         "raw_block_reasons": sorted(str(item) for item in (evidence.get("raw_block_reasons") or [])),

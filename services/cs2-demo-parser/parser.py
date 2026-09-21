@@ -27,14 +27,25 @@ from __future__ import annotations
 from typing import Any
 
 from adapter import build_raw_parser_output
+from capability_catalog import catalog_payload
 from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
+from forensic_audit import (
+    TICK_INTERVAL_SIZE,
+    TICK_PROPERTY_BATCH_SIZE,
+    build_tick_coverage,
+    build_tick_domain_source,
+    build_tick_intervals,
+    merge_property_summaries,
+    summarize_rows,
+)
 from raw_evidence import (
     EVENT_CANDIDATES,
     PLAYER_PROPERTIES,
     TICK_SAMPLE_LIMIT,
     build_gates,
     build_manifest,
+    build_forensic_contract_v2,
     event_coverage,
     field_coverage,
     mapping_inventory,
@@ -143,6 +154,79 @@ def _parse_ticks(
         return rows[::step][:TICK_SAMPLE_LIMIT], None
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
         return [], exc
+
+
+def _discover_updated_fields(demo: Any) -> tuple[list[str], BaseException | None]:
+    """Use the versioned parser discovery API without pretending it is static metadata."""
+    method = getattr(demo, "list_updated_fields", None)
+    if not callable(method):
+        return [], AttributeError("list_updated_fields is unavailable")
+    try:
+        discovered: set[str] = set()
+        for item in method() or []:
+            if isinstance(item, str) and item.strip():
+                discovered.add(item.strip())
+            elif isinstance(item, (list, tuple)):
+                for value in item:
+                    if isinstance(value, str) and value.strip():
+                        discovered.add(value.strip())
+            elif isinstance(item, dict):
+                for key in ("name", "field", "property"):
+                    value = item.get(key)
+                    if isinstance(value, str) and value.strip():
+                        discovered.add(value.strip())
+        return sorted(discovered), None
+    except BaseException as exc:  # noqa: BLE001 - retained as forensic evidence
+        return [], exc
+
+
+def _audit_full_tick_domain(
+    demo: Any, properties: list[str], playback_ticks: int | None,
+    *, tick_domain_source: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Audit every tick for deterministic property batches with bounded DataFrames.
+
+    The API is invoked only with explicit bounded tick intervals. When the
+    installed runtime cannot provide an independently authoritative expected
+    domain, the proof is BLOCKED and no unbounded fallback is attempted.
+    """
+    method = getattr(demo, "parse_ticks", None)
+    source = tick_domain_source or build_tick_domain_source(playback_ticks)
+    if not callable(method):
+        error = AttributeError("parse_ticks is unavailable")
+        unavailable = summarize_rows([], properties, attempted=False)
+        for item in unavailable:
+            item.update({"classification": "UNAVAILABLE", "parse_success": False, "reason": "demoparser2.parse_ticks API is unavailable."})
+        return build_tick_coverage(batches=[], playback_ticks=playback_ticks, tick_domain_source=source), unavailable
+    intervals = build_tick_intervals(source, TICK_INTERVAL_SIZE)
+    if not intervals:
+        unavailable = summarize_rows([], properties, attempted=False)
+        for item in unavailable:
+            item.update({"classification": "UNAVAILABLE", "parse_success": False, "reason": "Authoritative expected tick domain is unavailable."})
+        return build_tick_coverage(batches=[], playback_ticks=playback_ticks, tick_domain_source=source), unavailable
+    batches: list[dict[str, Any]] = []
+    interval_summaries: list[dict[str, Any]] = []
+    for start in range(0, len(properties), TICK_PROPERTY_BATCH_SIZE):
+        requested = properties[start:start + TICK_PROPERTY_BATCH_SIZE]
+        for first_tick, last_tick in intervals:
+            try:
+                requested_ticks = list(range(first_tick, last_tick + 1))
+                rows = _records(method(requested, ticks=requested_ticks))
+                tick_values = sorted({row.get("tick") for row in rows if isinstance(row.get("tick"), int)})
+                players = sorted({str(value) for row in rows for value in [row.get("steamid", row.get("player_steamid"))] if value is not None})
+                batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": len(rows), "ticks": tick_values, "players": players})
+                for summary in summarize_rows(rows, requested):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
+                del rows
+            except BaseException as exc:  # noqa: BLE001 - fail-closed evidence
+                kind, message = safe_error(exc)
+                batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": 0, "ticks": [], "players": [], "error": f"{kind}: {message}"})
+                for summary in summarize_rows([], requested, error=exc):
+                    summary["interval_digest"] = [first_tick, last_tick, summary.get("property")]
+                    interval_summaries.append(summary)
+    summaries = merge_property_summaries(interval_summaries)
+    return build_tick_coverage(batches=batches, playback_ticks=playback_ticks, tick_domain_source=source), summaries
 
 
 def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | None]:
@@ -394,6 +478,10 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["header"] = dict(demo.parse_header() or {})
 
+    updated_fields, updated_fields_error = _discover_updated_fields(demo)
+    raw["updated_fields"] = updated_fields
+    raw["updated_fields_error"] = updated_fields_error
+
     inventory, inventory_error = _available_events(demo)
     raw["event_inventory_error"] = inventory_error
     raw["event_inventory"] = sorted(inventory)
@@ -448,9 +536,23 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         }
     )
     tick_rows, tick_error = _parse_ticks(demo, sample_ticks)
+    audit_properties = sorted(set(updated_fields) | set(PLAYER_PROPERTIES))
+    full_tick_audit, full_tick_properties = _audit_full_tick_domain(
+        demo,
+        audit_properties,
+        raw["header"].get("playback_ticks") if isinstance(raw["header"].get("playback_ticks"), int) else None,
+    )
     grenade_rows, grenade_error = _parse_grenades(demo)
     raw["tick_rows"] = tick_rows
     raw["tick_error"] = tick_error
+    raw["full_tick_audit"] = full_tick_audit
+    raw["full_tick_properties"] = full_tick_properties
+    discovery_error = safe_error(updated_fields_error)[1] if updated_fields_error else None
+    raw["capability_catalog"] = catalog_payload(
+        updated_fields,
+        inventory,
+        discovery_error=discovery_error,
+    )
     raw["grenade_rows"] = grenade_rows
     raw["grenade_error"] = grenade_error
     derive_round_streams_from_tick_evidence(raw)
@@ -524,6 +626,7 @@ def build_raw_evidence(raw: dict[str, Any], output: dict[str, Any]) -> dict[str,
     penalties += 0.1 if not economy_coverage or not any(item["available"] for item in economy_coverage) else 0.0
     evidence["manifest"]["extraction_confidence"] = round(max(0.0, 1.0 - penalties), 3)
     evidence["gates"] = build_gates(evidence)
+    evidence["forensic_contract_v2"] = build_forensic_contract_v2(evidence, raw)
     return evidence
 
 

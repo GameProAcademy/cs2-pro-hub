@@ -12,7 +12,6 @@ from typing import Any, Callable
 import httpx
 
 from errors import WorkerError
-from parser_isolated import parse_demo_file_isolated
 from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
@@ -84,7 +83,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                             file_size=claim["file_size"],
                         ),
                         settings,
-                        parse_demo_file_isolated,
+                        parse,
                         job_id=identity["jobId"],
                         user_id=claim["user_id"],
                         attempt_number=claim["attempt_number"],
