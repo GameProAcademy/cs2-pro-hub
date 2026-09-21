@@ -1748,12 +1748,16 @@ export type Database = {
       }
       parser_runtime_provenance: {
         Row: {
+          app_source_commit: string | null
+          attestation_digest: string
+          attestation_version: number
           build_revision: string
           contract_version: number
           created_at: string
           critical_source_hashes: Json
           deployment_commit: string
           deployment_id: string
+          deployment_proof: Json
           id: string
           parser_name: string
           parser_version: string
@@ -1761,18 +1765,26 @@ export type Database = {
           railway_environment_id: string
           railway_project_id: string
           railway_service_id: string
+          repository_full_name: string
+          runtime_proof: Json
           semantic_revision: string
+          source_proof: Json
           status: string
           verification_method: string
           verification_timestamp: string
+          verified_endpoint: string
         }
         Insert: {
+          app_source_commit?: string | null
+          attestation_digest: string
+          attestation_version: number
           build_revision: string
           contract_version: number
           created_at?: string
           critical_source_hashes: Json
           deployment_commit: string
           deployment_id: string
+          deployment_proof: Json
           id?: string
           parser_name: string
           parser_version: string
@@ -1780,18 +1792,26 @@ export type Database = {
           railway_environment_id: string
           railway_project_id: string
           railway_service_id: string
+          repository_full_name: string
+          runtime_proof: Json
           semantic_revision: string
+          source_proof: Json
           status: string
           verification_method: string
           verification_timestamp: string
+          verified_endpoint: string
         }
         Update: {
+          app_source_commit?: string | null
+          attestation_digest?: string
+          attestation_version?: number
           build_revision?: string
           contract_version?: number
           created_at?: string
           critical_source_hashes?: Json
           deployment_commit?: string
           deployment_id?: string
+          deployment_proof?: Json
           id?: string
           parser_name?: string
           parser_version?: string
@@ -1799,10 +1819,14 @@ export type Database = {
           railway_environment_id?: string
           railway_project_id?: string
           railway_service_id?: string
+          repository_full_name?: string
+          runtime_proof?: Json
           semantic_revision?: string
+          source_proof?: Json
           status?: string
           verification_method?: string
           verification_timestamp?: string
+          verified_endpoint?: string
         }
         Relationships: []
       }
@@ -3095,6 +3119,10 @@ export type Database = {
         Row: {
           analysis_version: string | null
           attempt_number: number
+          controlled_replay_copy_status: string | null
+          controlled_replay_copy_verified_at: string | null
+          controlled_replay_reservation_id: string | null
+          controlled_replay_source_upload_id: string | null
           created_at: string
           demo_sha256: string | null
           error_code: string | null
@@ -3119,6 +3147,10 @@ export type Database = {
         Insert: {
           analysis_version?: string | null
           attempt_number?: number
+          controlled_replay_copy_status?: string | null
+          controlled_replay_copy_verified_at?: string | null
+          controlled_replay_reservation_id?: string | null
+          controlled_replay_source_upload_id?: string | null
           created_at?: string
           demo_sha256?: string | null
           error_code?: string | null
@@ -3143,6 +3175,10 @@ export type Database = {
         Update: {
           analysis_version?: string | null
           attempt_number?: number
+          controlled_replay_copy_status?: string | null
+          controlled_replay_copy_verified_at?: string | null
+          controlled_replay_reservation_id?: string | null
+          controlled_replay_source_upload_id?: string | null
           created_at?: string
           demo_sha256?: string | null
           error_code?: string | null
@@ -3165,6 +3201,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "uploads_controlled_replay_source_upload_id_fkey"
+            columns: ["controlled_replay_source_upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "uploads_supersedes_job_id_fkey"
             columns: ["supersedes_job_id"]
@@ -3315,21 +3358,38 @@ export type Database = {
         }
         Returns: Json
       }
-      finalize_controlled_demo_replay_attempt_9: {
-        Args: {
-          _admin_user_id: string
-          _copy_outcome: string
-          _destination_sha256: string
-          _destination_size: number
-          _provenance_id: string
-          _source_job_id: string
-          _source_sha256: string
-          _source_size: number
-          _upload_id: string
-          _user_id: string
-        }
-        Returns: Json
-      }
+      finalize_controlled_demo_replay_attempt_9:
+        | {
+            Args: {
+              _admin_user_id: string
+              _copy_outcome: string
+              _destination_sha256: string
+              _destination_size: number
+              _provenance_id: string
+              _reservation_id: string
+              _source_job_id: string
+              _source_sha256: string
+              _source_size: number
+              _upload_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _admin_user_id: string
+              _copy_outcome: string
+              _destination_sha256: string
+              _destination_size: number
+              _provenance_id: string
+              _source_job_id: string
+              _source_sha256: string
+              _source_size: number
+              _upload_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
       finalize_demo_parse_message: {
         Args: {
           _attempt: number
@@ -3389,6 +3449,14 @@ export type Database = {
       }
       owns_plan: { Args: { _plan_id: string }; Returns: boolean }
       owns_player: { Args: { _player_id: string }; Returns: boolean }
+      parser_attestation_canonical_payload: {
+        Args: { _attestation: Json }
+        Returns: string
+      }
+      parser_attestation_digest: {
+        Args: { _attestation: Json }
+        Returns: string
+      }
       persist_canonical_observation: {
         Args: { _bundle: Json; _owner_player_id?: string; _upload_id?: string }
         Returns: Json
@@ -3455,20 +3523,37 @@ export type Database = {
         Args: { _attachment: Json; _job_id: string; _user_id: string }
         Returns: boolean
       }
-      reserve_controlled_demo_replay_attempt_9: {
-        Args: {
-          _expected_attempt: number
-          _expected_sha256: string
-          _expected_size: number
-          _new_upload_id: string
-          _provenance_id: string
-          _replay_reason: string
-          _source_job_id: string
-          _source_upload_id: string
-          _user_id: string
-        }
-        Returns: Json
-      }
+      reserve_controlled_demo_replay_attempt_9:
+        | {
+            Args: {
+              _expected_attempt: number
+              _expected_sha256: string
+              _expected_size: number
+              _new_upload_id: string
+              _provenance_id: string
+              _replay_reason: string
+              _source_job_id: string
+              _source_upload_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _admin_user_id: string
+              _expected_attempt: number
+              _expected_sha256: string
+              _expected_size: number
+              _new_upload_id: string
+              _provenance_id: string
+              _replay_reason: string
+              _reservation_id: string
+              _source_job_id: string
+              _source_upload_id: string
+              _user_id: string
+            }
+            Returns: Json
+          }
       reserve_demo_upload: {
         Args: {
           _demo_sha256: string
