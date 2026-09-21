@@ -1,17 +1,18 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6 — DEM RETENTION & VERIFIED DELETION
 
-**Status:** `PASS_FOR_CODE_AND_SCHEMA`; cleanup produtivo `NOT_RUN` por restrição explícita.
+**Status:** `BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP`; nenhum cleanup G.6 foi invocado pelo agente.
 
 - [x] G.6-A/B: auditar estado real, lifecycle SQL, Storage e concorrência retry×cleanup.
 - [x] G.6-C/D: versionar `demo-retention-v1`; 24h sucesso, 72h falha/RAW bloqueado, cancelamento imediato.
 - [x] G.6-E/F: safety gate central, claim/lease transacional e ownership `{user_id}/{upload_id}.dem`.
 - [x] G.6-G: delete somente via Storage API, com consulta anterior/posterior e ausência física obrigatória.
 - [x] G.6-H: detectar `storage_deleted_at` divergente e classificar órfãos sem auto-delete.
-- [x] G.6-I: backfill preservador somente para retenções terminais ausentes; nenhum histórico apagado/reaberto.
+- [!] G.6-I: o backfill não apagou dados, mas expôs retenções já vencidas à rotina legada publicada; seis objetos desapareceram entre leituras.
 - [x] G.6-J: testes A–Q, métricas, documentação e ACL service-role-only.
-- [ ] Execução física produtiva: `NOT_RUN`; proibida nesta fase.
+- [x] Contenção: três objetos remanescentes colocados em quarentena de 24h, sem remoção ou substituição.
+- [ ] Revisão operacional independente e publicação coordenada são obrigatórias antes de liberar cleanup.
 
-**Decisão:** somente o `.dem` original temporário pode ser removido; uploads, jobs, SHA, provenance, RAW evidence, Canonical, rounds, eventos, métricas e features permanecem. Real DEM, Cache Run, attempt 9, Railway, Canonical e AI continuam fora deste gate.
+**Decisão:** fail-closed. O código e schema novos não autorizam liberação operacional. Somente o `.dem` original temporário era elegível, mas a corrida de rollout viola a prova exigida. Uploads, jobs, SHA, provenance, RAW evidence e Canonical permanecem preservados; Real DEM, Cache Run, attempt 9, Railway, Canonical e AI continuam fora deste gate.
 
 # CURRENT EXECUTION GATE — FASE 2.7.2G.5-R-F.2.10-F–H — REAL DEM + FIELD PARITY
 

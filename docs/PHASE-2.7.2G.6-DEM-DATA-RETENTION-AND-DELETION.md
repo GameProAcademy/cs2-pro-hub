@@ -2,16 +2,19 @@
 
 ## Decisão
 
-`DEM_RETENTION_POLICY = PASS_FOR_CODE_AND_SCHEMA`
+`DEM_RETENTION_POLICY = BLOCKED_BY_CONCURRENT_LEGACY_CLEANUP`
 
 O `.dem` original do bucket privado `demos` é temporário. Jobs processados usam
 retenção de 24 horas; falhas terminais e `blocked_raw_audit`, 72 horas;
 cancelamentos tornam-se elegíveis imediatamente. Jobs, uploads, SHA-256,
 provenance, RAW evidence, Canonical e derivados permanecem intactos.
 
-Nenhum cleanup produtivo foi executado nesta fase. A prova de remoção é de
-contrato, migration, testes e auditoria read-only; não houve DEM real, Cache Run,
-attempt 9, Railway, Canonical ou segredo.
+Nenhum cleanup produtivo foi invocado pelo agente. Porém, após o backfill tornar
+retenções históricas vencidas explícitas, uma rotina legada já publicada e
+externa a esta execução removeu seis dos nove objetos antes da publicação do novo
+safety gate. O agente interrompeu o fechamento, aplicou quarentena de 24 horas
+aos objetos remanescentes e preservou a evidência do incidente. Não houve DEM
+real, Cache Run, attempt 9, Railway, Canonical ou segredo.
 
 ## Estado auditado antes da migration
 
@@ -28,6 +31,20 @@ attempt 9, Railway, Canonical ou segredo.
 
 O backfill definiu apenas retenção ausente em `failed`/`blocked_raw_audit`, a
 partir do timestamp terminal histórico. Não apagou nem reabriu tentativas.
+
+## Incidente de rollout detectado
+
+Entre duas leituras read-only consecutivas, o bucket passou de 9 objetos e
+3.789.985.512 bytes para 3 objetos e 947.497.146 bytes. Não houve chamada de
+cleanup/Storage feita pelo agente. O comportamento é compatível com a versão
+publicada anterior de `cleanupExpiredDemos`, que observou as retenções históricas
+vencidas criadas pelo backfill antes que o novo código de claim e verificação
+fosse publicado.
+
+A migration de contenção moveu somente os objetos ainda fisicamente presentes
+para `retain_until >= now()+24h`. Nenhum arquivo foi restaurado, fabricado ou
+substituído. O gate G.6 permanece bloqueado até revisão operacional independente
+do incidente e publicação coordenada do servidor endurecido.
 
 ## Contrato
 
@@ -59,7 +76,7 @@ partir do timestamp terminal histórico. Não apagou nem reabriu tentativas.
 | M    | falha registrada sem falso positivo              | PASS   |
 | N    | mismatch de metadado detectado                   | PASS   |
 | O    | órfão classificado, sem auto-delete              | PASS   |
-| P    | histórico/RAW/Canonical/SHA preservados          | PASS   |
+| P    | histórico/RAW/Canonical/SHA preservados          | BLOCKED: remoção concorrente de seis DEMs temporários |
 | Q    | RPCs service-role-only e `search_path=''`        | PASS   |
 
 ## Métricas
@@ -71,8 +88,8 @@ sem retornar paths ou PII.
 
 ## Limites
 
-- Não há claim de deleção física produtiva neste fechamento porque o cleanup foi
-  deliberadamente proibido durante a auditoria.
+- Nenhum claim do fluxo G.6 foi executado. Houve remoção externa concorrente pela
+  rotina legada publicada; portanto, a fase não recebe PASS operacional.
 - `REAL_DEM_EXECUTION`, paridade Python×WASM e determinismo: `NOT_RUN`.
 - Canonical admission e AI Data Readiness permanecem bloqueados pelos gates
   próprios; esta política de retenção não os libera.
