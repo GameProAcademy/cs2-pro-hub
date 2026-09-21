@@ -168,7 +168,12 @@ export function compareFieldObservation(input: {
     wasmSample: input.wasmValue,
     normalizedPython,
     normalizedWasm,
-    equal: status === "PASS" ? true : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" ? false : null,
+    equal:
+      status === "PASS"
+        ? true
+        : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH"
+          ? false
+          : null,
     status,
     classification: status === "PASS" ? "CANONICAL_CANDIDATE" : "BLOCKED",
     canonicalEligible: false,
@@ -183,7 +188,13 @@ export function evaluateDeterminism(input: {
   wasmRunDigests: string[];
 }): ClientDeterminismReport {
   if (!input.demoSha256 || input.pythonRunDigests.length < 2 || input.wasmRunDigests.length < 2) {
-    return { ...input, pythonDeterministic: null, wasmDeterministic: null, status: "NOT_RUN", reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE" };
+    return {
+      ...input,
+      pythonDeterministic: null,
+      wasmDeterministic: null,
+      status: "NOT_RUN",
+      reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
+    };
   }
   const pythonDeterministic = new Set(input.pythonRunDigests).size === 1;
   const wasmDeterministic = new Set(input.wasmRunDigests).size === 1;
@@ -192,7 +203,10 @@ export function evaluateDeterminism(input: {
     pythonDeterministic,
     wasmDeterministic,
     status: pythonDeterministic && wasmDeterministic ? "PASS" : "FAIL",
-    reason: pythonDeterministic && wasmDeterministic ? "repeated_normalized_digests_equal" : "DETERMINISM_FAIL",
+    reason:
+      pythonDeterministic && wasmDeterministic
+        ? "repeated_normalized_digests_equal"
+        : "DETERMINISM_FAIL",
   };
 }
 

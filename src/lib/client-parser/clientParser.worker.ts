@@ -236,7 +236,17 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   try {
     const callStarted = performance.now();
     header = object(parser.parseHeader(bytes));
-    apiCalls.push(apiEvidence("parseHeader", true, true, true, undefined, performance.now() - callStarted, header));
+    apiCalls.push(
+      apiEvidence(
+        "parseHeader",
+        true,
+        true,
+        true,
+        undefined,
+        performance.now() - callStarted,
+        header,
+      ),
+    );
   } catch (error) {
     apiCalls.push(apiEvidence("parseHeader", true, true, false, error));
     throw new Error("CLIENT_DEMO_PARSE_FAILED");
@@ -249,7 +259,17 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   try {
     const callStarted = performance.now();
     discoveredEvents = parser.listGameEvents(bytes);
-    apiCalls.push(apiEvidence("listGameEvents", true, true, true, undefined, performance.now() - callStarted, discoveredEvents));
+    apiCalls.push(
+      apiEvidence(
+        "listGameEvents",
+        true,
+        true,
+        true,
+        undefined,
+        performance.now() - callStarted,
+        discoveredEvents,
+      ),
+    );
   } catch (error) {
     apiCalls.push(apiEvidence("listGameEvents", true, true, false, error));
     discoveryStatus = "PARSE_FAILED";
@@ -318,20 +338,18 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       parseEventFailure = error;
     }
   }
-  apiCalls.push(
-    {
-      ...apiEvidence(
-        "parseEvent",
-        true,
-        parseEventAttempted,
-        parseEventSucceeded,
-        parseEventFailure,
-        parseEventAttempted ? parseEventDurationMs : null,
-        parsedEventDigests,
-      ),
-      resultBytes: parseEventSucceeded ? parseEventResultBytes : null,
-    },
-  );
+  apiCalls.push({
+    ...apiEvidence(
+      "parseEvent",
+      true,
+      parseEventAttempted,
+      parseEventSucceeded,
+      parseEventFailure,
+      parseEventAttempted ? parseEventDurationMs : null,
+      parsedEventDigests,
+    ),
+    resultBytes: parseEventSucceeded ? parseEventResultBytes : null,
+  });
 
   progress(command.requestId, "PARSING_TICKS", 0.72, started);
   const playbackTicks = safeNumber(header["playback_ticks"] ?? header["playbackTicks"]);
@@ -352,7 +370,17 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     try {
       const callStarted = performance.now();
       tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, false));
-      apiCalls.push(apiEvidence("parseTicks", true, true, true, undefined, performance.now() - callStarted, tickRows));
+      apiCalls.push(
+        apiEvidence(
+          "parseTicks",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          tickRows,
+        ),
+      );
     } catch (error) {
       apiCalls.push(apiEvidence("parseTicks", true, true, false, error));
       tickStatus = "PARSE_FAILED";
@@ -385,9 +413,21 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     const callStarted = performance.now();
     try {
       const grenades = parser.parseGrenades(bytes);
-      apiCalls.push(apiEvidence("parseGrenades", true, true, true, undefined, performance.now() - callStarted, grenades));
+      apiCalls.push(
+        apiEvidence(
+          "parseGrenades",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          grenades,
+        ),
+      );
     } catch (error) {
-      apiCalls.push(apiEvidence("parseGrenades", true, true, false, error, performance.now() - callStarted));
+      apiCalls.push(
+        apiEvidence("parseGrenades", true, true, false, error, performance.now() - callStarted),
+      );
     }
   } else {
     apiCalls.push(apiEvidence("parseGrenades", false, false, false));

@@ -310,28 +310,50 @@ describe("client parser compact contract", () => {
   });
 
   it("preserves null, type and value mismatches in field parity", () => {
-    expect(compareFieldObservation({
-      category: "ECONOMY", eventOrEntity: "tick_state", field: "balance",
-      pythonAvailable: true, wasmExportAvailable: true, pythonParsed: true, wasmParsed: true,
-      pythonValue: 0, wasmValue: null, evidenceRef: "same-dem",
-    }).status).toBe("TYPE_MISMATCH");
-    expect(compareFieldObservation({
-      category: "HEADER", eventOrEntity: "header", field: "map_name",
-      pythonAvailable: true, wasmExportAvailable: true, pythonParsed: true, wasmParsed: true,
-      pythonValue: "de_cache", wasmValue: "de_mirage", evidenceRef: "same-dem",
-    }).status).toBe("VALUE_MISMATCH");
+    expect(
+      compareFieldObservation({
+        category: "ECONOMY",
+        eventOrEntity: "tick_state",
+        field: "balance",
+        pythonAvailable: true,
+        wasmExportAvailable: true,
+        pythonParsed: true,
+        wasmParsed: true,
+        pythonValue: 0,
+        wasmValue: null,
+        evidenceRef: "same-dem",
+      }).status,
+    ).toBe("TYPE_MISMATCH");
+    expect(
+      compareFieldObservation({
+        category: "HEADER",
+        eventOrEntity: "header",
+        field: "map_name",
+        pythonAvailable: true,
+        wasmExportAvailable: true,
+        pythonParsed: true,
+        wasmParsed: true,
+        pythonValue: "de_cache",
+        wasmValue: "de_mirage",
+        evidenceRef: "same-dem",
+      }).status,
+    ).toBe("VALUE_MISMATCH");
   });
 
   it("does not claim determinism without two real runs per runtime", () => {
-    expect(evaluateDeterminism({ demoSha256: null, pythonRunDigests: [], wasmRunDigests: [] })).toMatchObject({
+    expect(
+      evaluateDeterminism({ demoSha256: null, pythonRunDigests: [], wasmRunDigests: [] }),
+    ).toMatchObject({
       status: "NOT_RUN",
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
     });
-    expect(evaluateDeterminism({
-      demoSha256: "b".repeat(64),
-      pythonRunDigests: ["a", "a"],
-      wasmRunDigests: ["c", "d"],
-    })).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
+    expect(
+      evaluateDeterminism({
+        demoSha256: "b".repeat(64),
+        pythonRunDigests: ["a", "a"],
+        wasmRunDigests: ["c", "d"],
+      }),
+    ).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
   });
 
   it("discovers the observed runtime surface instead of trusting declarations", () => {

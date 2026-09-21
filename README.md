@@ -83,4 +83,3 @@ implemented, and no anti-bot circumvention will be.
   fallback `src/assets/gamepro-symbol.png`.
 - **Persistent security suite**: `supabase/tests/security_checks.sql` — every row must
   report `PASS`.
-
