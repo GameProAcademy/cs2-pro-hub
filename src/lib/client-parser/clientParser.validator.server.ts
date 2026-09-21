@@ -178,7 +178,17 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         (call.durationMs !== null && (!Number.isFinite(call.durationMs) || call.durationMs < 0)) ||
         (call.resultBytes !== null &&
           (!Number.isSafeInteger(call.resultBytes) || call.resultBytes < 0)) ||
-        (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)),
+        (call.normalizedDigest !== null && !HEX_64.test(call.normalizedDigest)) ||
+        (call.inputDigest !== null && !HEX_64.test(call.inputDigest)) ||
+        (call.outputDigest !== null && !HEX_64.test(call.outputDigest)) ||
+        !Array.isArray(call.requestedPlayerFields) ||
+        !Array.isArray(call.requestedOtherFields) ||
+        !Array.isArray(call.actualReturnedFields) ||
+        !Array.isArray(call.missingRequestedFields) ||
+        !Array.isArray(call.unexpectedReturnedFields) ||
+        call.requestedPlayerFields.length > MAX_OBJECT_KEYS ||
+        call.requestedOtherFields.length > MAX_OBJECT_KEYS ||
+        call.actualReturnedFields.length > MAX_OBJECT_KEYS,
     ) ||
     !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
       result.parser.apiCalls.some(

@@ -237,7 +237,7 @@ export interface PythonReferenceArtifact {
   eventInventory: string[];
   playerInventory: Array<Record<string, unknown>>;
   roundInventory: Array<Record<string, unknown>>;
-  grenadeInventory: ClientGrenadeEvidence;
+  grenadeInventory: Array<Record<string, unknown>>;
   tickDomainEvidence: Record<string, unknown>;
   headerEvidence: Record<string, unknown>;
   timingEvidence: Record<string, unknown>;
@@ -258,6 +258,8 @@ export interface PythonReferenceArtifact {
   durationMs: number;
   status: "SUCCEEDED";
   evidenceStatus: "BOUNDED_REFERENCE";
+  canonicalEligible: false;
+  persisted: false;
 }
 
 export interface ClientParserArtifactProvenance {
