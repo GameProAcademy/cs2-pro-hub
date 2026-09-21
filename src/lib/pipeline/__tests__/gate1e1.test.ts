@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 import { PARSER_CONTRACT_VERSION, PARSER_NAME, PARSER_VERSION } from "@/config/pipeline";
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
 import {
+  DEPLOYED_WORKER_REVISION,
   DEPLOYED_WORKER_BUILD_REVISION,
   expectedParserContract,
   isParserRevisionRequired,
@@ -130,6 +131,12 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
 });
 
 describe("GATE 1E.1 — revision lock", () => {
+  it("pins the current production semantic and build identity", () => {
+    const deployed = "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76";
+    expect(DEPLOYED_WORKER_REVISION).toBe(deployed);
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(deployed);
+  });
+
   it("accepts the exact expected build", () => {
     expect(() => assertParserIdentity(worker(), expected())).not.toThrow();
   });
@@ -158,6 +165,30 @@ describe("GATE 1E.1 — revision lock", () => {
     expect(thrown(() => assertParserIdentity(worker({ revision: null }), expected()))).toBe(
       "PARSER_IDENTITY_MISMATCH",
     );
+  });
+
+  it.each(["unknown", "pypi-0.42.0", `git:${"f".repeat(40)}`])(
+    "rejects incompatible production revision %s",
+    (revision) => {
+      expect(thrown(() => assertParserIdentity(worker({ revision }), expected()))).toBe(
+        "PARSER_IDENTITY_MISMATCH",
+      );
+    },
+  );
+
+  it("rejects a different exact build revision", () => {
+    expect(
+      thrown(() =>
+        assertParserIdentity(
+          { ...worker(), buildRevision: `git:${"a".repeat(40)}` },
+          {
+            ...expected(),
+            buildRevision: `git:${"b".repeat(40)}`,
+            buildRevisionRequired: true,
+          },
+        ),
+      ),
+    ).toBe("PARSER_IDENTITY_MISMATCH");
   });
 
   it("refuses to run locked without a pinned revision (configuration error)", () => {
