@@ -45,12 +45,6 @@ import {
   headerEvidence,
 } from "./clientParser.audit";
 
-function sortedRecord(row: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(row).sort(([left], [right]) => left.localeCompare(right)),
-  );
-}
-
 function roundEvidenceFromSamples(
   samples: ClientEventSample[],
 ): ClientParseResult["roundEvidence"] {
@@ -443,6 +437,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
             inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
             outputDigest: sha256Text(encoded),
             evidenceRef: `parseEvent:${name}:${sha256Text(encoded)}`,
+            requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+            requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+            eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+            parserVersion: CLIENT_PARSER_VERSION,
+            parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+            demoSha256: demoSha,
           },
         ),
       );
@@ -455,6 +455,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
           requestedOtherFields: [...request.otherFields],
           inputDigest: sha256Text(stableClientJson({ demoSha, name, request })),
           evidenceRef: `parseEvent:${name}:failed`,
+          requestCatalogVersion: CLIENT_PARSER_CATALOG_VERSION,
+          requestCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+          eventCatalogDigest: CLIENT_AUDIT_CATALOG_DIGEST,
+          parserVersion: CLIENT_PARSER_VERSION,
+          parserRevision: CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ?? "",
+          demoSha256: demoSha,
         }),
       );
       parsedEventInventory.push({

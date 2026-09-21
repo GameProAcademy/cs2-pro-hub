@@ -11,7 +11,24 @@ import type {
   ClientFieldAuditStatus,
   ClientFieldMatrixSummary,
 } from "./clientParser.types";
-import { CLIENT_FIELD_AUDIT_CATALOG } from "./clientParser.audit";
+import {
+  CLIENT_AUDIT_CATALOG_DIGEST,
+  CLIENT_FIELD_AUDIT_CATALOG,
+  CLIENT_PARSER_CONTRACT_DIGEST,
+} from "./clientParser.audit";
+import { CLIENT_PARSER_CATALOG_VERSION, CLIENT_PARSER_CONTRACT_VERSION } from "./clientParser.types";
+
+export interface ClientFieldTolerance {
+  fieldName: string;
+  absoluteTolerance: number;
+  relativeTolerance: number;
+  reason: string;
+  source: string;
+  contractVersion: number;
+}
+
+export const CLIENT_FIELD_TOLERANCES: Readonly<Record<string, ClientFieldTolerance>> = {};
+
 
 export interface ClientParserParityMismatch {
   path: string;
@@ -118,6 +135,8 @@ export function buildNotRunFieldMatrix(): ClientFieldAuditRow[] {
     wasmSample: null,
     normalizedPython: null,
     normalizedWasm: null,
+    pythonEvidenceRef: null,
+    wasmEvidenceRef: null,
     equal: null,
     status: "NOT_RUN",
     classification: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
@@ -167,6 +186,8 @@ export function compareFieldObservation(input: {
   pythonValue: unknown;
   wasmValue: unknown;
   evidenceRef: string;
+  pythonEvidenceRef?: string;
+  wasmEvidenceRef?: string;
 }): ClientFieldAuditRow {
   const normalizedPython = normalizeForParity(input.pythonValue);
   const normalizedWasm = normalizeForParity(input.wasmValue);
@@ -181,8 +202,20 @@ export function compareFieldObservation(input: {
   } else if (valueType(input.pythonValue) !== valueType(input.wasmValue)) {
     status = "TYPE_MISMATCH";
     reason = "runtime_value_types_differ";
+  } else if (input.pythonValue === null && input.wasmValue === null) {
+    status = "NULL_MATCH";
+    reason = "null_values_equal";
+  } else if (input.pythonValue === 0 && input.wasmValue === 0) {
+    status = "ZERO_MATCH";
+    reason = "zero_values_equal";
+  } else if (input.pythonValue === false && input.wasmValue === false) {
+    status = "FALSE_MATCH";
+    reason = "false_values_equal";
+  } else if (input.pythonValue === "" && input.wasmValue === "") {
+    status = "EMPTY_STRING_MATCH";
+    reason = "empty_string_values_equal";
   } else if (stableClientJson(normalizedPython) !== stableClientJson(normalizedWasm)) {
-    status = "VALUE_MISMATCH";
+    status = "SEMANTIC_MISMATCH";
     reason = "normalized_values_differ";
   } else {
     status = "PASS";
@@ -213,13 +246,15 @@ export function compareFieldObservation(input: {
     normalizedPython,
     normalizedWasm,
     equal:
-      status === "PASS"
+      ["PASS", "NULL_MATCH", "ZERO_MATCH", "FALSE_MATCH", "EMPTY_STRING_MATCH", "TOLERANCE_MATCH"].includes(status)
         ? true
-        : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH"
+        : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" || status === "SEMANTIC_MISMATCH"
           ? false
           : null,
     status,
-    classification: status === "PASS" ? "CANONICAL_CANDIDATE" : "BLOCKED",
+    pythonEvidenceRef: input.pythonEvidenceRef ?? input.evidenceRef,
+    wasmEvidenceRef: input.wasmEvidenceRef ?? input.evidenceRef,
+    classification: status === "PASS" ? "PARITY_OBSERVED_CANONICAL_BLOCKED" : "BLOCKED",
     canonicalEligible: false,
     reason,
     evidenceRef: input.evidenceRef,
@@ -240,6 +275,18 @@ export function evaluateDeterminism(input: {
       status: "NOT_RUN",
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
     };
+  }
+  const uniqueRunIds = new Set(input.runs.map((run) => run.runId));
+  if (uniqueRunIds.size !== input.runs.length) {
+    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "DUPLICATE_RUN_IDENTITY" };
+  }
+  const catalogMismatch = input.runs.some((run) => run.catalogVersion !== CLIENT_PARSER_CATALOG_VERSION || run.catalogDigest !== CLIENT_AUDIT_CATALOG_DIGEST);
+  if (catalogMismatch) {
+    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "CATALOG_MISMATCH" };
+  }
+  const contractMismatch = input.runs.some((run) => run.contractVersion !== CLIENT_PARSER_CONTRACT_VERSION || run.contractDigest !== CLIENT_PARSER_CONTRACT_DIGEST);
+  if (contractMismatch) {
+    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "CONTRACT_MISMATCH" };
   }
   const runsValid = input.runs.every(
     (run) =>

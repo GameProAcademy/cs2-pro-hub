@@ -51,6 +51,9 @@ const FORBIDDEN_KEYS = new Set([
   "binary",
   "buffer",
   "buffers",
+  "__proto__",
+  "prototype",
+  "constructor",
 ]);
 const MAX_DEPTH = 12;
 const MAX_OBJECT_KEYS = 256;
@@ -153,6 +156,14 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   )
     return fail("CLIENT_PARSER_IDENTITY_MISMATCH");
   if (
+    result.demo?.authorization?.authorizedDemo !== true ||
+    result.demo.authorization.provenance !== "LOCAL_USER_SELECTION" ||
+    result.demo.authorization.source !== "LOCAL_FILE" ||
+    result.demo.authorization.filename !== result.demo.name ||
+    result.demo.authorization.sizeBytes !== result.demo.sizeBytes ||
+    result.demo.authorization.sha256 !== result.demo.sha256 ||
+    !result.demo.authorization.authorizationRef ||
+    !result.demo.authorization.receivedAt ||
     !HEX_64.test(result.demo?.sha256 ?? "") ||
     result.demo.sha256 !== manifest.demoSha256 ||
     result.demo.sizeBytes !== manifest.demoSizeBytes ||
@@ -188,7 +199,13 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         !Array.isArray(call.unexpectedReturnedFields) ||
         call.requestedPlayerFields.length > MAX_OBJECT_KEYS ||
         call.requestedOtherFields.length > MAX_OBJECT_KEYS ||
-        call.actualReturnedFields.length > MAX_OBJECT_KEYS,
+        call.actualReturnedFields.length > MAX_OBJECT_KEYS ||
+        call.requestCatalogVersion !== CLIENT_PARSER_CATALOG_VERSION ||
+        call.requestCatalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||
+        call.eventCatalogDigest !== CLIENT_PARSER_CATALOG_DIGEST ||
+        call.parserVersion !== CLIENT_PARSER_VERSION ||
+        call.parserRevision !== CLIENT_PARSER_ARTIFACT_PROVENANCE.sourceCommit ||
+        (call.demoSha256 !== "" && call.demoSha256 !== result.demo.sha256),
     ) ||
     !CLIENT_REQUIRED_RUNTIME_EXPORTS.every((name) =>
       result.parser.apiCalls.some(
@@ -274,8 +291,13 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     (result.grenadeEvidence.status !== "AVAILABLE" && result.grenadeEvidence.count !== null) ||
     result.roundEvidence.some(
       (round) =>
-        !Number.isSafeInteger(round.roundIndex) ||
-        round.roundIndex < 1 ||
+        !Number.isSafeInteger(round.derivedRoundIndex) ||
+        round.derivedRoundIndex < 1 ||
+        (round.observedRoundNumber !== null && !Number.isSafeInteger(round.observedRoundNumber)) ||
+        round.evidenceScope !== "BOUNDED_REFERENCE" ||
+        round.sampleLimit !== CLIENT_EVENT_SAMPLE_LIMIT ||
+        round.sampled !== true ||
+        round.complete !== false ||
         !Number.isSafeInteger(round.startTick) ||
         round.startTick < 0 ||
         (round.endTick !== null &&
@@ -284,6 +306,9 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         round.eventsCount < 0 ||
         round.source !== "round_start+round_end",
     ) ||
+    result.tickDomainEvidence.probeType !== "FIRST_MIDDLE_LAST" ||
+    result.tickDomainEvidence.authoritativeDomain !== false ||
+    result.tickDomainEvidence.headerPlaybackTicks !== result.tickDomainEvidence.tickCount ||
     result.tickDomainEvidence.provenance !== "demoparser2.parseHeader+parseTicks" ||
     result.tickDomainEvidence.source !== "header_probe" ||
     result.parsedEventInventory.some(
