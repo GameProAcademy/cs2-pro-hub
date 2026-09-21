@@ -22,6 +22,7 @@ import {
   CLIENT_DEMO_MAX_BYTES,
   CLIENT_EVENT_INVENTORY_LIMIT,
   CLIENT_EVENT_SAMPLE_LIMIT,
+  CLIENT_GRENADE_SAMPLE_LIMIT,
   CLIENT_PARSER_BUILD_IDENTITY,
   CLIENT_PARSER_NAME,
   CLIENT_PARSER_RUNTIME,
@@ -37,6 +38,7 @@ import {
 import {
   CLIENT_PRIORITY_EVENTS,
   CLIENT_TICK_PROPERTIES,
+  eventFieldRequest,
   headerEvidence,
 } from "./clientParser.audit";
 
@@ -275,10 +277,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     discoveryStatus = "PARSE_FAILED";
     discoveredEvents = [];
   }
-  const names = (Array.isArray(discoveredEvents) ? discoveredEvents : [])
+  const discoveredEventsRaw = (Array.isArray(discoveredEvents) ? discoveredEvents : [])
     .filter((name): name is string => typeof name === "string")
-    .slice(0, CLIENT_EVENT_INVENTORY_LIMIT)
-    .sort();
+    .slice(0, CLIENT_EVENT_INVENTORY_LIMIT);
+  const names = [...discoveredEventsRaw];
+  const uniqueEventNames = [...new Set(names)];
+  const normalizedEventInventory = [...uniqueEventNames].sort();
   assertActive(command.requestId);
 
   progress(command.requestId, "PARSING_EVENTS", 0.55, started);
@@ -290,21 +294,33 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   let parseEventDurationMs = 0;
   let parseEventResultBytes = 0;
   const parsedEventDigests: string[] = [];
-  const eventsToAudit = [...new Set([...CLIENT_PRIORITY_EVENTS, ...names])].slice(
+  const eventsToAudit = [...new Set([...CLIENT_PRIORITY_EVENTS, ...uniqueEventNames])].slice(
     0,
     CLIENT_EVENT_INVENTORY_LIMIT,
   );
   for (const name of eventsToAudit) {
     assertActive(command.requestId);
     if (!names.includes(name)) {
-      parsedEventInventory.push({ name, status: "NOT_PRESENT", count: null, fields: [] });
+      const request = eventFieldRequest(name);
+      parsedEventInventory.push({
+        name,
+        status: "NOT_PRESENT",
+        count: null,
+        fields: [],
+        requestedPlayerFields: [...request.playerFields],
+        requestedOtherFields: [...request.otherFields],
+        semanticStatus: "NOT_RUN",
+      });
       continue;
     }
+    const request = eventFieldRequest(name);
     let parsed: Array<Record<string, unknown>>;
     try {
       parseEventAttempted = true;
       const callStarted = performance.now();
-      parsed = rows(parser.parseEvent(bytes, name, [], []));
+      parsed = rows(
+        parser.parseEvent(bytes, name, [...request.playerFields], [...request.otherFields]),
+      );
       parseEventDurationMs += performance.now() - callStarted;
       const encoded = stableClientJson(parsed);
       parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
@@ -312,11 +328,29 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       parseEventSucceeded = true;
     } catch (error) {
       parseEventFailure = error;
-      parsedEventInventory.push({ name, status: "PRESENT_BUT_FAILED", count: null, fields: [] });
+      parsedEventInventory.push({
+        name,
+        status: "PRESENT_BUT_FAILED",
+        count: null,
+        fields: [],
+        requestedPlayerFields: [...request.playerFields],
+        requestedOtherFields: [...request.otherFields],
+        semanticStatus: "FAIL",
+      });
       continue;
     }
     const fields = [...new Set(parsed.flatMap((row) => Object.keys(row)))].sort().slice(0, 256);
-    parsedEventInventory.push({ name, status: "PRESENT_AND_PARSED", count: parsed.length, fields });
+    const requestedFields = [...request.playerFields, ...request.otherFields];
+    const semanticStatus = requestedFields.every((field) => fields.includes(field)) ? "PASS" : "FAIL";
+    parsedEventInventory.push({
+      name,
+      status: "PRESENT_AND_PARSED",
+      count: parsed.length,
+      fields,
+      requestedPlayerFields: [...request.playerFields],
+      requestedOtherFields: [...request.otherFields],
+      semanticStatus,
+    });
     for (const row of parsed.slice(
       0,
       Math.max(0, CLIENT_EVENT_SAMPLE_LIMIT - selectedEventSamples.length),
@@ -328,7 +362,14 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     try {
       parseEventAttempted = true;
       const callStarted = performance.now();
-      const fallbackResult = parser.parseEvent(bytes, names[0] ?? "player_death", [], []);
+      const fallbackName = names[0] ?? "player_death";
+      const request = eventFieldRequest(fallbackName);
+      const fallbackResult = parser.parseEvent(
+        bytes,
+        fallbackName,
+        [...request.playerFields],
+        [...request.otherFields],
+      );
       parseEventDurationMs += performance.now() - callStarted;
       const encoded = stableClientJson(fallbackResult ?? null);
       parseEventResultBytes += new TextEncoder().encode(encoded).byteLength;
@@ -409,10 +450,35 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       playerInventory.status === "PARSE_FAILED" ? new Error("parse_failed") : undefined,
     ),
   );
+  let grenadeEvidence: ClientParseResult["grenadeEvidence"] = {
+    status: "UNAVAILABLE",
+    count: null,
+    samples: [],
+    normalizedDigest: null,
+    rawFieldInventory: [],
+    semanticStatus: "NOT_RUN",
+    evidenceRef: null,
+  };
   if (typeof parser.parseGrenades === "function") {
     const callStarted = performance.now();
     try {
-      const grenades = parser.parseGrenades(bytes);
+      const grenadeRows = rows(parser.parseGrenades(bytes));
+      const rawFieldInventory = [...new Set(grenadeRows.flatMap((row) => Object.keys(row)))].sort();
+      const samples = grenadeRows.slice(0, CLIENT_GRENADE_SAMPLE_LIMIT);
+      const normalizedDigest = sha256Text(stableClientJson(grenadeRows));
+      grenadeEvidence = {
+        status: "AVAILABLE",
+        count: grenadeRows.length,
+        samples,
+        normalizedDigest,
+        rawFieldInventory,
+        semanticStatus: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"].every(
+          (field) => rawFieldInventory.includes(field),
+        )
+          ? "PASS"
+          : "FAIL",
+        evidenceRef: `grenades:${normalizedDigest}`,
+      };
       apiCalls.push(
         apiEvidence(
           "parseGrenades",
@@ -421,10 +487,11 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
           true,
           undefined,
           performance.now() - callStarted,
-          grenades,
+          { count: grenadeRows.length, rawFieldInventory, normalizedDigest },
         ),
       );
     } catch (error) {
+      grenadeEvidence = { ...grenadeEvidence, status: "PARSE_FAILED", semanticStatus: "FAIL" };
       apiCalls.push(
         apiEvidence("parseGrenades", true, true, false, error, performance.now() - callStarted),
       );
@@ -452,9 +519,18 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     },
     header: { values: header, evidence: headerEvidence(header) },
     playerInventory,
-    eventDiscovery: { status: discoveryStatus, count: names.length, names },
+    eventDiscovery: {
+      status: discoveryStatus,
+      discoveredEventsRaw,
+      discoveredEventCount: names.length,
+      discoveredEventNamesInOrder: names,
+      duplicateEventCount: names.length - uniqueEventNames.length,
+      uniqueEventNames,
+      normalizedEventInventory,
+    },
     parsedEventInventory,
     selectedEventSamples,
+    grenadeEvidence,
     roundSummary: {
       status: parsedEventInventory.some(
         (item) => item.name === "round_start" && item.status === "PRESENT_AND_PARSED",

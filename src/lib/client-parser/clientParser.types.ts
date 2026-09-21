@@ -51,7 +51,14 @@ export type ClientParsedEventStatus =
 export interface ClientPlayerInventory {
   status: Exclude<ClientObservationStatus, "NOT_PRESENT">;
   count: number | null;
-  players: Array<{ steamId: string | null; name: string | null; teamNumber: number | null }>;
+  players: Array<{
+    steamId: string | null;
+    name: string | null;
+    internalSlot: number | null;
+    userId: number | null;
+    participantId: string | null;
+    teamNumber: number | null;
+  }>;
 }
 
 export interface ClientRuntimeSurface {
@@ -219,6 +226,9 @@ export interface ClientParseResult {
     status: ClientParsedEventStatus;
     count: number | null;
     fields: string[];
+    requestedPlayerFields: string[];
+    requestedOtherFields: string[];
+    semanticStatus: "NOT_RUN" | "PASS" | "FAIL";
   }>;
   selectedEventSamples: ClientEventSample[];
   grenadeEvidence: ClientGrenadeEvidence;

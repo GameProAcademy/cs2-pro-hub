@@ -119,6 +119,9 @@ export function playerInventoryFromRuntime(
       .map((row) => ({
         steamId: safeString(row["steamid"] ?? row["steam_id"]),
         name: safeString(row["name"] ?? row["player_name"]),
+        internalSlot: safeNumber(row["internal_slot"] ?? row["slot"]),
+        userId: safeNumber(row["user_id"] ?? row["userid"]),
+        participantId: safeString(row["participant_id"]),
         teamNumber: safeNumber(row["team_number"] ?? row["teamNumber"]),
       }));
     return { status: "AVAILABLE", count: players.length, players };
