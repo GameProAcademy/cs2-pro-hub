@@ -76,11 +76,33 @@ export async function demoExists(storagePath: string): Promise<{ size: number } 
   return { size };
 }
 
-/** Removes the temporary demo. Cleanup failures never fail the analysis. */
-export async function deleteDemo(storagePath: string): Promise<void> {
+export type DemoDeletionOutcome = "DELETE_VERIFIED" | "ALREADY_ABSENT";
+
+export function assertDemoStoragePath(
+  storagePath: string,
+  userId: string,
+  uploadId: string,
+): void {
+  if (storagePath !== demoStoragePath(userId, uploadId)) {
+    throw new PipelineError("CLEANUP_ERROR", "PATH_OWNERSHIP_MISMATCH");
+  }
+}
+
+/** Removes only an owned temporary DEM and proves physical absence afterwards. */
+export async function deleteDemoVerified(
+  storagePath: string,
+  userId: string,
+  uploadId: string,
+): Promise<DemoDeletionOutcome> {
+  assertDemoStoragePath(storagePath, userId, uploadId);
+  const before = await demoExists(storagePath);
+  if (!before) return "ALREADY_ABSENT";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin.storage.from(DEMO_BUCKET).remove([storagePath]);
   if (error) throw new PipelineError("CLEANUP_ERROR", error.message);
+  const after = await demoExists(storagePath);
+  if (after) throw new PipelineError("CLEANUP_ERROR", "DELETE_NOT_VERIFIED");
+  return "DELETE_VERIFIED";
 }
 
 /**
