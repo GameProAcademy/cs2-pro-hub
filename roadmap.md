@@ -9,7 +9,8 @@
 - [x] Retenção `demo-retention-v1`, claims, ownership, pós-delete verification, RAW/Canonical gates e órfãos read-only preservados.
 - [x] Candidato MAIN fixado em `2f8a76645c6030659f2ed0480469b1452e75f72e`, parser `demoparser2@0.42.0`, contrato `1`, com manifest SHA por arquivo.
 - [ ] `RAILWAY_RUNTIME_PARITY`: BLOCKED — branch `infra/cs2-parser-worker-v8`, source tree, arquivos de isolamento, imagem e conexão Railway indisponíveis.
-- [ ] `/health` e `/version` do candidato Railway alinhado: não podem substituir o diff/source/deploy ausente.
+- [x] `/health` e `/version` respondem 200; runtime observado em semantic `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` / build `git:684da207d6a35d14d5663b011966561b09d55703`.
+- [ ] Identidade Railway alinhada ao candidato `2f8a76645c6030659f2ed0480469b1452e75f72e`: FAIL; source/deploy continuam indisponíveis.
 - [x] Nenhum DEM, parsing, retry, Cache Run 2, attempt 9, cleanup físico, Canonical, AI, deploy, secret ou reescrita histórica.
 
 **Decisão:** `BLOCKED`. `LEGACY_CLEANUP_DISABLED`, `RETENTION_CONTRACT`, `CLEANUP_AUTHORITY_SINGLE` e `NO_DESTRUCTIVE_EXECUTION` passam no candidato local; `RAILWAY_RUNTIME_PARITY` não passa sem acesso auditável ao runtime. Real DEM, Python×WASM, determinismo, Canonical e AI permanecem `NOT_RUN/BLOCKED`.

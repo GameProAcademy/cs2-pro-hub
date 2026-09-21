@@ -137,6 +137,10 @@ O candidato MAIN é `2f8a76645c6030659f2ed0480469b1452e75f72e`. O branch
 `infra/cs2-parser-worker-v8`, os arquivos de isolamento, a imagem e uma conexão
 Railway não estão disponíveis. Logo, `RAILWAY_RUNTIME_PARITY = BLOCKED`; hashes e
 surface do candidato constam em `docs/G6_R_RUNTIME_MANIFEST.md`.
+As sondagens read-only de `/health` e `/version` passam em HTTP 200, mas o runtime
+declara semantic revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` e
+build revision `git:684da207d6a35d14d5663b011966561b09d55703`, diferentes
+do candidato.
 
 ### Classificação final
 

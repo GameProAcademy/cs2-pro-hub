@@ -34,6 +34,8 @@ The candidate contains `_parse_event_with_context`, `_available_events`, `_parse
 
 The requested `infra/cs2-parser-worker-v8` ref is absent from all accessible repository refs, and no Railway connection is available. The runtime source, process-isolation files, candidate image, and deployment environment cannot be compared or changed from this project.
 
+Read-only probes returned HTTP 200 from both `/health` and `/version`. The deployed service reports `demoparser2` `0.42.0`, contract `1`, semantic revision `git:40ae4977e174f9a21b1394fb047b53fba2505e8b`, and build revision `git:684da207d6a35d14d5663b011966561b09d55703`. Those identities do not match the candidate commit.
+
 Therefore `RAILWAY_RUNTIME_PARITY = BLOCKED`. This manifest is a MAIN candidate baseline only; it is not evidence of a deploy or runtime parity.
 
 ## Cleanup authority
