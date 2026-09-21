@@ -33,5 +33,8 @@ export const CLIENT_PARSER_CAPABILITY_CATALOG: ClientCapability[] = [
 export { CLIENT_AUDIT_CATALOG_DIGEST as CLIENT_PARSER_CATALOG_DIGEST } from "./clientParser.audit";
 
 export const CLIENT_PARSER_CAPABILITY_DIGEST = sha256Text(
-  stableClientJson({ classifications: CLIENT_CAPABILITY_CLASSIFICATIONS, capabilities: CLIENT_PARSER_CAPABILITY_CATALOG }),
+  stableClientJson({
+    classifications: CLIENT_CAPABILITY_CLASSIFICATIONS,
+    capabilities: CLIENT_PARSER_CAPABILITY_CATALOG,
+  }),
 );

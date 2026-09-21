@@ -162,9 +162,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "map_name",
@@ -186,9 +184,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "demo_version",
@@ -210,9 +206,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "demo_version_guid",
@@ -234,9 +228,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "demo_version_name",
@@ -258,9 +250,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "patch_version",
@@ -282,9 +272,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_ticks",
@@ -306,9 +294,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_frames",
@@ -330,9 +316,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_time",
@@ -354,9 +338,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_ticks_per_second",
@@ -378,9 +360,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_commands",
@@ -402,9 +382,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "playback_signon_length",
@@ -426,9 +404,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "server_name",
@@ -450,9 +426,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "client_name",
@@ -474,9 +448,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "network_protocol",
@@ -498,9 +470,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "build_version",
@@ -522,9 +492,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L354-L384"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L354-L384"]
     },
     {
       "propertyName": "tick",
@@ -568,9 +536,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L188"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L188"]
     },
     {
       "propertyName": "Y",
@@ -592,9 +558,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L189"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L189"]
     },
     {
       "propertyName": "Z",
@@ -616,9 +580,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L190"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L190"]
     },
     {
       "propertyName": "velocity",
@@ -640,9 +602,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L194"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L194"]
     },
     {
       "propertyName": "velocity_X",
@@ -664,9 +624,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L191"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L191"]
     },
     {
       "propertyName": "velocity_Y",
@@ -688,9 +646,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L192"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L192"]
     },
     {
       "propertyName": "velocity_Z",
@@ -712,9 +668,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L193"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L193"]
     },
     {
       "propertyName": "pitch",
@@ -736,9 +690,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L195"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L195"]
     },
     {
       "propertyName": "yaw",
@@ -760,9 +712,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L196"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L196"]
     },
     {
       "propertyName": "aim_punch_angle",
@@ -784,9 +734,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L894"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L894"]
     },
     {
       "propertyName": "aim_punch_angle_vel",
@@ -808,9 +756,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L895"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L895"]
     },
     {
       "propertyName": "shots_fired",
@@ -832,9 +778,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1079"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1079"]
     },
     {
       "propertyName": "is_scoped",
@@ -856,9 +800,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1062"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1062"]
     },
     {
       "propertyName": "health",
@@ -880,9 +822,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1091"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1091"]
     },
     {
       "propertyName": "armor_value",
@@ -904,9 +844,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1080"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1080"]
     },
     {
       "propertyName": "is_alive",
@@ -928,9 +866,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L197"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L197"]
     },
     {
       "propertyName": "life_state",
@@ -952,9 +888,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1092"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1092"]
     },
     {
       "propertyName": "is_airborne",
@@ -976,9 +910,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L198"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L198"]
     },
     {
       "propertyName": "is_crouching",
@@ -1022,9 +954,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1047"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1047"]
     },
     {
       "propertyName": "ducking",
@@ -1046,9 +976,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1048"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1048"]
     },
     {
       "propertyName": "is_walking",
@@ -1070,9 +998,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1063"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1063"]
     },
     {
       "propertyName": "is_strafing",
@@ -1094,9 +1020,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1087"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1087"]
     },
     {
       "propertyName": "move_state",
@@ -1118,9 +1042,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1074"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1074"]
     },
     {
       "propertyName": "stamina",
@@ -1142,9 +1064,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1077"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1077"]
     },
     {
       "propertyName": "velo_modifier",
@@ -1166,9 +1086,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1081"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1081"]
     },
     {
       "propertyName": "active_weapon",
@@ -1190,9 +1108,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1031"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1031"]
     },
     {
       "propertyName": "active_weapon_name",
@@ -1214,9 +1130,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1103"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1103"]
     },
     {
       "propertyName": "active_weapon_ammo",
@@ -1238,9 +1152,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1104"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1104"]
     },
     {
       "propertyName": "total_ammo_left",
@@ -1262,9 +1174,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1105"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1105"]
     },
     {
       "propertyName": "balance",
@@ -1286,9 +1196,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L990"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L990"]
     },
     {
       "propertyName": "start_balance",
@@ -1310,9 +1218,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L991"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L991"]
     },
     {
       "propertyName": "total_cash_spent",
@@ -1334,9 +1240,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L992"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L992"]
     },
     {
       "propertyName": "round_start_equip_value",
@@ -1358,9 +1262,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1088"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1088"]
     },
     {
       "propertyName": "current_equip_value",
@@ -1382,9 +1284,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1089"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1089"]
     },
     {
       "propertyName": "cash_spent_this_round",
@@ -1406,9 +1306,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L993"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L993"]
     },
     {
       "propertyName": "weapon_purchases_this_round",
@@ -1430,9 +1328,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1055"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1055"]
     },
     {
       "propertyName": "weapon_purchases_this_match",
@@ -1454,9 +1350,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1054"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1054"]
     },
     {
       "propertyName": "game_time",
@@ -1478,9 +1372,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L652"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L652"]
     },
     {
       "propertyName": "round_start_time",
@@ -1502,9 +1394,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L928"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L928"]
     },
     {
       "propertyName": "match_start_time",
@@ -1526,9 +1416,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L927"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L927"]
     },
     {
       "propertyName": "game_start_time",
@@ -1550,9 +1438,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L931"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L931"]
     },
     {
       "propertyName": "game_phase",
@@ -1574,9 +1460,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L933"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L933"]
     },
     {
       "propertyName": "round_in_progress",
@@ -1598,9 +1482,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L963"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L963"]
     },
     {
       "propertyName": "rounds_played_this_phase",
@@ -1622,9 +1504,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L935"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L935"]
     },
     {
       "propertyName": "death_time",
@@ -1646,9 +1526,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L984"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L984"]
     },
     {
       "propertyName": "spawn_time",
@@ -1670,9 +1548,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L983"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L983"]
     },
     {
       "propertyName": "last_place_name",
@@ -1694,9 +1570,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1086"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1086"]
     },
     {
       "propertyName": "team_num",
@@ -1718,9 +1592,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1030"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1030"]
     },
     {
       "propertyName": "team_name",
@@ -1742,9 +1614,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L908"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L908"]
     },
     {
       "propertyName": "score",
@@ -1766,9 +1636,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L985"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L985"]
     },
     {
       "propertyName": "team_score_first_half",
@@ -1790,9 +1658,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L912"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L912"]
     },
     {
       "propertyName": "team_score_second_half",
@@ -1814,9 +1680,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L913"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L913"]
     },
     {
       "propertyName": "team_score_overtime",
@@ -1838,9 +1702,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L909"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L909"]
     },
     {
       "propertyName": "ct_losing_streak",
@@ -1862,9 +1724,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L960"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L960"]
     },
     {
       "propertyName": "t_losing_streak",
@@ -1886,9 +1746,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L961"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L961"]
     },
     {
       "propertyName": "in_bomb_zone",
@@ -1910,9 +1768,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1070"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1070"]
     },
     {
       "propertyName": "in_buy_zone",
@@ -1934,9 +1790,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1071"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1071"]
     },
     {
       "propertyName": "in_no_defuse_area",
@@ -1958,9 +1812,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1072"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1072"]
     },
     {
       "propertyName": "which_bomb_zone",
@@ -1982,9 +1834,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1075"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1075"]
     },
     {
       "propertyName": "total_rounds_played",
@@ -2006,9 +1856,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L934"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L934"]
     },
     {
       "propertyName": "is_bomb_planted",
@@ -2030,9 +1878,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L950"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L950"]
     },
     {
       "propertyName": "is_bomb_dropped",
@@ -2054,9 +1900,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L949"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L949"]
     },
     {
       "propertyName": "is_freeze_period",
@@ -2078,9 +1922,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L915"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L915"]
     },
     {
       "propertyName": "is_warmup_period",
@@ -2102,9 +1944,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L916"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L916"]
     },
     {
       "propertyName": "kills_total",
@@ -2126,9 +1966,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1011"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1011"]
     },
     {
       "propertyName": "deaths_total",
@@ -2150,9 +1988,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1012"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1012"]
     },
     {
       "propertyName": "assists_total",
@@ -2174,9 +2010,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1013"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1013"]
     },
     {
       "propertyName": "alive_time_total",
@@ -2198,9 +2032,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1014"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1014"]
     },
     {
       "propertyName": "headshot_kills_total",
@@ -2222,9 +2054,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1015"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1015"]
     },
     {
       "propertyName": "ace_rounds_total",
@@ -2246,9 +2076,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1016"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1016"]
     },
     {
       "propertyName": "4k_rounds_total",
@@ -2270,9 +2098,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1017"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1017"]
     },
     {
       "propertyName": "3k_rounds_total",
@@ -2294,9 +2120,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1018"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1018"]
     },
     {
       "propertyName": "damage_total",
@@ -2318,9 +2142,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1019"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1019"]
     },
     {
       "propertyName": "objective_total",
@@ -2342,9 +2164,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1020"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1020"]
     },
     {
       "propertyName": "utility_damage_total",
@@ -2366,9 +2186,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1021"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1021"]
     },
     {
       "propertyName": "enemies_flashed_total",
@@ -2390,9 +2208,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1022"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1022"]
     },
     {
       "propertyName": "equipment_value_total",
@@ -2414,9 +2230,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1023"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1023"]
     },
     {
       "propertyName": "money_saved_total",
@@ -2438,9 +2252,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1024"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1024"]
     },
     {
       "propertyName": "kill_reward_total",
@@ -2462,9 +2274,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1025"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1025"]
     },
     {
       "propertyName": "cash_earned_total",
@@ -2486,9 +2296,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L1026"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L1026"]
     },
     {
       "propertyName": "team_rounds_total",
@@ -2510,9 +2318,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/maps.rs#L907"
-      ]
+      "evidenceRefs": ["src/parser/src/maps.rs#L907"]
     },
     {
       "propertyName": "tick",
@@ -2534,9 +2340,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -2602,9 +2406,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15709"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15709"]
     },
     {
       "propertyName": "attacker_name",
@@ -2626,9 +2428,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15705"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15705"]
     },
     {
       "propertyName": "user",
@@ -2672,9 +2472,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15495"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15495"]
     },
     {
       "propertyName": "user_name",
@@ -2696,9 +2494,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15491"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15491"]
     },
     {
       "propertyName": "assister",
@@ -2742,9 +2538,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15713"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15713"]
     },
     {
       "propertyName": "weapon",
@@ -2766,9 +2560,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15559"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15559"]
     },
     {
       "propertyName": "weapon_name",
@@ -2790,9 +2582,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L286"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L286"]
     },
     {
       "propertyName": "headshot",
@@ -2814,9 +2604,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15641"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15641"]
     },
     {
       "propertyName": "attackerblind",
@@ -2838,9 +2626,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15673"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15673"]
     },
     {
       "propertyName": "attackerinair",
@@ -2884,9 +2670,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15621"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15621"]
     },
     {
       "propertyName": "dominated",
@@ -2908,9 +2692,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15645"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15645"]
     },
     {
       "propertyName": "revenge",
@@ -2932,9 +2714,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15649"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15649"]
     },
     {
       "propertyName": "wipe",
@@ -2956,9 +2736,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15653"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15653"]
     },
     {
       "propertyName": "distance",
@@ -2980,9 +2758,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15677"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15677"]
     },
     {
       "propertyName": "noscope",
@@ -3004,9 +2780,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15665"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15665"]
     },
     {
       "propertyName": "thrusmoke",
@@ -3028,9 +2802,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15669"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15669"]
     },
     {
       "propertyName": "penetrated",
@@ -3052,9 +2824,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15657"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15657"]
     },
     {
       "propertyName": "attacker_team",
@@ -3120,9 +2890,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -3210,9 +2978,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15709"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15709"]
     },
     {
       "propertyName": "user_steamid",
@@ -3234,9 +3000,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15495"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15495"]
     },
     {
       "propertyName": "weapon",
@@ -3258,9 +3022,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15559"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15559"]
     },
     {
       "propertyName": "weapon_name",
@@ -3282,9 +3044,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L286"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L286"]
     },
     {
       "propertyName": "dmg_health",
@@ -3306,9 +3066,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15681"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15681"]
     },
     {
       "propertyName": "dmg_armor",
@@ -3330,9 +3088,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15685"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15685"]
     },
     {
       "propertyName": "health",
@@ -3354,9 +3110,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L16777"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L16777"]
     },
     {
       "propertyName": "armor",
@@ -3378,9 +3132,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L16781"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L16781"]
     },
     {
       "propertyName": "hitgroup",
@@ -3402,9 +3154,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15689"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15689"]
     },
     {
       "propertyName": "attacker_team",
@@ -3470,9 +3220,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15657"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15657"]
     },
     {
       "propertyName": "thrusmoke",
@@ -3494,9 +3242,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15669"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15669"]
     },
     {
       "propertyName": "noscope",
@@ -3518,9 +3264,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15665"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15665"]
     },
     {
       "propertyName": "distance",
@@ -3542,9 +3286,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15677"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15677"]
     },
     {
       "propertyName": "tick",
@@ -3566,9 +3308,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -3656,9 +3396,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15709"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15709"]
     },
     {
       "propertyName": "user_steamid",
@@ -3680,9 +3418,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15495"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15495"]
     },
     {
       "propertyName": "blind_duration",
@@ -3704,9 +3440,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L16509"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L16509"]
     },
     {
       "propertyName": "tick",
@@ -3728,9 +3462,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -3774,9 +3506,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L714"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L714"]
     },
     {
       "propertyName": "round_start_time",
@@ -3820,9 +3550,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -3866,9 +3594,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L17539"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L17539"]
     },
     {
       "propertyName": "winner_team",
@@ -3912,9 +3638,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L16691"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L16691"]
     },
     {
       "propertyName": "game_time",
@@ -3936,9 +3660,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L714"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L714"]
     },
     {
       "propertyName": "tick",
@@ -3960,9 +3682,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L724"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L724"]
     },
     {
       "propertyName": "round",
@@ -4006,9 +3726,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L15495"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L15495"]
     },
     {
       "propertyName": "site",
@@ -4030,9 +3748,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L16031"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L16031"]
     },
     {
       "propertyName": "X",
@@ -4054,9 +3770,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L277"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L277"]
     },
     {
       "propertyName": "Y",
@@ -4078,9 +3792,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L278"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L278"]
     },
     {
       "propertyName": "Z",
@@ -4102,9 +3814,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L279"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L279"]
     },
     {
       "propertyName": "entity_id",
@@ -4126,9 +3836,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "grenade_type",
@@ -4150,9 +3858,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "name",
@@ -4174,9 +3880,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "steamid",
@@ -4198,9 +3902,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "tick",
@@ -4222,9 +3924,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "x",
@@ -4246,9 +3946,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "y",
@@ -4270,9 +3968,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     },
     {
       "propertyName": "z",
@@ -4294,9 +3990,7 @@
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
       "canonicalStatus": "BLOCKED",
-      "evidenceRefs": [
-        "src/wasm/src/lib.rs#L293-L352"
-      ]
+      "evidenceRefs": ["src/wasm/src/lib.rs#L293-L352"]
     }
   ],
   "events": [
@@ -4426,9 +4120,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L334"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L334"]
     },
     {
       "eventName": "player_hurt",
@@ -4556,9 +4248,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L352"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L352"]
     },
     {
       "eventName": "weapon_fire",
@@ -4678,9 +4368,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L333"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L333"]
     },
     {
       "eventName": "weapon_fire_on_empty",
@@ -4920,9 +4608,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L331"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L331"]
     },
     {
       "eventName": "weapon_zoom",
@@ -5042,9 +4728,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L345"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L345"]
     },
     {
       "eventName": "player_blind",
@@ -5172,9 +4856,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L348"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L348"]
     },
     {
       "eventName": "grenade_thrown",
@@ -5398,9 +5080,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L368"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L368"]
     },
     {
       "eventName": "smokegrenade_detonate",
@@ -5512,9 +5192,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L341"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L341"]
     },
     {
       "eventName": "smokegrenade_expired",
@@ -5626,9 +5304,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L335"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L335"]
     },
     {
       "eventName": "molotov_detonate",
@@ -5852,9 +5528,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L350"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L350"]
     },
     {
       "eventName": "inferno_expire",
@@ -5966,9 +5640,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L364"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L364"]
     },
     {
       "eventName": "hegrenade_detonate",
@@ -6080,9 +5752,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L371"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L371"]
     },
     {
       "eventName": "decoy_detonate",
@@ -6314,9 +5984,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L366"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L366"]
     },
     {
       "eventName": "round_end",
@@ -6436,9 +6104,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L365"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L365"]
     },
     {
       "eventName": "bomb_planted",
@@ -6558,9 +6224,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L337"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L337"]
     },
     {
       "eventName": "bomb_defused",
@@ -6680,9 +6344,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L358"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L358"]
     },
     {
       "eventName": "bomb_exploded",
@@ -6802,9 +6464,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L338"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L338"]
     },
     {
       "eventName": "bomb_beginplant",
@@ -6924,9 +6584,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L353"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L353"]
     },
     {
       "eventName": "bomb_begindefuse",
@@ -7046,9 +6704,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L349"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L349"]
     },
     {
       "eventName": "bomb_abortplant",
@@ -7408,9 +7064,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L363"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L363"]
     },
     {
       "eventName": "bomb_pickup",
@@ -7530,9 +7184,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L347"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L347"]
     },
     {
       "eventName": "bomb_beep",
@@ -7772,9 +7424,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L369"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L369"]
     },
     {
       "eventName": "enter_bombzone",
@@ -8326,9 +7976,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L1144"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L1144"]
     },
     {
       "eventName": "item_pickup",
@@ -8448,9 +8096,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L355"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L355"]
     },
     {
       "eventName": "item_equip",
@@ -8570,9 +8216,7 @@
       "unexpectedReturnedFields": [],
       "semanticStatus": "NOT_RUN",
       "parityStatus": "NOT_RUN",
-      "evidenceRefs": [
-        "src/parser/src/e2e_test.rs#L336"
-      ]
+      "evidenceRefs": ["src/parser/src/e2e_test.rs#L336"]
     },
     {
       "eventName": "item_remove",

@@ -16,7 +16,10 @@ import {
   CLIENT_FIELD_AUDIT_CATALOG,
   CLIENT_PARSER_CONTRACT_DIGEST,
 } from "./clientParser.audit";
-import { CLIENT_PARSER_CATALOG_VERSION, CLIENT_PARSER_CONTRACT_VERSION } from "./clientParser.types";
+import {
+  CLIENT_PARSER_CATALOG_VERSION,
+  CLIENT_PARSER_CONTRACT_VERSION,
+} from "./clientParser.types";
 
 export interface ClientFieldTolerance {
   fieldName: string;
@@ -28,7 +31,6 @@ export interface ClientFieldTolerance {
 }
 
 export const CLIENT_FIELD_TOLERANCES: Readonly<Record<string, ClientFieldTolerance>> = {};
-
 
 export interface ClientParserParityMismatch {
   path: string;
@@ -245,12 +247,18 @@ export function compareFieldObservation(input: {
     wasmSample: input.wasmValue,
     normalizedPython,
     normalizedWasm,
-    equal:
-      ["PASS", "NULL_MATCH", "ZERO_MATCH", "FALSE_MATCH", "EMPTY_STRING_MATCH", "TOLERANCE_MATCH"].includes(status)
-        ? true
-        : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" || status === "SEMANTIC_MISMATCH"
-          ? false
-          : null,
+    equal: [
+      "PASS",
+      "NULL_MATCH",
+      "ZERO_MATCH",
+      "FALSE_MATCH",
+      "EMPTY_STRING_MATCH",
+      "TOLERANCE_MATCH",
+    ].includes(status)
+      ? true
+      : status === "TYPE_MISMATCH" || status === "VALUE_MISMATCH" || status === "SEMANTIC_MISMATCH"
+        ? false
+        : null,
     status,
     pythonEvidenceRef: input.pythonEvidenceRef ?? input.evidenceRef,
     wasmEvidenceRef: input.wasmEvidenceRef ?? input.evidenceRef,
@@ -278,15 +286,41 @@ export function evaluateDeterminism(input: {
   }
   const uniqueRunIds = new Set(input.runs.map((run) => run.runId));
   if (uniqueRunIds.size !== input.runs.length) {
-    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "DUPLICATE_RUN_IDENTITY" };
+    return {
+      ...input,
+      pythonDeterministic: false,
+      wasmDeterministic: false,
+      status: "FAIL",
+      reason: "DUPLICATE_RUN_IDENTITY",
+    };
   }
-  const catalogMismatch = input.runs.some((run) => run.catalogVersion !== CLIENT_PARSER_CATALOG_VERSION || run.catalogDigest !== CLIENT_AUDIT_CATALOG_DIGEST);
+  const catalogMismatch = input.runs.some(
+    (run) =>
+      run.catalogVersion !== CLIENT_PARSER_CATALOG_VERSION ||
+      run.catalogDigest !== CLIENT_AUDIT_CATALOG_DIGEST,
+  );
   if (catalogMismatch) {
-    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "CATALOG_MISMATCH" };
+    return {
+      ...input,
+      pythonDeterministic: false,
+      wasmDeterministic: false,
+      status: "FAIL",
+      reason: "CATALOG_MISMATCH",
+    };
   }
-  const contractMismatch = input.runs.some((run) => run.contractVersion !== CLIENT_PARSER_CONTRACT_VERSION || run.contractDigest !== CLIENT_PARSER_CONTRACT_DIGEST);
+  const contractMismatch = input.runs.some(
+    (run) =>
+      run.contractVersion !== CLIENT_PARSER_CONTRACT_VERSION ||
+      run.contractDigest !== CLIENT_PARSER_CONTRACT_DIGEST,
+  );
   if (contractMismatch) {
-    return { ...input, pythonDeterministic: false, wasmDeterministic: false, status: "FAIL", reason: "CONTRACT_MISMATCH" };
+    return {
+      ...input,
+      pythonDeterministic: false,
+      wasmDeterministic: false,
+      status: "FAIL",
+      reason: "CONTRACT_MISMATCH",
+    };
   }
   const runsValid = input.runs.every(
     (run) =>

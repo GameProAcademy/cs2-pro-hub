@@ -76,11 +76,7 @@ export const CLIENT_FIELD_AUDIT_CATALOG = surfaceManifest.fields.map((entry) => 
   category: entry.category,
   eventOrEntity: entry.eventOrEntity,
   field: entry.propertyName,
-  source: entry.sourceApi as
-    | "parseHeader"
-    | "parseEvent"
-    | "parseTicks"
-    | "parseGrenades",
+  source: entry.sourceApi as "parseHeader" | "parseEvent" | "parseTicks" | "parseGrenades",
   requestable: entry.runtimeRequestable,
   upstreamSupported: entry.upstreamSupported,
   upstreamSourceRef: entry.upstreamSourceRef,
@@ -93,7 +89,9 @@ export const CLIENT_UPSTREAM_SURFACE = surfaceManifest.fields.map((entry) => ({
   eventOrEntity: entry.eventOrEntity,
   sourceAPI: entry.sourceApi,
   upstreamSupported: entry.upstreamSupported,
-  upstreamVerification: entry.upstreamSupported ? ("SOURCE_VERIFIED" as const) : ("UPSTREAM_NOT_VERIFIED" as const),
+  upstreamVerification: entry.upstreamSupported
+    ? ("SOURCE_VERIFIED" as const)
+    : ("UPSTREAM_NOT_VERIFIED" as const),
   upstreamSourceRef: entry.upstreamSourceRef,
   projectCatalogued: entry.projectCatalogued,
   requestable: entry.runtimeRequestable,
@@ -111,11 +109,28 @@ export const CLIENT_AUDIT_CATALOG_DIGEST = surfaceManifest.catalogDigest;
 export const CLIENT_PARSER_CONTRACT_DIGEST = surfaceManifest.contractDigest;
 
 export const CLIENT_PARITY_DIMENSIONS = [
-  "header", "map", "version", "playback_ticks", "tickrate", "player_count",
-  "player_identities", "event_inventory", "player_death_count", "player_hurt_count",
-  "round_start_count", "round_end_count", "bomb_events", "grenade_events",
-  "event_tick_ordering", "controlled_tick_values", "position", "health", "armor",
-  "weapon", "economy", "round_boundaries",
+  "header",
+  "map",
+  "version",
+  "playback_ticks",
+  "tickrate",
+  "player_count",
+  "player_identities",
+  "event_inventory",
+  "player_death_count",
+  "player_hurt_count",
+  "round_start_count",
+  "round_end_count",
+  "bomb_events",
+  "grenade_events",
+  "event_tick_ordering",
+  "controlled_tick_values",
+  "position",
+  "health",
+  "armor",
+  "weapon",
+  "economy",
+  "round_boundaries",
 ] as const;
 
 export type ClientParityDimension = (typeof CLIENT_PARITY_DIMENSIONS)[number];
@@ -134,24 +149,33 @@ export function headerEvidence(header: Record<string, unknown>): ClientFieldEvid
     field,
     observed: Object.prototype.hasOwnProperty.call(header, field),
     source: "parseHeader",
-    classification: Object.prototype.hasOwnProperty.call(header, field) ? "RAW_ONLY" : "NOT_PRESENT",
+    classification: Object.prototype.hasOwnProperty.call(header, field)
+      ? "RAW_ONLY"
+      : "NOT_PRESENT",
     value: Object.prototype.hasOwnProperty.call(header, field) ? header[field] : null,
   }));
 }
 
 export function verifySurfaceManifestDigests(): boolean {
-  const catalogDigest = sha256Text(stableClientJson({
-    provenance: surfaceManifest.provenance,
-    apis: surfaceManifest.apis,
-    fields: surfaceManifest.fields,
-    events: surfaceManifest.events,
-  }));
-  const contractDigest = sha256Text(stableClientJson({
-    contractVersion: surfaceManifest.contractVersion,
-    catalogVersion: surfaceManifest.catalogVersion,
-    catalogDigest,
-    limits: surfaceManifest.limits,
-    policies: surfaceManifest.policies,
-  }));
-  return catalogDigest === CLIENT_AUDIT_CATALOG_DIGEST && contractDigest === CLIENT_PARSER_CONTRACT_DIGEST;
+  const catalogDigest = sha256Text(
+    stableClientJson({
+      provenance: surfaceManifest.provenance,
+      apis: surfaceManifest.apis,
+      fields: surfaceManifest.fields,
+      events: surfaceManifest.events,
+    }),
+  );
+  const contractDigest = sha256Text(
+    stableClientJson({
+      contractVersion: surfaceManifest.contractVersion,
+      catalogVersion: surfaceManifest.catalogVersion,
+      catalogDigest,
+      limits: surfaceManifest.limits,
+      policies: surfaceManifest.policies,
+    }),
+  );
+  return (
+    catalogDigest === CLIENT_AUDIT_CATALOG_DIGEST &&
+    contractDigest === CLIENT_PARSER_CONTRACT_DIGEST
+  );
 }
