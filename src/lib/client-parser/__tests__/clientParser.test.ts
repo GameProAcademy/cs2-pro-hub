@@ -68,13 +68,58 @@ function result(): ClientParseResult {
     playerInventory: {
       status: "AVAILABLE",
       count: 1,
-      players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
+      players: [
+        {
+          steamId: "76561198000000000",
+          name: "Player",
+          internalSlot: null,
+          userId: null,
+          participantId: null,
+          teamNumber: 2,
+        },
+      ],
     },
-    eventDiscovery: { status: "AVAILABLE", count: 1, names: ["round_end"] },
+    eventDiscovery: {
+      status: "AVAILABLE",
+      discoveredEventsRaw: ["round_end"],
+      discoveredEventCount: 1,
+      discoveredEventNamesInOrder: ["round_end"],
+      duplicateEventCount: 0,
+      uniqueEventNames: ["round_end"],
+      normalizedEventInventory: ["round_end"],
+    },
     parsedEventInventory: [
-      { name: "round_end", status: "PRESENT_AND_PARSED", count: 1, fields: ["tick"] },
+      {
+        name: "round_end",
+        status: "PRESENT_AND_PARSED",
+        count: 1,
+        fields: ["tick"],
+        requestedPlayerFields: [],
+        requestedOtherFields: [],
+        semanticStatus: "PASS",
+      },
     ],
     selectedEventSamples: [{ eventName: "round_end", tick: 64, fields: { tick: 64 } }],
+    grenadeEvidence: {
+      status: "AVAILABLE",
+      count: 1,
+      samples: [
+        {
+          entity_id: 1,
+          grenade_type: "smoke",
+          name: "Player",
+          steamid: "1",
+          tick: 1,
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+      ],
+      normalizedDigest: "d".repeat(64),
+      rawFieldInventory: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
+      semanticStatus: "PASS",
+      evidenceRef: `grenades:${"d".repeat(64)}`,
+    },
     roundSummary: { status: "UNAVAILABLE", count: null },
     tickProbe: {
       status: "AVAILABLE",
@@ -361,17 +406,32 @@ describe("client parser compact contract", () => {
   });
 
   it("does not claim determinism without two real runs per runtime", () => {
-    expect(
-      evaluateDeterminism({ demoSha256: null, pythonRunDigests: [], wasmRunDigests: [] }),
-    ).toMatchObject({
+    expect(evaluateDeterminism({ demoSha256: null, runs: [] })).toMatchObject({
       status: "NOT_RUN",
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
+    });
+    const run = (runtime: "PYTHON" | "WASM", runId: string, normalizedDigest: string) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      normalizedDigest,
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
     });
     expect(
       evaluateDeterminism({
         demoSha256: "b".repeat(64),
-        pythonRunDigests: ["a", "a"],
-        wasmRunDigests: ["c", "d"],
+        runs: [
+          run("PYTHON", "python-1", "a".repeat(64)),
+          run("PYTHON", "python-2", "a".repeat(64)),
+          run("WASM", "wasm-1", "c".repeat(64)),
+          run("WASM", "wasm-2", "d".repeat(64)),
+        ],
       }),
     ).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
   });
@@ -448,7 +508,16 @@ describe("client parser compact contract", () => {
     expect(inventory).toEqual({
       status: "AVAILABLE",
       count: 1,
-      players: [{ steamId: "76561198000000000", name: "Player", teamNumber: 2 }],
+      players: [
+        {
+          steamId: "76561198000000000",
+          name: "Player",
+          internalSlot: null,
+          userId: null,
+          participantId: null,
+          teamNumber: 2,
+        },
+      ],
     });
     expect(playerInventoryFromRuntime({}, new Uint8Array([1])).status).toBe("UNAVAILABLE");
     expect(
@@ -528,7 +597,10 @@ describe("client parser compact contract", () => {
       (v: ReturnType<typeof envelope>) => (v.result.parser.artifact.status = "INVALID"),
     ],
     ["player inventory", (v: ReturnType<typeof envelope>) => (v.result.playerInventory.count = 99)],
-    ["event inventory", (v: ReturnType<typeof envelope>) => (v.result.eventDiscovery.count = 99)],
+    [
+      "event inventory",
+      (v: ReturnType<typeof envelope>) => (v.result.eventDiscovery.discoveredEventCount = 99),
+    ],
     [
       "full tick claim",
       (v: ReturnType<typeof envelope>) =>

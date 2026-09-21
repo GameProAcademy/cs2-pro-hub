@@ -4,13 +4,20 @@ import type { ClientCapabilityClassification } from "./clientParser.types";
 export const CLIENT_HEADER_FIELDS = [
   "game_directory",
   "map_name",
+  "demo_version",
   "demo_version_guid",
   "demo_version_name",
   "patch_version",
   "playback_ticks",
+  "playback_frames",
+  "playback_time",
   "playback_ticks_per_second",
+  "playback_commands",
+  "playback_signon_length",
   "server_name",
   "client_name",
+  "network_protocol",
+  "build_version",
 ] as const;
 
 export const CLIENT_EVENT_CATALOG = {
@@ -70,6 +77,7 @@ export const CLIENT_TICK_PROPERTIES = [
   "pitch",
   "yaw",
   "aim_punch_angle",
+  "aim_punch_angle_vel",
   "shots_fired",
   "is_scoped",
   "health",
@@ -78,11 +86,17 @@ export const CLIENT_TICK_PROPERTIES = [
   "life_state",
   "is_airborne",
   "is_crouching",
+  "ducked",
+  "ducking",
   "is_walking",
   "is_strafing",
+  "move_state",
+  "stamina",
+  "velo_modifier",
   "active_weapon",
   "active_weapon_name",
   "active_weapon_ammo",
+  "total_ammo_left",
   "balance",
   "start_balance",
   "total_cash_spent",
@@ -93,23 +107,31 @@ export const CLIENT_TICK_PROPERTIES = [
   "weapon_purchases_this_match",
   "game_time",
   "round_start_time",
+  "match_start_time",
+  "game_start_time",
+  "game_phase",
+  "round_in_progress",
+  "rounds_played_this_phase",
+  "death_time",
+  "spawn_time",
   "last_place_name",
   "team_num",
+  "team_name",
+  "score",
+  "team_score_first_half",
+  "team_score_second_half",
+  "team_score_overtime",
+  "ct_losing_streak",
+  "t_losing_streak",
+  "in_bomb_zone",
+  "in_buy_zone",
+  "in_no_defuse_area",
+  "which_bomb_zone",
   "total_rounds_played",
   "is_bomb_planted",
   "is_bomb_dropped",
   "is_freeze_period",
   "is_warmup_period",
-  "aim_punch_angle_vel",
-  "ducked",
-  "ducking",
-  "stamina",
-  "velo_modifier",
-  "team_name",
-  "score",
-  "match_start_time",
-  "game_start_time",
-  "death_time",
   "kills_total",
   "deaths_total",
   "assists_total",
@@ -190,8 +212,103 @@ export const CLIENT_EVENT_FIELD_CATALOG = {
   round_start: ["tick", "round", "game_time", "round_start_time"],
   round_end: ["tick", "round", "winner", "winner_team", "reason", "game_time"],
   bomb: ["tick", "round", "user_steamid", "site", "X", "Y", "Z"],
-  grenade: ["entity_id", "grenade_type", "grenade_name", "steamid", "tick", "X", "Y", "Z"],
+  grenade: ["entity_id", "grenade_type", "name", "steamid", "tick", "x", "y", "z"],
 } as const;
+
+export interface ClientEventFieldRequest {
+  playerFields: readonly string[];
+  otherFields: readonly string[];
+  rawOnlyFields: readonly string[];
+  notRequestableFields: readonly string[];
+  wasmUnavailableFields: readonly string[];
+}
+
+const PLAYER_CONTEXT = ["X", "Y", "Z", "player_name", "player_steamid", "team_num"] as const;
+const GAME_CONTEXT = ["total_rounds_played", "is_warmup_period", "game_time"] as const;
+const request = (
+  playerFields: readonly string[] = PLAYER_CONTEXT,
+  otherFields: readonly string[] = GAME_CONTEXT,
+): ClientEventFieldRequest => ({
+  playerFields,
+  otherFields,
+  rawOnlyFields: [],
+  notRequestableFields: [],
+  wasmUnavailableFields: [],
+});
+
+export const EVENT_FIELD_REQUEST_CATALOG: Readonly<Record<string, ClientEventFieldRequest>> =
+  Object.fromEntries([
+    ...CLIENT_PRIORITY_EVENTS.map((name) => [name, request()]),
+    ["player_hurt", request([...PLAYER_CONTEXT, "health", "armor_value"])],
+    ["bomb_planted", request(PLAYER_CONTEXT, [...GAME_CONTEXT, "which_bomb_zone"])],
+  ]);
+
+export function eventFieldRequest(name: string): ClientEventFieldRequest {
+  return EVENT_FIELD_REQUEST_CATALOG[name] ?? request();
+}
+
+function tickCategory(field: string): string {
+  if (
+    ["player_name", "player_steamid", "internal_slot", "user_id", "participant_id"].includes(field)
+  )
+    return "IDENTITY";
+  if (
+    [
+      "team_num",
+      "team_name",
+      "score",
+      "team_rounds_total",
+      "team_score_first_half",
+      "team_score_second_half",
+      "team_score_overtime",
+      "ct_losing_streak",
+      "t_losing_streak",
+    ].includes(field)
+  )
+    return "TEAM_SCORE";
+  if (
+    [
+      "X",
+      "Y",
+      "Z",
+      "velocity",
+      "velocity_X",
+      "velocity_Y",
+      "velocity_Z",
+      "last_place_name",
+    ].includes(field)
+  )
+    return "POSITION";
+  if (
+    ["pitch", "yaw", "aim_punch_angle", "aim_punch_angle_vel", "shots_fired", "is_scoped"].includes(
+      field,
+    )
+  )
+    return "AIM";
+  if (
+    [
+      "balance",
+      "start_balance",
+      "total_cash_spent",
+      "cash_spent_this_round",
+      "current_equip_value",
+      "round_start_equip_value",
+      "weapon_purchases_this_match",
+      "weapon_purchases_this_round",
+      "equipment_value_total",
+      "money_saved_total",
+      "kill_reward_total",
+      "cash_earned_total",
+    ].includes(field)
+  )
+    return "ECONOMY";
+  if (
+    ["active_weapon", "active_weapon_name", "active_weapon_ammo", "total_ammo_left"].includes(field)
+  )
+    return "WEAPONS";
+  if (field.endsWith("_total")) return "AGGREGATES";
+  return "PLAYER_STATE";
+}
 
 export const CLIENT_FIELD_AUDIT_CATALOG = [
   ...CLIENT_HEADER_FIELDS.map((field) => ({
@@ -199,12 +316,14 @@ export const CLIENT_FIELD_AUDIT_CATALOG = [
     eventOrEntity: "header",
     field,
     source: "parseHeader" as const,
+    requestable: false,
   })),
   ...CLIENT_TICK_PROPERTIES.map((field) => ({
-    category: "PLAYERS",
+    category: tickCategory(field),
     eventOrEntity: "tick_state",
     field,
     source: "parseTicks" as const,
+    requestable: true,
   })),
   ...Object.entries(CLIENT_EVENT_FIELD_CATALOG).flatMap(([eventOrEntity, fields]) =>
     fields.map((field) => ({
@@ -213,6 +332,7 @@ export const CLIENT_FIELD_AUDIT_CATALOG = [
       eventOrEntity,
       field,
       source: eventOrEntity === "grenade" ? ("parseGrenades" as const) : ("parseEvent" as const),
+      requestable: eventOrEntity !== "grenade",
     })),
   ),
 ] as const;
@@ -272,6 +392,7 @@ export const CLIENT_AUDIT_CATALOG_DIGEST = sha256Text(
     tickProperties: CLIENT_TICK_PROPERTIES,
     parityDimensions: CLIENT_PARITY_DIMENSIONS,
     fieldAuditCatalog: CLIENT_FIELD_AUDIT_CATALOG,
+    eventFieldRequests: EVENT_FIELD_REQUEST_CATALOG,
   }),
 );
 

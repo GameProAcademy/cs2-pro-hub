@@ -173,7 +173,7 @@ export function ClientParserPoc() {
           />
           <Metric
             label="Eventos amostrados"
-            value={`${result.result.selectedEventSamples.length} / ${result.result.eventDiscovery.count} descobertos`}
+            value={`${result.result.selectedEventSamples.length} / ${result.result.eventDiscovery.discoveredEventCount} descobertos`}
           />
           <Metric
             label="Resultado compacto"

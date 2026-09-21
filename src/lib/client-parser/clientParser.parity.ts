@@ -74,9 +74,7 @@ export interface ClientFieldParityMatrixRow {
 
 export function normalizeForParity(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return value
-      .map(normalizeForParity)
-      .sort((left, right) => stableClientJson(left).localeCompare(stableClientJson(right)));
+    return value.map(normalizeForParity);
   }
   if (value && typeof value === "object") {
     return Object.fromEntries(
@@ -99,10 +97,18 @@ export function buildNotRunFieldMatrix(): ClientFieldAuditRow[] {
     category: entry.category,
     eventOrEntity: entry.eventOrEntity,
     field: entry.field,
+    upstreamSupported: null,
+    projectCatalogued: true,
+    runtimeExportAvailable: null,
+    requestable: entry.requestable,
+    pythonRequested: false,
+    wasmRequested: false,
     pythonAvailable: null,
     wasmExportAvailable: null,
     pythonParsed: false,
     wasmParsed: false,
+    pythonSemanticStatus: "NOT_RUN",
+    wasmSemanticStatus: "NOT_RUN",
     pythonValueType: null,
     wasmValueType: null,
     pythonNull: null,
@@ -126,8 +132,14 @@ export function compareFieldObservation(input: {
   field: string;
   pythonAvailable: boolean;
   wasmExportAvailable: boolean;
+  upstreamSupported?: boolean;
+  requestable?: boolean;
+  pythonRequested?: boolean;
+  wasmRequested?: boolean;
   pythonParsed: boolean;
   wasmParsed: boolean;
+  pythonSemanticStatus?: "PASS" | "FAIL" | "NOT_RUN";
+  wasmSemanticStatus?: "PASS" | "FAIL" | "NOT_RUN";
   pythonValue: unknown;
   wasmValue: unknown;
   evidenceRef: string;
@@ -156,10 +168,18 @@ export function compareFieldObservation(input: {
     category: input.category,
     eventOrEntity: input.eventOrEntity,
     field: input.field,
+    upstreamSupported: input.upstreamSupported ?? null,
+    projectCatalogued: true,
+    runtimeExportAvailable: input.wasmExportAvailable,
+    requestable: input.requestable ?? true,
+    pythonRequested: input.pythonRequested ?? input.pythonParsed,
+    wasmRequested: input.wasmRequested ?? input.wasmParsed,
     pythonAvailable: input.pythonAvailable,
     wasmExportAvailable: input.wasmExportAvailable,
     pythonParsed: input.pythonParsed,
     wasmParsed: input.wasmParsed,
+    pythonSemanticStatus: input.pythonSemanticStatus ?? (input.pythonParsed ? "PASS" : "NOT_RUN"),
+    wasmSemanticStatus: input.wasmSemanticStatus ?? (input.wasmParsed ? "PASS" : "NOT_RUN"),
     pythonValueType: input.pythonParsed ? valueType(input.pythonValue) : null,
     wasmValueType: input.wasmParsed ? valueType(input.wasmValue) : null,
     pythonNull: input.pythonParsed ? input.pythonValue === null : null,
@@ -184,10 +204,11 @@ export function compareFieldObservation(input: {
 
 export function evaluateDeterminism(input: {
   demoSha256: string | null;
-  pythonRunDigests: string[];
-  wasmRunDigests: string[];
+  runs: import("./clientParser.types").ClientParserRunEvidence[];
 }): ClientDeterminismReport {
-  if (!input.demoSha256 || input.pythonRunDigests.length < 2 || input.wasmRunDigests.length < 2) {
+  const pythonRuns = input.runs.filter((run) => run.runtime === "PYTHON");
+  const wasmRuns = input.runs.filter((run) => run.runtime === "WASM");
+  if (!input.demoSha256 || pythonRuns.length !== 2 || wasmRuns.length !== 2) {
     return {
       ...input,
       pythonDeterministic: null,
@@ -196,8 +217,39 @@ export function evaluateDeterminism(input: {
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
     };
   }
-  const pythonDeterministic = new Set(input.pythonRunDigests).size === 1;
-  const wasmDeterministic = new Set(input.wasmRunDigests).size === 1;
+  const runsValid = input.runs.every(
+    (run) =>
+      run.status === "SUCCEEDED" &&
+      run.demoSha256 === input.demoSha256 &&
+      /^[0-9a-f]{64}$/.test(run.demoSha256) &&
+      /^[0-9a-f]{64}$/.test(run.normalizedDigest) &&
+      run.parserIdentity.length > 0 &&
+      run.parserVersion.length > 0 &&
+      run.parserRevision.length > 0 &&
+      Number.isFinite(run.durationMs) &&
+      run.durationMs >= 0,
+  );
+  const pythonIdentity = new Set(
+    pythonRuns.map((run) => `${run.parserIdentity}:${run.parserVersion}:${run.parserRevision}`),
+  );
+  const wasmIdentity = new Set(
+    wasmRuns.map(
+      (run) =>
+        `${run.parserIdentity}:${run.parserVersion}:${run.parserRevision}:${run.artifactIdentity ?? ""}`,
+    ),
+  );
+  const wasmArtifactsPresent = wasmRuns.every((run) => Boolean(run.artifactIdentity));
+  if (!runsValid || pythonIdentity.size !== 1 || wasmIdentity.size !== 1 || !wasmArtifactsPresent) {
+    return {
+      ...input,
+      pythonDeterministic: false,
+      wasmDeterministic: false,
+      status: "FAIL",
+      reason: "RUN_IDENTITY_OR_DEMO_SHA_MISMATCH",
+    };
+  }
+  const pythonDeterministic = new Set(pythonRuns.map((run) => run.normalizedDigest)).size === 1;
+  const wasmDeterministic = new Set(wasmRuns.map((run) => run.normalizedDigest)).size === 1;
   return {
     ...input,
     pythonDeterministic,

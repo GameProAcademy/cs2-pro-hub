@@ -1,6 +1,7 @@
 import {
   CLIENT_EVENT_INVENTORY_LIMIT,
   CLIENT_EVENT_SAMPLE_LIMIT,
+  CLIENT_GRENADE_SAMPLE_LIMIT,
   CLIENT_PARSER_BUILD_IDENTITY,
   CLIENT_PARSER_CATALOG_VERSION,
   CLIENT_PARSER_CONTRACT_VERSION,
@@ -207,12 +208,19 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
   if (
     !Array.isArray(result.playerInventory?.players) ||
     result.playerInventory.players.length > CLIENT_PLAYER_LIMIT ||
-    !Array.isArray(result.eventDiscovery?.names) ||
-    result.eventDiscovery.names.length > CLIENT_EVENT_INVENTORY_LIMIT ||
+    !Array.isArray(result.eventDiscovery?.discoveredEventsRaw) ||
+    !Array.isArray(result.eventDiscovery?.discoveredEventNamesInOrder) ||
+    !Array.isArray(result.eventDiscovery?.uniqueEventNames) ||
+    !Array.isArray(result.eventDiscovery?.normalizedEventInventory) ||
+    result.eventDiscovery.discoveredEventsRaw.length > CLIENT_EVENT_INVENTORY_LIMIT ||
     !Array.isArray(result.parsedEventInventory) ||
     result.parsedEventInventory.length > CLIENT_EVENT_INVENTORY_LIMIT ||
     !Array.isArray(result.selectedEventSamples) ||
     result.selectedEventSamples.length > CLIENT_EVENT_SAMPLE_LIMIT ||
+    !Array.isArray(result.grenadeEvidence?.samples) ||
+    result.grenadeEvidence.samples.length > CLIENT_GRENADE_SAMPLE_LIMIT ||
+    !Array.isArray(result.grenadeEvidence?.rawFieldInventory) ||
+    result.grenadeEvidence.rawFieldInventory.length > MAX_OBJECT_KEYS ||
     !Array.isArray(result.capabilities)
   )
     return fail("CLIENT_RESULT_TOO_LARGE");
@@ -226,11 +234,29 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_TOO_LARGE");
   if (
     result.playerInventory.count !== result.playerInventory.players.length ||
-    result.eventDiscovery.count !== result.eventDiscovery.names.length ||
+    result.eventDiscovery.discoveredEventCount !==
+      result.eventDiscovery.discoveredEventsRaw.length ||
+    result.eventDiscovery.discoveredEventCount !==
+      result.eventDiscovery.discoveredEventNamesInOrder.length ||
+    result.eventDiscovery.duplicateEventCount !==
+      result.eventDiscovery.discoveredEventCount - result.eventDiscovery.uniqueEventNames.length ||
+    new Set(result.eventDiscovery.uniqueEventNames).size !==
+      result.eventDiscovery.uniqueEventNames.length ||
+    result.eventDiscovery.normalizedEventInventory.join("\u0000") !==
+      [...result.eventDiscovery.uniqueEventNames].sort().join("\u0000") ||
+    (result.grenadeEvidence.status === "AVAILABLE" &&
+      (result.grenadeEvidence.count === null ||
+        result.grenadeEvidence.count < result.grenadeEvidence.samples.length ||
+        !HEX_64.test(result.grenadeEvidence.normalizedDigest ?? ""))) ||
+    (result.grenadeEvidence.status !== "AVAILABLE" && result.grenadeEvidence.count !== null) ||
     result.parsedEventInventory.some(
       (item) =>
         typeof item.name !== "string" ||
         !Array.isArray(item.fields) ||
+        !Array.isArray(item.requestedPlayerFields) ||
+        !Array.isArray(item.requestedOtherFields) ||
+        item.requestedPlayerFields.length > MAX_OBJECT_KEYS ||
+        item.requestedOtherFields.length > MAX_OBJECT_KEYS ||
         (item.status === "PRESENT_AND_PARSED" && (item.count === null || item.count < 0)) ||
         (item.status !== "PRESENT_AND_PARSED" && item.count !== null),
     )
