@@ -154,3 +154,30 @@ do candidato.
 - `DETERMINISM_REAL = NOT_RUN`
 - `CANONICAL = BLOCKED`
 - `AI = BLOCKED`
+
+### Snapshot read-only final
+
+- Storage: 3 objetos, 947.497.146 bytes.
+- Vinculados a jobs: 2 objetos, 947.496.122 bytes.
+- Mismatch em quarentena: 1 objeto.
+- Órfão não verificado: 1 objeto, 1.024 bytes; reportado e não apagado.
+
+### Quality gates
+
+- TypeScript: PASS.
+- Retention A–T: 14/14 PASS.
+- APP: 1.021/1.021 PASS, 68 arquivos.
+- ESLint: PASS, 0 erros e 9 warnings preexistentes.
+- Python compileall: PASS.
+- Python pytest: `NOT_RUN — PYTEST_NOT_INSTALLED`.
+- Formatting e diff check: PASS.
+- Preview build: PASS.
+
+### Blocker exato
+
+`RAILWAY_RUNTIME_PARITY` exige o source da branch
+`infra/cs2-parser-worker-v8`, seus arquivos de isolamento e uma imagem candidata
+construída no SHA `2f8a76645c6030659f2ed0480469b1452e75f72e`. Observado:
+branch/conexão indisponíveis e runtime em semantic `40ae…` / build `684da…`.
+Remediação necessária: sincronização cirúrgica no repositório Railway, testes de
+isolamento, build/deploy controlado e nova prova read-only de identidade.

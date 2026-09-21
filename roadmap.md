@@ -12,6 +12,8 @@
 - [x] `/health` e `/version` respondem 200; runtime observado em semantic `git:40ae4977e174f9a21b1394fb047b53fba2505e8b` / build `git:684da207d6a35d14d5663b011966561b09d55703`.
 - [ ] Identidade Railway alinhada ao candidato `2f8a76645c6030659f2ed0480469b1452e75f72e`: FAIL; source/deploy continuam indisponíveis.
 - [x] Nenhum DEM, parsing, retry, Cache Run 2, attempt 9, cleanup físico, Canonical, AI, deploy, secret ou reescrita histórica.
+- [x] Snapshot read-only final: 3 objetos/947.497.146 bytes; 2 vinculados/947.496.122 bytes; 1 órfão/1.024 bytes, sem delete.
+- [x] Quality gates locais: APP 1.021/1.021, retenção 14/14, typecheck, lint (0 erros/9 warnings), compileall, formatting, diff check e preview build PASS; pytest `NOT_RUN — PYTEST_NOT_INSTALLED`.
 
 **Decisão:** `BLOCKED`. `LEGACY_CLEANUP_DISABLED`, `RETENTION_CONTRACT`, `CLEANUP_AUTHORITY_SINGLE` e `NO_DESTRUCTIVE_EXECUTION` passam no candidato local; `RAILWAY_RUNTIME_PARITY` não passa sem acesso auditável ao runtime. Real DEM, Python×WASM, determinismo, Canonical e AI permanecem `NOT_RUN/BLOCKED`.
 
