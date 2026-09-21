@@ -178,27 +178,29 @@ function cleanupErrorCode(error: unknown): string {
 async function executeCleanupClaim(claim: CleanupClaim): Promise<"verified" | "alreadyAbsent"> {
   const db = await admin();
   try {
-    const outcome = await deleteDemoVerified(
-      claim.storage_path,
-      claim.user_id,
-      claim.upload_id,
+    const outcome = await deleteDemoVerified(claim.storage_path, claim.user_id, claim.upload_id);
+    const { data, error } = await db.rpc(
+      "finish_demo_cleanup_verified" as never,
+      {
+        _job_id: claim.job_id,
+        _claim_token: claim.claim_token,
+        _outcome: outcome,
+      } as never,
     );
-    const { data, error } = await db.rpc("finish_demo_cleanup_verified" as never, {
-      _job_id: claim.job_id,
-      _claim_token: claim.claim_token,
-      _outcome: outcome,
-    } as never);
     if (error || data !== true) {
       throw new PipelineError("CLEANUP_ERROR", error?.message ?? "CLEANUP_CLAIM_STALE");
     }
     return outcome === "ALREADY_ABSENT" ? "alreadyAbsent" : "verified";
   } catch (error) {
     const code = cleanupErrorCode(error);
-    await db.rpc("fail_demo_cleanup" as never, {
-      _job_id: claim.job_id,
-      _claim_token: claim.claim_token,
-      _error_code: code,
-    } as never);
+    await db.rpc(
+      "fail_demo_cleanup" as never,
+      {
+        _job_id: claim.job_id,
+        _claim_token: claim.claim_token,
+        _error_code: code,
+      } as never,
+    );
     console.error(`[demo-cleanup] job=${claim.job_id} code=${code}`);
     throw error;
   }
@@ -207,10 +209,13 @@ async function executeCleanupClaim(claim: CleanupClaim): Promise<"verified" | "a
 async function finishCancellation(jobId: string, _storagePath: string | null) {
   const db = await admin();
   await db.rpc("finish_demo_job_cancelled", { _job_id: jobId });
-  const { data, error } = await db.rpc("claim_demo_cleanup_job" as never, {
-    _job_id: jobId,
-    _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
-  } as never);
+  const { data, error } = await db.rpc(
+    "claim_demo_cleanup_job" as never,
+    {
+      _job_id: jobId,
+      _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
+    } as never,
+  );
   const result = data as Record<string, unknown> | null;
   if (error || result?.["claimed"] !== true) return;
   const claim = cleanupClaim(result);
@@ -400,10 +405,13 @@ export async function reconcileOrphanDemoUploads(
 /** Claims, deletes and physically verifies eligible temporary demo files. */
 export async function cleanupExpiredDemos(limit = 25): Promise<DemoCleanupSummary> {
   const db = await admin();
-  const { data, error } = await db.rpc("claim_demo_cleanup_jobs" as never, {
-    _limit: limit,
-    _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
-  } as never);
+  const { data, error } = await db.rpc(
+    "claim_demo_cleanup_jobs" as never,
+    {
+      _limit: limit,
+      _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS,
+    } as never,
+  );
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
   const payload = data as { items?: unknown[] } | null;
   const claims = (payload?.items ?? []).map(cleanupClaim).filter((claim) => claim !== null);

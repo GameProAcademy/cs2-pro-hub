@@ -21,7 +21,13 @@ Segredos necessários (servidor):
 `POST DEMO_PARSER_URL` com `Authorization: Bearer <DEMO_PARSER_TOKEN>` e corpo:
 
 ```json
-{ "contract_version": 1, "upload_id": "uuid", "demo_url": "signed-url", "demo_sha256": "hex", "file_size": 123 }
+{
+  "contract_version": 1,
+  "upload_id": "uuid",
+  "demo_url": "signed-url",
+  "demo_sha256": "hex",
+  "file_size": 123
+}
 ```
 
 Resposta: `RawParserOutput` (`src/lib/pipeline/types.ts`) com
@@ -42,22 +48,22 @@ Estados: `pending -> processing -> processed | failed`.
 
 ## Camadas
 
-| Módulo | Responsabilidade |
-| --- | --- |
-| `src/config/pipeline.ts` | versões, limites, retenção, janelas, concorrência |
-| `src/lib/pipeline/errors.ts` | taxonomia estruturada; permanente vs transitório |
-| `src/lib/pipeline/types.ts` | contrato do parser + schema canônico |
-| `src/lib/pipeline/parser/adapter.ts` | abstração `DemoParserAdapter` |
-| `src/lib/pipeline/parser/remoteParser.server.ts` | transporte HTTP para o worker |
-| `src/lib/pipeline/validator.ts` | validação de arquivo, canônica e identidade |
-| `src/lib/pipeline/normalizer.ts` | parser -> canônico (puro) |
-| `src/lib/pipeline/metrics.ts` | KAST, trades, opening, clutch, utility (puro) |
-| `src/lib/pipeline/features.ts` | sinais das dez dimensões DNA (puro) |
-| `src/lib/pipeline/persistence.server.ts` | escrita permanente (service role) |
-| `src/lib/pipeline/jobs.server.ts` | ciclo de vida, retries, stale, cleanup |
-| `src/lib/pipeline.functions.ts` | API do jogador |
-| `src/lib/pipeline-admin.functions.ts` | observabilidade master |
-| `src/routes/api/public/pipeline-cron.ts` | manutenção agendada (bearer secret) |
+| Módulo                                           | Responsabilidade                                  |
+| ------------------------------------------------ | ------------------------------------------------- |
+| `src/config/pipeline.ts`                         | versões, limites, retenção, janelas, concorrência |
+| `src/lib/pipeline/errors.ts`                     | taxonomia estruturada; permanente vs transitório  |
+| `src/lib/pipeline/types.ts`                      | contrato do parser + schema canônico              |
+| `src/lib/pipeline/parser/adapter.ts`             | abstração `DemoParserAdapter`                     |
+| `src/lib/pipeline/parser/remoteParser.server.ts` | transporte HTTP para o worker                     |
+| `src/lib/pipeline/validator.ts`                  | validação de arquivo, canônica e identidade       |
+| `src/lib/pipeline/normalizer.ts`                 | parser -> canônico (puro)                         |
+| `src/lib/pipeline/metrics.ts`                    | KAST, trades, opening, clutch, utility (puro)     |
+| `src/lib/pipeline/features.ts`                   | sinais das dez dimensões DNA (puro)               |
+| `src/lib/pipeline/persistence.server.ts`         | escrita permanente (service role)                 |
+| `src/lib/pipeline/jobs.server.ts`                | ciclo de vida, retries, stale, cleanup            |
+| `src/lib/pipeline.functions.ts`                  | API do jogador                                    |
+| `src/lib/pipeline-admin.functions.ts`            | observabilidade master                            |
+| `src/routes/api/public/pipeline-cron.ts`         | manutenção agendada (bearer secret)               |
 
 ## Dados
 

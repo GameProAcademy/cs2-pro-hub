@@ -15,16 +15,16 @@ attempt 9, Railway, Canonical ou segredo.
 
 ## Estado auditado antes da migration
 
-| Sinal | Contagem |
-|---|---:|
-| jobs totais | 12 |
-| objetos no bucket `demos` | 9 |
-| bytes físicos | 3.789.985.512 |
-| `blocked_raw_audit` sem retenção | 1 |
-| `failed` sem retenção | 6 |
-| metadados `storage_deleted_at` com objeto ainda presente | 3 |
-| objeto órfão | 1 |
-| bytes órfãos | 1.024 |
+| Sinal                                                    |      Contagem |
+| -------------------------------------------------------- | ------------: |
+| jobs totais                                              |            12 |
+| objetos no bucket `demos`                                |             9 |
+| bytes físicos                                            | 3.789.985.512 |
+| `blocked_raw_audit` sem retenção                         |             1 |
+| `failed` sem retenção                                    |             6 |
+| metadados `storage_deleted_at` com objeto ainda presente |             3 |
+| objeto órfão                                             |             1 |
+| bytes órfãos                                             |         1.024 |
 
 O backfill definiu apenas retenção ausente em `failed`/`blocked_raw_audit`, a
 partir do timestamp terminal histórico. Não apagou nem reabriu tentativas.
@@ -48,19 +48,19 @@ partir do timestamp terminal histórico. Não apagou nem reabriu tentativas.
 
 ## Matriz A–Q
 
-| Gate | Prova | Estado |
-|---|---|---|
-| A–C | policy version + 24h/72h + backfill terminal | PASS |
-| D–E | estado terminal + retenção vencida | PASS |
-| F–G | worker/lease + claim transacional concorrente | PASS |
-| H | retry bloqueado durante cleanup e após deleção | PASS |
-| I–J | ownership estrito + cancelamento imediato seguro | PASS |
-| K–L | verificação pós-delete + ausência idempotente | PASS |
-| M | falha registrada sem falso positivo | PASS |
-| N | mismatch de metadado detectado | PASS |
-| O | órfão classificado, sem auto-delete | PASS |
-| P | histórico/RAW/Canonical/SHA preservados | PASS |
-| Q | RPCs service-role-only e `search_path=''` | PASS |
+| Gate | Prova                                            | Estado |
+| ---- | ------------------------------------------------ | ------ |
+| A–C  | policy version + 24h/72h + backfill terminal     | PASS   |
+| D–E  | estado terminal + retenção vencida               | PASS   |
+| F–G  | worker/lease + claim transacional concorrente    | PASS   |
+| H    | retry bloqueado durante cleanup e após deleção   | PASS   |
+| I–J  | ownership estrito + cancelamento imediato seguro | PASS   |
+| K–L  | verificação pós-delete + ausência idempotente    | PASS   |
+| M    | falha registrada sem falso positivo              | PASS   |
+| N    | mismatch de metadado detectado                   | PASS   |
+| O    | órfão classificado, sem auto-delete              | PASS   |
+| P    | histórico/RAW/Canonical/SHA preservados          | PASS   |
+| Q    | RPCs service-role-only e `search_path=''`        | PASS   |
 
 ## Métricas
 

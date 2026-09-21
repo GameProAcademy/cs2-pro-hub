@@ -78,11 +78,7 @@ export async function demoExists(storagePath: string): Promise<{ size: number } 
 
 export type DemoDeletionOutcome = "DELETE_VERIFIED" | "ALREADY_ABSENT";
 
-export function assertDemoStoragePath(
-  storagePath: string,
-  userId: string,
-  uploadId: string,
-): void {
+export function assertDemoStoragePath(storagePath: string, userId: string, uploadId: string): void {
   if (storagePath !== demoStoragePath(userId, uploadId)) {
     throw new PipelineError("CLEANUP_ERROR", "PATH_OWNERSHIP_MISMATCH");
   }

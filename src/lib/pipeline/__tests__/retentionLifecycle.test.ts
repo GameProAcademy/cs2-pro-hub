@@ -70,12 +70,16 @@ describe("G.6 DEM retention and verified deletion A-Q", () => {
 
   it("M records failures without marking physical deletion", () => {
     expect(migration).toContain("storage_deleted_at = NULL, storage_delete_verified_at = NULL");
-    expect(migration).toContain("'DELETE_FAILED','DELETE_NOT_VERIFIED','DELETE_VERIFICATION_FAILED'");
-    expect(jobs).toContain('summary.failed += 1');
+    expect(migration).toContain(
+      "'DELETE_FAILED','DELETE_NOT_VERIFIED','DELETE_VERIFICATION_FAILED'",
+    );
+    expect(jobs).toContain("summary.failed += 1");
   });
 
   it("N detects legacy metadata mismatch", () => {
-    expect(migration).toContain("storage_deleted_at IS NOT NULL AND _job.storage_delete_verified_at IS NULL");
+    expect(migration).toContain(
+      "storage_deleted_at IS NOT NULL AND _job.storage_delete_verified_at IS NULL",
+    );
     expect(migration).toContain("'DELETION_METADATA_MISMATCH'");
   });
 
