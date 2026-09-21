@@ -25,3 +25,9 @@ The current catalog contains 175 field rows and 38 event-specific requests. The 
 - Canonical eligibility: `false` for every field and result.
 
 This report does not claim that every catalog field is supported upstream. Those values remain `UPSTREAM_NOT_VERIFIED` until source-level or same-runtime evidence can establish them without inference.
+
+## Machine-readable L/M/N manifest
+
+`upstream-surface-manifest.json` is the shared language-neutral source for API, field and event provenance. Its canonical catalog digest is `29f90c175be2838a3c510d1d0699fe5f663fabe9f6efd73f7dc6e9a80efeea6d`; its contract digest is `bedbe8e284d723ad63e3365c88c9fc836c415826ce8ffeecef40ff31664202b8`. TypeScript imports the manifest directly; Python independently recomputes both digests before producing evidence.
+
+The manifest records 153/175 fields with direct source evidence and leaves 22 unsupported/unverified rather than assigning a generic source range. Event requests are represented event-by-event, not generated at runtime from broad categories.

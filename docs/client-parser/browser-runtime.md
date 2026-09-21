@@ -21,3 +21,7 @@ Each parser API call also records whether the export exists, whether the call wa
 | Safari  | NOT_RUN        | NOT_RUN  | NOT_RUN          | NOT_RUN        | BLOCKED |
 
 Chromium loaded and initialized the exact upstream-commit artifact and exposed all four required APIs. No `.dem` was provided, so call execution, parsing and validation remain `NOT_RUN`; the formal real-runtime gate is `BLOCKED`. The requested ~400 MB gate cannot be run under the current conservative 128 MiB POC ceiling and remains `NOT_RUN`. No universal browser support claim follows from the Chromium initialization check.
+
+## F.2.10-L/M/N hardening
+
+Each parse call is bound to the shared catalog/contract identity, pinned parser revision, and recomputed DEM SHA. Local selection authorization is explicit and checked again inside the Worker. Grenades retain raw evidence separately from conservative normalization; rounds are bounded references; tick coverage remains a non-authoritative probe.

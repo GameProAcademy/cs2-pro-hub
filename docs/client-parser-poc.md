@@ -139,3 +139,9 @@ Nenhum Cache Run, retry, attempt 9, enqueue, claim, Canonical real, migration, s
 ## Gate final
 
 `POC_NOT_READY`
+
+# F.2.10-L/M/N — contract closure
+
+The harness now uses one machine-readable upstream manifest shared by TypeScript and Python, with independently recomputed catalog and contract digests. It contains source-backed API/field/event provenance, 38 explicit event request definitions, objective coverage metrics, and separate lifecycle states. Python artifacts use unique execution IDs while semantic digests exclude operational identity. Browser and Python inputs require explicit authorization metadata bound to filename, size and SHA-256.
+
+`PASS_FOR_AUTHORIZED_REAL_DEM` applies only to the static harness contracts. No authorized DEM was supplied, so `REAL DEM VERIFIED = NO`, `PYTHON × WASM VERIFIED = NO`, `DETERMINISM VERIFIED = NO`, `CANONICAL READY = NO`, and `AI DATA READY = NO`. The operational evidence status remains `POC_NOT_READY / NO_AUTHORIZED_REAL_DEM_FIXTURE`.

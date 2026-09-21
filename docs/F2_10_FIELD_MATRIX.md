@@ -33,3 +33,9 @@ The catalog expands each header, tick/player-state, combat, blind, round, bomb a
 The executable parity contract retains 22 summary dimensions and supports `PASS`, `FAIL`, `NOT_RUN`, `BLOCKED`, `NOT_AVAILABLE_ON_WASM`, `NOT_AVAILABLE_ON_PYTHON`, and `PARSE_FAILED`. Field rows additionally preserve `TYPE_MISMATCH`, `VALUE_MISMATCH`, `NOT_PRESENT`, `UNAVAILABLE`, and `NORMALIZATION_REQUIRED`. Missing, null, zero, unavailable and failed values are never normalized into equality.
 
 `summarizeFieldMatrix()` derives all totals from rows. No manually entered count can promote a gate. Every row remains `canonicalEligible=false`, including any future parity PASS row.
+
+## F.2.10-L/M/N contract closure
+
+The machine-readable authority is `docs/client-parser/upstream-surface-manifest.json`, generated from the pinned upstream commit. Current objective metrics are **9 APIs catalogued**, **8 source-supported APIs**, **175 fields**, **153 fields with direct source evidence**, **151 runtime-requestable fields**, **129 cross-runtime candidates**, and **38/38 explicit event request catalogs**. The remaining 22 fields are not promoted by inference.
+
+Each field row now carries separate Python and WASM evidence references. Match states distinguish `NULL_MATCH`, `ZERO_MATCH`, `FALSE_MATCH`, `EMPTY_STRING_MATCH`, exact equality, type mismatch, semantic mismatch, unavailable and not-run. The numeric tolerance registry is intentionally empty: no tolerance is accepted without a field-specific contract entry.

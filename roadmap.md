@@ -1307,3 +1307,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Calculated matrix: 175 fields, 151 requestable, 0 executed, 0 parity PASS, 175 blocked/NOT_RUN; 22 parity dimensions.
 - [ ] `REAL DEM VERIFIED = NO`; `PYTHON × WASM VERIFIED = NO`; `DETERMINISM VERIFIED = NO`; `CANONICAL READY = NO`; `AI DATA READY = NO`.
 - Final implementation status: `HARNESS READY FOR AUTHORIZED REAL DEM`; evidence status remains `POC_NOT_READY / NO_AUTHORIZED_REAL_DEM_FIXTURE`.
+
+### F.2.10-L/M/N — Shared provenance and execution contracts
+
+- [x] Added a machine-readable upstream manifest for pinned commit `d3767705dc5846d73ed29db50eaeda58778dc934`, with independent API/field/event states and source references.
+- [x] Replaced runtime category heuristics with 38 explicit event request entries carrying reasons, semantic purposes and upstream evidence.
+- [x] Bound Python and WASM to the same catalog/contract digests; mismatch blocks before field comparison.
+- [x] Added unique run identities, exact 2×Python + 2×WASM identity checks, conservative grenade normalization, bounded round metadata and non-authoritative tick-probe metadata.
+- [x] Added structured local DEM authorization verified against filename, size and SHA-256; no DEM was executed.
+- Contract gate: `PASS_FOR_AUTHORIZED_REAL_DEM`.
+- Evidence gate: `POC_NOT_READY / NO_AUTHORIZED_REAL_DEM_FIXTURE`; `REAL DEM VERIFIED = NO`; `PYTHON × WASM VERIFIED = NO`; `DETERMINISM VERIFIED = NO`; `CANONICAL READY = NO`; `AI DATA READY = NO`.
+- No Cache run, attempt, Railway, Storage, migration, secret, Canonical, production, or historical mutation occurred.

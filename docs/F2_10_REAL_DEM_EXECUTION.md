@@ -15,3 +15,9 @@ Discovered-event order and duplicates are retained independently from the normal
 ## Required before execution
 
 An authorized real `.dem` with documented provenance must be supplied to both the browser WASM and Python demoparser2 0.42.0 harnesses. Their input SHA-256 values must match exactly. Until then F.2.10-F is `BLOCKED`, F.2.10-G/H are `NOT_RUN`, and no runtime evidence file exists.
+
+## F.2.10-L/M/N authorization contract
+
+A browser run now requires structured authorization metadata bound to the selected local file: `authorizedDemo=true`, local provenance/source, filename, byte size, computed SHA-256, authorization reference, and receipt time. The Worker recomputes the SHA after transfer and rejects any mismatch. The Python producer requires the equivalent explicit metadata and verifies filename, size and SHA before parsing.
+
+No DEM was supplied or executed in this phase. Therefore real parsing, parity and determinism remain `NOT_RUN`.
