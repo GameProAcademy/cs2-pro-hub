@@ -73,6 +73,30 @@ def build_python_reference(path_value: str | None) -> dict[str, Any]:
     demo_sha = _sha256(path)
     output = parse_demo_file(str(path))
     raw = output.get("raw_evidence") or {}
+    header = _domain(output, "header", {})
+    players = _domain(output, "players", [])
+    events = _domain(output, "events", [])
+    rounds = _domain(output, "rounds", [])
+    grenades = _bounded(raw.get("grenade_samples") or [])
+    field_inventory = sorted(
+        {
+            str(key)
+            for section in (header, *players, *events, *rounds, *grenades)
+            if isinstance(section, dict)
+            for key in section
+        }
+    )
+    event_inventory = [
+        str(item.get("event_name"))
+        for item in raw.get("event_coverage") or []
+        if isinstance(item, dict) and item.get("event_name") is not None
+    ]
+    normalized_result = _bounded(
+        {"header": header, "players": players, "events": events, "rounds": rounds, "grenades": grenades}
+    )
+    normalized_digest = hashlib.sha256(
+        json.dumps(normalized_result, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
     artifact: dict[str, Any] = {
         "runId": f"python:{demo_sha}:1",
         "runtime": "PYTHON",
@@ -80,11 +104,14 @@ def build_python_reference(path_value: str | None) -> dict[str, Any]:
         "parserName": "demoparser2-python",
         "parserVersion": PARSER_VERSION,
         "parserRevision": PARSER_REVISION,
-        "headerEvidence": _domain(output, "header", {}),
-        "playerEvidence": _domain(output, "players", []),
-        "eventEvidence": _domain(output, "events", []),
-        "grenadeEvidence": _bounded(raw.get("grenade_samples") or []),
-        "roundEvidence": _domain(output, "rounds", []),
+        "contractVersion": 3,
+        "catalogDigest": hashlib.sha256("python-reference-v1".encode()).hexdigest(),
+        "fieldInventory": field_inventory,
+        "eventInventory": event_inventory,
+        "playerInventory": players,
+        "roundInventory": rounds,
+        "grenadeInventory": grenades,
+        "headerEvidence": header,
         "tickDomainEvidence": _bounded(raw.get("forensic_contract_v2", {}).get("tick_domain", {})),
         "timingEvidence": _bounded({"header": output.get("header", {}), "rounds": output.get("rounds", [])}),
         "mapEvidence": _bounded({"map": (output.get("header") or {}).get("map")}),
@@ -97,7 +124,8 @@ def build_python_reference(path_value: str | None) -> dict[str, Any]:
         "weaponEvidence": _bounded([item for item in output.get("events", []) if str(item.get("type", "")).startswith(("weapon_", "item_"))]),
         "positionEvidence": _bounded(raw.get("tick_samples") or []),
         "aimEvidence": _bounded(raw.get("tick_samples") or []),
-        "normalizedDigest": "",
+        "normalizedResult": normalized_result,
+        "normalizedResultDigest": normalized_digest,
         "startedAt": started_at,
         "durationMs": 0,
         "status": "SUCCEEDED",
@@ -105,11 +133,21 @@ def build_python_reference(path_value: str | None) -> dict[str, Any]:
         "canonicalEligible": False,
         "persisted": False,
     }
+    artifact["runIdentity"] = {
+        "runId": artifact["runId"],
+        "runtime": "PYTHON",
+        "demoSha256": demo_sha,
+        "parserIdentity": artifact["parserName"],
+        "parserVersion": PARSER_VERSION,
+        "parserRevision": PARSER_REVISION,
+        "artifactIdentity": None,
+        "normalizedDigest": normalized_digest,
+        "startedAt": started_at,
+        "durationMs": 0,
+        "status": "SUCCEEDED",
+    }
     artifact["durationMs"] = round((time.perf_counter() - started) * 1_000, 3)
-    deterministic = {key: value for key, value in artifact.items() if key not in {"normalizedDigest", "startedAt", "durationMs", "runId"}}
-    artifact["normalizedDigest"] = hashlib.sha256(
-        json.dumps(deterministic, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-    ).hexdigest()
+    artifact["runIdentity"]["durationMs"] = artifact["durationMs"]
     if not _finite(artifact):
         raise ValueError("python_reference_contains_non_finite_value")
     return artifact

@@ -94,7 +94,10 @@ function inspectShape(value: unknown): ClientParserErrorCode | null {
     activePath.add(current.value);
     pending.push({ value: current.value, depth: current.depth, leaving: true });
     if (Array.isArray(current.value)) {
-      if (current.value.length > Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT))
+      if (
+        current.value.length >
+        Math.max(CLIENT_EVENT_INVENTORY_LIMIT, CLIENT_EVENT_SAMPLE_LIMIT, CLIENT_TICK_PROBE_LIMIT)
+      )
         return "CLIENT_RESULT_TOO_LARGE";
       for (const item of current.value) pending.push({ value: item, depth: current.depth + 1 });
       continue;
@@ -259,6 +262,20 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
         result.grenadeEvidence.samples.length !== result.grenadeEvidence.normalizedSamples.length ||
         !HEX_64.test(result.grenadeEvidence.normalizedDigest ?? ""))) ||
     (result.grenadeEvidence.status !== "AVAILABLE" && result.grenadeEvidence.count !== null) ||
+    result.roundEvidence.some(
+      (round) =>
+        !Number.isSafeInteger(round.roundIndex) ||
+        round.roundIndex < 1 ||
+        !Number.isSafeInteger(round.startTick) ||
+        round.startTick < 0 ||
+        (round.endTick !== null &&
+          (!Number.isSafeInteger(round.endTick) || round.endTick < round.startTick)) ||
+        (round.duration !== null && (!Number.isFinite(round.duration) || round.duration < 0)) ||
+        round.eventsCount < 0 ||
+        round.source !== "round_start+round_end",
+    ) ||
+    result.tickDomainEvidence.provenance !== "demoparser2.parseHeader+parseTicks" ||
+    result.tickDomainEvidence.source !== "header_probe" ||
     result.parsedEventInventory.some(
       (item) =>
         typeof item.name !== "string" ||

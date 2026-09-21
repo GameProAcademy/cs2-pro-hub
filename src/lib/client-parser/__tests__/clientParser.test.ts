@@ -8,6 +8,7 @@ import {
   compareClientVsPythonSemantic,
   compareClientVsServerReference,
   evaluateDeterminism,
+  normalizeForParity,
   summarizeFieldMatrix,
 } from "../clientParser.parity";
 import {
@@ -443,6 +444,21 @@ describe("client parser compact contract", () => {
         evidenceRef: "same-dem",
       }).status,
     ).toBe("VALUE_MISMATCH");
+  });
+
+  it("preserves array order and duplicates while normalizing object keys", () => {
+    expect(normalizeForParity([{ z: 1, a: 2 }, { a: 2, z: 1 }, { z: 1, a: 2 }])).toEqual([
+      { a: 2, z: 1 },
+      { a: 2, z: 1 },
+      { a: 2, z: 1 },
+    ]);
+    expect(normalizeForParity(["b", "a", "b"])).toEqual(["b", "a", "b"]);
+  });
+
+  it("refuses to serialize non-finite numbers in deterministic evidence", () => {
+    expect(() => computeClientResultDigest({ value: Number.NaN })).toThrow(
+      "non_finite_number_is_not_serializable",
+    );
   });
 
   it("does not claim determinism without two real runs per runtime", () => {
