@@ -23,11 +23,36 @@ PARSER_REVISION = "d3767705dc5846d73ed29db50eaeda58778dc934"
 SURFACE_MANIFEST_PATH = Path(__file__).resolve().parents[2] / "docs/client-parser/upstream-surface-manifest.json"
 
 
+def _stable_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha256(_stable_json(value).encode()).hexdigest()
+
+
 def _manifest() -> dict[str, Any]:
     with SURFACE_MANIFEST_PATH.open(encoding="utf-8") as handle:
         value = json.load(handle)
     if value.get("provenance", {}).get("commit") != PARSER_REVISION:
         raise ValueError("catalog_parser_revision_mismatch")
+    catalog_payload = {
+        "provenance": value["provenance"],
+        "apis": value["apis"],
+        "fields": value["fields"],
+        "events": value["events"],
+    }
+    if _digest(catalog_payload) != value.get("catalogDigest"):
+        raise ValueError("catalog_digest_mismatch")
+    contract_payload = {
+        "contractVersion": value["contractVersion"],
+        "catalogVersion": value["catalogVersion"],
+        "catalogDigest": value["catalogDigest"],
+        "limits": value["limits"],
+        "policies": value["policies"],
+    }
+    if _digest(contract_payload) != value.get("contractDigest"):
+        raise ValueError("contract_digest_mismatch")
     return value
 
 
