@@ -65,19 +65,19 @@ do incidente e publicação coordenada do servidor endurecido.
 
 ## Matriz A–Q
 
-| Gate | Prova                                            | Estado |
-| ---- | ------------------------------------------------ | ------ |
-| A–C  | policy version + 24h/72h + backfill terminal     | PASS   |
-| D–E  | estado terminal + retenção vencida               | PASS   |
-| F–G  | worker/lease + claim transacional concorrente    | PASS   |
-| H    | retry bloqueado durante cleanup e após deleção   | PASS   |
-| I–J  | ownership estrito + cancelamento imediato seguro | PASS   |
-| K–L  | verificação pós-delete + ausência idempotente    | PASS   |
-| M    | falha registrada sem falso positivo              | PASS   |
-| N    | mismatch de metadado detectado                   | PASS   |
-| O    | órfão classificado, sem auto-delete              | PASS   |
+| Gate | Prova                                            | Estado                                                |
+| ---- | ------------------------------------------------ | ----------------------------------------------------- |
+| A–C  | policy version + 24h/72h + backfill terminal     | PASS                                                  |
+| D–E  | estado terminal + retenção vencida               | PASS                                                  |
+| F–G  | worker/lease + claim transacional concorrente    | PASS                                                  |
+| H    | retry bloqueado durante cleanup e após deleção   | PASS                                                  |
+| I–J  | ownership estrito + cancelamento imediato seguro | PASS                                                  |
+| K–L  | verificação pós-delete + ausência idempotente    | PASS                                                  |
+| M    | falha registrada sem falso positivo              | PASS                                                  |
+| N    | mismatch de metadado detectado                   | PASS                                                  |
+| O    | órfão classificado, sem auto-delete              | PASS                                                  |
 | P    | histórico/RAW/Canonical/SHA preservados          | BLOCKED: remoção concorrente de seis DEMs temporários |
-| Q    | RPCs service-role-only e `search_path=''`        | PASS   |
+| Q    | RPCs service-role-only e `search_path=''`        | PASS                                                  |
 
 ## Métricas
 
