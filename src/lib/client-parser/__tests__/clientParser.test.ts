@@ -395,17 +395,36 @@ describe("client parser compact contract", () => {
   });
 
   it("does not claim determinism without two real runs per runtime", () => {
-    expect(
-      evaluateDeterminism({ demoSha256: null, pythonRunDigests: [], wasmRunDigests: [] }),
-    ).toMatchObject({
+    expect(evaluateDeterminism({ demoSha256: null, runs: [] })).toMatchObject({
       status: "NOT_RUN",
       reason: "NO_AUTHORIZED_REAL_DEM_FIXTURE",
+    });
+    const run = (
+      runtime: "PYTHON" | "WASM",
+      runId: string,
+      normalizedDigest: string,
+    ) => ({
+      runId,
+      runtime,
+      demoSha256: "b".repeat(64),
+      parserIdentity: runtime === "PYTHON" ? "demoparser2-python" : "demoparser2-wasm",
+      parserVersion: "0.42.0",
+      parserRevision: "revision",
+      artifactIdentity: runtime === "WASM" ? "artifact" : null,
+      normalizedDigest,
+      startedAt: "2026-09-21T00:00:00.000Z",
+      durationMs: 1,
+      status: "SUCCEEDED" as const,
     });
     expect(
       evaluateDeterminism({
         demoSha256: "b".repeat(64),
-        pythonRunDigests: ["a", "a"],
-        wasmRunDigests: ["c", "d"],
+        runs: [
+          run("PYTHON", "python-1", "a".repeat(64)),
+          run("PYTHON", "python-2", "a".repeat(64)),
+          run("WASM", "wasm-1", "c".repeat(64)),
+          run("WASM", "wasm-2", "d".repeat(64)),
+        ],
       }),
     ).toMatchObject({ status: "FAIL", pythonDeterministic: true, wasmDeterministic: false });
   });
