@@ -350,10 +350,15 @@ export type Database = {
           cancel_requested_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          cleanup_attempt_count: number
+          cleanup_claim_expires_at: string | null
+          cleanup_claim_token: string | null
+          cleanup_claimed_at: string | null
           cleanup_error: string | null
           created_at: string
           declared_nickname: string | null
           declared_participant_key: string | null
+          deletion_reason: string | null
           demo_sha256: string | null
           dispatch_attempt: number | null
           dispatched_at: string | null
@@ -368,6 +373,7 @@ export type Database = {
           heartbeat_at: string | null
           id: string
           identity_status: string
+          last_cleanup_attempt_at: string | null
           lease_expires_at: string | null
           match_id: string | null
           max_retries: number
@@ -384,6 +390,7 @@ export type Database = {
           replacement_reason: string | null
           resolved_steam_id: string | null
           retain_until: string | null
+          retention_policy_version: string | null
           retry_count: number
           rounds_detected: number | null
           rounds_valid: number | null
@@ -391,6 +398,8 @@ export type Database = {
           stage: string
           started_at: string | null
           status: Database["public"]["Enums"]["upload_status"]
+          storage_delete_attempted_at: string | null
+          storage_delete_verified_at: string | null
           storage_deleted_at: string | null
           storage_path: string | null
           superseded_by_job_id: string | null
@@ -416,10 +425,15 @@ export type Database = {
           cancel_requested_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          cleanup_attempt_count?: number
+          cleanup_claim_expires_at?: string | null
+          cleanup_claim_token?: string | null
+          cleanup_claimed_at?: string | null
           cleanup_error?: string | null
           created_at?: string
           declared_nickname?: string | null
           declared_participant_key?: string | null
+          deletion_reason?: string | null
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
@@ -434,6 +448,7 @@ export type Database = {
           heartbeat_at?: string | null
           id?: string
           identity_status?: string
+          last_cleanup_attempt_at?: string | null
           lease_expires_at?: string | null
           match_id?: string | null
           max_retries?: number
@@ -450,6 +465,7 @@ export type Database = {
           replacement_reason?: string | null
           resolved_steam_id?: string | null
           retain_until?: string | null
+          retention_policy_version?: string | null
           retry_count?: number
           rounds_detected?: number | null
           rounds_valid?: number | null
@@ -457,6 +473,8 @@ export type Database = {
           stage?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["upload_status"]
+          storage_delete_attempted_at?: string | null
+          storage_delete_verified_at?: string | null
           storage_deleted_at?: string | null
           storage_path?: string | null
           superseded_by_job_id?: string | null
@@ -482,10 +500,15 @@ export type Database = {
           cancel_requested_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          cleanup_attempt_count?: number
+          cleanup_claim_expires_at?: string | null
+          cleanup_claim_token?: string | null
+          cleanup_claimed_at?: string | null
           cleanup_error?: string | null
           created_at?: string
           declared_nickname?: string | null
           declared_participant_key?: string | null
+          deletion_reason?: string | null
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
@@ -500,6 +523,7 @@ export type Database = {
           heartbeat_at?: string | null
           id?: string
           identity_status?: string
+          last_cleanup_attempt_at?: string | null
           lease_expires_at?: string | null
           match_id?: string | null
           max_retries?: number
@@ -516,6 +540,7 @@ export type Database = {
           replacement_reason?: string | null
           resolved_steam_id?: string | null
           retain_until?: string | null
+          retention_policy_version?: string | null
           retry_count?: number
           rounds_detected?: number | null
           rounds_valid?: number | null
@@ -523,6 +548,8 @@ export type Database = {
           stage?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["upload_status"]
+          storage_delete_attempted_at?: string | null
+          storage_delete_verified_at?: string | null
           storage_deleted_at?: string | null
           storage_path?: string | null
           superseded_by_job_id?: string | null
@@ -3144,6 +3171,10 @@ export type Database = {
         Args: { _source: Database["public"]["Enums"]["data_source"] }
         Returns: number
       }
+      claim_demo_cleanup_jobs: {
+        Args: { _claim_seconds?: number; _limit?: number }
+        Returns: Json
+      }
       claim_demo_parse_message: {
         Args: {
           _max_concurrent?: number
@@ -3199,6 +3230,11 @@ export type Database = {
         Args: { _upload_id: string; _user_id: string }
         Returns: Json
       }
+      evaluate_demo_deletion_gate: { Args: { _job_id: string }; Returns: Json }
+      fail_demo_cleanup: {
+        Args: { _claim_token: string; _error_code: string; _job_id: string }
+        Returns: boolean
+      }
       fail_demo_parse_message: {
         Args: {
           _attempt: number
@@ -3220,6 +3256,10 @@ export type Database = {
         }
         Returns: Json
       }
+      finish_demo_cleanup_verified: {
+        Args: { _claim_token: string; _job_id: string; _outcome: string }
+        Returns: boolean
+      }
       finish_demo_job_cancelled: {
         Args: { _cleanup_error?: string; _job_id: string }
         Returns: boolean
@@ -3228,6 +3268,11 @@ export type Database = {
         Args: { _job_id: string; _result: Json }
         Returns: boolean
       }
+      get_demo_orphan_report: {
+        Args: { _older_than_hours?: number }
+        Returns: Json
+      }
+      get_demo_retention_metrics: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
