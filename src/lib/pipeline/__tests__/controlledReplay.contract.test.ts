@@ -16,14 +16,18 @@ describe("G.6-R.3 controlled replay contract", () => {
     expect(retryBlock).not.toContain('.update({\n        status: "pending"');
   });
 
-  it("reserves and enqueues a new logical attempt only through official RPCs", () => {
+  it("reserves and finalizes attempt 9 through dedicated transactional RPCs", () => {
     const replayBlock = adminSource.slice(adminSource.indexOf("adminCreateControlledDemoReplay"));
-    expect(replayBlock).toContain('"reserve_demo_upload"');
-    expect(replayBlock).toContain('rpc("enqueue_demo_job"');
-    expect(replayBlock).toContain('throw new Error("ATTEMPT_10_FORBIDDEN")');
+    expect(replayBlock).toContain('"reserve_controlled_demo_replay_attempt_9"');
+    expect(replayBlock).toContain('"finalize_controlled_demo_replay_attempt_9"');
+    expect(replayBlock).not.toContain('"reserve_demo_upload"');
+    expect(replayBlock).not.toContain('rpc("enqueue_demo_job"');
     expect(replayBlock).toContain('Number(reserved["attempt_number"]) !== 9');
+    expect(replayBlock).toContain('_provenance_id: data.provenanceId');
+    expect(replayBlock).toContain('queued["audit_status"] !== "RECORDED"');
     expect(replayBlock).not.toContain('.from("demo_jobs").insert');
     expect(replayBlock).not.toContain('.from("uploads").insert');
+    expect(replayBlock).not.toContain('.from("admin_audit_logs").insert');
   });
 
   it("uses server-side copy and verifies ownership, size, hash, and source preservation", () => {

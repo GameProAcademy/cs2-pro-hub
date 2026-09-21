@@ -348,6 +348,7 @@ export const adminRetryDemoJob = createServerFn({ method: "POST" })
 
 const controlledReplayInput = z.object({
   sourceJobId: z.string().uuid(),
+  provenanceId: z.string().uuid(),
   expectedAttempt: z.literal(8),
   expectedSize: z.literal(473_748_061),
   expectedSha256: z.literal("0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"),
@@ -394,27 +395,19 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
       throw new Error("SOURCE_UPLOAD_MISMATCH");
     }
 
-    const { data: attempts, error: attemptsError } = await supabaseAdmin
-      .from("uploads")
-      .select("id, attempt_number")
-      .eq("user_id", sourceJob.user_id)
-      .eq("demo_sha256", data.expectedSha256)
-      .gte("attempt_number", 9);
-    if (attemptsError) throw new Error(UNAVAILABLE);
-    if ((attempts ?? []).some((attempt) => attempt.attempt_number > 9)) {
-      throw new Error("ATTEMPT_10_FORBIDDEN");
-    }
-
-    const existingAttempt9 = (attempts ?? []).find((attempt) => attempt.attempt_number === 9);
-    const requestedUploadId = existingAttempt9?.id ?? crypto.randomUUID();
+    const requestedUploadId = crypto.randomUUID();
     const { data: reservation, error: reserveError } = await supabaseAdmin.rpc(
-      "reserve_demo_upload",
+      "reserve_controlled_demo_replay_attempt_9",
       {
         _user_id: sourceJob.user_id,
-        _upload_id: requestedUploadId,
-        _file_name: sourceUpload.file_name,
-        _file_size: data.expectedSize,
-        _demo_sha256: data.expectedSha256,
+        _source_job_id: sourceJob.id,
+        _source_upload_id: sourceJob.upload_id,
+        _expected_attempt: data.expectedAttempt,
+        _expected_sha256: data.expectedSha256,
+        _expected_size: data.expectedSize,
+        _replay_reason: "g6r-real-demo-replay",
+        _new_upload_id: requestedUploadId,
+        _provenance_id: data.provenanceId,
       },
     );
     if (reserveError || !reservation || typeof reservation !== "object" || Array.isArray(reservation)) {
@@ -428,7 +421,8 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
       !uploadId ||
       !destinationPath ||
       Number(reserved["attempt_number"]) !== 9 ||
-      uploadId !== requestedUploadId
+      reserved["supersedes_job_id"] !== sourceJob.id ||
+      reserved["replacement_reason"] !== "g6r-real-demo-replay"
     ) {
       throw new Error("ATTEMPT_9_RESERVATION_MISMATCH");
     }
@@ -444,33 +438,35 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
       expectedSize: data.expectedSize,
       expectedSha256: data.expectedSha256,
     });
-    const { data: enqueue, error: enqueueError } = await supabaseAdmin.rpc("enqueue_demo_job", {
+    const { data: enqueue, error: enqueueError } = await supabaseAdmin.rpc(
+      "finalize_controlled_demo_replay_attempt_9",
+      {
+        _user_id: sourceJob.user_id,
       _upload_id: uploadId,
-      _user_id: sourceJob.user_id,
-    });
+        _source_job_id: sourceJob.id,
+        _admin_user_id: (context as Ctx).userId,
+        _provenance_id: data.provenanceId,
+        _source_sha256: data.expectedSha256,
+        _destination_sha256: data.expectedSha256,
+        _source_size: data.expectedSize,
+        _destination_size: data.expectedSize,
+        _copy_outcome: copyOutcome,
+      },
+    );
     if (enqueueError || !enqueue || typeof enqueue !== "object" || Array.isArray(enqueue)) {
       throw new Error(enqueueError?.message ?? "ENQUEUE_FAILED");
     }
     const queued = enqueue as Record<string, Json | undefined>;
     const jobId = typeof queued["job_id"] === "string" ? queued["job_id"] : null;
-    if (!jobId || Number(queued["attempt_number"]) !== 9) {
+    if (
+      !jobId ||
+      Number(queued["attempt_number"]) !== 9 ||
+      queued["supersedes_job_id"] !== sourceJob.id ||
+      queued["replacement_reason"] !== "g6r-real-demo-replay" ||
+      queued["audit_status"] !== "RECORDED"
+    ) {
       throw new Error("ATTEMPT_9_ENQUEUE_MISMATCH");
     }
-
-    const { error: auditError } = await (context as Ctx).supabase.from("admin_audit_logs").insert({
-      admin_user_id: (context as Ctx).userId,
-      action: "DEMO_CONTROLLED_REPLAY_CREATED",
-      target_user_id: sourceJob.user_id,
-      metadata: {
-        source_job_id: sourceJob.id,
-        source_upload_id: sourceJob.upload_id,
-        upload_id: uploadId,
-        job_id: jobId,
-        attempt_number: 9,
-        copy_outcome: copyOutcome,
-      },
-    });
-    if (auditError) throw new Error("AUDIT_FAILED");
     return { status: "queued" as const, uploadId, jobId, attemptNumber: 9, copyOutcome };
   });
 
