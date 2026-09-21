@@ -145,7 +145,9 @@ describe("G.6-R legacy shutdown and single authority R-T", () => {
 
   it("T preserves quarantine/backfill and mismatch evidence without deleting Storage", () => {
     expect(migration).toContain("GREATEST(j.retain_until, now() + interval '24 hours')");
-    expect(migration).toContain("WHEN storage_deleted_at IS NOT NULL THEN 'DELETION_METADATA_MISMATCH'");
+    expect(migration).toContain(
+      "WHEN storage_deleted_at IS NOT NULL THEN 'DELETION_METADATA_MISMATCH'",
+    );
     expect(migration).not.toMatch(/DELETE\s+FROM\s+storage\.objects/i);
     expect(migration).not.toMatch(/storage\.from\([^)]*\)\.remove/i);
     expect(storage.match(/\.remove\(\[storagePath\]\)/g)).toHaveLength(1);

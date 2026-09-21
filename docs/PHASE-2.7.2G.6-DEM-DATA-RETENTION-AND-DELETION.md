@@ -104,16 +104,16 @@ sem retornar paths ou PII.
 
 ### Autoridades auditadas
 
-| Caminho | Classe | Estado G.6-R |
-| --- | --- | --- |
-| `deleteDemoVerified` | `NEW_G6_CLEANUP` | implementação única preservada, execução desligada |
-| `cleanupExpiredDemos` | `NEW_G6_CLEANUP` | no-op explícito com autoridade e status |
-| cron de pipeline | automático | chamada destrutiva removida |
-| cancelamento/conclusão | automático | chamada destrutiva removida |
-| ação master | manual | somente recovery e status fail-closed |
-| RPCs de claim/finalização | service-role-only | preservadas para gate operacional futuro |
-| relatório de órfãos/métricas | read-only | preservado, sem delete |
-| cleanup legado publicado | `LEGACY_CLEANUP` | nenhum caminho executável permanece no candidato |
+| Caminho                      | Classe            | Estado G.6-R                                       |
+| ---------------------------- | ----------------- | -------------------------------------------------- |
+| `deleteDemoVerified`         | `NEW_G6_CLEANUP`  | implementação única preservada, execução desligada |
+| `cleanupExpiredDemos`        | `NEW_G6_CLEANUP`  | no-op explícito com autoridade e status            |
+| cron de pipeline             | automático        | chamada destrutiva removida                        |
+| cancelamento/conclusão       | automático        | chamada destrutiva removida                        |
+| ação master                  | manual            | somente recovery e status fail-closed              |
+| RPCs de claim/finalização    | service-role-only | preservadas para gate operacional futuro           |
+| relatório de órfãos/métricas | read-only         | preservado, sem delete                             |
+| cleanup legado publicado     | `LEGACY_CLEANUP`  | nenhum caminho executável permanece no candidato   |
 
 ### Matriz A–T
 
