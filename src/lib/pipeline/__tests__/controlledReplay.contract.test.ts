@@ -27,7 +27,10 @@ describe("G.6-R.3 controlled replay contract", () => {
   });
 
   it("uses server-side copy and verifies ownership, size, hash, and source preservation", () => {
-    const copyBlock = storageSource.slice(storageSource.indexOf("copyDemoVerified"));
+    const copyBlock = storageSource.slice(
+      storageSource.indexOf("copyDemoVerified"),
+      storageSource.indexOf("/** Removes only"),
+    );
     expect(copyBlock).toContain("assertDemoStoragePath(args.sourcePath");
     expect(copyBlock).toContain("assertDemoStoragePath(");
     expect(copyBlock).toContain(".copy(args.sourcePath, args.destinationPath)");

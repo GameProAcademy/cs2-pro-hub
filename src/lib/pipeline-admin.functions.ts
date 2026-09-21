@@ -388,6 +388,7 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
       sourceUpload.attempt_number !== data.expectedAttempt ||
       sourceUpload.demo_sha256 !== data.expectedSha256 ||
       sourceUpload.file_size !== data.expectedSize ||
+      !sourceJob.storage_path ||
       sourceUpload.storage_path !== sourceJob.storage_path
     ) {
       throw new Error("SOURCE_UPLOAD_MISMATCH");
