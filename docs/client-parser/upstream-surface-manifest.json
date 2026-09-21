@@ -8475,8 +8475,8 @@
     "tickDomain": "PROBE_ONLY",
     "numericTolerance": "EXPLICIT_ONLY"
   },
-  "catalogDigest": "6ad61389ae7615b3de51dbeda8a94ad7cb5159300f6d8d94b6813fb4a6a5912a",
-  "contractDigest": "66f246b774f5b43c28e65a01699223475d445e1595064028b51a1f0d473cf4ab",
+  "catalogDigest": "29f90c175be2838a3c510d1d0699fe5f663fabe9f6efd73f7dc6e9a80efeea6d",
+  "contractDigest": "bedbe8e284d723ad63e3365c88c9fc836c415826ce8ffeecef40ff31664202b8",
   "metrics": {
     "upstreamApiCount": 8,
     "cataloguedApiCount": 9,
