@@ -255,7 +255,9 @@ describe("client parser compact contract", () => {
       "missing API evidence digest",
       resign(
         mutate((v) => {
-          v.result.parser.apiCalls[0].normalizedDigest = null;
+          const call = v.result.parser.apiCalls[0];
+          if (!call) throw new Error("fixture_call_missing");
+          call.normalizedDigest = null;
         }),
       ),
     ],
@@ -263,7 +265,9 @@ describe("client parser compact contract", () => {
       "negative API duration",
       resign(
         mutate((v) => {
-          v.result.parser.apiCalls[0].durationMs = -1;
+          const call = v.result.parser.apiCalls[0];
+          if (!call) throw new Error("fixture_call_missing");
+          call.durationMs = -1;
         }),
       ),
     ],
