@@ -77,6 +77,8 @@ function inspectShape(value: unknown): ClientParserErrorCode | null {
     if (nodes > MAX_NODES) return "CLIENT_RESULT_TOO_LARGE";
     if (current.depth > MAX_DEPTH) return "CLIENT_RESULT_INVALID";
     if (typeof current.value === "function") return "CLIENT_RESULT_INVALID";
+    if (typeof current.value === "number" && !Number.isFinite(current.value))
+      return "CLIENT_RESULT_INVALID";
     if (!current.value || typeof current.value !== "object") continue;
     if (current.leaving) {
       activePath.delete(current.value);
@@ -114,6 +116,8 @@ function fail(reasonCode: ClientParserErrorCode): ClientParserValidationDecision
 }
 
 export function validateClientParserResult(value: unknown): ClientParserValidationDecision {
+  const shapeError = inspectShape(value);
+  if (shapeError) return fail(shapeError);
   let encoded: Uint8Array;
   try {
     encoded = new TextEncoder().encode(JSON.stringify(value));
@@ -121,8 +125,6 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     return fail("CLIENT_RESULT_INVALID");
   }
   if (encoded.byteLength > CLIENT_RESULT_MAX_BYTES) return fail("CLIENT_RESULT_TOO_LARGE");
-  const shapeError = inspectShape(value);
-  if (shapeError) return fail(shapeError);
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail("CLIENT_RESULT_INVALID");
   const envelope = value as Partial<ClientParserEnvelope>;
@@ -218,9 +220,16 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     !Array.isArray(result.selectedEventSamples) ||
     result.selectedEventSamples.length > CLIENT_EVENT_SAMPLE_LIMIT ||
     !Array.isArray(result.grenadeEvidence?.samples) ||
+    !Array.isArray(result.grenadeEvidence?.normalizedSamples) ||
     result.grenadeEvidence.samples.length > CLIENT_GRENADE_SAMPLE_LIMIT ||
+    result.grenadeEvidence.normalizedSamples.length > CLIENT_GRENADE_SAMPLE_LIMIT ||
     !Array.isArray(result.grenadeEvidence?.rawFieldInventory) ||
     result.grenadeEvidence.rawFieldInventory.length > MAX_OBJECT_KEYS ||
+    !Array.isArray(result.roundEvidence) ||
+    result.roundEvidence.length > CLIENT_EVENT_SAMPLE_LIMIT ||
+    !Array.isArray(result.tickDomainEvidence?.probeTicks) ||
+    result.tickDomainEvidence.probeTicks.length > CLIENT_TICK_PROBE_LIMIT ||
+    result.tickDomainEvidence.authoritative !== false ||
     !Array.isArray(result.capabilities)
   )
     return fail("CLIENT_RESULT_TOO_LARGE");
@@ -247,6 +256,7 @@ export function validateClientParserResult(value: unknown): ClientParserValidati
     (result.grenadeEvidence.status === "AVAILABLE" &&
       (result.grenadeEvidence.count === null ||
         result.grenadeEvidence.count < result.grenadeEvidence.samples.length ||
+        result.grenadeEvidence.samples.length !== result.grenadeEvidence.normalizedSamples.length ||
         !HEX_64.test(result.grenadeEvidence.normalizedDigest ?? ""))) ||
     (result.grenadeEvidence.status !== "AVAILABLE" && result.grenadeEvidence.count !== null) ||
     result.parsedEventInventory.some(

@@ -9,6 +9,7 @@ import type {
   ClientDeterminismReport,
   ClientFieldAuditRow,
   ClientFieldAuditStatus,
+  ClientFieldMatrixSummary,
 } from "./clientParser.types";
 import { CLIENT_FIELD_AUDIT_CATALOG } from "./clientParser.audit";
 
@@ -124,6 +125,29 @@ export function buildNotRunFieldMatrix(): ClientFieldAuditRow[] {
     reason: "runtime_evidence_not_executed",
     evidenceRef: null,
   }));
+}
+
+export function summarizeFieldMatrix(rows: ClientFieldAuditRow[]): ClientFieldMatrixSummary {
+  const count = (predicate: (row: ClientFieldAuditRow) => boolean) => rows.filter(predicate).length;
+  return {
+    total: rows.length,
+    upstreamIdentified: count((row) => row.upstreamSupported === true),
+    projectCatalogued: count((row) => row.projectCatalogued),
+    runtimeExportAvailable: count((row) => row.runtimeExportAvailable === true),
+    requestable: count((row) => row.requestable),
+    requested: count((row) => row.pythonRequested || row.wasmRequested),
+    parsed: count((row) => row.pythonParsed || row.wasmParsed),
+    semanticallyValidated: count(
+      (row) => row.pythonSemanticStatus === "PASS" || row.wasmSemanticStatus === "PASS",
+    ),
+    parityPass: count((row) => row.status === "PASS"),
+    unavailable: count((row) => row.status === "UNAVAILABLE"),
+    parseFailed: count((row) => row.status === "PARSE_FAILED"),
+    notRun: count((row) => row.status === "NOT_RUN"),
+    valueMismatch: count((row) => row.status === "VALUE_MISMATCH"),
+    typeMismatch: count((row) => row.status === "TYPE_MISMATCH"),
+    blocked: count((row) => row.status !== "PASS" || !row.canonicalEligible),
+  };
 }
 
 export function compareFieldObservation(input: {
