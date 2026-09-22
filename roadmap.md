@@ -13,6 +13,7 @@
 - [x] Corrigir o vínculo para o branch real `infra/cs2-parser-worker-v8` e criar `assert_real_demo_release_ready()` com evidence imutável, service-role-only e chamada obrigatória dentro da reserva.
 - [x] Consolidar os catálogos Python/WASM em matriz machine-readable determinística, preservando divergências como `BLOCKED` sem inferir equivalência.
 - [x] Adicionar `compileall`, revision guard, typecheck e instalação reproduzível ao workflow existente, sem criar estratégia paralela.
+- [x] Implementar attestor independente fail-closed, inventário Canonical formal e gate global de 22 condições.
 - [ ] Observar CI real, obter provenance independente GitHub↔Railway, autoridade integral de ticks e executar paridade/determinismo reais.
 - [ ] Executar gates locais e preflight final imediatamente antes da mutação.
 - [ ] Criar upload 9, copiar/verificar o objeto, enfileirar pelo lifecycle oficial e observar o E2E real até terminal.
@@ -20,7 +21,7 @@
 
 **Stop conditions:** qualquer divergência de objeto, tamanho, SHA, attempt, claim, parser, contrato, RAW, HOT, Canonical, fila ou cleanup interrompe a fase sem attempt 10.
 
-**Blocker atual:** GitHub devolve 404 para o commit fixado e não há prova independente Railway API/source binding nem CI real observado. A matriz reconciliada mantém diferenças explícitas, tick authority/paridade/determinismo reais continuam não executados, e não existe registro `VERIFIED`; a RPC bloqueia antes de criar/copy/enqueue, mantendo attempt 9 em zero.
+**Blocker atual:** attestor e gates implementados; GitHub devolve 404 para o commit fixado e não há prova independente Railway API/source binding nem CI real observado. A matriz reconciliada mantém diferenças explícitas, tick authority/paridade/determinismo reais continuam não executados, e não existe registro `VERIFIED`; a RPC bloqueia antes de criar/copy/enqueue, mantendo attempt 9 em zero.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.6-R — LEGACY CLEANUP SHUTDOWN + RAILWAY RUNTIME PARITY
 

@@ -2,9 +2,9 @@ name: Quality Gates
 
 on:
   push:
-    branches: [main]
+    branches: [main, infra/cs2-parser-worker-v8]
   pull_request:
-    branches: [main]
+    branches: [main, infra/cs2-parser-worker-v8]
 
 permissions:
   contents: read
@@ -64,7 +64,10 @@ jobs:
 
       - name: Verify reconciled field governance matrix
         working-directory: ${{ github.workspace }}
-        run: python scripts/generate-parser-field-matrix.py --check
+        run: |
+          python scripts/generate-parser-field-matrix.py --check
+          python scripts/canonical_mapping_gate.py > /tmp/canonical-mapping-gate.json
+          grep -F '"gateStatus":"BLOCKED"' /tmp/canonical-mapping-gate.json
 
       - name: Run parser test suite
         run: pytest -q
