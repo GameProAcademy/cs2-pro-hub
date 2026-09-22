@@ -3618,15 +3618,26 @@ export type Database = {
         }
         Returns: boolean
       }
-      record_parser_runtime_attestation: {
-        Args: {
-          _attestation_digest: string
-          _payload: Json
-          _release_gate_evidence: Json
-          _signature: string
-        }
-        Returns: string
-      }
+      record_parser_runtime_attestation:
+        | {
+            Args: {
+              _attestation_digest: string
+              _canonical_payload: string
+              _payload: Json
+              _release_gate_evidence: Json
+              _signature: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _attestation_digest: string
+              _payload: Json
+              _release_gate_evidence: Json
+              _signature: string
+            }
+            Returns: string
+          }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
         Returns: number
