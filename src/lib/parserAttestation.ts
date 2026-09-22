@@ -18,8 +18,7 @@ export const PARSER_ATTESTATION_OIDC = {
   audience: "gamepro-parser-attestation",
   repositoryOwner: "GameProAcademy",
   branchRef: "refs/heads/infra/cs2-parser-worker-v8",
-  subject:
-    "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8",
+  subject: "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8",
 } as const;
 
 const CRITICAL_HASHES: Record<string, string> = {

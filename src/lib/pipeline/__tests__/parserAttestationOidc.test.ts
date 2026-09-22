@@ -36,16 +36,21 @@ describe("parser attestation OIDC claims", () => {
     expect(validateParserAttestationOidcClaims(validClaims(), workflowIdentity, NOW)).toEqual([]);
   });
 
-  it.each(["aud", "repository", "repository_owner", "ref", "workflow_ref", "job_workflow_ref", "sub"])(
-    "rejects a mismatched %s claim",
-    (claim) => {
-      const claims = validClaims();
-      claims[claim] = "unexpected";
-      expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
-        "OIDC_CLAIMS_MISMATCH",
-      );
-    },
-  );
+  it.each([
+    "aud",
+    "repository",
+    "repository_owner",
+    "ref",
+    "workflow_ref",
+    "job_workflow_ref",
+    "sub",
+  ])("rejects a mismatched %s claim", (claim) => {
+    const claims = validClaims();
+    claims[claim] = "unexpected";
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
 
   it("rejects expired and future-issued identities", () => {
     const expired = validClaims();
