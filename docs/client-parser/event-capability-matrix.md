@@ -4,11 +4,11 @@ Status for all rows: `CATALOGUED / REAL_DEM_NOT_RUN / CANONICAL_BLOCKED`.
 
 | Family | Events |
 | --- | --- |
-| Combat | `player_death`, `player_hurt`, `player_blind`, `bullet_damage` |
+| Combat | `player_death`, `player_hurt`, `player_blind`, `bullet_damage`, `bullet_impact` |
 | Weapons | `weapon_fire`, `weapon_fire_on_empty`, `weapon_reload`, `weapon_zoom`, `weapon_zoom_rifle`, `item_purchase`, `item_pickup`, `item_equip`, `item_remove` |
 | Grenades | `grenade_thrown`, `flashbang_detonate`, `smokegrenade_detonate`, `smokegrenade_expired`, `molotov_detonate`, `inferno_startburn`, `inferno_expire`, `inferno_extinguish`, `hegrenade_detonate`, `decoy_detonate` |
 | Rounds | `round_start`, `round_end`, `round_mvp` |
-| Bomb | `bomb_planted`, `bomb_defused`, `bomb_exploded`, `bomb_beginplant`, `bomb_begindefuse`, `bomb_abortplant`, `bomb_abortdefuse`, `bomb_dropped`, `bomb_pickup`, `bomb_beep` |
+| Bomb | `bomb_planted`, `bomb_defused`, `bomb_exploded`, `bomb_beginplant`, `bomb_begindefuse`, `bomb_abortplant`, `bomb_abortdefuse`, `bomb_dropped`, `bomb_pickup` |
 | Zones | `enter_bombzone`, `exit_bombzone`, `enter_buyzone`, `exit_buyzone` |
 
 The matrix has 40 unique event names. Catalogue presence is not observation, parity, determinism, identity proof or Canonical authorization: documented ≠ verified ≠ canonical-authorized.
