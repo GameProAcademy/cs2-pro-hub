@@ -41,7 +41,8 @@ function safeEqual(left: string, right: string): boolean {
 function base64UrlJson(value: string): Record<string, unknown> {
   const decoded = Buffer.from(value, "base64url").toString("utf8");
   const parsed: unknown = JSON.parse(decoded);
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("OIDC_INVALID");
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    throw new Error("OIDC_INVALID");
   return parsed as Record<string, unknown>;
 }
 
@@ -112,7 +113,12 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
       POST: async ({ request }) => {
         const transportSecret = process.env["PARSER_ATTESTATION_TRANSPORT_SECRET"];
         const signingSecret = process.env["PARSER_ATTESTATION_HMAC_SECRET"];
-        if (!transportSecret || transportSecret.length < 32 || !signingSecret || signingSecret.length < 32) {
+        if (
+          !transportSecret ||
+          transportSecret.length < 32 ||
+          !signingSecret ||
+          signingSecret.length < 32
+        ) {
           return Response.json({ error: "ATTESTATION_SERVER_NOT_CONFIGURED" }, { status: 503 });
         }
         const authorization = request.headers.get("authorization") ?? "";

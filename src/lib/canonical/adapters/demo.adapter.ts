@@ -192,9 +192,7 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
     participantsExpected: null,
   });
 
-  const matchQuality = parsed.quality.partialParse
-    ? sourceQuality
-    : qualityFromCoverage(coverage);
+  const matchQuality = parsed.quality.partialParse ? sourceQuality : qualityFromCoverage(coverage);
   const hasTerminalEvidence =
     !parsed.quality.partialParse &&
     parsed.rounds.length > 0 &&
