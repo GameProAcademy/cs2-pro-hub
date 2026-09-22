@@ -16,6 +16,7 @@ from scripts.parser_runtime_attestation import (
     release_gate_evidence,
     runtime_identity,
     stable_json,
+    build_attestation,
 )
 
 
@@ -72,3 +73,19 @@ def test_release_evidence_is_explicitly_blocked_before_attempt_9():
 
 def test_mapping_authority_digests_match_reviewed_artifacts():
     assert mapping_authority_matches_artifact() is True
+
+
+def test_attestation_v3_has_freshness_and_unique_nonce(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", REPOSITORY)
+    with patch("scripts.parser_runtime_attestation.mapping_authority_matches_artifact", return_value=True), \
+         patch("scripts.parser_runtime_attestation.git_value", side_effect=["a" * 40]), \
+         patch("scripts.parser_runtime_attestation.git_object_bytes", return_value=b"x"), \
+         patch("scripts.parser_runtime_attestation.subprocess.check_call", return_value=0), \
+         patch("scripts.parser_runtime_attestation.fetch_json", return_value={}), \
+         patch("scripts.parser_runtime_attestation.railway_deployment_evidence", side_effect=ValueError("blocked")):
+        first = build_attestation()["payload"]
+        second = build_attestation()["payload"]
+    assert first["schema_version"] == 3
+    assert first["attested_at"].endswith("Z")
+    assert len(first["nonce"]) == 64
+    assert first["nonce"] != second["nonce"]
