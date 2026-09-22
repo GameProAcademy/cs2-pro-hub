@@ -236,10 +236,12 @@ WITH catalogue AS (
 
   UNION ALL
   SELECT '21g. C.7-C.10 nonce registry is private and immutable',
-         NOT has_table_privilege('anon','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE')
-         AND NOT has_table_privilege('authenticated','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE')
+         NOT has_table_privilege('anon','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('authenticated','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl, acldefault('r',c.relowner))) a WHERE c.oid='public.parser_attestation_nonces'::regclass AND a.grantee=0)
          AND has_table_privilege('service_role','public.parser_attestation_nonces','SELECT,INSERT')
          AND NOT has_table_privilege('service_role','public.parser_attestation_nonces','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_privileges WHERE table_schema='public' AND table_name='parser_attestation_nonces' AND grantee IN ('anon','authenticated','PUBLIC'))
          AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.parser_attestation_nonces'::regclass AND tgname='parser_attestation_nonces_immutable' AND NOT tgisinternal)
 
   UNION ALL
@@ -249,6 +251,31 @@ WITH catalogue AS (
            WHERE p.pronamespace='public'::regnamespace
              AND p.proname IN ('record_parser_runtime_attestation','pre_attempt_9_gate_status')
              AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+         )
+
+  UNION ALL
+  SELECT '21i. runtime provenance effective ACL is append-only service access',
+         NOT has_table_privilege('anon','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('authenticated','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl, acldefault('r',c.relowner))) a WHERE c.oid='public.parser_runtime_provenance'::regclass AND a.grantee=0)
+         AND has_table_privilege('service_role','public.parser_runtime_provenance','SELECT,INSERT')
+         AND NOT has_table_privilege('service_role','public.parser_runtime_provenance','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_privileges WHERE table_schema='public' AND table_name='parser_runtime_provenance' AND grantee IN ('anon','authenticated','PUBLIC'))
+         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.parser_runtime_provenance'::regclass AND tgname='parser_runtime_provenance_immutable' AND NOT tgisinternal)
+
+  UNION ALL
+  SELECT '21j. Cache Attempt 9 gate is private, explicit and search-path hardened',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('assert_cache_attempt_9_ready','assert_pre_attempt_9_ready','pre_attempt_9_gate_status')
+             AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('assert_cache_attempt_9_ready','assert_pre_attempt_9_ready','pre_attempt_9_gate_status')
+             AND (NOT p.prosecdef OR NOT (coalesce(p.proconfig,ARRAY[]::text[]) @> ARRAY['search_path=""']))
          )
 
   -- 22. integrity constraints

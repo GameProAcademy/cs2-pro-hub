@@ -1436,3 +1436,14 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - Estado de dados verificado: Attempt 8=1, Attempt 9=0, Attempt 10+=0, provenance=0, provenance VERIFIED=0.
 - Provas externas ausentes: Railway API, endpoint/HMAC/transport, OIDC real, CI remoto, Python×WASM, determinismo, persistência, identidade e tick authority. Nenhuma foi fabricada.
 - Nenhum replay, processamento/cópia/exclusão de DEM, cleanup, Canonical, métricas, features, AI Coach ou mutação Railway ocorreu.
+
+## Fase G.6-R.4-C.10-R1 — 2026-09-22
+
+- Estado: `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+- [x] Restringir as ACLs efetivas de `parser_attestation_nonces` e `parser_runtime_provenance` a `service_role: SELECT, INSERT`, sem UPDATE/DELETE/TRUNCATE/TRIGGER/REFERENCES.
+- [x] Preservar RLS e triggers imutáveis; adicionar regressões de catálogo para anon/authenticated/PUBLIC/service_role e `TRUNCATE`.
+- [x] Tornar explícito que o gate é exclusivo do replay controlado Cache attempt 8 → 9, com identidade fixa e fail-closed.
+- [x] Reconciliar os 40 eventos do catálogo, incluindo `bullet_damage` e `inferno_extinguish`, sem promovê-los.
+- [x] Adicionar comparação automática entre catálogo e documentação, detectando ausências, extras e duplicatas.
+- [ ] HMAC, OIDC, provenance, parity, determinismo, identidade, integridade forense e tick authority reais continuam ausentes ou não verificados.
+- [ ] Attempt 9/10+, DEM real, Canonical, cleanup, Railway, secrets e histórico não foram executados ou alterados.
