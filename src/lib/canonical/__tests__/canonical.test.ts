@@ -226,7 +226,7 @@ describe("FASE 2.6 — demo adapter", () => {
 
   it("does not claim terminal completion for a partial parse", () => {
     const parsed = normalizeParserOutput(syntheticParserOutput);
-    parsed.quality = { ...parsed.quality, partialParse: true, flags: ["truncated"] };
+    parsed.quality = { ...parsed.quality, partialParse: true, flags: ["partial_parse"] };
     const bundle = demoToCanonicalBundle({ parsed, fingerprint: "c".repeat(64) });
     expect(bundle.match).toMatchObject({ status: "partial", finished: false, terminal: false });
     expect(bundle.rounds.every((round) => round.quality.status === "partial")).toBe(true);

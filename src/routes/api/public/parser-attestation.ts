@@ -3,6 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import type { Json } from "@/integrations/supabase/types";
+
 const bodySchema = z.object({
   result: z.object({
     status: z.literal("VERIFIED"),
@@ -141,10 +143,10 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data, error } = await supabaseAdmin.rpc("record_parser_runtime_attestation", {
           _canonical_payload: canonicalPayload,
-          _payload: parsed.data.result.payload,
+          _payload: parsed.data.result.payload as Json,
           _attestation_digest: parsed.data.result.attestation_digest,
           _signature: parsed.data.signature,
-          _release_gate_evidence: parsed.data.releaseGateEvidence,
+          _release_gate_evidence: parsed.data.releaseGateEvidence as Json,
         });
         if (error) {
           console.error(`[parser-attestation] recorder failed: ${error.code}`);
