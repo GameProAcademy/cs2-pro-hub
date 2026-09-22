@@ -1,3 +1,16 @@
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.2 — OPERATIONAL CLOSURE
+
+**Status:** `IN PROGRESS / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+
+- [ ] Auditar e alinhar deterministicamente o inventário Canonical local, JSON e banco, sem autorizar mappings.
+- [ ] Endurecer semântica do adapter e reconciliar catálogo, matriz, tipos e persistência.
+- [ ] Substituir evidência Railway declarativa por consulta independente e validar runtime, Git blobs, OIDC e HMAC.
+- [ ] Fechar recorder, provenance, release evidence e release gate com provas verificáveis e fail-closed.
+- [ ] Fechar workflows e guardas automáticos sem executar replay, DEM real, Attempt 9 ou mutações Canonical.
+- [ ] Executar validações locais/read-only e produzir relatório C.2 com estados e blockers reais.
+
+**Restrições:** runtime Railway congelado; staged patch não aceito; Attempt 9/10+, cópia/processamento de DEM, cleanup, Canonical, métricas e features proibidos nesta fase.
+
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.1 — VERIFIED PARSER PROVENANCE
 
 **Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9` — attestation, release gate e reserva vinculada fail-closed aplicadas; replay não iniciado.
