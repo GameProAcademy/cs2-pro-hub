@@ -15,6 +15,10 @@ const releaseGateMigration = readFileSync(
   resolve("supabase/migrations/20260922011120_46ec54c1-89d9-462c-abc9-074e4bd89262.sql"),
   "utf8",
 );
+const correctedProvenanceMigration = readFileSync(
+  resolve("supabase/migrations/20260922010930_3c1a0e71-825a-4359-b6bd-1b2ee5cf7613.sql"),
+  "utf8",
+);
 
 describe("G.6-R.3 controlled replay database contract", () => {
   it("accepts the dedicated reason while constraining it to attempt 9", () => {
@@ -62,7 +66,7 @@ describe("G.6-R.3 controlled replay database contract", () => {
 describe("G.6-R.4 parser attestation and replay binding", () => {
   it("pins the repository, deployment, branch, parser identity, and critical source hashes", () => {
     expect(hardeningMigration).toContain("GameProAcademy/cs2-pro-hub");
-    expect(releaseGateMigration).toContain("infra/cs2-parser-worker-v8");
+    expect(correctedProvenanceMigration).toContain("infra/cs2-parser-worker-v8");
     expect(hardeningMigration).toContain("6330c8c4-a410-45db-a364-4eb47702c2fc");
     expect(hardeningMigration).toContain("GITHUB_COMMIT_RAILWAY_DEPLOYMENT_LIVE_VERSION_V1");
     expect(hardeningMigration).toContain("services/cs2-demo-parser/parser.py");
