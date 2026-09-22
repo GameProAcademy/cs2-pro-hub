@@ -536,7 +536,17 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
     ]
     contract = {
         "audit_contract_version": AUDIT_CONTRACT_VERSION,
-        "parser": {"name": evidence.get("manifest", {}).get("parser_name"), "version": evidence.get("manifest", {}).get("parser_version")},
+        "report_completeness": "PARTIAL_BLOCKED",
+        "demo_sha256": evidence.get("manifest", {}).get("demo_sha256"),
+        "file_size": evidence.get("manifest", {}).get("demo_size_bytes"),
+        "parse_timestamp": evidence.get("manifest", {}).get("parse_timestamp"),
+        "parser": {
+            "name": evidence.get("manifest", {}).get("parser_name"),
+            "version": evidence.get("manifest", {}).get("parser_version"),
+            "revision": evidence.get("manifest", {}).get("parser_revision"),
+            "build_revision": evidence.get("manifest", {}).get("build_revision"),
+            "contract_version": evidence.get("manifest", {}).get("contract_version"),
+        },
         "capability_catalog": catalog,
         "capability_reconciliation": capability_reconciliation,
         "full_tick_audit": tick_audit,
@@ -554,7 +564,26 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
         "canonical_admission": "BLOCKED",
     }
     contract["catalog_digest"] = catalog.get("catalog_digest") if isinstance(catalog, dict) else None
+    contract["capability_inventory_digest"] = deterministic_digest(catalog)
+    contract["mapping_release_digest"] = raw.get("mapping_release_digest")
+    contract["parity_digest"] = raw.get("parity_digest")
+    contract["determinism_digest"] = raw.get("determinism_digest")
     contract["tick_authority_digest"] = (tick_audit.get("tick_domain_source") or {}).get("digest")
+    for name, value in {
+        "header": evidence.get("manifest", {}).get("raw_header") or evidence.get("header"),
+        "player": evidence.get("raw_player_info") or evidence.get("player_coverage"),
+        "event": evidence.get("raw_events") or event_inventory,
+        "round": evidence.get("round_evidence"),
+        "tick": tick_audit,
+        "grenade": evidence.get("grenade_samples") or evidence.get("grenade_coverage"),
+        "bomb": inventory.get("bomb_inventory"),
+        "damage": inventory.get("damage_inventory"),
+        "death": inventory.get("death_inventory"),
+        "economy": inventory.get("economy_inventory"),
+        "weapon": inventory.get("weapon_inventory"),
+    }.items():
+        contract[f"{name}_digest"] = deterministic_digest(value or [])
+    contract["raw_manifest_digest"] = evidence.get("manifest", {}).get("manifest_digest")
     contract["unsigned_contract_digest"] = deterministic_digest(contract)
     contract["deterministic_digest"] = contract["unsigned_contract_digest"]
     return contract

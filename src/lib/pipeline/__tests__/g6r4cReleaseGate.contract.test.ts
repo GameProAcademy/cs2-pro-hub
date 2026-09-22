@@ -21,6 +21,10 @@ const releaseMigration = readFileSync(
   resolve("supabase/migrations/20260922073148_196da5bd-d5f4-4296-8131-0cac0b26c059.sql"),
   "utf8",
 );
+const readinessMigration = readFileSync(
+  resolve("supabase/migrations/20260922081136_4be12bdc-b7f7-425f-b7a2-862834bf49ce.sql"),
+  "utf8",
+);
 
 const REQUIRED_GATES = [
   "parser_runtime_identity",
@@ -125,5 +129,18 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toContain("workflow_call:");
     expect(attestor).toContain('event != "workflow_dispatch"');
+  });
+
+  it("requires fresh replay-safe v3 attestation and exposes only a two-state readiness diagnostic", () => {
+    expect(readinessMigration).toContain("CREATE TABLE public.parser_attestation_nonces");
+    expect(readinessMigration).toContain("parser_attestation_nonces_immutable");
+    expect(readinessMigration).toContain("PARSER_ATTESTATION_FRESHNESS_INVALID");
+    expect(readinessMigration).toContain("_payload->>'schema_version'<>'3'");
+    expect(readinessMigration).toContain(
+      "record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)",
+    );
+    expect(readinessMigration).toContain("RETURN 'READY_TO_EXECUTE_ATTEMPT_9'");
+    expect(readinessMigration).toContain("RETURN 'BLOCKED'");
+    expect(readinessMigration).toContain("lower(btrim(source_field)) IN");
   });
 });

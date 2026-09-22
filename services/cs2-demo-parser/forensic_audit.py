@@ -13,25 +13,36 @@ TICK_PROPERTY_BATCH_SIZE = 12
 TICK_INTERVAL_SIZE = 8192
 TICK_DIAGNOSTIC_SAMPLE_LIMIT = 4096
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
+TICK_AUTHORITY_STATES = frozenset({"UNAVAILABLE", "OBSERVED_ONLY", "PROVISIONAL", "VERIFIED"})
 REAL_AUTHORITY_KINDS = frozenset({"VERIFIED_RUNTIME_NATIVE", "VERIFIED_DEMO_METADATA", "VERIFIED_EXTERNAL_METADATA"})
 
 
 @dataclass(frozen=True)
 class TickDomainAuthority:
     status: str
-    source_kind: str
-    source_reference: str
-    parser_version: str
+    authority_type: str
+    authority_source: str
+    demo_sha256: str | None
+    parser_revision: str
+    tickrate: float | None
     authoritative: bool
     expected_min_tick: int | None
     expected_max_tick: int | None
     expected_tick_count: int | None
     expected_intervals: tuple[tuple[int, int], ...]
+    coverage_digest: str | None
+    created_at: str | None
     reason: str
 
     def payload(self) -> dict[str, Any]:
         value = {**self.__dict__, "expected_intervals": [list(row) for row in self.expected_intervals]}
-        value["digest"] = deterministic_digest(value)
+        value.update({
+            "min_tick": self.expected_min_tick,
+            "max_tick": self.expected_max_tick,
+            "intervals": value["expected_intervals"],
+        })
+        value["authority_digest"] = deterministic_digest(value)
+        value["digest"] = value["authority_digest"]
         return value
 
 
@@ -146,25 +157,35 @@ def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
     retained as an observation and cannot authorize a full-domain claim.
     """
     source = TickDomainAuthority("UNAVAILABLE", "UNAVAILABLE", "demoparser2.parse_header.playback_ticks",
-        "0.42.0", False, None, None, None, (),
+        None, "demoparser2@0.42.0", None, False, None, None, None, (), None, None,
         "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration").payload()
     source["observed_playback_ticks"] = playback_ticks
-    source["digest"] = deterministic_digest({key: value for key, value in source.items() if key != "digest"})
+    unsigned = {key: value for key, value in source.items() if key not in {"digest", "authority_digest"}}
+    source["authority_digest"] = deterministic_digest(unsigned)
+    source["digest"] = source["authority_digest"]
     return source
 
 
-def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: str) -> dict[str, Any]:
-    """Build an injectable authoritative domain for deterministic fixtures/probes."""
+def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: str,
+                              demo_sha256: str | None = None, tickrate: float | None = None,
+                              parser_revision: str = "demoparser2@0.42.0",
+                              created_at: str | None = None) -> dict[str, Any]:
+    """Build a domain claim; fixtures remain PROVISIONAL and cannot pass production gates."""
     if first_tick < 0 or last_tick < first_tick:
         raise ValueError("invalid authoritative tick domain")
-    source_kind = "FIXTURE_AUTHORITY" if provenance.startswith("fixture") else "VERIFIED_RUNTIME_NATIVE"
-    return TickDomainAuthority("AVAILABLE", source_kind, provenance, "0.42.0", True,
+    fixture = provenance.startswith("fixture")
+    authority_type = "TEST_FIXTURE_ONLY" if fixture else "VERIFIED_RUNTIME_NATIVE"
+    coverage_digest = deterministic_digest({"min_tick": first_tick, "max_tick": last_tick,
+                                             "intervals": [[first_tick, last_tick]]})
+    return TickDomainAuthority("PROVISIONAL" if fixture else "VERIFIED", authority_type,
+        provenance, demo_sha256, parser_revision, tickrate, not fixture,
         first_tick, last_tick, last_tick - first_tick + 1, ((first_tick, last_tick),),
-        "Explicit bounded domain supplied by the test fixture." if source_kind == "FIXTURE_AUTHORITY" else "Verified independent runtime domain.").payload()
+        coverage_digest, created_at,
+        "TEST_FIXTURE_ONLY: exercises gate mechanics and is never real evidence." if fixture else "Verified independent runtime domain.").payload()
 
 
 def build_tick_intervals(source: dict[str, Any], interval_size: int = TICK_INTERVAL_SIZE) -> list[tuple[int, int]]:
-    if source.get("authoritative") is not True or interval_size <= 0:
+    if source.get("status") not in {"PROVISIONAL", "VERIFIED"} or interval_size <= 0:
         return []
     first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
     if not isinstance(first, int) or not isinstance(last, int) or first < 0 or last < first:
@@ -195,14 +216,17 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
             if outside: overlaps.append({"batch": index, "unexpected_ticks": outside[:256], "total": len(outside)})
         intervals.append({"batch": index, "properties": sorted(batch.get("properties") or []), "requested_interval": list(requested) if key else None, "first_tick": min(batch_tick_set) if batch_tick_set else None, "last_tick": max(batch_tick_set) if batch_tick_set else None, "distinct_ticks": len(batch_tick_set), "rows": int(batch.get("row_count") or 0), "digest": deterministic_digest({"properties": sorted(batch.get("properties") or []), "requested_interval": requested, "ticks": sorted(batch_tick_set), "rows": int(batch.get("row_count") or 0)}), "status": "FAIL" if error else "PASS"})
     expected: set[int] = set()
-    if source.get("authoritative") is True:
+    if source.get("status") in {"PROVISIONAL", "VERIFIED"}:
         first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
         if isinstance(first, int) and isinstance(last, int) and last >= first:
             expected = set(range(first, last + 1))
     missing = expected - observed
     unexpected = observed - expected if expected else set(observed)
-    authority_allowed = source.get("source_kind") in REAL_AUTHORITY_KINDS or source.get("source_kind") == "FIXTURE_AUTHORITY"
-    complete = bool(batches) and bool(expected) and source.get("authoritative") is True and authority_allowed and not failures and not missing and not unexpected and not duplicate_ticks and not overlaps and all(item["status"] == "PASS" for item in intervals)
+    invalid_ticks = sorted(tick for tick in observed if tick < 0)
+    ordered_ticks = [tick for batch in batches for tick in (batch.get("ticks") or []) if isinstance(tick, int)]
+    out_of_order = sum(left > right for left, right in zip(ordered_ticks, ordered_ticks[1:]))
+    authority_allowed = source.get("status") == "VERIFIED" and source.get("authority_type") in REAL_AUTHORITY_KINDS
+    complete = bool(batches) and bool(expected) and source.get("authoritative") is True and authority_allowed and not failures and not missing and not unexpected and not duplicate_ticks and not overlaps and not invalid_ticks and out_of_order == 0 and all(item["status"] == "PASS" for item in intervals)
     proof = {
         "status": "PASS" if complete else "BLOCKED",
         "source": source,
@@ -215,13 +239,18 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
         "duplicate_tick_count": len(duplicate_ticks),
         "gap_count": len(missing),
         "overlap_count": len(overlaps),
+        "out_of_order_tick_count": out_of_order,
+        "invalid_tick_count": len(invalid_ticks),
         "interval_count": len(intervals),
         "completed_interval_count": sum(item["status"] == "PASS" for item in intervals),
         "coverage_ratio": len(observed & expected) / len(expected) if expected else 0.0,
         "complete": complete,
     }
     proof["digest"] = deterministic_digest(proof)
-    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if complete else "BLOCKED", "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL", "tick_domain_source": source, "full_tick_domain_proof": proof, "expected_tick_domain": {"min_tick": proof["expected_min_tick"], "max_tick": proof["expected_max_tick"], "count": proof["expected_tick_count"]}, "observed_tick_domain": {"min_tick": min(observed) if observed else None, "max_tick": max(observed) if observed else None, "count": len(observed)}, "missing_ticks": sorted(missing)[:4096], "missing_tick_count": len(missing), "unexpected_ticks": sorted(unexpected)[:4096], "unexpected_tick_count": len(unexpected), "duplicate_ticks": sorted(duplicate_ticks)[:4096], "duplicate_tick_count": len(duplicate_ticks), "first_tick": min(observed) if observed else None, "last_tick": max(observed) if observed else None, "total_ticks_observed": len(observed), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(missing)[:4096], "gap_count": len(missing), "overlaps": overlaps, "failures": failures + ([] if source.get("authoritative") is True else ["expected_tick_domain_unavailable"]), "domain_proof_status": proof["status"], "complete": complete}
+    authority_failures = [] if authority_allowed else ["verified_independent_tick_authority_required"]
+    if not expected:
+        authority_failures.insert(0, "expected_tick_domain_unavailable")
+    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if complete else "BLOCKED", "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL", "tick_domain_source": source, "full_tick_domain_proof": proof, "expected_tick_domain": {"min_tick": proof["expected_min_tick"], "max_tick": proof["expected_max_tick"], "count": proof["expected_tick_count"]}, "observed_tick_domain": {"min_tick": min(observed) if observed else None, "max_tick": max(observed) if observed else None, "count": len(observed)}, "missing_ticks": sorted(missing)[:4096], "missing_tick_count": len(missing), "unexpected_ticks": sorted(unexpected)[:4096], "unexpected_tick_count": len(unexpected), "duplicate_ticks": sorted(duplicate_ticks)[:4096], "duplicate_tick_count": len(duplicate_ticks), "out_of_order_tick_count": out_of_order, "invalid_ticks": invalid_ticks[:4096], "invalid_tick_count": len(invalid_ticks), "first_tick": min(observed) if observed else None, "last_tick": max(observed) if observed else None, "total_ticks_observed": len(observed), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(missing)[:4096], "gap_count": len(missing), "overlaps": overlaps, "failures": failures + authority_failures, "domain_proof_status": proof["status"], "complete": complete}
 
 
 def deterministic_digest(value: Any) -> str:

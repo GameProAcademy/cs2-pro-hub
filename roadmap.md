@@ -1,4 +1,21 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.3/C.4 — SEMANTIC RECONCILIATION
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.7 → C.10
+
+**Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+
+**Infrastructure:** `PRE_ATTEMPT_9_READY_INFRASTRUCTURE` — release imutável de 105 campos, attestation v3 com freshness/nonce anti-replay, quatro estados de tick authority, harnesses Python×WASM/determinismo e auditoria forense completa implementados em modo fail-closed.
+
+**Next external evidence:** `REAL DEM + VERIFIED ATTESTATION + PYTHON/WASM PARITY + DETERMINISM + TICK AUTHORITY`.
+
+- [x] Implementar attestation assinada, vinculada a OIDC/Git/Railway/runtime/release, com freshness e replay protection.
+- [x] Formalizar `UNAVAILABLE / OBSERVED_ONLY / PROVISIONAL / VERIFIED`; somente `VERIFIED` satisfaz domínio completo.
+- [x] Preparar harnesses do mesmo DEM/SHA e relatórios machine-readable; sem DEM, retornam somente `NOT_RUN`.
+- [x] Reforçar release gate contra source genérico e expor diagnóstico de dois estados sem mutação.
+- [x] Documentar checklist, matrizes e decisões C.7–C.10 sem promover mappings.
+- [ ] Obter DEM real autorizado, attestation externa, CI remoto, paridade, determinismo e tick authority reais.
+
+**Attempt 9:** `NOT EXECUTED`. **Fase 2.8:** `BLOCKED`.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.4-C.3/C.4 — SEMANTIC RECONCILIATION
 
 **Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
 

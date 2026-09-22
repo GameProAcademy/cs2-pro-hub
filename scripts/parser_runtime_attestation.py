@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import urllib.request
@@ -224,7 +225,10 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("BLOCKED_EXTERNAL_PROOF")
 
     payload = {
-        "schema_version": 2, "repository": REPOSITORY, "railway_branch": BRANCH,
+        "schema_version": 3,
+        "attested_at": datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z"),
+        "nonce": secrets.token_hex(32),
+        "repository": REPOSITORY, "railway_branch": BRANCH,
         "git_commit": COMMIT, "git_tree": tree, "deployment_id": DEPLOYMENT,
         "railway_project_id": PROJECT, "railway_service_id": SERVICE,
         "railway_environment_id": ENVIRONMENT, "parser_name": "demoparser2",

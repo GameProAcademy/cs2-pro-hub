@@ -234,6 +234,23 @@ WITH catalogue AS (
              AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
          )
 
+  UNION ALL
+  SELECT '21g. C.7-C.10 nonce registry is private and immutable',
+         NOT has_table_privilege('anon','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('authenticated','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE')
+         AND has_table_privilege('service_role','public.parser_attestation_nonces','SELECT,INSERT')
+         AND NOT has_table_privilege('service_role','public.parser_attestation_nonces','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.parser_attestation_nonces'::regclass AND tgname='parser_attestation_nonces_immutable' AND NOT tgisinternal)
+
+  UNION ALL
+  SELECT '21h. C.7-C.10 attestation and readiness routines are service-only',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('record_parser_runtime_attestation','pre_attempt_9_gate_status')
+             AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+         )
+
   -- 22. integrity constraints
   UNION ALL
   SELECT '22. range/positivity constraints are active',

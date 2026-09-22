@@ -140,6 +140,20 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
             { status: 422 },
           );
         }
+        const attestedAt = parsed.data.result.payload["attested_at"];
+        const nonce = parsed.data.result.payload["nonce"];
+        if (typeof attestedAt !== "string" || typeof nonce !== "string") {
+          return Response.json({ error: "ATTESTATION_FRESHNESS_INVALID" }, { status: 422 });
+        }
+        const attestedAtMs = Date.parse(attestedAt);
+        const nowMs = Date.now();
+        if (
+          !Number.isFinite(attestedAtMs) ||
+          attestedAtMs > nowMs + 60_000 ||
+          attestedAtMs < nowMs - 300_000
+        ) {
+          return Response.json({ error: "ATTESTATION_FRESHNESS_INVALID" }, { status: 422 });
+        }
         try {
           await verifyGitHubOidc(parsed.data.oidcToken, parsed.data.result.payload);
         } catch (error) {
@@ -177,6 +191,8 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           _attestation_digest: parsed.data.result.attestation_digest,
           _signature: parsed.data.signature,
           _release_gate_evidence: parsed.data.releaseGateEvidence as Json,
+          _attested_at: attestedAt,
+          _nonce: nonce,
         });
         if (error) {
           console.error(`[parser-attestation] recorder failed: ${error.code}`);
