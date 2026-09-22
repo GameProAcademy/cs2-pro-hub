@@ -7,9 +7,13 @@
 - [x] Pinar todas as GitHub Actions por SHA imutável e vincular a attestation ao Git blob aprovado da workflow sem autorreferência circular.
 - [x] Criar gate read-only `BLOCKED_BEFORE_REAL_DEMO`, relatório machine-readable e auditoria C.10-R1.1.
 - [x] Preservar 105 mappings, 0 autorizados/verificados/genéricos, nonce vazio, provenance VERIFIED=0 e attempts 9/10+=0.
-- [ ] C.10-R5 — REAL CACHE DEM FORENSIC EXECUTION: `READY_FOR_REVIEW / NOT_AUTOMATICALLY_AUTHORIZED`.
+- [x] C.10-R5 — REAL CACHE DEM FORENSIC EXECUTION: `IMPLEMENTATION COMPLETE / EXECUTION PARTIAL / VERIFICATION PARTIAL / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
+  - [x] `IMPLEMENTATION`: nove relatórios obrigatórios gerados sem DEM bruto, token, secret ou HMAC.
+  - [x] `EXECUTION`: preflight e gates oficiais executados; DEM físico não acessível, portanto Python/WASM permaneceram `NOT_RUN`.
+  - [x] `VERIFICATION`: segurança `PASS`, workflow blob `PASS`, Vitest focado 10/10; pytest `NOT_RUN` por indisponibilidade no ambiente.
+  - [x] `AUTHORIZATION`: todos os asserts finais `BLOCKED`; Attempt 9=0, Attempt 10+=0, Canonical=105/0/0/0, cleanup não executado.
 
-**Locks:** real DEM, Attempt 9, Canonical e cleanup continuam `LOCKED`; Railway permanece `FROZEN`; HMAC `NOT CONFIGURED`; provenance `NOT VERIFIED`.
+**Locks:** real DEM, Attempt 9, Canonical e cleanup continuam `LOCKED`; Railway permanece `FROZEN`; HMAC `NOT CONFIGURED`; provenance `NOT VERIFIED`. Próximo marco: restaurar os bytes do DEM autorizado pelo lifecycle privado oficial, obter evidência Railway/HMAC/GitHub real e repetir R5.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.4-C.7 → C.10
 
