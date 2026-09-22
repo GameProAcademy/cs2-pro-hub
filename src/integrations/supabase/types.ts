@@ -3250,6 +3250,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_real_demo_release_ready: {
+        Args: { _gate_evidence: Json; _provenance_id: string }
+        Returns: Json
+      }
       assert_verified_parser_provenance: {
         Args: { _provenance_id: string }
         Returns: Json
