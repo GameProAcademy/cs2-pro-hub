@@ -24,9 +24,63 @@ REQUIRED_FIELDS = (
     "semanticMismatch", "normalizationExecuted",
 )
 
-# This inventory names only fields consumed by the current Canonical adapter. Entries
-# remain blocked until same-DEM parity and determinism are actually observed.
-INVENTORY: tuple[dict[str, Any], ...] = (
+# Complete leaf-field surface emitted by the Demo adapter. Free-form metadata/data
+# bags are inventoried as bounded roots; their keys remain provenance, never schema.
+ADAPTER_OUTPUT_FIELDS = frozenset({
+    "CanonicalMatchSource.source", "CanonicalMatchSource.sourceContractVersion",
+    "CanonicalMatchSource.externalMatchId", "CanonicalMatchSource.externalParentId",
+    "CanonicalMatchSource.sourceVersion", "CanonicalMatchSource.fetchedAt",
+    "CanonicalMatchSource.sourceUpdatedAt", "CanonicalMatchSource.status",
+    "CanonicalMatchSource.quality.status", "CanonicalMatchSource.quality.reasons",
+    "CanonicalMatchSource.quality.confidence", "CanonicalMatchSource.fingerprint",
+    "CanonicalMatchSource.metadata",
+    "CanonicalMatch.game", "CanonicalMatch.map", "CanonicalMatch.mapNumber",
+    "CanonicalMatch.playedAt", "CanonicalMatch.startedAt", "CanonicalMatch.finishedAt",
+    "CanonicalMatch.durationSeconds", "CanonicalMatch.status", "CanonicalMatch.finished",
+    "CanonicalMatch.terminal", "CanonicalMatch.teamA", "CanonicalMatch.teamB",
+    "CanonicalMatch.scoreTeamA", "CanonicalMatch.scoreTeamB", "CanonicalMatch.winnerTeam",
+    "CanonicalMatch.roundCount", "CanonicalMatch.quality.status",
+    "CanonicalMatch.quality.reasons", "CanonicalMatch.quality.confidence",
+    "CanonicalMatch.coverage.roundsExpected", "CanonicalMatch.coverage.roundsObserved",
+    "CanonicalMatch.coverage.participantsExpected", "CanonicalMatch.coverage.participantsObserved",
+    "CanonicalMatch.coverage.participantsResolved", "CanonicalMatch.coverage.eventsObserved",
+    "CanonicalMatch.coverage.hasRoundData", "CanonicalMatch.coverage.hasEventData",
+    "CanonicalMatch.coverage.hasPlayerRoundState", "CanonicalMatch.schemaVersion",
+    "CanonicalParticipant.participantKey", "CanonicalParticipant.internalPlayerId",
+    "CanonicalParticipant.source", "CanonicalParticipant.externalPlayerId",
+    "CanonicalParticipant.steamId64", "CanonicalParticipant.nicknameSnapshot",
+    "CanonicalParticipant.team", "CanonicalParticipant.isTargetPlayer",
+    "CanonicalParticipant.identityStatus", "CanonicalParticipant.identityConfidence",
+    "CanonicalParticipant.metadata",
+    "CanonicalRound.roundNumber", "CanonicalRound.startTick", "CanonicalRound.endTick",
+    "CanonicalRound.startTimeSeconds", "CanonicalRound.endTimeSeconds",
+    "CanonicalRound.durationSeconds", "CanonicalRound.winningTeam",
+    "CanonicalRound.winningSide", "CanonicalRound.winReason", "CanonicalRound.bombPlanted",
+    "CanonicalRound.bombDefused", "CanonicalRound.bombExploded",
+    "CanonicalRound.quality.status", "CanonicalRound.quality.reasons",
+    "CanonicalRound.quality.confidence", "CanonicalRound.metadata",
+    "CanonicalRoundPlayer.roundNumber", "CanonicalRoundPlayer.participantKey",
+    "CanonicalRoundPlayer.side", "CanonicalRoundPlayer.survived",
+    "CanonicalRoundPlayer.moneyStart", "CanonicalRoundPlayer.moneyEnd",
+    "CanonicalRoundPlayer.equipmentValue", "CanonicalRoundPlayer.buyContext",
+    "CanonicalRoundPlayer.kills", "CanonicalRoundPlayer.deaths", "CanonicalRoundPlayer.assists",
+    "CanonicalRoundPlayer.damage", "CanonicalRoundPlayer.flashAssists",
+    "CanonicalRoundPlayer.openingKill", "CanonicalRoundPlayer.openingDeath",
+    "CanonicalRoundPlayer.traded", "CanonicalRoundPlayer.tradeKill",
+    "CanonicalRoundPlayer.metadata",
+    "CanonicalEvent.roundNumber", "CanonicalEvent.type", "CanonicalEvent.tick",
+    "CanonicalEvent.gameTimeSeconds", "CanonicalEvent.actorParticipantKey",
+    "CanonicalEvent.victimParticipantKey", "CanonicalEvent.assisterParticipantKey",
+    "CanonicalEvent.sourceActorExternalId", "CanonicalEvent.sourceVictimExternalId",
+    "CanonicalEvent.sourceAssisterExternalId", "CanonicalEvent.weapon",
+    "CanonicalEvent.headshot", "CanonicalEvent.distance", "CanonicalEvent.damage",
+    "CanonicalEvent.quality.status", "CanonicalEvent.quality.reasons",
+    "CanonicalEvent.quality.confidence", "CanonicalEvent.data",
+})
+
+# Direct parser-to-Canonical mappings get specific evidence. Every other emitted
+# field is still inventoried and remains fail-closed as a derived/constant mapping.
+DIRECT_INVENTORY: tuple[dict[str, Any], ...] = (
     {
         "canonicalField": "CanonicalMatch.map", "sourceCapability": "header.map_name",
         "sourceField": "map_name", "parserApi": "parse_header",
@@ -85,6 +139,38 @@ INVENTORY: tuple[dict[str, Any], ...] = (
     },
 )
 
+DIRECT_BY_FIELD = {row["canonicalField"]: row for row in DIRECT_INVENTORY}
+
+
+def seed_for(field: str) -> dict[str, Any]:
+    direct = DIRECT_BY_FIELD.get(field)
+    if direct:
+        return direct
+    if field.startswith("CanonicalParticipant"):
+        capability, parser_api = "player_info.steamid", "parse_player_info"
+    elif field.startswith("CanonicalRoundPlayer"):
+        capability, parser_api = "economy.balance", "parse_ticks"
+    elif field.startswith("CanonicalRound"):
+        capability, parser_api = "rounds.number", "parse_event"
+    elif field.startswith("CanonicalEvent"):
+        capability, parser_api = "events.player_death", "parse_event"
+    else:
+        capability, parser_api = "header.map_name", "parse_header"
+    return {
+        "canonicalField": field,
+        "sourceCapability": capability,
+        "sourceField": "derived_or_constant",
+        "parserApi": parser_api,
+        "normalization": "Demo adapter translation; real same-DEM evidence required",
+        "identityRequirement": "EXPLICIT_CANONICAL_SEMANTICS",
+        "nullSemantics": "unknown remains null",
+        "zeroSemantics": "observed zero preserved",
+        "falseSemantics": "observed false preserved",
+        "emptyStringSemantics": "not promoted without validation",
+        "missingSemantics": "null or fail-closed constant",
+        "dependsOnFullTickDomain": field.startswith(("CanonicalRound", "CanonicalEvent")),
+    }
+
 
 def stable_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -94,29 +180,27 @@ def digest(value: Any) -> str:
     return hashlib.sha256(stable_json(value).encode()).hexdigest()
 
 
-def build_inventory(*, authorize: bool = False) -> dict[str, Any]:
+def build_inventory() -> dict[str, Any]:
     matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
     matrix_by_id = {row["identity"]: row for row in matrix["rows"]}
     rows: list[dict[str, Any]] = []
-    for seed in INVENTORY:
+    for field in sorted(ADAPTER_OUTPUT_FIELDS):
+        seed = seed_for(field)
         evidence = matrix_by_id.get(seed["sourceCapability"])
-        parity = "VERIFIED" if authorize else "NOT_RUN"
-        determinism = "VERIFIED" if authorize else "NOT_RUN"
-        status = "AUTHORIZED_CANONICAL" if authorize else "PARITY_PENDING"
         row = {
             **seed,
             "pythonEvidence": evidence.get("pythonEvidenceRef") if evidence else None,
             "wasmEvidence": evidence.get("wasmEvidenceRefs", []) if evidence else [],
             "eventEvidence": "REQUIRED_ON_REAL_DEM" if seed["parserApi"] == "parse_event" else "NOT_APPLICABLE",
-            "evidenceClass": "REAL_DEM_PARITY" if authorize else "DECLARED_SOURCE_ONLY",
-            "parityStatus": parity,
-            "determinismStatus": determinism,
-            "canonicalAuthorization": authorize,
+            "evidenceClass": "DECLARED_SOURCE_ONLY",
+            "parityStatus": "NOT_RUN",
+            "determinismStatus": "NOT_RUN",
+            "canonicalAuthorization": False,
             "reviewStatus": "REVIEWED",
-            "lastVerifiedAt": "2026-09-22T00:00:00Z" if authorize else None,
-            "status": status,
+            "lastVerifiedAt": None,
+            "status": "PARITY_PENDING",
             "semanticMismatch": False,
-            "normalizationExecuted": authorize,
+            "normalizationExecuted": False,
         }
         row["digest"] = digest(row)
         rows.append(row)
@@ -156,6 +240,13 @@ def assert_canonical_mapping_gate(inventory: dict[str, Any], matrix: dict[str, A
             unverified.append(field)
             continue
         authorized += 1
+    missing = ADAPTER_OUTPUT_FIELDS - canonical_fields
+    unknown = canonical_fields - ADAPTER_OUTPUT_FIELDS
+    if missing or unknown:
+        raise ValueError(
+            "CANONICAL_MAPPING_SURFACE_MISMATCH:"
+            f"missing={','.join(sorted(missing))}:unknown={','.join(sorted(unknown))}"
+        )
     noncanonical_blocked = sum(
         row.get("status") == "BLOCKED" and row.get("identity") not in {r.get("sourceCapability") for r in rows}
         for row in matrix.get("rows", [])

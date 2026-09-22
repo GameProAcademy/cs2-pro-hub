@@ -30,6 +30,7 @@ import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authenticated/admin/demo-e2e'
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
 import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
 import { Route as ApiPublicIntegrationsFaceitCallbackRouteImport } from './routes/api/public/integrations/faceit/callback'
@@ -143,6 +144,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiPublicParserAttestationRoute =
+  ApiPublicParserAttestationRouteImport.update({
+    id: '/api/public/parser-attestation',
+    path: '/api/public/parser-attestation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPipelineCronRoute = ApiPublicPipelineCronRouteImport.update({
   id: '/api/public/pipeline-cron',
   path: '/api/public/pipeline-cron',
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -212,6 +220,7 @@ export interface FileRoutesByTo {
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -240,6 +249,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin/demo-e2e'
     | '/admin/pipeline'
     | '/admin/users'
+    | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/admin/'
     | '/api/public/pipeline-worker/$action'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/admin/demo-e2e'
     | '/admin/pipeline'
     | '/admin/users'
+    | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/admin'
     | '/api/public/pipeline-worker/$action'
@@ -320,6 +332,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/demo-e2e'
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/users'
+    | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/_authenticated/admin/'
     | '/api/public/pipeline-worker/$action'
@@ -333,6 +346,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicParserAttestationRoute: typeof ApiPublicParserAttestationRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
   ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
   ApiPublicIntegrationsFaceitCallbackRoute: typeof ApiPublicIntegrationsFaceitCallbackRoute
@@ -488,6 +502,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/parser-attestation': {
+      id: '/api/public/parser-attestation'
+      path: '/api/public/parser-attestation'
+      fullPath: '/api/public/parser-attestation'
+      preLoaderRoute: typeof ApiPublicParserAttestationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/pipeline-cron': {
       id: '/api/public/pipeline-cron'
       path: '/api/public/pipeline-cron'
@@ -578,6 +599,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicParserAttestationRoute: ApiPublicParserAttestationRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
   ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
   ApiPublicIntegrationsFaceitCallbackRoute:

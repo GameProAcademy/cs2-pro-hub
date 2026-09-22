@@ -73,6 +73,13 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
   const fetchedAt = input.fetchedAt ?? new Date().toISOString();
   const teamA = parsed.teamA;
   const teamB = parsed.teamB;
+  const sourceQuality = parsed.quality.partialParse
+    ? quality(
+        "partial",
+        ["partial_parse", ...parsed.quality.flags],
+        parsed.quality.extractionConfidence,
+      )
+    : quality("complete", [], parsed.quality.extractionConfidence);
 
   const participants: CanonicalParticipant[] = parsed.players.flatMap((player) => {
     const participantKey = player.participantKey ?? player.steamId;
@@ -91,8 +98,14 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
         team: slotFor(player.team, teamA, teamB),
         isTargetPlayer: Boolean(targetParticipantKey) && participantKey === targetParticipantKey,
         // A demo proves who was in the server, not who OWNS the account.
-        identityStatus: "unlinked" as const,
-        identityConfidence: null,
+        identityStatus:
+          targetParticipantKey && participantKey === targetParticipantKey && input.internalPlayerId
+            ? ("correlated" as const)
+            : ("unlinked" as const),
+        identityConfidence:
+          targetParticipantKey && participantKey === targetParticipantKey && input.internalPlayerId
+            ? 1
+            : null,
         metadata: {},
       },
     ];
@@ -109,15 +122,11 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
     winningSide: sideOf(round.winnerSide),
     // The parser contract does not report a win reason; the bomb flags below are
     // evidence, not a conclusion, so the reason stays unknown.
-    winReason: round.bombDefused
-      ? ("bomb_defused" as const)
-      : round.bombExploded
-        ? ("bomb_exploded" as const)
-        : ("unknown" as const),
+    winReason: "unknown" as const,
     bombPlanted: round.bombPlanted,
     bombDefused: round.bombDefused,
     bombExploded: round.bombExploded,
-    quality: quality("complete", [], 1),
+    quality: sourceQuality,
     metadata: {},
   }));
 
@@ -170,7 +179,7 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
     headshot: event.headshot,
     distance: event.distance,
     damage: event.damage,
-    quality: quality("complete", [], 1),
+    quality: sourceQuality,
     data: event.data,
   }));
 
@@ -184,12 +193,12 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
   });
 
   const matchQuality = parsed.quality.partialParse
-    ? quality(
-        "partial",
-        ["partial_parse", ...parsed.quality.flags],
-        parsed.quality.extractionConfidence,
-      )
+    ? sourceQuality
     : qualityFromCoverage(coverage);
+  const hasTerminalEvidence =
+    !parsed.quality.partialParse &&
+    parsed.rounds.length > 0 &&
+    parsed.rounds.every((round) => round.endTick !== null);
 
   return {
     observation: {
@@ -226,10 +235,9 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
       startedAt: parsed.matchDate,
       finishedAt: null,
       durationSeconds: parsed.durationSeconds,
-      // A parsed demo is a recording of a match that already happened.
-      status: parsed.quality.partialParse ? "partial" : "completed",
-      finished: true,
-      terminal: true,
+      status: hasTerminalEvidence ? "completed" : "partial",
+      finished: hasTerminalEvidence,
+      terminal: hasTerminalEvidence,
       teamA,
       teamB,
       scoreTeamA: parsed.scoreA,

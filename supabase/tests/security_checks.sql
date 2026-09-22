@@ -192,6 +192,30 @@ WITH catalogue AS (
              AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
          )
 
+  UNION ALL
+  SELECT '21c. parser governance RPCs are service-only',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace = 'public'::regnamespace
+             AND p.proname IN ('assert_canonical_mapping_gate',
+                               'record_parser_runtime_attestation',
+                               'assert_verified_parser_provenance',
+                               'assert_real_demo_release_ready')
+             AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+                  OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+         )
+
+  UNION ALL
+  SELECT '21d. canonical mapping governance is immutable and RPC-gated',
+         has_table_privilege('service_role','public.canonical_mapping_inventory','SELECT')
+         AND NOT has_table_privilege('service_role','public.canonical_mapping_inventory',
+                                     'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND EXISTS (
+           SELECT 1 FROM pg_trigger
+           WHERE tgrelid='public.canonical_mapping_inventory'::regclass
+             AND tgname='canonical_mapping_inventory_immutable' AND NOT tgisinternal
+         )
+
   -- 22. integrity constraints
   UNION ALL
   SELECT '22. range/positivity constraints are active',

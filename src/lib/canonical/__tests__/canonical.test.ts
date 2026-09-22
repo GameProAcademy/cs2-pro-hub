@@ -218,6 +218,24 @@ describe("FASE 2.6 — demo adapter", () => {
     expect(bundle.participants.some((p) => p.internalPlayerId === null)).toBe(true);
     expect(bundle.participants.filter((p) => p.isTargetPlayer)).toHaveLength(1);
   });
+
+  it("marks a bound target as correlated rather than unlinked", () => {
+    const target = demoBundle().participants.find((participant) => participant.isTargetPlayer);
+    expect(target).toMatchObject({ internalPlayerId: "player-1", identityStatus: "correlated" });
+  });
+
+  it("does not claim terminal completion for a partial parse", () => {
+    const parsed = normalizeParserOutput(syntheticParserOutput);
+    parsed.quality = { ...parsed.quality, partialParse: true, flags: ["truncated"] };
+    const bundle = demoToCanonicalBundle({ parsed, fingerprint: "c".repeat(64) });
+    expect(bundle.match).toMatchObject({ status: "partial", finished: false, terminal: false });
+    expect(bundle.rounds.every((round) => round.quality.status === "partial")).toBe(true);
+    expect(bundle.events.every((event) => event.quality.status === "partial")).toBe(true);
+  });
+
+  it("keeps win reason unknown until a formal source mapping is verified", () => {
+    expect(demoBundle().rounds.every((round) => round.winReason === "unknown")).toBe(true);
+  });
 });
 
 describe("FASE 2.6 — FACEIT adapter", () => {

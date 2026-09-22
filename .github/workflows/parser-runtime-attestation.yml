@@ -15,11 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout exact runtime commit
+      - name: Checkout attestor source
         uses: actions/checkout@v4
         with:
-          ref: 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76
-          fetch-depth: 1
+          fetch-depth: 0
+
+      - name: Fetch frozen runtime branch and commit as Git objects
+        run: |
+          git fetch --no-tags origin \
+            infra/cs2-parser-worker-v8:refs/remotes/origin/infra/cs2-parser-worker-v8
+          git cat-file -e 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76^{commit}
+          git merge-base --is-ancestor \
+            5703b1d88f21ee57fdd1d83722edf30e0f0c6f76 \
+            refs/remotes/origin/infra/cs2-parser-worker-v8
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -35,6 +43,42 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: parser-runtime-attestation.json
+
+      - name: Mint short-lived GitHub identity token
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('gamepro-parser-attestation')
+            core.setSecret(token)
+            core.setOutput('token', token)
+
+      - name: Sign and deliver verified evidence to the server-side recorder
+        env:
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
+          RELEASE_GATE_EVIDENCE_JSON: ${{ secrets.RELEASE_GATE_EVIDENCE_JSON }}
+          GITHUB_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          test -n "$PARSER_ATTESTATION_ENDPOINT"
+          test -n "$PARSER_ATTESTATION_TRANSPORT_SECRET"
+          test -n "$PARSER_ATTESTATION_HMAC_SECRET"
+          test -n "$RELEASE_GATE_EVIDENCE_JSON"
+          test -n "$GITHUB_OIDC_TOKEN"
+          canonical_payload="$(jq -cS '.payload' parser-runtime-attestation.json)"
+          signature="$(printf '%s' "$canonical_payload" | openssl dgst -sha256 -hmac "$PARSER_ATTESTATION_HMAC_SECRET" -binary | xxd -p -c 256)"
+          curl --fail-with-body --silent --show-error \
+            --retry 0 \
+            -H "Authorization: Bearer $PARSER_ATTESTATION_TRANSPORT_SECRET" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -n \
+              --rawfile result parser-runtime-attestation.json \
+              --arg signature "$signature" \
+              --arg oidcToken "$GITHUB_OIDC_TOKEN" \
+              --argjson releaseGate "$RELEASE_GATE_EVIDENCE_JSON" \
+              '{result:($result|fromjson),signature:$signature,oidcToken:$oidcToken,releaseGateEvidence:$releaseGate}')" \
+            "$PARSER_ATTESTATION_ENDPOINT"
 
       - name: Upload evidence
         uses: actions/upload-artifact@v4

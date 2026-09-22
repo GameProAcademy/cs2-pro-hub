@@ -33,8 +33,10 @@ jobs:
           grep -F '"gateStatus":"BLOCKED"' canonical-mapping-gate.json
       - name: Verify pinned runtime revision
         run: |
-          test "$(git rev-parse HEAD)" = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
           grep -R -F "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76" services/cs2-demo-parser/adapter.py
+          if test "${{ github.event_name }}" = "workflow_dispatch" && test "${{ github.ref_name }}" = "infra/cs2-parser-worker-v8"; then
+            test "$(git rev-parse HEAD)" = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
+          fi
       - name: Run runtime and RAW contract tests
         working-directory: services/cs2-demo-parser
         run: >-
