@@ -32,6 +32,7 @@ IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_re
 WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
+MAPPING_RELEASE_ID = "cf0549c2-dfbd-c4df-25b4-2ce8204edf87"
 
 
 def stable_json(value: Any) -> str:
@@ -130,6 +131,10 @@ def release_gate_evidence() -> dict[str, Any]:
         "matrix_digest": MATRIX_DIGEST,
         "row_count": 105,
         "authorized_count": 0,
+        "generic_count": 0,
+        "verified_count": 0,
+        "release_id": MAPPING_RELEASE_ID,
+        "inventory_version": "canonical-demo-v2",
     }
     return evidence
 
@@ -235,6 +240,17 @@ def build_attestation() -> dict[str, Any]:
                               "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha,
                               "event_name": event},
         "release_gate_evidence": release_gate_evidence(),
+        "mapping_release": {
+            "release_id": MAPPING_RELEASE_ID,
+            "inventory_version": "canonical-demo-v2",
+            "inventory_digest": INVENTORY_DIGEST,
+            "matrix_digest": MATRIX_DIGEST,
+            "row_count": 105,
+            "generic_count": 0,
+            "authorized_count": 0,
+            "verified_count": 0,
+            "status": "BLOCKED",
+        },
     }
     attestation_digest = digest(payload)
     return {"status": "VERIFIED" if not statuses else "BLOCKED", "blockers": sorted(set(statuses)),

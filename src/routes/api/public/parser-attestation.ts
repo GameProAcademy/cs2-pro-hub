@@ -162,7 +162,11 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           mappingRecord["matrix_digest"] !==
             "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702" ||
           mappingRecord["row_count"] !== 105 ||
-          mappingRecord["authorized_count"] !== 0
+          mappingRecord["generic_count"] !== 0 ||
+          mappingRecord["authorized_count"] !== 0 ||
+          mappingRecord["verified_count"] !== 0 ||
+          mappingRecord["release_id"] !== PARSER_ATTESTATION_EXPECTED.mappingReleaseId ||
+          mappingRecord["inventory_version"] !== PARSER_ATTESTATION_EXPECTED.inventoryVersion
         ) {
           return Response.json({ error: "MAPPING_AUTHORITY_MISMATCH" }, { status: 422 });
         }
