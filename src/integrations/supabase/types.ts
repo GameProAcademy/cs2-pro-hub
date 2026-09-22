@@ -1952,6 +1952,36 @@ export type Database = {
         }
         Relationships: []
       }
+      parser_attestation_nonces: {
+        Row: {
+          attestation_digest: string
+          attested_at: string
+          created_at: string
+          expires_at: string
+          nonce: string
+          workflow_run_attempt: string
+          workflow_run_id: string
+        }
+        Insert: {
+          attestation_digest: string
+          attested_at: string
+          created_at?: string
+          expires_at: string
+          nonce: string
+          workflow_run_attempt: string
+          workflow_run_id: string
+        }
+        Update: {
+          attestation_digest?: string
+          attested_at?: string
+          created_at?: string
+          expires_at?: string
+          nonce?: string
+          workflow_run_attempt?: string
+          workflow_run_id?: string
+        }
+        Relationships: []
+      }
       parser_runtime_provenance: {
         Row: {
           app_source_commit: string | null
@@ -3742,6 +3772,10 @@ export type Database = {
         }
         Returns: string
       }
+      pre_attempt_9_gate_status: {
+        Args: { _provenance_id: string }
+        Returns: string
+      }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
       reconcile_orphan_demo_uploads: {
         Args: { _limit?: number; _older_than_minutes?: number }
@@ -3759,7 +3793,9 @@ export type Database = {
       record_parser_runtime_attestation: {
         Args: {
           _attestation_digest: string
+          _attested_at: string
           _canonical_payload: string
+          _nonce: string
           _payload: Json
           _release_gate_evidence: Json
           _signature: string
