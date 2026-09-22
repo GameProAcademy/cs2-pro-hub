@@ -15,7 +15,7 @@ Runtime provenance, release binding, RAW forensic integrity, identity, independe
 
 ## Event capability matrix
 
-The frozen upstream catalogue contains 38 explicit events. Each remains evidence-only until observed on the authorized DEM and reconciled; inferred round ends, team identity from `team_number`, nickname-only identity and invalid bomb transitions are prohibited.
+The frozen upstream catalogue contains **40 explicit events**. Each remains evidence-only until observed on the authorized DEM and reconciled; inferred round ends, team identity from `team_number`, nickname-only identity and invalid bomb transitions are prohibited. The current 40-event catalogue is the authoritative event count for C.10 and supersedes the stale 38-event wording from earlier gate documentation.
 
 ## Decision
 
