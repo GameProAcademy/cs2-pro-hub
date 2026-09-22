@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "status": "PASS_NO_R5_MUTATION_OBSERVED",
+  "captured_at": "2026-09-22T09:59:05Z",
+  "before": {
+    "attempt_9_count": 0,
+    "attempt_10_plus_count": 0,
+    "provenance_count": 0,
+    "nonce_count": 0,
+    "mapping_count": 105,
+    "mapping_authorized_count": 0,
+    "mapping_verified_count": 0,
+    "mapping_generic_count": 0,
+    "match_metrics_count": 0,
+    "match_features_count": 0
+  },
+  "after": {
+    "attempt_9_count": 0,
+    "attempt_10_plus_count": 0,
+    "provenance_count": 0,
+    "nonce_count": 0,
+    "mapping_count": 105,
+    "mapping_authorized_count": 0,
+    "mapping_verified_count": 0,
+    "mapping_generic_count": 0,
+    "match_metrics_count": 0,
+    "match_features_count": 0
+  },
+  "attempts_1_through_8_preserved": true,
+  "attempt_8_upload_id": "d89b697f-c40d-42f4-ae51-040e4e8cabba",
+  "attempt_8_job_id": "d1851c49-820a-426b-86c6-0ea4623b4f41",
+  "canonical_changed": false,
+  "cleanup_executed": false,
+  "railway_mutated": false,
+  "environment_patch_applied": false,
+  "unexpected_mutations": []
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "status": "NOT_EXECUTED",
+  "cleanup_executed": false,
+  "physical_delete_executed": false,
+  "original_demo_deleted": false,
+  "temporary_copy_created": false,
+  "temporary_copy_deleted": false,
+  "future_cleanup_eligibility": "MUST_BE_REEVALUATED_BY_OFFICIAL_LIFECYCLE",
+  "reason": "C.10-R5_PROHIBITS_CLEANUP"
+}

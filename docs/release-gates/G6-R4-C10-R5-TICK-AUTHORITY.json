@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "status": "NOT_VERIFIED",
+  "classification": "UNAVAILABLE",
+  "dem_sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+  "parser_source": null,
+  "independent_source": null,
+  "first_tick": null,
+  "last_tick": null,
+  "missing_ticks": null,
+  "unexpected_ticks": null,
+  "duplicate_ticks": null,
+  "overlaps": null,
+  "out_of_order_ticks": null,
+  "invalid_ticks": null,
+  "coverage_ratio": null,
+  "reason": "REAL_DEM_NOT_RUN_AND_NO_INDEPENDENT_TICK_SOURCE",
+  "full_tick_domain_authority": false
+}
