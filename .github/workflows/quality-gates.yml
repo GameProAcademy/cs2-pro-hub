@@ -66,9 +66,6 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python scripts/generate-parser-field-matrix.py --check
 
-      - name: Run production revision guard
-        run: pytest -q tests/test_revision.py
-
       - name: Run parser test suite
         run: pytest -q
 
