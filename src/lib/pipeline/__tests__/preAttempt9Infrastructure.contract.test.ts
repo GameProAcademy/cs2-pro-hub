@@ -18,7 +18,7 @@ const parityMigration = readFileSync(
   "utf8",
 );
 const workflowBindingMigration = readFileSync(
-  resolve("supabase/migrations/20260922095221_6f69d740-f944-4f4d-a604-5d5186aa7d38.sql"),
+  resolve("supabase/migrations/20260922093815_8745c511-6a49-4950-bff2-6bed730d5587.sql"),
   "utf8",
 );
 
