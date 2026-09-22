@@ -96,8 +96,9 @@ def test_runtime_tick_domain_is_never_authoritative_without_independent_evidence
     assert source["authoritative"] is False
     assert source["expected_intervals"] == []
     assert source["observed_playback_ticks"] == 99_999
-    unsigned = {key: value for key, value in source.items() if key != "digest"}
+    unsigned = {key: value for key, value in source.items() if key not in {"digest", "authority_digest"}}
     assert source["digest"] == deterministic_digest(unsigned)
+    assert source["authority_digest"] == source["digest"]
 
 
 def test_only_verified_independent_authority_can_complete_tick_domain():

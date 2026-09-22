@@ -36,7 +36,13 @@ class TickDomainAuthority:
 
     def payload(self) -> dict[str, Any]:
         value = {**self.__dict__, "expected_intervals": [list(row) for row in self.expected_intervals]}
-        value["digest"] = deterministic_digest(value)
+        value.update({
+            "min_tick": self.expected_min_tick,
+            "max_tick": self.expected_max_tick,
+            "intervals": value["expected_intervals"],
+        })
+        value["authority_digest"] = deterministic_digest(value)
+        value["digest"] = value["authority_digest"]
         return value
 
 
@@ -154,7 +160,9 @@ def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
         None, "demoparser2@0.42.0", None, False, None, None, None, (), None, None,
         "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration").payload()
     source["observed_playback_ticks"] = playback_ticks
-    source["digest"] = deterministic_digest({key: value for key, value in source.items() if key != "digest"})
+    unsigned = {key: value for key, value in source.items() if key not in {"digest", "authority_digest"}}
+    source["authority_digest"] = deterministic_digest(unsigned)
+    source["digest"] = source["authority_digest"]
     return source
 
 
