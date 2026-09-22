@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,8 @@ EXPECTED_HASHES = {
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
 WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
+INVENTORY_DIGEST = "206b649f141b291f51d3b7d47b9ea6f20efc19148974b1bd5432eec9e35c7453"
+MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
 
 
 def stable_json(value: Any) -> str:
@@ -51,8 +54,9 @@ def git_blob_sha1(data: bytes) -> str:
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
 
 
-def fetch_json(url: str) -> dict[str, Any]:
-    request = urllib.request.Request(url, headers={"User-Agent": "gamepro-parser-attestor/1"})
+def fetch_json(url: str, *, data: bytes | None = None, headers: dict[str, str] | None = None) -> dict[str, Any]:
+    request_headers = {"User-Agent": "gamepro-parser-attestor/2", **(headers or {})}
+    request = urllib.request.Request(url, data=data, headers=request_headers, method="POST" if data else "GET")
     with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - pinned HTTPS endpoints
         payload = json.load(response)
     if not isinstance(payload, dict):
@@ -60,11 +64,74 @@ def fetch_json(url: str) -> dict[str, Any]:
     return payload
 
 
+def railway_deployment_evidence(token: str) -> dict[str, Any]:
+    if len(token) < 20:
+        raise ValueError("RAILWAY_API_TOKEN_MISSING")
+    query = """query DeploymentEvidence($id: String!) { deployment(id: $id) { id status projectId serviceId environmentId meta } }"""
+    response = fetch_json(
+        "https://backboard.railway.com/graphql/v2",
+        data=stable_json({"query": query, "variables": {"id": DEPLOYMENT}}).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+    )
+    if response.get("errors"):
+        raise ValueError("RAILWAY_API_QUERY_FAILED")
+    deployment = (response.get("data") or {}).get("deployment")
+    if not isinstance(deployment, dict):
+        raise ValueError("RAILWAY_DEPLOYMENT_NOT_FOUND")
+    meta = deployment.get("meta") if isinstance(deployment.get("meta"), dict) else {}
+    observed = {
+        "deployment_id": deployment.get("id"),
+        "project_id": deployment.get("projectId"),
+        "service_id": deployment.get("serviceId"),
+        "environment_id": deployment.get("environmentId"),
+        "deployment_status": deployment.get("status"),
+        "source_repository": meta.get("repo") or meta.get("repository"),
+        "source_branch": meta.get("branch"),
+        "source_commit": meta.get("commitHash") or meta.get("commit"),
+    }
+    expected = {
+        "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
+        "environment_id": ENVIRONMENT, "deployment_status": "SUCCESS",
+        "source_repository": REPOSITORY, "source_branch": BRANCH, "source_commit": COMMIT,
+    }
+    if observed != expected:
+        raise ValueError("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
+    proof = {
+        **observed,
+        "verification_source": "RAILWAY_API",
+        "independently_verified": True,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    proof["query_digest"] = digest({"query": query, "observed": observed})
+    return proof
+
+
 def runtime_identity(payload: dict[str, Any]) -> dict[str, Any]:
     parser = payload.get("parser") if isinstance(payload.get("parser"), dict) else payload
     result = {field: parser.get(field) for field in IDENTITY_FIELDS}
     result["contract_version"] = payload.get("contract_version", payload.get("contractVersion"))
     return result
+
+
+def release_gate_evidence() -> dict[str, Any]:
+    blocked = {"status": "BLOCKED", "evidence_ref": "NOT_RUN_BEFORE_ATTEMPT_9"}
+    evidence = {key: dict(blocked) for key in (
+        "parser_runtime_identity", "provenance_verified", "provenance_fresh",
+        "provenance_immutable", "attestation_valid", "github_source_identity",
+        "railway_deployment_identity", "runtime_version", "custom_domain_binding",
+        "critical_file_hashes", "canonical_scoped_field_gate", "tick_domain",
+        "real_demo_authorization", "attempt_sequencing", "cleanup_safety",
+        "retry_safety", "storage_copy_safety", "no_attempt_10_plus",
+        "no_canonical_contamination", "unresolved_required_mapping", "ci",
+    )}
+    evidence["mapping_inventory"] = {
+        **blocked,
+        "inventory_digest": INVENTORY_DIGEST,
+        "matrix_digest": MATRIX_DIGEST,
+        "row_count": 105,
+        "authorized_count": 0,
+    }
+    return evidence
 
 
 def build_attestation() -> dict[str, Any]:
@@ -128,17 +195,11 @@ def build_attestation() -> dict[str, Any]:
     if custom_identity != expected_identity or railway_identity != expected_identity or custom_identity != railway_identity:
         statuses.append("RUNTIME_IDENTITY_MISMATCH")
 
-    railway_proof = os.getenv("RAILWAY_DEPLOYMENT_EVIDENCE_JSON")
     deployment_evidence: dict[str, Any] | None = None
-    if railway_proof:
-        deployment_evidence = json.loads(railway_proof)
-        expected = {"deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
-                    "environment_id": ENVIRONMENT, "source_branch": BRANCH, "source_commit": COMMIT}
-        if any(deployment_evidence.get(key) != value for key, value in expected.items()):
-            statuses.append("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
-        if deployment_evidence.get("verification_source") != "RAILWAY_API" or deployment_evidence.get("independently_verified") is not True:
-            statuses.append("RAILWAY_DEPLOYMENT_PROOF_UNTRUSTED")
-    else:
+    railway_token = os.getenv("RAILWAY_API_TOKEN", "")
+    try:
+        deployment_evidence = railway_deployment_evidence(railway_token)
+    except (ValueError, OSError):
         statuses.append("BLOCKED_EXTERNAL_PROOF")
 
     payload = {
@@ -157,6 +218,7 @@ def build_attestation() -> dict[str, Any]:
                               "ref_name": ref_name, "workflow_ref": workflow_ref,
                               "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha,
                               "event_name": event},
+        "release_gate_evidence": release_gate_evidence(),
     }
     attestation_digest = digest(payload)
     return {"status": "VERIFIED" if not statuses else "BLOCKED", "blockers": sorted(set(statuses)),
