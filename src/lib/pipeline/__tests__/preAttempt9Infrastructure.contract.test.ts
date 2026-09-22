@@ -17,6 +17,10 @@ const parityMigration = readFileSync(
   resolve("supabase/migrations/20260922093643_6fa8a841-6d45-4220-90ac-d53b8b7d04da.sql"),
   "utf8",
 );
+const workflowBindingMigration = readFileSync(
+  resolve("supabase/migrations/20260922095221_6f69d740-f944-4f4d-a604-5d5186aa7d38.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -57,6 +61,12 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
     expect(parityMigration).toContain("public.pre_real_demo_gate_status()");
     expect(parityMigration).toContain("'status', 'BLOCKED_BEFORE_REAL_DEMO'");
     expect(parityMigration).not.toMatch(/\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/);
+  });
+
+  it("enforces the reviewed workflow source at the persistence boundary", () => {
+    expect(workflowBindingMigration).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+    expect(workflowBindingMigration).toContain("5039bff74550f02291fd066c7f10d781f6b86ebe");
+    expect(workflowBindingMigration).toContain("parser_runtime_provenance_approved_workflow");
   });
 
   it("makes the readiness contract explicitly Cache-specific without weakening any gate", () => {

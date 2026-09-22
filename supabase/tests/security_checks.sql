@@ -291,6 +291,24 @@ WITH catalogue AS (
              AND p.proname IN ('attestation_security_invariants','pre_real_demo_gate_status')
              AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
          )
+
+  UNION ALL
+  SELECT '21m. attestation workflow approval is enforced at persistence',
+         EXISTS (
+           SELECT 1 FROM pg_trigger
+           WHERE tgrelid='public.parser_runtime_provenance'::regclass
+             AND tgname='parser_runtime_provenance_approved_workflow'
+             AND NOT tgisinternal
+         )
+         AND EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname='enforce_approved_attestation_workflow'
+             AND p.prosecdef
+             AND coalesce(p.proconfig,ARRAY[]::text[]) @> ARRAY['search_path=""']
+             AND NOT has_function_privilege('anon',p.oid,'EXECUTE')
+             AND NOT has_function_privilege('authenticated',p.oid,'EXECUTE')
+         )
          AND NOT EXISTS (
            SELECT 1 FROM pg_proc p
            WHERE p.pronamespace='public'::regnamespace

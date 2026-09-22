@@ -1,5 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -9,6 +7,11 @@ import {
   validateParserAttestationOidcClaims,
   validateParserAttestationPayload,
 } from "@/lib/parserAttestation";
+import {
+  canonicalAttestationJson,
+  safeAttestationEqual,
+  signAttestationPayload,
+} from "@/lib/parserAttestationCrypto.server";
 
 const bodySchema = z.object({
   result: z.object({
@@ -21,22 +24,6 @@ const bodySchema = z.object({
   oidcToken: z.string().min(100),
   releaseGateEvidence: z.record(z.unknown()),
 });
-
-function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
-    .join(",")}}`;
-}
-
-function safeEqual(left: string, right: string): boolean {
-  const leftBytes = Buffer.from(left);
-  const rightBytes = Buffer.from(right);
-  return leftBytes.length === rightBytes.length && timingSafeEqual(leftBytes, rightBytes);
-}
 
 function base64UrlJson(value: string): Record<string, unknown> {
   const decoded = Buffer.from(value, "base64url").toString("utf8");
@@ -108,7 +95,7 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "ATTESTATION_SERVER_NOT_CONFIGURED" }, { status: 503 });
         }
         const authorization = request.headers.get("authorization") ?? "";
-        if (!safeEqual(authorization, `Bearer ${transportSecret}`)) {
+        if (!safeAttestationEqual(authorization, `Bearer ${transportSecret}`)) {
           return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
         }
 
@@ -116,7 +103,7 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         if (!parsed.success) {
           return Response.json({ error: "ATTESTATION_PAYLOAD_INVALID" }, { status: 400 });
         }
-        const canonicalPayload = canonicalJson(parsed.data.result.payload);
+        const canonicalPayload = canonicalAttestationJson(parsed.data.result.payload);
         const calculatedDigest = await crypto.subtle.digest(
           "SHA-256",
           new TextEncoder().encode(canonicalPayload),
@@ -124,13 +111,11 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         const calculatedDigestHex = Array.from(new Uint8Array(calculatedDigest), (byte) =>
           byte.toString(16).padStart(2, "0"),
         ).join("");
-        if (!safeEqual(parsed.data.result.attestation_digest, calculatedDigestHex)) {
+        if (!safeAttestationEqual(parsed.data.result.attestation_digest, calculatedDigestHex)) {
           return Response.json({ error: "ATTESTATION_DIGEST_INVALID" }, { status: 400 });
         }
-        const expectedSignature = createHmac("sha256", signingSecret)
-          .update(canonicalPayload)
-          .digest("hex");
-        if (!safeEqual(parsed.data.signature, expectedSignature)) {
+        const expectedSignature = signAttestationPayload(canonicalPayload, signingSecret);
+        if (!safeAttestationEqual(parsed.data.signature, expectedSignature)) {
           return Response.json({ error: "ATTESTATION_SIGNATURE_INVALID" }, { status: 401 });
         }
         const payloadBlockers = validateParserAttestationPayload(parsed.data.result.payload);
