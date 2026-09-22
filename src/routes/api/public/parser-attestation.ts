@@ -24,6 +24,7 @@ const bodySchema = z.object({
 const EXPECTED_BRANCH_REF = "refs/heads/infra/cs2-parser-worker-v8";
 const EXPECTED_WORKFLOW = ".github/workflows/parser-runtime-attestation.yml";
 const OIDC_AUDIENCE = "gamepro-parser-attestation";
+const EXPECTED_REPOSITORY_OWNER = "GameProAcademy";
 
 function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -92,12 +93,16 @@ async function verifyGitHubOidc(token: string, payload: Record<string, unknown>)
   }
   const workflowIdentity = workflow as Record<string, unknown>;
   const expectedWorkflowRef = `${PARSER_ATTESTATION_EXPECTED.repository}/${EXPECTED_WORKFLOW}@${EXPECTED_BRANCH_REF}`;
+  const expectedSubject = `repo:${PARSER_ATTESTATION_EXPECTED.repository}:ref:${EXPECTED_BRANCH_REF}`;
   if (
     claims["iss"] !== "https://token.actions.githubusercontent.com" ||
     claims["aud"] !== OIDC_AUDIENCE ||
     claims["repository"] !== PARSER_ATTESTATION_EXPECTED.repository ||
+    claims["repository_owner"] !== EXPECTED_REPOSITORY_OWNER ||
     claims["ref"] !== EXPECTED_BRANCH_REF ||
     claims["workflow_ref"] !== expectedWorkflowRef ||
+    claims["job_workflow_ref"] !== expectedWorkflowRef ||
+    claims["sub"] !== expectedSubject ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
     String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
