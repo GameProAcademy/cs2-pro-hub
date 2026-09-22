@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "status": "NOT_RUN",
+  "reason": "NO_AUTHORIZED_REAL_DEM_BINARY_ACCESSIBLE",
+  "python_run_id": null,
+  "wasm_run_id": null,
+  "dem_sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+  "parser_revision": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+  "field_results": [],
+  "array_results": [],
+  "count_results": [],
+  "semantic_results": [],
+  "mismatches": [],
+  "mismatch_digests": [],
+  "harness_digest": "934fc2b2a3eed0f7518da37c811647908f312b4f0f964dc3541ce2e07055c138",
+  "canonical_authorization": false
+}

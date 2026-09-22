@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "status": "NOT_VERIFIED",
+  "dem_sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+  "players": [],
+  "identity_method": null,
+  "independent_correlation_evidence": false,
+  "nickname_only_accepted": false,
+  "contradictions": [],
+  "reason": "REAL_DEM_NOT_RUN",
+  "canonical_authorization": false
+}

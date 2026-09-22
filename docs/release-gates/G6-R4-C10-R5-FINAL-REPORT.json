@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "phase": "C.10-R5",
+  "generated_at": "2026-09-22T09:59:05Z",
+  "status": "BLOCKED",
+  "implementation": "COMPLETE",
+  "execution": "PARTIAL",
+  "verification": "PARTIAL",
+  "authorization": "ATTEMPT_9_LOCKED",
+  "git_commit": "d662e0b79f6eaccdec693a99ac381b2b4c2ca274",
+  "migrations": {
+    "applied_in_r5": [],
+    "not_applied_in_r5": []
+  },
+  "dem": {
+    "filename": "furia-vs-gamerlegion-m1-cache.dem",
+    "expected_sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+    "expected_size": 473748061,
+    "database_identity_found": true,
+    "attempt_8_upload_found": true,
+    "storage_object_found": false,
+    "bytes_accessible": false,
+    "bytes_read": false,
+    "bytes_processed": false,
+    "observed_sha256": null,
+    "observed_size": null,
+    "status": "REAL_DEM_BINARY_NOT_ACCESSIBLE"
+  },
+  "railway": {
+    "project": "CS2 Pro Parser Worker",
+    "service": "cs2-demo-parser",
+    "environment": "production",
+    "deployment_id": "6330c8c4-a410-45db-a364-4eb47702c2fc",
+    "expected_revision": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+    "expected_branch": "infra/cs2-parser-worker-v8",
+    "parser_version": "0.42.0",
+    "contract_version": 1,
+    "api_token_available": false,
+    "identity": "NOT_VERIFIED",
+    "mutation": "NONE"
+  },
+  "github": {
+    "repository": "GameProAcademy/cs2-pro-hub",
+    "workflow_path": ".github/workflows/parser-runtime-attestation.yml",
+    "approved_blob_sha": "5039bff74550f02291fd066c7f10d781f6b86ebe",
+    "observed_blob_sha": "5039bff74550f02291fd066c7f10d781f6b86ebe",
+    "workflow_identity": "VERIFIED_STATIC_ONLY",
+    "live_run": "NOT_RUN"
+  },
+  "hmac": {
+    "configured": false,
+    "secret_created": false,
+    "status": "NOT_CONFIGURED"
+  },
+  "attestation": {
+    "status": "NOT_VERIFIED",
+    "oidc": "NOT_RUN",
+    "nonce_count": 0
+  },
+  "provenance": {
+    "status": "NOT_VERIFIED",
+    "total_count": 0,
+    "verified_count": 0
+  },
+  "python": {
+    "status": "NOT_RUN",
+    "run_ids": []
+  },
+  "wasm": {
+    "status": "NOT_RUN",
+    "run_ids": []
+  },
+  "parity": {
+    "status": "NOT_RUN",
+    "reason": "NO_AUTHORIZED_REAL_DEM_BINARY_ACCESSIBLE"
+  },
+  "determinism": {
+    "status": "NOT_RUN",
+    "reason": "TWO_REAL_RUNS_PER_RUNTIME_REQUIRED"
+  },
+  "identity": {
+    "status": "NOT_VERIFIED"
+  },
+  "tick_authority": {
+    "status": "NOT_VERIFIED",
+    "classification": "UNAVAILABLE"
+  },
+  "persistence": {
+    "status": "NOT_VERIFIED",
+    "attempt_8_raw_artifacts": 1,
+    "attempt_8_raw_chunks": 25,
+    "attempt_8_raw_reports": 0
+  },
+  "forensic_integrity": {
+    "status": "NOT_VERIFIED",
+    "manifest_sha256": "9d07911c622358958717acad55cb807140d045a8d6c8bc6f6b2e72be0801bfb1"
+  },
+  "contamination": {
+    "status": "PASS_NO_R5_MUTATION_OBSERVED",
+    "unexpected_mutations": 0
+  },
+  "attempt_9": {
+    "count": 0,
+    "status": "LOCKED"
+  },
+  "attempt_10_plus": {
+    "count": 0,
+    "status": "ABSENT"
+  },
+  "canonical": {
+    "mapping_count": 105,
+    "authorized_count": 0,
+    "verified_count": 0,
+    "generic_count": 0,
+    "promoted": false
+  },
+  "cleanup": {
+    "executed": false
+  },
+  "final_gate": {
+    "pre_real_demo_gate_status": "BLOCKED_BEFORE_REAL_DEMO",
+    "pre_attempt_9_gate_status": "BLOCKED",
+    "assert_real_demo_release_ready": "BLOCKED",
+    "assert_cache_attempt_9_ready": "BLOCKED",
+    "assert_pre_attempt_9_ready": "BLOCKED",
+    "decision": "BLOCKED"
+  },
+  "security_invariants": "PASS",
+  "tests": {
+    "compileall": "PASS",
+    "vitest_focused": "10_PASS",
+    "vitest_full": "1079_PASS_6_FAIL_PREEXISTING_PARSER_CONTRACT",
+    "pytest": "NOT_RUN_PYTEST_NOT_AVAILABLE",
+    "parity_harness": "NOT_RUN",
+    "determinism_harness": "NOT_RUN",
+    "workflow_blob": "PASS",
+    "event_catalogue": "2_PASS_DIRECT_INVOCATION",
+    "lint": "FAIL_4_PREEXISTING_FORMATTING_ERRORS_9_WARNINGS",
+    "diff_check": "PASS",
+    "database_linter": "15_EXISTING_FINDINGS_3_CATEGORIES"
+  },
+  "blockers": [
+    "REAL_DEM_BINARY_NOT_ACCESSIBLE",
+    "RAILWAY_API_TOKEN_NOT_AVAILABLE",
+    "HMAC_NOT_CONFIGURED",
+    "GITHUB_ATTESTATION_NOT_RUN",
+    "RUNTIME_PROVENANCE_NOT_VERIFIED",
+    "PYTHON_REAL_RUN_NOT_RUN",
+    "WASM_REAL_RUN_NOT_RUN",
+    "PYTHON_WASM_PARITY_NOT_VERIFIED",
+    "DETERMINISM_NOT_VERIFIED",
+    "TICK_AUTHORITY_NOT_VERIFIED",
+    "IDENTITY_NOT_VERIFIED",
+    "PERSISTENCE_NOT_VERIFIED",
+    "FORENSIC_INTEGRITY_NOT_VERIFIED"
+  ],
+  "next_milestone": "Restore authorized DEM bytes through the official private storage lifecycle, configure external HMAC and Railway evidence, then rerun R5 without creating Attempt 9."
+}
