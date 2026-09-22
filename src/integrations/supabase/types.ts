@@ -161,6 +161,96 @@ export type Database = {
           },
         ]
       }
+      canonical_mapping_inventory: {
+        Row: {
+          canonical_authorization: boolean
+          canonical_field: string
+          created_at: string
+          depends_on_full_tick_domain: boolean
+          determinism_status: string
+          empty_string_semantics: string
+          event_evidence: Json
+          evidence_class: string
+          evidence_digest: string
+          false_semantics: string
+          identity_requirement: string
+          last_verified_at: string | null
+          mapping_status: string
+          missing_semantics: string
+          normalization: string
+          normalization_executed: boolean
+          null_semantics: string
+          parity_status: string
+          parser_api: string
+          python_evidence: Json
+          review_status: string
+          semantic_mismatch: boolean
+          source_capability: string
+          source_field: string
+          updated_at: string
+          wasm_evidence: Json
+          zero_semantics: string
+        }
+        Insert: {
+          canonical_authorization?: boolean
+          canonical_field: string
+          created_at?: string
+          depends_on_full_tick_domain?: boolean
+          determinism_status: string
+          empty_string_semantics: string
+          event_evidence?: Json
+          evidence_class: string
+          evidence_digest: string
+          false_semantics: string
+          identity_requirement: string
+          last_verified_at?: string | null
+          mapping_status: string
+          missing_semantics: string
+          normalization: string
+          normalization_executed?: boolean
+          null_semantics: string
+          parity_status: string
+          parser_api: string
+          python_evidence?: Json
+          review_status: string
+          semantic_mismatch?: boolean
+          source_capability: string
+          source_field: string
+          updated_at?: string
+          wasm_evidence?: Json
+          zero_semantics: string
+        }
+        Update: {
+          canonical_authorization?: boolean
+          canonical_field?: string
+          created_at?: string
+          depends_on_full_tick_domain?: boolean
+          determinism_status?: string
+          empty_string_semantics?: string
+          event_evidence?: Json
+          evidence_class?: string
+          evidence_digest?: string
+          false_semantics?: string
+          identity_requirement?: string
+          last_verified_at?: string | null
+          mapping_status?: string
+          missing_semantics?: string
+          normalization?: string
+          normalization_executed?: boolean
+          null_semantics?: string
+          parity_status?: string
+          parser_api?: string
+          python_evidence?: Json
+          review_status?: string
+          semantic_mismatch?: boolean
+          source_capability?: string
+          source_field?: string
+          updated_at?: string
+          wasm_evidence?: Json
+          zero_semantics?: string
+        }
+        Relationships: []
+      }
       coach_conversations: {
         Row: {
           created_at: string
@@ -1750,7 +1840,10 @@ export type Database = {
         Row: {
           app_source_commit: string | null
           attestation_digest: string
+          attestation_payload: Json | null
+          attestation_signature: string | null
           attestation_version: number
+          attestor_identity: Json | null
           build_revision: string
           contract_version: number
           created_at: string
@@ -1758,6 +1851,7 @@ export type Database = {
           deployment_commit: string
           deployment_id: string
           deployment_proof: Json
+          git_tree: string | null
           id: string
           parser_name: string
           parser_version: string
@@ -1774,11 +1868,15 @@ export type Database = {
           verification_method: string
           verification_timestamp: string
           verified_endpoint: string
+          workflow_identity: Json | null
         }
         Insert: {
           app_source_commit?: string | null
           attestation_digest: string
+          attestation_payload?: Json | null
+          attestation_signature?: string | null
           attestation_version: number
+          attestor_identity?: Json | null
           build_revision: string
           contract_version: number
           created_at?: string
@@ -1786,6 +1884,7 @@ export type Database = {
           deployment_commit: string
           deployment_id: string
           deployment_proof: Json
+          git_tree?: string | null
           id?: string
           parser_name: string
           parser_version: string
@@ -1802,11 +1901,15 @@ export type Database = {
           verification_method: string
           verification_timestamp: string
           verified_endpoint: string
+          workflow_identity?: Json | null
         }
         Update: {
           app_source_commit?: string | null
           attestation_digest?: string
+          attestation_payload?: Json | null
+          attestation_signature?: string | null
           attestation_version?: number
+          attestor_identity?: Json | null
           build_revision?: string
           contract_version?: number
           created_at?: string
@@ -1814,6 +1917,7 @@ export type Database = {
           deployment_commit?: string
           deployment_id?: string
           deployment_proof?: Json
+          git_tree?: string | null
           id?: string
           parser_name?: string
           parser_version?: string
@@ -1830,6 +1934,7 @@ export type Database = {
           verification_method?: string
           verification_timestamp?: string
           verified_endpoint?: string
+          workflow_identity?: Json | null
         }
         Relationships: []
       }
@@ -3253,6 +3358,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_canonical_mapping_gate: { Args: never; Returns: Json }
       assert_real_demo_release_ready:
         | { Args: { _provenance_id: string }; Returns: Json }
         | {
@@ -3511,6 +3617,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_parser_runtime_attestation: {
+        Args: {
+          _attestation_digest: string
+          _payload: Json
+          _release_gate_evidence: Json
+          _signature: string
+        }
+        Returns: string
       }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
