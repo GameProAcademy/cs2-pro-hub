@@ -132,12 +132,9 @@ CATEGORY_FIELDS = {
 
 CANONICAL_MAPPINGS = {
     "header.map_name": ("header.map", "CanonicalMatch.map"),
-    "header.demo_version_name": ("header.game_version", "CanonicalMatch.gameVersion"),
-    "header.playback_ticks_per_second": ("header.tickrate", "CanonicalMatch.tickrate"),
-    "player_info.steamid": ("players[].steam_id", "CanonicalPlayer.steamId"),
-    "player_info.name": ("players[].name", "CanonicalPlayer.name"),
-    "player_info.team_number": ("players[].side", "CanonicalPlayer.side"),
-    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winnerSide"),
+    "player_info.steamid": ("players[].steam_id", "CanonicalParticipant.steamId64"),
+    "player_info.name": ("players[].name", "CanonicalParticipant.nicknameSnapshot"),
+    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winningSide"),
 }
 DERIVATIONS = {
     "rounds.start_tick": "ordered parser-native round_start.tick",

@@ -1,0 +1,44 @@
+name: Parser Runtime Attestation
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-runtime:
+    if: github.repository == 'GameProAcademy/cs2-pro-hub' && github.ref_name == 'infra/cs2-parser-worker-v8'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact runtime commit
+        uses: actions/checkout@v4
+        with:
+          ref: 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build fail-closed runtime evidence
+        env:
+          RAILWAY_DEPLOYMENT_EVIDENCE_JSON: ${{ secrets.RAILWAY_DEPLOYMENT_EVIDENCE_JSON }}
+        run: python scripts/parser_runtime_attestation.py parser-runtime-attestation.json
+
+      - name: Attest the evidence artifact
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: parser-runtime-attestation.json
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-runtime-attestation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: parser-runtime-attestation.json
+          if-no-files-found: error
