@@ -30,8 +30,12 @@ describe("G.6-R.3 controlled replay database contract", () => {
 
   it("serializes reservation before validating and creating attempt 9", () => {
     const reservation = migration.slice(
-      migration.indexOf("CREATE OR REPLACE FUNCTION public.reserve_controlled_demo_replay_attempt_9"),
-      migration.indexOf("CREATE OR REPLACE FUNCTION public.finalize_controlled_demo_replay_attempt_9"),
+      migration.indexOf(
+        "CREATE OR REPLACE FUNCTION public.reserve_controlled_demo_replay_attempt_9",
+      ),
+      migration.indexOf(
+        "CREATE OR REPLACE FUNCTION public.finalize_controlled_demo_replay_attempt_9",
+      ),
     );
     expect(reservation).toContain("pg_advisory_xact_lock");
     expect(reservation).toContain("ATTEMPT_10_FORBIDDEN");
@@ -43,7 +47,9 @@ describe("G.6-R.3 controlled replay database contract", () => {
   it("fails closed on provenance and atomically couples enqueue with audit", () => {
     expect(migration).toContain("PARSER_PROVENANCE_UNVERIFIED");
     const finalization = migration.slice(
-      migration.indexOf("CREATE OR REPLACE FUNCTION public.finalize_controlled_demo_replay_attempt_9"),
+      migration.indexOf(
+        "CREATE OR REPLACE FUNCTION public.finalize_controlled_demo_replay_attempt_9",
+      ),
     );
     expect(finalization).toContain("public.enqueue_demo_job(_upload_id, _user_id)");
     expect(finalization).toContain("INSERT INTO public.admin_audit_logs");
@@ -77,8 +83,12 @@ describe("G.6-R.4 parser attestation and replay binding", () => {
     expect(releaseGateMigration).toContain("release_gate_evidence jsonb NOT NULL");
     expect(releaseGateMigration).toContain("public.assert_real_demo_release_ready(_provenance_id)");
     expect(releaseGateMigration).toContain("REAL_DEMO_RELEASE_NOT_READY");
-    expect(releaseGateMigration).toContain("REVOKE ALL ON FUNCTION public.assert_real_demo_release_ready(uuid)");
-    expect(releaseGateMigration).not.toContain("GRANT EXECUTE ON FUNCTION public.assert_real_demo_release_ready(uuid) TO authenticated");
+    expect(releaseGateMigration).toContain(
+      "REVOKE ALL ON FUNCTION public.assert_real_demo_release_ready(uuid)",
+    );
+    expect(releaseGateMigration).not.toContain(
+      "GRANT EXECUTE ON FUNCTION public.assert_real_demo_release_ready(uuid) TO authenticated",
+    );
   });
 
   it("recomputes a canonical SHA-256 attestation and anchors freshness to server time", () => {

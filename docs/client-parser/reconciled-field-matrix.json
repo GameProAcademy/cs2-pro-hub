@@ -23,8 +23,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1018"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:3k_rounds_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1018"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:3k_rounds_total"
+      ]
     },
     {
       "appField": null,
@@ -47,8 +51,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1017"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:4k_rounds_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1017"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:4k_rounds_total"
+      ]
     },
     {
       "appField": null,
@@ -71,8 +79,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1016"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ace_rounds_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1016"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ace_rounds_total"
+      ]
     },
     {
       "appField": null,
@@ -95,8 +107,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1014"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:alive_time_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1014"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:alive_time_total"
+      ]
     },
     {
       "appField": null,
@@ -119,8 +135,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1013"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:assists_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1013"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:assists_total"
+      ]
     },
     {
       "appField": null,
@@ -143,8 +163,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1026"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:cash_earned_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1026"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:cash_earned_total"
+      ]
     },
     {
       "appField": null,
@@ -167,8 +191,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1019"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:damage_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1019"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:damage_total"
+      ]
     },
     {
       "appField": null,
@@ -191,8 +219,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1012"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:deaths_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1012"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:deaths_total"
+      ]
     },
     {
       "appField": null,
@@ -215,8 +247,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1022"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:enemies_flashed_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1022"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:enemies_flashed_total"
+      ]
     },
     {
       "appField": null,
@@ -239,8 +275,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1023"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:equipment_value_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1023"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:equipment_value_total"
+      ]
     },
     {
       "appField": null,
@@ -263,8 +303,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1015"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:headshot_kills_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1015"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:headshot_kills_total"
+      ]
     },
     {
       "appField": null,
@@ -287,8 +331,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1025"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:kill_reward_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1025"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:kill_reward_total"
+      ]
     },
     {
       "appField": null,
@@ -311,8 +359,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1011"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:kills_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1011"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:kills_total"
+      ]
     },
     {
       "appField": null,
@@ -335,8 +387,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1024"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:money_saved_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1024"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:money_saved_total"
+      ]
     },
     {
       "appField": null,
@@ -359,8 +415,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1020"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:objective_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1020"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:objective_total"
+      ]
     },
     {
       "appField": null,
@@ -383,8 +443,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1021"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:utility_damage_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1021"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:utility_damage_total"
+      ]
     },
     {
       "appField": null,
@@ -407,8 +471,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L894"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:aim_punch_angle"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L894"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:aim_punch_angle"
+      ]
     },
     {
       "appField": null,
@@ -431,8 +499,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L895"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:aim_punch_angle_vel"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L895"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:aim_punch_angle_vel"
+      ]
     },
     {
       "appField": null,
@@ -455,8 +527,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L195"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:pitch"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L195"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:pitch"
+      ]
     },
     {
       "appField": null,
@@ -551,8 +627,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L196"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:yaw"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L196"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:yaw"
+      ]
     },
     {
       "appField": null,
@@ -575,8 +655,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1070"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1070"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -599,8 +683,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1072"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_no_defuse_area"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1072"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_no_defuse_area"
+      ]
     },
     {
       "appField": null,
@@ -623,8 +711,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L949"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_bomb_dropped"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L949"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_bomb_dropped"
+      ]
     },
     {
       "appField": null,
@@ -647,8 +739,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L950"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_bomb_planted"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L950"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_bomb_planted"
+      ]
     },
     {
       "appField": null,
@@ -671,8 +767,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1075"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:which_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1075"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:which_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -1103,8 +1203,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1080"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:armor_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1080"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:armor_value"
+      ]
     },
     {
       "appField": null,
@@ -1127,8 +1231,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L984"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:death_time"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L984"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:death_time"
+      ]
     },
     {
       "appField": null,
@@ -1223,8 +1331,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16777", "src/parser/src/maps.rs#L1091"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:health", "parseTicks:tick_state:health"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16777",
+        "src/parser/src/maps.rs#L1091"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:health",
+        "parseTicks:tick_state:health"
+      ]
     },
     {
       "appField": null,
@@ -1247,8 +1361,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L197"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_alive"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L197"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_alive"
+      ]
     },
     {
       "appField": null,
@@ -1295,8 +1413,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1062"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_scoped"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1062"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_scoped"
+      ]
     },
     {
       "appField": null,
@@ -1319,8 +1441,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1092"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:life_state"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1092"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:life_state"
+      ]
     },
     {
       "appField": null,
@@ -1343,8 +1469,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1079"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:shots_fired"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1079"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:shots_fired"
+      ]
     },
     {
       "appField": null,
@@ -1467,8 +1597,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15677"],
-      "wasmFieldIdentities": ["parseEvent:player_death:distance", "parseEvent:player_hurt:distance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15677"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:distance",
+        "parseEvent:player_hurt:distance"
+      ]
     },
     {
       "appField": null,
@@ -1491,8 +1626,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15641"],
-      "wasmFieldIdentities": ["parseEvent:player_death:headshot"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15641"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:headshot"
+      ]
     },
     {
       "appField": null,
@@ -1515,8 +1654,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15689"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:hitgroup"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15689"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:hitgroup"
+      ]
     },
     {
       "appField": null,
@@ -1594,7 +1737,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L724", "src/wasm/src/lib.rs#L293-L352"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L724",
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:bomb:tick",
         "parseEvent:player_blind:tick",
@@ -1651,8 +1797,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15559"],
-      "wasmFieldIdentities": ["parseEvent:player_death:weapon", "parseEvent:player_hurt:weapon"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15559"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:weapon",
+        "parseEvent:player_hurt:weapon"
+      ]
     },
     {
       "appField": null,
@@ -1676,7 +1827,9 @@
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_death:assister"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:assister"
+      ]
     },
     {
       "appField": null,
@@ -1751,8 +1904,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15677"],
-      "wasmFieldIdentities": ["parseEvent:player_death:distance", "parseEvent:player_hurt:distance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15677"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:distance",
+        "parseEvent:player_hurt:distance"
+      ]
     },
     {
       "appField": null,
@@ -1775,8 +1933,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15641"],
-      "wasmFieldIdentities": ["parseEvent:player_death:headshot"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15641"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:headshot"
+      ]
     },
     {
       "appField": null,
@@ -1902,7 +2064,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L724", "src/wasm/src/lib.rs#L293-L352"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L724",
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:bomb:tick",
         "parseEvent:player_blind:tick",
@@ -1983,8 +2148,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15559"],
-      "wasmFieldIdentities": ["parseEvent:player_death:weapon", "parseEvent:player_hurt:weapon"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15559"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:weapon",
+        "parseEvent:player_hurt:weapon"
+      ]
     },
     {
       "appField": null,
@@ -2007,8 +2177,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L990"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:balance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L990"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:balance"
+      ]
     },
     {
       "appField": null,
@@ -2031,8 +2205,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L993"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:cash_spent_this_round"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L993"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:cash_spent_this_round"
+      ]
     },
     {
       "appField": null,
@@ -2055,8 +2233,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1089"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:current_equip_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1089"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:current_equip_value"
+      ]
     },
     {
       "appField": null,
@@ -2079,8 +2261,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1088"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:round_start_equip_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1088"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:round_start_equip_value"
+      ]
     },
     {
       "appField": null,
@@ -2103,8 +2289,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L991"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:start_balance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L991"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:start_balance"
+      ]
     },
     {
       "appField": null,
@@ -2127,8 +2317,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L992"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:total_cash_spent"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L992"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:total_cash_spent"
+      ]
     },
     {
       "appField": null,
@@ -2151,8 +2345,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1054"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:weapon_purchases_this_match"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1054"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:weapon_purchases_this_match"
+      ]
     },
     {
       "appField": null,
@@ -2175,8 +2373,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1055"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:weapon_purchases_this_round"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1055"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:weapon_purchases_this_round"
+      ]
     },
     {
       "appField": null,
@@ -2199,8 +2401,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L277", "src/parser/src/maps.rs#L188"],
-      "wasmFieldIdentities": ["parseEvent:bomb:X", "parseTicks:tick_state:X"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L277",
+        "src/parser/src/maps.rs#L188"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:X",
+        "parseTicks:tick_state:X"
+      ]
     },
     {
       "appField": null,
@@ -2223,8 +2431,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L278", "src/parser/src/maps.rs#L189"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Y", "parseTicks:tick_state:Y"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L278",
+        "src/parser/src/maps.rs#L189"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Y",
+        "parseTicks:tick_state:Y"
+      ]
     },
     {
       "appField": null,
@@ -2247,8 +2461,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L279", "src/parser/src/maps.rs#L190"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Z", "parseTicks:tick_state:Z"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L279",
+        "src/parser/src/maps.rs#L190"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Z",
+        "parseTicks:tick_state:Z"
+      ]
     },
     {
       "appField": null,
@@ -2271,8 +2491,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16781"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:armor"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16781"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:armor"
+      ]
     },
     {
       "appField": null,
@@ -2296,7 +2520,9 @@
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_death:assister"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:assister"
+      ]
     },
     {
       "appField": null,
@@ -2343,8 +2569,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15713"],
-      "wasmFieldIdentities": ["parseEvent:player_death:assister_steamid"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15713"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:assister_steamid"
+      ]
     },
     {
       "appField": null,
@@ -2395,8 +2625,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15705"],
-      "wasmFieldIdentities": ["parseEvent:player_death:attacker_name"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15705"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:attacker_name"
+      ]
     },
     {
       "appField": null,
@@ -2419,7 +2653,9 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15709"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15709"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:player_blind:attacker_steamid",
         "parseEvent:player_death:attacker_steamid",
@@ -2471,8 +2707,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15673"],
-      "wasmFieldIdentities": ["parseEvent:player_death:attackerblind"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15673"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:attackerblind"
+      ]
     },
     {
       "appField": null,
@@ -2495,8 +2735,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16509"],
-      "wasmFieldIdentities": ["parseEvent:player_blind:blind_duration"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16509"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_blind:blind_duration"
+      ]
     },
     {
       "appField": null,
@@ -2543,8 +2787,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15677"],
-      "wasmFieldIdentities": ["parseEvent:player_death:distance", "parseEvent:player_hurt:distance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15677"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:distance",
+        "parseEvent:player_hurt:distance"
+      ]
     },
     {
       "appField": null,
@@ -2567,8 +2816,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15685"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:dmg_armor"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15685"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:dmg_armor"
+      ]
     },
     {
       "appField": null,
@@ -2591,8 +2844,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15681"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:dmg_health"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15681"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:dmg_health"
+      ]
     },
     {
       "appField": null,
@@ -2615,7 +2872,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L714", "src/parser/src/maps.rs#L652"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L714",
+        "src/parser/src/maps.rs#L652"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:round_end:game_time",
         "parseEvent:round_start:game_time",
@@ -2643,8 +2903,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15641"],
-      "wasmFieldIdentities": ["parseEvent:player_death:headshot"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15641"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:headshot"
+      ]
     },
     {
       "appField": null,
@@ -2667,8 +2931,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16777", "src/parser/src/maps.rs#L1091"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:health", "parseTicks:tick_state:health"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16777",
+        "src/parser/src/maps.rs#L1091"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:health",
+        "parseTicks:tick_state:health"
+      ]
     },
     {
       "appField": null,
@@ -2691,8 +2961,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15689"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:hitgroup"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15689"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:hitgroup"
+      ]
     },
     {
       "appField": null,
@@ -2715,8 +2989,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15665"],
-      "wasmFieldIdentities": ["parseEvent:player_death:noscope", "parseEvent:player_hurt:noscope"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15665"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:noscope",
+        "parseEvent:player_hurt:noscope"
+      ]
     },
     {
       "appField": null,
@@ -2739,7 +3018,9 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15657"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15657"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:player_death:penetrated",
         "parseEvent:player_hurt:penetrated"
@@ -2797,8 +3078,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16031"],
-      "wasmFieldIdentities": ["parseEvent:bomb:site"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16031"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:site"
+      ]
     },
     {
       "appField": null,
@@ -2821,8 +3106,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1030"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_num"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1030"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_num"
+      ]
     },
     {
       "appField": null,
@@ -2845,7 +3134,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L724", "src/wasm/src/lib.rs#L293-L352"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L724",
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:bomb:tick",
         "parseEvent:player_blind:tick",
@@ -2878,8 +3170,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L934"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:total_rounds_played"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L934"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:total_rounds_played"
+      ]
     },
     {
       "appField": null,
@@ -2930,8 +3226,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15491"],
-      "wasmFieldIdentities": ["parseEvent:player_death:user_name"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15491"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:user_name"
+      ]
     },
     {
       "appField": null,
@@ -2954,7 +3254,9 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15495"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15495"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:bomb:user_steamid",
         "parseEvent:player_blind:user_steamid",
@@ -3079,8 +3381,13 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15559"],
-      "wasmFieldIdentities": ["parseEvent:player_death:weapon", "parseEvent:player_hurt:weapon"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15559"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:weapon",
+        "parseEvent:player_hurt:weapon"
+      ]
     },
     {
       "appField": null,
@@ -3103,7 +3410,9 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L286"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L286"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:player_death:weapon_name",
         "parseEvent:player_hurt:weapon_name"
@@ -3130,8 +3439,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:x"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:x"
+      ]
     },
     {
       "appField": null,
@@ -3154,8 +3467,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:y"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:y"
+      ]
     },
     {
       "appField": null,
@@ -3178,8 +3495,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:z"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:z"
+      ]
     },
     {
       "appField": null,
@@ -4162,8 +4483,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L960"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ct_losing_streak"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L960"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ct_losing_streak"
+      ]
     },
     {
       "appField": null,
@@ -4186,8 +4511,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L933"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:game_phase"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L933"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:game_phase"
+      ]
     },
     {
       "appField": null,
@@ -4210,8 +4539,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L931"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:game_start_time"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L931"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:game_start_time"
+      ]
     },
     {
       "appField": null,
@@ -4234,7 +4567,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L714", "src/parser/src/maps.rs#L652"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L714",
+        "src/parser/src/maps.rs#L652"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:round_end:game_time",
         "parseEvent:round_start:game_time",
@@ -4262,8 +4598,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1070"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1070"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -4286,8 +4626,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1071"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_buy_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1071"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_buy_zone"
+      ]
     },
     {
       "appField": null,
@@ -4310,8 +4654,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1072"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_no_defuse_area"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1072"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_no_defuse_area"
+      ]
     },
     {
       "appField": null,
@@ -4334,8 +4682,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L949"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_bomb_dropped"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L949"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_bomb_dropped"
+      ]
     },
     {
       "appField": null,
@@ -4358,8 +4710,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L950"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_bomb_planted"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L950"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_bomb_planted"
+      ]
     },
     {
       "appField": null,
@@ -4382,8 +4738,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L915"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_freeze_period"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L915"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_freeze_period"
+      ]
     },
     {
       "appField": null,
@@ -4430,8 +4790,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L916"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_warmup_period"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L916"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_warmup_period"
+      ]
     },
     {
       "appField": null,
@@ -4454,8 +4818,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1086"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:last_place_name"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1086"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:last_place_name"
+      ]
     },
     {
       "appField": null,
@@ -4478,8 +4846,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L927"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:match_start_time"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L927"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:match_start_time"
+      ]
     },
     {
       "appField": null,
@@ -4502,8 +4874,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L963"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:round_in_progress"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L963"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:round_in_progress"
+      ]
     },
     {
       "appField": null,
@@ -4526,7 +4902,9 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L928"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L928"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:round_start:round_start_time",
         "parseTicks:tick_state:round_start_time"
@@ -4601,8 +4979,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L935"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:rounds_played_this_phase"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L935"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:rounds_played_this_phase"
+      ]
     },
     {
       "appField": null,
@@ -4625,8 +5007,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L961"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:t_losing_streak"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L961"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:t_losing_streak"
+      ]
     },
     {
       "appField": null,
@@ -4649,8 +5035,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L934"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:total_rounds_played"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L934"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:total_rounds_played"
+      ]
     },
     {
       "appField": null,
@@ -4673,8 +5063,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1075"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:which_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1075"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:which_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -4697,8 +5091,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L277", "src/parser/src/maps.rs#L188"],
-      "wasmFieldIdentities": ["parseEvent:bomb:X", "parseTicks:tick_state:X"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L277",
+        "src/parser/src/maps.rs#L188"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:X",
+        "parseTicks:tick_state:X"
+      ]
     },
     {
       "appField": null,
@@ -4721,8 +5121,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L278", "src/parser/src/maps.rs#L189"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Y", "parseTicks:tick_state:Y"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L278",
+        "src/parser/src/maps.rs#L189"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Y",
+        "parseTicks:tick_state:Y"
+      ]
     },
     {
       "appField": null,
@@ -4745,8 +5151,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L279", "src/parser/src/maps.rs#L190"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Z", "parseTicks:tick_state:Z"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L279",
+        "src/parser/src/maps.rs#L190"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Z",
+        "parseTicks:tick_state:Z"
+      ]
     },
     {
       "appField": null,
@@ -4769,8 +5181,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:entity_id"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:entity_id"
+      ]
     },
     {
       "appField": null,
@@ -4817,8 +5233,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:grenade_type"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:grenade_type"
+      ]
     },
     {
       "appField": null,
@@ -4841,8 +5261,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:name"
+      ]
     },
     {
       "appField": null,
@@ -4865,8 +5289,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:steamid"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:steamid"
+      ]
     },
     {
       "appField": null,
@@ -4913,7 +5341,10 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L724", "src/wasm/src/lib.rs#L293-L352"],
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L724",
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
       "wasmFieldIdentities": [
         "parseEvent:bomb:tick",
         "parseEvent:player_blind:tick",
@@ -4946,8 +5377,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:x"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:x"
+      ]
     },
     {
       "appField": null,
@@ -4970,8 +5405,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:y"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:y"
+      ]
     },
     {
       "appField": null,
@@ -4994,8 +5433,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:z"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:z"
+      ]
     },
     {
       "appField": null,
@@ -5114,8 +5557,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:client_name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:client_name"
+      ]
     },
     {
       "appField": null,
@@ -5162,8 +5609,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:demo_version_guid"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:demo_version_guid"
+      ]
     },
     {
       "appField": "header.game_version",
@@ -5186,8 +5637,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:demo_version_name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:demo_version_name"
+      ]
     },
     {
       "appField": null,
@@ -5234,8 +5689,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:game_directory"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:game_directory"
+      ]
     },
     {
       "appField": "header.map",
@@ -5258,8 +5717,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:map_name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:map_name"
+      ]
     },
     {
       "appField": null,
@@ -5282,8 +5745,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:network_protocol"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:network_protocol"
+      ]
     },
     {
       "appField": null,
@@ -5306,8 +5773,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:patch_version"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:patch_version"
+      ]
     },
     {
       "appField": null,
@@ -5330,8 +5801,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_frames"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_frames"
+      ]
     },
     {
       "appField": null,
@@ -5354,8 +5829,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_ticks"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_ticks"
+      ]
     },
     {
       "appField": "header.tickrate",
@@ -5378,8 +5857,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_ticks_per_second"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_ticks_per_second"
+      ]
     },
     {
       "appField": null,
@@ -5402,8 +5885,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_time"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_time"
+      ]
     },
     {
       "appField": null,
@@ -5426,8 +5913,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:server_name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:server_name"
+      ]
     },
     {
       "appField": null,
@@ -5450,8 +5941,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L990"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:balance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L990"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:balance"
+      ]
     },
     {
       "appField": null,
@@ -5474,8 +5969,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L993"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:cash_spent_this_round"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L993"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:cash_spent_this_round"
+      ]
     },
     {
       "appField": null,
@@ -5498,8 +5997,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1089"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:current_equip_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1089"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:current_equip_value"
+      ]
     },
     {
       "appField": null,
@@ -5570,8 +6073,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1088"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:round_start_equip_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1088"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:round_start_equip_value"
+      ]
     },
     {
       "appField": null,
@@ -5594,8 +6101,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L991"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:start_balance"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L991"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:start_balance"
+      ]
     },
     {
       "appField": null,
@@ -5618,8 +6129,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L992"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:total_cash_spent"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L992"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:total_cash_spent"
+      ]
     },
     {
       "appField": null,
@@ -5642,8 +6157,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1054"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:weapon_purchases_this_match"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1054"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:weapon_purchases_this_match"
+      ]
     },
     {
       "appField": null,
@@ -5666,8 +6185,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1055"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:weapon_purchases_this_round"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1055"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:weapon_purchases_this_round"
+      ]
     },
     {
       "appField": null,
@@ -5690,8 +6213,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1047"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ducked"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1047"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ducked"
+      ]
     },
     {
       "appField": null,
@@ -5714,8 +6241,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1048"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ducking"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1048"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ducking"
+      ]
     },
     {
       "appField": null,
@@ -5738,8 +6269,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L198"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_airborne"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L198"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_airborne"
+      ]
     },
     {
       "appField": null,
@@ -5762,8 +6297,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1087"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_strafing"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1087"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_strafing"
+      ]
     },
     {
       "appField": null,
@@ -5786,8 +6325,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1063"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_walking"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1063"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_walking"
+      ]
     },
     {
       "appField": null,
@@ -5810,8 +6353,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1074"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:move_state"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1074"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:move_state"
+      ]
     },
     {
       "appField": null,
@@ -5858,8 +6405,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1077"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:stamina"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1077"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:stamina"
+      ]
     },
     {
       "appField": null,
@@ -5882,8 +6433,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1081"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velo_modifier"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1081"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velo_modifier"
+      ]
     },
     {
       "appField": null,
@@ -5906,8 +6461,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L194"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L194"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity"
+      ]
     },
     {
       "appField": null,
@@ -5930,8 +6489,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L191"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_X"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L191"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_X"
+      ]
     },
     {
       "appField": null,
@@ -5954,8 +6517,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L192"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_Y"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L192"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_Y"
+      ]
     },
     {
       "appField": null,
@@ -5978,8 +6545,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L193"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_Z"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L193"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_Z"
+      ]
     },
     {
       "appField": null,
@@ -6074,8 +6645,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1070"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:in_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1070"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:in_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -6098,8 +6673,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1020"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:objective_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1020"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:objective_total"
+      ]
     },
     {
       "appField": null,
@@ -6122,8 +6701,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1075"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:which_bomb_zone"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1075"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:which_bomb_zone"
+      ]
     },
     {
       "appField": null,
@@ -6410,8 +6993,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:name"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:name"
+      ]
     },
     {
       "appField": "players[].steam_id",
@@ -6434,8 +7021,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L293-L352"],
-      "wasmFieldIdentities": ["parseGrenades:grenade:steamid"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "wasmFieldIdentities": [
+        "parseGrenades:grenade:steamid"
+      ]
     },
     {
       "appField": "players[].side",
@@ -6482,8 +7073,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L277", "src/parser/src/maps.rs#L188"],
-      "wasmFieldIdentities": ["parseEvent:bomb:X", "parseTicks:tick_state:X"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L277",
+        "src/parser/src/maps.rs#L188"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:X",
+        "parseTicks:tick_state:X"
+      ]
     },
     {
       "appField": null,
@@ -6506,8 +7103,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L278", "src/parser/src/maps.rs#L189"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Y", "parseTicks:tick_state:Y"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L278",
+        "src/parser/src/maps.rs#L189"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Y",
+        "parseTicks:tick_state:Y"
+      ]
     },
     {
       "appField": null,
@@ -6530,8 +7133,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L279", "src/parser/src/maps.rs#L190"],
-      "wasmFieldIdentities": ["parseEvent:bomb:Z", "parseTicks:tick_state:Z"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L279",
+        "src/parser/src/maps.rs#L190"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:bomb:Z",
+        "parseTicks:tick_state:Z"
+      ]
     },
     {
       "appField": null,
@@ -6554,8 +7163,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L894"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:aim_punch_angle"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L894"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:aim_punch_angle"
+      ]
     },
     {
       "appField": null,
@@ -6578,8 +7191,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L895"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:aim_punch_angle_vel"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L895"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:aim_punch_angle_vel"
+      ]
     },
     {
       "appField": null,
@@ -6602,8 +7219,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1080"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:armor_value"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1080"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:armor_value"
+      ]
     },
     {
       "appField": null,
@@ -6626,8 +7247,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L984"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:death_time"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L984"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:death_time"
+      ]
     },
     {
       "appField": null,
@@ -6650,8 +7275,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1047"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ducked"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1047"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ducked"
+      ]
     },
     {
       "appField": null,
@@ -6674,8 +7303,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1048"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:ducking"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1048"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:ducking"
+      ]
     },
     {
       "appField": null,
@@ -6770,8 +7403,14 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16777", "src/parser/src/maps.rs#L1091"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:health", "parseTicks:tick_state:health"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16777",
+        "src/parser/src/maps.rs#L1091"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:health",
+        "parseTicks:tick_state:health"
+      ]
     },
     {
       "appField": null,
@@ -6794,8 +7433,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L198"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_airborne"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L198"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_airborne"
+      ]
     },
     {
       "appField": null,
@@ -6818,8 +7461,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L197"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_alive"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L197"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_alive"
+      ]
     },
     {
       "appField": null,
@@ -6866,8 +7513,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1062"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_scoped"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1062"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_scoped"
+      ]
     },
     {
       "appField": null,
@@ -6890,8 +7541,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1087"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_strafing"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1087"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_strafing"
+      ]
     },
     {
       "appField": null,
@@ -6914,8 +7569,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1063"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_walking"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1063"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_walking"
+      ]
     },
     {
       "appField": null,
@@ -6938,8 +7597,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1092"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:life_state"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1092"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:life_state"
+      ]
     },
     {
       "appField": null,
@@ -6962,8 +7625,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1074"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:move_state"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1074"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:move_state"
+      ]
     },
     {
       "appField": null,
@@ -7010,8 +7677,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L195"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:pitch"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L195"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:pitch"
+      ]
     },
     {
       "appField": null,
@@ -7034,8 +7705,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1079"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:shots_fired"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1079"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:shots_fired"
+      ]
     },
     {
       "appField": null,
@@ -7058,8 +7733,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1077"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:stamina"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1077"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:stamina"
+      ]
     },
     {
       "appField": null,
@@ -7082,8 +7761,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1081"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velo_modifier"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1081"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velo_modifier"
+      ]
     },
     {
       "appField": null,
@@ -7106,8 +7789,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L194"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L194"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity"
+      ]
     },
     {
       "appField": null,
@@ -7130,8 +7817,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L191"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_X"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L191"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_X"
+      ]
     },
     {
       "appField": null,
@@ -7154,8 +7845,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L192"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_Y"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L192"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_Y"
+      ]
     },
     {
       "appField": null,
@@ -7178,8 +7873,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L193"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:velocity_Z"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L193"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:velocity_Z"
+      ]
     },
     {
       "appField": null,
@@ -7202,8 +7901,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L196"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:yaw"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L196"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:yaw"
+      ]
     },
     {
       "appField": null,
@@ -7394,8 +8097,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L17539"],
-      "wasmFieldIdentities": ["parseEvent:round_end:winner"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L17539"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:round_end:winner"
+      ]
     },
     {
       "appField": "rounds[].winner_side",
@@ -7443,7 +8150,9 @@
       "status": "RECONCILED",
       "tickRoundStatus": "DECLARED",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:round_end:winner_team"]
+      "wasmFieldIdentities": [
+        "parseEvent:round_end:winner_team"
+      ]
     },
     {
       "appField": null,
@@ -7466,8 +8175,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L985"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:score"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L985"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:score"
+      ]
     },
     {
       "appField": null,
@@ -7490,8 +8203,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L907"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_rounds_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L907"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_rounds_total"
+      ]
     },
     {
       "appField": null,
@@ -7514,8 +8231,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L912"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_score_first_half"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L912"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_score_first_half"
+      ]
     },
     {
       "appField": null,
@@ -7538,8 +8259,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L909"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_score_overtime"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L909"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_score_overtime"
+      ]
     },
     {
       "appField": null,
@@ -7562,8 +8287,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L913"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_score_second_half"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L913"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_score_second_half"
+      ]
     },
     {
       "appField": null,
@@ -7610,8 +8339,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L908"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_name"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L908"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_name"
+      ]
     },
     {
       "appField": null,
@@ -7634,8 +8367,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1030"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_num"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1030"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_num"
+      ]
     },
     {
       "appField": null,
@@ -7658,8 +8395,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L907"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:team_rounds_total"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L907"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:team_rounds_total"
+      ]
     },
     {
       "appField": null,
@@ -8042,8 +8783,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15621"],
-      "wasmFieldIdentities": ["parseEvent:player_death:assistedflash"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15621"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:assistedflash"
+      ]
     },
     {
       "appField": null,
@@ -8067,7 +8812,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_death:attacker_team"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:attacker_team"
+      ]
     },
     {
       "appField": null,
@@ -8091,7 +8838,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_death:attackerinair"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:attackerinair"
+      ]
     },
     {
       "appField": null,
@@ -8114,8 +8863,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15645"],
-      "wasmFieldIdentities": ["parseEvent:player_death:dominated"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15645"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:dominated"
+      ]
     },
     {
       "appField": null,
@@ -8138,8 +8891,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15649"],
-      "wasmFieldIdentities": ["parseEvent:player_death:revenge"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15649"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:revenge"
+      ]
     },
     {
       "appField": null,
@@ -8162,8 +8919,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15669"],
-      "wasmFieldIdentities": ["parseEvent:player_death:thrusmoke"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15669"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:thrusmoke"
+      ]
     },
     {
       "appField": null,
@@ -8187,7 +8948,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_death:user_team"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:user_team"
+      ]
     },
     {
       "appField": null,
@@ -8210,8 +8973,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15653"],
-      "wasmFieldIdentities": ["parseEvent:player_death:wipe"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15653"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_death:wipe"
+      ]
     },
     {
       "appField": null,
@@ -8235,7 +9002,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:attacker_team"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:attacker_team"
+      ]
     },
     {
       "appField": null,
@@ -8258,8 +9027,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L15669"],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:thrusmoke"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L15669"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:thrusmoke"
+      ]
     },
     {
       "appField": null,
@@ -8283,7 +9056,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseEvent:player_hurt:user_team"]
+      "wasmFieldIdentities": [
+        "parseEvent:player_hurt:user_team"
+      ]
     },
     {
       "appField": null,
@@ -8306,8 +9081,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/e2e_test.rs#L16691"],
-      "wasmFieldIdentities": ["parseEvent:round_end:reason"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/e2e_test.rs#L16691"
+      ],
+      "wasmFieldIdentities": [
+        "parseEvent:round_end:reason"
+      ]
     },
     {
       "appField": null,
@@ -8330,8 +9109,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:build_version"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:build_version"
+      ]
     },
     {
       "appField": null,
@@ -8354,8 +9137,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:demo_version"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:demo_version"
+      ]
     },
     {
       "appField": null,
@@ -8378,8 +9165,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_commands"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_commands"
+      ]
     },
     {
       "appField": null,
@@ -8402,8 +9193,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/wasm/src/lib.rs#L354-L384"],
-      "wasmFieldIdentities": ["parseHeader:header:playback_signon_length"]
+      "wasmEvidenceRefs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "wasmFieldIdentities": [
+        "parseHeader:header:playback_signon_length"
+      ]
     },
     {
       "appField": null,
@@ -8427,7 +9222,9 @@
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
       "wasmEvidenceRefs": [],
-      "wasmFieldIdentities": ["parseTicks:tick_state:is_crouching"]
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:is_crouching"
+      ]
     },
     {
       "appField": null,
@@ -8450,8 +9247,12 @@
       "reviewStatus": "REVIEW_REQUIRED",
       "status": "BLOCKED",
       "tickRoundStatus": "NOT_RUN",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L983"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:spawn_time"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L983"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:spawn_time"
+      ]
     },
     {
       "appField": null,
@@ -8498,8 +9299,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1031"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:active_weapon"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1031"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:active_weapon"
+      ]
     },
     {
       "appField": null,
@@ -8522,8 +9327,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1104"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:active_weapon_ammo"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1104"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:active_weapon_ammo"
+      ]
     },
     {
       "appField": null,
@@ -8546,8 +9355,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1103"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:active_weapon_name"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1103"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:active_weapon_name"
+      ]
     },
     {
       "appField": null,
@@ -9026,8 +9839,12 @@
       "reviewStatus": "REVIEWED",
       "status": "RECONCILED",
       "tickRoundStatus": "NOT_APPLICABLE",
-      "wasmEvidenceRefs": ["src/parser/src/maps.rs#L1105"],
-      "wasmFieldIdentities": ["parseTicks:tick_state:total_ammo_left"]
+      "wasmEvidenceRefs": [
+        "src/parser/src/maps.rs#L1105"
+      ],
+      "wasmFieldIdentities": [
+        "parseTicks:tick_state:total_ammo_left"
+      ]
     },
     {
       "appField": null,
