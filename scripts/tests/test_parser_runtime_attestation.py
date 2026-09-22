@@ -11,6 +11,7 @@ from scripts.parser_runtime_attestation import (
     SERVICE,
     digest,
     git_blob_sha1,
+    mapping_authority_matches_artifact,
     railway_deployment_evidence,
     release_gate_evidence,
     runtime_identity,
@@ -64,3 +65,7 @@ def test_release_evidence_is_explicitly_blocked_before_attempt_9():
     assert all(item["status"] == "BLOCKED" for item in evidence.values())
     assert evidence["mapping_inventory"]["row_count"] == 105
     assert evidence["mapping_inventory"]["authorized_count"] == 0
+
+
+def test_mapping_authority_digests_match_reviewed_artifacts():
+    assert mapping_authority_matches_artifact() is True

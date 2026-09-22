@@ -134,8 +134,24 @@ def release_gate_evidence() -> dict[str, Any]:
     return evidence
 
 
+def mapping_authority_matches_artifact() -> bool:
+    inventory_path = ROOT / "docs/client-parser/canonical-mapping-inventory.json"
+    matrix_path = ROOT / "docs/client-parser/reconciled-field-matrix.json"
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
+    return (
+        inventory.get("digest") == INVENTORY_DIGEST
+        and inventory.get("matrixDigest") == MATRIX_DIGEST
+        and matrix.get("digest") == MATRIX_DIGEST
+        and len(inventory.get("rows", [])) == 105
+        and all(row.get("canonicalAuthorization") is False for row in inventory["rows"])
+    )
+
+
 def build_attestation() -> dict[str, Any]:
     statuses: list[str] = []
+    if not mapping_authority_matches_artifact():
+        statuses.append("CANONICAL_MAPPING_AUTHORITY_MISMATCH")
     repository = os.getenv("GITHUB_REPOSITORY", "")
     ref_name = os.getenv("GITHUB_REF_NAME", "")
     sha = os.getenv("GITHUB_SHA", "")
