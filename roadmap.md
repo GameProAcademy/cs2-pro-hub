@@ -1,4 +1,16 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.2 — OPERATIONAL CLOSURE
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.3/C.4 — SEMANTIC RECONCILIATION
+
+**Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+
+- [x] Substituir os 98 mappings genéricos por um registro explícito de 105/105 campos, com 15 classes fail-closed e sem autorização fabricada.
+- [x] Versionar inventário e gerador, registrar tipos/nullabilidade/origem/normalização/identidade/tick/persistência e manter parity/determinism como `NOT_RUN`.
+- [x] Exigir no OIDC issuer/audience/repository/owner/ref/workflow/job-workflow/subject/run/freshness e preservar prova Railway API independente.
+- [x] Impedir upload autenticado direto com `attempt_number` diferente de 1; attempts controlados permanecem exclusivos das rotinas service-role.
+- [ ] Obter secrets externos, CI remoto, Git objects congelados, paridade Python×WASM, determinismo, tick authority e validação real de persistência.
+
+**Decisão:** nenhum replay, DEM, cópia/exclusão de Storage, cleanup, Canonical, métricas, features, AI, deploy ou mutação Railway foi executado. Inventário: 105 total, 0 genéricos, 0 autorizados; o gate permanece deliberadamente bloqueado.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.4-C.2 — OPERATIONAL CLOSURE
 
 **Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
 

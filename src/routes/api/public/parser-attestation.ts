@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { Json } from "@/integrations/supabase/types";
 import {
   PARSER_ATTESTATION_EXPECTED,
+  validateParserAttestationOidcClaims,
   validateParserAttestationPayload,
 } from "@/lib/parserAttestation";
 
@@ -20,10 +21,6 @@ const bodySchema = z.object({
   oidcToken: z.string().min(100),
   releaseGateEvidence: z.record(z.unknown()),
 });
-
-const EXPECTED_BRANCH_REF = "refs/heads/infra/cs2-parser-worker-v8";
-const EXPECTED_WORKFLOW = ".github/workflows/parser-runtime-attestation.yml";
-const OIDC_AUDIENCE = "gamepro-parser-attestation";
 
 function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -91,21 +88,7 @@ async function verifyGitHubOidc(token: string, payload: Record<string, unknown>)
     throw new Error("WORKFLOW_IDENTITY_INVALID");
   }
   const workflowIdentity = workflow as Record<string, unknown>;
-  const expectedWorkflowRef = `${PARSER_ATTESTATION_EXPECTED.repository}/${EXPECTED_WORKFLOW}@${EXPECTED_BRANCH_REF}`;
-  if (
-    claims["iss"] !== "https://token.actions.githubusercontent.com" ||
-    claims["aud"] !== OIDC_AUDIENCE ||
-    claims["repository"] !== PARSER_ATTESTATION_EXPECTED.repository ||
-    claims["ref"] !== EXPECTED_BRANCH_REF ||
-    claims["workflow_ref"] !== expectedWorkflowRef ||
-    claims["sha"] !== workflowIdentity["workflow_sha"] ||
-    String(claims["run_id"]) !== workflowIdentity["run_id"] ||
-    String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
-    typeof claims["exp"] !== "number" ||
-    typeof claims["iat"] !== "number" ||
-    claims["exp"] < now ||
-    claims["iat"] > now + 60
-  ) {
+  if (validateParserAttestationOidcClaims(claims, workflowIdentity, now).length > 0) {
     throw new Error("OIDC_CLAIMS_MISMATCH");
   }
 }
@@ -175,7 +158,7 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           !mappingRecord ||
           mappingRecord["status"] !== "BLOCKED" ||
           mappingRecord["inventory_digest"] !==
-            "206b649f141b291f51d3b7d47b9ea6f20efc19148974b1bd5432eec9e35c7453" ||
+            "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1" ||
           mappingRecord["matrix_digest"] !==
             "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702" ||
           mappingRecord["row_count"] !== 105 ||

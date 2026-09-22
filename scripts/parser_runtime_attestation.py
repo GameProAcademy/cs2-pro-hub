@@ -30,7 +30,7 @@ EXPECTED_HASHES = {
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
 WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
-INVENTORY_DIGEST = "206b649f141b291f51d3b7d47b9ea6f20efc19148974b1bd5432eec9e35c7453"
+INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
 
 

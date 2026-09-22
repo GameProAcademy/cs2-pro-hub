@@ -13,6 +13,14 @@ export const PARSER_ATTESTATION_EXPECTED = {
   contractVersion: 1,
 } as const;
 
+export const PARSER_ATTESTATION_OIDC = {
+  issuer: "https://token.actions.githubusercontent.com",
+  audience: "gamepro-parser-attestation",
+  repositoryOwner: "GameProAcademy",
+  branchRef: "refs/heads/infra/cs2-parser-worker-v8",
+  subject: "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8",
+} as const;
+
 const CRITICAL_HASHES: Record<string, string> = {
   "services/cs2-demo-parser/parser.py": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
   "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
@@ -25,6 +33,36 @@ function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+export function validateParserAttestationOidcClaims(
+  claims: Record<string, unknown>,
+  workflowIdentity: Record<string, unknown>,
+  nowSeconds: number,
+): string[] {
+  const expected = PARSER_ATTESTATION_EXPECTED;
+  const oidc = PARSER_ATTESTATION_OIDC;
+  const blockers: string[] = [];
+  if (
+    claims["iss"] !== oidc.issuer ||
+    claims["aud"] !== oidc.audience ||
+    claims["repository"] !== expected.repository ||
+    claims["repository_owner"] !== oidc.repositoryOwner ||
+    claims["ref"] !== oidc.branchRef ||
+    claims["workflow_ref"] !== expected.workflowRef ||
+    claims["job_workflow_ref"] !== expected.workflowRef ||
+    claims["sub"] !== oidc.subject ||
+    claims["sha"] !== workflowIdentity["workflow_sha"] ||
+    String(claims["run_id"]) !== workflowIdentity["run_id"] ||
+    String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
+    typeof claims["exp"] !== "number" ||
+    typeof claims["iat"] !== "number" ||
+    claims["exp"] < nowSeconds ||
+    claims["iat"] > nowSeconds + 60
+  ) {
+    blockers.push("OIDC_CLAIMS_MISMATCH");
+  }
+  return blockers;
 }
 
 export function validateParserAttestationPayload(payload: Record<string, unknown>): string[] {
