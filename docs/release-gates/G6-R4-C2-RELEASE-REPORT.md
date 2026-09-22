@@ -32,3 +32,14 @@
 - Canonical mapping gate remains blocked: 105 required, 0 authorized, 48 blocked, 57 unverified.
 
 No replay, upload, Storage copy/deletion, DEM parsing, Canonical admission, metrics, features, AI processing, Railway deployment/configuration, or Attempt 9/10+ was executed.
+## Fase G.6-R.4-C.5/C.6 — 2026-09-22
+
+- Estado: `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+- Autoridade versionada: release `cf0549c2-dfbd-c4df-25b4-2ce8204edf87`, inventário `canonical-demo-v2`, 105 campos únicos, 0 genéricos, 0 autorizados e 0 verificados.
+- Digests: inventário `cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1`; matriz `a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702`.
+- Autoridade histórica `canonical_mapping_inventory` foi preservada e desclassificada como fonte atual; nenhuma linha histórica foi alterada nesta fase.
+- OIDC exige subject imutável por owner/repository IDs, `repository_owner_id=323426481`, `repository_id=1358428146`, branch congelada e somente `workflow_dispatch`.
+- Gate final: 32 condições, provenance vinculado à release, ausência de Attempt 9/10+, e Canonical fail-closed.
+- Estado de dados verificado: Attempt 8=1, Attempt 9=0, Attempt 10+=0, provenance=0, provenance VERIFIED=0.
+- Provas externas ausentes: Railway API, endpoint/HMAC/transport, OIDC real, CI remoto, Python×WASM, determinismo, persistência, identidade e tick authority. Nenhuma foi fabricada.
+- Nenhum replay, processamento/cópia/exclusão de DEM, cleanup, Canonical, métricas, features, AI Coach ou mutação Railway ocorreu.
