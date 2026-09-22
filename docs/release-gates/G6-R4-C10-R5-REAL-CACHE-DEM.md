@@ -13,18 +13,18 @@
 
 ## Execution results
 
-| Area | Result |
-| --- | --- |
-| Python real run | NOT_RUN — DEM bytes unavailable |
-| WASM real run | NOT_RUN — DEM bytes unavailable |
-| Python/WASM parity | NOT_RUN |
-| Four-run determinism | NOT_RUN |
-| Tick authority | NOT_VERIFIED / UNAVAILABLE |
-| Player identity | NOT_VERIFIED |
-| Persistence | NOT_VERIFIED for a new R5 run |
-| Forensic integrity | NOT_VERIFIED; partial evidence envelope recorded |
-| Contamination | PASS — no R5 mutation observed |
-| Cleanup | NOT_EXECUTED |
+| Area                 | Result                                           |
+| -------------------- | ------------------------------------------------ |
+| Python real run      | NOT_RUN — DEM bytes unavailable                  |
+| WASM real run        | NOT_RUN — DEM bytes unavailable                  |
+| Python/WASM parity   | NOT_RUN                                          |
+| Four-run determinism | NOT_RUN                                          |
+| Tick authority       | NOT_VERIFIED / UNAVAILABLE                       |
+| Player identity      | NOT_VERIFIED                                     |
+| Persistence          | NOT_VERIFIED for a new R5 run                    |
+| Forensic integrity   | NOT_VERIFIED; partial evidence envelope recorded |
+| Contamination        | PASS — no R5 mutation observed                   |
+| Cleanup              | NOT_EXECUTED                                     |
 
 ## Official gate results
 
