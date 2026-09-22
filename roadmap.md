@@ -1,4 +1,17 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.7 → C.10
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.10-R1.1
+
+**Status:** `IMPLEMENTATION COMPLETE / C.10-R1.1 VERIFIED / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+
+- [x] Classificar `sandbox_exec` como role interno confiável de migrations/queries, com login e BYPASSRLS; manter somente SELECT/INSERT nas duas tabelas append-only.
+- [x] Validar ACL/RLS/triggers/functions no banco live e fixar invariantes permanentes de paridade migration/live.
+- [x] Pinar todas as GitHub Actions por SHA imutável e vincular a attestation ao Git blob aprovado da workflow sem autorreferência circular.
+- [x] Criar gate read-only `BLOCKED_BEFORE_REAL_DEMO`, relatório machine-readable e auditoria C.10-R1.1.
+- [x] Preservar 105 mappings, 0 autorizados/verificados/genéricos, nonce vazio, provenance VERIFIED=0 e attempts 9/10+=0.
+- [ ] C.10-R5 — REAL CACHE DEM FORENSIC EXECUTION: `READY_FOR_REVIEW / NOT_AUTOMATICALLY_AUTHORIZED`.
+
+**Locks:** real DEM, Attempt 9, Canonical e cleanup continuam `LOCKED`; Railway permanece `FROZEN`; HMAC `NOT CONFIGURED`; provenance `NOT VERIFIED`.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.4-C.7 → C.10
 
 **Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
 

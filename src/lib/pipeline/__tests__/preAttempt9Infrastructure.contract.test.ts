@@ -13,6 +13,14 @@ const hardeningMigration = readFileSync(
   resolve("supabase/migrations/20260922091723_ba54139e-9e9d-4d40-ae57-232fd1461829.sql"),
   "utf8",
 );
+const parityMigration = readFileSync(
+  resolve("supabase/migrations/20260922093643_6fa8a841-6d45-4220-90ac-d53b8b7d04da.sql"),
+  "utf8",
+);
+const workflowBindingMigration = readFileSync(
+  resolve("supabase/migrations/20260922093815_8745c511-6a49-4950-bff2-6bed730d5587.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -36,6 +44,29 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
       "GRANT SELECT, INSERT ON TABLE public.parser_runtime_provenance TO service_role",
     );
     expect(hardeningMigration.match(/REVOKE ALL ON TABLE/g)).toHaveLength(4);
+  });
+
+  it("records the approved internal sandbox exception without widening privileges", () => {
+    expect(parityMigration).toContain(
+      "GRANT SELECT, INSERT ON TABLE public.parser_attestation_nonces TO service_role, sandbox_exec",
+    );
+    expect(parityMigration).toContain(
+      "GRANT SELECT, INSERT ON TABLE public.parser_runtime_provenance TO service_role, sandbox_exec",
+    );
+    expect(parityMigration).toContain("client_roles_zero_privileges");
+    expect(parityMigration).toContain("UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES");
+  });
+
+  it("keeps the final pre-real-demo diagnostic read-only and blocked", () => {
+    expect(parityMigration).toContain("public.pre_real_demo_gate_status()");
+    expect(parityMigration).toContain("'status', 'BLOCKED_BEFORE_REAL_DEMO'");
+    expect(parityMigration).not.toMatch(/\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/);
+  });
+
+  it("enforces the reviewed workflow source at the persistence boundary", () => {
+    expect(workflowBindingMigration).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+    expect(workflowBindingMigration).toContain("5039bff74550f02291fd066c7f10d781f6b86ebe");
+    expect(workflowBindingMigration).toContain("parser_runtime_provenance_approved_workflow");
   });
 
   it("makes the readiness contract explicitly Cache-specific without weakening any gate", () => {

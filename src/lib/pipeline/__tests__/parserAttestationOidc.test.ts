@@ -11,6 +11,8 @@ import {
 const NOW = 1_790_064_000;
 const workflowIdentity = {
   workflow_sha: "a".repeat(40),
+  workflow_path: PARSER_ATTESTATION_EXPECTED.workflowPath,
+  workflow_source_sha: PARSER_ATTESTATION_EXPECTED.workflowSourceSha,
   run_id: "42",
   run_attempt: "1",
 };
@@ -42,6 +44,7 @@ describe("parser attestation OIDC claims", () => {
   });
 
   it.each([
+    "iss",
     "aud",
     "repository",
     "repository_id",
@@ -82,6 +85,30 @@ describe("parser attestation OIDC claims", () => {
     claims[claim] = "unexpected";
     expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
       "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
+  it.each(["run_id", "run_attempt"])("rejects an absent %s binding", (claim) => {
+    const claims = validClaims();
+    delete claims[claim];
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
+  it("rejects a malformed workflow commit", () => {
+    const claims = validClaims();
+    claims["sha"] = "not-a-sha";
+    const identity = { ...workflowIdentity, workflow_sha: "not-a-sha" };
+    expect(validateParserAttestationOidcClaims(claims, identity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
+  it("rejects workflow source outside the reviewed registry", () => {
+    const identity = { ...workflowIdentity, workflow_source_sha: "b".repeat(40) };
+    expect(validateParserAttestationOidcClaims(validClaims(), identity, NOW)).toContain(
+      "ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED",
     );
   });
 });

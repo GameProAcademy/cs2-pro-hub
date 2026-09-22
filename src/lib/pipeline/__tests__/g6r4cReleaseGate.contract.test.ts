@@ -100,7 +100,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
   });
 
   it("builds evidence in GitHub Actions and never self-asserts database provenance", () => {
-    expect(workflow).toContain("actions/attest-build-provenance@v2");
+    expect(workflow).toContain(
+      "actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45",
+    );
     expect(workflow).toContain("infra/cs2-parser-worker-v8");
     expect(attestor).toContain('statuses.append("BLOCKED_EXTERNAL_PROOF")');
     expect(attestor).toContain("RAILWAY_API_TOKEN");
@@ -129,6 +131,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toContain("workflow_call:");
     expect(attestor).toContain('event != "workflow_dispatch"');
+    expect(workflow.match(/uses: [^\n]+@[0-9a-f]{40}/g)).toHaveLength(5);
+    expect(workflow).not.toMatch(/uses: [^\n]+@v\d/);
+    expect(attestor).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
   });
 
   it("requires fresh replay-safe v3 attestation and exposes only a two-state readiness diagnostic", () => {

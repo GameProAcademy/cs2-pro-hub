@@ -3532,6 +3532,7 @@ export type Database = {
         Args: { _provenance_id: string }
         Returns: Json
       }
+      attestation_security_invariants: { Args: never; Returns: Json }
       block_demo_job_raw_audit: {
         Args: {
           _attempt: number
@@ -3780,6 +3781,7 @@ export type Database = {
         Args: { _provenance_id: string }
         Returns: string
       }
+      pre_real_demo_gate_status: { Args: never; Returns: Json }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
       reconcile_orphan_demo_uploads: {
         Args: { _limit?: number; _older_than_minutes?: number }

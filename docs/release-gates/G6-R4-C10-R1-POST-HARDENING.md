@@ -2,13 +2,15 @@
 
 Final state: **IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9**.
 
+Applied migration: `20260922091723_ba54139e-9e9d-4d40-ae57-232fd1461829.sql` (version `20260922091723`, live validation `PASS`). The superseded draft filename `20260922090000_g6_r4_c10_r1_security_acl_gate_hardening.sql` was never the applied migration and is not authoritative.
+
 ## Readiness answers
 
 | Question | State | Evidence |
 | --- | --- | --- |
 | ACL hardening complete? | YES | Live ACL inspection after migration |
-| Nonce table private? | YES | No anon/authenticated/PUBLIC privileges; service role is append-only |
-| Provenance table correctly restricted? | YES | No client privileges; service role has read/create only |
+| Nonce table private? | YES | No anon/authenticated/PUBLIC privileges; service role plus approved internal sandbox role are append-only |
+| Provenance table correctly restricted? | YES | No client privileges; trusted server/internal roles have read/create only |
 | RLS correct? | YES | RLS remains enabled; direct client grants are absent |
 | Immutable triggers present? | YES | Both nonce and provenance mutation triggers observed live |
 | Event matrix complete? | YES | 40 catalogue events documented |

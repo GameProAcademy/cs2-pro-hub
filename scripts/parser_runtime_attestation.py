@@ -31,6 +31,7 @@ EXPECTED_HASHES = {
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
 WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
+WORKFLOW_REGISTRY_PATH = "scripts/approved_attestation_workflow.json"
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
 MAPPING_RELEASE_ID = "cf0549c2-dfbd-c4df-25b4-2ce8204edf87"
@@ -54,6 +55,18 @@ def git_object_bytes(spec: str) -> bytes:
 
 def git_blob_sha1(data: bytes) -> str:
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
+
+def approved_workflow_identity(workflow_commit: str) -> dict[str, str]:
+    registry = json.loads((ROOT / WORKFLOW_REGISTRY_PATH).read_text(encoding="utf-8"))
+    path = registry.get("path")
+    expected_sha = registry.get("source_sha")
+    if path != WORKFLOW_PATH or not isinstance(expected_sha, str):
+        raise ValueError("ATTESTATION_WORKFLOW_REGISTRY_INVALID")
+    observed_sha = git_blob_sha1(git_object_bytes(f"{workflow_commit}:{path}"))
+    if observed_sha != expected_sha:
+        raise ValueError("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED")
+    return {"workflow_path": path, "workflow_source_sha": observed_sha}
 
 
 def fetch_json(url: str, *, data: bytes | None = None, headers: dict[str, str] | None = None) -> dict[str, Any]:
@@ -165,6 +178,11 @@ def build_attestation() -> dict[str, Any]:
     run_id = os.getenv("GITHUB_RUN_ID", "")
     run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "")
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
+    try:
+        workflow_source = approved_workflow_identity(sha)
+    except (ValueError, OSError, subprocess.CalledProcessError):
+        workflow_source = {"workflow_path": WORKFLOW_PATH, "workflow_source_sha": None}
+        statuses.append("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED")
     if repository != REPOSITORY:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
     if event != "workflow_dispatch" or not run_id or not run_attempt:
@@ -242,7 +260,7 @@ def build_attestation() -> dict[str, Any]:
         "workflow_identity": {"provider": "github_actions", "repository": repository,
                               "ref_name": ref_name, "workflow_ref": workflow_ref,
                               "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha,
-                              "event_name": event},
+                               "event_name": event, **workflow_source},
         "release_gate_evidence": release_gate_evidence(),
         "mapping_release": {
             "release_id": MAPPING_RELEASE_ID,

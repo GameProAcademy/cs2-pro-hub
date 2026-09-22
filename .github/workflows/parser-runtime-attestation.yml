@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout attestor source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
@@ -29,7 +29,7 @@ jobs:
             refs/remotes/origin/infra/cs2-parser-worker-v8
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -39,13 +39,13 @@ jobs:
         run: python scripts/parser_runtime_attestation.py parser-runtime-attestation.json
 
       - name: Attest the evidence artifact
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
         with:
           subject-path: parser-runtime-attestation.json
 
       - name: Mint short-lived GitHub identity token
         id: oidc
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const token = await core.getIDToken('gamepro-parser-attestation')
@@ -78,7 +78,7 @@ jobs:
             "$PARSER_ATTESTATION_ENDPOINT"
 
       - name: Upload evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: parser-runtime-attestation-${{ github.run_id }}-${{ github.run_attempt }}
           path: parser-runtime-attestation.json
