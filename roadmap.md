@@ -10,7 +10,7 @@
 - [x] C.10-R5 — REAL CACHE DEM FORENSIC EXECUTION: `IMPLEMENTATION COMPLETE / EXECUTION PARTIAL / VERIFICATION PARTIAL / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
   - [x] `IMPLEMENTATION`: nove relatórios obrigatórios gerados sem DEM bruto, token, secret ou HMAC.
   - [x] `EXECUTION`: preflight e gates oficiais executados; DEM físico não acessível, portanto Python/WASM permaneceram `NOT_RUN`.
-  - [x] `VERIFICATION`: segurança `PASS`, workflow blob `PASS`, Vitest focado 10/10; pytest `NOT_RUN` por indisponibilidade no ambiente.
+  - [x] `VERIFICATION`: segurança `PASS`, workflow blob `PASS`, Vitest focado 10/10 e matriz de 40 eventos 2/2; pytest `NOT_RUN` por indisponibilidade no ambiente. Suite completa: 1.079 PASS/6 FAIL preexistentes; lint: 4 erros preexistentes/9 warnings.
   - [x] `AUTHORIZATION`: todos os asserts finais `BLOCKED`; Attempt 9=0, Attempt 10+=0, Canonical=105/0/0/0, cleanup não executado.
 
 **Locks:** real DEM, Attempt 9, Canonical e cleanup continuam `LOCKED`; Railway permanece `FROZEN`; HMAC `NOT CONFIGURED`; provenance `NOT VERIFIED`. Próximo marco: restaurar os bytes do DEM autorizado pelo lifecycle privado oficial, obter evidência Railway/HMAC/GitHub real e repetir R5.

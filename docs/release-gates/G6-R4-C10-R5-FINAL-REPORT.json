@@ -129,11 +129,15 @@
   "tests": {
     "compileall": "PASS",
     "vitest_focused": "10_PASS",
+    "vitest_full": "1079_PASS_6_FAIL_PREEXISTING_PARSER_CONTRACT",
     "pytest": "NOT_RUN_PYTEST_NOT_AVAILABLE",
     "parity_harness": "NOT_RUN",
     "determinism_harness": "NOT_RUN",
     "workflow_blob": "PASS",
-    "event_catalogue": "NOT_RUN_PYTEST_NOT_AVAILABLE"
+    "event_catalogue": "2_PASS_DIRECT_INVOCATION",
+    "lint": "FAIL_4_PREEXISTING_FORMATTING_ERRORS_9_WARNINGS",
+    "diff_check": "PASS",
+    "database_linter": "15_EXISTING_FINDINGS_3_CATEGORIES"
   },
   "blockers": [
     "REAL_DEM_BINARY_NOT_ACCESSIBLE",

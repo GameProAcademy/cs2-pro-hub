@@ -37,9 +37,13 @@
 
 - Python compileall: PASS.
 - Focused Vitest: 10 passed.
+- Full Vitest: 1,079 passed and 6 failed in two pre-existing parser contract suites (`hotPayload.contract` and `quality271`); these failures were not counted as R5 PASS.
 - Workflow blob identity: PASS.
 - Pytest/event matrix: NOT_RUN because pytest is not installed in this environment; no dependency was installed to manufacture a pass.
+- Event matrix functions invoked directly: 2 passed, confirming the documented catalogue exactly matches all 40 `EVENT_TYPES`.
 - Parity and determinism harnesses: correctly returned NOT_RUN.
+- Lint: FAIL due to four pre-existing formatting errors, with nine warnings; `git diff --check` passed.
+- Database linter: unchanged baseline of 15 findings across three categories.
 
 ## Final disposition
 
