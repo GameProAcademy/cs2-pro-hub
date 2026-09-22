@@ -1,6 +1,6 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4 — VERIFIED PARSER PROVENANCE
 
-**Status:** `BLOCKED_BEFORE_ATTEMPT_9` — attestation e reserva vinculada fail-closed aplicadas; replay não iniciado.
+**Status:** `G.6-R.4 BLOCKED` / `BLOCKED_BEFORE_ATTEMPT_9` — attestation, release gate e reserva vinculada fail-closed aplicadas; replay não iniciado.
 
 - [x] Confirmar read-only que o objeto do attempt 8 existe no bucket `demos` com 473.748.061 bytes.
 - [x] Confirmar ausência de attempt 9 para o mesmo usuário/SHA e preservação dos attempts 7/8.
@@ -10,13 +10,17 @@
 - [x] Implementar RPC exclusiva e atômica do attempt 9, defesa de banco contra attempt 10, provenance fail-closed e cópia server-side validada; retry admin usa o lifecycle oficial.
 - [x] Fixar repository/branch/deployment/runtime, hashes críticos exatos, digest canônico e freshness ancorada no servidor.
 - [x] Vincular reserva, cópia verificada, enqueue e auditoria por UUID opaco; ACL continua service-role-only.
+- [x] Corrigir o vínculo para o branch real `infra/cs2-parser-worker-v8` e criar `assert_real_demo_release_ready()` com evidence imutável, service-role-only e chamada obrigatória dentro da reserva.
+- [x] Consolidar os catálogos Python/WASM em matriz machine-readable determinística, preservando divergências como `BLOCKED` sem inferir equivalência.
+- [x] Adicionar `compileall`, revision guard, typecheck e instalação reproduzível ao workflow existente, sem criar estratégia paralela.
+- [ ] Observar CI real, obter provenance independente GitHub↔Railway, autoridade integral de ticks e executar paridade/determinismo reais.
 - [ ] Executar gates locais e preflight final imediatamente antes da mutação.
 - [ ] Criar upload 9, copiar/verificar o objeto, enfileirar pelo lifecycle oficial e observar o E2E real até terminal.
 - [ ] Auditar RAW/HOT/Canonical/fila, comparar attempts 8×9 e documentar evidência integral sem cleanup.
 
 **Stop conditions:** qualquer divergência de objeto, tamanho, SHA, attempt, claim, parser, contrato, RAW, HOT, Canonical, fila ou cleanup interrompe a fase sem attempt 10.
 
-**Blocker atual:** GitHub devolve 404 para o commit fixado e não há prova independente Railway API/source binding. Não existe registro `VERIFIED`; a RPC bloqueia com `PARSER_PROVENANCE_UNVERIFIED`, mantendo attempt 9 em zero antes de copy/enqueue.
+**Blocker atual:** GitHub devolve 404 para o commit fixado e não há prova independente Railway API/source binding nem CI real observado. A matriz reconciliada mantém diferenças explícitas, tick authority/paridade/determinismo reais continuam não executados, e não existe registro `VERIFIED`; a RPC bloqueia antes de criar/copy/enqueue, mantendo attempt 9 em zero.
 
 # PRIOR EXECUTION GATE — FASE 2.7.2G.6-R — LEGACY CLEANUP SHUTDOWN + RAILWAY RUNTIME PARITY
 

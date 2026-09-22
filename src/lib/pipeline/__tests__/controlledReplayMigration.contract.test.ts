@@ -11,6 +11,10 @@ const hardeningMigration = readFileSync(
   resolve("supabase/migrations/20260921082049_c2b2d22d-f840-4296-86b8-8cfdc9ed5295.sql"),
   "utf8",
 );
+const releaseGateMigration = readFileSync(
+  resolve("supabase/migrations/20260922011053_db169872-f6cf-47ea-8cae-e09adfc55e62.sql"),
+  "utf8",
+);
 
 describe("G.6-R.3 controlled replay database contract", () => {
   it("accepts the dedicated reason while constraining it to attempt 9", () => {
@@ -58,11 +62,19 @@ describe("G.6-R.3 controlled replay database contract", () => {
 describe("G.6-R.4 parser attestation and replay binding", () => {
   it("pins the repository, deployment, branch, parser identity, and critical source hashes", () => {
     expect(hardeningMigration).toContain("GameProAcademy/cs2-pro-hub");
-    expect(hardeningMigration).toContain("infra/cs2-demo-parser-worker-v8");
+    expect(releaseGateMigration).toContain("infra/cs2-parser-worker-v8");
     expect(hardeningMigration).toContain("6330c8c4-a410-45db-a364-4eb47702c2fc");
     expect(hardeningMigration).toContain("GITHUB_COMMIT_RAILWAY_DEPLOYMENT_LIVE_VERSION_V1");
     expect(hardeningMigration).toContain("services/cs2-demo-parser/parser.py");
     expect(hardeningMigration).toContain("services/cs2-demo-parser/settings.py");
+  });
+
+  it("makes the immutable release gate mandatory before attempt 9 reservation", () => {
+    expect(releaseGateMigration).toContain("release_gate_evidence jsonb NOT NULL");
+    expect(releaseGateMigration).toContain("public.assert_real_demo_release_ready(_provenance_id)");
+    expect(releaseGateMigration).toContain("REAL_DEMO_RELEASE_NOT_READY");
+    expect(releaseGateMigration).toContain("REVOKE ALL ON FUNCTION public.assert_real_demo_release_ready(uuid)");
+    expect(releaseGateMigration).not.toContain("GRANT EXECUTE ON FUNCTION public.assert_real_demo_release_ready(uuid) TO authenticated");
   });
 
   it("recomputes a canonical SHA-256 attestation and anchors freshness to server time", () => {
