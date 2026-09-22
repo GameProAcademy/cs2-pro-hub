@@ -1,3 +1,8 @@
+import {
+  APPROVED_ATTESTATION_WORKFLOW_PATH,
+  APPROVED_ATTESTATION_WORKFLOW_SHA,
+} from "@/lib/parserAttestationWorkflowRegistry";
+
 export const PARSER_ATTESTATION_EXPECTED = {
   repository: "GameProAcademy/cs2-pro-hub",
   branch: "infra/cs2-parser-worker-v8",
@@ -8,6 +13,8 @@ export const PARSER_ATTESTATION_EXPECTED = {
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
   workflowRef:
     "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/infra/cs2-parser-worker-v8",
+  workflowPath: APPROVED_ATTESTATION_WORKFLOW_PATH,
+  workflowSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
   parser: "demoparser2",
   parserVersion: "0.42.0",
   contractVersion: 1,
@@ -55,6 +62,12 @@ export function validateParserAttestationOidcClaims(
   const oidc = PARSER_ATTESTATION_OIDC;
   const blockers: string[] = [];
   if (
+    workflowIdentity["workflow_path"] !== expected.workflowPath ||
+    workflowIdentity["workflow_source_sha"] !== expected.workflowSourceSha
+  ) {
+    blockers.push("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+  }
+  if (
     claims["iss"] !== oidc.issuer ||
     claims["aud"] !== oidc.audience ||
     claims["repository"] !== expected.repository ||
@@ -67,6 +80,8 @@ export function validateParserAttestationOidcClaims(
     claims["sub"] !== oidc.subject ||
     claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
+    typeof claims["sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(claims["sha"]) ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
     String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
     typeof claims["exp"] !== "number" ||
@@ -88,6 +103,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   const railwayVersion = record(payload["railway_domain_version"]);
   const hashes = record(payload["critical_file_hashes"]);
   const mappingRelease = record(payload["mapping_release"]);
+  const workflowIdentity = record(payload["workflow_identity"]);
 
   if (
     payload["schema_version"] !== PARSER_ATTESTATION_SCHEMA_VERSION ||
@@ -100,6 +116,13 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     payload["railway_environment_id"] !== expected.environmentId
   ) {
     blockers.push("PINNED_IDENTITY_MISMATCH");
+  }
+  if (
+    !workflowIdentity ||
+    workflowIdentity["workflow_path"] !== expected.workflowPath ||
+    workflowIdentity["workflow_source_sha"] !== expected.workflowSourceSha
+  ) {
+    blockers.push("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
   }
   const attestedAt =
     typeof payload["attested_at"] === "string" ? Date.parse(payload["attested_at"]) : NaN;

@@ -271,6 +271,32 @@ WITH catalogue AS (
              AND p.proname IN ('assert_cache_attempt_9_ready','assert_pre_attempt_9_ready','pre_attempt_9_gate_status')
              AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
          )
+
+  UNION ALL
+  SELECT '21k. attestation tables expose only approved internal append privileges',
+         has_table_privilege('service_role','public.parser_attestation_nonces','SELECT,INSERT')
+         AND has_table_privilege('sandbox_exec','public.parser_attestation_nonces','SELECT,INSERT')
+         AND has_table_privilege('service_role','public.parser_runtime_provenance','SELECT,INSERT')
+         AND has_table_privilege('sandbox_exec','public.parser_runtime_provenance','SELECT,INSERT')
+         AND NOT has_table_privilege('service_role','public.parser_attestation_nonces','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('sandbox_exec','public.parser_attestation_nonces','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('service_role','public.parser_runtime_provenance','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('sandbox_exec','public.parser_runtime_provenance','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+
+  UNION ALL
+  SELECT '21l. C.10-R1.1 live parity and pre-real-demo diagnostics are private and hardened',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('attestation_security_invariants','pre_real_demo_gate_status')
+             AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('attestation_security_invariants','pre_real_demo_gate_status')
+             AND (NOT p.prosecdef OR p.provolatile <> 's' OR NOT (coalesce(p.proconfig,ARRAY[]::text[]) @> ARRAY['search_path=""']))
+         )
          AND NOT EXISTS (
            SELECT 1 FROM pg_proc p
            WHERE p.pronamespace='public'::regnamespace

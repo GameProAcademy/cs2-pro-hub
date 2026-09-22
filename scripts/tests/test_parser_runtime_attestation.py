@@ -17,6 +17,7 @@ from scripts.parser_runtime_attestation import (
     runtime_identity,
     stable_json,
     build_attestation,
+    approved_workflow_identity,
 )
 
 
@@ -36,6 +37,12 @@ def test_runtime_identity_preserves_required_fields():
 
 def test_git_blob_hash_uses_object_database_framing():
     assert git_blob_sha1(b"test content\n") == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+
+
+def test_workflow_source_requires_reviewed_git_blob():
+    with patch("scripts.parser_runtime_attestation.git_object_bytes", return_value=b"unexpected"):
+        with pytest.raises(ValueError, match="ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED"):
+            approved_workflow_identity("a" * 40)
 
 
 def test_railway_evidence_is_derived_from_api_response():
