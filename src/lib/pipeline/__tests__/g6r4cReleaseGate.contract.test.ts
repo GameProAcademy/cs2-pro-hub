@@ -73,7 +73,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
       "custom_domain_version' IS DISTINCT FROM _payload->'railway_domain_version",
     );
     expect(closureMigration).toContain("_payload->>'schema_version' <> '2'");
-    expect(closureMigration).toContain("_workflow->>'workflow_sha' = _p.deployment_commit");
+    expect(closureMigration).toContain(
+      "_p.workflow_identity->>'workflow_sha' = _p.deployment_commit",
+    );
   });
 
   it("anchors freshness to verification_timestamp with bounded future skew", () => {
