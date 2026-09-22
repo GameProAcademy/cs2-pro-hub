@@ -15,6 +15,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from errors import (
+    AUTHORIZED_DEM_METADATA_MISMATCH,
+    AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS,
+    EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED,
+    NO_AUTHORIZED_REAL_DEM,
+    NO_AUTHORIZED_REAL_DEM_FIXTURE,
+)
 from parser import parse_demo_file
 
 MAX_DEMO_BYTES = 128 * 1024 * 1024
@@ -93,26 +100,26 @@ def build_python_reference(path_value: str | None, authorization: dict[str, Any]
     if not path_value:
         return {
             "status": "NOT_RUN",
-            "reason": "NO_AUTHORIZED_REAL_DEM_FIXTURE",
+            "reason": NO_AUTHORIZED_REAL_DEM_FIXTURE,
             "canonicalEligible": False,
             "persisted": False,
         }
     if not authorization or authorization.get("authorizedDemo") is not True:
-        raise ValueError("NO_AUTHORIZED_REAL_DEM")
+        raise ValueError(NO_AUTHORIZED_REAL_DEM)
     required_authorization = {"provenance", "filename", "sha256", "sizeBytes", "source", "authorizationRef", "receivedAt"}
     if not required_authorization.issubset(authorization) or authorization.get("source") != "LOCAL_FILE":
-        raise ValueError("NO_AUTHORIZED_REAL_DEM")
+        raise ValueError(NO_AUTHORIZED_REAL_DEM)
     path = Path(path_value)
     if not path.is_file() or path.suffix.lower() != ".dem":
-        raise ValueError("explicit_authorized_dem_path_required")
+        raise ValueError(EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED)
     size = path.stat().st_size
     if size < 1 or size > MAX_DEMO_BYTES:
-        raise ValueError("authorized_dem_size_out_of_bounds")
+        raise ValueError(AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS)
     started = time.perf_counter()
     started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     demo_sha = _sha256(path)
     if authorization["filename"] != path.name or authorization["sizeBytes"] != size or authorization["sha256"] != demo_sha:
-        raise ValueError("authorized_dem_metadata_mismatch")
+        raise ValueError(AUTHORIZED_DEM_METADATA_MISMATCH)
     surface = _manifest()
     output = parse_demo_file(str(path))
     raw = output.get("raw_evidence") or {}

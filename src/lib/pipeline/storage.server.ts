@@ -102,11 +102,7 @@ export async function copyDemoVerified(args: {
   destinationSha256: string;
 }> {
   assertDemoStoragePath(args.sourcePath, args.sourceUserId, args.sourceUploadId);
-  assertDemoStoragePath(
-    args.destinationPath,
-    args.destinationUserId,
-    args.destinationUploadId,
-  );
+  assertDemoStoragePath(args.destinationPath, args.destinationUserId, args.destinationUploadId);
   if (args.sourcePath === args.destinationPath) {
     throw new PipelineError("PERSISTENCE_ERROR", "COPY_PATH_COLLISION");
   }

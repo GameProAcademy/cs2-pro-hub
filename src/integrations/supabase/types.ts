@@ -1765,6 +1765,7 @@ export type Database = {
           railway_environment_id: string
           railway_project_id: string
           railway_service_id: string
+          release_gate_evidence: Json
           repository_full_name: string
           runtime_proof: Json
           semantic_revision: string
@@ -1792,6 +1793,7 @@ export type Database = {
           railway_environment_id: string
           railway_project_id: string
           railway_service_id: string
+          release_gate_evidence?: Json
           repository_full_name: string
           runtime_proof: Json
           semantic_revision: string
@@ -1819,6 +1821,7 @@ export type Database = {
           railway_environment_id?: string
           railway_project_id?: string
           railway_service_id?: string
+          release_gate_evidence?: Json
           repository_full_name?: string
           runtime_proof?: Json
           semantic_revision?: string
@@ -3250,6 +3253,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_real_demo_release_ready:
+        | { Args: { _provenance_id: string }; Returns: Json }
+        | {
+            Args: { _gate_evidence: Json; _provenance_id: string }
+            Returns: Json
+          }
       assert_verified_parser_provenance: {
         Args: { _provenance_id: string }
         Returns: Json

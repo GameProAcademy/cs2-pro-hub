@@ -1,7 +1,13 @@
 import copy
 
 from capability_catalog import CATALOG_VERSION, catalog_payload, validate_catalog
-from forensic_audit import authoritative_tick_domain, build_tick_coverage, summarize_rows
+from forensic_audit import (
+    authoritative_tick_domain,
+    build_tick_coverage,
+    build_tick_domain_source,
+    deterministic_digest,
+    summarize_rows,
+)
 from parser import _audit_full_tick_domain
 from raw_evidence import build_forensic_contract_v2
 
@@ -79,6 +85,17 @@ def test_authoritative_domain_detects_missing_and_unexpected_ticks():
     assert coverage["missing_ticks"] == [3]
     assert coverage["unexpected_ticks"] == [4]
     assert coverage["domain_proof_status"] == "BLOCKED"
+
+
+def test_runtime_tick_domain_is_never_authoritative_without_independent_evidence():
+    source = build_tick_domain_source(99_999)
+    assert source["status"] == "UNAVAILABLE"
+    assert source["source_kind"] == "UNAVAILABLE"
+    assert source["authoritative"] is False
+    assert source["expected_intervals"] == []
+    assert source["observed_playback_ticks"] == 99_999
+    unsigned = {key: value for key, value in source.items() if key != "digest"}
+    assert source["digest"] == deterministic_digest(unsigned)
 
 
 def test_contract_has_exactly_22_gates_and_waits_for_independent_physical_audit():

@@ -18,22 +18,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: bun install --frozen-lockfile
 
       - name: Test
-        run: npm test
+        run: bun run test
+
+      - name: Typecheck
+        run: bunx tsgo --noEmit
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
   parser-quality:
     name: CS2 parser tests
@@ -55,6 +58,13 @@ jobs:
 
       - name: Install parser dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+
+      - name: Compile parser sources
+        run: python -m compileall -q .
+
+      - name: Verify reconciled field governance matrix
+        working-directory: ${{ github.workspace }}
+        run: python scripts/generate-parser-field-matrix.py --check
 
       - name: Run parser test suite
         run: pytest -q

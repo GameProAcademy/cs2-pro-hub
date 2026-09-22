@@ -365,7 +365,9 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: sourceJob, error: sourceError } = await supabaseAdmin
       .from("demo_jobs")
-      .select("id, upload_id, user_id, status, attempt_number, demo_sha256, file_size, storage_path")
+      .select(
+        "id, upload_id, user_id, status, attempt_number, demo_sha256, file_size, storage_path",
+      )
       .eq("id", data.sourceJobId)
       .maybeSingle();
     if (sourceError || !sourceJob) throw new Error("SOURCE_JOB_NOT_FOUND");
@@ -413,7 +415,12 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
         _reservation_id: requestedReservationId,
       },
     );
-    if (reserveError || !reservation || typeof reservation !== "object" || Array.isArray(reservation)) {
+    if (
+      reserveError ||
+      !reservation ||
+      typeof reservation !== "object" ||
+      Array.isArray(reservation)
+    ) {
       throw new Error(reserveError?.message ?? "RESERVATION_FAILED");
     }
     const reserved = reservation as Record<string, Json | undefined>;
@@ -462,7 +469,7 @@ export const adminCreateControlledDemoReplay = createServerFn({ method: "POST" }
       "finalize_controlled_demo_replay_attempt_9",
       {
         _user_id: sourceJob.user_id,
-      _upload_id: uploadId,
+        _upload_id: uploadId,
         _source_job_id: sourceJob.id,
         _admin_user_id: (context as Ctx).userId,
         _provenance_id: data.provenanceId,
