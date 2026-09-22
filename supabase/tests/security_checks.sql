@@ -238,7 +238,7 @@ WITH catalogue AS (
   SELECT '21g. C.7-C.10 nonce registry is private and immutable',
          NOT has_table_privilege('anon','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
          AND NOT has_table_privilege('authenticated','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
-         AND NOT has_table_privilege('PUBLIC','public.parser_attestation_nonces','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl, acldefault('r',c.relowner))) a WHERE c.oid='public.parser_attestation_nonces'::regclass AND a.grantee=0)
          AND has_table_privilege('service_role','public.parser_attestation_nonces','SELECT,INSERT')
          AND NOT has_table_privilege('service_role','public.parser_attestation_nonces','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
          AND NOT EXISTS (SELECT 1 FROM information_schema.table_privileges WHERE table_schema='public' AND table_name='parser_attestation_nonces' AND grantee IN ('anon','authenticated','PUBLIC'))
@@ -257,7 +257,7 @@ WITH catalogue AS (
   SELECT '21i. runtime provenance effective ACL is append-only service access',
          NOT has_table_privilege('anon','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
          AND NOT has_table_privilege('authenticated','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
-         AND NOT has_table_privilege('PUBLIC','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl, acldefault('r',c.relowner))) a WHERE c.oid='public.parser_runtime_provenance'::regclass AND a.grantee=0)
          AND has_table_privilege('service_role','public.parser_runtime_provenance','SELECT,INSERT')
          AND NOT has_table_privilege('service_role','public.parser_runtime_provenance','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
          AND NOT EXISTS (SELECT 1 FROM information_schema.table_privileges WHERE table_schema='public' AND table_name='parser_runtime_provenance' AND grantee IN ('anon','authenticated','PUBLIC'))
