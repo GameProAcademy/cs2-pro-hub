@@ -17,8 +17,12 @@ export const PARSER_ATTESTATION_OIDC = {
   issuer: "https://token.actions.githubusercontent.com",
   audience: "gamepro-parser-attestation",
   repositoryOwner: "GameProAcademy",
+  repositoryOwnerId: "323426481",
+  repositoryId: "1358428146",
   branchRef: "refs/heads/infra/cs2-parser-worker-v8",
-  subject: "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8",
+  subject:
+    "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/infra/cs2-parser-worker-v8",
+  eventName: "workflow_dispatch",
 } as const;
 
 const CRITICAL_HASHES: Record<string, string> = {
@@ -47,11 +51,14 @@ export function validateParserAttestationOidcClaims(
     claims["iss"] !== oidc.issuer ||
     claims["aud"] !== oidc.audience ||
     claims["repository"] !== expected.repository ||
+    claims["repository_id"] !== oidc.repositoryId ||
     claims["repository_owner"] !== oidc.repositoryOwner ||
+    claims["repository_owner_id"] !== oidc.repositoryOwnerId ||
     claims["ref"] !== oidc.branchRef ||
     claims["workflow_ref"] !== expected.workflowRef ||
     claims["job_workflow_ref"] !== expected.workflowRef ||
     claims["sub"] !== oidc.subject ||
+    claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
     String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||

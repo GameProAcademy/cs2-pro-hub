@@ -18,11 +18,14 @@ function validClaims(): Record<string, unknown> {
     iss: PARSER_ATTESTATION_OIDC.issuer,
     aud: PARSER_ATTESTATION_OIDC.audience,
     repository: PARSER_ATTESTATION_EXPECTED.repository,
+    repository_id: PARSER_ATTESTATION_OIDC.repositoryId,
     repository_owner: PARSER_ATTESTATION_OIDC.repositoryOwner,
+    repository_owner_id: PARSER_ATTESTATION_OIDC.repositoryOwnerId,
     ref: PARSER_ATTESTATION_OIDC.branchRef,
     workflow_ref: PARSER_ATTESTATION_EXPECTED.workflowRef,
     job_workflow_ref: PARSER_ATTESTATION_EXPECTED.workflowRef,
     sub: PARSER_ATTESTATION_OIDC.subject,
+    event_name: PARSER_ATTESTATION_OIDC.eventName,
     sha: workflowIdentity.workflow_sha,
     run_id: workflowIdentity.run_id,
     run_attempt: workflowIdentity.run_attempt,
@@ -39,11 +42,14 @@ describe("parser attestation OIDC claims", () => {
   it.each([
     "aud",
     "repository",
+    "repository_id",
     "repository_owner",
+    "repository_owner_id",
     "ref",
     "workflow_ref",
     "job_workflow_ref",
     "sub",
+    "event_name",
   ])("rejects a mismatched %s claim", (claim) => {
     const claims = validClaims();
     claims[claim] = "unexpected";
@@ -59,5 +65,22 @@ describe("parser attestation OIDC claims", () => {
     const future = validClaims();
     future["iat"] = NOW + 61;
     expect(validateParserAttestationOidcClaims(future, workflowIdentity, NOW)).not.toEqual([]);
+  });
+
+  it("rejects the legacy mutable repository subject", () => {
+    const claims = validClaims();
+    claims["sub"] =
+      "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8";
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
+  it.each(["sha", "run_id", "run_attempt"])("rejects a mismatched %s binding", (claim) => {
+    const claims = validClaims();
+    claims[claim] = "unexpected";
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
   });
 });

@@ -161,7 +161,7 @@ def build_attestation() -> dict[str, Any]:
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
     if repository != REPOSITORY:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
-    if event not in {"workflow_dispatch", "workflow_call"} or not run_id or not run_attempt:
+    if event != "workflow_dispatch" or not run_id or not run_attempt:
         statuses.append("GITHUB_WORKFLOW_IDENTITY_MISSING")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         statuses.append("GITHUB_WORKFLOW_COMMIT_INVALID")
