@@ -44,9 +44,11 @@ def test_full_tick_audit_uses_explicit_intervals_and_deterministic_property_batc
     coverage, properties = _audit_full_tick_domain(demo, [f"p{i:02}" for i in range(25)], 2, tick_domain_source=source)
     assert len(demo.calls) == 3
     assert all(ticks == [1, 2] for _, ticks in demo.calls)
-    assert coverage["coverage"] == "FULL_TICK_DOMAIN_AUDIT"
-    assert coverage["domain_proof_status"] == "PASS"
-    assert coverage["complete"] is True
+    assert source["status"] == "PROVISIONAL"
+    assert source["authority_type"] == "TEST_FIXTURE_ONLY"
+    assert coverage["coverage"] == "BLOCKED"
+    assert coverage["domain_proof_status"] == "BLOCKED"
+    assert coverage["complete"] is False
     assert coverage["total_rows_audited"] == 6
     assert len(properties) == 25
     assert all(row["classification"] == "RAW_ONLY" for row in properties)
@@ -90,12 +92,34 @@ def test_authoritative_domain_detects_missing_and_unexpected_ticks():
 def test_runtime_tick_domain_is_never_authoritative_without_independent_evidence():
     source = build_tick_domain_source(99_999)
     assert source["status"] == "UNAVAILABLE"
-    assert source["source_kind"] == "UNAVAILABLE"
+    assert source["authority_type"] == "UNAVAILABLE"
     assert source["authoritative"] is False
     assert source["expected_intervals"] == []
     assert source["observed_playback_ticks"] == 99_999
     unsigned = {key: value for key, value in source.items() if key != "digest"}
     assert source["digest"] == deterministic_digest(unsigned)
+
+
+def test_only_verified_independent_authority_can_complete_tick_domain():
+    source = authoritative_tick_domain(1, 2, provenance="independent-runtime", demo_sha256="a" * 64)
+    assert source["status"] == "VERIFIED"
+    coverage = build_tick_coverage(
+        batches=[{"properties": ["health"], "requested_interval": [1, 2], "row_count": 2, "ticks": [1, 2]}],
+        tick_domain_source=source,
+    )
+    assert coverage["domain_proof_status"] == "PASS"
+    assert coverage["complete"] is True
+
+
+def test_out_of_order_and_invalid_ticks_block_coverage():
+    source = authoritative_tick_domain(0, 2, provenance="independent-runtime", demo_sha256="a" * 64)
+    coverage = build_tick_coverage(
+        batches=[{"properties": ["health"], "requested_interval": [0, 2], "row_count": 4, "ticks": [0, 2, 1, -1]}],
+        tick_domain_source=source,
+    )
+    assert coverage["out_of_order_tick_count"] > 0
+    assert coverage["invalid_tick_count"] == 1
+    assert coverage["complete"] is False
 
 
 def test_contract_has_exactly_22_gates_and_waits_for_independent_physical_audit():

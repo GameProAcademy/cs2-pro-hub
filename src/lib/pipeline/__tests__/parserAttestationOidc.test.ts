@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   PARSER_ATTESTATION_EXPECTED,
   PARSER_ATTESTATION_OIDC,
+  PARSER_ATTESTATION_SCHEMA_VERSION,
   validateParserAttestationOidcClaims,
+  validateParserAttestationPayload,
 } from "@/lib/parserAttestation";
 
 const NOW = 1_790_064_000;
@@ -81,5 +83,21 @@ describe("parser attestation OIDC claims", () => {
     expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
       "OIDC_CLAIMS_MISMATCH",
     );
+  });
+});
+
+describe("parser attestation freshness contract", () => {
+  it("rejects a payload without a timestamp and nonce before persistence", () => {
+    const blockers = validateParserAttestationPayload({ schema_version: PARSER_ATTESTATION_SCHEMA_VERSION });
+    expect(blockers).toContain("ATTESTATION_FRESHNESS_INVALID");
+  });
+
+  it("rejects the previous schema version", () => {
+    const blockers = validateParserAttestationPayload({
+      schema_version: 2,
+      attested_at: new Date(NOW * 1000).toISOString(),
+      nonce: "a".repeat(64),
+    });
+    expect(blockers).toContain("PINNED_IDENTITY_MISMATCH");
   });
 });

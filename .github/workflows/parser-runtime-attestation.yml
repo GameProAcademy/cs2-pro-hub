@@ -63,7 +63,7 @@ jobs:
           test -n "$PARSER_ATTESTATION_TRANSPORT_SECRET"
           test -n "$PARSER_ATTESTATION_HMAC_SECRET"
           test -n "$GITHUB_OIDC_TOKEN"
-          canonical_payload="$(jq -cS '.payload' parser-runtime-attestation.json)"
+           canonical_payload="$(jq -cS '.payload' parser-runtime-attestation.json)"
           signature="$(printf '%s' "$canonical_payload" | openssl dgst -sha256 -hmac "$PARSER_ATTESTATION_HMAC_SECRET" -binary | xxd -p -c 256)"
           curl --fail-with-body --silent --show-error \
             --retry 0 \

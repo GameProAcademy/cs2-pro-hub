@@ -29,6 +29,9 @@ export const PARSER_ATTESTATION_OIDC = {
   eventName: "workflow_dispatch",
 } as const;
 
+export const PARSER_ATTESTATION_SCHEMA_VERSION = 3 as const;
+export const PARSER_ATTESTATION_MAX_AGE_SECONDS = 300;
+
 const CRITICAL_HASHES: Record<string, string> = {
   "services/cs2-demo-parser/parser.py": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
   "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
@@ -87,7 +90,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   const mappingRelease = record(payload["mapping_release"]);
 
   if (
-    payload["schema_version"] !== 2 ||
+    payload["schema_version"] !== PARSER_ATTESTATION_SCHEMA_VERSION ||
     payload["repository"] !== expected.repository ||
     payload["railway_branch"] !== expected.branch ||
     payload["git_commit"] !== expected.commit ||
@@ -97,6 +100,14 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     payload["railway_environment_id"] !== expected.environmentId
   ) {
     blockers.push("PINNED_IDENTITY_MISMATCH");
+  }
+  const attestedAt = typeof payload["attested_at"] === "string" ? Date.parse(payload["attested_at"]) : NaN;
+  if (
+    !Number.isFinite(attestedAt) ||
+    typeof payload["nonce"] !== "string" ||
+    !/^[0-9a-f]{32,128}$/.test(payload["nonce"])
+  ) {
+    blockers.push("ATTESTATION_FRESHNESS_INVALID");
   }
   if (
     payload["parser_name"] !== expected.parser ||
