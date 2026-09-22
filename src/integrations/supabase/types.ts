@@ -3515,6 +3515,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_cache_attempt_9_ready: {
+        Args: { _provenance_id: string }
+        Returns: Json
+      }
       assert_canonical_mapping_gate: { Args: never; Returns: Json }
       assert_pre_attempt_9_ready: {
         Args: { _provenance_id: string }
