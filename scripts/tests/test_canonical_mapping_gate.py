@@ -57,7 +57,7 @@ def test_required_normalization_and_full_tick_dependency_block():
     inventory = authorized_fixture()
     inventory["rows"][0]["normalizationExecuted"] = False
     assert assert_canonical_mapping_gate(inventory, MATRIX)["gateStatus"] == "BLOCKED"
-    inventory = build_inventory(authorize=True)
+    inventory = authorized_fixture()
     inventory["rows"][0]["dependsOnFullTickDomain"] = True
     assert assert_canonical_mapping_gate(inventory, MATRIX)["gateStatus"] == "BLOCKED"
 
