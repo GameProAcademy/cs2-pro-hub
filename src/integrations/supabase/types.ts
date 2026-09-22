@@ -251,6 +251,122 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_mapping_inventory_release_rows: {
+        Row: {
+          canonical_authorization: boolean
+          canonical_field: string
+          created_at: string
+          determinism_status: string
+          evidence_digest: string
+          identity_dependency: string
+          mapping_class: string
+          metadata: Json
+          parity_status: string
+          persistence_validation: string
+          release_id: string
+          semantic_validation: string
+          source_capability: string
+          source_field: string
+          tick_dependency: string
+        }
+        Insert: {
+          canonical_authorization?: boolean
+          canonical_field: string
+          created_at?: string
+          determinism_status: string
+          evidence_digest: string
+          identity_dependency: string
+          mapping_class: string
+          metadata: Json
+          parity_status: string
+          persistence_validation: string
+          release_id: string
+          semantic_validation: string
+          source_capability: string
+          source_field: string
+          tick_dependency: string
+        }
+        Update: {
+          canonical_authorization?: boolean
+          canonical_field?: string
+          created_at?: string
+          determinism_status?: string
+          evidence_digest?: string
+          identity_dependency?: string
+          mapping_class?: string
+          metadata?: Json
+          parity_status?: string
+          persistence_validation?: string
+          release_id?: string
+          semantic_validation?: string
+          source_capability?: string
+          source_field?: string
+          tick_dependency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canonical_mapping_inventory_release_rows_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_mapping_inventory_releases"
+            referencedColumns: ["release_id"]
+          },
+        ]
+      }
+      canonical_mapping_inventory_releases: {
+        Row: {
+          authoritative_candidate: boolean
+          authorized_count: number
+          created_at: string
+          generator_commit: string
+          generator_revision: string
+          generic_count: number
+          inventory_digest: string
+          inventory_version: string
+          matrix_digest: string
+          provenance_metadata: Json
+          release_id: string
+          row_count: number
+          schema_version: number
+          status: string
+          verified_count: number
+        }
+        Insert: {
+          authoritative_candidate?: boolean
+          authorized_count?: number
+          created_at?: string
+          generator_commit: string
+          generator_revision: string
+          generic_count?: number
+          inventory_digest: string
+          inventory_version: string
+          matrix_digest: string
+          provenance_metadata?: Json
+          release_id: string
+          row_count: number
+          schema_version: number
+          status: string
+          verified_count?: number
+        }
+        Update: {
+          authoritative_candidate?: boolean
+          authorized_count?: number
+          created_at?: string
+          generator_commit?: string
+          generator_revision?: string
+          generic_count?: number
+          inventory_digest?: string
+          inventory_version?: string
+          matrix_digest?: string
+          provenance_metadata?: Json
+          release_id?: string
+          row_count?: number
+          schema_version?: number
+          status?: string
+          verified_count?: number
+        }
+        Relationships: []
+      }
       coach_conversations: {
         Row: {
           created_at: string
@@ -1853,6 +1969,7 @@ export type Database = {
           deployment_proof: Json
           git_tree: string | null
           id: string
+          mapping_release_id: string | null
           parser_name: string
           parser_version: string
           railway_branch: string
@@ -1886,6 +2003,7 @@ export type Database = {
           deployment_proof: Json
           git_tree?: string | null
           id?: string
+          mapping_release_id?: string | null
           parser_name: string
           parser_version: string
           railway_branch: string
@@ -1919,6 +2037,7 @@ export type Database = {
           deployment_proof?: Json
           git_tree?: string | null
           id?: string
+          mapping_release_id?: string | null
           parser_name?: string
           parser_version?: string
           railway_branch?: string
@@ -1936,7 +2055,15 @@ export type Database = {
           verified_endpoint?: string
           workflow_identity?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "parser_runtime_provenance_mapping_release_id_fkey"
+            columns: ["mapping_release_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_mapping_inventory_releases"
+            referencedColumns: ["release_id"]
+          },
+        ]
       }
       player_connections: {
         Row: {
@@ -3359,6 +3486,10 @@ export type Database = {
     }
     Functions: {
       assert_canonical_mapping_gate: { Args: never; Returns: Json }
+      assert_pre_attempt_9_ready: {
+        Args: { _provenance_id: string }
+        Returns: Json
+      }
       assert_real_demo_release_ready: {
         Args: { _provenance_id: string }
         Returns: Json
@@ -3386,6 +3517,10 @@ export type Database = {
           _source_contract_version: string
         }
         Returns: string
+      }
+      canonical_mapping_inventory_release_snapshot: {
+        Args: never
+        Returns: Json
       }
       canonical_mapping_inventory_snapshot: { Args: never; Returns: Json }
       canonical_source_priority: {
@@ -3442,6 +3577,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
+      create_canonical_mapping_inventory_release: {
+        Args: { _release: Json; _rows: Json }
+        Returns: string
+      }
       decide_demo_automatic_identity: {
         Args: {
           _action: string

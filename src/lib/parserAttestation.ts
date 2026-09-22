@@ -11,14 +11,22 @@ export const PARSER_ATTESTATION_EXPECTED = {
   parser: "demoparser2",
   parserVersion: "0.42.0",
   contractVersion: 1,
+  mappingReleaseId: "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  inventoryVersion: "canonical-demo-v2",
+  inventoryDigest: "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1",
+  matrixDigest: "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702",
 } as const;
 
 export const PARSER_ATTESTATION_OIDC = {
   issuer: "https://token.actions.githubusercontent.com",
   audience: "gamepro-parser-attestation",
   repositoryOwner: "GameProAcademy",
+  repositoryOwnerId: "323426481",
+  repositoryId: "1358428146",
   branchRef: "refs/heads/infra/cs2-parser-worker-v8",
-  subject: "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8",
+  subject:
+    "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/infra/cs2-parser-worker-v8",
+  eventName: "workflow_dispatch",
 } as const;
 
 const CRITICAL_HASHES: Record<string, string> = {
@@ -47,11 +55,14 @@ export function validateParserAttestationOidcClaims(
     claims["iss"] !== oidc.issuer ||
     claims["aud"] !== oidc.audience ||
     claims["repository"] !== expected.repository ||
+    claims["repository_id"] !== oidc.repositoryId ||
     claims["repository_owner"] !== oidc.repositoryOwner ||
+    claims["repository_owner_id"] !== oidc.repositoryOwnerId ||
     claims["ref"] !== oidc.branchRef ||
     claims["workflow_ref"] !== expected.workflowRef ||
     claims["job_workflow_ref"] !== expected.workflowRef ||
     claims["sub"] !== oidc.subject ||
+    claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
     String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
@@ -73,6 +84,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   const customVersion = record(payload["custom_domain_version"]);
   const railwayVersion = record(payload["railway_domain_version"]);
   const hashes = record(payload["critical_file_hashes"]);
+  const mappingRelease = record(payload["mapping_release"]);
 
   if (
     payload["schema_version"] !== 2 ||
@@ -143,6 +155,20 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
         blockers.push(`CRITICAL_HASH_MISMATCH:${path}`);
       }
     }
+  }
+  if (
+    !mappingRelease ||
+    mappingRelease["release_id"] !== expected.mappingReleaseId ||
+    mappingRelease["inventory_version"] !== expected.inventoryVersion ||
+    mappingRelease["inventory_digest"] !== expected.inventoryDigest ||
+    mappingRelease["matrix_digest"] !== expected.matrixDigest ||
+    mappingRelease["row_count"] !== 105 ||
+    mappingRelease["generic_count"] !== 0 ||
+    mappingRelease["authorized_count"] !== 0 ||
+    mappingRelease["verified_count"] !== 0 ||
+    mappingRelease["status"] !== "BLOCKED"
+  ) {
+    blockers.push("MAPPING_RELEASE_PROOF_INVALID");
   }
   return blockers;
 }

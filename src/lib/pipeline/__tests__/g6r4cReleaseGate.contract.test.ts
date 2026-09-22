@@ -17,6 +17,10 @@ const closureMigration = readFileSync(
 );
 const attestor = readFileSync(resolve("scripts/parser_runtime_attestation.py"), "utf8");
 const workflow = readFileSync(resolve(".github/workflows/parser-runtime-attestation.yml"), "utf8");
+const releaseMigration = readFileSync(
+  resolve("supabase/migrations/20260922073148_196da5bd-d5f4-4296-8131-0cac0b26c059.sql"),
+  "utf8",
+);
 
 const REQUIRED_GATES = [
   "parser_runtime_identity",
@@ -100,5 +104,26 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(attestor).toContain('"authorized_count": 0');
     expect(workflow).not.toContain("RELEASE_GATE_EVIDENCE_JSON");
     expect(attestor).not.toContain("record_parser_runtime_attestation");
+  });
+
+  it("uses an append-only 105-row release authority and a 32-condition final gate", () => {
+    expect(releaseMigration).toContain("CREATE TABLE public.canonical_mapping_inventory_releases");
+    expect(releaseMigration).toContain(
+      "CREATE TABLE public.canonical_mapping_inventory_release_rows",
+    );
+    expect(releaseMigration).toContain("canonical_mapping_inventory_releases_immutable");
+    expect(releaseMigration).toContain("canonical_mapping_inventory_release_rows_immutable");
+    expect(releaseMigration).toContain("row_count=105 AND generic_count=0 AND authorized_count=0");
+    expect(releaseMigration).toContain(
+      "CREATE OR REPLACE FUNCTION public.assert_pre_attempt_9_ready",
+    );
+    expect(releaseMigration).toContain("'runtime_frozen'");
+    expect(releaseMigration).toContain("BLOCKED_BEFORE_ATTEMPT_9");
+  });
+
+  it("uses workflow_dispatch only and immutable GitHub repository identity", () => {
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).not.toContain("workflow_call:");
+    expect(attestor).toContain('event != "workflow_dispatch"');
   });
 });

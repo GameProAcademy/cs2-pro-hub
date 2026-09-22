@@ -216,6 +216,24 @@ WITH catalogue AS (
              AND tgname='canonical_mapping_inventory_immutable' AND NOT tgisinternal
          )
 
+  UNION ALL
+  SELECT '21e. versioned mapping releases are private and immutable',
+         NOT has_table_privilege('anon','public.canonical_mapping_inventory_releases','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('authenticated','public.canonical_mapping_inventory_releases','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('anon','public.canonical_mapping_inventory_release_rows','SELECT,INSERT,UPDATE,DELETE')
+         AND NOT has_table_privilege('authenticated','public.canonical_mapping_inventory_release_rows','SELECT,INSERT,UPDATE,DELETE')
+         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.canonical_mapping_inventory_releases'::regclass AND tgname='canonical_mapping_inventory_releases_immutable' AND NOT tgisinternal)
+         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.canonical_mapping_inventory_release_rows'::regclass AND tgname='canonical_mapping_inventory_release_rows_immutable' AND NOT tgisinternal)
+
+  UNION ALL
+  SELECT '21f. C.5/C.6 governance routines are service-only',
+         NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.pronamespace='public'::regnamespace
+             AND p.proname IN ('create_canonical_mapping_inventory_release','canonical_mapping_inventory_release_snapshot','assert_pre_attempt_9_ready')
+             AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+         )
+
   -- 22. integrity constraints
   UNION ALL
   SELECT '22. range/positivity constraints are active',

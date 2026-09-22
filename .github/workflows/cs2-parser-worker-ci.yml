@@ -6,16 +6,24 @@ on:
   pull_request:
     branches: [infra/cs2-parser-worker-v8]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Frozen parser branch"
+        required: true
+        default: "infra/cs2-parser-worker-v8"
 
 permissions:
   contents: read
 
 jobs:
   parser-contract:
+    if: github.event_name != 'workflow_dispatch' || inputs.ref == 'infra/cs2-parser-worker-v8'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
