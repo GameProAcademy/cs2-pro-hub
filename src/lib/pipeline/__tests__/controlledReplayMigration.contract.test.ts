@@ -12,7 +12,7 @@ const hardeningMigration = readFileSync(
   "utf8",
 );
 const releaseGateMigration = readFileSync(
-  resolve("supabase/migrations/20260922011053_db169872-f6cf-47ea-8cae-e09adfc55e62.sql"),
+  resolve("supabase/migrations/20260922011120_46ec54c1-89d9-462c-abc9-074e4bd89262.sql"),
   "utf8",
 );
 

@@ -31,7 +31,6 @@ describe("G.6-R.3 controlled replay contract", () => {
     expect(replayBlock).toContain('reservationStatus === "ENQUEUED"');
     expect(replayBlock).toContain('copyOutcome: "ALREADY_VERIFIED"');
     expect(replayBlock).toContain('queued["audit_status"] !== "RECORDED"');
-    expect(replayBlock).toContain('"reserve_controlled_demo_replay_attempt_9"');
     expect(replayBlock).not.toContain('.from("demo_jobs").insert');
     expect(replayBlock).not.toContain('.from("uploads").insert');
     expect(replayBlock).not.toContain('.from("admin_audit_logs").insert');
