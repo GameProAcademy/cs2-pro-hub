@@ -185,7 +185,7 @@ def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: st
 
 
 def build_tick_intervals(source: dict[str, Any], interval_size: int = TICK_INTERVAL_SIZE) -> list[tuple[int, int]]:
-    if source.get("authoritative") is not True or interval_size <= 0:
+    if source.get("status") not in {"PROVISIONAL", "VERIFIED"} or interval_size <= 0:
         return []
     first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
     if not isinstance(first, int) or not isinstance(last, int) or first < 0 or last < first:
@@ -216,7 +216,7 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
             if outside: overlaps.append({"batch": index, "unexpected_ticks": outside[:256], "total": len(outside)})
         intervals.append({"batch": index, "properties": sorted(batch.get("properties") or []), "requested_interval": list(requested) if key else None, "first_tick": min(batch_tick_set) if batch_tick_set else None, "last_tick": max(batch_tick_set) if batch_tick_set else None, "distinct_ticks": len(batch_tick_set), "rows": int(batch.get("row_count") or 0), "digest": deterministic_digest({"properties": sorted(batch.get("properties") or []), "requested_interval": requested, "ticks": sorted(batch_tick_set), "rows": int(batch.get("row_count") or 0)}), "status": "FAIL" if error else "PASS"})
     expected: set[int] = set()
-    if source.get("authoritative") is True:
+    if source.get("status") in {"PROVISIONAL", "VERIFIED"}:
         first = source.get("expected_min_tick"); last = source.get("expected_max_tick")
         if isinstance(first, int) and isinstance(last, int) and last >= first:
             expected = set(range(first, last + 1))
@@ -247,7 +247,10 @@ def build_tick_coverage(*, batches: list[dict[str, Any]], playback_ticks: int | 
         "complete": complete,
     }
     proof["digest"] = deterministic_digest(proof)
-    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if complete else "BLOCKED", "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL", "tick_domain_source": source, "full_tick_domain_proof": proof, "expected_tick_domain": {"min_tick": proof["expected_min_tick"], "max_tick": proof["expected_max_tick"], "count": proof["expected_tick_count"]}, "observed_tick_domain": {"min_tick": min(observed) if observed else None, "max_tick": max(observed) if observed else None, "count": len(observed)}, "missing_ticks": sorted(missing)[:4096], "missing_tick_count": len(missing), "unexpected_ticks": sorted(unexpected)[:4096], "unexpected_tick_count": len(unexpected), "duplicate_ticks": sorted(duplicate_ticks)[:4096], "duplicate_tick_count": len(duplicate_ticks), "out_of_order_tick_count": out_of_order, "invalid_ticks": invalid_ticks[:4096], "invalid_tick_count": len(invalid_ticks), "first_tick": min(observed) if observed else None, "last_tick": max(observed) if observed else None, "total_ticks_observed": len(observed), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(missing)[:4096], "gap_count": len(missing), "overlaps": overlaps, "failures": failures + ([] if authority_allowed else ["verified_independent_tick_authority_required"]), "domain_proof_status": proof["status"], "complete": complete}
+    authority_failures = [] if authority_allowed else ["verified_independent_tick_authority_required"]
+    if not expected:
+        authority_failures.insert(0, "expected_tick_domain_unavailable")
+    return {"coverage": "FULL_TICK_DOMAIN_AUDIT" if complete else "BLOCKED", "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL", "tick_domain_source": source, "full_tick_domain_proof": proof, "expected_tick_domain": {"min_tick": proof["expected_min_tick"], "max_tick": proof["expected_max_tick"], "count": proof["expected_tick_count"]}, "observed_tick_domain": {"min_tick": min(observed) if observed else None, "max_tick": max(observed) if observed else None, "count": len(observed)}, "missing_ticks": sorted(missing)[:4096], "missing_tick_count": len(missing), "unexpected_ticks": sorted(unexpected)[:4096], "unexpected_tick_count": len(unexpected), "duplicate_ticks": sorted(duplicate_ticks)[:4096], "duplicate_tick_count": len(duplicate_ticks), "out_of_order_tick_count": out_of_order, "invalid_ticks": invalid_ticks[:4096], "invalid_tick_count": len(invalid_ticks), "first_tick": min(observed) if observed else None, "last_tick": max(observed) if observed else None, "total_ticks_observed": len(observed), "total_demo_ticks": playback_ticks, "total_rows_audited": rows, "players_observed": sorted(players), "properties_observed": sorted(properties), "batch_count": len(batches), "batches": intervals, "gaps": sorted(missing)[:4096], "gap_count": len(missing), "overlaps": overlaps, "failures": failures + authority_failures, "domain_proof_status": proof["status"], "complete": complete}
 
 
 def deterministic_digest(value: Any) -> str:

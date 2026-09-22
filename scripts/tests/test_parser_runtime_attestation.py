@@ -78,7 +78,7 @@ def test_mapping_authority_digests_match_reviewed_artifacts():
 def test_attestation_v3_has_freshness_and_unique_nonce(monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", REPOSITORY)
     with patch("scripts.parser_runtime_attestation.mapping_authority_matches_artifact", return_value=True), \
-         patch("scripts.parser_runtime_attestation.git_value", side_effect=["a" * 40]), \
+         patch("scripts.parser_runtime_attestation.git_value", return_value="a" * 40), \
          patch("scripts.parser_runtime_attestation.git_object_bytes", return_value=b"x"), \
          patch("scripts.parser_runtime_attestation.subprocess.check_call", return_value=0), \
          patch("scripts.parser_runtime_attestation.fetch_json", return_value={}), \
