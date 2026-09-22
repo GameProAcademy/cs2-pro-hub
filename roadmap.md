@@ -1,6 +1,6 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4 — VERIFIED PARSER PROVENANCE
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.1 — VERIFIED PARSER PROVENANCE
 
-**Status:** `G.6-R.4 BLOCKED` / `BLOCKED_BEFORE_ATTEMPT_9` — attestation, release gate e reserva vinculada fail-closed aplicadas; replay não iniciado.
+**Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9` — attestation, release gate e reserva vinculada fail-closed aplicadas; replay não iniciado.
 
 - [x] Confirmar read-only que o objeto do attempt 8 existe no bucket `demos` com 473.748.061 bytes.
 - [x] Confirmar ausência de attempt 9 para o mesmo usuário/SHA e preservação dos attempts 7/8.
@@ -14,6 +14,8 @@
 - [x] Consolidar os catálogos Python/WASM em matriz machine-readable determinística, preservando divergências como `BLOCKED` sem inferir equivalência; digest atual `a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702`.
 - [x] Adicionar `compileall`, revision guard, typecheck e instalação reproduzível ao workflow existente, sem criar estratégia paralela.
 - [x] Implementar attestor independente fail-closed, inventário Canonical formal e gate global de 22 condições.
+- [x] Separar identidades workflow/runtime, verificar Git objects/blobs, exigir GitHub OIDC e prova Railway API, e restringir o recorder v2 ao service role.
+- [x] Cobrir toda a superfície de saída do demo adapter sem bypass de autorização e impedir lifecycle terminal em parse parcial.
 - [ ] Observar CI real, obter provenance independente GitHub↔Railway, autoridade integral de ticks e executar paridade/determinismo reais.
 - [ ] Executar gates locais e preflight final imediatamente antes da mutação.
 - [ ] Criar upload 9, copiar/verificar o objeto, enfileirar pelo lifecycle oficial e observar o E2E real até terminal.

@@ -28,6 +28,7 @@ EXPECTED_HASHES = {
     "services/cs2-demo-parser/settings.py": "35eecfb06223812137a4a2f17114aae57cb7fe54",
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
+WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
 
 
 def stable_json(value: Any) -> str:
@@ -40,6 +41,14 @@ def digest(value: Any) -> str:
 
 def git_value(*args: str) -> str:
     return subprocess.check_output(("git", *args), cwd=ROOT, text=True).strip()
+
+
+def git_object_bytes(spec: str) -> bytes:
+    return subprocess.check_output(("git", "cat-file", "blob", spec), cwd=ROOT)
+
+
+def git_blob_sha1(data: bytes) -> str:
+    return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
 
 
 def fetch_json(url: str) -> dict[str, Any]:
@@ -67,18 +76,41 @@ def build_attestation() -> dict[str, Any]:
     run_id = os.getenv("GITHUB_RUN_ID", "")
     run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "")
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
-    if repository != REPOSITORY or ref_name != BRANCH or sha != COMMIT:
+    if repository != REPOSITORY:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
     if event not in {"workflow_dispatch", "workflow_call"} or not run_id or not run_attempt:
         statuses.append("GITHUB_WORKFLOW_IDENTITY_MISSING")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
-        statuses.append("GIT_COMMIT_INVALID")
+        statuses.append("GITHUB_WORKFLOW_COMMIT_INVALID")
+    expected_workflow_ref = f"{REPOSITORY}/{WORKFLOW_PATH}@"
+    if not workflow_ref.startswith(expected_workflow_ref):
+        statuses.append("GITHUB_WORKFLOW_REF_MISMATCH")
 
-    tree = git_value("rev-parse", f"{COMMIT}^{{tree}}") if sha == COMMIT else None
+    try:
+        git_value("cat-file", "-e", f"{COMMIT}^{{commit}}")
+        tree = git_value("rev-parse", f"{COMMIT}^{{tree}}")
+    except subprocess.CalledProcessError:
+        tree = None
+        statuses.append("RUNTIME_GIT_COMMIT_NOT_FOUND")
+    runtime_ref = f"refs/remotes/origin/{BRANCH}"
+    try:
+        subprocess.check_call(
+            ("git", "merge-base", "--is-ancestor", COMMIT, runtime_ref),
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        branch_contains_commit = True
+    except subprocess.CalledProcessError:
+        branch_contains_commit = False
+        statuses.append("RUNTIME_BRANCH_DOES_NOT_CONTAIN_COMMIT")
+
     observed_hashes: dict[str, dict[str, Any]] = {}
     for path, expected in EXPECTED_HASHES.items():
-        candidate = ROOT / path
-        observed = hashlib.sha1((f"blob {candidate.stat().st_size}\0").encode() + candidate.read_bytes()).hexdigest() if candidate.exists() else None
+        try:
+            observed = git_blob_sha1(git_object_bytes(f"{COMMIT}:{path}"))
+        except subprocess.CalledProcessError:
+            observed = None
         observed_hashes[path] = {"expected": expected, "observed": observed, "match": observed == expected}
         if observed != expected:
             statuses.append(f"CRITICAL_HASH_MISMATCH:{path}")
@@ -104,11 +136,13 @@ def build_attestation() -> dict[str, Any]:
                     "environment_id": ENVIRONMENT, "source_branch": BRANCH, "source_commit": COMMIT}
         if any(deployment_evidence.get(key) != value for key, value in expected.items()):
             statuses.append("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
+        if deployment_evidence.get("verification_source") != "RAILWAY_API" or deployment_evidence.get("independently_verified") is not True:
+            statuses.append("RAILWAY_DEPLOYMENT_PROOF_UNTRUSTED")
     else:
         statuses.append("BLOCKED_EXTERNAL_PROOF")
 
     payload = {
-        "schema_version": 1, "repository": REPOSITORY, "railway_branch": BRANCH,
+        "schema_version": 2, "repository": REPOSITORY, "railway_branch": BRANCH,
         "git_commit": COMMIT, "git_tree": tree, "deployment_id": DEPLOYMENT,
         "railway_project_id": PROJECT, "railway_service_id": SERVICE,
         "railway_environment_id": ENVIRONMENT, "parser_name": "demoparser2",
@@ -117,8 +151,12 @@ def build_attestation() -> dict[str, Any]:
         "runtime_health": {"custom": custom_health, "railway": railway_health},
         "custom_domain_version": custom_identity, "railway_domain_version": railway_identity,
         "critical_file_hashes": observed_hashes, "deployment_evidence": deployment_evidence,
-        "attestor": {"provider": "github_actions", "workflow_ref": workflow_ref,
-                     "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha},
+        "runtime_identity": {"repository": REPOSITORY, "branch": BRANCH, "commit": COMMIT,
+                             "tree": tree, "branch_contains_commit": branch_contains_commit},
+        "workflow_identity": {"provider": "github_actions", "repository": repository,
+                              "ref_name": ref_name, "workflow_ref": workflow_ref,
+                              "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha,
+                              "event_name": event},
     }
     attestation_digest = digest(payload)
     return {"status": "VERIFIED" if not statuses else "BLOCKED", "blockers": sorted(set(statuses)),

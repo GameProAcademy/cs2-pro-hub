@@ -11,6 +11,10 @@ const aclMigration = readFileSync(
   resolve("supabase/migrations/20260922020440_55f0a265-0e1d-4890-8382-6d6d8f26cb4d.sql"),
   "utf8",
 );
+const closureMigration = readFileSync(
+  resolve("supabase/migrations/20260922060006_86148852-19aa-4341-af5d-6e3fa4d08063.sql"),
+  "utf8",
+);
 const attestor = readFileSync(resolve("scripts/parser_runtime_attestation.py"), "utf8");
 const workflow = readFileSync(resolve(".github/workflows/parser-runtime-attestation.yml"), "utf8");
 
@@ -50,20 +54,27 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(gateMigration).toContain(
       "REVOKE ALL ON FUNCTION public.assert_canonical_mapping_gate() FROM PUBLIC, anon, authenticated",
     );
-    expect(aclMigration).toContain(
+    expect(closureMigration).toContain(
       "REVOKE ALL ON FUNCTION public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb) FROM PUBLIC, anon, authenticated",
+    );
+    expect(closureMigration).toContain(
+      "REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON TABLE public.canonical_mapping_inventory FROM service_role",
     );
   });
 
   it("requires an external secret, canonical digest, HMAC, exact source, deployment, and runtime binding", () => {
-    expect(aclMigration).toContain("PARSER_ATTESTATION_SECRET_NOT_CONFIGURED");
-    expect(aclMigration).toContain("extensions.digest(convert_to(_canonical_payload");
-    expect(aclMigration).toContain("extensions.hmac(convert_to(_canonical_payload");
-    expect(aclMigration).toContain("GameProAcademy/cs2-pro-hub");
-    expect(aclMigration).toContain("infra/cs2-parser-worker-v8");
-    expect(aclMigration).toContain("6330c8c4-a410-45db-a364-4eb47702c2fc");
-    expect(aclMigration).toContain(
+    expect(closureMigration).toContain("PARSER_ATTESTATION_SECRET_NOT_CONFIGURED");
+    expect(closureMigration).toContain("extensions.digest(convert_to(_canonical_payload");
+    expect(closureMigration).toContain("extensions.hmac(convert_to(_canonical_payload");
+    expect(closureMigration).toContain("GameProAcademy/cs2-pro-hub");
+    expect(closureMigration).toContain("infra/cs2-parser-worker-v8");
+    expect(closureMigration).toContain("6330c8c4-a410-45db-a364-4eb47702c2fc");
+    expect(closureMigration).toContain(
       "custom_domain_version' IS DISTINCT FROM _payload->'railway_domain_version",
+    );
+    expect(closureMigration).toContain("_payload->>'schema_version' <> '2'");
+    expect(closureMigration).toContain(
+      "_p.workflow_identity->>'workflow_sha' = _p.deployment_commit",
     );
   });
 
