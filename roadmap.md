@@ -1,15 +1,17 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.2 — OPERATIONAL CLOSURE
 
-**Status:** `IN PROGRESS / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
+**Status:** `IMPLEMENTATION COMPLETE / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
 
-- [ ] Auditar e alinhar deterministicamente o inventário Canonical local, JSON e banco, sem autorizar mappings.
-- [ ] Endurecer semântica do adapter e reconciliar catálogo, matriz, tipos e persistência.
-- [ ] Substituir evidência Railway declarativa por consulta independente e validar runtime, Git blobs, OIDC e HMAC.
-- [ ] Fechar recorder, provenance, release evidence e release gate com provas verificáveis e fail-closed.
-- [ ] Fechar workflows e guardas automáticos sem executar replay, DEM real, Attempt 9 ou mutações Canonical.
-- [ ] Executar validações locais/read-only e produzir relatório C.2 com estados e blockers reais.
+- [x] Alinhar deterministicamente o inventário Canonical local e banco em 105 campos, sem autorizar mappings.
+- [x] Preservar adapter parcial/não terminal, `winReason=unknown` e identidade correlacionada sem inferência silenciosa.
+- [x] Substituir evidência Railway declarativa por consulta autenticada à API e validar runtime, Git blobs, OIDC, digest e HMAC.
+- [x] Fechar recorder, provenance e release evidence em modo fail-closed.
+- [x] Fechar workflow e guardas automáticos sem executar replay, DEM real, Attempt 9 ou mutações Canonical.
+- [x] Executar validações locais/read-only e produzir relatório C.2.
 
 **Restrições:** runtime Railway congelado; staged patch não aceito; Attempt 9/10+, cópia/processamento de DEM, cleanup, Canonical, métricas e features proibidos nesta fase.
+
+**Blockers externos:** `RAILWAY_API_TOKEN` e secrets de transporte/assinatura ausentes; commit congelado indisponível no Git local; paridade Python×WASM, determinismo, tick authority e CI remoto não executados. Inventário: 105 total, 0 autorizado; Attempt 8=1, Attempt 9=0, Attempt 10+=0; provenance VERIFIED=0.
 
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.1 — VERIFIED PARSER PROVENANCE
 

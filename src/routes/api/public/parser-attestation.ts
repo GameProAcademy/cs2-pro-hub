@@ -4,6 +4,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 import type { Json } from "@/integrations/supabase/types";
+import {
+  PARSER_ATTESTATION_EXPECTED,
+  validateParserAttestationPayload,
+} from "@/lib/parserAttestation";
 
 const bodySchema = z.object({
   result: z.object({
@@ -17,7 +21,6 @@ const bodySchema = z.object({
   releaseGateEvidence: z.record(z.unknown()),
 });
 
-const EXPECTED_REPOSITORY = "GameProAcademy/cs2-pro-hub";
 const EXPECTED_BRANCH_REF = "refs/heads/infra/cs2-parser-worker-v8";
 const EXPECTED_WORKFLOW = ".github/workflows/parser-runtime-attestation.yml";
 const OIDC_AUDIENCE = "gamepro-parser-attestation";
@@ -88,11 +91,11 @@ async function verifyGitHubOidc(token: string, payload: Record<string, unknown>)
     throw new Error("WORKFLOW_IDENTITY_INVALID");
   }
   const workflowIdentity = workflow as Record<string, unknown>;
-  const expectedWorkflowRef = `${EXPECTED_REPOSITORY}/${EXPECTED_WORKFLOW}@${EXPECTED_BRANCH_REF}`;
+  const expectedWorkflowRef = `${PARSER_ATTESTATION_EXPECTED.repository}/${EXPECTED_WORKFLOW}@${EXPECTED_BRANCH_REF}`;
   if (
     claims["iss"] !== "https://token.actions.githubusercontent.com" ||
     claims["aud"] !== OIDC_AUDIENCE ||
-    claims["repository"] !== EXPECTED_REPOSITORY ||
+    claims["repository"] !== PARSER_ATTESTATION_EXPECTED.repository ||
     claims["ref"] !== EXPECTED_BRANCH_REF ||
     claims["workflow_ref"] !== expectedWorkflowRef ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
@@ -131,11 +134,28 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "ATTESTATION_PAYLOAD_INVALID" }, { status: 400 });
         }
         const canonicalPayload = canonicalJson(parsed.data.result.payload);
+        const calculatedDigest = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(canonicalPayload),
+        );
+        const calculatedDigestHex = Array.from(new Uint8Array(calculatedDigest), (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join("");
+        if (!safeEqual(parsed.data.result.attestation_digest, calculatedDigestHex)) {
+          return Response.json({ error: "ATTESTATION_DIGEST_INVALID" }, { status: 400 });
+        }
         const expectedSignature = createHmac("sha256", signingSecret)
           .update(canonicalPayload)
           .digest("hex");
         if (!safeEqual(parsed.data.signature, expectedSignature)) {
           return Response.json({ error: "ATTESTATION_SIGNATURE_INVALID" }, { status: 401 });
+        }
+        const payloadBlockers = validateParserAttestationPayload(parsed.data.result.payload);
+        if (payloadBlockers.length > 0) {
+          return Response.json(
+            { error: "ATTESTATION_EVIDENCE_INVALID", blockers: payloadBlockers },
+            { status: 422 },
+          );
         }
         try {
           await verifyGitHubOidc(parsed.data.oidcToken, parsed.data.result.payload);
@@ -146,6 +166,23 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "ATTESTATION_IDENTITY_INVALID" }, { status: 401 });
         }
 
+        const mappingEvidence = parsed.data.releaseGateEvidence["mapping_inventory"];
+        const mappingRecord =
+          mappingEvidence && typeof mappingEvidence === "object" && !Array.isArray(mappingEvidence)
+            ? (mappingEvidence as Record<string, unknown>)
+            : null;
+        if (
+          !mappingRecord ||
+          mappingRecord["status"] !== "BLOCKED" ||
+          mappingRecord["inventory_digest"] !==
+            "206b649f141b291f51d3b7d47b9ea6f20efc19148974b1bd5432eec9e35c7453" ||
+          mappingRecord["matrix_digest"] !==
+            "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702" ||
+          mappingRecord["row_count"] !== 105 ||
+          mappingRecord["authorized_count"] !== 0
+        ) {
+          return Response.json({ error: "MAPPING_AUTHORITY_MISMATCH" }, { status: 422 });
+        }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data, error } = await supabaseAdmin.rpc("record_parser_runtime_attestation", {
           _canonical_payload: canonicalPayload,

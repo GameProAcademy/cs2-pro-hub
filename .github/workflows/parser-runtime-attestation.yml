@@ -36,7 +36,7 @@ jobs:
 
       - name: Build fail-closed runtime evidence
         env:
-          RAILWAY_DEPLOYMENT_EVIDENCE_JSON: ${{ secrets.RAILWAY_DEPLOYMENT_EVIDENCE_JSON }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: python scripts/parser_runtime_attestation.py parser-runtime-attestation.json
 
       - name: Attest the evidence artifact
@@ -58,13 +58,11 @@ jobs:
           PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
           PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
           PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
-          RELEASE_GATE_EVIDENCE_JSON: ${{ secrets.RELEASE_GATE_EVIDENCE_JSON }}
           GITHUB_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
           test -n "$PARSER_ATTESTATION_ENDPOINT"
           test -n "$PARSER_ATTESTATION_TRANSPORT_SECRET"
           test -n "$PARSER_ATTESTATION_HMAC_SECRET"
-          test -n "$RELEASE_GATE_EVIDENCE_JSON"
           test -n "$GITHUB_OIDC_TOKEN"
           canonical_payload="$(jq -cS '.payload' parser-runtime-attestation.json)"
           signature="$(printf '%s' "$canonical_payload" | openssl dgst -sha256 -hmac "$PARSER_ATTESTATION_HMAC_SECRET" -binary | xxd -p -c 256)"
@@ -75,8 +73,8 @@ jobs:
             --data "$(jq -n \
               --rawfile result parser-runtime-attestation.json \
               --arg signature "$signature" \
-              --arg oidcToken "$GITHUB_OIDC_TOKEN" \
-              --argjson releaseGate "$RELEASE_GATE_EVIDENCE_JSON" \
+               --arg oidcToken "$GITHUB_OIDC_TOKEN" \
+               --argjson releaseGate "$(jq -c '.release_gate_evidence' parser-runtime-attestation.json)" \
               '{result:($result|fromjson),signature:$signature,oidcToken:$oidcToken,releaseGateEvidence:$releaseGate}')" \
             "$PARSER_ATTESTATION_ENDPOINT"
 

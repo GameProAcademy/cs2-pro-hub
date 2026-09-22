@@ -3359,12 +3359,10 @@ export type Database = {
     }
     Functions: {
       assert_canonical_mapping_gate: { Args: never; Returns: Json }
-      assert_real_demo_release_ready:
-        | { Args: { _provenance_id: string }; Returns: Json }
-        | {
-            Args: { _gate_evidence: Json; _provenance_id: string }
-            Returns: Json
-          }
+      assert_real_demo_release_ready: {
+        Args: { _provenance_id: string }
+        Returns: Json
+      }
       assert_verified_parser_provenance: {
         Args: { _provenance_id: string }
         Returns: Json
@@ -3389,6 +3387,7 @@ export type Database = {
         }
         Returns: string
       }
+      canonical_mapping_inventory_snapshot: { Args: never; Returns: Json }
       canonical_source_priority: {
         Args: { _source: Database["public"]["Enums"]["data_source"] }
         Returns: number

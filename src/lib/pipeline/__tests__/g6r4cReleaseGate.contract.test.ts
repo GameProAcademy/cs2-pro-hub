@@ -95,6 +95,10 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("actions/attest-build-provenance@v2");
     expect(workflow).toContain("infra/cs2-parser-worker-v8");
     expect(attestor).toContain('statuses.append("BLOCKED_EXTERNAL_PROOF")');
+    expect(attestor).toContain("RAILWAY_API_TOKEN");
+    expect(attestor).not.toContain("RAILWAY_DEPLOYMENT_EVIDENCE_JSON");
+    expect(attestor).toContain('"authorized_count": 0');
+    expect(workflow).not.toContain("RELEASE_GATE_EVIDENCE_JSON");
     expect(attestor).not.toContain("record_parser_runtime_attestation");
   });
 });
