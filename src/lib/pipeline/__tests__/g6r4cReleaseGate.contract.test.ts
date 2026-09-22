@@ -108,11 +108,15 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
 
   it("uses an append-only 105-row release authority and a 32-condition final gate", () => {
     expect(releaseMigration).toContain("CREATE TABLE public.canonical_mapping_inventory_releases");
-    expect(releaseMigration).toContain("CREATE TABLE public.canonical_mapping_inventory_release_rows");
+    expect(releaseMigration).toContain(
+      "CREATE TABLE public.canonical_mapping_inventory_release_rows",
+    );
     expect(releaseMigration).toContain("canonical_mapping_inventory_releases_immutable");
     expect(releaseMigration).toContain("canonical_mapping_inventory_release_rows_immutable");
     expect(releaseMigration).toContain("row_count=105 AND generic_count=0 AND authorized_count=0");
-    expect(releaseMigration).toContain("CREATE OR REPLACE FUNCTION public.assert_pre_attempt_9_ready");
+    expect(releaseMigration).toContain(
+      "CREATE OR REPLACE FUNCTION public.assert_pre_attempt_9_ready",
+    );
     expect(releaseMigration).toContain("'runtime_frozen'");
     expect(releaseMigration).toContain("BLOCKED_BEFORE_ATTEMPT_9");
   });

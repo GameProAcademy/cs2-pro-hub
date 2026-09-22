@@ -69,8 +69,7 @@ describe("parser attestation OIDC claims", () => {
 
   it("rejects the legacy mutable repository subject", () => {
     const claims = validClaims();
-    claims["sub"] =
-      "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8";
+    claims["sub"] = "repo:GameProAcademy/cs2-pro-hub:ref:refs/heads/infra/cs2-parser-worker-v8";
     expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
       "OIDC_CLAIMS_MISMATCH",
     );
