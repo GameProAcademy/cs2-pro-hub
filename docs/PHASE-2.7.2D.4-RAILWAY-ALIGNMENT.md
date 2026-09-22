@@ -6,7 +6,9 @@ Status: **READY FOR RAILWAY SYNC**. This document is a CI/runtime-contract refer
 
 Railway owns only the parser/worker runtime under `services/cs2-demo-parser/`. The APP owns orchestration, queue authorization, database and Storage access, RAW verification, forensic audit, Canonical persistence, metrics, features, and pipeline lifecycle.
 
-The Railway service is configured to use the GitHub branch `infra/cs2-demo-parser-worker-v8`. That branch is now present and points to the currently deployed commit `5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`, preserving runtime parity.
+The **actual production Railway source branch is `infra/cs2-parser-worker-v8`**. The currently deployed runtime is commit `5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`, preserving the frozen parser runtime identity.
+
+A similarly named legacy/stray branch such as `infra/cs2-demo-parser-worker-v8` must **not** be treated as the Railway source of truth.
 
 Never merge `main` into the worker branch wholesale. Compare and transfer parser files individually. Do not copy APP React code, Canonical persistence, unrelated migrations, secrets, or environment files into the worker runtime.
 
@@ -14,11 +16,12 @@ Never merge `main` into the worker branch wholesale. Compare and transfer parser
 
 - Parser: `demoparser2==0.42.0`.
 - Parser contract: `1`.
-- Current deployed Railway branch: `infra/cs2-demo-parser-worker-v8`.
+- **Actual Railway source branch:** `infra/cs2-parser-worker-v8`.
 - Current deployed Railway commit: `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`.
 - The deployed revision must remain an immutable `git:<40 lowercase hex>` identity.
 - The runtime must report the same semantic and build revision.
-- Creating the missing GitHub branch above does not by itself authorize or require a Railway redeploy.
+- Updating CI/docs on a non-production PR branch does not by itself authorize or require a Railway redeploy.
+- Do not accept any staged Railway patch merely because it exists; it must be independently reviewed and explicitly authorized.
 
 ## MUST PRESERVE Railway-specific safeguards
 
@@ -56,9 +59,10 @@ The parser-worker CI workflow is deliberately limited to:
 - dependency installation from `requirements-dev.txt`;
 - compileall;
 - pytest;
+- reconciled field-governance matrix check;
 - production revision guard.
 
-The workflow triggers on both the current Railway branch and the legacy `infra/cs2-parser-worker-v8` naming family so historical branches remain testable.
+The workflow must trigger for the **actual Railway branch family `infra/cs2-parser-worker-v8`** and its PR branches. Legacy/stray branch names must never be used as production source-of-truth documentation.
 
 ## Real-demo prohibition
 
@@ -71,7 +75,7 @@ Passing this CI does not authorize:
 - metrics/features generation;
 - AI Coach consumption.
 
-Those operations require the separate provenance attestation and real-demo gates.
+Those operations require the separate independent provenance attestation and real-demo gates.
 
 ## Current decision
 
@@ -79,3 +83,4 @@ Those operations require the separate provenance attestation and real-demo gates
 - Railway deployment: unchanged by this PR.
 - Real DEM E2E: not authorized.
 - Attempt 9: not authorized.
+- Canonical admission: not authorized.
