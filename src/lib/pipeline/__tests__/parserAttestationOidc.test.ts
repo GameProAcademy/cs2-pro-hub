@@ -88,7 +88,9 @@ describe("parser attestation OIDC claims", () => {
 
 describe("parser attestation freshness contract", () => {
   it("rejects a payload without a timestamp and nonce before persistence", () => {
-    const blockers = validateParserAttestationPayload({ schema_version: PARSER_ATTESTATION_SCHEMA_VERSION });
+    const blockers = validateParserAttestationPayload({
+      schema_version: PARSER_ATTESTATION_SCHEMA_VERSION,
+    });
     expect(blockers).toContain("ATTESTATION_FRESHNESS_INVALID");
   });
 

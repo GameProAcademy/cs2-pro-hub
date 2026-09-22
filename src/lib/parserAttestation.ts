@@ -101,7 +101,8 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   ) {
     blockers.push("PINNED_IDENTITY_MISMATCH");
   }
-  const attestedAt = typeof payload["attested_at"] === "string" ? Date.parse(payload["attested_at"]) : NaN;
+  const attestedAt =
+    typeof payload["attested_at"] === "string" ? Date.parse(payload["attested_at"]) : NaN;
   if (
     !Number.isFinite(attestedAt) ||
     typeof payload["nonce"] !== "string" ||
