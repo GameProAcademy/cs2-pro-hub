@@ -11,7 +11,7 @@
 - [x] Fixar repository/branch/deployment/runtime, hashes críticos exatos, digest canônico e freshness ancorada no servidor.
 - [x] Vincular reserva, cópia verificada, enqueue e auditoria por UUID opaco; ACL continua service-role-only.
 - [x] Corrigir o vínculo para o branch real `infra/cs2-parser-worker-v8` e criar `assert_real_demo_release_ready()` com evidence imutável, service-role-only e chamada obrigatória dentro da reserva.
-- [x] Consolidar os catálogos Python/WASM em matriz machine-readable determinística, preservando divergências como `BLOCKED` sem inferir equivalência.
+- [x] Consolidar os catálogos Python/WASM em matriz machine-readable determinística, preservando divergências como `BLOCKED` sem inferir equivalência; digest atual `a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702`.
 - [x] Adicionar `compileall`, revision guard, typecheck e instalação reproduzível ao workflow existente, sem criar estratégia paralela.
 - [x] Implementar attestor independente fail-closed, inventário Canonical formal e gate global de 22 condições.
 - [ ] Observar CI real, obter provenance independente GitHub↔Railway, autoridade integral de ticks e executar paridade/determinismo reais.

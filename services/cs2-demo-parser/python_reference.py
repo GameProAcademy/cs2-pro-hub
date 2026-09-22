@@ -104,14 +104,14 @@ def build_python_reference(path_value: str | None, authorization: dict[str, Any]
             "canonicalEligible": False,
             "persisted": False,
         }
+    path = Path(path_value)
+    if not path.is_file() or path.suffix.lower() != ".dem":
+        raise ValueError(EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED)
     if not authorization or authorization.get("authorizedDemo") is not True:
         raise ValueError(NO_AUTHORIZED_REAL_DEM)
     required_authorization = {"provenance", "filename", "sha256", "sizeBytes", "source", "authorizationRef", "receivedAt"}
     if not required_authorization.issubset(authorization) or authorization.get("source") != "LOCAL_FILE":
         raise ValueError(NO_AUTHORIZED_REAL_DEM)
-    path = Path(path_value)
-    if not path.is_file() or path.suffix.lower() != ".dem":
-        raise ValueError(EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED)
     size = path.stat().st_size
     if size < 1 or size > MAX_DEMO_BYTES:
         raise ValueError(AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS)
