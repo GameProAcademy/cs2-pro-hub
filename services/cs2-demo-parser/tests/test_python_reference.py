@@ -5,7 +5,7 @@ import math
 
 import pytest
 
-from python_reference import _bounded, _finite, _manifest, build_python_reference
+from python_reference import MAX_DEMO_BYTES, _bounded, _finite, _manifest, build_python_reference
 
 
 def test_reference_is_not_run_without_explicit_authorized_fixture():
@@ -28,6 +28,10 @@ def test_reference_bounds_rows_and_rejects_non_finite_values():
     assert _bounded(list(range(1_100))) == list(range(1_000))
     assert _finite({"zero": 0, "false": False, "none": None})
     assert not _finite({"nested": [math.inf]})
+
+
+def test_reference_accepts_the_1_5_gib_real_demo_contract_ceiling():
+    assert MAX_DEMO_BYTES == 1_500 * 1024 * 1024
 
 
 def test_reference_rejects_existing_demo_without_authorization(tmp_path):
