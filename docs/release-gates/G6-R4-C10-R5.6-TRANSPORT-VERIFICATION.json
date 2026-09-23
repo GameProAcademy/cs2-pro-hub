@@ -33,7 +33,12 @@
     "attempt9": 0,
     "attempt10Plus": 0,
     "demoJobsAtOrAbove9": 0,
-    "canonical": { "mappingCount": 105, "authorizedCount": 0, "verifiedCount": 0, "genericCount": 0 },
+    "canonical": {
+      "mappingCount": 105,
+      "authorizedCount": 0,
+      "verifiedCount": 0,
+      "genericCount": 0
+    },
     "provenanceVerified": 0,
     "nonces": 0
   },

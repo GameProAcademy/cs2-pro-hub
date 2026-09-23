@@ -86,14 +86,16 @@ export const recordR5ForensicUpload = createServerFn({ method: "POST" })
 export const recordR5ForensicProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      stagingId: z.string().uuid(),
-      bytesUploaded: z.number().int().min(0),
-      bytesTotal: z.number().int().positive(),
-      percent: z.number().int().min(0).max(100),
-      retryCount: z.number().int().min(0),
-      resumed: z.boolean(),
-    }).parse(input),
+    z
+      .object({
+        stagingId: z.string().uuid(),
+        bytesUploaded: z.number().int().min(0),
+        bytesTotal: z.number().int().positive(),
+        percent: z.number().int().min(0).max(100),
+        retryCount: z.number().int().min(0),
+        resumed: z.boolean(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await requireMaster(context as Context);
@@ -118,7 +120,8 @@ export const verifyR5ForensicDemo = createServerFn({ method: "POST" })
     await audit(context as Context, "R5_VERIFY_STARTED", data.stagingId, {});
     try {
       const result = await verifyR5ForensicStaging(data.stagingId);
-      const gate = typeof result === "object" && result !== null ? result as Record<string, unknown> : {};
+      const gate =
+        typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
       const ready = gate["status"] === "READY_FOR_EXECUTION";
       await audit(context as Context, "R5_VERIFY_COMPLETED", data.stagingId, {});
       await audit(context as Context, ready ? "R5_GATE_READY" : "R5_GATE_BLOCKED", data.stagingId, {

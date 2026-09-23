@@ -32,10 +32,14 @@ function metadataDigest(value: Record<string, unknown>): string {
     .digest("hex");
 }
 
-
-async function createDemoSignedUrlForBucketObject(bucketId: string, storagePath: string): Promise<string> {
+async function createDemoSignedUrlForBucketObject(
+  bucketId: string,
+  storagePath: string,
+): Promise<string> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.storage.from(bucketId).createSignedUrl(storagePath, 60 * 15);
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucketId)
+    .createSignedUrl(storagePath, 60 * 15);
   if (error || !data?.signedUrl) throw new Error("R5_DEM_OBJECT_MISSING");
   return data.signedUrl;
 }
@@ -85,7 +89,8 @@ export async function getR5ForensicStaging(): Promise<R5ForensicStagingResult | 
 export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("prepare_r5_forensic_staging");
-  if (error || !data) throw new Error(`R5_STAGING_CREATE_FAILED:${error?.message ?? "missing row"}`);
+  if (error || !data)
+    throw new Error(`R5_STAGING_CREATE_FAILED:${error?.message ?? "missing row"}`);
   return mapStagingRow(data);
 }
 
@@ -103,7 +108,10 @@ export async function updateR5TransportState(
   if (error) throw new Error(`R5_STAGING_STATE_FAILED:${error.message}`);
 }
 
-export async function updateR5TransportProgress(stagingId: string, bytesUploaded: number): Promise<void> {
+export async function updateR5TransportProgress(
+  stagingId: string,
+  bytesUploaded: number,
+): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin.rpc("record_r5_forensic_progress", {
     _staging_id: stagingId,
@@ -171,16 +179,22 @@ export async function verifyR5ForensicStaging(stagingId: string) {
       size: observedSize,
       storagePath: row.storage_path,
     });
-    const { error: verifiedError } = await supabaseAdmin.rpc("transition_r5_forensic_verification", {
-      _staging_id: stagingId,
-      _action: "verified",
-      _observed_size: observedSize,
-      _observed_sha256: observedSha256,
-      _metadata_digest: digest,
-    });
+    const { error: verifiedError } = await supabaseAdmin.rpc(
+      "transition_r5_forensic_verification",
+      {
+        _staging_id: stagingId,
+        _action: "verified",
+        _observed_size: observedSize,
+        _observed_sha256: observedSha256,
+        _metadata_digest: digest,
+      },
+    );
     if (verifiedError) throw new Error(`R5_STAGING_VERIFY_FAILED:${verifiedError.message}`);
   } catch (error) {
-    const code = error instanceof Error ? (error.message.split(":", 1)[0] ?? "R5_VERIFICATION_FAILED") : "R5_VERIFICATION_FAILED";
+    const code =
+      error instanceof Error
+        ? (error.message.split(":", 1)[0] ?? "R5_VERIFICATION_FAILED")
+        : "R5_VERIFICATION_FAILED";
     await supabaseAdmin.rpc("transition_r5_forensic_verification", {
       _staging_id: stagingId,
       _action: "failed",

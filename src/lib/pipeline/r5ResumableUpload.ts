@@ -48,7 +48,9 @@ export async function verifyAuthorizedR5FileLocally(
 ): Promise<R5LocalFileEvidence> {
   assertAuthorizedR5File(file);
   const evidence = await new Promise<R5LocalFileEvidence>((resolve, reject) => {
-    const worker = new Worker(new URL("./r5DemHash.worker.ts", import.meta.url), { type: "module" });
+    const worker = new Worker(new URL("./r5DemHash.worker.ts", import.meta.url), {
+      type: "module",
+    });
     let settled = false;
     const finish = (result: { evidence?: R5LocalFileEvidence; error?: Error }) => {
       if (settled) return;
@@ -62,7 +64,9 @@ export async function verifyAuthorizedR5FileLocally(
     const onAbort = () => finish({ error: new DOMException("Hash cancelled", "AbortError") });
     signal?.addEventListener("abort", onAbort, { once: true });
     worker.onerror = () => finish({ error: new Error("R5_FILE_HASH_FAILED") });
-    worker.onmessage = (event: MessageEvent<{ type: string; percent?: number; sha256?: string; size?: number }>) => {
+    worker.onmessage = (
+      event: MessageEvent<{ type: string; percent?: number; sha256?: string; size?: number }>,
+    ) => {
       if (event.data.type === "progress") onProgress?.(event.data.percent ?? 0);
       if (event.data.type === "done") {
         event.data.sha256 && event.data.size !== undefined
