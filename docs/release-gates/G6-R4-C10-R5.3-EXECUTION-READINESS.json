@@ -12,6 +12,7 @@
   "gate": "R5.3_EXECUTION_READINESS",
   "implementation": "IMPLEMENTED",
   "status": "BLOCKED",
+  "staging": "BLOCKED_REAL_DEM_NOT_STAGED",
   "python": "NOT_RUN",
   "wasm": "NOT_RUN",
   "parity": "NOT_RUN",

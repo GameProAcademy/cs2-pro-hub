@@ -12,6 +12,8 @@
   "gate": "R5.2_FINAL",
   "implementation": "IMPLEMENTED",
   "status": "BLOCKED_REAL_DEM_NOT_STAGED",
+  "liveDatabaseVerification": "VERIFIED",
+  "resumeRuntimeVerification": "NOT_VERIFIED",
   "transport": "BLOCKED",
   "storage": "PASS",
   "identity": "BLOCKED",

@@ -15,6 +15,8 @@
   "bucket": "r5-forensic-staging",
   "private": true,
   "pathAuthority": "SERVER_FIXED",
+  "pathSemantics": "BUCKET_RELATIVE_VERIFIED_LIVE",
+  "bucketSizeLimitBytes": 524288000,
   "objectPresent": false,
   "separatedFrom": [
     "uploads",
