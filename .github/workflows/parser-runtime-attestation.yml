@@ -10,23 +10,22 @@ permissions:
 
 jobs:
   attest-runtime:
-    if: github.repository == 'GameProAcademy/cs2-pro-hub' && github.ref_name == 'infra/cs2-parser-worker-v8'
+    # The attestor workflow is intentionally sourced from main. The Railway
+    # runtime branch is an evidence target, not the workflow source.
+    if: github.repository == 'GameProAcademy/cs2-pro-hub' && github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout attestor source
+      - name: Checkout approved attestor source from main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
-      - name: Fetch frozen runtime branch and commit as Git objects
+      - name: Fetch frozen Railway runtime branch and commit as Git objects
         run: |
-          git fetch --no-tags origin \
-            infra/cs2-parser-worker-v8:refs/remotes/origin/infra/cs2-parser-worker-v8
+          git fetch --no-tags origin             infra/cs2-parser-worker-v8:refs/remotes/origin/infra/cs2-parser-worker-v8
           git cat-file -e 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76^{commit}
-          git merge-base --is-ancestor \
-            5703b1d88f21ee57fdd1d83722edf30e0f0c6f76 \
-            refs/remotes/origin/infra/cs2-parser-worker-v8
+          git merge-base --is-ancestor             5703b1d88f21ee57fdd1d83722edf30e0f0c6f76             refs/remotes/origin/infra/cs2-parser-worker-v8
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -65,17 +64,7 @@ jobs:
           test -n "$GITHUB_OIDC_TOKEN"
           canonical_payload="$(jq -cS '.payload' parser-runtime-attestation.json)"
           signature="$(printf '%s' "$canonical_payload" | openssl dgst -sha256 -hmac "$PARSER_ATTESTATION_HMAC_SECRET" -binary | xxd -p -c 256)"
-          curl --fail-with-body --silent --show-error \
-            --retry 0 \
-            -H "Authorization: Bearer $PARSER_ATTESTATION_TRANSPORT_SECRET" \
-            -H "Content-Type: application/json" \
-            --data "$(jq -n \
-              --rawfile result parser-runtime-attestation.json \
-              --arg signature "$signature" \
-               --arg oidcToken "$GITHUB_OIDC_TOKEN" \
-               --argjson releaseGate "$(jq -c '.release_gate_evidence' parser-runtime-attestation.json)" \
-              '{result:($result|fromjson),signature:$signature,oidcToken:$oidcToken,releaseGateEvidence:$releaseGate}')" \
-            "$PARSER_ATTESTATION_ENDPOINT"
+          curl --fail-with-body --silent --show-error             --retry 0             -H "Authorization: Bearer $PARSER_ATTESTATION_TRANSPORT_SECRET"             -H "Content-Type: application/json"             --data "$(jq -n               --rawfile result parser-runtime-attestation.json               --arg signature "$signature"               --arg oidcToken "$GITHUB_OIDC_TOKEN"               --argjson releaseGate "$(jq -c '.release_gate_evidence' parser-runtime-attestation.json)"               '{result:($result|fromjson),signature:$signature,oidcToken:$oidcToken,releaseGateEvidence:$releaseGate}')"             "$PARSER_ATTESTATION_ENDPOINT"
 
       - name: Upload evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
