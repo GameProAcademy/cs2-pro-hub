@@ -13,7 +13,8 @@ async function audit(
   stagingId: string | null,
   metadata: Record<string, string | number | boolean | null>,
 ): Promise<void> {
-  const { error } = await context.supabase.from("admin_audit_logs").insert({
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.from("admin_audit_logs").insert({
     admin_user_id: context.userId,
     action,
     target_user_id: null,
