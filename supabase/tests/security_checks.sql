@@ -315,6 +315,23 @@ WITH catalogue AS (
              AND p.proname IN ('attestation_security_invariants','pre_real_demo_gate_status')
              AND (NOT p.prosecdef OR p.provolatile <> 's' OR NOT (coalesce(p.proconfig,ARRAY[]::text[]) @> ARRAY['search_path=""']))
          )
+
+  UNION ALL
+  SELECT '21n. R5 forensic staging is private, non-destructive and gate-controlled',
+         NOT has_table_privilege('anon','public.r5_forensic_staging','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND NOT has_table_privilege('authenticated','public.r5_forensic_staging','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND has_table_privilege('service_role','public.r5_forensic_staging','SELECT,INSERT,UPDATE')
+         AND NOT has_table_privilege('service_role','public.r5_forensic_staging','DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND has_table_privilege('sandbox_exec','public.r5_forensic_staging','SELECT')
+         AND NOT has_table_privilege('sandbox_exec','public.r5_forensic_staging','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+         AND EXISTS (SELECT 1 FROM pg_class WHERE oid='public.r5_forensic_staging'::regclass AND relrowsecurity)
+         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.r5_forensic_staging'::regclass AND tgname='r5_forensic_staging_guard' AND NOT tgisinternal)
+         AND NOT has_function_privilege('anon','public.r5_real_dem_access_gate(uuid)','EXECUTE')
+         AND NOT has_function_privilege('authenticated','public.r5_real_dem_access_gate(uuid)','EXECUTE')
+         AND EXISTS (
+           SELECT 1 FROM storage.buckets
+           WHERE id='r5-forensic-staging' AND NOT public AND file_size_limit >= 473748061
+         )
          AND NOT EXISTS (
            SELECT 1 FROM pg_proc p
            WHERE p.pronamespace='public'::regnamespace

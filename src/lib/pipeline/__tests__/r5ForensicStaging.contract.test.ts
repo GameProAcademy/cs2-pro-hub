@@ -41,6 +41,7 @@ describe("R5.1 forensic staging contract", () => {
     expect(migration).toContain("ATTEMPT_9_ALREADY_EXISTS");
     expect(migration).toContain("CANONICAL_BASELINE_CHANGED");
     expect(migration).toContain("R5_STAGING_CLEANUP_OBSERVED");
+    expect(migration).not.toMatch(/GRANT .* ON TABLE public\.r5_forensic_staging TO (?:anon|authenticated)/);
   });
 
   it("exposes staging only through an authenticated master-admin server function", () => {
