@@ -42,7 +42,7 @@ CREATE TABLE public.uploads (
   supersedes_job_id uuid, replacement_reason text
 );
 CREATE TABLE public.demo_jobs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), upload_id uuid NOT NULL UNIQUE REFERENCES public.uploads(id),
+  id uuid PRIMARY KEY, upload_id uuid NOT NULL UNIQUE REFERENCES public.uploads(id),
   user_id uuid NOT NULL REFERENCES public.profiles(id), status public.upload_status NOT NULL DEFAULT 'pending',
   stage text NOT NULL DEFAULT 'queued', retry_count integer NOT NULL DEFAULT 0,
   max_retries integer NOT NULL DEFAULT 2, queued_at timestamptz NOT NULL DEFAULT now(),
@@ -61,7 +61,7 @@ CREATE UNIQUE INDEX demo_jobs_superseded_once_key ON public.demo_jobs(supersedes
 CREATE UNIQUE INDEX uploads_user_demo_sha_active_key ON public.uploads(user_id,demo_sha256)
   WHERE demo_sha256 IS NOT NULL AND status IN ('pending','processing','cancel_requested');
 CREATE TABLE public.raw_demo_evidence_reports (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), job_id uuid NOT NULL REFERENCES public.demo_jobs(id),
+  id uuid PRIMARY KEY, job_id uuid NOT NULL REFERENCES public.demo_jobs(id),
   approved_for_canonical boolean NOT NULL DEFAULT false, raw_audit_status text NOT NULL
 );
 CREATE SCHEMA pgmq;
