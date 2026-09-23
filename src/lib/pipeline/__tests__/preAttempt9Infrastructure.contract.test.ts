@@ -24,7 +24,8 @@ const workflowBindingMigration = readFileSync(
 const r57Migration = readFileSync(
   resolve("supabase/migrations/20260923084535_357aad48-bac1-451b-a991-c76cfd20b66f.sql"),
   "utf8",
-);\nconst r573Migration = readFileSync(
+);
+const r573Migration = readFileSync(
   resolve("supabase/migrations/20260923100000_r573_attestation_version_v3.sql"),
   "utf8",
 );
