@@ -16,8 +16,14 @@ export interface R5ForensicStagingResult {
   id: string;
   status: string;
   expiresAt: string;
-  uploadToken: string;
   path: string;
+  bucket: string;
+  observedSha256: string | null;
+  observedSize: number | null;
+  bytesReadable: boolean;
+  bytesUploaded: number;
+  uploadAttemptCount: number;
+  lastErrorCode: string | null;
 }
 
 function metadataDigest(value: Record<string, unknown>): string {
@@ -34,19 +40,57 @@ async function createDemoSignedUrlForBucketObject(bucketId: string, storagePath:
   return data.signedUrl;
 }
 
+const R5_SELECT =
+  "id, status, transport_status, expires_at, observed_sha256, observed_size, bytes_readable, bytes_uploaded, upload_attempt_count, last_error_code";
+
+function mapStagingRow(row: {
+  id: string;
+  transport_status: string;
+  expires_at: string;
+  observed_sha256: string | null;
+  observed_size: number | null;
+  bytes_readable: boolean;
+  bytes_uploaded: number;
+  upload_attempt_count: number;
+  last_error_code: string | null;
+}): R5ForensicStagingResult {
+  return {
+    id: row.id,
+    status: row.transport_status,
+    expiresAt: row.expires_at,
+    path: R5_FORENSIC_STORAGE_PATH,
+    bucket: R5_FORENSIC_STAGING_BUCKET,
+    observedSha256: row.observed_sha256,
+    observedSize: row.observed_size,
+    bytesReadable: row.bytes_readable,
+    bytesUploaded: row.bytes_uploaded,
+    uploadAttemptCount: row.upload_attempt_count,
+    lastErrorCode: row.last_error_code,
+  };
+}
+
+export async function getR5ForensicStaging(): Promise<R5ForensicStagingResult | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("r5_forensic_staging")
+    .select(R5_SELECT)
+    .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
+    .maybeSingle();
+  if (error) throw new Error(`R5_STAGING_LOOKUP_FAILED:${error.message}`);
+  return data ? mapStagingRow(data) : null;
+}
+
 export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const expiresAt = new Date(Date.now() + R5_STAGING_TTL_HOURS * 3_600_000).toISOString();
   const { data: existing, error: lookupError } = await supabaseAdmin
     .from("r5_forensic_staging")
-    .select("id, status, expires_at")
+    .select(R5_SELECT)
     .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
     .maybeSingle();
   if (lookupError) throw new Error(`R5_STAGING_LOOKUP_FAILED:${lookupError.message}`);
 
   let id = existing?.id;
-  let status = existing?.status ?? "NOT_READY";
-  let effectiveExpiry = existing?.expires_at ?? expiresAt;
   if (!id) {
     const { data, error } = await supabaseAdmin
       .from("r5_forensic_staging")
@@ -60,32 +104,73 @@ export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResul
         source: R5_FORENSIC_SOURCE,
         expires_at: expiresAt,
       })
-      .select("id, status, expires_at")
+      .select(R5_SELECT)
       .single();
     if (error || !data) throw new Error(`R5_STAGING_CREATE_FAILED:${error?.message ?? "missing row"}`);
-    id = data.id;
-    status = data.status;
-    effectiveExpiry = data.expires_at;
+    return mapStagingRow(data);
   }
+  if (!existing) throw new Error("R5_STAGING_NOT_FOUND");
+  return mapStagingRow(existing);
+}
 
-  const { data: upload, error: uploadError } = await supabaseAdmin.storage
-    .from(R5_FORENSIC_STAGING_BUCKET)
-    .createSignedUploadUrl(R5_FORENSIC_STORAGE_PATH, { upsert: false });
-  if (uploadError || !upload?.token) {
-    throw new Error(`R5_STAGING_SIGNED_UPLOAD_FAILED:${uploadError?.message ?? "missing token"}`);
-  }
-  return { id, status, expiresAt: effectiveExpiry, uploadToken: upload.token, path: upload.path };
+export async function updateR5TransportState(
+  stagingId: string,
+  state: "started" | "completed" | "failed",
+  errorCode?: string,
+): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const now = new Date().toISOString();
+  const changes =
+    state === "started"
+      ? {
+          transport_status: "UPLOADING",
+          upload_started_at: now,
+          upload_attempt_count: 1,
+          last_error_code: null,
+          last_error_message_safe: null,
+        }
+      : state === "completed"
+        ? {
+            transport_status: "UPLOADED_UNVERIFIED",
+            upload_completed_at: now,
+            bytes_uploaded: R5_AUTHORIZED_DEM_SIZE_BYTES,
+            last_error_code: null,
+            last_error_message_safe: null,
+          }
+        : {
+            transport_status: "BLOCKED",
+            last_error_code: errorCode ?? "R5_UPLOAD_FAILED",
+            last_error_message_safe: errorCode ?? "R5_UPLOAD_FAILED",
+          };
+  const { error } = await supabaseAdmin
+    .from("r5_forensic_staging")
+    .update(changes)
+    .eq("id", stagingId)
+    .eq("storage_path", R5_FORENSIC_STORAGE_PATH);
+  if (error) throw new Error(`R5_STAGING_STATE_FAILED:${error.message}`);
 }
 
 export async function verifyR5ForensicStaging(stagingId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: row, error: rowError } = await supabaseAdmin
     .from("r5_forensic_staging")
-    .select("id, bucket_id, storage_path, expires_at")
+    .select("id, bucket_id, storage_path, release_id, filename, demo_sha256, file_size, expires_at")
     .eq("id", stagingId)
     .maybeSingle();
   if (rowError || !row) throw new Error("R5_STAGING_NOT_FOUND");
   if (new Date(row.expires_at).getTime() <= Date.now()) throw new Error("R5_STAGING_EXPIRED");
+  if (row.bucket_id !== R5_FORENSIC_STAGING_BUCKET) throw new Error("R5_BUCKET_MISMATCH");
+  if (row.storage_path !== R5_FORENSIC_STORAGE_PATH) throw new Error("R5_PATH_MISMATCH");
+  if (row.release_id !== R5_CANONICAL_RELEASE_ID) throw new Error("R5_RELEASE_MISMATCH");
+  if (row.filename !== R5_AUTHORIZED_DEM_FILENAME) throw new Error("R5_FILE_NAME_MISMATCH");
+  if (row.demo_sha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
+  if (row.file_size !== R5_AUTHORIZED_DEM_SIZE_BYTES) throw new Error("R5_FILE_SIZE_MISMATCH");
+
+  const { error: verifyingError } = await supabaseAdmin
+    .from("r5_forensic_staging")
+    .update({ transport_status: "VERIFYING", verification_started_at: new Date().toISOString() })
+    .eq("id", stagingId);
+  if (verifyingError) throw new Error(`R5_STAGING_VERIFY_FAILED:${verifyingError.message}`);
 
   const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
   const response = await fetch(signedUrl);
@@ -94,7 +179,11 @@ export async function verifyR5ForensicStaging(stagingId: string) {
   let observedSize = 0;
   const hashingStream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = response.body!.getReader();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        controller.error(new Error("R5_OBJECT_UNREADABLE"));
+        return;
+      }
       try {
         for (;;) {
           const { done, value } = await reader.read();
@@ -127,12 +216,18 @@ export async function verifyR5ForensicStaging(stagingId: string) {
     .from("r5_forensic_staging")
     .update({
       status: valid ? "READY_FOR_EXECUTION" : "BLOCKED",
+      transport_status: valid ? "READY_FOR_EXECUTION" : "BLOCKED",
       bytes_readable: true,
       bytes_verified_at: new Date().toISOString(),
       observed_sha256: observedSha256,
       observed_size: observedSize,
       metadata_digest: digest,
       blocked_reason: valid ? null : "CACHE_DEMO_IDENTITY_MISMATCH",
+      last_error_code: valid
+        ? null
+        : observedSize !== R5_AUTHORIZED_DEM_SIZE_BYTES
+          ? "R5_FILE_SIZE_MISMATCH"
+          : "R5_FILE_HASH_MISMATCH",
     })
     .eq("id", stagingId);
   if (updateError) throw new Error(`R5_STAGING_VERIFY_FAILED:${updateError.message}`);
