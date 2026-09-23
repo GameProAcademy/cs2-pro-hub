@@ -1,0 +1,29 @@
+{
+  "phase": "2.7.2G.6-R.5.8.x",
+  "gate": "LARGE_DEM_FEASIBILITY_GATE",
+  "status": "NOT_RUN",
+  "experimental_flag_default": false,
+  "parser_ceiling_bytes": 134217728,
+  "parser_ceiling_status": "UNCHANGED_NOT_A_SUPPORT_CLAIM",
+  "authorized_cache_dem_bytes": 473748061,
+  "authorized_cache_dem_execution": "NOT_RUN",
+  "metadata_only_boundaries": [134217728, 134217729, 314572800, 419430400, 524288000, 473748061],
+  "metadata_only_result": "PASS",
+  "worker_hashing": {
+    "status": "IMPLEMENTED_NOT_RUN_ON_REAL_DEM",
+    "chunk_bytes": 8388608,
+    "bounded_memory": true,
+    "cancelable": true,
+    "deterministic_equivalence_test": "PASS"
+  },
+  "memory_measurement": "MEMORY_UNAVAILABLE",
+  "memory_measurement_rule": "measureUserAgentSpecificMemory only",
+  "parser_input_strategy": "WASM_INPUT_REQUIRES_CONTIGUOUS_BUFFER",
+  "full_file_array_buffer_for_parser": true,
+  "supported_by_measurement": false,
+  "canonical_authorization": false,
+  "attempt_9_authorization": false,
+  "parity": "NOT_RUN",
+  "determinism": "NOT_RUN",
+  "next_safe_action": "RUN_CONTROLLED_BROWSER_MEMORY_MEASUREMENT_ONLY_AFTER_OPERATOR_CONFIGURATION_AND_EXPLICIT_AUTHORIZATION"
+}

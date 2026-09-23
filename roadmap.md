@@ -12,6 +12,22 @@
 
 **Preserved locks:** no DEM execution, Attempt 9+, RAW final evidence, Canonical promotion, Railway mutation, secret change, migration, cleanup, or AI feature work.
 
+# CURRENT IMPLEMENTATION — FASE 2.7.2G.6-R.5.8.x
+
+**Status:** `R5.8 BLOCKED / LARGE_DEM_FEASIBILITY_GATE NOT_RUN / 128 MiB UNCHANGED`.
+
+- [x] Adicionar diagnóstico server-side Master Admin com 14 estados, sem retornar valor, comprimento, hash ou fragmento de secret.
+- [x] Expor `DATABASE_HMAC_CONFIGURATION_REQUIRED` sem criar migration ou segunda fonte de verdade.
+- [x] Implementar preflight machine-readable fail-closed; primeira attestation permanece `NOT_RUN`.
+- [x] Criar gate de viabilidade com flag experimental OFF, estados explícitos e memória `MEMORY_UNAVAILABLE` sem API confiável.
+- [x] Implementar SHA-256 incremental em Worker cancelável, 8 MiB por chunk, separado do parser.
+- [x] Cobrir limites metadata-only de 128 MiB, 128 MiB+1, 300/400/500 MiB e 473.748.061 bytes.
+- [x] Corrigir o harness PostgreSQL descartável para executar `psql` sob o mesmo usuário do cluster; 50/50 cenários passaram.
+- [ ] Executar benchmark do DEM real: `NOT_RUN`; a rodada não autoriza leitura/processamento da DEM.
+- [ ] Executar parity/determinism: `NOT_RUN`.
+
+**Locks:** migrations 0; Railway/staging/secrets/DEM/Attempt 9/Canonical inalterados.
+
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.8
 
 **Status:** `BLOCKED_OPERATOR_CONFIGURATION / R5.7.6 CLOSED / FIRST ATTESTATION NOT RUN / ATTEMPT_9 LOCKED`.
