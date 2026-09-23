@@ -10,7 +10,7 @@
   "rls_status": "PASS",
   "trigger_status": "PASS",
   "workflow_path": ".github/workflows/parser-runtime-attestation.yml",
-  "workflow_sha_expected": "5039bff74550f02291fd066c7f10d781f6b86ebe",
+  "workflow_sha_expected": "13ce10e95a508e62d832bb9dc432e1496499676c",
   "workflow_sha_policy": "REVIEWED_GIT_BLOB_SHA1_NON_CIRCULAR",
   "oidc_policy_status": "IMPLEMENTED_AND_UNIT_TESTED_NOT_LIVE_VERIFIED",
   "hmac_configured": false,

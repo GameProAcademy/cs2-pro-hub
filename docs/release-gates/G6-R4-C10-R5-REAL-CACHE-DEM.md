@@ -7,7 +7,7 @@
 - The database contains the authorized Attempt 8 identity (`d89b697f-c40d-42f4-ae51-040e4e8cabba`) for `0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d`, 473,748,061 bytes.
 - The exact private `demos` object is absent. Only Attempt 8 RAW evidence remains: 1 artifact and 25 chunks. Therefore the DEM bytes were not readable or processed in R5.
 - Security invariants returned `PASS`: client roles have zero access; `service_role` and approved internal `sandbox_exec` retain SELECT/INSERT only; RLS and immutability are required.
-- The approved workflow Git blob is `5039bff74550f02291fd066c7f10d781f6b86ebe`. Live GitHub OIDC/attestation was not run.
+- Historical R5 evidence used workflow Git blob `5039bff74550f02291fd066c7f10d781f6b86ebe`; the current R5.7 approved blob is `13ce10e95a508e62d832bb9dc432e1496499676c`. Live GitHub OIDC/attestation was not run.
 - Railway and HMAC credentials were unavailable. Railway was not queried through its authenticated API and was not mutated.
 - Provenance and nonce counts remain zero. Canonical remains 105 mappings, 0 authorized, 0 verified, 0 generic.
 

@@ -18,7 +18,7 @@
   "railway_identity_digest": null,
   "github_attestation_digest": null,
   "runtime_provenance_digest": null,
-  "workflow_blob_sha": "5039bff74550f02291fd066c7f10d781f6b86ebe",
+  "workflow_blob_sha": "13ce10e95a508e62d832bb9dc432e1496499676c",
   "repository_commit_observed": "d662e0b79f6eaccdec693a99ac381b2b4c2ca274",
   "evidence_chain_reconstructable": false,
   "reason": "REAL_DEM_BINARY_AND_EXTERNAL_ATTESTATION_EVIDENCE_UNAVAILABLE",
