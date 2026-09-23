@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Cpu, FileLock2, FlaskConical, LayoutDashboard, ScrollText, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Cpu,
+  FileLock2,
+  FlaskConical,
+  LayoutDashboard,
+  ScrollText,
+  Users,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Brand } from "@/components/layout/Brand";
