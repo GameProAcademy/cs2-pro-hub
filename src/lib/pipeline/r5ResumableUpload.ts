@@ -75,15 +75,18 @@ export async function uploadR5DemoResumably(
       uploadDataDuringCreation: true,
       metadata: {
         bucketName: R5_FORENSIC_STAGING_BUCKET,
+        // TUS objectName is relative to bucketName. Never send the bucket prefix.
         objectName: R5_FORENSIC_STORAGE_PATH,
         contentType: "application/octet-stream",
         cacheControl: "no-store",
       },
       headers: { "x-upsert": "false" },
-      fingerprint: async () => `r5-forensic:${R5_FORENSIC_STAGING_BUCKET}:${R5_FORENSIC_STORAGE_PATH}:${file.size}`,
+      fingerprint: async () =>
+        `r5-forensic:${R5_FORENSIC_STAGING_BUCKET}:${R5_FORENSIC_STORAGE_PATH}:${file.size}`,
       storeFingerprintForResuming: true,
       removeFingerprintOnSuccess: true,
-      onBeforeRequest: async (request) => request.setHeader("authorization", `Bearer ${await accessToken()}`),
+      onBeforeRequest: async (request) =>
+        request.setHeader("authorization", `Bearer ${await accessToken()}`),
       onProgress: (bytesSent, bytesTotal) => {
         const elapsedSeconds = Math.max((performance.now() - startedAt) / 1_000, 0.001);
         const bytesPerSecond = bytesSent / elapsedSeconds;
@@ -100,12 +103,20 @@ export async function uploadR5DemoResumably(
       onError: () => finish(new Error("R5_UPLOAD_FAILED")),
       onSuccess: () => finish(),
     });
-    const onAbort = () => void upload.abort(false).finally(() => finish(new DOMException("Upload cancelled", "AbortError")));
+    const onAbort = () =>
+      void upload
+        .abort(false)
+        .finally(() => finish(new DOMException("Upload cancelled", "AbortError")));
     options.signal?.addEventListener("abort", onAbort, { once: true });
-    void upload.findPreviousUploads().then((previous) => {
-      const resumable = previous.find((candidate) => candidate.uploadUrl != null && candidate.size === file.size);
-      if (resumable) upload.resumeFromPreviousUpload(resumable);
-      upload.start();
-    }).catch(() => finish(new Error("R5_UPLOAD_FAILED")));
+    void upload
+      .findPreviousUploads()
+      .then((previous) => {
+        const resumable = previous.find(
+          (candidate) => candidate.uploadUrl != null && candidate.size === file.size,
+        );
+        if (resumable) upload.resumeFromPreviousUpload(resumable);
+        upload.start();
+      })
+      .catch(() => finish(new Error("R5_UPLOAD_FAILED")));
   });
 }
