@@ -37,7 +37,7 @@ const semanticsMigration = readFileSync(
   "utf8",
 );
 const shaCorrectionMigration = readFileSync(
-  resolve("supabase/migrations/20260923020200_r5_authorized_dem_sha_correction.sql"),
+  resolve("supabase/migrations/20260923023058_94927a9d-31d5-47f4-8935-ccc9e7f2ac56.sql"),
   "utf8",
 );
 const lifecycleMigration = readFileSync(
@@ -46,7 +46,7 @@ const lifecycleMigration = readFileSync(
 );
 const workflow = readFileSync(resolve(".github/workflows/quality-gates.yml"), "utf8");
 
-describe("R5.1 forensic staging contract", () => {
+describe("R5 forensic staging contract", () => {
   it("pins the one authorized Cache DEM identity", () => {
     expect(R5_AUTHORIZED_DEM_FILENAME).toBe("furia-vs-gamerlegion-m1-cache.dem");
     expect(R5_AUTHORIZED_DEM_SHA256).toBe(
