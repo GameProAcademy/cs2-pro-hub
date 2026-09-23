@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "r5-evidence-v1",
+  "phase": "2.7.2G.6-R.5.3",
+  "authorizedDemo": {
+    "filename": "furia-vs-gamerlegion-m1-cache.dem",
+    "sizeBytes": 473748061,
+    "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+    "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87"
+  },
+  "execution": "NOT_RUN",
+  "verification": "NOT_VERIFIED",
+  "gate": "R5.3_EXECUTION_READINESS",
+  "implementation": "IMPLEMENTED",
+  "status": "BLOCKED",
+  "python": "NOT_RUN",
+  "wasm": "NOT_RUN",
+  "parity": "NOT_RUN",
+  "determinism": "NOT_RUN",
+  "tickAuthority": "UNAVAILABLE",
+  "oidc": "NOT_RUN",
+  "hmac": "NOT_CONFIGURED",
+  "provenance": "NOT_RUN",
+  "attempt9Authorized": false,
+  "blockers": [
+    "R5_STAGING_NOT_READY",
+    "R5_HMAC_NOT_VERIFIED",
+    "R5_OIDC_NOT_VERIFIED",
+    "R5_CURRENT_RUNTIME_PROVENANCE_NOT_VERIFIED"
+  ]
+}
