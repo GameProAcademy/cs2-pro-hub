@@ -18,6 +18,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install PostgreSQL server binaries for disposable concurrency harness
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
