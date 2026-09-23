@@ -1,6 +1,6 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.1
 
-**Status:** `IMPLEMENTATION IN PROGRESS / EXECUTION NOT RUN / VERIFICATION PARTIAL / ATTEMPT_9 LOCKED`.
+**Status:** `IMPLEMENTATION COMPLETE / EXECUTION NOT RUN / VERIFICATION PARTIAL / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
 
 - [x] Preservar as correções externas do main `893e24c64881f6fbd89be58097726a9fd5e1d926`: fixtures `5703...`, teto Python 1,5 GiB e `initdb` no CI.
 - [x] Criar bucket privado e registro independente `R5_FORENSIC_STAGING`, sem vínculo com `uploads`, `demo_jobs`, fila ou attempts.

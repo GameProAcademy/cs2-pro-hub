@@ -23,6 +23,12 @@
   "gate": "BLOCKED_BEFORE_ATTEMPT_9",
   "generatedAt": "2026-09-23T01:15:06.754555Z",
   "implementation": "COMPLETE",
+  "liveGate": {
+    "blockers": [
+      "R5_DEM_NOT_STAGED"
+    ],
+    "status": "NOT_READY"
+  },
   "phase": "2.7.2G.6-R.5.1",
   "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
   "schemaVersion": 1,
