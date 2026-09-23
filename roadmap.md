@@ -1,4 +1,18 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.6
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.7
+
+**Status:** `AUDIT COMPLETE / SECURE CONFIGURATION BLOCKED / ATTESTATION NOT RUN / ATTEMPT_9 BLOCKED`.
+
+- [x] Confirmar staging real `READY_FOR_EXECUTION`, identidade observada e preservação do registro `61df7731-ec89-4fa3-8211-dd29128f3be8`.
+- [x] Confirmar Attempt 9/10+=0, Canonical=105/0/0/0, provenance VERIFIED=0 e nonces=0.
+- [x] Confirmar HMAC duplo, OIDC RS256, freshness, nonce, Railway API, runtime identity, hashes críticos e workflow aprovado já implementados.
+- [ ] Configurar com segurança `PARSER_ATTESTATION_TRANSPORT_SECRET`, `PARSER_ATTESTATION_HMAC_SECRET`, `PARSER_ATTESTATION_ENDPOINT` e `RAILWAY_API_TOKEN` nos ambientes corretos.
+- [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública.
+- [ ] Executar o workflow real e aceitar uma nova attestation somente se toda prova independente passar.
+- [ ] Revalidar provenance, invariantes e gates read-only; parar antes de Attempt 9 mesmo se o execution gate avançar.
+
+**Locks:** nenhum parser, replay, upload/job/Attempt 9+, RAW, Canonical, cleanup, mutation Railway ou EnvironmentPatch é permitido.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.5.6
 
 **Status:** `READY_FOR_REAL_DEM_STAGING / REAL_DEM_NOT_PHYSICALLY_AVAILABLE / EXECUTION NOT_RUN / ATTEMPT_9 BLOCKED / CANONICAL BLOCKED / RAILWAY UNCHANGED`.
 
