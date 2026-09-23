@@ -21,8 +21,8 @@ export const FEATURES = {
   profilePersistence: true,
   /** The demo ingestion UI (select, validate, queue) exists and is usable. */
   demoIngestionUI: true,
-  /** External .dem parser transport is configured; runtime status remains authoritative. */
-  realDemoParser: true,
+  /** Real DEM admission remains fail-closed until the full forensic/parity/determinism gates are independently proven. */
+  realDemoParser: false,
   /** Isolated browser-only experiment. Disabled unless explicitly enabled at build time. */
   clientDemParserPoc: import.meta.env["VITE_CLIENT_DEM_PARSER_POC_ENABLED"] === "true",
 
