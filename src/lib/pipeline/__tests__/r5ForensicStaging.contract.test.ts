@@ -201,8 +201,8 @@ describe("R5 forensic staging contract", () => {
     expect(functions).toContain("getR58OperatorDiagnostic");
     expect(functions).toContain("await requireMaster(context as Context)");
     expect(diagnostics).toContain("DATABASE_HMAC_CONFIGURATION_REQUIRED");
-    expect(diagnostics).toContain("GITHUB_RAILWAY_TOKEN_CONFIGURATION_NOT_CHECKED");
+    expect(diagnostics).toContain('{ key: "RAILWAY_API_TOKEN", state: railwayState }');
     expect(diagnostics).not.toMatch(/slice\(0,\s*[1-9]/);
-    expect(diagnostics).not.toMatch(/reasonCode:.*process\.env/);
+    expect(diagnostics).not.toContain("reasonCode");
   });
 });

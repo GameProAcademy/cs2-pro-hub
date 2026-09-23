@@ -273,13 +273,15 @@ function R5ForensicPage() {
                       {item.state}
                     </span>
                   </div>
-                  <p className="mt-2 break-words font-mono text-xs text-foreground">
-                    {item.reasonCode}
-                  </p>
                 </div>
               ))}
             </div>
           )}
+          {diagnostic.data?.operatorAction ? (
+            <p className="border-l-2 border-warning pl-3 font-mono text-xs text-warning">
+              {diagnostic.data.operatorAction}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             Secret values, lengths, hashes and prefixes are never returned by this diagnostic.
           </p>

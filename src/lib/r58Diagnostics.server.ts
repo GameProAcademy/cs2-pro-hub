@@ -17,12 +17,12 @@ export type R58DiagnosticState = (typeof R58_DIAGNOSTIC_STATES)[number];
 export interface R58DiagnosticItem {
   key: string;
   state: R58DiagnosticState;
-  reasonCode: string;
 }
 
 export interface R58OperatorDiagnostic {
   overallStatus: "PASS" | "BLOCKED" | "PARTIAL";
   configurationStatus: "READY" | "BLOCKED";
+  operatorAction: "DATABASE_HMAC_CONFIGURATION_REQUIRED" | null;
   items: R58DiagnosticItem[];
   attestationPreflight: {
     attestation_preflight_status: "BLOCKED";
@@ -98,99 +98,33 @@ export async function buildR58OperatorDiagnostic(): Promise<R58OperatorDiagnosti
   const provenance = (gate?.provenance_verified_count ?? 0) > 0 ? "CONFIGURED" : "BLOCKED";
 
   const items: R58DiagnosticItem[] = [
+    { key: "PARSER_ATTESTATION_ENDPOINT", state: endpointState },
+    { key: "PARSER_ATTESTATION_TRANSPORT_SECRET", state: transportState },
+    { key: "PARSER_ATTESTATION_HMAC_SECRET", state: hmacState },
+    { key: "DATABASE_HMAC_SETTING", state: databaseHmacState },
+    { key: "RAILWAY_API_TOKEN", state: railwayState },
     {
-      key: "endpoint",
-      state: endpointState,
-      reasonCode:
-        endpointState === "CONFIGURED"
-          ? "ENDPOINT_CONFIGURED"
-          : "ATTESTATION_ENDPOINT_CONFIGURATION_REQUIRED",
-    },
-    {
-      key: "transport_secret",
-      state: transportState,
-      reasonCode:
-        transportState === "CONFIGURED"
-          ? "TRANSPORT_SECRET_CONFIGURED"
-          : "TRANSPORT_SECRET_CONFIGURATION_REQUIRED",
-    },
-    {
-      key: "hmac_secret",
-      state: hmacState,
-      reasonCode:
-        hmacState === "CONFIGURED"
-          ? "HMAC_SECRET_CONFIGURED"
-          : "HMAC_SECRET_CONFIGURATION_REQUIRED",
-    },
-    {
-      key: "database_hmac",
-      state: databaseHmacState,
-      reasonCode:
-        databaseHmacState === "CONFIGURED"
-          ? "DATABASE_HMAC_CONFIGURED"
-          : "DATABASE_HMAC_CONFIGURATION_REQUIRED",
-    },
-    {
-      key: "railway_token",
-      state: railwayState,
-      reasonCode:
-        railwayState === "CONFIGURED"
-          ? "GITHUB_RAILWAY_TOKEN_CONFIGURED"
-          : "GITHUB_RAILWAY_TOKEN_CONFIGURATION_NOT_CHECKED",
-    },
-    {
-      key: "oidc_expected",
-      state: "CONFIGURED",
-      reasonCode:
+      key: "GITHUB_OIDC_EXPECTED",
+      state:
         PARSER_ATTESTATION_OIDC.audience === "gamepro-parser-attestation"
-          ? "OIDC_EXPECTATION_PINNED"
-          : "OIDC_EXPECTATION_INVALID",
+          ? "CONFIGURED"
+          : "INVALID",
     },
     {
-      key: "approved_workflow",
-      state: "CONFIGURED",
-      reasonCode:
+      key: "APPROVED_WORKFLOW",
+      state:
         APPROVED_ATTESTATION_WORKFLOW_PATH === PARSER_ATTESTATION_EXPECTED.workflowPath &&
         APPROVED_ATTESTATION_WORKFLOW_SHA === PARSER_ATTESTATION_EXPECTED.workflowSourceSha
-          ? "APPROVED_WORKFLOW_PINNED"
-          : "APPROVED_WORKFLOW_MISMATCH",
+          ? "CONFIGURED"
+          : "MISMATCH",
     },
-    {
-      key: "railway_runtime_binding",
-      state: "CONFIGURED",
-      reasonCode: "RAILWAY_RUNTIME_BINDING_PINNED",
-    },
-    {
-      key: "runtime_identity",
-      state: provenance,
-      reasonCode:
-        provenance === "CONFIGURED"
-          ? "RUNTIME_IDENTITY_ATTESTED"
-          : "RUNTIME_IDENTITY_ATTESTATION_REQUIRED",
-    },
-    {
-      key: "critical_file_hashes",
-      state: provenance,
-      reasonCode:
-        provenance === "CONFIGURED"
-          ? "CRITICAL_HASHES_ATTESTED"
-          : "CRITICAL_HASH_ATTESTATION_REQUIRED",
-    },
-    {
-      key: "release_mapping",
-      state: releaseMapping,
-      reasonCode:
-        releaseMapping === "CONFIGURED"
-          ? "RELEASE_MAPPING_BASELINE_PRESERVED"
-          : "RELEASE_MAPPING_NOT_VERIFIED",
-    },
-    { key: "real_demo_authorization", state: "BLOCKED", reasonCode: "REAL_DEM_NOT_AUTHORIZED" },
-    {
-      key: "attempt_9_lock",
-      state: attemptsLocked,
-      reasonCode: attemptsLocked === "CONFIGURED" ? "ATTEMPT_9_LOCKED" : "ATTEMPT_9_LOCK_VIOLATION",
-    },
-    { key: "canonical_lock", state: "BLOCKED", reasonCode: "CANONICAL_ADMISSION_BLOCKED" },
+    { key: "RAILWAY_RUNTIME_BINDING", state: "CONFIGURED" },
+    { key: "RUNTIME_IDENTITY", state: provenance },
+    { key: "CRITICAL_FILE_HASHES", state: provenance },
+    { key: "RELEASE_MAPPING", state: releaseMapping },
+    { key: "REAL_DEM_AUTHORIZATION", state: "BLOCKED" },
+    { key: "ATTEMPT_9_LOCK", state: attemptsLocked },
+    { key: "CANONICAL_LOCK", state: "BLOCKED" },
   ];
   const configurationReady = [endpointState, transportState, hmacState, databaseHmacState].every(
     (state) => state === "CONFIGURED",
@@ -199,6 +133,8 @@ export async function buildR58OperatorDiagnostic(): Promise<R58OperatorDiagnosti
   return {
     overallStatus: "BLOCKED",
     configurationStatus: configurationReady ? "READY" : "BLOCKED",
+    operatorAction:
+      databaseHmacState === "CONFIGURED" ? null : "DATABASE_HMAC_CONFIGURATION_REQUIRED",
     items,
     attestationPreflight: {
       attestation_preflight_status: "BLOCKED",
