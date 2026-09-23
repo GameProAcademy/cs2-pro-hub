@@ -24,7 +24,7 @@ from errors import (
 )
 from parser import parse_demo_file
 
-MAX_DEMO_BYTES = 128 * 1024 * 1024
+MAX_DEMO_BYTES = 1_500 * 1024 * 1024
 PARSER_VERSION = "0.42.0"
 PARSER_REVISION = "d3767705dc5846d73ed29db50eaeda58778dc934"
 SURFACE_MANIFEST_PATH = Path(__file__).resolve().parents[2] / "docs/client-parser/upstream-surface-manifest.json"
