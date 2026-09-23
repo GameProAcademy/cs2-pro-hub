@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "status": "NOT_RUN",
-  "reason": "TWO_REAL_RUNS_PER_RUNTIME_REQUIRED",
-  "demo_sha256": null,
-  "runs": [],
-  "determinism_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "canonical_authorization": false
-}
