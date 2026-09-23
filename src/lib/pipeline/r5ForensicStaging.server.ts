@@ -10,7 +10,7 @@ import {
   R5_FORENSIC_STORAGE_PATH,
   R5_STAGING_TTL_HOURS,
 } from "@/config/r5ForensicStaging";
-import { createDemoSignedUrl, sha256FromStream } from "@/lib/pipeline/storage.server";
+import { sha256FromStream } from "@/lib/pipeline/storage.server";
 
 export interface R5ForensicStagingResult {
   id: string;
@@ -120,12 +120,19 @@ export async function updateR5TransportState(
 ): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const now = new Date().toISOString();
+  const { data: current, error: lookupError } = await supabaseAdmin
+    .from("r5_forensic_staging")
+    .select("upload_attempt_count")
+    .eq("id", stagingId)
+    .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
+    .maybeSingle();
+  if (lookupError || !current) throw new Error("R5_STAGING_NOT_FOUND");
   const changes =
     state === "started"
       ? {
           transport_status: "UPLOADING",
           upload_started_at: now,
-          upload_attempt_count: 1,
+          upload_attempt_count: current.upload_attempt_count + 1,
           last_error_code: null,
           last_error_message_safe: null,
         }
@@ -172,9 +179,24 @@ export async function verifyR5ForensicStaging(stagingId: string) {
     .eq("id", stagingId);
   if (verifyingError) throw new Error(`R5_STAGING_VERIFY_FAILED:${verifyingError.message}`);
 
-  const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
-  const response = await fetch(signedUrl);
-  if (!response.ok || !response.body) throw new Error("R5_DEM_OBJECT_MISSING");
+  let response: Response;
+  try {
+    const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
+    response = await fetch(signedUrl);
+    if (!response.ok || !response.body) throw new Error("R5_DEM_OBJECT_MISSING");
+  } catch (error) {
+    await supabaseAdmin
+      .from("r5_forensic_staging")
+      .update({
+        transport_status: "BLOCKED",
+        status: "BLOCKED",
+        bytes_readable: false,
+        last_error_code: "R5_DEM_OBJECT_MISSING",
+        blocked_reason: "R5_DEM_OBJECT_MISSING",
+      })
+      .eq("id", stagingId);
+    throw error;
+  }
 
   let observedSize = 0;
   const hashingStream = new ReadableStream<Uint8Array>({
