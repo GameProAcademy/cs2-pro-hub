@@ -26,7 +26,7 @@ const r57Migration = readFileSync(
   "utf8",
 );
 const r573Migration = readFileSync(
-  resolve("supabase/migrations/20260923100000_r573_attestation_version_v3.sql"),
+  resolve("supabase/migrations/20260923091130_de2051f7-577e-4c53-a40e-424d1ef1e3ae.sql"),
   "utf8",
 );
 const r573ConstraintMigration = readFileSync(
@@ -99,6 +99,7 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
     expect(r573ConstraintMigration).toContain("CHECK (attestation_version = 3)");
     expect(r573ConstraintMigration).not.toContain("CHECK (attestation_version = 1)");
     expect(r573Migration).toContain("attestation schema v3");
+    expect(r573Migration).toContain("attestation_version <> 3");
     expect(r573Migration).toContain("does not recompute a non-canonical JSON digest");
   });
 
