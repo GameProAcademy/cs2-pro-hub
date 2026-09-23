@@ -32,8 +32,7 @@ export const PARSER_ATTESTATION_OIDC = {
   repositoryOwnerId: "323426481",
   repositoryId: "1358428146",
   branchRef: "refs/heads/main",
-  subject:
-    "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/main",
+  subject: "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/main",
   eventName: "workflow_dispatch",
 } as const;
 

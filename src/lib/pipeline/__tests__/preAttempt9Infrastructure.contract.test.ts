@@ -64,7 +64,9 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps the final pre-real-demo diagnostic read-only and blocked", () => {
     expect(parityMigration).toContain("public.pre_real_demo_gate_status()");
     expect(parityMigration).toContain("'status', 'BLOCKED_BEFORE_REAL_DEMO'");
-    expect(parityMigration).not.toMatch(/\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/);
+    expect(parityMigration).not.toMatch(
+      /\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/,
+    );
   });
 
   it("enforces the reviewed workflow source at the persistence boundary", () => {
