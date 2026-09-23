@@ -69,9 +69,11 @@ export async function verifyAuthorizedR5FileLocally(
     ) => {
       if (event.data.type === "progress") onProgress?.(event.data.percent ?? 0);
       if (event.data.type === "done") {
-        event.data.sha256 && event.data.size !== undefined
-          ? finish({ evidence: { sha256: event.data.sha256, size: event.data.size } })
-          : finish({ error: new Error("R5_FILE_HASH_FAILED") });
+        if (event.data.sha256 && event.data.size !== undefined) {
+          finish({ evidence: { sha256: event.data.sha256, size: event.data.size } });
+        } else {
+          finish({ error: new Error("R5_FILE_HASH_FAILED") });
+        }
       }
       if (event.data.type === "error") finish({ error: new Error("R5_FILE_HASH_FAILED") });
     };
@@ -116,7 +118,8 @@ export async function uploadR5DemoResumably(
       if (settled) return;
       settled = true;
       options.signal?.removeEventListener("abort", onAbort);
-      error ? reject(error) : resolve();
+      if (error) reject(error);
+      else resolve();
     };
     const upload = new Upload(file, {
       endpoint,

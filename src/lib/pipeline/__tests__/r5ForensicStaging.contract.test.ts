@@ -91,7 +91,7 @@ describe("R5 forensic staging contract", () => {
     expect(functions).toContain('rpc("is_admin_master"');
     expect(server).toContain("createDemoSignedUrlForBucketObject");
     expect(server).toContain("sha256FromStream");
-    expect(server).toContain("response.body.getReader()");
+    expect(server).toContain("responseBody.getReader()");
     expect(server).not.toMatch(/\.storage\\s*\\.from\\([^\n]+\\)\\s*\\.download/);
   });
 
@@ -115,7 +115,7 @@ describe("R5 forensic staging contract", () => {
     expect(hashWorker).toContain("file.slice(offset, end).arrayBuffer()");
     expect(hashWorker).not.toContain("file.arrayBuffer()");
     expect(hashWorker).not.toContain("crypto.subtle.digest");
-    expect(server).toContain("response.body.getReader()");
+    expect(server).toContain("responseBody.getReader()");
     expect(server).toContain("sha256FromStream(hashingStream)");
     expect(server).not.toMatch(/\.storage\s*\.from\([^\n]+\)\s*\.download/);
     expect(server).not.toContain("response.arrayBuffer()");
