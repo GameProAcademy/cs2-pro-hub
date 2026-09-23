@@ -2646,6 +2646,7 @@ export type Database = {
           blocked_reason: string | null
           bucket_id: string
           bytes_readable: boolean
+          bytes_uploaded: number
           bytes_verified_at: string | null
           created_at: string
           deleted_at: string | null
@@ -2654,6 +2655,8 @@ export type Database = {
           file_size: number
           filename: string
           id: string
+          last_error_code: string | null
+          last_error_message_safe: string | null
           metadata_digest: string | null
           object_private: boolean
           observed_sha256: string | null
@@ -2662,11 +2665,17 @@ export type Database = {
           source: string
           status: Database["public"]["Enums"]["r5_forensic_staging_status"]
           storage_path: string
+          transport_status: string
+          upload_attempt_count: number
+          upload_completed_at: string | null
+          upload_started_at: string | null
+          verification_started_at: string | null
         }
         Insert: {
           blocked_reason?: string | null
           bucket_id?: string
           bytes_readable?: boolean
+          bytes_uploaded?: number
           bytes_verified_at?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -2675,6 +2684,8 @@ export type Database = {
           file_size: number
           filename: string
           id?: string
+          last_error_code?: string | null
+          last_error_message_safe?: string | null
           metadata_digest?: string | null
           object_private?: boolean
           observed_sha256?: string | null
@@ -2683,11 +2694,17 @@ export type Database = {
           source: string
           status?: Database["public"]["Enums"]["r5_forensic_staging_status"]
           storage_path: string
+          transport_status?: string
+          upload_attempt_count?: number
+          upload_completed_at?: string | null
+          upload_started_at?: string | null
+          verification_started_at?: string | null
         }
         Update: {
           blocked_reason?: string | null
           bucket_id?: string
           bytes_readable?: boolean
+          bytes_uploaded?: number
           bytes_verified_at?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -2696,6 +2713,8 @@ export type Database = {
           file_size?: number
           filename?: string
           id?: string
+          last_error_code?: string | null
+          last_error_message_safe?: string | null
           metadata_digest?: string | null
           object_private?: boolean
           observed_sha256?: string | null
@@ -2704,6 +2723,11 @@ export type Database = {
           source?: string
           status?: Database["public"]["Enums"]["r5_forensic_staging_status"]
           storage_path?: string
+          transport_status?: string
+          upload_attempt_count?: number
+          upload_completed_at?: string | null
+          upload_started_at?: string | null
+          verification_started_at?: string | null
         }
         Relationships: []
       }
@@ -3581,6 +3605,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_attempt_9_authorized: {
+        Args: { _staging_id?: string }
+        Returns: Json
+      }
       assert_cache_attempt_9_ready: {
         Args: { _provenance_id: string }
         Returns: Json
@@ -3849,6 +3877,10 @@ export type Database = {
       }
       pre_real_demo_gate_status: { Args: never; Returns: Json }
       r5_real_dem_access_gate: { Args: { _staging_id?: string }; Returns: Json }
+      r5_real_dem_execution_gate: {
+        Args: { _staging_id?: string }
+        Returns: Json
+      }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
       reconcile_orphan_demo_uploads: {
         Args: { _limit?: number; _older_than_minutes?: number }
