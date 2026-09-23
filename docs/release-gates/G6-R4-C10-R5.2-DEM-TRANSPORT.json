@@ -23,9 +23,11 @@
   ],
   "progress": true,
   "resume": true,
+  "resumeRuntimeVerification": "RESUME_RUNTIME_NOT_VERIFIED",
   "cancel": true,
   "physicalAvailability": false,
   "blockers": [
-    "BLOCKED_REAL_DEM_NOT_STAGED"
+    "BLOCKED_REAL_DEM_NOT_STAGED",
+    "RESUME_RUNTIME_NOT_VERIFIED"
   ]
 }

@@ -10,6 +10,8 @@ The master-admin page uses Storage TUS uploads with 6 MiB chunks, bounded retrie
 
 Browser validation rejects the wrong name or size and hashes 8 MiB slices incrementally. This local digest is an early safety check, not final authority.
 
+Hashing is bounded-memory but currently runs on the browser main thread. Moving it to a Web Worker remains a hardening item; it does not weaken the server-side byte authority. Runtime resume proof remains `RESUME_RUNTIME_NOT_VERIFIED` until the physical DEM is available for an interrupted-upload exercise.
+
 ## Verification
 
 Final verification reads the private stored object through a short-lived URL and consumes its response stream incrementally. It does not call `storage.download()`, allocate a whole-file buffer, use one-shot `crypto.subtle.digest`, or treat `Content-Length` as proof. Read byte count and SHA-256 must match the authorized identity before `READY_FOR_EXECUTION`.
@@ -26,4 +28,4 @@ Staging expires after 24 hours. Expiration makes the gate fail closed and makes 
 
 ## Current verdict
 
-The transport, storage boundary, bounded-memory verification and access controls are implemented. No real DEM bytes were supplied in this change, so transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
+The path correction and database controls were verified against the live backend: the bucket is private with a 500 MiB limit, the relative-path constraint is singular, and staging/object/Attempt 9/Attempt 10+/provenance/nonce counts remain zero while Canonical remains 105/0/0/0. No real DEM bytes were supplied in this change, so transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.

@@ -23,6 +23,14 @@ const r52Migration = readFileSync(
   resolve("supabase/migrations/20260923012919_d1e69d4d-c42e-4b0e-b1c4-11d75a5febc7.sql"),
   "utf8",
 );
+const pathMigration = readFileSync(
+  resolve("supabase/migrations/20260923015032_f6c180fc-fa4c-4175-872a-7f73973c521c.sql"),
+  "utf8",
+);
+const stateMigration = readFileSync(
+  resolve("supabase/migrations/20260923014908_d8bbbb89-cbf3-4dc6-96ea-5184b8377097.sql"),
+  "utf8",
+);
 const workflow = readFileSync(resolve(".github/workflows/quality-gates.yml"), "utf8");
 
 describe("R5.1 forensic staging contract", () => {
@@ -31,6 +39,7 @@ describe("R5.1 forensic staging contract", () => {
     expect(R5_AUTHORIZED_DEM_SHA256).toBe(
       "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
     );
+    expect(R5_AUTHORIZED_DEM_SHA256).toHaveLength(64);
     expect(R5_AUTHORIZED_DEM_SIZE_BYTES).toBe(473_748_061);
     expect(R5_FORENSIC_STORAGE_PATH).toBe(
     `${R5_CANONICAL_RELEASE_ID}/${R5_AUTHORIZED_DEM_SHA256}.dem`,
@@ -73,7 +82,9 @@ describe("R5.1 forensic staging contract", () => {
     expect(resumable).toContain("findPreviousUploads()");
     expect(resumable).toContain("resumeFromPreviousUpload");
     expect(resumable).toContain("retryDelays");
-    expect(resumable).toContain("upload.abort(false)");
+    expect(resumable).toMatch(/upload\s*\.abort\(false\)/);
+    expect(resumable).toContain('candidate.metadata["bucketName"] === R5_FORENSIC_STAGING_BUCKET');
+    expect(resumable).toContain('candidate.metadata["objectName"] === R5_FORENSIC_STORAGE_PATH');
   });
 
   it("preserves bounded-memory hashing on browser and server", () => {
@@ -92,6 +103,14 @@ describe("R5.1 forensic staging contract", () => {
     expect(r52Migration).toContain("CREATE OR REPLACE FUNCTION public.assert_attempt_9_authorized");
     expect(r52Migration).toContain("R5_ATTEMPT_9_NOT_AUTHORIZED");
     expect(r52Migration).not.toMatch(/INSERT INTO public\.(uploads|demo_jobs|matches)/);
+  });
+
+  it("uses one relative path and atomic service-only transitions", () => {
+    expect(pathMigration).toContain("DROP CONSTRAINT IF EXISTS r5_forensic_staging_path_check");
+    expect(pathMigration).not.toContain("29b00dd4d");
+    expect(server).toContain('rpc("transition_r5_forensic_upload"');
+    expect(stateMigration).toContain("FOR UPDATE");
+    expect(stateMigration).toContain("R5_PREMATURE_READY_FOR_EXECUTION");
   });
 
   it("preserves PostgreSQL setup for the concurrency harness", () => {

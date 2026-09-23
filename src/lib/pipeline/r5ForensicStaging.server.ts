@@ -119,41 +119,11 @@ export async function updateR5TransportState(
   errorCode?: string,
 ): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const now = new Date().toISOString();
-  const { data: current, error: lookupError } = await supabaseAdmin
-    .from("r5_forensic_staging")
-    .select("upload_attempt_count")
-    .eq("id", stagingId)
-    .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
-    .maybeSingle();
-  if (lookupError || !current) throw new Error("R5_STAGING_NOT_FOUND");
-  const changes =
-    state === "started"
-      ? {
-          transport_status: "UPLOADING",
-          upload_started_at: now,
-          upload_attempt_count: current.upload_attempt_count + 1,
-          last_error_code: null,
-          last_error_message_safe: null,
-        }
-      : state === "completed"
-        ? {
-            transport_status: "UPLOADED_UNVERIFIED",
-            upload_completed_at: now,
-            bytes_uploaded: R5_AUTHORIZED_DEM_SIZE_BYTES,
-            last_error_code: null,
-            last_error_message_safe: null,
-          }
-        : {
-            transport_status: "BLOCKED",
-            last_error_code: errorCode ?? "R5_UPLOAD_FAILED",
-            last_error_message_safe: errorCode ?? "R5_UPLOAD_FAILED",
-          };
-  const { error } = await supabaseAdmin
-    .from("r5_forensic_staging")
-    .update(changes)
-    .eq("id", stagingId)
-    .eq("storage_path", R5_FORENSIC_STORAGE_PATH);
+  const { error } = await supabaseAdmin.rpc("transition_r5_forensic_upload", {
+    _staging_id: stagingId,
+    _action: state,
+    ...(errorCode === undefined ? {} : { _error_code: errorCode }),
+  });
   if (error) throw new Error(`R5_STAGING_STATE_FAILED:${error.message}`);
 }
 

@@ -112,7 +112,12 @@ export async function uploadR5DemoResumably(
       .findPreviousUploads()
       .then((previous) => {
         const resumable = previous.find(
-          (candidate) => candidate.uploadUrl != null && candidate.size === file.size,
+          (candidate) =>
+            candidate.uploadUrl != null &&
+            candidate.size === file.size &&
+            candidate.metadata["bucketName"] === R5_FORENSIC_STAGING_BUCKET &&
+            candidate.metadata["objectName"] === R5_FORENSIC_STORAGE_PATH &&
+            candidate.metadata["contentType"] === "application/octet-stream",
         );
         if (resumable) upload.resumeFromPreviousUpload(resumable);
         upload.start();
