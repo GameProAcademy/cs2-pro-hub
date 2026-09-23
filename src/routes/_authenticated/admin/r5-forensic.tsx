@@ -65,6 +65,7 @@ function R5ForensicPage() {
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
   const lastProgressAuditRef = useRef(-1);
+  const progressAuditChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const [file, setFile] = useState<File | null>(null);
   const [hashPercent, setHashPercent] = useState(0);
   const [progress, setProgress] = useState<R5UploadProgress | null>(null);
@@ -84,6 +85,7 @@ function R5ForensicPage() {
       setProgress(null);
       setLocalEvidence(null);
       lastProgressAuditRef.current = -1;
+      progressAuditChainRef.current = Promise.resolve();
       const controller = new AbortController();
       abortRef.current = controller;
       const local = await verifyAuthorizedR5FileLocally(selected, setHashPercent, controller.signal);
@@ -98,17 +100,20 @@ function R5ForensicPage() {
             const milestone = Math.floor(next.percent / 10) * 10;
             if (milestone > lastProgressAuditRef.current) {
               lastProgressAuditRef.current = milestone;
-              void recordR5ForensicProgress({ data: {
-                stagingId: slot.id,
-                bytesUploaded: next.bytesSent,
-                bytesTotal: next.bytesTotal,
-                percent: milestone,
-                retryCount: next.retryCount,
-                resumed: next.resumed,
-              } });
+              progressAuditChainRef.current = progressAuditChainRef.current.then(() =>
+                recordR5ForensicProgress({ data: {
+                  stagingId: slot.id,
+                  bytesUploaded: next.bytesSent,
+                  bytesTotal: next.bytesTotal,
+                  percent: milestone,
+                  retryCount: next.retryCount,
+                  resumed: next.resumed,
+                }),
+              );
             }
           },
         });
+        await progressAuditChainRef.current;
         await recordR5ForensicProgress({ data: {
           stagingId: slot.id,
           bytesUploaded: selected.size,
