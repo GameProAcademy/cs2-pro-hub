@@ -31,10 +31,6 @@ CREATE SCHEMA storage;
 CREATE TABLE storage.objects (bucket_id text NOT NULL, name text NOT NULL, PRIMARY KEY(bucket_id,name));
 CREATE TYPE public.upload_status AS ENUM
   ('pending','processing','processed','failed','cancel_requested','cancelled','blocked_raw_audit');
-CREATE FUNCTION public.gen_random_uuid() RETURNS uuid
-LANGUAGE SQL VOLATILE AS $
-  SELECT md5(random()::text || clock_timestamp()::text || pg_backend_pid()::text)::uuid;
-$;
 CREATE TABLE public.profiles (id uuid PRIMARY KEY);
 CREATE TABLE public.uploads (
   id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES public.profiles(id),
