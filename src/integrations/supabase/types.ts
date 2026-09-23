@@ -2641,6 +2641,72 @@ export type Database = {
         }
         Relationships: []
       }
+      r5_forensic_staging: {
+        Row: {
+          blocked_reason: string | null
+          bucket_id: string
+          bytes_readable: boolean
+          bytes_verified_at: string | null
+          created_at: string
+          deleted_at: string | null
+          demo_sha256: string
+          expires_at: string
+          file_size: number
+          filename: string
+          id: string
+          metadata_digest: string | null
+          object_private: boolean
+          observed_sha256: string | null
+          observed_size: number | null
+          release_id: string
+          source: string
+          status: Database["public"]["Enums"]["r5_forensic_staging_status"]
+          storage_path: string
+        }
+        Insert: {
+          blocked_reason?: string | null
+          bucket_id?: string
+          bytes_readable?: boolean
+          bytes_verified_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          demo_sha256: string
+          expires_at: string
+          file_size: number
+          filename: string
+          id?: string
+          metadata_digest?: string | null
+          object_private?: boolean
+          observed_sha256?: string | null
+          observed_size?: number | null
+          release_id: string
+          source: string
+          status?: Database["public"]["Enums"]["r5_forensic_staging_status"]
+          storage_path: string
+        }
+        Update: {
+          blocked_reason?: string | null
+          bucket_id?: string
+          bytes_readable?: boolean
+          bytes_verified_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          demo_sha256?: string
+          expires_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          metadata_digest?: string | null
+          object_private?: boolean
+          observed_sha256?: string | null
+          observed_size?: number | null
+          release_id?: string
+          source?: string
+          status?: Database["public"]["Enums"]["r5_forensic_staging_status"]
+          storage_path?: string
+        }
+        Relationships: []
+      }
       raw_demo_evidence_reports: {
         Row: {
           approved_at: string | null
@@ -3782,6 +3848,7 @@ export type Database = {
         Returns: string
       }
       pre_real_demo_gate_status: { Args: never; Returns: Json }
+      r5_real_dem_access_gate: { Args: { _staging_id?: string }; Returns: Json }
       reconcile_demo_parse_queue: { Args: { _limit?: number }; Returns: number }
       reconcile_orphan_demo_uploads: {
         Args: { _limit?: number; _older_than_minutes?: number }
@@ -3978,6 +4045,13 @@ export type Database = {
       plan_item_status: "pending" | "in_progress" | "done" | "skipped"
       plan_status: "draft" | "active" | "completed" | "archived"
       platform_kind: "FACEIT" | "GAMERS_CLUB" | "STEAM"
+      r5_forensic_staging_status:
+        | "NOT_READY"
+        | "STAGED"
+        | "IDENTITY_VERIFIED"
+        | "ACCESSIBLE"
+        | "READY_FOR_EXECUTION"
+        | "BLOCKED"
       upload_source: "manual" | "faceit" | "gamers_club" | "steam"
       upload_status:
         | "pending"
@@ -4180,6 +4254,14 @@ export const Constants = {
       plan_item_status: ["pending", "in_progress", "done", "skipped"],
       plan_status: ["draft", "active", "completed", "archived"],
       platform_kind: ["FACEIT", "GAMERS_CLUB", "STEAM"],
+      r5_forensic_staging_status: [
+        "NOT_READY",
+        "STAGED",
+        "IDENTITY_VERIFIED",
+        "ACCESSIBLE",
+        "READY_FOR_EXECUTION",
+        "BLOCKED",
+      ],
       upload_source: ["manual", "faceit", "gamers_club", "steam"],
       upload_status: [
         "pending",
