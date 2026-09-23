@@ -1,4 +1,16 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.4-C.10-R1.1
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.1
+
+**Status:** `IMPLEMENTATION IN PROGRESS / EXECUTION NOT RUN / VERIFICATION PARTIAL / ATTEMPT_9 LOCKED`.
+
+- [x] Preservar as correções externas do main `893e24c64881f6fbd89be58097726a9fd5e1d926`: fixtures `5703...`, teto Python 1,5 GiB e `initdb` no CI.
+- [x] Criar bucket privado e registro independente `R5_FORENSIC_STAGING`, sem vínculo com `uploads`, `demo_jobs`, fila ou attempts.
+- [x] Criar gate read-only `R5_REAL_DEM_ACCESS_GATE` com SHA/tamanho/nome/release exatos e baseline Canonical/attempts fail-closed.
+- [x] Criar fluxo master-admin para signed upload temporário e verificação streaming dos bytes, sem expor credenciais.
+- [ ] Executar DEM real, Python/WASM, parity, determinism, tick authority, attestation, HMAC ou provenance — permanecem bloqueados até bytes e requisitos externos reais existirem.
+
+**Locks:** Attempt 9/10+, Canonical, cleanup, Railway production, EnvironmentPatch, provenance e nonce continuam sem mutação.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.4-C.10-R1.1
 
 **Status:** `IMPLEMENTATION COMPLETE / C.10-R1.1 VERIFIED / RELEASE BLOCKED / BLOCKED_BEFORE_ATTEMPT_9`.
 

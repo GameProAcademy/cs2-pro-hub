@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import math
+from unittest.mock import patch
 
 import pytest
 
 from python_reference import MAX_DEMO_BYTES, _bounded, _finite, _manifest, build_python_reference
+
+AUTHORIZED_CACHE_SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
+AUTHORIZED_CACHE_SIZE = 473_748_061
 
 
 def test_reference_is_not_run_without_explicit_authorized_fixture():
@@ -32,6 +36,41 @@ def test_reference_bounds_rows_and_rejects_non_finite_values():
 
 def test_reference_accepts_the_1_5_gib_real_demo_contract_ceiling():
     assert MAX_DEMO_BYTES == 1_500 * 1024 * 1024
+
+
+def test_reference_rejects_empty_demo(tmp_path):
+    path = tmp_path / "empty.dem"
+    path.write_bytes(b"")
+    with pytest.raises(ValueError, match="authorized_dem_size_out_of_bounds"):
+        build_python_reference(str(path), {"authorizedDemo": True})
+
+
+def test_reference_rejects_demo_above_1_5_gib(tmp_path):
+    path = tmp_path / "oversized.dem"
+    path.touch()
+    with patch("pathlib.Path.stat") as stat:
+        stat.return_value.st_size = MAX_DEMO_BYTES + 1
+        with pytest.raises(ValueError, match="authorized_dem_size_out_of_bounds"):
+            build_python_reference(str(path), {"authorizedDemo": True})
+
+
+def test_reference_real_cache_size_passes_size_gate_then_rejects_wrong_sha(tmp_path):
+    path = tmp_path / "furia-vs-gamerlegion-m1-cache.dem"
+    path.write_bytes(b"dem")
+    authorization = {
+        "authorizedDemo": True,
+        "provenance": "R5_FORENSIC_STAGING",
+        "filename": path.name,
+        "sha256": AUTHORIZED_CACHE_SHA,
+        "sizeBytes": AUTHORIZED_CACHE_SIZE,
+        "source": "LOCAL_FILE",
+        "authorizationRef": "R5_REAL_DEM_ACCESS_GATE",
+        "receivedAt": "2026-09-23T00:00:00Z",
+    }
+    with patch("pathlib.Path.stat") as stat:
+        stat.return_value.st_size = AUTHORIZED_CACHE_SIZE
+        with pytest.raises(ValueError, match="authorized_dem_metadata_mismatch"):
+            build_python_reference(str(path), authorization)
 
 
 def test_reference_rejects_existing_demo_without_authorization(tmp_path):
