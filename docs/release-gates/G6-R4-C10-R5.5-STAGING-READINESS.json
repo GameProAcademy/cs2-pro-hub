@@ -11,7 +11,7 @@
     "bucket": "r5-forensic-staging",
     "objectPath": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d.dem"
   },
-  "migration20260923020200": "APPLIED",
+  "migration20260923020200": "SQL_APPLIED_EFFECTIVE_SCHEMA_VERIFIED_REGISTRY_VERSION_ABSENT",
   "expiredLifecycle": "IMPLEMENTED",
   "browserHashWorker": "IMPLEMENTED_NOT_RUN_WITH_REAL_DEM",
   "resumableUpload": "IMPLEMENTED_NOT_RUN_WITH_REAL_DEM",

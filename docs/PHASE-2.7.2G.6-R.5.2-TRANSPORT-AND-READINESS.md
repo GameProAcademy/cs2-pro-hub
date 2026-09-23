@@ -28,6 +28,6 @@ Expired rows remain immutable forensic history. A new Master Admin action may re
 
 ## Current verdict
 
-The official SHA correction and additive lifecycle hardening were applied to the live backend. The bucket remains private with a 500 MiB limit, the fixed object path is relative to the bucket, and expired rows cannot be silently reused or erased. No real DEM bytes were supplied in this change, so the operational status is `READY_FOR_REAL_DEM_STAGING` with `BLOCKED_REAL_DEM_NOT_STAGED`: transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
+The official SHA-correction SQL and additive lifecycle hardening were applied to the live backend. The corrected live definitions are present, but the managed migration registry consolidated the correction without a distinct `20260923020200` version row; this discrepancy is recorded rather than hidden or backfilled. The bucket remains private with a 500 MiB limit, the fixed object path is relative to the bucket, and expired rows cannot be silently reused or erased. No real DEM bytes were supplied in this change, so the operational status is `READY_FOR_REAL_DEM_STAGING` with `BLOCKED_REAL_DEM_NOT_STAGED`: transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
 
 `REAL DEM NOT STAGED — NO EXECUTION PERFORMED.`

@@ -2,7 +2,7 @@
 
 **Status:** `READY_FOR_REAL_DEM_STAGING / REAL DEM NOT STAGED / EXECUTION NOT RUN / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
 
-- [x] Aplicar a migration oficial `20260923020200` com o SHA canônico de 64 caracteres, sem reescrever migrations históricas.
+- [x] Aplicar o SQL corretivo oficial `20260923020200` com o SHA canônico de 64 caracteres, sem reescrever migrations históricas; o schema live está corrigido, embora o registry gerenciado o tenha consolidado sem uma linha de versão `20260923020200` independente.
 - [x] Preservar stagings expirados por UUID e criar novo ciclo de 24h somente por ação Master Admin, com lock transacional e unicidade parcial.
 - [x] Bloquear novo staging enquanto um objeto expirado permanecer no path; nenhum overwrite, DELETE ou cleanup automático.
 - [x] Mover o SHA-256 local bounded-memory para Web Worker cancelável e manter TUS em chunks de 6 MiB com retries 0/3/5/10/20s.
