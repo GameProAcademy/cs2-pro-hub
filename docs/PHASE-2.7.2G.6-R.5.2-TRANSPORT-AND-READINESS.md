@@ -8,9 +8,7 @@ The authorized DEM is staged outside `uploads`, `demo_jobs`, queues, final RAW e
 
 The master-admin page uses Storage TUS uploads with 6 MiB chunks, bounded retries, resumable fingerprints, progress, speed, remaining bytes and safe cancellation. The server supplies the fixed destination; the browser cannot choose another bucket or path. Existing objects are never overwritten automatically.
 
-Browser validation rejects the wrong name or size and hashes 8 MiB slices incrementally. This local digest is an early safety check, not final authority.
-
-Hashing is bounded-memory but currently runs on the browser main thread. Moving it to a Web Worker remains a hardening item; it does not weaken the server-side byte authority. Runtime resume proof remains `RESUME_RUNTIME_NOT_VERIFIED` until the physical DEM is available for an interrupted-upload exercise.
+Browser validation rejects the wrong name or size and hashes 8 MiB slices incrementally in a dedicated Web Worker. Cancellation terminates hashing without creating a staging slot. This local digest is an early safety check, not final authority. Runtime resume proof remains `RESUME_RUNTIME_NOT_VERIFIED` until the physical DEM is available for an interrupted-upload exercise.
 
 ## Verification
 
@@ -26,6 +24,10 @@ R5.3 and R5.4 contracts preserve `NOT_RUN`, `NOT_VERIFIED`, `BLOCKED` and `UNAVA
 
 Staging expires after 24 hours. Expiration makes the gate fail closed and makes the object eligible for a separately authorized cleanup phase. This implementation does not delete the object or execute cleanup.
 
+Expired rows remain immutable forensic history. A new Master Admin action may receive a new UUID and TTL only after the prior row is marked `EXPIRED` and Storage proves the old object is absent. A transaction lock and partial unique indexes prevent concurrent active or ready rows. No automatic delete, overwrite, or cleanup occurs.
+
 ## Current verdict
 
-The path correction and database controls were verified against the live backend: the bucket is private with a 500 MiB limit, the relative-path constraint is singular, and staging/object/Attempt 9/Attempt 10+/provenance/nonce counts remain zero while Canonical remains 105/0/0/0. No real DEM bytes were supplied in this change, so transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
+The official SHA correction and additive lifecycle hardening were applied to the live backend. The bucket remains private with a 500 MiB limit, the fixed object path is relative to the bucket, and expired rows cannot be silently reused or erased. No real DEM bytes were supplied in this change, so the operational status is `READY_FOR_REAL_DEM_STAGING` with `BLOCKED_REAL_DEM_NOT_STAGED`: transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
+
+`REAL DEM NOT STAGED — NO EXECUTION PERFORMED.`
