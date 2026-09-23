@@ -1,3 +1,17 @@
+# CURRENT VALIDATION — FASE 2.7.2G.5-R
+
+**Status:** `POC_BLOCKED_PENDING_REAL_DEM / POC_BLOCKED_WITH_FORENSIC_EVIDENCE`.
+
+- [x] Audit browser/WASM 0.42.0 Worker, bounded manifest, server validator, parity and determinism contracts.
+- [x] Confirm the POC remains off by default and Canonical admission is always fail-closed.
+- [x] Confirm no authorized local `.dem` fixture exists in the repository or current uploads.
+- [x] Expose the forensic section matrix and identity/performance evidence without presenting phase progress as parser percentage.
+- [ ] Execute an authorized real DEM in browser/WASM: `NOT_RUN` because R5.8 still forbids DEM processing before attestation closure.
+- [ ] Execute Python×WASM parity and repeated determinism: `NOT_RUN`, dependent on the same authorized bytes and gate release.
+- [ ] Admit DEM evidence to Canonical: `BLOCKED`; no mapping was authorized or persisted.
+
+**Preserved locks:** no DEM execution, Attempt 9+, RAW final evidence, Canonical promotion, Railway mutation, secret change, migration, cleanup, or AI feature work.
+
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.8
 
 **Status:** `BLOCKED_OPERATOR_CONFIGURATION / R5.7.6 CLOSED / FIRST ATTESTATION NOT RUN / ATTEMPT_9 LOCKED`.
