@@ -81,6 +81,7 @@ function R5ForensicPage() {
       setMessage(null);
       setHashPercent(0);
       setProgress(null);
+      lastProgressAuditRef.current = -1;
       const controller = new AbortController();
       abortRef.current = controller;
       await verifyAuthorizedR5FileLocally(selected, setHashPercent, controller.signal);
@@ -113,6 +114,9 @@ function R5ForensicPage() {
       await queryClient.invalidateQueries({ queryKey: ["admin", "r5-forensic"] });
     },
     onError: (error) => setMessage(error instanceof Error ? error.message : "R5_UPLOAD_FAILED"),
+    onSettled: () => {
+      abortRef.current = null;
+    },
   });
 
   const verify = useMutation({
@@ -128,8 +132,9 @@ function R5ForensicPage() {
     onError: (error) => setMessage(error instanceof Error ? error.message : "R5_VERIFICATION_FAILED"),
   });
 
-  const status = staging.data?.status ?? "NOT_READY";
+  const status = staging.data?.status ?? "READY_FOR_REAL_DEM_STAGING";
   const statusReady = status === "READY_FOR_EXECUTION";
+  const canVerify = staging.data?.status === "UPLOADED_UNVERIFIED";
 
   return (
     <AdminShell session={adminSession}>
@@ -225,7 +230,7 @@ function R5ForensicPage() {
                   <Pause className="size-4" aria-hidden /> Cancel safely
                 </Button>
               ) : null}
-              <Button variant="outline" disabled={!staging.data || upload.isPending || verify.isPending || statusReady} onClick={() => verify.mutate()}>
+              <Button variant="outline" disabled={!canVerify || upload.isPending || verify.isPending || statusReady} onClick={() => verify.mutate()}>
                 {verify.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ShieldCheck className="size-4" aria-hidden />}
                 Verify stored bytes
               </Button>
