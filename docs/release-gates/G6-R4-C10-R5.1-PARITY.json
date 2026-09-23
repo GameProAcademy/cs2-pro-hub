@@ -1,0 +1,12 @@
+{
+  "canonicalEligible": false,
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "phase": "2.7.2G.6-R.5.1",
+  "python": "NOT_RUN",
+  "reason": "REAL_DEM_NOT_ACCESSIBLE",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "status": "NOT_RUN",
+  "verified": false,
+  "wasm": "NOT_RUN"
+}

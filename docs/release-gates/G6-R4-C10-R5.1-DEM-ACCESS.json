@@ -1,0 +1,26 @@
+{
+  "blockers": [
+    "R5_DEM_NOT_STAGED",
+    "R5_DEM_OBJECT_MISSING"
+  ],
+  "canonicalEligible": false,
+  "gate": "R5_REAL_DEM_ACCESS_GATE",
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "identity": {
+    "filename": "furia-vs-gamerlegion-m1-cache.dem",
+    "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+    "sizeBytes": 473748061
+  },
+  "phase": "2.7.2G.6-R.5.1",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "status": "BLOCKED",
+  "storage": {
+    "bucket": "r5-forensic-staging",
+    "bytesAccessible": false,
+    "objects": 0,
+    "private": true,
+    "sizeLimitBytes": 524288000,
+    "stagingRows": 0
+  }
+}

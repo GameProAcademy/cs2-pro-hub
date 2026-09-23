@@ -1,0 +1,502 @@
+{
+  "canonicalEligible": false,
+  "cataloguedCount": 40,
+  "events": [
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "round_start",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L366"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "round_end",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L365"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "round_mvp",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L369"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_abortdefuse",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_abortplant",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_begindefuse",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L349"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_beginplant",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L353"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_defused",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L358"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_dropped",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L363"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_exploded",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L338"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_pickup",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L347"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bomb_planted",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L337"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bullet_damage",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_VERIFIED",
+      "requestable": false,
+      "row_count": null,
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "player_hurt",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L352"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "bullet_impact",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_VERIFIED",
+      "requestable": false,
+      "row_count": null,
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "player_death",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L334"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "player_blind",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L348"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "flashbang_detonate",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L368"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "grenade_thrown",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "hegrenade_detonate",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L371"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "molotov_detonate",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "inferno_startburn",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L350"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "inferno_expire",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L364"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "inferno_extinguish",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_VERIFIED",
+      "requestable": false,
+      "row_count": null,
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "smokegrenade_detonate",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L341"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "smokegrenade_expired",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L335"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "decoy_detonate",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "weapon_fire",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L333"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "weapon_fire_on_empty",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "weapon_reload",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L331"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "weapon_zoom",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L345"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "weapon_zoom_rifle",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "item_equip",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L336"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "item_pickup",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L355"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "item_purchase",
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L1144"
+      ],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "item_remove",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "enter_bombzone",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "exit_bombzone",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "enter_buyzone",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "determinism_status": "NOT_RUN",
+      "event": "exit_buyzone",
+      "evidence_refs": [],
+      "observed": false,
+      "parity_status": "NOT_RUN",
+      "requestable": true,
+      "row_count": null,
+      "status": "AVAILABLE_NOT_OBSERVED"
+    }
+  ],
+  "expectedCount": 40,
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "phase": "2.7.2G.6-R.5.1",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "status": "CATALOGUED_NOT_REAL_DEM_OBSERVED"
+}

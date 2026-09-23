@@ -1,0 +1,12 @@
+{
+  "canonicalEligible": false,
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "hashChain": "NOT_CREATED",
+  "phase": "2.7.2G.6-R.5.1",
+  "productionLifecycleTouched": false,
+  "rawEvidence": "NOT_CREATED",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "stagingSource": "R5_FORENSIC_STAGING",
+  "status": "IMPLEMENTED_NOT_EXECUTED"
+}

@@ -1,0 +1,2068 @@
+{
+  "canonicalEligible": false,
+  "fieldCount": 175,
+  "fields": [
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "game_directory",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "map_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "demo_version",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "demo_version_guid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "demo_version_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "patch_version",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_ticks",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_frames",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_ticks_per_second",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_commands",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "playback_signon_length",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "server_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "client_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "network_protocol",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L354-L384"
+      ],
+      "field": "build_version",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L188"
+      ],
+      "field": "X",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L189"
+      ],
+      "field": "Y",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L190"
+      ],
+      "field": "Z",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L194"
+      ],
+      "field": "velocity",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L191"
+      ],
+      "field": "velocity_X",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L192"
+      ],
+      "field": "velocity_Y",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L193"
+      ],
+      "field": "velocity_Z",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L195"
+      ],
+      "field": "pitch",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L196"
+      ],
+      "field": "yaw",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L894"
+      ],
+      "field": "aim_punch_angle",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L895"
+      ],
+      "field": "aim_punch_angle_vel",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1079"
+      ],
+      "field": "shots_fired",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1062"
+      ],
+      "field": "is_scoped",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1091"
+      ],
+      "field": "health",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1080"
+      ],
+      "field": "armor_value",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L197"
+      ],
+      "field": "is_alive",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1092"
+      ],
+      "field": "life_state",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L198"
+      ],
+      "field": "is_airborne",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "is_crouching",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1047"
+      ],
+      "field": "ducked",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1048"
+      ],
+      "field": "ducking",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1063"
+      ],
+      "field": "is_walking",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1087"
+      ],
+      "field": "is_strafing",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1074"
+      ],
+      "field": "move_state",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1077"
+      ],
+      "field": "stamina",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1081"
+      ],
+      "field": "velo_modifier",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1031"
+      ],
+      "field": "active_weapon",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1103"
+      ],
+      "field": "active_weapon_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1104"
+      ],
+      "field": "active_weapon_ammo",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1105"
+      ],
+      "field": "total_ammo_left",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L990"
+      ],
+      "field": "balance",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L991"
+      ],
+      "field": "start_balance",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L992"
+      ],
+      "field": "total_cash_spent",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1088"
+      ],
+      "field": "round_start_equip_value",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1089"
+      ],
+      "field": "current_equip_value",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L993"
+      ],
+      "field": "cash_spent_this_round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1055"
+      ],
+      "field": "weapon_purchases_this_round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1054"
+      ],
+      "field": "weapon_purchases_this_match",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L652"
+      ],
+      "field": "game_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L928"
+      ],
+      "field": "round_start_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L927"
+      ],
+      "field": "match_start_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L931"
+      ],
+      "field": "game_start_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L933"
+      ],
+      "field": "game_phase",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L963"
+      ],
+      "field": "round_in_progress",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L935"
+      ],
+      "field": "rounds_played_this_phase",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L984"
+      ],
+      "field": "death_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L983"
+      ],
+      "field": "spawn_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1086"
+      ],
+      "field": "last_place_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1030"
+      ],
+      "field": "team_num",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L908"
+      ],
+      "field": "team_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L985"
+      ],
+      "field": "score",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L912"
+      ],
+      "field": "team_score_first_half",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L913"
+      ],
+      "field": "team_score_second_half",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L909"
+      ],
+      "field": "team_score_overtime",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L960"
+      ],
+      "field": "ct_losing_streak",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L961"
+      ],
+      "field": "t_losing_streak",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1070"
+      ],
+      "field": "in_bomb_zone",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1071"
+      ],
+      "field": "in_buy_zone",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1072"
+      ],
+      "field": "in_no_defuse_area",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1075"
+      ],
+      "field": "which_bomb_zone",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L934"
+      ],
+      "field": "total_rounds_played",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L950"
+      ],
+      "field": "is_bomb_planted",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L949"
+      ],
+      "field": "is_bomb_dropped",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L915"
+      ],
+      "field": "is_freeze_period",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L916"
+      ],
+      "field": "is_warmup_period",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1011"
+      ],
+      "field": "kills_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1012"
+      ],
+      "field": "deaths_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1013"
+      ],
+      "field": "assists_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1014"
+      ],
+      "field": "alive_time_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1015"
+      ],
+      "field": "headshot_kills_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1016"
+      ],
+      "field": "ace_rounds_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1017"
+      ],
+      "field": "4k_rounds_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1018"
+      ],
+      "field": "3k_rounds_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1019"
+      ],
+      "field": "damage_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1020"
+      ],
+      "field": "objective_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1021"
+      ],
+      "field": "utility_damage_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1022"
+      ],
+      "field": "enemies_flashed_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1023"
+      ],
+      "field": "equipment_value_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1024"
+      ],
+      "field": "money_saved_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1025"
+      ],
+      "field": "kill_reward_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L1026"
+      ],
+      "field": "cash_earned_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/maps.rs#L907"
+      ],
+      "field": "team_rounds_total",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attacker",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15709"
+      ],
+      "field": "attacker_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15705"
+      ],
+      "field": "attacker_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "user",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15495"
+      ],
+      "field": "user_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15491"
+      ],
+      "field": "user_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "assister",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15713"
+      ],
+      "field": "assister_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15559"
+      ],
+      "field": "weapon",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L286"
+      ],
+      "field": "weapon_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15641"
+      ],
+      "field": "headshot",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15673"
+      ],
+      "field": "attackerblind",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attackerinair",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15621"
+      ],
+      "field": "assistedflash",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15645"
+      ],
+      "field": "dominated",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15649"
+      ],
+      "field": "revenge",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15653"
+      ],
+      "field": "wipe",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15677"
+      ],
+      "field": "distance",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15665"
+      ],
+      "field": "noscope",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15669"
+      ],
+      "field": "thrusmoke",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15657"
+      ],
+      "field": "penetrated",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attacker_team",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "user_team",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attacker",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "user",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15709"
+      ],
+      "field": "attacker_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15495"
+      ],
+      "field": "user_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15559"
+      ],
+      "field": "weapon",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L286"
+      ],
+      "field": "weapon_name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15681"
+      ],
+      "field": "dmg_health",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15685"
+      ],
+      "field": "dmg_armor",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L16777"
+      ],
+      "field": "health",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L16781"
+      ],
+      "field": "armor",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15689"
+      ],
+      "field": "hitgroup",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attacker_team",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "user_team",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15657"
+      ],
+      "field": "penetrated",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15669"
+      ],
+      "field": "thrusmoke",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15665"
+      ],
+      "field": "noscope",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15677"
+      ],
+      "field": "distance",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "attacker",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "user",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15709"
+      ],
+      "field": "attacker_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15495"
+      ],
+      "field": "user_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L16509"
+      ],
+      "field": "blind_duration",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L714"
+      ],
+      "field": "game_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round_start_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L17539"
+      ],
+      "field": "winner",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "winner_team",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L16691"
+      ],
+      "field": "reason",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L714"
+      ],
+      "field": "game_time",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L724"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [],
+      "field": "round",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L15495"
+      ],
+      "field": "user_steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L16031"
+      ],
+      "field": "site",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L277"
+      ],
+      "field": "X",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L278"
+      ],
+      "field": "Y",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/parser/src/e2e_test.rs#L279"
+      ],
+      "field": "Z",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "entity_id",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "grenade_type",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "name",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "steamid",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "tick",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "x",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "y",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    },
+    {
+      "catalogued": true,
+      "evidence_refs": [
+        "src/wasm/src/lib.rs#L293-L352"
+      ],
+      "field": "z",
+      "null_count": null,
+      "observed": false,
+      "row_count": null,
+      "semantic_status": "NOT_RUN",
+      "status": "AVAILABLE_NOT_OBSERVED"
+    }
+  ],
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "phase": "2.7.2G.6-R.5.1",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "sourceCatalogDigest": "29f90c175be2838a3c510d1d0699fe5f663fabe9f6efd73f7dc6e9a80efeea6d",
+  "status": "CATALOGUED_NOT_REAL_DEM_OBSERVED"
+}
