@@ -36,7 +36,7 @@ jobs:
         run: bun run test
 
       - name: Typecheck
-        run: bunx tsgo --noEmit
+        run: bunx tsc --noEmit
 
       - name: Lint
         run: bun run lint
