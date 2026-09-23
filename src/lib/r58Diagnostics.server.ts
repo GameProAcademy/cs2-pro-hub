@@ -19,6 +19,26 @@ export interface R58DiagnosticItem {
   state: R58DiagnosticState;
 }
 
+export const R58_OPERATOR_ATTESTATION_ENDPOINT = "https://parser.gamepro.network" as const;
+
+export function classifyR58AttestationEndpoint(endpoint: string | undefined): R58DiagnosticState {
+  return endpoint
+    ? endpoint === R58_OPERATOR_ATTESTATION_ENDPOINT
+      ? "CONFIGURED"
+      : "MISMATCH"
+    : "MISSING";
+}
+
+/**
+ * The independent Railway API credential belongs to the GitHub Actions
+ * attestor. The Lovable/server process cannot prove whether that GitHub secret
+ * exists, so its local environment must never be treated as evidence of the
+ * attestor secret being configured.
+ */
+export function classifyR58ServerRailwayApiToken(): R58DiagnosticState {
+  return "NOT_CHECKED";
+}
+
 export interface R58OperatorDiagnostic {
   overallStatus: "PASS" | "BLOCKED" | "PARTIAL";
   configurationStatus: "READY" | "BLOCKED";
@@ -58,16 +78,10 @@ function configured(value: string | undefined): R58DiagnosticState {
 
 export async function buildR58OperatorDiagnostic(): Promise<R58OperatorDiagnostic> {
   const endpoint = process.env["PARSER_ATTESTATION_ENDPOINT"];
-  const endpointState: R58DiagnosticState = endpoint
-    ? endpoint === "https://gamepro.network/api/public/parser-attestation"
-      ? "CONFIGURED"
-      : "MISMATCH"
-    : "MISSING";
+  const endpointState = classifyR58AttestationEndpoint(endpoint);
   const transportState = configured(process.env["PARSER_ATTESTATION_TRANSPORT_SECRET"]);
   const hmacState = configured(process.env["PARSER_ATTESTATION_HMAC_SECRET"]);
-  const railwayState: R58DiagnosticState = process.env["RAILWAY_API_TOKEN"]
-    ? "CONFIGURED"
-    : "NOT_CHECKED";
+  const railwayState = classifyR58ServerRailwayApiToken();
 
   let gate: GateSnapshot | null = null;
   try {
