@@ -1,0 +1,72 @@
+{
+  "phase": "2.7.2G.5-R",
+  "status": "BLOCKED",
+  "evidence_status": "POC_BLOCKED_WITH_FORENSIC_EVIDENCE",
+  "execution_status": "POC_BLOCKED_PENDING_REAL_DEM",
+  "parser_identity": {
+    "name": "demoparser2",
+    "version": "0.42.0",
+    "runtime": "wasm-browser-worker",
+    "source_revision": "d3767705dc5846d73ed29db50eaeda58778dc934",
+    "production_runtime_revision_preserved": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+    "contract_version": 4,
+    "catalog_version": 5,
+    "production_contract_version_preserved": 1
+  },
+  "fixture": {
+    "authorized_local_dem_count": 0,
+    "staged_private_dem": "PRESENT_BUT_EXECUTION_LOCKED_BY_R5.8",
+    "browser_execution": "NOT_RUN"
+  },
+  "inventory": {
+    "catalogued_apis": 9,
+    "catalogued_fields": 175,
+    "catalogued_events": 38,
+    "runtime_verified_fields": 0,
+    "runtime_verified_events": 0
+  },
+  "gates": {
+    "wasm_artifact_identity": "PASS",
+    "wasm_initialization": "PASS_PREVIOUS_EVIDENCE",
+    "worker_contract": "PASS",
+    "real_dem_execution": "NOT_RUN",
+    "python_wasm_parity": "NOT_RUN",
+    "determinism": "NOT_RUN",
+    "field_inventory": "NOT_RUN",
+    "round_inventory": "NOT_RUN",
+    "player_inventory": "NOT_RUN",
+    "event_inventory": "NOT_RUN",
+    "tick_inventory": "NOT_RUN",
+    "bomb_inventory": "NOT_RUN",
+    "death_inventory": "NOT_RUN",
+    "damage_inventory": "NOT_RUN",
+    "performance": "NOT_RUN",
+    "memory": "NOT_RUN",
+    "canonical_admission": "BLOCKED"
+  },
+  "validation": {
+    "focused_client_parser_tests": "69_PASS",
+    "typescript": "PASS",
+    "focused_lint": "PASS",
+    "diff_integrity": "PASS",
+    "full_suite": "1106_PASS_1_INFRASTRUCTURE_FAILURE",
+    "full_suite_failure": "DISPOSABLE_POSTGRES_ROLE_ROOT_DOES_NOT_EXIST"
+  },
+  "safety": {
+    "browser_poc_default": "OFF",
+    "canonical_persistence": false,
+    "raw_dem_persisted_by_poc": false,
+    "railway_changed": false,
+    "security_model_changed": false,
+    "migrations_created": 0,
+    "attempt_9_created": false
+  },
+  "blockers": [
+    "R5.8_ATTESTATION_PREFLIGHT_NOT_CLOSED",
+    "AUTHORIZED_LOCAL_DEM_FIXTURE_NOT_AVAILABLE",
+    "BROWSER_POC_128_MIB_LIMIT_BELOW_STAGED_DEM_SIZE",
+    "SAME_DEM_PYTHON_REFERENCE_NOT_EXECUTED",
+    "REPEATED_REAL_RUNS_NOT_EXECUTED"
+  ],
+  "next_safe_action": "COMPLETE_R5.8_OPERATOR_CONFIGURATION_AND_INDEPENDENT_ATTESTATION_AUDIT"
+}

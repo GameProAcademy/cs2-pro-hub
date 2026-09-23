@@ -7,7 +7,11 @@ import {
   trustedRuntimeUrl,
 } from "./clientParser.runtime";
 import type { ClientParserWorkerEvent, ClientParserStage } from "./clientParser.protocol";
-import { CLIENT_DEMO_MAX_BYTES, type ClientParserEnvelope } from "./clientParser.types";
+import {
+  CLIENT_DEMO_MAX_BYTES,
+  CLIENT_PARSE_TIMEOUT_MS,
+  type ClientParserEnvelope,
+} from "./clientParser.types";
 import { sha256Hex } from "./clientParser.hash";
 
 export interface ClientParserProgress {
@@ -56,7 +60,12 @@ export class ClientParserService {
       CLIENT_WASM_BINARY_SHA256;
 
     return new Promise<ClientParserEnvelope>((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        finish();
+        reject(new ClientParserError("CLIENT_PARSE_TIMEOUT"));
+      }, CLIENT_PARSE_TIMEOUT_MS);
       const finish = () => {
+        window.clearTimeout(timeout);
         worker.terminate();
         if (this.worker === worker) this.worker = null;
         if (this.requestId === requestId) this.requestId = null;
