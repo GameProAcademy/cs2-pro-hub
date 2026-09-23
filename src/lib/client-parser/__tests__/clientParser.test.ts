@@ -25,6 +25,7 @@ import {
   CLIENT_PARSER_RUNTIME,
   CLIENT_PARSER_SCHEMA_VERSION,
   CLIENT_PARSER_VERSION,
+  CLIENT_PARSE_TIMEOUT_MS,
   type ClientParseResult,
 } from "../clientParser.types";
 import { validateClientParserResult } from "../clientParser.validator.server";
@@ -246,6 +247,10 @@ describe("client parser compact contract", () => {
     expect(sha256Text("abc")).toBe(
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
     ));
+  it("keeps a finite terminal timeout for an unresponsive Worker", () => {
+    expect(CLIENT_PARSE_TIMEOUT_MS).toBe(300_000);
+    expect(Number.isSafeInteger(CLIENT_PARSE_TIMEOUT_MS)).toBe(true);
+  });
   it("keeps deterministic digest independent from measurements", () => {
     const left = result();
     const right = { ...left, performance: { ...left.performance, totalDurationMs: 99 } };
