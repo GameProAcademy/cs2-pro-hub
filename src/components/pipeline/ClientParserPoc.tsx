@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { ClientParserAuditReport } from "@/components/pipeline/ClientParserAuditReport";
 import { ClientParserError } from "@/lib/client-parser/clientParser.errors";
 import { verifyClientParserResult } from "@/lib/client-parser/clientParser.functions";
 import type { ClientParserProgress } from "@/lib/client-parser/clientParser.service";
@@ -125,12 +125,17 @@ export function ClientParserPoc() {
         </div>
       ) : null}
       {progress ? (
-        <div className="space-y-2">
-          <div className="flex justify-between font-mono text-xs text-muted-foreground">
-            <span>{progress.stage}</span>
-            <span>{Math.round(progress.progress * 100)}%</span>
+        <div
+          className="flex items-center justify-between gap-4 border border-border bg-card/40 px-4 py-3"
+          aria-live="polite"
+        >
+          <div>
+            <p className="text-xs text-muted-foreground">Fase atual</p>
+            <p className="mt-1 font-mono text-sm text-foreground">{progress.stage}</p>
           </div>
-          <Progress value={progress.progress * 100} />
+          <p className="font-mono text-xs text-muted-foreground">
+            {(progress.elapsedMs / 1000).toFixed(1)} s
+          </p>
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
@@ -209,6 +214,11 @@ export function ClientParserPoc() {
           <p className="mt-1 text-muted-foreground">Canonical: BLOCKED · Persistido: não</p>
         </div>
       ) : null}
+      <ClientParserAuditReport
+        result={result}
+        verification={verification}
+        progress={progress}
+      />
     </div>
   );
 }
