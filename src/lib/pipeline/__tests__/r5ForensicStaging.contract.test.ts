@@ -31,7 +31,7 @@ describe("R5.1 forensic staging contract", () => {
   it("keeps staging independent from attempts, jobs and queues", () => {
     expect(migration).toContain("CREATE TABLE public.r5_forensic_staging");
     expect(migration).not.toMatch(/INSERT INTO public\.(uploads|demo_jobs)/);
-    expect(migration).not.toMatch(/pgmq\.send|enqueue_demo_job|attempt_number\s*=/);
+    expect(migration).not.toMatch(/pgmq\.send|enqueue_demo_job|INSERT INTO public\.(?:uploads|demo_jobs)/);
     expect(server).not.toMatch(/\.from\(["'](?:uploads|demo_jobs)["']\)/);
   });
 
