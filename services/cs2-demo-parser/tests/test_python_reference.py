@@ -67,8 +67,9 @@ def test_reference_real_cache_size_passes_size_gate_then_rejects_wrong_sha(tmp_p
         "authorizationRef": "R5_REAL_DEM_ACCESS_GATE",
         "receivedAt": "2026-09-23T00:00:00Z",
     }
-    with patch("pathlib.Path.stat") as stat:
-        stat.return_value.st_size = AUTHORIZED_CACHE_SIZE
+    real_stat = path.stat()
+    with patch.object(type(path), "stat") as stat:
+        stat.return_value = real_stat._replace(st_size=AUTHORIZED_CACHE_SIZE)
         with pytest.raises(ValueError, match="authorized_dem_metadata_mismatch"):
             build_python_reference(str(path), authorization)
 
