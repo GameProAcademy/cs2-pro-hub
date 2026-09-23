@@ -138,10 +138,11 @@ export async function verifyR5ForensicStaging(stagingId: string) {
     const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
     const response = await fetch(signedUrl);
     if (!response.ok || !response.body) throw new Error("R5_DEM_OBJECT_MISSING");
+    const responseBody = response.body;
     let observedSize = 0;
     const hashingStream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const reader = response.body.getReader();
+        const reader = responseBody.getReader();
         try {
           for (;;) {
             const { done, value } = await reader.read();
