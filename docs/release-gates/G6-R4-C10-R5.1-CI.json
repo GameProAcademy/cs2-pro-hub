@@ -1,0 +1,22 @@
+{
+  "canonicalEligible": false,
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "local": {
+    "pythonReferenceTests": "BLOCKED_MISSING_ISOLATED_RUNTIME_DEPENDENCIES",
+    "r5ContractTests": "PASS:5/5"
+  },
+  "phase": "2.7.2G.6-R.5.1",
+  "railwayBranchCi": "BLOCKED_EXTERNAL_CHANGE_REQUIRED",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "secrets": {
+    "PARSER_ATTESTATION_HMAC_SECRET": "ABSENT",
+    "RAILWAY_API_TOKEN": "ABSENT"
+  },
+  "status": "VERIFICATION_PARTIAL",
+  "workflow": {
+    "externalRun": "NOT_VERIFIED",
+    "pgConfigBinAddedToPath": true,
+    "postgresqlInstalled": true
+  }
+}

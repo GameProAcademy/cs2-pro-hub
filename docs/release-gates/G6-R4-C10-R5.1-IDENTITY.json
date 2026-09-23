@@ -1,0 +1,14 @@
+{
+  "canonicalEligible": false,
+  "contractVersion": 1,
+  "demoSha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+  "deploymentRevision": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "identitiesSeparated": true,
+  "parserUpstreamRevision": "d3767705dc5846d73ed29db50eaeda58778dc934",
+  "parserVersion": "0.42.0",
+  "phase": "2.7.2G.6-R.5.1",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "schemaVersion": 1,
+  "status": "IMPLEMENTED_NOT_EXECUTED"
+}

@@ -1,0 +1,13 @@
+{
+  "canonicalEligible": false,
+  "generatedAt": "2026-09-23T01:15:06.754555Z",
+  "phase": "2.7.2G.6-R.5.1",
+  "rawEvidenceDiff": "NOT_VERIFIED_WITHOUT_LIVE_RAILWAY_CHECKOUT",
+  "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+  "runtimeBranch": "infra/cs2-parser-worker-v8",
+  "runtimeDeployment": "6330c8c4-a410-45db-a364-4eb47702c2fc",
+  "runtimeMutationPerformed": false,
+  "runtimeRevision": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+  "schemaVersion": 1,
+  "status": "BLOCKED_EXTERNAL_CHANGE_REQUIRED"
+}
