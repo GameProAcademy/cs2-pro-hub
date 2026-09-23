@@ -180,7 +180,7 @@ def build_attestation() -> dict[str, Any]:
     run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "")
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
     try:
-        workflow_source = approved_workflow_identity(trigger_commit_sha)
+        workflow_source = approved_workflow_identity(workflow_file_commit_sha)
     except (ValueError, OSError, subprocess.CalledProcessError):
         workflow_source = {"workflow_path": WORKFLOW_PATH, "workflow_source_sha": None}
         statuses.append("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED")
