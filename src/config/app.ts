@@ -25,6 +25,9 @@ export const FEATURES = {
   realDemoParser: false,
   /** Isolated browser-only experiment. Disabled unless explicitly enabled at build time. */
   clientDemParserPoc: import.meta.env["VITE_CLIENT_DEM_PARSER_POC_ENABLED"] === "true",
+  /** Metadata/hash feasibility laboratory only; never unlocks parsing or Canonical. */
+  clientDemLargeFileExperimental:
+    import.meta.env["VITE_CLIENT_DEM_LARGE_FILE_EXPERIMENTAL"] === "true",
 
   faceitIntegration: true,
   /** No official API and the public site is behind an anti-bot challenge. */

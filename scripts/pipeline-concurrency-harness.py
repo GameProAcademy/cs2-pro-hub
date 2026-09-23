@@ -101,7 +101,7 @@ def main() -> None:
     failures = deadlocks = timeouts = successes = 0
 
     def psql(sql: str, *, tuples: bool = True) -> str:
-        cmd = ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(base), "-p", str(port), "-d", "postgres"]
+        cmd = as_user + ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(base), "-p", str(port), "-d", "postgres"]
         if tuples:
             cmd += ["-A", "-t"]
         cmd += ["-c", sql]
