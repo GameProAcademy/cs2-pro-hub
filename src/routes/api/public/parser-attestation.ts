@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Json } from "@/integrations/supabase/types";
 import {
+  extractBoundReleaseGateEvidence,
   PARSER_ATTESTATION_EXPECTED,
   validateParserAttestationOidcClaims,
   validateParserAttestationPayload,
@@ -22,7 +23,6 @@ const bodySchema = z.object({
   }),
   signature: z.string().regex(/^[0-9a-f]{64}$/),
   oidcToken: z.string().min(100),
-  releaseGateEvidence: z.record(z.unknown()),
 });
 
 function base64UrlJson(value: string): Record<string, unknown> {
@@ -148,7 +148,11 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "ATTESTATION_IDENTITY_INVALID" }, { status: 401 });
         }
 
-        const mappingEvidence = parsed.data.releaseGateEvidence["mapping_inventory"];
+        const releaseGateEvidence = extractBoundReleaseGateEvidence(parsed.data.result.payload);
+        if (!releaseGateEvidence) {
+          return Response.json({ error: "RELEASE_GATE_EVIDENCE_INVALID" }, { status: 422 });
+        }
+        const mappingEvidence = releaseGateEvidence["mapping_inventory"];
         const mappingRecord =
           mappingEvidence && typeof mappingEvidence === "object" && !Array.isArray(mappingEvidence)
             ? (mappingEvidence as Record<string, unknown>)
@@ -175,7 +179,7 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           _payload: parsed.data.result.payload as Json,
           _attestation_digest: parsed.data.result.attestation_digest,
           _signature: parsed.data.signature,
-          _release_gate_evidence: parsed.data.releaseGateEvidence as Json,
+          _release_gate_evidence: releaseGateEvidence as Json,
           _attested_at: attestedAt,
           _nonce: nonce,
         });

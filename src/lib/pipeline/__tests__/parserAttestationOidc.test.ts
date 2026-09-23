@@ -4,6 +4,7 @@ import {
   PARSER_ATTESTATION_EXPECTED,
   PARSER_ATTESTATION_OIDC,
   PARSER_ATTESTATION_SCHEMA_VERSION,
+  extractBoundReleaseGateEvidence,
   validateParserAttestationOidcClaims,
   validateParserAttestationPayload,
 } from "@/lib/parserAttestation";
@@ -52,12 +53,25 @@ describe("parser attestation OIDC claims", () => {
     "repository_owner_id",
     "ref",
     "workflow_ref",
-    "job_workflow_ref",
     "sub",
     "event_name",
   ])("rejects a mismatched %s claim", (claim) => {
     const claims = validClaims();
     claims[claim] = "unexpected";
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
+  it("accepts a normal workflow token without job_workflow_ref", () => {
+    const claims = validClaims();
+    delete claims["job_workflow_ref"];
+    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toEqual([]);
+  });
+
+  it("rejects job_workflow_ref when it is present but mismatched", () => {
+    const claims = validClaims();
+    claims["job_workflow_ref"] = "unexpected";
     expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
       "OIDC_CLAIMS_MISMATCH",
     );
@@ -114,6 +128,11 @@ describe("parser attestation OIDC claims", () => {
 });
 
 describe("parser attestation freshness contract", () => {
+  it("derives release gate evidence only from the signed payload", () => {
+    const evidence = { mapping_inventory: { status: "BLOCKED" } };
+    expect(extractBoundReleaseGateEvidence({ release_gate_evidence: evidence })).toEqual(evidence);
+    expect(extractBoundReleaseGateEvidence({})).toBeNull();
+  });
   it("rejects a payload without a timestamp and nonce before persistence", () => {
     const blockers = validateParserAttestationPayload({
       schema_version: PARSER_ATTESTATION_SCHEMA_VERSION,

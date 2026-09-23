@@ -21,6 +21,10 @@ const workflowBindingMigration = readFileSync(
   resolve("supabase/migrations/20260922093815_8745c511-6a49-4950-bff2-6bed730d5587.sql"),
   "utf8",
 );
+const r57Migration = readFileSync(
+  resolve("supabase/migrations/20260923084500_r57_attestation_main_binding.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -65,7 +69,9 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
 
   it("enforces the reviewed workflow source at the persistence boundary", () => {
     expect(workflowBindingMigration).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
-    expect(workflowBindingMigration).toContain("5039bff74550f02291fd066c7f10d781f6b86ebe");
+    expect(r57Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
+    expect(r57Migration).toContain("refs/heads/main");
+    expect(r57Migration).toContain("_release_gate_evidence IS DISTINCT FROM _payload->'release_gate_evidence'");
     expect(workflowBindingMigration).toContain("parser_runtime_provenance_approved_workflow");
   });
 
