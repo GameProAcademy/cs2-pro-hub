@@ -101,33 +101,39 @@ function R5ForensicPage() {
             if (milestone > lastProgressAuditRef.current) {
               lastProgressAuditRef.current = milestone;
               progressAuditChainRef.current = progressAuditChainRef.current.then(() =>
-                recordR5ForensicProgress({ data: {
-                  stagingId: slot.id,
-                  bytesUploaded: next.bytesSent,
-                  bytesTotal: next.bytesTotal,
-                  percent: milestone,
-                  retryCount: next.retryCount,
-                  resumed: next.resumed,
+                recordR5ForensicProgress({
+                  data: {
+                    stagingId: slot.id,
+                    bytesUploaded: next.bytesSent,
+                    bytesTotal: next.bytesTotal,
+                    percent: milestone,
+                    retryCount: next.retryCount,
+                    resumed: next.resumed,
+                  },
                 }),
               );
             }
           },
         });
         await progressAuditChainRef.current;
-        await recordR5ForensicProgress({ data: {
-          stagingId: slot.id,
-          bytesUploaded: selected.size,
-          bytesTotal: selected.size,
-          percent: 100,
-          retryCount: transport.retryCount,
-          resumed: transport.resumed,
-        } });
+        await recordR5ForensicProgress({
+          data: {
+            stagingId: slot.id,
+            bytesUploaded: selected.size,
+            bytesTotal: selected.size,
+            percent: 100,
+            retryCount: transport.retryCount,
+            resumed: transport.resumed,
+          },
+        });
         await recordR5ForensicUpload({ data: { stagingId: slot.id, state: "completed" } });
         return slot.id;
       } catch (error) {
         const cancelled = error instanceof DOMException && error.name === "AbortError";
         const code = cancelled ? "R5_UPLOAD_CANCELLED" : "R5_UPLOAD_FAILED";
-        await recordR5ForensicUpload({ data: { stagingId: slot.id, state: cancelled ? "cancelled" : "failed", errorCode: code } });
+        await recordR5ForensicUpload({
+          data: { stagingId: slot.id, state: cancelled ? "cancelled" : "failed", errorCode: code },
+        });
         throw error;
       } finally {
         abortRef.current = null;
