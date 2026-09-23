@@ -44,6 +44,14 @@
     "memory": "NOT_RUN",
     "canonical_admission": "BLOCKED"
   },
+  "validation": {
+    "focused_client_parser_tests": "69_PASS",
+    "typescript": "PASS",
+    "focused_lint": "PASS",
+    "diff_integrity": "PASS",
+    "full_suite": "1106_PASS_1_INFRASTRUCTURE_FAILURE",
+    "full_suite_failure": "DISPOSABLE_POSTGRES_ROLE_ROOT_DOES_NOT_EXIST"
+  },
   "safety": {
     "browser_poc_default": "OFF",
     "canonical_persistence": false,
