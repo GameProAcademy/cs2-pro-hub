@@ -173,13 +173,14 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("CANONICAL_MAPPING_AUTHORITY_MISMATCH")
     repository = os.getenv("GITHUB_REPOSITORY", "")
     ref_name = os.getenv("GITHUB_REF_NAME", "")
-    sha = os.getenv("GITHUB_SHA", "")
+    trigger_commit_sha = os.getenv("GITHUB_SHA", "")
+    workflow_file_commit_sha = os.getenv("GITHUB_WORKFLOW_SHA", "")
     event = os.getenv("GITHUB_EVENT_NAME", "")
     run_id = os.getenv("GITHUB_RUN_ID", "")
     run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "")
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
     try:
-        workflow_source = approved_workflow_identity(sha)
+        workflow_source = approved_workflow_identity(trigger_commit_sha)
     except (ValueError, OSError, subprocess.CalledProcessError):
         workflow_source = {"workflow_path": WORKFLOW_PATH, "workflow_source_sha": None}
         statuses.append("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED")
@@ -192,8 +193,10 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
     if event != "workflow_dispatch" or not run_id or not run_attempt:
         statuses.append("GITHUB_WORKFLOW_IDENTITY_MISSING")
-    if not re.fullmatch(r"[0-9a-f]{40}", sha):
-        statuses.append("GITHUB_WORKFLOW_COMMIT_INVALID")
+    if not re.fullmatch(r"[0-9a-f]{40}", trigger_commit_sha):
+        statuses.append("GITHUB_TRIGGER_COMMIT_INVALID")
+    if not re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha):
+        statuses.append("GITHUB_WORKFLOW_FILE_COMMIT_INVALID")
     expected_workflow_ref = f"{REPOSITORY}/{WORKFLOW_PATH}@"
     if not workflow_ref.startswith(expected_workflow_ref):
         statuses.append("GITHUB_WORKFLOW_REF_MISMATCH")
@@ -263,7 +266,9 @@ def build_attestation() -> dict[str, Any]:
         "attestor_source_identity": {
             "repository": REPOSITORY,
             "branch": "main",
-            "workflow_sha": sha,
+            "workflow_sha": trigger_commit_sha,
+            "trigger_commit_sha": trigger_commit_sha,
+            "workflow_file_commit_sha": workflow_file_commit_sha,
             "workflow_path": WORKFLOW_PATH,
             "workflow_source_sha": workflow_source.get("workflow_source_sha"),
         },
@@ -271,7 +276,9 @@ def build_attestation() -> dict[str, Any]:
                              "tree": tree, "branch_contains_commit": branch_contains_commit},
         "workflow_identity": {"provider": "github_actions", "repository": repository,
                               "ref_name": ref_name, "workflow_ref": workflow_ref,
-                              "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": sha,
+                              "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": trigger_commit_sha,
+                               "trigger_commit_sha": trigger_commit_sha,
+                               "workflow_file_commit_sha": workflow_file_commit_sha,
                                "event_name": event, **workflow_source},
         "release_gate_evidence": release_gate_evidence(),
         "mapping_release": {
