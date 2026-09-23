@@ -9,7 +9,7 @@
 - [x] Vincular `release_gate_evidence` ao payload assinado na rota e no limite de persistência, via migration aditiva.
 - [x] Restringir `parser_runtime_provenance.attestation_version` a `3` no banco e cobrir a restrição com contrato de regressão.
 - [x] Persistir somente `GITHUB_ACTIONS_SIGNED_ATTESTATION_V3` e exigir `workflow_sha = trigger_commit_sha`, `workflow_file_commit_sha` explícito e o blob aprovado independente.
-- [x] Validar TypeScript, 38 contratos focados, 1.105/1.106 testes web na primeira execução e o único timeout isolado em 13/13, build e lint dos arquivos alterados; pytest permanece `NOT_RUN` por indisponibilidade do runner.
+- [x] Validar TypeScript, 38 contratos focados, 1.106/1.106 testes web na execução final, build e lint dos arquivos alterados; pytest permanece `NOT_RUN` por indisponibilidade do runner.
 - [ ] Configuração parcial: endpoint e secrets de transporte/HMAC existem no servidor Lovable; `RAILWAY_API_TOKEN` ainda exige configuração operacional.
 - [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública (`DATABASE_HMAC_SECRET_CONFIGURATION_REQUIRES_OPERATOR_ACTION`).
 - [ ] Executar o workflow real e aceitar uma nova attestation somente se toda prova independente passar.
