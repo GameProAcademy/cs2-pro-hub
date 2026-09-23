@@ -7,6 +7,8 @@ import {
   R5_AUTHORIZED_DEM_FILENAME,
   R5_AUTHORIZED_DEM_SHA256,
   R5_AUTHORIZED_DEM_SIZE_BYTES,
+  R5_CANONICAL_RELEASE_ID,
+  R5_FORENSIC_STAGING_BUCKET,
   R5_FORENSIC_STORAGE_PATH,
 } from "@/config/r5ForensicStaging";
 
@@ -30,7 +32,12 @@ describe("R5.1 forensic staging contract", () => {
       "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
     );
     expect(R5_AUTHORIZED_DEM_SIZE_BYTES).toBe(473_748_061);
-    expect(R5_FORENSIC_STORAGE_PATH).toContain(R5_AUTHORIZED_DEM_SHA256);
+    expect(R5_FORENSIC_STORAGE_PATH).toBe(
+    `${R5_CANONICAL_RELEASE_ID}/${R5_AUTHORIZED_DEM_SHA256}.dem`,
+  );
+  expect(R5_FORENSIC_STORAGE_PATH).not.toMatch(
+    new RegExp(`^${R5_FORENSIC_STAGING_BUCKET}/`),
+  );
   });
 
   it("keeps staging independent from attempts, jobs and queues", () => {
@@ -61,6 +68,7 @@ describe("R5.1 forensic staging contract", () => {
   it("uses resumable TUS transport with fixed destination, retry, progress and cancellation", () => {
     expect(resumable).toContain("bucketName: R5_FORENSIC_STAGING_BUCKET");
     expect(resumable).toContain("objectName: R5_FORENSIC_STORAGE_PATH");
+    expect(resumable).toContain("// TUS objectName is relative to bucketName. Never send the bucket prefix.");
     expect(resumable).toContain('headers: { "x-upsert": "false" }');
     expect(resumable).toContain("findPreviousUploads()");
     expect(resumable).toContain("resumeFromPreviousUpload");
