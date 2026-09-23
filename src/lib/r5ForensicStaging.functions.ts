@@ -81,19 +81,35 @@ export const recordR5ForensicUpload = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const recordR5ForensicProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ stagingId: z.string().uuid(), percent: z.number().int().min(0).max(100) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await requireMaster(context as Context);
+    await audit(context as Context, "R5_UPLOAD_PROGRESS", data.stagingId, { percent: data.percent });
+    return { ok: true };
+  });
+
 export const verifyR5ForensicDemo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ stagingId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await requireMaster(context as Context);
     const { verifyR5ForensicStaging } = await import("@/lib/pipeline/r5ForensicStaging.server");
-    await audit(context as Context, "R5_VERIFICATION_STARTED", data.stagingId, {});
+    await audit(context as Context, "R5_VERIFY_STARTED", data.stagingId, {});
     try {
       const result = await verifyR5ForensicStaging(data.stagingId);
-      await audit(context as Context, "R5_VERIFICATION_COMPLETED", data.stagingId, {});
+      const gate = typeof result === "object" && result !== null ? result as Record<string, unknown> : {};
+      const ready = gate["status"] === "READY_FOR_EXECUTION";
+      await audit(context as Context, "R5_VERIFY_COMPLETED", data.stagingId, {});
+      await audit(context as Context, ready ? "R5_GATE_READY" : "R5_GATE_BLOCKED", data.stagingId, {
+        status: typeof gate["status"] === "string" ? gate["status"] : "BLOCKED",
+      });
       return result;
     } catch (error) {
-      await audit(context as Context, "R5_VERIFICATION_FAILED", data.stagingId, {
+      await audit(context as Context, "R5_VERIFY_FAILED", data.stagingId, {
         error_code:
           error instanceof Error
             ? (error.message.split(":", 1)[0] ?? "R5_VERIFICATION_FAILED")

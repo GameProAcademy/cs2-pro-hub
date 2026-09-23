@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "r5-evidence-v1",
+  "phase": "2.7.2G.6-R.5.5",
+  "status": "READY_FOR_REAL_DEM_STAGING",
+  "releaseBlocked": true,
+  "authorizedDemo": {
+    "filename": "furia-vs-gamerlegion-m1-cache.dem",
+    "sizeBytes": 473748061,
+    "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+    "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
+    "bucket": "r5-forensic-staging",
+    "objectPath": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d.dem"
+  },
+  "migration20260923020200": "SQL_APPLIED_EFFECTIVE_SCHEMA_VERIFIED_REGISTRY_VERSION_ABSENT",
+  "expiredLifecycle": "IMPLEMENTED",
+  "browserHashWorker": "IMPLEMENTED_NOT_RUN_WITH_REAL_DEM",
+  "resumableUpload": "IMPLEMENTED_NOT_RUN_WITH_REAL_DEM",
+  "serverStreamingVerification": "IMPLEMENTED_NOT_RUN_WITH_REAL_DEM",
+  "staging": "BLOCKED_REAL_DEM_NOT_STAGED",
+  "execution": "NOT_RUN",
+  "python": "NOT_RUN",
+  "wasm": "NOT_RUN",
+  "parity": "NOT_RUN",
+  "determinism": "NOT_RUN",
+  "tickAuthority": "UNAVAILABLE",
+  "oidc": "NOT_RUN",
+  "hmac": "NOT_CONFIGURED",
+  "provenance": "NOT_VERIFIED",
+  "attempt9Authorized": false,
+  "cleanup": "NOT_RUN",
+  "verdict": "REAL DEM NOT STAGED — NO EXECUTION PERFORMED."
+}

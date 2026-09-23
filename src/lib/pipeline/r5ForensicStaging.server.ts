@@ -75,6 +75,8 @@ export async function getR5ForensicStaging(): Promise<R5ForensicStagingResult | 
     .from("r5_forensic_staging")
     .select(R5_SELECT)
     .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(`R5_STAGING_LOOKUP_FAILED:${error.message}`);
   return data ? mapStagingRow(data) : null;
@@ -82,35 +84,9 @@ export async function getR5ForensicStaging(): Promise<R5ForensicStagingResult | 
 
 export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const expiresAt = new Date(Date.now() + R5_STAGING_TTL_HOURS * 3_600_000).toISOString();
-  const { data: existing, error: lookupError } = await supabaseAdmin
-    .from("r5_forensic_staging")
-    .select(R5_SELECT)
-    .eq("storage_path", R5_FORENSIC_STORAGE_PATH)
-    .maybeSingle();
-  if (lookupError) throw new Error(`R5_STAGING_LOOKUP_FAILED:${lookupError.message}`);
-
-  let id = existing?.id;
-  if (!id) {
-    const { data, error } = await supabaseAdmin
-      .from("r5_forensic_staging")
-      .insert({
-        release_id: R5_CANONICAL_RELEASE_ID,
-        demo_sha256: R5_AUTHORIZED_DEM_SHA256,
-        file_size: R5_AUTHORIZED_DEM_SIZE_BYTES,
-        filename: R5_AUTHORIZED_DEM_FILENAME,
-        bucket_id: R5_FORENSIC_STAGING_BUCKET,
-        storage_path: R5_FORENSIC_STORAGE_PATH,
-        source: R5_FORENSIC_SOURCE,
-        expires_at: expiresAt,
-      })
-      .select(R5_SELECT)
-      .single();
-    if (error || !data) throw new Error(`R5_STAGING_CREATE_FAILED:${error?.message ?? "missing row"}`);
-    return mapStagingRow(data);
-  }
-  if (!existing) throw new Error("R5_STAGING_NOT_FOUND");
-  return mapStagingRow(existing);
+  const { data, error } = await supabaseAdmin.rpc("prepare_r5_forensic_staging");
+  if (error || !data) throw new Error(`R5_STAGING_CREATE_FAILED:${error?.message ?? "missing row"}`);
+  return mapStagingRow(data);
 }
 
 export async function updateR5TransportState(

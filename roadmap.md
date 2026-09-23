@@ -1,4 +1,19 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.2 → R5.4
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.5
+
+**Status:** `READY_FOR_REAL_DEM_STAGING / REAL DEM NOT STAGED / EXECUTION NOT RUN / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
+
+- [x] Aplicar o SQL corretivo oficial `20260923020200` com o SHA canônico de 64 caracteres, sem reescrever migrations históricas; o schema live está corrigido, embora o registry gerenciado o tenha consolidado sem uma linha de versão `20260923020200` independente.
+- [x] Preservar stagings expirados por UUID e criar novo ciclo de 24h somente por ação Master Admin, com lock transacional e unicidade parcial.
+- [x] Bloquear novo staging enquanto um objeto expirado permanecer no path; nenhum overwrite, DELETE ou cleanup automático.
+- [x] Mover o SHA-256 local bounded-memory para Web Worker cancelável e manter TUS em chunks de 6 MiB com retries 0/3/5/10/20s.
+- [x] Restringir retomada por release, SHA, nome, tamanho, bucket, path e content type; registrar progresso e gates na auditoria.
+- [x] Expor bucket/path, identidade local/servidor e a espera explícita por upload físico na tela Master Admin.
+- [ ] Receber fisicamente o DEM autorizado e provar upload interrompido/retomado; permanece `BLOCKED_REAL_DEM_NOT_STAGED`.
+- [ ] Executar qualquer parser, Python/WASM, parity, determinism, tick authority, Attempt 9 ou Canonical; todos permanecem `NOT_RUN/BLOCKED`.
+
+**Locks:** Railway, secrets, HMAC/OIDC/provenance, Attempt 9/10+, Canonical, RAW final e cleanup permanecem sem mutação. `REAL DEM NOT STAGED — NO EXECUTION PERFORMED.`
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.5.2 → R5.4
 
 **Status:** `IMPLEMENTATION COMPLETE / TRANSPORT NOT RUN / EXECUTION NOT RUN / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
 

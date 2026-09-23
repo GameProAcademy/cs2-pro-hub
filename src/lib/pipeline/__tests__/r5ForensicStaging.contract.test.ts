@@ -19,6 +19,7 @@ const migration = readFileSync(
 const functions = readFileSync(resolve("src/lib/r5ForensicStaging.functions.ts"), "utf8");
 const server = readFileSync(resolve("src/lib/pipeline/r5ForensicStaging.server.ts"), "utf8");
 const resumable = readFileSync(resolve("src/lib/pipeline/r5ResumableUpload.ts"), "utf8");
+const hashWorker = readFileSync(resolve("src/lib/pipeline/r5DemHash.worker.ts"), "utf8");
 const r52Migration = readFileSync(
   resolve("supabase/migrations/20260923012919_d1e69d4d-c42e-4b0e-b1c4-11d75a5febc7.sql"),
   "utf8",
@@ -29,6 +30,18 @@ const pathMigration = readFileSync(
 );
 const stateMigration = readFileSync(
   resolve("supabase/migrations/20260923014908_d8bbbb89-cbf3-4dc6-96ea-5184b8377097.sql"),
+  "utf8",
+);
+const semanticsMigration = readFileSync(
+  resolve("supabase/migrations/20260923020000_r5_storage_path_semantics.sql"),
+  "utf8",
+);
+const shaCorrectionMigration = readFileSync(
+  resolve("supabase/migrations/20260923020200_r5_authorized_dem_sha_correction.sql"),
+  "utf8",
+);
+const lifecycleMigration = readFileSync(
+  resolve("supabase/migrations/20260923023228_b55a6705-84a5-4ff9-b178-5e6510afeb22.sql"),
   "utf8",
 );
 const workflow = readFileSync(resolve(".github/workflows/quality-gates.yml"), "utf8");
@@ -88,9 +101,10 @@ describe("R5.1 forensic staging contract", () => {
   });
 
   it("preserves bounded-memory hashing on browser and server", () => {
-    expect(resumable).toContain("file.slice(offset, end).arrayBuffer()");
-    expect(resumable).not.toContain("file.arrayBuffer()");
-    expect(resumable).not.toContain("crypto.subtle.digest");
+    expect(resumable).toContain('new Worker(new URL("./r5DemHash.worker.ts", import.meta.url)');
+    expect(hashWorker).toContain("file.slice(offset, end).arrayBuffer()");
+    expect(hashWorker).not.toContain("file.arrayBuffer()");
+    expect(hashWorker).not.toContain("crypto.subtle.digest");
     expect(server).toContain("response.body?.getReader()");
     expect(server).toContain("sha256FromStream(hashingStream)");
     expect(server).not.toMatch(/\.storage\s*\.from\([^\n]+\)\s*\.download/);
@@ -111,6 +125,36 @@ describe("R5.1 forensic staging contract", () => {
     expect(server).toContain('rpc("transition_r5_forensic_upload"');
     expect(stateMigration).toContain("FOR UPDATE");
     expect(stateMigration).toContain("R5_PREMATURE_READY_FOR_EXECUTION");
+  });
+
+  it("applies the official SHA correction without rewriting historical migrations", () => {
+    expect(semanticsMigration).toContain("0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d");
+    expect(shaCorrectionMigration).toContain(R5_AUTHORIZED_DEM_SHA256);
+    expect(shaCorrectionMigration).not.toContain("29b00dd4d");
+    expect(shaCorrectionMigration).toContain("r5_real_dem_access_gate");
+    expect(shaCorrectionMigration).toContain("transition_r5_forensic_upload");
+  });
+
+  it("preserves expired history and permits only one active or ready slot", () => {
+    expect(lifecycleMigration).toContain("DROP CONSTRAINT IF EXISTS r5_forensic_staging_storage_path_key");
+    expect(lifecycleMigration).toContain("r5_forensic_staging_active_path_key");
+    expect(lifecycleMigration).toContain("WHERE transport_status <> 'EXPIRED'");
+    expect(lifecycleMigration).toContain("r5_forensic_staging_ready_path_key");
+    expect(lifecycleMigration).toContain("pg_advisory_xact_lock");
+    expect(lifecycleMigration).toContain("R5_EXPIRED_OBJECT_REMAINS");
+    expect(lifecycleMigration).toContain("R5_STAGING_EXPIRED");
+    expect(lifecycleMigration).not.toMatch(/DELETE FROM public\.r5_forensic_staging/);
+    expect(server).toContain('rpc("prepare_r5_forensic_staging"');
+  });
+
+  it("records upload progress, exact verify events and gate outcomes", () => {
+    expect(functions).toContain("R5_UPLOAD_PROGRESS");
+    expect(functions).toContain("R5_VERIFY_STARTED");
+    expect(functions).toContain("R5_VERIFY_COMPLETED");
+    expect(functions).toContain("R5_VERIFY_FAILED");
+    expect(functions).toContain("R5_GATE_READY");
+    expect(functions).toContain("R5_GATE_BLOCKED");
+    expect(functions).not.toContain("R5_VERIFICATION_STARTED");
   });
 
   it("preserves PostgreSQL setup for the concurrency harness", () => {

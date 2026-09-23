@@ -4,6 +4,7 @@ import {
   R5_AUTHORIZED_DEM_FILENAME,
   R5_AUTHORIZED_DEM_SHA256,
   R5_AUTHORIZED_DEM_SIZE_BYTES,
+  R5_CANONICAL_RELEASE_ID,
   R5_FORENSIC_STAGING_BUCKET,
   R5_FORENSIC_STORAGE_PATH,
   R5_TUS_CHUNK_BYTES,
@@ -11,7 +12,6 @@ import {
 } from "@/config/r5ForensicStaging";
 import { supabase } from "@/integrations/supabase/client";
 import { resumableStorageEndpoint } from "@/lib/pipeline/resumableUpload";
-import { HASH_CHUNK_BYTES, Sha256 } from "@/lib/pipeline/sha256";
 
 export interface R5UploadProgress {
   bytesSent: number;
@@ -32,15 +32,38 @@ export function assertAuthorizedR5File(file: File): void {
 export async function verifyAuthorizedR5FileLocally(
   file: File,
   onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   assertAuthorizedR5File(file);
-  const hasher = new Sha256();
-  for (let offset = 0; offset < file.size; offset += HASH_CHUNK_BYTES) {
-    const end = Math.min(offset + HASH_CHUNK_BYTES, file.size);
-    hasher.update(new Uint8Array(await file.slice(offset, end).arrayBuffer()));
-    onProgress?.(Math.round((end / file.size) * 100));
-  }
-  if (hasher.hex() !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
+  const observedSha256 = await new Promise<string>((resolve, reject) => {
+    const worker = new Worker(new URL("./r5DemHash.worker.ts", import.meta.url), { type: "module" });
+    let settled = false;
+    const finish = (result: { sha256?: string; error?: Error }) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener("abort", onAbort);
+      worker.terminate();
+      result.error ? reject(result.error) : resolve(result.sha256 ?? "");
+    };
+    const onAbort = () => finish({ error: new DOMException("Hash cancelled", "AbortError") });
+    signal?.addEventListener("abort", onAbort, { once: true });
+    worker.onerror = () => finish({ error: new Error("R5_FILE_HASH_FAILED") });
+    worker.onmessage = (event: MessageEvent<{ type: string; percent?: number; sha256?: string }>) => {
+      if (event.data.type === "progress") onProgress?.(event.data.percent ?? 0);
+      if (event.data.type === "done") {
+        event.data.sha256
+          ? finish({ sha256: event.data.sha256 })
+          : finish({ error: new Error("R5_FILE_HASH_FAILED") });
+      }
+      if (event.data.type === "error") finish({ error: new Error("R5_FILE_HASH_FAILED") });
+    };
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    worker.postMessage({ type: "hash", file });
+  });
+  if (observedSha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
 }
 
 async function accessToken(): Promise<string> {
@@ -74,6 +97,9 @@ export async function uploadR5DemoResumably(
       retryDelays: [...R5_TUS_RETRY_DELAYS_MS],
       uploadDataDuringCreation: true,
       metadata: {
+        releaseId: R5_CANONICAL_RELEASE_ID,
+        sha256: R5_AUTHORIZED_DEM_SHA256,
+        filename: R5_AUTHORIZED_DEM_FILENAME,
         bucketName: R5_FORENSIC_STAGING_BUCKET,
         // TUS objectName is relative to bucketName. Never send the bucket prefix.
         objectName: R5_FORENSIC_STORAGE_PATH,
@@ -82,7 +108,7 @@ export async function uploadR5DemoResumably(
       },
       headers: { "x-upsert": "false" },
       fingerprint: async () =>
-        `r5-forensic:${R5_FORENSIC_STAGING_BUCKET}:${R5_FORENSIC_STORAGE_PATH}:${file.size}`,
+        `r5-forensic:${R5_CANONICAL_RELEASE_ID}:${R5_AUTHORIZED_DEM_SHA256}:${R5_AUTHORIZED_DEM_FILENAME}:${R5_FORENSIC_STAGING_BUCKET}:${R5_FORENSIC_STORAGE_PATH}:${file.size}`,
       storeFingerprintForResuming: true,
       removeFingerprintOnSuccess: true,
       onBeforeRequest: async (request) =>
@@ -115,6 +141,9 @@ export async function uploadR5DemoResumably(
           (candidate) =>
             candidate.uploadUrl != null &&
             candidate.size === file.size &&
+            candidate.metadata["releaseId"] === R5_CANONICAL_RELEASE_ID &&
+            candidate.metadata["sha256"] === R5_AUTHORIZED_DEM_SHA256 &&
+            candidate.metadata["filename"] === R5_AUTHORIZED_DEM_FILENAME &&
             candidate.metadata["bucketName"] === R5_FORENSIC_STAGING_BUCKET &&
             candidate.metadata["objectName"] === R5_FORENSIC_STORAGE_PATH &&
             candidate.metadata["contentType"] === "application/octet-stream",
