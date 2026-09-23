@@ -122,7 +122,7 @@ export async function updateR5TransportState(
   const { error } = await supabaseAdmin.rpc("transition_r5_forensic_upload", {
     _staging_id: stagingId,
     _action: state,
-    _error_code: errorCode,
+    ...(errorCode === undefined ? {} : { _error_code: errorCode }),
   });
   if (error) throw new Error(`R5_STAGING_STATE_FAILED:${error.message}`);
 }
