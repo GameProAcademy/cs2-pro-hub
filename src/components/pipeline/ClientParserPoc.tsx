@@ -81,7 +81,7 @@ export function ClientParserPoc() {
         <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
         <div>
           <p className="font-medium text-foreground">
-            Arquivo processado localmente — nenhum .DEM enviado.
+            Processamento local isolado — nenhum .DEM é enviado.
           </p>
           <p className="mt-1 text-muted-foreground">
             Resultado do cliente é não confiável até validação do servidor.

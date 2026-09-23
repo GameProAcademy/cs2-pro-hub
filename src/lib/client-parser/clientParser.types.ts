@@ -16,6 +16,8 @@ export const CLIENT_EVENT_INVENTORY_LIMIT = 1_024;
 export const CLIENT_RESULT_MAX_BYTES = 2 * 1024 * 1024;
 /** Conservative POC ceiling; this is not a production or 400 MB support claim. */
 export const CLIENT_DEMO_MAX_BYTES = 128 * 1024 * 1024;
+/** Terminal ceiling for an unresponsive browser Worker; not a performance claim. */
+export const CLIENT_PARSE_TIMEOUT_MS = 5 * 60 * 1_000;
 
 export const CLIENT_CAPABILITY_CLASSIFICATIONS = [
   "CANONICAL",
@@ -455,6 +457,7 @@ export type ClientParserErrorCode =
   | "CLIENT_PARITY_NOT_AVAILABLE"
   | "CLIENT_RESULT_INVALID"
   | "CLIENT_RESULT_TOO_LARGE"
+  | "CLIENT_PARSE_TIMEOUT"
   | "CLIENT_CONTRACT_MISMATCH"
   | "CLIENT_PARSER_IDENTITY_MISMATCH"
   | "CLIENT_RESULT_DIGEST_MISMATCH"
