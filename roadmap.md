@@ -1,10 +1,13 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.7
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.7.1 + R.5.7.2
 
-**Status:** `AUDIT COMPLETE / SECURE CONFIGURATION BLOCKED / ATTESTATION NOT RUN / ATTEMPT_9 BLOCKED`.
+**Status:** `ATTESTATION ARCHITECTURE REPAIRED / LOCAL WEB TESTS PASS / FIRST ATTESTATION NOT RUN / ATTEMPT_9 BLOCKED`.
 
 - [x] Confirmar staging real `READY_FOR_EXECUTION`, identidade observada e preservação do registro `61df7731-ec89-4fa3-8211-dd29128f3be8`.
 - [x] Confirmar Attempt 9/10+=0, Canonical=105/0/0/0, provenance VERIFIED=0 e nonces=0.
 - [x] Confirmar HMAC duplo, OIDC RS256, freshness, nonce, Railway API, runtime identity, hashes críticos e workflow aprovado já implementados.
+- [x] Separar o attestor em `main` do runtime congelado em `infra/cs2-parser-worker-v8`, usando o Git blob aprovado `13ce10e95a508e62d832bb9dc432e1496499676c`.
+- [x] Vincular `release_gate_evidence` ao payload assinado na rota e no limite de persistência, via migration aditiva.
+- [x] Validar TypeScript, 43 contratos focados, 1.101 testes web, build e lint dos arquivos alterados; pytest permanece `NOT_RUN` por indisponibilidade do runner.
 - [ ] Configuração parcial: endpoint e secrets de transporte/HMAC existem no servidor Lovable; os quatro secrets do GitHub Actions ainda exigem configuração operacional.
 - [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública (`DATABASE_HMAC_SECRET_CONFIGURATION_REQUIRES_OPERATOR_ACTION`).
 - [ ] Executar o workflow real e aceitar uma nova attestation somente se toda prova independente passar.

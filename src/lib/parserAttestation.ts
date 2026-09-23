@@ -5,6 +5,7 @@ import {
 
 export const PARSER_ATTESTATION_EXPECTED = {
   repository: "GameProAcademy/cs2-pro-hub",
+  attestorBranch: "main",
   branch: "infra/cs2-parser-worker-v8",
   commit: "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
   deploymentId: "6330c8c4-a410-45db-a364-4eb47702c2fc",
@@ -12,7 +13,7 @@ export const PARSER_ATTESTATION_EXPECTED = {
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
   workflowRef:
-    "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/infra/cs2-parser-worker-v8",
+    "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
   workflowPath: APPROVED_ATTESTATION_WORKFLOW_PATH,
   workflowSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
   parser: "demoparser2",
@@ -30,9 +31,8 @@ export const PARSER_ATTESTATION_OIDC = {
   repositoryOwner: "GameProAcademy",
   repositoryOwnerId: "323426481",
   repositoryId: "1358428146",
-  branchRef: "refs/heads/infra/cs2-parser-worker-v8",
-  subject:
-    "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/infra/cs2-parser-worker-v8",
+  branchRef: "refs/heads/main",
+  subject: "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/main",
   eventName: "workflow_dispatch",
 } as const;
 
@@ -76,7 +76,8 @@ export function validateParserAttestationOidcClaims(
     claims["repository_owner_id"] !== oidc.repositoryOwnerId ||
     claims["ref"] !== oidc.branchRef ||
     claims["workflow_ref"] !== expected.workflowRef ||
-    claims["job_workflow_ref"] !== expected.workflowRef ||
+    (claims["job_workflow_ref"] !== undefined &&
+      claims["job_workflow_ref"] !== expected.workflowRef) ||
     claims["sub"] !== oidc.subject ||
     claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
@@ -104,6 +105,8 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   const hashes = record(payload["critical_file_hashes"]);
   const mappingRelease = record(payload["mapping_release"]);
   const workflowIdentity = record(payload["workflow_identity"]);
+  const attestorSource = record(payload["attestor_source_identity"]);
+  const releaseGateEvidence = record(payload["release_gate_evidence"]);
 
   if (
     payload["schema_version"] !== PARSER_ATTESTATION_SCHEMA_VERSION ||
@@ -119,10 +122,29 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   }
   if (
     !workflowIdentity ||
+    workflowIdentity["repository"] !== expected.repository ||
+    workflowIdentity["ref_name"] !== expected.attestorBranch ||
+    workflowIdentity["workflow_ref"] !== expected.workflowRef ||
+    workflowIdentity["event_name"] !== PARSER_ATTESTATION_OIDC.eventName ||
+    typeof workflowIdentity["workflow_sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_sha"]) ||
     workflowIdentity["workflow_path"] !== expected.workflowPath ||
     workflowIdentity["workflow_source_sha"] !== expected.workflowSourceSha
   ) {
     blockers.push("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+  }
+  if (
+    !attestorSource ||
+    attestorSource["repository"] !== expected.repository ||
+    attestorSource["branch"] !== expected.attestorBranch ||
+    attestorSource["workflow_sha"] !== workflowIdentity?.["workflow_sha"] ||
+    attestorSource["workflow_path"] !== expected.workflowPath ||
+    attestorSource["workflow_source_sha"] !== expected.workflowSourceSha
+  ) {
+    blockers.push("ATTESTOR_SOURCE_IDENTITY_INVALID");
+  }
+  if (!releaseGateEvidence || record(releaseGateEvidence["mapping_inventory"]) === null) {
+    blockers.push("RELEASE_GATE_EVIDENCE_INVALID");
   }
   const attestedAt =
     typeof payload["attested_at"] === "string" ? Date.parse(payload["attested_at"]) : NaN;
@@ -206,4 +228,10 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     blockers.push("MAPPING_RELEASE_PROOF_INVALID");
   }
   return blockers;
+}
+
+export function extractBoundReleaseGateEvidence(
+  payload: Record<string, unknown>,
+): Record<string, unknown> | null {
+  return record(payload["release_gate_evidence"]);
 }

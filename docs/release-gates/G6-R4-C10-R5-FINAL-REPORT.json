@@ -42,8 +42,8 @@
   "github": {
     "repository": "GameProAcademy/cs2-pro-hub",
     "workflow_path": ".github/workflows/parser-runtime-attestation.yml",
-    "approved_blob_sha": "5039bff74550f02291fd066c7f10d781f6b86ebe",
-    "observed_blob_sha": "5039bff74550f02291fd066c7f10d781f6b86ebe",
+    "approved_blob_sha": "13ce10e95a508e62d832bb9dc432e1496499676c",
+    "observed_blob_sha": "13ce10e95a508e62d832bb9dc432e1496499676c",
     "workflow_identity": "VERIFIED_STATIC_ONLY",
     "live_run": "NOT_RUN"
   },

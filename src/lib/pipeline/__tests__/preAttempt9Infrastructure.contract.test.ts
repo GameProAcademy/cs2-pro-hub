@@ -21,6 +21,10 @@ const workflowBindingMigration = readFileSync(
   resolve("supabase/migrations/20260922093815_8745c511-6a49-4950-bff2-6bed730d5587.sql"),
   "utf8",
 );
+const r57Migration = readFileSync(
+  resolve("supabase/migrations/20260923084535_357aad48-bac1-451b-a991-c76cfd20b66f.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -60,12 +64,18 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps the final pre-real-demo diagnostic read-only and blocked", () => {
     expect(parityMigration).toContain("public.pre_real_demo_gate_status()");
     expect(parityMigration).toContain("'status', 'BLOCKED_BEFORE_REAL_DEMO'");
-    expect(parityMigration).not.toMatch(/\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/);
+    expect(parityMigration).not.toMatch(
+      /\b(?:INSERT INTO|UPDATE|DELETE FROM|TRUNCATE) public\.uploads\b/,
+    );
   });
 
   it("enforces the reviewed workflow source at the persistence boundary", () => {
     expect(workflowBindingMigration).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
-    expect(workflowBindingMigration).toContain("5039bff74550f02291fd066c7f10d781f6b86ebe");
+    expect(r57Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
+    expect(r57Migration).toContain("refs/heads/main");
+    expect(r57Migration).toContain(
+      "NEW.release_gate_evidence IS DISTINCT FROM NEW.attestation_payload->'release_gate_evidence'",
+    );
     expect(workflowBindingMigration).toContain("parser_runtime_provenance_approved_workflow");
   });
 
