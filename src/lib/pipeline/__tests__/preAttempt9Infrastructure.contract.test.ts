@@ -110,7 +110,9 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("persists only the v3 method and keeps all three workflow SHA concepts distinct", () => {
     expect(r575Migration).toContain("GITHUB_ACTIONS_SIGNED_ATTESTATION_V3");
     expect(r575Migration).not.toContain("GITHUB_ACTIONS_SIGNED_ATTESTATION_V2");
-    expect(r575Migration).toContain("workflow_sha' IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha");
+    expect(r575Migration).toContain(
+      "workflow_sha' IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha",
+    );
     expect(r575Migration).toContain("workflow_file_commit_sha' !~ '^[0-9a-f]{40}$'");
     expect(r575Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
     expect(r575Migration).toContain("refs/heads/main");

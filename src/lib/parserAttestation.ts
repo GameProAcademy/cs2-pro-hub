@@ -148,8 +148,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     attestorSource["branch"] !== expected.attestorBranch ||
     attestorSource["workflow_sha"] !== workflowIdentity?.["workflow_sha"] ||
     attestorSource["trigger_commit_sha"] !== workflowIdentity?.["trigger_commit_sha"] ||
-    attestorSource["workflow_file_commit_sha"] !==
-      workflowIdentity?.["workflow_file_commit_sha"] ||
+    attestorSource["workflow_file_commit_sha"] !== workflowIdentity?.["workflow_file_commit_sha"] ||
     attestorSource["workflow_path"] !== expected.workflowPath ||
     attestorSource["workflow_source_sha"] !== expected.workflowSourceSha
   ) {
