@@ -105,7 +105,7 @@ def main() -> None:
         if tuples:
             cmd += ["-A", "-t"]
         cmd += ["-c", sql]
-        return run(cmd, env=clean_env, capture_output=True, timeout=15).stdout.strip()
+        try:\n            return run(cmd, env=clean_env, capture_output=True, timeout=15).stdout.strip()\n        except subprocess.CalledProcessError as error:\n            if error.stderr:\n                print(error.stderr.strip(), file=sys.stderr, flush=True)\n            raise
 
     def run_concurrently(sql_a: str, sql_b: str) -> tuple[str, str]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
