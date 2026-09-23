@@ -72,7 +72,8 @@ export function browserLargeDemPreflight(metadata: LargeDemMetadata): LargeDemCa
   return preflightLargeDem(metadata, {
     workerAvailable: typeof Worker !== "undefined",
     wasmAvailable: typeof WebAssembly !== "undefined",
-    memoryMeasurementAvailable: typeof performanceWithMemory.measureUserAgentSpecificMemory === "function",
+    memoryMeasurementAvailable:
+      typeof performanceWithMemory.measureUserAgentSpecificMemory === "function",
     crossOriginIsolated: globalThis.crossOriginIsolated === true,
   });
 }

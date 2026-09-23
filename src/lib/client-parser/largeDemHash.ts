@@ -1,11 +1,17 @@
-export interface LargeDemHashProgress { bytesRead: number; bytesTotal: number }
+export interface LargeDemHashProgress {
+  bytesRead: number;
+  bytesTotal: number;
+}
 
 export function hashLargeDemInWorker(
   file: File,
   options: { signal?: AbortSignal; onProgress?: (progress: LargeDemHashProgress) => void } = {},
 ): Promise<{ sha256: string; bytesRead: number }> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./largeDemHash.worker.ts", import.meta.url), { type: "module", name: "gamepro-large-dem-hash" });
+    const worker = new Worker(new URL("./largeDemHash.worker.ts", import.meta.url), {
+      type: "module",
+      name: "gamepro-large-dem-hash",
+    });
     const requestId = crypto.randomUUID();
     let settled = false;
     const finish = (error?: Error, result?: { sha256: string; bytesRead: number }) => {
@@ -24,9 +30,18 @@ export function hashLargeDemInWorker(
     worker.onerror = () => finish(new Error("LARGE_DEM_HASH_FAILED"));
     worker.onmessage = (event: MessageEvent<Record<string, unknown>>) => {
       if (event.data["requestId"] !== requestId) return;
-      if (event.data["type"] === "PROGRESS") options.onProgress?.({ bytesRead: Number(event.data["bytesRead"]), bytesTotal: Number(event.data["bytesTotal"]) });
-      if (event.data["type"] === "COMPLETE") finish(undefined, { sha256: String(event.data["sha256"]), bytesRead: Number(event.data["bytesRead"]) });
-      if (event.data["type"] === "CANCELLED") finish(new DOMException("Hash cancelled", "AbortError"));
+      if (event.data["type"] === "PROGRESS")
+        options.onProgress?.({
+          bytesRead: Number(event.data["bytesRead"]),
+          bytesTotal: Number(event.data["bytesTotal"]),
+        });
+      if (event.data["type"] === "COMPLETE")
+        finish(undefined, {
+          sha256: String(event.data["sha256"]),
+          bytesRead: Number(event.data["bytesRead"]),
+        });
+      if (event.data["type"] === "CANCELLED")
+        finish(new DOMException("Hash cancelled", "AbortError"));
       if (event.data["type"] === "ERROR") finish(new Error("LARGE_DEM_HASH_FAILED"));
     };
     if (options.signal?.aborted) {

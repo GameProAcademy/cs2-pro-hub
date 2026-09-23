@@ -2,7 +2,8 @@
 import { Sha256 } from "@/lib/pipeline/sha256";
 import { LARGE_DEM_HASH_CHUNK_BYTES } from "./largeDemFeasibility";
 
-type Request = { type: "HASH"; requestId: string; file: File } | { type: "CANCEL"; requestId: string };
+type Request =
+  { type: "HASH"; requestId: string; file: File } | { type: "CANCEL"; requestId: string };
 type Response =
   | { type: "PROGRESS"; requestId: string; bytesRead: number; bytesTotal: number }
   | { type: "COMPLETE"; requestId: string; sha256: string; bytesRead: number }
@@ -33,9 +34,19 @@ async function hash(request: Extract<Request, { type: "HASH" }>) {
       }
       const end = Math.min(offset + LARGE_DEM_HASH_CHUNK_BYTES, request.file.size);
       hasher.update(new Uint8Array(await request.file.slice(offset, end).arrayBuffer()));
-      scope.postMessage({ type: "PROGRESS", requestId: request.requestId, bytesRead: end, bytesTotal: request.file.size });
+      scope.postMessage({
+        type: "PROGRESS",
+        requestId: request.requestId,
+        bytesRead: end,
+        bytesTotal: request.file.size,
+      });
     }
-    scope.postMessage({ type: "COMPLETE", requestId: request.requestId, sha256: hasher.hex(), bytesRead: request.file.size });
+    scope.postMessage({
+      type: "COMPLETE",
+      requestId: request.requestId,
+      sha256: hasher.hex(),
+      bytesRead: request.file.size,
+    });
   } catch {
     scope.postMessage({ type: "ERROR", requestId: request.requestId });
   } finally {

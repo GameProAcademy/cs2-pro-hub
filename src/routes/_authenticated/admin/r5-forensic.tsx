@@ -260,7 +260,16 @@ function R5ForensicPage() {
                     <p className="font-mono text-[10px] uppercase text-muted-foreground">
                       {item.key.replaceAll("_", " ")}
                     </p>
-                    <span className={cn("font-mono text-[10px]", item.state === "CONFIGURED" ? "text-success" : item.state === "BLOCKED" || item.state === "MISSING" ? "text-warning" : "text-muted-foreground")}>
+                    <span
+                      className={cn(
+                        "font-mono text-[10px]",
+                        item.state === "CONFIGURED"
+                          ? "text-success"
+                          : item.state === "BLOCKED" || item.state === "MISSING"
+                            ? "text-warning"
+                            : "text-muted-foreground",
+                      )}
+                    >
                       {item.state}
                     </span>
                   </div>
