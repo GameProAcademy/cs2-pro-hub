@@ -39,12 +39,11 @@
     "canonical_authorized_count": 0,
     "canonical_verified_count": 0,
     "hmac_configured": false,
-    "hmac_length_only": 0,
     "pre_real_demo_gate_status": "NOT_VERIFIED_READ_ROLE_DENIED"
   },
   "secrets": {
-    "PARSER_ATTESTATION_TRANSPORT_SECRET": "PRESENT_LENGTH_64",
-    "PARSER_ATTESTATION_HMAC_SECRET": "PRESENT_LENGTH_64",
+    "PARSER_ATTESTATION_TRANSPORT_SECRET": "CONFIGURED",
+    "PARSER_ATTESTATION_HMAC_SECRET": "CONFIGURED",
     "PARSER_ATTESTATION_ENDPOINT": "PRESENT_NOT_VALIDATED",
     "RAILWAY_API_TOKEN": "OPERATOR_GITHUB_SECRET_VERIFICATION_REQUIRED",
     "database_hmac": "NOT_CONFIGURED",
