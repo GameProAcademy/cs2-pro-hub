@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import math
+import stat
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
 from python_reference import MAX_DEMO_BYTES, _bounded, _finite, _manifest, build_python_reference
 
-AUTHORIZED_CACHE_SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
+AUTHORIZED_CACHE_SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d"
 AUTHORIZED_CACHE_SIZE = 473_748_061
 
 
@@ -58,8 +60,8 @@ def test_reference_rejects_demo_above_1_5_gib(tmp_path):
         "sha256": hashlib.sha256(b"").hexdigest(), "sizeBytes": MAX_DEMO_BYTES + 1, "source": "LOCAL_FILE",
         "authorizationRef": "R5_REAL_DEM_ACCESS_GATE", "receivedAt": "2026-09-23T00:00:00Z",
     }
-    with patch("pathlib.Path.stat") as stat:
-        stat.return_value.st_size = MAX_DEMO_BYTES + 1
+    with patch.object(type(path), "stat") as mocked_stat:
+        mocked_stat.return_value = SimpleNamespace(st_size=MAX_DEMO_BYTES + 1, st_mode=stat.S_IFREG)
         with pytest.raises(ValueError, match="authorized_demo_size_out_of_bounds"):
             build_python_reference(str(path), authorization)
 
@@ -77,9 +79,8 @@ def test_reference_real_cache_size_passes_size_gate_then_rejects_wrong_sha(tmp_p
         "authorizationRef": "R5_REAL_DEM_ACCESS_GATE",
         "receivedAt": "2026-09-23T00:00:00Z",
     }
-    real_stat = path.stat()
-    with patch.object(type(path), "stat") as stat:
-        stat.return_value = real_stat._replace(st_size=AUTHORIZED_CACHE_SIZE)
+    with patch.object(type(path), "stat") as mocked_stat:
+        mocked_stat.return_value = SimpleNamespace(st_size=AUTHORIZED_CACHE_SIZE, st_mode=stat.S_IFREG)
         with pytest.raises(ValueError, match="authorized_demo_metadata_mismatch"):
             build_python_reference(str(path), authorization)
 
