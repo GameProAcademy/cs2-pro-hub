@@ -12,9 +12,7 @@ describe("R5.8 operator diagnostic helpers", () => {
 
   it("rejects the obsolete application-host route as a mismatch", () => {
     expect(
-      classifyR58AttestationEndpoint(
-        "https://gamepro.network/api/public/parser-attestation",
-      ),
+      classifyR58AttestationEndpoint("https://gamepro.network/api/public/parser-attestation"),
     ).toBe("MISMATCH");
   });
 
