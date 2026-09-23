@@ -1,4 +1,18 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.5
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.6
+
+**Status:** `READY_FOR_REAL_DEM_STAGING / REAL_DEM_NOT_PHYSICALLY_AVAILABLE / EXECUTION NOT_RUN / ATTEMPT_9 BLOCKED / CANONICAL BLOCKED / RAILWAY UNCHANGED`.
+
+- [x] Preservar a migration efetivamente aplicada `20260923023058` e manter ausente a duplicada removida `20260923020200`.
+- [x] Revalidar o banco real antes de qualquer staging: rows/objects=0, Attempt 9/10+=0, jobs>=9=0, Canonical=105/0/0/0, provenance VERIFIED=0 e nonces=0.
+- [x] Aplicar hardening aditivo R5.6 para preflight atômico, progresso monotônico, cancelamento retomável e verificação server-side transacional.
+- [x] Fazer o Worker retornar SHA/tamanho realmente observados e preservar TUS 6 MiB, retries 0/3/5/10/20s e resume estrito.
+- [x] Registrar `R5_UPLOAD_CANCELLED` e telemetria segura de bytes, retries e resume sem conteúdo do DEM ou credenciais.
+- [ ] Executar hash, TUS, cancelamento/resume, streaming e gate com o DEM real: `NOT_RUN — REAL_DEM_NOT_PHYSICALLY_AVAILABLE`.
+- [ ] Executar R5.7, parser, Python/WASM, parity, determinism, tick authority, Attempt 9, RAW ou Canonical: proibido nesta fase.
+
+**Locks:** nenhum staging/objeto foi criado; Railway, EnvironmentPatch, secrets, HMAC/OIDC, Canonical e cleanup permaneceram sem mutação.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.5.5
 
 **Status:** `READY_FOR_REAL_DEM_STAGING / REAL DEM NOT STAGED / EXECUTION NOT RUN / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
 

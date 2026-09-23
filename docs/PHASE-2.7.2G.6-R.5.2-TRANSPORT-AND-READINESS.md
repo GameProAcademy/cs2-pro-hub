@@ -31,3 +31,13 @@ Expired rows remain immutable forensic history. A new Master Admin action may re
 The official SHA-correction SQL and additive lifecycle hardening were applied to the live backend. The corrected live definitions are present, but the managed migration registry consolidated the correction without a distinct `20260923020200` version row; this discrepancy is recorded rather than hidden or backfilled. The bucket remains private with a 500 MiB limit, the fixed object path is relative to the bucket, and expired rows cannot be silently reused or erased. No real DEM bytes were supplied in this change, so the operational status is `READY_FOR_REAL_DEM_STAGING` with `BLOCKED_REAL_DEM_NOT_STAGED`: transport and identity verification remain blocked, and no parser, Attempt 9, Canonical write, Railway change or destructive cleanup ran.
 
 `REAL DEM NOT STAGED — NO EXECUTION PERFORMED.`
+
+## R5.6 final transport hardening
+
+R5.6 adds a fail-closed database preflight before staging creation. The routine now verifies the private bucket, size limit, exact Canonical baseline, absence of Attempt 9/10+ jobs, and absence of unexpected provenance or nonce evidence under the same advisory lock used to create the slot.
+
+Upload progress is persisted monotonically by a service-only RPC. Cancellation remains `UPLOADING` so the same exact TUS fingerprint can resume; it records `R5_UPLOAD_CANCELLED` and never sets completed, verified or ready. Retry and resume observations are audit metadata only and contain no DEM bytes, authorization headers or upload URL.
+
+The browser Worker returns the observed local SHA-256 and size rather than presenting the expected constants as observed evidence. The server verification lifecycle is atomic: only `UPLOADED_UNVERIFIED` can enter `VERIFYING`, only matching streamed bytes can enter `READY_FOR_EXECUTION`, and every verification error is moved to `BLOCKED` with a safe code.
+
+The authorized DEM was not physically supplied in this phase. Therefore Worker, TUS, cancellation/resume, server streaming and local↔server comparison are `NOT_RUN_WITH_REAL_DEM`; the operational verdict remains `READY_FOR_REAL_DEM_STAGING`. No parser, Python, WASM, Railway, Attempt 9/10+, RAW, Canonical promotion or cleanup ran.

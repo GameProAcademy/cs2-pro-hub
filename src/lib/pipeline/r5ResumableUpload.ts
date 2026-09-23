@@ -20,6 +20,18 @@ export interface R5UploadProgress {
   bytesRemaining: number;
   bytesPerSecond: number;
   etaSeconds: number | null;
+  retryCount: number;
+  resumed: boolean;
+}
+
+export interface R5LocalFileEvidence {
+  sha256: string;
+  size: number;
+}
+
+export interface R5UploadResult {
+  resumed: boolean;
+  retryCount: number;
 }
 
 export function assertAuthorizedR5File(file: File): void {
@@ -33,27 +45,35 @@ export async function verifyAuthorizedR5FileLocally(
   file: File,
   onProgress?: (percent: number) => void,
   signal?: AbortSignal,
-): Promise<void> {
+): Promise<R5LocalFileEvidence> {
   assertAuthorizedR5File(file);
-  const observedSha256 = await new Promise<string>((resolve, reject) => {
-    const worker = new Worker(new URL("./r5DemHash.worker.ts", import.meta.url), { type: "module" });
+  const evidence = await new Promise<R5LocalFileEvidence>((resolve, reject) => {
+    const worker = new Worker(new URL("./r5DemHash.worker.ts", import.meta.url), {
+      type: "module",
+    });
     let settled = false;
-    const finish = (result: { sha256?: string; error?: Error }) => {
+    const finish = (result: { evidence?: R5LocalFileEvidence; error?: Error }) => {
       if (settled) return;
       settled = true;
       signal?.removeEventListener("abort", onAbort);
       worker.terminate();
-      result.error ? reject(result.error) : resolve(result.sha256 ?? "");
+      if (result.error) reject(result.error);
+      else if (result.evidence) resolve(result.evidence);
+      else reject(new Error("R5_FILE_HASH_FAILED"));
     };
     const onAbort = () => finish({ error: new DOMException("Hash cancelled", "AbortError") });
     signal?.addEventListener("abort", onAbort, { once: true });
     worker.onerror = () => finish({ error: new Error("R5_FILE_HASH_FAILED") });
-    worker.onmessage = (event: MessageEvent<{ type: string; percent?: number; sha256?: string }>) => {
+    worker.onmessage = (
+      event: MessageEvent<{ type: string; percent?: number; sha256?: string; size?: number }>,
+    ) => {
       if (event.data.type === "progress") onProgress?.(event.data.percent ?? 0);
       if (event.data.type === "done") {
-        event.data.sha256
-          ? finish({ sha256: event.data.sha256 })
-          : finish({ error: new Error("R5_FILE_HASH_FAILED") });
+        if (event.data.sha256 && event.data.size !== undefined) {
+          finish({ evidence: { sha256: event.data.sha256, size: event.data.size } });
+        } else {
+          finish({ error: new Error("R5_FILE_HASH_FAILED") });
+        }
       }
       if (event.data.type === "error") finish({ error: new Error("R5_FILE_HASH_FAILED") });
     };
@@ -63,7 +83,9 @@ export async function verifyAuthorizedR5FileLocally(
     }
     worker.postMessage({ type: "hash", file });
   });
-  if (observedSha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
+  if (evidence.sha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
+  if (evidence.size !== R5_AUTHORIZED_DEM_SIZE_BYTES) throw new Error("R5_FILE_SIZE_MISMATCH");
+  return evidence;
 }
 
 async function accessToken(): Promise<string> {
@@ -75,13 +97,20 @@ async function accessToken(): Promise<string> {
 
 export async function uploadR5DemoResumably(
   file: File,
-  options: { signal?: AbortSignal; onProgress?: (progress: R5UploadProgress) => void } = {},
-): Promise<void> {
+  options: {
+    signal?: AbortSignal;
+    onProgress?: (progress: R5UploadProgress) => void;
+    onResume?: () => void;
+    onRetry?: (retryCount: number) => void;
+  } = {},
+): Promise<R5UploadResult> {
   assertAuthorizedR5File(file);
   const baseUrl = import.meta.env["VITE_SUPABASE_URL"];
   if (!baseUrl) throw new Error("R5_UPLOAD_FAILED");
   const endpoint = resumableStorageEndpoint(baseUrl);
   const startedAt = performance.now();
+  let retryCount = 0;
+  let resumed = false;
 
   await new Promise<void>((resolve, reject) => {
     let settled = false;
@@ -89,7 +118,8 @@ export async function uploadR5DemoResumably(
       if (settled) return;
       settled = true;
       options.signal?.removeEventListener("abort", onAbort);
-      error ? reject(error) : resolve();
+      if (error) reject(error);
+      else resolve();
     };
     const upload = new Upload(file, {
       endpoint,
@@ -111,6 +141,11 @@ export async function uploadR5DemoResumably(
         `r5-forensic:${R5_CANONICAL_RELEASE_ID}:${R5_AUTHORIZED_DEM_SHA256}:${R5_AUTHORIZED_DEM_FILENAME}:${R5_FORENSIC_STAGING_BUCKET}:${R5_FORENSIC_STORAGE_PATH}:${file.size}`,
       storeFingerprintForResuming: true,
       removeFingerprintOnSuccess: true,
+      onShouldRetry: () => {
+        retryCount += 1;
+        options.onRetry?.(retryCount);
+        return true;
+      },
       onBeforeRequest: async (request) =>
         request.setHeader("authorization", `Bearer ${await accessToken()}`),
       onProgress: (bytesSent, bytesTotal) => {
@@ -124,6 +159,8 @@ export async function uploadR5DemoResumably(
           bytesRemaining,
           bytesPerSecond,
           etaSeconds: bytesPerSecond > 0 ? Math.ceil(bytesRemaining / bytesPerSecond) : null,
+          retryCount,
+          resumed,
         });
       },
       onError: () => finish(new Error("R5_UPLOAD_FAILED")),
@@ -148,9 +185,14 @@ export async function uploadR5DemoResumably(
             candidate.metadata["objectName"] === R5_FORENSIC_STORAGE_PATH &&
             candidate.metadata["contentType"] === "application/octet-stream",
         );
-        if (resumable) upload.resumeFromPreviousUpload(resumable);
+        if (resumable) {
+          resumed = true;
+          upload.resumeFromPreviousUpload(resumable);
+          options.onResume?.();
+        }
         upload.start();
       })
       .catch(() => finish(new Error("R5_UPLOAD_FAILED")));
   });
+  return { resumed, retryCount };
 }

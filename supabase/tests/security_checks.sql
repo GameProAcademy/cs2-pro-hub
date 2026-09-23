@@ -660,6 +660,25 @@ WITH catalogue AS (
               AND with_check LIKE '%r5-forensic-staging/cf0549c2-dfbd-c4df-25b4-2ce8204edf87/%'
          )
 
+  UNION ALL
+  SELECT '31d. R5.6 lifecycle functions are server-only',
+         NOT has_function_privilege('anon','public.record_r5_forensic_progress(uuid,bigint)','EXECUTE')
+         AND NOT has_function_privilege('authenticated','public.record_r5_forensic_progress(uuid,bigint)','EXECUTE')
+         AND has_function_privilege('service_role','public.record_r5_forensic_progress(uuid,bigint)','EXECUTE')
+         AND NOT has_function_privilege('anon','public.transition_r5_forensic_verification(uuid,text,bigint,text,text,text)','EXECUTE')
+         AND NOT has_function_privilege('authenticated','public.transition_r5_forensic_verification(uuid,text,bigint,text,text,text)','EXECUTE')
+         AND has_function_privilege('service_role','public.transition_r5_forensic_verification(uuid,text,bigint,text,text,text)','EXECUTE')
+
+  UNION ALL
+  SELECT '31e. R5 staging has one active and one ready slot',
+         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public' AND tablename='r5_forensic_staging' AND indexname='r5_forensic_staging_active_path_key' AND indexdef LIKE '%UNIQUE%transport_status <>%EXPIRED%')
+         AND EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public' AND tablename='r5_forensic_staging' AND indexname='r5_forensic_staging_ready_path_key' AND indexdef LIKE '%UNIQUE%transport_status =%READY_FOR_EXECUTION%')
+
+  UNION ALL
+  SELECT '31f. R5 storage policies preserve private exact-path access',
+         EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='r5_forensic_staging_objects_service_select' AND roles @> ARRAY['service_role']::name[])
+         AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='r5_forensic_staging_objects_master_select' AND roles @> ARRAY['authenticated']::name[] AND qual LIKE '%is_admin_master%')
+
 )
 
 

@@ -3945,6 +3945,44 @@ export type Database = {
         }
         Returns: string
       }
+      record_r5_forensic_progress: {
+        Args: { _bytes_uploaded: number; _staging_id: string }
+        Returns: {
+          blocked_reason: string | null
+          bucket_id: string
+          bytes_readable: boolean
+          bytes_uploaded: number
+          bytes_verified_at: string | null
+          created_at: string
+          deleted_at: string | null
+          demo_sha256: string
+          expires_at: string
+          file_size: number
+          filename: string
+          id: string
+          last_error_code: string | null
+          last_error_message_safe: string | null
+          metadata_digest: string | null
+          object_private: boolean
+          observed_sha256: string | null
+          observed_size: number | null
+          release_id: string
+          source: string
+          status: Database["public"]["Enums"]["r5_forensic_staging_status"]
+          storage_path: string
+          transport_status: string
+          upload_attempt_count: number
+          upload_completed_at: string | null
+          upload_started_at: string | null
+          verification_started_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "r5_forensic_staging"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }
         Returns: number
@@ -4049,6 +4087,51 @@ export type Database = {
       }
       transition_r5_forensic_upload: {
         Args: { _action: string; _error_code?: string; _staging_id: string }
+        Returns: {
+          blocked_reason: string | null
+          bucket_id: string
+          bytes_readable: boolean
+          bytes_uploaded: number
+          bytes_verified_at: string | null
+          created_at: string
+          deleted_at: string | null
+          demo_sha256: string
+          expires_at: string
+          file_size: number
+          filename: string
+          id: string
+          last_error_code: string | null
+          last_error_message_safe: string | null
+          metadata_digest: string | null
+          object_private: boolean
+          observed_sha256: string | null
+          observed_size: number | null
+          release_id: string
+          source: string
+          status: Database["public"]["Enums"]["r5_forensic_staging_status"]
+          storage_path: string
+          transport_status: string
+          upload_attempt_count: number
+          upload_completed_at: string | null
+          upload_started_at: string | null
+          verification_started_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "r5_forensic_staging"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transition_r5_forensic_verification: {
+        Args: {
+          _action: string
+          _error_code?: string
+          _metadata_digest?: string
+          _observed_sha256?: string
+          _observed_size?: number
+          _staging_id: string
+        }
         Returns: {
           blocked_reason: string | null
           bucket_id: string

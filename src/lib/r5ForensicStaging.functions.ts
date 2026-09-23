@@ -60,7 +60,7 @@ export const recordR5ForensicUpload = createServerFn({ method: "POST" })
     z
       .object({
         stagingId: z.string().uuid(),
-        state: z.enum(["started", "completed", "failed"]),
+        state: z.enum(["started", "completed", "cancelled", "failed"]),
         errorCode: z.string().max(80).optional(),
       })
       .parse(input),
@@ -74,7 +74,9 @@ export const recordR5ForensicUpload = createServerFn({ method: "POST" })
         ? "R5_UPLOAD_STARTED"
         : data.state === "completed"
           ? "R5_UPLOAD_COMPLETED"
-          : "R5_UPLOAD_FAILED";
+          : data.state === "cancelled"
+            ? "R5_UPLOAD_CANCELLED"
+            : "R5_UPLOAD_FAILED";
     await audit(context as Context, action, data.stagingId, {
       error_code: data.errorCode ?? null,
     });
@@ -84,11 +86,28 @@ export const recordR5ForensicUpload = createServerFn({ method: "POST" })
 export const recordR5ForensicProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ stagingId: z.string().uuid(), percent: z.number().int().min(0).max(100) }).parse(input),
+    z
+      .object({
+        stagingId: z.string().uuid(),
+        bytesUploaded: z.number().int().min(0),
+        bytesTotal: z.number().int().positive(),
+        percent: z.number().int().min(0).max(100),
+        retryCount: z.number().int().min(0),
+        resumed: z.boolean(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await requireMaster(context as Context);
-    await audit(context as Context, "R5_UPLOAD_PROGRESS", data.stagingId, { percent: data.percent });
+    const { updateR5TransportProgress } = await import("@/lib/pipeline/r5ForensicStaging.server");
+    await updateR5TransportProgress(data.stagingId, data.bytesUploaded);
+    await audit(context as Context, "R5_UPLOAD_PROGRESS", data.stagingId, {
+      bytes_uploaded: data.bytesUploaded,
+      bytes_total: data.bytesTotal,
+      percent: data.percent,
+      retry_count: data.retryCount,
+      resumed: data.resumed,
+    });
     return { ok: true };
   });
 
@@ -101,7 +120,8 @@ export const verifyR5ForensicDemo = createServerFn({ method: "POST" })
     await audit(context as Context, "R5_VERIFY_STARTED", data.stagingId, {});
     try {
       const result = await verifyR5ForensicStaging(data.stagingId);
-      const gate = typeof result === "object" && result !== null ? result as Record<string, unknown> : {};
+      const gate =
+        typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
       const ready = gate["status"] === "READY_FOR_EXECUTION";
       await audit(context as Context, "R5_VERIFY_COMPLETED", data.stagingId, {});
       await audit(context as Context, ready ? "R5_GATE_READY" : "R5_GATE_BLOCKED", data.stagingId, {

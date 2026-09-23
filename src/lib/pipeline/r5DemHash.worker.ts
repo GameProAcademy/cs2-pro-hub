@@ -3,7 +3,7 @@ import { HASH_CHUNK_BYTES, Sha256 } from "./sha256";
 type HashRequest = { type: "hash"; file: File };
 type HashResponse =
   | { type: "progress"; percent: number }
-  | { type: "done"; sha256: string }
+  | { type: "done"; sha256: string; size: number }
   | { type: "error"; code: string };
 
 const workerScope = self as unknown as {
@@ -25,7 +25,7 @@ async function hashFile(file: File): Promise<void> {
       hasher.update(new Uint8Array(chunk));
       workerScope.postMessage({ type: "progress", percent: Math.round((end / file.size) * 100) });
     }
-    workerScope.postMessage({ type: "done", sha256: hasher.hex() });
+    workerScope.postMessage({ type: "done", sha256: hasher.hex(), size: file.size });
   } catch {
     workerScope.postMessage({ type: "error", code: "R5_FILE_HASH_FAILED" });
   }

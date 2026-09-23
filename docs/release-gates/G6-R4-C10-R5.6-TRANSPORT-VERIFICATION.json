@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "r5-evidence-v1",
+  "phase": "2.7.2G.6-R.5.6",
+  "status": "READY_FOR_REAL_DEM_STAGING",
+  "githubState": "PASS",
+  "migrationState": "PASS",
+  "databaseState": "PASS",
+  "storageState": "PASS",
+  "demIdentity": "PASS",
+  "localHash": "NOT_RUN",
+  "tus": "IMPLEMENTED",
+  "resume": "IMPLEMENTED",
+  "serverStreaming": "IMPLEMENTED",
+  "serverHash": "NOT_RUN",
+  "auditEvents": "IMPLEMENTED",
+  "r5AccessGate": "BLOCKED",
+  "attempt9Safety": "PASS",
+  "canonicalSafety": "PASS",
+  "railwaySafety": "PASS",
+  "hmacOidc": "NOT_VERIFIED",
+  "ci": "NOT_VERIFIED",
+  "realDemOperationalVerification": "NOT_AVAILABLE",
+  "blockers": ["REAL_DEM_NOT_PHYSICALLY_AVAILABLE"],
+  "remainingRisks": [
+    "WORKER_NOT_OPERATIONALLY_VERIFIED_WITH_REAL_DEM",
+    "TUS_CANCEL_RESUME_NOT_OPERATIONALLY_VERIFIED_WITH_REAL_DEM",
+    "SERVER_STREAMING_NOT_OPERATIONALLY_VERIFIED_WITH_REAL_DEM"
+  ],
+  "nextMilestone": "SELECT_AUTHORIZED_DEM_IN_MASTER_ADMIN_AND_RUN_TRANSPORT_ONLY",
+  "baseline": {
+    "stagingRows": 0,
+    "storageObjects": 0,
+    "attempt9": 0,
+    "attempt10Plus": 0,
+    "demoJobsAtOrAbove9": 0,
+    "canonical": {
+      "mappingCount": 105,
+      "authorizedCount": 0,
+      "verifiedCount": 0,
+      "genericCount": 0
+    },
+    "provenanceVerified": 0,
+    "nonces": 0
+  },
+  "execution": {
+    "parser": "NOT_RUN",
+    "python": "NOT_RUN",
+    "wasm": "NOT_RUN",
+    "parity": "NOT_RUN",
+    "determinism": "NOT_RUN",
+    "tickAuthority": "NOT_RUN",
+    "attempt9": "BLOCKED",
+    "canonical": "BLOCKED",
+    "railway": "UNCHANGED",
+    "cleanup": "NOT_RUN"
+  },
+  "verdict": "REAL_DEM_NOT_PHYSICALLY_AVAILABLE — READY_FOR_REAL_DEM_STAGING"
+}
