@@ -10,7 +10,7 @@ import {
   R5_FORENSIC_STORAGE_PATH,
   R5_STAGING_TTL_HOURS,
 } from "@/config/r5ForensicStaging";
-import { sha256FromStream } from "@/lib/pipeline/storage.server";
+import { createDemoSignedUrl, sha256FromStream } from "@/lib/pipeline/storage.server";
 
 export interface R5ForensicStagingResult {
   id: string;
@@ -24,6 +24,14 @@ function metadataDigest(value: Record<string, unknown>): string {
   return createHash("sha256")
     .update(JSON.stringify(value, Object.keys(value).sort()))
     .digest("hex");
+}
+
+
+async function createDemoSignedUrlForBucketObject(bucketId: string, storagePath: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.storage.from(bucketId).createSignedUrl(storagePath, 60 * 15);
+  if (error || !data?.signedUrl) throw new Error("R5_DEM_OBJECT_MISSING");
+  return data.signedUrl;
 }
 
 export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResult> {
@@ -79,12 +87,32 @@ export async function verifyR5ForensicStaging(stagingId: string) {
   if (rowError || !row) throw new Error("R5_STAGING_NOT_FOUND");
   if (new Date(row.expires_at).getTime() <= Date.now()) throw new Error("R5_STAGING_EXPIRED");
 
-  const { data: blob, error: downloadError } = await supabaseAdmin.storage
-    .from(row.bucket_id)
-    .download(row.storage_path);
-  if (downloadError || !blob) throw new Error("R5_DEM_OBJECT_MISSING");
-  const observedSize = blob.size;
-  const observedSha256 = await sha256FromStream(blob.stream() as ReadableStream<Uint8Array>);
+  const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
+  const response = await fetch(signedUrl);
+  if (!response.ok || !response.body) throw new Error("R5_DEM_OBJECT_MISSING");
+
+  let observedSize = 0;
+  const hashingStream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = response.body!.getReader();
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            observedSize += value.byteLength;
+            controller.enqueue(value);
+          }
+        }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  });
+  const observedSha256 = await sha256FromStream(hashingStream);
   const valid =
     observedSize === R5_AUTHORIZED_DEM_SIZE_BYTES && observedSha256 === R5_AUTHORIZED_DEM_SHA256;
   const digest = metadataDigest({
