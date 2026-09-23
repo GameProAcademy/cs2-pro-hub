@@ -54,7 +54,7 @@ NO_AUTHORIZED_REAL_DEM_FIXTURE = "NO_AUTHORIZED_REAL_DEM_FIXTURE"
 NO_AUTHORIZED_REAL_DEM = "NO_AUTHORIZED_REAL_DEM"
 EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED = "explicit_authorized_dem_path_required"
 AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS = "authorized_demo_size_out_of_bounds"
-AUTHORIZED_DEM_METADATA_MISMATCH = "authorized_dem_metadata_mismatch"
+AUTHORIZED_DEM_METADATA_MISMATCH = "authorized_demo_metadata_mismatch"
 
 WORKER_ERROR_CODES: tuple[str, ...] = (
     UNAUTHORIZED,
