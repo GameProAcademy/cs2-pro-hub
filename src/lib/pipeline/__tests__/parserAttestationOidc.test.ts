@@ -12,6 +12,8 @@ import {
 const NOW = 1_790_064_000;
 const workflowIdentity = {
   workflow_sha: "a".repeat(40),
+  trigger_commit_sha: "a".repeat(40),
+  workflow_file_commit_sha: "b".repeat(40),
   workflow_path: PARSER_ATTESTATION_EXPECTED.workflowPath,
   workflow_source_sha: PARSER_ATTESTATION_EXPECTED.workflowSourceSha,
   run_id: "42",
@@ -119,6 +121,13 @@ describe("parser attestation OIDC claims", () => {
     );
   });
 
+  it("rejects a workflow SHA that does not represent the trigger commit", () => {
+    const identity = { ...workflowIdentity, trigger_commit_sha: "c".repeat(40) };
+    expect(validateParserAttestationOidcClaims(validClaims(), identity, NOW)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
+  });
+
   it("rejects workflow source outside the reviewed registry", () => {
     const identity = { ...workflowIdentity, workflow_source_sha: "b".repeat(40) };
     expect(validateParserAttestationOidcClaims(validClaims(), identity, NOW)).toContain(
@@ -148,4 +157,23 @@ describe("parser attestation freshness contract", () => {
     });
     expect(blockers).toContain("PINNED_IDENTITY_MISMATCH");
   });
+
+  it.each(["trigger_commit_sha", "workflow_file_commit_sha"])(
+    "rejects a missing or malformed %s",
+    (field) => {
+      const blockers = validateParserAttestationPayload({
+        workflow_identity: { ...workflowIdentity, [field]: "not-a-sha" },
+        attestor_source_identity: {
+          repository: PARSER_ATTESTATION_EXPECTED.repository,
+          branch: PARSER_ATTESTATION_EXPECTED.attestorBranch,
+          workflow_sha: workflowIdentity.workflow_sha,
+          trigger_commit_sha: workflowIdentity.trigger_commit_sha,
+          workflow_file_commit_sha: workflowIdentity.workflow_file_commit_sha,
+          workflow_path: PARSER_ATTESTATION_EXPECTED.workflowPath,
+          workflow_source_sha: PARSER_ATTESTATION_EXPECTED.workflowSourceSha,
+        },
+      });
+      expect(blockers).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+    },
+  );
 });

@@ -81,6 +81,9 @@ export function validateParserAttestationOidcClaims(
     claims["sub"] !== oidc.subject ||
     claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
+    workflowIdentity["workflow_sha"] !== workflowIdentity["trigger_commit_sha"] ||
+    typeof workflowIdentity["workflow_file_commit_sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_file_commit_sha"]) ||
     typeof claims["sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(claims["sha"]) ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
@@ -128,6 +131,12 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     workflowIdentity["event_name"] !== PARSER_ATTESTATION_OIDC.eventName ||
     typeof workflowIdentity["workflow_sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_sha"]) ||
+    typeof workflowIdentity["trigger_commit_sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(workflowIdentity["trigger_commit_sha"]) ||
+    typeof workflowIdentity["workflow_file_commit_sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_file_commit_sha"]) ||
+    workflowIdentity["workflow_sha"] !== workflowIdentity["trigger_commit_sha"] ||
+    workflowIdentity["workflow_sha"] === expected.commit ||
     workflowIdentity["workflow_path"] !== expected.workflowPath ||
     workflowIdentity["workflow_source_sha"] !== expected.workflowSourceSha
   ) {
@@ -138,6 +147,8 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     attestorSource["repository"] !== expected.repository ||
     attestorSource["branch"] !== expected.attestorBranch ||
     attestorSource["workflow_sha"] !== workflowIdentity?.["workflow_sha"] ||
+    attestorSource["trigger_commit_sha"] !== workflowIdentity?.["trigger_commit_sha"] ||
+    attestorSource["workflow_file_commit_sha"] !== workflowIdentity?.["workflow_file_commit_sha"] ||
     attestorSource["workflow_path"] !== expected.workflowPath ||
     attestorSource["workflow_source_sha"] !== expected.workflowSourceSha
   ) {

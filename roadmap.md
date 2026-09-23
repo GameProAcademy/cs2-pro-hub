@@ -1,6 +1,6 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.7.3 + R.5.7.4
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.7.4 + R.5.7.5
 
-**Status:** `ATTESTATION V3 CONTRACT CLOSED / LOCAL WEB TESTS PASS / FIRST ATTESTATION NOT RUN / ATTEMPT_9 BLOCKED`.
+**Status:** `BLOCKED / ATTESTATION V3 FORENSIC CONTRACT HARDENED / FIRST ATTESTATION NOT RUN / ATTEMPT_9 BLOCKED`.
 
 - [x] Confirmar staging real `READY_FOR_EXECUTION`, identidade observada e preservação do registro `61df7731-ec89-4fa3-8211-dd29128f3be8`.
 - [x] Confirmar Attempt 9/10+=0, Canonical=105/0/0/0, provenance VERIFIED=0 e nonces=0.
@@ -8,7 +8,9 @@
 - [x] Separar o attestor em `main` do runtime congelado em `infra/cs2-parser-worker-v8`, usando o Git blob aprovado `13ce10e95a508e62d832bb9dc432e1496499676c`.
 - [x] Vincular `release_gate_evidence` ao payload assinado na rota e no limite de persistência, via migration aditiva.
 - [x] Restringir `parser_runtime_provenance.attestation_version` a `3` no banco e cobrir a restrição com contrato de regressão.
-- [x] Validar TypeScript, 44 contratos focados, 1.102 testes web, build e lint dos arquivos alterados; pytest permanece `NOT_RUN` por indisponibilidade do runner.
+- [x] Persistir somente `GITHUB_ACTIONS_SIGNED_ATTESTATION_V3` e exigir `workflow_sha = trigger_commit_sha`, `workflow_file_commit_sha` explícito e o blob aprovado independente.
+- [x] Corrigir a constraint histórica de `verification_method` para aceitar exclusivamente v3; a descoberta após a primeira migration exigiu uma segunda migration aditiva, portanto migration hygiene não pode ser declarada limpa nesta rodada.
+- [x] Validar TypeScript, 38 contratos focados, 1.106/1.106 testes web na execução final, build e lint dos arquivos alterados; pytest permanece `NOT_RUN` por indisponibilidade do runner.
 - [ ] Configuração parcial: endpoint e secrets de transporte/HMAC existem no servidor Lovable; `RAILWAY_API_TOKEN` ainda exige configuração operacional.
 - [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública (`DATABASE_HMAC_SECRET_CONFIGURATION_REQUIRES_OPERATOR_ACTION`).
 - [ ] Executar o workflow real e aceitar uma nova attestation somente se toda prova independente passar.

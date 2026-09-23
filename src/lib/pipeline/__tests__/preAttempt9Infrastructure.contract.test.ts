@@ -33,6 +33,14 @@ const r573ConstraintMigration = readFileSync(
   resolve("supabase/migrations/20260923091427_9b483c0c-340d-4d66-9354-3e44c2ffda5e.sql"),
   "utf8",
 );
+const r575Migration = readFileSync(
+  resolve("supabase/migrations/20260923093242_b5dfb9fd-34cf-4ac9-b098-55dfd1ea5698.sql"),
+  "utf8",
+);
+const r575MethodConstraintMigration = readFileSync(
+  resolve("supabase/migrations/20260923093925_0b84af34-7960-452b-ac75-30dca940bb8f.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -101,6 +109,27 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
     expect(r573Migration).toContain("attestation schema v3");
     expect(r573Migration).toContain("attestation_version <> 3");
     expect(r573Migration).toContain("does not recompute a non-canonical JSON digest");
+  });
+
+  it("persists only the v3 method and keeps all three workflow SHA concepts distinct", () => {
+    expect(r575Migration).toContain("GITHUB_ACTIONS_SIGNED_ATTESTATION_V3");
+    expect(r575Migration).not.toContain("GITHUB_ACTIONS_SIGNED_ATTESTATION_V2");
+    expect(r575Migration).toContain(
+      "workflow_sha' IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha",
+    );
+    expect(r575Migration).toContain("workflow_file_commit_sha' !~ '^[0-9a-f]{40}$'");
+    expect(r575Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
+    expect(r575Migration).toContain("refs/heads/main");
+    expect(r575Migration).toContain("infra/cs2-parser-worker-v8");
+    expect(r575Migration).toContain(
+      "_release_gate_evidence IS DISTINCT FROM _payload->'release_gate_evidence'",
+    );
+    expect(r575Migration).not.toContain("20260923100000_r573_attestation_version_v3.sql");
+    expect(r575MethodConstraintMigration).toContain(
+      "CHECK (verification_method = 'GITHUB_ACTIONS_SIGNED_ATTESTATION_V3')",
+    );
+    expect(r575MethodConstraintMigration).not.toContain("ATTESTATION_V1");
+    expect(r575MethodConstraintMigration).not.toContain("ATTESTATION_V2");
   });
 
   it("makes the readiness contract explicitly Cache-specific without weakening any gate", () => {
