@@ -10,6 +10,7 @@ import {
 } from "@/config/r5ForensicStaging";
 import { supabase } from "@/integrations/supabase/client";
 import { resumableStorageEndpoint } from "@/lib/pipeline/resumableUpload";
+import { HASH_CHUNK_BYTES, Sha256 } from "@/lib/pipeline/sha256";
 
 export interface R5UploadProgress {
   bytesSent: number;
@@ -25,6 +26,20 @@ export function assertAuthorizedR5File(file: File): void {
     throw new Error("R5_FILE_NAME_MISMATCH");
   }
   if (file.size !== R5_AUTHORIZED_DEM_SIZE_BYTES) throw new Error("R5_FILE_SIZE_MISMATCH");
+}
+
+export async function verifyAuthorizedR5FileLocally(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<void> {
+  assertAuthorizedR5File(file);
+  const hasher = new Sha256();
+  for (let offset = 0; offset < file.size; offset += HASH_CHUNK_BYTES) {
+    const end = Math.min(offset + HASH_CHUNK_BYTES, file.size);
+    hasher.update(new Uint8Array(await file.slice(offset, end).arrayBuffer()));
+    onProgress?.(Math.round((end / file.size) * 100));
+  }
+  if (hasher.hex() !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
 }
 
 async function accessToken(): Promise<string> {
