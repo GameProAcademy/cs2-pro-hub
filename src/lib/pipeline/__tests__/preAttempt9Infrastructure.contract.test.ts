@@ -29,6 +29,10 @@ const r573Migration = readFileSync(
   resolve("supabase/migrations/20260923100000_r573_attestation_version_v3.sql"),
   "utf8",
 );
+const r573ConstraintMigration = readFileSync(
+  resolve("supabase/migrations/20260923091427_9b483c0c-340d-4d66-9354-3e44c2ffda5e.sql"),
+  "utf8",
+);
 
 describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("keeps attestation nonces private, immutable and replay-rejecting", () => {
@@ -90,8 +94,10 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
     expect(r573Migration).toContain("refs/heads/main");
     expect(r573Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
     expect(r573Migration).toContain(
-      "NEW.release_gate_evidence IS DISTINCT FROM NEW.attestation_payload->'release_gate_evidence'",
+      "_p.release_gate_evidence IS DISTINCT FROM _p.attestation_payload->'release_gate_evidence'",
     );
+    expect(r573ConstraintMigration).toContain("CHECK (attestation_version = 3)");
+    expect(r573ConstraintMigration).not.toContain("CHECK (attestation_version = 1)");
     expect(r573Migration).toContain("attestation schema v3");
     expect(r573Migration).toContain("does not recompute a non-canonical JSON digest");
   });
