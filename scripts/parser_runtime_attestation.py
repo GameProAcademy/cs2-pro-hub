@@ -183,6 +183,11 @@ def build_attestation() -> dict[str, Any]:
     except (ValueError, OSError, subprocess.CalledProcessError):
         workflow_source = {"workflow_path": WORKFLOW_PATH, "workflow_source_sha": None}
         statuses.append("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED")
+    # The attestor source is deliberately main; the Railway runtime branch is
+    # fetched separately as immutable evidence. This prevents workflow source
+    # and deployed runtime identity from being conflated.
+    if ref_name != "main":
+        statuses.append("GITHUB_ATTESTOR_SOURCE_REF_MISMATCH")
     if repository != REPOSITORY:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
     if event != "workflow_dispatch" or not run_id or not run_attempt:
@@ -255,6 +260,13 @@ def build_attestation() -> dict[str, Any]:
         "runtime_health": {"custom": custom_health, "railway": railway_health},
         "custom_domain_version": custom_identity, "railway_domain_version": railway_identity,
         "critical_file_hashes": observed_hashes, "deployment_evidence": deployment_evidence,
+        "attestor_source_identity": {
+            "repository": REPOSITORY,
+            "branch": "main",
+            "workflow_sha": sha,
+            "workflow_path": WORKFLOW_PATH,
+            "workflow_source_sha": workflow_source.get("workflow_source_sha"),
+        },
         "runtime_identity": {"repository": REPOSITORY, "branch": BRANCH, "commit": COMMIT,
                              "tree": tree, "branch_contains_commit": branch_contains_commit},
         "workflow_identity": {"provider": "github_actions", "repository": repository,
