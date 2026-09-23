@@ -41,17 +41,27 @@ def test_reference_accepts_the_1_5_gib_real_demo_contract_ceiling():
 def test_reference_rejects_empty_demo(tmp_path):
     path = tmp_path / "empty.dem"
     path.write_bytes(b"")
-    with pytest.raises(ValueError, match="authorized_dem_size_out_of_bounds"):
-        build_python_reference(str(path), {"authorizedDemo": True})
+    authorization = {
+        "authorizedDemo": True, "provenance": "R5_FORENSIC_STAGING", "filename": path.name,
+        "sha256": hashlib.sha256(b"").hexdigest(), "sizeBytes": 0, "source": "LOCAL_FILE",
+        "authorizationRef": "R5_REAL_DEM_ACCESS_GATE", "receivedAt": "2026-09-23T00:00:00Z",
+    }
+    with pytest.raises(ValueError, match="authorized_demo_size_out_of_bounds"):
+        build_python_reference(str(path), authorization)
 
 
 def test_reference_rejects_demo_above_1_5_gib(tmp_path):
     path = tmp_path / "oversized.dem"
     path.touch()
+    authorization = {
+        "authorizedDemo": True, "provenance": "R5_FORENSIC_STAGING", "filename": path.name,
+        "sha256": hashlib.sha256(b"").hexdigest(), "sizeBytes": MAX_DEMO_BYTES + 1, "source": "LOCAL_FILE",
+        "authorizationRef": "R5_REAL_DEM_ACCESS_GATE", "receivedAt": "2026-09-23T00:00:00Z",
+    }
     with patch("pathlib.Path.stat") as stat:
         stat.return_value.st_size = MAX_DEMO_BYTES + 1
-        with pytest.raises(ValueError, match="authorized_dem_size_out_of_bounds"):
-            build_python_reference(str(path), {"authorizedDemo": True})
+        with pytest.raises(ValueError, match="authorized_demo_size_out_of_bounds"):
+            build_python_reference(str(path), authorization)
 
 
 def test_reference_real_cache_size_passes_size_gate_then_rejects_wrong_sha(tmp_path):
@@ -70,7 +80,7 @@ def test_reference_real_cache_size_passes_size_gate_then_rejects_wrong_sha(tmp_p
     real_stat = path.stat()
     with patch.object(type(path), "stat") as stat:
         stat.return_value = real_stat._replace(st_size=AUTHORIZED_CACHE_SIZE)
-        with pytest.raises(ValueError, match="authorized_dem_metadata_mismatch"):
+        with pytest.raises(ValueError, match="authorized_demo_metadata_mismatch"):
             build_python_reference(str(path), authorization)
 
 
