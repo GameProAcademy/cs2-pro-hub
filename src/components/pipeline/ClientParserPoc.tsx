@@ -214,11 +214,7 @@ export function ClientParserPoc() {
           <p className="mt-1 text-muted-foreground">Canonical: BLOCKED · Persistido: não</p>
         </div>
       ) : null}
-      <ClientParserAuditReport
-        result={result}
-        verification={verification}
-        progress={progress}
-      />
+      <ClientParserAuditReport result={result} verification={verification} progress={progress} />
     </div>
   );
 }

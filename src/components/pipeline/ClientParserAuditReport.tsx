@@ -106,7 +106,8 @@ function sectionsFor(
     {
       label: "Teams",
       status: teamFields > 0 ? "PASS" : "UNAVAILABLE",
-      evidence: teamFields > 0 ? `${teamFields} event schemas expose team/side` : "No direct team proof",
+      evidence:
+        teamFields > 0 ? `${teamFields} event schemas expose team/side` : "No direct team proof",
     },
     {
       label: "Rounds",
@@ -134,7 +135,7 @@ function sectionsFor(
       evidence: verification
         ? verification.accepted
           ? "Untrusted result validated"
-          : verification.reasonCode ?? "Rejected"
+          : (verification.reasonCode ?? "Rejected")
         : "Server validation not requested",
     },
   ];
@@ -154,7 +155,10 @@ export function ClientParserAuditReport({
   const performance = result?.result.performance;
 
   return (
-    <section className="space-y-4 border-t border-border pt-5" aria-labelledby="forensic-audit-title">
+    <section
+      className="space-y-4 border-t border-border pt-5"
+      aria-labelledby="forensic-audit-title"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase text-muted-foreground">Forensic manifest</p>
@@ -170,7 +174,10 @@ export function ClientParserAuditReport({
       <dl className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Identity label="Version" value={parser?.version ?? "NOT RUN"} />
         <Identity label="Revision" value={parser?.artifact.sourceCommit ?? "NOT RUN"} mono />
-        <Identity label="Browser contract" value={result ? String(result.manifest.contractVersion) : "NOT RUN"} />
+        <Identity
+          label="Browser contract"
+          value={result ? String(result.manifest.contractVersion) : "NOT RUN"}
+        />
         <Identity label="Runtime" value={parser?.runtime ?? "NOT RUN"} />
         <Identity label="Worker" value={progress?.stage ?? (result ? "COMPLETE" : "IDLE")} />
         <Identity
@@ -193,7 +200,10 @@ export function ClientParserAuditReport({
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {sections.map((section) => (
-          <div key={section.label} className="flex min-h-20 items-start justify-between gap-3 border border-border bg-card/40 p-3">
+          <div
+            key={section.label}
+            className="flex min-h-20 items-start justify-between gap-3 border border-border bg-card/40 p-3"
+          >
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">{section.label}</p>
               <p className="mt-1 text-xs text-muted-foreground">{section.evidence}</p>
@@ -220,7 +230,15 @@ export function ClientParserAuditReport({
   );
 }
 
-function Identity({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function Identity({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
   return (
     <div className="min-w-0 bg-card p-3">
       <dt className="text-xs text-muted-foreground">{label}</dt>
