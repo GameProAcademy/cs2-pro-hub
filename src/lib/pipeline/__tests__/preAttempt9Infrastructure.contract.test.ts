@@ -86,8 +86,9 @@ describe("C.7-C.10 pre-Attempt-9 infrastructure", () => {
   it("reconciles provenance assertion with attestation schema v3 without authorizing Attempt 9", () => {
     expect(r573Migration).toContain("attestation_version <> 3");
     expect(r573Migration).not.toContain("attestation_version <> 2");
-    expect(r573Migration).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
+    expect(r573Migration).toContain("PARSER_PROVENANCE_UNVERIFIED");
     expect(r573Migration).toContain("refs/heads/main");
+    expect(r573Migration).toContain("13ce10e95a508e62d832bb9dc432e1496499676c");
     expect(r573Migration).toContain(
       "NEW.release_gate_evidence IS DISTINCT FROM NEW.attestation_payload->'release_gate_evidence'",
     );
