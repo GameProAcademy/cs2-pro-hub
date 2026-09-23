@@ -54,6 +54,14 @@ export const getR5ForensicDemo = createServerFn({ method: "GET" })
     return getR5ForensicStaging();
   });
 
+export const getR58OperatorDiagnostic = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireMaster(context as Context);
+    const { buildR58OperatorDiagnostic } = await import("@/lib/r58Diagnostics.server");
+    return buildR58OperatorDiagnostic();
+  });
+
 export const recordR5ForensicUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>

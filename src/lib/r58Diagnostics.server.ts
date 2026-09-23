@@ -1,6 +1,5 @@
 import { PARSER_ATTESTATION_EXPECTED, PARSER_ATTESTATION_OIDC } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_PATH, APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
-import { R5_AUTHORIZED_DEM_SHA256, R5_CANONICAL_RELEASE_ID } from "@/config/r5ForensicStaging";
 
 export const R58_DIAGNOSTIC_STATES = [
   "CONFIGURED",
@@ -107,7 +106,7 @@ export async function buildR58OperatorDiagnostic(): Promise<R58OperatorDiagnosti
     { key: "runtime_identity", state: provenance, reasonCode: provenance === "CONFIGURED" ? "RUNTIME_IDENTITY_ATTESTED" : "RUNTIME_IDENTITY_ATTESTATION_REQUIRED" },
     { key: "critical_file_hashes", state: provenance, reasonCode: provenance === "CONFIGURED" ? "CRITICAL_HASHES_ATTESTED" : "CRITICAL_HASH_ATTESTATION_REQUIRED" },
     { key: "release_mapping", state: releaseMapping, reasonCode: releaseMapping === "CONFIGURED" ? "RELEASE_MAPPING_BASELINE_PRESERVED" : "RELEASE_MAPPING_NOT_VERIFIED" },
-    { key: "real_demo_authorization", state: "BLOCKED", reasonCode: `REAL_DEM_NOT_AUTHORIZED:${R5_AUTHORIZED_DEM_SHA256.slice(0, 0)}${R5_CANONICAL_RELEASE_ID.slice(0, 0)}` },
+    { key: "real_demo_authorization", state: "BLOCKED", reasonCode: "REAL_DEM_NOT_AUTHORIZED" },
     { key: "attempt_9_lock", state: attemptsLocked, reasonCode: attemptsLocked === "CONFIGURED" ? "ATTEMPT_9_LOCKED" : "ATTEMPT_9_LOCK_VIOLATION" },
     { key: "canonical_lock", state: "BLOCKED", reasonCode: "CANONICAL_ADMISSION_BLOCKED" },
   ];

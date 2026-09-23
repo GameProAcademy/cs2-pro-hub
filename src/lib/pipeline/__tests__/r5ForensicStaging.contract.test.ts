@@ -20,6 +20,7 @@ const functions = readFileSync(resolve("src/lib/r5ForensicStaging.functions.ts")
 const server = readFileSync(resolve("src/lib/pipeline/r5ForensicStaging.server.ts"), "utf8");
 const resumable = readFileSync(resolve("src/lib/pipeline/r5ResumableUpload.ts"), "utf8");
 const hashWorker = readFileSync(resolve("src/lib/pipeline/r5DemHash.worker.ts"), "utf8");
+const diagnostics = readFileSync(resolve("src/lib/r58Diagnostics.server.ts"), "utf8");
 const r52Migration = readFileSync(
   resolve("supabase/migrations/20260923012919_d1e69d4d-c42e-4b0e-b1c4-11d75a5febc7.sql"),
   "utf8",
@@ -194,5 +195,14 @@ describe("R5 forensic staging contract", () => {
   it("preserves PostgreSQL setup for the concurrency harness", () => {
     expect(workflow).toContain("sudo apt-get install -y postgresql");
     expect(workflow).toContain('echo "$(pg_config --bindir)" >> "$GITHUB_PATH"');
+  });
+
+  it("exposes an authenticated master-only R5.8 diagnostic without secret material", () => {
+    expect(functions).toContain("getR58OperatorDiagnostic");
+    expect(functions).toContain("await requireMaster(context as Context)");
+    expect(diagnostics).toContain("DATABASE_HMAC_CONFIGURATION_REQUIRED");
+    expect(diagnostics).toContain("GITHUB_RAILWAY_TOKEN_CONFIGURATION_NOT_CHECKED");
+    expect(diagnostics).not.toMatch(/slice\(0,\s*[1-9]/);
+    expect(diagnostics).not.toMatch(/reasonCode:.*process\.env/);
   });
 });

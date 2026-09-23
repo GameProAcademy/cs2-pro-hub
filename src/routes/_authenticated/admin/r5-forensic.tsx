@@ -26,6 +26,7 @@ import {
 } from "@/config/r5ForensicStaging";
 import {
   getR5ForensicDemo,
+  getR58OperatorDiagnostic,
   prepareR5ForensicDemo,
   recordR5ForensicProgress,
   recordR5ForensicUpload,
@@ -93,6 +94,10 @@ function R5ForensicPage() {
     queryKey: ["admin", "r5-forensic"],
     queryFn: () => getR5ForensicDemo(),
     refetchInterval: 15_000,
+  });
+  const diagnostic = useQuery({
+    queryKey: ["admin", "r5-operator-diagnostic"],
+    queryFn: () => getR58OperatorDiagnostic(),
   });
 
   const upload = useMutation({
@@ -227,6 +232,48 @@ function R5ForensicPage() {
               <Ban className="size-4" aria-hidden /> Attempt 9 locked · Canonical locked
             </div>
           </div>
+        </section>
+
+        <section className="space-y-4 border-t border-border pt-5" aria-labelledby="r58-title">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                R5.8 read-only preflight
+              </p>
+              <h2 id="r58-title" className="mt-1 font-display text-xl font-semibold">
+                Operator configuration
+              </h2>
+            </div>
+            <span className="border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-xs text-warning">
+              {diagnostic.data?.overallStatus ?? "NOT_CHECKED"}
+            </span>
+          </div>
+          {diagnostic.isLoading ? (
+            <LoadingState />
+          ) : diagnostic.isError ? (
+            <ErrorState onRetry={() => void diagnostic.refetch()} />
+          ) : (
+            <div className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-2 xl:grid-cols-3">
+              {diagnostic.data?.items.map((item) => (
+                <div key={item.key} className="min-w-0 bg-card p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-mono text-[10px] uppercase text-muted-foreground">
+                      {item.key.replaceAll("_", " ")}
+                    </p>
+                    <span className={cn("font-mono text-[10px]", item.state === "CONFIGURED" ? "text-success" : item.state === "BLOCKED" || item.state === "MISSING" ? "text-warning" : "text-muted-foreground")}>
+                      {item.state}
+                    </span>
+                  </div>
+                  <p className="mt-2 break-words font-mono text-xs text-foreground">
+                    {item.reasonCode}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Secret values, lengths, hashes and prefixes are never returned by this diagnostic.
+          </p>
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
