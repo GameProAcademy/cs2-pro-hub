@@ -50,7 +50,11 @@ export async function verifyAuthorizedR5FileLocally(
     worker.onerror = () => finish({ error: new Error("R5_FILE_HASH_FAILED") });
     worker.onmessage = (event: MessageEvent<{ type: string; percent?: number; sha256?: string }>) => {
       if (event.data.type === "progress") onProgress?.(event.data.percent ?? 0);
-      if (event.data.type === "done") finish({ sha256: event.data.sha256 });
+      if (event.data.type === "done") {
+        event.data.sha256
+          ? finish({ sha256: event.data.sha256 })
+          : finish({ error: new Error("R5_FILE_HASH_FAILED") });
+      }
       if (event.data.type === "error") finish({ error: new Error("R5_FILE_HASH_FAILED") });
     };
     if (signal?.aborted) {
