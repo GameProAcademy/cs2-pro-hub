@@ -7,6 +7,8 @@
 - [x] Registrar estados de transporte/evidência, tentativas, timestamps e erros seguros, preservando identidade imutável e auditoria sem tokens/URLs privadas.
 - [x] Criar `/admin/r5-forensic` e separar upload, verificação e prontidão; `READY_FOR_EXECUTION` nunca dispara parser ou Attempt 9.
 - [x] Criar `r5_real_dem_execution_gate` read-only e manter `assert_attempt_9_authorized` inacessível/bloqueado nesta fase.
+- [x] Aplicar e verificar a correção de caminho relativo no banco real; restaurar o SHA canônico de 64 caracteres e remover a constraint legada contraditória.
+- [x] Tornar as transições de transporte atômicas e restringir retomadas TUS por tamanho, bucket, caminho e content type.
 - [ ] Receber e verificar os bytes reais; enquanto ausentes, R5.2 = `BLOCKED_REAL_DEM_NOT_STAGED` e R5.3 = `BLOCKED`.
 - [ ] Executar Python/WASM, parity, determinism, tick authority, OIDC/HMAC/nonce/provenance — todos permanecem `NOT_RUN/NOT_VERIFIED/BLOCKED`.
 
