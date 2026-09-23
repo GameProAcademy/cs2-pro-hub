@@ -220,6 +220,7 @@ export const es: Dictionary = {
   "admin.nav.users": "Usuarios",
   "admin.nav.audit": "Registro de auditoría",
   "admin.nav.demoE2E": "E2E de demo real",
+  "admin.nav.r5Forensic": "Staging forense R5",
   "admin.nav.backToApp": "Volver al producto",
   "admin.overview.title": "Visión general",
   "admin.overview.subtitle": "Números reales de la plataforma CS2 PRO AI COACH.",

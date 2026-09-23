@@ -1,4 +1,18 @@
-# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.1
+# CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.2 → R5.4
+
+**Status:** `IMPLEMENTATION COMPLETE / TRANSPORT NOT RUN / EXECUTION NOT RUN / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
+
+- [x] Implementar transporte TUS resumível master-only para o bucket/path R5 fixo, com chunks de 6 MiB, retry, retomada, progresso e cancelamento.
+- [x] Manter validação local bounded-memory e verificação final server-side por streaming incremental, sem `storage.download()`, buffer integral ou confiança em Content-Length.
+- [x] Registrar estados de transporte/evidência, tentativas, timestamps e erros seguros, preservando identidade imutável e auditoria sem tokens/URLs privadas.
+- [x] Criar `/admin/r5-forensic` e separar upload, verificação e prontidão; `READY_FOR_EXECUTION` nunca dispara parser ou Attempt 9.
+- [x] Criar `r5_real_dem_execution_gate` read-only e manter `assert_attempt_9_authorized` inacessível/bloqueado nesta fase.
+- [ ] Receber e verificar os bytes reais; enquanto ausentes, R5.2 = `BLOCKED_REAL_DEM_NOT_STAGED` e R5.3 = `BLOCKED`.
+- [ ] Executar Python/WASM, parity, determinism, tick authority, OIDC/HMAC/nonce/provenance — todos permanecem `NOT_RUN/NOT_VERIFIED/BLOCKED`.
+
+**Locks:** Attempt 9/10+, Canonical, cleanup, histórico, Railway production, EnvironmentPatch, secrets, provenance e nonce permanecem sem mutação.
+
+# PRIOR EXECUTION GATE — FASE 2.7.2G.6-R.5.1
 
 **Status:** `IMPLEMENTATION COMPLETE / EXECUTION NOT RUN / VERIFICATION PARTIAL / RELEASE BLOCKED / ATTEMPT_9 LOCKED`.
 

@@ -16,6 +16,11 @@ const migration = readFileSync(
 );
 const functions = readFileSync(resolve("src/lib/r5ForensicStaging.functions.ts"), "utf8");
 const server = readFileSync(resolve("src/lib/pipeline/r5ForensicStaging.server.ts"), "utf8");
+const resumable = readFileSync(resolve("src/lib/pipeline/r5ResumableUpload.ts"), "utf8");
+const r52Migration = readFileSync(
+  resolve("supabase/migrations/20260923012919_d1e69d4d-c42e-4b0e-b1c4-11d75a5febc7.sql"),
+  "utf8",
+);
 const workflow = readFileSync(resolve(".github/workflows/quality-gates.yml"), "utf8");
 
 describe("R5.1 forensic staging contract", () => {
@@ -47,11 +52,38 @@ describe("R5.1 forensic staging contract", () => {
   it("exposes staging only through an authenticated master-admin server function", () => {
     expect(functions).toContain("middleware([requireSupabaseAuth])");
     expect(functions).toContain('rpc("is_admin_master"');
-    expect(server).toContain("createSignedUploadUrl");
     expect(server).toContain("createDemoSignedUrlForBucketObject");
     expect(server).toContain("sha256FromStream");
-    expect(server).toContain("response.body!.getReader()");
+    expect(server).toContain("response.body?.getReader()");
     expect(server).not.toMatch(/\.storage\\s*\\.from\\([^\n]+\\)\\s*\\.download/);
+  });
+
+  it("uses resumable TUS transport with fixed destination, retry, progress and cancellation", () => {
+    expect(resumable).toContain("bucketName: R5_FORENSIC_STAGING_BUCKET");
+    expect(resumable).toContain("objectName: R5_FORENSIC_STORAGE_PATH");
+    expect(resumable).toContain('headers: { "x-upsert": "false" }');
+    expect(resumable).toContain("findPreviousUploads()");
+    expect(resumable).toContain("resumeFromPreviousUpload");
+    expect(resumable).toContain("retryDelays");
+    expect(resumable).toContain("upload.abort(false)");
+  });
+
+  it("preserves bounded-memory hashing on browser and server", () => {
+    expect(resumable).toContain("file.slice(offset, end).arrayBuffer()");
+    expect(resumable).not.toContain("file.arrayBuffer()");
+    expect(resumable).not.toContain("crypto.subtle.digest");
+    expect(server).toContain("response.body?.getReader()");
+    expect(server).toContain("sha256FromStream(hashingStream)");
+    expect(server).not.toMatch(/\.storage\s*\.from\([^\n]+\)\s*\.download/);
+    expect(server).not.toContain("response.arrayBuffer()");
+  });
+
+  it("keeps execution and Attempt 9 authorization fail-closed", () => {
+    expect(r52Migration).toContain("CREATE OR REPLACE FUNCTION public.r5_real_dem_execution_gate");
+    expect(r52Migration).toContain("R5_CURRENT_RUNTIME_PROVENANCE_NOT_VERIFIED");
+    expect(r52Migration).toContain("CREATE OR REPLACE FUNCTION public.assert_attempt_9_authorized");
+    expect(r52Migration).toContain("R5_ATTEMPT_9_NOT_AUTHORIZED");
+    expect(r52Migration).not.toMatch(/INSERT INTO public\.(uploads|demo_jobs|matches)/);
   });
 
   it("preserves PostgreSQL setup for the concurrency harness", () => {

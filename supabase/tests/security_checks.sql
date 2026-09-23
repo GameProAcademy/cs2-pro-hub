@@ -639,6 +639,27 @@ WITH catalogue AS (
                     AND contype='c'
                     AND pg_get_constraintdef(oid) ILIKE '%accepted%')
 
+  UNION ALL
+  SELECT '31a. R5 execution gate is unavailable to browser roles',
+         NOT has_function_privilege('anon','public.r5_real_dem_execution_gate(uuid)','EXECUTE')
+         AND NOT has_function_privilege('authenticated','public.r5_real_dem_execution_gate(uuid)','EXECUTE')
+
+  UNION ALL
+  SELECT '31b. R5 Attempt 9 authorization is unreachable in this phase',
+         NOT has_function_privilege('service_role','public.assert_attempt_9_authorized(uuid)','EXECUTE')
+         AND NOT has_function_privilege('sandbox_exec','public.assert_attempt_9_authorized(uuid)','EXECUTE')
+
+  UNION ALL
+  SELECT '31c. R5 resumable upload is master-only and exact-path',
+         EXISTS (
+           SELECT 1 FROM pg_policies
+            WHERE schemaname='storage' AND tablename='objects'
+              AND policyname='r5_forensic_staging_objects_master_insert'
+              AND roles @> ARRAY['authenticated']::name[]
+              AND with_check LIKE '%is_admin_master%'
+              AND with_check LIKE '%r5-forensic-staging/cf0549c2-dfbd-c4df-25b4-2ce8204edf87/%'
+         )
+
 )
 
 

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Cpu, FlaskConical, LayoutDashboard, ScrollText, Users } from "lucide-react";
+import { ArrowLeft, Cpu, FileLock2, FlaskConical, LayoutDashboard, ScrollText, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Brand } from "@/components/layout/Brand";
@@ -12,6 +12,7 @@ const adminNav = [
   { to: "/admin/users", labelKey: "admin.nav.users", icon: Users },
   { to: "/admin/pipeline", labelKey: "pipeline.admin.title", icon: Cpu },
   { to: "/admin/demo-e2e", labelKey: "admin.nav.demoE2E", icon: FlaskConical },
+  { to: "/admin/r5-forensic", labelKey: "admin.nav.r5Forensic", icon: FileLock2 },
   { to: "/admin/audit", labelKey: "admin.nav.audit", icon: ScrollText },
 ] as const;
 

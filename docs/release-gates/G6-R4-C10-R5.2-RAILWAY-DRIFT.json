@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "r5-evidence-v1",
+  "phase": "2.7.2G.6-R.5.2",
+  "authorizedDemo": {
+    "filename": "furia-vs-gamerlegion-m1-cache.dem",
+    "sizeBytes": 473748061,
+    "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+    "releaseId": "cf0549c2-dfbd-c4df-25b4-2ce8204edf87"
+  },
+  "execution": "NOT_RUN",
+  "verification": "NOT_VERIFIED",
+  "gate": "R5.2_RAILWAY_DRIFT",
+  "implementation": "IMPLEMENTED",
+  "status": "NOT_VERIFIED",
+  "productionRevision": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+  "deploymentId": "6330c8c4-a410-45db-a364-4eb47702c2fc",
+  "branch": "infra/cs2-parser-worker-v8",
+  "mutation": "UNCHANGED",
+  "environmentPatch": "STAGED_NOT_APPLIED",
+  "blockers": [
+    "RAILWAY_READ_CREDENTIALS_UNAVAILABLE"
+  ]
+}
