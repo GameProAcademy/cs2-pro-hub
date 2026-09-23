@@ -1,6 +1,6 @@
 # CURRENT EXECUTION GATE — FASE 2.7.2G.6-R.5.8
 
-**Status:** `BLOCKED_BEFORE_FIRST_REAL_ATTESTATION / R5.7.6 CLOSED / ATTEMPT_9 LOCKED`.
+**Status:** `BLOCKED_OPERATOR_CONFIGURATION / R5.7.6 CLOSED / FIRST ATTESTATION NOT RUN / ATTEMPT_9 LOCKED`.
 
 R5.7.6 is formally closed: GitHub Quality Gates run `35848017260` passed on main commit `5245af872a8c7654d99a31797c956a1499b7a6c3`. The historical two-migration exception is documented and applied migration history must not be rewritten.
 
@@ -11,11 +11,11 @@ R5.7.6 is formally closed: GitHub Quality Gates run `35848017260` passed on main
 - [x] Approved attestor sourced from `main`; Railway runtime remains frozen at `infra/cs2-parser-worker-v8` / `5703b1d...`.
 - [x] GitHub Quality Gates verified on latest main commit.
 - [x] Real DEM staging preserved: exactly 1 `READY_FOR_EXECUTION` object.
-- [ ] Verify operator secrets are present by name only; never print secret values.
+- [x] Verify operator secrets by name only: transport/HMAC/endpoint present; Railway token requires GitHub operator verification.
 - [ ] Configure protected database HMAC setting with the operator-supplied secret, without a migration and without persisting it in public tables.
 - [ ] Configure/verify `RAILWAY_API_TOKEN` for the attestor workflow without exposing it.
-- [ ] Verify attestation endpoint/transport secret configuration by presence only.
-- [ ] Run a read-only preflight proving all required operator prerequisites are satisfied.
+- [x] Verify attestation endpoint/transport secret configuration safely: transport present; endpoint present but does not validate as the required production endpoint.
+- [x] Run read-only staging, jobs, provenance, nonce, Canonical, function, constraint and security checks; direct gate execution remains unavailable to the read role.
 - [ ] Only after the preflight is GREEN, manually dispatch the attestation workflow.
 - [ ] Independently audit the resulting attestation/provenance/nonce; do not create Attempt 9.
 
