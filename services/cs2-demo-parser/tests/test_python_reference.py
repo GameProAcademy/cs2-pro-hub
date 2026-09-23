@@ -4,6 +4,8 @@ import hashlib
 import math
 import stat
 from types import SimpleNamespace
+import stat
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
