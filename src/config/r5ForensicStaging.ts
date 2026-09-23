@@ -13,5 +13,4 @@ export const R5_TUS_RETRY_DELAYS_MS = [0, 3_000, 5_000, 10_000, 20_000] as const
  * Supabase Storage object names are relative to the bucket.
  * Do not prefix this value with R5_FORENSIC_STAGING_BUCKET.
  */
-export const R5_FORENSIC_STORAGE_PATH =
-  `${R5_CANONICAL_RELEASE_ID}/${R5_AUTHORIZED_DEM_SHA256}.dem`;
+export const R5_FORENSIC_STORAGE_PATH = `${R5_CANONICAL_RELEASE_ID}/${R5_AUTHORIZED_DEM_SHA256}.dem`;
