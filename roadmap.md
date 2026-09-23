@@ -5,8 +5,8 @@
 - [x] Confirmar staging real `READY_FOR_EXECUTION`, identidade observada e preservação do registro `61df7731-ec89-4fa3-8211-dd29128f3be8`.
 - [x] Confirmar Attempt 9/10+=0, Canonical=105/0/0/0, provenance VERIFIED=0 e nonces=0.
 - [x] Confirmar HMAC duplo, OIDC RS256, freshness, nonce, Railway API, runtime identity, hashes críticos e workflow aprovado já implementados.
-- [ ] Configurar com segurança `PARSER_ATTESTATION_TRANSPORT_SECRET`, `PARSER_ATTESTATION_HMAC_SECRET`, `PARSER_ATTESTATION_ENDPOINT` e `RAILWAY_API_TOKEN` nos ambientes corretos.
-- [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública.
+- [ ] Configuração parcial: endpoint e secrets de transporte/HMAC existem no servidor Lovable; os quatro secrets do GitHub Actions ainda exigem configuração operacional.
+- [ ] Configurar o mesmo segredo HMAC no setting protegido do banco, sem migration, código ou tabela pública (`DATABASE_HMAC_SECRET_CONFIGURATION_REQUIRES_OPERATOR_ACTION`).
 - [ ] Executar o workflow real e aceitar uma nova attestation somente se toda prova independente passar.
 - [ ] Revalidar provenance, invariantes e gates read-only; parar antes de Attempt 9 mesmo se o execution gate avançar.
 
