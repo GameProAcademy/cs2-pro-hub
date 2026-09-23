@@ -68,6 +68,7 @@ function R5ForensicPage() {
   const [file, setFile] = useState<File | null>(null);
   const [hashPercent, setHashPercent] = useState(0);
   const [progress, setProgress] = useState<R5UploadProgress | null>(null);
+  const [localEvidence, setLocalEvidence] = useState<{ sha256: string; size: number } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const staging = useQuery({
@@ -81,29 +82,47 @@ function R5ForensicPage() {
       setMessage(null);
       setHashPercent(0);
       setProgress(null);
+      setLocalEvidence(null);
       lastProgressAuditRef.current = -1;
       const controller = new AbortController();
       abortRef.current = controller;
-      await verifyAuthorizedR5FileLocally(selected, setHashPercent, controller.signal);
+      const local = await verifyAuthorizedR5FileLocally(selected, setHashPercent, controller.signal);
+      setLocalEvidence(local);
       const slot = await prepareR5ForensicDemo();
       await recordR5ForensicUpload({ data: { stagingId: slot.id, state: "started" } });
       try {
-        await uploadR5DemoResumably(selected, {
+        const transport = await uploadR5DemoResumably(selected, {
           signal: controller.signal,
           onProgress: (next) => {
             setProgress(next);
             const milestone = Math.floor(next.percent / 10) * 10;
             if (milestone > lastProgressAuditRef.current) {
               lastProgressAuditRef.current = milestone;
-              void recordR5ForensicProgress({ data: { stagingId: slot.id, percent: milestone } });
+              void recordR5ForensicProgress({ data: {
+                stagingId: slot.id,
+                bytesUploaded: next.bytesSent,
+                bytesTotal: next.bytesTotal,
+                percent: milestone,
+                retryCount: next.retryCount,
+                resumed: next.resumed,
+              } });
             }
           },
         });
+        await recordR5ForensicProgress({ data: {
+          stagingId: slot.id,
+          bytesUploaded: selected.size,
+          bytesTotal: selected.size,
+          percent: 100,
+          retryCount: transport.retryCount,
+          resumed: transport.resumed,
+        } });
         await recordR5ForensicUpload({ data: { stagingId: slot.id, state: "completed" } });
         return slot.id;
       } catch (error) {
-        const code = error instanceof DOMException && error.name === "AbortError" ? "R5_UPLOAD_INCOMPLETE" : "R5_UPLOAD_FAILED";
-        await recordR5ForensicUpload({ data: { stagingId: slot.id, state: "failed", errorCode: code } });
+        const cancelled = error instanceof DOMException && error.name === "AbortError";
+        const code = cancelled ? "R5_UPLOAD_CANCELLED" : "R5_UPLOAD_FAILED";
+        await recordR5ForensicUpload({ data: { stagingId: slot.id, state: cancelled ? "cancelled" : "failed", errorCode: code } });
         throw error;
       } finally {
         abortRef.current = null;
@@ -140,7 +159,7 @@ function R5ForensicPage() {
     <AdminShell session={adminSession}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="FASE 2.7.2G.6 · R5.2"
+          eyebrow="FASE 2.7.2G.6 · R5.6"
           title="R5 Forensic Staging"
           description="Transporte privado e verificação independente do DEM autorizado. Nenhuma execução do pipeline é iniciada nesta tela."
         />
@@ -177,7 +196,8 @@ function R5ForensicPage() {
               <EvidenceRow label="canonical release" value={R5_CANONICAL_RELEASE_ID} />
               <EvidenceRow label="bucket" value={R5_FORENSIC_STAGING_BUCKET} />
               <EvidenceRow label="object path" value={R5_FORENSIC_STORAGE_PATH} />
-              <EvidenceRow label="local SHA-256" value={hashPercent === 100 ? R5_AUTHORIZED_DEM_SHA256 : "NOT VERIFIED"} />
+               <EvidenceRow label="local size" value={localEvidence ? `${localEvidence.size} bytes` : "NOT VERIFIED"} />
+               <EvidenceRow label="local SHA-256" value={localEvidence?.sha256 ?? "NOT VERIFIED"} />
               <EvidenceRow label="observed size" value={staging.data?.observedSize == null ? "NOT VERIFIED" : `${staging.data.observedSize} bytes`} />
               <EvidenceRow label="observed SHA-256" value={staging.data?.observedSha256 ?? "NOT VERIFIED"} />
               <EvidenceRow label="bytes readable" value={staging.data?.bytesReadable ? "VERIFIED" : "NOT VERIFIED"} />
@@ -215,6 +235,8 @@ function R5ForensicPage() {
                     <span>{formatBytes(progress.bytesTotal)} total</span>
                     <span>{formatBytes(progress.bytesPerSecond)}/s</span>
                     <span>ETA {progress.etaSeconds == null ? "—" : `${progress.etaSeconds}s`}</span>
+                     <span>Retries {progress.retryCount}</span>
+                     <span>{progress.resumed ? "RESUMED" : "NEW UPLOAD"}</span>
                   </div>
                 ) : null}
               </div>

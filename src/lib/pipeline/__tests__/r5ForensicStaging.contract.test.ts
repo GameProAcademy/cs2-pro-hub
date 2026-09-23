@@ -44,6 +44,10 @@ const lifecycleMigration = readFileSync(
   resolve("supabase/migrations/20260923023228_b55a6705-84a5-4ff9-b178-5e6510afeb22.sql"),
   "utf8",
 );
+const r56Migration = readFileSync(
+  resolve("supabase/migrations/20260923041600_da71ec8d-ad69-4233-b80d-b221da8e8b42.sql"),
+  "utf8",
+);
 const workflow = readFileSync(resolve(".github/workflows/quality-gates.yml"), "utf8");
 
 describe("R5 forensic staging contract", () => {
@@ -154,7 +158,27 @@ describe("R5 forensic staging contract", () => {
     expect(functions).toContain("R5_VERIFY_FAILED");
     expect(functions).toContain("R5_GATE_READY");
     expect(functions).toContain("R5_GATE_BLOCKED");
+    expect(functions).toContain("R5_UPLOAD_CANCELLED");
+    expect(functions).toContain("bytesUploaded");
     expect(functions).not.toContain("R5_VERIFICATION_STARTED");
+  });
+
+  it("uses the applied R5.6 migration for atomic progress, cancellation and verification", () => {
+    expect(r56Migration).toContain("record_r5_forensic_progress");
+    expect(r56Migration).toContain("transition_r5_forensic_verification");
+    expect(r56Migration).toContain("_action='cancelled'");
+    expect(r56Migration).toContain("R5_UPLOAD_CANCELLED");
+    expect(r56Migration).toContain("R5_CANONICAL_BASELINE_CHANGED");
+    expect(r56Migration).toContain("R5_UNEXPECTED_EXECUTION_EVIDENCE");
+    expect(r56Migration).not.toMatch(/INSERT INTO public\.(uploads|demo_jobs|matches)/);
+  });
+
+  it("returns observed local evidence and records strict resume telemetry", () => {
+    expect(hashWorker).toContain('type: "done", sha256: hasher.hex(), size: file.size');
+    expect(resumable).toContain("Promise<R5LocalFileEvidence>");
+    expect(resumable).toContain("Promise<R5UploadResult>");
+    expect(resumable).toContain("onShouldRetry");
+    expect(resumable).toContain("options.onResume?.()");
   });
 
   it("preserves PostgreSQL setup for the concurrency harness", () => {

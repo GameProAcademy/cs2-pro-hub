@@ -91,7 +91,7 @@ export async function prepareR5ForensicStaging(): Promise<R5ForensicStagingResul
 
 export async function updateR5TransportState(
   stagingId: string,
-  state: "started" | "completed" | "failed",
+  state: "started" | "completed" | "cancelled" | "failed",
   errorCode?: string,
 ): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -101,6 +101,15 @@ export async function updateR5TransportState(
     ...(errorCode === undefined ? {} : { _error_code: errorCode }),
   });
   if (error) throw new Error(`R5_STAGING_STATE_FAILED:${error.message}`);
+}
+
+export async function updateR5TransportProgress(stagingId: string, bytesUploaded: number): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.rpc("record_r5_forensic_progress", {
+    _staging_id: stagingId,
+    _bytes_uploaded: bytesUploaded,
+  });
+  if (error) throw new Error(`R5_STAGING_PROGRESS_FAILED:${error.message}`);
 }
 
 export async function verifyR5ForensicStaging(stagingId: string) {
@@ -119,86 +128,65 @@ export async function verifyR5ForensicStaging(stagingId: string) {
   if (row.demo_sha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
   if (row.file_size !== R5_AUTHORIZED_DEM_SIZE_BYTES) throw new Error("R5_FILE_SIZE_MISMATCH");
 
-  const { error: verifyingError } = await supabaseAdmin
-    .from("r5_forensic_staging")
-    .update({ transport_status: "VERIFYING", verification_started_at: new Date().toISOString() })
-    .eq("id", stagingId);
+  const { error: verifyingError } = await supabaseAdmin.rpc("transition_r5_forensic_verification", {
+    _staging_id: stagingId,
+    _action: "started",
+  });
   if (verifyingError) throw new Error(`R5_STAGING_VERIFY_FAILED:${verifyingError.message}`);
 
-  let response: Response;
   try {
     const signedUrl = await createDemoSignedUrlForBucketObject(row.bucket_id, row.storage_path);
-    response = await fetch(signedUrl);
+    const response = await fetch(signedUrl);
     if (!response.ok || !response.body) throw new Error("R5_DEM_OBJECT_MISSING");
+    let observedSize = 0;
+    const hashingStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = response.body.getReader();
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              observedSize += value.byteLength;
+              controller.enqueue(value);
+            }
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          reader.releaseLock();
+        }
+      },
+    });
+    const observedSha256 = await sha256FromStream(hashingStream);
+    if (observedSize !== R5_AUTHORIZED_DEM_SIZE_BYTES) throw new Error("R5_FILE_SIZE_MISMATCH");
+    if (observedSha256 !== R5_AUTHORIZED_DEM_SHA256) throw new Error("R5_FILE_HASH_MISMATCH");
+    const digest = metadataDigest({
+      bucketId: row.bucket_id,
+      filename: R5_AUTHORIZED_DEM_FILENAME,
+      releaseId: R5_CANONICAL_RELEASE_ID,
+      sha256: observedSha256,
+      size: observedSize,
+      storagePath: row.storage_path,
+    });
+    const { error: verifiedError } = await supabaseAdmin.rpc("transition_r5_forensic_verification", {
+      _staging_id: stagingId,
+      _action: "verified",
+      _observed_size: observedSize,
+      _observed_sha256: observedSha256,
+      _metadata_digest: digest,
+    });
+    if (verifiedError) throw new Error(`R5_STAGING_VERIFY_FAILED:${verifiedError.message}`);
   } catch (error) {
-    await supabaseAdmin
-      .from("r5_forensic_staging")
-      .update({
-        transport_status: "BLOCKED",
-        status: "BLOCKED",
-        bytes_readable: false,
-        last_error_code: "R5_DEM_OBJECT_MISSING",
-        blocked_reason: "R5_DEM_OBJECT_MISSING",
-      })
-      .eq("id", stagingId);
+    const code = error instanceof Error ? (error.message.split(":", 1)[0] ?? "R5_VERIFICATION_FAILED") : "R5_VERIFICATION_FAILED";
+    await supabaseAdmin.rpc("transition_r5_forensic_verification", {
+      _staging_id: stagingId,
+      _action: "failed",
+      _error_code: code,
+    });
     throw error;
   }
-
-  let observedSize = 0;
-  const hashingStream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      if (!reader) {
-        controller.error(new Error("R5_OBJECT_UNREADABLE"));
-        return;
-      }
-      try {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) {
-            observedSize += value.byteLength;
-            controller.enqueue(value);
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  });
-  const observedSha256 = await sha256FromStream(hashingStream);
-  const valid =
-    observedSize === R5_AUTHORIZED_DEM_SIZE_BYTES && observedSha256 === R5_AUTHORIZED_DEM_SHA256;
-  const digest = metadataDigest({
-    bucketId: row.bucket_id,
-    filename: R5_AUTHORIZED_DEM_FILENAME,
-    releaseId: R5_CANONICAL_RELEASE_ID,
-    sha256: observedSha256,
-    size: observedSize,
-    storagePath: row.storage_path,
-  });
-  const { error: updateError } = await supabaseAdmin
-    .from("r5_forensic_staging")
-    .update({
-      status: valid ? "READY_FOR_EXECUTION" : "BLOCKED",
-      transport_status: valid ? "READY_FOR_EXECUTION" : "BLOCKED",
-      bytes_readable: true,
-      bytes_verified_at: new Date().toISOString(),
-      observed_sha256: observedSha256,
-      observed_size: observedSize,
-      metadata_digest: digest,
-      blocked_reason: valid ? null : "CACHE_DEMO_IDENTITY_MISMATCH",
-      last_error_code: valid
-        ? null
-        : observedSize !== R5_AUTHORIZED_DEM_SIZE_BYTES
-          ? "R5_FILE_SIZE_MISMATCH"
-          : "R5_FILE_HASH_MISMATCH",
-    })
-    .eq("id", stagingId);
-  if (updateError) throw new Error(`R5_STAGING_VERIFY_FAILED:${updateError.message}`);
 
   const { data: gate, error: gateError } = await supabaseAdmin.rpc("r5_real_dem_access_gate", {
     _staging_id: stagingId,
