@@ -29,6 +29,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authenticated/admin/demo-e2e'
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
+import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
@@ -139,6 +140,12 @@ const AuthenticatedAdminPipelineRoute =
     path: '/pipeline',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminR5ForensicRoute =
+  AuthenticatedAdminR5ForensicRouteImport.update({
+    id: '/r5-forensic',
+    path: '/r5-forensic',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
+  '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
+  '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
+  '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/demo-e2e'
     | '/admin/pipeline'
+    | '/admin/r5-forensic'
     | '/admin/users'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/demo-e2e'
     | '/admin/pipeline'
+    | '/admin/r5-forensic'
     | '/admin/users'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
@@ -331,6 +343,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/demo-e2e'
     | '/_authenticated/admin/pipeline'
+    | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPipelineRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/r5-forensic': {
+      id: '/_authenticated/admin/r5-forensic'
+      path: '/r5-forensic'
+      fullPath: '/admin/r5-forensic'
+      preLoaderRoute: typeof AuthenticatedAdminR5ForensicRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/users'
@@ -544,6 +564,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminDemoE2eRoute: typeof AuthenticatedAdminDemoE2eRoute
   AuthenticatedAdminPipelineRoute: typeof AuthenticatedAdminPipelineRoute
+  AuthenticatedAdminR5ForensicRoute: typeof AuthenticatedAdminR5ForensicRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -553,6 +574,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminDemoE2eRoute: AuthenticatedAdminDemoE2eRoute,
     AuthenticatedAdminPipelineRoute: AuthenticatedAdminPipelineRoute,
+    AuthenticatedAdminR5ForensicRoute: AuthenticatedAdminR5ForensicRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
