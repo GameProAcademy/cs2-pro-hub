@@ -35,12 +35,12 @@ ON storage.objects FOR UPDATE TO authenticated
 USING (
   public.is_admin_master(auth.uid())
   AND bucket_id = 'r5-forensic-staging'
-  AND name = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689e29b00dd4d446b4ec8ae3d.dem'
+  AND name = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d.dem'
 )
 WITH CHECK (
   public.is_admin_master(auth.uid())
   AND bucket_id = 'r5-forensic-staging'
-  AND name = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689e29b00dd4d446b4ec8ae3d.dem'
+  AND name = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d.dem'
 );
 
 ALTER TABLE public.r5_forensic_staging
