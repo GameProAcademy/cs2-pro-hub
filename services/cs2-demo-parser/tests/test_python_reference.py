@@ -107,7 +107,7 @@ def test_reference_rejects_mismatched_authorization(tmp_path):
         "authorizationRef": "test",
         "receivedAt": "2026-09-21T00:00:00Z",
     }
-    with pytest.raises(ValueError, match="authorized_dem_metadata_mismatch"):
+    with pytest.raises(ValueError, match="authorized_demo_metadata_mismatch"):
         build_python_reference(str(path), authorization)
 
 
