@@ -21,8 +21,10 @@ const bodySchema = z.object({
     attestation_digest: z.string().regex(/^[0-9a-f]{64}$/),
     payload: z.record(z.unknown()),
   }),
+  canonicalPayload: z.string().min(2),
   signature: z.string().regex(/^[0-9a-f]{64}$/),
   oidcToken: z.string().min(100),
+  releaseGateEvidence: z.record(z.unknown()),
 });
 
 function base64UrlJson(value: string): Record<string, unknown> {
@@ -103,7 +105,23 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         if (!parsed.success) {
           return Response.json({ error: "ATTESTATION_PAYLOAD_INVALID" }, { status: 400 });
         }
-        const canonicalPayload = canonicalAttestationJson(parsed.data.result.payload);
+        let canonicalPayloadObject: Record<string, unknown>;
+        try {
+          const candidate: unknown = JSON.parse(parsed.data.canonicalPayload);
+          if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+            throw new Error("CANONICAL_PAYLOAD_INVALID");
+          }
+          canonicalPayloadObject = candidate as Record<string, unknown>;
+        } catch {
+          return Response.json({ error: "CANONICAL_PAYLOAD_INVALID" }, { status: 400 });
+        }
+        const canonicalPayload = parsed.data.canonicalPayload;
+        if (
+          canonicalAttestationJson(canonicalPayloadObject) !== canonicalPayload ||
+          canonicalAttestationJson(parsed.data.result.payload) !== canonicalPayload
+        ) {
+          return Response.json({ error: "CANONICAL_PAYLOAD_MISMATCH" }, { status: 400 });
+        }
         const calculatedDigest = await crypto.subtle.digest(
           "SHA-256",
           new TextEncoder().encode(canonicalPayload),
@@ -149,7 +167,11 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         }
 
         const releaseGateEvidence = extractBoundReleaseGateEvidence(parsed.data.result.payload);
-        if (!releaseGateEvidence) {
+        if (
+          !releaseGateEvidence ||
+          canonicalAttestationJson(releaseGateEvidence) !==
+            canonicalAttestationJson(parsed.data.releaseGateEvidence)
+        ) {
           return Response.json({ error: "RELEASE_GATE_EVIDENCE_INVALID" }, { status: 422 });
         }
         const mappingEvidence = releaseGateEvidence["mapping_inventory"];
@@ -174,7 +196,9 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "MAPPING_AUTHORITY_MISMATCH" }, { status: 422 });
         }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data, error } = await supabaseAdmin.rpc("record_parser_runtime_attestation", {
+        const { data, error } = await supabaseAdmin.rpc(
+          "record_parser_runtime_attestation_with_secret",
+          {
           _canonical_payload: canonicalPayload,
           _payload: parsed.data.result.payload as Json,
           _attestation_digest: parsed.data.result.attestation_digest,
@@ -182,12 +206,22 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           _release_gate_evidence: releaseGateEvidence as Json,
           _attested_at: attestedAt,
           _nonce: nonce,
-        });
+            _hmac_secret: signingSecret,
+          },
+        );
         if (error) {
           console.error(`[parser-attestation] recorder failed: ${error.code}`);
           return Response.json({ error: "ATTESTATION_REJECTED" }, { status: 422 });
         }
-        return Response.json({ status: "RECORDED", provenanceId: data }, { status: 201 });
+        return Response.json(
+          {
+            ok: true,
+            status: "VERIFIED",
+            provenanceId: data,
+            attestationDigest: parsed.data.result.attestation_digest,
+          },
+          { status: 200 },
+        );
       },
     },
   },

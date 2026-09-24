@@ -8,6 +8,20 @@
 
 Status: `IMPLEMENTED / FAIL-CLOSED / PRE-EXECUTION`.
 
+### H.3-E.2 — Protected Operator Configuration & Attestation Readiness
+
+Status: `IMPLEMENTED / PRE-EXECUTION / FAIL-CLOSED`.
+
+- [x] Keep the external recorder on the supported server-only `/api/public/parser-attestation` boundary.
+- [x] Require transport authentication, cryptographic GitHub OIDC verification and exact claim binding.
+- [x] Verify the exact workflow-supplied canonical bytes, SHA-256 digest, HMAC-SHA256 signature and signed release evidence.
+- [x] Add a service-only database wrapper that injects the existing HMAC secret with transaction-local `set_config(..., true)` and delegates to the unchanged authoritative recorder.
+- [x] Preserve private/RLS/immutable provenance and nonce storage and replay rejection.
+- [x] Adapt the manual GitHub workflow to send `canonicalPayload` without dispatching it.
+- [ ] Execute the first attestation: `NOT RUN`.
+
+**Locks:** no real DEM, Cache DEM, Attempt 9/10+, final RAW evidence, Canonical authorization, Railway mutation, EnvironmentPatch, secret rotation, or attestation workflow execution occurred.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.

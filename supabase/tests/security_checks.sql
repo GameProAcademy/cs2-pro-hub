@@ -254,6 +254,27 @@ WITH catalogue AS (
          )
 
   UNION ALL
+  SELECT '21j. H.3-E.2 transient HMAC bridge is service-only',
+         NOT has_function_privilege(
+           'anon',
+           'public.record_parser_runtime_attestation_with_secret(text,jsonb,text,text,jsonb,timestamptz,text,text)',
+           'EXECUTE'
+         )
+         AND NOT has_function_privilege(
+           'authenticated',
+           'public.record_parser_runtime_attestation_with_secret(text,jsonb,text,text,jsonb,timestamptz,text,text)',
+           'EXECUTE'
+         )
+         AND has_function_privilege(
+           'service_role',
+           'public.record_parser_runtime_attestation_with_secret(text,jsonb,text,text,jsonb,timestamptz,text,text)',
+           'EXECUTE'
+         )
+         AND pg_get_functiondef(
+           'public.record_parser_runtime_attestation_with_secret(text,jsonb,text,text,jsonb,timestamptz,text,text)'::regprocedure
+         ) LIKE '%set_config(''app.settings.parser_attestation_hmac_secret'', _hmac_secret, true)%'
+
+  UNION ALL
   SELECT '21i. runtime provenance effective ACL is append-only service access',
          NOT has_table_privilege('anon','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
          AND NOT has_table_privilege('authenticated','public.parser_runtime_provenance','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')

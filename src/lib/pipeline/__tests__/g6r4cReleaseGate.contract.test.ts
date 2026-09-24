@@ -25,6 +25,10 @@ const readinessMigration = readFileSync(
   resolve("supabase/migrations/20260922081136_4be12bdc-b7f7-425f-b7a2-862834bf49ce.sql"),
   "utf8",
 );
+const transientSecretBridgeMigration = readFileSync(
+  resolve("supabase/migrations/20260924075412_bd5954f3-8218-4a10-a059-24b01fa84cc6.sql"),
+  "utf8",
+);
 
 const REQUIRED_GATES = [
   "parser_runtime_identity",
@@ -147,5 +151,23 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(readinessMigration).toContain("RETURN 'READY_TO_EXECUTE_ATTEMPT_9'");
     expect(readinessMigration).toContain("RETURN 'BLOCKED'");
     expect(readinessMigration).toContain("lower(btrim(source_field)) IN");
+  });
+
+  it("injects the HMAC secret transaction-locally through a service-only wrapper", () => {
+    expect(transientSecretBridgeMigration).toContain(
+      "record_parser_runtime_attestation_with_secret",
+    );
+    expect(transientSecretBridgeMigration).toContain("pg_catalog.set_config(");
+    expect(transientSecretBridgeMigration).toContain("_hmac_secret,\n    true");
+    expect(transientSecretBridgeMigration).toContain(
+      "public.record_parser_runtime_attestation(",
+    );
+    expect(transientSecretBridgeMigration).toContain(
+      "FROM PUBLIC;\nREVOKE ALL ON FUNCTION",
+    );
+    expect(transientSecretBridgeMigration).toContain("FROM anon;");
+    expect(transientSecretBridgeMigration).toContain("FROM authenticated;");
+    expect(transientSecretBridgeMigration).toContain("TO service_role;");
+    expect(transientSecretBridgeMigration).not.toMatch(/INSERT[\s\S]*_hmac_secret/i);
   });
 });
