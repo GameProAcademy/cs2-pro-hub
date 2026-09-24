@@ -25,6 +25,9 @@ describe("memory lab architecture guards", () => {
     expect(worker).toContain('"ARRAYBUFFER_STARTED"');
     expect(worker).toContain('"ARRAYBUFFER_COMPLETE"');
     expect(runner).toContain('"messageerror"');
+    expect(worker).toContain('"ONERROR"');
+    expect(worker).toContain('"UNHANDLED_REJECTION"');
+    expect(runner).toContain("workerRuntimeSignal");
     expect(runner).not.toContain(".arrayBuffer(");
     expect(ui).not.toContain(".arrayBuffer(");
     expect(worker).not.toMatch(/demoparser2|parseDemo|ClientParserService|readContiguousDemoInput/);
