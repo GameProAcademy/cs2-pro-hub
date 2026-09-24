@@ -135,10 +135,11 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(releaseMigration).toContain("BLOCKED_BEFORE_ATTEMPT_9");
   });
 
-  it("uses workflow_dispatch only and immutable GitHub repository identity", () => {
+  it("uses controlled workflow_dispatch/workflow_run triggers and immutable GitHub repository identity", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toContain("workflow_call:");
-    expect(attestor).toContain('event != "workflow_dispatch"');
+    expect(attestor).toContain('event not in {"workflow_dispatch", "workflow_run"}');
+    expect(attestor).toContain("GITHUB_WORKFLOW_RUN_UPSTREAM_NOT_APPROVED");
     expect(workflow.match(/uses: [^\n]+@[0-9a-f]{40}/g)).toHaveLength(5);
     expect(workflow).not.toMatch(/uses: [^\n]+@v\d/);
     expect(attestor).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
