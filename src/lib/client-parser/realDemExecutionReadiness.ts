@@ -138,8 +138,6 @@ export function evaluateRealDemExecutionReadiness(
     evidenceClass: "FAIL_CLOSED_PRE_EXECUTION_GATE",
   };
 }
-
-
 export const CONTROLLED_CACHE_EXECUTION_ENVELOPE = {
   fileName: "furia-vs-gamerlegion-m1-cache.dem",
   sizeBytes: 473_748_061,
