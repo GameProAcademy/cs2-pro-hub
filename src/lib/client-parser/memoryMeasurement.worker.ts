@@ -56,7 +56,7 @@ async function materialize(command: MemoryWorkerCommand) {
     const startedAt = performance.now();
     const fixture = createSyntheticFixture(command.descriptor);
     const buffer = await fixture.arrayBuffer();
-    if (buffer.byteLength !== command.fixture.size) {
+    if (buffer.byteLength !== command.descriptor.sizeBytes) {
       scope.postMessage({
         type: "ERROR",
         requestId: command.requestId,
