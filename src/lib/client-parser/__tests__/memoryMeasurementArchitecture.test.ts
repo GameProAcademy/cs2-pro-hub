@@ -21,6 +21,7 @@ describe("memory lab architecture guards", () => {
     expect(worker).toContain("MATERIALIZATION_READ_FAILED");
     expect(worker).toContain("MATERIALIZATION_LENGTH_MISMATCH");
     expect(worker).toContain('type: "WORKER_READY"');
+    expect(worker).toContain('MEMORY_WORKER_INIT');
     expect(worker).toContain('"FILE_CREATION_STARTED"');
     expect(worker).toContain('"ARRAYBUFFER_STARTED"');
     expect(worker).toContain('"ARRAYBUFFER_COMPLETE"');
@@ -29,6 +30,9 @@ describe("memory lab architecture guards", () => {
     expect(worker).toContain('"UNHANDLED_REJECTION"');
     expect(runner).toContain("workerRuntimeSignal");
     expect(runner).toContain("runWorkerBootstrapProbe");
+    expect(runner).toContain("runModuleWorkerBootstrapProbe");
+    expect(runner).toContain("MEMORY_WORKER_INIT");
+    expect(runner).toContain("memoryMeasurement.module-bootstrap.worker.ts");
     expect(runner).toContain("GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY");
     expect(runner).not.toContain(".arrayBuffer(");
     expect(ui).not.toContain(".arrayBuffer(");
