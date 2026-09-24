@@ -250,6 +250,7 @@ export async function runSyntheticMemoryMeasurement(
     });
 
     postMaterializationBytes = await sample();
+    await releaseMaterialization(worker, requestId, timeoutMs);
     worker.terminate();
     worker = null;
     await wait(options.stabilizationMs ?? 250);
@@ -312,6 +313,50 @@ export async function runSyntheticMemoryMeasurement(
     worker = null;
   }
 }
+
+async function releaseMaterialization(
+  worker: WorkerLike,
+  requestId: string,
+  timeoutMs: number,
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const releaseTimeout = setTimeout(() => {
+      finish(new MemoryLabError("MATERIALIZATION_TIMEOUT"));
+    }, Math.min(timeoutMs, 5_000));
+
+    const finish = (error?: MemoryLabError) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(releaseTimeout);
+      worker.removeEventListener("message", onMessage);
+      worker.removeEventListener("error", onError);
+      if (error) reject(error);
+      else resolve();
+    };
+
+    const onMessage = (message: MessageEvent<unknown>) => {
+      if (!isMemoryWorkerEvent(message.data)) return;
+      if (
+        message.data.type === "WORKER_STAGE" &&
+        message.data.requestId === requestId &&
+        message.data.stage === "MATERIALIZATION_RELEASED"
+      ) {
+        finish();
+      }
+    };
+
+    const onError = () => finish(new MemoryLabError("MATERIALIZATION_WORKER_ERROR"));
+
+    worker.addEventListener("message", onMessage);
+    worker.addEventListener("error", onError);
+    worker.postMessage({
+      type: "MEMORY_MATERIALIZATION_RELEASE",
+      requestId,
+    });
+  });
+}
+
 
 async function runModuleWorkerBootstrapProbe(): Promise<"PASS" | "FAIL"> {
   if (typeof Worker === "undefined") return "FAIL";
