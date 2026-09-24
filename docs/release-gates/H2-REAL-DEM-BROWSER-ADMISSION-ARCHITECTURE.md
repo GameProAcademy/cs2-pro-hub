@@ -1,6 +1,6 @@
 # H.2 — Real DEM Browser Admission Architecture & Fail-Closed Gate
 
-STATUS: **H.2 ARCHITECTURE GATE IMPLEMENTED / REAL DEM EXECUTION BLOCKED**
+STATUS: **H.2 PASS — ARCHITECTURE GATE IMPLEMENTED / REAL DEM EXECUTION BLOCKED**
 
 ## Objective
 
@@ -151,7 +151,9 @@ The H.1 result remains useful only as diagnostic evidence for the synthetic mate
 
 ## Exit criteria
 
-H.2 is complete only when the architecture and fail-closed authorization contract are implemented and tested.
+H.2 is complete only when the architecture and fail-closed authorization contract are implemented, tested, and accepted by the repository Quality Gates.
+
+Quality Gate run #267 completed with Web tests / lint / build, Contract-sensitive parser tests, and CS2 parser tests all successful.
 
 H.2 does **not** mean real DEM execution is complete.
 
