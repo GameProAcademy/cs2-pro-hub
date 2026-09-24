@@ -151,14 +151,13 @@ describe("H.3 controlled real DEM execution readiness", () => {
   });
 });
 
-describe("H.3-E/ controlled Cache execution envelope", () => {
+describe("H.3-E controlled Cache execution envelope", () => {
   it("freezes the authorized Cache identity and Railway file-path surface", () => {
     expect(CONTROLLED_CACHE_EXECUTION_ENVELOPE).toEqual({
       fileName: "furia-vs-gamerlegion-m1-cache.dem",
       sizeBytes: 473_748_061,
       sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
-      parserBuildIdentity:
-        "demoparser2:0.42.0:git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+      parserBuildIdentity: "demoparser2:0.42.0:git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
       contractVersion: 1,
       executionSurface: "RAILWAY_CONTROLLED",
       inputStrategy: "FILE_PATH",
