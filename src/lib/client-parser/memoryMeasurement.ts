@@ -32,7 +32,11 @@ export type MemoryMeasurementErrorCode =
   | "CANCELLED"
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
-export type CleanupStatus = "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN" | "FAILED";
+export type CleanupStatus =
+  | "CLEANUP_OBSERVED"
+  | "CLEANUP_MEASUREMENT_UNAVAILABLE"
+  | "CLEANUP_NOT_RUN"
+  | "FAILED";
 
 export interface SyntheticFixtureDescriptor {
   kind: "SYNTHETIC_MEMORY_FIXTURE";
@@ -98,8 +102,7 @@ export type MemoryWorkerEvent =
 export function createSyntheticFixtureDescriptor(sizeBytes: number): SyntheticFixtureDescriptor {
   if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > MAX_SYNTHETIC_FIXTURE_BYTES)
     throw new MemoryLabError("FIXTURE_TOO_LARGE");
-  if (!MEMORY_LAB_FIXTURE_SIZES.includes(sizeBytes))
-    throw new MemoryLabError("FIXTURE_TOO_LARGE");
+  if (!MEMORY_LAB_FIXTURE_SIZES.includes(sizeBytes)) throw new MemoryLabError("FIXTURE_TOO_LARGE");
   return { kind: "SYNTHETIC_MEMORY_FIXTURE", sizeBytes };
 }
 
@@ -109,8 +112,7 @@ export function createSyntheticFixture(descriptor: SyntheticFixtureDescriptor): 
     throw new MemoryLabError("FIXTURE_CREATION_FAILED");
   try {
     const block = new Uint8Array(1024 * 1024);
-    for (let index = 0; index < block.length; index += 1)
-      block[index] = (index * 31 + 17) & 0xff;
+    for (let index = 0; index < block.length; index += 1) block[index] = (index * 31 + 17) & 0xff;
     const parts = Array.from({ length: validated.sizeBytes / block.byteLength }, () => block);
     return new File(parts, `synthetic-memory-${validated.sizeBytes}.bin`, {
       type: "application/x-gamepro-synthetic-memory-fixture",
@@ -141,8 +143,7 @@ export function getMemoryMeasurementAvailability(input: {
 export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const event = value as Record<string, unknown>;
-  if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string")
-    return false;
+  if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string") return false;
   if (event["type"] === "MATERIALIZATION_STARTED") return true;
   if (event["type"] === "ERROR")
     return (
