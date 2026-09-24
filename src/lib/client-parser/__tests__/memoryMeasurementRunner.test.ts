@@ -51,7 +51,8 @@ class FakeWorker {
     }
     if (this.behavior === "hang") return;
     const requestId = (command as { requestId: string }).requestId;
-    const descriptor = (command as { descriptor: { sizeBytes: number } }).descriptor;
+    const descriptor = (command as { descriptor?: { sizeBytes: number } }).descriptor;
+    const sizeBytes = descriptor?.sizeBytes ?? 16 * 1024 * 1024;
     queueMicrotask(() => {
       if (this.behavior === "worker-error") {
         for (const listener of this.errorListeners) listener({ type: "error" } as ErrorEvent);
@@ -70,7 +71,7 @@ class FakeWorker {
         this.emit({
           type: "MATERIALIZATION_COMPLETE",
           requestId: "another-request",
-          materializedByteLength: descriptor.sizeBytes,
+          materializedByteLength: sizeBytes,
           materializationDurationMs: 4,
         });
         return;
