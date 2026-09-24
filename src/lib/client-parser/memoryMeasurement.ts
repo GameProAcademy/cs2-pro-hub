@@ -35,6 +35,7 @@ export type MemoryMeasurementErrorCode =
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
 export type MemoryWorkerRuntimeSignal = "ERROR_EVENT" | "ONERROR" | "UNHANDLED_REJECTION";
+export type MemoryWorkerBootstrapProbeStatus = "PASS" | "FAIL" | "NOT_RUN";
 export type MemoryWorkerLifecycleStage =
   | "CREATED"
   | "READY"
@@ -88,6 +89,7 @@ export interface MemoryMeasurementResult {
   runtime: { userAgent: string };
   workerLifecycleStage: MemoryWorkerLifecycleStage | null;
   workerRuntimeSignal: MemoryWorkerRuntimeSignal | null;
+  workerBootstrapProbe: MemoryWorkerBootstrapProbeStatus;
 }
 
 export type MemoryWorkerCommand = {
