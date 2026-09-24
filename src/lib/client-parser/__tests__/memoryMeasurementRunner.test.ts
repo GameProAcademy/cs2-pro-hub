@@ -22,13 +22,13 @@ class FakeWorker {
   constructor(
     private readonly behavior: WorkerBehavior = "complete",
     private readonly lifecycle: string[] = [],
-  ) {
-    queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
-  }
+  ) {}
 
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
-    if (type === "message")
+    if (type === "message") {
       this.messageListeners.add(listener as (event: MessageEvent<unknown>) => void);
+      queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
+    }
     if (type === "error") this.errorListeners.add(listener as (event: ErrorEvent) => void);
     if (type === "messageerror")
       this.messageErrorListeners.add(listener as (event: MessageEvent<unknown>) => void);
