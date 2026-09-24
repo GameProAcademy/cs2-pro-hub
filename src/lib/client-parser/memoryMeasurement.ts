@@ -23,6 +23,9 @@ export type MemoryMeasurementErrorCode =
   | "FIXTURE_TOO_LARGE"
   | "FIXTURE_CREATION_FAILED"
   | "MATERIALIZATION_FAILED"
+  | "MATERIALIZATION_INVALID_COMMAND"
+  | "MATERIALIZATION_READ_FAILED"
+  | "MATERIALIZATION_LENGTH_MISMATCH"
   | "MATERIALIZATION_TIMEOUT"
   | "MEASUREMENT_FAILED"
   | "CLEANUP_MEASUREMENT_FAILED"
@@ -30,7 +33,10 @@ export type MemoryMeasurementErrorCode =
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
 export type CleanupStatus =
-  "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN" | "FAILED";
+  | "CLEANUP_OBSERVED"
+  | "CLEANUP_MEASUREMENT_UNAVAILABLE"
+  | "CLEANUP_NOT_RUN"
+  | "FAILED";
 
 export interface SyntheticFixtureDescriptor {
   kind: "SYNTHETIC_MEMORY_FIXTURE";
@@ -83,7 +89,15 @@ export type MemoryWorkerEvent =
       materializedByteLength: number;
       materializationDurationMs: number;
     }
-  | { type: "ERROR"; requestId: string; code: "MATERIALIZATION_FAILED" };
+  | {
+      type: "ERROR";
+      requestId: string;
+      code:
+        | "MATERIALIZATION_FAILED"
+        | "MATERIALIZATION_INVALID_COMMAND"
+        | "MATERIALIZATION_READ_FAILED"
+        | "MATERIALIZATION_LENGTH_MISMATCH";
+    };
 
 export function createSyntheticFixtureDescriptor(sizeBytes: number): SyntheticFixtureDescriptor {
   if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > MAX_SYNTHETIC_FIXTURE_BYTES)
@@ -131,7 +145,13 @@ export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent 
   const event = value as Record<string, unknown>;
   if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string") return false;
   if (event["type"] === "MATERIALIZATION_STARTED") return true;
-  if (event["type"] === "ERROR") return event["code"] === "MATERIALIZATION_FAILED";
+  if (event["type"] === "ERROR")
+    return (
+      event["code"] === "MATERIALIZATION_FAILED" ||
+      event["code"] === "MATERIALIZATION_INVALID_COMMAND" ||
+      event["code"] === "MATERIALIZATION_READ_FAILED" ||
+      event["code"] === "MATERIALIZATION_LENGTH_MISMATCH"
+    );
   return (
     event["type"] === "MATERIALIZATION_COMPLETE" &&
     Number.isSafeInteger(event["materializedByteLength"]) &&
