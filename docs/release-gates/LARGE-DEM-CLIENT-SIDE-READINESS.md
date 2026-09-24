@@ -3,6 +3,8 @@
 ## Status
 
 - Architecture preparation: `IMPLEMENTED`
+- H.1-M synthetic browser memory gate: `CLOSED`
+- H.2 real-DEM browser admission architecture: `PASS`
 - Unit/static verification: `VERIFIED`
 - Real DEM execution: `NOT_RUN`
 - Files above 128 MiB: `NOT_SUPPORTED` by the current contiguous-buffer parser path
@@ -82,6 +84,8 @@ These are deterministic metadata-only tests; no giant parser buffer or real DEM 
 
 ## Next gate
 
-The next technical gate was H.1-M, which is now CLOSED. The current gate is **H.2 — Real DEM Browser Admission Architecture & Fail-Closed Gate**. It must measure the actual browser/Worker memory behavior of the client-side architecture using only non-production synthetic fixtures or an explicitly authorized fixture, with no real Cache DEM and no production parser admission. The measurement API must be treated as browser-specific evidence, not a universal memory guarantee; availability depends on secure cross-origin-isolated execution.
+H.2 is now `PASS`: the real-DEM browser admission architecture is implemented, fail-closed, tested, and accepted by Quality Gate run #267. Real DEM execution remains `NOT_RUN`.
 
-A larger parser ceiling requires measured evidence sufficient for the exact runtime or a verified streaming-capable parser adapter. The 128 MiB production ceiling remains unchanged until such evidence exists.
+The next gate is **H.3 — Controlled Real DEM Execution Readiness**. H.3 must freeze one exact DEM identity, parser/runtime identity, contract, input strategy, memory/overhead evidence, Python/WASM parity, determinism, tick authority, player identity, retention authorization, fresh attestation, and explicit execution authorization before any real DEM execution is permitted.
+
+The 128 MiB browser ceiling remains unchanged. The 473,748,061-byte Cache DEM remains a controlled-execution candidate only; it is not authorized to execute yet.
