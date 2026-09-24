@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import resource
 from pathlib import Path
 import threading
 
@@ -54,6 +55,17 @@ def _bounded_tick_query(sample_ticks: list[int]) -> list[int]:
     last = len(sample_ticks) - 1
     indices = [round(index * last / (limit - 1)) for index in range(limit)]
     return [sample_ticks[index] for index in indices]
+
+
+def _rss_bytes() -> int | None:
+    """Return current child RSS in bytes from Linux procfs when available."""
+    try:
+        for line in Path("/proc/self/status").read_text(encoding="utf-8").splitlines():
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1]) * 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
 
 
 def _rss_gb() -> float | None:
@@ -145,8 +157,16 @@ def main() -> int:
     try:
         result = parse_demo_file(args.input_path)
         print(f"parser_child_stage=parse_complete rss_gb={_rss_gb()}", flush=True)
+        runtime = {
+            "peak_rss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) * 1024,
+            "final_rss_bytes": _rss_bytes(),
+            "evidenceClass": "ISOLATED_PARSER_CHILD_RUNTIME",
+        }
         output_path.write_text(
-            json.dumps({"ok": True, "result": result}, ensure_ascii=False),
+            json.dumps(
+                {"ok": True, "result": result, "_child_runtime": runtime},
+                ensure_ascii=False,
+            ),
             encoding="utf-8",
         )
         return 0
@@ -162,6 +182,11 @@ def main() -> int:
         stop_rss_monitor.set()
         rss_thread.join(timeout=1.0)
 
+    payload["_child_runtime"] = {
+        "peak_rss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) * 1024,
+        "final_rss_bytes": _rss_bytes(),
+        "evidenceClass": "ISOLATED_PARSER_CHILD_RUNTIME",
+    }
     output_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     return 0
 
