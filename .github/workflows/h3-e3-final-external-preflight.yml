@@ -12,21 +12,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Validate protected secret presence without revealing values
+      - name: Validate protected secret presence and exact endpoint without revealing values
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
           PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
           PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
         run: |
-          set -euo pipefail
-          test -n "$RAILWAY_API_TOKEN"
-          test -n "$PARSER_ATTESTATION_ENDPOINT"
-          test -n "$PARSER_ATTESTATION_TRANSPORT_SECRET"
-          test -n "$PARSER_ATTESTATION_HMAC_SECRET"
-          test "$PARSER_ATTESTATION_ENDPOINT" = "https://gamepro.network/api/public/parser-attestation"
-          echo "protected_secret_presence=PASS"
-          echo "endpoint_exact_match=PASS"
+          set -u
+          failed=0
+
+          if [ -n "$RAILWAY_API_TOKEN" ]; then echo "railway_api_token_presence=PASS"; else echo "railway_api_token_presence=FAIL"; failed=1; fi
+          if [ -n "$PARSER_ATTESTATION_ENDPOINT" ]; then echo "attestation_endpoint_presence=PASS"; else echo "attestation_endpoint_presence=FAIL"; failed=1; fi
+          if [ -n "$PARSER_ATTESTATION_TRANSPORT_SECRET" ]; then echo "transport_secret_presence=PASS"; else echo "transport_secret_presence=FAIL"; failed=1; fi
+          if [ -n "$PARSER_ATTESTATION_HMAC_SECRET" ]; then echo "hmac_secret_presence=PASS"; else echo "hmac_secret_presence=FAIL"; failed=1; fi
+
+          if [ "$PARSER_ATTESTATION_ENDPOINT" = "https://gamepro.network/api/public/parser-attestation" ]; then
+            echo "endpoint_exact_match=PASS"
+          else
+            echo "endpoint_exact_match=FAIL"
+            echo "expected_endpoint=https://gamepro.network/api/public/parser-attestation"
+            failed=1
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            echo "protected_configuration_preflight=BLOCKED"
+            exit 1
+          fi
+
+          echo "protected_configuration_preflight=PASS"
 
       - name: Probe attestation endpoint without credentials or attestation payload
         run: |
@@ -45,13 +59,8 @@ jobs:
             exit 1
           fi
           case "$http_code" in
-            401|400|422|503)
-              echo "endpoint_reachability=PASS"
-              ;;
-            *)
-              echo "endpoint_reachability=BLOCKED"
-              exit 1
-              ;;
+            401|400|422|503) echo "endpoint_reachability=PASS" ;;
+            *) echo "endpoint_reachability=BLOCKED"; exit 1 ;;
           esac
 
       - name: Probe Railway runtime endpoints without credentials
