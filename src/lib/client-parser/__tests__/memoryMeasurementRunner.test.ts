@@ -85,7 +85,7 @@ class FakeWorker {
       this.emit({
         type: "MATERIALIZATION_COMPLETE",
         requestId,
-        materializedByteLength: descriptor.sizeBytes,
+        materializedByteLength: sizeBytes,
         materializationDurationMs: 4,
       });
       this.lifecycle.push("complete");
