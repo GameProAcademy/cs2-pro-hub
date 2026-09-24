@@ -131,11 +131,7 @@ export class ClientParserService {
           } catch {
             const cancelled = this.hashAbortController?.signal.aborted === true;
             finish();
-            reject(
-              new ClientParserError(
-                cancelled ? "CLIENT_CANCELLED" : "CLIENT_DEMO_INVALID",
-              ),
-            );
+            reject(new ClientParserError(cancelled ? "CLIENT_CANCELLED" : "CLIENT_DEMO_INVALID"));
           }
         } else if (event.type === "COMPLETE") {
           finish();
