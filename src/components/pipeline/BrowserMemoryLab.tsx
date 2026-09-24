@@ -291,13 +291,14 @@ export function BrowserMemoryLab() {
                 <TableHead>errorCode</TableHead>
                 <TableHead>workerLifecycleStage</TableHead>
                 <TableHead>workerRuntimeSignal</TableHead>
+                <TableHead>workerBootstrapProbe</TableHead>
                 <TableHead>timestamp</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {results.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={20} className="h-16 text-center text-muted-foreground">
+                  <TableCell colSpan={21} className="h-16 text-center text-muted-foreground">
                     NOT_RUN
                   </TableCell>
                 </TableRow>
@@ -328,6 +329,9 @@ export function BrowserMemoryLab() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {result.workerRuntimeSignal ?? "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {result.workerBootstrapProbe}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{result.timestamp}</TableCell>
                   </TableRow>
