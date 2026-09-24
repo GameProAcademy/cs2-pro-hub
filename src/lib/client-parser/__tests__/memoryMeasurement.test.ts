@@ -63,15 +63,34 @@ describe("controlled browser memory measurement contracts", () => {
 
   it("validates worker events fail-closed", () => {
     expect(isMemoryWorkerEvent({ type: "MATERIALIZATION_STARTED", requestId: "r" })).toBe(true);
-    expect(isMemoryWorkerEvent({ type: "MATERIALIZATION_COMPLETE", requestId: "r", materializedByteLength: 1, materializationDurationMs: 1 })).toBe(true);
-    expect(isMemoryWorkerEvent({ type: "MATERIALIZATION_COMPLETE", requestId: "r", materializedByteLength: "1", materializationDurationMs: 1 })).toBe(false);
+    expect(
+      isMemoryWorkerEvent({
+        type: "MATERIALIZATION_COMPLETE",
+        requestId: "r",
+        materializedByteLength: 1,
+        materializationDurationMs: 1,
+      }),
+    ).toBe(true);
+    expect(
+      isMemoryWorkerEvent({
+        type: "MATERIALIZATION_COMPLETE",
+        requestId: "r",
+        materializedByteLength: "1",
+        materializationDurationMs: 1,
+      }),
+    ).toBe(false);
     expect(isMemoryWorkerEvent({ type: "ERROR", requestId: "r", code: "RAW_BYTES" })).toBe(false);
   });
 
   it("keeps report schema metadata-only", () => {
     const report = createBrowserMemoryDiagnosticReport([]);
     expect(report.measurementStatus).toBe("NOT_RUN");
-    expect(report.classification).toEqual(["EXPERIMENTAL", "DIAGNOSTIC_ONLY", "NON_PRODUCTION", "NO_REAL_DEM"]);
+    expect(report.classification).toEqual([
+      "EXPERIMENTAL",
+      "DIAGNOSTIC_ONLY",
+      "NON_PRODUCTION",
+      "NO_REAL_DEM",
+    ]);
     expect(containsBinaryValue(report)).toBe(false);
   });
 });

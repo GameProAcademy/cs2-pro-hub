@@ -15,7 +15,10 @@ type MemoryPerformance = Performance & {
   measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
 };
 
-type WorkerLike = Pick<Worker, "postMessage" | "terminate" | "addEventListener" | "removeEventListener">;
+type WorkerLike = Pick<
+  Worker,
+  "postMessage" | "terminate" | "addEventListener" | "removeEventListener"
+>;
 
 export interface MemoryMeasurementRunOptions {
   repetition?: number;
@@ -96,11 +99,16 @@ export async function runSyntheticMemoryMeasurement(
     crossOriginIsolated: capabilities.crossOriginIsolated,
     secureContext: capabilities.secureContext,
     apiAvailable: capabilities.apiAvailable,
-    runtime: { userAgent: dependencies?.runtime?.() ?? globalThis.navigator?.userAgent ?? "unknown" },
+    runtime: {
+      userAgent: dependencies?.runtime?.() ?? globalThis.navigator?.userAgent ?? "unknown",
+    },
   };
-  if (availability !== "AVAILABLE") return unavailableResult(common, availabilityToError(availability));
+  if (availability !== "AVAILABLE")
+    return unavailableResult(common, availabilityToError(availability));
 
-  const wait = dependencies?.wait ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const wait =
+    dependencies?.wait ??
+    ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const now = dependencies?.now ?? (() => performance.now());
   const workerFactory =
     dependencies?.workerFactory ??
@@ -110,11 +118,15 @@ export async function runSyntheticMemoryMeasurement(
         name: "gamepro-browser-memory-lab",
       }));
   const requestId = dependencies?.randomUUID?.() ?? crypto.randomUUID();
-  const timeoutMs = Math.min(MEMORY_MEASUREMENT_TIMEOUT_MS, Math.max(1, options.timeoutMs ?? MEMORY_MEASUREMENT_TIMEOUT_MS));
+  const timeoutMs = Math.min(
+    MEMORY_MEASUREMENT_TIMEOUT_MS,
+    Math.max(1, options.timeoutMs ?? MEMORY_MEASUREMENT_TIMEOUT_MS),
+  );
   let measurementCount = 0;
   const sample = async () => {
     const measured = await measureMemory();
-    if (!Number.isFinite(measured.bytes) || measured.bytes < 0) throw new MemoryLabError("MEASUREMENT_FAILED");
+    if (!Number.isFinite(measured.bytes) || measured.bytes < 0)
+      throw new MemoryLabError("MEASUREMENT_FAILED");
     measurementCount += 1;
     return measured.bytes;
   };
@@ -138,56 +150,65 @@ export async function runSyntheticMemoryMeasurement(
     postFixtureBytes = await sample();
     preMaterializationBytes = await sample();
     worker = workerFactory();
-    const materialized = await new Promise<Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>>(
-      (resolve, reject) => {
-        let settled = false;
-        const finish = (
-          error?: MemoryLabError,
-          event?: Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>,
-        ) => {
-          if (settled) return;
-          settled = true;
-          if (timeout) clearTimeout(timeout);
-          if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
-          worker?.removeEventListener("message", onMessage);
-          worker?.removeEventListener("error", onError);
-          if (error) reject(error);
-          else if (event) resolve(event);
-          else reject(new MemoryLabError("UNKNOWN_ERROR"));
-        };
-        const onError = () => finish(new MemoryLabError("MATERIALIZATION_FAILED"));
-        const onMessage = (message: MessageEvent<unknown>) => {
-          if (!isMemoryWorkerEvent(message.data) || message.data.requestId !== requestId) return;
-          if (message.data.type === "MATERIALIZATION_STARTED") {
-            void sample()
-              .then((bytes) => {
-                observedMaterializationBytes = bytes;
-              })
-              .catch(() => finish(new MemoryLabError("MEASUREMENT_FAILED")));
-          } else if (message.data.type === "MATERIALIZATION_COMPLETE") finish(undefined, message.data);
-          else finish(new MemoryLabError("MATERIALIZATION_FAILED"));
-        };
-        abortHandler = () => finish(new MemoryLabError("CANCELLED"));
-        worker?.addEventListener("message", onMessage);
-        worker?.addEventListener("error", onError);
-        options.signal?.addEventListener("abort", abortHandler, { once: true });
-        timeout = setTimeout(() => finish(new MemoryLabError("MATERIALIZATION_TIMEOUT")), timeoutMs);
-        if (options.signal?.aborted) {
-          abortHandler();
-          return;
-        }
-        worker?.postMessage({ type: "MEMORY_MEASUREMENT", requestId, fixture, descriptor: validated });
-      },
-    );
+    const materialized = await new Promise<
+      Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>
+    >((resolve, reject) => {
+      let settled = false;
+      const finish = (
+        error?: MemoryLabError,
+        event?: Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>,
+      ) => {
+        if (settled) return;
+        settled = true;
+        if (timeout) clearTimeout(timeout);
+        if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
+        worker?.removeEventListener("message", onMessage);
+        worker?.removeEventListener("error", onError);
+        if (error) reject(error);
+        else if (event) resolve(event);
+        else reject(new MemoryLabError("UNKNOWN_ERROR"));
+      };
+      const onError = () => finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+      const onMessage = (message: MessageEvent<unknown>) => {
+        if (!isMemoryWorkerEvent(message.data) || message.data.requestId !== requestId) return;
+        if (message.data.type === "MATERIALIZATION_STARTED") {
+          void sample()
+            .then((bytes) => {
+              observedMaterializationBytes = bytes;
+            })
+            .catch(() => finish(new MemoryLabError("MEASUREMENT_FAILED")));
+        } else if (message.data.type === "MATERIALIZATION_COMPLETE")
+          finish(undefined, message.data);
+        else finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+      };
+      abortHandler = () => finish(new MemoryLabError("CANCELLED"));
+      worker?.addEventListener("message", onMessage);
+      worker?.addEventListener("error", onError);
+      options.signal?.addEventListener("abort", abortHandler, { once: true });
+      timeout = setTimeout(() => finish(new MemoryLabError("MATERIALIZATION_TIMEOUT")), timeoutMs);
+      if (options.signal?.aborted) {
+        abortHandler();
+        return;
+      }
+      worker?.postMessage({
+        type: "MEMORY_MEASUREMENT",
+        requestId,
+        fixture,
+        descriptor: validated,
+      });
+    });
     postCompletionBytes = await sample();
     fixture = null;
     worker.terminate();
     worker = null;
     await wait(options.stabilizationMs ?? 250);
     postCleanupBytes = await sample();
-    const observed = [postFixtureBytes, preMaterializationBytes, observedMaterializationBytes, postCompletionBytes].filter(
-      (value): value is number => value !== null,
-    );
+    const observed = [
+      postFixtureBytes,
+      preMaterializationBytes,
+      observedMaterializationBytes,
+      postCompletionBytes,
+    ].filter((value): value is number => value !== null);
     const observedPeakBytes = observed.length > 0 ? Math.max(...observed) : null;
     const cleanupDeltaBytes = postCleanupBytes - baselineBytes;
     return {
@@ -234,7 +255,9 @@ export async function runSyntheticMemoryMeasurement(
   }
 }
 
-function availabilityToError(availability: Exclude<ReturnType<typeof getMemoryMeasurementAvailability>, "AVAILABLE">): MemoryMeasurementErrorCode {
+function availabilityToError(
+  availability: Exclude<ReturnType<typeof getMemoryMeasurementAvailability>, "AVAILABLE">,
+): MemoryMeasurementErrorCode {
   const errors = {
     FEATURE_DISABLED: "FEATURE_DISABLED",
     WORKER_UNAVAILABLE: "WORKER_UNAVAILABLE",

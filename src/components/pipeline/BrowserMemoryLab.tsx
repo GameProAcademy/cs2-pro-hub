@@ -98,7 +98,10 @@ export function BrowserMemoryLab() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Status label="API disponível" value={availability === "AVAILABLE" ? "SIM" : "NÃO"} />
-        <Status label="Contexto seguro" value={globalThis.isSecureContext === true ? "SIM" : "NÃO"} />
+        <Status
+          label="Contexto seguro"
+          value={globalThis.isSecureContext === true ? "SIM" : "NÃO"}
+        />
         <Status
           label="Cross-origin isolated"
           value={globalThis.crossOriginIsolated === true ? "SIM" : "NÃO"}
@@ -113,60 +116,147 @@ export function BrowserMemoryLab() {
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
         <label className="space-y-1 text-xs text-muted-foreground">
           Tamanho sintético
-          <Select value={String(selectedSize)} onValueChange={(value) => setSelectedSize(Number(value))} disabled={running}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={String(selectedSize)}
+            onValueChange={(value) => setSelectedSize(Number(value))}
+            disabled={running}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {MEMORY_LAB_FIXTURE_SIZES.map((size) => (
-                <SelectItem key={size} value={String(size)}>{mib(size)}</SelectItem>
+                <SelectItem key={size} value={String(size)}>
+                  {mib(size)}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </label>
         <label className="space-y-1 text-xs text-muted-foreground">
           Repetições
-          <Select value={String(runs)} onValueChange={(value) => setRuns(Number(value))} disabled={running}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={String(runs)}
+            onValueChange={(value) => setRuns(Number(value))}
+            disabled={running}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3].map((count) => <SelectItem key={count} value={String(count)}>{count}</SelectItem>)}
+              {[1, 2, 3].map((count) => (
+                <SelectItem key={count} value={String(count)}>
+                  {count}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </label>
         <Button onClick={() => void execute()} disabled={running || availability !== "AVAILABLE"}>
-          {running ? <Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" /> : <FlaskConical className="mr-2 size-4" />}
+          {running ? (
+            <Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <FlaskConical className="mr-2 size-4" />
+          )}
           Executar tamanho selecionado
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {MEMORY_LAB_FIXTURE_SIZES.map((size) => (
-          <Button key={size} variant="outline" size="sm" onClick={() => void execute(size)} disabled={running || availability !== "AVAILABLE"}>
+          <Button
+            key={size}
+            variant="outline"
+            size="sm"
+            onClick={() => void execute(size)}
+            disabled={running || availability !== "AVAILABLE"}
+          >
             Run {mib(size)}
           </Button>
         ))}
-        {running ? <Button variant="outline" size="sm" onClick={() => abortController.current?.abort()}><Square className="mr-2 size-3.5" />Cancelar</Button> : null}
+        {running ? (
+          <Button variant="outline" size="sm" onClick={() => abortController.current?.abort()}>
+            <Square className="mr-2 size-3.5" />
+            Cancelar
+          </Button>
+        ) : null}
       </div>
 
       <div className="border border-border">
         <Table>
-          <TableHeader><TableRow><TableHead>Size</TableHead><TableHead>Run</TableHead><TableHead>Baseline</TableHead><TableHead>Observed sample</TableHead><TableHead>Delta</TableHead><TableHead>Post cleanup</TableHead><TableHead>Duration</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Size</TableHead>
+              <TableHead>Run</TableHead>
+              <TableHead>Baseline</TableHead>
+              <TableHead>Observed sample</TableHead>
+              <TableHead>Delta</TableHead>
+              <TableHead>Post cleanup</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
-            {results.length === 0 ? <TableRow><TableCell colSpan={8} className="h-16 text-center text-muted-foreground">NOT_RUN</TableCell></TableRow> : results.map((result, index) => (
-              <TableRow key={`${result.timestamp}-${index}`}>
-                <TableCell>{mib(result.fixtureSizeBytes)}</TableCell><TableCell>{result.repetition}</TableCell><TableCell>{memory(result.baselineBytes)}</TableCell><TableCell>{memory(result.observedPeakBytes)}</TableCell><TableCell>{memory(result.peakDeltaBytes)}</TableCell><TableCell>{memory(result.postCleanupBytes)}</TableCell><TableCell>{result.materializationDurationMs === null ? "—" : `${result.materializationDurationMs.toFixed(1)} ms`}</TableCell><TableCell className="font-mono text-xs">{result.status}</TableCell>
+            {results.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-16 text-center text-muted-foreground">
+                  NOT_RUN
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              results.map((result, index) => (
+                <TableRow key={`${result.timestamp}-${index}`}>
+                  <TableCell>{mib(result.fixtureSizeBytes)}</TableCell>
+                  <TableCell>{result.repetition}</TableCell>
+                  <TableCell>{memory(result.baselineBytes)}</TableCell>
+                  <TableCell>{memory(result.observedPeakBytes)}</TableCell>
+                  <TableCell>{memory(result.peakDeltaBytes)}</TableCell>
+                  <TableCell>{memory(result.postCleanupBytes)}</TableCell>
+                  <TableCell>
+                    {result.materializationDurationMs === null
+                      ? "—"
+                      : `${result.materializationDurationMs.toFixed(1)} ms`}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{result.status}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => void copyReport()} disabled={results.length === 0 || running}><Clipboard className="mr-2 size-3.5" />{copied ? "Relatório copiado" : "Copiar relatório diagnóstico"}</Button>
-        <Button variant="outline" size="sm" onClick={() => { setResults([]); setCopied(false); }} disabled={results.length === 0 || running}><Trash2 className="mr-2 size-3.5" />Limpar resultados locais</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void copyReport()}
+          disabled={results.length === 0 || running}
+        >
+          <Clipboard className="mr-2 size-3.5" />
+          {copied ? "Relatório copiado" : "Copiar relatório diagnóstico"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setResults([]);
+            setCopied(false);
+          }}
+          disabled={results.length === 0 || running}
+        >
+          <Trash2 className="mr-2 size-3.5" />
+          Limpar resultados locais
+        </Button>
       </div>
     </section>
   );
 }
 
 function Status({ label, value }: { label: string; value: string }) {
-  return <div className="border border-border bg-card/40 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-mono text-sm text-foreground">{value}</p></div>;
+  return (
+    <div className="border border-border bg-card/40 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-sm text-foreground">{value}</p>
+    </div>
+  );
 }

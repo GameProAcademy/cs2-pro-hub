@@ -24,7 +24,9 @@ describe("memory lab architecture guards", () => {
   });
 
   it("does not persist, upload, analyze, or contact protected infrastructure", () => {
-    expect(all).not.toMatch(/localStorage|indexedDB|supabase|storage\.|analytics|fetch\(|Railway|attestation|Canonical|R5\.8/i);
+    expect(all).not.toMatch(
+      /localStorage|indexedDB|supabase|storage\.|analytics|fetch\(|Railway|attestation|Canonical|R5\.8/i,
+    );
   });
 
   it("keeps production parser closed and the ceiling sourced from the existing constant", () => {

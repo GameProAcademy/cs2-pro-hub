@@ -51,6 +51,10 @@ async function materialize(command: MemoryWorkerCommand) {
       materializationDurationMs,
     });
   } catch {
-    scope.postMessage({ type: "ERROR", requestId: command.requestId, code: "MATERIALIZATION_FAILED" });
+    scope.postMessage({
+      type: "ERROR",
+      requestId: command.requestId,
+      code: "MATERIALIZATION_FAILED",
+    });
   }
 }

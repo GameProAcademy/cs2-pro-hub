@@ -15,7 +15,9 @@ export function createBrowserMemoryDiagnosticReport(
     reportType: "CONTIGUOUS_INPUT_MATERIALIZATION_MEMORY",
     classification: ["EXPERIMENTAL", "DIAGNOSTIC_ONLY", "NON_PRODUCTION", "NO_REAL_DEM"],
     generatedAt: new Date().toISOString(),
-    measurementStatus: results.some((result) => result.status === "OBSERVED") ? "OBSERVED" : "NOT_RUN",
+    measurementStatus: results.some((result) => result.status === "OBSERVED")
+      ? "OBSERVED"
+      : "NOT_RUN",
     results: results.map((result) => ({ ...result })),
   };
 }

@@ -11,13 +11,15 @@ class FakeWorker {
   constructor(private readonly behavior: "complete" | "hang" = "complete") {}
 
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
-    if (type === "message") this.messageListeners.add(listener as (event: MessageEvent<unknown>) => void);
+    if (type === "message")
+      this.messageListeners.add(listener as (event: MessageEvent<unknown>) => void);
     if (type === "error") this.errorListeners.add(listener as (event: ErrorEvent) => void);
   }
 
   removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     this.removed += 1;
-    if (type === "message") this.messageListeners.delete(listener as (event: MessageEvent<unknown>) => void);
+    if (type === "message")
+      this.messageListeners.delete(listener as (event: MessageEvent<unknown>) => void);
     if (type === "error") this.errorListeners.delete(listener as (event: ErrorEvent) => void);
   }
 
