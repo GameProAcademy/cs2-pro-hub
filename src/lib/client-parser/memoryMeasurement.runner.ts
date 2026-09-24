@@ -140,6 +140,7 @@ export async function runSyntheticMemoryMeasurement(
   let workerLifecycleStage: MemoryWorkerLifecycleStage | null = null;
   let workerRuntimeSignal: "ERROR_EVENT" | "ONERROR" | "UNHANDLED_REJECTION" | null = null;
   let workerBootstrapProbe: "PASS" | "FAIL" | "NOT_RUN" = "NOT_RUN";
+  let moduleWorkerBootstrapProbe: "PASS" | "FAIL" | "NOT_RUN" = "NOT_RUN";
   let worker: WorkerLike | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let abortHandler: (() => void) | null = null;
@@ -151,6 +152,7 @@ export async function runSyntheticMemoryMeasurement(
     preMaterializationBytes = await sample();
 
     workerBootstrapProbe = await runWorkerBootstrapProbe();
+    moduleWorkerBootstrapProbe = await runModuleWorkerBootstrapProbe();
     worker = workerFactory();
     workerLifecycleStage = "CREATED";
 
@@ -240,6 +242,7 @@ export async function runSyntheticMemoryMeasurement(
       worker?.addEventListener("message", onMessage);
       worker?.addEventListener("error", onError);
       worker?.addEventListener("messageerror", onMessageError);
+      worker?.postMessage({ type: "MEMORY_WORKER_INIT", requestId });
       options.signal?.addEventListener("abort", abortHandler, { once: true });
       timeout = setTimeout(() => finish(new MemoryLabError("MATERIALIZATION_TIMEOUT")), timeoutMs);
 
@@ -285,6 +288,7 @@ export async function runSyntheticMemoryMeasurement(
       workerLifecycleStage,
       workerRuntimeSignal,
       workerBootstrapProbe,
+      moduleWorkerBootstrapProbe,
     };
   } catch (reason) {
     const error = reason instanceof MemoryLabError ? reason : new MemoryLabError("UNKNOWN_ERROR");
@@ -301,12 +305,45 @@ export async function runSyntheticMemoryMeasurement(
       workerLifecycleStage,
       workerRuntimeSignal,
       workerBootstrapProbe,
+      moduleWorkerBootstrapProbe,
     };
   } finally {
     if (timeout) clearTimeout(timeout);
     if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
     worker?.terminate();
     worker = null;
+  }
+}
+
+async function runModuleWorkerBootstrapProbe(): Promise<"PASS" | "FAIL"> {
+  if (typeof Worker === "undefined") return "FAIL";
+  let worker: Worker | null = null;
+  try {
+    worker = new Worker(
+      new URL("./memoryMeasurement.module-bootstrap.worker.ts", import.meta.url),
+      { type: "module", name: "gamepro-memory-module-bootstrap-probe" },
+    );
+    return await new Promise<"PASS" | "FAIL">((resolve) => {
+      let settled = false;
+      const finish = (status: "PASS" | "FAIL") => {
+        if (settled) return;
+        settled = true;
+        worker?.removeEventListener("message", onMessage);
+        worker?.removeEventListener("error", onError);
+        resolve(status);
+      };
+      const onMessage = (event: MessageEvent<unknown>) => {
+        finish(event.data === "GAMEPRO_MEMORY_MODULE_BOOTSTRAP_READY" ? "PASS" : "FAIL");
+      };
+      const onError = () => finish("FAIL");
+      worker?.addEventListener("message", onMessage);
+      worker?.addEventListener("error", onError);
+      setTimeout(() => finish("FAIL"), 2_000);
+    });
+  } catch {
+    return "FAIL";
+  } finally {
+    worker?.terminate();
   }
 }
 
