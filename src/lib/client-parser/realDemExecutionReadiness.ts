@@ -12,6 +12,7 @@ export const REAL_DEM_EXECUTION_BLOCKERS = [
   "PARSER_BUILD_NOT_VERIFIED",
   "CONTRACT_NOT_VERIFIED",
   "RUNTIME_ARTIFACT_NOT_VERIFIED",
+  "RUNTIME_PREFLIGHT_NOT_VERIFIED",
   "INPUT_STRATEGY_NOT_VERIFIED",
   "SURFACE_CAPACITY_NOT_VERIFIED",
   "REAL_MEMORY_NOT_OBSERVED",
@@ -105,7 +106,7 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.surfaceCapacityVerified) blockers.push("SURFACE_CAPACITY_NOT_VERIFIED");
   if (input.executionSurface === "BROWSER" && input.sizeBytes > 128 * 1024 * 1024)
     blockers.push("SURFACE_CAPACITY_NOT_VERIFIED");
-  if (!input.runtimePreflightVerified) blockers.push("RUNTIME_ARTIFACT_NOT_VERIFIED");
+  if (!input.runtimePreflightVerified) blockers.push("RUNTIME_PREFLIGHT_NOT_VERIFIED");
   if (!input.parserOverheadMeasured) postExecutionEvidenceBlockers.push("PARSER_OVERHEAD_NOT_MEASURED");
   if (!input.parityVerified) postExecutionEvidenceBlockers.push("PARITY_NOT_VERIFIED");
   if (!input.determinismVerified) postExecutionEvidenceBlockers.push("DETERMINISM_NOT_VERIFIED");
