@@ -321,9 +321,12 @@ async function releaseMaterialization(
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     let settled = false;
-    const releaseTimeout = setTimeout(() => {
-      finish(new MemoryLabError("MATERIALIZATION_TIMEOUT"));
-    }, Math.min(timeoutMs, 5_000));
+    const releaseTimeout = setTimeout(
+      () => {
+        finish(new MemoryLabError("MATERIALIZATION_TIMEOUT"));
+      },
+      Math.min(timeoutMs, 5_000),
+    );
 
     const finish = (error?: MemoryLabError) => {
       if (settled) return;
@@ -356,7 +359,6 @@ async function releaseMaterialization(
     });
   });
 }
-
 
 async function runModuleWorkerBootstrapProbe(): Promise<"PASS" | "FAIL"> {
   if (typeof Worker === "undefined") return "FAIL";
