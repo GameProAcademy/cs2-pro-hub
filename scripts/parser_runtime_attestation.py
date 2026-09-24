@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "infra/cs2-parser-worker-v8"
 COMMIT = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
-DEPLOYMENT = "6330c8c4-a410-45db-a364-4eb47702c2fc"
+DEPLOYMENT = "7a540da0-3a69-44c0-9c42-40209f903fa7"
+DEPLOYMENT_SOURCE_COMMIT = "ff0cc222f514c01eda6e26d7bb95271a8b0c9b04"
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
 ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
@@ -107,7 +108,7 @@ def railway_deployment_evidence(token: str) -> dict[str, Any]:
     expected = {
         "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
         "environment_id": ENVIRONMENT, "deployment_status": "SUCCESS",
-        "source_repository": REPOSITORY, "source_branch": BRANCH, "source_commit": COMMIT,
+        "source_repository": REPOSITORY, "source_branch": BRANCH, "source_commit": DEPLOYMENT_SOURCE_COMMIT,
     }
     if observed != expected:
         raise ValueError("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
@@ -307,6 +308,8 @@ def main() -> int:
                   "attestation_digest": None}
     output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["status"])
+    if result.get("blockers"):
+        print("BLOCKERS=" + "|".join(result["blockers"]))
     return 0 if result["status"] == "VERIFIED" else 1
 
 
