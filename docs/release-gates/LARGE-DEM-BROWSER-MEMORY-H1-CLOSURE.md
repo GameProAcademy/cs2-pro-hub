@@ -17,7 +17,7 @@ STATUS: IMPLEMENTATION HARDENED / RUNTIME MEASUREMENT PENDING
 
 ## Pending closure criteria
 
-- [ ] Complete all CI gates for H.1-R.
+- [x] Complete all CI gates for H.1-R: 1,181 web tests, 189 parser tests, 66 contract-sensitive parser tests, TypeScript, lint, and build passed.
 - [ ] Execute H.1-M manually in a compatible foreground browser.
 - [ ] Record only the metadata defined by the manual protocol.
 
