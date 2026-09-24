@@ -3,6 +3,7 @@ import type {
   ClientParserEnvelope,
   ClientParserErrorCode,
 } from "./clientParser.types";
+import type { DemoParserCapability } from "./clientParser.input";
 
 export const CLIENT_PARSER_STAGES = [
   "INIT",
@@ -34,7 +35,8 @@ export type ClientParserCommand =
   | {
       type: "PARSE";
       requestId: string;
-      file: { bytes: ArrayBuffer; name: string; size: number; lastModified: number };
+      file: File;
+      capability: DemoParserCapability;
       authorization: ClientDemoAuthorization;
     }
   | { type: "CANCEL"; requestId: string };
@@ -55,8 +57,20 @@ export type ClientParserWorkerEvent =
 export function isClientParserWorkerEvent(value: unknown): value is ClientParserWorkerEvent {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const event = value as Record<string, unknown>;
-  return (
-    typeof event["requestId"] === "string" &&
-    ["PROGRESS", "READY", "COMPLETE", "ERROR", "CANCELLED"].includes(String(event["type"]))
-  );
+  if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string") return false;
+  if (event["type"] === "PROGRESS")
+    return (
+      typeof event["stage"] === "string" &&
+      CLIENT_PARSER_STAGES.includes(event["stage"] as ClientParserStage) &&
+      typeof event["progress"] === "number" &&
+      Number.isFinite(event["progress"]) &&
+      typeof event["elapsedMs"] === "number" &&
+      Number.isFinite(event["elapsedMs"])
+    );
+  if (event["type"] === "READY")
+    return typeof event["wasmLoadMs"] === "number" && Number.isFinite(event["wasmLoadMs"]);
+  if (event["type"] === "COMPLETE")
+    return Boolean(event["envelope"] && typeof event["envelope"] === "object");
+  if (event["type"] === "ERROR") return typeof event["code"] === "string";
+  return event["type"] === "CANCELLED";
 }
