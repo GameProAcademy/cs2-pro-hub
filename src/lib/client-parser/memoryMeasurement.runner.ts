@@ -434,5 +434,6 @@ function unavailableResult(
     workerLifecycleStage: null,
     workerRuntimeSignal: null,
     workerBootstrapProbe: "NOT_RUN",
+    moduleWorkerBootstrapProbe: "NOT_RUN",
   };
 }
