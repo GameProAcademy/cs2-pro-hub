@@ -43,7 +43,7 @@ class FakeWorker {
     const fixture = (command as { fixture: File }).fixture;
     queueMicrotask(() => {
       if (this.behavior === "worker-error") {
-        for (const listener of this.errorListeners) listener(new ErrorEvent("error"));
+        for (const listener of this.errorListeners) listener({ type: "error" } as ErrorEvent);
         return;
       }
       if (this.behavior === "malformed") {
@@ -139,7 +139,7 @@ describe("synthetic memory measurement lifecycle", () => {
     expect(result.postCleanupBytes).toBe(110);
     expect(result.observedPeakBytes).toBe(220);
     expect(result.peakDeltaBytes).toBe(120);
-    expect(result.cleanupDeltaBytes).toBe(10);
+    expect(result.observedCleanupDeltaBytes).toBe(10);
     expect(result.cleanupStatus).toBe("CLEANUP_OBSERVED");
     expect(result.measurementCount).toBe(5);
     expect(result.materializedByteLength).toBe(16 * 1024 * 1024);
@@ -178,7 +178,7 @@ describe("synthetic memory measurement lifecycle", () => {
       descriptor,
       optionsFor(worker, async () => ({ bytes: samples.shift() ?? 0 })),
     );
-    expect(result.cleanupDeltaBytes).toBe(expectedDelta);
+    expect(result.observedCleanupDeltaBytes).toBe(expectedDelta);
     expect(result.cleanupStatus).toBe("CLEANUP_OBSERVED");
   });
 
@@ -195,7 +195,7 @@ describe("synthetic memory measurement lifecycle", () => {
     );
     expect(result.status).toBe("OBSERVED");
     expect(result.postCleanupBytes).toBeNull();
-    expect(result.cleanupDeltaBytes).toBeNull();
+    expect(result.observedCleanupDeltaBytes).toBeNull();
     expect(result.cleanupStatus).toBe("CLEANUP_MEASUREMENT_UNAVAILABLE");
   });
 

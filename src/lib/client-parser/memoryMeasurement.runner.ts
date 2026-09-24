@@ -211,7 +211,7 @@ export async function runSyntheticMemoryMeasurement(
       (value): value is number => value !== null,
     );
     const observedPeakBytes = observed.length > 0 ? Math.max(...observed) : null;
-    const cleanupDeltaBytes =
+    const observedCleanupDeltaBytes =
       postCleanupBytes === null || baselineBytes === null ? null : postCleanupBytes - baselineBytes;
     return {
       ...common,
@@ -223,7 +223,7 @@ export async function runSyntheticMemoryMeasurement(
       postCleanupBytes,
       observedPeakBytes,
       peakDeltaBytes: observedPeakBytes === null ? null : observedPeakBytes - baselineBytes,
-      cleanupDeltaBytes,
+      observedCleanupDeltaBytes,
       materializationDurationMs: materialized.materializationDurationMs,
       workerDurationMs: now() - startedAt,
       materializedByteLength: materialized.materializedByteLength,
@@ -293,7 +293,7 @@ function unavailableResult(
     postCleanupBytes: null,
     observedPeakBytes: null,
     peakDeltaBytes: null,
-    cleanupDeltaBytes: null,
+    observedCleanupDeltaBytes: null,
     materializationDurationMs: null,
     workerDurationMs: null,
     materializedByteLength: null,

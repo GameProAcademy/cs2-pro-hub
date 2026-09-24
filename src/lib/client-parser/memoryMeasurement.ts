@@ -58,7 +58,7 @@ export interface MemoryMeasurementResult {
   postCleanupBytes: number | null;
   observedPeakBytes: number | null;
   peakDeltaBytes: number | null;
-  cleanupDeltaBytes: number | null;
+  observedCleanupDeltaBytes: number | null;
   materializationDurationMs: number | null;
   workerDurationMs: number | null;
   materializedByteLength: number | null;
