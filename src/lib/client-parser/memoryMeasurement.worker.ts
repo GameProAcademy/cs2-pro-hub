@@ -7,6 +7,8 @@ import {
   type MemoryWorkerEvent,
 } from "./memoryMeasurement";
 
+let retainedBuffer: ArrayBuffer | null = null;
+
 const scope = self as unknown as {
   onmessage: ((event: MessageEvent<unknown>) => void) | null;
   onerror: ((event: ErrorEvent) => void) | null;
@@ -37,6 +39,10 @@ scope.onmessage = (event) => {
     scope.postMessage({ type: "WORKER_READY" });
     return;
   }
+  if (isReleaseCommand(command)) {
+    releaseMaterialization(command.requestId);
+    return;
+  }
   if (!isCommand(command)) {
     const requestId =
       command && typeof command === "object" && !Array.isArray(command)
@@ -58,6 +64,17 @@ function isInitCommand(value: unknown): value is Extract<MemoryWorkerCommand, { 
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   return command["type"] === "MEMORY_WORKER_INIT" && typeof command["requestId"] === "string";
+}
+
+function isReleaseCommand(
+  value: unknown,
+): value is Extract<MemoryWorkerCommand, { type: "MEMORY_MATERIALIZATION_RELEASE" }> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const command = value as Record<string, unknown>;
+  return (
+    command["type"] === "MEMORY_MATERIALIZATION_RELEASE" &&
+    typeof command["requestId"] === "string"
+  );
 }
 
 function isCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type: "MEMORY_MEASUREMENT" }> {
@@ -100,6 +117,7 @@ async function materialize(command: Extract<MemoryWorkerCommand, { type: "MEMORY
       });
       return;
     }
+    retainedBuffer = buffer;
     postStage(command.requestId, "MATERIALIZATION_COMPLETE");
     const materializationDurationMs = performance.now() - startedAt;
     scope.postMessage({
@@ -122,4 +140,10 @@ function postStage(
   stage: Extract<MemoryWorkerEvent, { type: "WORKER_STAGE" }>["stage"],
 ) {
   scope.postMessage({ type: "WORKER_STAGE", requestId, stage });
+}
+
+
+function releaseMaterialization(requestId: string) {
+  retainedBuffer = null;
+  postStage(requestId, "MATERIALIZATION_RELEASED");
 }
