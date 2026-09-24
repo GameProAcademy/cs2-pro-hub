@@ -90,6 +90,7 @@ export interface MemoryMeasurementResult {
   workerLifecycleStage: MemoryWorkerLifecycleStage | null;
   workerRuntimeSignal: MemoryWorkerRuntimeSignal | null;
   workerBootstrapProbe: MemoryWorkerBootstrapProbeStatus;
+  moduleWorkerBootstrapProbe: MemoryWorkerBootstrapProbeStatus;
 }
 
 export type MemoryWorkerCommand =
