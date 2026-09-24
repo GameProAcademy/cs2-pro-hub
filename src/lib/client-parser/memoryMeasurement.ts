@@ -33,7 +33,7 @@ export type MemoryMeasurementErrorCode =
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
 export type CleanupStatus =
-  | "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN"
+  "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN"
   | "FAILED";
 
 export interface SyntheticFixtureDescriptor {
