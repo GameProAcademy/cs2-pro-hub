@@ -46,6 +46,7 @@ export type MemoryWorkerLifecycleStage =
   | "ARRAYBUFFER_STARTED"
   | "ARRAYBUFFER_COMPLETE"
   | "MATERIALIZATION_COMPLETE"
+  | "MATERIALIZATION_RELEASED"
   | "WORKER_ERROR"
   | "MESSAGE_ERROR"
   | "UNKNOWN";
@@ -99,7 +100,8 @@ export type MemoryWorkerCommand =
       type: "MEMORY_MEASUREMENT";
       requestId: string;
       descriptor: SyntheticFixtureDescriptor;
-    };
+    }
+  | { type: "MEMORY_MATERIALIZATION_RELEASE"; requestId: string };
 export type MemoryWorkerEvent =
   | { type: "WORKER_READY" }
   | { type: "MATERIALIZATION_STARTED"; requestId: string }
