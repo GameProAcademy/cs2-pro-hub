@@ -1,6 +1,6 @@
 # Large DEM Browser Memory H.1 Closure
 
-STATUS: H.1-R PASS / H.1-M0 READY / H.1-M NOT RUN
+STATUS: H.1-R PASS / H.1-M0 READY / H.1-M SMOKE FAILED → CORRECTION APPLIED / RERUN PENDING
 
 ## H.1-R implementation criteria
 
@@ -23,7 +23,9 @@ STATUS: H.1-R PASS / H.1-M0 READY / H.1-M NOT RUN
 ## Pending closure criteria
 
 - [x] Complete all CI gates for H.1-R: 1,184 web tests, 189 parser tests, 66 contract-sensitive parser tests, TypeScript, lint, and build passed.
-- [ ] Execute H.1-M manually in a compatible foreground browser.
-- [ ] Record only the metadata defined by the manual protocol.
+- [x] Execute initial H.1-M smoke test (16 MiB × 1) in a compatible foreground browser; the run failed closed with `MATERIALIZATION_FAILED` before materialization completion.
+- [x] Isolate the failure to the synthetic Worker boundary: the first implementation structured-cloned the synthetic `File` into the Worker; the corrected implementation sends only the validated descriptor and creates/materializes the synthetic fixture inside the Worker.
+- [ ] Rerun the 16 MiB × 1 smoke test against the corrected Preview build and record only the metadata defined by the manual protocol.
+- [ ] After a successful smoke test, execute the complete 15-run H.1-M matrix.
 
-Passing implementation tests does not make H.1 runtime validated. H.1-M remains pending and H.2 remains blocked.
+Passing implementation tests does not make H.1 runtime validated. The first smoke run is retained as a failed diagnostic observation; it does not count as an accepted H.1-M observation. H.1-M remains pending and H.2 remains blocked.
