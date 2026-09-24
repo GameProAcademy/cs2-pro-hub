@@ -14,7 +14,7 @@ jobs:
     if: >-
       github.repository == 'GameProAcademy/cs2-pro-hub' &&
       github.ref == 'refs/heads/main' &&
-      github.event.before == '11becc9c96089283c3b00f27539619a9f6f10726'
+      github.event.before == '6462c7517e90b812772b63eb63c21312963b57be'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
