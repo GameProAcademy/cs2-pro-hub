@@ -143,13 +143,18 @@ export function preflightLargeDem(
     crossOriginIsolated: boolean;
   },
 ): LargeDemCapabilityHint {
-  const state: LargeDemFeasibilityState = !LARGE_DEM_EXPERIMENTAL_ENABLED
-    ? "NOT_RUN"
-    : !capabilities.workerAvailable || !capabilities.wasmAvailable
+  // Size is a deterministic capability boundary, not an execution result.
+  // Report it even while the experimental parser gate is OFF so the UI/docs
+  // do not conflate "not executed" with "unsupported by the current input path".
+  const state: LargeDemFeasibilityState =
+    !capabilities.workerAvailable || !capabilities.wasmAvailable
       ? "UNAVAILABLE"
       : metadata.sizeBytes > CLIENT_DEMO_MAX_BYTES
         ? "BLOCKED_BY_SIZE"
-        : "NOT_RUN";
+        : !LARGE_DEM_EXPERIMENTAL_ENABLED
+          ? "NOT_RUN"
+          : "NOT_RUN";
+
   return {
     state,
     experimentalEnabled: LARGE_DEM_EXPERIMENTAL_ENABLED,
