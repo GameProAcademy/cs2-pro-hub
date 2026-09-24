@@ -63,7 +63,8 @@ export function evaluateRealDemBrowserAdmission(
   } else if (input.sizeBytes > 128 * 1024 * 1024) {
     blockers.push("ABOVE_CONTIGUOUS_INPUT_LIMIT");
   }
-  if (input.parserCapability.requiresContiguousBuffer) blockers.push("PARSER_REQUIRES_CONTIGUOUS_BUFFER");
+  if (input.parserCapability.requiresContiguousBuffer)
+    blockers.push("PARSER_REQUIRES_CONTIGUOUS_BUFFER");
   if (input.syntheticMemoryEvidenceAccepted) blockers.push("SYNTHETIC_MEMORY_EVIDENCE_ONLY");
   if (!input.parserOverheadMeasured) blockers.push("PARSER_OVERHEAD_UNMEASURED");
   if (!input.parityVerified) blockers.push("PARITY_NOT_VERIFIED");
