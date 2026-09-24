@@ -7,6 +7,7 @@ import {
   type MemoryMeasurementErrorCode,
   type MemoryMeasurementResult,
   type MemoryWorkerEvent,
+  type MemoryWorkerLifecycleStage,
   type SyntheticFixtureDescriptor,
 } from "./memoryMeasurement";
 
@@ -136,6 +137,7 @@ export async function runSyntheticMemoryMeasurement(
   let preMaterializationBytes: number | null = null;
   let postMaterializationBytes: number | null = null;
   let postCleanupBytes: number | null = null;
+  let workerLifecycleStage: MemoryWorkerLifecycleStage | null = null;
   let worker: WorkerLike | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let abortHandler: (() => void) | null = null;
@@ -145,11 +147,15 @@ export async function runSyntheticMemoryMeasurement(
     baselineBytes = await sample();
     postFixtureBytes = await sample();
     preMaterializationBytes = await sample();
+
     worker = workerFactory();
+    workerLifecycleStage = "CREATED";
+
     const materialized = await new Promise<
       Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>
     >((resolve, reject) => {
       let settled = false;
+      let commandPosted = false;
       const finish = (
         error?: MemoryLabError,
         event?: Extract<MemoryWorkerEvent, { type: "MATERIALIZATION_COMPLETE" }>,
@@ -160,38 +166,78 @@ export async function runSyntheticMemoryMeasurement(
         if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
         worker?.removeEventListener("message", onMessage);
         worker?.removeEventListener("error", onError);
+        worker?.removeEventListener("messageerror", onMessageError);
         if (error) reject(error);
         else if (event) resolve(event);
         else reject(new MemoryLabError("UNKNOWN_ERROR"));
       };
-      const onError = () => finish(new MemoryLabError("MATERIALIZATION_WORKER_ERROR"));
+
+      const onError = () => {
+        workerLifecycleStage = "WORKER_ERROR";
+        finish(new MemoryLabError("MATERIALIZATION_WORKER_ERROR"));
+      };
+
+      const onMessageError = () => {
+        workerLifecycleStage = "MESSAGE_ERROR";
+        finish(new MemoryLabError("MATERIALIZATION_MESSAGE_ERROR"));
+      };
+
       const onMessage = (message: MessageEvent<unknown>) => {
         if (!isMemoryWorkerEvent(message.data)) {
           finish(new MemoryLabError("MATERIALIZATION_FAILED"));
           return;
         }
+
+        if (message.data.type === "WORKER_READY") {
+          workerLifecycleStage = "READY";
+          if (commandPosted) return;
+          commandPosted = true;
+          worker?.postMessage({
+            type: "MEMORY_MEASUREMENT",
+            requestId,
+            descriptor: validated,
+          });
+          return;
+        }
+
         if (message.data.requestId !== requestId) {
           finish(new MemoryLabError("MATERIALIZATION_FAILED"));
           return;
         }
-        if (message.data.type === "MATERIALIZATION_COMPLETE") finish(undefined, message.data);
-        else if (message.data.type === "ERROR") finish(new MemoryLabError(message.data.code));
+
+        if (message.data.type === "WORKER_STAGE") {
+          workerLifecycleStage = message.data.stage;
+          return;
+        }
+
+        if (message.data.type === "MATERIALIZATION_STARTED") {
+          workerLifecycleStage = "MATERIALIZATION_STARTED";
+          return;
+        }
+
+        if (message.data.type === "MATERIALIZATION_COMPLETE") {
+          workerLifecycleStage = "MATERIALIZATION_COMPLETE";
+          finish(undefined, message.data);
+          return;
+        }
+
+        if (message.data.type === "ERROR") {
+          finish(new MemoryLabError(message.data.code));
+        }
       };
+
       abortHandler = () => finish(new MemoryLabError("CANCELLED"));
       worker?.addEventListener("message", onMessage);
       worker?.addEventListener("error", onError);
+      worker?.addEventListener("messageerror", onMessageError);
       options.signal?.addEventListener("abort", abortHandler, { once: true });
       timeout = setTimeout(() => finish(new MemoryLabError("MATERIALIZATION_TIMEOUT")), timeoutMs);
+
       if (options.signal?.aborted) {
         abortHandler();
-        return;
       }
-      worker?.postMessage({
-        type: "MEMORY_MEASUREMENT",
-        requestId,
-        descriptor: validated,
-      });
     });
+
     postMaterializationBytes = await sample();
     worker.terminate();
     worker = null;
@@ -226,6 +272,7 @@ export async function runSyntheticMemoryMeasurement(
         postCleanupBytes === null ? "CLEANUP_MEASUREMENT_UNAVAILABLE" : "CLEANUP_OBSERVED",
       errorCode: null,
       errorMessageSanitized: null,
+      workerLifecycleStage,
     };
   } catch (reason) {
     const error = reason instanceof MemoryLabError ? reason : new MemoryLabError("UNKNOWN_ERROR");
@@ -239,6 +286,7 @@ export async function runSyntheticMemoryMeasurement(
       measurementCount,
       workerDurationMs: now() - startedAt,
       cleanupStatus: "FAILED",
+      workerLifecycleStage,
     };
   } finally {
     if (timeout) clearTimeout(timeout);
@@ -294,5 +342,6 @@ function unavailableResult(
     cleanupStatus: "CLEANUP_NOT_RUN",
     errorCode: code,
     errorMessageSanitized: code,
+    workerLifecycleStage: null,
   };
 }
