@@ -26,8 +26,7 @@ export const APP_TAGLINE = "Análise de performance e treinamento para Counter-S
  */
 const isDedicatedLovablePreview = () =>
   typeof window !== "undefined" &&
-  window.location.hostname ===
-    "id-preview--91478977-16c3-4839-ae28-6796024bcfc9.lovable.app";
+  window.location.hostname === "id-preview--91478977-16c3-4839-ae28-6796024bcfc9.lovable.app";
 
 /** Feature flags for capabilities intentionally NOT implemented in this stage. */
 export const FEATURES = {
