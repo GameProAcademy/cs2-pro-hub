@@ -21,6 +21,7 @@ const cacheBase = {
   runtimeArtifactVerified: true,
   inputStrategyVerified: true,
   surfaceCapacityVerified: true,
+  runtimePreflightVerified: true,
   realMemoryObserved: true,
   parserOverheadMeasured: true,
   parityVerified: true,
@@ -45,6 +46,7 @@ describe("H.3 controlled real DEM execution readiness", () => {
     const result = evaluateRealDemExecutionReadiness({
       ...cacheBase,
       runtimeArtifactVerified: false,
+      runtimePreflightVerified: false,
       realMemoryObserved: false,
       parityVerified: false,
       determinismVerified: false,
@@ -60,11 +62,16 @@ describe("H.3 controlled real DEM execution readiness", () => {
     expect(result.blockers).toEqual(
       expect.arrayContaining([
         "RUNTIME_ARTIFACT_NOT_VERIFIED",
+        "RUNTIME_PREFLIGHT_NOT_VERIFIED",
+        "ATTESTATION_NOT_FRESH",
+        "EXECUTION_AUTHORIZATION_NOT_GRANTED",
+      ]),
+    );
+    expect(result.postExecutionEvidenceBlockers).toEqual(
+      expect.arrayContaining([
         "REAL_MEMORY_NOT_OBSERVED",
         "PARITY_NOT_VERIFIED",
         "DETERMINISM_NOT_VERIFIED",
-        "ATTESTATION_NOT_FRESH",
-        "EXECUTION_AUTHORIZATION_NOT_GRANTED",
       ]),
     );
   });
@@ -102,6 +109,32 @@ describe("H.3 controlled real DEM execution readiness", () => {
     expect(result.canCanonicalize).toBe(false);
     expect(result.operation).toBe("CONTROLLED_EXECUTION_ONLY");
     expect(result.blockers).toEqual([]);
+    expect(result.postExecutionEvidenceBlockers).toEqual([]);
+  });
+
+  it("can authorize the first controlled run before post-run semantic evidence exists", () => {
+    const result = evaluateRealDemExecutionReadiness({
+      ...cacheBase,
+      realMemoryObserved: false,
+      parserOverheadMeasured: false,
+      parityVerified: false,
+      determinismVerified: false,
+      tickAuthorityVerified: false,
+      playerIdentityVerified: false,
+    });
+
+    expect(result.state).toBe("READY_FOR_CONTROLLED_EXECUTION");
+    expect(result.canExecute).toBe(true);
+    expect(result.postExecutionEvidenceBlockers).toEqual(
+      expect.arrayContaining([
+        "REAL_MEMORY_NOT_OBSERVED",
+        "PARSER_OVERHEAD_NOT_MEASURED",
+        "PARITY_NOT_VERIFIED",
+        "DETERMINISM_NOT_VERIFIED",
+        "TICK_AUTHORITY_NOT_VERIFIED",
+        "PLAYER_IDENTITY_NOT_VERIFIED",
+      ]),
+    );
   });
 
   it("requires the Canonical lock to remain active during controlled execution", () => {
