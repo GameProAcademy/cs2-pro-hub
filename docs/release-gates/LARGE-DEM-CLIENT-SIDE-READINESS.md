@@ -9,6 +9,15 @@
 - R5.8.1: `BLOCKED_OPERATOR_CONFIGURATION`
 - Canonical: `BLOCKED`
 
+## Final validation
+
+- Full Vitest suite: `80 files / 1,139 tests PASS`
+- Focused parser, Worker and boundary suite: `4 files / 96 tests PASS`
+- TypeScript: `PASS`
+- ESLint: `PASS` with no errors
+- Preview build: `PASS`
+- Real DEM, browser memory benchmark, parity and determinism: `NOT_RUN`
+
 ## Architecture before
 
 The local POC validated metadata on the main thread, loaded the complete `File` into an `ArrayBuffer`, synchronously hashed that buffer, transferred it to a parser Worker, hashed it again, and passed one contiguous `Uint8Array` to demoparser2 WASM calls. The separate chunked hash Worker and feasibility module existed but were not integrated.

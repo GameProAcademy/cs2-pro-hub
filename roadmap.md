@@ -8,6 +8,7 @@
 - [x] Adicionar gate determinístico e modelo de memória que mantém overhead WASM/parser e pico como desconhecidos.
 - [x] Cobrir metadata-only de 0 byte até 500 MiB e o Cache de 473.748.061 bytes sem alocações gigantes.
 - [x] Integrar capacidade, viabilidade, motivo factual e execução em Worker ao POC existente.
+- [x] Validar 1.139 testes, TypeScript, lint sem erros e build automático.
 - [ ] Executar DEM real, benchmark de memória, parity ou determinism: `NOT_RUN`.
 
 **Locks:** teto de 128 MiB inalterado; `FEATURES.realDemoParser=false`; R5.8.1 `BLOCKED_OPERATOR_CONFIGURATION`; Attempt 9/10+ e Canonical `BLOCKED`; Railway, staging, secrets, migrations e attestation inalterados.
