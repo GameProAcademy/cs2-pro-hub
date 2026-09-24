@@ -69,6 +69,8 @@ export class ClientParserService {
       }, CLIENT_PARSE_TIMEOUT_MS);
       const finish = () => {
         window.clearTimeout(timeout);
+        this.hashAbortController?.abort();
+        this.hashAbortController = null;
         worker.terminate();
         if (this.worker === worker) this.worker = null;
         if (this.requestId === requestId) this.requestId = null;
@@ -97,6 +99,7 @@ export class ClientParserService {
           try {
             const hashAbortController = new AbortController();
             this.hashAbortController = hashAbortController;
+            const hashStarted = performance.now();
             const { sha256 } = await hashLargeDemInWorker(file, {
               signal: hashAbortController.signal,
               onProgress: ({ bytesRead, bytesTotal }) =>
@@ -106,12 +109,14 @@ export class ClientParserService {
                   elapsedMs: 0,
                 }),
             });
+            const hashDurationMs = performance.now() - hashStarted;
             this.hashAbortController = null;
             worker.postMessage({
               type: "PARSE",
               requestId,
               file,
               capability: CLIENT_DEMO_PARSER_CAPABILITY,
+              hashDurationMs,
               authorization: {
                 authorizedDemo: true,
                 provenance: "LOCAL_USER_SELECTION",
@@ -124,12 +129,11 @@ export class ClientParserService {
               },
             });
           } catch {
+            const cancelled = this.hashAbortController?.signal.aborted === true;
             finish();
             reject(
               new ClientParserError(
-                this.hashAbortController?.signal.aborted
-                  ? "CLIENT_CANCELLED"
-                  : "CLIENT_DEMO_INVALID",
+                cancelled ? "CLIENT_CANCELLED" : "CLIENT_DEMO_INVALID",
               ),
             );
           }

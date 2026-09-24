@@ -37,6 +37,7 @@ export type ClientParserCommand =
       requestId: string;
       file: File;
       capability: DemoParserCapability;
+      hashDurationMs: number;
       authorization: ClientDemoAuthorization;
     }
   | { type: "CANCEL"; requestId: string };

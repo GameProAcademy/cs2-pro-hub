@@ -310,10 +310,12 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     command.authorization.sizeBytes !== file.size ||
     !/^[0-9a-f]{64}$/.test(demoSha) ||
     !command.authorization.authorizationRef ||
-    !command.authorization.receivedAt
+    !command.authorization.receivedAt ||
+    !Number.isFinite(command.hashDurationMs) ||
+    command.hashDurationMs < 0
   )
     throw new Error("CLIENT_DEMO_INVALID");
-  const hashDurationMs = 0;
+  const hashDurationMs = command.hashDurationMs;
   assertActive(command.requestId);
 
   const parseStarted = performance.now();

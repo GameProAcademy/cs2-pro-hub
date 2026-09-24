@@ -60,7 +60,7 @@ describe("large DEM feasibility gate", () => {
   });
 
   it.each([
-    [0, "SAFE"],
+    [0, "BLOCKED"],
     [1, "SAFE"],
     [128 * 1024 * 1024 - 1, "SAFE"],
     [128 * 1024 * 1024, "SAFE"],

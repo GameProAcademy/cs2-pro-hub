@@ -45,6 +45,7 @@ export interface LargeDemReadiness {
     | "PARSER_CAPABILITY_UNKNOWN"
     | "PARSER_STREAMING_NOT_SUPPORTED"
     | "ABOVE_SAFE_INPUT_LIMIT"
+    | "INVALID_FILE_SIZE"
     | "WITHIN_CONSERVATIVE_LIMIT";
   parserCapability: DemoParserCapability;
   memory: LargeDemMemoryEstimate;
@@ -96,12 +97,14 @@ export function evaluateLargeDemFeasibility(
   });
 
   if (!options.realParserEnabled) return result("NOT_RUN", "REAL_PARSER_DISABLED");
-  if (!options.experimentalEnabled) return result("NOT_RUN", "EXPERIMENT_NOT_ENABLED");
   if (!options.workerAvailable || !options.wasmAvailable)
     return result("NOT_SUPPORTED", "WORKER_OR_WASM_UNAVAILABLE");
   if (parserCapability.inputCapability === "UNKNOWN")
     return result("NOT_SUPPORTED", "PARSER_CAPABILITY_UNKNOWN");
+  if (!Number.isSafeInteger(metadata.sizeBytes) || metadata.sizeBytes < 1)
+    return result("BLOCKED", "INVALID_FILE_SIZE");
   if (metadata.sizeBytes > CLIENT_DEMO_MAX_BYTES) {
+    if (!options.experimentalEnabled) return result("BLOCKED", "EXPERIMENT_NOT_ENABLED");
     return result(
       parserCapability.requiresContiguousBuffer ? "NOT_SUPPORTED" : "BLOCKED",
       parserCapability.requiresContiguousBuffer
