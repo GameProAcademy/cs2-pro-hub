@@ -60,7 +60,9 @@ scope.onmessage = (event) => {
   void materialize(command);
 };
 
-function isInitCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type: "MEMORY_WORKER_INIT" }> {
+function isInitCommand(
+  value: unknown,
+): value is Extract<MemoryWorkerCommand, { type: "MEMORY_WORKER_INIT" }> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   return command["type"] === "MEMORY_WORKER_INIT" && typeof command["requestId"] === "string";
@@ -72,12 +74,13 @@ function isReleaseCommand(
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   return (
-    command["type"] === "MEMORY_MATERIALIZATION_RELEASE" &&
-    typeof command["requestId"] === "string"
+    command["type"] === "MEMORY_MATERIALIZATION_RELEASE" && typeof command["requestId"] === "string"
   );
 }
 
-function isCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type: "MEMORY_MEASUREMENT" }> {
+function isCommand(
+  value: unknown,
+): value is Extract<MemoryWorkerCommand, { type: "MEMORY_MEASUREMENT" }> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   const descriptor = command["descriptor"] as Record<string, unknown> | undefined;
@@ -141,7 +144,6 @@ function postStage(
 ) {
   scope.postMessage({ type: "WORKER_STAGE", requestId, stage });
 }
-
 
 function releaseMaterialization(requestId: string) {
   retainedBuffer = null;
