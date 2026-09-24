@@ -1,11 +1,13 @@
 # Large DEM Browser Memory H.1 Closure
 
-STATUS: H.1-R PASS / H.1-M0 READY / H.1-M SMOKE FAILED TWICE → WORKER LIFECYCLE INSTRUMENTED / RERUN PENDING
+STATUS: H.1-R PASS / H.1-M0 PASS / H.1-M0.1 PASS / H.1-M PASS — 15/15 SYNTHETIC RUNTIME OBSERVATIONS ACCEPTED
 
 ## H.1-R implementation criteria
 
 - [x] Deterministic lifecycle without a concurrent in-flight memory sample.
 - [x] Explicit `postMaterializationBytes` after Worker completion.
+- [x] Retained contiguous `ArrayBuffer` remains reachable in the Worker until the post-materialization sample completes.
+- [x] Explicit materialization-release handshake occurs only after the post-materialization sample.
 - [x] Observed peak limited to post-fixture, pre-materialization, and post-materialization samples.
 - [x] Neutral cleanup status and observational delta only.
 - [x] Logical fixture-size semantics documented.
@@ -16,19 +18,76 @@ STATUS: H.1-R PASS / H.1-M0 READY / H.1-M SMOKE FAILED TWICE → WORKER LIFECYCL
 - [x] Feature flag remains false by default; real parser remains false; 128 MiB remains the hard ceiling.
 - [x] Dedicated authenticated `/admin/memory-lab` surface depends only on the Memory Lab flag.
 - [x] Parser POC remains independent and OFF by default.
-- [x] H.1-M0.1 route isolation headers are implemented on the dedicated Memory Lab route; runtime gate verified in Preview as cross-origin isolated with Memory API available.
+- [x] H.1-M0.1 route isolation headers are implemented on the dedicated Memory Lab route; Preview runtime was verified as cross-origin isolated with Memory API available.
 - [x] Disabled route is inert and reports `FEATURE_DISABLED`; administrative navigation is hidden.
 - [x] Local 15-run H.1-M progress matrix and complete metadata result fields are exposed without persistence.
 
-## Pending closure criteria
+## H.1-M runtime acceptance
 
-- [x] Complete all CI gates for H.1-R: 1,184 web tests, 189 parser tests, 66 contract-sensitive parser tests, TypeScript, lint, and build passed.
-- [x] Execute initial H.1-M smoke test (16 MiB × 1) in a compatible foreground browser; the run failed closed with `MATERIALIZATION_FAILED` before materialization completion.
-- [x] Isolate the first failure to the synthetic Worker boundary: the first implementation structured-cloned the synthetic `File` into the Worker; the corrected implementation sends only the validated descriptor and creates/materializes the synthetic fixture inside the Worker.
-- [x] Record the second 16 MiB × 1 smoke failure as `MATERIALIZATION_FAILED`; this run predates the latest Worker lifecycle instrumentation and therefore does not identify the underlying Worker stage.
-- [x] Instrument the Worker lifecycle with `WORKER_READY`, command/stage events, `messageerror`, distinct Worker `error`, and a sanitized `workerLifecycleStage` result field. The command is now posted only after `WORKER_READY`; file creation and `arrayBuffer()` are separately observable stages.
-- [x] Verify the lifecycle instrumentation through the full CI gate: web tests passed, TypeScript passed, lint passed, build passed, parser tests passed, and contract-sensitive parser tests passed on commit `6f8e0f7619fd2d712243e40172f72befca345bed`.
-- [ ] Rerun the 16 MiB × 1 smoke test against the corrected Preview build and record only the metadata defined by the manual protocol.
-- [ ] After a successful smoke test, execute the complete 15-run H.1-M matrix.
+The manual foreground-browser protocol was completed on the dedicated Lovable Preview runtime on 2026-09-24.
 
-Passing implementation tests do not make H.1 runtime validated. Both browser smoke runs are retained as failed diagnostic observations; neither counts as an accepted H.1-M observation. The next required action is a fresh 16 MiB × 1 smoke run against a Preview build that contains the lifecycle instrumentation. Do not execute the 15-run matrix until that smoke run is accepted. H.1-M remains pending and H.2 remains blocked.
+Matrix:
+
+| Fixture | Repetitions | Accepted observations |
+|---|---:|---:|
+| 16 MiB | 3 | 3/3 |
+| 32 MiB | 3 | 3/3 |
+| 64 MiB | 3 | 3/3 |
+| 96 MiB | 3 | 3/3 |
+| 128 MiB | 3 | 3/3 |
+| **Total** | **15** | **15/15** |
+
+Every accepted observation reported:
+
+- `status=OBSERVED`
+- exact `materializedByteLength` equal to the requested fixture size
+- `measurementCount=5`
+- `cleanupStatus=CLEANUP_OBSERVED`
+- `errorCode=null`
+- `workerLifecycleStage=MATERIALIZATION_COMPLETE`
+- `workerRuntimeSignal=null`
+- `workerBootstrapProbe=PASS`
+- secure context and cross-origin isolation enabled
+- Memory API available
+- no real DEM/parser execution
+
+The complete numeric evidence is recorded in `docs/release-gates/LARGE-DEM-BROWSER-MEMORY-H1-M-RUNTIME-EVIDENCE-2026-09-24.md`.
+
+## Runtime observations and interpretation
+
+The accepted runs demonstrate that the current synthetic contiguous-input materialization path completed successfully for 16, 32, 64, 96, and 128 MiB fixtures in the tested Chrome 153 foreground Preview environment.
+
+The measured memory values remain observational. `performance.measureUserAgentSpecificMemory()` does not provide an exact physical peak or a guaranteed sample of every allocation. `observedPeakBytes` is only the maximum of the protocol's defined samples. `observedCleanupDeltaBytes` is arithmetic observation only and is not a leak diagnosis.
+
+The observed `materializedByteLength` values prove that the Worker created the requested contiguous ArrayBuffer sizes. They do not prove that the browser exposes an equivalent byte-for-byte increase in the aggregate memory metric.
+
+## Diagnostic-only module probe
+
+`moduleWorkerBootstrapProbe=FAIL` remained present in the accepted reports. It is not the Worker path used by the successful measurement execution and is not an H.1-M acceptance gate.
+
+The actual Vite-managed `?worker&inline` measurement Worker completed the lifecycle successfully, including `MATERIALIZATION_COMPLETE`, across all 15 accepted observations.
+
+## Release locks
+
+H.1-M completion does NOT authorize any of the following:
+
+- real DEM upload or parsing
+- demoparser2/WASM execution against a real DEM
+- increasing the 128 MiB synthetic ceiling
+- claiming 300–500 MiB support or safety
+- claiming support for the 300–500 MiB library DEMs
+- Canonical admission
+- production enablement
+- backend persistence
+- Railway parser execution
+- R5.8 attestation
+- parser parity/determinism closure
+- H.2
+
+Those gates remain independently blocked or locked.
+
+## Closure decision
+
+H.1-M is CLOSED as a synthetic browser-memory diagnostic experiment for the specified 15-run matrix.
+
+H.2 and real DEM processing remain BLOCKED pending their separate release criteria.
