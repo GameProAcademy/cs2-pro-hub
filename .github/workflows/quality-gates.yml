@@ -1,0 +1,106 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [main, infra/cs2-parser-worker-v8]
+  pull_request:
+    branches: [main, infra/cs2-parser-worker-v8]
+
+permissions:
+  contents: read
+
+jobs:
+  web-quality:
+    name: Web tests / lint / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL server binaries for disposable concurrency harness
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Test
+        run: bun run test
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Build
+        run: bun run build
+
+  parser-quality:
+    name: CS2 parser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/cs2-demo-parser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/cs2-demo-parser/requirements-dev.txt
+
+      - name: Install parser dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+
+      - name: Compile parser sources
+        run: python -m compileall -q .
+
+      - name: Verify reconciled field governance matrix
+        working-directory: ${{ github.workspace }}
+        run: |
+          python scripts/generate-parser-field-matrix.py --check
+          python scripts/canonical_mapping_gate.py > /tmp/canonical-mapping-gate.json
+          grep -F '"gateStatus":"BLOCKED"' /tmp/canonical-mapping-gate.json
+
+      - name: Run parser test suite
+        run: pytest -q
+
+  contract-gate:
+    name: Contract-sensitive parser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services/cs2-demo-parser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/cs2-demo-parser/requirements-dev.txt
+      - name: Install parser dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+      - name: Run round-boundary, output-contract and RAW evidence tests
+        run: >-
+          pytest -q
+          tests/test_adapter.py
+          tests/test_output_contract.py
+          tests/test_raw_evidence.py
+          tests/test_raw_manifest_audit.py
+          tests/test_runtime_contract.py
