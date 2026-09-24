@@ -164,7 +164,7 @@ export async function runSyntheticMemoryMeasurement(
         else if (event) resolve(event);
         else reject(new MemoryLabError("UNKNOWN_ERROR"));
       };
-      const onError = () => finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+      const onError = () => finish(new MemoryLabError("MATERIALIZATION_WORKER_ERROR"));
       const onMessage = (message: MessageEvent<unknown>) => {
         if (!isMemoryWorkerEvent(message.data)) {
           finish(new MemoryLabError("MATERIALIZATION_FAILED"));
