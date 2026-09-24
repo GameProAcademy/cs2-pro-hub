@@ -9,7 +9,26 @@ import {
 
 const scope = self as unknown as {
   onmessage: ((event: MessageEvent<unknown>) => void) | null;
+  onerror: ((event: ErrorEvent) => void) | null;
+  onunhandledrejection: ((event: PromiseRejectionEvent) => void) | null;
   postMessage: (message: MemoryWorkerEvent) => void;
+};
+
+scope.onerror = () => {
+  scope.postMessage({
+    type: "ERROR",
+    requestId: "runtime",
+    code: "MATERIALIZATION_WORKER_ERROR",
+    runtimeSignal: "ONERROR",
+  });
+};
+scope.onunhandledrejection = () => {
+  scope.postMessage({
+    type: "ERROR",
+    requestId: "runtime",
+    code: "MATERIALIZATION_WORKER_ERROR",
+    runtimeSignal: "UNHANDLED_REJECTION",
+  });
 };
 
 scope.postMessage({ type: "WORKER_READY" });
@@ -57,8 +76,8 @@ async function materialize(command: MemoryWorkerCommand) {
     postStage(command.requestId, "MATERIALIZATION_STARTED");
     stage = "FILE_CREATION_STARTED";
     postStage(command.requestId, stage);
-    stage = "FILE_CREATED";
     const fixture = createSyntheticFixture(command.descriptor);
+    stage = "FILE_CREATED";
     postStage(command.requestId, stage);
     stage = "ARRAYBUFFER_STARTED";
     postStage(command.requestId, stage);
