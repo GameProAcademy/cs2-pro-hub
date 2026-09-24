@@ -6,7 +6,7 @@ STATUS: ACCEPTED — 15/15 SYNTHETIC OBSERVATIONS
 
 Manual foreground-browser execution of the H.1-M synthetic contiguous-input materialization protocol in the dedicated Lovable Preview runtime.
 
-Browser: Chrome 153 on Windows 11 user agent reported by the runtime.
+Browser: Chrome 153; the runtime reported user agent `Windows NT 10.0`.
 
 All accepted observations had secure context=true, crossOriginIsolated=true, apiAvailable=true, status=OBSERVED, measurementCount=5, cleanupStatus=CLEANUP_OBSERVED, errorCode=null, workerLifecycleStage=MATERIALIZATION_COMPLETE, workerRuntimeSignal=null, and workerBootstrapProbe=PASS.
 
