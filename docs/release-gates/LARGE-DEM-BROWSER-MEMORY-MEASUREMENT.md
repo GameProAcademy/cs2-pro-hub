@@ -1,10 +1,10 @@
 # Large DEM browser memory measurement
 
-STATUS: H.1-R PASS / H.1-M0 READY / H.1-M RUNTIME NOT RUN
+STATUS: H.1-R PASS / H.1-M0 PASS / H.1-M0.1 PASS / H.1-M COMPLETE — 15/15 SYNTHETIC RUNTIME OBSERVATIONS
 
 ## 1. Scope
 
-This phase adds a local browser laboratory for controlled, synthetic memory observations.
+This phase provides a local browser laboratory for controlled, synthetic memory observations.
 
 ## 2. Classification
 
@@ -16,13 +16,15 @@ It does not parse a DEM, exercise demoparser2/WASM, validate gameplay semantics,
 
 ## 4. Current execution status
 
-No browser measurement has been executed or recorded by this implementation work. Runtime evidence remains `NOT_RUN`.
+H.1-M was executed manually in the dedicated Preview runtime on 2026-09-24. All 15 protocol runs were accepted: 16, 32, 64, 96, and 128 MiB, three repetitions each.
+
+The detailed evidence is recorded in `LARGE-DEM-BROWSER-MEMORY-H1-M-RUNTIME-EVIDENCE-2026-09-24.md`.
 
 ## 5. Feature gate
 
 `VITE_CLIENT_DEM_MEMORY_LAB` is public, non-secret, independent, and false by default.
 
-The official authenticated administrative surface is `/admin/memory-lab`. It depends only on this Memory Lab flag and browser capabilities; it does not depend on `VITE_CLIENT_DEM_PARSER_POC_ENABLED`. When disabled, the route renders `FEATURE_DISABLED` and does not mount the laboratory. The administrative navigation entry is hidden.
+The official authenticated administrative surface is `/admin/memory-lab`. It depends only on this Memory Lab gate and browser capabilities; it does not depend on `VITE_CLIENT_DEM_PARSER_POC_ENABLED`. When disabled, the route renders `FEATURE_DISABLED` and does not mount the laboratory. The administrative navigation entry is hidden.
 
 ## 6. Required browser capabilities
 
@@ -34,7 +36,7 @@ A missing capability produces a factual unavailable state. There is no `performa
 
 ## 8. Fixtures
 
-Fixtures are locally generated, deterministic, synthetic logical `File` objects without DEM semantics. A fixture's declared size is its logical byte length, not a claim about its physical browser-memory footprint; repeated Blob parts may share the same source block.
+Fixtures are locally generated, deterministic, synthetic logical `File` objects without DEM semantics. A fixture's declared size is its logical byte length, not a claim about its physical browser-memory footprint.
 
 ## 9. Approved sizes
 
@@ -46,7 +48,9 @@ Only 16, 32, 64, 96, and 128 MiB are accepted.
 
 ## 11. Input boundary
 
-The dedicated Worker reuses `readContiguousDemoInput`, the sole whole-input materialization boundary.
+The dedicated Worker reuses the contiguous-input materialization boundary. For the H.1-M experiment, the Worker creates the synthetic fixture and materializes its ArrayBuffer internally.
+
+The Worker retains the resulting contiguous ArrayBuffer until the runner completes the `postMaterialization` sample. Only then does the runner send the explicit release command and wait for the `MATERIALIZATION_RELEASED` acknowledgement before terminating the Worker.
 
 ## 12. Parser isolation
 
@@ -54,7 +58,9 @@ The Worker does not import or call parser, WASM, server, database, Storage, Rail
 
 ## 13. Measurement sequence
 
-A run follows an explicit sequence: validate capabilities; sample baseline; create the synthetic logical File; sample post-fixture and pre-materialization; create the Worker; send the command; receive start and completion events; sample post-materialization; release the File reference; terminate the Worker; stabilize; and sample post-cleanup. There is no concurrent or guaranteed sample during materialization.
+A run follows an explicit sequence: validate capabilities; sample baseline; create the synthetic logical File; sample post-fixture and pre-materialization; create the Worker; send the command; receive start and completion events; sample post-materialization while the contiguous ArrayBuffer remains retained in the Worker; request release; wait for release acknowledgement; terminate the Worker; stabilize; and sample post-cleanup.
+
+There is no concurrent or guaranteed sample during materialization.
 
 ## 14. Evidence semantics
 
@@ -62,7 +68,7 @@ The displayed peak is `max(postFixtureBytes, preMaterializationBytes, postMateri
 
 ## 15. Cleanup semantics
 
-The Worker is terminated and references and listeners are released. `observedCleanupDeltaBytes` is only the arithmetic difference between post-cleanup and baseline. Positive, zero, and negative values all receive the neutral `CLEANUP_OBSERVED` status and do not diagnose a leak, stability, reclamation, or browser behavior. An unavailable cleanup sample is `CLEANUP_MEASUREMENT_UNAVAILABLE`.
+The Worker is explicitly released and terminated and references/listeners are cleaned up. `observedCleanupDeltaBytes` is only the arithmetic difference between post-cleanup and baseline. Positive, zero, and negative values all receive the neutral `CLEANUP_OBSERVED` status and do not diagnose a leak, stability, reclamation, or browser behavior. An unavailable cleanup sample is `CLEANUP_MEASUREMENT_UNAVAILABLE`.
 
 ## 16. Timeout and cancellation
 
@@ -84,7 +90,9 @@ The copy action emits textual JSON containing metadata and numeric observations 
 
 ## 20. Interpretation and release locks
 
-Synthetic observations cannot establish that 128 MiB is safe, that 400–500 MiB is supported, or that parser memory is known. The 128 MiB ceiling, real-parser flag, real DEM, parity, determinism, Attempt 9/10+, Canonical, Railway, database, Storage, secrets, and attestation gates remain unchanged.
+Synthetic observations cannot establish that 128 MiB is safe, that 300–500 MiB is supported, or that parser memory is known.
+
+The 128 MiB ceiling, real-parser flag, real DEM, parity, determinism, Attempt 9/10+, Canonical, Railway, database, Storage, secrets, and attestation gates remain unchanged.
 
 ## 21. Evidence Integrity / H.1-R
 
@@ -96,11 +104,15 @@ Synthetic observations cannot establish that 128 MiB is safe, that 400–500 MiB
 6. Worker messages are schema-validated and malformed or foreign-request events fail closed.
 7. Timeout, cancellation, Worker errors, and all completion paths terminate the Worker and remove listeners.
 8. Reports contain serializable metadata only and remain local.
-9. No result demonstrates that 400–500 MiB is safe, that a real DEM can be processed, or that the 128 MiB limit may increase.
+9. No result demonstrates that 300–500 MiB is safe, that a real DEM can be processed, or that the 128 MiB limit may increase.
 10. No result authorizes production, Canonical, attestation, backend persistence, or H.2.
 
-## 22. H.1-M experimental runtime configuration
+## 22. H.1-M runtime configuration and closure
 
-Use an isolated Preview/experimental build with `VITE_CLIENT_DEM_MEMORY_LAB=true` and `VITE_CLIENT_DEM_PARSER_POC_ENABLED=false`. Keep `FEATURES.realDemoParser=false`. Because `VITE_*` values are public build configuration, not credentials, configure the value in the Preview environment and rebuild the Preview; do not store it as a secret. Production and repository defaults remain OFF.
+The accepted runtime was an isolated Preview/experimental build. The production/repository defaults remain OFF.
 
-The route performs no DEM access, parser/WASM execution, upload, backend request, persistence, analytics, Railway request, Canonical admission, R5.8 action, or attestation. Results exist only in page memory and the copied report remains metadata-only.
+H.1-M is CLOSED for the stated synthetic diagnostic experiment after 15/15 accepted observations.
+
+The separate `moduleWorkerBootstrapProbe` remained `FAIL` in the reports. This is diagnostic-only and is not the measurement Worker path. The successful measurement path is the Vite-managed `?worker&inline` Worker, which reached `MATERIALIZATION_COMPLETE` in all 15 accepted runs.
+
+No real DEM, parser/WASM, backend request, persistence, analytics, Railway request, Canonical admission, R5.8 action, or attestation was performed.
