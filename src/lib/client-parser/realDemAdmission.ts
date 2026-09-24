@@ -1,11 +1,7 @@
 import type { DemoParserCapability } from "./clientParser.input";
 
-export const REAL_DEM_BROWSER_ADMISSION_STATES = [
-  "BLOCKED",
-  "METADATA_ONLY",
-] as const;
-export type RealDemBrowserAdmissionState =
-  (typeof REAL_DEM_BROWSER_ADMISSION_STATES)[number];
+export const REAL_DEM_BROWSER_ADMISSION_STATES = ["BLOCKED", "METADATA_ONLY"] as const;
+export type RealDemBrowserAdmissionState = (typeof REAL_DEM_BROWSER_ADMISSION_STATES)[number];
 
 export const REAL_DEM_BROWSER_BLOCKERS = [
   "REAL_PARSER_DISABLED",
@@ -21,8 +17,7 @@ export const REAL_DEM_BROWSER_BLOCKERS = [
   "CANONICAL_ADMISSION_LOCKED",
 ] as const;
 
-export type RealDemBrowserAdmissionBlocker =
-  (typeof REAL_DEM_BROWSER_BLOCKERS)[number];
+export type RealDemBrowserAdmissionBlocker = (typeof REAL_DEM_BROWSER_BLOCKERS)[number];
 
 export interface RealDemBrowserAdmissionInput {
   fileName: string;
@@ -68,10 +63,8 @@ export function evaluateRealDemBrowserAdmission(
   } else if (input.sizeBytes > 128 * 1024 * 1024) {
     blockers.push("ABOVE_CONTIGUOUS_INPUT_LIMIT");
   }
-  if (input.parserCapability.requiresContiguousBuffer)
-    blockers.push("PARSER_REQUIRES_CONTIGUOUS_BUFFER");
-  if (input.syntheticMemoryEvidenceAccepted)
-    blockers.push("SYNTHETIC_MEMORY_EVIDENCE_ONLY");
+  if (input.parserCapability.requiresContiguousBuffer) blockers.push("PARSER_REQUIRES_CONTIGUOUS_BUFFER");
+  if (input.syntheticMemoryEvidenceAccepted) blockers.push("SYNTHETIC_MEMORY_EVIDENCE_ONLY");
   if (!input.parserOverheadMeasured) blockers.push("PARSER_OVERHEAD_UNMEASURED");
   if (!input.parityVerified) blockers.push("PARITY_NOT_VERIFIED");
   if (!input.determinismVerified) blockers.push("DETERMINISM_NOT_VERIFIED");
