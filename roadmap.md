@@ -1,3 +1,17 @@
+# CURRENT IMPLEMENTATION — FASE 2.7.2H.1
+
+**Status:** `IMPLEMENTED / REAL BROWSER MEASUREMENT NOT_RUN / SYNTHETIC ONLY`.
+
+- [x] Implementar fixtures sintéticos determinísticos de 16/32/64/96/128 MiB, com teto fail-closed em 128 MiB.
+- [x] Reutilizar a fronteira contígua exclusivamente em Worker dedicado, sem parser/WASM e sem retornar bytes à UI.
+- [x] Exigir feature flag, contexto seguro, cross-origin isolation, Worker, File API e API de memória.
+- [x] Implementar timeout de 60 s, cancelamento, encerramento do Worker, remoção de listeners e amostra pós-cleanup.
+- [x] Manter resultados somente em memória e permitir cópia de relatório JSON textual classificado como diagnóstico sintético.
+- [ ] Executar manualmente a medição em navegador compatível: `NOT_RUN`.
+- [ ] Usar o resultado como prova de suporte, elevar o teto ou processar DEM real: proibido nesta fase.
+
+**Locks:** teto de 128 MiB, `FEATURES.realDemoParser=false`, real DEM, parser, Canonical, Attempt 9/10+, Railway, banco, Storage, secrets e attestation inalterados.
+
 # CURRENT IMPLEMENTATION — FASE 2.7.2H
 
 **Status:** `ARCHITECTURAL_READINESS IMPLEMENTED / LARGE_DEM_REAL_EXECUTION_STATUS BLOCKED / REAL DEM NOT_RUN`.

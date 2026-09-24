@@ -28,6 +28,8 @@ export const FEATURES = {
   /** Metadata/hash feasibility laboratory only; never unlocks parsing or Canonical. */
   clientDemLargeFileExperimental:
     import.meta.env["VITE_CLIENT_DEM_LARGE_FILE_EXPERIMENTAL"] === "true",
+  /** Synthetic-only browser memory diagnostics. Disabled by default and never unlocks parsing. */
+  clientDemMemoryLab: import.meta.env["VITE_CLIENT_DEM_MEMORY_LAB"] === "true",
 
   faceitIntegration: true,
   /** No official API and the public site is behind an anti-bot challenge. */
