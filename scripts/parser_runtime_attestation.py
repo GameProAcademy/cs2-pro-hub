@@ -192,8 +192,21 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("GITHUB_ATTESTOR_SOURCE_REF_MISMATCH")
     if repository != REPOSITORY:
         statuses.append("GITHUB_SOURCE_IDENTITY_MISMATCH")
-    if event != "workflow_dispatch" or not run_id or not run_attempt:
+    if event not in {"workflow_dispatch", "workflow_run"} or not run_id or not run_attempt:
         statuses.append("GITHUB_WORKFLOW_IDENTITY_MISSING")
+    if event == "workflow_run":
+        try:
+            event_path = os.getenv("GITHUB_EVENT_PATH", "")
+            event_payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+            upstream = event_payload.get("workflow_run") if isinstance(event_payload.get("workflow_run"), dict) else {}
+            if (
+                upstream.get("name") != "H.3-E.3 Final External Preflight"
+                or upstream.get("conclusion") != "success"
+                or upstream.get("head_branch") != "main"
+            ):
+                statuses.append("GITHUB_WORKFLOW_RUN_UPSTREAM_NOT_APPROVED")
+        except (OSError, json.JSONDecodeError):
+            statuses.append("GITHUB_WORKFLOW_RUN_EVENT_INVALID")
     if not re.fullmatch(r"[0-9a-f]{40}", trigger_commit_sha):
         statuses.append("GITHUB_TRIGGER_COMMIT_INVALID")
     if not re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha):
@@ -267,7 +280,7 @@ def build_attestation() -> dict[str, Any]:
         "attestor_source_identity": {
             "repository": REPOSITORY,
             "branch": "main",
-            "workflow_sha": trigger_commit_sha,
+            "workflow_sha": workflow_file_commit_sha,
             "trigger_commit_sha": trigger_commit_sha,
             "workflow_file_commit_sha": workflow_file_commit_sha,
             "workflow_path": WORKFLOW_PATH,
@@ -277,7 +290,7 @@ def build_attestation() -> dict[str, Any]:
                              "tree": tree, "branch_contains_commit": branch_contains_commit},
         "workflow_identity": {"provider": "github_actions", "repository": repository,
                               "ref_name": ref_name, "workflow_ref": workflow_ref,
-                              "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": trigger_commit_sha,
+                              "run_id": run_id, "run_attempt": run_attempt, "workflow_sha": workflow_file_commit_sha,
                                "trigger_commit_sha": trigger_commit_sha,
                                "workflow_file_commit_sha": workflow_file_commit_sha,
                                "event_name": event, **workflow_source},
