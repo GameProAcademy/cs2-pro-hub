@@ -147,9 +147,7 @@ No blocker may be inferred away from file size.
 
 H.1-M established successful synthetic materialization observations at 16/32/64/96/128 MiB in the tested Chrome 153 Preview runtime.
 
-MDN documents that `measureUserAgentSpecificMemory()` estimates aggregate application memory including Workers, requires secure cross-origin-isolated execution, and produces implementation-dependent byte values that are not directly comparable across browsers or browser versions. citeturn0search0
-
-The H.1 result therefore remains useful as diagnostic evidence for the synthetic materialization mechanism, but it does not authorize real DEM parsing.
+The H.1 result remains useful only as diagnostic evidence for the synthetic materialization mechanism; it does not authorize real DEM parsing.
 
 ## Exit criteria
 
