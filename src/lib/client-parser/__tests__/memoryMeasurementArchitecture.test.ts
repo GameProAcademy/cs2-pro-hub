@@ -21,6 +21,7 @@ describe("memory lab architecture guards", () => {
     expect(worker).toContain("MATERIALIZATION_READ_FAILED");
     expect(worker).toContain("MATERIALIZATION_LENGTH_MISMATCH");
     expect(worker).toContain('type: "WORKER_READY"');
+    expect(worker).toContain('"FILE_CREATION_STARTED"');
     expect(worker).toContain('"ARRAYBUFFER_STARTED"');
     expect(worker).toContain('"ARRAYBUFFER_COMPLETE"');
     expect(runner).toContain('"messageerror"');
