@@ -50,10 +50,7 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
 }
 
 async function materialize(command: MemoryWorkerCommand) {
-  let stage: Extract<
-    MemoryWorkerEvent,
-    { type: "WORKER_STAGE" }
-  >["stage"] = "COMMAND_RECEIVED";
+  let stage: Extract<MemoryWorkerEvent, { type: "WORKER_STAGE" }>["stage"] = "COMMAND_RECEIVED";
   const startedAt = performance.now();
   try {
     postStage(command.requestId, stage);
@@ -95,10 +92,7 @@ async function materialize(command: MemoryWorkerCommand) {
 
 function postStage(
   requestId: string,
-  stage: Extract<
-    MemoryWorkerEvent,
-    { type: "WORKER_STAGE" }
-  >["stage"],
+  stage: Extract<MemoryWorkerEvent, { type: "WORKER_STAGE" }>["stage"],
 ) {
   scope.postMessage({ type: "WORKER_STAGE", requestId, stage });
 }
