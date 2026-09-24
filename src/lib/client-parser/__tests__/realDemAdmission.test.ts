@@ -22,10 +22,7 @@ const base = {
 
 describe("H.2 real DEM browser admission gate", () => {
   it("exposes only fail-closed states", () => {
-    expect(REAL_DEM_BROWSER_ADMISSION_STATES).toEqual([
-      "BLOCKED",
-      "METADATA_ONLY",
-    ]);
+    expect(REAL_DEM_BROWSER_ADMISSION_STATES).toEqual(["BLOCKED", "METADATA_ONLY"]);
   });
 
   it("never converts synthetic H.1 evidence into real DEM authorization", () => {
