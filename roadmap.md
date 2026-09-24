@@ -25,6 +25,15 @@ Status: `IMPLEMENTED / FAIL-CLOSED / PRE-EXECUTION`.
 - Canonical admission remains locked.
 - No cleanup or production Railway mutation is authorized by H.3-E.
 
+### H.3-E post-merge reconciliation — 2026-09-24
+
+- PR #19 was merged into `main` as `f4f1088ead0055566309f09a01d0dc870d6e94ac` after Quality Gates run #300 (`35967900425`) completed successfully.
+- The H.3-E code/tests are therefore present on `main`; this merge does **not** authorize a real DEM execution.
+- Railway production was re-audited after the merge: the parser service remains sourced from `infra/cs2-parser-worker-v8`, with latest successful deployment `ff0cc222f514c01eda6e26d7bb95271a8b0c9b04`. No production mutation was made by H.3-E.
+- A pre-existing staged Railway `EnvironmentPatch` (`d66b5a12-a69e-4b9a-87b6-314f75c471cc`) remains untouched and is not part of H.3-E.
+- Next gate is **H.3-E closure/readiness reconciliation**, not execution: close only independently evidenced retention authorization, fresh attestation, and explicit operator authorization. Do not infer any of these from CI, PR merge, Railway health, or synthetic memory evidence.
+
+
 ### Non-negotiable execution order
 
 `EXACT DEM IDENTITY → RUNTIME IDENTITY/PREFLIGHT → RETENTION → FRESH ATTESTATION → EXPLICIT AUTHORIZATION → ONE CONTROLLED RUN → POST-RUN FORENSICS → PARITY/DETERMINISM/TICK/IDENTITY → Canonical remains locked`
