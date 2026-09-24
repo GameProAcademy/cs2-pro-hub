@@ -139,6 +139,7 @@ export async function runSyntheticMemoryMeasurement(
   let postCleanupBytes: number | null = null;
   let workerLifecycleStage: MemoryWorkerLifecycleStage | null = null;
   let workerRuntimeSignal: "ERROR_EVENT" | "ONERROR" | "UNHANDLED_REJECTION" | null = null;
+  let workerBootstrapProbe: "PASS" | "FAIL" | "NOT_RUN" = "NOT_RUN";
   let worker: WorkerLike | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let abortHandler: (() => void) | null = null;
@@ -149,6 +150,7 @@ export async function runSyntheticMemoryMeasurement(
     postFixtureBytes = await sample();
     preMaterializationBytes = await sample();
 
+    workerBootstrapProbe = await runWorkerBootstrapProbe();
     worker = workerFactory();
     workerLifecycleStage = "CREATED";
 
@@ -282,6 +284,7 @@ export async function runSyntheticMemoryMeasurement(
       errorMessageSanitized: null,
       workerLifecycleStage,
       workerRuntimeSignal,
+      workerBootstrapProbe,
     };
   } catch (reason) {
     const error = reason instanceof MemoryLabError ? reason : new MemoryLabError("UNKNOWN_ERROR");
@@ -303,6 +306,38 @@ export async function runSyntheticMemoryMeasurement(
     if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
     worker?.terminate();
     worker = null;
+  }
+}
+
+async function runWorkerBootstrapProbe(): Promise<"PASS" | "FAIL"> {
+  if (typeof Worker === "undefined" || typeof Blob === "undefined" || typeof URL === "undefined") {
+    return "FAIL";
+  }
+
+  const script = 'self.postMessage("GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY");';
+  const url = URL.createObjectURL(new Blob([script], { type: "text/javascript" }));
+  const worker = new Worker(url);
+  try {
+    return await new Promise<"PASS" | "FAIL">((resolve) => {
+      let settled = false;
+      const finish = (status: "PASS" | "FAIL") => {
+        if (settled) return;
+        settled = true;
+        worker.removeEventListener("message", onMessage);
+        worker.removeEventListener("error", onError);
+        resolve(status);
+      };
+      const onMessage = (event: MessageEvent<unknown>) => {
+        finish(event.data === "GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY" ? "PASS" : "FAIL");
+      };
+      const onError = () => finish("FAIL");
+      worker.addEventListener("message", onMessage);
+      worker.addEventListener("error", onError);
+      setTimeout(() => finish("FAIL"), 2_000);
+    });
+  } finally {
+    worker.terminate();
+    URL.revokeObjectURL(url);
   }
 }
 
