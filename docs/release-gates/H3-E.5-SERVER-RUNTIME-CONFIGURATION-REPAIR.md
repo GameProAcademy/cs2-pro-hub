@@ -1,7 +1,7 @@
 # H.3-E.5 — Server Runtime Configuration Repair
 
 **Date:** 2026-09-24  
-**Status:** IMPLEMENTED / VALIDATION PENDING / FAIL-CLOSED
+**Status:** IMPLEMENTED / PUBLISHED / FAIL-CLOSED
 
 ## Observed failure
 
@@ -16,6 +16,8 @@ The two existing project secret objects were present under the correct names. Th
 The adapter now copies only `PARSER_ATTESTATION_TRANSPORT_SECRET` and `PARSER_ATTESTATION_HMAC_SECRET` from the server runtime binding object into the server-only environment before request dispatch. It does not enumerate, serialize, log, return, persist, rotate, or alter either value.
 
 The recorder remains unchanged and fail-closed. Missing or short values still return `503`; configured requests must still pass bearer authentication, exact canonical payload checks, digest, HMAC, evidence, freshness, GitHub OIDC signature and claim binding, mapping authority, and the service-only transactional database recorder.
+
+After application-only republication, an anonymous production `POST` with an empty JSON body returned `401 UNAUTHORIZED` instead of `503 ATTESTATION_SERVER_NOT_CONFIGURED`. This proves only that runtime configuration reached the bearer-authentication gate. No valid credential, attestation payload, OIDC token, or real attestation was sent.
 
 ## Locks
 

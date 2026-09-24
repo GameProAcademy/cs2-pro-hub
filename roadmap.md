@@ -24,12 +24,12 @@ Status: `IMPLEMENTED / PRE-EXECUTION / FAIL-CLOSED`.
 
 ### H.3-E.5 — Server Runtime Configuration Repair
 
-Status: `IMPLEMENTED / VALIDATION PENDING / FAIL-CLOSED`.
+Status: `IMPLEMENTED / PUBLISHED / FAIL-CLOSED`.
 
 - [x] Preserve the existing secret values and bridge only the two named server runtime bindings into the TanStack server environment.
 - [x] Keep missing/invalid configuration at `503 ATTESTATION_SERVER_NOT_CONFIGURED` and preserve all cryptographic and database gates.
 - [x] Add non-disclosure and binding-scope tests without using production secret values.
-- [ ] Republish the application and verify an anonymous POST advances to the expected `401 UNAUTHORIZED`: `PENDING`.
+- [x] Republish the application and verify an anonymous POST advances to the expected `401 UNAUTHORIZED`.
 
 **Observed state:** H.3-E.3 Final External Preflight #9 completed successfully on `main`. Parser Runtime Attestation #9 reached verified evidence generation and GitHub OIDC minting, then delivery failed with `503 ATTESTATION_SERVER_NOT_CONFIGURED`; that failed request wrote no parser provenance. H.3-E.3 remains a reachability-only check and must not be interpreted as endpoint readiness.
 
