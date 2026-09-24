@@ -103,9 +103,7 @@ export function evaluateLargeDemFeasibility(
     return result("NOT_SUPPORTED", "PARSER_CAPABILITY_UNKNOWN");
   if (metadata.sizeBytes > CLIENT_DEMO_MAX_BYTES) {
     return result(
-      parserCapability.requiresContiguousBuffer
-        ? "NOT_SUPPORTED"
-        : "BLOCKED",
+      parserCapability.requiresContiguousBuffer ? "NOT_SUPPORTED" : "BLOCKED",
       parserCapability.requiresContiguousBuffer
         ? "PARSER_STREAMING_NOT_SUPPORTED"
         : "ABOVE_SAFE_INPUT_LIMIT",
