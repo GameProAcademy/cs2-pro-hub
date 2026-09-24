@@ -3,7 +3,13 @@ import { containsBinaryValue, createSyntheticFixtureDescriptor } from "../memory
 import { runSyntheticMemoryMeasurement } from "../memoryMeasurement.runner";
 
 type WorkerBehavior =
-  "complete" | "hang" | "error-event" | "worker-error" | "malformed" | "wrong-request";
+  | "complete"
+  | "hang"
+  | "error-event"
+  | "worker-error"
+  | "message-error"
+  | "malformed"
+  | "wrong-request";
 
 class FakeWorker {
   terminated = 0;
@@ -11,16 +17,21 @@ class FakeWorker {
   posted = 0;
   private messageListeners = new Set<(event: MessageEvent<unknown>) => void>();
   private errorListeners = new Set<(event: ErrorEvent) => void>();
+  private messageErrorListeners = new Set<(event: MessageEvent<unknown>) => void>();
 
   constructor(
     private readonly behavior: WorkerBehavior = "complete",
     private readonly lifecycle: string[] = [],
-  ) {}
+  ) {
+    queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
+  }
 
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     if (type === "message")
       this.messageListeners.add(listener as (event: MessageEvent<unknown>) => void);
     if (type === "error") this.errorListeners.add(listener as (event: ErrorEvent) => void);
+    if (type === "messageerror")
+      this.messageErrorListeners.add(listener as (event: MessageEvent<unknown>) => void);
   }
 
   removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
@@ -28,6 +39,8 @@ class FakeWorker {
     if (type === "message")
       this.messageListeners.delete(listener as (event: MessageEvent<unknown>) => void);
     if (type === "error") this.errorListeners.delete(listener as (event: ErrorEvent) => void);
+    if (type === "messageerror")
+      this.messageErrorListeners.delete(listener as (event: MessageEvent<unknown>) => void);
   }
 
   postMessage(command: unknown) {
@@ -39,6 +52,11 @@ class FakeWorker {
     queueMicrotask(() => {
       if (this.behavior === "worker-error") {
         for (const listener of this.errorListeners) listener({ type: "error" } as ErrorEvent);
+        return;
+      }
+      if (this.behavior === "message-error") {
+        for (const listener of this.messageErrorListeners)
+          listener({ type: "messageerror" } as MessageEvent<unknown>);
         return;
       }
       if (this.behavior === "malformed") {
@@ -144,7 +162,7 @@ describe("synthetic memory measurement lifecycle", () => {
     expect(result.materializedByteLength).toBe(16 * 1024 * 1024);
     expect(containsBinaryValue(result)).toBe(false);
     expect(worker.terminated).toBe(1);
-    expect(worker.removed).toBeGreaterThanOrEqual(2);
+    expect(worker.removed).toBeGreaterThanOrEqual(3);
     expect(lifecycle.indexOf("complete")).toBeLessThan(lifecycle.indexOf("sample:220"));
     expect(lifecycle.indexOf("sample:220")).toBeLessThan(lifecycle.indexOf("terminate"));
   });
@@ -243,9 +261,21 @@ describe("synthetic memory measurement lifecycle", () => {
     expect(worker.removed).toBeGreaterThanOrEqual(2);
   });
 
+  it("reports the last Worker lifecycle stage when the Worker errors", async () => {
+    const lifecycle: string[] = [];
+    const worker = new FakeWorker("worker-error", lifecycle);
+    const result = await runSyntheticMemoryMeasurement(
+      descriptor,
+      optionsFor(worker, async () => ({ bytes: 100 }), lifecycle),
+    );
+    expect(result.errorCode).toBe("MATERIALIZATION_WORKER_ERROR");
+    expect(result.workerLifecycleStage).toBe("WORKER_ERROR");
+  });
+
   it.each([
     ["error-event", "MATERIALIZATION_FAILED"],
     ["worker-error", "MATERIALIZATION_WORKER_ERROR"],
+    ["message-error", "MATERIALIZATION_MESSAGE_ERROR"],
     ["malformed", "MATERIALIZATION_FAILED"],
     ["wrong-request", "MATERIALIZATION_FAILED"],
   ] as const)("fails closed for %s and terminates the Worker", async (behavior, code) => {
