@@ -138,6 +138,7 @@ export async function runSyntheticMemoryMeasurement(
   let postMaterializationBytes: number | null = null;
   let postCleanupBytes: number | null = null;
   let workerLifecycleStage: MemoryWorkerLifecycleStage | null = null;
+  let workerRuntimeSignal: "ERROR_EVENT" | "ONERROR" | "UNHANDLED_REJECTION" | null = null;
   let worker: WorkerLike | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let abortHandler: (() => void) | null = null;
@@ -173,11 +174,12 @@ export async function runSyntheticMemoryMeasurement(
       };
 
       const onError = () => {
-        workerLifecycleStage = "WORKER_ERROR";
+        workerRuntimeSignal ??= "ERROR_EVENT";
         finish(new MemoryLabError("MATERIALIZATION_WORKER_ERROR"));
       };
 
       const onMessageError = () => {
+        workerRuntimeSignal ??= "ERROR_EVENT";
         workerLifecycleStage = "MESSAGE_ERROR";
         finish(new MemoryLabError("MATERIALIZATION_MESSAGE_ERROR"));
       };
@@ -197,6 +199,12 @@ export async function runSyntheticMemoryMeasurement(
             requestId,
             descriptor: validated,
           });
+          return;
+        }
+
+        if (message.data.type === "ERROR" && message.data.runtimeSignal) {
+          workerRuntimeSignal ??= message.data.runtimeSignal;
+          finish(new MemoryLabError(message.data.code));
           return;
         }
 
@@ -273,6 +281,7 @@ export async function runSyntheticMemoryMeasurement(
       errorCode: null,
       errorMessageSanitized: null,
       workerLifecycleStage,
+      workerRuntimeSignal,
     };
   } catch (reason) {
     const error = reason instanceof MemoryLabError ? reason : new MemoryLabError("UNKNOWN_ERROR");
@@ -287,6 +296,7 @@ export async function runSyntheticMemoryMeasurement(
       workerDurationMs: now() - startedAt,
       cleanupStatus: "FAILED",
       workerLifecycleStage,
+      workerRuntimeSignal,
     };
   } finally {
     if (timeout) clearTimeout(timeout);
