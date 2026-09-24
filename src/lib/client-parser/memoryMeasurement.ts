@@ -134,7 +134,9 @@ export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent 
   return (
     event["type"] === "MATERIALIZATION_COMPLETE" &&
     Number.isSafeInteger(event["materializedByteLength"]) &&
-    Number.isFinite(event["materializationDurationMs"])
+    (event["materializedByteLength"] as number) >= 0 &&
+    Number.isFinite(event["materializationDurationMs"]) &&
+    (event["materializationDurationMs"] as number) >= 0
   );
 }
 
