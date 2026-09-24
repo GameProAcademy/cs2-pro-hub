@@ -111,8 +111,7 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.playerIdentityVerified) blockers.push("PLAYER_IDENTITY_NOT_VERIFIED");
   if (!input.retentionAuthorizationVerified) blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
   if (!input.attestationFresh) blockers.push("ATTESTATION_NOT_FRESH");
-  if (!input.executionAuthorizationGranted)
-    blockers.push("EXECUTION_AUTHORIZATION_NOT_GRANTED");
+  if (!input.executionAuthorizationGranted) blockers.push("EXECUTION_AUTHORIZATION_NOT_GRANTED");
   if (!input.canonicalAdmissionLocked) blockers.push("CANONICAL_LOCK_NOT_ACTIVE");
 
   const uniqueBlockers = [...new Set(blockers)];
