@@ -24,6 +24,7 @@ export type MemoryMeasurementErrorCode =
   | "FIXTURE_CREATION_FAILED"
   | "MATERIALIZATION_FAILED"
   | "MATERIALIZATION_WORKER_ERROR"
+  | "MATERIALIZATION_MESSAGE_ERROR"
   | "MATERIALIZATION_INVALID_COMMAND"
   | "MATERIALIZATION_READ_FAILED"
   | "MATERIALIZATION_LENGTH_MISMATCH"
@@ -33,6 +34,18 @@ export type MemoryMeasurementErrorCode =
   | "CANCELLED"
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
+export type MemoryWorkerLifecycleStage =
+  | "CREATED"
+  | "READY"
+  | "COMMAND_RECEIVED"
+  | "MATERIALIZATION_STARTED"
+  | "FILE_CREATED"
+  | "ARRAYBUFFER_STARTED"
+  | "ARRAYBUFFER_COMPLETE"
+  | "MATERIALIZATION_COMPLETE"
+  | "WORKER_ERROR"
+  | "MESSAGE_ERROR"
+  | "UNKNOWN";
 export type CleanupStatus =
   "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN" | "FAILED";
 
@@ -71,6 +84,7 @@ export interface MemoryMeasurementResult {
   errorCode: MemoryMeasurementErrorCode | null;
   errorMessageSanitized: string | null;
   runtime: { userAgent: string };
+  workerLifecycleStage: MemoryWorkerLifecycleStage | null;
 }
 
 export type MemoryWorkerCommand = {
@@ -79,7 +93,9 @@ export type MemoryWorkerCommand = {
   descriptor: SyntheticFixtureDescriptor;
 };
 export type MemoryWorkerEvent =
+  | { type: "WORKER_READY" }
   | { type: "MATERIALIZATION_STARTED"; requestId: string }
+  | { type: "WORKER_STAGE"; requestId: string; stage: Exclude<MemoryWorkerLifecycleStage, "CREATED" | "READY" | "WORKER_ERROR" | "MESSAGE_ERROR" | "UNKNOWN"> }
   | {
       type: "MATERIALIZATION_COMPLETE";
       requestId: string;
@@ -92,6 +108,7 @@ export type MemoryWorkerEvent =
       code:
         | "MATERIALIZATION_FAILED"
         | "MATERIALIZATION_WORKER_ERROR"
+        | "MATERIALIZATION_MESSAGE_ERROR"
         | "MATERIALIZATION_INVALID_COMMAND"
         | "MATERIALIZATION_READ_FAILED"
         | "MATERIALIZATION_LENGTH_MISMATCH";
