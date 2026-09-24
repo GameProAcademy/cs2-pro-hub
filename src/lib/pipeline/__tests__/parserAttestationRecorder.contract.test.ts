@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const route = readFileSync(resolve("src/routes/api/public/parser-attestation.ts"), "utf8");
 const workflow = readFileSync(resolve(".github/workflows/parser-runtime-attestation.yml"), "utf8");
+const server = readFileSync(resolve("src/server.ts"), "utf8");
 
 describe("H.3-E.2 protected attestation recorder contract", () => {
   it("requires transport, OIDC, HMAC, canonical, digest, and release evidence", () => {
@@ -24,6 +25,14 @@ describe("H.3-E.2 protected attestation recorder contract", () => {
     expect(route).not.toMatch(
       /console\.(log|error)\([^)]*(signingSecret|transportSecret|oidcToken)/,
     );
+  });
+
+  it("keeps missing runtime configuration fail-closed without disclosing readiness details", () => {
+    expect(route).toContain('error: "ATTESTATION_SERVER_NOT_CONFIGURED"');
+    expect(route).toContain("{ status: 503 }");
+    expect(route).not.toContain("transportSecretConfigured");
+    expect(route).not.toContain("signingSecretConfigured");
+    expect(server).toContain("bindAttestationRuntimeSecrets(env)");
   });
 
   it("keeps dispatch manual and sends the exact signed canonical payload", () => {
