@@ -1,7 +1,6 @@
 import {
   MEMORY_MEASUREMENT_TIMEOUT_MS,
   MemoryLabError,
-  createSyntheticFixture,
   createSyntheticFixtureDescriptor,
   getMemoryMeasurementAvailability,
   isMemoryWorkerEvent,
@@ -137,7 +136,6 @@ export async function runSyntheticMemoryMeasurement(
   let preMaterializationBytes: number | null = null;
   let postMaterializationBytes: number | null = null;
   let postCleanupBytes: number | null = null;
-  let fixture: File | null = null;
   let worker: WorkerLike | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let abortHandler: (() => void) | null = null;
@@ -145,7 +143,6 @@ export async function runSyntheticMemoryMeasurement(
 
   try {
     baselineBytes = await sample();
-    fixture = createSyntheticFixture(validated);
     postFixtureBytes = await sample();
     preMaterializationBytes = await sample();
     worker = workerFactory();
@@ -192,12 +189,10 @@ export async function runSyntheticMemoryMeasurement(
       worker?.postMessage({
         type: "MEMORY_MEASUREMENT",
         requestId,
-        fixture,
         descriptor: validated,
       });
     });
     postMaterializationBytes = await sample();
-    fixture = null;
     worker.terminate();
     worker = null;
     await wait(options.stabilizationMs ?? 250);
@@ -248,7 +243,6 @@ export async function runSyntheticMemoryMeasurement(
   } finally {
     if (timeout) clearTimeout(timeout);
     if (abortHandler) options.signal?.removeEventListener("abort", abortHandler);
-    fixture = null;
     worker?.terminate();
     worker = null;
   }
