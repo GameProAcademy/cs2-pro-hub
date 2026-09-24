@@ -221,6 +221,7 @@ export const ptPT: Dictionary = {
   "admin.nav.audit": "Registo de auditoria",
   "admin.nav.demoE2E": "E2E de demo real",
   "admin.nav.r5Forensic": "Staging forense R5",
+  "admin.nav.memoryLab": "Browser Memory Lab",
   "admin.nav.backToApp": "Voltar ao produto",
   "admin.overview.title": "Visão geral",
   "admin.overview.subtitle": "Números reais da plataforma CS2 PRO AI COACH.",
