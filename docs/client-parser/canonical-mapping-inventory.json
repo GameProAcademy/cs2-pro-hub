@@ -1,6 +1,6 @@
 {
   "digest": "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1",
-  "generatorCommit": "e83c70eaca70a2c34be5375c4f1b62c453b2e477",
+  "generatorCommit": "d060d3288c4a1115d06b39cbe584bdf6fb73cd81",
   "generatorRevision": "scripts/canonical_mapping_gate.py:v2",
   "inventoryVersion": "canonical-demo-v2",
   "matrixDigest": "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702",

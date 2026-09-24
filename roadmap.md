@@ -1,13 +1,19 @@
-# CURRENT IMPLEMENTATION — FASE 2.7.2H.1
+# CURRENT IMPLEMENTATION — FASE 2.7.2H.1-R
 
-**Status:** `IMPLEMENTED / REAL BROWSER MEASUREMENT NOT_RUN / SYNTHETIC ONLY`.
+**Status:** `IMPLEMENTATION HARDENED / CI VERIFIED / H.1-M RUNTIME MEASUREMENT PENDING / SYNTHETIC ONLY`.
 
 - [x] Implementar fixtures sintéticos determinísticos de 16/32/64/96/128 MiB, com teto fail-closed em 128 MiB.
 - [x] Reutilizar a fronteira contígua exclusivamente em Worker dedicado, sem parser/WASM e sem retornar bytes à UI.
 - [x] Exigir feature flag, contexto seguro, cross-origin isolation, Worker, File API e API de memória.
 - [x] Implementar timeout de 60 s, cancelamento, encerramento do Worker, remoção de listeners e amostra pós-cleanup.
+- [x] Remover a amostra concorrente e fixar a sequência determinística com amostra explícita pós-materialização.
+- [x] Tornar `observedPeakBytes` o máximo das amostras observadas pré-cleanup, sem alegar pico absoluto.
+- [x] Classificar cleanup de forma neutra e manter somente `observedCleanupDeltaBytes` como diferença observada.
+- [x] Documentar o tamanho do fixture como tamanho lógico, sem alegação de footprint físico.
 - [x] Manter resultados somente em memória e permitir cópia de relatório JSON textual classificado como diagnóstico sintético.
-- [ ] Executar manualmente a medição em navegador compatível: `NOT_RUN`.
+- [x] Confirmar todos os gates de CI da H.1-R: 1.181 testes web, 189 testes do parser, 66 testes contratuais, TypeScript, lint e build aprovados.
+- [ ] H.1-M: executar manualmente a medição em navegador compatível: `NOT_RUN`.
+- [ ] H.2: medir parser/DEM real: bloqueado e fora desta fase.
 - [ ] Usar o resultado como prova de suporte, elevar o teto ou processar DEM real: proibido nesta fase.
 
 **Locks:** teto de 128 MiB, `FEATURES.realDemoParser=false`, real DEM, parser, Canonical, Attempt 9/10+, Railway, banco, Storage, secrets e attestation inalterados.

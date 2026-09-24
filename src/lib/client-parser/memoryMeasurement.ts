@@ -30,11 +30,7 @@ export type MemoryMeasurementErrorCode =
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
 export type CleanupStatus =
-  | "CLEANUP_OBSERVED_STABLE"
-  | "CLEANUP_OBSERVED_RESIDUAL"
-  | "CLEANUP_MEASUREMENT_UNAVAILABLE"
-  | "CLEANUP_NOT_RUN"
-  | "FAILED";
+  "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN" | "FAILED";
 
 export interface SyntheticFixtureDescriptor {
   kind: "SYNTHETIC_MEMORY_FIXTURE";
@@ -55,12 +51,11 @@ export interface MemoryMeasurementResult {
   baselineBytes: number | null;
   postFixtureBytes: number | null;
   preMaterializationBytes: number | null;
-  observedMaterializationBytes: number | null;
-  postCompletionBytes: number | null;
+  postMaterializationBytes: number | null;
   postCleanupBytes: number | null;
   observedPeakBytes: number | null;
   peakDeltaBytes: number | null;
-  cleanupDeltaBytes: number | null;
+  observedCleanupDeltaBytes: number | null;
   materializationDurationMs: number | null;
   workerDurationMs: number | null;
   materializedByteLength: number | null;
