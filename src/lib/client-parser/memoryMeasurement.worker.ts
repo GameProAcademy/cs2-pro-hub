@@ -18,7 +18,11 @@ scope.onmessage = (event) => {
         ? (command as Record<string, unknown>)["requestId"]
         : null;
     if (typeof requestId === "string") {
-      scope.postMessage({ type: "ERROR", requestId, code: "MATERIALIZATION_INVALID_COMMAND" });
+      scope.postMessage({
+        type: "ERROR",
+        requestId,
+        code: "MATERIALIZATION_INVALID_COMMAND",
+      });
     }
     return;
   }
@@ -29,7 +33,9 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   const descriptor = command["descriptor"] as Record<string, unknown> | undefined;
-  const fixture = command["fixture"] as { size?: unknown; type?: unknown; arrayBuffer?: unknown } | undefined;
+  const fixture = command["fixture"] as
+    | { size?: unknown; type?: unknown; arrayBuffer?: unknown }
+    | undefined;
   return (
     command["type"] === "MEMORY_MEASUREMENT" &&
     typeof command["requestId"] === "string" &&
@@ -50,11 +56,18 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
 
 async function materialize(command: MemoryWorkerCommand) {
   try {
-    scope.postMessage({ type: "MATERIALIZATION_STARTED", requestId: command.requestId });
+    scope.postMessage({
+      type: "MATERIALIZATION_STARTED",
+      requestId: command.requestId,
+    });
     const startedAt = performance.now();
     const buffer = await command.fixture.arrayBuffer();
     if (buffer.byteLength !== command.fixture.size) {
-      scope.postMessage({ type: "ERROR", requestId: command.requestId, code: "MATERIALIZATION_LENGTH_MISMATCH" });
+      scope.postMessage({
+        type: "ERROR",
+        requestId: command.requestId,
+        code: "MATERIALIZATION_LENGTH_MISMATCH",
+      });
       return;
     }
     const materializationDurationMs = performance.now() - startedAt;
@@ -65,6 +78,10 @@ async function materialize(command: MemoryWorkerCommand) {
       materializationDurationMs,
     });
   } catch {
-    scope.postMessage({ type: "ERROR", requestId: command.requestId, code: "MATERIALIZATION_READ_FAILED" });
+    scope.postMessage({
+      type: "ERROR",
+      requestId: command.requestId,
+      code: "MATERIALIZATION_READ_FAILED",
+    });
   }
 }
