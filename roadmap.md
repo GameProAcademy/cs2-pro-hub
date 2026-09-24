@@ -8,6 +8,20 @@
 
 Status: `IMPLEMENTED / FAIL-CLOSED / PRE-EXECUTION`.
 
+### H.3-E.2 — Protected Operator Configuration & Attestation Readiness
+
+Status: `IMPLEMENTED / PRE-EXECUTION / FAIL-CLOSED`.
+
+- [x] Keep the external recorder on the supported server-only `/api/public/parser-attestation` boundary.
+- [x] Require transport authentication, cryptographic GitHub OIDC verification and exact claim binding.
+- [x] Verify the exact workflow-supplied canonical bytes, SHA-256 digest, HMAC-SHA256 signature and signed release evidence.
+- [x] Add a service-only database wrapper that injects the existing HMAC secret with transaction-local `set_config(..., true)` and delegates to the unchanged authoritative recorder.
+- [x] Preserve private/RLS/immutable provenance and nonce storage and replay rejection.
+- [x] Adapt the manual GitHub workflow to send `canonicalPayload` without dispatching it.
+- [ ] Execute the first attestation: `NOT RUN`.
+
+**Locks:** no real DEM, Cache DEM, Attempt 9/10+, final RAW evidence, Canonical authorization, Railway mutation, EnvironmentPatch, secret rotation, or attestation workflow execution occurred.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
@@ -32,7 +46,6 @@ Status: `IMPLEMENTED / FAIL-CLOSED / PRE-EXECUTION`.
 - Railway production was re-audited after the merge: the parser service remains sourced from `infra/cs2-parser-worker-v8`, with latest successful deployment `ff0cc222f514c01eda6e26d7bb95271a8b0c9b04`. No production mutation was made by H.3-E.
 - A pre-existing staged Railway `EnvironmentPatch` (`d66b5a12-a69e-4b9a-87b6-314f75c471cc`) remains untouched and is not part of H.3-E.
 - Next gate is **H.3-E closure/readiness reconciliation**, not execution: close only independently evidenced retention authorization, fresh attestation, and explicit operator authorization. Do not infer any of these from CI, PR merge, Railway health, or synthetic memory evidence.
-
 
 ### Non-negotiable execution order
 

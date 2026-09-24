@@ -81,11 +81,14 @@ export function validateParserAttestationOidcClaims(
     claims["sub"] !== oidc.subject ||
     claims["event_name"] !== oidc.eventName ||
     claims["sha"] !== workflowIdentity["workflow_sha"] ||
+    claims["workflow_sha"] !== workflowIdentity["workflow_file_commit_sha"] ||
     workflowIdentity["workflow_sha"] !== workflowIdentity["trigger_commit_sha"] ||
     typeof workflowIdentity["workflow_file_commit_sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_file_commit_sha"]) ||
     typeof claims["sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(claims["sha"]) ||
+    typeof claims["workflow_sha"] !== "string" ||
+    !/^[0-9a-f]{40}$/.test(claims["workflow_sha"]) ||
     String(claims["run_id"]) !== workflowIdentity["run_id"] ||
     String(claims["run_attempt"]) !== workflowIdentity["run_attempt"] ||
     typeof claims["exp"] !== "number" ||

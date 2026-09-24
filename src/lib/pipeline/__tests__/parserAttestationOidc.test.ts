@@ -34,6 +34,7 @@ function validClaims(): Record<string, unknown> {
     sub: PARSER_ATTESTATION_OIDC.subject,
     event_name: PARSER_ATTESTATION_OIDC.eventName,
     sha: workflowIdentity.workflow_sha,
+    workflow_sha: workflowIdentity.workflow_file_commit_sha,
     run_id: workflowIdentity.run_id,
     run_attempt: workflowIdentity.run_attempt,
     iat: NOW - 30,
@@ -96,13 +97,16 @@ describe("parser attestation OIDC claims", () => {
     );
   });
 
-  it.each(["sha", "run_id", "run_attempt"])("rejects a mismatched %s binding", (claim) => {
-    const claims = validClaims();
-    claims[claim] = "unexpected";
-    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
-      "OIDC_CLAIMS_MISMATCH",
-    );
-  });
+  it.each(["sha", "workflow_sha", "run_id", "run_attempt"])(
+    "rejects a mismatched %s binding",
+    (claim) => {
+      const claims = validClaims();
+      claims[claim] = "unexpected";
+      expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+        "OIDC_CLAIMS_MISMATCH",
+      );
+    },
+  );
 
   it.each(["run_id", "run_attempt"])("rejects an absent %s binding", (claim) => {
     const claims = validClaims();
