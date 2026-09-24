@@ -48,6 +48,7 @@ export interface RealDemExecutionReadinessInput {
   inputStrategyVerified: boolean;
   surfaceCapacityVerified: boolean;
   runtimePreflightVerified: boolean;
+  realMemoryObserved: boolean;
   parserOverheadMeasured: boolean;
   parityVerified: boolean;
   determinismVerified: boolean;
