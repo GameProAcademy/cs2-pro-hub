@@ -103,6 +103,14 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
 
         const parsed = bodySchema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) {
+          console.error(
+            "[parser-attestation] payload schema rejected",
+            parsed.error.issues.map((issue) => ({
+              code: issue.code,
+              path: issue.path,
+              message: issue.message,
+            })),
+          );
           return Response.json({ error: "ATTESTATION_PAYLOAD_INVALID" }, { status: 400 });
         }
         let canonicalPayloadObject: Record<string, unknown>;
