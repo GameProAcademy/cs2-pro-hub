@@ -33,9 +33,7 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   const descriptor = command["descriptor"] as Record<string, unknown> | undefined;
-  const fixture = command["fixture"] as
-    | { size?: unknown; type?: unknown; arrayBuffer?: unknown }
-    | undefined;
+  const fixture = command["fixture"] as { size?: unknown; type?: unknown; arrayBuffer?: unknown };
   return (
     command["type"] === "MEMORY_MEASUREMENT" &&
     typeof command["requestId"] === "string" &&
