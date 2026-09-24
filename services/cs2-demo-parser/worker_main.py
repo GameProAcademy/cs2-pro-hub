@@ -13,8 +13,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import json
 
 from parser_isolated import parse_demo_file_isolated
+from runtime_evidence import collect_runtime_evidence
 from settings import PARSER_NAME, PARSER_VERSION, load_settings
 from worker import durable_consumer_loop
 
@@ -26,6 +28,12 @@ async def _health_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
         request = await reader.read(2048)
         first_line = request.split(b"\r\n", 1)[0] if request else b""
         settings = load_settings()
+        request_text = request.decode("latin-1", errors="ignore")
+        headers = {}
+        for header_line in request_text.split("\r\n")[1:]:
+            key, separator, value = header_line.partition(":")
+            if separator:
+                headers[key.strip().lower()] = value.strip()
         if first_line.startswith(b"GET /health "):
             body = b'{"status":"ok","role":"durable-worker"}'
             response = (
@@ -34,6 +42,24 @@ async def _health_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
                 b"content-length: " + str(len(body)).encode() + b"\r\n"
                 b"connection: close\r\n\r\n" + body
             )
+        elif first_line.startswith(b"GET /v1/runtime/preflight "):
+            expected = f"Bearer {settings.token}"
+            if headers.get("authorization") != expected:
+                body = b'{"error":"unauthorized"}'
+                response = (
+                    b"HTTP/1.1 401 Unauthorized\r\n"
+                    b"content-type: application/json\r\n"
+                    b"content-length: " + str(len(body)).encode() + b"\r\n"
+                    b"connection: close\r\n\r\n" + body
+                )
+            else:
+                body = json.dumps(collect_runtime_evidence(settings), separators=(",", ":")).encode("utf-8")
+                response = (
+                    b"HTTP/1.1 200 OK\r\n"
+                    b"content-type: application/json\r\n"
+                    b"content-length: " + str(len(body)).encode() + b"\r\n"
+                    b"connection: close\r\n\r\n" + body
+                )
         elif first_line.startswith(b"GET /version "):
             import json
 
