@@ -300,6 +300,7 @@ export async function runSyntheticMemoryMeasurement(
       cleanupStatus: "FAILED",
       workerLifecycleStage,
       workerRuntimeSignal,
+      workerBootstrapProbe,
     };
   } finally {
     if (timeout) clearTimeout(timeout);
