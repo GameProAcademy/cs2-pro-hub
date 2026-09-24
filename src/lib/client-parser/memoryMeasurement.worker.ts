@@ -54,6 +54,7 @@ async function materialize(command: MemoryWorkerCommand) {
     MemoryWorkerEvent,
     { type: "WORKER_STAGE" }
   >["stage"] = "COMMAND_RECEIVED";
+  const startedAt = performance.now();
   try {
     postStage(command.requestId, stage);
     postStage(command.requestId, "MATERIALIZATION_STARTED");
@@ -74,7 +75,7 @@ async function materialize(command: MemoryWorkerCommand) {
       return;
     }
     postStage(command.requestId, "MATERIALIZATION_COMPLETE");
-    const materializationDurationMs = performance.now();
+    const materializationDurationMs = performance.now() - startedAt;
     scope.postMessage({
       type: "MATERIALIZATION_COMPLETE",
       requestId: command.requestId,
