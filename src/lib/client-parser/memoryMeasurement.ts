@@ -34,6 +34,7 @@ export type MemoryMeasurementErrorCode =
   | "CANCELLED"
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
+export type MemoryWorkerRuntimeSignal = "ERROR_EVENT" | "ONERROR" | "UNHANDLED_REJECTION";
 export type MemoryWorkerLifecycleStage =
   | "CREATED"
   | "READY"
@@ -86,6 +87,7 @@ export interface MemoryMeasurementResult {
   errorMessageSanitized: string | null;
   runtime: { userAgent: string };
   workerLifecycleStage: MemoryWorkerLifecycleStage | null;
+  workerRuntimeSignal: MemoryWorkerRuntimeSignal | null;
 }
 
 export type MemoryWorkerCommand = {
@@ -120,6 +122,7 @@ export type MemoryWorkerEvent =
         | "MATERIALIZATION_INVALID_COMMAND"
         | "MATERIALIZATION_READ_FAILED"
         | "MATERIALIZATION_LENGTH_MISMATCH";
+      runtimeSignal?: MemoryWorkerRuntimeSignal;
     };
 
 export function createSyntheticFixtureDescriptor(sizeBytes: number): SyntheticFixtureDescriptor {
