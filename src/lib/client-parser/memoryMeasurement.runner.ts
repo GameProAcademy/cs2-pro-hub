@@ -314,30 +314,36 @@ async function runWorkerBootstrapProbe(): Promise<"PASS" | "FAIL"> {
     return "FAIL";
   }
 
-  const script = 'self.postMessage("GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY");';
-  const url = URL.createObjectURL(new Blob([script], { type: "text/javascript" }));
-  const worker = new Worker(url);
+  let worker: Worker | null = null;
+  let url: string | null = null;
+
   try {
+    const script = 'self.postMessage("GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY");';
+    url = URL.createObjectURL(new Blob([script], { type: "text/javascript" }));
+    worker = new Worker(url);
+
     return await new Promise<"PASS" | "FAIL">((resolve) => {
       let settled = false;
       const finish = (status: "PASS" | "FAIL") => {
         if (settled) return;
         settled = true;
-        worker.removeEventListener("message", onMessage);
-        worker.removeEventListener("error", onError);
+        worker?.removeEventListener("message", onMessage);
+        worker?.removeEventListener("error", onError);
         resolve(status);
       };
       const onMessage = (event: MessageEvent<unknown>) => {
         finish(event.data === "GAMEPRO_MEMORY_WORKER_BOOTSTRAP_READY" ? "PASS" : "FAIL");
       };
       const onError = () => finish("FAIL");
-      worker.addEventListener("message", onMessage);
-      worker.addEventListener("error", onError);
+      worker?.addEventListener("message", onMessage);
+      worker?.addEventListener("error", onError);
       setTimeout(() => finish("FAIL"), 2_000);
     });
+  } catch {
+    return "FAIL";
   } finally {
-    worker.terminate();
-    URL.revokeObjectURL(url);
+    worker?.terminate();
+    if (url !== null) URL.revokeObjectURL(url);
   }
 }
 
