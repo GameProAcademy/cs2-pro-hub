@@ -1,0 +1,80 @@
+name: H.3-E.3 Final External Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-preflight:
+    if: github.repository == 'GameProAcademy/cs2-pro-hub' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate protected secret presence without revealing values
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$RAILWAY_API_TOKEN"
+          test -n "$PARSER_ATTESTATION_ENDPOINT"
+          test -n "$PARSER_ATTESTATION_TRANSPORT_SECRET"
+          test -n "$PARSER_ATTESTATION_HMAC_SECRET"
+          test "$PARSER_ATTESTATION_ENDPOINT" = "https://gamepro.network/api/public/parser-attestation"
+          echo "protected_secret_presence=PASS"
+          echo "endpoint_exact_match=PASS"
+
+      - name: Probe attestation endpoint without credentials or attestation payload
+        run: |
+          set -euo pipefail
+          set +e
+          body="$(mktemp)"
+          http_code="$(curl --silent --show-error --output "$body" --write-out '%{http_code}' --max-time 15 --retry 0             -X POST             -H 'Content-Type: application/json'             --data '{}'             'https://gamepro.network/api/public/parser-attestation')"
+          curl_rc=$?
+          set -e
+          cat "$body" | head -c 512
+          printf '\n'
+          echo "endpoint_http_code=$http_code"
+          echo "curl_exit=$curl_rc"
+          if [ "$curl_rc" -ne 0 ]; then
+            echo "endpoint_reachability=BLOCKED"
+            exit 1
+          fi
+          case "$http_code" in
+            401|400|422|503)
+              echo "endpoint_reachability=PASS"
+              ;;
+            *)
+              echo "endpoint_reachability=BLOCKED"
+              exit 1
+              ;;
+          esac
+
+      - name: Probe Railway runtime endpoints without credentials
+        run: |
+          set -euo pipefail
+          for url in             "https://parser.gamepro.network/version"             "https://parser.gamepro.network/health"             "https://cs2-demo-parser-production.up.railway.app/version"             "https://cs2-demo-parser-production.up.railway.app/health"
+          do
+            code="$(curl --silent --show-error --output /tmp/endpoint-body --write-out '%{http_code}' --max-time 15 --retry 0 "$url")"
+            rc=$?
+            echo "url=$url"
+            echo "http_code=$code"
+            if [ "$rc" -ne 0 ] || [ "$code" != "200" ]; then
+              echo "runtime_endpoint_preflight=BLOCKED"
+              exit 1
+            fi
+            head -c 512 /tmp/endpoint-body
+            printf '\n'
+          done
+          echo "runtime_endpoint_preflight=PASS"
+
+      - name: Assert this workflow never executes attestation or DEM parsing
+        run: |
+          echo "dem_execution=NOT_RUN"
+          echo "attestation_execution=NOT_RUN"
+          echo "provenance_write=NOT_RUN"
+          echo "railway_mutation=NOT_RUN"
