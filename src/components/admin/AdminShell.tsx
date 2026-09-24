@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 
 import { Brand } from "@/components/layout/Brand";
 import { Button } from "@/components/ui/button";
+import { FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
 import type { AdminSession } from "@/lib/admin.functions";
 
@@ -45,7 +46,18 @@ export function AdminShell({ session, children }: { session: AdminSession; child
               aria-label={t("admin.area")}
               className="flex flex-1 items-center gap-1 overflow-x-auto"
             >
-              {adminNav.map((item) => (
+              {[
+                ...adminNav,
+                ...(FEATURES.clientDemMemoryLab
+                  ? ([
+                      {
+                        to: "/admin/memory-lab" as const,
+                        labelKey: "admin.nav.memoryLab" as const,
+                        icon: FlaskConical,
+                      },
+                    ] as const)
+                  : []),
+              ].map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}

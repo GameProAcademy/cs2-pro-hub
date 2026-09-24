@@ -10,7 +10,6 @@ import {
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ClientParserAuditReport } from "@/components/pipeline/ClientParserAuditReport";
-import { BrowserMemoryLab } from "@/components/pipeline/BrowserMemoryLab";
 import { ClientParserError } from "@/lib/client-parser/clientParser.errors";
 import { verifyClientParserResult } from "@/lib/client-parser/clientParser.functions";
 import type { ClientParserProgress } from "@/lib/client-parser/clientParser.service";
@@ -254,7 +253,6 @@ export function ClientParserPoc() {
         </div>
       ) : null}
       <ClientParserAuditReport result={result} verification={verification} progress={progress} />
-      <BrowserMemoryLab />
     </div>
   );
 }

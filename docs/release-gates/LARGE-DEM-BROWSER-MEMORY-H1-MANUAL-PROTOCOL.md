@@ -1,14 +1,18 @@
 # Large DEM Browser Memory H.1-M Manual Protocol
 
-STATUS: PREPARED / NOT EXECUTED
+STATUS: H.1-M0 READY / H.1-M NOT RUN
 
 ## Preconditions
 
-Use a foreground browser in a secure, cross-origin-isolated context with Worker, File, and `performance.measureUserAgentSpecificMemory` available. Enable the Memory Lab flag only in the local experimental runtime. Do not enable the real parser.
+Use the authenticated administrative route `/admin/memory-lab` in a foreground browser with a secure, cross-origin-isolated context, Worker, File, and `performance.measureUserAgentSpecificMemory` available.
+
+Build the Preview/experimental runtime with `VITE_CLIENT_DEM_MEMORY_LAB=true` and `VITE_CLIENT_DEM_PARSER_POC_ENABLED=false`. Keep `FEATURES.realDemoParser=false`. This public `VITE_*` build setting is not a secret and requires a Preview rebuild after it changes. Repository and production defaults stay OFF.
 
 ## Procedure
 
-Run the synthetic logical File sizes 16, 32, 64, 96, and 128 MiB manually, with three repetitions per size. Keep the page in the foreground. Do not automate, poll, schedule, upload, persist, or send results to a backend.
+Confirm the page reports Memory Lab `ENABLED`, secure context `YES`, cross-origin isolation `YES`, Memory API `AVAILABLE`, Worker `AVAILABLE`, File API `AVAILABLE`, real parser `DISABLED`, real DEM `BLOCKED`, Canonical `LOCKED`, and Railway/R5.8 `UNCHANGED`.
+
+Run the synthetic logical File sizes 16, 32, 64, 96, and 128 MiB manually, with three repetitions per size, for exactly 15 runs. Keep the page in the foreground. Do not automate, poll, schedule, upload, persist, or send results to a backend. Use `Reset H.1-M session` only to clear local page state.
 
 ## Permitted evidence
 

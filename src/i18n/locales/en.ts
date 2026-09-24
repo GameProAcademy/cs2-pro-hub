@@ -217,6 +217,7 @@ export const en: Dictionary = {
   "admin.nav.audit": "Audit log",
   "admin.nav.demoE2E": "Real demo E2E",
   "admin.nav.r5Forensic": "R5 forensic staging",
+  "admin.nav.memoryLab": "Browser Memory Lab",
   "admin.nav.backToApp": "Back to app",
   "admin.overview.title": "Overview",
   "admin.overview.subtitle": "Real numbers from the CS2 PRO AI COACH platform.",
