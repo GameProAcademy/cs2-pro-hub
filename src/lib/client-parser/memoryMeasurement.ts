@@ -39,6 +39,7 @@ export type MemoryWorkerLifecycleStage =
   | "READY"
   | "COMMAND_RECEIVED"
   | "MATERIALIZATION_STARTED"
+  | "FILE_CREATION_STARTED"
   | "FILE_CREATED"
   | "ARRAYBUFFER_STARTED"
   | "ARRAYBUFFER_COMPLETE"
@@ -164,6 +165,7 @@ export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent 
     return (
       event["stage"] === "COMMAND_RECEIVED" ||
       event["stage"] === "MATERIALIZATION_STARTED" ||
+      event["stage"] === "FILE_CREATION_STARTED" ||
       event["stage"] === "FILE_CREATED" ||
       event["stage"] === "ARRAYBUFFER_STARTED" ||
       event["stage"] === "ARRAYBUFFER_COMPLETE" ||
