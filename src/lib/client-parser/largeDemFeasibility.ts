@@ -50,7 +50,12 @@ export interface LargeDemReadiness {
   parserCapability: DemoParserCapability;
   memory: LargeDemMemoryEstimate;
   canHashChunked: boolean;
-  canParse: boolean;
+  /**
+   * This is deliberately false until a separate real-DEM authorization gate
+   * has accepted the complete evidence envelope. A size/capability hint is
+   * never parser authorization.
+   */
+  canParse: false;
   evidenceClass: "CAPABILITY_HINT";
 }
 
@@ -85,14 +90,13 @@ export function evaluateLargeDemFeasibility(
   const result = (
     state: LargeDemReadinessState,
     reason: LargeDemReadiness["reason"],
-    canParse = false,
   ): LargeDemReadiness => ({
     state,
     reason,
     parserCapability,
     memory,
     canHashChunked: options.workerAvailable,
-    canParse,
+    canParse: false,
     evidenceClass: "CAPABILITY_HINT",
   });
 
@@ -112,7 +116,7 @@ export function evaluateLargeDemFeasibility(
         : "ABOVE_SAFE_INPUT_LIMIT",
     );
   }
-  return result("SAFE", "WITHIN_CONSERVATIVE_LIMIT", true);
+  return result("SAFE", "WITHIN_CONSERVATIVE_LIMIT");
 }
 
 export interface LargeDemMetadata {
