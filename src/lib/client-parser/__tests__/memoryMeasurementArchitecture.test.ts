@@ -15,14 +15,21 @@ const executionSurface = `${contract}\n${worker}\n${runner}\n${report}`;
 const all = `${executionSurface}\n${ui}`;
 
 describe("memory lab architecture guards", () => {
-  it("keeps full materialization inside the dedicated Worker adapter", () => {
-    expect(worker).toContain("readContiguousDemoInput");
+  it("keeps synthetic contiguous materialization inside the dedicated Worker adapter", () => {
+    expect(worker).toContain("arrayBuffer()");
+    expect(worker).toContain("MATERIALIZATION_READ_FAILED");
+    expect(worker).toContain("MATERIALIZATION_LENGTH_MISMATCH");
     expect(runner).not.toContain(".arrayBuffer(");
     expect(ui).not.toContain(".arrayBuffer(");
-    expect(worker).not.toMatch(/demoparser2|parseDemo|ClientParserService/);
+    expect(worker).not.toMatch(/demoparser2|parseDemo|ClientParserService|readContiguousDemoInput/);
     expect(runner).not.toContain("void sample().then");
     expect(runner).not.toContain("observedMaterializationBytes");
     expect(runner).not.toMatch(/performance\.memory/);
+  });
+
+  it("validates the worker command structurally across the worker boundary", () => {
+    expect(worker).toContain('typeof fixture?.arrayBuffer === "function"');
+    expect(worker).not.toContain("fixture instanceof File");
   });
 
   it("never returns binary values from the Worker", () => {
