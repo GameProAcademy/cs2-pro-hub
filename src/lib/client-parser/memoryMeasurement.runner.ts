@@ -389,5 +389,6 @@ function unavailableResult(
     errorMessageSanitized: code,
     workerLifecycleStage: null,
     workerRuntimeSignal: null,
+    workerBootstrapProbe: "NOT_RUN",
   };
 }
