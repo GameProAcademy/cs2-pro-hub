@@ -12,6 +12,8 @@ const scope = self as unknown as {
   postMessage: (message: MemoryWorkerEvent) => void;
 };
 
+scope.postMessage({ type: "WORKER_READY" });
+
 scope.onmessage = (event) => {
   const command = event.data;
   if (!isCommand(command)) {
@@ -48,14 +50,21 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
 }
 
 async function materialize(command: MemoryWorkerCommand) {
+  let stage: Extract<
+    MemoryWorkerEvent,
+    { type: "WORKER_STAGE" }
+  >["stage"] = "COMMAND_RECEIVED";
   try {
-    scope.postMessage({
-      type: "MATERIALIZATION_STARTED",
-      requestId: command.requestId,
-    });
-    const startedAt = performance.now();
+    postStage(command.requestId, stage);
+    postStage(command.requestId, "MATERIALIZATION_STARTED");
+    stage = "FILE_CREATED";
     const fixture = createSyntheticFixture(command.descriptor);
+    postStage(command.requestId, stage);
+    stage = "ARRAYBUFFER_STARTED";
+    postStage(command.requestId, stage);
     const buffer = await fixture.arrayBuffer();
+    stage = "ARRAYBUFFER_COMPLETE";
+    postStage(command.requestId, stage);
     if (buffer.byteLength !== command.descriptor.sizeBytes) {
       scope.postMessage({
         type: "ERROR",
@@ -64,7 +73,8 @@ async function materialize(command: MemoryWorkerCommand) {
       });
       return;
     }
-    const materializationDurationMs = performance.now() - startedAt;
+    postStage(command.requestId, "MATERIALIZATION_COMPLETE");
+    const materializationDurationMs = performance.now();
     scope.postMessage({
       type: "MATERIALIZATION_COMPLETE",
       requestId: command.requestId,
@@ -78,4 +88,14 @@ async function materialize(command: MemoryWorkerCommand) {
       code: "MATERIALIZATION_READ_FAILED",
     });
   }
+}
+
+function postStage(
+  requestId: string,
+  stage: Extract<
+    MemoryWorkerEvent,
+    { type: "WORKER_STAGE" }
+  >["stage"],
+) {
+  scope.postMessage({ type: "WORKER_STAGE", requestId, stage });
 }
