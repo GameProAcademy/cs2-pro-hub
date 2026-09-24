@@ -109,10 +109,9 @@ export function createSyntheticFixture(descriptor: SyntheticFixtureDescriptor): 
   if (descriptor.kind !== "SYNTHETIC_MEMORY_FIXTURE")
     throw new MemoryLabError("FIXTURE_CREATION_FAILED");
   try {
-    const block = new Uint8Array(1024 * 1024);
-    for (let index = 0; index < block.length; index += 1) block[index] = (index * 31 + 17) & 0xff;
-    const parts = Array.from({ length: validated.sizeBytes / block.byteLength }, () => block);
-    return new File(parts, `synthetic-memory-${validated.sizeBytes}.bin`, {
+    const bytes = new Uint8Array(validated.sizeBytes);
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = (index * 31 + 17) & 0xff;
+    return new File([bytes], `synthetic-memory-${validated.sizeBytes}.bin`, {
       type: "application/x-gamepro-synthetic-memory-fixture",
       lastModified: 0,
     });
