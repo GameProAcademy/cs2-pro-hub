@@ -163,12 +163,8 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     );
     expect(transientSecretBridgeMigration).toContain("pg_catalog.set_config(");
     expect(transientSecretBridgeMigration).toContain("_hmac_secret,\n    true");
-    expect(transientSecretBridgeMigration).toContain(
-      "public.record_parser_runtime_attestation(",
-    );
-    expect(transientSecretBridgeMigration).toContain(
-      "FROM PUBLIC;\nREVOKE ALL ON FUNCTION",
-    );
+    expect(transientSecretBridgeMigration).toContain("public.record_parser_runtime_attestation(");
+    expect(transientSecretBridgeMigration).toContain("FROM PUBLIC;\nREVOKE ALL ON FUNCTION");
     expect(transientSecretBridgeMigration).toContain("FROM anon;");
     expect(transientSecretBridgeMigration).toContain("FROM authenticated;");
     expect(transientSecretBridgeMigration).toContain("TO service_role;");
@@ -176,9 +172,7 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
   });
 
   it("pins the protected workflow adapter to its reviewed source identity", () => {
-    expect(workflowAllowlistMigration).toContain(
-      "de6732f465cae08c96aece304558273242b7016d",
-    );
+    expect(workflowAllowlistMigration).toContain("de6732f465cae08c96aece304558273242b7016d");
     expect(workflowAllowlistMigration).toContain("enforce_approved_attestation_workflow");
     expect(workflowAllowlistMigration).toContain("record_parser_runtime_attestation");
     expect(workflowAllowlistMigration).toContain("assert_verified_parser_provenance");

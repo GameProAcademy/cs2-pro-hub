@@ -100,11 +100,11 @@ describe("parser attestation OIDC claims", () => {
   it.each(["sha", "workflow_sha", "run_id", "run_attempt"])(
     "rejects a mismatched %s binding",
     (claim) => {
-    const claims = validClaims();
-    claims[claim] = "unexpected";
-    expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
-      "OIDC_CLAIMS_MISMATCH",
-    );
+      const claims = validClaims();
+      claims[claim] = "unexpected";
+      expect(validateParserAttestationOidcClaims(claims, workflowIdentity, NOW)).toContain(
+        "OIDC_CLAIMS_MISMATCH",
+      );
     },
   );
 

@@ -21,13 +21,15 @@ describe("H.3-E.2 protected attestation recorder contract", () => {
     expect(route).toContain('"record_parser_runtime_attestation_with_secret"');
     expect(route).toContain("_hmac_secret: signingSecret");
     expect(route).not.toMatch(/Response\.json\([^)]*(signingSecret|transportSecret|oidcToken)/);
-    expect(route).not.toMatch(/console\.(log|error)\([^)]*(signingSecret|transportSecret|oidcToken)/);
+    expect(route).not.toMatch(
+      /console\.(log|error)\([^)]*(signingSecret|transportSecret|oidcToken)/,
+    );
   });
 
   it("keeps dispatch manual and sends the exact signed canonical payload", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toContain("push:");
-    expect(workflow).toContain("--arg canonicalPayload \"$canonical_payload\"");
+    expect(workflow).toContain('--arg canonicalPayload "$canonical_payload"');
     expect(workflow).toContain("canonicalPayload:$canonicalPayload");
   });
 });
