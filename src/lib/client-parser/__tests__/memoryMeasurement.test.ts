@@ -80,6 +80,32 @@ describe("controlled browser memory measurement contracts", () => {
       }),
     ).toBe(false);
     expect(isMemoryWorkerEvent({ type: "ERROR", requestId: "r", code: "RAW_BYTES" })).toBe(false);
+    expect(isMemoryWorkerEvent({ type: "MATERIALIZATION_STARTED" })).toBe(false);
+    expect(isMemoryWorkerEvent({ type: "UNKNOWN", requestId: "r" })).toBe(false);
+    expect(
+      isMemoryWorkerEvent({
+        type: "MATERIALIZATION_COMPLETE",
+        requestId: "r",
+        materializedByteLength: -1,
+        materializationDurationMs: 1,
+      }),
+    ).toBe(false);
+    expect(
+      isMemoryWorkerEvent({
+        type: "MATERIALIZATION_COMPLETE",
+        requestId: "r",
+        materializedByteLength: 1,
+        materializationDurationMs: Number.NaN,
+      }),
+    ).toBe(false);
+    expect(
+      isMemoryWorkerEvent({
+        type: "MATERIALIZATION_COMPLETE",
+        requestId: "r",
+        materializedByteLength: 1,
+        materializationDurationMs: -1,
+      }),
+    ).toBe(false);
   });
 
   it("keeps report schema metadata-only", () => {

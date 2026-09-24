@@ -16,6 +16,9 @@ describe("memory lab architecture guards", () => {
     expect(runner).not.toContain(".arrayBuffer(");
     expect(ui).not.toContain(".arrayBuffer(");
     expect(worker).not.toMatch(/demoparser2|parseDemo|ClientParserService/);
+    expect(runner).not.toContain("void sample().then");
+    expect(runner).not.toContain("observedMaterializationBytes");
+    expect(runner).not.toMatch(/performance\.memory/);
   });
 
   it("never returns binary values from the Worker", () => {
@@ -33,6 +36,12 @@ describe("memory lab architecture guards", () => {
     expect(contract).toContain("MAX_SYNTHETIC_FIXTURE_BYTES = CLIENT_DEMO_MAX_BYTES");
     expect(config).toContain("realDemoParser: false");
     expect(config).toContain('VITE_CLIENT_DEM_MEMORY_LAB"] === "true"');
+  });
+
+  it("uses neutral cleanup evidence without diagnosing memory state", () => {
+    expect(contract).toContain('"CLEANUP_OBSERVED"');
+    expect(contract).not.toMatch(/CLEANUP_OBSERVED_(RESIDUAL|STABLE)/);
+    expect(all).not.toMatch(/memory leak confirmed|exact peak/i);
   });
 
   it("contains no embedded DEM or base64 fixture", () => {
