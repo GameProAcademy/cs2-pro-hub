@@ -1,22 +1,33 @@
 # Large DEM Browser Memory H.1-M Manual Protocol
 
-STATUS: H.1-M0 READY / H.1-M NOT RUN
+STATUS: H.1-M COMPLETE — 15/15 ACCEPTED OBSERVATIONS
 
 ## Preconditions
 
 Use the authenticated administrative route `/admin/memory-lab` in a foreground browser with a secure, cross-origin-isolated context, Worker, File, and `performance.measureUserAgentSpecificMemory` available.
 
-Build the Preview/experimental runtime with `VITE_CLIENT_DEM_MEMORY_LAB=true` and `VITE_CLIENT_DEM_PARSER_POC_ENABLED=false`. Keep `FEATURES.realDemoParser=false`. This public `VITE_*` build setting is not a secret and requires a Preview rebuild after it changes. Repository and production defaults stay OFF.
+The accepted runtime evidence was collected on 2026-09-24 in Chrome 153 on the dedicated Lovable Preview runtime. Repository and production defaults remain OFF.
 
 ## Procedure
 
-Confirm the page reports Memory Lab `ENABLED`, secure context `YES`, cross-origin isolation `YES`, Memory API `AVAILABLE`, Worker `AVAILABLE`, File API `AVAILABLE`, real parser `DISABLED`, real DEM `BLOCKED`, Canonical `LOCKED`, and Railway/R5.8 `UNCHANGED`.
+The synthetic logical File sizes 16, 32, 64, 96, and 128 MiB were executed manually with three foreground repetitions per size, for exactly 15 runs. No automation, polling, scheduling, upload, persistence, backend reporting, or analytics were used.
 
-Run the synthetic logical File sizes 16, 32, 64, 96, and 128 MiB manually, with three repetitions per size, for exactly 15 runs. Keep the page in the foreground. Do not automate, poll, schedule, upload, persist, or send results to a backend. Use `Reset H.1-M session` only to clear local page state.
+The page reported Memory Lab ENABLED, secure context YES, cross-origin isolation YES, Memory API AVAILABLE, Worker AVAILABLE, File API AVAILABLE, real parser DISABLED, real DEM BLOCKED, Canonical LOCKED, and Railway/R5.8 UNCHANGED.
+
+## Acceptance matrix
+
+| Fixture | R1 | R2 | R3 | Result |
+|---|---|---|---|---|
+| 16 MiB | PASS | PASS | PASS | 3/3 |
+| 32 MiB | PASS | PASS | PASS | 3/3 |
+| 64 MiB | PASS | PASS | PASS | 3/3 |
+| 96 MiB | PASS | PASS | PASS | 3/3 |
+| 128 MiB | PASS | PASS | PASS | 3/3 |
+| **Total** | **PASS** | **PASS** | **PASS** | **15/15** |
 
 ## Permitted evidence
 
-Record only:
+The runtime report recorded:
 
 - `fixtureSizeBytes`
 - `repetition`
@@ -38,6 +49,12 @@ Record only:
 
 ## Interpretation limits
 
-The fixture size is logical, not its guaranteed physical memory footprint. Samples are observations at defined points, not an exact peak or guaranteed in-flight materialization measurement. Cleanup delta is not a leak diagnosis. Results do not demonstrate production support, real DEM processing, parser/WASM memory, 400–500 MiB safety, a higher limit, Canonical admission, or attestation readiness.
+The fixture size is logical, not a guaranteed physical memory footprint. Samples are observations at defined points, not an exact peak or guaranteed in-flight materialization measurement. Cleanup delta is not a leak diagnosis.
 
-This protocol must not be executed as part of implementation hardening.
+The experiment does not demonstrate production support, real DEM processing, parser/WASM memory behavior, 300–500 MiB safety, a higher limit, Canonical admission, Railway execution, attestation readiness, or H.2 readiness.
+
+## Closure
+
+The complete 15-run runtime evidence is recorded in `docs/release-gates/LARGE-DEM-BROWSER-MEMORY-H1-M-RUNTIME-EVIDENCE-2026-09-24.md`.
+
+H.1-M is complete for its stated synthetic diagnostic scope. No real DEM or parser gate was opened by this protocol.
