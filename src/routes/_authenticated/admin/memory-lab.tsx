@@ -10,7 +10,8 @@ export const Route = createFileRoute("/_authenticated/admin/memory-lab")({
       { title: "Browser Memory Lab H.1-M — Administração GamePro" },
       {
         name: "description",
-        content: "Laboratório administrativo de medição controlada de memória com fixtures sintéticos.",
+        content:
+          "Laboratório administrativo de medição controlada de memória com fixtures sintéticos.",
       },
       { property: "og:title", content: "Browser Memory Lab H.1-M — Administração GamePro" },
       {
@@ -37,7 +38,10 @@ function BrowserMemoryLabPage() {
       {FEATURES.clientDemMemoryLab ? (
         <BrowserMemoryLab />
       ) : (
-        <section className="border border-warning/30 bg-warning/8 p-5" aria-label="Browser Memory Lab status">
+        <section
+          className="border border-warning/30 bg-warning/8 p-5"
+          aria-label="Browser Memory Lab status"
+        >
           <p className="font-mono text-xs font-semibold text-warning">STATUS: FEATURE_DISABLED</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Browser Memory Lab desabilitado neste ambiente.

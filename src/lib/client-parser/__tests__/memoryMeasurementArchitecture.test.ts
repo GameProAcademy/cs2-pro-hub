@@ -37,7 +37,7 @@ describe("memory lab architecture guards", () => {
   });
 
   it("exposes the lab through its own admin route without the parser POC flag", () => {
-    expect(adminRoute).toContain('<BrowserMemoryLab />');
+    expect(adminRoute).toContain("<BrowserMemoryLab />");
     expect(adminRoute).toContain("FEATURES.clientDemMemoryLab");
     expect(adminRoute).not.toContain("clientDemParserPoc");
     expect(parserPoc).not.toContain("BrowserMemoryLab");
