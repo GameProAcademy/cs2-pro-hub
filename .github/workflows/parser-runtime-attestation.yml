@@ -11,7 +11,6 @@ on:
 permissions:
   contents: read
   id-token: write
-  attestations: write
 
 jobs:
   attest-runtime:
@@ -57,10 +56,6 @@ jobs:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: python scripts/parser_runtime_attestation.py parser-runtime-attestation.json
 
-      - name: Attest the evidence artifact
-        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
-        with:
-          subject-path: parser-runtime-attestation.json
 
       - name: Mint short-lived GitHub identity token
         id: oidc
