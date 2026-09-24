@@ -94,7 +94,11 @@ def parse_demo_file_isolated(path: str) -> dict[str, Any]:
 
         payload = _read_result(result_path)
         if payload.get("ok") is True and isinstance(payload.get("result"), dict):
-            return payload["result"]
+            result = payload["result"]
+            child_runtime = payload.get("_child_runtime")
+            if isinstance(child_runtime, dict):
+                result["_child_runtime"] = child_runtime
+            return result
 
         error_type = payload.get("error_type")
         message = payload.get("message")
