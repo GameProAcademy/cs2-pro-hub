@@ -28,9 +28,13 @@ describe("memory lab architecture guards", () => {
     expect(runner).not.toMatch(/performance\.memory/);
   });
 
-  it("validates the worker command structurally across the worker boundary", () => {
-    expect(worker).toContain('typeof fixture?.arrayBuffer === "function"');
+  it("validates only the synthetic descriptor across the Worker boundary", () => {
+    expect(worker).toContain('descriptor?.["kind"] === "SYNTHETIC_MEMORY_FIXTURE"');
+    expect(worker).toContain('MEMORY_LAB_FIXTURE_SIZES.includes');
+    expect(worker).not.toContain("fixture?.arrayBuffer");
     expect(worker).not.toContain("fixture instanceof File");
+    expect(runner).toContain("descriptor: validated");
+    expect(runner).not.toContain("fixture,");
   });
 
   it("never returns binary values from the Worker", () => {
