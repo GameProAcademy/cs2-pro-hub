@@ -3945,6 +3945,19 @@ export type Database = {
         }
         Returns: string
       }
+      record_parser_runtime_attestation_with_secret: {
+        Args: {
+          _attestation_digest: string
+          _attested_at: string
+          _canonical_payload: string
+          _hmac_secret: string
+          _nonce: string
+          _payload: Json
+          _release_gate_evidence: Json
+          _signature: string
+        }
+        Returns: string
+      }
       record_r5_forensic_progress: {
         Args: { _bytes_uploaded: number; _staging_id: string }
         Returns: {
