@@ -76,7 +76,7 @@ function isCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type
   );
 }
 
-async function materialize(command: MemoryWorkerCommand) {
+async function materialize(command: Extract<MemoryWorkerCommand, { type: "MEMORY_MEASUREMENT" }>) {
   let stage: Extract<MemoryWorkerEvent, { type: "WORKER_STAGE" }>["stage"] = "COMMAND_RECEIVED";
   const startedAt = performance.now();
   try {
