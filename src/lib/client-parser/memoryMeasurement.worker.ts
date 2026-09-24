@@ -31,10 +31,12 @@ scope.onunhandledrejection = () => {
   });
 };
 
-scope.postMessage({ type: "WORKER_READY" });
-
 scope.onmessage = (event) => {
   const command = event.data;
+  if (isInitCommand(command)) {
+    scope.postMessage({ type: "WORKER_READY" });
+    return;
+  }
   if (!isCommand(command)) {
     const requestId =
       command && typeof command === "object" && !Array.isArray(command)
@@ -52,7 +54,13 @@ scope.onmessage = (event) => {
   void materialize(command);
 };
 
-function isCommand(value: unknown): value is MemoryWorkerCommand {
+function isInitCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type: "MEMORY_WORKER_INIT" }> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const command = value as Record<string, unknown>;
+  return command["type"] === "MEMORY_WORKER_INIT" && typeof command["requestId"] === "string";
+}
+
+function isCommand(value: unknown): value is Extract<MemoryWorkerCommand, { type: "MEMORY_MEASUREMENT" }> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   const descriptor = command["descriptor"] as Record<string, unknown> | undefined;
