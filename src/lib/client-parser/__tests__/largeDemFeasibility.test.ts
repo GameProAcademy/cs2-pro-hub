@@ -35,15 +35,15 @@ describe("large DEM feasibility gate", () => {
   });
 
   it.each([
-    128 * 1024 * 1024,
-    128 * 1024 * 1024 + 1,
-    300 * 1024 * 1024,
-    400 * 1024 * 1024,
-    500 * 1024 * 1024,
-    473_748_061,
-  ])("classifies %i bytes as metadata-only capability evidence", (sizeBytes) => {
+    [128 * 1024 * 1024, "NOT_RUN"],
+    [128 * 1024 * 1024 + 1, "BLOCKED_BY_SIZE"],
+    [300 * 1024 * 1024, "BLOCKED_BY_SIZE"],
+    [400 * 1024 * 1024, "BLOCKED_BY_SIZE"],
+    [500 * 1024 * 1024, "BLOCKED_BY_SIZE"],
+    [473_748_061, "BLOCKED_BY_SIZE"],
+  ])("classifies %i bytes as metadata-only capability evidence", (sizeBytes, expectedState) => {
     const result = preflightLargeDem({ name: "synthetic.dem", sizeBytes }, capabilities);
-    expect(result.state).toBe("NOT_RUN");
+    expect(result.state).toBe(expectedState);
     expect(result.evidenceClass).toBe("CAPABILITY_HINT");
     expect(result.memoryMeasurement).toBe("MEMORY_UNAVAILABLE");
     expect(result.parserInputStrategy).toBe("WASM_INPUT_REQUIRES_CONTIGUOUS_BUFFER");
