@@ -10,6 +10,7 @@ import {
 } from "@/lib/parserAttestation";
 import {
   canonicalAttestationJson,
+  isAttestationTransportAuthorized,
   safeAttestationEqual,
   signAttestationPayload,
 } from "@/lib/parserAttestationCrypto.server";
@@ -96,8 +97,7 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         ) {
           return Response.json({ error: "ATTESTATION_SERVER_NOT_CONFIGURED" }, { status: 503 });
         }
-        const authorization = request.headers.get("authorization") ?? "";
-        if (!safeAttestationEqual(authorization, `Bearer ${transportSecret}`)) {
+        if (!isAttestationTransportAuthorized(request.headers, transportSecret)) {
           return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
         }
 
