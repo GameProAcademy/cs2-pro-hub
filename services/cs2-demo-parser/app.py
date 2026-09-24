@@ -151,6 +151,9 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             "elapsed_ms": round((time.perf_counter() - request_started) * 1000),
         },
     }
+    child_runtime = parsed.pop("_child_runtime", None)
+    if isinstance(child_runtime, dict):
+        payload["_performance"]["isolated_parser_child"] = child_runtime
     raw_evidence = parsed.get("raw_evidence")
     if isinstance(raw_evidence, dict):
         payload["raw_evidence"] = (
