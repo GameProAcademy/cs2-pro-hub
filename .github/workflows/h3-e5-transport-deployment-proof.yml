@@ -1,0 +1,80 @@
+name: H.3-E.5 Transport Deployment Proof
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  prove-transport-and-chain:
+    if: >-
+      github.repository == 'GameProAcademy/cs2-pro-hub' &&
+      github.ref == 'refs/heads/main' &&
+      github.event.before == 'ae328df8b84ef11d9114082a67a2268ebb0a730c'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate protected secrets exist without exposing them
+        env:
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "${PARSER_ATTESTATION_ENDPOINT}"
+          test -n "${PARSER_ATTESTATION_TRANSPORT_SECRET}"
+          test "${PARSER_ATTESTATION_ENDPOINT}" = "https://gamepro.network/api/public/parser-attestation"
+
+      - name: Prove transport authentication without submitting attestation
+        env:
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+        run: |
+          set -euo pipefail
+          set +e
+          status="$(curl --silent --show-error --output /tmp/transport-response.txt --write-out '%{http_code}'             --request POST "${PARSER_ATTESTATION_ENDPOINT}"             --header "Authorization: Bearer ${PARSER_ATTESTATION_TRANSPORT_SECRET}"             --header "X-Parser-Attestation-Transport: ${PARSER_ATTESTATION_TRANSPORT_SECRET}"             --header "Content-Type: application/json"             --data '{}')"
+          curl_exit=$?
+          set -e
+
+          test "${curl_exit}" -eq 0
+
+          case "${status}" in
+            400|422)
+              echo "transport_auth=ACCEPTED"
+              echo "attestation_submission=NOT_RUN"
+              ;;
+            401)
+              echo "transport_auth=REJECTED"
+              exit 1
+              ;;
+            503)
+              echo "transport_auth=SERVER_NOT_CONFIGURED"
+              exit 1
+              ;;
+            *)
+              echo "unexpected_http_status=${status}"
+              exit 1
+              ;;
+          esac
+
+      - name: Verify parser runtime endpoints
+        run: |
+          set -euo pipefail
+          for url in             "https://parser.gamepro.network/version"             "https://parser.gamepro.network/health"             "https://cs2-demo-parser-production.up.railway.app/version"             "https://cs2-demo-parser-production.up.railway.app/health"; do
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "${url}")"
+            test "${status}" = "200"
+          done
+
+      - name: Dispatch H.3-E.3 only after transport proof succeeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api             --method POST             "/repos/GameProAcademy/cs2-pro-hub/actions/workflows/h3-e3-final-external-preflight.yml/dispatches"             -f ref=main
+          echo "h3_e3_dispatch=REQUESTED"
+          echo "dem_execution=NOT_RUN"
+          echo "attestation_execution=NOT_RUN"
+          echo "provenance_write=NOT_RUN"
