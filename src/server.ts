@@ -2,34 +2,12 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { bindServerSecretsToProcessEnv } from "./lib/serverRuntimeEnv";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-const SERVER_SECRET_BINDINGS = [
-  "PARSER_ATTESTATION_TRANSPORT_SECRET",
-  "PARSER_ATTESTATION_HMAC_SECRET",
-] as const;
-
-type ProcessLike = {
-  env?: Record<string, string | undefined>;
-};
-
-function bindServerSecretsToProcessEnv(env: unknown): void {
-  if (!env || typeof env !== "object") return;
-
-  const bindings = env as Record<string, unknown>;
-  const processLike = (globalThis as typeof globalThis & { process?: ProcessLike }).process;
-  if (!processLike?.env) return;
-
-  for (const name of SERVER_SECRET_BINDINGS) {
-    const value = bindings[name];
-    if (typeof value === "string" && value.length > 0) {
-      processLike.env[name] = value;
-    }
-  }
-}
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
