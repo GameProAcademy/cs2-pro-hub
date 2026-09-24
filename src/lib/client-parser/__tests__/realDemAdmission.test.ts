@@ -42,7 +42,10 @@ describe("H.2 real DEM browser admission gate", () => {
   });
 
   it("blocks the exact 128 MiB ceiling because real parser authorization is independent", () => {
-    const result = evaluateRealDemBrowserAdmission(base);
+    const result = evaluateRealDemBrowserAdmission({
+      ...base,
+      realParserEnabled: false,
+    });
     expect(result.state).toBe("BLOCKED");
     expect(result.blockers).toContain("REAL_PARSER_DISABLED");
     expect(result.blockers).toContain("PARSER_OVERHEAD_UNMEASURED");
