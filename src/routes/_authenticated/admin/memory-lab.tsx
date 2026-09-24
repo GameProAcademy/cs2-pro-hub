@@ -5,6 +5,16 @@ import { BrowserMemoryLab } from "@/components/pipeline/BrowserMemoryLab";
 import { FEATURES } from "@/config/app";
 
 export const Route = createFileRoute("/_authenticated/admin/memory-lab")({
+  // H.1-M0.1: this dedicated diagnostic route must be served as a
+  // cross-origin-isolated document so Chromium can expose the standard memory
+  // measurement API. Scope the headers to this route only; do not change global
+  // production security headers or any parser/R5/Canonical runtime.
+  headers: () => ({
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "credentialless",
+    "Permissions-Policy": "cross-origin-isolated=(self)",
+    "Cache-Control": "no-store",
+  }),
   head: () => ({
     meta: [
       { title: "Browser Memory Lab H.1-M — Administração GamePro" },
