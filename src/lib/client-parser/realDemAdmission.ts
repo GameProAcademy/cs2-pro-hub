@@ -69,8 +69,7 @@ export function evaluateRealDemBrowserAdmission(
   if (!input.parityVerified) blockers.push("PARITY_NOT_VERIFIED");
   if (!input.determinismVerified) blockers.push("DETERMINISM_NOT_VERIFIED");
   if (!input.attestationFresh) blockers.push("ATTESTATION_NOT_FRESH");
-  if (!input.retentionAuthorizationVerified)
-    blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
+  if (!input.retentionAuthorizationVerified) blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
   if (input.canonicalAdmissionLocked) blockers.push("CANONICAL_ADMISSION_LOCKED");
 
   return {
