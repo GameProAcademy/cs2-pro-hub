@@ -1,6 +1,6 @@
 # H.3 — Controlled Real DEM Execution Readiness
 
-STATUS: **IMPLEMENTED / QUALITY GATE PASS / REAL DEM EXECUTION NOT RUN**
+STATUS: **IMPLEMENTED / PRE-EXECUTION GATE CORRECTED / REAL DEM EXECUTION NOT RUN**
 
 ## Objective
 
@@ -21,18 +21,23 @@ The H.3 gate freezes one exact execution envelope:
 7. execution surface;
 8. parser input strategy;
 9. surface capacity evidence;
-10. real runtime memory observation;
-11. parser/runtime overhead measurement;
-12. Python/WASM parity;
-13. determinism;
-14. tick authority;
-15. player identity;
-16. retention/deletion authorization;
-17. fresh attestation;
-18. explicit execution authorization;
-19. Canonical lock remaining active.
+10. fresh runtime preflight;
+11. retention/deletion authorization;
+12. fresh attestation;
+13. explicit execution authorization;
+14. Canonical lock remaining active.
 
-Missing evidence is BLOCKED.
+Post-execution evidence:
+- real parser memory;
+- parser/runtime overhead;
+- Python/WASM parity;
+- determinism;
+- tick authority;
+- player identity.
+
+Missing pre-execution evidence is BLOCKED.
+
+Post-execution evidence is tracked separately because it can only be produced by the first controlled run.
 
 ## Controlled execution surfaces
 
@@ -67,10 +72,19 @@ EXACT DEM IDENTITY
 PARSER / CONTRACT / RUNTIME IDENTITY
        |
        v
-REAL MEMORY + OVERHEAD + PARITY + DETERMINISM
+RUNTIME PREFLIGHT + CAPACITY
        |
        v
-TICK + PLAYER IDENTITY + RETENTION + ATTESTATION
+RETENTION + ATTESTATION + AUTHORIZATION
+       |
+       v
+CONTROLLED RUN
+       |
+       v
+MEMORY + OVERHEAD + PARITY + DETERMINISM
+       |
+       v
+TICK + PLAYER IDENTITY
        |
        v
 EXPLICIT EXECUTION AUTHORIZATION
@@ -133,21 +147,27 @@ A synthetic browser memory result cannot satisfy any of the real-parser observat
 
 ## Current H.3 disposition
 
-The gate is implemented, unit-tested, and accepted by Quality Gate run #278 (Web tests / lint / build, Contract-sensitive parser tests, and CS2 parser tests all successful).
+The gate is implemented and its pre-execution semantics are corrected so the first real run is not logically deadlocked by evidence that can only be produced by that run. Repository Quality Gates are validating the correction.
 
-Current real evidence remains incomplete:
+Current pre-execution evidence remains incomplete:
 
-- real Cache parser run: NOT_RUN;
-- exact parser/runtime memory observation for Cache: NOT_RUN;
-- parser/WASM overhead: NOT_MEASURED;
-- Python/WASM parity for Cache: NOT_RUN;
-- deterministic repeated real-Dem run: NOT_RUN;
-- authoritative tick evidence: NOT_RUN;
-- complete player identity evidence: NOT_RUN;
-- fresh runtime attestation for the execution: NOT_RUN;
-- explicit execution authorization for the actual run: NOT_GRANTED.
+- exact Cache identity: REGISTERED;
+- parser/runtime identity: REGISTERED;
+- Railway runtime preflight: OBSERVED;
+- container memory envelope: OBSERVED (~4.0 GB cgroup limit);
+- retention authorization: PENDING;
+- fresh execution attestation: PENDING;
+- explicit execution authorization: PENDING.
 
-Therefore the actual Cache execution remains **BLOCKED**.
+Post-execution evidence remains intentionally pending until the first controlled run:
+- real parser child peak memory;
+- parser/runtime overhead;
+- Python/WASM parity;
+- deterministic repeated run;
+- authoritative tick evidence;
+- complete player identity evidence.
+
+Therefore the Cache execution remains **BLOCKED until the pre-execution envelope is explicitly completed**.
 
 ## Retention rule
 
@@ -173,4 +193,4 @@ H.3 completion still does not mean the DEM was successfully parsed. The first re
 
 ## Next milestone
 
-After H.3 readiness is independently complete, the next step is a **single controlled real DEM execution** against the exact authorized target, with no Canonical admission and no production rollout.
+After the corrected pre-execution H.3 envelope is complete, the next step is a **single controlled real DEM execution** against the exact authorized target. That run produces the post-execution evidence envelope; Canonical remains locked.
