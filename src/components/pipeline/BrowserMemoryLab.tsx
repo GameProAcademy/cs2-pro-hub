@@ -322,7 +322,9 @@ export function BrowserMemoryLab() {
                     <TableCell className="font-mono text-xs">{result.cleanupStatus}</TableCell>
                     <TableCell className="font-mono text-xs">{result.status}</TableCell>
                     <TableCell className="font-mono text-xs">{result.errorCode ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs">{result.workerLifecycleStage ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {result.workerLifecycleStage ?? "—"}
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{result.timestamp}</TableCell>
                   </TableRow>
                 ))
