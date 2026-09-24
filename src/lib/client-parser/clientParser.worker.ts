@@ -36,6 +36,7 @@ import {
   type ClientParseResult,
   type ClientParserErrorCode,
 } from "./clientParser.types";
+import { readContiguousDemoInput } from "./clientParser.input";
 import {
   CLIENT_AUDIT_CATALOG_DIGEST,
   CLIENT_PARSER_CONTRACT_DIGEST,
@@ -292,29 +293,29 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   if (
     !file.name.toLowerCase().endsWith(".dem") ||
     file.size < 1 ||
-    file.bytes.byteLength !== file.size
+    command.authorization.filename !== file.name
   )
     throw new Error("CLIENT_DEMO_INVALID");
   if (file.size > CLIENT_DEMO_MAX_BYTES) throw new Error("CLIENT_DEMO_TOO_LARGE");
-  const bytes = new Uint8Array(file.bytes);
   progress(command.requestId, "READING_FILE", 0.03, started);
+  const { bytes } = await readContiguousDemoInput(file, command.capability);
   assertActive(command.requestId);
 
-  progress(command.requestId, "HASHING", 0.08, started);
-  const hashStarted = performance.now();
-  const demoSha = sha256Hex(bytes);
+  const demoSha = command.authorization.sha256;
   if (
     command.authorization.authorizedDemo !== true ||
     command.authorization.provenance !== "LOCAL_USER_SELECTION" ||
     command.authorization.source !== "LOCAL_FILE" ||
     command.authorization.filename !== file.name ||
     command.authorization.sizeBytes !== file.size ||
-    command.authorization.sha256 !== demoSha ||
+    !/^[0-9a-f]{64}$/.test(demoSha) ||
     !command.authorization.authorizationRef ||
-    !command.authorization.receivedAt
+    !command.authorization.receivedAt ||
+    !Number.isFinite(command.hashDurationMs) ||
+    command.hashDurationMs < 0
   )
     throw new Error("CLIENT_DEMO_INVALID");
-  const hashDurationMs = performance.now() - hashStarted;
+  const hashDurationMs = command.hashDurationMs;
   assertActive(command.requestId);
 
   const parseStarted = performance.now();

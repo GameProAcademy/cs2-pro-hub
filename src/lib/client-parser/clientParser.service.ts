@@ -7,12 +7,14 @@ import {
   trustedRuntimeUrl,
 } from "./clientParser.runtime";
 import type { ClientParserWorkerEvent, ClientParserStage } from "./clientParser.protocol";
+import { isClientParserWorkerEvent } from "./clientParser.protocol";
+import { CLIENT_DEMO_PARSER_CAPABILITY } from "./clientParser.input";
 import {
   CLIENT_DEMO_MAX_BYTES,
   CLIENT_PARSE_TIMEOUT_MS,
   type ClientParserEnvelope,
 } from "./clientParser.types";
-import { sha256Hex } from "./clientParser.hash";
+import { hashLargeDemInWorker } from "./largeDemHash";
 
 export interface ClientParserProgress {
   stage: ClientParserStage;
@@ -24,6 +26,7 @@ export class ClientParserService {
   private worker: Worker | null = null;
   private requestId: string | null = null;
   private rejectCurrent: ((reason: ClientParserError) => void) | null = null;
+  private hashAbortController: AbortController | null = null;
 
   async parse(
     file: File,
@@ -66,6 +69,8 @@ export class ClientParserService {
       }, CLIENT_PARSE_TIMEOUT_MS);
       const finish = () => {
         window.clearTimeout(timeout);
+        this.hashAbortController?.abort();
+        this.hashAbortController = null;
         worker.terminate();
         if (this.worker === worker) this.worker = null;
         if (this.requestId === requestId) this.requestId = null;
@@ -77,8 +82,13 @@ export class ClientParserService {
         reject(new ClientParserError("CLIENT_WORKER_FAILED"));
       };
       worker.onmessage = async (message: MessageEvent<unknown>) => {
-        const event = message.data as ClientParserWorkerEvent;
-        if (!event || event.requestId !== requestId) return;
+        if (!isClientParserWorkerEvent(message.data)) {
+          finish();
+          reject(new ClientParserError("CLIENT_WORKER_FAILED"));
+          return;
+        }
+        const event: ClientParserWorkerEvent = message.data;
+        if (event.requestId !== requestId) return;
         if (event.type === "PROGRESS")
           onProgress?.({
             stage: event.stage,
@@ -87,29 +97,41 @@ export class ClientParserService {
           });
         else if (event.type === "READY") {
           try {
-            const bytes = await file.arrayBuffer();
-            const sha256 = sha256Hex(new Uint8Array(bytes));
-            worker.postMessage(
-              {
-                type: "PARSE",
-                requestId,
-                file: { bytes, name: file.name, size: file.size, lastModified: file.lastModified },
-                authorization: {
-                  authorizedDemo: true,
-                  provenance: "LOCAL_USER_SELECTION",
-                  filename: file.name,
-                  sha256,
-                  sizeBytes: file.size,
-                  source: "LOCAL_FILE",
-                  authorizationRef: `local-selection:${requestId}`,
-                  receivedAt: new Date().toISOString(),
-                },
+            const hashAbortController = new AbortController();
+            this.hashAbortController = hashAbortController;
+            const hashStarted = performance.now();
+            const { sha256 } = await hashLargeDemInWorker(file, {
+              signal: hashAbortController.signal,
+              onProgress: ({ bytesRead, bytesTotal }) =>
+                onProgress?.({
+                  stage: "HASHING",
+                  progress: bytesTotal > 0 ? bytesRead / bytesTotal : 1,
+                  elapsedMs: 0,
+                }),
+            });
+            const hashDurationMs = performance.now() - hashStarted;
+            this.hashAbortController = null;
+            worker.postMessage({
+              type: "PARSE",
+              requestId,
+              file,
+              capability: CLIENT_DEMO_PARSER_CAPABILITY,
+              hashDurationMs,
+              authorization: {
+                authorizedDemo: true,
+                provenance: "LOCAL_USER_SELECTION",
+                filename: file.name,
+                sha256,
+                sizeBytes: file.size,
+                source: "LOCAL_FILE",
+                authorizationRef: `local-selection:${requestId}`,
+                receivedAt: new Date().toISOString(),
               },
-              [bytes],
-            );
+            });
           } catch {
+            const cancelled = this.hashAbortController?.signal.aborted === true;
             finish();
-            reject(new ClientParserError("CLIENT_DEMO_INVALID"));
+            reject(new ClientParserError(cancelled ? "CLIENT_CANCELLED" : "CLIENT_DEMO_INVALID"));
           }
         } else if (event.type === "COMPLETE") {
           finish();
@@ -140,6 +162,8 @@ export class ClientParserService {
     this.requestId = null;
     const rejectCurrent = this.rejectCurrent;
     this.rejectCurrent = null;
+    this.hashAbortController?.abort();
+    this.hashAbortController = null;
     if (worker) {
       if (requestId) worker.postMessage({ type: "CANCEL", requestId });
       worker.terminate();

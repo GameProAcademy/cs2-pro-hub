@@ -4,8 +4,12 @@ import {
   LARGE_DEM_EXPERIMENTAL_ENABLED,
   LARGE_DEM_FEASIBILITY_STATES,
   LARGE_DEM_HASH_CHUNK_BYTES,
+  LARGE_DEM_READINESS_STATES,
+  estimateLargeDemMemory,
+  evaluateLargeDemFeasibility,
   preflightLargeDem,
 } from "../largeDemFeasibility";
+import { CLIENT_DEMO_PARSER_CAPABILITY } from "../clientParser.input";
 import { CLIENT_DEMO_MAX_BYTES } from "../clientParser.types";
 
 const capabilities = {
@@ -53,5 +57,81 @@ describe("large DEM feasibility gate", () => {
       chunked.update(bytes.subarray(offset, offset + 997));
     expect(chunked.hex()).toBe(whole);
     expect(LARGE_DEM_HASH_CHUNK_BYTES).toBe(8 * 1024 * 1024);
+  });
+
+  it.each([
+    [0, "BLOCKED"],
+    [1, "SAFE"],
+    [128 * 1024 * 1024 - 1, "SAFE"],
+    [128 * 1024 * 1024, "SAFE"],
+    [128 * 1024 * 1024 + 1, "NOT_SUPPORTED"],
+    [300 * 1024 * 1024, "NOT_SUPPORTED"],
+    [400 * 1024 * 1024, "NOT_SUPPORTED"],
+    [500 * 1024 * 1024, "NOT_SUPPORTED"],
+    [473_748_061, "NOT_SUPPORTED"],
+  ])("evaluates %i bytes without allocating a real file", (sizeBytes, expected) => {
+    const result = evaluateLargeDemFeasibility(
+      { name: "synthetic.dem", sizeBytes },
+      CLIENT_DEMO_PARSER_CAPABILITY,
+      {
+        workerAvailable: true,
+        wasmAvailable: true,
+        experimentalEnabled: true,
+        realParserEnabled: true,
+      },
+    );
+    expect(result.state).toBe(expected);
+    expect(result.canParse).toBe(expected === "SAFE");
+    expect(result.evidenceClass).toBe("CAPABILITY_HINT");
+  });
+
+  it("keeps authorization disabled independently of capability", () => {
+    const result = evaluateLargeDemFeasibility(
+      { name: "synthetic.dem", sizeBytes: 1 },
+      CLIENT_DEMO_PARSER_CAPABILITY,
+      {
+        workerAvailable: true,
+        wasmAvailable: true,
+        experimentalEnabled: true,
+        realParserEnabled: false,
+      },
+    );
+    expect(result.state).toBe("NOT_RUN");
+    expect(result.reason).toBe("REAL_PARSER_DISABLED");
+    expect(result.canParse).toBe(false);
+  });
+
+  it("fails closed for unknown parser capability", () => {
+    const result = evaluateLargeDemFeasibility(
+      { name: "synthetic.dem", sizeBytes: 1 },
+      { ...CLIENT_DEMO_PARSER_CAPABILITY, inputCapability: "UNKNOWN" },
+      {
+        workerAvailable: true,
+        wasmAvailable: true,
+        experimentalEnabled: true,
+        realParserEnabled: true,
+      },
+    );
+    expect(result.state).toBe("NOT_SUPPORTED");
+    expect(result.canParse).toBe(false);
+  });
+
+  it("keeps unknown parser and WASM overhead out of the memory estimate", () => {
+    const estimate = estimateLargeDemMemory(473_748_061, CLIENT_DEMO_PARSER_CAPABILITY);
+    expect(estimate).toMatchObject({
+      evidenceClass: "HEURISTIC",
+      contiguousBufferBytes: 473_748_061,
+      wasmOverheadBytes: null,
+      parserOverheadBytes: null,
+      estimatedPeakBytes: null,
+      confidence: "LOW",
+    });
+    expect(LARGE_DEM_READINESS_STATES).toEqual([
+      "SAFE",
+      "CAUTION",
+      "BLOCKED",
+      "NOT_SUPPORTED",
+      "NOT_RUN",
+    ]);
   });
 });

@@ -3,6 +3,27 @@ export interface LargeDemHashProgress {
   bytesTotal: number;
 }
 
+export type LargeDemHashWorkerEvent =
+  | { type: "PROGRESS"; requestId: string; bytesRead: number; bytesTotal: number }
+  | { type: "COMPLETE"; requestId: string; sha256: string; bytesRead: number }
+  | { type: "CANCELLED"; requestId: string }
+  | { type: "ERROR"; requestId: string };
+
+export function isLargeDemHashWorkerEvent(value: unknown): value is LargeDemHashWorkerEvent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const event = value as Record<string, unknown>;
+  if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string") return false;
+  if (event["type"] === "PROGRESS")
+    return Number.isFinite(event["bytesRead"]) && Number.isFinite(event["bytesTotal"]);
+  if (event["type"] === "COMPLETE")
+    return (
+      Number.isFinite(event["bytesRead"]) &&
+      typeof event["sha256"] === "string" &&
+      /^[0-9a-f]{64}$/.test(event["sha256"])
+    );
+  return event["type"] === "CANCELLED" || event["type"] === "ERROR";
+}
+
 export function hashLargeDemInWorker(
   file: File,
   options: { signal?: AbortSignal; onProgress?: (progress: LargeDemHashProgress) => void } = {},
@@ -28,7 +49,11 @@ export function hashLargeDemInWorker(
       finish(new DOMException("Hash cancelled", "AbortError"));
     };
     worker.onerror = () => finish(new Error("LARGE_DEM_HASH_FAILED"));
-    worker.onmessage = (event: MessageEvent<Record<string, unknown>>) => {
+    worker.onmessage = (event: MessageEvent<unknown>) => {
+      if (!isLargeDemHashWorkerEvent(event.data)) {
+        finish(new Error("LARGE_DEM_HASH_FAILED"));
+        return;
+      }
       if (event.data["requestId"] !== requestId) return;
       if (event.data["type"] === "PROGRESS")
         options.onProgress?.({
