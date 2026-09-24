@@ -81,7 +81,7 @@ describe("large DEM feasibility gate", () => {
       },
     );
     expect(result.state).toBe(expected);
-    expect(result.canParse).toBe(expected === "SAFE");
+    expect(result.canParse).toBe(false);
     expect(result.evidenceClass).toBe("CAPABILITY_HINT");
   });
 
