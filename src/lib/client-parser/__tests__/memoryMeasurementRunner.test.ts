@@ -27,7 +27,6 @@ class FakeWorker {
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     if (type === "message") {
       this.messageListeners.add(listener as (event: MessageEvent<unknown>) => void);
-      queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
     }
     if (type === "error") this.errorListeners.add(listener as (event: ErrorEvent) => void);
     if (type === "messageerror")
@@ -46,6 +45,10 @@ class FakeWorker {
   postMessage(command: unknown) {
     this.posted += 1;
     this.lifecycle.push("postMessage");
+    if ((command as { type?: string }).type === "MEMORY_WORKER_INIT") {
+      queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
+      return;
+    }
     if (this.behavior === "hang") return;
     const requestId = (command as { requestId: string }).requestId;
     const descriptor = (command as { descriptor: { sizeBytes: number } }).descriptor;
