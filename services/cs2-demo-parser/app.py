@@ -46,6 +46,7 @@ from parser import parse_demo_file
 from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
+from runtime_evidence import collect_runtime_evidence, parse_memory_snapshot
 from settings import (
     DURABLE_HOT_HARD_MAX_BYTES,
     PARSER_NAME,
@@ -89,6 +90,7 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
     if not SHA256_HEX.fullmatch(body.demo_sha256):
         raise WorkerError(409, E.CONTRACT_MISMATCH, "demo_sha256 must be a sha256 hex digest.")
 
+    baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
     path, sha256, size = await _download(body.demo_url, body.file_size, settings)
     download_ms = round((time.perf_counter() - download_started) * 1000)
@@ -104,6 +106,7 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
                 asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
             )
             parse_ms = round((time.perf_counter() - parse_started) * 1000)
+            parser_memory = parse_memory_snapshot()
         except asyncio.TimeoutError:
             raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
         except InvalidDemoError:
@@ -139,6 +142,11 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             "download_ms": download_ms,
             "parser_ms": parse_ms,
             "download_bytes": size,
+            "baseline_rss_bytes": baseline_memory["rss_bytes"],
+            "baseline_hwm_bytes": baseline_memory["hwm_bytes"],
+            "parser_rss_bytes": parser_memory["rss_bytes"],
+            "parser_hwm_bytes": parser_memory["hwm_bytes"],
+            "parser_ru_maxrss_bytes": parser_memory["ru_maxrss_bytes"],
             "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
             "elapsed_ms": round((time.perf_counter() - request_started) * 1000),
         },
@@ -333,6 +341,11 @@ def create_app(
     @app.get("/version")
     async def version() -> dict[str, Any]:
         return identity
+
+    @app.get("/v1/runtime/preflight")
+    async def runtime_preflight(request: Request) -> dict[str, Any]:
+        _require_token(request, resolved)
+        return collect_runtime_evidence(resolved)
 
     @app.post("/v1/parse")
     async def parse_endpoint(request: Request) -> JSONResponse:
