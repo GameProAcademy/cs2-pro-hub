@@ -75,7 +75,6 @@ export interface MemoryMeasurementResult {
 export type MemoryWorkerCommand = {
   type: "MEMORY_MEASUREMENT";
   requestId: string;
-  fixture: File;
   descriptor: SyntheticFixtureDescriptor;
 };
 export type MemoryWorkerEvent =
