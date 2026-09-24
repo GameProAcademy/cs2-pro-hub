@@ -35,7 +35,7 @@ class FakeWorker {
     this.lifecycle.push("postMessage");
     if (this.behavior === "hang") return;
     const requestId = (command as { requestId: string }).requestId;
-    const fixture = (command as { fixture: File }).fixture;
+    const descriptor = (command as { descriptor: { sizeBytes: number } }).descriptor;
     queueMicrotask(() => {
       if (this.behavior === "worker-error") {
         for (const listener of this.errorListeners) listener({ type: "error" } as ErrorEvent);
@@ -49,7 +49,7 @@ class FakeWorker {
         this.emit({
           type: "MATERIALIZATION_COMPLETE",
           requestId: "another-request",
-          materializedByteLength: fixture.size,
+          materializedByteLength: descriptor.sizeBytes,
           materializationDurationMs: 4,
         });
         return;
@@ -63,7 +63,7 @@ class FakeWorker {
       this.emit({
         type: "MATERIALIZATION_COMPLETE",
         requestId,
-        materializedByteLength: fixture.size,
+        materializedByteLength: descriptor.sizeBytes,
         materializationDurationMs: 4,
       });
       this.lifecycle.push("complete");
