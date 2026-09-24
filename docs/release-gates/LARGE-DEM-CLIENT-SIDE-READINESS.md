@@ -82,6 +82,6 @@ These are deterministic metadata-only tests; no giant parser buffer or real DEM 
 
 ## Next gate
 
-The next technical gate is **FASE 2.7.2H.1 — Controlled Browser Memory Measurement**. It must measure the actual browser/Worker memory behavior of the client-side architecture using only non-production synthetic fixtures or an explicitly authorized fixture, with no real Cache DEM and no production parser admission. The measurement API must be treated as browser-specific evidence, not a universal memory guarantee; availability depends on secure cross-origin-isolated execution. citeturn0search0turn0search1
+The next technical gate is **FASE 2.7.2H.1 — Controlled Browser Memory Measurement**. It must measure the actual browser/Worker memory behavior of the client-side architecture using only non-production synthetic fixtures or an explicitly authorized fixture, with no real Cache DEM and no production parser admission. The measurement API must be treated as browser-specific evidence, not a universal memory guarantee; availability depends on secure cross-origin-isolated execution.
 
 A larger parser ceiling requires measured evidence sufficient for the exact runtime or a verified streaming-capable parser adapter. The 128 MiB production ceiling remains unchanged until such evidence exists.
