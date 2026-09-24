@@ -59,7 +59,8 @@ jobs:
             exit 1
           fi
           case "$http_code" in
-            401|400|422|503) echo "endpoint_reachability=PASS" ;;
+            401|400|422) echo "endpoint_reachability=PASS" ;;
+            503) echo "endpoint_reachability=BLOCKED_SERVER_NOT_CONFIGURED"; exit 1 ;;
             *) echo "endpoint_reachability=BLOCKED"; exit 1 ;;
           esac
 
