@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 import {
+  MEMORY_LAB_FIXTURE_SIZES,
   MAX_SYNTHETIC_FIXTURE_BYTES,
+  createSyntheticFixture,
   type MemoryWorkerCommand,
   type MemoryWorkerEvent,
 } from "./memoryMeasurement";
@@ -33,22 +35,15 @@ function isCommand(value: unknown): value is MemoryWorkerCommand {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const command = value as Record<string, unknown>;
   const descriptor = command["descriptor"] as Record<string, unknown> | undefined;
-  const fixture = command["fixture"] as { size?: unknown; type?: unknown; arrayBuffer?: unknown };
+
   return (
     command["type"] === "MEMORY_MEASUREMENT" &&
     typeof command["requestId"] === "string" &&
-    typeof fixture?.size === "number" &&
-    Number.isSafeInteger(fixture.size) &&
-    fixture.size > 0 &&
-    fixture.size <= MAX_SYNTHETIC_FIXTURE_BYTES &&
-    typeof fixture?.type === "string" &&
-    fixture.type === "application/x-gamepro-synthetic-memory-fixture" &&
-    typeof fixture?.arrayBuffer === "function" &&
     descriptor?.["kind"] === "SYNTHETIC_MEMORY_FIXTURE" &&
     Number.isSafeInteger(descriptor["sizeBytes"]) &&
-    descriptor["sizeBytes"] === fixture.size &&
     Number(descriptor["sizeBytes"]) > 0 &&
-    Number(descriptor["sizeBytes"]) <= MAX_SYNTHETIC_FIXTURE_BYTES
+    Number(descriptor["sizeBytes"]) <= MAX_SYNTHETIC_FIXTURE_BYTES &&
+    MEMORY_LAB_FIXTURE_SIZES.includes(descriptor["sizeBytes"] as number)
   );
 }
 
@@ -59,7 +54,8 @@ async function materialize(command: MemoryWorkerCommand) {
       requestId: command.requestId,
     });
     const startedAt = performance.now();
-    const buffer = await command.fixture.arrayBuffer();
+    const fixture = createSyntheticFixture(command.descriptor);
+    const buffer = await fixture.arrayBuffer();
     if (buffer.byteLength !== command.fixture.size) {
       scope.postMessage({
         type: "ERROR",
