@@ -189,7 +189,7 @@ export function BrowserMemoryLab() {
               <TableHead>Size</TableHead>
               <TableHead>Run</TableHead>
               <TableHead>Baseline</TableHead>
-              <TableHead>Observed sample</TableHead>
+              <TableHead>Post-materialization</TableHead>
               <TableHead>Delta</TableHead>
               <TableHead>Post cleanup</TableHead>
               <TableHead>Duration</TableHead>
@@ -209,7 +209,7 @@ export function BrowserMemoryLab() {
                   <TableCell>{mib(result.fixtureSizeBytes)}</TableCell>
                   <TableCell>{result.repetition}</TableCell>
                   <TableCell>{memory(result.baselineBytes)}</TableCell>
-                  <TableCell>{memory(result.observedPeakBytes)}</TableCell>
+                  <TableCell>{memory(result.postMaterializationBytes)}</TableCell>
                   <TableCell>{memory(result.peakDeltaBytes)}</TableCell>
                   <TableCell>{memory(result.postCleanupBytes)}</TableCell>
                   <TableCell>

@@ -135,8 +135,7 @@ export async function runSyntheticMemoryMeasurement(
   let baselineBytes: number | null = null;
   let postFixtureBytes: number | null = null;
   let preMaterializationBytes: number | null = null;
-  let observedMaterializationBytes: number | null = null;
-  let postCompletionBytes: number | null = null;
+  let postMaterializationBytes: number | null = null;
   let postCleanupBytes: number | null = null;
   let fixture: File | null = null;
   let worker: WorkerLike | null = null;
@@ -170,16 +169,17 @@ export async function runSyntheticMemoryMeasurement(
       };
       const onError = () => finish(new MemoryLabError("MATERIALIZATION_FAILED"));
       const onMessage = (message: MessageEvent<unknown>) => {
-        if (!isMemoryWorkerEvent(message.data) || message.data.requestId !== requestId) return;
-        if (message.data.type === "MATERIALIZATION_STARTED") {
-          void sample()
-            .then((bytes) => {
-              observedMaterializationBytes = bytes;
-            })
-            .catch(() => finish(new MemoryLabError("MEASUREMENT_FAILED")));
-        } else if (message.data.type === "MATERIALIZATION_COMPLETE")
+        if (!isMemoryWorkerEvent(message.data)) {
+          finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+          return;
+        }
+        if (message.data.requestId !== requestId) {
+          finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+          return;
+        }
+        if (message.data.type === "MATERIALIZATION_COMPLETE")
           finish(undefined, message.data);
-        else finish(new MemoryLabError("MATERIALIZATION_FAILED"));
+        else if (message.data.type === "ERROR") finish(new MemoryLabError(message.data.code));
       };
       abortHandler = () => finish(new MemoryLabError("CANCELLED"));
       worker?.addEventListener("message", onMessage);
@@ -197,28 +197,29 @@ export async function runSyntheticMemoryMeasurement(
         descriptor: validated,
       });
     });
-    postCompletionBytes = await sample();
+    postMaterializationBytes = await sample();
     fixture = null;
     worker.terminate();
     worker = null;
     await wait(options.stabilizationMs ?? 250);
-    postCleanupBytes = await sample();
-    const observed = [
-      postFixtureBytes,
-      preMaterializationBytes,
-      observedMaterializationBytes,
-      postCompletionBytes,
-    ].filter((value): value is number => value !== null);
+    try {
+      postCleanupBytes = await sample();
+    } catch {
+      postCleanupBytes = null;
+    }
+    const observed = [postFixtureBytes, preMaterializationBytes, postMaterializationBytes].filter(
+      (value): value is number => value !== null,
+    );
     const observedPeakBytes = observed.length > 0 ? Math.max(...observed) : null;
-    const cleanupDeltaBytes = postCleanupBytes - baselineBytes;
+    const cleanupDeltaBytes =
+      postCleanupBytes === null || baselineBytes === null ? null : postCleanupBytes - baselineBytes;
     return {
       ...common,
       status: "OBSERVED",
       baselineBytes,
       postFixtureBytes,
       preMaterializationBytes,
-      observedMaterializationBytes,
-      postCompletionBytes,
+      postMaterializationBytes,
       postCleanupBytes,
       observedPeakBytes,
       peakDeltaBytes: observedPeakBytes === null ? null : observedPeakBytes - baselineBytes,
@@ -228,7 +229,7 @@ export async function runSyntheticMemoryMeasurement(
       materializedByteLength: materialized.materializedByteLength,
       measurementCount,
       cleanupStatus:
-        cleanupDeltaBytes > 0 ? "CLEANUP_OBSERVED_RESIDUAL" : "CLEANUP_OBSERVED_STABLE",
+        postCleanupBytes === null ? "CLEANUP_MEASUREMENT_UNAVAILABLE" : "CLEANUP_OBSERVED",
       errorCode: null,
       errorMessageSanitized: null,
     };
@@ -240,8 +241,7 @@ export async function runSyntheticMemoryMeasurement(
       baselineBytes,
       postFixtureBytes,
       preMaterializationBytes,
-      observedMaterializationBytes,
-      postCompletionBytes,
+      postMaterializationBytes,
       measurementCount,
       workerDurationMs: now() - startedAt,
       cleanupStatus: "FAILED",
@@ -289,8 +289,7 @@ function unavailableResult(
     baselineBytes: null,
     postFixtureBytes: null,
     preMaterializationBytes: null,
-    observedMaterializationBytes: null,
-    postCompletionBytes: null,
+    postMaterializationBytes: null,
     postCleanupBytes: null,
     observedPeakBytes: null,
     peakDeltaBytes: null,
