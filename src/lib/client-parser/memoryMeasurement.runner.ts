@@ -1,3 +1,5 @@
+import MemoryMeasurementWorker from "./memoryMeasurement.worker?worker&inline";
+
 import {
   MEMORY_MEASUREMENT_TIMEOUT_MS,
   MemoryLabError,
@@ -112,11 +114,7 @@ export async function runSyntheticMemoryMeasurement(
   const now = dependencies?.now ?? (() => performance.now());
   const workerFactory =
     dependencies?.workerFactory ??
-    (() =>
-      new Worker(new URL("./memoryMeasurement.worker.ts", import.meta.url), {
-        type: "module",
-        name: "gamepro-browser-memory-lab",
-      }));
+    (() => new MemoryMeasurementWorker({ name: "gamepro-browser-memory-lab" }));
   const requestId = dependencies?.randomUUID?.() ?? crypto.randomUUID();
   const timeoutMs = Math.min(
     MEMORY_MEASUREMENT_TIMEOUT_MS,
