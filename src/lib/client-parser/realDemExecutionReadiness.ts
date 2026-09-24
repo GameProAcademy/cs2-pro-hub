@@ -4,8 +4,7 @@ export const REAL_DEM_EXECUTION_READINESS_STATES = [
   "BLOCKED",
   "READY_FOR_CONTROLLED_EXECUTION",
 ] as const;
-export type RealDemExecutionReadinessState =
-  (typeof REAL_DEM_EXECUTION_READINESS_STATES)[number];
+export type RealDemExecutionReadinessState = (typeof REAL_DEM_EXECUTION_READINESS_STATES)[number];
 
 export const REAL_DEM_EXECUTION_BLOCKERS = [
   "INVALID_DEM_IDENTITY",
@@ -26,8 +25,7 @@ export const REAL_DEM_EXECUTION_BLOCKERS = [
   "EXECUTION_AUTHORIZATION_NOT_GRANTED",
   "CANONICAL_LOCK_NOT_ACTIVE",
 ] as const;
-export type RealDemExecutionReadinessBlocker =
-  (typeof REAL_DEM_EXECUTION_BLOCKERS)[number];
+export type RealDemExecutionReadinessBlocker = (typeof REAL_DEM_EXECUTION_BLOCKERS)[number];
 
 export type RealDemExecutionSurface = "RAILWAY_CONTROLLED" | "BROWSER";
 export type RealDemInputStrategy = "CONTIGUOUS_BUFFER" | "STREAMING" | "FILE_PATH";
@@ -93,7 +91,11 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.identityVerified) blockers.push("DEM_IDENTITY_NOT_VERIFIED");
   if (!input.parserBuildIdentity.trim() || !input.parserBuildVerified)
     blockers.push("PARSER_BUILD_NOT_VERIFIED");
-  if (!Number.isInteger(input.contractVersion) || input.contractVersion < 1 || !input.contractVerified)
+  if (
+    !Number.isInteger(input.contractVersion) ||
+    input.contractVersion < 1 ||
+    !input.contractVerified
+  )
     blockers.push("CONTRACT_NOT_VERIFIED");
   if (!input.runtimeArtifactIdentity.trim() || !input.runtimeArtifactVerified)
     blockers.push("RUNTIME_ARTIFACT_NOT_VERIFIED");
@@ -107,8 +109,7 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.determinismVerified) blockers.push("DETERMINISM_NOT_VERIFIED");
   if (!input.tickAuthorityVerified) blockers.push("TICK_AUTHORITY_NOT_VERIFIED");
   if (!input.playerIdentityVerified) blockers.push("PLAYER_IDENTITY_NOT_VERIFIED");
-  if (!input.retentionAuthorizationVerified)
-    blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
+  if (!input.retentionAuthorizationVerified) blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
   if (!input.attestationFresh) blockers.push("ATTESTATION_NOT_FRESH");
   if (!input.executionAuthorizationGranted)
     blockers.push("EXECUTION_AUTHORIZATION_NOT_GRANTED");
