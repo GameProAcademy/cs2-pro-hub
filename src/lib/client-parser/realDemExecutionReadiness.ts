@@ -110,10 +110,8 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.runtimePreflightVerified) blockers.push("RUNTIME_PREFLIGHT_NOT_VERIFIED");
   if (!input.parserOverheadMeasured)
     postExecutionEvidenceBlockers.push("PARSER_OVERHEAD_NOT_MEASURED");
-  if (!input.parityVerified)
-    postExecutionEvidenceBlockers.push("PARITY_NOT_VERIFIED");
-  if (!input.determinismVerified)
-    postExecutionEvidenceBlockers.push("DETERMINISM_NOT_VERIFIED");
+  if (!input.parityVerified) postExecutionEvidenceBlockers.push("PARITY_NOT_VERIFIED");
+  if (!input.determinismVerified) postExecutionEvidenceBlockers.push("DETERMINISM_NOT_VERIFIED");
   if (!input.tickAuthorityVerified)
     postExecutionEvidenceBlockers.push("TICK_AUTHORITY_NOT_VERIFIED");
   if (!input.playerIdentityVerified)
