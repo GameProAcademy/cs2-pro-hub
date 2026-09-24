@@ -14,20 +14,16 @@ jobs:
     if: >-
       github.repository == 'GameProAcademy/cs2-pro-hub' &&
       github.ref == 'refs/heads/main' &&
-      github.event.before == '6e2d3789070e79e3b1042246e0c84d27f90e9095'
+      github.event.before == '11becc9c96089283c3b00f27539619a9f6f10726'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Dispatch H.3-E.3 external preflight exactly once
+      - name: Dispatch H.3-E.3 external preflight exactly once after registry refresh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/h3-e3-final-external-preflight.yml/dispatches" \
-            -f ref='main'
+          gh api --method POST             -H 'Accept: application/vnd.github+json'             -H 'X-GitHub-Api-Version: 2022-11-28'             "/repos/${GITHUB_REPOSITORY}/actions/workflows/h3-e3-final-external-preflight.yml/dispatches"             -f ref='main'
           echo "h3_e3_dispatch=REQUESTED"
           echo "attestation_execution=NOT_RUN"
           echo "dem_execution=NOT_RUN"
