@@ -54,7 +54,7 @@ The current authorized Cache DEM is:
 
 - filename: furia-vs-gamerlegion-m1-cache.dem
 - size: 473,748,061 bytes
-- SHA-256: 0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d
+- SHA-256: 0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d
 
 The Cache DEM remains **NOT RUN**.
 
