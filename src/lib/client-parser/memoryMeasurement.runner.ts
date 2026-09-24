@@ -177,8 +177,7 @@ export async function runSyntheticMemoryMeasurement(
           finish(new MemoryLabError("MATERIALIZATION_FAILED"));
           return;
         }
-        if (message.data.type === "MATERIALIZATION_COMPLETE")
-          finish(undefined, message.data);
+        if (message.data.type === "MATERIALIZATION_COMPLETE") finish(undefined, message.data);
         else if (message.data.type === "ERROR") finish(new MemoryLabError(message.data.code));
       };
       abortHandler = () => finish(new MemoryLabError("CANCELLED"));

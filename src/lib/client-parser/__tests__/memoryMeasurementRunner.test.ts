@@ -3,12 +3,7 @@ import { containsBinaryValue, createSyntheticFixtureDescriptor } from "../memory
 import { runSyntheticMemoryMeasurement } from "../memoryMeasurement.runner";
 
 type WorkerBehavior =
-  | "complete"
-  | "hang"
-  | "error-event"
-  | "worker-error"
-  | "malformed"
-  | "wrong-request";
+  "complete" | "hang" | "error-event" | "worker-error" | "malformed" | "wrong-request";
 
 class FakeWorker {
   terminated = 0;
@@ -126,10 +121,14 @@ describe("synthetic memory measurement lifecycle", () => {
     const worker = new FakeWorker("complete", lifecycle);
     const samples = [100, 130, 145, 220, 110];
     const result = await runSyntheticMemoryMeasurement(descriptor, {
-      ...optionsFor(worker, async () => {
-        lifecycle.push(`sample:${samples[0]}`);
-        return { bytes: samples.shift() ?? 0 };
-      }, lifecycle),
+      ...optionsFor(
+        worker,
+        async () => {
+          lifecycle.push(`sample:${samples[0]}`);
+          return { bytes: samples.shift() ?? 0 };
+        },
+        lifecycle,
+      ),
     });
     expect(result.status).toBe("OBSERVED");
     expect(result.baselineBytes).toBe(100);
@@ -156,12 +155,16 @@ describe("synthetic memory measurement lifecycle", () => {
     let call = 0;
     const result = await runSyntheticMemoryMeasurement(
       descriptor,
-      optionsFor(worker, async () => {
-        call += 1;
-        if (call === 4) await Promise.resolve();
-        lifecycle.push(`resolved:${call}`);
-        return { bytes: call === 4 ? 220 : 100 + call };
-      }, lifecycle),
+      optionsFor(
+        worker,
+        async () => {
+          call += 1;
+          if (call === 4) await Promise.resolve();
+          lifecycle.push(`resolved:${call}`);
+          return { bytes: call === 4 ? 220 : 100 + call };
+        },
+        lifecycle,
+      ),
     );
     expect(result.postMaterializationBytes).toBe(220);
     expect(lifecycle.indexOf("complete")).toBeLessThan(lifecycle.indexOf("resolved:4"));
@@ -202,16 +205,16 @@ describe("synthetic memory measurement lifecycle", () => {
   it("times out fail-closed and terminates a hung Worker", async () => {
     const worker = new FakeWorker("hang");
     const result = await runSyntheticMemoryMeasurement(descriptor, {
-        featureEnabled: true,
-        timeoutMs: 1,
-        dependencies: {
-          capabilities,
-          workerFactory: () => worker,
-          measureMemory: async () => ({ bytes: 100 }),
-          wait: async () => undefined,
-          randomUUID: () => "timeout",
-        },
-      });
+      featureEnabled: true,
+      timeoutMs: 1,
+      dependencies: {
+        capabilities,
+        workerFactory: () => worker,
+        measureMemory: async () => ({ bytes: 100 }),
+        wait: async () => undefined,
+        randomUUID: () => "timeout",
+      },
+    });
     expect(result.status).toBe("FAILED");
     expect(result.errorCode).toBe("MATERIALIZATION_TIMEOUT");
     expect(worker.terminated).toBe(1);
@@ -221,20 +224,17 @@ describe("synthetic memory measurement lifecycle", () => {
   it("cancels fail-closed and terminates the Worker", async () => {
     const worker = new FakeWorker("hang");
     const controller = new AbortController();
-    const pending = runSyntheticMemoryMeasurement(
-      descriptor,
-      {
-        featureEnabled: true,
-        signal: controller.signal,
-        dependencies: {
-          capabilities,
-          workerFactory: () => worker,
-          measureMemory: async () => ({ bytes: 100 }),
-          wait: async () => undefined,
-          randomUUID: () => "cancel",
-        },
+    const pending = runSyntheticMemoryMeasurement(descriptor, {
+      featureEnabled: true,
+      signal: controller.signal,
+      dependencies: {
+        capabilities,
+        workerFactory: () => worker,
+        measureMemory: async () => ({ bytes: 100 }),
+        wait: async () => undefined,
+        randomUUID: () => "cancel",
       },
-    );
+    });
     queueMicrotask(() => controller.abort());
     const result = await pending;
     expect(result.status).toBe("CANCELLED");
@@ -284,19 +284,16 @@ describe("synthetic memory measurement lifecycle", () => {
 
   it("does not create a Worker when the feature is disabled", async () => {
     let created = false;
-    const result = await runSyntheticMemoryMeasurement(
-      descriptor,
-      {
-        featureEnabled: false,
-        dependencies: {
-          capabilities,
-          workerFactory: () => {
-            created = true;
-            return new FakeWorker();
-          },
+    const result = await runSyntheticMemoryMeasurement(descriptor, {
+      featureEnabled: false,
+      dependencies: {
+        capabilities,
+        workerFactory: () => {
+          created = true;
+          return new FakeWorker();
         },
       },
-    );
+    });
     expect(result.status).toBe("NOT_RUN");
     expect(result.errorCode).toBe("FEATURE_DISABLED");
     expect(created).toBe(false);
