@@ -73,6 +73,7 @@ async def _health_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
                         "build_revision": settings.build_revision,
                     },
                     "contract_version": settings.contract_version,
+                    "runtime": collect_runtime_evidence(settings),
                 },
                 separators=(",", ":"),
             ).encode("utf-8")
