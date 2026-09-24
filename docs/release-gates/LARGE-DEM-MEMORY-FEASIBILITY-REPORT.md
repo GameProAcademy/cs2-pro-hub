@@ -1,6 +1,6 @@
 # Large DEM Browser Memory / Feasibility Gate
 
-Status: `NOT_RUN`
+Status: `H.1-M CLOSED / H.2 ARCHITECTURE BLOCKED`
 
 ## Decision
 
@@ -32,6 +32,10 @@ Metadata-only boundary tests cover 128 MiB, 128 MiB + 1 byte, 300 MiB, 400 MiB, 
 | Parser working memory              | `NOT_MEASURED`                           |
 | Compact output                     | capped separately at 2 MiB               |
 | Peak browser memory                | `MEMORY_UNAVAILABLE`                     |
+
+## H.2 disposition
+
+H.1-M synthetic memory evidence is now complete, but it does not authorize real DEM parsing. The separate H.2 admission contract remains fail-closed until real-parser overhead, parity, determinism, retention authorization, and fresh runtime evidence are independently proven.
 
 ## Locks
 
