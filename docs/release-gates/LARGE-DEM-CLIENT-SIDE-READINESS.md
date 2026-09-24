@@ -5,17 +5,17 @@
 - Architecture preparation: `IMPLEMENTED`
 - Unit/static verification: `VERIFIED`
 - Real DEM execution: `NOT_RUN`
-- Files above 128 MiB: `NOT_SUPPORTED`
+- Files above 128 MiB: `NOT_SUPPORTED` by the current contiguous-buffer parser path
 - R5.8.1: `BLOCKED_OPERATOR_CONFIGURATION`
 - Canonical: `BLOCKED`
 
 ## Final validation
 
-- Full Vitest suite: `80 files / 1,139 tests PASS`
-- Focused parser, Worker and boundary suite: `4 files / 96 tests PASS`
-- TypeScript: `PASS`
-- ESLint: `PASS` with no errors
-- Preview build: `PASS`
+- Full Vitest suite: `80 files / 1,139 tests PASS` on the preceding readiness commit; a semantic boundary correction is now queued for fresh CI verification.
+- Focused parser, Worker and boundary suite: `PASS` on the preceding readiness commit; the preflight boundary regression is now explicitly covered.
+- TypeScript: `PASS` on the preceding readiness commit
+- ESLint: `PASS` with no errors on the preceding readiness commit
+- Preview build: `PASS` on the preceding readiness commit
 - Real DEM, browser memory benchmark, parity and determinism: `NOT_RUN`
 
 ## Architecture before
@@ -46,17 +46,23 @@ The browser-owned `File`, parser Worker `ArrayBuffer`, WASM linear memory, parse
 
 ## Boundaries
 
-| Metadata size | Parsing status |
-| --- | --- |
-| 128 MiB - 1 | `SAFE` only when both parser experiment flags and capabilities are available |
-| 128 MiB | `SAFE` under the same conditions; not a production support claim |
-| 128 MiB + 1 | `NOT_SUPPORTED` |
-| 300 MiB | `NOT_SUPPORTED` |
-| 400 MiB | `NOT_SUPPORTED` |
-| 500 MiB | `NOT_SUPPORTED` |
-| 473,748,061 bytes | `NOT_SUPPORTED / NOT_RUN` |
+The preflight gate and the execution feasibility gate have intentionally different semantics:
 
-These are deterministic metadata-only tests; no giant buffers or real DEM were created.
+- **Preflight** reports the deterministic input-size boundary even while the experimental gate is OFF. Therefore a file above 128 MiB is `BLOCKED_BY_SIZE` at preflight; this does **not** mean the parser was executed.
+- **Execution feasibility** requires the explicit experimental and real-parser gates. With those gates enabled, the current contiguous-buffer parser path classifies files above 128 MiB as `NOT_SUPPORTED`.
+- A file at or below 128 MiB can still be `NOT_RUN` when the experimental/real-parser gate is disabled.
+
+| Metadata size | Preflight | Execution feasibility when experimental + real parser are explicitly enabled | Actual parsing |
+| --- | --- | --- | --- |
+| 128 MiB - 1 | `NOT_RUN` | `SAFE` capability hint | `NOT_RUN` |
+| 128 MiB | `NOT_RUN` | `SAFE` capability hint; not a production support claim | `NOT_RUN` |
+| 128 MiB + 1 | `BLOCKED_BY_SIZE` | `NOT_SUPPORTED` | `NOT_RUN` |
+| 300 MiB | `BLOCKED_BY_SIZE` | `NOT_SUPPORTED` | `NOT_RUN` |
+| 400 MiB | `BLOCKED_BY_SIZE` | `NOT_SUPPORTED` | `NOT_RUN` |
+| 500 MiB | `BLOCKED_BY_SIZE` | `NOT_SUPPORTED` | `NOT_RUN` |
+| 473,748,061 bytes | `BLOCKED_BY_SIZE` | `NOT_SUPPORTED` | `NOT_RUN` |
+
+These are deterministic metadata-only tests; no giant parser buffer or real DEM was created.
 
 ## Security and retention
 
@@ -76,4 +82,6 @@ These are deterministic metadata-only tests; no giant buffers or real DEM were c
 
 ## Next gate
 
-The next technical gate is a separately authorized controlled browser memory measurement with the exact runtime and a non-production synthetic/authorized fixture. It must not run until operator configuration and execution authorization are independently complete. A larger parser ceiling requires measured evidence or a verified streaming-capable parser adapter.
+The next technical gate is **FASE 2.7.2H.1 — Controlled Browser Memory Measurement**. It must measure the actual browser/Worker memory behavior of the client-side architecture using only non-production synthetic fixtures or an explicitly authorized fixture, with no real Cache DEM and no production parser admission. The measurement API must be treated as browser-specific evidence, not a universal memory guarantee; availability depends on secure cross-origin-isolated execution. citeturn0search0turn0search1
+
+A larger parser ceiling requires measured evidence sufficient for the exact runtime or a verified streaming-capable parser adapter. The 128 MiB production ceiling remains unchanged until such evidence exists.
