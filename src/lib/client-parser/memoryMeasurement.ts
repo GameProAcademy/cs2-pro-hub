@@ -32,11 +32,7 @@ export type MemoryMeasurementErrorCode =
   | "CANCELLED"
   | "UNKNOWN_ERROR";
 export type MemoryMeasurementStatus = "OBSERVED" | "NOT_RUN" | "FAILED" | "CANCELLED";
-export type CleanupStatus =
-  | "CLEANUP_OBSERVED"
-  | "CLEANUP_MEASUREMENT_UNAVAILABLE"
-  | "CLEANUP_NOT_RUN"
-  | "FAILED";
+export type CleanupStatus = "CLEANUP_OBSERVED" | "CLEANUP_MEASUREMENT_UNAVAILABLE" | "CLEANUP_NOT_RUN" | "FAILED";
 
 export interface SyntheticFixtureDescriptor {
   kind: "SYNTHETIC_MEMORY_FIXTURE";
@@ -45,12 +41,7 @@ export interface SyntheticFixtureDescriptor {
 
 export interface MemoryMeasurementResult {
   status: MemoryMeasurementStatus;
-  evidenceClass: readonly [
-    "SYNTHETIC_FIXTURE",
-    "NO_REAL_DEM",
-    "NOT_SUPPORT_CLAIM",
-    "OBSERVED_BROWSER_MEMORY",
-  ];
+  evidenceClass: readonly ["SYNTHETIC_FIXTURE", "NO_REAL_DEM", "NOT_SUPPORT_CLAIM", "OBSERVED_BROWSER_MEMORY"];
   fixtureSizeBytes: number;
   repetition: number;
   timestamp: string;
@@ -108,8 +99,7 @@ export function createSyntheticFixtureDescriptor(sizeBytes: number): SyntheticFi
 
 export function createSyntheticFixture(descriptor: SyntheticFixtureDescriptor): File {
   const validated = createSyntheticFixtureDescriptor(descriptor.sizeBytes);
-  if (descriptor.kind !== "SYNTHETIC_MEMORY_FIXTURE")
-    throw new MemoryLabError("FIXTURE_CREATION_FAILED");
+  if (descriptor.kind !== "SYNTHETIC_MEMORY_FIXTURE") throw new MemoryLabError("FIXTURE_CREATION_FAILED");
   try {
     const block = new Uint8Array(1024 * 1024);
     for (let index = 0; index < block.length; index += 1) block[index] = (index * 31 + 17) & 0xff;
