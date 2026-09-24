@@ -7,6 +7,25 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+const ATTESTATION_RUNTIME_SECRET_NAMES = [
+  "PARSER_ATTESTATION_TRANSPORT_SECRET",
+  "PARSER_ATTESTATION_HMAC_SECRET",
+] as const;
+
+/**
+ * Lovable supplies custom server secrets as Worker bindings. TanStack's
+ * server route reads server-only values through process.env, so copy only the
+ * two attestation bindings into that server environment before dispatch.
+ */
+export function bindAttestationRuntimeSecrets(env: unknown): void {
+  if (!env || typeof env !== "object" || Array.isArray(env)) return;
+  const bindings = env as Record<string, unknown>;
+  for (const name of ATTESTATION_RUNTIME_SECRET_NAMES) {
+    const value = bindings[name];
+    if (typeof value === "string") process.env[name] = value;
+  }
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -47,6 +66,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      bindAttestationRuntimeSecrets(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
