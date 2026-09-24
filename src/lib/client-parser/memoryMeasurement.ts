@@ -96,7 +96,14 @@ export type MemoryWorkerCommand = {
 export type MemoryWorkerEvent =
   | { type: "WORKER_READY" }
   | { type: "MATERIALIZATION_STARTED"; requestId: string }
-  | { type: "WORKER_STAGE"; requestId: string; stage: Exclude<MemoryWorkerLifecycleStage, "CREATED" | "READY" | "WORKER_ERROR" | "MESSAGE_ERROR" | "UNKNOWN"> }
+  | {
+      type: "WORKER_STAGE";
+      requestId: string;
+      stage: Exclude<
+        MemoryWorkerLifecycleStage,
+        "CREATED" | "READY" | "WORKER_ERROR" | "MESSAGE_ERROR" | "UNKNOWN"
+      >;
+    }
   | {
       type: "MATERIALIZATION_COMPLETE";
       requestId: string;
