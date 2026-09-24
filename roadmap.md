@@ -1,3 +1,42 @@
+# CURRENT STATE RECONCILIATION — 2026-09-24
+
+> This section is the authoritative current-state snapshot. Older phase sections below are retained as historical implementation records and may contain earlier `NOT_RUN` wording.
+
+## Current milestone
+
+**H.3-E — Controlled Cache Execution Envelope**
+
+Status: `IMPLEMENTED / FAIL-CLOSED / PRE-EXECUTION`.
+
+### Confirmed current state
+
+- H.1-R: implemented and CI verified.
+- H.1-M: **ACCEPTED — 15/15 synthetic observations** (16/32/64/96/128 MiB × 3). This is synthetic browser materialization evidence only.
+- H.2: **NOT RUN / BLOCKED** for real DEM parser measurement.
+- H.3-R: implemented, merged, deployed; live Railway preflight observed.
+- H.3-E: implemented as an exact Cache envelope gate; real Cache execution remains blocked.
+- Exact Cache DEM: `furia-vs-gamerlegion-m1-cache.dem`, 473,748,061 bytes, SHA-256 `0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d`.
+- Railway parser: demoparser2 0.42.0, revision/build `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76`, contract 1.
+- Railway cgroup memory limit observed: 3,999,997,952 bytes.
+- Browser real DEM remains OFF and the 128 MiB conservative ceiling remains unchanged.
+- Real parser memory, Python/WASM parity, determinism, tick authority and complete player identity are post-execution evidence and remain unverified until a controlled real run.
+- Retention authorization, fresh execution attestation and explicit execution authorization remain pending.
+- Attempt 9/10+ remains locked.
+- Canonical admission remains locked.
+- No cleanup or production Railway mutation is authorized by H.3-E.
+
+### Non-negotiable execution order
+
+`EXACT DEM IDENTITY → RUNTIME IDENTITY/PREFLIGHT → RETENTION → FRESH ATTESTATION → EXPLICIT AUTHORIZATION → ONE CONTROLLED RUN → POST-RUN FORENSICS → PARITY/DETERMINISM/TICK/IDENTITY → Canonical remains locked`
+
+### H.3-E hard lock
+
+Until the pre-execution envelope is independently complete:
+
+**DO NOT execute the real DEM, create Attempt 9, create final RAW evidence, promote Canonical, execute cleanup, mutate Railway production, expose/rotate secrets, or bypass attestation.**
+
+---
+
 # CURRENT IMPLEMENTATION — FASE 2.7.2H.1-M0
 
 **Status:** `H.1-R PASS / H.1-M0 READY / H.1-M RUNTIME NOT_RUN / SYNTHETIC ONLY`.

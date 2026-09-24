@@ -1,6 +1,6 @@
 # H.3-R — Controlled Runtime Evidence Instrumentation
 
-STATUS: **IMPLEMENTED / NOT DEPLOYED**
+STATUS: **IMPLEMENTED / MERGED / DEPLOYED / LIVE PREFLIGHT OBSERVED**
 
 ## Purpose
 
@@ -22,13 +22,24 @@ H.3-R prepares the Railway parser runtime to produce a secret-free, exact-runtim
 - process-lifetime ru_maxrss, clearly marked as such;
 - explicit secretsIncluded=false.
 
-## Deployment rule
+## Current deployment
 
-This branch is intentionally NOT DEPLOYED to Railway production by this milestone.
-The Railway service is connected to infra/cs2-parser-worker-v8, and pushes to a connected GitHub branch can automatically deploy. Therefore the instrumentation remains isolated until CI and deployment are explicitly reviewed.
+The H.3-R instrumentation was merged to the mainline and the controlled Railway runtime was deployed on the frozen parser-worker production branch.
+
+Live preflight evidence is recorded in:
+`docs/release-gates/H3-R-LIVE-RAILWAY-PREFLIGHT-2026-09-24.md`
+
+Observed live identity:
+- demoparser2: 0.42.0
+- parser/build revision: git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76
+- contract: 1
+- Python: 3.12.14
+- cgroup memory: 3,999,997,952 bytes
+- CPU quota: 400,000 us / 100,000 us period
+- secretsIncluded: false
+
+This evidence proves the live runtime envelope only. It does not prove safe parsing of the 473,748,061-byte Cache DEM.
 
 ## Next gate
 
-After CI acceptance, the branch can be merged/deployed to the controlled Railway parser runtime. Only then should the runtime pre-flight endpoint be called.
-
-A successful pre-flight still does not authorize the Cache DEM. The first real parse remains a separate controlled execution event.
+H.3-E freezes the exact Cache execution envelope. A successful preflight still does not authorize the Cache DEM. The first real parse remains a separate controlled execution event.
