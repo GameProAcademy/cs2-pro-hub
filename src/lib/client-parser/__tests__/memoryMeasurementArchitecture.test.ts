@@ -17,6 +17,7 @@ const all = `${executionSurface}\n${ui}`;
 describe("memory lab architecture guards", () => {
   it("keeps synthetic contiguous materialization inside the dedicated Worker adapter", () => {
     expect(worker).toContain("arrayBuffer()");
+    expect(worker).toContain("createSyntheticFixture(command.descriptor)");
     expect(worker).toContain("MATERIALIZATION_READ_FAILED");
     expect(worker).toContain("MATERIALIZATION_LENGTH_MISMATCH");
     expect(runner).not.toContain(".arrayBuffer(");
