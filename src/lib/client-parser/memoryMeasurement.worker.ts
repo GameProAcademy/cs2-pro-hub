@@ -58,6 +58,8 @@ async function materialize(command: MemoryWorkerCommand) {
   try {
     postStage(command.requestId, stage);
     postStage(command.requestId, "MATERIALIZATION_STARTED");
+    stage = "FILE_CREATION_STARTED";
+    postStage(command.requestId, stage);
     stage = "FILE_CREATED";
     const fixture = createSyntheticFixture(command.descriptor);
     postStage(command.requestId, stage);
