@@ -25,6 +25,7 @@ export const REAL_DEM_EXECUTION_BLOCKERS = [
   "ATTESTATION_NOT_FRESH",
   "EXECUTION_AUTHORIZATION_NOT_GRANTED",
   "CANONICAL_LOCK_NOT_ACTIVE",
+  "CONTROLLED_ENVELOPE_MISMATCH",
 ] as const;
 export type RealDemExecutionReadinessBlocker = (typeof REAL_DEM_EXECUTION_BLOCKERS)[number];
 
@@ -135,5 +136,49 @@ export function evaluateRealDemExecutionReadiness(
     blockers: uniqueBlockers,
     postExecutionEvidenceBlockers: uniquePostExecutionEvidenceBlockers,
     evidenceClass: "FAIL_CLOSED_PRE_EXECUTION_GATE",
+  };
+}
+
+
+export const CONTROLLED_CACHE_EXECUTION_ENVELOPE = {
+  fileName: "furia-vs-gamerlegion-m1-cache.dem",
+  sizeBytes: 473_748_061,
+  sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
+  parserBuildIdentity:
+    "demoparser2:0.42.0:git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+  contractVersion: 1,
+  executionSurface: "RAILWAY_CONTROLLED" as const,
+  inputStrategy: "FILE_PATH" as const,
+} as const;
+
+/**
+ * H.3-E freezes the exact Cache execution envelope without executing it.
+ *
+ * The generic H.3 gate remains responsible for evidence booleans. This
+ * wrapper prevents a caller from presenting a different DEM, parser build,
+ * contract, surface, or input strategy as the authorized Cache envelope.
+ */
+export function evaluateControlledCacheExecutionEnvelope(
+  input: RealDemExecutionReadinessInput,
+): RealDemExecutionReadiness {
+  const base = evaluateRealDemExecutionReadiness(input);
+  const envelopeMatches =
+    input.fileName === CONTROLLED_CACHE_EXECUTION_ENVELOPE.fileName &&
+    input.sizeBytes === CONTROLLED_CACHE_EXECUTION_ENVELOPE.sizeBytes &&
+    input.sha256.toLowerCase() === CONTROLLED_CACHE_EXECUTION_ENVELOPE.sha256 &&
+    input.parserBuildIdentity === CONTROLLED_CACHE_EXECUTION_ENVELOPE.parserBuildIdentity &&
+    input.contractVersion === CONTROLLED_CACHE_EXECUTION_ENVELOPE.contractVersion &&
+    input.executionSurface === CONTROLLED_CACHE_EXECUTION_ENVELOPE.executionSurface &&
+    input.inputStrategy === CONTROLLED_CACHE_EXECUTION_ENVELOPE.inputStrategy;
+
+  if (envelopeMatches) return base;
+
+  const blockers = [...new Set([...base.blockers, "CONTROLLED_ENVELOPE_MISMATCH" as const])];
+  return {
+    ...base,
+    state: "BLOCKED",
+    canExecute: false,
+    operation: "METADATA_ONLY",
+    blockers,
   };
 }
