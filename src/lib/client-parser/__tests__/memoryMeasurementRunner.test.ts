@@ -245,7 +245,7 @@ describe("synthetic memory measurement lifecycle", () => {
 
   it.each([
     ["error-event", "MATERIALIZATION_FAILED"],
-    ["worker-error", "MATERIALIZATION_FAILED"],
+    ["worker-error", "MATERIALIZATION_WORKER_ERROR"],
     ["malformed", "MATERIALIZATION_FAILED"],
     ["wrong-request", "MATERIALIZATION_FAILED"],
   ] as const)("fails closed for %s and terminates the Worker", async (behavior, code) => {
