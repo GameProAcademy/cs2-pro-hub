@@ -186,7 +186,8 @@ export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent 
       event["stage"] === "FILE_CREATED" ||
       event["stage"] === "ARRAYBUFFER_STARTED" ||
       event["stage"] === "ARRAYBUFFER_COMPLETE" ||
-      event["stage"] === "MATERIALIZATION_COMPLETE"
+      event["stage"] === "MATERIALIZATION_COMPLETE" ||
+      event["stage"] === "MATERIALIZATION_RELEASED"
     );
   }
   if (event["type"] === "ERROR")
