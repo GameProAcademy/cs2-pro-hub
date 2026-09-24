@@ -108,9 +108,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
   });
 
   it("builds evidence in GitHub Actions and never self-asserts database provenance", () => {
-    expect(workflow).toContain(
-      "actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45",
-    );
+    expect(workflow).toContain("actions/upload-artifact@");
+    expect(workflow).not.toContain("actions/attest-build-provenance@");
+    expect(workflow).not.toContain("attestations: write");
     expect(workflow).toContain("infra/cs2-parser-worker-v8");
     expect(attestor).toContain('statuses.append("BLOCKED_EXTERNAL_PROOF")');
     expect(attestor).toContain("RAILWAY_API_TOKEN");
@@ -140,7 +140,7 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).not.toContain("workflow_call:");
     expect(attestor).toContain('event not in {"workflow_dispatch", "workflow_run"}');
     expect(attestor).toContain("GITHUB_WORKFLOW_RUN_UPSTREAM_NOT_APPROVED");
-    expect(workflow.match(/uses: [^\n]+@[0-9a-f]{40}/g)).toHaveLength(5);
+    expect(workflow.match(/uses: [^\n]+@[0-9a-f]{40}/g)).toHaveLength(4);
     expect(workflow).not.toMatch(/uses: [^\n]+@v\d/);
     expect(attestor).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
   });
