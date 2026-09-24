@@ -22,7 +22,7 @@ STATUS: H.1-R PASS / H.1-M0 READY / H.1-M NOT RUN
 
 ## Pending closure criteria
 
-- [x] Complete all CI gates for H.1-R: 1,181 web tests, 189 parser tests, 66 contract-sensitive parser tests, TypeScript, lint, and build passed.
+- [x] Complete all CI gates for H.1-R: 1,184 web tests, 189 parser tests, 66 contract-sensitive parser tests, TypeScript, lint, and build passed.
 - [ ] Execute H.1-M manually in a compatible foreground browser.
 - [ ] Record only the metadata defined by the manual protocol.
 
