@@ -8,7 +8,7 @@ import {
 const cacheBase = {
   fileName: "furia-vs-gamerlegion-m1-cache.dem",
   sizeBytes: 473_748_061,
-  sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+  sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
   parserCapability: CLIENT_DEMO_PARSER_CAPABILITY,
   parserBuildIdentity: "demoparser2:0.42.0:git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
   contractVersion: 1,
