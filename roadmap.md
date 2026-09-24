@@ -1,3 +1,17 @@
+# CURRENT IMPLEMENTATION — FASE 2.7.2H
+
+**Status:** `ARCHITECTURAL_READINESS IMPLEMENTED / LARGE_DEM_REAL_EXECUTION_STATUS BLOCKED / REAL DEM NOT_RUN`.
+
+- [x] Declarar demoparser2 0.42.0 como `CONTIGUOUS_BUFFER`, WASM, sem streaming comprovado.
+- [x] Mover o SHA-256 local para Worker incremental de 8 MiB, com progresso, cancelamento e mensagens validadas.
+- [x] Isolar a única materialização integral do arquivo no adapter executado pelo Worker do parser.
+- [x] Adicionar gate determinístico e modelo de memória que mantém overhead WASM/parser e pico como desconhecidos.
+- [x] Cobrir metadata-only de 0 byte até 500 MiB e o Cache de 473.748.061 bytes sem alocações gigantes.
+- [x] Integrar capacidade, viabilidade, motivo factual e execução em Worker ao POC existente.
+- [ ] Executar DEM real, benchmark de memória, parity ou determinism: `NOT_RUN`.
+
+**Locks:** teto de 128 MiB inalterado; `FEATURES.realDemoParser=false`; R5.8.1 `BLOCKED_OPERATOR_CONFIGURATION`; Attempt 9/10+ e Canonical `BLOCKED`; Railway, staging, secrets, migrations e attestation inalterados.
+
 # CURRENT VALIDATION — FASE 2.7.2G.5-R
 
 **Status:** `POC_BLOCKED_PENDING_REAL_DEM / POC_BLOCKED_WITH_FORENSIC_EVIDENCE`.

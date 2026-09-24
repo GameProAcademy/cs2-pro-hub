@@ -15,6 +15,12 @@ import { verifyClientParserResult } from "@/lib/client-parser/clientParser.funct
 import type { ClientParserProgress } from "@/lib/client-parser/clientParser.service";
 import { ClientParserService } from "@/lib/client-parser/clientParser.service";
 import type { ClientParserEnvelope } from "@/lib/client-parser/clientParser.types";
+import { CLIENT_DEMO_PARSER_CAPABILITY } from "@/lib/client-parser/clientParser.input";
+import {
+  evaluateLargeDemFeasibility,
+  type LargeDemReadiness,
+} from "@/lib/client-parser/largeDemFeasibility";
+import { FEATURES } from "@/config/app";
 
 function bytes(value: number) {
   return new Intl.NumberFormat(undefined, {
@@ -35,21 +41,35 @@ export function ClientParserPoc() {
   > | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [feasibility, setFeasibility] = useState<LargeDemReadiness | null>(null);
 
   const select = (next: File | undefined) => {
     setError(null);
     setResult(null);
     setVerification(null);
     setProgress(null);
+    setFeasibility(null);
     if (!next || !next.name.toLowerCase().endsWith(".dem")) {
       setFile(null);
       if (next) setError("Selecione um arquivo .dem válido.");
       return;
     }
     setFile(next);
+    setFeasibility(
+      evaluateLargeDemFeasibility(
+        { name: next.name, sizeBytes: next.size },
+        CLIENT_DEMO_PARSER_CAPABILITY,
+        {
+          workerAvailable: typeof Worker !== "undefined",
+          wasmAvailable: typeof WebAssembly !== "undefined",
+          experimentalEnabled: FEATURES.clientDemLargeFileExperimental,
+          realParserEnabled: FEATURES.clientDemParserPoc,
+        },
+      ),
+    );
   };
   const run = async () => {
-    if (!file) return;
+    if (!file || feasibility?.canParse !== true) return;
     setRunning(true);
     setError(null);
     setResult(null);
@@ -124,6 +144,24 @@ export function ClientParserPoc() {
           </div>
         </div>
       ) : null}
+      {file && feasibility ? (
+        <div className="grid gap-3 border border-border bg-card/40 p-4 sm:grid-cols-3">
+          <Metric label="Viabilidade" value={feasibility.state} mono />
+          <Metric
+            label="Entrada do parser"
+            value={feasibility.parserCapability.inputCapability}
+            mono
+          />
+          <Metric label="Execução" value="WEB WORKER" mono />
+          <div className="sm:col-span-3">
+            <p className="text-xs text-muted-foreground">
+              {feasibility.canParse
+                ? "Arquivo dentro do limite conservador configurado."
+                : "O arquivo pode ser identificado e hasheado localmente, mas o parser atual exige um buffer contíguo ou permanece desabilitado. O processamento foi bloqueado para proteger o navegador."}
+            </p>
+          </div>
+        </div>
+      ) : null}
       {progress ? (
         <div
           className="flex items-center justify-between gap-4 border border-border bg-card/40 px-4 py-3"
@@ -139,7 +177,7 @@ export function ClientParserPoc() {
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={run} disabled={!file || running}>
+        <Button onClick={run} disabled={!file || running || feasibility?.canParse !== true}>
           {running ? (
             <Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
           ) : (
