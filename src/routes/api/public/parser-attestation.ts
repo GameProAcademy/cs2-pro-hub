@@ -199,13 +199,13 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
         const { data, error } = await supabaseAdmin.rpc(
           "record_parser_runtime_attestation_with_secret",
           {
-          _canonical_payload: canonicalPayload,
-          _payload: parsed.data.result.payload as Json,
-          _attestation_digest: parsed.data.result.attestation_digest,
-          _signature: parsed.data.signature,
-          _release_gate_evidence: releaseGateEvidence as Json,
-          _attested_at: attestedAt,
-          _nonce: nonce,
+            _canonical_payload: canonicalPayload,
+            _payload: parsed.data.result.payload as Json,
+            _attestation_digest: parsed.data.result.attestation_digest,
+            _signature: parsed.data.signature,
+            _release_gate_evidence: releaseGateEvidence as Json,
+            _attested_at: attestedAt,
+            _nonce: nonce,
             _hmac_secret: signingSecret,
           },
         );

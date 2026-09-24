@@ -13,6 +13,8 @@ It is not a user endpoint. GitHub Actions must pass the existing transport secre
 
 The recorder validates the GitHub issuer, audience, repository, owner, main ref, workflow, event, run identity, workflow-file commit, token lifetime, frozen Railway/parser identity, critical hashes, release evidence, digest, and HMAC. Responses and logs exclude credentials, OIDC tokens, canonical payloads, and full evidence.
 
+The reviewed workflow source is pinned by Git blob identity `de6732f465cae08c96aece304558273242b7016d` in the application registry and database persistence boundary.
+
 ## Transient database HMAC bridge
 
 `public.record_parser_runtime_attestation_with_secret(...)` is executable only by `service_role`. It checks the server-side HMAC secret, sets `app.settings.parser_attestation_hmac_secret` locally for the current transaction, and delegates to the unchanged `public.record_parser_runtime_attestation(...)` function.

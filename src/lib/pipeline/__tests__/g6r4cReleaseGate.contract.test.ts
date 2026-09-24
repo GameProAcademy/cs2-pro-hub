@@ -29,6 +29,10 @@ const transientSecretBridgeMigration = readFileSync(
   resolve("supabase/migrations/20260924075412_bd5954f3-8218-4a10-a059-24b01fa84cc6.sql"),
   "utf8",
 );
+const workflowAllowlistMigration = readFileSync(
+  resolve("supabase/migrations/20260924075612_9f6bbc78-b031-4297-bbbc-5fe49e24c9c2.sql"),
+  "utf8",
+);
 
 const REQUIRED_GATES = [
   "parser_runtime_identity",
@@ -169,5 +173,14 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(transientSecretBridgeMigration).toContain("FROM authenticated;");
     expect(transientSecretBridgeMigration).toContain("TO service_role;");
     expect(transientSecretBridgeMigration).not.toMatch(/INSERT[\s\S]*_hmac_secret/i);
+  });
+
+  it("pins the protected workflow adapter to its reviewed source identity", () => {
+    expect(workflowAllowlistMigration).toContain(
+      "de6732f465cae08c96aece304558273242b7016d",
+    );
+    expect(workflowAllowlistMigration).toContain("enforce_approved_attestation_workflow");
+    expect(workflowAllowlistMigration).toContain("record_parser_runtime_attestation");
+    expect(workflowAllowlistMigration).toContain("assert_verified_parser_provenance");
   });
 });
