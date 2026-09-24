@@ -1,6 +1,6 @@
 # Large DEM Browser Memory / Feasibility Gate
 
-Status: `H.1-M CLOSED / H.2 ARCHITECTURE BLOCKED`
+Status: `H.1-M CLOSED / H.2 PASS / H.3 EXECUTION NOT READY`
 
 ## Decision
 
@@ -35,7 +35,11 @@ Metadata-only boundary tests cover 128 MiB, 128 MiB + 1 byte, 300 MiB, 400 MiB, 
 
 ## H.2 disposition
 
-H.1-M synthetic memory evidence is now complete, but it does not authorize real DEM parsing. The separate H.2 admission contract remains fail-closed until real-parser overhead, parity, determinism, retention authorization, and fresh runtime evidence are independently proven.
+H.1-M synthetic memory evidence is complete and H.2 is now `PASS` after the repository Quality Gate accepted the fail-closed real-DEM admission architecture. H.2 still does not authorize a real DEM run.
+
+## H.3 disposition
+
+H.3 now defines the pre-execution evidence envelope for one exact controlled DEM run. The Cache DEM remains `NOT RUN` until exact runtime memory/overhead, parity, determinism, tick authority, player identity, retention, attestation, and explicit execution authorization are independently complete.
 
 ## Locks
 
