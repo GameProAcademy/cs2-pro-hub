@@ -92,11 +92,13 @@ export interface MemoryMeasurementResult {
   workerBootstrapProbe: MemoryWorkerBootstrapProbeStatus;
 }
 
-export type MemoryWorkerCommand = {
-  type: "MEMORY_MEASUREMENT";
-  requestId: string;
-  descriptor: SyntheticFixtureDescriptor;
-};
+export type MemoryWorkerCommand =
+  | { type: "MEMORY_WORKER_INIT"; requestId: string }
+  | {
+      type: "MEMORY_MEASUREMENT";
+      requestId: string;
+      descriptor: SyntheticFixtureDescriptor;
+    };
 export type MemoryWorkerEvent =
   | { type: "WORKER_READY" }
   | { type: "MATERIALIZATION_STARTED"; requestId: string }
