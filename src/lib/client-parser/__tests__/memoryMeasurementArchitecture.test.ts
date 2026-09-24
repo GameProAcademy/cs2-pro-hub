@@ -30,7 +30,7 @@ describe("memory lab architecture guards", () => {
 
   it("validates only the synthetic descriptor across the Worker boundary", () => {
     expect(worker).toContain('descriptor?.["kind"] === "SYNTHETIC_MEMORY_FIXTURE"');
-    expect(worker).toContain('MEMORY_LAB_FIXTURE_SIZES.includes');
+    expect(worker).toContain("MEMORY_LAB_FIXTURE_SIZES.includes");
     expect(worker).not.toContain("fixture?.arrayBuffer");
     expect(worker).not.toContain("fixture instanceof File");
     expect(runner).toContain("descriptor: validated");
