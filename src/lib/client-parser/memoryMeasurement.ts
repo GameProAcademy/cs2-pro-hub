@@ -157,11 +157,24 @@ export function getMemoryMeasurementAvailability(input: {
 export function isMemoryWorkerEvent(value: unknown): value is MemoryWorkerEvent {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const event = value as Record<string, unknown>;
+  if (event["type"] === "WORKER_READY") return true;
   if (typeof event["requestId"] !== "string" || typeof event["type"] !== "string") return false;
   if (event["type"] === "MATERIALIZATION_STARTED") return true;
+  if (event["type"] === "WORKER_STAGE") {
+    return (
+      event["stage"] === "COMMAND_RECEIVED" ||
+      event["stage"] === "MATERIALIZATION_STARTED" ||
+      event["stage"] === "FILE_CREATED" ||
+      event["stage"] === "ARRAYBUFFER_STARTED" ||
+      event["stage"] === "ARRAYBUFFER_COMPLETE" ||
+      event["stage"] === "MATERIALIZATION_COMPLETE"
+    );
+  }
   if (event["type"] === "ERROR")
     return (
       event["code"] === "MATERIALIZATION_FAILED" ||
+      event["code"] === "MATERIALIZATION_WORKER_ERROR" ||
+      event["code"] === "MATERIALIZATION_MESSAGE_ERROR" ||
       event["code"] === "MATERIALIZATION_INVALID_COMMAND" ||
       event["code"] === "MATERIALIZATION_READ_FAILED" ||
       event["code"] === "MATERIALIZATION_LENGTH_MISMATCH"
