@@ -271,6 +271,7 @@ describe("synthetic memory measurement lifecycle", () => {
     expect(result.errorCode).toBe("MATERIALIZATION_WORKER_ERROR");
     expect(result.workerLifecycleStage).toBe("READY");
     expect(result.workerRuntimeSignal).toBe("ERROR_EVENT");
+    expect(result.workerBootstrapProbe).toBe("PASS");
   });
 
   it.each([
