@@ -353,5 +353,6 @@ function unavailableResult(
     errorCode: code,
     errorMessageSanitized: code,
     workerLifecycleStage: null,
+    workerRuntimeSignal: null,
   };
 }
