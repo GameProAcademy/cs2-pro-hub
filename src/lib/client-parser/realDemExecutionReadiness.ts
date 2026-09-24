@@ -46,7 +46,7 @@ export interface RealDemExecutionReadinessInput {
   runtimeArtifactVerified: boolean;
   inputStrategyVerified: boolean;
   surfaceCapacityVerified: boolean;
-  realMemoryObserved: boolean;
+  runtimePreflightVerified: boolean;
   parserOverheadMeasured: boolean;
   parityVerified: boolean;
   determinismVerified: boolean;
@@ -65,6 +65,7 @@ export interface RealDemExecutionReadiness {
   canCanonicalize: false;
   operation: "METADATA_ONLY" | "CONTROLLED_EXECUTION_ONLY";
   blockers: RealDemExecutionReadinessBlocker[];
+  postExecutionEvidenceBlockers: RealDemExecutionReadinessBlocker[];
   evidenceClass: "FAIL_CLOSED_PRE_EXECUTION_GATE";
 }
 
@@ -79,6 +80,7 @@ export function evaluateRealDemExecutionReadiness(
   input: RealDemExecutionReadinessInput,
 ): RealDemExecutionReadiness {
   const blockers: RealDemExecutionReadinessBlocker[] = [];
+  const postExecutionEvidenceBlockers: RealDemExecutionReadinessBlocker[] = [];
 
   if (
     !input.fileName.trim() ||
@@ -103,18 +105,20 @@ export function evaluateRealDemExecutionReadiness(
   if (!input.surfaceCapacityVerified) blockers.push("SURFACE_CAPACITY_NOT_VERIFIED");
   if (input.executionSurface === "BROWSER" && input.sizeBytes > 128 * 1024 * 1024)
     blockers.push("SURFACE_CAPACITY_NOT_VERIFIED");
-  if (!input.realMemoryObserved) blockers.push("REAL_MEMORY_NOT_OBSERVED");
-  if (!input.parserOverheadMeasured) blockers.push("PARSER_OVERHEAD_NOT_MEASURED");
-  if (!input.parityVerified) blockers.push("PARITY_NOT_VERIFIED");
-  if (!input.determinismVerified) blockers.push("DETERMINISM_NOT_VERIFIED");
-  if (!input.tickAuthorityVerified) blockers.push("TICK_AUTHORITY_NOT_VERIFIED");
-  if (!input.playerIdentityVerified) blockers.push("PLAYER_IDENTITY_NOT_VERIFIED");
+  if (!input.runtimePreflightVerified) blockers.push("RUNTIME_ARTIFACT_NOT_VERIFIED");
+  if (!input.parserOverheadMeasured) postExecutionEvidenceBlockers.push("PARSER_OVERHEAD_NOT_MEASURED");
+  if (!input.parityVerified) postExecutionEvidenceBlockers.push("PARITY_NOT_VERIFIED");
+  if (!input.determinismVerified) postExecutionEvidenceBlockers.push("DETERMINISM_NOT_VERIFIED");
+  if (!input.tickAuthorityVerified) postExecutionEvidenceBlockers.push("TICK_AUTHORITY_NOT_VERIFIED");
+  if (!input.playerIdentityVerified) postExecutionEvidenceBlockers.push("PLAYER_IDENTITY_NOT_VERIFIED");
+  if (!input.realMemoryObserved) postExecutionEvidenceBlockers.push("REAL_MEMORY_NOT_OBSERVED");
   if (!input.retentionAuthorizationVerified) blockers.push("RETENTION_AUTHORIZATION_NOT_VERIFIED");
   if (!input.attestationFresh) blockers.push("ATTESTATION_NOT_FRESH");
   if (!input.executionAuthorizationGranted) blockers.push("EXECUTION_AUTHORIZATION_NOT_GRANTED");
   if (!input.canonicalAdmissionLocked) blockers.push("CANONICAL_LOCK_NOT_ACTIVE");
 
   const uniqueBlockers = [...new Set(blockers)];
+  const uniquePostExecutionEvidenceBlockers = [...new Set(postExecutionEvidenceBlockers)];
   const ready = uniqueBlockers.length === 0;
 
   return {
@@ -124,6 +128,7 @@ export function evaluateRealDemExecutionReadiness(
     canCanonicalize: false,
     operation: ready ? "CONTROLLED_EXECUTION_ONLY" : "METADATA_ONLY",
     blockers: uniqueBlockers,
+    postExecutionEvidenceBlockers: uniquePostExecutionEvidenceBlockers,
     evidenceClass: "FAIL_CLOSED_PRE_EXECUTION_GATE",
   };
 }
