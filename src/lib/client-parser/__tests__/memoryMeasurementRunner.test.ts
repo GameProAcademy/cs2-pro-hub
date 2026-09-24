@@ -45,8 +45,20 @@ class FakeWorker {
   postMessage(command: unknown) {
     this.posted += 1;
     this.lifecycle.push("postMessage");
-    if ((command as { type?: string }).type === "MEMORY_WORKER_INIT") {
+    const commandType = (command as { type?: string }).type;
+    if (commandType === "MEMORY_WORKER_INIT") {
       queueMicrotask(() => this.emit({ type: "WORKER_READY" }));
+      return;
+    }
+    if (commandType === "MEMORY_MATERIALIZATION_RELEASE") {
+      const requestId = (command as { requestId: string }).requestId;
+      queueMicrotask(() =>
+        this.emit({
+          type: "WORKER_STAGE",
+          requestId,
+          stage: "MATERIALIZATION_RELEASED",
+        }),
+      );
       return;
     }
     if (this.behavior === "hang") return;
