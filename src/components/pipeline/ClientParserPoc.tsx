@@ -69,7 +69,7 @@ export function ClientParserPoc() {
     );
   };
   const run = async () => {
-    if (!file || feasibility?.canParse !== true) return;
+    if (!file || !feasibility?.canParse) return;
     setRunning(true);
     setError(null);
     setResult(null);
@@ -177,7 +177,7 @@ export function ClientParserPoc() {
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={run} disabled={!file || running || feasibility?.canParse !== true}>
+        <Button onClick={run} disabled={!file || running || !feasibility?.canParse}>
           {running ? (
             <Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
           ) : (
