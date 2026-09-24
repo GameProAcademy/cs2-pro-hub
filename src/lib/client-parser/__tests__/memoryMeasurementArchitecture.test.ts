@@ -20,6 +20,10 @@ describe("memory lab architecture guards", () => {
     expect(worker).toContain("createSyntheticFixture(command.descriptor)");
     expect(worker).toContain("MATERIALIZATION_READ_FAILED");
     expect(worker).toContain("MATERIALIZATION_LENGTH_MISMATCH");
+    expect(worker).toContain('type: "WORKER_READY"');
+    expect(worker).toContain('"ARRAYBUFFER_STARTED"');
+    expect(worker).toContain('"ARRAYBUFFER_COMPLETE"');
+    expect(runner).toContain('"messageerror"');
     expect(runner).not.toContain(".arrayBuffer(");
     expect(ui).not.toContain(".arrayBuffer(");
     expect(worker).not.toMatch(/demoparser2|parseDemo|ClientParserService|readContiguousDemoInput/);
@@ -34,6 +38,7 @@ describe("memory lab architecture guards", () => {
     expect(worker).not.toContain("fixture?.arrayBuffer");
     expect(worker).not.toContain("fixture instanceof File");
     expect(runner).toContain("descriptor: validated");
+    expect(runner).toContain("workerLifecycleStage");
     expect(runner).not.toContain("fixture,");
   });
 
