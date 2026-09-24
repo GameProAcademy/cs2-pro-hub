@@ -33,7 +33,7 @@ const memory = (bytes: number | null) =>
   bytes === null ? "—" : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 
 export function BrowserMemoryLab() {
-  const [selectedSize, setSelectedSize] = useState(MEMORY_LAB_FIXTURE_SIZES[0]);
+  const [selectedSize, setSelectedSize] = useState(16 * 1024 * 1024);
   const [runs, setRuns] = useState(1);
   const [results, setResults] = useState<MemoryMeasurementResult[]>([]);
   const [running, setRunning] = useState(false);
