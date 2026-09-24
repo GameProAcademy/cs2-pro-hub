@@ -7,8 +7,12 @@ const worker = read("../memoryMeasurement.worker.ts");
 const runner = read("../memoryMeasurement.runner.ts");
 const report = read("../memoryMeasurementReport.ts");
 const ui = read("../../../components/pipeline/BrowserMemoryLab.tsx");
+const parserPoc = read("../../../components/pipeline/ClientParserPoc.tsx");
+const adminRoute = read("../../../routes/_authenticated/admin/memory-lab.tsx");
+const adminShell = read("../../../components/admin/AdminShell.tsx");
 const config = read("../../../config/app.ts");
-const all = `${contract}\n${worker}\n${runner}\n${report}\n${ui}`;
+const executionSurface = `${contract}\n${worker}\n${runner}\n${report}`;
+const all = `${executionSurface}\n${ui}`;
 
 describe("memory lab architecture guards", () => {
   it("keeps full materialization inside the dedicated Worker adapter", () => {
@@ -27,9 +31,25 @@ describe("memory lab architecture guards", () => {
   });
 
   it("does not persist, upload, analyze, or contact protected infrastructure", () => {
-    expect(all).not.toMatch(
+    expect(executionSurface).not.toMatch(
       /localStorage|indexedDB|supabase|storage\.|analytics|fetch\(|Railway|attestation|Canonical|R5\.8/i,
     );
+  });
+
+  it("exposes the lab through its own admin route without the parser POC flag", () => {
+    expect(adminRoute).toContain('<BrowserMemoryLab />');
+    expect(adminRoute).toContain("FEATURES.clientDemMemoryLab");
+    expect(adminRoute).not.toContain("clientDemParserPoc");
+    expect(parserPoc).not.toContain("BrowserMemoryLab");
+    expect(adminShell).toContain('to: "/admin/memory-lab"');
+    expect(adminShell).toContain("FEATURES.clientDemMemoryLab");
+  });
+
+  it("keeps the disabled route fail-closed and the protocol manual", () => {
+    expect(adminRoute).toContain("STATUS: FEATURE_DISABLED");
+    expect(ui).not.toMatch(/useEffect|setInterval|setTimeout/);
+    expect(ui).toContain("16 / 32 / 64 / 96 / 128 MiB × 3");
+    expect(ui).toContain("Reset H.1-M session");
   });
 
   it("keeps production parser closed and the ceiling sourced from the existing constant", () => {

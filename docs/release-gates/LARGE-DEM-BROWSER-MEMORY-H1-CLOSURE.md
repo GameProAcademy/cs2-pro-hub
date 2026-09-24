@@ -1,6 +1,6 @@
 # Large DEM Browser Memory H.1 Closure
 
-STATUS: IMPLEMENTATION HARDENED / RUNTIME MEASUREMENT PENDING
+STATUS: H.1-R PASS / H.1-M0 READY / H.1-M NOT RUN
 
 ## H.1-R implementation criteria
 
@@ -14,6 +14,10 @@ STATUS: IMPLEMENTATION HARDENED / RUNTIME MEASUREMENT PENDING
 - [x] Results and copied reports are metadata-only.
 - [x] Parser, WASM, backend, persistence, analytics, Railway, R5.8, attestation, and Canonical remain isolated.
 - [x] Feature flag remains false by default; real parser remains false; 128 MiB remains the hard ceiling.
+- [x] Dedicated authenticated `/admin/memory-lab` surface depends only on the Memory Lab flag.
+- [x] Parser POC remains independent and OFF by default.
+- [x] Disabled route is inert and reports `FEATURE_DISABLED`; administrative navigation is hidden.
+- [x] Local 15-run H.1-M progress matrix and complete metadata result fields are exposed without persistence.
 
 ## Pending closure criteria
 

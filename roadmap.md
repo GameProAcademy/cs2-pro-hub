@@ -1,3 +1,17 @@
+# CURRENT IMPLEMENTATION — FASE 2.7.2H.1-M0
+
+**Status:** `H.1-R PASS / H.1-M0 READY / H.1-M RUNTIME NOT_RUN / SYNTHETIC ONLY`.
+
+- [x] Expor `/admin/memory-lab` sob autenticação e autorização administrativas existentes.
+- [x] Controlar a superfície exclusivamente por `VITE_CLIENT_DEM_MEMORY_LAB`, independente do Parser POC.
+- [x] Ocultar a navegação administrativa quando OFF e manter a rota inerte com `FEATURE_DISABLED`.
+- [x] Remover o Memory Lab da composição do Parser POC.
+- [x] Expor capacidades do navegador, locks reais, matriz local de 15 execuções e todos os metadados do protocolo.
+- [x] Manter execução somente por clique, resultados em memória React e relatório metadata-only.
+- [ ] H.1-M: executar manualmente 16/32/64/96/128 MiB × 3 em Preview experimental compatível: `NOT_RUN`.
+
+**Locks:** defaults OFF, `FEATURES.realDemoParser=false`, teto de 128 MiB e DEM real, parser/WASM, backend, persistência, Railway, R5.8, attestation, Canonical, banco, migrations, secrets e analytics inalterados.
+
 # CURRENT IMPLEMENTATION — FASE 2.7.2H.1-R
 
 **Status:** `IMPLEMENTATION HARDENED / CI VERIFIED / H.1-M RUNTIME MEASUREMENT PENDING / SYNTHETIC ONLY`.

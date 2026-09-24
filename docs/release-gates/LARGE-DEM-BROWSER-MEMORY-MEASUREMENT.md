@@ -1,6 +1,6 @@
 # Large DEM browser memory measurement
 
-STATUS: IMPLEMENTATION HARDENED / CI VERIFIED / RUNTIME MEASUREMENT PENDING
+STATUS: H.1-R PASS / H.1-M0 READY / H.1-M RUNTIME NOT RUN
 
 ## 1. Scope
 
@@ -21,6 +21,8 @@ No browser measurement has been executed or recorded by this implementation work
 ## 5. Feature gate
 
 `VITE_CLIENT_DEM_MEMORY_LAB` is public, non-secret, independent, and false by default.
+
+The official authenticated administrative surface is `/admin/memory-lab`. It depends only on this Memory Lab flag and browser capabilities; it does not depend on `VITE_CLIENT_DEM_PARSER_POC_ENABLED`. When disabled, the route renders `FEATURE_DISABLED` and does not mount the laboratory. The administrative navigation entry is hidden.
 
 ## 6. Required browser capabilities
 
@@ -70,6 +72,8 @@ Each run is bounded to at most 60 seconds. Timeout, cancellation, Worker error, 
 
 The operator may request one to three foreground runs. There is no polling, background loop, or automatic execution.
 
+The H.1-M protocol is 15 explicit runs: 16, 32, 64, 96, and 128 MiB, with three repetitions per size. The page shows a local progress matrix; opening the page or changing a control never starts a run.
+
 ## 18. Data handling
 
 Results remain in React memory. No bytes are returned from the Worker, persisted, uploaded, logged, or sent to analytics.
@@ -94,3 +98,9 @@ Synthetic observations cannot establish that 128 MiB is safe, that 400–500 MiB
 8. Reports contain serializable metadata only and remain local.
 9. No result demonstrates that 400–500 MiB is safe, that a real DEM can be processed, or that the 128 MiB limit may increase.
 10. No result authorizes production, Canonical, attestation, backend persistence, or H.2.
+
+## 22. H.1-M experimental runtime configuration
+
+Use an isolated Preview/experimental build with `VITE_CLIENT_DEM_MEMORY_LAB=true` and `VITE_CLIENT_DEM_PARSER_POC_ENABLED=false`. Keep `FEATURES.realDemoParser=false`. Because `VITE_*` values are public build configuration, not credentials, configure the value in the Preview environment and rebuild the Preview; do not store it as a secret. Production and repository defaults remain OFF.
+
+The route performs no DEM access, parser/WASM execution, upload, backend request, persistence, analytics, Railway request, Canonical admission, R5.8 action, or attestation. Results exist only in page memory and the copied report remains metadata-only.

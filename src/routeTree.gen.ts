@@ -28,6 +28,7 @@ import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authenticated/admin/demo-e2e'
+import { Route as AuthenticatedAdminMemoryLabRouteImport } from './routes/_authenticated/admin/memory-lab'
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
@@ -134,6 +135,12 @@ const AuthenticatedAdminDemoE2eRoute =
     path: '/demo-e2e',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMemoryLabRoute =
+  AuthenticatedAdminMemoryLabRouteImport.update({
+    id: '/memory-lab',
+    path: '/memory-lab',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminPipelineRoute =
   AuthenticatedAdminPipelineRouteImport.update({
     id: '/pipeline',
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
+  '/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -226,6 +234,7 @@ export interface FileRoutesByTo {
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
+  '/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -256,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
+  '/_authenticated/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/admin/audit'
     | '/admin/demo-e2e'
+    | '/admin/memory-lab'
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/admin/audit'
     | '/admin/demo-e2e'
+    | '/admin/memory-lab'
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upload'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/demo-e2e'
+    | '/_authenticated/admin/memory-lab'
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
@@ -501,6 +514,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDemoE2eRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/memory-lab': {
+      id: '/_authenticated/admin/memory-lab'
+      path: '/memory-lab'
+      fullPath: '/admin/memory-lab'
+      preLoaderRoute: typeof AuthenticatedAdminMemoryLabRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/pipeline': {
       id: '/_authenticated/admin/pipeline'
       path: '/pipeline'
@@ -563,6 +583,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminDemoE2eRoute: typeof AuthenticatedAdminDemoE2eRoute
+  AuthenticatedAdminMemoryLabRoute: typeof AuthenticatedAdminMemoryLabRoute
   AuthenticatedAdminPipelineRoute: typeof AuthenticatedAdminPipelineRoute
   AuthenticatedAdminR5ForensicRoute: typeof AuthenticatedAdminR5ForensicRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -573,6 +594,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
   {
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminDemoE2eRoute: AuthenticatedAdminDemoE2eRoute,
+    AuthenticatedAdminMemoryLabRoute: AuthenticatedAdminMemoryLabRoute,
     AuthenticatedAdminPipelineRoute: AuthenticatedAdminPipelineRoute,
     AuthenticatedAdminR5ForensicRoute: AuthenticatedAdminR5ForensicRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
