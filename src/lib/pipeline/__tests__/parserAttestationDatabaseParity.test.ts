@@ -52,16 +52,19 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     [OLD_DEPLOYMENT, APPROVED_ATTESTATION_WORKFLOW_SHA],
     [PARSER_ATTESTATION_EXPECTED.deploymentId, OLD_WORKFLOW_SHA],
     [OLD_DEPLOYMENT, OLD_WORKFLOW_SHA],
-  ])("rejects mixed or stale database identity %s / %s", (databaseDeployment, databaseWorkflowSha) => {
-    expect(
-      parity({
-        appDeployment: PARSER_ATTESTATION_EXPECTED.deploymentId,
-        databaseDeployment,
-        appWorkflowSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
-        databaseWorkflowSha,
-      }),
-    ).toBe(false);
-  });
+  ])(
+    "rejects mixed or stale database identity %s / %s",
+    (databaseDeployment, databaseWorkflowSha) => {
+      expect(
+        parity({
+          appDeployment: PARSER_ATTESTATION_EXPECTED.deploymentId,
+          databaseDeployment,
+          appWorkflowSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
+          databaseWorkflowSha,
+        }),
+      ).toBe(false);
+    },
+  );
 
   it("requires empty state and preserves function security before replacement", () => {
     expect(migration).toContain("FROM public.parser_runtime_provenance");
