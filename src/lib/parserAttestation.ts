@@ -8,7 +8,7 @@ export const PARSER_ATTESTATION_EXPECTED = {
   attestorBranch: "main",
   branch: "infra/cs2-parser-worker-v8",
   commit: "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
-  deploymentId: "6330c8c4-a410-45db-a364-4eb47702c2fc",
+  deploymentId: "7a540da0-3a69-44c0-9c42-40209f903fa7",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",

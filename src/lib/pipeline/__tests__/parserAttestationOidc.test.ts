@@ -141,6 +141,44 @@ describe("parser attestation OIDC claims", () => {
 });
 
 describe("parser attestation freshness contract", () => {
+  it("pins the independently verified Railway deployment identity", () => {
+    expect(PARSER_ATTESTATION_EXPECTED.deploymentId).toBe(
+      "7a540da0-3a69-44c0-9c42-40209f903fa7",
+    );
+  });
+
+  it("accepts the pinned deployment evidence and rejects a mismatched deployment", () => {
+    const basePayload = {
+      schema_version: PARSER_ATTESTATION_SCHEMA_VERSION,
+      repository: PARSER_ATTESTATION_EXPECTED.repository,
+      railway_branch: PARSER_ATTESTATION_EXPECTED.branch,
+      git_commit: PARSER_ATTESTATION_EXPECTED.commit,
+      deployment_id: PARSER_ATTESTATION_EXPECTED.deploymentId,
+      railway_project_id: PARSER_ATTESTATION_EXPECTED.projectId,
+      railway_service_id: PARSER_ATTESTATION_EXPECTED.serviceId,
+      railway_environment_id: PARSER_ATTESTATION_EXPECTED.environmentId,
+      deployment_evidence: {
+        verification_source: "RAILWAY_API",
+        independently_verified: true,
+        deployment_id: PARSER_ATTESTATION_EXPECTED.deploymentId,
+        project_id: PARSER_ATTESTATION_EXPECTED.projectId,
+        service_id: PARSER_ATTESTATION_EXPECTED.serviceId,
+        environment_id: PARSER_ATTESTATION_EXPECTED.environmentId,
+        source_branch: PARSER_ATTESTATION_EXPECTED.branch,
+        source_commit: PARSER_ATTESTATION_EXPECTED.commit,
+        deployment_status: "SUCCESS",
+        query_digest: "a".repeat(64),
+      },
+    };
+    expect(validateParserAttestationPayload(basePayload)).not.toContain(
+      "RAILWAY_API_PROOF_INVALID",
+    );
+
+    const mismatched = structuredClone(basePayload);
+    mismatched.deployment_evidence.deployment_id = "00000000-0000-0000-0000-000000000000";
+    expect(validateParserAttestationPayload(mismatched)).toContain("RAILWAY_API_PROOF_INVALID");
+  });
+
   it("derives release gate evidence only from the signed payload", () => {
     const evidence = { mapping_inventory: { status: "BLOCKED" } };
     expect(extractBoundReleaseGateEvidence({ release_gate_evidence: evidence })).toEqual(evidence);

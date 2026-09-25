@@ -40,5 +40,7 @@ describe("H.3-E.2 protected attestation recorder contract", () => {
     expect(workflow).not.toContain("push:");
     expect(workflow).toContain('--arg canonicalPayload "$canonical_payload"');
     expect(workflow).toContain("canonicalPayload:$canonicalPayload");
+    expect(workflow).toContain(".payload.release_gate_evidence");
+    expect(workflow).not.toContain("jq -c '.release_gate_evidence'");
   });
 });

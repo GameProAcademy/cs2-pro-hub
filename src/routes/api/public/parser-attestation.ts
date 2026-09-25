@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 
 import type { Json } from "@/integrations/supabase/types";
 import {
@@ -8,25 +7,13 @@ import {
   validateParserAttestationOidcClaims,
   validateParserAttestationPayload,
 } from "@/lib/parserAttestation";
+import { parserAttestationEnvelopeSchema } from "@/lib/parserAttestationEnvelope";
 import {
   canonicalAttestationJson,
   isAttestationTransportAuthorized,
   safeAttestationEqual,
   signAttestationPayload,
 } from "@/lib/parserAttestationCrypto.server";
-
-const bodySchema = z.object({
-  result: z.object({
-    status: z.literal("VERIFIED"),
-    blockers: z.array(z.string()).length(0),
-    attestation_digest: z.string().regex(/^[0-9a-f]{64}$/),
-    payload: z.record(z.unknown()),
-  }),
-  canonicalPayload: z.string().min(2),
-  signature: z.string().regex(/^[0-9a-f]{64}$/),
-  oidcToken: z.string().min(100),
-  releaseGateEvidence: z.record(z.unknown()),
-});
 
 function base64UrlJson(value: string): Record<string, unknown> {
   const decoded = Buffer.from(value, "base64url").toString("utf8");
@@ -101,7 +88,9 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
         }
 
-        const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+        const parsed = parserAttestationEnvelopeSchema.safeParse(
+          await request.json().catch(() => null),
+        );
         if (!parsed.success) {
           console.error(
             "[parser-attestation] payload schema rejected",
