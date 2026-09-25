@@ -178,7 +178,7 @@ export function evaluateH3E9FinalExecutionReadiness(
 
   if (input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
   if (input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
-  if (input.storage.provenanceCount < 0 || input.storage.nonceCount < 0)
+  if (input.storage.provenanceCount !== 0 || input.storage.nonceCount !== 0)
     blockers.push("H3E9_DATABASE_STATE_NOT_EMPTY");
 
   if (

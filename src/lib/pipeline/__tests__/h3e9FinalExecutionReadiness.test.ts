@@ -135,6 +135,20 @@ describe("H.3-E.9 final execution readiness", () => {
     expect(result.blockers).toContain("H3E9_RETENTION_NOT_AUTHORIZED");
   });
 
+  it("reports the shared non-empty database blocker with specific provenance and nonce causes", () => {
+    const result = blockerFor((input) => {
+      input.storage.provenanceCount = 1;
+      input.storage.nonceCount = 1;
+    });
+    expect(result.blockers).toEqual(
+      expect.arrayContaining([
+        "H3E9_DATABASE_STATE_NOT_EMPTY",
+        "H3E9_UNEXPECTED_PROVENANCE",
+        "H3E9_UNEXPECTED_NONCE",
+      ]),
+    );
+  });
+
   it("rejects expired retention authorization", () => {
     const result = blockerFor((input) => {
       input.retention.expiresAt = "2026-09-25T00:30:00.000Z";
