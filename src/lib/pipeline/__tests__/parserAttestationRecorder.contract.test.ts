@@ -1,11 +1,20 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
 const route = readFileSync(resolve("src/routes/api/public/parser-attestation.ts"), "utf8");
 const workflow = readFileSync(resolve(".github/workflows/parser-runtime-attestation.yml"), "utf8");
 const server = readFileSync(resolve("src/server.ts"), "utf8");
+const workflowRegistry = JSON.parse(
+  readFileSync(resolve("scripts/approved_attestation_workflow.json"), "utf8"),
+) as { path: string; source_sha: string };
+
+function gitBlobSha(content: string): string {
+  const bytes = Buffer.from(content);
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+}
 
 describe("H.3-E.2 protected attestation recorder contract", () => {
   it("requires transport, OIDC, HMAC, canonical, digest, and release evidence", () => {
@@ -42,5 +51,10 @@ describe("H.3-E.2 protected attestation recorder contract", () => {
     expect(workflow).toContain("canonicalPayload:$canonicalPayload");
     expect(workflow).toContain(".payload.release_gate_evidence");
     expect(workflow).not.toContain("jq -c '.release_gate_evidence'");
+  });
+
+  it("binds the attestor registry to the reviewed workflow bytes", () => {
+    expect(workflowRegistry.path).toBe(".github/workflows/parser-runtime-attestation.yml");
+    expect(workflowRegistry.source_sha).toBe(gitBlobSha(workflow));
   });
 });
