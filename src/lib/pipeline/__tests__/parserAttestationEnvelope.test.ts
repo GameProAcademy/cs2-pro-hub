@@ -51,8 +51,12 @@ describe("parser attestation GitHub Actions envelope", () => {
     expect(parserAttestationEnvelopeSchema.safeParse(githubActionsEnvelope()).success).toBe(true);
   });
 
-  it.each([
-    ["non-VERIFIED status", (body: EnvelopeFixture) => body.result && (body.result.status = "BLOCKED")],
+  it.each(
+    [
+      [
+        "non-VERIFIED status",
+        (body: EnvelopeFixture) => body.result && (body.result.status = "BLOCKED"),
+      ],
     ["non-empty blockers", (body: EnvelopeFixture) => body.result?.blockers.push("BLOCKED")],
     ["short digest", (body: EnvelopeFixture) => body.result && (body.result.attestation_digest = "abc")],
     ["non-hex digest", (body: EnvelopeFixture) => body.result && (body.result.attestation_digest = "g".repeat(64))],
@@ -67,12 +71,12 @@ describe("parser attestation GitHub Actions envelope", () => {
     ["missing result", (body: EnvelopeFixture) => delete body.result],
     ["missing release evidence", (body: EnvelopeFixture) => delete body.releaseGateEvidence],
     ["undefined critical field", (body: EnvelopeFixture) => (body.signature = undefined)],
-  ] satisfies Array<[string, (body: EnvelopeFixture) => unknown]>)
-    ("rejects %s", (_label, mutate) => {
+    ] satisfies Array<[string, (body: EnvelopeFixture) => unknown]>,
+  )("rejects %s", (_label, mutate) => {
     const body = githubActionsEnvelope();
     mutate(body);
     expect(parserAttestationEnvelopeSchema.safeParse(body).success).toBe(false);
-    });
+  });
 
   it("identifies the historical workflow path failure without exposing values", () => {
     const body = githubActionsEnvelope();
