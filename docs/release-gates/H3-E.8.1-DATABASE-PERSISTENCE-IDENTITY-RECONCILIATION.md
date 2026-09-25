@@ -23,11 +23,23 @@ Applied migration: `20260925011902_051ef9cf-6adf-4689-9fe2-c2fc86dedc40.sql`.
 
 ## Result
 
-Status: `PENDING FINAL VERIFICATION`.
+Status: `PASS`.
+
+- Application, reviewed workflow bytes, and database now agree on deployment `7a540da0-3a69-44c0-9c42-40209f903fa7` and workflow blob `fae651ed5174aa609e4b07d575105d80a00d0055`.
+- Post-migration read-only checks confirmed both old pins absent, both new pins present, all three authoritative functions remain `SECURITY DEFINER` with empty `search_path`, and the approved-workflow trigger remains installed.
+- Provenance count: `0`; nonce count: `0`.
+- Both attestation tables retain RLS and immutable user triggers; client roles retain zero data privileges.
+- The authoritative recorder, assertion, and HMAC bridge remain unavailable to `anon` and `authenticated`, and executable by `service_role` only.
+- The HMAC bridge still uses transaction-local `set_config(..., true)`.
+- Focused tests: `63 passed`.
+- Full web tests: `90 files passed`.
+- Python tests: `216 passed, 10 skipped`.
+- Typecheck: `PASS`; lint: `PASS` with nine pre-existing warnings and zero errors; managed build: `PASS`; diff check: `PASS`.
+- Public unauthenticated empty POST: `401 UNAUTHORIZED`.
 
 - Valid attestation: `NOT EXECUTED`.
 - DEM and Cache DEM: `NOT EXECUTED`.
 - Canonical admission: `LOCKED`.
 - Railway: `UNCHANGED`.
 - Secrets: `UNCHANGED`.
-- H.3-E.9: `NOT EXECUTED`.
+- H.3-E.9: `READY / NOT EXECUTED`.
