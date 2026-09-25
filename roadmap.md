@@ -59,6 +59,20 @@ Status: `PASS / FAIL-CLOSED`.
 
 **Locks:** no valid attestation, DEM, Cache DEM, ingestion, Canonical admission, Railway mutation, or secret change is authorized.
 
+### H.3-E.9 — Final Execution Readiness Gate
+
+Status: `BLOCKED / NOT EXECUTED`.
+
+- [x] Implement a deterministic, machine-readable `READY | BLOCKED` preflight with stable blocker codes.
+- [x] Keep technical readiness, retention authorization, operator authorization, execution, and verified provenance as independent states.
+- [x] Reconfirm the H.3-E.8.1 migration, zero provenance/nonces, RLS, client privilege isolation, service-only recorders, `SECURITY DEFINER`, and empty `search_path` by read-only inspection.
+- [x] Reconfirm the approved workflow blob, structural OIDC policy, exact runtime identity on both live domains, and the anonymous `401` recorder boundary.
+- [x] Prove the evaluator is pure, deterministic, diagnostic-only, and cannot dispatch workflows, parse DEMs, mutate Railway, write provenance/nonces, unlock Canonical, clean up data, or rotate secrets.
+- [ ] Provide a current explicit retention authorization: `BLOCKED`.
+- [ ] Provide a current explicit operator authorization for the first valid attestation: `BLOCKED`.
+
+**Locks:** valid attestation, workflow dispatch, DEM/Cache DEM, Attempt 9+, final RAW, Canonical admission, cleanup, Railway/EnvironmentPatch mutation, secret changes, feature changes, and database writes remain prohibited.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
