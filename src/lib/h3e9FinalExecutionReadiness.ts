@@ -174,7 +174,8 @@ export function evaluateH3E9FinalExecutionReadiness(
     input.identities.environmentId !== expected.environmentId ||
     input.identities.workflowPath !== expected.workflowPath ||
     input.identities.workflowSourceSha !== expected.workflowSourceSha
-  ) blockers.push("H3E9_IDENTITY_MISMATCH");
+  )
+    blockers.push("H3E9_IDENTITY_MISMATCH");
 
   if (input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
   if (input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
@@ -188,11 +189,13 @@ export function evaluateH3E9FinalExecutionReadiness(
     !input.database.hmacBridgeServiceRoleOnly ||
     !input.database.securityDefiner ||
     !input.database.emptySearchPath
-  ) blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
+  )
+    blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
   if (
     input.database.migrationVersion !== H3E9_EXPECTED_MIGRATION.version ||
     input.database.migrationName !== H3E9_EXPECTED_MIGRATION.name
-  ) blockers.push("H3E9_MIGRATION_HISTORY_MISMATCH");
+  )
+    blockers.push("H3E9_MIGRATION_HISTORY_MISMATCH");
 
   if (input.workflow.approvedPath !== APPROVED_ATTESTATION_WORKFLOW_PATH)
     blockers.push("H3E9_WORKFLOW_NOT_APPROVED");
@@ -200,7 +203,8 @@ export function evaluateH3E9FinalExecutionReadiness(
     input.workflow.approvedSourceSha !== APPROVED_ATTESTATION_WORKFLOW_SHA ||
     !input.workflow.registryMatches ||
     !input.workflow.sourceMatches
-  ) blockers.push("H3E9_WORKFLOW_SOURCE_MISMATCH");
+  )
+    blockers.push("H3E9_WORKFLOW_SOURCE_MISMATCH");
   if (!input.workflow.oidcConfigured) blockers.push("H3E9_OIDC_CONFIGURATION_INVALID");
 
   if (!input.transport.endpointConfigured) blockers.push("H3E9_ENDPOINT_NOT_CONFIGURED");
@@ -208,7 +212,8 @@ export function evaluateH3E9FinalExecutionReadiness(
   if (
     !input.transport.anonymousNegativeBoundary ||
     input.transport.anonymousNegativeBoundaryStatus !== 401
-  ) blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
+  )
+    blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
   if (!input.secrets.endpointPresent) blockers.push("H3E9_ENDPOINT_NOT_CONFIGURED");
   if (!input.secrets.transportSecretPresent) blockers.push("H3E9_TRANSPORT_SECRET_MISSING");
   if (!input.secrets.hmacSecretPresent) blockers.push("H3E9_HMAC_SECRET_MISSING");
@@ -227,7 +232,8 @@ export function evaluateH3E9FinalExecutionReadiness(
     !input.railway.serviceMatches ||
     !input.railway.environmentMatches ||
     !input.railway.bothRuntimeDomainsMatch
-  ) blockers.push("H3E9_RAILWAY_RUNTIME_MISMATCH");
+  )
+    blockers.push("H3E9_RAILWAY_RUNTIME_MISMATCH");
 
   const retention = validAuthorization(input.retention, "H3E9_ATTESTATION_RETENTION", nowMs);
   if (retention === "MISSING") blockers.push("H3E9_RETENTION_NOT_AUTHORIZED");
@@ -240,12 +246,14 @@ export function evaluateH3E9FinalExecutionReadiness(
   if (operator === "MISSING") blockers.push("H3E9_OPERATOR_AUTHORIZATION_MISSING");
   if (operator === "INVALID") blockers.push("H3E9_OPERATOR_AUTHORIZATION_INVALID");
 
-  if (input.execution.validAttestationExecuted)
-    blockers.push("H3E9_ATTESTATION_ALREADY_EXECUTED");
-  if (input.execution.demExecuted || input.execution.cacheDemExecuted || input.execution.attempt9Created)
+  if (input.execution.validAttestationExecuted) blockers.push("H3E9_ATTESTATION_ALREADY_EXECUTED");
+  if (
+    input.execution.demExecuted ||
+    input.execution.cacheDemExecuted ||
+    input.execution.attempt9Created
+  )
     blockers.push("H3E9_DEM_EXECUTION_DETECTED");
-  if (input.execution.canonicalAdmission !== "LOCKED")
-    blockers.push("H3E9_CANONICAL_NOT_LOCKED");
+  if (input.execution.canonicalAdmission !== "LOCKED") blockers.push("H3E9_CANONICAL_NOT_LOCKED");
 
   const uniqueBlockers = [...new Set(blockers)];
   const technicalBlockers = uniqueBlockers.filter(

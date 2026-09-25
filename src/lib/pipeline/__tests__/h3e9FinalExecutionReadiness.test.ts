@@ -101,25 +101,97 @@ describe("H.3-E.9 final execution readiness", () => {
   });
 
   it.each([
-    ["deployment", "H3E9_IDENTITY_MISMATCH", (i: H3E9ReadinessInput) => (i.identities.deploymentId = "stale")],
-    ["workflow identity", "H3E9_IDENTITY_MISMATCH", (i: H3E9ReadinessInput) => (i.identities.workflowSourceSha = "stale")],
-    ["provenance", "H3E9_UNEXPECTED_PROVENANCE", (i: H3E9ReadinessInput) => (i.storage.provenanceCount = 1)],
+    [
+      "deployment",
+      "H3E9_IDENTITY_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.identities.deploymentId = "stale"),
+    ],
+    [
+      "workflow identity",
+      "H3E9_IDENTITY_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.identities.workflowSourceSha = "stale"),
+    ],
+    [
+      "provenance",
+      "H3E9_UNEXPECTED_PROVENANCE",
+      (i: H3E9ReadinessInput) => (i.storage.provenanceCount = 1),
+    ],
     ["nonce", "H3E9_UNEXPECTED_NONCE", (i: H3E9ReadinessInput) => (i.storage.nonceCount = 1)],
-    ["RLS", "H3E9_DATABASE_SECURITY_INVARIANT_FAILED", (i: H3E9ReadinessInput) => (i.database.rlsEnabled = false)],
-    ["anon privilege", "H3E9_DATABASE_SECURITY_INVARIANT_FAILED", (i: H3E9ReadinessInput) => (i.database.clientPrivilegesZero = false)],
-    ["recorder role", "H3E9_DATABASE_SECURITY_INVARIANT_FAILED", (i: H3E9ReadinessInput) => (i.database.recorderServiceRoleOnly = false)],
-    ["security definer", "H3E9_DATABASE_SECURITY_INVARIANT_FAILED", (i: H3E9ReadinessInput) => (i.database.securityDefiner = false)],
-    ["search path", "H3E9_DATABASE_SECURITY_INVARIANT_FAILED", (i: H3E9ReadinessInput) => (i.database.emptySearchPath = false)],
-    ["migration history", "H3E9_MIGRATION_HISTORY_MISMATCH", (i: H3E9ReadinessInput) => (i.database.migrationVersion = "missing")],
-    ["endpoint", "H3E9_ENDPOINT_MISMATCH", (i: H3E9ReadinessInput) => (i.transport.endpoint = "https://wrong.invalid")],
-    ["negative boundary", "H3E9_ANONYMOUS_BOUNDARY_FAILED", (i: H3E9ReadinessInput) => (i.transport.anonymousNegativeBoundaryStatus = 200)],
-    ["transport secret", "H3E9_TRANSPORT_SECRET_MISSING", (i: H3E9ReadinessInput) => (i.secrets.transportSecretPresent = false)],
-    ["HMAC secret", "H3E9_HMAC_SECRET_MISSING", (i: H3E9ReadinessInput) => (i.secrets.hmacSecretPresent = false)],
-    ["Railway token", "H3E9_RAILWAY_TOKEN_MISSING", (i: H3E9ReadinessInput) => (i.secrets.railwayTokenPresent = false)],
-    ["deployment status", "H3E9_RAILWAY_DEPLOYMENT_NOT_SUCCESS", (i: H3E9ReadinessInput) => (i.railway.deploymentStatus = "FAILED")],
-    ["runtime commit", "H3E9_RAILWAY_RUNTIME_MISMATCH", (i: H3E9ReadinessInput) => (i.railway.parserCommitMatches = false)],
-    ["runtime version", "H3E9_RAILWAY_RUNTIME_MISMATCH", (i: H3E9ReadinessInput) => (i.railway.parserVersionMatches = false)],
-    ["Canonical lock", "H3E9_CANONICAL_NOT_LOCKED", (i: H3E9ReadinessInput) => (i.execution.canonicalAdmission = "UNLOCKED")],
+    [
+      "RLS",
+      "H3E9_DATABASE_SECURITY_INVARIANT_FAILED",
+      (i: H3E9ReadinessInput) => (i.database.rlsEnabled = false),
+    ],
+    [
+      "anon privilege",
+      "H3E9_DATABASE_SECURITY_INVARIANT_FAILED",
+      (i: H3E9ReadinessInput) => (i.database.clientPrivilegesZero = false),
+    ],
+    [
+      "recorder role",
+      "H3E9_DATABASE_SECURITY_INVARIANT_FAILED",
+      (i: H3E9ReadinessInput) => (i.database.recorderServiceRoleOnly = false),
+    ],
+    [
+      "security definer",
+      "H3E9_DATABASE_SECURITY_INVARIANT_FAILED",
+      (i: H3E9ReadinessInput) => (i.database.securityDefiner = false),
+    ],
+    [
+      "search path",
+      "H3E9_DATABASE_SECURITY_INVARIANT_FAILED",
+      (i: H3E9ReadinessInput) => (i.database.emptySearchPath = false),
+    ],
+    [
+      "migration history",
+      "H3E9_MIGRATION_HISTORY_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.database.migrationVersion = "missing"),
+    ],
+    [
+      "endpoint",
+      "H3E9_ENDPOINT_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.transport.endpoint = "https://wrong.invalid"),
+    ],
+    [
+      "negative boundary",
+      "H3E9_ANONYMOUS_BOUNDARY_FAILED",
+      (i: H3E9ReadinessInput) => (i.transport.anonymousNegativeBoundaryStatus = 200),
+    ],
+    [
+      "transport secret",
+      "H3E9_TRANSPORT_SECRET_MISSING",
+      (i: H3E9ReadinessInput) => (i.secrets.transportSecretPresent = false),
+    ],
+    [
+      "HMAC secret",
+      "H3E9_HMAC_SECRET_MISSING",
+      (i: H3E9ReadinessInput) => (i.secrets.hmacSecretPresent = false),
+    ],
+    [
+      "Railway token",
+      "H3E9_RAILWAY_TOKEN_MISSING",
+      (i: H3E9ReadinessInput) => (i.secrets.railwayTokenPresent = false),
+    ],
+    [
+      "deployment status",
+      "H3E9_RAILWAY_DEPLOYMENT_NOT_SUCCESS",
+      (i: H3E9ReadinessInput) => (i.railway.deploymentStatus = "FAILED"),
+    ],
+    [
+      "runtime commit",
+      "H3E9_RAILWAY_RUNTIME_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.railway.parserCommitMatches = false),
+    ],
+    [
+      "runtime version",
+      "H3E9_RAILWAY_RUNTIME_MISMATCH",
+      (i: H3E9ReadinessInput) => (i.railway.parserVersionMatches = false),
+    ],
+    [
+      "Canonical lock",
+      "H3E9_CANONICAL_NOT_LOCKED",
+      (i: H3E9ReadinessInput) => (i.execution.canonicalAdmission = "UNLOCKED"),
+    ],
   ])("blocks when %s fails", (_name, code, mutate) => {
     const result = blockerFor(mutate);
     expect(result.status).toBe("BLOCKED");
@@ -167,10 +239,26 @@ describe("H.3-E.9 final execution readiness", () => {
   });
 
   it.each([
-    ["valid attestation", (i: H3E9ReadinessInput) => (i.execution.validAttestationExecuted = true), "H3E9_ATTESTATION_ALREADY_EXECUTED"],
-    ["DEM", (i: H3E9ReadinessInput) => (i.execution.demExecuted = true), "H3E9_DEM_EXECUTION_DETECTED"],
-    ["Cache DEM", (i: H3E9ReadinessInput) => (i.execution.cacheDemExecuted = true), "H3E9_DEM_EXECUTION_DETECTED"],
-    ["Attempt 9", (i: H3E9ReadinessInput) => (i.execution.attempt9Created = true), "H3E9_DEM_EXECUTION_DETECTED"],
+    [
+      "valid attestation",
+      (i: H3E9ReadinessInput) => (i.execution.validAttestationExecuted = true),
+      "H3E9_ATTESTATION_ALREADY_EXECUTED",
+    ],
+    [
+      "DEM",
+      (i: H3E9ReadinessInput) => (i.execution.demExecuted = true),
+      "H3E9_DEM_EXECUTION_DETECTED",
+    ],
+    [
+      "Cache DEM",
+      (i: H3E9ReadinessInput) => (i.execution.cacheDemExecuted = true),
+      "H3E9_DEM_EXECUTION_DETECTED",
+    ],
+    [
+      "Attempt 9",
+      (i: H3E9ReadinessInput) => (i.execution.attempt9Created = true),
+      "H3E9_DEM_EXECUTION_DETECTED",
+    ],
   ])("blocks detected %s execution", (_name, mutate, code) => {
     expect(blockerFor(mutate).blockers).toContain(code);
   });
@@ -188,7 +276,10 @@ describe("H.3-E.9 final execution readiness", () => {
   });
 
   it("binds the single H.3-E.8.1 migration without creating a duplicate", () => {
-    const files = readFileSync(resolve("src/lib/pipeline/__tests__/parserAttestationDatabaseParity.test.ts"), "utf8");
+    const files = readFileSync(
+      resolve("src/lib/pipeline/__tests__/parserAttestationDatabaseParity.test.ts"),
+      "utf8",
+    );
     expect(files).toContain("20260925011902_051ef9cf-6adf-4689-9fe2-c2fc86dedc40.sql");
   });
 });

@@ -22,24 +22,24 @@ Unknown, absent, expired, contradictory, or mismatched evidence fails closed. A 
 
 ## Read-only evidence
 
-| Check | Result |
-| --- | --- |
-| H.3-E.8.1 migration `20260925011902` / `051ef9cf-6adf-4689-9fe2-c2fc86dedc40` | PASS; exactly present in migration history |
-| Provenance / nonce rows | `0 / 0` |
-| APP / WORKFLOW / DATABASE deployment | PASS: `7a540da0-3a69-44c0-9c42-40209f903fa7` |
-| APP / WORKFLOW / DATABASE workflow blob | PASS: `fae651ed5174aa609e4b07d575105d80a00d0055` |
-| Workflow source bytes | PASS: Git blob SHA matches the approved registry |
-| RLS / client data privileges | PASS: RLS enabled; `anon` and `authenticated` have zero data privileges |
-| Recorder and HMAC bridge privileges | PASS: client execution denied; service recorder execution preserved |
-| Function security | PASS: authoritative functions remain `SECURITY DEFINER` with empty `search_path` |
-| HMAC bridge | PASS: transaction-local secret binding preserved; not executed |
-| OIDC | PASS: `id-token: write`, approved audience, issuer/repository/branch/workflow validation preserved |
-| Runtime custom domain | PASS: health `ok`; demoparser2 `0.42.0`; contract `1`; frozen revision |
-| Runtime Railway domain | PASS: health `ok`; same parser, version, contract and revision |
-| Public recorder negative boundary | PASS: unauthenticated `POST {}` returned `401 UNAUTHORIZED` |
-| Canonical mapping | LOCKED: 105 total, 0 authorized, 0 verified, 0 generic |
-| Browser real DEM | OFF; 128 MiB ceiling unchanged; H.1-M remains synthetic-only |
-| EnvironmentPatch | Historical patch remains staged and was not touched |
+| Check                                                                         | Result                                                                                             |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| H.3-E.8.1 migration `20260925011902` / `051ef9cf-6adf-4689-9fe2-c2fc86dedc40` | PASS; exactly present in migration history                                                         |
+| Provenance / nonce rows                                                       | `0 / 0`                                                                                            |
+| APP / WORKFLOW / DATABASE deployment                                          | PASS: `7a540da0-3a69-44c0-9c42-40209f903fa7`                                                       |
+| APP / WORKFLOW / DATABASE workflow blob                                       | PASS: `fae651ed5174aa609e4b07d575105d80a00d0055`                                                   |
+| Workflow source bytes                                                         | PASS: Git blob SHA matches the approved registry                                                   |
+| RLS / client data privileges                                                  | PASS: RLS enabled; `anon` and `authenticated` have zero data privileges                            |
+| Recorder and HMAC bridge privileges                                           | PASS: client execution denied; service recorder execution preserved                                |
+| Function security                                                             | PASS: authoritative functions remain `SECURITY DEFINER` with empty `search_path`                   |
+| HMAC bridge                                                                   | PASS: transaction-local secret binding preserved; not executed                                     |
+| OIDC                                                                          | PASS: `id-token: write`, approved audience, issuer/repository/branch/workflow validation preserved |
+| Runtime custom domain                                                         | PASS: health `ok`; demoparser2 `0.42.0`; contract `1`; frozen revision                             |
+| Runtime Railway domain                                                        | PASS: health `ok`; same parser, version, contract and revision                                     |
+| Public recorder negative boundary                                             | PASS: unauthenticated `POST {}` returned `401 UNAUTHORIZED`                                        |
+| Canonical mapping                                                             | LOCKED: 105 total, 0 authorized, 0 verified, 0 generic                                             |
+| Browser real DEM                                                              | OFF; 128 MiB ceiling unchanged; H.1-M remains synthetic-only                                       |
+| EnvironmentPatch                                                              | Historical patch remains staged and was not touched                                                |
 
 Secret checks are presence-only. No value, length, hash, prefix, suffix, token, signature, or credential is emitted. The application secret store contains the endpoint, transport and HMAC names. The external attestor's Railway credential is not independently readable from this runtime, so its current presence is not promoted from historical evidence.
 
