@@ -47,6 +47,18 @@ Status: `IMPLEMENTED / PRE-PUBLISH / FAIL-CLOSED`.
 
 **Locks:** valid attestation delivery NOT RUN; real DEM, Cache DEM, Attempt 9/10+, ingestion, Canonical admission, Railway mutation, migration, secret change, and secret rotation remain prohibited.
 
+### H.3-E.8.1 — Database Persistence Identity Reconciliation
+
+Status: `IN PROGRESS / FAIL-CLOSED`.
+
+- [x] Apply the additive identity-only migration with zero-row and exact-old-pin preconditions.
+- [ ] Prove APP = WORKFLOW = DATABASE for deployment and approved workflow source.
+- [ ] Reconfirm RLS, immutable triggers, zero client privileges, service-only recorder execution, `SECURITY DEFINER`, and empty `search_path`.
+- [ ] Run synthetic/full verification and require an anonymous empty production POST to remain `401 UNAUTHORIZED`.
+- [ ] Leave H.3-E.9 as `READY / NOT EXECUTED` only after every H.3-E.8.1 gate passes.
+
+**Locks:** no valid attestation, DEM, Cache DEM, ingestion, Canonical admission, Railway mutation, or secret change is authorized.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
