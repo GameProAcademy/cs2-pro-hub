@@ -142,9 +142,7 @@ describe("parser attestation OIDC claims", () => {
 
 describe("parser attestation freshness contract", () => {
   it("pins the independently verified Railway deployment identity", () => {
-    expect(PARSER_ATTESTATION_EXPECTED.deploymentId).toBe(
-      "7a540da0-3a69-44c0-9c42-40209f903fa7",
-    );
+    expect(PARSER_ATTESTATION_EXPECTED.deploymentId).toBe("7a540da0-3a69-44c0-9c42-40209f903fa7");
   });
 
   it("accepts the pinned deployment evidence and rejects a mismatched deployment", () => {
