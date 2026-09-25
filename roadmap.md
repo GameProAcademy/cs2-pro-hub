@@ -35,6 +35,18 @@ Status: `IMPLEMENTED / PUBLISHED / FAIL-CLOSED`.
 
 **Locks:** no attestation rerun, DEM execution, Canonical admission, Railway mutation, database migration, or secret value change is authorized by this repair.
 
+### H.3-E.7 / H.3-E.8 — Attestation Envelope and Deployment Identity Repair
+
+Status: `IMPLEMENTED / PRE-PUBLISH / FAIL-CLOSED`.
+
+- [x] Identify the exact HTTP 400 cause: the workflow read `.release_gate_evidence` instead of `.payload.release_gate_evidence`, producing `null` at `releaseGateEvidence`.
+- [x] Preserve the strict body schema and safe diagnostics (`invalid_type`, `releaseGateEvidence`, `Expected object, received null`).
+- [x] Use one shared route/test envelope schema and add positive plus fail-closed negative coverage.
+- [x] Align the application expectation to existing Railway deployment `7a540da0-3a69-44c0-9c42-40209f903fa7` without changing Railway.
+- [ ] Publish the Lovable application and verify only an anonymous empty POST returns `401 UNAUTHORIZED`.
+
+**Locks:** valid attestation delivery NOT RUN; real DEM, Cache DEM, Attempt 9/10+, ingestion, Canonical admission, Railway mutation, migration, secret change, and secret rotation remain prohibited.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
