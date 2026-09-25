@@ -4,4 +4,4 @@ export const APPROVED_ATTESTATION_WORKFLOW_PATH =
 // Git blob SHA-1 of the reviewed workflow source. A content digest avoids the
 // impossible self-reference created by embedding the containing commit SHA.
 export const APPROVED_ATTESTATION_WORKFLOW_SHA =
-  "9a1828c07f53106e6d098122495f583f1972a58a" as const;
+  "7c950521c5d25a72284e7f1af1d8450f0484c594" as const;

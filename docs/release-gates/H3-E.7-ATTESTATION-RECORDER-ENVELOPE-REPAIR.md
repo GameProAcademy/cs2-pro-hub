@@ -21,6 +21,10 @@ The recorder correctly rejected that value at the body schema with this non-sens
 - The expected deployment ID changed from `6330c8c4-a410-45db-a364-4eb47702c2fc` to the independently verified existing deployment `7a540da0-3a69-44c0-9c42-40209f903fa7`.
 - Railway, secrets, database schema, RLS, privileges, the protected recorder, and the attestor payload generator were not changed.
 
+## Remaining protected persistence reconciliation
+
+The reviewed workflow source digest and deployment identity changed at the application boundary. The existing database recorder still contains its prior immutable allowlist values. Because this phase explicitly prohibits migrations, persistence remains fail-closed until a separately authorized additive migration reconciles those two pins. No valid delivery was attempted to bypass or probe that protected boundary.
+
 ## Safety state
 
 - Valid attestation delivery NOT RUN after this repair.
