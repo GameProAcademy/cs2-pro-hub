@@ -172,8 +172,9 @@ describe("parser attestation freshness contract", () => {
       "RAILWAY_API_PROOF_INVALID",
     );
 
-    const mismatched = structuredClone(basePayload);
-    mismatched.deployment_evidence.deployment_id = "00000000-0000-0000-0000-000000000000";
+    const mismatched: Record<string, unknown> = structuredClone(basePayload);
+    const mismatchedEvidence = mismatched["deployment_evidence"] as Record<string, unknown>;
+    mismatchedEvidence["deployment_id"] = "00000000-0000-0000-0000-000000000000";
     expect(validateParserAttestationPayload(mismatched)).toContain("RAILWAY_API_PROOF_INVALID");
   });
 
