@@ -222,7 +222,8 @@ export async function reconcileDurableExecution(
     .eq("id", input.jobId)
     .maybeSingle();
   if (
-    jobError || !job ||
+    jobError ||
+    !job ||
     Number(job.queue_message_id) !== input.messageId ||
     job.dispatch_attempt !== input.attempt ||
     job.worker_id !== input.workerId ||

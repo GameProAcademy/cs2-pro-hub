@@ -121,21 +121,27 @@ describe("durable execution reconciliation", () => {
     });
   });
 
-  it.each(["FAILED", "ABORTED"])("does not claim %s recovery after a stale lease", async (state) => {
-    readLifecycle.mockResolvedValueOnce(lifecycle(state, "WORKER_INTERRUPTED"));
-    maybeSingle.mockResolvedValueOnce({
-      data: {
-        status: "processing",
-        ...boundJob,
-      },
-      error: null,
-    });
-    rpc.mockResolvedValueOnce({ data: { accepted: false, reason: "lease_expired" }, error: null });
-    await expect(reconcileDurableExecution(input)).resolves.toEqual({
-      status: "reconciliation_required",
-      lifecycle: state,
-    });
-  });
+  it.each(["FAILED", "ABORTED"])(
+    "does not claim %s recovery after a stale lease",
+    async (state) => {
+      readLifecycle.mockResolvedValueOnce(lifecycle(state, "WORKER_INTERRUPTED"));
+      maybeSingle.mockResolvedValueOnce({
+        data: {
+          status: "processing",
+          ...boundJob,
+        },
+        error: null,
+      });
+      rpc.mockResolvedValueOnce({
+        data: { accepted: false, reason: "lease_expired" },
+        error: null,
+      });
+      await expect(reconcileDurableExecution(input)).resolves.toEqual({
+        status: "reconciliation_required",
+        lifecycle: state,
+      });
+    },
+  );
 
   it("rejects a lifecycle response for a different execution", async () => {
     readLifecycle.mockResolvedValueOnce({
@@ -155,7 +161,10 @@ describe("durable execution reconciliation", () => {
     ["different worker", { worker_id: "worker-2" }],
   ])("refuses reconciliation for %s", async (_case, changed) => {
     maybeSingle.mockReset();
-    maybeSingle.mockResolvedValueOnce({ data: { ...boundJob, status: "processed", ...changed }, error: null });
+    maybeSingle.mockResolvedValueOnce({
+      data: { ...boundJob, status: "processed", ...changed },
+      error: null,
+    });
     await expect(reconcileDurableExecution(input)).resolves.toEqual({
       status: "reconciliation_required",
       lifecycle: "UNKNOWN",
