@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from conftest import DEMO_SHA, empty_parse, make_settings
 from errors import WorkerError
 from h3e91_execution import ExecutionRecorder
