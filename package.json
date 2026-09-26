@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "npm run verify:public-build && vitest run",
-    "verify:public-build": "node scripts/verify-public-build-config.mjs"
+    "verify:public-build": "node scripts/verify-public-build-config.mjs",
+    "verify:browser-parser-sealed": "node scripts/verify-browser-parser-build.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
