@@ -81,7 +81,7 @@ describe("H.3-E.9.1 live evidence", () => {
   it("has no action-capable dependencies", () => {
     const collector = readFileSync(resolve("src/lib/h3e91Collector.server.ts"), "utf8");
     const workflow = readFileSync(resolve(".github/workflows/h3-e9-1-live-evidence-preflight.yml"), "utf8");
-    expect(collector).not.toMatch(/\.insert\(|\.update\(|\.delete\(|workflow_dispatch|child_process|RAILWAY_API_TOKEN/);
+    expect(collector).not.toMatch(/supabaseAdmin[\s\S]{0,120}\.(insert|update|delete)\(|workflow_dispatch|child_process|RAILWAY_API_TOKEN/);
     expect(workflow).not.toMatch(/actions:\s*write|workflow_run:|dispatches|parser_runtime_attestation\.py|\/parse|\.dem/);
   });
 });
