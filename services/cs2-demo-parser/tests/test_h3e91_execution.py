@@ -9,9 +9,12 @@ from h3e91_execution import ExecutionRecorder
 
 
 def test_missing_bridge_fails_closed():
-    with httpx.AsyncClient() as client:
+    client = httpx.AsyncClient()
+    try:
         with pytest.raises(RuntimeError, match="H3E91_EXECUTION_BRIDGE_NOT_CONFIGURED"):
             ExecutionRecorder(client, make_settings(), upload_id="synthetic", surface="RAILWAY_V1_PARSE")
+    finally:
+        asyncio.run(client.aclose())
 
 
 @pytest.mark.parametrize("status,payload", [
