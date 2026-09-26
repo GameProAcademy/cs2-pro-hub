@@ -139,6 +139,10 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     changed_attempt = client.post("/v1/parse", json={**body, "attempt_number": 2}, headers=auth())
     assert changed_attempt.status_code == 200
     assert len(parser_calls) == 2
+    assert len({execution for execution, _kind in seen}) == 2
+    missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
+    assert missing.status_code == 409
+    assert len(parser_calls) == 2
 
 
 @pytest.mark.parametrize("phase", ["intent_response_lost", "intent", "started", "finished"])
@@ -193,10 +197,6 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     assert len({e["eventId"] for e in requests if e["eventType"] == "EXECUTION_INTENT"}) == 1
     assert len(parser_calls) == (0 if phase == "intent_response_lost" else 1)
     assert sum(e["eventType"] == "EXECUTION_FINISHED" for e in stored.values()) == (0 if phase == "intent_response_lost" else 1)
-    assert len({execution for execution, _kind in seen}) == 2
-    missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
-    assert missing.status_code == 409
-    assert len(parser_calls) == 2
 @pytest.mark.parametrize("surface,scenario", [
     ("APP", "INTENT_UNAVAILABLE"), ("APP", "STARTED_UNAVAILABLE"), ("APP", "PARSER_FAILURE"),
     ("APP", "FAILED_UNAVAILABLE"), ("APP", "FINISHED_UNAVAILABLE"), ("APP", "FINISHED_REJECTED"),
