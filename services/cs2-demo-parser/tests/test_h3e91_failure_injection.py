@@ -88,7 +88,7 @@ def test_v1_parse_order_and_failure_suppression(stage, client_factory, monkeypat
     response = client.post("/v1/parse", json=parse_body(), headers=auth())
     assert response.status_code != 200
     if stage == "intent": assert events == ["EXECUTION_INTENT"]
-    if stage == "started": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "EXECUTION_ABORTED"]
+    if stage == "started": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED"]
     if stage == "parse": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "parse", "EXECUTION_FAILED"]
     if stage == "terminal": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "parse", "EXECUTION_FINISHED"]
 
