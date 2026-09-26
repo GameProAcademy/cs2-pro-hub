@@ -74,7 +74,16 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     job_id=identity["jobId"], attempt_number=claim["attempt_number"],
                     demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
                 ).bind_revision(settings.revision)
-                await recorder.record("EXECUTION_INTENT")
+                try:
+                    await recorder.record("EXECUTION_INTENT")
+                except Exception:
+                    logger.error("execution intent recording failed; parser suppressed")
+                    continue
+                started = False
+                async def record_start() -> None:
+                    nonlocal started
+                    await recorder.record("EXECUTION_STARTED")
+                    started = True
                 execution_started = time.perf_counter()
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
@@ -96,7 +105,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         attempt_number=claim["attempt_number"],
                         bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
                         client=client,
-                        on_started=lambda: recorder.record("EXECUTION_STARTED"),
+                        on_started=record_start,
                     )
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")
@@ -118,11 +127,11 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         await _bridge(client, settings, "complete", complete_body)
                         await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
                 except WorkerError as error:
-                    await recorder.record("EXECUTION_FAILED", _worker_error_code(error))
+                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
                     try:
-                        await recorder.record("EXECUTION_ABORTED", "WORKER_INTERRUPTED")
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                     except Exception:
                         logger.error("execution terminal recording failed")
                     logger.warning("durable job interrupted type=%s", type(error).__name__)

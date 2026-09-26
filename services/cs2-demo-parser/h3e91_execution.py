@@ -22,6 +22,7 @@ class ExecutionRecorder:
         self.url = f"{split.scheme}://{split.netloc}/api/public/h3e91-execution-event"
         self.client = client
         self.secret = settings.bridge_secret
+        self.settings_revision = settings.revision
         self.execution_id = execution_id or str(uuid.uuid4())
         self.correlation_id = correlation_id or str(uuid.uuid4())
         self.base = {
