@@ -181,10 +181,10 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
         parser_calls.append(1)
         return {"contract_version": 1}
 
-    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", TransportRecorder)
     monkeypatch.setattr(app, "_parse_downloaded", downloaded)
     client = client_factory(settings=make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
                                                    bridge_secret="synthetic-test-only"))
+    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", TransportRecorder)
     body = parse_body()
     first = client.post("/v1/parse", json=body, headers=auth())
     assert first.status_code == (503 if phase == "intent_response_lost" else 200)
