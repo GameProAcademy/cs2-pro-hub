@@ -1,20 +1,30 @@
 /** Server-only, fail-closed APP execution evidence; never authorizes parsing. */
 import { PipelineError } from "@/lib/pipeline/errors";
+import { createHash } from "node:crypto";
 
 type EventType = "EXECUTION_INTENT" | "EXECUTION_STARTED" | "EXECUTION_FINISHED" | "EXECUTION_FAILED" | "EXECUTION_ABORTED";
+
+/** Stable UUIDv5-shape identity derived only from immutable job and attempt identifiers. */
+function executionUuid(name: string): string {
+  const hash = createHash("sha1").update(`h3e91:app:${name}`, "utf8").digest();
+  hash[6] = ((hash[6] ?? 0) & 0x0f) | 0x50;
+  hash[8] = ((hash[8] ?? 0) & 0x3f) | 0x80;
+  const hex = hash.subarray(0, 16).toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 export function appExecutionRecorder(input: {
   jobId: string; uploadId: string; attemptNumber: number; demoSha256: string | null;
   fileSize: number; parserName: string; parserVersion: string; parserRevision: string | null;
 }) {
-  const executionId = crypto.randomUUID();
-  const correlationId = crypto.randomUUID();
+  const executionId = executionUuid(`${input.jobId}:${input.attemptNumber}`);
+  const correlationId = executionUuid(`${input.jobId}:${input.attemptNumber}:correlation`);
   const eventIds: Record<EventType, string> = {
-    EXECUTION_INTENT: crypto.randomUUID(),
-    EXECUTION_STARTED: crypto.randomUUID(),
-    EXECUTION_FINISHED: crypto.randomUUID(),
-    EXECUTION_FAILED: crypto.randomUUID(),
-    EXECUTION_ABORTED: crypto.randomUUID(),
+    EXECUTION_INTENT: executionUuid(`${executionId}:EXECUTION_INTENT`),
+    EXECUTION_STARTED: executionUuid(`${executionId}:EXECUTION_STARTED`),
+    EXECUTION_FINISHED: executionUuid(`${executionId}:EXECUTION_FINISHED`),
+    EXECUTION_FAILED: executionUuid(`${executionId}:EXECUTION_FAILED`),
+    EXECUTION_ABORTED: executionUuid(`${executionId}:EXECUTION_ABORTED`),
   };
   return async (eventType: EventType, outcomeCode: string | null = null) => {
     const intent = eventType === "EXECUTION_INTENT";

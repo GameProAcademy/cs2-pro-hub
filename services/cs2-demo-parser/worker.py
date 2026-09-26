@@ -7,6 +7,7 @@ import json
 import logging
 import resource
 import time
+import uuid
 from typing import Any, Callable
 
 import httpx
@@ -74,12 +75,15 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
                         job_id=identity["jobId"], attempt_number=claim["attempt_number"],
                         demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
+                        execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}")),
+                        correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}")),
                     ).bind_revision(settings.revision)
                     await recorder.record("EXECUTION_INTENT")
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")
                     continue
                 started = False
+                terminal_recorded = False
                 async def record_start() -> None:
                     nonlocal started
                     await recorder.record("EXECUTION_STARTED")
@@ -126,6 +130,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     round((time.perf_counter() - execution_started) * 1000),
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+                        terminal_recorded = True
                         # Parser execution evidence and queue finalization are distinct.
                         # Never report queue success when terminal recording failed.
                         await _bridge(client, settings, "complete", complete_body)
@@ -135,7 +140,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    if "H3E91_RECORDING_" not in str(error):
+                    if not terminal_recorded and "H3E91_RECORDING_" not in str(error):
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
