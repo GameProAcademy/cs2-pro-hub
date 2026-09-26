@@ -1,6 +1,10 @@
-# H.3-E.9.1-R4.1-C/F.5.3 — execution evidence proof closure
+# H.3-E.9.1-R4.1-C/F.5.3-CLOSURE.2 — execution evidence proof closure
 
 ## CURRENT STATE
+
+**F.5.3-CLOSURE.2 BLOCKED.** This checkpoint's source revision is `07b99ce` plus local changes; external CI for the eventual final revision is not verified. A managed migration was applied as `20260926061355` to stabilize `terminalEventAt` after `20260926055410` and `20260926055608`. Source-only `20260926053000` remains absent from live history; do not treat filename parity as achieved. Source `20260926060000` and the managed `20260926061355` currently contain the same SQL, but the source chain has duplicate definitions and a fresh/live schema-equivalence test is still missing. SOURCE_MIGRATION_VERSION=`20260926060000`; LIVE_MIGRATION_VERSION=`20260926061355`; FINAL_SCHEMA_VERSION=`20260926061355` (observed live).
+
+The FINISHED branch now additionally requires a ready RAW artifact bound to the same job/upload, with a root digest and approved audit for `processed`. This narrows the acknowledgement gate but does not prove HOT output, the complete RAW persistence chain or an integrated lost-acknowledgement replay. Local checks for this revision: 1,391 web tests, 239 Python tests (10 skipped), 24 mocked durable reconciliation cases, 30 disposable PostgreSQL writer scenarios and 50 stress executions, typecheck and lint (9 pre-existing warnings). The 43-case failure matrix, full race matrix, final Docker image/browser-bundle verification and final-commit external CI are not proven. **No synthetic production ledger rows were written.**
 
 **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY.** Retry-safe duplicate-execution prevention and an authenticated, minimal lifecycle read are implemented in source; transparent result retry is **NOT IMPLEMENTED**. A repeated INTENT returns an explicit reconciliation-required error (HTTP 409 for `/v1/parse`), never a second parse or fabricated cached result. `NEW_EXECUTION` means a newly inserted INTENT; `IDEMPOTENT_REPLAY` means the same event identity/payload already exists and is classified `SAFE_REPLAY_REQUIRES_RECONCILIATION`; `IDENTITY_CONFLICT` and `EVENT_ID_CONFLICT` are rejected, not retried.
 
@@ -30,6 +34,7 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
 - CURRENT CI: Quality Gates run `36222382006` completed GREEN for the current revision `5d06db444064e4626adcc83360899335a4638e83`. All three jobs passed, including web/lint/build, parser, contract-sensitive parser, disposable PostgreSQL concurrency, Docker image exclusion, and browser production-output sealing. This is CI evidence only; deployed Railway parity remains UNKNOWN.
+- SUPERSEDED CI evidence: run `36222382006` belongs to `5d06db444064e4626adcc83360899335a4638e83`, **not** this closure revision; final-revision CI remains UNKNOWN.
 - Failure-injection coverage remains bounded, not a complete 26-case deployed-surface matrix. No production ledger writes are needed or authorized for local tests.
 - Live reader is invariant-hardened through managed migration `20260926055410` and returns `terminalEventAt` through `20260926055608`; the earlier source-only filename `20260926053000` is still absent from migration history. Its SQL was executed unchanged by the managed tool, which assigned a new version rather than using that source filename.
 - FINISHED replay recovery is fail-closed when `demo_jobs` lacks a processed/blocked_raw_audit result; the current reconciliation test mocks the lifecycle and database result and does not prove recovery from persisted RAW/HOT state after a lost queue-completion acknowledgement in an integrated disposable database.
