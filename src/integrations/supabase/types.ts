@@ -3799,6 +3799,7 @@ export type Database = {
         Returns: Json
       }
       get_demo_retention_metrics: { Args: never; Returns: Json }
+      h3e91_live_database_evidence: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
