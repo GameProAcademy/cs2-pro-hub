@@ -127,7 +127,6 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     client = client_factory()
     body = parse_body()
     first = client.post("/v1/parse", json=body, headers=auth())
-    assert requests, (first.status_code, first.text, h3e91_execution.ExecutionRecorder)
     assert first.status_code == 200
     # A genuinely new HTTP request constructs a new recorder. A lost response
     # cannot accidentally start a second parse, even though INTENT replays.
@@ -188,6 +187,7 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", TransportRecorder)
     body = parse_body()
     first = client.post("/v1/parse", json=body, headers=auth())
+    assert requests, (first.status_code, first.text)
     assert first.status_code == (503 if phase == "intent_response_lost" else 200)
     first_count = len(stored)
     response = client.post("/v1/parse", json=body, headers=auth())
