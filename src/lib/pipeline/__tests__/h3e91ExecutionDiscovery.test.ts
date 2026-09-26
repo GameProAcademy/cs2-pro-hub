@@ -68,9 +68,13 @@ describe("H.3-E.9.1 execution source discovery", () => {
     expect(found).toEqual(
       Object.fromEntries(Object.entries(classified).map(([file, value]) => [file, value.count])),
     );
-    expect(Object.values(classified).every(({ classification }) =>
-      classification.startsWith("PRODUCTION_EXECUTION_SURFACE:") || classification.startsWith("TEST_ONLY:"),
-    )).toBe(true);
+    expect(
+      Object.values(classified).every(
+        ({ classification }) =>
+          classification.startsWith("PRODUCTION_EXECUTION_SURFACE:") ||
+          classification.startsWith("TEST_ONLY:"),
+      ),
+    ).toBe(true);
   });
 
   it("still discovers both independent Railway entrypoints and their shared boundary", () => {
@@ -100,8 +104,12 @@ describe("H.3-E.9.1 execution source discovery", () => {
     const sites = production.flatMap((path) => {
       const source = read(path);
       const matches = [
-        ...source.matchAll(/\b(?:from parser import parse_demo_file|from ["']\.\/clientParser\.service["']|from ["']@\/lib\/client-parser\/clientParser\.service["'])/g),
-        ...source.matchAll(/\b(?:@app\.post\(["']\/v1\/parse["']|async def durable_consumer_loop\()/g),
+        ...source.matchAll(
+          /\b(?:from parser import parse_demo_file|from ["']\.\/clientParser\.service["']|from ["']@\/lib\/client-parser\/clientParser\.service["'])/g,
+        ),
+        ...source.matchAll(
+          /\b(?:@app\.post\(["']\/v1\/parse["']|async def durable_consumer_loop\()/g,
+        ),
       ];
       return matches.length ? [[path, matches.length]] : [];
     });
