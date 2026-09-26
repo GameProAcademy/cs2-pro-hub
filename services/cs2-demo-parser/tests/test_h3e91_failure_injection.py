@@ -127,6 +127,7 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     client = client_factory()
     body = parse_body()
     first = client.post("/v1/parse", json=body, headers=auth())
+    assert requests, (first.status_code, first.text, h3e91_execution.ExecutionRecorder)
     assert first.status_code == 200
     # A genuinely new HTTP request constructs a new recorder. A lost response
     # cannot accidentally start a second parse, even though INTENT replays.
