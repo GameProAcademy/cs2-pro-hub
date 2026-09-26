@@ -19,7 +19,7 @@ import { H3E91_RAILWAY_SOURCE_COMMIT } from "@/lib/h3e91LiveEvidence";
 import { getH3E91Freshness } from "@/lib/h3e91LiveEvidence";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 
-function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN") {
+function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN", baselineValid: boolean) {
   const blockers: Array<
     | "H3E91_DATABASE_EVIDENCE_UNKNOWN"
     | "H3E91_MIGRATION_EVIDENCE_UNKNOWN"
@@ -32,7 +32,7 @@ function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91Data
     | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"
     | "H3E91_PREFLIGHT_STALE"
   > = [];
-  if (freshness !== "FRESH") blockers.push("H3E91_PREFLIGHT_STALE");
+  if (freshness !== "FRESH" || !baselineValid) blockers.push("H3E91_PREFLIGHT_STALE");
   if (
     db.status === "UNKNOWN" ||
     db.realDemoExecutionCount === null ||
@@ -289,11 +289,13 @@ export function finalizeH3E91Artifact(
   external: H3E91ExternalEvidence,
   databaseEvidence: H3E91DatabaseEvidence,
   baselineStartedAt: string = external.observedAt,
+  evaluatedAt: string = new Date().toISOString(),
 ): H3E91Artifact {
   const input = buildH3E91ReadinessInput(external, databaseEvidence);
   const finalResult = evaluateH3E9FinalExecutionReadiness(input);
-  const freshness = getH3E91Freshness(external.observedAt, new Date().toISOString());
-  const blockers = getH3E91EvidenceBlockers(external, databaseEvidence, freshness);
+  const freshness = getH3E91Freshness(external.observedAt, evaluatedAt);
+  const baselineValid = getH3E91Freshness(baselineStartedAt, evaluatedAt) === "FRESH" && Date.parse(baselineStartedAt) >= Date.parse(external.observedAt);
+  const blockers = getH3E91EvidenceBlockers(external, databaseEvidence, freshness, baselineValid);
   const withoutDigest = {
     schemaVersion: H3E91_LIVE_EVIDENCE_SCHEMA_VERSION,
     gate: "H.3-E.9" as const,
