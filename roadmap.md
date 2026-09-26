@@ -123,8 +123,11 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sa
 
 - [x] Add optional `execution_id`, `event_id`, `event_at`, `upload_id`, `correlation_id`, `outcome_code` and `event_version` to the existing sealed ledger; retain historical rows and revocations. No execution rows were created.
 - [x] Add a source-discovery regression check that enumerates existing parser invocations, including the standalone reference producer in the production image.
+- [x] Restrict the parser Docker image to an explicit runtime file allowlist; add source and CI image-isolation checks. This does not establish parity with the deployed Railway revision.
+- [x] Record a machine-readable, server-only coverage checkpoint with every executable production surface `NOT_COVERED` and writer authority false.
+- [ ] Complete the controlled writer, authenticated event bridge, lifecycle, failure injection, real disposable-Postgres concurrency harness, exhaustive security audit and all surface instrumentation before enabling any writer.
 - [ ] `H3E91_PREPARSER_WRITER_ABSENT`: no controlled lifecycle writer or confirmed INTENT/STARTED/terminal bridge. Keep actual parsing paths uninstrumented and blocked rather than enabling partial capture.
-- [ ] `H3E91_EXECUTION_SURFACE_NOT_COVERED`: APP, durable worker, `/v1/parse`, and browser/WASM remain unproven; reference CLI remains present in the production Docker context.
+- [ ] `H3E91_EXECUTION_SURFACE_NOT_COVERED`: APP, durable worker, `/v1/parse`, and browser/WASM remain unproven; reference CLI is excluded from the new image recipe but the deployed image is unverified.
 - [ ] `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`: independent Railway parity, security audit, disposable database concurrency proof and final authority evaluation are outstanding.
 
 ### Confirmed current state
