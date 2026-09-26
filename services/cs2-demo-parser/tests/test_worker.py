@@ -4,7 +4,14 @@ import asyncio
 
 from conftest import DEMO_SHA, empty_parse, make_settings
 from errors import WorkerError
+from h3e91_execution import ExecutionRecorder
 from worker import _worker_error_code, durable_consumer_loop
+
+
+def _synthetic_execution_recorder(monkeypatch):
+    async def record(_self, _event_type, _outcome_code=None):
+        return {"status": "INSERTED"}
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
 
 
 def test_worker_error_preserves_wire_code():
@@ -12,6 +19,7 @@ def test_worker_error_preserves_wire_code():
 
 
 def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     durable_kwargs = {}
     demo = tmp_path / "demo.dem"
