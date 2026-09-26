@@ -381,7 +381,13 @@ def create_app(
                                               attempt_number=body.attempt_number,
                                               execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, logical_identity)),
                                               correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, logical_identity + ":correlation"))).bind_revision(resolved.revision)
-                await recorder.record("EXECUTION_INTENT")
+                intent_result = await recorder.record("EXECUTION_INTENT")
+                # A replayed INTENT may already have STARTED or a terminal row.
+                # Without an authenticated read of that lifecycle, never parse twice.
+                if intent_result.get("status") != "INSERTED":
+                    raise WorkerError(409, E.CONTRACT_MISMATCH, "Execution already recorded; reconciliation required.")
+            except WorkerError:
+                raise
             except Exception:
                 raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable.") from None
             started = False
