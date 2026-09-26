@@ -73,6 +73,18 @@ Status: `BLOCKED / NOT EXECUTED`.
 
 **Locks:** valid attestation, workflow dispatch, DEM/Cache DEM, Attempt 9+, final RAW, Canonical admission, cleanup, Railway/EnvironmentPatch mutation, secret changes, feature changes, and database writes remain prohibited.
 
+### H.3-E.9.1 — Live Evidence Collector & Machine-Readable Preflight
+
+Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
+
+- [x] Add a GitHub-OIDC-protected server endpoint that accepts only strict safe external evidence and never trusts client-supplied database state.
+- [x] Collect live database counts with read-only queries and keep unavailable migration/security catalog evidence explicitly `UNKNOWN/BLOCKED` rather than infer it from source.
+- [x] Add a manually dispatched workflow for approved blob identity, OIDC structure, secret presence, Railway read-only control-plane evidence, runtime `/health` + `/version`, and anonymous recorder `401`.
+- [x] Feed collected evidence into the unchanged pure H.3-E.9 evaluator and emit canonical JSON evidence with a reproducible SHA-256 digest.
+- [x] Keep retention and operator authorization explicitly `NOT_AUTHORIZED` unless separately supplied through a future reviewed authority.
+
+**Locks:** FIRST VALID ATTESTATION = NOT RUN; DEM = NOT RUN; CACHE DEM = NOT RUN; ATTEMPT 9 = LOCKED; CANONICAL = LOCKED. No migration, provenance, nonce, cleanup, execution workflow dispatch, Railway/EnvironmentPatch mutation, or secret mutation.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.

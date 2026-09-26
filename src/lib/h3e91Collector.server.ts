@@ -62,6 +62,13 @@ export async function collectH3E91DatabaseEvidence(observedAt: string): Promise<
 
 export async function buildH3E91Artifact(external: H3E91ExternalEvidence): Promise<H3E91Artifact> {
   const databaseEvidence = await collectH3E91DatabaseEvidence(external.observedAt);
+  return finalizeH3E91Artifact(external, databaseEvidence);
+}
+
+export function finalizeH3E91Artifact(
+  external: H3E91ExternalEvidence,
+  databaseEvidence: H3E91DatabaseEvidence,
+): H3E91Artifact {
   const input = buildH3E91ReadinessInput(external, databaseEvidence);
   const finalResult = evaluateH3E9FinalExecutionReadiness(input);
   const withoutDigest = {
