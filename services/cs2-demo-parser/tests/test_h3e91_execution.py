@@ -53,3 +53,25 @@ def test_network_failure_fails_closed():
             with pytest.raises(httpx.ConnectError):
                 await recorder.record("EXECUTION_INTENT")
     asyncio.run(run())
+
+
+def test_ambiguous_insert_retry_reuses_event_identity():
+    received = []
+
+    async def transport(request):
+        received.append(request.read().decode())
+        if len(received) == 1:
+            raise httpx.ReadError("response lost after synthetic insert")
+        return httpx.Response(200, json={"status": "IDEMPOTENT_REPLAY"})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            recorder = ExecutionRecorder(client, make_settings(
+                bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                bridge_secret="synthetic-test-only",
+            ), upload_id="11111111-1111-1111-1111-111111111111", surface="RAILWAY_V1_PARSE")
+            with pytest.raises(httpx.ReadError):
+                await recorder.record("EXECUTION_INTENT")
+            assert (await recorder.record("EXECUTION_INTENT"))["status"] == "IDEMPOTENT_REPLAY"
+            assert received[0] == received[1]
+    asyncio.run(run())

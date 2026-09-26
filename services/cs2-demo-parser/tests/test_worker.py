@@ -191,3 +191,51 @@ def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path)
     names = [name for name, _ in calls]
     assert "fail" in names
     assert "complete" not in names
+
+
+def test_terminal_evidence_precedes_completion_and_failure_never_completes(monkeypatch):
+    import app
+    import worker
+
+    for terminal_failure, queue_failure in ((False, False), (True, False), (False, True)):
+        events = []
+        async def record(_self, event_type, _outcome_code=None):
+            events.append(event_type)
+            if terminal_failure and event_type == "EXECUTION_FINISHED":
+                raise RuntimeError("H3E91_RECORDING_FAILED_503")
+            return {"status": "INSERTED"}
+
+        async def bridge(_client, _settings, action, _body):
+            events.append(action)
+            if action == "claim":
+                if events.count("claim") > 1:
+                    raise asyncio.CancelledError()
+                return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
+                        "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
+                        "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                        "demo_url": "https://synthetic.invalid/demo.dem", "demo_sha256": DEMO_SHA,
+                        "file_size": 520, "schema_version": 1}
+            if action == "heartbeat":
+                return {"accepted": True, "cancelled": False}
+            if action == "complete" and queue_failure:
+                raise RuntimeError("synthetic queue outage")
+            return {"status": "processed"}
+
+        async def durable(*_args, **kwargs):
+            await kwargs["on_started"]()
+            return {"hot": {"schema_version": 1}, "raw": {"artifact_id": "synthetic", "root_digest": DEMO_SHA}}
+
+        monkeypatch.setattr(ExecutionRecorder, "record", record)
+        monkeypatch.setattr(worker, "_bridge", bridge)
+        monkeypatch.setattr(app, "_parse_durable_request", durable)
+        settings = make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                                 bridge_secret="synthetic-test-only")
+        try:
+            asyncio.run(durable_consumer_loop(settings, empty_parse))
+        except asyncio.CancelledError:
+            pass
+        assert events.index("EXECUTION_INTENT") < events.index("EXECUTION_STARTED") < events.index("EXECUTION_FINISHED")
+        assert ("complete" in events) is not terminal_failure
+        if "complete" in events:
+            assert events.index("EXECUTION_FINISHED") < events.index("complete")
+        assert events.count("EXECUTION_FAILED") == 0
