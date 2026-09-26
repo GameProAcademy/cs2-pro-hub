@@ -386,7 +386,7 @@ def create_app(
                 # A replayed INTENT may already have STARTED or a terminal row.
                 # Without an authenticated read of that lifecycle, never parse twice.
                 if intent_result.get("status") != "INSERTED":
-                    raise WorkerError(409, "SAFE_REPLAY_REQUIRES_RECONCILIATION", "Execution already recorded; reconciliation required.")
+                    raise WorkerError(409, E.SAFE_REPLAY_REQUIRES_RECONCILIATION, "Execution already recorded; reconciliation required.")
             except WorkerError:
                 raise
             except Exception:
