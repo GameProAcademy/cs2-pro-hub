@@ -9,11 +9,18 @@ export function appExecutionRecorder(input: {
 }) {
   const executionId = crypto.randomUUID();
   const correlationId = crypto.randomUUID();
+  const eventIds: Record<EventType, string> = {
+    EXECUTION_INTENT: crypto.randomUUID(),
+    EXECUTION_STARTED: crypto.randomUUID(),
+    EXECUTION_FINISHED: crypto.randomUUID(),
+    EXECUTION_FAILED: crypto.randomUUID(),
+    EXECUTION_ABORTED: crypto.randomUUID(),
+  };
   return async (eventType: EventType, outcomeCode: string | null = null) => {
     const intent = eventType === "EXECUTION_INTENT";
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("h3e91_record_execution_event" as never, {
-      _event_id: crypto.randomUUID(), _execution_id: executionId, _event_type: eventType,
+      _event_id: eventIds[eventType], _execution_id: executionId, _event_type: eventType,
       _upload_id: input.uploadId, _correlation_id: correlationId, _job_id: input.jobId,
       _attempt_number: input.attemptNumber, _demo_sha256: intent ? null : input.demoSha256,
       _file_size: intent ? null : input.fileSize,

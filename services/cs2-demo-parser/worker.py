@@ -125,15 +125,18 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     result["raw"].get("total_chunks"), result["raw"].get("total_bytes"),
                                     round((time.perf_counter() - execution_started) * 1000),
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-                        await _bridge(client, settings, "complete", complete_body)
                         await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+                        # Parser execution evidence and queue finalization are distinct.
+                        # Never report queue success when terminal recording failed.
+                        await _bridge(client, settings, "complete", complete_body)
                     else:
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
                     await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
+                    if "H3E91_RECORDING_" not in str(error):
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()
