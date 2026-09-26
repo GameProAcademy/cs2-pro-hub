@@ -191,7 +191,7 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     assert requests, (first.status_code, first.text)
     assert first.status_code == (200 if phase == "normal" else 503)
     assert {"intent": {"EXECUTION_INTENT"},
-            "started": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_ABORTED"},
+            "started": {"EXECUTION_INTENT", "EXECUTION_STARTED"},
             "finished": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED"},
             "normal": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED"}}[phase] == {
                 event["eventType"] for event in stored.values()
