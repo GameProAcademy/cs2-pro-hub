@@ -1,8 +1,10 @@
-# H.3-E.9.1-R4.1-C/F.5.1 — execution evidence proof closure
+# H.3-E.9.1-R4.1-C/F.5.2 — execution evidence proof closure
 
 ## CURRENT STATE
 
 **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY.** Retry-safe duplicate-execution prevention is implemented in source; transparent result retry is **NOT IMPLEMENTED**. A repeated INTENT returns an explicit reconciliation-required error (HTTP 409 for `/v1/parse`), never a second parse or fabricated cached result. `NEW_EXECUTION` means a newly inserted INTENT; `IDEMPOTENT_REPLAY` means the same event identity/payload already exists and is classified `SAFE_REPLAY_REQUIRES_RECONCILIATION`; `IDENTITY_CONFLICT` and `EVENT_ID_CONFLICT` are rejected, not retried. Started or terminal lifecycle state cannot be inferred from INTENT replay alone. Durable claim replay leaves queue reconciliation pending; it does not complete or fail a queue item based solely on this replay.
+
+Local F.5.2 correction: synthetic transport now persists and loses acknowledgements separately after INTENT, STARTED, and FINISHED; fresh HTTP retries reuse identity and return 409 without a second parse. A STARTED acknowledgement loss does not emit an incompatible ABORTED terminal. An ambiguous FINISHED acknowledgement on the durable worker does not emit FAILED. The prior four-iteration durable test represented **one** replay state, not four lifecycle states; it is now named accordingly. An authoritative per-execution read and durable queue reconciliation for INTENT_ONLY, STARTED_ONLY, FINISHED, FAILED, ABORTED and completion-lost states are **NOT IMPLEMENTED**. Queue completion cannot be reconstructed safely without durable HOT/RAW payload and lease binding; the worker suppresses duplicate parsing and leaves reconciliation required. These limits prohibit closing F.5.2.
 
 No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, attestation, Canonical authorization or secrets mutation is authorized. `realDemAuthorized=false`; `canonicalAuthorized=false`. The next independent deployment gate is H.3-E.9.1-R4.2. Zero production ledger rows do not prove absence of execution.
 
@@ -13,11 +15,12 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 | PROOF | SOURCE | LIVE_DB_WRITER | SURFACE_LIVE_EXECUTION | SYNTHETIC | CI | DEPLOYED | PROVENANCE | STATUS | BLOCKER |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Writer contract/security/digest | PASS | PASS (prior read-only inspection) | UNKNOWN | PASS (disposable DB) | UNKNOWN | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | External CI and parity unknown |
-| HTTP retry identity/reconciliation | PASS | UNKNOWN (zero rows) | UNKNOWN | PASS (fresh HTTP requests and transport replay) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | No deployed runtime proof; transparent result retry absent |
-| Durable retry and terminal-before-complete | PASS | UNKNOWN | UNKNOWN | PASS (synthetic state tests) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Queue reconciliation not automatic; deployed parity unknown |
+| HTTP retry identity/reconciliation | PASS | UNKNOWN (zero rows) | UNKNOWN | PASS (fresh HTTP requests, separately persisted lost acknowledgements for INTENT/STARTED/FINISHED; sequential only) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Concurrent HTTP retry and deployed runtime proof unknown; transparent result retry absent |
+| Durable retry and terminal-before-complete | PASS (duplicate suppression) | UNKNOWN | UNKNOWN | PASS (one replay state and terminal ordering only) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Authoritative lifecycle reconciliation and persisted completion recovery absent; deployed parity unknown |
 | PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | UNKNOWN | UNKNOWN | SYNTHETIC_PROVEN | BLOCKED | External CI not verified |
 | APP, Railway and browser isolation | PASS (bounded) | UNKNOWN | UNKNOWN | PASS (bounded ordering/isolation) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Complete injection matrix and deployed proof outstanding |
 | Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | UNKNOWN (image inspection in CI only) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Deployed image and Docker synthetic proof absent |
+| Local lint/typecheck/web/parser checks | PASS (configured) | NOT_RUN | UNKNOWN | PASS (1,353 web, 230 Python + 10 skipped, lint 0 errors/9 warnings, TypeScript clean) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | External CI and deployed proof unavailable |
 | External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | NOT_RUN | UNKNOWN | UNKNOWN | CI_EXTERNAL_VERIFIED missing | BLOCKED | No externally successful workflow run evidenced |
 
 ## CURRENT BLOCKERS
@@ -25,6 +28,7 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
 - `CI_CONFIGURED` is not `CI_EXTERNAL_VERIFIED`. No external successful workflow run has been observed here. Surface live execution proof remains `UNKNOWN` for APP and both Railway surfaces even when writer live DB proof is `LIVE_DB_VERIFIED`.
 - Failure-injection coverage is bounded, not a complete 26-case surface matrix. Durable queue completion after persisted FINISHED needs explicit reconciliation on failure, never a second terminal. No production ledger writes are needed or authorized to close local tests.
+- Complete independent PostgreSQL race matrix, simultaneous HTTP retry, per-state durable reconciliation and 26-case surface failure matrix remain unproven. The disposable 30-case + 50-stress harness proves only the scenarios it actually executes. Docker image inspection and external CI GREEN were not verified in this environment; configuration is not proof of success.
 - Historical assertions below are superseded snapshots; their `NOT_COVERED`, inactive writer, and `COPY . .` statements are **not current source state**.
 
 ## HISTORICAL CHECKPOINTS — SUPERSEDED
