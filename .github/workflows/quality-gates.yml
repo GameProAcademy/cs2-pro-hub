@@ -5,6 +5,7 @@ on:
     branches: [main, infra/cs2-parser-worker-v8]
   pull_request:
     branches: [main, infra/cs2-parser-worker-v8]
+  workflow_dispatch:
 
 permissions:
   contents: read

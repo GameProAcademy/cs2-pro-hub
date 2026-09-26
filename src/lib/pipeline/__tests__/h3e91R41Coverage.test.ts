@@ -9,7 +9,7 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
     expect(H3E91_R41_COVERAGE.writerCoverageVerified).toBe(false);
     expect(H3E91_R41_COVERAGE.deployedParity).toBe("UNKNOWN");
   });
-  it("lists every independent entry point without claiming runtime coverage", () => {
+  it("lists source-covered entry points without claiming deployed runtime coverage", () => {
     expect(Object.keys(H3E91_R41_COVERAGE.surfaces).sort()).toEqual(
       [
         "APP_REMOTE_PARSER",
@@ -22,8 +22,13 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
     expect(
       Object.values(H3E91_R41_COVERAGE.surfaces)
         .filter((surface) => surface.classification === "PRODUCTION_EXECUTION_SURFACE")
-        .every((surface) => surface.status === "NOT_COVERED" && !surface.startedBeforeParser),
+        .every((surface) => surface.status === "BLOCKED" && surface.deployedParity === "UNKNOWN"),
     ).toBe(true);
+    for (const surface of [H3E91_R41_COVERAGE.surfaces.APP_REMOTE_PARSER, H3E91_R41_COVERAGE.surfaces.RAILWAY_DURABLE_WORKER, H3E91_R41_COVERAGE.surfaces.RAILWAY_V1_PARSE]) {
+      expect(surface.writerBeforeExecution).toBe(true);
+      expect(surface.startedBeforeParser).toBe(true);
+      expect(surface.productionActivation).toBe("BLOCKED");
+    }
     expect(H3E91_R41_COVERAGE.surfaces.REFERENCE_CLI.status).toBe("IMAGE_EXCLUSION_SOURCE_ONLY");
   });
 });
