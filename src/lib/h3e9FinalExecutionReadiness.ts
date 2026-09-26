@@ -194,7 +194,7 @@ export function evaluateH3E9FinalExecutionReadiness(
 
   if (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
   if (input.storage.nonceCount !== null && input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
-    (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) || (input.storage.nonceCount !== null && input.storage.nonceCount !== 0)
+  if ((input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) || (input.storage.nonceCount !== null && input.storage.nonceCount !== 0))
     blockers.push("H3E9_DATABASE_STATE_NOT_EMPTY");
 
   if (
