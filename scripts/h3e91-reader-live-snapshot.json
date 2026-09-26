@@ -1,0 +1,8 @@
+{
+  "finalSchemaVersion": "20260926061355",
+  "liveAppliedVersions": ["20260926051200", "20260926055410", "20260926055608", "20260926061355"],
+  "supersededSourceOnlyVersions": ["20260926053000", "20260926060000"],
+  "readerDefinitionMd5": "d091f9315209ed97209ab7895e252c49",
+  "owner": "postgres",
+  "provenance": "LIVE_DB_VERIFIED read-only 2026-09-26; synthetic equality checked separately"
+}

@@ -19,7 +19,6 @@ MIGRATIONS = (
     "20260926031500_8a2e6d53-36cb-44ab-9998-a4fe3210bd1a.sql",
     "20260926031627_12654b87-3876-4c60-8916-6a0f296adda8.sql",
     "20260926051200_512a9d4b-af8a-4c69-8ce1-3e56101262ce.sql",
-    "20260926053000_h3e91_lifecycle_reader_invariants.sql",
     "20260926055410_78035044-68bf-4c19-8e0d-59fc694c9129.sql",
     "20260926055608_fba19e9c-70c1-4bd7-b215-ba70061fe6a9.sql",
     "20260926061355_43467a07-e56a-41de-8f02-c988fda5823e.sql",
@@ -64,6 +63,21 @@ def main():
         sql(BASE)
         for migration in MIGRATIONS:
             sql((ROOT / "supabase/migrations" / migration).read_text())
+        # Live, read-only snapshot captured at the closure checkpoint. Reject
+        # source-only duplicates and any drift of the final reader definition.
+        snapshot = json.loads((ROOT / "scripts/h3e91-reader-live-snapshot.json").read_text())
+        source_versions = {p.name[:14] for p in (ROOT / "supabase/migrations").glob("*.sql")}
+        assert snapshot["finalSchemaVersion"] in source_versions
+        assert not (set(snapshot["supersededSourceOnlyVersions"]) & source_versions)
+        assert all(v in source_versions for v in snapshot["liveAppliedVersions"])
+        assert sql("SELECT md5(pg_get_functiondef('public.h3e91_read_execution_lifecycle(uuid)'::regprocedure))") == snapshot["readerDefinitionMd5"]
+        assert sql("SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == snapshot["owner"]
+        assert sql("SELECT prosecdef::text FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
+        assert sql("SELECT proconfig[1] FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == 'search_path=""'
+        assert sql("SELECT relrowsecurity::text FROM pg_class WHERE oid='public.h3e91_execution_evidence_ledger'::regclass") == "t"
+        assert sql("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.h3e91_execution_evidence_ledger'::regclass AND NOT tgisinternal AND tgenabled <> 'D'") != "0"
+        assert sql("SELECT count(*) FROM pg_index WHERE indrelid='public.h3e91_execution_evidence_ledger'::regclass AND indisunique") != "0"
+        print("PASS: migration lineage SOURCE_AND_LIVE final reader; SUPERSEDED source-only duplicates absent; live schema snapshot matched")
         assert sql("SELECT has_table_privilege('service_role','public.h3e91_execution_evidence_ledger','INSERT')") == "f"
         assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_record_execution_event'") == "t"
         assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_read_execution_lifecycle'") == "t"
