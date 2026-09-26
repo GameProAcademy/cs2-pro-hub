@@ -3880,6 +3880,10 @@ export type Database = {
         Returns: Json
       }
       h3e91_live_database_evidence: { Args: never; Returns: Json }
+      h3e91_read_execution_lifecycle: {
+        Args: { _execution_id: string }
+        Returns: Json
+      }
       h3e91_record_execution_event: {
         Args: {
           _attempt_number: number
