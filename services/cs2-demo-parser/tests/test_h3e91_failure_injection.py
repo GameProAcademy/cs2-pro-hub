@@ -182,8 +182,8 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     client = client_factory(settings=make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
                                                    bridge_secret="synthetic-test-only"))
     body = parse_body()
-    if phase != "intent_response_lost":
-        assert client.post("/v1/parse", json=body, headers=auth()).status_code == 200
+    first = client.post("/v1/parse", json=body, headers=auth())
+    assert first.status_code == (503 if phase == "intent_response_lost" else 200)
     first_count = len(stored)
     response = client.post("/v1/parse", json=body, headers=auth())
     assert response.status_code == 409
