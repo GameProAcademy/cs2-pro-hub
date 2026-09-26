@@ -272,29 +272,29 @@ describe("FASE 2.2.1D — worker deadline", () => {
   it("aborta a request quando o deadline é mais próximo que o timeout", async () => {
     vi.useFakeTimers();
     try {
-    const fetchMock = vi.fn(
-      (_url: string, init?: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () =>
-            reject(new DOMException("x", "AbortError")),
-          );
-        }),
-    );
-    const client = createFaceitClient({
-      apiKey: "k",
-      baseUrl: "https://open.faceit.com/data/v4",
-      timeoutMs: 60_000,
-      maxRetries: 1,
-      fetchImpl: fetchMock as unknown as typeof fetch,
-      sleep: async () => undefined,
-      deadlineAt: Date.now() + 20,
-    });
-    // FASE 2.2.1E: abortar por deadline é parada controlada, não timeout comum.
-    const request = expect(client.get("/matches/m1")).rejects.toMatchObject({
-      code: "FACEIT_WORKER_DEADLINE_EXCEEDED",
-    });
-    await vi.advanceTimersByTimeAsync(21);
-    await request;
+      const fetchMock = vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("x", "AbortError")),
+            );
+          }),
+      );
+      const client = createFaceitClient({
+        apiKey: "k",
+        baseUrl: "https://open.faceit.com/data/v4",
+        timeoutMs: 60_000,
+        maxRetries: 1,
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        sleep: async () => undefined,
+        deadlineAt: Date.now() + 20,
+      });
+      // FASE 2.2.1E: abortar por deadline é parada controlada, não timeout comum.
+      const request = expect(client.get("/matches/m1")).rejects.toMatchObject({
+        code: "FACEIT_WORKER_DEADLINE_EXCEEDED",
+      });
+      await vi.advanceTimersByTimeAsync(21);
+      await request;
     } finally {
       vi.useRealTimers();
     }

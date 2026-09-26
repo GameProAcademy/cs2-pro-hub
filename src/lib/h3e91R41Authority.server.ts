@@ -28,15 +28,27 @@ export type H3E91R41Proofs = Readonly<Record<H3E91R41Proof, H3E91R41ProofStatus>
 
 /** Proof provenance is independent of the proof result; source cannot attest a deployment. */
 export const H3E91_R41_AUTHORITY_LEVELS = [
-  "SOURCE_IMPLEMENTED", "LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN", "BUILD_PROVEN", "DOCKER_SYNTHETIC", "CI_EXTERNAL_VERIFIED", "DEPLOYED_VERIFIED",
+  "SOURCE_IMPLEMENTED",
+  "LIVE_DB_VERIFIED",
+  "SYNTHETIC_PROVEN",
+  "BUILD_PROVEN",
+  "DOCKER_SYNTHETIC",
+  "CI_EXTERNAL_VERIFIED",
+  "DEPLOYED_VERIFIED",
 ] as const;
 export type H3E91R41AuthorityLevel = (typeof H3E91_R41_AUTHORITY_LEVELS)[number];
 
 /** These are independent evidence dimensions, not an ordered ladder. */
-export const H3E91_R41_MINIMUM_PROVENANCE: Readonly<Record<H3E91R41Proof, readonly H3E91R41AuthorityLevel[]>> = {
-  writerContract: ["LIVE_DB_VERIFIED"], writerSecurity: ["LIVE_DB_VERIFIED"], writerExecuteGrant: ["LIVE_DB_VERIFIED"],
-  eventDigest: ["LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN"], lifecycle: ["LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN"],
-  idempotency: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN"], databaseConcurrency: ["SYNTHETIC_PROVEN"],
+export const H3E91_R41_MINIMUM_PROVENANCE: Readonly<
+  Record<H3E91R41Proof, readonly H3E91R41AuthorityLevel[]>
+> = {
+  writerContract: ["LIVE_DB_VERIFIED"],
+  writerSecurity: ["LIVE_DB_VERIFIED"],
+  writerExecuteGrant: ["LIVE_DB_VERIFIED"],
+  eventDigest: ["LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN"],
+  lifecycle: ["LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN"],
+  idempotency: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN"],
+  databaseConcurrency: ["SYNTHETIC_PROVEN"],
   appIntentOrdering: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN"],
   railwayStartedOrdering: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN", "DEPLOYED_VERIFIED"],
   railwayTerminalEvents: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN", "DEPLOYED_VERIFIED"],
@@ -45,8 +57,10 @@ export const H3E91_R41_MINIMUM_PROVENANCE: Readonly<Record<H3E91R41Proof, readon
   authenticatedBridge: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN", "LIVE_DB_VERIFIED"],
   browserSealedOrInstrumented: ["SOURCE_IMPLEMENTED", "BUILD_PROVEN", "DEPLOYED_VERIFIED"],
   referenceImageExclusion: ["SOURCE_IMPLEMENTED", "DOCKER_SYNTHETIC", "DEPLOYED_VERIFIED"],
-  discovery: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN"], securityAudit: ["LIVE_DB_VERIFIED"],
-  failureInjection: ["SYNTHETIC_PROVEN"], ci: ["CI_EXTERNAL_VERIFIED"],
+  discovery: ["SOURCE_IMPLEMENTED", "SYNTHETIC_PROVEN"],
+  securityAudit: ["LIVE_DB_VERIFIED"],
+  failureInjection: ["SYNTHETIC_PROVEN"],
+  ci: ["CI_EXTERNAL_VERIFIED"],
   deployedSourceParity: ["DEPLOYED_VERIFIED"],
 };
 

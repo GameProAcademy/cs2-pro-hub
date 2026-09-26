@@ -85,9 +85,19 @@ vi.mock("@/lib/pipeline/h3e91ExecutionRecorder.server", () => ({
 // ---------------------------------------------------------------- boundaries
 
 const parseDemo = vi.fn();
-const assertParserWorkerReady = vi.fn(async (): Promise<{
-  name: string; version: string; revision: string; contractVersion: number;
-}> => ({ name: "demoparser2", version: "0.42.0", revision: "git:" + "a".repeat(40), contractVersion: 1 }));
+const assertParserWorkerReady = vi.fn(
+  async (): Promise<{
+    name: string;
+    version: string;
+    revision: string;
+    contractVersion: number;
+  }> => ({
+    name: "demoparser2",
+    version: "0.42.0",
+    revision: "git:" + "a".repeat(40),
+    contractVersion: 1,
+  }),
+);
 
 vi.mock("@/lib/pipeline/parser/remoteParser.server", () => ({
   assertParserWorkerReady: (...args: unknown[]) => assertParserWorkerReady(...(args as [])),
@@ -175,7 +185,12 @@ beforeEach(() => {
   // Real worker behaviour for a structurally corrupted demo: HTTP 422 with
   // { detail: { error_code: "CORRUPTED_DEMO" } }, already classified.
   parseDemo.mockRejectedValue(new PipelineError("CORRUPTED_DEMO", "structural integrity failed"));
-  assertParserWorkerReady.mockResolvedValue({ name: "demoparser2", version: "0.42.0", revision: "git:" + "a".repeat(40), contractVersion: 1 });
+  assertParserWorkerReady.mockResolvedValue({
+    name: "demoparser2",
+    version: "0.42.0",
+    revision: "git:" + "a".repeat(40),
+    contractVersion: 1,
+  });
 });
 
 // ---------------------------------------------------------------- tests
