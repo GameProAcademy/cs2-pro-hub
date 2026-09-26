@@ -91,3 +91,54 @@ def test_v1_parse_order_and_failure_suppression(stage, client_factory, monkeypat
     if stage == "started": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "EXECUTION_ABORTED"]
     if stage == "parse": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "parse", "EXECUTION_FAILED"]
     if stage == "terminal": assert events == ["EXECUTION_INTENT", "download", "EXECUTION_STARTED", "parse", "EXECUTION_FINISHED"]
+
+
+def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_factory, monkeypatch):
+    import app
+    import h3e91_execution
+    from uuid import UUID
+
+    seen = {}
+    parser_calls = []
+
+    class Recorder:
+        def __init__(self, *_args, **kwargs):
+            self.identity = (kwargs["execution_id"], kwargs["correlation_id"])
+            self.upload = kwargs["upload_id"]
+
+        def bind_revision(self, _revision):
+            return self
+
+        async def record(self, kind, _outcome=None):
+            key = (self.identity[0], kind)
+            if key in seen:
+                assert seen[key] == (self.identity, self.upload)
+                return {"status": "IDEMPOTENT_REPLAY"}
+            seen[key] = (self.identity, self.upload)
+            return {"status": "INSERTED"}
+
+    async def fake_downloaded(_body, _settings, _parse, *, on_started, **_kwargs):
+        await on_started()
+        parser_calls.append(1)
+        return {"contract_version": 1}
+
+    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", Recorder)
+    monkeypatch.setattr(app, "_parse_downloaded", fake_downloaded)
+    client = client_factory()
+    body = parse_body()
+    first = client.post("/v1/parse", json=body, headers=auth())
+    assert first.status_code == 200
+    # A genuinely new HTTP request constructs a new recorder. A lost response
+    # cannot accidentally start a second parse, even though INTENT replays.
+    second = client.post("/v1/parse", json=body, headers=auth())
+    assert second.status_code == 409
+    assert parser_calls == [1] and len(seen) == 3
+    identity = next(iter(seen))[0]
+    assert UUID(identity).version == 5
+    changed_attempt = client.post("/v1/parse", json={**body, "attempt_number": 2}, headers=auth())
+    assert changed_attempt.status_code == 200
+    assert len(parser_calls) == 2
+    assert len({execution for execution, _kind in seen}) == 2
+    missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
+    assert missing.status_code == 409
+    assert len(parser_calls) == 2
