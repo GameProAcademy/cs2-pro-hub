@@ -26,6 +26,27 @@ export type H3E91R41Proof = (typeof H3E91_R41_REQUIRED_PROOFS)[number];
 export type H3E91R41ProofStatus = "PASS" | "FAIL" | "BLOCKED" | "UNKNOWN";
 export type H3E91R41Proofs = Readonly<Record<H3E91R41Proof, H3E91R41ProofStatus>>;
 
+/** Proof provenance is independent of the proof result; source cannot attest a deployment. */
+export const H3E91_R41_AUTHORITY_LEVELS = [
+  "SOURCE_IMPLEMENTED", "LIVE_DB_VERIFIED", "SYNTHETIC_PROVEN", "DEPLOYED_VERIFIED",
+] as const;
+export type H3E91R41AuthorityLevel = (typeof H3E91_R41_AUTHORITY_LEVELS)[number];
+
+export function evaluateH3E91R41Evidence(
+  proofs: H3E91R41Proofs,
+  provenance: Readonly<Partial<Record<H3E91R41Proof, H3E91R41AuthorityLevel>>>,
+) {
+  const required = H3E91_R41_REQUIRED_PROOFS.filter((proof) => !provenance[proof]);
+  const parity = provenance.deployedSourceParity === "DEPLOYED_VERIFIED";
+  const decision = evaluateH3E91R41Authority(proofs);
+  return {
+    ...decision,
+    status: required.length === 0 && parity ? decision.status : "BLOCKED",
+    blockers: [...new Set([...decision.blockers, ...required, ...(parity ? [] : ["deployedSourceParity" as const])])],
+    provenance,
+  } as const;
+}
+
 export function evaluateH3E91R41Authority(proofs: H3E91R41Proofs) {
   const blockers = H3E91_R41_REQUIRED_PROOFS.filter((proof) => proofs[proof] !== "PASS");
   return {
