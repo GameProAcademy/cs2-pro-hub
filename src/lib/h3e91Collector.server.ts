@@ -20,7 +20,12 @@ import { getH3E91Freshness } from "@/lib/h3e91LiveEvidence";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { inspectH3E91ExecutionSurfaces } from "@/lib/h3e91ExecutionSurfaces.server";
 
-function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN", baselineValid: boolean) {
+function getH3E91EvidenceBlockers(
+  external: H3E91ExternalEvidence,
+  db: H3E91DatabaseEvidence,
+  freshness: "FRESH" | "STALE" | "UNKNOWN",
+  baselineValid: boolean,
+) {
   const blockers: Array<import("@/lib/h3e9FinalExecutionReadiness").H3E9BlockerCode> = [];
   if (freshness !== "FRESH") blockers.push("H3E91_PREFLIGHT_STALE");
   if (!baselineValid) blockers.push("H3E91_BASELINE_INVALID", "H3E91_PREFLIGHT_STALE");
@@ -28,17 +33,26 @@ function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91Data
   const coverage = inspectH3E91ExecutionSurfaces();
   if (coverage.uncoveredSurfaceCount > 0 || coverage.unexpectedWriterCount > 0)
     blockers.push("H3E91_EXECUTION_SURFACE_NOT_COVERED");
-  if (coverage.unknownSurfaceCount > 0)
-    blockers.push("H3E91_EXECUTION_SURFACE_UNKNOWN");
-  if (!execution || execution.writerCoverageVerified !== true || execution.ledgerAuthority !== "AUTHORITATIVE") {
+  if (coverage.unknownSurfaceCount > 0) blockers.push("H3E91_EXECUTION_SURFACE_UNKNOWN");
+  if (
+    !execution ||
+    execution.writerCoverageVerified !== true ||
+    execution.ledgerAuthority !== "AUTHORITATIVE"
+  ) {
     blockers.push("H3E91_EXECUTION_LEDGER_UNKNOWN");
-    if (execution?.ledgerType === "APPEND_ONLY_PREPARED") blockers.push("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
+    if (execution?.ledgerType === "APPEND_ONLY_PREPARED")
+      blockers.push("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
   }
-  if (execution?.securityVerified === false) blockers.push("H3E91_EXECUTION_LEDGER_SECURITY_FAILED");
-  if ((execution?.afterBaselineCount ?? 0) > 0 || (db.realDemoExecutionCount ?? 0) > 0) blockers.push("H3E91_EXECUTION_AFTER_BASELINE");
-  if ((execution?.cacheAfterBaselineCount ?? 0) > 0 || (db.cacheDemoExecutionCount ?? 0) > 0) blockers.push("H3E91_CACHE_EXECUTION_AFTER_BASELINE");
-  if ((execution?.attempt9AfterBaselineCount ?? 0) > 0) blockers.push("H3E91_ATTEMPT9_AFTER_BASELINE");
-  if ((execution?.attempt10PlusAfterBaselineCount ?? 0) > 0) blockers.push("H3E91_ATTEMPT10_PLUS_AFTER_BASELINE");
+  if (execution?.securityVerified === false)
+    blockers.push("H3E91_EXECUTION_LEDGER_SECURITY_FAILED");
+  if ((execution?.afterBaselineCount ?? 0) > 0 || (db.realDemoExecutionCount ?? 0) > 0)
+    blockers.push("H3E91_EXECUTION_AFTER_BASELINE");
+  if ((execution?.cacheAfterBaselineCount ?? 0) > 0 || (db.cacheDemoExecutionCount ?? 0) > 0)
+    blockers.push("H3E91_CACHE_EXECUTION_AFTER_BASELINE");
+  if ((execution?.attempt9AfterBaselineCount ?? 0) > 0)
+    blockers.push("H3E91_ATTEMPT9_AFTER_BASELINE");
+  if ((execution?.attempt10PlusAfterBaselineCount ?? 0) > 0)
+    blockers.push("H3E91_ATTEMPT10_PLUS_AFTER_BASELINE");
   if (
     db.status === "UNKNOWN" ||
     db.realDemoExecutionCount === null ||
@@ -169,13 +183,23 @@ export async function collectH3E91DatabaseEvidence(
         "h3e91_authoritative_execution_evidence",
         { _baseline_started_at: baselineStartedAt },
       );
-      if (!sealedError && sealedLedger && typeof sealedLedger === "object" && !Array.isArray(sealedLedger)) {
+      if (
+        !sealedError &&
+        sealedLedger &&
+        typeof sealedLedger === "object" &&
+        !Array.isArray(sealedLedger)
+      ) {
         const item = sealedLedger as Record<string, unknown>;
         const numberOrNull = (key: string): number | null =>
-          typeof item[key] === "number" && Number.isSafeInteger(item[key]) && (item[key] as number) >= 0 ? item[key] as number : null;
+          typeof item[key] === "number" &&
+          Number.isSafeInteger(item[key]) &&
+          (item[key] as number) >= 0
+            ? (item[key] as number)
+            : null;
         evidence.executionEvidence = {
           ledgerType: typeof item["ledgerType"] === "string" ? item["ledgerType"] : null,
-          ledgerAuthority: typeof item["ledgerAuthority"] === "string" ? item["ledgerAuthority"] : null,
+          ledgerAuthority:
+            typeof item["ledgerAuthority"] === "string" ? item["ledgerAuthority"] : null,
           baselineStartedAt,
           historicalCount: numberOrNull("historicalCount"),
           spanningBaselineCount: numberOrNull("spanningBaselineCount"),
@@ -184,7 +208,12 @@ export async function collectH3E91DatabaseEvidence(
           attempt9AfterBaselineCount: numberOrNull("attempt9AfterBaselineCount"),
           attempt10PlusAfterBaselineCount: numberOrNull("attempt10PlusAfterBaselineCount"),
           writerCoverageVerified: item["writerCoverageVerified"] === true,
-          securityVerified: item["rlsEnabled"] === true && item["noClientPrivileges"] === true && item["serviceReadOnly"] === true && item["mutationTriggerPresent"] === true && item["rpcServiceRoleOnly"] === true,
+          securityVerified:
+            item["rlsEnabled"] === true &&
+            item["noClientPrivileges"] === true &&
+            item["serviceReadOnly"] === true &&
+            item["mutationTriggerPresent"] === true &&
+            item["rpcServiceRoleOnly"] === true,
         };
       }
       const { data: ledger, error: ledgerError } = await supabaseAdmin.rpc(
@@ -198,10 +227,17 @@ export async function collectH3E91DatabaseEvidence(
           realDemoExecutionCount: "realDemoExecutionCountAfterBaseline",
           cacheDemoExecutionCount: "cacheDemoExecutionCountAfterBaseline",
         } as const;
-        if (entries["baselineValid"] === true && entries["startedAtMissingCount"] === 0 && entries["invalidTimestampsCount"] === 0) {
-          for (const [target, source] of Object.entries(mapping) as Array<[keyof typeof mapping, string]>) {
+        if (
+          entries["baselineValid"] === true &&
+          entries["startedAtMissingCount"] === 0 &&
+          entries["invalidTimestampsCount"] === 0
+        ) {
+          for (const [target, source] of Object.entries(mapping) as Array<
+            [keyof typeof mapping, string]
+          >) {
             const count = entries[source];
-            if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) evidence[target] = count;
+            if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0)
+              evidence[target] = count;
           }
           // A mutable job row is a positive signal but cannot prove the absence
           // of starts: retry/reset or deletion may erase the only timestamp.
@@ -210,8 +246,14 @@ export async function collectH3E91DatabaseEvidence(
           const attempt9 = entries["attempt9CountAfterBaseline"];
           const attempt10 = entries["attempt10PlusCountAfterBaseline"];
           // All-time attempts from the primary RPC still gate the historical lock.
-          if (typeof attempt9 !== "number" || !Number.isSafeInteger(attempt9) || attempt9 < 0 ||
-              typeof attempt10 !== "number" || !Number.isSafeInteger(attempt10) || attempt10 < 0) {
+          if (
+            typeof attempt9 !== "number" ||
+            !Number.isSafeInteger(attempt9) ||
+            attempt9 < 0 ||
+            typeof attempt10 !== "number" ||
+            !Number.isSafeInteger(attempt10) ||
+            attempt10 < 0
+          ) {
             evidence.realDemoExecutionCount = null;
             evidence.cacheDemoExecutionCount = null;
           } else if (attempt9 > 0 || attempt10 > 0) {
@@ -240,13 +282,21 @@ export async function collectH3E91DatabaseEvidence(
       countsKnown && securityKnown && evidence.migration.exactMatchCount !== null
         ? evidence.migration.exactMatchCount === 1 &&
           Object.values(evidence.security).every(Boolean) &&
-          evidence.provenanceCount === 0 && evidence.nonceCount === 0 &&
-          evidence.attempt9Count === 0 && evidence.attempt10PlusCount === 0 &&
-          evidence.realDemoExecutionCount === 0 && evidence.cacheDemoExecutionCount === 0
+          evidence.provenanceCount === 0 &&
+          evidence.nonceCount === 0 &&
+          evidence.attempt9Count === 0 &&
+          evidence.attempt10PlusCount === 0 &&
+          evidence.realDemoExecutionCount === 0 &&
+          evidence.cacheDemoExecutionCount === 0
           ? "PASS"
           : "BLOCKED"
         : "UNKNOWN";
-    if (!evidence.executionEvidence || evidence.executionEvidence.writerCoverageVerified !== true || evidence.executionEvidence.ledgerAuthority !== "AUTHORITATIVE") evidence.status = "UNKNOWN";
+    if (
+      !evidence.executionEvidence ||
+      evidence.executionEvidence.writerCoverageVerified !== true ||
+      evidence.executionEvidence.ledgerAuthority !== "AUTHORITATIVE"
+    )
+      evidence.status = "UNKNOWN";
     return evidence;
   } catch {
     return evidence;
@@ -329,7 +379,9 @@ export function finalizeH3E91Artifact(
   const input = buildH3E91ReadinessInput(external, databaseEvidence);
   const finalResult = evaluateH3E9FinalExecutionReadiness(input);
   const freshness = getH3E91Freshness(external.observedAt, evaluatedAt);
-  const baselineValid = getH3E91Freshness(baselineStartedAt, evaluatedAt) === "FRESH" && Date.parse(baselineStartedAt) >= Date.parse(external.observedAt);
+  const baselineValid =
+    getH3E91Freshness(baselineStartedAt, evaluatedAt) === "FRESH" &&
+    Date.parse(baselineStartedAt) >= Date.parse(external.observedAt);
   const blockers = getH3E91EvidenceBlockers(external, databaseEvidence, freshness, baselineValid);
   const withoutDigest = {
     schemaVersion: H3E91_LIVE_EVIDENCE_SCHEMA_VERSION,
@@ -337,7 +389,11 @@ export function finalizeH3E91Artifact(
     collectorVersion: H3E91_COLLECTOR_VERSION,
     observedAt: external.observedAt,
     baselineStartedAt,
-    baseline: { startedAt: baselineStartedAt, source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const, semantics: "COUNT_EXECUTION_STARTED_AFTER_BASELINE_ONLY" as const },
+    baseline: {
+      startedAt: baselineStartedAt,
+      source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const,
+      semantics: "COUNT_EXECUTION_STARTED_AFTER_BASELINE_ONLY" as const,
+    },
     freshness,
     parserRuntimeRevision: `git:${PARSER_ATTESTATION_EXPECTED.commit}`,
     workflowIdentity: external.workflowIdentity,
@@ -347,10 +403,17 @@ export function finalizeH3E91Artifact(
     railwayDeploymentCommit: H3E91_RAILWAY_SOURCE_COMMIT,
     databaseEvidence,
     executionEvidence: databaseEvidence.executionEvidence ?? {
-      ledgerType: null, ledgerAuthority: null, baselineStartedAt,
-      historicalCount: null, spanningBaselineCount: null, afterBaselineCount: null,
-      cacheAfterBaselineCount: null, attempt9AfterBaselineCount: null,
-      attempt10PlusAfterBaselineCount: null, writerCoverageVerified: null, securityVerified: null,
+      ledgerType: null,
+      ledgerAuthority: null,
+      baselineStartedAt,
+      historicalCount: null,
+      spanningBaselineCount: null,
+      afterBaselineCount: null,
+      cacheAfterBaselineCount: null,
+      attempt9AfterBaselineCount: null,
+      attempt10PlusAfterBaselineCount: null,
+      writerCoverageVerified: null,
+      securityVerified: null,
     },
     executionSurfaceCoverage: inspectH3E91ExecutionSurfaces(),
     securityEvidence: databaseEvidence.security,
@@ -368,18 +431,9 @@ export function finalizeH3E91Artifact(
     },
     finalResult: {
       ...finalResult,
-      blockers: [
-        ...new Set([
-          ...finalResult.blockers,
-          ...blockers,
-        ]),
-      ],
-      technicalReadiness: blockers.length
-        ? ("BLOCKED" as const)
-        : finalResult.technicalReadiness,
-      status: blockers.length
-        ? ("BLOCKED" as const)
-        : finalResult.status,
+      blockers: [...new Set([...finalResult.blockers, ...blockers])],
+      technicalReadiness: blockers.length ? ("BLOCKED" as const) : finalResult.technicalReadiness,
+      status: blockers.length ? ("BLOCKED" as const) : finalResult.status,
     },
   };
   // Recompute the diagnostic status from the exact blocker set, not a client claim.

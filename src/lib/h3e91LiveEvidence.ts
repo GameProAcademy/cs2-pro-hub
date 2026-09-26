@@ -173,7 +173,11 @@ export interface H3E91Artifact {
   collectorVersion: typeof H3E91_COLLECTOR_VERSION;
   observedAt: string;
   baselineStartedAt: string;
-  baseline: { startedAt: string; source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE"; semantics: "COUNT_EXECUTION_STARTED_AFTER_BASELINE_ONLY" };
+  baseline: {
+    startedAt: string;
+    source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE";
+    semantics: "COUNT_EXECUTION_STARTED_AFTER_BASELINE_ONLY";
+  };
   freshness: "FRESH" | "STALE" | "UNKNOWN";
   parserRuntimeRevision: string;
   workflowIdentity: H3E91ExternalEvidence["workflowIdentity"];

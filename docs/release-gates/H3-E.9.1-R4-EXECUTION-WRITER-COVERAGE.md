@@ -4,12 +4,12 @@
 
 The machine-readable inventory is `inspectH3E91ExecutionSurfaces()`, included in the preflight artifact and its digest. It is a diagnostic, not permission to execute. Current source revision at investigation: `a9750e3a35f26a85690122aadb2cd187efcf3cb3`; changes to this report and registry are not yet a reviewed or deployed Railway revision.
 
-| Surface | Current status | Actual path and reason |
-| --- | --- | --- |
-| `APP_REMOTE_PARSER` | `NOT_COVERED` | `jobs.server.ts` calls `adapter.parseDemo()`; `remoteParser.server.ts` sends `POST /v1/parse` without a ledger INTENT. |
-| `RAILWAY_DURABLE_WORKER` | `NOT_COVERED` | `worker.py` claims via the APP bridge and calls `_parse_durable_request`; `app.py` calls `asyncio.to_thread(parse, path)` without an authoritative STARTED write. |
-| `RAILWAY_V1_PARSE` | `NOT_COVERED` | `app.py` exposes an independent authenticated `POST /v1/parse` that calls `_parse_request`, bypassing any ledger writer. It has **not** been silently disabled. |
-| `BROWSER_WASM_POC` | `NOT_COVERED` | `FEATURES.realDemoParser=false`, but a separately gated POC and directly callable `ClientParserService.parse()`/worker exist. A build flag and UI gate alone do not prove this surface `SEALED_OFF`. |
+| Surface                  | Current status | Actual path and reason                                                                                                                                                                               |
+| ------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_REMOTE_PARSER`      | `NOT_COVERED`  | `jobs.server.ts` calls `adapter.parseDemo()`; `remoteParser.server.ts` sends `POST /v1/parse` without a ledger INTENT.                                                                               |
+| `RAILWAY_DURABLE_WORKER` | `NOT_COVERED`  | `worker.py` claims via the APP bridge and calls `_parse_durable_request`; `app.py` calls `asyncio.to_thread(parse, path)` without an authoritative STARTED write.                                    |
+| `RAILWAY_V1_PARSE`       | `NOT_COVERED`  | `app.py` exposes an independent authenticated `POST /v1/parse` that calls `_parse_request`, bypassing any ledger writer. It has **not** been silently disabled.                                      |
+| `BROWSER_WASM_POC`       | `NOT_COVERED`  | `FEATURES.realDemoParser=false`, but a separately gated POC and directly callable `ClientParserService.parse()`/worker exist. A build flag and UI gate alone do not prove this surface `SEALED_OFF`. |
 
 Other entrypoints considered: `pipeline-worker.$action.ts` routes claims/completions into the durable path; `python_reference.py` and local parity/determinism scripts can call the parser outside the service and must be scoped in any future exhaustive review. The deployed Railway source is not proven identical to the checked-out source. Neither an empty ledger nor zero mutable job rows proves zero execution.
 

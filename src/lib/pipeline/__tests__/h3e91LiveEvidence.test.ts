@@ -16,7 +16,10 @@ import { evaluateH3E9FinalExecutionReadiness } from "@/lib/h3e9FinalExecutionRea
 import { validateH3E91OidcClaims } from "@/lib/h3e91Oidc.server";
 import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
 import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
-import { H3E91_EXECUTION_SURFACES, inspectH3E91ExecutionSurfaces } from "@/lib/h3e91ExecutionSurfaces.server";
+import {
+  H3E91_EXECUTION_SURFACES,
+  inspectH3E91ExecutionSurfaces,
+} from "@/lib/h3e91ExecutionSurfaces.server";
 
 const NOW = "2026-09-26T00:00:00.000Z";
 const safe = <T>(value: T) => ({
@@ -151,7 +154,10 @@ describe("H.3-E.9.1 live evidence", () => {
     expect(coverage.sealedOffSurfaceCount).toBe(0);
   });
   it("rejects newly discovered or missing execution surfaces rather than treating them as covered", () => {
-    const unexpected = inspectH3E91ExecutionSurfaces([...H3E91_EXECUTION_SURFACES, "TEST_UNREGISTERED_SURFACE"]);
+    const unexpected = inspectH3E91ExecutionSurfaces([
+      ...H3E91_EXECUTION_SURFACES,
+      "TEST_UNREGISTERED_SURFACE",
+    ]);
     expect(unexpected.unexpectedWriterCount).toBe(1);
     expect(unexpected.writerCoverageVerified).toBe(false);
     const missing = inspectH3E91ExecutionSurfaces(["APP_REMOTE_PARSER"]);
@@ -164,7 +170,9 @@ describe("H.3-E.9.1 live evidence", () => {
     expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_SURFACE_NOT_COVERED");
     expect(artifact.finalResult.technicalReadiness).toBe("BLOCKED");
     const { evidenceDigest: _digest, ...payload } = artifact;
-    expect(artifact.evidenceDigest).toBe(createHash("sha256").update(canonicalAttestationJson(payload)).digest("hex"));
+    expect(artifact.evidenceDigest).toBe(
+      createHash("sha256").update(canonicalAttestationJson(payload)).digest("hex"),
+    );
   });
   it("accepts a strict safe external evidence envelope", () =>
     expect(h3e91ExternalEvidenceSchema.safeParse(external()).success).toBe(true));
@@ -268,10 +276,17 @@ describe("H.3-E.9.1 live evidence", () => {
   it("blocks even an empty append-only ledger until its execution writers are covered", () => {
     const d = database();
     d.executionEvidence = {
-      ledgerType: "APPEND_ONLY_PREPARED", ledgerAuthority: "UNINSTRUMENTED", baselineStartedAt: NOW,
-      historicalCount: 0, spanningBaselineCount: null, afterBaselineCount: 0,
-      cacheAfterBaselineCount: 0, attempt9AfterBaselineCount: 0,
-      attempt10PlusAfterBaselineCount: 0, writerCoverageVerified: false, securityVerified: true,
+      ledgerType: "APPEND_ONLY_PREPARED",
+      ledgerAuthority: "UNINSTRUMENTED",
+      baselineStartedAt: NOW,
+      historicalCount: 0,
+      spanningBaselineCount: null,
+      afterBaselineCount: 0,
+      cacheAfterBaselineCount: 0,
+      attempt9AfterBaselineCount: 0,
+      attempt10PlusAfterBaselineCount: 0,
+      writerCoverageVerified: false,
+      securityVerified: true,
     };
     const artifact = finalizeH3E91Artifact(external(), d, NOW, NOW);
     expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
