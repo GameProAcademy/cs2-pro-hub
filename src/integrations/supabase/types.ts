@@ -1107,68 +1107,71 @@ export type Database = {
       }
       h3e91_execution_evidence_ledger: {
         Row: {
-          attempt_number: number
+          attempt_number: number | null
           correlation_id: string | null
           created_at: string
-          demo_sha256: string
+          demo_sha256: string | null
           event_at: string | null
+          event_digest: string | null
           event_id: string | null
           event_type: string
           event_version: number | null
           execution_id: string | null
           execution_surface: string
-          file_size: number
+          file_size: number | null
           id: string
-          job_id: string
-          metadata_digest: string
+          job_id: string | null
+          metadata_digest: string | null
           outcome_code: string | null
-          parser_name: string
-          parser_revision: string
-          parser_version: string
+          parser_name: string | null
+          parser_revision: string | null
+          parser_version: string | null
           source: string
           upload_id: string | null
         }
         Insert: {
-          attempt_number: number
+          attempt_number?: number | null
           correlation_id?: string | null
           created_at?: string
-          demo_sha256: string
+          demo_sha256?: string | null
           event_at?: string | null
+          event_digest?: string | null
           event_id?: string | null
           event_type: string
           event_version?: number | null
           execution_id?: string | null
           execution_surface: string
-          file_size: number
+          file_size?: number | null
           id?: string
-          job_id: string
-          metadata_digest: string
+          job_id?: string | null
+          metadata_digest?: string | null
           outcome_code?: string | null
-          parser_name: string
-          parser_revision: string
-          parser_version: string
+          parser_name?: string | null
+          parser_revision?: string | null
+          parser_version?: string | null
           source: string
           upload_id?: string | null
         }
         Update: {
-          attempt_number?: number
+          attempt_number?: number | null
           correlation_id?: string | null
           created_at?: string
-          demo_sha256?: string
+          demo_sha256?: string | null
           event_at?: string | null
+          event_digest?: string | null
           event_id?: string | null
           event_type?: string
           event_version?: number | null
           execution_id?: string | null
           execution_surface?: string
-          file_size?: number
+          file_size?: number | null
           id?: string
-          job_id?: string
-          metadata_digest?: string
+          job_id?: string | null
+          metadata_digest?: string | null
           outcome_code?: string | null
-          parser_name?: string
-          parser_revision?: string
-          parser_version?: string
+          parser_name?: string | null
+          parser_revision?: string | null
+          parser_version?: string | null
           source?: string
           upload_id?: string | null
         }
@@ -3877,6 +3880,28 @@ export type Database = {
         Returns: Json
       }
       h3e91_live_database_evidence: { Args: never; Returns: Json }
+      h3e91_record_execution_event: {
+        Args: {
+          _attempt_number: number
+          _correlation_id: string
+          _demo_sha256: string
+          _event_id: string
+          _event_type: string
+          _event_version: number
+          _execution_id: string
+          _execution_surface: string
+          _file_size: number
+          _job_id: string
+          _metadata_digest: string
+          _outcome_code: string
+          _parser_name: string
+          _parser_revision: string
+          _parser_version: string
+          _source: string
+          _upload_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

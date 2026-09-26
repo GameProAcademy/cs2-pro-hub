@@ -28,7 +28,7 @@ import tempfile
 import re
 import resource
 import time
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 import httpx
 from fastapi import FastAPI, Request
@@ -80,7 +80,7 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
 
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
-                            finalize_raw: bool) -> dict[str, Any]:
+                            finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None) -> dict[str, Any]:
     request_started = time.perf_counter()
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
@@ -101,6 +101,11 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             raise WorkerError(422, E.HASH_MISMATCH, "Demo integrity check failed.")
         _require_cs2_magic(path)
         try:
+            if on_started is not None:
+                try:
+                    await on_started()
+                except Exception:
+                    raise WorkerError(503, E.PARSER_ERROR, "Execution recording failed before parsing.") from None
             parse_started = time.perf_counter()
             parsed = await asyncio.wait_for(
                 asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
@@ -165,8 +170,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
                                  job_id: str, user_id: str, attempt_number: int,
-                                 bridge, client: httpx.AsyncClient) -> dict[str, Any]:
-    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False)
+                                 bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
+    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started)
     performance = payload.pop("_performance", {})
     evidence = payload.pop("raw_evidence", None)
     if not isinstance(evidence, dict):
@@ -355,10 +360,32 @@ def create_app(
         except (ValidationError, ValueError):
             raise WorkerError(409, E.CONTRACT_MISMATCH, "Malformed parse request.") from None
 
-        payload = await _parse_request(body, resolved, parse)
-        response = JSONResponse(content=payload)
-        if len(response.body) > resolved.max_payload_bytes:
-            raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
+        from h3e91_execution import ExecutionRecorder
+        async with httpx.AsyncClient(timeout=30) as execution_client:
+            try:
+                recorder = ExecutionRecorder(execution_client, resolved, upload_id=body.upload_id,
+                                             surface="RAILWAY_V1_PARSE", demo_sha256=body.demo_sha256,
+                                             file_size=body.file_size).bind_revision(resolved.revision)
+                await recorder.record("EXECUTION_INTENT")
+            except Exception:
+                raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable.") from None
+            started = False
+            async def record_start() -> None:
+                nonlocal started
+                await recorder.record("EXECUTION_STARTED")
+                started = True
+            try:
+                payload = await _parse_downloaded(body, resolved, parse, finalize_raw=True,
+                                                  on_started=record_start)
+                payload.pop("_performance", None)
+                response = JSONResponse(content=payload)
+                if len(response.body) > resolved.max_payload_bytes:
+                    raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
+            except BaseException:
+                await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
+                                      "PARSE_FAILED" if started else "PREPARSE_FAILED")
+                raise
+            await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
         return response
 
     if resolved.bridge_url and resolved.bridge_secret:

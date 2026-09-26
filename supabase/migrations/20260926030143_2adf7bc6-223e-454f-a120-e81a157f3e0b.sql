@@ -1,0 +1,2 @@
+ALTER TABLE public.h3e91_execution_evidence_ledger DROP CONSTRAINT h3e91_parser_identity_nonempty;
+ALTER TABLE public.h3e91_execution_evidence_ledger ADD CONSTRAINT h3e91_parser_identity_nonempty CHECK (event_id IS NULL OR event_type = 'EXECUTION_INTENT' OR (length(trim(parser_name)) > 0 AND length(trim(parser_version)) > 0 AND length(trim(parser_revision)) > 0)) NOT VALID;

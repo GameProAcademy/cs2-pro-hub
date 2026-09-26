@@ -4,7 +4,14 @@ import asyncio
 
 from conftest import DEMO_SHA, empty_parse, make_settings
 from errors import WorkerError
+from h3e91_execution import ExecutionRecorder
 from worker import _worker_error_code, durable_consumer_loop
+
+
+def _synthetic_execution_recorder(monkeypatch):
+    async def record(_self, _event_type, _outcome_code=None):
+        return {"status": "INSERTED"}
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
 
 
 def test_worker_error_preserves_wire_code():
@@ -12,6 +19,7 @@ def test_worker_error_preserves_wire_code():
 
 
 def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     durable_kwargs = {}
     demo = tmp_path / "demo.dem"
@@ -69,6 +77,7 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
 
 
 def test_consumer_uses_parser_contract_not_queue_schema_version(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
@@ -107,6 +116,7 @@ def test_consumer_uses_parser_contract_not_queue_schema_version(monkeypatch, tmp
 
 
 def test_consumer_suppresses_completion_after_rejected_final_heartbeat(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
@@ -145,6 +155,7 @@ def test_consumer_suppresses_completion_after_rejected_final_heartbeat(monkeypat
 
 
 def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)

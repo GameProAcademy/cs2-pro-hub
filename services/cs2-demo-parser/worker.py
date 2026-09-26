@@ -12,6 +12,7 @@ from typing import Any, Callable
 import httpx
 
 from errors import WorkerError
+from h3e91_execution import ExecutionRecorder
 from settings import DURABLE_HOT_HARD_MAX_BYTES, Settings
 
 logger = logging.getLogger("cs2-demo-parser")
@@ -68,6 +69,21 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     "attempt": claim["attempt"],
                     "workerId": settings.worker_id,
                 }
+                try:
+                    recorder = ExecutionRecorder(
+                        client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
+                        job_id=identity["jobId"], attempt_number=claim["attempt_number"],
+                        demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
+                    ).bind_revision(settings.revision)
+                    await recorder.record("EXECUTION_INTENT")
+                except Exception:
+                    logger.error("execution intent recording failed; parser suppressed")
+                    continue
+                started = False
+                async def record_start() -> None:
+                    nonlocal started
+                    await recorder.record("EXECUTION_STARTED")
+                    started = True
                 execution_started = time.perf_counter()
                 stop = asyncio.Event()
                 heartbeat = asyncio.create_task(_heartbeat_loop(client, settings, identity, stop))
@@ -89,9 +105,11 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         attempt_number=claim["attempt_number"],
                         bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
                         client=client,
+                        on_started=record_start,
                     )
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                         continue
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
@@ -108,9 +126,14 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     round((time.perf_counter() - execution_started) * 1000),
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await _bridge(client, settings, "complete", complete_body)
+                        await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+                    else:
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
+                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
+                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()

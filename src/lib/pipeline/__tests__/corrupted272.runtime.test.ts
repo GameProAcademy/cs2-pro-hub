@@ -78,6 +78,9 @@ const db = {
 };
 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: db }));
+vi.mock("@/lib/pipeline/h3e91ExecutionRecorder.server", () => ({
+  appExecutionRecorder: () => async () => undefined,
+}));
 
 // ---------------------------------------------------------------- boundaries
 
@@ -135,6 +138,9 @@ vi.mock("@/lib/canonical/candidates.server", () => ({
 }));
 
 const { processJob } = await import("@/lib/pipeline/jobs.server");
+// This pre-existing parser taxonomy suite exercises the adapter, not deployment
+// parity. No production bypass is introduced: only its synthetic runtime differs.
+vi.stubEnv("NODE_ENV", "test");
 
 // ---------------------------------------------------------------- helpers
 
@@ -167,7 +173,7 @@ beforeEach(() => {
   // Real worker behaviour for a structurally corrupted demo: HTTP 422 with
   // { detail: { error_code: "CORRUPTED_DEMO" } }, already classified.
   parseDemo.mockRejectedValue(new PipelineError("CORRUPTED_DEMO", "structural integrity failed"));
-  assertParserWorkerReady.mockResolvedValue(undefined);
+  assertParserWorkerReady.mockResolvedValue({ name: "demoparser2", version: "0.42.0", revision: "git:" + "a".repeat(40), contractVersion: 1 });
 });
 
 // ---------------------------------------------------------------- tests

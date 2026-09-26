@@ -28,6 +28,7 @@ import {
 } from "@/lib/canonical/canonical.resolver";
 
 import { PipelineError, toPipelineError } from "@/lib/pipeline/errors";
+import { appExecutionRecorder } from "@/lib/pipeline/h3e91ExecutionRecorder.server";
 import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
@@ -555,14 +556,33 @@ export async function processJob(
       assertDeadline();
       const signedUrl = await createDemoSignedUrl(job.storage_path);
       assertDeadline();
-      raw = await adapter.parseDemo({
-        storagePath: job.storage_path,
-        signedUrl,
-        uploadId: job.upload_id,
-        fileSize: stored.size || (job.file_size ?? 0),
-        demoSha256: job.demo_sha256,
-        deadlineAt,
+      // The Railway production image has not been independently matched to this
+      // source. Never dispatch to an uninstrumented deployed parser.
+      if (process.env["NODE_ENV"] === "production") {
+        throw new PipelineError("PARSER_UNAVAILABLE", "H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED");
+      }
+      const record = appExecutionRecorder({
+        jobId, uploadId: job.upload_id, attemptNumber: job.attempt_number,
+        demoSha256: job.demo_sha256, fileSize: stored.size || (job.file_size ?? 0),
+        parserName: workerIdentity.name, parserVersion: workerIdentity.version,
+        parserRevision: workerIdentity.revision,
       });
+      await record("EXECUTION_INTENT");
+      await record("EXECUTION_STARTED");
+      try {
+        raw = await adapter.parseDemo({
+          storagePath: job.storage_path,
+          signedUrl,
+          uploadId: job.upload_id,
+          fileSize: stored.size || (job.file_size ?? 0),
+          demoSha256: job.demo_sha256,
+          deadlineAt,
+        });
+      } catch (parseError) {
+        await record("EXECUTION_FAILED", "PARSE_FAILED");
+        throw parseError;
+      }
+      await record("EXECUTION_FINISHED", "PARSE_SUCCEEDED");
       assertParserIdentityConsistency(workerIdentity, raw.parser, raw.contract_version);
     }
     await assertNotCancelled(jobId);

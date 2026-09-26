@@ -19,6 +19,7 @@ const base = z.object({
   parserName: z.string().min(1).max(128).nullable(),
   parserVersion: z.string().min(1).max(128).nullable(),
   parserRevision: z.string().min(1).max(128).nullable(),
+  metadataDigest: digest.nullable(),
   executionSurface: z.enum(["APP_REMOTE_PARSER", "RAILWAY_DURABLE_WORKER", "RAILWAY_V1_PARSE"]),
   source: z.enum(["APP", "RAILWAY"]),
   eventVersion: z.literal(1),
@@ -43,7 +44,7 @@ export const h3e91ExecutionEvent = base.extend({
   }
 });
 
-/** Unactivated until the controlled writer and all production paths are reviewed. */
+/** Authenticated, bounded transport. Only the database generates event time and digest. */
 export async function handleH3E91ExecutionBridge(request: Request): Promise<Response> {
   const unauthorized = authenticateDurableWorker(request);
   if (unauthorized) return unauthorized;
@@ -54,6 +55,7 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
   }
 
   let payload = "";
+  let event: z.infer<typeof h3e91ExecutionEvent>;
   try {
     const reader = request.body?.getReader();
     if (!reader) return Response.json({ code: "H3E91_PAYLOAD_INVALID" }, { status: 400 });
@@ -74,13 +76,41 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
     } finally {
       reader.releaseLock();
     }
-    if (!h3e91ExecutionEvent.safeParse(JSON.parse(payload)).success) {
+    const parsed = h3e91ExecutionEvent.safeParse(JSON.parse(payload));
+    if (!parsed.success) {
       return Response.json({ code: "H3E91_PAYLOAD_INVALID" }, { status: 400 });
     }
+    event = parsed.data;
   } catch {
     return Response.json({ code: "H3E91_PAYLOAD_INVALID" }, { status: 400 });
   }
 
-  // Deliberate fail-closed response: no writer, no DB access, no execution authority.
-  return Response.json({ code: "H3E91_WRITER_NOT_ACTIVATED" }, { status: 503 });
+  if (event.source !== "RAILWAY" || event.executionSurface === "APP_REMOTE_PARSER") {
+    return Response.json({ code: "H3E91_SURFACE_UNAUTHORIZED" }, { status: 401 });
+  }
+  // The Railway image running in production predates this event recorder.
+  // Do not accept writer events from a revision without independently verified parity.
+  if (process.env["NODE_ENV"] === "production") {
+    return Response.json({ code: "H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED" }, { status: 503 });
+  }
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("h3e91_record_execution_event" as never, {
+      _event_id: event.eventId, _execution_id: event.executionId, _event_type: event.eventType,
+      _upload_id: event.uploadId, _correlation_id: event.correlationId, _job_id: event.jobId,
+      _attempt_number: event.attemptNumber, _demo_sha256: event.demoSha256,
+      _file_size: event.fileSize, _parser_name: event.parserName, _parser_version: event.parserVersion,
+      _parser_revision: event.parserRevision, _execution_surface: event.executionSurface,
+      _source: event.source, _metadata_digest: event.metadataDigest,
+      _outcome_code: event.outcomeCode, _event_version: event.eventVersion,
+    } as never);
+    if (error || !data || typeof data !== "object") return Response.json({ code: "H3E91_RECORDING_UNAVAILABLE" }, { status: 503 });
+    const result = data as { status?: string; code?: string };
+    if (result.status === "INSERTED") return Response.json(result, { status: 201 });
+    if (result.status === "IDEMPOTENT_REPLAY") return Response.json(result, { status: 200 });
+    if (result.status === "REJECTED") return Response.json(result, { status: result.code === "INVALID_INPUT" ? 400 : 409 });
+  } catch {
+    return Response.json({ code: "H3E91_RECORDING_UNAVAILABLE" }, { status: 503 });
+  }
+  return Response.json({ code: "H3E91_RECORDING_UNAVAILABLE" }, { status: 503 });
 }

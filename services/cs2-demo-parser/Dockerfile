@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Runtime allowlist: never place reference CLI, tests, development scripts or
 # documentation in the production image. Keep this list in sync with the
 # production-import and image-isolation checks in the quality gate.
-COPY adapter.py app.py capability_catalog.py demo_integrity.py errors.py forensic_audit.py hot_payload.py parser.py raw_artifact.py raw_evidence.py runtime_evidence.py settings.py worker.py ./
+COPY adapter.py app.py capability_catalog.py demo_integrity.py errors.py forensic_audit.py h3e91_execution.py hot_payload.py parser.py raw_artifact.py raw_evidence.py runtime_evidence.py settings.py worker.py ./
 
 # Non-root runtime: the worker only needs to read /app and write the temporary
 # demo file it deletes right after parsing. UID is stable so a mounted volume

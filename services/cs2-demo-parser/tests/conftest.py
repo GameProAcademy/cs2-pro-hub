@@ -55,13 +55,31 @@ def empty_parse(_path: str) -> dict[str, Any]:
 
 
 @pytest.fixture()
-def client_factory():
+def client_factory(monkeypatch):
     from fastapi.testclient import TestClient
+    import h3e91_execution
+
+    class SyntheticRecorder:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def bind_revision(self, _revision):
+            return self
+
+        async def record(self, _event_type, _outcome_code=None):
+            return {"status": "INSERTED"}
+
+    # Legacy parser-contract tests exercise only synthetic byte fixtures. A
+    # separately injected recorder test proves that production fails closed.
+    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", SyntheticRecorder)
 
     def build(parse_fn=empty_parse, settings=None, download=None):
         if download is not None:
             app_module._download = download  # type: ignore[assignment]
-        application = app_module.create_app(settings or make_settings(), parse_fn)
+        application = app_module.create_app(settings or make_settings(
+            bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+            bridge_secret="synthetic-test-only",
+        ), parse_fn)
         return TestClient(application, raise_server_exceptions=False)
 
     original_download = app_module._download
