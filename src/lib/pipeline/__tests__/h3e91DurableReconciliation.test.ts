@@ -30,6 +30,12 @@ const boundJob = {
   upload_id: "55555555-5555-5555-5555-555555555555",
   attempt_number: 1,
 };
+const readyArtifact = {
+  status: "ready",
+  raw_status: "ready",
+  audit_status: "approved",
+  root_digest: "a".repeat(64),
+};
 
 const lifecycle = (value: string, outcome: string | null = null) => ({
   executionId: input.executionId,
@@ -70,6 +76,7 @@ describe("durable execution reconciliation", () => {
       },
       error: null,
     });
+    maybeSingle.mockResolvedValueOnce({ data: readyArtifact, error: null });
     rpc.mockResolvedValueOnce({ data: { acknowledged: true }, error: null });
 
     await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
@@ -93,6 +100,22 @@ describe("durable execution reconciliation", () => {
       },
       error: null,
     });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "FINISHED",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["missing RAW artifact", null],
+    ["incomplete RAW", { ...readyArtifact, status: "uploading" }],
+    ["unverified digest", { ...readyArtifact, root_digest: null }],
+    ["unapproved RAW", { ...readyArtifact, audit_status: "blocked" }],
+  ])("does not archive a processed job with %s", async (_reason, artifact) => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
+    maybeSingle.mockResolvedValueOnce({ data: { ...boundJob, status: "processed" }, error: null });
+    maybeSingle.mockResolvedValueOnce({ data: artifact, error: null });
     await expect(reconcileDurableExecution(input)).resolves.toEqual({
       status: "reconciliation_required",
       lifecycle: "FINISHED",
@@ -124,6 +147,7 @@ describe("durable execution reconciliation", () => {
       },
       error: null,
     });
+    maybeSingle.mockResolvedValueOnce({ data: readyArtifact, error: null });
     rpc.mockResolvedValueOnce({ data: result, error: null });
     await expect(reconcileDurableExecution(input)).resolves.toEqual({
       status: "reconciliation_required",
