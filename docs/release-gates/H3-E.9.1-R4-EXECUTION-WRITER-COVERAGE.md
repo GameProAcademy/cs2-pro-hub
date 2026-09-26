@@ -25,12 +25,12 @@ Other entrypoints considered: `pipeline-worker.$action.ts` routes claims/complet
 
 The current ledger remains the R3 schema (`id`, `created_at`, `event_type`, `job_id`, `attempt_number`, DEM hash/size, parser identity, surface, source, digest). It lacks `execution_id`, `event_id`, `event_at`, nullable upload/job support, correlation, outcome and event-version fields. There is **no lifecycle writer**, no execution-id correlation, no event-id idempotency, no concurrency proof, and no pre-parser writer-failure tests. The inspector still checks selected roles only; it does not enumerate all roles or independently attest a protected writer. Do not change `ledgerAuthority=UNINSTRUMENTED` or `writerCoverageVerified=false`.
 
-| Surface | R4.1 status | Blocking function / missing proof |
-| --- | --- | --- |
-| `APP_REMOTE_PARSER` | `NOT_COVERED` | `jobs.server.ts:processJob` and `remoteParser.server.ts:parseDemo`: no confirmed `EXECUTION_INTENT` before invocation, no failure injection proving zero calls. |
+| Surface                  | R4.1 status   | Blocking function / missing proof                                                                                                                                                                   |
+| ------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_REMOTE_PARSER`      | `NOT_COVERED` | `jobs.server.ts:processJob` and `remoteParser.server.ts:parseDemo`: no confirmed `EXECUTION_INTENT` before invocation, no failure injection proving zero calls.                                     |
 | `RAILWAY_DURABLE_WORKER` | `NOT_COVERED` | `worker.py:durable_consumer_loop` → `app.py:_parse_durable_request/_parse_downloaded`: no authenticated `EXECUTION_STARTED` before `asyncio.to_thread(parse,path)`; deployed-source parity unknown. |
-| `RAILWAY_V1_PARSE` | `NOT_COVERED` | `app.py:parse_endpoint/_parse_request/_parse_downloaded`: independent endpoint still operational without writer; no proof of sealing. |
-| `BROWSER_WASM_POC` | `NOT_COVERED` | `ClientParserService.parse` and browser worker remain callable with a separately gated POC; no production-inaccessibility or ledger instrumentation proof. |
+| `RAILWAY_V1_PARSE`       | `NOT_COVERED` | `app.py:parse_endpoint/_parse_request/_parse_downloaded`: independent endpoint still operational without writer; no proof of sealing.                                                               |
+| `BROWSER_WASM_POC`       | `NOT_COVERED` | `ClientParserService.parse` and browser worker remain callable with a separately gated POC; no production-inaccessibility or ledger instrumentation proof.                                          |
 
 `python_reference.py` and parser parity/determinism scripts appear to be development/test tools; their exclusion from deployed runtime is not independently established. Search covered adapter calls, Python parser calls, browser Worker references, queue consumers and scripts in source, but no exhaustive CI discovery guard was implemented. The authority result stays unknown even with zero ledger rows; the mutable job diagnostic cannot prove absence. Baseline historical/spanning/post-baseline semantics remain unchanged.
 
