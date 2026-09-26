@@ -117,6 +117,11 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
             seen[key] = (self.identity, self.upload)
             return {"status": "INSERTED"}
 
+        async def read_lifecycle(self):
+            kinds = {kind for execution, kind in seen if execution == self.identity[0]}
+            lifecycle = "FINISHED" if "EXECUTION_FINISHED" in kinds else "STARTED" if "EXECUTION_STARTED" in kinds else "INTENT_ONLY"
+            return {"lifecycle": lifecycle}
+
     async def fake_downloaded(_body, _settings, _parse, *, on_started, **_kwargs):
         await on_started()
         parser_calls.append(1)
@@ -159,6 +164,18 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
 
     async def bridge(request):
         import json
+        if request.url.path == "/api/public/h3e91-execution-lifecycle":
+            execution_id = json.loads(request.content)["executionId"]
+            kinds = {event["eventType"] for event in stored.values() if event["executionId"] == execution_id}
+            lifecycle = "FINISHED" if "EXECUTION_FINISHED" in kinds else "STARTED" if "EXECUTION_STARTED" in kinds else "INTENT_ONLY"
+            terminal = lifecycle == "FINISHED"
+            return httpx.Response(200, json={
+                "executionId": execution_id, "lifecycle": lifecycle,
+                "terminalEventId": next((event["eventId"] for event in stored.values() if event["eventType"] == "EXECUTION_FINISHED"), None),
+                "terminalOutcome": "PARSE_SUCCEEDED" if terminal else None,
+                "terminalCreatedAt": "2026-09-26T05:12:00Z" if terminal else None,
+                "hasStarted": lifecycle in ("STARTED", "FINISHED"), "hasTerminal": terminal,
+            })
         event = json.loads(request.content)
         requests.append(event)
         key = event["eventId"]
