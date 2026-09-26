@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.h3e91_record_execution_event FROM PUBLIC, anon, authenticated, sandbox_exec; GRANT EXECUTE ON FUNCTION public.h3e91_record_execution_event TO service_role;
