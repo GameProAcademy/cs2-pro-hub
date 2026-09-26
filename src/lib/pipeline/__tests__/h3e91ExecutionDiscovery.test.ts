@@ -146,4 +146,15 @@ describe("H.3-E.9.1 execution source discovery", () => {
       /CREATE\s+(OR REPLACE\s+)?FUNCTION\s+public\.h3e91_record_execution_event/i,
     );
   });
+
+  it("rejects direct application writes to the sealed ledger", () => {
+    const sourceFiles = ["src", "services/cs2-demo-parser", "scripts"].flatMap(productionFiles);
+    const directWrites = sourceFiles.filter((path) => {
+      const source = read(path);
+      return /\b(?:from\s*\(\s*["']h3e91_execution_evidence_ledger["']\s*\)|h3e91_execution_evidence_ledger)(?:[\s\S]{0,150})\.(?:insert|upsert|update|delete)\s*\(/.test(
+        source,
+      );
+    });
+    expect(directWrites).toEqual([]);
+  });
 });
