@@ -186,8 +186,9 @@ export function buildH3E91ReadinessInput(
       workflowSourceSha: external.workflowEvidence.actualBlobSha.value ?? "UNKNOWN",
     },
     storage: {
-      provenanceCount: database.provenanceCount ?? Number.NaN,
-      nonceCount: database.nonceCount ?? Number.NaN,
+      provenanceCount: database.provenanceCount,
+      nonceCount: database.nonceCount,
+      verifiedProvenanceCount: database.verifiedProvenanceCount,
     },
     database: {
       migrationVersion:
@@ -198,12 +199,13 @@ export function buildH3E91ReadinessInput(
         database.migration.exactMatchCount === 1
           ? (database.migration.name ?? "UNKNOWN")
           : "UNKNOWN",
-      rlsEnabled: security.rlsEnabled === true,
-      clientPrivilegesZero: security.clientPrivilegesZero === true,
-      recorderServiceRoleOnly: security.recorderServiceRoleOnly === true,
-      hmacBridgeServiceRoleOnly: security.hmacBridgeServiceRoleOnly === true,
-      securityDefiner: security.securityDefiner === true,
-      emptySearchPath: security.emptySearchPath === true,
+      rlsEnabled: security.rlsEnabled,
+      clientPrivilegesZero: security.clientPrivilegesZero,
+      recorderServiceRoleOnly: security.recorderServiceRoleOnly,
+      hmacBridgeServiceRoleOnly: security.hmacBridgeServiceRoleOnly,
+      securityDefiner: security.securityDefiner,
+      emptySearchPath: security.emptySearchPath,
+      migrationExactMatchCount: database.migration.exactMatchCount,
     },
     transport: {
       endpointConfigured: external.secretPresence.endpointPresent.value,
@@ -245,14 +247,17 @@ export function buildH3E91ReadinessInput(
     retention: { status: "NOT_AUTHORIZED" },
     operatorAuthorization: { status: "NOT_AUTHORIZED" },
     execution: {
-      validAttestationExecuted: (database.verifiedProvenanceCount ?? 0) > 0,
-      demExecuted: (database.realDemoExecutionCount ?? 0) > 0,
-      cacheDemExecuted: (database.cacheDemoExecutionCount ?? 0) > 0,
-      attempt9Created: (database.attempt9Count ?? 0) > 0 || (database.attempt10PlusCount ?? 0) > 0,
+      validAttestationExecuted: database.verifiedProvenanceCount === null ? null : database.verifiedProvenanceCount > 0,
+      demExecuted: database.realDemoExecutionCount === null ? null : database.realDemoExecutionCount > 0,
+      cacheDemExecuted: database.cacheDemoExecutionCount === null ? null : database.cacheDemoExecutionCount > 0,
+      attempt9Created: database.attempt9Count === null || database.attempt10PlusCount === null ? null : database.attempt9Count > 0 || database.attempt10PlusCount > 0,
+      realDemoExecutionCount: database.realDemoExecutionCount,
+      cacheDemoExecutionCount: database.cacheDemoExecutionCount,
+      attempt10PlusCount: database.attempt10PlusCount,
       canonicalAdmission:
         database.canonical.authorized === 0 && database.canonical.verified === 0
           ? "LOCKED"
-          : "UNLOCKED",
+          : database.canonical.authorized === null || database.canonical.verified === null ? "UNKNOWN" : "UNLOCKED",
     },
   };
 }
