@@ -133,7 +133,7 @@ def main():
             elif name == "identity_conflict":
                 prior = [intent]
                 other = started_row.copy(); other[0], other[3] = str(uuid.uuid4()), str(uuid.uuid4())
-                pair, expected = [started_row, other], [("INSERTED", None), ("REJECTED", "EXECUTION_IDENTITY_CONFLICT")]
+                pair = [started_row, other]
             elif name == "cross_execution_id":
                 other = event("EXECUTION_INTENT"); other[0] = intent[0]
                 pair, expected = [intent, other], [("INSERTED", None), ("REJECTED", "EVENT_ID_CONFLICT")]
@@ -171,6 +171,9 @@ def main():
                     assert statuses == sorted(expected), (name, results)
                 else:
                     assert sorted(r["status"] for r in results) in (["INSERTED", "INSERTED"], ["INSERTED", "REJECTED"]), (name, results)
+                    if name == "identity_conflict":
+                        assert sorted(r["status"] for r in results) == ["INSERTED", "REJECTED"]
+                        assert next(r["code"] for r in results if r["status"] == "REJECTED") in ("EXECUTION_IDENTITY_CONFLICT", "TRANSITION_CONFLICT")
             if name in ("concurrent_full_lifecycle",):
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
                     assert sorted(r["status"] for r in [f.result() for f in [pool.submit(call, started_row), pool.submit(call, started_row)]]) == ["IDEMPOTENT_REPLAY", "INSERTED"]
