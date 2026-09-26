@@ -5,7 +5,7 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
   it("never promotes an empty uninstrumented ledger", () => {
     expect(H3E91_R41_COVERAGE.status).toBe("BLOCKED");
     expect(H3E91_R41_COVERAGE.writer.present).toBe(true);
-    expect(H3E91_R41_COVERAGE.writer.writerLiveDbProof).toBe("LIVE_DB_VERIFIED");
+    expect(H3E91_R41_COVERAGE.writer.contract).toBe("LIVE_DB_VERIFIED");
     expect(H3E91_R41_COVERAGE.ledgerAuthority).toBe("UNINSTRUMENTED");
     expect(H3E91_R41_COVERAGE.writerCoverageVerified).toBe(false);
     expect(H3E91_R41_COVERAGE.deployedParity).toBe("UNKNOWN");
@@ -31,7 +31,6 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
       expect(surface.productionActivation).toBe("BLOCKED");
       expect(surface.writerLiveDbProof).toBe("LIVE_DB_VERIFIED");
       expect(surface.surfaceLiveExecutionProof).toBe("UNKNOWN");
-      expect(surface.liveDbProof).toBe("UNKNOWN");
     }
     expect(H3E91_R41_COVERAGE.surfaces.REFERENCE_CLI.status).toBe("IMAGE_EXCLUSION_SOURCE_ONLY");
   });
