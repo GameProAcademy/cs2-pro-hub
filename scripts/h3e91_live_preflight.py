@@ -93,7 +93,6 @@ def collect() -> dict[str, Any]:
     health_values = [(item[1] or {}).get("status") for item in runtime_results]
     expected_identity = {"name": "demoparser2", "version": "0.42.0", "revision": PARSER_REVISION, "contract": 1}
 
-    anonymous_status, _ = fetch_json(ENDPOINT, data=b"{}", headers={"Content-Type": "application/json"})
     endpoint_secret = os.getenv("PARSER_ATTESTATION_ENDPOINT", "")
     collector_workflow_sha = os.getenv("GITHUB_WORKFLOW_SHA", "")
     trigger_commit_sha = os.getenv("GITHUB_SHA", "")
@@ -145,7 +144,7 @@ def collect() -> dict[str, Any]:
         },
         "transportEvidence": {
             "endpointMatches": safe(endpoint_secret == ENDPOINT, "GITHUB_CONFIGURATION_COMPARISON", observed_at),
-            "anonymousStatus": safe(anonymous_status, "ANONYMOUS_NEGATIVE_POST", observed_at, "PASS" if anonymous_status == 401 else "BLOCKED"),
+            "anonymousStatus": safe(None, "TRUSTED_SERVER_NEGATIVE_POST_PENDING", observed_at, "UNKNOWN"),
             "preNegativeProvenanceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
             "postNegativeProvenanceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
             "preNegativeNonceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
