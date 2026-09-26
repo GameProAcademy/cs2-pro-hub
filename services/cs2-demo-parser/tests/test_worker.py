@@ -77,6 +77,7 @@ def test_consumer_claims_heartbeats_and_completes(monkeypatch, tmp_path):
 
 
 def test_consumer_uses_parser_contract_not_queue_schema_version(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
@@ -115,6 +116,7 @@ def test_consumer_uses_parser_contract_not_queue_schema_version(monkeypatch, tmp
 
 
 def test_consumer_suppresses_completion_after_rejected_final_heartbeat(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
@@ -153,6 +155,7 @@ def test_consumer_suppresses_completion_after_rejected_final_heartbeat(monkeypat
 
 
 def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path):
+    _synthetic_execution_recorder(monkeypatch)
     calls: list[tuple[str, dict]] = []
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
