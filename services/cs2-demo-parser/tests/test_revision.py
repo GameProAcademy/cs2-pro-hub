@@ -127,9 +127,10 @@ def test_version_revision_matches_the_process_revision(client_factory, ok_downlo
         },
         headers={"Authorization": f"Bearer {TOKEN}"},
     )
-    # Integrity fails (deliberate), but the identity source is the same object.
+    # A request without logical attempt identity fails closed before integrity
+    # checks; /version still reports the immutable process revision.
     assert version_revision == SHA
-    assert parsed.status_code == 422
+    assert parsed.status_code == 409
 
 
 def test_version_does_not_leak_the_token(client_factory):
