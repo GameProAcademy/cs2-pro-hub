@@ -15,6 +15,7 @@ MIGRATIONS = (
     "20260926030030_f488bae4-e05f-48cb-a00d-bd396e374e49.sql",
     "20260926030143_2adf7bc6-223e-454f-a120-e81a157f3e0b.sql",
     "20260926030840_c41e0dea-f0d1-4596-9f5d-6b1d1ba34912.sql",
+    "20260926031500_8a2e6d53-36cb-44ab-9998-a4fe3210bd1a.sql",
 )
 BASE = (ROOT / "supabase/migrations/20260926013427_db74f397-2274-4c39-ba28-c6a87d80e314.sql").read_text().split(
     "-- Correct the previously deployed mutable-job diagnostic:"
