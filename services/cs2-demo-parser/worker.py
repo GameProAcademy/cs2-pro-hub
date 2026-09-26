@@ -75,8 +75,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
                         job_id=identity["jobId"], attempt_number=claim["attempt_number"],
                         demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
-                        execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}")),
-                        correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}")),
+                        execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}:{claim['upload_id']}")),
+                        correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}:{claim['upload_id']}")),
                     ).bind_revision(settings.revision)
                     intent_result = await recorder.record("EXECUTION_INTENT")
                     if intent_result.get("status") != "INSERTED":
