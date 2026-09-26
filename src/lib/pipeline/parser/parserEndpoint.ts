@@ -90,6 +90,7 @@ export const WORKER_ERROR_CODES = [
   "UNAUTHORIZED",
   "FORBIDDEN",
   "CONTRACT_MISMATCH",
+  "SAFE_REPLAY_REQUIRES_RECONCILIATION",
   "UNSUPPORTED_CONTRACT_VERSION",
   "INVALID_DEMO_FORMAT",
   "CORRUPTED_DEMO",
@@ -150,6 +151,8 @@ export function classifyWorkerFailure(status: number, body: unknown): PipelineEr
   }`;
 
   switch (errorCode) {
+    case "SAFE_REPLAY_REQUIRES_RECONCILIATION":
+      return new PipelineError("PARSER_CONTRACT_MISMATCH", detail);
     case "UNAUTHORIZED":
       return new PipelineError("PARSER_UNAUTHORIZED", detail);
     case "FORBIDDEN":

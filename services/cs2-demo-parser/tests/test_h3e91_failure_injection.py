@@ -132,6 +132,7 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     # cannot accidentally start a second parse, even though INTENT replays.
     second = client.post("/v1/parse", json=body, headers=auth())
     assert second.status_code == 409
+    assert second.json()["detail"]["error_code"] == "SAFE_REPLAY_REQUIRES_RECONCILIATION"
     assert parser_calls == [1] and len(seen) == 3
     identity = next(iter(seen))[0]
     assert UUID(identity).version == 5
@@ -142,3 +143,59 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
     assert missing.status_code == 409
     assert len(parser_calls) == 2
+
+
+@pytest.mark.parametrize("phase", ["intent_response_lost", "intent", "started", "finished"])
+def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monkeypatch, phase):
+    """New HTTP requests and real recorder transport; the ledger is a synthetic bridge, not PostgreSQL."""
+    import app
+    import importlib
+    import h3e91_execution
+
+    stored = {}
+    requests = []
+    parser_calls = []
+    original = importlib.reload(h3e91_execution).ExecutionRecorder
+
+    async def bridge(request):
+        import json
+        event = json.loads(request.content)
+        requests.append(event)
+        key = event["eventId"]
+        old = stored.get(key)
+        if old and old != event:
+            return httpx.Response(409, json={"status": "REJECTED", "code": "EVENT_ID_CONFLICT"})
+        stored[key] = event
+        if phase == "intent_response_lost" and len(requests) == 1:
+            raise httpx.ReadError("synthetic response lost after persistence")
+        return httpx.Response(200 if old else 201, json={"status": "IDEMPOTENT_REPLAY" if old else "INSERTED"})
+
+    transport = httpx.MockTransport(bridge)
+
+    class TransportRecorder(original):
+        def __init__(self, _client, settings, **kwargs):
+            self.transport_client = httpx.AsyncClient(transport=transport)
+            super().__init__(self.transport_client, settings, **kwargs)
+
+    async def downloaded(_body, _settings, _parse, *, on_started, **_kwargs):
+        await on_started()
+        parser_calls.append(1)
+        return {"contract_version": 1}
+
+    monkeypatch.setattr(app, "_parse_downloaded", downloaded)
+    client = client_factory(settings=make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                                                   bridge_secret="synthetic-test-only"))
+    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", TransportRecorder)
+    body = parse_body()
+    first = client.post("/v1/parse", json=body, headers=auth())
+    assert requests, (first.status_code, first.text)
+    assert first.status_code == (503 if phase == "intent_response_lost" else 200)
+    first_count = len(stored)
+    response = client.post("/v1/parse", json=body, headers=auth())
+    assert response.status_code == 409
+    assert response.json()["detail"]["error_code"] == "SAFE_REPLAY_REQUIRES_RECONCILIATION"
+    assert len(stored) == first_count
+    assert len({e["executionId"] for e in requests}) == 1
+    assert len({e["eventId"] for e in requests if e["eventType"] == "EXECUTION_INTENT"}) == 1
+    assert len(parser_calls) == (0 if phase == "intent_response_lost" else 1)
+    assert sum(e["eventType"] == "EXECUTION_FINISHED" for e in stored.values()) == (0 if phase == "intent_response_lost" else 1)
