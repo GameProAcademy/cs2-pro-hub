@@ -245,7 +245,7 @@ export async function reconcileDurableExecution(
   }
 
   if (lifecycle.lifecycle === "FINISHED") {
-    if (!["processed", "blocked_raw_audit", "cancelled"].includes(job.status)) {
+    if (!["processed", "blocked_raw_audit"].includes(job.status)) {
       return { status: "reconciliation_required", lifecycle: "FINISHED" };
     }
     const { data, error } = await rpc("finalize_demo_parse_message", {

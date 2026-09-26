@@ -100,6 +100,16 @@ describe("durable execution reconciliation", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("does not treat a cancelled job as successful FINISHED output", async () => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
+    maybeSingle.mockResolvedValueOnce({ data: { ...boundJob, status: "cancelled" }, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "FINISHED",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["expired lease", { acknowledged: false, reason: "lease_expired" }],
     ["stale claim", { acknowledged: false, reason: "claim_not_current" }],
