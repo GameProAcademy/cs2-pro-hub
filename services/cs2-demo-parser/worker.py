@@ -78,7 +78,13 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}")),
                         correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}")),
                     ).bind_revision(settings.revision)
-                    await recorder.record("EXECUTION_INTENT")
+                intent_result = await recorder.record("EXECUTION_INTENT")
+                if intent_result.get("status") != "INSERTED":
+                    # The queue lease may be a retry of a previously parsed job.
+                    # Without reading its prior STARTED/terminal state, do not
+                    # run the parser or submit a different terminal event.
+                    logger.warning("durable execution replay requires reconciliation")
+                    continue
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")
                     continue
