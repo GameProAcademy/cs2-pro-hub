@@ -71,7 +71,9 @@ def main():
         assert not (set(snapshot["supersededSourceOnlyVersions"]) & source_versions)
         assert all(v in source_versions for v in snapshot["liveAppliedVersions"])
         assert sql("SELECT md5(pg_get_functiondef('public.h3e91_read_execution_lifecycle(uuid)'::regprocedure))") == snapshot["readerDefinitionMd5"]
-        assert sql("SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == snapshot["owner"]
+        # Disposable initdb runs as lovable; the live owner is postgres.
+        assert sql("SELECT pg_get_userbyid(proowner) = current_user FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
+        assert snapshot["owner"] == "postgres"
         assert sql("SELECT prosecdef::text FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
         assert sql("SELECT proconfig[1] FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == 'search_path=""'
         assert sql("SELECT relrowsecurity::text FROM pg_class WHERE oid='public.h3e91_execution_evidence_ledger'::regclass") == "t"
