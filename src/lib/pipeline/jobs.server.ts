@@ -582,8 +582,13 @@ export async function processJob(
         await record("EXECUTION_FAILED", "PARSE_FAILED");
         throw parseError;
       }
+      try {
+        assertParserIdentityConsistency(workerIdentity, raw.parser, raw.contract_version);
+      } catch (identityError) {
+        await record("EXECUTION_FAILED", "PARSER_IDENTITY_MISMATCH");
+        throw identityError;
+      }
       await record("EXECUTION_FINISHED", "PARSE_SUCCEEDED");
-      assertParserIdentityConsistency(workerIdentity, raw.parser, raw.contract_version);
     }
     await assertNotCancelled(jobId);
 

@@ -25,6 +25,11 @@ class ExecutionRecorder:
         self.settings_revision = settings.revision
         self.execution_id = execution_id or str(uuid.uuid4())
         self.correlation_id = correlation_id or str(uuid.uuid4())
+        # Stable per execution and transition, including retries after a lost response.
+        self.event_ids = {event: str(uuid.uuid5(uuid.UUID(self.execution_id), event)) for event in (
+            "EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED",
+            "EXECUTION_FAILED", "EXECUTION_ABORTED",
+        )}
         self.base = {
             "protocol": "H3E91_EXECUTION_BRIDGE_V1", "executionId": self.execution_id,
             "uploadId": upload_id, "correlationId": self.correlation_id, "jobId": job_id,
@@ -35,7 +40,7 @@ class ExecutionRecorder:
 
     async def record(self, event_type: str, outcome_code: str | None = None) -> dict[str, Any]:
         intent = event_type == "EXECUTION_INTENT"
-        body = {**self.base, "eventId": str(uuid.uuid4()), "eventType": event_type,
+        body = {**self.base, "eventId": self.event_ids[event_type], "eventType": event_type,
                 "parserName": None if intent else PARSER_NAME,
                 "parserVersion": None if intent else PARSER_VERSION,
                 "parserRevision": None if intent else self._revision,

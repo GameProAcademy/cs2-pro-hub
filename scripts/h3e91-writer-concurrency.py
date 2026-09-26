@@ -1,5 +1,6 @@
 """Disposable PostgreSQL proof; synthetic identities only, never a DEM or live DB."""
 import concurrent.futures
+import hashlib
 import json
 import os
 import pathlib
@@ -60,30 +61,141 @@ def main():
         assert sql("SELECT has_table_privilege('service_role','public.h3e91_execution_evidence_ledger','INSERT')") == "f"
         assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_record_execution_event'") == "t"
 
-        for case in range(30):
-            execution, upload, correlation, job = (str(uuid.uuid4()) for _ in range(4))
-            event = str(uuid.uuid4())
-            args = [event, execution, "EXECUTION_INTENT", upload, correlation, job, 1, None, None, None, None, None, "APP_REMOTE_PARSER", "APP", None, None, 1]
-            def call(values):
-                return json.loads(sql("SELECT public.h3e91_record_execution_event(" + ",".join(map(quote, values)) + ")::text"))
-            if case % 3 == 0:
-                pair = [args, args.copy()]
-                expected = {"INSERTED", "IDEMPOTENT_REPLAY"}
-            elif case % 3 == 1:
-                other = args.copy(); other[0] = str(uuid.uuid4()); other[5] = str(uuid.uuid4())
-                pair = [args, other]
-                expected = {"INSERTED", "REJECTED"}
-            else:
-                other = args.copy(); other[5] = str(uuid.uuid4())
-                pair = [args, other]
-                expected = {"INSERTED", "REJECTED"}
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-                futures = [pool.submit(call, row) for row in pair]
-                results = [f.result(timeout=15) for f in futures]
-            assert {item["status"] for item in results} == expected, (case, results)
-            assert sql(f"SELECT count(*) FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{execution}'") == "1"
-            print(f"case {case + 1}/30: {','.join(sorted(expected))}")
-        print("PASS: 30 concurrent two-connection cases; 30 rows, no live data")
+        def event(kind, base=None):
+            if base is None:
+                base = [str(uuid.uuid4()), str(uuid.uuid4()), "EXECUTION_INTENT",
+                        str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4()), 1,
+                        None, None, None, None, None, "APP_REMOTE_PARSER", "APP", None, None, 1]
+            row = base.copy()
+            row[0], row[2] = str(uuid.uuid4()), kind
+            if kind != "EXECUTION_INTENT":
+                row[7:12] = ["a" * 64, 520, "parser", "0.42.0", "git:synthetic"]
+            if kind in ("EXECUTION_FINISHED", "EXECUTION_FAILED", "EXECUTION_ABORTED"):
+                row[15] = "PARSE_SUCCEEDED" if kind == "EXECUTION_FINISHED" else "WORKER_INTERRUPTED"
+            return row
+
+        def call(values):
+            return json.loads(sql("SELECT public.h3e91_record_execution_event(" + ",".join(map(quote, values)) + ")::text"))
+
+        def assert_result(row, status, code=None):
+            result = call(row)
+            assert result["status"] == status and (code is None or result.get("code") == code), result
+            return result
+
+        # Each case uses a fresh synthetic execution. Paired calls use separate psql
+        # processes and independent PostgreSQL connections; only the DB serializes them.
+        names = (
+            "identical_intent", "conflicting_intent", "identical_started", "conflicting_started",
+            "duplicate_finished", "finished_failed", "finished_aborted", "failed_aborted",
+            "duplicate_terminal", "started_finished", "started_failed", "started_aborted",
+            "stable_intent", "changed_intent_id", "lost_response", "identity_conflict",
+            "parser_conflict", "demo_conflict", "cross_execution_id", "terminal_after_terminal",
+            "started_without_intent", "finished_without_started", "failed_without_started",
+            "aborted_without_intent", "aborted_after_started", "full_lifecycle_replay",
+            "concurrent_full_lifecycle", "writer_error_rollback", "failed_insert_no_partial", "production_untouched",
+        )
+        for case, name in enumerate(names, 1):
+            intent = event("EXECUTION_INTENT")
+            execution = intent[1]
+            started_row = event("EXECUTION_STARTED", intent)
+            finished = event("EXECUTION_FINISHED", intent)
+            failed = event("EXECUTION_FAILED", intent)
+            aborted = event("EXECUTION_ABORTED", intent)
+            prior = []
+            pair = None
+            expected = None
+            if name in ("identical_intent", "stable_intent", "lost_response"):
+                pair, expected = [intent, intent.copy()], [("INSERTED", None), ("IDEMPOTENT_REPLAY", None)]
+            elif name in ("conflicting_intent", "changed_intent_id"):
+                other = intent.copy(); other[0] = str(uuid.uuid4())
+                pair, expected = [intent, other], [("INSERTED", None), ("REJECTED", "TRANSITION_CONFLICT")]
+            elif name in ("identical_started", "conflicting_started", "parser_conflict", "demo_conflict"):
+                prior = [intent]
+                other = started_row.copy()
+                if name == "conflicting_started": other[0] = str(uuid.uuid4())
+                if name == "parser_conflict": other[0], other[11] = str(uuid.uuid4()), "git:other"
+                if name == "demo_conflict": other[0], other[7] = str(uuid.uuid4()), "b" * 64
+                pair = [started_row, other]
+                expected = [("INSERTED", None), ("REJECTED", "TRANSITION_CONFLICT")] if name != "identical_started" else [("INSERTED", None), ("IDEMPOTENT_REPLAY", None)]
+            elif name in ("duplicate_finished", "finished_failed", "finished_aborted", "failed_aborted", "duplicate_terminal"):
+                prior = [intent, started_row]
+                pair = {
+                    "duplicate_finished": [finished, finished.copy()], "finished_failed": [finished, failed],
+                    "finished_aborted": [finished, aborted], "failed_aborted": [failed, aborted],
+                    "duplicate_terminal": [failed, failed.copy()],
+                }[name]
+                expected = [("INSERTED", None), ("IDEMPOTENT_REPLAY", None)] if pair[0] == pair[1] else [("INSERTED", None), ("REJECTED", "INVALID_TRANSITION")]
+            elif name in ("started_finished", "started_failed", "started_aborted"):
+                prior = [intent]
+                pair = [started_row, {"started_finished": finished, "started_failed": failed, "started_aborted": aborted}[name]]
+                # The terminal may win first and be rejected; or STARTED wins and
+                # the terminal follows. Assert only a valid serialized lifecycle.
+            elif name == "identity_conflict":
+                prior = [intent]
+                other = started_row.copy(); other[0], other[3] = str(uuid.uuid4()), str(uuid.uuid4())
+                pair = [started_row, other]
+            elif name == "cross_execution_id":
+                other = event("EXECUTION_INTENT"); other[0] = intent[0]
+                pair, expected = [intent, other], [("INSERTED", None), ("REJECTED", "EVENT_ID_CONFLICT")]
+            elif name == "terminal_after_terminal":
+                prior = [intent, started_row, finished]
+                assert_result(failed, "REJECTED", "INVALID_TRANSITION")
+            elif name in ("started_without_intent", "finished_without_started", "failed_without_started", "aborted_without_intent"):
+                if name in ("finished_without_started", "failed_without_started"): prior = [intent]
+                rejected = {"started_without_intent": started_row, "finished_without_started": finished,
+                            "failed_without_started": failed, "aborted_without_intent": aborted}[name]
+                for row in prior: assert_result(row, "INSERTED")
+                assert_result(rejected, "REJECTED", "INVALID_TRANSITION")
+                prior = []
+            elif name == "aborted_after_started": prior = [intent, started_row, aborted]
+            elif name == "full_lifecycle_replay": prior = [intent, started_row, finished]
+            elif name == "concurrent_full_lifecycle":
+                pair, expected = [intent, intent.copy()], [("INSERTED", None), ("IDEMPOTENT_REPLAY", None)]
+            elif name == "writer_error_rollback":
+                bad = intent.copy(); bad[16] = 2
+                assert_result(bad, "REJECTED", "UNSUPPORTED_VERSION")
+                prior = [intent]
+            elif name == "failed_insert_no_partial":
+                bad = intent.copy(); bad[12] = "INVALID"
+                assert_result(bad, "REJECTED", "UNSUPPORTED_SURFACE")
+                prior = [intent]
+            elif name == "production_untouched": prior = [intent]
+
+            for row in prior: assert_result(row, "INSERTED")
+            if pair:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                    futures = [pool.submit(call, row) for row in pair]
+                    results = [f.result(timeout=15) for f in futures]
+                statuses = sorted((r["status"], r.get("code")) for r in results)
+                if expected:
+                    assert statuses == sorted(expected), (name, results)
+                else:
+                    assert sorted(r["status"] for r in results) in (["INSERTED", "INSERTED"], ["INSERTED", "REJECTED"]), (name, results)
+                    if name == "identity_conflict":
+                        assert sorted(r["status"] for r in results) == ["INSERTED", "REJECTED"]
+                        assert next(r["code"] for r in results if r["status"] == "REJECTED") in ("EXECUTION_IDENTITY_CONFLICT", "TRANSITION_CONFLICT")
+            if name in ("concurrent_full_lifecycle",):
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                    assert sorted(r["status"] for r in [f.result() for f in [pool.submit(call, started_row), pool.submit(call, started_row)]]) == ["IDEMPOTENT_REPLAY", "INSERTED"]
+                    assert sorted(r["status"] for r in [f.result() for f in [pool.submit(call, finished), pool.submit(call, finished)]]) == ["IDEMPOTENT_REPLAY", "INSERTED"]
+            if name == "full_lifecycle_replay":
+                for row in (intent, started_row, finished): assert_result(row, "IDEMPOTENT_REPLAY")
+            rows = json.loads(sql(f"SELECT coalesce(json_agg(event_type ORDER BY event_at, created_at, id)::text,'[]') FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{execution}'"))
+            assert len(rows) == len(set(rows)) and rows.count("EXECUTION_INTENT") <= 1, (name, rows)
+            assert sum(t in rows for t in ("EXECUTION_FINISHED", "EXECUTION_FAILED", "EXECUTION_ABORTED")) <= 1, (name, rows)
+            if "EXECUTION_STARTED" in rows: assert "EXECUTION_INTENT" in rows
+            if any(t in rows for t in ("EXECUTION_FINISHED", "EXECUTION_FAILED")): assert "EXECUTION_STARTED" in rows
+            if len(rows) > 1: assert rows[0] == "EXECUTION_INTENT", (name, rows)
+            if len(rows) == 3: assert rows[1] == "EXECUTION_STARTED", (name, rows)
+            if name == "lost_response": assert_result(intent, "IDEMPOTENT_REPLAY")
+            if name == "identical_intent":
+                actual = sql(f"SELECT event_digest FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{execution}'")
+                # Writer canonical array begins with version and omits version
+                # from the end of the caller's argument order.
+                canonical = json.dumps([intent[16], *intent[:16]], ensure_ascii=False)
+                assert actual == hashlib.sha256(canonical.encode("utf8")).hexdigest(), (actual, canonical)
+            print(f"case {case}/30 {name}: {','.join(rows) or 'none'}")
+        print("PASS: 30 disposable two-connection lifecycle scenarios; no live database access")
     finally:
         if started:
             run(["pg_ctl", "-D", str(data), "-m", "immediate", "-w", "stop"])

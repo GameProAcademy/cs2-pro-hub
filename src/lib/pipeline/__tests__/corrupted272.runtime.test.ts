@@ -85,7 +85,9 @@ vi.mock("@/lib/pipeline/h3e91ExecutionRecorder.server", () => ({
 // ---------------------------------------------------------------- boundaries
 
 const parseDemo = vi.fn();
-const assertParserWorkerReady = vi.fn(async () => undefined);
+const assertParserWorkerReady = vi.fn(async (): Promise<{
+  name: string; version: string; revision: string; contractVersion: number;
+}> => ({ name: "demoparser2", version: "0.42.0", revision: "git:" + "a".repeat(40), contractVersion: 1 }));
 
 vi.mock("@/lib/pipeline/parser/remoteParser.server", () => ({
   assertParserWorkerReady: (...args: unknown[]) => assertParserWorkerReady(...(args as [])),

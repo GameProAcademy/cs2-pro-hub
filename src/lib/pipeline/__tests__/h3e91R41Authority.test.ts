@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateH3E91R41Authority,
+  evaluateH3E91R41Evidence,
   H3E91_R41_CURRENT_PROOFS,
   H3E91_R41_REQUIRED_PROOFS,
   type H3E91R41Proofs,
@@ -35,6 +36,13 @@ describe("H3E91 R4.1 independent authority contract", () => {
       blockers: [],
       realDemAuthorized: false,
       canonicalAuthorized: false,
+    });
+  });
+  it("cannot promote source-only parity even when every contract proof says PASS", () => {
+    const provenance = Object.fromEntries(H3E91_R41_REQUIRED_PROOFS.map((proof) => [proof, "SYNTHETIC_PROVEN"])) as Record<typeof H3E91_R41_REQUIRED_PROOFS[number], "SYNTHETIC_PROVEN">;
+    expect(evaluateH3E91R41Evidence(evidence("PASS"), provenance)).toMatchObject({
+      status: "BLOCKED", blockers: ["deployedSourceParity"],
+      realDemAuthorized: false, canonicalAuthorized: false,
     });
   });
 });
