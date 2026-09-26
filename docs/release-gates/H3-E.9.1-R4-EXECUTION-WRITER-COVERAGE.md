@@ -20,7 +20,8 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 | PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | UNKNOWN | UNKNOWN | SYNTHETIC_PROVEN | BLOCKED | External CI not verified |
 | APP, Railway and browser isolation | PASS (bounded) | UNKNOWN | UNKNOWN | PASS (bounded ordering/isolation) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Complete injection matrix and deployed proof outstanding |
 | Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | UNKNOWN (image inspection in CI only) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Deployed image and Docker synthetic proof absent |
-| Local lint/typecheck/web/parser checks | PASS (configured) | NOT_RUN | UNKNOWN | PASS (1,353 web, 230 Python + 10 skipped, lint 0 errors/9 warnings, TypeScript clean) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | External CI and deployed proof unavailable |
+| Local lint/typecheck/web/parser checks | PASS (configured) | NOT_RUN | UNKNOWN | PASS (1,353 web, 230 Python + 10 skipped, focused contracts 109 passed/7 skipped, lint 0 errors/9 warnings, TypeScript clean) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | External CI and deployed proof unavailable |
+| Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | NOT_RUN (output absent in local sandbox) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Build output not available for local sealing; CI build must run before verifier |
 | External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | NOT_RUN | UNKNOWN | UNKNOWN | CI_EXTERNAL_VERIFIED missing | BLOCKED | No externally successful workflow run evidenced |
 
 ## CURRENT BLOCKERS
@@ -28,7 +29,7 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
 - `CI_CONFIGURED` is not `CI_EXTERNAL_VERIFIED`. No external successful workflow run has been observed here. Surface live execution proof remains `UNKNOWN` for APP and both Railway surfaces even when writer live DB proof is `LIVE_DB_VERIFIED`.
 - Failure-injection coverage is bounded, not a complete 26-case surface matrix. Durable queue completion after persisted FINISHED needs explicit reconciliation on failure, never a second terminal. No production ledger writes are needed or authorized to close local tests.
-- Complete independent PostgreSQL race matrix, simultaneous HTTP retry, per-state durable reconciliation and 26-case surface failure matrix remain unproven. The disposable 30-case + 50-stress harness proves only the scenarios it actually executes. Docker image inspection and external CI GREEN were not verified in this environment; configuration is not proof of success.
+- Complete independent PostgreSQL race matrix, simultaneous HTTP retry, per-state durable reconciliation and 26-case surface failure matrix remain unproven. The disposable 30-case + 50-stress harness proves only the scenarios it actually executes. Docker image inspection, browser production-output sealing (no local output), and external CI GREEN were not verified in this environment; configuration is not proof of success.
 - Historical assertions below are superseded snapshots; their `NOT_COVERED`, inactive writer, and `COPY . .` statements are **not current source state**.
 
 ## HISTORICAL CHECKPOINTS — SUPERSEDED
