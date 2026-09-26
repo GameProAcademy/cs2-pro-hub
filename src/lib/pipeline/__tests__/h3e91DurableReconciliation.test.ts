@@ -95,25 +95,28 @@ describe("durable execution reconciliation", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it.each(["FAILED", "ABORTED"])("reconciles %s through queue failure without another terminal", async (state) => {
-    readLifecycle.mockResolvedValueOnce(lifecycle(state, "WORKER_INTERRUPTED"));
-    maybeSingle.mockResolvedValueOnce({
-      data: {
-        status: "processing",
-        queue_message_id: input.messageId,
-        dispatch_attempt: input.attempt,
-        worker_id: input.workerId,
-      },
-      error: null,
-    });
-    rpc.mockResolvedValueOnce({ data: { accepted: true }, error: null });
-    await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
-      status: "queue_reconciled",
-      lifecycle: state,
-    });
-    expect(rpc).toHaveBeenCalledWith(
-      "fail_demo_parse_message",
-      expect.objectContaining({ _error_code: "WORKER_INTERRUPTED" }),
-    );
-  });
+  it.each(["FAILED", "ABORTED"])(
+    "reconciles %s through queue failure without another terminal",
+    async (state) => {
+      readLifecycle.mockResolvedValueOnce(lifecycle(state, "WORKER_INTERRUPTED"));
+      maybeSingle.mockResolvedValueOnce({
+        data: {
+          status: "processing",
+          queue_message_id: input.messageId,
+          dispatch_attempt: input.attempt,
+          worker_id: input.workerId,
+        },
+        error: null,
+      });
+      rpc.mockResolvedValueOnce({ data: { accepted: true }, error: null });
+      await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
+        status: "queue_reconciled",
+        lifecycle: state,
+      });
+      expect(rpc).toHaveBeenCalledWith(
+        "fail_demo_parse_message",
+        expect.objectContaining({ _error_code: "WORKER_INTERRUPTED" }),
+      );
+    },
+  );
 });

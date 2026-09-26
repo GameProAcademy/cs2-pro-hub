@@ -5,9 +5,20 @@ import { PipelineError } from "@/lib/pipeline/errors";
 const lifecycleResult = z
   .object({
     executionId: z.string().uuid(),
-    lifecycle: z.enum(["NONE", "INTENT_ONLY", "STARTED", "FINISHED", "FAILED", "ABORTED", "INVALID"]),
+    lifecycle: z.enum([
+      "NONE",
+      "INTENT_ONLY",
+      "STARTED",
+      "FINISHED",
+      "FAILED",
+      "ABORTED",
+      "INVALID",
+    ]),
     terminalEventId: z.string().uuid().nullable(),
-    terminalOutcome: z.string().regex(/^[A-Z][A-Z0-9_]{0,63}$/).nullable(),
+    terminalOutcome: z
+      .string()
+      .regex(/^[A-Z][A-Z0-9_]{0,63}$/)
+      .nullable(),
     terminalCreatedAt: z.string().datetime({ offset: true }).nullable(),
     hasStarted: z.boolean(),
     hasTerminal: z.boolean(),

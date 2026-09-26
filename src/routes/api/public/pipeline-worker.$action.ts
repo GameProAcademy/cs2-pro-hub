@@ -106,10 +106,7 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             );
           }
           if (params.action === "reconcile") {
-            const input = identity
-              .extend({ executionId: z.string().uuid() })
-              .strict()
-              .parse(body);
+            const input = identity.extend({ executionId: z.string().uuid() }).strict().parse(body);
             return Response.json(await reconcileDurableExecution(input));
           }
           if (params.action === "raw-artifact-init") {
