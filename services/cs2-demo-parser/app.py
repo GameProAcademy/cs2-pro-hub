@@ -377,15 +377,15 @@ def create_app(
             try:
                 payload = await _parse_downloaded(body, resolved, parse, finalize_raw=True,
                                                   on_started=record_start)
+                payload.pop("_performance", None)
+                response = JSONResponse(content=payload)
+                if len(response.body) > resolved.max_payload_bytes:
+                    raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
             except BaseException:
                 await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
                                       "PARSE_FAILED" if started else "PREPARSE_FAILED")
                 raise
             await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
-        payload.pop("_performance", None)
-        response = JSONResponse(content=payload)
-        if len(response.body) > resolved.max_payload_bytes:
-            raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
         return response
 
     if resolved.bridge_url and resolved.bridge_secret:

@@ -69,12 +69,12 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     "attempt": claim["attempt"],
                     "workerId": settings.worker_id,
                 }
-                recorder = ExecutionRecorder(
-                    client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
-                    job_id=identity["jobId"], attempt_number=claim["attempt_number"],
-                    demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
-                ).bind_revision(settings.revision)
                 try:
+                    recorder = ExecutionRecorder(
+                        client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
+                        job_id=identity["jobId"], attempt_number=claim["attempt_number"],
+                        demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
+                    ).bind_revision(settings.revision)
                     await recorder.record("EXECUTION_INTENT")
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")
@@ -109,6 +109,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     )
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                         continue
                     final_heartbeat = await _bridge(client, settings, "heartbeat", {**identity, "stage": "persisting"})
                     if final_heartbeat.get("accepted") is True and final_heartbeat.get("cancelled") is not True:
@@ -126,6 +127,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
                         await _bridge(client, settings, "complete", complete_body)
                         await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+                    else:
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
                     await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
