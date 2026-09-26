@@ -133,10 +133,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                     await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    try:
-                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
-                    except Exception:
-                        logger.error("execution terminal recording failed")
+                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()
