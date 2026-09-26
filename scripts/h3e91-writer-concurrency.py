@@ -132,7 +132,7 @@ def main():
                 # the terminal follows. Assert only a valid serialized lifecycle.
             elif name == "identity_conflict":
                 prior = [intent]
-                other = started_row.copy(); other[3] = str(uuid.uuid4())
+                other = started_row.copy(); other[0], other[3] = str(uuid.uuid4()), str(uuid.uuid4())
                 pair, expected = [started_row, other], [("INSERTED", None), ("REJECTED", "EXECUTION_IDENTITY_CONFLICT")]
             elif name == "cross_execution_id":
                 other = event("EXECUTION_INTENT"); other[0] = intent[0]
