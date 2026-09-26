@@ -79,6 +79,29 @@ def test_ambiguous_insert_retry_reuses_event_identity():
     asyncio.run(run())
 
 
+def test_execution_identity_changes_when_upload_changes():
+    settings = make_settings(
+        bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+        bridge_secret="synthetic-test-only",
+    )
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _request: httpx.Response(201, json={"status": "INSERTED"}))) as client:
+            common = dict(
+                client=client,
+                settings=settings,
+                surface="RAILWAY_DURABLE_WORKER",
+                job_id="22222222-2222-2222-2222-222222222222",
+                attempt_number=7,
+                demo_sha256=DEMO_SHA,
+                file_size=520,
+            )
+            first = ExecutionRecorder(common["client"], common["settings"], upload_id="11111111-1111-1111-1111-111111111111", **{k: v for k, v in common.items() if k not in {"client", "settings"}})
+            second = ExecutionRecorder(common["client"], common["settings"], upload_id="33333333-3333-3333-3333-333333333333", **{k: v for k, v in common.items() if k not in {"client", "settings"}})
+            assert first.execution_id != second.execution_id
+            assert first.correlation_id != second.correlation_id
+    asyncio.run(run())
+
+
 def test_reconstructed_http_retry_and_terminal_replays_keep_database_identity():
     """Each request creates a fresh recorder; a lost response never creates another execution."""
     rows = {}
