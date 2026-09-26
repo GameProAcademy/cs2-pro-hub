@@ -39,7 +39,10 @@ def main():
     env = {"PATH": os.environ["PATH"], "HOME": "/tmp", "LANG": "C", "PGOPTIONS": "-c statement_timeout=10000 -c lock_timeout=8000"}
 
     def run(command, **kw):
-        return subprocess.run(user + command, env=env, text=True, check=True, capture_output=True, timeout=20, **kw).stdout.strip()
+        result = subprocess.run(user + command, env=env, text=True, capture_output=True, timeout=20, **kw)
+        if result.returncode:
+            raise RuntimeError(result.stderr.strip())
+        return result.stdout.strip()
 
     def sql(command):
         return run(["psql", "-X", "-A", "-t", "-v", "ON_ERROR_STOP=1", "-h", str(root), "-p", str(port), "-d", "postgres", "-c", command])
