@@ -111,6 +111,14 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**.
 
 **Locks:** no valid attestation, DEM, Cache DEM, Attempt 9+, Canonical admission, RAW finalization, cleanup, Railway/EnvironmentPatch mutation, deployment, secret changes or workflow dispatch. R5.8 and H.3-E.9 remain blocked; retention and operator authorization remain absent.
 
+### H.3-E.9.1-R4.1 — controlled writer and coverage closure
+
+Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sandbox_exec` direct-write grant was revoked and checked again. Existing R4 diagnostics were formatted for CI. No event writer was activated: APP remote parsing, Railway durable parsing, the independent `/v1/parse` endpoint, and browser/WASM are still `NOT_COVERED`. An active Railway revision cannot be established as source-parity without a separate deployment audit, which is explicitly excluded here. No empty-ledger absence claim, first valid attestation, parser execution or operational authorization follows from this repair.
+
+- [ ] Design and validate the controlled lifecycle writer, idempotency, concurrent transitions, pre-parser failure protection and exhaustive runtime/CI surface discovery.
+- [ ] Reconcile database security inspector and writer privileges; validate applied schema and tests before any authority transition.
+- [ ] Independently verify deployed Railway parity and all four surfaces before considering `AUTHORITATIVE`.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
