@@ -21,6 +21,15 @@ export const H3E91_COLLECTOR_VERSION = "H.3-E.9.1" as const;
 export const H3E91_WORKFLOW_PATH = H3E91_APPROVED_WORKFLOW_PATH;
 export const H3E91_OIDC_AUDIENCE = "gamepro-h3e9-live-preflight" as const;
 export const H3E91_RAILWAY_SOURCE_COMMIT = "ff0cc222f514c01eda6e26d7bb95271a8b0c9b04" as const;
+export const H3E91_MAX_AGE_SECONDS = 600 as const;
+
+export function getH3E91Freshness(observedAt: string, now: string): "FRESH" | "STALE" | "UNKNOWN" {
+  const observed = Date.parse(observedAt);
+  const current = Date.parse(now);
+  if (!Number.isFinite(observed) || !Number.isFinite(current)) return "UNKNOWN";
+  const age = current - observed;
+  return age < 0 ? "UNKNOWN" : age <= H3E91_MAX_AGE_SECONDS * 1000 ? "FRESH" : "STALE";
+}
 
 const isoDate = z.string().datetime({ offset: true });
 const sha40 = z.string().regex(/^[0-9a-f]{40}$/);
@@ -123,6 +132,7 @@ export interface H3E91DatabaseEvidence {
   attempt10PlusCount: number | null;
   realDemoExecutionCount: number | null;
   cacheDemoExecutionCount: number | null;
+  historicalStartedJobCount: number | null;
   canonical: {
     total: number | null;
     authorized: number | null;
@@ -148,6 +158,10 @@ export interface H3E91Artifact {
   gate: "H.3-E.9";
   collectorVersion: typeof H3E91_COLLECTOR_VERSION;
   observedAt: string;
+  baselineStartedAt: string;
+  baseline: { startedAt: string; source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE"; semantics: "COUNT_EXECUTION_AFTER_BASELINE_ONLY" };
+  freshness: "FRESH" | "STALE" | "UNKNOWN";
+  parserRuntimeRevision: string;
   workflowIdentity: H3E91ExternalEvidence["workflowIdentity"];
   collectorWorkflowSha: string;
   collectorTriggerCommitSha: string;
@@ -167,6 +181,7 @@ export interface H3E91Artifact {
     attempt10PlusCount: number | null;
     realDemoExecutionCount: number | null;
     cacheDemoExecutionCount: number | null;
+    historicalStartedJobCount: number | null;
   };
   finalResult: H3E9ReadinessResult;
   evidenceDigest: string;
