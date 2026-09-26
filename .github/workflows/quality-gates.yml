@@ -18,42 +18,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install PostgreSQL server binaries for disposable concurrency harness
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql
           echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
       - name: Test
         run: bun run test
-
       - name: H3E91 source discovery and sealed-ledger gate
         run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts src/lib/pipeline/__tests__/h3e91ExecutionBridge.test.ts src/lib/pipeline/__tests__/h3e91ExecutionRecorder.test.ts src/lib/pipeline/__tests__/h3e91R41Coverage.test.ts src/lib/pipeline/__tests__/h3e91R41Authority.test.ts
-
       - name: H3E91 disposable PostgreSQL writer concurrency
         run: python3 scripts/h3e91-writer-concurrency.py
-
       - name: H3E91 APP retry and browser isolation regression
         run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionRecorder.test.ts src/lib/pipeline/__tests__/h3e91BrowserBuildIsolation.test.ts
-
       - name: Typecheck
-        run: bunx tsgo --noEmit
-
+        run: bunx tsc --noEmit
       - name: Lint
         run: bun run lint
-
       - name: Build
         run: bun run build
-
       - name: Verify browser parser is absent from production output
         run: bun run verify:browser-parser-sealed
 
@@ -67,39 +56,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: services/cs2-demo-parser/requirements-dev.txt
-
       - name: Install parser dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
-
       - name: Compile parser sources
         run: python -m compileall -q .
-
       - name: Verify reconciled field governance matrix
         working-directory: ${{ github.workspace }}
         run: |
           python scripts/generate-parser-field-matrix.py --check
           python scripts/canonical_mapping_gate.py > /tmp/canonical-mapping-gate.json
           grep -F '"gateStatus":"BLOCKED"' /tmp/canonical-mapping-gate.json
-
       - name: Run parser test suite
         run: pytest -q
-
       - name: H3E91 Railway ordering, stable retries and failure injection
         run: pytest -q tests/test_h3e91_execution.py tests/test_h3e91_failure_injection.py tests/test_worker.py
-
       - name: Verify production parser image excludes reference tools
         working-directory: ${{ github.workspace }}
         run: |
           docker build --tag gamepro-parser-isolation:ci services/cs2-demo-parser
           docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
-
   contract-gate:
     name: Contract-sensitive parser tests
     runs-on: ubuntu-latest
@@ -116,8 +97,6 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: services/cs2-demo-parser/requirements-dev.txt
-      - name: Install parser dependencies
-        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
       - name: Run round-boundary, output-contract and RAW evidence tests
         run: >-
           pytest -q
