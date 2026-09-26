@@ -1,5 +1,9 @@
 # H.3-E.9.1-R4 — execution writer coverage
 
+## R4.1-C/F.2 live safety checkpoint
+
+An idempotent safety repair was applied to the live ledger: `sandbox_exec`, `service_role`, `anon`, `authenticated` and `PUBLIC` cannot write directly; the mutation-trigger function is not executable by them. Effective privilege checks confirmed sandbox_exec and service_role read-only, anon and authenticated without access, and zero production ledger rows. This repair does not install or activate a writer. Full lifecycle, disposable-database concurrency, pre-parser APP/Railway coverage, bridge recording and deployed-source parity remain unproven. Result: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. No production event was inserted or parser run.
+
 **Result: H.3-E.9.1-R4 — BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY.**
 
 The machine-readable inventory is `inspectH3E91ExecutionSurfaces()`, included in the preflight artifact and its digest. It is a diagnostic, not permission to execute. Current source revision at investigation: `a9750e3a35f26a85690122aadb2cd187efcf3cb3`; changes to this report and registry are not yet a reviewed or deployed Railway revision.
