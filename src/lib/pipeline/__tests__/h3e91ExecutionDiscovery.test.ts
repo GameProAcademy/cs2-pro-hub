@@ -132,7 +132,11 @@ describe("H.3-E.9.1 execution source discovery", () => {
       .flatMap(productionFiles)
       .filter((path) => !path.startsWith("src/lib/client-parser/"))
       .filter((path) => !path.includes(".server."))
-      .filter((path) => /(?:import\s*\(|from\s*["'])[^\n]*clientParser\.(?:service|worker)|(?:import\s*\(|from\s*["'])[^\n]*ClientParserPoc/.test(read(path)));
+      .filter((path) =>
+        /(?:import\s*\(|from\s*["'])[^\n]*clientParser\.(?:service|worker)|(?:import\s*\(|from\s*["'])[^\n]*ClientParserPoc/.test(
+          read(path),
+        ),
+      );
     expect(reachable).toEqual([]);
   });
 
