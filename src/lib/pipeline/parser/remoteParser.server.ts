@@ -156,7 +156,11 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
         "demoSha256 must be a verified 64-character SHA-256 digest",
       );
     }
-    if (!request.jobId || !Number.isSafeInteger(request.attemptNumber) || (request.attemptNumber ?? 0) < 1) {
+    if (
+      !request.jobId ||
+      !Number.isSafeInteger(request.attemptNumber) ||
+      (request.attemptNumber ?? 0) < 1
+    ) {
       throw new PipelineError("PARSER_CONFIG_ERROR", "logical attempt identity is required");
     }
 

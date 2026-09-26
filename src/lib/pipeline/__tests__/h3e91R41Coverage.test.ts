@@ -25,7 +25,11 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
         .filter((surface) => surface.classification === "PRODUCTION_EXECUTION_SURFACE")
         .every((surface) => surface.status === "BLOCKED" && surface.deployedParity === "UNKNOWN"),
     ).toBe(true);
-    for (const surface of [H3E91_R41_COVERAGE.surfaces.APP_REMOTE_PARSER, H3E91_R41_COVERAGE.surfaces.RAILWAY_DURABLE_WORKER, H3E91_R41_COVERAGE.surfaces.RAILWAY_V1_PARSE]) {
+    for (const surface of [
+      H3E91_R41_COVERAGE.surfaces.APP_REMOTE_PARSER,
+      H3E91_R41_COVERAGE.surfaces.RAILWAY_DURABLE_WORKER,
+      H3E91_R41_COVERAGE.surfaces.RAILWAY_V1_PARSE,
+    ]) {
       expect(surface.writerBeforeExecution).toBe(true);
       expect(surface.startedBeforeParser).toBe(true);
       expect(surface.productionActivation).toBe("BLOCKED");

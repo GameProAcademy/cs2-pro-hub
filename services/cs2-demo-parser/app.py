@@ -392,9 +392,16 @@ def create_app(
             except Exception:
                 raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable.") from None
             started = False
+            start_recording_failed = False
             async def record_start() -> None:
-                nonlocal started
-                await recorder.record("EXECUTION_STARTED")
+                nonlocal started, start_recording_failed
+                try:
+                    await recorder.record("EXECUTION_STARTED")
+                except Exception:
+                    # A lost acknowledgement may mean STARTED was persisted.
+                    # Never write an incompatible ABORTED terminal on that ambiguity.
+                    start_recording_failed = True
+                    raise
                 started = True
             try:
                 payload = await _parse_downloaded(body, resolved, parse, finalize_raw=True,
@@ -404,6 +411,8 @@ def create_app(
                 if len(response.body) > resolved.max_payload_bytes:
                     raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
             except BaseException:
+                if start_recording_failed:
+                    raise WorkerError(503, E.PARSER_ERROR, "Execution start unavailable; reconciliation required.") from None
                 await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
                                       "PARSE_FAILED" if started else "PREPARSE_FAILED")
                 raise

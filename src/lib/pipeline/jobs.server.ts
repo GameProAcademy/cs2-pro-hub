@@ -562,9 +562,13 @@ export async function processJob(
         throw new PipelineError("PARSER_UNAVAILABLE", "H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED");
       }
       const record = appExecutionRecorder({
-        jobId, uploadId: job.upload_id, attemptNumber: job.attempt_number,
-        demoSha256: job.demo_sha256, fileSize: stored.size || (job.file_size ?? 0),
-        parserName: workerIdentity.name, parserVersion: workerIdentity.version,
+        jobId,
+        uploadId: job.upload_id,
+        attemptNumber: job.attempt_number,
+        demoSha256: job.demo_sha256,
+        fileSize: stored.size || (job.file_size ?? 0),
+        parserName: workerIdentity.name,
+        parserVersion: workerIdentity.version,
         parserRevision: workerIdentity.revision,
       });
       await record("EXECUTION_INTENT");
