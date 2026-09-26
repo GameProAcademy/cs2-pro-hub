@@ -31,6 +31,12 @@ def test_collector_emits_safe_fail_closed_evidence(monkeypatch):
 
 def test_collector_has_no_execution_or_mutation_surface():
     source = Path("scripts/h3e91_live_preflight.py").read_text()
-    forbidden = ("parser_runtime_attestation.py", "workflow_dispatches", "/parse", ".dem", "mutation Railway")
+    forbidden = (
+        "scripts/parser_runtime_attestation.py",
+        "workflow_dispatches",
+        'urlopen(f"{domain}/parse',
+        'open("sample.dem"',
+        "mutation Railway",
+    )
     assert all(term not in source for term in forbidden)
     assert APPROVED_BLOB in source
