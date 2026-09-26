@@ -87,9 +87,9 @@ Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
 
 ### H.3-E.9.1-R2 / H.3-E.9.2 preparation
 
-- [ ] Capture a trusted server baseline and a read-only, baseline-relative execution ledger; preserve UNKNOWN where execution cannot be proven.
-- [ ] Validate collector workflow structure and artifact freshness without changing the approved workflow SHA or authorizing execution.
-- [ ] Document the H.3-E.9.2 prerequisite contract and verify the diagnostics with synthetic tests.
+- [x] Capture a server baseline and read-only, baseline-relative **mutable job-row diagnostic**; preserve `UNKNOWN/BLOCKED` where absence of execution cannot be proven.
+- [x] Check collector workflow structure and artifact freshness without changing the approved workflow SHA or authorizing execution.
+- [x] Document the H.3-E.9.2 prerequisite contract and verify synthetic diagnostics. R2 closure remains **BLOCKED** pending an authoritative append-only execution ledger and reviewed live evidence.
 
 ### Confirmed current state
 
