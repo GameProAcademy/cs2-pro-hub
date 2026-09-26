@@ -1105,6 +1105,54 @@ export type Database = {
           },
         ]
       }
+      h3e91_execution_evidence_ledger: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          demo_sha256: string
+          event_type: string
+          execution_surface: string
+          file_size: number
+          id: string
+          job_id: string
+          metadata_digest: string
+          parser_name: string
+          parser_revision: string
+          parser_version: string
+          source: string
+        }
+        Insert: {
+          attempt_number: number
+          created_at?: string
+          demo_sha256: string
+          event_type: string
+          execution_surface: string
+          file_size: number
+          id?: string
+          job_id: string
+          metadata_digest: string
+          parser_name: string
+          parser_revision: string
+          parser_version: string
+          source: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          demo_sha256?: string
+          event_type?: string
+          execution_surface?: string
+          file_size?: number
+          id?: string
+          job_id?: string
+          metadata_digest?: string
+          parser_name?: string
+          parser_revision?: string
+          parser_version?: string
+          source?: string
+        }
+        Relationships: []
+      }
       identity_correlation_evidence: {
         Row: {
           attribute: string
@@ -3799,6 +3847,10 @@ export type Database = {
         Returns: Json
       }
       get_demo_retention_metrics: { Args: never; Returns: Json }
+      h3e91_authoritative_execution_evidence: {
+        Args: { _baseline_started_at: string }
+        Returns: Json
+      }
       h3e91_execution_ledger_after_baseline: {
         Args: { _baseline_started_at: string }
         Returns: Json
