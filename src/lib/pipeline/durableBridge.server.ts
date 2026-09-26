@@ -22,6 +22,20 @@ import {
 const VISIBILITY_SECONDS = 15 * 60;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+const UUID_URL_NAMESPACE = Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex");
+
+/** Matches Python uuid.uuid5(uuid.NAMESPACE_URL, ...) in the durable worker. */
+function durableExecutionId(jobId: string, attemptNumber: number, uploadId: string): string {
+  const digest = createHash("sha1")
+    .update(UUID_URL_NAMESPACE)
+    .update(`h3e91:durable:${jobId}:${attemptNumber}:${uploadId}`, "utf8")
+    .digest();
+  const bytes = Buffer.from(digest.subarray(0, 16));
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 export const RAW_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 export const RAW_MAX_CHUNKS_PER_SECTION = 100_000;
 export const RAW_MAX_CHUNKS_TOTAL = 200_000;
@@ -201,6 +215,23 @@ export async function failDurableDemo(
 export async function reconcileDurableExecution(
   input: DurableJobClaim & { jobId: string; executionId: string },
 ) {
+  const { db, rpc } = await context();
+  const { data: job, error: jobError } = await db
+    .from("demo_jobs")
+    .select("status, queue_message_id, dispatch_attempt, worker_id, upload_id, attempt_number")
+    .eq("id", input.jobId)
+    .maybeSingle();
+  if (
+    jobError || !job ||
+    Number(job.queue_message_id) !== input.messageId ||
+    job.dispatch_attempt !== input.attempt ||
+    job.worker_id !== input.workerId ||
+    typeof job.upload_id !== "string" ||
+    typeof job.attempt_number !== "number" ||
+    durableExecutionId(input.jobId, job.attempt_number, job.upload_id) !== input.executionId
+  ) {
+    return { status: "reconciliation_required", lifecycle: "UNKNOWN" };
+  }
   const lifecycle = await readH3E91ExecutionLifecycle(input.executionId);
   if (lifecycle.executionId !== input.executionId) {
     throw new PipelineError("PARSER_UNAVAILABLE", "H3E91_LIFECYCLE_IDENTITY_MISMATCH");
@@ -209,22 +240,6 @@ export async function reconcileDurableExecution(
     return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
   }
   if (lifecycle.lifecycle === "INTENT_ONLY" || lifecycle.lifecycle === "STARTED") {
-    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
-  }
-
-  const { db, rpc } = await context();
-  const { data: job, error: jobError } = await db
-    .from("demo_jobs")
-    .select("status, queue_message_id, dispatch_attempt, worker_id")
-    .eq("id", input.jobId)
-    .maybeSingle();
-  if (
-    jobError ||
-    !job ||
-    Number(job.queue_message_id) !== input.messageId ||
-    job.dispatch_attempt !== input.attempt ||
-    job.worker_id !== input.workerId
-  ) {
     return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
   }
 
