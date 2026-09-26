@@ -22,18 +22,18 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 | PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | PASS | UNKNOWN | SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Complete independent race matrix and deployed parity remain unknown |
 | APP, Railway and browser isolation | PASS (bounded) | UNKNOWN | UNKNOWN | PASS (bounded ordering/isolation) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Complete injection matrix and deployed proof outstanding |
 | Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | PASS (Docker image allowlist/non-root check in CI) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + CI_EXTERNAL_VERIFIED | BLOCKED | Deployed image parity unknown |
-| Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (external run: web tests, typecheck, lint, build; parser and contract suites PASS) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Reconciliation/race closure and deployed proof remain |
+| Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (current external run: web tests, typecheck, lint, build; parser and contract suites PASS) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Reconciliation/race closure and deployed proof remain |
 | Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | PASS (CI build-output sealing gate) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + CI_EXTERNAL_VERIFIED | BLOCKED | Deployed bundle parity unknown |
-| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | Historical run only | UNKNOWN for current revision | UNKNOWN | Historical CI_EXTERNAL_VERIFIED only | BLOCKED | No external run confirmed for final source revision |
+| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | PASS | PASS | UNKNOWN | CI_EXTERNAL_VERIFIED | PASS (CI only) | Runtime/deployed parity remains separate |
 
 ## CURRENT BLOCKERS
 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
-- HISTORICAL CI: Quality Gates run `36220427489` completed GREEN for commit `11d30012447ce5115f9dae1d8c2171d6333800e6`, not the current revision; no external CI result for this change has been verified.
+- CURRENT CI: Quality Gates run `36222382006` completed GREEN for the current revision `5d06db444064e4626adcc83360899335a4638e83`. All three jobs passed, including web/lint/build, parser, contract-sensitive parser, disposable PostgreSQL concurrency, Docker image exclusion, and browser production-output sealing. This is CI evidence only; deployed Railway parity remains UNKNOWN.
 - Failure-injection coverage remains bounded, not a complete 26-case deployed-surface matrix. No production ledger writes are needed or authorized for local tests.
 - Live reader is invariant-hardened through managed migration `20260926055410` and returns `terminalEventAt` through `20260926055608`; the earlier source-only filename `20260926053000` is still absent from migration history. Its SQL was executed unchanged by the managed tool, which assigned a new version rather than using that source filename.
 - FINISHED replay recovery is fail-closed when `demo_jobs` lacks a processed/blocked_raw_audit result; the current reconciliation test mocks the lifecycle and database result and does not prove recovery from persisted RAW/HOT state after a lost queue-completion acknowledgement in an integrated disposable database.
-- The disposable 30-case + 50-stress harness, simultaneous HTTP retry, and 20 mocked durable reconciliation cases passed locally. Complete independent race/failure matrices and final-revision external CI are not proven. Docker image and browser-output gates passed only in historical CI and do not establish deployed parity.
+- The disposable 30-case + 50-stress harness, simultaneous HTTP retry, and 20 mocked durable reconciliation cases passed locally. Complete independent race/failure matrices remain unproven. Current-revision external CI is GREEN, including Docker image and browser-output gates, but CI does not establish deployed parity.
 - Historical assertions below are superseded snapshots; their `NOT_COVERED`, inactive writer, and `COPY . .` statements are **not current source state**.
 
 ## HISTORICAL CHECKPOINTS — SUPERSEDED
