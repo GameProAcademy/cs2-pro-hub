@@ -18,16 +18,58 @@ import { H3E9_EXPECTED_ENDPOINT } from "@/lib/h3e9FinalExecutionReadiness";
 import { H3E91_RAILWAY_SOURCE_COMMIT } from "@/lib/h3e91LiveEvidence";
 
 function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence) {
-  const blockers: Array<"H3E91_DATABASE_EVIDENCE_UNKNOWN" | "H3E91_MIGRATION_EVIDENCE_UNKNOWN" | "H3E91_SECURITY_EVIDENCE_UNKNOWN" | "H3E91_RUNTIME_EVIDENCE_UNKNOWN" | "H3E91_RAILWAY_EVIDENCE_UNKNOWN" | "H3E9_WORKFLOW_NOT_APPROVED" | "H3E9_ANONYMOUS_BOUNDARY_FAILED" | "H3E9_WORKFLOW_SOURCE_MISMATCH" | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"> = [];
-  if (db.status === "UNKNOWN" || db.realDemoExecutionCount === null || db.cacheDemoExecutionCount === null) blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
+  const blockers: Array<
+    | "H3E91_DATABASE_EVIDENCE_UNKNOWN"
+    | "H3E91_MIGRATION_EVIDENCE_UNKNOWN"
+    | "H3E91_SECURITY_EVIDENCE_UNKNOWN"
+    | "H3E91_RUNTIME_EVIDENCE_UNKNOWN"
+    | "H3E91_RAILWAY_EVIDENCE_UNKNOWN"
+    | "H3E9_WORKFLOW_NOT_APPROVED"
+    | "H3E9_ANONYMOUS_BOUNDARY_FAILED"
+    | "H3E9_WORKFLOW_SOURCE_MISMATCH"
+    | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"
+  > = [];
+  if (
+    db.status === "UNKNOWN" ||
+    db.realDemoExecutionCount === null ||
+    db.cacheDemoExecutionCount === null
+  )
+    blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
   if (db.migration.exactMatchCount === null) blockers.push("H3E91_MIGRATION_EVIDENCE_UNKNOWN");
-  if (Object.values(db.security).some(v => v === null)) blockers.push("H3E91_SECURITY_EVIDENCE_UNKNOWN");
-  if (Object.values(db.security).some(v => v === false)) blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
-  if (external.workflowIdentity.collectorWorkflowSha !== H3E91_APPROVED_WORKFLOW_SHA || external.workflowEvidence.collectorWorkflowSha.value !== H3E91_APPROVED_WORKFLOW_SHA || external.workflowEvidence.collectorWorkflowSha.status !== "PASS") blockers.push("H3E9_WORKFLOW_NOT_APPROVED");
-  if (Object.values(external.runtimeEvidence).some(v => v.status !== "PASS" || v.value !== true)) blockers.push("H3E91_RUNTIME_EVIDENCE_UNKNOWN");
-  if (Object.values(external.railwayEvidence).some(v => v.status !== "PASS" || v.value === false || v.value === null)) blockers.push("H3E91_RAILWAY_EVIDENCE_UNKNOWN");
-  if (Object.values(external.workflowEvidence).some(v => v.status !== "PASS" || v.value === false || v.value === null)) blockers.push("H3E9_WORKFLOW_SOURCE_MISMATCH");
-  if (external.transportEvidence.noNegativePostSideEffect.value !== true || external.transportEvidence.anonymousStatus.value !== 401 || Object.values(external.transportEvidence).some(v => v.status !== "PASS") || external.transportEvidence.preNegativeProvenanceCount.value !== external.transportEvidence.postNegativeProvenanceCount.value || external.transportEvidence.preNegativeNonceCount.value !== external.transportEvidence.postNegativeNonceCount.value) blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
+  if (Object.values(db.security).some((v) => v === null))
+    blockers.push("H3E91_SECURITY_EVIDENCE_UNKNOWN");
+  if (Object.values(db.security).some((v) => v === false))
+    blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
+  if (
+    external.workflowIdentity.collectorWorkflowSha !== H3E91_APPROVED_WORKFLOW_SHA ||
+    external.workflowEvidence.collectorWorkflowSha.value !== H3E91_APPROVED_WORKFLOW_SHA ||
+    external.workflowEvidence.collectorWorkflowSha.status !== "PASS"
+  )
+    blockers.push("H3E9_WORKFLOW_NOT_APPROVED");
+  if (Object.values(external.runtimeEvidence).some((v) => v.status !== "PASS" || v.value !== true))
+    blockers.push("H3E91_RUNTIME_EVIDENCE_UNKNOWN");
+  if (
+    Object.values(external.railwayEvidence).some(
+      (v) => v.status !== "PASS" || v.value === false || v.value === null,
+    )
+  )
+    blockers.push("H3E91_RAILWAY_EVIDENCE_UNKNOWN");
+  if (
+    Object.values(external.workflowEvidence).some(
+      (v) => v.status !== "PASS" || v.value === false || v.value === null,
+    )
+  )
+    blockers.push("H3E9_WORKFLOW_SOURCE_MISMATCH");
+  if (
+    external.transportEvidence.noNegativePostSideEffect.value !== true ||
+    external.transportEvidence.anonymousStatus.value !== 401 ||
+    Object.values(external.transportEvidence).some((v) => v.status !== "PASS") ||
+    external.transportEvidence.preNegativeProvenanceCount.value !==
+      external.transportEvidence.postNegativeProvenanceCount.value ||
+    external.transportEvidence.preNegativeNonceCount.value !==
+      external.transportEvidence.postNegativeNonceCount.value
+  )
+    blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
   return [...new Set(blockers)];
 }
 
@@ -68,27 +110,44 @@ export async function collectH3E91DatabaseEvidence(
     const { data, error } = await supabaseAdmin.rpc("h3e91_live_database_evidence");
     if (error || !data || typeof data !== "object" || Array.isArray(data)) return evidence;
     const value = data as Record<string, unknown>;
-    for (const key of ["provenanceCount", "verifiedProvenanceCount", "nonceCount", "attempt9Count", "attempt10PlusCount"] as const) {
+    for (const key of [
+      "provenanceCount",
+      "verifiedProvenanceCount",
+      "nonceCount",
+      "attempt9Count",
+      "attempt10PlusCount",
+    ] as const) {
       const count = value[key];
-      if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) evidence[key] = count;
+      if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0)
+        evidence[key] = count;
     }
     const canonical = value["canonical"];
     if (canonical && typeof canonical === "object" && !Array.isArray(canonical)) {
-      for (const key of Object.keys(evidence.canonical) as Array<keyof H3E91DatabaseEvidence["canonical"]>) {
-        const count = (canonical as Record<string,unknown>)[key];
-        if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) evidence.canonical[key] = count;
+      for (const key of Object.keys(evidence.canonical) as Array<
+        keyof H3E91DatabaseEvidence["canonical"]
+      >) {
+        const count = (canonical as Record<string, unknown>)[key];
+        if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0)
+          evidence.canonical[key] = count;
       }
     }
     const exactMigration = value["migrationExactMatchCount"];
-    if (typeof exactMigration === "number" && Number.isSafeInteger(exactMigration) && exactMigration >= 0) evidence.migration = {
-      version: H3E91_EXPECTED_MIGRATION.version,
-      name: H3E91_EXPECTED_MIGRATION.name,
-      exactMatchCount: exactMigration,
-    };
+    if (
+      typeof exactMigration === "number" &&
+      Number.isSafeInteger(exactMigration) &&
+      exactMigration >= 0
+    )
+      evidence.migration = {
+        version: H3E91_EXPECTED_MIGRATION.version,
+        name: H3E91_EXPECTED_MIGRATION.name,
+        exactMatchCount: exactMigration,
+      };
     const security = value["security"];
     if (security && typeof security === "object" && !Array.isArray(security)) {
-      for (const key of Object.keys(evidence.security) as Array<keyof H3E91DatabaseEvidence["security"]>) {
-        const observed = (security as Record<string,unknown>)[key];
+      for (const key of Object.keys(evidence.security) as Array<
+        keyof H3E91DatabaseEvidence["security"]
+      >) {
+        const observed = (security as Record<string, unknown>)[key];
         if (typeof observed === "boolean") evidence.security[key] = observed;
       }
     }
@@ -108,7 +167,10 @@ export async function collectH3E91DatabaseEvidence(
     // can establish their absence; preserve UNKNOWN until independently proven.
     evidence.status =
       countsKnown && securityKnown && evidence.migration.exactMatchCount !== null
-        ? evidence.migration.exactMatchCount === 1 && Object.values(evidence.security).every(Boolean) ? "PASS" : "BLOCKED"
+        ? evidence.migration.exactMatchCount === 1 &&
+          Object.values(evidence.security).every(Boolean)
+          ? "PASS"
+          : "BLOCKED"
         : "UNKNOWN";
     return evidence;
   } catch {
@@ -120,22 +182,63 @@ export async function buildH3E91Artifact(external: H3E91ExternalEvidence): Promi
   const before = await collectH3E91DatabaseEvidence(new Date().toISOString());
   let status: number | null = null;
   try {
-    const response = await fetch(H3E9_EXPECTED_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", redirect: "manual", signal: AbortSignal.timeout(10000) });
+    const response = await fetch(H3E9_EXPECTED_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+      redirect: "manual",
+      signal: AbortSignal.timeout(10000),
+    });
     status = response.status;
-  } catch { /* Unavailable remains UNKNOWN. */ }
+  } catch {
+    /* Unavailable remains UNKNOWN. */
+  }
   const after = await collectH3E91DatabaseEvidence(new Date().toISOString());
-  const safe = <T>(value: T, source: string, valid: boolean) => ({ source, observedAt: new Date().toISOString(), classification: "SAFE_NON_SECRET" as const, status: (valid ? "PASS" : value === null ? "UNKNOWN" : "BLOCKED") as "PASS" | "UNKNOWN" | "BLOCKED", value });
-  const noSideEffect = before.provenanceCount !== null && before.nonceCount !== null && after.provenanceCount !== null && after.nonceCount !== null ? before.provenanceCount === after.provenanceCount && before.nonceCount === after.nonceCount : null;
+  const safe = <T>(value: T, source: string, valid: boolean) => ({
+    source,
+    observedAt: new Date().toISOString(),
+    classification: "SAFE_NON_SECRET" as const,
+    status: (valid ? "PASS" : value === null ? "UNKNOWN" : "BLOCKED") as
+      "PASS" | "UNKNOWN" | "BLOCKED",
+    value,
+  });
+  const noSideEffect =
+    before.provenanceCount !== null &&
+    before.nonceCount !== null &&
+    after.provenanceCount !== null &&
+    after.nonceCount !== null
+      ? before.provenanceCount === after.provenanceCount && before.nonceCount === after.nonceCount
+      : null;
   const trusted = {
     ...external,
     transportEvidence: {
       ...external.transportEvidence,
       anonymousStatus: safe(status, "TRUSTED_SERVER_NEGATIVE_POST", status === 401),
-      preNegativeProvenanceCount: safe(before.provenanceCount, "TRUSTED_SERVER_DATABASE_PRE", before.provenanceCount !== null),
-      postNegativeProvenanceCount: safe(after.provenanceCount, "TRUSTED_SERVER_DATABASE_POST", after.provenanceCount !== null),
-      preNegativeNonceCount: safe(before.nonceCount, "TRUSTED_SERVER_DATABASE_PRE", before.nonceCount !== null),
-      postNegativeNonceCount: safe(after.nonceCount, "TRUSTED_SERVER_DATABASE_POST", after.nonceCount !== null),
-      noNegativePostSideEffect: safe(noSideEffect, "TRUSTED_SERVER_DATABASE_COMPARISON", noSideEffect === true),
+      preNegativeProvenanceCount: safe(
+        before.provenanceCount,
+        "TRUSTED_SERVER_DATABASE_PRE",
+        before.provenanceCount !== null,
+      ),
+      postNegativeProvenanceCount: safe(
+        after.provenanceCount,
+        "TRUSTED_SERVER_DATABASE_POST",
+        after.provenanceCount !== null,
+      ),
+      preNegativeNonceCount: safe(
+        before.nonceCount,
+        "TRUSTED_SERVER_DATABASE_PRE",
+        before.nonceCount !== null,
+      ),
+      postNegativeNonceCount: safe(
+        after.nonceCount,
+        "TRUSTED_SERVER_DATABASE_POST",
+        after.nonceCount !== null,
+      ),
+      noNegativePostSideEffect: safe(
+        noSideEffect,
+        "TRUSTED_SERVER_DATABASE_COMPARISON",
+        noSideEffect === true,
+      ),
     },
   };
   return finalizeH3E91Artifact(trusted, after);
@@ -164,15 +267,26 @@ export function finalizeH3E91Artifact(
     transportEvidence: external.transportEvidence,
     secretPresence: external.secretPresence,
     authorizationEvidence: { retention: input.retention, operator: input.operatorAuthorization },
-    executionLocks: { ...input.execution, attempt10PlusCount: databaseEvidence.attempt10PlusCount, realDemoExecutionCount: databaseEvidence.realDemoExecutionCount, cacheDemoExecutionCount: databaseEvidence.cacheDemoExecutionCount },
+    executionLocks: {
+      ...input.execution,
+      attempt10PlusCount: databaseEvidence.attempt10PlusCount,
+      realDemoExecutionCount: databaseEvidence.realDemoExecutionCount,
+      cacheDemoExecutionCount: databaseEvidence.cacheDemoExecutionCount,
+    },
     finalResult: {
       ...finalResult,
-      blockers: [...new Set([
-        ...finalResult.blockers,
-        ...getH3E91EvidenceBlockers(external, databaseEvidence),
-      ])],
-      technicalReadiness: getH3E91EvidenceBlockers(external, databaseEvidence).length ? "BLOCKED" as const : finalResult.technicalReadiness,
-      status: getH3E91EvidenceBlockers(external, databaseEvidence).length ? "BLOCKED" as const : finalResult.status,
+      blockers: [
+        ...new Set([
+          ...finalResult.blockers,
+          ...getH3E91EvidenceBlockers(external, databaseEvidence),
+        ]),
+      ],
+      technicalReadiness: getH3E91EvidenceBlockers(external, databaseEvidence).length
+        ? ("BLOCKED" as const)
+        : finalResult.technicalReadiness,
+      status: getH3E91EvidenceBlockers(external, databaseEvidence).length
+        ? ("BLOCKED" as const)
+        : finalResult.status,
     },
   };
   // Recompute the diagnostic status from the exact blocker set, not a client claim.

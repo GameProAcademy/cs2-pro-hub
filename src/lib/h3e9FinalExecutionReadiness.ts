@@ -70,7 +70,11 @@ export interface H3E9ReadinessInput {
     workflowPath: string;
     workflowSourceSha: string;
   };
-  storage: { provenanceCount: number | null; nonceCount: number | null; verifiedProvenanceCount?: number | null };
+  storage: {
+    provenanceCount: number | null;
+    nonceCount: number | null;
+    verifiedProvenanceCount?: number | null;
+  };
   database: {
     migrationVersion: string;
     migrationName: string;
@@ -170,12 +174,28 @@ export function evaluateH3E9FinalExecutionReadiness(
   const blockers: H3E9BlockerCode[] = [];
   const nowMs = Date.parse(input.now);
   if (!Number.isFinite(nowMs)) blockers.push("H3E9_UNKNOWN_STATE");
-  if (input.storage.provenanceCount === null || input.storage.nonceCount === null || input.storage.verifiedProvenanceCount === null || input.execution.validAttestationExecuted === null || input.execution.attempt9Created === null || input.execution.realDemoExecutionCount === null || input.execution.cacheDemoExecutionCount === null || input.execution.attempt10PlusCount === null)
+  if (
+    input.storage.provenanceCount === null ||
+    input.storage.nonceCount === null ||
+    input.storage.verifiedProvenanceCount === null ||
+    input.execution.validAttestationExecuted === null ||
+    input.execution.attempt9Created === null ||
+    input.execution.realDemoExecutionCount === null ||
+    input.execution.cacheDemoExecutionCount === null ||
+    input.execution.attempt10PlusCount === null
+  )
     blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
-  if (input.database.migrationExactMatchCount === null) blockers.push("H3E91_MIGRATION_EVIDENCE_UNKNOWN");
-  if (Object.entries(input.database).some(([key,value]) => key !== "migrationExactMatchCount" && value === null)) blockers.push("H3E91_SECURITY_EVIDENCE_UNKNOWN");
+  if (input.database.migrationExactMatchCount === null)
+    blockers.push("H3E91_MIGRATION_EVIDENCE_UNKNOWN");
+  if (
+    Object.entries(input.database).some(
+      ([key, value]) => key !== "migrationExactMatchCount" && value === null,
+    )
+  )
+    blockers.push("H3E91_SECURITY_EVIDENCE_UNKNOWN");
   if (input.railway.deploymentStatus === "UNKNOWN") blockers.push("H3E91_RAILWAY_EVIDENCE_UNKNOWN");
-  if (input.execution.canonicalAdmission === "UNKNOWN") blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
+  if (input.execution.canonicalAdmission === "UNKNOWN")
+    blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
 
   const expected = PARSER_ATTESTATION_EXPECTED;
   if (
@@ -192,9 +212,14 @@ export function evaluateH3E9FinalExecutionReadiness(
   )
     blockers.push("H3E9_IDENTITY_MISMATCH");
 
-  if (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
-  if (input.storage.nonceCount !== null && input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
-  if ((input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) || (input.storage.nonceCount !== null && input.storage.nonceCount !== 0))
+  if (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0)
+    blockers.push("H3E9_UNEXPECTED_PROVENANCE");
+  if (input.storage.nonceCount !== null && input.storage.nonceCount !== 0)
+    blockers.push("H3E9_UNEXPECTED_NONCE");
+  if (
+    (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) ||
+    (input.storage.nonceCount !== null && input.storage.nonceCount !== 0)
+  )
     blockers.push("H3E9_DATABASE_STATE_NOT_EMPTY");
 
   if (
@@ -207,7 +232,8 @@ export function evaluateH3E9FinalExecutionReadiness(
   )
     blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
   if (
-    (input.database.migrationExactMatchCount !== undefined && input.database.migrationExactMatchCount !== 1) ||
+    (input.database.migrationExactMatchCount !== undefined &&
+      input.database.migrationExactMatchCount !== 1) ||
     input.database.migrationVersion !== H3E9_EXPECTED_MIGRATION.version ||
     input.database.migrationName !== H3E9_EXPECTED_MIGRATION.name
   )
@@ -292,7 +318,12 @@ export function evaluateH3E9FinalExecutionReadiness(
     attestationAuthorization: input.retention.status,
     executionAuthorization: input.operatorAuthorization.status,
     attestationExecuted: input.execution.validAttestationExecuted,
-    provenanceVerified: input.storage.verifiedProvenanceCount === undefined ? (input.storage.provenanceCount !== null && input.storage.provenanceCount > 0) : input.storage.verifiedProvenanceCount === null ? null : input.storage.verifiedProvenanceCount > 0,
+    provenanceVerified:
+      input.storage.verifiedProvenanceCount === undefined
+        ? input.storage.provenanceCount !== null && input.storage.provenanceCount > 0
+        : input.storage.verifiedProvenanceCount === null
+          ? null
+          : input.storage.verifiedProvenanceCount > 0,
     operation: "DIAGNOSTIC_ONLY",
     sideEffects: false,
   };

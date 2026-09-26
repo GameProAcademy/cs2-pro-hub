@@ -73,7 +73,15 @@ function external(): H3E91ExternalEvidence {
       contractVersionMatches: safe(true),
       bothDomainsMatch: safe(true),
     },
-    transportEvidence: { endpointMatches: safe(true), anonymousStatus: safe(401), preNegativeProvenanceCount: safe(0), postNegativeProvenanceCount: safe(0), preNegativeNonceCount: safe(0), postNegativeNonceCount: safe(0), noNegativePostSideEffect: safe(true) },
+    transportEvidence: {
+      endpointMatches: safe(true),
+      anonymousStatus: safe(401),
+      preNegativeProvenanceCount: safe(0),
+      postNegativeProvenanceCount: safe(0),
+      preNegativeNonceCount: safe(0),
+      postNegativeNonceCount: safe(0),
+      noNegativePostSideEffect: safe(true),
+    },
   };
 }
 
@@ -168,7 +176,15 @@ describe("H.3-E.9.1 live evidence", () => {
       ]),
     );
   });
-  it.each(["provenanceCount", "verifiedProvenanceCount", "nonceCount", "attempt9Count", "attempt10PlusCount", "realDemoExecutionCount", "cacheDemoExecutionCount"] as const)("blocks unknown %s without pretending false", key => {
+  it.each([
+    "provenanceCount",
+    "verifiedProvenanceCount",
+    "nonceCount",
+    "attempt9Count",
+    "attempt10PlusCount",
+    "realDemoExecutionCount",
+    "cacheDemoExecutionCount",
+  ] as const)("blocks unknown %s without pretending false", (key) => {
     const d = database();
     d[key] = null;
     const result = finalizeH3E91Artifact(external(), d).finalResult;
@@ -180,7 +196,12 @@ describe("H.3-E.9.1 live evidence", () => {
     d.migration.exactMatchCount = null;
     d.security.approvedPinsPresent = null;
     const result = finalizeH3E91Artifact(external(), d).finalResult;
-    expect(result.blockers).toEqual(expect.arrayContaining(["H3E91_MIGRATION_EVIDENCE_UNKNOWN", "H3E91_SECURITY_EVIDENCE_UNKNOWN"]));
+    expect(result.blockers).toEqual(
+      expect.arrayContaining([
+        "H3E91_MIGRATION_EVIDENCE_UNKNOWN",
+        "H3E91_SECURITY_EVIDENCE_UNKNOWN",
+      ]),
+    );
   });
   it("does not infer an attestation from an unverified provenance row", () => {
     const d = database();
@@ -192,7 +213,9 @@ describe("H.3-E.9.1 live evidence", () => {
   it("blocks negative POST side effects even if the response is 401", () => {
     const e = external();
     e.transportEvidence.postNegativeNonceCount = safe(1);
-    expect(finalizeH3E91Artifact(e, database()).finalResult.blockers).toContain("H3E9_ANONYMOUS_BOUNDARY_FAILED");
+    expect(finalizeH3E91Artifact(e, database()).finalResult.blockers).toContain(
+      "H3E9_ANONYMOUS_BOUNDARY_FAILED",
+    );
   });
   it("changes digest when safe evidence changes", () => {
     const a = external();

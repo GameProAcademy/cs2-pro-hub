@@ -10,7 +10,11 @@ import {
 } from "@/lib/h3e9FinalExecutionReadiness";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
-import { H3E91_APPROVED_WORKFLOW_PATH, H3E91_APPROVED_WORKFLOW_SHA, H3E91_APPROVED_WORKFLOW_NAME } from "@/lib/h3e91WorkflowRegistry";
+import {
+  H3E91_APPROVED_WORKFLOW_PATH,
+  H3E91_APPROVED_WORKFLOW_SHA,
+  H3E91_APPROVED_WORKFLOW_NAME,
+} from "@/lib/h3e91WorkflowRegistry";
 
 export const H3E91_LIVE_EVIDENCE_SCHEMA_VERSION = 1 as const;
 export const H3E91_COLLECTOR_VERSION = "H.3-E.9.1" as const;
@@ -43,7 +47,9 @@ export const h3e91ExternalEvidenceSchema = z
         refType: z.literal("branch"),
         eventName: z.literal("workflow_dispatch"),
         workflow: z.literal(H3E91_APPROVED_WORKFLOW_NAME),
-        workflowRef: z.literal(`${PARSER_ATTESTATION_EXPECTED.repository}/${H3E91_WORKFLOW_PATH}@refs/heads/main`),
+        workflowRef: z.literal(
+          `${PARSER_ATTESTATION_EXPECTED.repository}/${H3E91_WORKFLOW_PATH}@refs/heads/main`,
+        ),
         collectorWorkflowSha: z.literal(H3E91_APPROVED_WORKFLOW_SHA),
         collectorTriggerCommitSha: sha40,
       })
@@ -157,7 +163,11 @@ export interface H3E91Artifact {
     retention: H3E9AuthorizationEvidence;
     operator: H3E9AuthorizationEvidence;
   };
-  executionLocks: H3E9ReadinessInput["execution"] & { attempt10PlusCount: number | null; realDemoExecutionCount: number | null; cacheDemoExecutionCount: number | null };
+  executionLocks: H3E9ReadinessInput["execution"] & {
+    attempt10PlusCount: number | null;
+    realDemoExecutionCount: number | null;
+    cacheDemoExecutionCount: number | null;
+  };
   finalResult: H3E9ReadinessResult;
   evidenceDigest: string;
 }
@@ -181,9 +191,11 @@ export function buildH3E91ReadinessInput(
       projectId: PARSER_ATTESTATION_EXPECTED.projectId,
       serviceId: PARSER_ATTESTATION_EXPECTED.serviceId,
       environmentId: PARSER_ATTESTATION_EXPECTED.environmentId,
-      workflowPath: external.workflowEvidence.approvedPathMatches.value && external.workflowEvidence.approvedPathMatches.status === "PASS"
-        ? PARSER_ATTESTATION_EXPECTED.workflowPath
-        : "MISMATCH",
+      workflowPath:
+        external.workflowEvidence.approvedPathMatches.value &&
+        external.workflowEvidence.approvedPathMatches.status === "PASS"
+          ? PARSER_ATTESTATION_EXPECTED.workflowPath
+          : "MISMATCH",
       workflowSourceSha: external.workflowEvidence.actualBlobSha.value ?? "UNKNOWN",
     },
     storage: {
@@ -211,7 +223,9 @@ export function buildH3E91ReadinessInput(
     transport: {
       endpointConfigured: external.secretPresence.endpointPresent.value,
       endpoint: external.transportEvidence.endpointMatches.value ? H3E9_EXPECTED_ENDPOINT : null,
-      anonymousNegativeBoundary: external.transportEvidence.anonymousStatus.value === 401 && external.transportEvidence.noNegativePostSideEffect.value === true,
+      anonymousNegativeBoundary:
+        external.transportEvidence.anonymousStatus.value === 401 &&
+        external.transportEvidence.noNegativePostSideEffect.value === true,
       anonymousNegativeBoundaryStatus: external.transportEvidence.anonymousStatus.value,
     },
     secrets: {
@@ -221,16 +235,29 @@ export function buildH3E91ReadinessInput(
       railwayTokenPresent: external.secretPresence.railwayTokenPresent.value,
     },
     workflow: {
-      approvedPath: external.workflowEvidence.approvedPathMatches.value && external.workflowEvidence.approvedPathMatches.status === "PASS"
-        ? PARSER_ATTESTATION_EXPECTED.workflowPath
-        : "MISMATCH",
+      approvedPath:
+        external.workflowEvidence.approvedPathMatches.value &&
+        external.workflowEvidence.approvedPathMatches.status === "PASS"
+          ? PARSER_ATTESTATION_EXPECTED.workflowPath
+          : "MISMATCH",
       approvedSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
-      registryMatches: external.workflowEvidence.approvedBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.blobMatches.value && external.workflowEvidence.blobMatches.status === "PASS",
-      sourceMatches: external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.actualBlobSha.status === "PASS",
-      oidcConfigured: external.workflowEvidence.oidcStructureValid.value && external.workflowEvidence.oidcStructureValid.status === "PASS",
+      registryMatches:
+        external.workflowEvidence.approvedBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA &&
+        external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA &&
+        external.workflowEvidence.blobMatches.value &&
+        external.workflowEvidence.blobMatches.status === "PASS",
+      sourceMatches:
+        external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA &&
+        external.workflowEvidence.actualBlobSha.status === "PASS",
+      oidcConfigured:
+        external.workflowEvidence.oidcStructureValid.value &&
+        external.workflowEvidence.oidcStructureValid.status === "PASS",
     },
     railway: {
-      deploymentIdMatches: external.railwayEvidence.deploymentIdMatches.value && external.railwayEvidence.deploymentIdMatches.status === "PASS" && external.railwayEvidence.available.value,
+      deploymentIdMatches:
+        external.railwayEvidence.deploymentIdMatches.value &&
+        external.railwayEvidence.deploymentIdMatches.status === "PASS" &&
+        external.railwayEvidence.available.value,
       deploymentStatus: external.railwayEvidence.deploymentStatus.value ?? "UNKNOWN",
       branchMatches: external.railwayEvidence.branchMatches.value,
       parserCommitMatches: external.railwayEvidence.sourceCommitMatches.value,
@@ -250,17 +277,25 @@ export function buildH3E91ReadinessInput(
     retention: { status: "NOT_AUTHORIZED" },
     operatorAuthorization: { status: "NOT_AUTHORIZED" },
     execution: {
-      validAttestationExecuted: database.verifiedProvenanceCount === null ? null : database.verifiedProvenanceCount > 0,
-      demExecuted: database.realDemoExecutionCount === null ? null : database.realDemoExecutionCount > 0,
-      cacheDemExecuted: database.cacheDemoExecutionCount === null ? null : database.cacheDemoExecutionCount > 0,
-      attempt9Created: database.attempt9Count === null || database.attempt10PlusCount === null ? null : database.attempt9Count > 0 || database.attempt10PlusCount > 0,
+      validAttestationExecuted:
+        database.verifiedProvenanceCount === null ? null : database.verifiedProvenanceCount > 0,
+      demExecuted:
+        database.realDemoExecutionCount === null ? null : database.realDemoExecutionCount > 0,
+      cacheDemExecuted:
+        database.cacheDemoExecutionCount === null ? null : database.cacheDemoExecutionCount > 0,
+      attempt9Created:
+        database.attempt9Count === null || database.attempt10PlusCount === null
+          ? null
+          : database.attempt9Count > 0 || database.attempt10PlusCount > 0,
       realDemoExecutionCount: database.realDemoExecutionCount,
       cacheDemoExecutionCount: database.cacheDemoExecutionCount,
       attempt10PlusCount: database.attempt10PlusCount,
       canonicalAdmission:
         database.canonical.authorized === 0 && database.canonical.verified === 0
           ? "LOCKED"
-          : database.canonical.authorized === null || database.canonical.verified === null ? "UNKNOWN" : "UNLOCKED",
+          : database.canonical.authorized === null || database.canonical.verified === null
+            ? "UNKNOWN"
+            : "UNLOCKED",
     },
   };
 }
