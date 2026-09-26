@@ -199,8 +199,10 @@ def test_terminal_evidence_precedes_completion_and_failure_never_completes(monke
 
     for terminal_failure, queue_failure in ((False, False), (True, False), (False, True)):
         events = []
+        execution_ids = []
         async def record(_self, event_type, _outcome_code=None):
             events.append(event_type)
+            execution_ids.append(_self.execution_id)
             if terminal_failure and event_type == "EXECUTION_FINISHED":
                 raise RuntimeError("H3E91_RECORDING_FAILED_503")
             return {"status": "INSERTED"}
@@ -239,3 +241,42 @@ def test_terminal_evidence_precedes_completion_and_failure_never_completes(monke
         if "complete" in events:
             assert events.index("EXECUTION_FINISHED") < events.index("complete")
         assert events.count("EXECUTION_FAILED") == 0
+        assert len(set(execution_ids)) == 1
+
+
+def test_durable_execution_identity_survives_claim_retry(monkeypatch):
+    import app
+    import worker
+
+    ids = []
+    events = []
+
+    async def record(self, event_type, _outcome_code=None):
+        events.append(event_type)
+        ids.append((self.execution_id, self.event_ids[event_type]))
+        return {"status": "IDEMPOTENT_REPLAY" if len(ids) > 1 else "INSERTED"}
+
+    async def bridge(_client, _settings, action, _body):
+        if action == "claim":
+            if events.count("EXECUTION_INTENT") == 2:
+                raise asyncio.CancelledError()
+            return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
+                    "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                    "demo_url": "https://synthetic.invalid/demo.dem", "demo_sha256": DEMO_SHA,
+                    "file_size": 520, "schema_version": 1}
+        return {"accepted": True, "cancelled": False}
+
+    async def durable(*_args, **_kwargs):
+        raise RuntimeError("synthetic preparser failure")
+
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
+    monkeypatch.setattr(worker, "_bridge", bridge)
+    monkeypatch.setattr(app, "_parse_durable_request", durable)
+    settings = make_settings(bridge_url="https://synthetic.invalid/bridge", bridge_secret="synthetic-test-only")
+    try:
+        asyncio.run(durable_consumer_loop(settings, empty_parse))
+    except asyncio.CancelledError:
+        pass
+    assert events == ["EXECUTION_INTENT", "EXECUTION_ABORTED", "EXECUTION_INTENT"]
+    assert ids[0] == ids[2]
