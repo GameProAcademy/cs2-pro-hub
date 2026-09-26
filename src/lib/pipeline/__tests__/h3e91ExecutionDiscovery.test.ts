@@ -10,7 +10,8 @@ const productionRoots = ["src/lib", "src/routes", "services/cs2-demo-parser"];
 function productionFiles(root: string): string[] {
   return readdirSync(resolve(process.cwd(), root), { withFileTypes: true }).flatMap((entry) => {
     const path = `${root}/${entry.name}`;
-    if (entry.isDirectory()) return entry.name === "tests" || entry.name === "__tests__" ? [] : productionFiles(path);
+    if (entry.isDirectory())
+      return entry.name === "tests" || entry.name === "__tests__" ? [] : productionFiles(path);
     return /\.(ts|tsx|py)$/.test(entry.name) ? [path] : [];
   });
 }
@@ -26,12 +27,30 @@ const executablePatterns = [
 // All matching sites must be classified. References/definitions are intentionally
 // excluded; unknown actual calls fail rather than silently passing as documentation.
 const classified: Record<string, { count: number; classification: string }> = {
-  "src/lib/pipeline/jobs.server.ts": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:APP_REMOTE_PARSER" },
-  "src/lib/client-parser/clientParser.service.ts": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC" },
-  "src/lib/client-parser/clientParser.worker.ts": { count: 4, classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC" },
-  "services/cs2-demo-parser/app.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:RAILWAY_DURABLE_WORKER+RAILWAY_V1_PARSE" },
-  "services/cs2-demo-parser/parser.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:SHARED_PARSER_IMPLEMENTATION" },
-  "services/cs2-demo-parser/python_reference.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:UNSEALED_REFERENCE_CLI" },
+  "src/lib/pipeline/jobs.server.ts": {
+    count: 1,
+    classification: "PRODUCTION_EXECUTION_SURFACE:APP_REMOTE_PARSER",
+  },
+  "src/lib/client-parser/clientParser.service.ts": {
+    count: 1,
+    classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
+  },
+  "src/lib/client-parser/clientParser.worker.ts": {
+    count: 4,
+    classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
+  },
+  "services/cs2-demo-parser/app.py": {
+    count: 1,
+    classification: "PRODUCTION_EXECUTION_SURFACE:RAILWAY_DURABLE_WORKER+RAILWAY_V1_PARSE",
+  },
+  "services/cs2-demo-parser/parser.py": {
+    count: 1,
+    classification: "PRODUCTION_EXECUTION_SURFACE:SHARED_PARSER_IMPLEMENTATION",
+  },
+  "services/cs2-demo-parser/python_reference.py": {
+    count: 1,
+    classification: "PRODUCTION_EXECUTION_SURFACE:UNSEALED_REFERENCE_CLI",
+  },
 };
 
 describe("H.3-E.9.1 execution source discovery", () => {
@@ -39,12 +58,21 @@ describe("H.3-E.9.1 execution source discovery", () => {
     const found = Object.fromEntries(
       productionRoots.flatMap(productionFiles).flatMap((path) => {
         const source = read(path);
-        const count = executablePatterns.reduce((sum, pattern) => sum + [...source.matchAll(pattern)].length, 0);
+        const count = executablePatterns.reduce(
+          (sum, pattern) => sum + [...source.matchAll(pattern)].length,
+          0,
+        );
         return count > 0 ? [[path, count]] : [];
       }),
     );
-    expect(found).toEqual(Object.fromEntries(Object.entries(classified).map(([file, value]) => [file, value.count])));
-    expect(Object.values(classified).every(({ classification }) => classification.startsWith("PRODUCTION_EXECUTION_SURFACE:"))).toBe(true);
+    expect(found).toEqual(
+      Object.fromEntries(Object.entries(classified).map(([file, value]) => [file, value.count])),
+    );
+    expect(
+      Object.values(classified).every(({ classification }) =>
+        classification.startsWith("PRODUCTION_EXECUTION_SURFACE:"),
+      ),
+    ).toBe(true);
   });
 
   it("still discovers both independent Railway entrypoints and their shared boundary", () => {
@@ -57,7 +85,9 @@ describe("H.3-E.9.1 execution source discovery", () => {
 
   it("treats reference scripts copied into the production image as unsealed", () => {
     expect(read("services/cs2-demo-parser/Dockerfile")).toMatch(/^COPY \. \.$/m);
-    expect(classified["services/cs2-demo-parser/python_reference.py"]?.classification).toContain("UNSEALED_REFERENCE_CLI");
+    expect(classified["services/cs2-demo-parser/python_reference.py"]?.classification).toContain(
+      "UNSEALED_REFERENCE_CLI",
+    );
   });
 
   it("does not confuse an additive identity schema with a functioning writer", () => {
@@ -66,6 +96,8 @@ describe("H.3-E.9.1 execution source discovery", () => {
     expect(sql).toContain("ADD COLUMN event_id uuid");
     expect(sql).toContain("CREATE UNIQUE INDEX h3e91_execution_event_id_unique");
     expect(sql).toMatch(/REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES/);
-    expect(sql).not.toMatch(/CREATE\s+(OR REPLACE\s+)?FUNCTION\s+public\.h3e91_record_execution_event/i);
+    expect(sql).not.toMatch(
+      /CREATE\s+(OR REPLACE\s+)?FUNCTION\s+public\.h3e91_record_execution_event/i,
+    );
   });
 });
