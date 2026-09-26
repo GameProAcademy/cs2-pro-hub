@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep H.3-E.9.1 evidence collection in server-only/read-only modules and the H.3-E.9 evaluator pure, so diagnostics cannot become an execution path.

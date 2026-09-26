@@ -10,12 +10,13 @@ type ServerEntry = {
 const ATTESTATION_RUNTIME_SECRET_NAMES = [
   "PARSER_ATTESTATION_TRANSPORT_SECRET",
   "PARSER_ATTESTATION_HMAC_SECRET",
+  "PARSER_ATTESTATION_ENDPOINT",
 ] as const;
 
 /**
  * Lovable supplies custom server secrets as Worker bindings. TanStack's
  * server route reads server-only values through process.env, so copy only the
- * two attestation bindings into that server environment before dispatch.
+ * attestation bindings into that server environment before dispatch.
  */
 export function bindAttestationRuntimeSecrets(env: unknown): void {
   if (!env || typeof env !== "object" || Array.isArray(env)) return;

@@ -1,0 +1,63 @@
+name: H.3-E.9.1 Live Evidence Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  collect-live-evidence:
+    if: github.repository == 'GameProAcademy/cs2-pro-hub' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout controlled diagnostic source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Collect external read-only evidence
+        env:
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
+        run: python scripts/h3e91_live_preflight.py h3-e9-external-evidence.json
+
+      - name: Mint short-lived preflight identity
+        id: oidc
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const token = await core.getIDToken('gamepro-h3e9-live-preflight')
+            core.setSecret(token)
+            core.setOutput('token', token)
+
+      - name: Evaluate evidence without executing attestation
+        env:
+          H3E91_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --retry 0 --max-time 30 \
+            -H "Authorization: Bearer ${H3E91_OIDC_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data-binary @h3-e9-external-evidence.json \
+            'https://gamepro.network/api/internal/h3e9/preflight' \
+            --output h3-e9-live-preflight.json
+          jq -e '.operation == null and .finalResult.operation == "DIAGNOSTIC_ONLY" and .finalResult.sideEffects == false' h3-e9-live-preflight.json >/dev/null
+
+      - name: Upload machine-readable preflight
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: h3-e9-live-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: h3-e9-live-preflight.json
+          if-no-files-found: error
+          retention-days: 7
