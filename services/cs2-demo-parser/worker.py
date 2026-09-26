@@ -82,7 +82,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     if intent_result.get("status") != "INSERTED":
                         # A retried lease needs independent lifecycle reconciliation;
                         # never execute a parser or add a new terminal on replay.
-                        logger.warning("durable execution replay requires reconciliation")
+                        logger.warning("durable execution replay requires reconciliation job=%s attempt=%s state=RECONCILIATION_REQUIRED", identity["jobId"], claim["attempt_number"])
                         continue
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")
@@ -145,13 +145,23 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
                     if not terminal_recorded:
-                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
-                        await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
+                        try:
+                            await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
+                        except Exception:
+                            logger.error("terminal evidence unavailable; queue failure suppressed job=%s", identity["jobId"])
+                        else:
+                            try:
+                                await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
+                            except Exception:
+                                logger.warning("queue failure notification unavailable; terminal evidence retained job=%s", identity["jobId"])
                     else:
                         logger.warning("queue completion failed after terminal evidence; refusing second terminal type=%s", type(error).__name__)
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
                     if not terminal_recorded and "H3E91_RECORDING_" not in str(error):
-                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
+                        try:
+                            await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
+                        except Exception:
+                            logger.error("terminal evidence unavailable; reconciliation required job=%s", identity["jobId"])
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()

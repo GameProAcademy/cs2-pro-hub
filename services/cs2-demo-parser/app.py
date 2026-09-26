@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import hmac
 import logging
 import os
 import tempfile
@@ -225,7 +226,7 @@ def _require_token(request: Request, settings: Settings) -> None:
     scheme, _, value = header.partition(" ")
     if scheme.lower() != "bearer" or not value.strip():
         raise WorkerError(401, E.UNAUTHORIZED, "Missing bearer credentials.")
-    if value.strip() != settings.token:
+    if not hmac.compare_digest(value.strip(), settings.token):
         raise WorkerError(401, E.UNAUTHORIZED, "Invalid credentials.")
 
 
@@ -385,7 +386,7 @@ def create_app(
                 # A replayed INTENT may already have STARTED or a terminal row.
                 # Without an authenticated read of that lifecycle, never parse twice.
                 if intent_result.get("status") != "INSERTED":
-                    raise WorkerError(409, E.CONTRACT_MISMATCH, "Execution already recorded; reconciliation required.")
+                    raise WorkerError(409, "SAFE_REPLAY_REQUIRES_RECONCILIATION", "Execution already recorded; reconciliation required.")
             except WorkerError:
                 raise
             except Exception:
@@ -406,7 +407,11 @@ def create_app(
                 await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
                                       "PARSE_FAILED" if started else "PREPARSE_FAILED")
                 raise
-            await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+            try:
+                await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+            except Exception:
+                logger.error("terminal execution evidence unavailable job=%s attempt=%s", body.job_id, body.attempt_number)
+                raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable; reconciliation required.") from None
         return response
 
     if resolved.bridge_url and resolved.bridge_secret:
