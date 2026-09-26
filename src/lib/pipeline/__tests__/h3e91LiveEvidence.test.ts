@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { finalizeH3E91Artifact } from "@/lib/h3e91Collector.server";
 import { H3E91_OIDC_AUDIENCE, H3E91_WORKFLOW_PATH, h3e91ExternalEvidenceSchema, type H3E91DatabaseEvidence, type H3E91ExternalEvidence } from "@/lib/h3e91LiveEvidence";
+import { evaluateH3E9FinalExecutionReadiness } from "@/lib/h3e9FinalExecutionReadiness";
 import { validateH3E91OidcClaims } from "@/lib/h3e91Oidc.server";
 import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
 
@@ -42,7 +43,7 @@ describe("H.3-E.9.1 live evidence", () => {
     const artifact = finalizeH3E91Artifact(external(), database());
     artifact.finalResult.retention = { status: "AUTHORIZED", reference: "synthetic", issuedAt: "2026-09-25T23:00:00Z", expiresAt: "2026-09-26T01:00:00Z", scope: "H3E9_ATTESTATION_RETENTION" };
     artifact.finalResult.operatorAuthorization = { status: "AUTHORIZED", reference: "synthetic", issuedAt: "2026-09-25T23:00:00Z", expiresAt: "2026-09-26T01:00:00Z", scope: "H3E9_FIRST_VALID_ATTESTATION" };
-    const reevaluated = (await import("@/lib/h3e9FinalExecutionReadiness")).evaluateH3E9FinalExecutionReadiness(artifact.finalResult);
+    const reevaluated = evaluateH3E9FinalExecutionReadiness(artifact.finalResult);
     expect(reevaluated.status).toBe("READY");
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
