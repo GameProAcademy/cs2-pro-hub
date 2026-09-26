@@ -16,6 +16,7 @@ import { evaluateH3E9FinalExecutionReadiness } from "@/lib/h3e9FinalExecutionRea
 import { validateH3E91OidcClaims } from "@/lib/h3e91Oidc.server";
 import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
 import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
+import { H3E91_EXECUTION_SURFACES, inspectH3E91ExecutionSurfaces } from "@/lib/h3e91ExecutionSurfaces.server";
 
 const NOW = "2026-09-26T00:00:00.000Z";
 const safe = <T>(value: T) => ({
@@ -141,6 +142,30 @@ function claims() {
 }
 
 describe("H.3-E.9.1 live evidence", () => {
+  it("keeps every identified parser entry point uncovered until reviewed instrumentation exists", () => {
+    const coverage = inspectH3E91ExecutionSurfaces();
+    expect(Object.keys(coverage.surfaces).sort()).toEqual([...H3E91_EXECUTION_SURFACES].sort());
+    expect(coverage.writerCoverageVerified).toBe(false);
+    expect(coverage.uncoveredSurfaceCount).toBe(4);
+    expect(coverage.activeInstrumentedSurfaceCount).toBe(0);
+    expect(coverage.sealedOffSurfaceCount).toBe(0);
+  });
+  it("rejects newly discovered or missing execution surfaces rather than treating them as covered", () => {
+    const unexpected = inspectH3E91ExecutionSurfaces([...H3E91_EXECUTION_SURFACES, "TEST_UNREGISTERED_SURFACE"]);
+    expect(unexpected.unexpectedWriterCount).toBe(1);
+    expect(unexpected.writerCoverageVerified).toBe(false);
+    const missing = inspectH3E91ExecutionSurfaces(["APP_REMOTE_PARSER"]);
+    expect(missing.unknownSurfaceCount).toBe(3);
+    expect(missing.writerCoverageVerified).toBe(false);
+  });
+  it("binds the uncovered inventory into the diagnostic digest and blocker set", () => {
+    const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
+    expect(artifact.executionSurfaceCoverage.writerCoverageVerified).toBe(false);
+    expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_SURFACE_NOT_COVERED");
+    expect(artifact.finalResult.technicalReadiness).toBe("BLOCKED");
+    const { evidenceDigest: _digest, ...payload } = artifact;
+    expect(artifact.evidenceDigest).toBe(createHash("sha256").update(canonicalAttestationJson(payload)).digest("hex"));
+  });
   it("accepts a strict safe external evidence envelope", () =>
     expect(h3e91ExternalEvidenceSchema.safeParse(external()).success).toBe(true));
   it("rejects unknown and secret-bearing fields", () => {
