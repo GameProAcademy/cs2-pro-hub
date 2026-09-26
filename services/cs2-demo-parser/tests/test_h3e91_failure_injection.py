@@ -145,7 +145,7 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     assert len(parser_calls) == 2
 
 
-@pytest.mark.parametrize("phase", ["intent_response_lost", "intent", "started", "finished"])
+@pytest.mark.parametrize("phase", ["intent", "started", "finished", "normal"])
 def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monkeypatch, phase):
     """New HTTP requests and real recorder transport; the ledger is a synthetic bridge, not PostgreSQL."""
     import app
@@ -166,7 +166,7 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
         if old and old != event:
             return httpx.Response(409, json={"status": "REJECTED", "code": "EVENT_ID_CONFLICT"})
         stored[key] = event
-        if phase == "intent_response_lost" and len(requests) == 1:
+        if old is None and event["eventType"] == f"EXECUTION_{phase.upper()}":
             raise httpx.ReadError("synthetic response lost after persistence")
         return httpx.Response(200 if old else 201, json={"status": "IDEMPOTENT_REPLAY" if old else "INSERTED"})
 
@@ -189,7 +189,13 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     body = parse_body()
     first = client.post("/v1/parse", json=body, headers=auth())
     assert requests, (first.status_code, first.text)
-    assert first.status_code == (503 if phase == "intent_response_lost" else 200)
+    assert first.status_code == (200 if phase == "normal" else 503)
+    assert {"intent": {"EXECUTION_INTENT"},
+            "started": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_ABORTED"},
+            "finished": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED"},
+            "normal": {"EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED"}}[phase] == {
+                event["eventType"] for event in stored.values()
+            }
     first_count = len(stored)
     response = client.post("/v1/parse", json=body, headers=auth())
     assert response.status_code == 409
@@ -197,5 +203,7 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
     assert len(stored) == first_count
     assert len({e["executionId"] for e in requests}) == 1
     assert len({e["eventId"] for e in requests if e["eventType"] == "EXECUTION_INTENT"}) == 1
-    assert len(parser_calls) == (0 if phase == "intent_response_lost" else 1)
-    assert sum(e["eventType"] == "EXECUTION_FINISHED" for e in stored.values()) == (0 if phase == "intent_response_lost" else 1)
+    assert len(parser_calls) == (0 if phase in ("intent", "started") else 1)
+    assert sum(e["eventType"] == "EXECUTION_FINISHED" for e in stored.values()) == (1 if phase in ("finished", "normal") else 0)
+    assert len({e["correlationId"] for e in requests}) == 1
+    assert len({e["eventId"] for e in stored.values()}) == len(stored)
