@@ -30,8 +30,12 @@ export function appExecutionRecorder(input: {
 }) {
   // The immutable logical execution identity includes job + attempt + upload.
   // Reusing only job+attempt could collide if an upload is replaced under the same logical attempt.
-  const executionIdentity = executionUuid(\n    `${input.jobId}:${input.attemptNumber}:${input.uploadId}`,\n  );
-  const correlationId = executionUuid(\n    `${input.jobId}:${input.attemptNumber}:${input.uploadId}:correlation`,\n  );
+  const executionIdentity = executionUuid(
+    `${input.jobId}:${input.attemptNumber}:${input.uploadId}`,
+  );
+  const correlationId = executionUuid(
+    `${input.jobId}:${input.attemptNumber}:${input.uploadId}:correlation`,
+  );
   const eventIds: Record<EventType, string> = {
     EXECUTION_INTENT: executionUuid(`${executionIdentity}:EXECUTION_INTENT`),
     EXECUTION_STARTED: executionUuid(`${executionIdentity}:EXECUTION_STARTED`),
