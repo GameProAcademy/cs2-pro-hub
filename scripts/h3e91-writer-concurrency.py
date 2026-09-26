@@ -74,9 +74,9 @@ def main():
         # Disposable initdb runs as lovable; the live owner is postgres.
         assert sql("SELECT pg_get_userbyid(proowner) = current_user FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
         assert snapshot["owner"] == "postgres"
-        assert sql("SELECT prosecdef::text FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
+        assert sql("SELECT prosecdef FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == "t"
         assert sql("SELECT proconfig[1] FROM pg_proc WHERE oid='public.h3e91_read_execution_lifecycle(uuid)'::regprocedure") == 'search_path=""'
-        assert sql("SELECT relrowsecurity::text FROM pg_class WHERE oid='public.h3e91_execution_evidence_ledger'::regclass") == "t"
+        assert sql("SELECT relrowsecurity FROM pg_class WHERE oid='public.h3e91_execution_evidence_ledger'::regclass") == "t"
         assert sql("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.h3e91_execution_evidence_ledger'::regclass AND NOT tgisinternal AND tgenabled <> 'D'") != "0"
         assert sql("SELECT count(*) FROM pg_index WHERE indrelid='public.h3e91_execution_evidence_ledger'::regclass AND indisunique") != "0"
         print("PASS: migration lineage SOURCE_AND_LIVE final reader; SUPERSEDED source-only duplicates absent; live schema snapshot matched")
