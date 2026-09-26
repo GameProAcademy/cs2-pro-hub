@@ -33,8 +33,7 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 ## CURRENT BLOCKERS
 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
-- CURRENT CI: Quality Gates run `36222382006` completed GREEN for the current revision `5d06db444064e4626adcc83360899335a4638e83`. All three jobs passed, including web/lint/build, parser, contract-sensitive parser, disposable PostgreSQL concurrency, Docker image exclusion, and browser production-output sealing. This is CI evidence only; deployed Railway parity remains UNKNOWN.
-- SUPERSEDED CI evidence: run `36222382006` belongs to `5d06db444064e4626adcc83360899335a4638e83`, **not** this closure revision; final-revision CI remains UNKNOWN.
+- SUPERSEDED CI evidence: Quality Gates run `36222382006` passed for `5d06db444064e4626adcc83360899335a4638e83`, **not** this closure revision. Final-revision CI remains UNKNOWN; deployed Railway parity remains UNKNOWN.
 - Failure-injection coverage remains bounded, not a complete 26-case deployed-surface matrix. No production ledger writes are needed or authorized for local tests.
 - Live reader is invariant-hardened through managed migration `20260926055410` and returns `terminalEventAt` through `20260926055608`; the earlier source-only filename `20260926053000` is still absent from migration history. Its SQL was executed unchanged by the managed tool, which assigned a new version rather than using that source filename.
 - FINISHED replay recovery is fail-closed when `demo_jobs` lacks a processed/blocked_raw_audit result; the current reconciliation test mocks the lifecycle and database result and does not prove recovery from persisted RAW/HOT state after a lost queue-completion acknowledgement in an integrated disposable database.
