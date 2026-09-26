@@ -20,15 +20,15 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 
 | PROOF | SOURCE | LIVE_DB_WRITER | SURFACE_LIVE_EXECUTION | SYNTHETIC | CI | DEPLOYED | PROVENANCE | STATUS | BLOCKER |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Writer contract/security/digest | PASS | PASS (live read-only inspection) | UNKNOWN | PASS (disposable DB) | PASS | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Deployed parity unknown |
+| Writer contract/security/digest | PASS | PASS (live read-only inspection) | UNKNOWN | PASS (disposable DB) | UNKNOWN (final revision) | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | Final-revision CI and deployed parity unknown |
 | HTTP retry identity/reconciliation | PASS | UNKNOWN (zero rows) | UNKNOWN | PASS (lost acknowledgements per state plus simultaneous original and two retries) | UNKNOWN (new revision) | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Deployed runtime proof unknown; transparent result retry absent |
 | Durable retry and terminal-before-complete | PASS (bounded lifecycle and queue reconciliation) | invariant reader applied as 20260926055410; timestamp rename as 20260926055608; source version 20260926053000 absent | UNKNOWN | PASS (mocked per-state read/reconciliation and terminal ordering) | UNKNOWN (new commit) | UNKNOWN | SOURCE_IMPLEMENTED + LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | FINISHED recovery with real queue persistence and complete failure matrix unproven; deployed parity unknown |
-| PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | PASS | UNKNOWN | SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Complete independent race matrix and deployed parity remain unknown |
+| PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | UNKNOWN (final revision) | UNKNOWN | SYNTHETIC_PROVEN | BLOCKED | Complete independent race matrix and deployed parity remain unknown |
 | APP, Railway and browser isolation | PASS (bounded) | UNKNOWN | UNKNOWN | PASS (bounded ordering/isolation) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Complete injection matrix and deployed proof outstanding |
-| Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | PASS (Docker image allowlist/non-root check in CI) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + CI_EXTERNAL_VERIFIED | BLOCKED | Deployed image parity unknown |
-| Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (current external run: web tests, typecheck, lint, build; parser and contract suites PASS) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN + CI_EXTERNAL_VERIFIED | BLOCKED | Reconciliation/race closure and deployed proof remain |
-| Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | PASS (CI build-output sealing gate) | PASS | UNKNOWN | SOURCE_IMPLEMENTED + CI_EXTERNAL_VERIFIED | BLOCKED | Deployed bundle parity unknown |
-| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | PASS | PASS | UNKNOWN | CI_EXTERNAL_VERIFIED | PASS (CI only) | Runtime/deployed parity remains separate |
+| Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | NOT_RUN (Docker unavailable locally) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final image and deployed image parity unknown |
+| Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (1,391 web; 239 Python/10 skipped; lint/typecheck; preview build OK) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Final CI and deployed proof remain |
+| Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | NOT_RUN (final output gate) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final bundle and deployed bundle parity unknown |
+| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | NOT_RUN for final revision | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | External run for final commit unverified |
 
 ## CURRENT BLOCKERS
 
