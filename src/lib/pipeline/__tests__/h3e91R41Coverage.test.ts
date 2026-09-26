@@ -11,7 +11,13 @@ describe("R4.1 source checkpoint remains diagnostic", () => {
   });
   it("lists every independent entry point without claiming runtime coverage", () => {
     expect(Object.keys(H3E91_R41_COVERAGE.surfaces).sort()).toEqual(
-      ["APP_REMOTE_PARSER", "RAILWAY_DURABLE_WORKER", "RAILWAY_V1_PARSE", "BROWSER_WASM_POC", "REFERENCE_CLI"].sort(),
+      [
+        "APP_REMOTE_PARSER",
+        "RAILWAY_DURABLE_WORKER",
+        "RAILWAY_V1_PARSE",
+        "BROWSER_WASM_POC",
+        "REFERENCE_CLI",
+      ].sort(),
     );
     expect(
       Object.values(H3E91_R41_COVERAGE.surfaces)
