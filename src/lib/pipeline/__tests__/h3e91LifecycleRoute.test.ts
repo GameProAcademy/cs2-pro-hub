@@ -12,7 +12,7 @@ const executionId = "11111111-1111-5111-8111-111111111111";
 function request(body: unknown, authorized = true) {
   return new Request("http://localhost/api/public/h3e91-execution-lifecycle", {
     method: "POST",
-    headers: authorized ? { authorization: "Bearer synthetic-test-only" } : undefined,
+    ...(authorized ? { headers: { authorization: "Bearer synthetic-test-only" } } : {}),
     body: JSON.stringify(body),
   });
 }

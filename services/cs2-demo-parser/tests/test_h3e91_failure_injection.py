@@ -146,6 +146,10 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     changed_attempt = client.post("/v1/parse", json={**body, "attempt_number": 2}, headers=auth())
     assert changed_attempt.status_code == 200
     assert len(parser_calls) == 2
+    assert len({execution for execution, _kind in seen}) == 2
+    missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
+    assert missing.status_code == 409
+    assert len(parser_calls) == 2
 
 
 def test_v1_original_and_two_retries_overlap_without_second_parse(client_factory, monkeypatch):
@@ -201,10 +205,6 @@ def test_v1_original_and_two_retries_overlap_without_second_parse(client_factory
     assert [response.status_code for response in retry_responses] == [409, 409]
     assert parser_calls == [1]
     assert len({execution for execution, _kind in recorded}) == 1
-    assert len({execution for execution, _kind in seen}) == 2
-    missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
-    assert missing.status_code == 409
-    assert len(parser_calls) == 2
 
 
 @pytest.mark.parametrize("phase", ["intent", "started", "finished", "normal"])
