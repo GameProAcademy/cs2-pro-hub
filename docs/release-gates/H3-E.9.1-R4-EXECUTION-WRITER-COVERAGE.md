@@ -6,6 +6,8 @@
 
 Local F.5.2 correction: synthetic transport now persists and loses acknowledgements separately after INTENT, STARTED, and FINISHED; fresh HTTP retries reuse identity and return 409 without a second parse. A STARTED acknowledgement loss does not emit an incompatible ABORTED terminal. An ambiguous FINISHED acknowledgement on the durable worker does not emit FAILED. The prior four-iteration durable test represented **one** replay state, not four lifecycle states; it is now named accordingly. An authoritative per-execution read and durable queue reconciliation for INTENT_ONLY, STARTED_ONLY, FINISHED, FAILED, ABORTED and completion-lost states are **NOT IMPLEMENTED**. Queue completion cannot be reconstructed safely without durable HOT/RAW payload and lease binding; the worker suppresses duplicate parsing and leaves reconciliation required. These limits prohibit closing F.5.2.
 
+Read-only live database inspection during this checkpoint: ledger **0 rows**, writer `SECURITY DEFINER`, owner `postgres`, empty `search_path`, RLS enabled, `service_role` alone among tested API roles can execute; neither `service_role` nor `sandbox_exec` can directly insert. This is writer security evidence, **not** surface-execution or absence-of-execution proof.
+
 No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, attestation, Canonical authorization or secrets mutation is authorized. `realDemAuthorized=false`; `canonicalAuthorized=false`. The next independent deployment gate is H.3-E.9.1-R4.2. Zero production ledger rows do not prove absence of execution.
 
 ## CURRENT PROOF MATRIX
