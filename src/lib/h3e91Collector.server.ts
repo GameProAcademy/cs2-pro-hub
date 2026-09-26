@@ -102,6 +102,9 @@ export async function collectH3E91DatabaseEvidence(
     const securityKnown = Object.values(evidence.security).every(
       (value) => typeof value === "boolean",
     );
+    // No authoritative database ledger for real or Cache DEM execution exists in
+    // this read surface. Neither feature flags nor an old diagnostic constant
+    // can establish their absence; preserve UNKNOWN until independently proven.
     evidence.status =
       countsKnown && securityKnown && evidence.migration.exactMatchCount !== null
         ? evidence.migration.exactMatchCount === 1 && Object.values(evidence.security).every(Boolean) ? "PASS" : "BLOCKED"
