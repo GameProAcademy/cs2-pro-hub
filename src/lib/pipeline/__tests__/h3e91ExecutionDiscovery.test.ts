@@ -28,8 +28,10 @@ const executablePatterns = [
 const classified: Record<string, { count: number; classification: string }> = {
   "src/lib/pipeline/jobs.server.ts": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:APP_REMOTE_PARSER" },
   "src/lib/client-parser/clientParser.service.ts": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC" },
-  "src/lib/client-parser/clientParser.worker.ts": { count: 3, classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC" },
+  "src/lib/client-parser/clientParser.worker.ts": { count: 4, classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC" },
   "services/cs2-demo-parser/app.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:RAILWAY_DURABLE_WORKER+RAILWAY_V1_PARSE" },
+  "services/cs2-demo-parser/parser.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:SHARED_PARSER_IMPLEMENTATION" },
+  "services/cs2-demo-parser/python_reference.py": { count: 1, classification: "PRODUCTION_EXECUTION_SURFACE:UNSEALED_REFERENCE_CLI" },
 };
 
 describe("H.3-E.9.1 execution source discovery", () => {
@@ -51,6 +53,11 @@ describe("H.3-E.9.1 execution source discovery", () => {
     expect(read("services/cs2-demo-parser/app.py")).toMatch(/async def _parse_downloaded\(/);
     expect(read("services/cs2-demo-parser/app.py")).toMatch(/async def _parse_durable_request\(/);
     expect(read("services/cs2-demo-parser/worker.py")).toMatch(/async def durable_consumer_loop\(/);
+  });
+
+  it("treats reference scripts copied into the production image as unsealed", () => {
+    expect(read("services/cs2-demo-parser/Dockerfile")).toMatch(/^COPY \. \.$/m);
+    expect(classified["services/cs2-demo-parser/python_reference.py"]?.classification).toContain("UNSEALED_REFERENCE_CLI");
   });
 
   it("does not confuse an additive identity schema with a functioning writer", () => {
