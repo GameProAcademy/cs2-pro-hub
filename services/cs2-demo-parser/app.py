@@ -28,12 +28,13 @@ import tempfile
 import re
 import resource
 import time
+import uuid
 from typing import Any, Awaitable, Callable
 
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 
 import errors as E
 from errors import (
@@ -71,6 +72,10 @@ class ParseRequest(BaseModel):
     demo_url: str
     demo_sha256: str
     file_size: int
+    # HTTP retries are the same logical execution only for the same authenticated
+    # job, attempt and upload. The client cannot choose an execution UUID.
+    job_id: uuid.UUID | None = None
+    attempt_number: int | None = Field(default=None, ge=1)
 
 
 async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
@@ -359,13 +364,23 @@ def create_app(
             body = ParseRequest.model_validate(await request.json())
         except (ValidationError, ValueError):
             raise WorkerError(409, E.CONTRACT_MISMATCH, "Malformed parse request.") from None
+        if body.job_id is None or body.attempt_number is None:
+            raise WorkerError(409, E.CONTRACT_MISMATCH, "Logical execution identity is required.")
+        try:
+            upload_uuid = uuid.UUID(body.upload_id)
+        except ValueError:
+            raise WorkerError(409, E.CONTRACT_MISMATCH, "Invalid upload identity.") from None
+        logical_identity = f"h3e91:v1:{body.job_id}:{body.attempt_number}:{upload_uuid}"
 
         from h3e91_execution import ExecutionRecorder
         async with httpx.AsyncClient(timeout=30) as execution_client:
             try:
                 recorder = ExecutionRecorder(execution_client, resolved, upload_id=body.upload_id,
                                              surface="RAILWAY_V1_PARSE", demo_sha256=body.demo_sha256,
-                                             file_size=body.file_size).bind_revision(resolved.revision)
+                                              file_size=body.file_size, job_id=str(body.job_id),
+                                              attempt_number=body.attempt_number,
+                                              execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, logical_identity)),
+                                              correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, logical_identity + ":correlation"))).bind_revision(resolved.revision)
                 await recorder.record("EXECUTION_INTENT")
             except Exception:
                 raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable.") from None
