@@ -46,7 +46,7 @@ jobs:
         run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionRecorder.test.ts src/lib/pipeline/__tests__/h3e91BrowserBuildIsolation.test.ts
 
       - name: Typecheck
-        run: bunx tsc --noEmit
+        run: bunx tsgo --noEmit
 
       - name: Lint
         run: bun run lint
@@ -98,7 +98,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           docker build --tag gamepro-parser-isolation:ci services/cs2-demo-parser
-          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py"}; assert {x.name for x in p.iterdir() if x.is_file()} == expected | {"requirements.txt"}; assert not (p/"python_reference.py").exists(); assert not (p/"tests").exists()'
+          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
 
   contract-gate:
     name: Contract-sensitive parser tests
