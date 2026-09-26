@@ -32,6 +32,9 @@ export class ClientParserService {
     file: File,
     onProgress?: (value: ClientParserProgress) => void,
   ): Promise<ClientParserEnvelope> {
+    // The source remains available to isolated test harnesses, but no
+    // production bundle may turn this browser parser into an execution path.
+    if (import.meta.env.PROD) throw new ClientParserError("CLIENT_PARSER_DISABLED");
     if (!file.name.toLowerCase().endsWith(".dem") || file.size < 1)
       throw new ClientParserError("CLIENT_DEMO_INVALID");
     if (file.size > CLIENT_DEMO_MAX_BYTES) throw new ClientParserError("CLIENT_DEMO_TOO_LARGE");

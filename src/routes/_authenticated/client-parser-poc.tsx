@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ClientParserPoc } from "@/components/pipeline/ClientParserPoc";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/common/PageHeader";
-import { FEATURES } from "@/config/app";
 
 export const Route = createFileRoute("/_authenticated/client-parser-poc")({
   head: () => ({
@@ -33,13 +31,9 @@ function ClientParserPocPage() {
           title="CS2 Pro — Client Parser POC"
           description="Experimento isolado no navegador. Não substitui o parser oficial nem libera dados para análise."
         />
-        {FEATURES.clientDemParserPoc ? (
-          <ClientParserPoc />
-        ) : (
-          <p className="border border-warning/30 bg-warning/8 p-4 text-sm text-warning">
-            POC desabilitada neste ambiente.
-          </p>
-        )}
+        <p className="border border-warning/30 bg-warning/8 p-4 text-sm text-warning">
+          STATUS: FEATURE_DISABLED
+        </p>
       </div>
     </AppShell>
   );
