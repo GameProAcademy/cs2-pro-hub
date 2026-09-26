@@ -36,7 +36,10 @@ jobs:
         run: bun run test
 
       - name: H3E91 source discovery and sealed-ledger gate
-        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts
+        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts src/lib/pipeline/__tests__/h3e91ExecutionBridge.test.ts src/lib/pipeline/__tests__/h3e91R41Coverage.test.ts src/lib/pipeline/__tests__/h3e91R41Authority.test.ts
+
+      - name: H3E91 disposable PostgreSQL writer concurrency
+        run: python3 scripts/h3e91-writer-concurrency.py
 
       - name: Typecheck
         run: bunx tsc --noEmit
