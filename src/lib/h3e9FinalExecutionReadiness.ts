@@ -38,6 +38,11 @@ export const H3E9_BLOCKER_CODES = [
   "H3E9_DEM_EXECUTION_DETECTED",
   "H3E9_ATTESTATION_ALREADY_EXECUTED",
   "H3E9_UNKNOWN_STATE",
+  "H3E91_DATABASE_EVIDENCE_UNKNOWN",
+  "H3E91_MIGRATION_EVIDENCE_UNKNOWN",
+  "H3E91_SECURITY_EVIDENCE_UNKNOWN",
+  "H3E91_RUNTIME_EVIDENCE_UNKNOWN",
+  "H3E91_RAILWAY_EVIDENCE_UNKNOWN",
 ] as const;
 
 export type H3E9BlockerCode = (typeof H3E9_BLOCKER_CODES)[number];
@@ -75,6 +80,7 @@ export interface H3E9ReadinessInput {
     hmacBridgeServiceRoleOnly: boolean | null;
     securityDefiner: boolean | null;
     emptySearchPath: boolean | null;
+    migrationExactMatchCount?: number | null;
   };
   transport: {
     endpointConfigured: boolean;
@@ -116,6 +122,9 @@ export interface H3E9ReadinessInput {
     cacheDemExecuted: boolean | null;
     attempt9Created: boolean | null;
     canonicalAdmission: "LOCKED" | "UNLOCKED" | "UNKNOWN";
+    realDemoExecutionCount?: number | null;
+    cacheDemoExecutionCount?: number | null;
+    attempt10PlusCount?: number | null;
   };
 }
 
@@ -183,9 +192,9 @@ export function evaluateH3E9FinalExecutionReadiness(
   )
     blockers.push("H3E9_IDENTITY_MISMATCH");
 
-  if (input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
-  if (input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
-  if (input.storage.provenanceCount !== 0 || input.storage.nonceCount !== 0)
+  if (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) blockers.push("H3E9_UNEXPECTED_PROVENANCE");
+  if (input.storage.nonceCount !== null && input.storage.nonceCount !== 0) blockers.push("H3E9_UNEXPECTED_NONCE");
+    (input.storage.provenanceCount !== null && input.storage.provenanceCount !== 0) || (input.storage.nonceCount !== null && input.storage.nonceCount !== 0)
     blockers.push("H3E9_DATABASE_STATE_NOT_EMPTY");
 
   if (
@@ -198,6 +207,7 @@ export function evaluateH3E9FinalExecutionReadiness(
   )
     blockers.push("H3E9_DATABASE_SECURITY_INVARIANT_FAILED");
   if (
+    (input.database.migrationExactMatchCount !== undefined && input.database.migrationExactMatchCount !== 1) ||
     input.database.migrationVersion !== H3E9_EXPECTED_MIGRATION.version ||
     input.database.migrationName !== H3E9_EXPECTED_MIGRATION.name
   )
@@ -256,7 +266,8 @@ export function evaluateH3E9FinalExecutionReadiness(
   if (
     input.execution.demExecuted ||
     input.execution.cacheDemExecuted ||
-    input.execution.attempt9Created
+    input.execution.attempt9Created ||
+    (input.execution.attempt10PlusCount ?? 0) > 0
   )
     blockers.push("H3E9_DEM_EXECUTION_DETECTED");
   if (input.execution.canonicalAdmission !== "LOCKED") blockers.push("H3E9_CANONICAL_NOT_LOCKED");
@@ -281,7 +292,7 @@ export function evaluateH3E9FinalExecutionReadiness(
     attestationAuthorization: input.retention.status,
     executionAuthorization: input.operatorAuthorization.status,
     attestationExecuted: input.execution.validAttestationExecuted,
-    provenanceVerified: input.storage.provenanceCount > 0,
+    provenanceVerified: input.storage.verifiedProvenanceCount === undefined ? (input.storage.provenanceCount !== null && input.storage.provenanceCount > 0) : input.storage.verifiedProvenanceCount === null ? null : input.storage.verifiedProvenanceCount > 0,
     operation: "DIAGNOSTIC_ONLY",
     sideEffects: false,
   };
