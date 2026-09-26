@@ -113,8 +113,8 @@ def main():
                 prior = [intent]
                 other = started_row.copy()
                 if name == "conflicting_started": other[0] = str(uuid.uuid4())
-                if name == "parser_conflict": other[11] = "git:other"
-                if name == "demo_conflict": other[7] = "b" * 64
+                if name == "parser_conflict": other[0], other[11] = str(uuid.uuid4()), "git:other"
+                if name == "demo_conflict": other[0], other[7] = str(uuid.uuid4()), "b" * 64
                 pair = [started_row, other]
                 expected = [("INSERTED", None), ("REJECTED", "TRANSITION_CONFLICT")] if name != "identical_started" else [("INSERTED", None), ("IDEMPOTENT_REPLAY", None)]
             elif name in ("duplicate_finished", "finished_failed", "finished_aborted", "failed_aborted", "duplicate_terminal"):
