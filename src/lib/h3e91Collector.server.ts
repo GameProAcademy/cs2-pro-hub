@@ -26,7 +26,7 @@ function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91Data
   if (Object.values(external.runtimeEvidence).some(v => v.status !== "PASS" || v.value !== true)) blockers.push("H3E91_RUNTIME_EVIDENCE_UNKNOWN");
   if (Object.values(external.railwayEvidence).some(v => v.status !== "PASS" || v.value === false || v.value === null)) blockers.push("H3E91_RAILWAY_EVIDENCE_UNKNOWN");
   if (Object.values(external.workflowEvidence).some(v => v.status !== "PASS" || v.value === false || v.value === null)) blockers.push("H3E9_WORKFLOW_SOURCE_MISMATCH");
-  if (external.transportEvidence.noNegativePostSideEffect.value !== true || external.transportEvidence.anonymousStatus.value !== 401 || Object.values(external.transportEvidence).some(v => v.status !== "PASS")) blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
+  if (external.transportEvidence.noNegativePostSideEffect.value !== true || external.transportEvidence.anonymousStatus.value !== 401 || Object.values(external.transportEvidence).some(v => v.status !== "PASS") || external.transportEvidence.preNegativeProvenanceCount.value !== external.transportEvidence.postNegativeProvenanceCount.value || external.transportEvidence.preNegativeNonceCount.value !== external.transportEvidence.postNegativeNonceCount.value) blockers.push("H3E9_ANONYMOUS_BOUNDARY_FAILED");
   return [...new Set(blockers)];
 }
 
@@ -174,6 +174,7 @@ export function finalizeH3E91Artifact(
       status: getH3E91EvidenceBlockers(external, databaseEvidence).length ? "BLOCKED" as const : finalResult.status,
     },
   };
+  // Recompute the diagnostic status from the exact blocker set, not a client claim.
   const evidenceDigest = createHash("sha256")
     .update(canonicalAttestationJson(withoutDigest))
     .digest("hex");
