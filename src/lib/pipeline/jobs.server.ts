@@ -578,11 +578,11 @@ export async function processJob(
           demoSha256: job.demo_sha256,
           deadlineAt,
         });
-        await record("EXECUTION_FINISHED", "PARSE_SUCCEEDED");
       } catch (parseError) {
         await record("EXECUTION_FAILED", "PARSE_FAILED");
         throw parseError;
       }
+      await record("EXECUTION_FINISHED", "PARSE_SUCCEEDED");
       assertParserIdentityConsistency(workerIdentity, raw.parser, raw.contract_version);
     }
     await assertNotCancelled(jobId);

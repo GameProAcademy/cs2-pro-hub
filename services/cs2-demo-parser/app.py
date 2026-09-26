@@ -377,11 +377,11 @@ def create_app(
             try:
                 payload = await _parse_downloaded(body, resolved, parse, finalize_raw=True,
                                                   on_started=record_start)
-                await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
             except BaseException:
                 await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
                                       "PARSE_FAILED" if started else "PREPARSE_FAILED")
                 raise
+            await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
         payload.pop("_performance", None)
         response = JSONResponse(content=payload)
         if len(response.body) > resolved.max_payload_bytes:
