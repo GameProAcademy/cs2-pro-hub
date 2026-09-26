@@ -14,6 +14,7 @@ const sample = {
   parserName: null,
   parserVersion: null,
   parserRevision: null,
+  metadataDigest: null,
   executionSurface: "RAILWAY_V1_PARSE",
   source: "RAILWAY",
   eventVersion: 1,
@@ -36,7 +37,7 @@ describe("H3E91 bridge staging", () => {
     expect(response.status).toBe(401);
   });
 
-  it("authenticated requests still never write or execute while writer is absent", async () => {
+  it("authenticated requests fail closed when the database recording boundary is unavailable", async () => {
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     try {
       const response = await handleH3E91ExecutionBridge(new Request("http://localhost/api/public/h3e91-execution-event", {
@@ -45,7 +46,7 @@ describe("H3E91 bridge staging", () => {
         body: JSON.stringify(sample),
       }));
       expect(response.status).toBe(503);
-      expect(await response.json()).toEqual({ code: "H3E91_WRITER_NOT_ACTIVATED" });
+      expect(await response.json()).toEqual({ code: "H3E91_RECORDING_UNAVAILABLE" });
     } finally {
       vi.unstubAllEnvs();
     }
