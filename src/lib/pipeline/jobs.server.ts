@@ -556,6 +556,11 @@ export async function processJob(
       assertDeadline();
       const signedUrl = await createDemoSignedUrl(job.storage_path);
       assertDeadline();
+      // The Railway production image has not been independently matched to this
+      // source. Never dispatch to an uninstrumented deployed parser.
+      if (process.env["NODE_ENV"] === "production") {
+        throw new PipelineError("PARSER_UNAVAILABLE", "H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED");
+      }
       const record = appExecutionRecorder({
         jobId, uploadId: job.upload_id, attemptNumber: job.attempt_number,
         demoSha256: job.demo_sha256, fileSize: stored.size || (job.file_size ?? 0),
