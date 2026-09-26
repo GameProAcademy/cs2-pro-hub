@@ -187,7 +187,9 @@ def main():
             if name == "lost_response": assert_result(intent, "IDEMPOTENT_REPLAY")
             if name == "identical_intent":
                 actual = sql(f"SELECT event_digest FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{execution}'")
-                canonical = json.dumps(intent, ensure_ascii=False).lower() if False else json.dumps(intent, ensure_ascii=False)
+                # Writer canonical array begins with version and omits version
+                # from the end of the caller's argument order.
+                canonical = json.dumps([intent[16], *intent[:16]], ensure_ascii=False)
                 assert actual == hashlib.sha256(canonical.encode("utf8")).hexdigest(), (actual, canonical)
             print(f"case {case}/30 {name}: {','.join(rows) or 'none'}")
         print("PASS: 30 disposable two-connection lifecycle scenarios; no live database access")
