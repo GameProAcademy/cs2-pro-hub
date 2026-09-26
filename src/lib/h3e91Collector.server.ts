@@ -36,7 +36,8 @@ function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91Data
   if (
     db.status === "UNKNOWN" ||
     db.realDemoExecutionCount === null ||
-    db.cacheDemoExecutionCount === null
+    db.cacheDemoExecutionCount === null ||
+    db.historicalStartedJobCount === null
   )
     blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
   if (db.migration.exactMatchCount === null) blockers.push("H3E91_MIGRATION_EVIDENCE_UNKNOWN");
@@ -200,6 +201,7 @@ export async function collectH3E91DatabaseEvidence(
       ...Object.values(evidence.canonical),
       evidence.realDemoExecutionCount,
       evidence.cacheDemoExecutionCount,
+      evidence.historicalStartedJobCount,
     ].every((value) => typeof value === "number");
     const securityKnown = Object.values(evidence.security).every(
       (value) => typeof value === "boolean",
