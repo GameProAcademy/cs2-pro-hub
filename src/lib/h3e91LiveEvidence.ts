@@ -20,58 +20,80 @@ const isoDate = z.string().datetime({ offset: true });
 const sha40 = z.string().regex(/^[0-9a-f]{40}$/);
 const evidenceStatus = z.enum(["PASS", "BLOCKED", "UNKNOWN"]);
 const safeEvidence = <T extends z.ZodTypeAny>(value: T) =>
-  z.object({ source: z.string().min(1).max(160), observedAt: isoDate, classification: z.literal("SAFE_NON_SECRET"), status: evidenceStatus, value }).strict();
+  z
+    .object({
+      source: z.string().min(1).max(160),
+      observedAt: isoDate,
+      classification: z.literal("SAFE_NON_SECRET"),
+      status: evidenceStatus,
+      value,
+    })
+    .strict();
 
-export const h3e91ExternalEvidenceSchema = z.object({
-  schemaVersion: z.literal(H3E91_LIVE_EVIDENCE_SCHEMA_VERSION),
-  observedAt: isoDate,
-  workflowIdentity: z.object({
-    repository: z.literal(PARSER_ATTESTATION_EXPECTED.repository),
-    ref: z.literal("refs/heads/main"),
-    refType: z.literal("branch"),
-    eventName: z.literal("workflow_dispatch"),
-    workflow: z.string().min(1).max(160),
-    workflowRef: z.string().min(1).max(300),
-    sourceCommit: sha40,
-  }).strict(),
-  workflowEvidence: z.object({
-    approvedPathMatches: safeEvidence(z.boolean()),
-    actualBlobSha: safeEvidence(sha40.nullable()),
-    approvedBlobSha: safeEvidence(sha40),
-    blobMatches: safeEvidence(z.boolean()),
-    oidcStructureValid: safeEvidence(z.boolean()),
-  }).strict(),
-  secretPresence: z.object({
-    endpointPresent: safeEvidence(z.boolean()),
-    transportSecretPresent: safeEvidence(z.boolean()),
-    hmacSecretPresent: safeEvidence(z.boolean()),
-    railwayTokenPresent: safeEvidence(z.boolean()),
-  }).strict(),
-  railwayEvidence: z.object({
-    available: safeEvidence(z.boolean()),
-    projectMatches: safeEvidence(z.boolean()),
-    serviceMatches: safeEvidence(z.boolean()),
-    environmentMatches: safeEvidence(z.boolean()),
-    deploymentIdMatches: safeEvidence(z.boolean()),
-    deploymentStatus: safeEvidence(z.string().max(40).nullable()),
-    branchMatches: safeEvidence(z.boolean()),
-    sourceCommitMatches: safeEvidence(z.boolean()),
-  }).strict(),
-  runtimeEvidence: z.object({
-    customDomainAvailable: safeEvidence(z.boolean()),
-    railwayDomainAvailable: safeEvidence(z.boolean()),
-    healthMatches: safeEvidence(z.boolean()),
-    parserNameMatches: safeEvidence(z.boolean()),
-    parserVersionMatches: safeEvidence(z.boolean()),
-    parserRevisionMatches: safeEvidence(z.boolean()),
-    contractVersionMatches: safeEvidence(z.boolean()),
-    bothDomainsMatch: safeEvidence(z.boolean()),
-  }).strict(),
-  transportEvidence: z.object({
-    endpointMatches: safeEvidence(z.boolean()),
-    anonymousStatus: safeEvidence(z.number().int().min(100).max(599).nullable()),
-  }).strict(),
-}).strict();
+export const h3e91ExternalEvidenceSchema = z
+  .object({
+    schemaVersion: z.literal(H3E91_LIVE_EVIDENCE_SCHEMA_VERSION),
+    observedAt: isoDate,
+    workflowIdentity: z
+      .object({
+        repository: z.literal(PARSER_ATTESTATION_EXPECTED.repository),
+        ref: z.literal("refs/heads/main"),
+        refType: z.literal("branch"),
+        eventName: z.literal("workflow_dispatch"),
+        workflow: z.string().min(1).max(160),
+        workflowRef: z.string().min(1).max(300),
+        sourceCommit: sha40,
+      })
+      .strict(),
+    workflowEvidence: z
+      .object({
+        approvedPathMatches: safeEvidence(z.boolean()),
+        actualBlobSha: safeEvidence(sha40.nullable()),
+        approvedBlobSha: safeEvidence(sha40),
+        blobMatches: safeEvidence(z.boolean()),
+        oidcStructureValid: safeEvidence(z.boolean()),
+      })
+      .strict(),
+    secretPresence: z
+      .object({
+        endpointPresent: safeEvidence(z.boolean()),
+        transportSecretPresent: safeEvidence(z.boolean()),
+        hmacSecretPresent: safeEvidence(z.boolean()),
+        railwayTokenPresent: safeEvidence(z.boolean()),
+      })
+      .strict(),
+    railwayEvidence: z
+      .object({
+        available: safeEvidence(z.boolean()),
+        projectMatches: safeEvidence(z.boolean()),
+        serviceMatches: safeEvidence(z.boolean()),
+        environmentMatches: safeEvidence(z.boolean()),
+        deploymentIdMatches: safeEvidence(z.boolean()),
+        deploymentStatus: safeEvidence(z.string().max(40).nullable()),
+        branchMatches: safeEvidence(z.boolean()),
+        sourceCommitMatches: safeEvidence(z.boolean()),
+      })
+      .strict(),
+    runtimeEvidence: z
+      .object({
+        customDomainAvailable: safeEvidence(z.boolean()),
+        railwayDomainAvailable: safeEvidence(z.boolean()),
+        healthMatches: safeEvidence(z.boolean()),
+        parserNameMatches: safeEvidence(z.boolean()),
+        parserVersionMatches: safeEvidence(z.boolean()),
+        parserRevisionMatches: safeEvidence(z.boolean()),
+        contractVersionMatches: safeEvidence(z.boolean()),
+        bothDomainsMatch: safeEvidence(z.boolean()),
+      })
+      .strict(),
+    transportEvidence: z
+      .object({
+        endpointMatches: safeEvidence(z.boolean()),
+        anonymousStatus: safeEvidence(z.number().int().min(100).max(599).nullable()),
+      })
+      .strict(),
+  })
+  .strict();
 
 export type H3E91ExternalEvidence = z.infer<typeof h3e91ExternalEvidenceSchema>;
 
@@ -82,7 +104,12 @@ export interface H3E91DatabaseEvidence {
   provenanceCount: number | null;
   nonceCount: number | null;
   attempt9Count: number | null;
-  canonical: { total: number | null; authorized: number | null; verified: number | null; generic: number | null };
+  canonical: {
+    total: number | null;
+    authorized: number | null;
+    verified: number | null;
+    generic: number | null;
+  };
   migration: { version: string | null; name: string | null; exactMatchCount: number | null };
   security: {
     rlsEnabled: boolean | null;
@@ -111,7 +138,10 @@ export interface H3E91Artifact {
   railwayEvidence: H3E91ExternalEvidence["railwayEvidence"];
   transportEvidence: H3E91ExternalEvidence["transportEvidence"];
   secretPresence: H3E91ExternalEvidence["secretPresence"];
-  authorizationEvidence: { retention: H3E9AuthorizationEvidence; operator: H3E9AuthorizationEvidence };
+  authorizationEvidence: {
+    retention: H3E9AuthorizationEvidence;
+    operator: H3E9AuthorizationEvidence;
+  };
   executionLocks: H3E9ReadinessInput["execution"];
   finalResult: H3E9ReadinessResult;
   evidenceDigest: string;
@@ -120,26 +150,43 @@ export interface H3E91Artifact {
 const falseWhenUnknown = (value: boolean | null) => value === true;
 const countWhenUnknown = (value: number | null) => value ?? -1;
 
-export function buildH3E91ReadinessInput(external: H3E91ExternalEvidence, database: H3E91DatabaseEvidence): H3E9ReadinessInput {
+export function buildH3E91ReadinessInput(
+  external: H3E91ExternalEvidence,
+  database: H3E91DatabaseEvidence,
+): H3E9ReadinessInput {
   const security = database.security;
   return {
     now: external.observedAt,
     identities: {
       repository: external.workflowIdentity.repository,
-      attestorBranch: external.workflowIdentity.ref === "refs/heads/main" ? "main" : external.workflowIdentity.ref,
+      attestorBranch:
+        external.workflowIdentity.ref === "refs/heads/main"
+          ? "main"
+          : external.workflowIdentity.ref,
       railwayBranch: PARSER_ATTESTATION_EXPECTED.branch,
       parserCommit: PARSER_ATTESTATION_EXPECTED.commit,
       deploymentId: PARSER_ATTESTATION_EXPECTED.deploymentId,
       projectId: PARSER_ATTESTATION_EXPECTED.projectId,
       serviceId: PARSER_ATTESTATION_EXPECTED.serviceId,
       environmentId: PARSER_ATTESTATION_EXPECTED.environmentId,
-      workflowPath: external.workflowEvidence.approvedPathMatches.value ? PARSER_ATTESTATION_EXPECTED.workflowPath : "MISMATCH",
+      workflowPath: external.workflowEvidence.approvedPathMatches.value
+        ? PARSER_ATTESTATION_EXPECTED.workflowPath
+        : "MISMATCH",
       workflowSourceSha: external.workflowEvidence.actualBlobSha.value ?? "UNKNOWN",
     },
-    storage: { provenanceCount: countWhenUnknown(database.provenanceCount), nonceCount: countWhenUnknown(database.nonceCount) },
+    storage: {
+      provenanceCount: countWhenUnknown(database.provenanceCount),
+      nonceCount: countWhenUnknown(database.nonceCount),
+    },
     database: {
-      migrationVersion: database.migration.exactMatchCount === 1 ? (database.migration.version ?? "UNKNOWN") : "UNKNOWN",
-      migrationName: database.migration.exactMatchCount === 1 ? (database.migration.name ?? "UNKNOWN") : "UNKNOWN",
+      migrationVersion:
+        database.migration.exactMatchCount === 1
+          ? (database.migration.version ?? "UNKNOWN")
+          : "UNKNOWN",
+      migrationName:
+        database.migration.exactMatchCount === 1
+          ? (database.migration.name ?? "UNKNOWN")
+          : "UNKNOWN",
       rlsEnabled: falseWhenUnknown(security.rlsEnabled),
       clientPrivilegesZero: falseWhenUnknown(security.clientPrivilegesZero),
       recorderServiceRoleOnly: falseWhenUnknown(security.recorderServiceRoleOnly),
@@ -160,7 +207,9 @@ export function buildH3E91ReadinessInput(external: H3E91ExternalEvidence, databa
       railwayTokenPresent: external.secretPresence.railwayTokenPresent.value,
     },
     workflow: {
-      approvedPath: external.workflowEvidence.approvedPathMatches.value ? PARSER_ATTESTATION_EXPECTED.workflowPath : "MISMATCH",
+      approvedPath: external.workflowEvidence.approvedPathMatches.value
+        ? PARSER_ATTESTATION_EXPECTED.workflowPath
+        : "MISMATCH",
       approvedSourceSha: external.workflowEvidence.approvedBlobSha.value,
       registryMatches: external.workflowEvidence.blobMatches.value,
       sourceMatches: external.workflowEvidence.blobMatches.value,
@@ -177,7 +226,10 @@ export function buildH3E91ReadinessInput(external: H3E91ExternalEvidence, databa
       projectMatches: external.railwayEvidence.projectMatches.value,
       serviceMatches: external.railwayEvidence.serviceMatches.value,
       environmentMatches: external.railwayEvidence.environmentMatches.value,
-      bothRuntimeDomainsMatch: external.runtimeEvidence.bothDomainsMatch.value && external.runtimeEvidence.healthMatches.value && external.runtimeEvidence.parserRevisionMatches.value,
+      bothRuntimeDomainsMatch:
+        external.runtimeEvidence.bothDomainsMatch.value &&
+        external.runtimeEvidence.healthMatches.value &&
+        external.runtimeEvidence.parserRevisionMatches.value,
     },
     retention: { status: "NOT_AUTHORIZED" },
     operatorAuthorization: { status: "NOT_AUTHORIZED" },
@@ -186,7 +238,10 @@ export function buildH3E91ReadinessInput(external: H3E91ExternalEvidence, databa
       demExecuted: false,
       cacheDemExecuted: false,
       attempt9Created: countWhenUnknown(database.attempt9Count) !== 0,
-      canonicalAdmission: database.canonical.authorized === 0 && database.canonical.verified === 0 ? "LOCKED" : "UNLOCKED",
+      canonicalAdmission:
+        database.canonical.authorized === 0 && database.canonical.verified === 0
+          ? "LOCKED"
+          : "UNLOCKED",
     },
   };
 }
