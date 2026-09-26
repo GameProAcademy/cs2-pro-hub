@@ -36,7 +36,7 @@ const lifecycle = (value: string, outcome: string | null = null) => ({
   lifecycle: value,
   terminalEventId: outcome ? "33333333-3333-5333-8333-333333333333" : null,
   terminalOutcome: outcome,
-  terminalCreatedAt: outcome ? "2026-09-26T05:12:00.000Z" : null,
+  terminalEventAt: outcome ? "2026-09-26T05:12:00.000Z" : null,
   hasStarted: value === "STARTED" || value === "FINISHED" || value === "FAILED",
   hasTerminal: ["FINISHED", "FAILED", "ABORTED"].includes(value),
 });

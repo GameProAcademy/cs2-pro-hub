@@ -208,7 +208,7 @@ def main():
                 "EXECUTION_INTENT": "INTENT_ONLY",
             }
             assert lifecycle["lifecycle"] == (expected_lifecycle[rows[-1]] if rows else "NONE"), (name, rows, lifecycle)
-            assert set(lifecycle) == {"executionId", "lifecycle", "terminalEventId", "terminalOutcome", "terminalCreatedAt", "hasStarted", "hasTerminal"}
+            assert set(lifecycle) == {"executionId", "lifecycle", "terminalEventId", "terminalOutcome", "terminalEventAt", "hasStarted", "hasTerminal"}
             print(f"case {case}/30 {name}: {','.join(rows) or 'none'}")
         # Fifty isolated executions compete on independent PostgreSQL connections
         # for each transition. No in-process lock or shared result cache is used.

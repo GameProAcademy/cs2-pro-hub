@@ -109,7 +109,7 @@ def test_lifecycle_read_is_minimal_and_fails_closed():
         "lifecycle": "STARTED",
         "terminalEventId": None,
         "terminalOutcome": None,
-        "terminalCreatedAt": None,
+        "terminalEventAt": None,
         "hasStarted": True,
         "hasTerminal": False,
     }

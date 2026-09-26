@@ -230,7 +230,7 @@ def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monk
                 "executionId": execution_id, "lifecycle": lifecycle,
                 "terminalEventId": next((event["eventId"] for event in stored.values() if event["eventType"] == "EXECUTION_FINISHED"), None),
                 "terminalOutcome": "PARSE_SUCCEEDED" if terminal else None,
-                "terminalCreatedAt": "2026-09-26T05:12:00Z" if terminal else None,
+                "terminalEventAt": "2026-09-26T05:12:00Z" if terminal else None,
                 "hasStarted": lifecycle in ("STARTED", "FINISHED"), "hasTerminal": terminal,
             })
         event = json.loads(request.content)

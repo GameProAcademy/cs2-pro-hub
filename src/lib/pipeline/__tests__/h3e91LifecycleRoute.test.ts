@@ -32,7 +32,7 @@ describe("H3E91 lifecycle transport", () => {
       lifecycle: "FINISHED",
       terminalEventId: "22222222-2222-5222-8222-222222222222",
       terminalOutcome: "PARSE_SUCCEEDED",
-      terminalCreatedAt: "2026-09-26T05:12:00.000Z",
+      terminalEventAt: "2026-09-26T05:12:00.000Z",
       hasStarted: true,
       hasTerminal: true,
     });
