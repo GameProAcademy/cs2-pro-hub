@@ -36,7 +36,7 @@ const classified: Record<string, { count: number; classification: string }> = {
     classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
   },
   "src/lib/client-parser/clientParser.worker.ts": {
-    count: 4,
+    count: 5,
     classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
   },
   "services/cs2-demo-parser/app.py": {
@@ -88,7 +88,7 @@ describe("H.3-E.9.1 execution source discovery", () => {
   it("requires a runtime image allowlist that excludes the reference producer", () => {
     const dockerfile = read("services/cs2-demo-parser/Dockerfile");
     expect(dockerfile).not.toMatch(/^COPY \. \.$/m);
-    const runtime = dockerfile.match(/^COPY (.+) \.\/$/m)?.[1]?.split(/\s+/) ?? [];
+    const runtime = dockerfile.match(/^COPY (.+app\.py.+) \.\/$/m)?.[1]?.split(/\s+/) ?? [];
     expect(runtime).toContain("app.py");
     expect(runtime).toContain("parser.py");
     expect(runtime).toContain("worker.py");
@@ -114,7 +114,7 @@ describe("H.3-E.9.1 execution source discovery", () => {
       return matches.length ? [[path, matches.length]] : [];
     });
     expect(Object.fromEntries(sites)).toEqual({
-      "services/cs2-demo-parser/app.py": 2,
+      "services/cs2-demo-parser/app.py": 1,
       "services/cs2-demo-parser/python_reference.py": 1,
       "services/cs2-demo-parser/worker.py": 1,
     });

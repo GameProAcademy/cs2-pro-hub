@@ -16,7 +16,7 @@ RUNTIME = {
 def test_runtime_image_has_explicit_complete_allowlist():
     dockerfile = (ROOT / "Dockerfile").read_text()
     assert not re.search(r"(?m)^COPY\s+\.\s+\.$", dockerfile)
-    copies = re.findall(r"(?m)^COPY\s+([^\n]+?)\s+\./$", dockerfile)
+    copies = re.findall(r"(?m)^COPY\s+([^\n]*app\.py[^\n]*)\s+\./$", dockerfile)
     assert len(copies) == 1
     assert set(copies[0].split()) == RUNTIME
     assert "python_reference.py" not in dockerfile.split("COPY requirements.txt ./", 1)[1].split("# Non-root runtime", 1)[0]

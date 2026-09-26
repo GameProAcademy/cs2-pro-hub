@@ -35,6 +35,9 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: H3E91 source discovery and sealed-ledger gate
+        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts
+
       - name: Typecheck
         run: bunx tsc --noEmit
 
@@ -77,6 +80,12 @@ jobs:
 
       - name: Run parser test suite
         run: pytest -q
+
+      - name: Verify production parser image excludes reference tools
+        working-directory: ${{ github.workspace }}
+        run: |
+          docker build --tag gamepro-parser-isolation:ci services/cs2-demo-parser
+          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","hot_payload.py","parser.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py"}; assert {x.name for x in p.iterdir() if x.is_file()} == expected | {"requirements.txt"}; assert not (p/"python_reference.py").exists(); assert not (p/"tests").exists()'
 
   contract-gate:
     name: Contract-sensitive parser tests
