@@ -212,7 +212,7 @@ def main():
             # races in two psql subprocesses, each opening its own DB session.
             for i in range(50):
                 stress_one(i)
-        print("PASS: 30 disposable scenarios + 50 independent-session lifecycle stress executions; no live database access")
+        print("PASS: 30 lifecycle scenarios + 18 explicit terminal races + 50 stress executions; no live database access")
     finally:
         if started:
             run(["pg_ctl", "-D", str(data), "-m", "immediate", "-w", "stop"])
