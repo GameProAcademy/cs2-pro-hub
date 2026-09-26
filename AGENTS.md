@@ -15,3 +15,5 @@
 - Keep R4.1 execution identities additive and the ledger writer absent until every parser path has a reviewed pre-parser fail-closed bridge; schema preparation alone is not execution authority.
 - Keep parser production images on an explicit runtime source allowlist; reference CLI and tests must stay out because their parse entrypoints would evade production ledger coverage.
 - Keep the browser parser POC unreachable from production routes and reject production service calls; source and CI checks are preparation, not deployed-bundle proof.
+- Keep the H3E91 execution-event bridge authenticated but inactive (503) until all parser paths have reviewed pre-parser and terminal coverage plus a controlled writer; accepting a typed event without durable authority would create false evidence.
+- Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
