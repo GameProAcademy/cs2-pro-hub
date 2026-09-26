@@ -197,7 +197,7 @@ def test_terminal_evidence_precedes_completion_and_failure_never_completes(monke
     import app
     import worker
 
-    for terminal_failure, queue_failure in ((False, False), (True, False), (False, True)):
+    for terminal_failure, queue_failure in ((False, False), (True, False), (False, True), ("lost_ack", False)):
         events = []
         execution_ids = []
         async def record(_self, event_type, _outcome_code=None):
@@ -241,6 +241,8 @@ def test_terminal_evidence_precedes_completion_and_failure_never_completes(monke
         if "complete" in events:
             assert events.index("EXECUTION_FINISHED") < events.index("complete")
         assert events.count("EXECUTION_FAILED") == 0
+        assert events.count("EXECUTION_ABORTED") == 0
+        assert events.count("EXECUTION_FINISHED") == 1
         assert len(set(execution_ids)) == 1
 
 
