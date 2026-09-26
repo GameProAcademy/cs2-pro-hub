@@ -88,6 +88,11 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
   if (event.source !== "RAILWAY" || event.executionSurface === "APP_REMOTE_PARSER") {
     return Response.json({ code: "H3E91_SURFACE_UNAUTHORIZED" }, { status: 401 });
   }
+  // The Railway image running in production predates this event recorder.
+  // Do not accept writer events from a revision without independently verified parity.
+  if (process.env["NODE_ENV"] === "production") {
+    return Response.json({ code: "H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED" }, { status: 503 });
+  }
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("h3e91_record_execution_event" as never, {
