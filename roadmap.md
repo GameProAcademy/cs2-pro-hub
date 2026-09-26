@@ -119,6 +119,14 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sa
 - [ ] Reconcile database security inspector and writer privileges; validate applied schema and tests before any authority transition.
 - [ ] Independently verify deployed Railway parity and all four surfaces before considering `AUTHORITATIVE`.
 
+#### R4.1-C → F checkpoint — still BLOCKED
+
+- [x] Add optional `execution_id`, `event_id`, `event_at`, `upload_id`, `correlation_id`, `outcome_code` and `event_version` to the existing sealed ledger; retain historical rows and revocations. No execution rows were created.
+- [x] Add a source-discovery regression check that enumerates existing parser invocations, including the standalone reference producer in the production image.
+- [ ] `H3E91_PREPARSER_WRITER_ABSENT`: no controlled lifecycle writer or confirmed INTENT/STARTED/terminal bridge. Keep actual parsing paths uninstrumented and blocked rather than enabling partial capture.
+- [ ] `H3E91_EXECUTION_SURFACE_NOT_COVERED`: APP, durable worker, `/v1/parse`, and browser/WASM remain unproven; reference CLI remains present in the production Docker context.
+- [ ] `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`: independent Railway parity, security audit, disposable database concurrency proof and final authority evaluation are outstanding.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.

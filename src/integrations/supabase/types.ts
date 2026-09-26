@@ -1108,48 +1108,69 @@ export type Database = {
       h3e91_execution_evidence_ledger: {
         Row: {
           attempt_number: number
+          correlation_id: string | null
           created_at: string
           demo_sha256: string
+          event_at: string | null
+          event_id: string | null
           event_type: string
+          event_version: number | null
+          execution_id: string | null
           execution_surface: string
           file_size: number
           id: string
           job_id: string
           metadata_digest: string
+          outcome_code: string | null
           parser_name: string
           parser_revision: string
           parser_version: string
           source: string
+          upload_id: string | null
         }
         Insert: {
           attempt_number: number
+          correlation_id?: string | null
           created_at?: string
           demo_sha256: string
+          event_at?: string | null
+          event_id?: string | null
           event_type: string
+          event_version?: number | null
+          execution_id?: string | null
           execution_surface: string
           file_size: number
           id?: string
           job_id: string
           metadata_digest: string
+          outcome_code?: string | null
           parser_name: string
           parser_revision: string
           parser_version: string
           source: string
+          upload_id?: string | null
         }
         Update: {
           attempt_number?: number
+          correlation_id?: string | null
           created_at?: string
           demo_sha256?: string
+          event_at?: string | null
+          event_id?: string | null
           event_type?: string
+          event_version?: number | null
+          execution_id?: string | null
           execution_surface?: string
           file_size?: number
           id?: string
           job_id?: string
           metadata_digest?: string
+          outcome_code?: string | null
           parser_name?: string
           parser_revision?: string
           parser_version?: string
           source?: string
+          upload_id?: string | null
         }
         Relationships: []
       }
