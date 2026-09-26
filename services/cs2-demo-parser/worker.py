@@ -80,9 +80,18 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     ).bind_revision(settings.revision)
                     intent_result = await recorder.record("EXECUTION_INTENT")
                     if intent_result.get("status") != "INSERTED":
-                        # A retried lease needs independent lifecycle reconciliation;
-                        # never execute a parser or add a new terminal on replay.
-                        logger.warning("durable execution replay requires reconciliation job=%s attempt=%s state=RECONCILIATION_REQUIRED", identity["jobId"], claim["attempt_number"])
+                        reconciliation = await _bridge(
+                            client,
+                            settings,
+                            "reconcile",
+                            {**identity, "executionId": recorder.execution_id},
+                        )
+                        state = reconciliation.get("lifecycle", "UNKNOWN")
+                        status = reconciliation.get("status", "reconciliation_required")
+                        logger.warning(
+                            "durable execution replay reconciled job=%s attempt=%s lifecycle=%s status=%s",
+                            identity["jobId"], claim["attempt_number"], state, status,
+                        )
                         continue
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")

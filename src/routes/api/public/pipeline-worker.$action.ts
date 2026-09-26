@@ -8,6 +8,7 @@ import {
   failDurableDemo,
   heartbeatDurableDemo,
   initializeRawArtifact,
+  reconcileDurableExecution,
   prepareRawChunk,
   verifyRawChunk,
   finalizeRawArtifact,
@@ -103,6 +104,13 @@ export const Route = createFileRoute("/api/public/pipeline-worker/$action")({
             return Response.json(
               await heartbeatDurableDemo(input.stage ? { ...input, stage: input.stage } : input),
             );
+          }
+          if (params.action === "reconcile") {
+            const input = identity
+              .extend({ executionId: z.string().uuid() })
+              .strict()
+              .parse(body);
+            return Response.json(await reconcileDurableExecution(input));
           }
           if (params.action === "raw-artifact-init") {
             return Response.json(await initializeRawArtifact(identity.parse(body)));

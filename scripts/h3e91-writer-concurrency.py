@@ -17,6 +17,7 @@ MIGRATIONS = (
     "20260926030143_2adf7bc6-223e-454f-a120-e81a157f3e0b.sql",
     "20260926030840_c41e0dea-f0d1-4596-9f5d-6b1d1ba34912.sql",
     "20260926031500_8a2e6d53-36cb-44ab-9998-a4fe3210bd1a.sql",
+    "20260926051200_512a9d4b-af8a-4c69-8ce1-3e56101262ce.sql",
 )
 BASE = (ROOT / "supabase/migrations/20260926013427_db74f397-2274-4c39-ba28-c6a87d80e314.sql").read_text().split(
     "-- Correct the previously deployed mutable-job diagnostic:"
@@ -60,6 +61,9 @@ def main():
             sql((ROOT / "supabase/migrations" / migration).read_text())
         assert sql("SELECT has_table_privilege('service_role','public.h3e91_execution_evidence_ledger','INSERT')") == "f"
         assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_record_execution_event'") == "t"
+        assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_read_execution_lifecycle'") == "t"
+        for role in ("anon", "authenticated", "sandbox_exec"):
+            assert sql(f"SELECT has_function_privilege('{role}',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_read_execution_lifecycle'") == "f"
 
         def event(kind, base=None):
             if base is None:
@@ -194,6 +198,16 @@ def main():
                 # from the end of the caller's argument order.
                 canonical = json.dumps([intent[16], *intent[:16]], ensure_ascii=False)
                 assert actual == hashlib.sha256(canonical.encode("utf8")).hexdigest(), (actual, canonical)
+            lifecycle = json.loads(sql(f"SELECT public.h3e91_read_execution_lifecycle('{execution}')::text"))
+            expected_lifecycle = {
+                "EXECUTION_FINISHED": "FINISHED",
+                "EXECUTION_FAILED": "FAILED",
+                "EXECUTION_ABORTED": "ABORTED",
+                "EXECUTION_STARTED": "STARTED",
+                "EXECUTION_INTENT": "INTENT_ONLY",
+            }
+            assert lifecycle["lifecycle"] == (expected_lifecycle[rows[-1]] if rows else "NONE"), (name, rows, lifecycle)
+            assert set(lifecycle) == {"executionId", "lifecycle", "terminalEventId", "terminalOutcome", "terminalCreatedAt", "hasStarted", "hasTerminal"}
             print(f"case {case}/30 {name}: {','.join(rows) or 'none'}")
         # Fifty isolated executions compete on independent PostgreSQL connections
         # for each transition. No in-process lock or shared result cache is used.
