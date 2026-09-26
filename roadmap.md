@@ -85,6 +85,12 @@ Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
 
 **Locks:** FIRST VALID ATTESTATION = NOT RUN; DEM = NOT RUN; CACHE DEM = NOT RUN; ATTEMPT 9 = LOCKED; CANONICAL = LOCKED. One additive read-only diagnostic RPC migration; no provenance, nonce, cleanup, execution dispatch, Railway/EnvironmentPatch mutation or secret mutation.
 
+### H.3-E.9.1-R2 / H.3-E.9.2 preparation
+
+- [ ] Capture a trusted server baseline and a read-only, baseline-relative execution ledger; preserve UNKNOWN where execution cannot be proven.
+- [ ] Validate collector workflow structure and artifact freshness without changing the approved workflow SHA or authorizing execution.
+- [ ] Document the H.3-E.9.2 prerequisite contract and verify the diagnostics with synthetic tests.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.
