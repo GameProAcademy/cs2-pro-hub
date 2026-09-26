@@ -121,6 +121,8 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sa
 
 #### R4.1-C → F checkpoint — still BLOCKED
 
+- [x] R4.1-C/F.2: apply an idempotent live safety repair revoking direct ledger writes from sandbox_exec, service_role, anon, authenticated and PUBLIC, and execution of the mutation trigger function; verify effective permissions and zero production events. This is a security repair, not writer coverage.
+- [ ] R4.1-C/F.2: implement and prove a real controlled writer in disposable PostgreSQL, then cover APP, durable worker, independent /v1/parse, terminal outcomes and bridge end-to-end before activation. The separate deployed Railway parity audit remains outstanding; no local/source-only evidence promotes authority.
 - [x] Add optional `execution_id`, `event_id`, `event_at`, `upload_id`, `correlation_id`, `outcome_code` and `event_version` to the existing sealed ledger; retain historical rows and revocations. No execution rows were created.
 - [x] Add a source-discovery regression check that enumerates existing parser invocations, including the standalone reference producer in the production image.
 - [x] Restrict the parser Docker image to an explicit runtime file allowlist; add source and CI image-isolation checks. This does not establish parity with the deployed Railway revision.
