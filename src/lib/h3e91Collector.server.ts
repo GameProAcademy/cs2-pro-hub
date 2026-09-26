@@ -15,6 +15,7 @@ import { evaluateH3E9FinalExecutionReadiness } from "@/lib/h3e9FinalExecutionRea
 import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
 import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
 import { H3E9_EXPECTED_ENDPOINT } from "@/lib/h3e9FinalExecutionReadiness";
+import { H3E91_RAILWAY_SOURCE_COMMIT } from "@/lib/h3e91LiveEvidence";
 
 function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence) {
   const blockers: Array<"H3E91_DATABASE_EVIDENCE_UNKNOWN" | "H3E91_MIGRATION_EVIDENCE_UNKNOWN" | "H3E91_SECURITY_EVIDENCE_UNKNOWN" | "H3E91_RUNTIME_EVIDENCE_UNKNOWN" | "H3E91_RAILWAY_EVIDENCE_UNKNOWN" | "H3E9_WORKFLOW_NOT_APPROVED" | "H3E9_ANONYMOUS_BOUNDARY_FAILED" | "H3E9_WORKFLOW_SOURCE_MISMATCH" | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"> = [];
@@ -155,7 +156,7 @@ export function finalizeH3E91Artifact(
     collectorWorkflowSha: external.workflowIdentity.collectorWorkflowSha,
     collectorTriggerCommitSha: external.workflowIdentity.collectorTriggerCommitSha,
     attestationWorkflowSourceSha: external.workflowEvidence.actualBlobSha.value,
-    railwayDeploymentCommit: "ff0cc222f514c01eda6e26d7bb95271a8b0c9b04",
+    railwayDeploymentCommit: H3E91_RAILWAY_SOURCE_COMMIT,
     databaseEvidence,
     securityEvidence: databaseEvidence.security,
     runtimeEvidence: external.runtimeEvidence,
