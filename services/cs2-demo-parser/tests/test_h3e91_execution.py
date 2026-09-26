@@ -1,5 +1,7 @@
 """Synthetic transport failures; no real demo is downloaded or parsed."""
 import asyncio
+import json
+import uuid
 
 import httpx
 import pytest
@@ -74,4 +76,49 @@ def test_ambiguous_insert_retry_reuses_event_identity():
                 await recorder.record("EXECUTION_INTENT")
             assert (await recorder.record("EXECUTION_INTENT"))["status"] == "IDEMPOTENT_REPLAY"
             assert received[0] == received[1]
+    asyncio.run(run())
+
+
+def test_reconstructed_http_retry_and_terminal_replays_keep_database_identity():
+    """Each request creates a fresh recorder; a lost response never creates another execution."""
+    rows = {}
+    statuses = []
+    execution_id = str(uuid.uuid5(uuid.NAMESPACE_URL, "h3e91:v1:job:1:upload"))
+    correlation_id = str(uuid.uuid5(uuid.NAMESPACE_URL, "h3e91:v1:job:1:upload:correlation"))
+
+    async def transport(request):
+        body = json.loads(request.content)
+        event_id = body["eventId"]
+        old = rows.get(event_id)
+        if old is None:
+            rows[event_id] = body
+            status = "INSERTED"
+        elif old == body:
+            status = "IDEMPOTENT_REPLAY"
+        else:
+            status = "REJECTED"
+        statuses.append(status)
+        if len(statuses) == 1:
+            raise httpx.ReadError("synthetic response lost after insert")
+        return httpx.Response(201 if status == "INSERTED" else 200, json={"status": status})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            def new_request():
+                return ExecutionRecorder(client, make_settings(
+                    bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                    bridge_secret="synthetic-test-only",
+                ), upload_id="11111111-1111-1111-1111-111111111111", surface="RAILWAY_V1_PARSE",
+                    job_id="22222222-2222-2222-2222-222222222222", attempt_number=1,
+                    demo_sha256=DEMO_SHA, file_size=520,
+                    execution_id=execution_id, correlation_id=correlation_id).bind_revision("git:" + "a" * 40)
+
+            with pytest.raises(httpx.ReadError):
+                await new_request().record("EXECUTION_INTENT")
+            assert (await new_request().record("EXECUTION_INTENT"))["status"] == "IDEMPOTENT_REPLAY"
+            for event_type, outcome in (("EXECUTION_STARTED", None), ("EXECUTION_FINISHED", "PARSE_SUCCEEDED")):
+                assert (await new_request().record(event_type, outcome))["status"] == "INSERTED"
+                assert (await new_request().record(event_type, outcome))["status"] == "IDEMPOTENT_REPLAY"
+            assert len(rows) == 3
+            assert all(row["executionId"] == execution_id for row in rows.values())
     asyncio.run(run())
