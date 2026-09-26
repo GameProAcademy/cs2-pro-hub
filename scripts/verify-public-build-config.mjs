@@ -48,8 +48,8 @@ if (!/Missing Supabase environment variable\(s\)/.test(supabaseClient)) {
   throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: fail-closed client initialization was removed");
 }
 
-if (!/VITE_CLIENT_DEM_PARSER_POC_ENABLED["']\]\s*===\s*["']true["']/.test(appConfig)) {
-  throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: client parser POC is no longer default-off");
+if (!/clientDemParserPoc:\s*false/.test(appConfig)) {
+  throw new Error("PUBLIC_BUILD_CONFIG_REGRESSION: client parser POC is not sealed off");
 }
 
 console.log("PUBLIC_BUILD_CONFIG_OK");
