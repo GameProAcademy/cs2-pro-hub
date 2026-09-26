@@ -91,6 +91,14 @@ Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
 - [x] Check collector workflow structure and artifact freshness without changing the approved workflow SHA or authorizing execution.
 - [x] Document the H.3-E.9.2 prerequisite contract and verify synthetic diagnostics. R2 closure remains **BLOCKED** pending an authoritative append-only execution ledger and reviewed live evidence.
 
+### H.3-E.9.1-R3
+
+- [x] Correct mutable-job temporal diagnostic and distinguish historical, spanning, and post-baseline starts.
+- [x] Prepare sealed append-only execution event structure and read-only inspector, without events or a writer.
+- [x] Preserve UNKNOWN/BLOCKED for empty but uninstrumented evidence; include it in the signed diagnostic digest.
+- [ ] Instrument and independently review all actual execution writers before the ledger can prove absence; blocked by separate operational authorization.
+- [ ] R3 closure blocked by uninstrumented ledger and missing live evidence; no execution or operational mutation authorized.
+
 ### Confirmed current state
 
 - H.1-R: implemented and CI verified.

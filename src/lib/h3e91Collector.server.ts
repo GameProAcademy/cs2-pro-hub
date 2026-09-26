@@ -20,19 +20,19 @@ import { getH3E91Freshness } from "@/lib/h3e91LiveEvidence";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 
 function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN", baselineValid: boolean) {
-  const blockers: Array<
-    | "H3E91_DATABASE_EVIDENCE_UNKNOWN"
-    | "H3E91_MIGRATION_EVIDENCE_UNKNOWN"
-    | "H3E91_SECURITY_EVIDENCE_UNKNOWN"
-    | "H3E91_RUNTIME_EVIDENCE_UNKNOWN"
-    | "H3E91_RAILWAY_EVIDENCE_UNKNOWN"
-    | "H3E9_WORKFLOW_NOT_APPROVED"
-    | "H3E9_ANONYMOUS_BOUNDARY_FAILED"
-    | "H3E9_WORKFLOW_SOURCE_MISMATCH"
-    | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"
-    | "H3E91_PREFLIGHT_STALE"
-  > = [];
-  if (freshness !== "FRESH" || !baselineValid) blockers.push("H3E91_PREFLIGHT_STALE");
+  const blockers: Array<import("@/lib/h3e9FinalExecutionReadiness").H3E9BlockerCode> = [];
+  if (freshness !== "FRESH") blockers.push("H3E91_PREFLIGHT_STALE");
+  if (!baselineValid) blockers.push("H3E91_BASELINE_INVALID", "H3E91_PREFLIGHT_STALE");
+  const execution = db.executionEvidence;
+  if (!execution || execution.writerCoverageVerified !== true || execution.ledgerAuthority !== "AUTHORITATIVE") {
+    blockers.push("H3E91_EXECUTION_LEDGER_UNKNOWN");
+    if (execution?.ledgerType === "APPEND_ONLY_PREPARED") blockers.push("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
+  }
+  if (execution?.securityVerified === false) blockers.push("H3E91_EXECUTION_LEDGER_SECURITY_FAILED");
+  if ((execution?.afterBaselineCount ?? 0) > 0 || (db.realDemoExecutionCount ?? 0) > 0) blockers.push("H3E91_EXECUTION_AFTER_BASELINE");
+  if ((execution?.cacheAfterBaselineCount ?? 0) > 0 || (db.cacheDemoExecutionCount ?? 0) > 0) blockers.push("H3E91_CACHE_EXECUTION_AFTER_BASELINE");
+  if ((execution?.attempt9AfterBaselineCount ?? 0) > 0) blockers.push("H3E91_ATTEMPT9_AFTER_BASELINE");
+  if ((execution?.attempt10PlusAfterBaselineCount ?? 0) > 0) blockers.push("H3E91_ATTEMPT10_PLUS_AFTER_BASELINE");
   if (
     db.status === "UNKNOWN" ||
     db.realDemoExecutionCount === null ||
@@ -159,6 +159,28 @@ export async function collectH3E91DatabaseEvidence(
       }
     }
     if (baselineStartedAt) {
+      const { data: sealedLedger, error: sealedError } = await supabaseAdmin.rpc(
+        "h3e91_authoritative_execution_evidence",
+        { _baseline_started_at: baselineStartedAt },
+      );
+      if (!sealedError && sealedLedger && typeof sealedLedger === "object" && !Array.isArray(sealedLedger)) {
+        const item = sealedLedger as Record<string, unknown>;
+        const numberOrNull = (key: string): number | null =>
+          typeof item[key] === "number" && Number.isSafeInteger(item[key]) && (item[key] as number) >= 0 ? item[key] as number : null;
+        evidence.executionEvidence = {
+          ledgerType: typeof item["ledgerType"] === "string" ? item["ledgerType"] : null,
+          ledgerAuthority: typeof item["ledgerAuthority"] === "string" ? item["ledgerAuthority"] : null,
+          baselineStartedAt,
+          historicalCount: numberOrNull("historicalCount"),
+          spanningBaselineCount: numberOrNull("spanningBaselineCount"),
+          afterBaselineCount: numberOrNull("afterBaselineCount"),
+          cacheAfterBaselineCount: numberOrNull("cacheAfterBaselineCount"),
+          attempt9AfterBaselineCount: numberOrNull("attempt9AfterBaselineCount"),
+          attempt10PlusAfterBaselineCount: numberOrNull("attempt10PlusAfterBaselineCount"),
+          writerCoverageVerified: item["writerCoverageVerified"] === true,
+          securityVerified: item["rlsEnabled"] === true && item["noClientPrivileges"] === true && item["serviceReadOnly"] === true && item["mutationTriggerPresent"] === true && item["rpcServiceRoleOnly"] === true,
+        };
+      }
       const { data: ledger, error: ledgerError } = await supabaseAdmin.rpc(
         "h3e91_execution_ledger_after_baseline",
         { _baseline_started_at: baselineStartedAt },
@@ -218,6 +240,7 @@ export async function collectH3E91DatabaseEvidence(
           ? "PASS"
           : "BLOCKED"
         : "UNKNOWN";
+    if (!evidence.executionEvidence || evidence.executionEvidence.writerCoverageVerified !== true || evidence.executionEvidence.ledgerAuthority !== "AUTHORITATIVE") evidence.status = "UNKNOWN";
     return evidence;
   } catch {
     return evidence;
@@ -308,7 +331,7 @@ export function finalizeH3E91Artifact(
     collectorVersion: H3E91_COLLECTOR_VERSION,
     observedAt: external.observedAt,
     baselineStartedAt,
-    baseline: { startedAt: baselineStartedAt, source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const, semantics: "COUNT_EXECUTION_AFTER_BASELINE_ONLY" as const },
+    baseline: { startedAt: baselineStartedAt, source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const, semantics: "COUNT_EXECUTION_STARTED_AFTER_BASELINE_ONLY" as const },
     freshness,
     parserRuntimeRevision: `git:${PARSER_ATTESTATION_EXPECTED.commit}`,
     workflowIdentity: external.workflowIdentity,
@@ -317,6 +340,12 @@ export function finalizeH3E91Artifact(
     attestationWorkflowSourceSha: external.workflowEvidence.actualBlobSha.value,
     railwayDeploymentCommit: H3E91_RAILWAY_SOURCE_COMMIT,
     databaseEvidence,
+    executionEvidence: databaseEvidence.executionEvidence ?? {
+      ledgerType: null, ledgerAuthority: null, baselineStartedAt,
+      historicalCount: null, spanningBaselineCount: null, afterBaselineCount: null,
+      cacheAfterBaselineCount: null, attempt9AfterBaselineCount: null,
+      attempt10PlusAfterBaselineCount: null, writerCoverageVerified: null, securityVerified: null,
+    },
     securityEvidence: databaseEvidence.security,
     runtimeEvidence: external.runtimeEvidence,
     railwayEvidence: external.railwayEvidence,

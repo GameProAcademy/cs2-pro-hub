@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep H.3-E.9.1 evidence collection in server-only/read-only modules and the H.3-E.9 evaluator pure, so diagnostics cannot become an execution path.
+- Keep the H.3-E.9.1 execution ledger sealed without an event writer until separately reviewed execution-path coverage exists, because empty uninstrumented tables cannot prove no execution.

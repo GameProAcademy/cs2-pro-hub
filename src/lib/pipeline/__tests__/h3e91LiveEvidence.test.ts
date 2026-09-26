@@ -169,12 +169,13 @@ describe("H.3-E.9.1 live evidence", () => {
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
     const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
-    expect(artifact.finalResult.technicalReadiness).toBe("READY");
+    expect(artifact.finalResult.technicalReadiness).toBe("BLOCKED");
     expect(artifact.finalResult.status).toBe("BLOCKED");
     expect(artifact.finalResult.blockers).toEqual(
       expect.arrayContaining([
         "H3E9_RETENTION_NOT_AUTHORIZED",
         "H3E9_OPERATOR_AUTHORIZATION_MISSING",
+        "H3E91_EXECUTION_LEDGER_UNKNOWN",
       ]),
     );
   });
@@ -232,6 +233,28 @@ describe("H.3-E.9.1 live evidence", () => {
     const result = finalizeH3E91Artifact(external(), database(), "invalid", NOW);
     expect(result.finalResult.blockers).toContain("H3E91_PREFLIGHT_STALE");
     expect(result.finalResult.technicalReadiness).toBe("BLOCKED");
+  });
+  it("does not treat zero mutable job rows or an uninstrumented sealed ledger as proof of absence", () => {
+    const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
+    expect(artifact.executionEvidence.afterBaselineCount).toBeNull();
+    expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_LEDGER_UNKNOWN");
+    expect(artifact.finalResult.technicalReadiness).toBe("BLOCKED");
+  });
+  it("blocks even an empty append-only ledger until its execution writers are covered", () => {
+    const d = database();
+    d.executionEvidence = {
+      ledgerType: "APPEND_ONLY_PREPARED", ledgerAuthority: "UNINSTRUMENTED", baselineStartedAt: NOW,
+      historicalCount: 0, spanningBaselineCount: null, afterBaselineCount: 0,
+      cacheAfterBaselineCount: 0, attempt9AfterBaselineCount: 0,
+      attempt10PlusAfterBaselineCount: 0, writerCoverageVerified: false, securityVerified: true,
+    };
+    const artifact = finalizeH3E91Artifact(external(), d, NOW, NOW);
+    expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
+    expect(artifact.finalResult.status).toBe("BLOCKED");
+    d.executionEvidence.afterBaselineCount = 1;
+    const changed = finalizeH3E91Artifact(external(), d, NOW, NOW);
+    expect(changed.finalResult.blockers).toContain("H3E91_EXECUTION_AFTER_BASELINE");
+    expect(changed.evidenceDigest).not.toBe(artifact.evidenceDigest);
   });
   it.each([
     [
