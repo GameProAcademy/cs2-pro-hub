@@ -95,7 +95,8 @@ def collect() -> dict[str, Any]:
 
     anonymous_status, _ = fetch_json(ENDPOINT, data=b"{}", headers={"Content-Type": "application/json"})
     endpoint_secret = os.getenv("PARSER_ATTESTATION_ENDPOINT", "")
-    source_commit = os.getenv("GITHUB_WORKFLOW_SHA", "")
+    collector_workflow_sha = os.getenv("GITHUB_WORKFLOW_SHA", "")
+    trigger_commit_sha = os.getenv("GITHUB_SHA", "")
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "")
 
     return {
@@ -105,7 +106,8 @@ def collect() -> dict[str, Any]:
             "repository": os.getenv("GITHUB_REPOSITORY", ""), "ref": os.getenv("GITHUB_REF", ""),
             "refType": os.getenv("GITHUB_REF_TYPE", ""), "eventName": os.getenv("GITHUB_EVENT_NAME", ""),
             "workflow": os.getenv("GITHUB_WORKFLOW", ""), "workflowRef": workflow_ref,
-            "sourceCommit": source_commit,
+            "collectorWorkflowSha": collector_workflow_sha,
+            "collectorTriggerCommitSha": trigger_commit_sha,
         },
         "workflowEvidence": {
             "approvedPathMatches": safe(ATTESTATION_WORKFLOW == ".github/workflows/parser-runtime-attestation.yml", "GIT_CHECKOUT", observed_at),
@@ -113,6 +115,7 @@ def collect() -> dict[str, Any]:
             "approvedBlobSha": safe(APPROVED_BLOB, "APPROVED_REGISTRY", observed_at, "PASS"),
             "blobMatches": safe(actual_blob == APPROVED_BLOB, "GIT_BLOB_COMPARISON", observed_at),
             "oidcStructureValid": safe(oidc_structure, "ATTESTATION_WORKFLOW_SOURCE", observed_at),
+            "collectorWorkflowSha": safe(collector_workflow_sha, "GITHUB_WORKFLOW_IDENTITY", observed_at),
         },
         "secretPresence": {
             "endpointPresent": safe(bool(endpoint_secret), "GITHUB_SECRET_PRESENCE", observed_at),
@@ -143,6 +146,11 @@ def collect() -> dict[str, Any]:
         "transportEvidence": {
             "endpointMatches": safe(endpoint_secret == ENDPOINT, "GITHUB_CONFIGURATION_COMPARISON", observed_at),
             "anonymousStatus": safe(anonymous_status, "ANONYMOUS_NEGATIVE_POST", observed_at, "PASS" if anonymous_status == 401 else "BLOCKED"),
+            "preNegativeProvenanceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
+            "postNegativeProvenanceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
+            "preNegativeNonceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
+            "postNegativeNonceCount": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
+            "noNegativePostSideEffect": safe(None, "UNTRUSTED_RUNNER_NO_DATABASE_ACCESS", observed_at, "UNKNOWN"),
         },
     }
 
