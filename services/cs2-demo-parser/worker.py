@@ -98,6 +98,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         ParseRequest(
                             contract_version=settings.contract_version,
                             upload_id=claim["upload_id"],
+                            job_id=identity["jobId"],
+                            attempt_number=claim["attempt_number"],
                             demo_url=claim["demo_url"],
                             demo_sha256=claim["demo_sha256"],
                             file_size=claim["file_size"],
