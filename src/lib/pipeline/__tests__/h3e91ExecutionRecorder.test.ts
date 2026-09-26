@@ -17,7 +17,7 @@ describe("APP controlled execution recorder", () => {
     rpc.mockReset();
     rpc.mockResolvedValueOnce({ data: null, error: { message: "response lost" } });
     rpc.mockResolvedValueOnce({ data: { status: "IDEMPOTENT_REPLAY" }, error: null });
-    await expect(appExecutionRecorder(input)("EXECUTION_INTENT")).rejects.toThrow("H3E91_RECORDING_FAILED");
+    await expect(appExecutionRecorder(input)("EXECUTION_INTENT")).rejects.toMatchObject({ code: "PARSER_UNAVAILABLE", detail: "H3E91_RECORDING_FAILED:UNAVAILABLE" });
     await expect(appExecutionRecorder(input)("EXECUTION_INTENT")).resolves.toBeUndefined();
     const [, first] = rpc.mock.calls[0];
     const [, replay] = rpc.mock.calls[1];
@@ -30,7 +30,7 @@ describe("APP controlled execution recorder", () => {
   it("fails closed on rejection and never sends a parser-success terminal implicitly", async () => {
     rpc.mockReset();
     rpc.mockResolvedValueOnce({ data: { status: "REJECTED", code: "INVALID_TRANSITION" }, error: null });
-    await expect(appExecutionRecorder(input)("EXECUTION_FINISHED", "PARSE_SUCCEEDED")).rejects.toThrow("INVALID_TRANSITION");
+    await expect(appExecutionRecorder(input)("EXECUTION_FINISHED", "PARSE_SUCCEEDED")).rejects.toMatchObject({ code: "PARSER_UNAVAILABLE", detail: "H3E91_RECORDING_FAILED:INVALID_TRANSITION" });
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 });
