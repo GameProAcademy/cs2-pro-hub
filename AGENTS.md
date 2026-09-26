@@ -13,3 +13,4 @@
 - Keep the H.3-E.9.1 execution ledger sealed without an event writer until separately reviewed execution-path coverage exists, because empty uninstrumented tables cannot prove no execution.
 - Keep the H.3-E.9.1-R4 execution-surface inventory server-only and diagnostic; only independently reviewed code and deployed-source parity can promote coverage, because local source inspection cannot establish an authoritative ledger.
 - Keep R4.1 execution identities additive and the ledger writer absent until every parser path has a reviewed pre-parser fail-closed bridge; schema preparation alone is not execution authority.
+- Keep parser production images on an explicit runtime source allowlist; reference CLI and tests must stay out because their parse entrypoints would evade production ledger coverage.

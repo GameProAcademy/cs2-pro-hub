@@ -20,7 +20,7 @@ const executablePatterns = [
   /\b(?:adapter|service)\.parseDemo\s*\(/g,
   /\basyncio\.to_thread\(parse\s*,/g,
   /\bparse_demo_file\s*\(/g,
-  /\bparser\.(?:parseTicks|parseEvent|parseHeader|parseEvents)\s*\(/g,
+  /\bparser\.(?:parseTicks|parseEvent|parseHeader|parseEvents|parseGrenades|parsePlayerInfo)\s*\(/g,
   /\bnew Worker\(new URL\("\.\/clientParser\.worker\.ts"/g,
 ];
 
@@ -36,7 +36,7 @@ const classified: Record<string, { count: number; classification: string }> = {
     classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
   },
   "src/lib/client-parser/clientParser.worker.ts": {
-    count: 4,
+    count: 5,
     classification: "PRODUCTION_EXECUTION_SURFACE:BROWSER_WASM_POC",
   },
   "services/cs2-demo-parser/app.py": {
@@ -49,7 +49,7 @@ const classified: Record<string, { count: number; classification: string }> = {
   },
   "services/cs2-demo-parser/python_reference.py": {
     count: 1,
-    classification: "PRODUCTION_EXECUTION_SURFACE:UNSEALED_REFERENCE_CLI",
+    classification: "TEST_ONLY:REFERENCE_CLI_IMAGE_EXCLUDED",
   },
 };
 
@@ -69,8 +69,10 @@ describe("H.3-E.9.1 execution source discovery", () => {
       Object.fromEntries(Object.entries(classified).map(([file, value]) => [file, value.count])),
     );
     expect(
-      Object.values(classified).every(({ classification }) =>
-        classification.startsWith("PRODUCTION_EXECUTION_SURFACE:"),
+      Object.values(classified).every(
+        ({ classification }) =>
+          classification.startsWith("PRODUCTION_EXECUTION_SURFACE:") ||
+          classification.startsWith("TEST_ONLY:"),
       ),
     ).toBe(true);
   });
@@ -83,11 +85,41 @@ describe("H.3-E.9.1 execution source discovery", () => {
     expect(read("services/cs2-demo-parser/worker.py")).toMatch(/async def durable_consumer_loop\(/);
   });
 
-  it("treats reference scripts copied into the production image as unsealed", () => {
-    expect(read("services/cs2-demo-parser/Dockerfile")).toMatch(/^COPY \. \.$/m);
+  it("requires a runtime image allowlist that excludes the reference producer", () => {
+    const dockerfile = read("services/cs2-demo-parser/Dockerfile");
+    expect(dockerfile).not.toMatch(/^COPY \. \.$/m);
+    const runtime = dockerfile.match(/^COPY (.+app\.py.+) \.\/$/m)?.[1]?.split(/\s+/) ?? [];
+    expect(runtime).toContain("app.py");
+    expect(runtime).toContain("parser.py");
+    expect(runtime).toContain("worker.py");
+    expect(runtime).not.toContain("python_reference.py");
+    expect(runtime).not.toContain("raw_manifest_audit.py");
     expect(classified["services/cs2-demo-parser/python_reference.py"]?.classification).toContain(
-      "UNSEALED_REFERENCE_CLI",
+      "TEST_ONLY:",
     );
+  });
+
+  it("does not silently admit unclassified parser entrypoints, imports or browser workers", () => {
+    const production = productionRoots.flatMap(productionFiles);
+    const sites = production.flatMap((path) => {
+      const source = read(path);
+      const matches = [
+        ...source.matchAll(
+          /\b(?:from parser import parse_demo_file|from ["']\.\/clientParser\.service["']|from ["']@\/lib\/client-parser\/clientParser\.service["'])/g,
+        ),
+        ...source.matchAll(
+          /\b(?:@app\.post\(["']\/v1\/parse["']|async def durable_consumer_loop\()/g,
+        ),
+      ];
+      return matches.length ? [[path, matches.length]] : [];
+    });
+    expect(Object.fromEntries(sites)).toEqual({
+      "services/cs2-demo-parser/app.py": 1,
+      "services/cs2-demo-parser/python_reference.py": 1,
+      "services/cs2-demo-parser/worker.py": 1,
+    });
+    expect(read("src/components/pipeline/ClientParserPoc.tsx")).toContain("ClientParserService");
+    expect(read("src/routes/_authenticated/client-parser-poc.tsx")).toContain("ClientParserPoc");
   });
 
   it("does not confuse an additive identity schema with a functioning writer", () => {
