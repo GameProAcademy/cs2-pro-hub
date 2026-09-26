@@ -137,8 +137,11 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     else:
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
-                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
-                    await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
+                    if not terminal_recorded:
+                        await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
+                        await _bridge(client, settings, "fail", {**identity, "errorCode": _worker_error_code(error), "detail": error.message})
+                    else:
+                        logger.warning("queue completion failed after terminal evidence; refusing second terminal type=%s", type(error).__name__)
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
                     if not terminal_recorded and "H3E91_RECORDING_" not in str(error):
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
