@@ -8,10 +8,7 @@ export const H3E91_EXECUTION_SURFACES = [
 
 export type H3E91ExecutionSurface = (typeof H3E91_EXECUTION_SURFACES)[number];
 export type H3E91SurfaceStatus =
-  | "ACTIVE_AND_INSTRUMENTED"
-  | "SEALED_OFF"
-  | "NOT_COVERED"
-  | "UNKNOWN";
+  "ACTIVE_AND_INSTRUMENTED" | "SEALED_OFF" | "NOT_COVERED" | "UNKNOWN";
 
 // An application flag alone does not seal the browser worker: the service can
 // still be called directly, and a separate build may enable the POC.
@@ -35,10 +32,12 @@ export function inspectH3E91ExecutionSurfaces(
     unknownSurfaceCount: values.filter((value) => value === "UNKNOWN").length + missing.length,
     uncoveredSurfaceCount: values.filter((value) => value === "NOT_COVERED").length,
     sealedOffSurfaceCount: values.filter((value) => value === "SEALED_OFF").length,
-    activeInstrumentedSurfaceCount: values.filter((value) => value === "ACTIVE_AND_INSTRUMENTED").length,
+    activeInstrumentedSurfaceCount: values.filter((value) => value === "ACTIVE_AND_INSTRUMENTED")
+      .length,
     unexpectedWriterCount: unexpected.length,
     writerCoverageVerified:
-      unexpected.length === 0 && missing.length === 0 &&
+      unexpected.length === 0 &&
+      missing.length === 0 &&
       values.every((value) => value === "ACTIVE_AND_INSTRUMENTED" || value === "SEALED_OFF"),
   };
 }
