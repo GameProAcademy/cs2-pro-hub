@@ -19,8 +19,9 @@ describe("APP controlled execution recorder", () => {
     rpc.mockResolvedValueOnce({ data: { status: "IDEMPOTENT_REPLAY" }, error: null });
     await expect(appExecutionRecorder(input)("EXECUTION_INTENT")).rejects.toMatchObject({ code: "PARSER_UNAVAILABLE", detail: "H3E91_RECORDING_FAILED:UNAVAILABLE" });
     await expect(appExecutionRecorder(input)("EXECUTION_INTENT")).resolves.toBeUndefined();
-    const [, first] = rpc.mock.calls[0];
-    const [, replay] = rpc.mock.calls[1];
+    const first = rpc.mock.calls[0]?.[1];
+    const replay = rpc.mock.calls[1]?.[1];
+    expect(first).toBeDefined();
     expect(first).toEqual(replay);
     expect(first._event_id).toMatch(/^[0-9a-f-]{36}$/);
     expect(first._demo_sha256).toBeNull();
