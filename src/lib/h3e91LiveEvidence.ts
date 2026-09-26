@@ -9,6 +9,7 @@ import {
   type H3E9ReadinessResult,
 } from "@/lib/h3e9FinalExecutionReadiness";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
+import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
 import { H3E91_APPROVED_WORKFLOW_PATH, H3E91_APPROVED_WORKFLOW_SHA, H3E91_APPROVED_WORKFLOW_NAME } from "@/lib/h3e91WorkflowRegistry";
 
 export const H3E91_LIVE_EVIDENCE_SCHEMA_VERSION = 1 as const;
@@ -223,10 +224,10 @@ export function buildH3E91ReadinessInput(
       approvedPath: external.workflowEvidence.approvedPathMatches.value
         ? PARSER_ATTESTATION_EXPECTED.workflowPath
         : "MISMATCH",
-      approvedSourceSha: external.workflowEvidence.approvedBlobSha.value,
-      registryMatches: external.workflowEvidence.blobMatches.value,
-      sourceMatches: external.workflowEvidence.blobMatches.value,
-      oidcConfigured: external.workflowEvidence.oidcStructureValid.value,
+      approvedSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
+      registryMatches: external.workflowEvidence.approvedBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.blobMatches.value && external.workflowEvidence.blobMatches.status === "PASS",
+      sourceMatches: external.workflowEvidence.actualBlobSha.value === APPROVED_ATTESTATION_WORKFLOW_SHA && external.workflowEvidence.actualBlobSha.status === "PASS",
+      oidcConfigured: external.workflowEvidence.oidcStructureValid.value && external.workflowEvidence.oidcStructureValid.status === "PASS",
     },
     railway: {
       deploymentIdMatches: external.railwayEvidence.deploymentIdMatches.value,
