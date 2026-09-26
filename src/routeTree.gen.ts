@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminMemoryLabRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as ApiPublicH3e91ExecutionEventRouteImport } from './routes/api/public/h3e91-execution-event'
 import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
 import { Route as ApiInternalH3e9PreflightRouteImport } from './routes/api/internal/h3e9/preflight'
@@ -159,6 +160,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiPublicH3e91ExecutionEventRoute =
+  ApiPublicH3e91ExecutionEventRouteImport.update({
+    id: '/api/public/h3e91-execution-event',
+    path: '/api/public/h3e91-execution-event',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicParserAttestationRoute =
   ApiPublicParserAttestationRouteImport.update({
     id: '/api/public/parser-attestation',
@@ -217,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesByTo {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -278,6 +287,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/api/public/h3e91-execution-event'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/admin/'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/api/public/h3e91-execution-event'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/admin'
@@ -370,6 +382,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
+    | '/api/public/h3e91-execution-event'
     | '/api/public/parser-attestation'
     | '/api/public/pipeline-cron'
     | '/_authenticated/admin/'
@@ -385,6 +398,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicH3e91ExecutionEventRoute: typeof ApiPublicH3e91ExecutionEventRoute
   ApiPublicParserAttestationRoute: typeof ApiPublicParserAttestationRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
   ApiInternalH3e9PreflightRoute: typeof ApiInternalH3e9PreflightRoute
@@ -556,6 +570,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/h3e91-execution-event': {
+      id: '/api/public/h3e91-execution-event'
+      path: '/api/public/h3e91-execution-event'
+      fullPath: '/api/public/h3e91-execution-event'
+      preLoaderRoute: typeof ApiPublicH3e91ExecutionEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/parser-attestation': {
       id: '/api/public/parser-attestation'
       path: '/api/public/parser-attestation'
@@ -664,6 +685,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicH3e91ExecutionEventRoute: ApiPublicH3e91ExecutionEventRoute,
   ApiPublicParserAttestationRoute: ApiPublicParserAttestationRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
   ApiInternalH3e9PreflightRoute: ApiInternalH3e9PreflightRoute,
