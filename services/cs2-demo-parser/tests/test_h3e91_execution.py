@@ -102,6 +102,40 @@ def test_execution_identity_changes_when_upload_changes():
     asyncio.run(run())
 
 
+def test_lifecycle_read_is_minimal_and_fails_closed():
+    execution_id = "11111111-1111-5111-8111-111111111111"
+    allowed = {
+        "executionId": execution_id,
+        "lifecycle": "STARTED",
+        "terminalEventId": None,
+        "terminalOutcome": None,
+        "terminalCreatedAt": None,
+        "hasStarted": True,
+        "hasTerminal": False,
+    }
+
+    async def run(payload, status=200):
+        async def transport(request):
+            assert request.url.path == "/api/public/h3e91-execution-lifecycle"
+            assert json.loads(request.content) == {"executionId": execution_id}
+            return httpx.Response(status, json=payload)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            recorder = ExecutionRecorder(
+                client,
+                make_settings(bridge_url="https://synthetic.invalid/bridge", bridge_secret="synthetic-test-only"),
+                upload_id="22222222-2222-2222-2222-222222222222",
+                surface="RAILWAY_V1_PARSE",
+                execution_id=execution_id,
+            )
+            return await recorder.read_lifecycle()
+
+    assert asyncio.run(run(allowed)) == allowed
+    with pytest.raises(RuntimeError, match="INVALID_RESPONSE"):
+        asyncio.run(run({**allowed, "parserOutput": {"unsafe": True}}))
+    with pytest.raises(RuntimeError, match="FAILED_503"):
+        asyncio.run(run({"code": "unavailable"}, 503))
+
+
 def test_reconstructed_http_retry_and_terminal_replays_keep_database_identity():
     """Each request creates a fresh recorder; a lost response never creates another execution."""
     rows = {}

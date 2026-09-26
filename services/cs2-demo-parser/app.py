@@ -384,9 +384,13 @@ def create_app(
                                               correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, logical_identity + ":correlation"))).bind_revision(resolved.revision)
                 intent_result = await recorder.record("EXECUTION_INTENT")
                 # A replayed INTENT may already have STARTED or a terminal row.
-                # Without an authenticated read of that lifecycle, never parse twice.
                 if intent_result.get("status") != "INSERTED":
-                    raise WorkerError(409, E.SAFE_REPLAY_REQUIRES_RECONCILIATION, "Execution already recorded; reconciliation required.")
+                    lifecycle = await recorder.read_lifecycle()
+                    raise WorkerError(
+                        409,
+                        E.SAFE_REPLAY_REQUIRES_RECONCILIATION,
+                        f"Execution already recorded in {lifecycle['lifecycle']}; reconciliation required.",
+                    )
             except WorkerError:
                 raise
             except Exception:

@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import { MAX_CONCURRENT_DEMO_JOBS, MAX_JOB_RETRIES } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
+import { readH3E91ExecutionLifecycle } from "@/lib/pipeline/h3e91Lifecycle.server";
 import { processJob, type DurableJobClaim } from "@/lib/pipeline/jobs.server";
 import { mapParserErrorCode } from "@/lib/pipeline/parser/adapter";
 import { RAW_CHUNK_HARD_MAX_BYTES, type DurableDemoCompletionV1 } from "@/lib/pipeline/types";
@@ -195,6 +196,60 @@ export async function failDurableDemo(
       .neq("status", "ready");
   }
   return { ...(data as object), maxRetries: MAX_JOB_RETRIES };
+}
+
+export async function reconcileDurableExecution(
+  input: DurableJobClaim & { jobId: string; executionId: string },
+) {
+  const lifecycle = await readH3E91ExecutionLifecycle(input.executionId);
+  if (lifecycle.lifecycle === "INVALID" || lifecycle.lifecycle === "NONE") {
+    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+  }
+  if (lifecycle.lifecycle === "INTENT_ONLY" || lifecycle.lifecycle === "STARTED") {
+    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+  }
+
+  const { db, rpc } = await context();
+  const { data: job, error: jobError } = await db
+    .from("demo_jobs")
+    .select("status, queue_message_id, dispatch_attempt, worker_id")
+    .eq("id", input.jobId)
+    .maybeSingle();
+  if (
+    jobError ||
+    !job ||
+    Number(job.queue_message_id) !== input.messageId ||
+    job.dispatch_attempt !== input.attempt ||
+    job.worker_id !== input.workerId
+  ) {
+    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+  }
+
+  if (lifecycle.lifecycle === "FINISHED") {
+    if (!["processed", "blocked_raw_audit", "cancelled"].includes(job.status)) {
+      return { status: "reconciliation_required", lifecycle: "FINISHED" };
+    }
+    const { data, error } = await rpc("finalize_demo_parse_message", {
+      _job_id: input.jobId,
+      _message_id: input.messageId,
+      _attempt: input.attempt,
+      _worker_id: input.workerId,
+    });
+    if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+    return { status: "queue_reconciled", lifecycle: "FINISHED", queue: data };
+  }
+
+  const { data, error } = await rpc("fail_demo_parse_message", {
+    _job_id: input.jobId,
+    _message_id: input.messageId,
+    _attempt: input.attempt,
+    _worker_id: input.workerId,
+    _error_code: lifecycle.terminalOutcome ?? `EXECUTION_${lifecycle.lifecycle}`,
+    _error_message: "Authoritative execution terminal reconciled without parser replay.",
+    _permanent: lifecycle.lifecycle === "FAILED",
+  });
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  return { status: "queue_reconciled", lifecycle: lifecycle.lifecycle, queue: data };
 }
 
 export function rawPrefix(userId: string, uploadId: string, demoAttemptNumber: number): string {

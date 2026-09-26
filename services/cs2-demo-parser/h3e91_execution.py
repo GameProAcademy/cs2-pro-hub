@@ -53,6 +53,31 @@ class ExecutionRecorder:
             raise RuntimeError("H3E91_RECORDING_INVALID_RESPONSE")
         return result
 
+    async def read_lifecycle(self) -> dict[str, Any]:
+        response = await self.client.post(
+            self.url.replace("h3e91-execution-event", "h3e91-execution-lifecycle"),
+            headers={"authorization": f"Bearer {self.secret}"},
+            json={"executionId": self.execution_id},
+        )
+        if response.status_code != 200:
+            raise RuntimeError(f"H3E91_LIFECYCLE_READ_FAILED_{response.status_code}")
+        result = response.json()
+        allowed = {
+            "executionId", "lifecycle", "terminalEventId", "terminalOutcome",
+            "terminalCreatedAt", "hasStarted", "hasTerminal",
+        }
+        valid_states = {"NONE", "INTENT_ONLY", "STARTED", "FINISHED", "FAILED", "ABORTED", "INVALID"}
+        if (
+            not isinstance(result, dict)
+            or set(result) != allowed
+            or result.get("executionId") != self.execution_id
+            or result.get("lifecycle") not in valid_states
+            or not isinstance(result.get("hasStarted"), bool)
+            or not isinstance(result.get("hasTerminal"), bool)
+        ):
+            raise RuntimeError("H3E91_LIFECYCLE_READ_INVALID_RESPONSE")
+        return result
+
     @property
     def _revision(self) -> str:
         return self.settings_revision
