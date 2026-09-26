@@ -4,7 +4,7 @@ import { H3E91_R41_COVERAGE } from "@/lib/h3e91R41Coverage.server";
 describe("R4.1 source checkpoint remains diagnostic", () => {
   it("never promotes an empty uninstrumented ledger", () => {
     expect(H3E91_R41_COVERAGE.status).toBe("BLOCKED");
-    expect(H3E91_R41_COVERAGE.writer.present).toBe(false);
+    expect(H3E91_R41_COVERAGE.writer.present).toBe(true);
     expect(H3E91_R41_COVERAGE.ledgerAuthority).toBe("UNINSTRUMENTED");
     expect(H3E91_R41_COVERAGE.writerCoverageVerified).toBe(false);
     expect(H3E91_R41_COVERAGE.deployedParity).toBe("UNKNOWN");
