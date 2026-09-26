@@ -95,6 +95,58 @@ describe("durable execution reconciliation", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["expired lease", { acknowledged: false, reason: "lease_expired" }],
+    ["stale claim", { acknowledged: false, reason: "claim_not_current" }],
+    ["missing queue message", { acknowledged: false, reason: "message_not_archived" }],
+    ["malformed acknowledgement", null],
+  ])("does not claim FINISHED recovery after %s", async (_case, result) => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
+    maybeSingle.mockResolvedValueOnce({
+      data: {
+        status: "processed",
+        queue_message_id: input.messageId,
+        dispatch_attempt: input.attempt,
+        worker_id: input.workerId,
+      },
+      error: null,
+    });
+    rpc.mockResolvedValueOnce({ data: result, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "FINISHED",
+    });
+  });
+
+  it.each(["FAILED", "ABORTED"])("does not claim %s recovery after a stale lease", async (state) => {
+    readLifecycle.mockResolvedValueOnce(lifecycle(state, "WORKER_INTERRUPTED"));
+    maybeSingle.mockResolvedValueOnce({
+      data: {
+        status: "processing",
+        queue_message_id: input.messageId,
+        dispatch_attempt: input.attempt,
+        worker_id: input.workerId,
+      },
+      error: null,
+    });
+    rpc.mockResolvedValueOnce({ data: { accepted: false, reason: "lease_expired" }, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: state,
+    });
+  });
+
+  it("rejects a lifecycle response for a different execution", async () => {
+    readLifecycle.mockResolvedValueOnce({
+      ...lifecycle("FINISHED", "PARSE_SUCCEEDED"),
+      executionId: "44444444-4444-5444-8444-444444444444",
+    });
+    await expect(reconcileDurableExecution(input)).rejects.toMatchObject({
+      code: "PARSER_UNAVAILABLE",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it.each(["FAILED", "ABORTED"])(
     "reconciles %s through queue failure without another terminal",
     async (state) => {

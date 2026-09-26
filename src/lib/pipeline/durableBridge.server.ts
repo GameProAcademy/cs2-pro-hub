@@ -202,6 +202,9 @@ export async function reconcileDurableExecution(
   input: DurableJobClaim & { jobId: string; executionId: string },
 ) {
   const lifecycle = await readH3E91ExecutionLifecycle(input.executionId);
+  if (lifecycle.executionId !== input.executionId) {
+    throw new PipelineError("PARSER_UNAVAILABLE", "H3E91_LIFECYCLE_IDENTITY_MISMATCH");
+  }
   if (lifecycle.lifecycle === "INVALID" || lifecycle.lifecycle === "NONE") {
     return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
   }
@@ -236,6 +239,9 @@ export async function reconcileDurableExecution(
       _worker_id: input.workerId,
     });
     if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+    if ((data as { acknowledged?: boolean } | null)?.acknowledged !== true) {
+      return { status: "reconciliation_required", lifecycle: "FINISHED" };
+    }
     return { status: "queue_reconciled", lifecycle: "FINISHED", queue: data };
   }
 
@@ -249,6 +255,9 @@ export async function reconcileDurableExecution(
     _permanent: lifecycle.lifecycle === "FAILED",
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  if ((data as { accepted?: boolean } | null)?.accepted !== true) {
+    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+  }
   return { status: "queue_reconciled", lifecycle: lifecycle.lifecycle, queue: data };
 }
 
