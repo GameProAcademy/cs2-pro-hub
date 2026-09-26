@@ -7,6 +7,7 @@ import { finalizeH3E91Artifact } from "@/lib/h3e91Collector.server";
 import {
   H3E91_OIDC_AUDIENCE,
   H3E91_WORKFLOW_PATH,
+  getH3E91Freshness,
   h3e91ExternalEvidenceSchema,
   type H3E91DatabaseEvidence,
   type H3E91ExternalEvidence,
@@ -97,6 +98,7 @@ function database(): H3E91DatabaseEvidence {
     attempt10PlusCount: 0,
     realDemoExecutionCount: 0,
     cacheDemoExecutionCount: 0,
+    historicalStartedJobCount: 0,
     canonical: { total: 105, authorized: 0, verified: 0, generic: 0 },
     migration: {
       version: "20260925011902",
@@ -147,7 +149,7 @@ describe("H.3-E.9.1 live evidence", () => {
     expect(h3e91ExternalEvidenceSchema.safeParse(candidate).success).toBe(false);
   });
   it("produces READY only for fully valid synthetic evidence with explicit synthetic authorizations", () => {
-    const artifact = finalizeH3E91Artifact(external(), database());
+    const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
     artifact.finalResult.retention = {
       status: "AUTHORIZED",
       reference: "synthetic",
@@ -166,7 +168,7 @@ describe("H.3-E.9.1 live evidence", () => {
     expect(reevaluated.status).toBe("READY");
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
-    const artifact = finalizeH3E91Artifact(external(), database());
+    const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
     expect(artifact.finalResult.technicalReadiness).toBe("READY");
     expect(artifact.finalResult.status).toBe("BLOCKED");
     expect(artifact.finalResult.blockers).toEqual(
@@ -223,6 +225,13 @@ describe("H.3-E.9.1 live evidence", () => {
     expect(finalizeH3E91Artifact(external(), database()).evidenceDigest).toBe(first.evidenceDigest);
     a.runtimeEvidence.healthMatches.value = false;
     expect(finalizeH3E91Artifact(a, database()).evidenceDigest).not.toBe(first.evidenceDigest);
+  });
+  it("blocks stale or invalid baseline instead of inferring readiness", () => {
+    expect(getH3E91Freshness(NOW, "2026-09-26T00:11:00Z")).toBe("STALE");
+    expect(getH3E91Freshness("invalid", NOW)).toBe("UNKNOWN");
+    const result = finalizeH3E91Artifact(external(), database(), "invalid", NOW);
+    expect(result.finalResult.blockers).toContain("H3E91_PREFLIGHT_STALE");
+    expect(result.finalResult.technicalReadiness).toBe("BLOCKED");
   });
   it.each([
     [

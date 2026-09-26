@@ -304,7 +304,7 @@ export function finalizeH3E91Artifact(
     baselineStartedAt,
     baseline: { startedAt: baselineStartedAt, source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const, semantics: "COUNT_EXECUTION_AFTER_BASELINE_ONLY" as const },
     freshness,
-    parserRuntimeRevision: PARSER_ATTESTATION_EXPECTED.parserRevision,
+    parserRuntimeRevision: `git:${PARSER_ATTESTATION_EXPECTED.commit}`,
     workflowIdentity: external.workflowIdentity,
     collectorWorkflowSha: external.workflowIdentity.collectorWorkflowSha,
     collectorTriggerCommitSha: external.workflowIdentity.collectorTriggerCommitSha,
