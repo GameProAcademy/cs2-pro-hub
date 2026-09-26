@@ -128,6 +128,9 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sa
 - [x] Remove the browser parser from its authenticated experimental route, hard-disable its configuration, reject production service calls and add source/build-output isolation checks to CI. Deployed bundle verification remains pending.
 - [x] Add an application-source guard against direct ledger writes, without adding any writer or event rows.
 - [ ] Complete the controlled writer, authenticated event bridge, lifecycle, failure injection, real disposable-Postgres concurrency harness, exhaustive security audit and all surface instrumentation before enabling any writer.
+- [x] Add a strictly versioned, bounded, authenticated execution-event bridge contract that deliberately returns 503 for valid requests while the controlled writer is absent; synthetic tests confirm 401 anonymous and 503 authenticated, with no ledger writes.
+- [x] Add a pure R4.1 proof-decision contract covering 20 independently required proofs; UNKNOWN/FAIL/BLOCKED each prevent even independent-audit readiness, and no result authorizes DEM or Canonical.
+- [ ] Activate the bridge only after pre-parser instrumentation, disposable-PostgreSQL lifecycle/concurrency/security proofs, independently reviewed source parity, and a controlled writer all pass. Current endpoint is deliberately inactive.
 - [ ] `H3E91_PREPARSER_WRITER_ABSENT`: no controlled lifecycle writer or confirmed INTENT/STARTED/terminal bridge. Keep actual parsing paths uninstrumented and blocked rather than enabling partial capture.
 - [ ] `H3E91_EXECUTION_SURFACE_NOT_COVERED`: APP, durable worker, `/v1/parse`, and browser/WASM remain unproven; reference CLI is excluded from the new image recipe but the deployed image is unverified.
 - [ ] `H3E91_BROWSER_NOT_SEALED`: source path removed and CI build check prepared, but the published bundle/runtime has not been independently verified; leave coverage `NOT_COVERED`.
