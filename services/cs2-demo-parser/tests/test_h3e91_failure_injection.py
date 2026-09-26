@@ -149,12 +149,13 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
 def test_v1_ambiguous_request_retry_is_safe_not_transparent(client_factory, monkeypatch, phase):
     """New HTTP requests and real recorder transport; the ledger is a synthetic bridge, not PostgreSQL."""
     import app
+    import importlib
     import h3e91_execution
 
     stored = {}
     requests = []
     parser_calls = []
-    original = h3e91_execution.ExecutionRecorder
+    original = importlib.reload(h3e91_execution).ExecutionRecorder
 
     async def bridge(request):
         import json
