@@ -1,3 +1,7 @@
+# R3 diagnostic clarification
+
+The execution evidence ledger is prepared but uninstrumented. No writer exists and zero events never certify an empty execution window. The server compares mutable jobs by `started_at >= baseline` only; earlier starts finishing later are historical spanning work. Cache identification uses SHA plus file size. A missing, stale or contradictory observation remains blocked. This diagnostic does not dispatch or authorize execution.
+
 # H.3-E.9.1 — Live Evidence Collector & Machine-Readable Preflight
 
 ## Status
