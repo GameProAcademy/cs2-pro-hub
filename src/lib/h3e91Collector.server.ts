@@ -91,7 +91,6 @@ function unknownDatabaseEvidence(observedAt: string): H3E91DatabaseEvidence {
     realDemoExecutionCount: null,
     cacheDemoExecutionCount: null,
     historicalStartedJobCount: null,
-    executionEvidence: undefined,
     canonical: { total: null, authorized: null, verified: null, generic: null },
     migration: { version: null, name: null, exactMatchCount: null },
     security: {
