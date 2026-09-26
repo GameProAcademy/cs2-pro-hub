@@ -1,5 +1,18 @@
 # H.3-E.9.1-R4 — execution writer coverage
 
+### R4.1-C/F.4 controlled evidence checkpoint (supersedes earlier staged claims below)
+
+| Requirement | Source | Live DB | Synthetic Test | CI | Status |
+|---|---|---|---|---|---|
+| Controlled writer, server digest, security | Version-1 SECURITY DEFINER, canonical JSON array SHA-256 without `event_at` | Writer present; digest column present; 0 rows; service_role EXECUTE only; no direct INSERT | Exact digest and 30 disposable DB lifecycle cases | PostgreSQL harness | SOURCE + LIVE_DB + SYNTHETIC VERIFIED |
+| Stable IDs and replay | APP deterministic job/attempt UUID; durable worker deterministic job/attempt UUID; parser event UUIDv5 | Duplicate event/type unique indexes present | APP reconstructed retry; parser lost response; durable claim retry | Vitest and pytest | SYNTHETIC_PROVEN |
+| Full lifecycle and terminal safety | INTENT→STARTED→terminal before parser/queue return | RLS deny, append-only trigger, one-terminal index | 30 concurrency cases, worker complete-after-FINISHED, `/v1/parse` failure ordering | PostgreSQL harness; pytest | SYNTHETIC_PROVEN |
+| Bridge and failure injection | Strict authenticated 8 KiB protocol, no client digest or signed URL | Writer only service_role | 15 transport failures plus ordering scenarios | Vitest and pytest | SYNTHETIC_PROVEN |
+| Browser and reference CLI | Feature disabled; Docker allowlist excludes reference producer | Not applicable | Import/allowlist and build-verifier unit tests | Build-output verifier and Docker image inspection | SOURCE_PROVEN; deployed bundle UNKNOWN |
+| Deployed Railway parity | Production guard rejects without independent parity | 0 production ledger events (not proof of no execution) | Cannot be proved synthetically | Not deployable by CI | UNKNOWN / BLOCKED |
+
+Authority levels are `SOURCE_IMPLEMENTED`, `LIVE_DB_VERIFIED`, `SYNTHETIC_PROVEN`, `DEPLOYED_VERIFIED`; source and synthetic tests cannot substitute for deployment evidence. The 20-proof decision stays BLOCKED while deployed-source parity and independent production-output verification are UNKNOWN. `realDemAuthorized=false`, `canonicalAuthorized=false`. No real DEM/Cache, Attempt 9/10+, attestation, provenance/nonce, Canonical, Railway deployment, EnvironmentPatch or secret mutation was performed. Older staged notes below are historical only.
+
 ## R4.1-C/F.2 live safety checkpoint
 
 An idempotent safety repair was applied to the live ledger: `sandbox_exec`, `service_role`, `anon`, `authenticated` and `PUBLIC` cannot write directly; the mutation-trigger function is not executable by them. Effective privilege checks confirmed sandbox_exec and service_role read-only, anon and authenticated without access, and zero production ledger rows. This repair does not install or activate a writer. Full lifecycle, disposable-database concurrency, pre-parser APP/Railway coverage, bridge recording and deployed-source parity remain unproven. Result: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. No production event was inserted or parser run.

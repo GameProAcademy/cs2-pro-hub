@@ -123,7 +123,7 @@ Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**. The database's observed `sa
 
 #### R4.1-C → F checkpoint — still BLOCKED
 
-- [ ] R4.1-C/F.4: prove stable retry identities, full lifecycle concurrency, terminal ordering/failure injection, local proof matrix and CI; deployed Railway parity remains external and UNKNOWN.
+- [x] R4.1-C/F.4 source/synthetic checkpoint: stable retry identities across recorder reconstruction, 30 disposable PostgreSQL lifecycle disputes, terminal ordering, 15 injected transport failures, independent `/v1/parse` failure ordering, and CI gates. Live DB remains sealed and deployed Railway parity is UNKNOWN; operational authority stays BLOCKED.
 
 - [x] R4.1-C/F.2: apply an idempotent live safety repair revoking direct ledger writes from sandbox_exec, service_role, anon, authenticated and PUBLIC, and execution of the mutation trigger function; verify effective permissions and zero production events. This is a security repair, not writer coverage.
 - [ ] R4.1-C/F.2: implement and prove a real controlled writer in disposable PostgreSQL, then cover APP, durable worker, independent /v1/parse, terminal outcomes and bridge end-to-end before activation. The separate deployed Railway parity audit remains outstanding; no local/source-only evidence promotes authority.
