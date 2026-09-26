@@ -89,6 +89,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     continue
                 started = False
                 terminal_recorded = False
+                terminal_attempted = False
                 async def record_start() -> None:
                     nonlocal started
                     await recorder.record("EXECUTION_STARTED")
@@ -136,6 +137,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                                     result["raw"].get("total_chunks"), result["raw"].get("total_bytes"),
                                     round((time.perf_counter() - execution_started) * 1000),
                                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+                        terminal_attempted = True
                         await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
                         terminal_recorded = True
                         # Parser execution evidence and queue finalization are distinct.
@@ -144,7 +146,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     else:
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
                 except WorkerError as error:
-                    if not terminal_recorded:
+                    if not terminal_recorded and not terminal_attempted:
                         try:
                             await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", _worker_error_code(error))
                         except Exception:
@@ -157,7 +159,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     else:
                         logger.warning("queue completion failed after terminal evidence; refusing second terminal type=%s", type(error).__name__)
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
-                    if not terminal_recorded and "H3E91_RECORDING_" not in str(error):
+                    if not terminal_recorded and not terminal_attempted and "H3E91_RECORDING_" not in str(error):
                         try:
                             await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                         except Exception:
