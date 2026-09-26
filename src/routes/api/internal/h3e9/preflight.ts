@@ -28,7 +28,8 @@ export const Route = createFileRoute("/api/internal/h3e9/preflight")({
           claims["event_name"] !== parsed.data.workflowIdentity.eventName ||
           claims["workflow"] !== parsed.data.workflowIdentity.workflow ||
           claims["workflow_ref"] !== parsed.data.workflowIdentity.workflowRef ||
-          claims["workflow_sha"] !== parsed.data.workflowIdentity.sourceCommit
+          claims["workflow_sha"] !== parsed.data.workflowIdentity.collectorWorkflowSha ||
+          claims["sha"] !== parsed.data.workflowIdentity.collectorTriggerCommitSha
         ) {
           return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
         }

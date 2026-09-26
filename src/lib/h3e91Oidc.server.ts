@@ -1,5 +1,6 @@
 import { H3E91_OIDC_AUDIENCE, H3E91_WORKFLOW_PATH } from "@/lib/h3e91LiveEvidence";
 import { PARSER_ATTESTATION_EXPECTED, PARSER_ATTESTATION_OIDC } from "@/lib/parserAttestation";
+import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
 
 export type H3E91OidcClaims = Record<string, unknown>;
 
@@ -17,6 +18,8 @@ export function validateH3E91OidcClaims(claims: H3E91OidcClaims, nowSeconds: num
   if (claims["aud"] !== H3E91_OIDC_AUDIENCE) blockers.push("H3E91_OIDC_AUDIENCE_INVALID");
   if (claims["repository"] !== PARSER_ATTESTATION_EXPECTED.repository)
     blockers.push("H3E91_OIDC_REPOSITORY_INVALID");
+  if (claims["repository_id"] !== PARSER_ATTESTATION_OIDC.repositoryId || claims["repository_owner_id"] !== PARSER_ATTESTATION_OIDC.repositoryOwnerId || claims["sub"] !== PARSER_ATTESTATION_OIDC.subject)
+    blockers.push("H3E91_OIDC_SUBJECT_INVALID");
   if (claims["ref"] !== "refs/heads/main" || claims["ref_type"] !== "branch")
     blockers.push("H3E91_OIDC_REF_INVALID");
   if (claims["event_name"] !== "workflow_dispatch") blockers.push("H3E91_OIDC_EVENT_INVALID");
@@ -25,8 +28,9 @@ export function validateH3E91OidcClaims(claims: H3E91OidcClaims, nowSeconds: num
     claims["workflow_ref"] !== expectedWorkflowRef
   )
     blockers.push("H3E91_OIDC_WORKFLOW_INVALID");
-  if (typeof claims["workflow_sha"] !== "string" || !/^[0-9a-f]{40}$/.test(claims["workflow_sha"]))
+  if (claims["workflow_sha"] !== H3E91_APPROVED_WORKFLOW_SHA)
     blockers.push("H3E91_OIDC_WORKFLOW_SHA_INVALID");
+  if (typeof claims["sha"] !== "string" || !/^[0-9a-f]{40}$/.test(claims["sha"])) blockers.push("H3E91_OIDC_TRIGGER_SHA_INVALID");
   const iat = claims["iat"];
   const exp = claims["exp"];
   const nbf = claims["nbf"];
@@ -36,7 +40,9 @@ export function validateH3E91OidcClaims(claims: H3E91OidcClaims, nowSeconds: num
     iat > nowSeconds + 60 ||
     exp <= nowSeconds ||
     exp - iat > 600 ||
-    (nbf !== undefined && (typeof nbf !== "number" || nbf > nowSeconds + 60))
+    iat < nowSeconds - 600 ||
+    (typeof nbf !== "number" || nbf > nowSeconds + 60 || nbf > exp) ||
+    exp <= nbf
   )
     blockers.push("H3E91_OIDC_TIME_INVALID");
   return blockers;
@@ -56,7 +62,7 @@ export async function verifyH3E91OidcToken(token: string): Promise<H3E91OidcClai
   );
   if (!configurationResponse.ok) throw new Error("H3E91_OIDC_CONFIGURATION_UNAVAILABLE");
   const configuration = (await configurationResponse.json()) as { jwks_uri?: string };
-  if (!configuration.jwks_uri?.startsWith(`${PARSER_ATTESTATION_OIDC.issuer}/`))
+  if (typeof configuration.jwks_uri !== "string" || new URL(configuration.jwks_uri).origin !== PARSER_ATTESTATION_OIDC.issuer)
     throw new Error("H3E91_OIDC_CONFIGURATION_INVALID");
   const keysResponse = await fetch(configuration.jwks_uri);
   if (!keysResponse.ok) throw new Error("H3E91_OIDC_KEYS_UNAVAILABLE");
