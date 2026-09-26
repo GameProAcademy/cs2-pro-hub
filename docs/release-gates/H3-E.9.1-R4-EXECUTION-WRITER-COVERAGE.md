@@ -1,5 +1,25 @@
 # H.3-E.9.1-R4 — execution writer coverage
 
+## H3E91-R4.1-C/F.5 FINAL MATRIX — current checkpoint
+
+`PASS` below means only the named proof dimension passed; it is not production authorization. This section supersedes all earlier checkpoint claims below. The source matrix remains diagnostic; it does not collect or certify deployed evidence.
+
+| PROOF | SOURCE | LIVE_DB | SYNTHETIC | CI | DEPLOYED | PROVENANCE | STATUS | BLOCKER |
+|---|---|---|---|---|---|---|---|---|
+| Controlled writer/security | PASS | PASS (previous read-only inspection) | PASS (disposable DB) | UNKNOWN | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | External CI and deployment unverified |
+| Request retry identity / lifecycle | PASS | UNKNOWN (zero event rows) | PASS (fresh HTTP request and recorder reconstruction; 30 races + 50 stress executions) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Full HTTP/DB cross-identity retry proof and deployed runtime absent |
+| APP / Railway ordering and failure safety | PASS | UNKNOWN | PASS (bounded cases, not exhaustive matrix) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Exhaustive failure injection / deployment parity absent |
+| Browser sealing / reference image | PASS (source allowlist) | NOT_RUN | PASS (source tests) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Published bundle and deployed image unverified |
+| External CI / Railway parity | PASS (workflow configured) | NOT_RUN | NOT_RUN | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED only | BLOCKED | No externally verified workflow run or independent Railway proof |
+
+**Counts at this checkpoint:** 30 disposable PostgreSQL cases plus 50 stress executions; 15 transport-injection cases; 1 fresh-object transport retry and 1 fresh HTTP-request retry, with INTENT/STARTED/FINISHED replays; 20 injection/HTTP tests, 11 focused web tests passed. No new migration was created. Live read-only inspection confirmed 0 ledger rows, owner `postgres`, `SECURITY DEFINER`, `search_path=""`, service-only EXECUTE, RLS, a mutation trigger and unique lifecycle indexes. No remote CI run or Docker image build was executed locally. `CI_CONFIGURED=PASS`, `CI_EXECUTED=UNKNOWN`, `CI_PASSED=UNKNOWN`, `CI_FAILED=UNKNOWN`; Railway deployment `NOT_RUN`; DEM `NOT_RUN`; Cache `NOT_RUN`; Attempt 9 `NOT_RUN`; Canonical `BLOCKED`. Zero live ledger rows are not evidence that no execution occurred. `realDemAuthorized=false`, `canonicalAuthorized=false`. **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY.**
+
+`/v1/parse` now requires a bearer-authenticated request with job UUID, upload UUID and positive attempt number. These immutable logical identifiers reconstruct its execution and correlation UUIDs on a repeated request; event UUIDs are deterministic per execution and transition. A repeated INTENT is acknowledged as an idempotent recording replay but HTTP parsing refuses to execute again without independent lifecycle reconciliation. Different upload/attempt values cannot silently reuse an execution identity; the controlled writer rejects conflicting identities. No parser output, signed URL or DEM bytes enter event evidence. Production APP dispatch remains blocked until independently proven Railway deployed-source parity.
+
+### HISTORICAL / SUPERSEDED CHECKPOINTS
+
+The remaining sections record what was believed or missing at their dated checkpoints. Their `NOT_COVERED`, `writer none` and `NOT_RUN` assertions do not describe current source state and must not be used as release authority.
+
 ### R4.1-C/F.4 controlled evidence checkpoint (supersedes earlier staged claims below)
 
 | Requirement | Source | Live DB | Synthetic Test | CI | Status |

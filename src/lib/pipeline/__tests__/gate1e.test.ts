@@ -253,6 +253,8 @@ describe("GATE 1E — transport request/response", () => {
     storagePath: "user/upload.dem",
     signedUrl: "https://storage.example/demo.dem?token=signed",
     uploadId: "upload-1",
+    jobId: "22222222-2222-2222-2222-222222222222",
+    attemptNumber: 1,
     fileSize: 1024,
     demoSha256: "a".repeat(64),
   };
@@ -300,6 +302,8 @@ describe("GATE 1E — transport request/response", () => {
     expect(body).toEqual({
       contract_version: PARSER_CONTRACT_VERSION,
       upload_id: request.uploadId,
+      job_id: request.jobId,
+      attempt_number: request.attemptNumber,
       demo_url: request.signedUrl,
       demo_sha256: request.demoSha256,
       file_size: request.fileSize,

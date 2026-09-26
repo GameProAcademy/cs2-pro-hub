@@ -101,6 +101,8 @@ def parse_body(**overrides: Any) -> dict[str, Any]:
     body = {
         "contract_version": 1,
         "upload_id": "11111111-1111-1111-1111-111111111111",
+        "job_id": "22222222-2222-2222-2222-222222222222",
+        "attempt_number": 1,
         "demo_url": "https://storage.example.com/demo.dem?token=redacted",
         "demo_sha256": DEMO_SHA,
         "file_size": len(DEMO_BYTES),

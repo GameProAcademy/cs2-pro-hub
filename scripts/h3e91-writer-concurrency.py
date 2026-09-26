@@ -195,7 +195,24 @@ def main():
                 canonical = json.dumps([intent[16], *intent[:16]], ensure_ascii=False)
                 assert actual == hashlib.sha256(canonical.encode("utf8")).hexdigest(), (actual, canonical)
             print(f"case {case}/30 {name}: {','.join(rows) or 'none'}")
-        print("PASS: 30 disposable two-connection lifecycle scenarios; no live database access")
+        # Fifty isolated executions compete on independent PostgreSQL connections
+        # for each transition. No in-process lock or shared result cache is used.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            def stress_one(_):
+                intent = event("EXECUTION_INTENT")
+                started_row = event("EXECUTION_STARTED", intent)
+                finished = event("EXECUTION_FINISHED", intent)
+                for row in (intent, started_row, finished):
+                    futures = [pool.submit(call, row), pool.submit(call, row)]
+                    results = sorted(f.result(timeout=15)["status"] for f in futures)
+                    assert results == ["IDEMPOTENT_REPLAY", "INSERTED"], results
+                rows = json.loads(sql(f"SELECT json_agg(event_type ORDER BY event_at)::text FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{intent[1]}'"))
+                assert rows == ["EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED"], rows
+            # Submit successive executions from the parent; each transition itself
+            # races in two psql subprocesses, each opening its own DB session.
+            for i in range(50):
+                stress_one(i)
+        print("PASS: 30 disposable scenarios + 50 independent-session lifecycle stress executions; no live database access")
     finally:
         if started:
             run(["pg_ctl", "-D", str(data), "-m", "immediate", "-w", "stop"])

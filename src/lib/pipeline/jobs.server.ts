@@ -574,6 +574,8 @@ export async function processJob(
           storagePath: job.storage_path,
           signedUrl,
           uploadId: job.upload_id,
+          jobId,
+          attemptNumber: job.attempt_number,
           fileSize: stored.size || (job.file_size ?? 0),
           demoSha256: job.demo_sha256,
           deadlineAt,

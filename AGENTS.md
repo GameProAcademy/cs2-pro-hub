@@ -17,3 +17,4 @@
 - Keep the browser parser POC unreachable from production routes and reject production service calls; source and CI checks are preparation, not deployed-bundle proof.
 - Keep the H3E91 event bridge authenticated, bounded and database-backed; failed recording must stop parsing, and source-only coverage never establishes deployed parity.
 - Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
+- Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.

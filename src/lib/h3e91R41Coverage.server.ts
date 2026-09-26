@@ -1,4 +1,13 @@
-/** Source-level R4.1 checkpoint. It is not an execution permit or ledger authority. */
+/** Independent diagnostic dimensions; source coverage cannot prove deployed parity. */
+const sourceCovered = {
+  classification: "PRODUCTION_EXECUTION_SURFACE",
+  writerBeforeExecution: true, startedBeforeParser: true, terminalEvents: true,
+  executionIdPropagation: true, failClosed: true, deployedRelevant: true,
+  sourceImplementation: "SOURCE_IMPLEMENTED", sourceOrdering: "SOURCE_IMPLEMENTED",
+  syntheticProof: "SYNTHETIC_PROVEN", liveDbProof: "LIVE_DB_VERIFIED",
+  deployedParity: "UNKNOWN", deployedRuntimeProof: "UNKNOWN",
+  productionActivation: "BLOCKED", status: "BLOCKED",
+} as const;
 export const H3E91_R41_COVERAGE = {
   gate: "H.3-E.9.1-R4.1",
   status: "BLOCKED",
@@ -21,34 +30,13 @@ export const H3E91_R41_COVERAGE = {
   },
   surfaces: {
     APP_REMOTE_PARSER: {
-      classification: "PRODUCTION_EXECUTION_SURFACE",
-      writerBeforeExecution: false,
-      startedBeforeParser: false,
-      terminalEvents: false,
-      executionIdPropagation: false,
-      failClosed: false,
-      deployedRelevant: true,
-      status: "NOT_COVERED",
+      ...sourceCovered,
     },
     RAILWAY_DURABLE_WORKER: {
-      classification: "PRODUCTION_EXECUTION_SURFACE",
-      writerBeforeExecution: false,
-      startedBeforeParser: false,
-      terminalEvents: false,
-      executionIdPropagation: false,
-      failClosed: false,
-      deployedRelevant: true,
-      status: "NOT_COVERED",
+      ...sourceCovered,
     },
     RAILWAY_V1_PARSE: {
-      classification: "PRODUCTION_EXECUTION_SURFACE",
-      writerBeforeExecution: false,
-      startedBeforeParser: false,
-      terminalEvents: false,
-      executionIdPropagation: false,
-      failClosed: false,
-      deployedRelevant: true,
-      status: "NOT_COVERED",
+      ...sourceCovered,
     },
     BROWSER_WASM_POC: {
       classification: "PRODUCTION_EXECUTION_SURFACE",
@@ -58,7 +46,10 @@ export const H3E91_R41_COVERAGE = {
       executionIdPropagation: false,
       failClosed: false,
       deployedRelevant: true,
-      status: "NOT_COVERED",
+      sourceImplementation: "SOURCE_IMPLEMENTED", sourceOrdering: "SOURCE_IMPLEMENTED",
+      syntheticProof: "SYNTHETIC_PROVEN", liveDbProof: "UNKNOWN",
+      deployedParity: "UNKNOWN", deployedRuntimeProof: "UNKNOWN",
+      productionActivation: "BLOCKED", status: "BLOCKED",
     },
     REFERENCE_CLI: {
       classification: "TEST_ONLY",
@@ -68,6 +59,10 @@ export const H3E91_R41_COVERAGE = {
       executionIdPropagation: false,
       failClosed: false,
       deployedRelevant: true,
+      sourceImplementation: "SOURCE_IMPLEMENTED", sourceOrdering: "UNKNOWN",
+      syntheticProof: "UNKNOWN", liveDbProof: "UNKNOWN",
+      deployedParity: "UNKNOWN", deployedRuntimeProof: "UNKNOWN",
+      productionActivation: "BLOCKED",
       status: "IMAGE_EXCLUSION_SOURCE_ONLY",
     },
   },
@@ -75,11 +70,8 @@ export const H3E91_R41_COVERAGE = {
   ledgerAuthority: "UNINSTRUMENTED",
   writerCoverageVerified: false,
   blockers: [
-    "H3E91_EXECUTION_SURFACE_NOT_COVERED",
-    "H3E91_BROWSER_SURFACE_NOT_SEALED",
-    "H3E91_REFERENCE_CLI_IMAGE_NOT_VERIFIED",
-    "H3E91_DB_CONCURRENCY_UNTESTED",
-    "H3E91_SECURITY_AUDIT_INCOMPLETE",
     "H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN",
+    "H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN",
+    "H3E91_DEPLOYED_IMAGE_UNKNOWN",
   ],
 } as const;

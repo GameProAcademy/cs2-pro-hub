@@ -23,6 +23,9 @@ export interface ParseRequest {
   /** Short-lived signed URL the parser worker can download from. */
   signedUrl: string;
   uploadId: string;
+  /** Immutable logical attempt identity for request-level recorder reconstruction. */
+  jobId?: string;
+  attemptNumber?: number;
   fileSize: number;
   demoSha256: string | null;
   /**

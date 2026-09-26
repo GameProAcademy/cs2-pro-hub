@@ -156,6 +156,9 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
         "demoSha256 must be a verified 64-character SHA-256 digest",
       );
     }
+    if (!request.jobId || !Number.isSafeInteger(request.attemptNumber) || (request.attemptNumber ?? 0) < 1) {
+      throw new PipelineError("PARSER_CONFIG_ERROR", "logical attempt identity is required");
+    }
 
     const remaining =
       request.deadlineAt != null ? request.deadlineAt - Date.now() : PARSER_MAX_DURATION_MS;
@@ -179,6 +182,8 @@ export const remoteDemoparser2Adapter: DemoParserAdapter = {
         body: JSON.stringify({
           contract_version: PARSER_CONTRACT_VERSION,
           upload_id: request.uploadId,
+          job_id: request.jobId,
+          attempt_number: request.attemptNumber,
           demo_url: request.signedUrl,
           demo_sha256: request.demoSha256,
           file_size: request.fileSize,

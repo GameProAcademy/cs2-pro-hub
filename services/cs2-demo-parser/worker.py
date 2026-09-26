@@ -78,7 +78,12 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}")),
                         correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}")),
                     ).bind_revision(settings.revision)
-                    await recorder.record("EXECUTION_INTENT")
+                    intent_result = await recorder.record("EXECUTION_INTENT")
+                    if intent_result.get("status") != "INSERTED":
+                        # A retried lease needs independent lifecycle reconciliation;
+                        # never execute a parser or add a new terminal on replay.
+                        logger.warning("durable execution replay requires reconciliation")
+                        continue
                 except Exception:
                     logger.error("execution intent recording failed; parser suppressed")
                     continue
@@ -98,6 +103,8 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         ParseRequest(
                             contract_version=settings.contract_version,
                             upload_id=claim["upload_id"],
+                            job_id=identity["jobId"],
+                            attempt_number=claim["attempt_number"],
                             demo_url=claim["demo_url"],
                             demo_sha256=claim["demo_sha256"],
                             file_size=claim["file_size"],
