@@ -1,0 +1,1 @@
+CREATE POLICY h3e91_ledger_explicit_deny ON public.h3e91_execution_evidence_ledger FOR ALL TO PUBLIC USING (false) WITH CHECK (false);
