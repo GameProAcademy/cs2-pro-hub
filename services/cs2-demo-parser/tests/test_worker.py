@@ -280,52 +280,50 @@ def test_durable_execution_identity_survives_claim_retry(monkeypatch):
         pass
     assert events == ["EXECUTION_INTENT", "EXECUTION_ABORTED", "EXECUTION_INTENT"]
     assert ids[0] == ids[2]
-def test_durable_worker_replayed_intent_suppresses_parser_for_each_known_prior_state(monkeypatch):
-    """Synthetic prior INTENT, STARTED, FINISHED and completion-loss states all require reconciliation."""
+def test_durable_worker_replayed_intent_suppresses_parser_without_claiming_lifecycle_state(monkeypatch):
+    """INTENT replay alone cannot reveal the terminal state; no parse or queue completion is safe."""
     import app
     import worker
     from h3e91_execution import ExecutionRecorder
 
-    for case in (1, 2, 3, 4):
-        events = []
-        parser_called = False
-        claims = 0
-        queue_actions = []
+    events = []
+    parser_called = False
+    claims = 0
+    queue_actions = []
 
-        async def record(self, event_type, outcome_code=None):
-            events.append(event_type)
-            return {"status": "IDEMPOTENT_REPLAY"}
+    async def record(self, event_type, outcome_code=None):
+        events.append(event_type)
+        return {"status": "IDEMPOTENT_REPLAY"}
 
-        async def bridge(_client, _settings, action, _body):
-            nonlocal claims
-            queue_actions.append(action)
-            if action == "claim":
-                claims += 1
-                if claims > 1:
-                    raise asyncio.CancelledError()
-                return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111", "message_id": 1, "attempt": 1,
-                        "upload_id": "22222222-2222-2222-2222-222222222222", "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
-                        "demo_url": "url", "demo_sha256": DEMO_SHA, "file_size": 520}
-            if action == "complete": return {"status": "processed"}
-            return {"accepted": True}
+    async def bridge(_client, _settings, action, _body):
+        nonlocal claims
+        queue_actions.append(action)
+        if action == "claim":
+            claims += 1
+            if claims > 1:
+                raise asyncio.CancelledError()
+            return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111", "message_id": 1, "attempt": 1,
+                    "upload_id": "22222222-2222-2222-2222-222222222222", "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                    "demo_url": "url", "demo_sha256": DEMO_SHA, "file_size": 520}
+        if action == "complete": return {"status": "processed"}
+        return {"accepted": True}
 
-        async def durable(*args, **kwargs):
-            nonlocal parser_called
-            parser_called = True
-            await kwargs["on_started"]()
-            return {"hot": {}, "raw": {"artifact_id": "a1", "root_digest": "d1"}}
+    async def durable(*args, **kwargs):
+        nonlocal parser_called
+        parser_called = True
+        await kwargs["on_started"]()
+        return {"hot": {}, "raw": {"artifact_id": "a1", "root_digest": "d1"}}
 
-        monkeypatch.setattr(ExecutionRecorder, "record", record)
-        monkeypatch.setattr(worker, "_bridge", bridge)
-        monkeypatch.setattr(app, "_parse_durable_request", durable)
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
+    monkeypatch.setattr(worker, "_bridge", bridge)
+    monkeypatch.setattr(app, "_parse_durable_request", durable)
 
-        settings = make_settings(bridge_url="http://bridge", bridge_secret="s")
-        try:
-            asyncio.run(worker.durable_consumer_loop(settings, lambda x: {}))
-        except asyncio.CancelledError:
-            pass
+    settings = make_settings(bridge_url="http://bridge", bridge_secret="s")
+    try:
+        asyncio.run(worker.durable_consumer_loop(settings, lambda x: {}))
+    except asyncio.CancelledError:
+        pass
 
-        # In all retry cases where INTENT is already present, parser must NOT be called
-        assert not parser_called, f"Case {case} failed: parser was called"
-        assert events == ["EXECUTION_INTENT"], f"Case {case} failed: unexpected events {events}"
-        assert queue_actions == ["claim", "claim"]
+    assert not parser_called
+    assert events == ["EXECUTION_INTENT"]
+    assert queue_actions == ["claim", "claim"]
