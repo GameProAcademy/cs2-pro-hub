@@ -174,6 +174,10 @@ export async function collectH3E91DatabaseEvidence(
             const count = entries[source];
             if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) evidence[target] = count;
           }
+          // A mutable job row is a positive signal but cannot prove the absence
+          // of starts: retry/reset or deletion may erase the only timestamp.
+          if (evidence.realDemoExecutionCount === 0) evidence.realDemoExecutionCount = null;
+          if (evidence.cacheDemoExecutionCount === 0) evidence.cacheDemoExecutionCount = null;
           const attempt9 = entries["attempt9CountAfterBaseline"];
           const attempt10 = entries["attempt10PlusCountAfterBaseline"];
           // All-time attempts from the primary RPC still gate the historical lock.
@@ -200,8 +204,8 @@ export async function collectH3E91DatabaseEvidence(
     const securityKnown = Object.values(evidence.security).every(
       (value) => typeof value === "boolean",
     );
-    // A claimed job has started, but this is not proof that parser output was produced.
-    // Missing ledger timestamps remain UNKNOWN, never inferred as zero.
+    // Job starts are positive signals, not immutable proof that no work occurred.
+    // Missing and zero counts stay UNKNOWN until an authoritative ledger exists.
     evidence.status =
       countsKnown && securityKnown && evidence.migration.exactMatchCount !== null
         ? evidence.migration.exactMatchCount === 1 &&
