@@ -120,12 +120,20 @@ describe("H.3-E.9.1 execution source discovery", () => {
     });
     expect(read("src/components/pipeline/ClientParserPoc.tsx")).toContain("ClientParserService");
     const pocRoute = read("src/routes/_authenticated/client-parser-poc.tsx");
-    expect(pocRoute).not.toMatch(/import\s*\(?.*ClientParserPoc/);
+    expect(pocRoute).not.toMatch(/import\s*(?:\(|[^;]*from).*ClientParserPoc/);
     expect(pocRoute).not.toContain("ClientParserService");
     expect(pocRoute).toContain("STATUS: FEATURE_DISABLED");
+    expect(read("src/config/app.ts")).toMatch(/clientDemParserPoc:\s*false/);
     expect(read("src/lib/client-parser/clientParser.service.ts")).toMatch(
       /import\.meta\.env\.PROD\) throw new ClientParserError\("CLIENT_PARSER_DISABLED"\)/,
     );
+    const reachable = productionRoots
+      .slice(0, 2)
+      .flatMap(productionFiles)
+      .filter((path) => !path.startsWith("src/lib/client-parser/"))
+      .filter((path) => !path.includes(".server."))
+      .filter((path) => /(?:import\s*\(|from\s*["'])[^\n]*clientParser\.(?:service|worker)|(?:import\s*\(|from\s*["'])[^\n]*ClientParserPoc/.test(read(path)));
+    expect(reachable).toEqual([]);
   });
 
   it("does not confuse an additive identity schema with a functioning writer", () => {
