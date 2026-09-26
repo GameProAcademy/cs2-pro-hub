@@ -9,7 +9,7 @@ export const H3E91_R41_COVERAGE = {
     searchPathEmpty: false,
     directTableWritesBlocked: true,
   },
-  bridge: { protocol: null, authenticatedExecutionEvents: false },
+  bridge: { protocol: "H3E91_EXECUTION_BRIDGE_V1_STAGED_INACTIVE", authenticatedExecutionEvents: false },
   lifecycle: {
     intent: false,
     started: false,
@@ -76,6 +76,7 @@ export const H3E91_R41_COVERAGE = {
   writerCoverageVerified: false,
   blockers: [
     "H3E91_PREPARSER_WRITER_ABSENT",
+    "H3E91_EXECUTION_BRIDGE_INACTIVE",
     "H3E91_EXECUTION_SURFACE_NOT_COVERED",
     "H3E91_BROWSER_SURFACE_NOT_SEALED",
     "H3E91_REFERENCE_CLI_IMAGE_NOT_VERIFIED",
