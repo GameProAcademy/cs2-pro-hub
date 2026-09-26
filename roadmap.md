@@ -93,11 +93,23 @@ Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
 
 ### H.3-E.9.1-R3
 
+- R3 is closed **only as diagnostic preparation**; the sealed ledger has no event writer and proves no absence of execution.
 - [x] Correct mutable-job temporal diagnostic and distinguish historical, spanning, and post-baseline starts.
 - [x] Prepare sealed append-only execution event structure and read-only inspector, without events or a writer.
 - [x] Preserve UNKNOWN/BLOCKED for empty but uninstrumented evidence; include it in the signed diagnostic digest.
 - [ ] Instrument and independently review all actual execution writers before the ledger can prove absence; blocked by separate operational authorization.
 - [ ] R3 closure blocked by uninstrumented ledger and missing live evidence; no execution or operational mutation authorized.
+
+### H.3-E.9.1-R4 — execution writer coverage
+
+Status: **BLOCKED / FAIL-CLOSED / DIAGNOSTIC-ONLY**.
+
+- [x] Inventory APP remote parser, Railway durable worker, Railway `/v1/parse`, and browser/WASM as four distinct potential entry points in a machine-readable, server-only diagnostic.
+- [x] Report every surface as `NOT_COVERED`; unregistered surfaces and missing inventory entries block the diagnostic. Include the coverage report in the evidence digest and use a specific uncovered-surface blocker.
+- [ ] Independently review a controlled, append-only event writer and all real execution paths, with fail-closed pre-parser writes and synthetic lifecycle/concurrency/security tests. No writer is enabled in this phase.
+- [ ] Verify deployed Railway source parity and all execution surfaces before asserting `writerCoverageVerified=true` or `ledgerAuthority=AUTHORITATIVE`.
+
+**Locks:** no valid attestation, DEM, Cache DEM, Attempt 9+, Canonical admission, RAW finalization, cleanup, Railway/EnvironmentPatch mutation, deployment, secret changes or workflow dispatch. R5.8 and H.3-E.9 remain blocked; retention and operator authorization remain absent.
 
 ### Confirmed current state
 

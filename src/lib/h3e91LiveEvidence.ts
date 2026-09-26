@@ -10,6 +10,7 @@ import {
 } from "@/lib/h3e9FinalExecutionReadiness";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
+import type { inspectH3E91ExecutionSurfaces } from "@/lib/h3e91ExecutionSurfaces.server";
 import {
   H3E91_APPROVED_WORKFLOW_PATH,
   H3E91_APPROVED_WORKFLOW_SHA,
@@ -182,6 +183,7 @@ export interface H3E91Artifact {
   railwayDeploymentCommit: string;
   databaseEvidence: H3E91DatabaseEvidence;
   executionEvidence: NonNullable<H3E91DatabaseEvidence["executionEvidence"]>;
+  executionSurfaceCoverage: ReturnType<typeof inspectH3E91ExecutionSurfaces>;
   securityEvidence: H3E91DatabaseEvidence["security"];
   runtimeEvidence: H3E91ExternalEvidence["runtimeEvidence"];
   railwayEvidence: H3E91ExternalEvidence["railwayEvidence"];

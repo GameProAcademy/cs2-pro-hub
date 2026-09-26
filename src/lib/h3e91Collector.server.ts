@@ -18,12 +18,18 @@ import { H3E9_EXPECTED_ENDPOINT } from "@/lib/h3e9FinalExecutionReadiness";
 import { H3E91_RAILWAY_SOURCE_COMMIT } from "@/lib/h3e91LiveEvidence";
 import { getH3E91Freshness } from "@/lib/h3e91LiveEvidence";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
+import { inspectH3E91ExecutionSurfaces } from "@/lib/h3e91ExecutionSurfaces.server";
 
 function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN", baselineValid: boolean) {
   const blockers: Array<import("@/lib/h3e9FinalExecutionReadiness").H3E9BlockerCode> = [];
   if (freshness !== "FRESH") blockers.push("H3E91_PREFLIGHT_STALE");
   if (!baselineValid) blockers.push("H3E91_BASELINE_INVALID", "H3E91_PREFLIGHT_STALE");
   const execution = db.executionEvidence;
+  const coverage = inspectH3E91ExecutionSurfaces();
+  if (coverage.uncoveredSurfaceCount > 0 || coverage.unexpectedWriterCount > 0)
+    blockers.push("H3E91_EXECUTION_SURFACE_NOT_COVERED");
+  if (coverage.unknownSurfaceCount > 0)
+    blockers.push("H3E91_EXECUTION_SURFACE_UNKNOWN");
   if (!execution || execution.writerCoverageVerified !== true || execution.ledgerAuthority !== "AUTHORITATIVE") {
     blockers.push("H3E91_EXECUTION_LEDGER_UNKNOWN");
     if (execution?.ledgerType === "APPEND_ONLY_PREPARED") blockers.push("H3E91_EXECUTION_LEDGER_MUTABLE_ONLY");
@@ -346,6 +352,7 @@ export function finalizeH3E91Artifact(
       cacheAfterBaselineCount: null, attempt9AfterBaselineCount: null,
       attempt10PlusAfterBaselineCount: null, writerCoverageVerified: null, securityVerified: null,
     },
+    executionSurfaceCoverage: inspectH3E91ExecutionSurfaces(),
     securityEvidence: databaseEvidence.security,
     runtimeEvidence: external.runtimeEvidence,
     railwayEvidence: external.railwayEvidence,
