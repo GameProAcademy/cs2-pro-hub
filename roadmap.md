@@ -78,12 +78,12 @@ Status: `BLOCKED / NOT EXECUTED`.
 Status: `IMPLEMENTED / DIAGNOSTIC-ONLY / FAIL-CLOSED`.
 
 - [x] Add a GitHub-OIDC-protected server endpoint that accepts only strict safe external evidence and never trusts client-supplied database state.
-- [x] Collect live database counts with read-only queries and keep unavailable migration/security catalog evidence explicitly `UNKNOWN/BLOCKED` rather than infer it from source.
-- [x] Add a manually dispatched workflow for approved blob identity, OIDC structure, secret presence, Railway read-only control-plane evidence, runtime `/health` + `/version`, and anonymous recorder `401`.
+- [x] Collect database counts, migration history and security invariants through one additive service-role-only read-only diagnostic RPC; missing evidence remains `UNKNOWN/BLOCKED`. Real DEM/Cache DEM execution counts remain unknown without a ledger.
+- [x] Pin the manually dispatched collector workflow identity/SHA separately from the attestation blob; collect safe external claims and server-side anonymous `401` with before/after counts.
 - [x] Feed collected evidence into the unchanged pure H.3-E.9 evaluator and emit canonical JSON evidence with a reproducible SHA-256 digest.
 - [x] Keep retention and operator authorization explicitly `NOT_AUTHORIZED` unless separately supplied through a future reviewed authority.
 
-**Locks:** FIRST VALID ATTESTATION = NOT RUN; DEM = NOT RUN; CACHE DEM = NOT RUN; ATTEMPT 9 = LOCKED; CANONICAL = LOCKED. No migration, provenance, nonce, cleanup, execution workflow dispatch, Railway/EnvironmentPatch mutation, or secret mutation.
+**Locks:** FIRST VALID ATTESTATION = NOT RUN; DEM = NOT RUN; CACHE DEM = NOT RUN; ATTEMPT 9 = LOCKED; CANONICAL = LOCKED. One additive read-only diagnostic RPC migration; no provenance, nonce, cleanup, execution dispatch, Railway/EnvironmentPatch mutation or secret mutation.
 
 ### Confirmed current state
 
