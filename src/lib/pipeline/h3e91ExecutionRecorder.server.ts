@@ -31,11 +31,11 @@ export function appExecutionRecorder(input: {
   // The immutable logical execution identity includes job + attempt + upload.\n  // Reusing only job+attempt could collide if an upload is replaced under the same logical attempt.\n  const executionId = executionUuid(`${input.jobId}:${input.attemptNumber}:${input.uploadId}`);
   const correlationId = executionUuid(`${input.jobId}:${input.attemptNumber}:${input.uploadId}:correlation`);
   const eventIds: Record<EventType, string> = {
-    EXECUTION_INTENT: executionUuid(`${executionId}:EXECUTION_INTENT`),
-    EXECUTION_STARTED: executionUuid(`${executionId}:EXECUTION_STARTED`),
-    EXECUTION_FINISHED: executionUuid(`${executionId}:EXECUTION_FINISHED`),
-    EXECUTION_FAILED: executionUuid(`${executionId}:EXECUTION_FAILED`),
-    EXECUTION_ABORTED: executionUuid(`${executionId}:EXECUTION_ABORTED`),
+    EXECUTION_INTENT: executionUuid(`${executionIdentity}:EXECUTION_INTENT`),
+    EXECUTION_STARTED: executionUuid(`${executionIdentity}:EXECUTION_STARTED`),
+    EXECUTION_FINISHED: executionUuid(`${executionIdentity}:EXECUTION_FINISHED`),
+    EXECUTION_FAILED: executionUuid(`${executionIdentity}:EXECUTION_FAILED`),
+    EXECUTION_ABORTED: executionUuid(`${executionIdentity}:EXECUTION_ABORTED`),
   };
   return async (eventType: EventType, outcomeCode: string | null = null) => {
     const intent = eventType === "EXECUTION_INTENT";
@@ -44,7 +44,7 @@ export function appExecutionRecorder(input: {
       "h3e91_record_execution_event" as never,
       {
         _event_id: eventIds[eventType],
-        _execution_id: executionId,
+        _execution_id: executionIdentity,
         _event_type: eventType,
         _upload_id: input.uploadId,
         _correlation_id: correlationId,
