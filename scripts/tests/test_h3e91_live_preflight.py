@@ -23,7 +23,9 @@ def test_collector_emits_safe_fail_closed_evidence(monkeypatch):
     with patch("scripts.h3e91_live_preflight.fetch_json", return_value=(None, None)):
         result = collect()
     assert result["railwayEvidence"]["available"]["status"] == "BLOCKED"
-    assert result["transportEvidence"]["anonymousStatus"]["status"] == "BLOCKED"
+    assert result["transportEvidence"]["anonymousStatus"]["status"] == "UNKNOWN"
+    assert result["workflowIdentity"]["collectorWorkflowSha"] == "a" * 40
+    assert result["workflowIdentity"]["collectorTriggerCommitSha"] == ""
     rendered = str(result)
     assert "Authorization" not in rendered
     assert "oidcToken" not in rendered

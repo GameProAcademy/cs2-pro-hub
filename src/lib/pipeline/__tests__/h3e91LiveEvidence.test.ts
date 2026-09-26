@@ -14,6 +14,7 @@ import {
 import { evaluateH3E9FinalExecutionReadiness } from "@/lib/h3e9FinalExecutionReadiness";
 import { validateH3E91OidcClaims } from "@/lib/h3e91Oidc.server";
 import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
+import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
 
 const NOW = "2026-09-26T00:00:00.000Z";
 const safe = <T>(value: T) => ({
@@ -35,7 +36,8 @@ function external(): H3E91ExternalEvidence {
       eventName: "workflow_dispatch",
       workflow: "H.3-E.9.1 Live Evidence Preflight",
       workflowRef: `GameProAcademy/cs2-pro-hub/${H3E91_WORKFLOW_PATH}@refs/heads/main`,
-      sourceCommit: "a".repeat(40),
+      collectorWorkflowSha: H3E91_APPROVED_WORKFLOW_SHA,
+      collectorTriggerCommitSha: "a".repeat(40),
     },
     workflowEvidence: {
       approvedPathMatches: safe(true),
@@ -43,6 +45,7 @@ function external(): H3E91ExternalEvidence {
       approvedBlobSha: safe("fae651ed5174aa609e4b07d575105d80a00d0055"),
       blobMatches: safe(true),
       oidcStructureValid: safe(true),
+      collectorWorkflowSha: safe(H3E91_APPROVED_WORKFLOW_SHA),
     },
     secretPresence: {
       endpointPresent: safe(true),
@@ -70,7 +73,15 @@ function external(): H3E91ExternalEvidence {
       contractVersionMatches: safe(true),
       bothDomainsMatch: safe(true),
     },
-    transportEvidence: { endpointMatches: safe(true), anonymousStatus: safe(401) },
+    transportEvidence: {
+      endpointMatches: safe(true),
+      anonymousStatus: safe(401),
+      preNegativeProvenanceCount: safe(0),
+      postNegativeProvenanceCount: safe(0),
+      preNegativeNonceCount: safe(0),
+      postNegativeNonceCount: safe(0),
+      noNegativePostSideEffect: safe(true),
+    },
   };
 }
 
@@ -80,8 +91,12 @@ function database(): H3E91DatabaseEvidence {
     observedAt: NOW,
     status: "PASS",
     provenanceCount: 0,
+    verifiedProvenanceCount: 0,
     nonceCount: 0,
     attempt9Count: 0,
+    attempt10PlusCount: 0,
+    realDemoExecutionCount: 0,
+    cacheDemoExecutionCount: 0,
     canonical: { total: 105, authorized: 0, verified: 0, generic: 0 },
     migration: {
       version: "20260925011902",
@@ -107,12 +122,16 @@ function claims() {
     iss: "https://token.actions.githubusercontent.com",
     aud: H3E91_OIDC_AUDIENCE,
     repository: "GameProAcademy/cs2-pro-hub",
+    repository_id: "1358428146",
+    repository_owner_id: "323426481",
+    sub: "repo:GameProAcademy@323426481/cs2-pro-hub@1358428146:ref:refs/heads/main",
+    sha: "a".repeat(40),
     ref: "refs/heads/main",
     ref_type: "branch",
     event_name: "workflow_dispatch",
     workflow: "H.3-E.9.1 Live Evidence Preflight",
     workflow_ref: `GameProAcademy/cs2-pro-hub/${H3E91_WORKFLOW_PATH}@refs/heads/main`,
-    workflow_sha: "a".repeat(40),
+    workflow_sha: H3E91_APPROVED_WORKFLOW_SHA,
     iat: 1_790_899_170,
     nbf: 1_790_899_170,
     exp: 1_790_899_500,
@@ -156,6 +175,54 @@ describe("H.3-E.9.1 live evidence", () => {
         "H3E9_OPERATOR_AUTHORIZATION_MISSING",
       ]),
     );
+  });
+  it.each([
+    "provenanceCount",
+    "verifiedProvenanceCount",
+    "nonceCount",
+    "attempt9Count",
+    "attempt10PlusCount",
+    "realDemoExecutionCount",
+    "cacheDemoExecutionCount",
+  ] as const)("blocks unknown %s without pretending false", (key) => {
+    const d = database();
+    d[key] = null;
+    const result = finalizeH3E91Artifact(external(), d).finalResult;
+    expect(result.technicalReadiness).toBe("BLOCKED");
+    expect(result.blockers).toContain("H3E91_DATABASE_EVIDENCE_UNKNOWN");
+  });
+  it("blocks unknown migration and every unknown security invariant", () => {
+    const d = database();
+    d.migration.exactMatchCount = null;
+    d.security.approvedPinsPresent = null;
+    const result = finalizeH3E91Artifact(external(), d).finalResult;
+    expect(result.blockers).toEqual(
+      expect.arrayContaining([
+        "H3E91_MIGRATION_EVIDENCE_UNKNOWN",
+        "H3E91_SECURITY_EVIDENCE_UNKNOWN",
+      ]),
+    );
+  });
+  it("does not infer an attestation from an unverified provenance row", () => {
+    const d = database();
+    d.provenanceCount = 1;
+    const result = finalizeH3E91Artifact(external(), d).finalResult;
+    expect(result.attestationExecuted).toBe(false);
+    expect(result.blockers).toContain("H3E9_UNEXPECTED_PROVENANCE");
+  });
+  it("blocks negative POST side effects even if the response is 401", () => {
+    const e = external();
+    e.transportEvidence.postNegativeNonceCount = safe(1);
+    expect(finalizeH3E91Artifact(e, database()).finalResult.blockers).toContain(
+      "H3E9_ANONYMOUS_BOUNDARY_FAILED",
+    );
+  });
+  it("changes digest when safe evidence changes", () => {
+    const a = external();
+    const first = finalizeH3E91Artifact(a, database());
+    expect(finalizeH3E91Artifact(external(), database()).evidenceDigest).toBe(first.evidenceDigest);
+    a.runtimeEvidence.healthMatches.value = false;
+    expect(finalizeH3E91Artifact(a, database()).evidenceDigest).not.toBe(first.evidenceDigest);
   });
   it.each([
     [
