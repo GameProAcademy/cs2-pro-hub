@@ -20,7 +20,15 @@ const input = {
   messageId: 7,
   attempt: 2,
   workerId: "worker-1",
-  executionId: "22222222-2222-5222-8222-222222222222",
+  executionId: "e92a9a08-6268-5322-9678-5e9f4fea1f20",
+};
+
+const boundJob = {
+  queue_message_id: input.messageId,
+  dispatch_attempt: input.attempt,
+  worker_id: input.workerId,
+  upload_id: "55555555-5555-5555-5555-555555555555",
+  attempt_number: 1,
 };
 
 const lifecycle = (value: string, outcome: string | null = null) => ({
@@ -38,6 +46,7 @@ describe("durable execution reconciliation", () => {
     rpc.mockReset();
     maybeSingle.mockReset();
     readLifecycle.mockReset();
+    maybeSingle.mockResolvedValue({ data: { ...boundJob, status: "processing" }, error: null });
   });
 
   it.each(["NONE", "INTENT_ONLY", "STARTED", "INVALID"])(
@@ -57,9 +66,7 @@ describe("durable execution reconciliation", () => {
     maybeSingle.mockResolvedValueOnce({
       data: {
         status: "processed",
-        queue_message_id: input.messageId,
-        dispatch_attempt: input.attempt,
-        worker_id: input.workerId,
+        ...boundJob,
       },
       error: null,
     });
@@ -82,9 +89,7 @@ describe("durable execution reconciliation", () => {
     maybeSingle.mockResolvedValueOnce({
       data: {
         status: "processing",
-        queue_message_id: input.messageId,
-        dispatch_attempt: input.attempt,
-        worker_id: input.workerId,
+        ...boundJob,
       },
       error: null,
     });
@@ -105,9 +110,7 @@ describe("durable execution reconciliation", () => {
     maybeSingle.mockResolvedValueOnce({
       data: {
         status: "processed",
-        queue_message_id: input.messageId,
-        dispatch_attempt: input.attempt,
-        worker_id: input.workerId,
+        ...boundJob,
       },
       error: null,
     });
@@ -123,9 +126,7 @@ describe("durable execution reconciliation", () => {
     maybeSingle.mockResolvedValueOnce({
       data: {
         status: "processing",
-        queue_message_id: input.messageId,
-        dispatch_attempt: input.attempt,
-        worker_id: input.workerId,
+        ...boundJob,
       },
       error: null,
     });
@@ -147,6 +148,22 @@ describe("durable execution reconciliation", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["different upload", { upload_id: "66666666-6666-6666-6666-666666666666" }],
+    ["different attempt", { attempt_number: 2 }],
+    ["different queue message", { queue_message_id: 8 }],
+    ["different worker", { worker_id: "worker-2" }],
+  ])("refuses reconciliation for %s", async (_case, changed) => {
+    maybeSingle.mockReset();
+    maybeSingle.mockResolvedValueOnce({ data: { ...boundJob, status: "processed", ...changed }, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "UNKNOWN",
+    });
+    expect(readLifecycle).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it.each(["FAILED", "ABORTED"])(
     "reconciles %s through queue failure without another terminal",
     async (state) => {
@@ -154,9 +171,7 @@ describe("durable execution reconciliation", () => {
       maybeSingle.mockResolvedValueOnce({
         data: {
           status: "processing",
-          queue_message_id: input.messageId,
-          dispatch_attempt: input.attempt,
-          worker_id: input.workerId,
+          ...boundJob,
         },
         error: null,
       });
