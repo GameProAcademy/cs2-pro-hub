@@ -133,6 +133,19 @@ export interface H3E91DatabaseEvidence {
   realDemoExecutionCount: number | null;
   cacheDemoExecutionCount: number | null;
   historicalStartedJobCount: number | null;
+  executionEvidence?: {
+    ledgerType: string | null;
+    ledgerAuthority: string | null;
+    baselineStartedAt: string;
+    historicalCount: number | null;
+    spanningBaselineCount: number | null;
+    afterBaselineCount: number | null;
+    cacheAfterBaselineCount: number | null;
+    attempt9AfterBaselineCount: number | null;
+    attempt10PlusAfterBaselineCount: number | null;
+    writerCoverageVerified: boolean | null;
+    securityVerified: boolean | null;
+  };
   canonical: {
     total: number | null;
     authorized: number | null;
@@ -168,6 +181,7 @@ export interface H3E91Artifact {
   attestationWorkflowSourceSha: string | null;
   railwayDeploymentCommit: string;
   databaseEvidence: H3E91DatabaseEvidence;
+  executionEvidence: NonNullable<H3E91DatabaseEvidence["executionEvidence"]>;
   securityEvidence: H3E91DatabaseEvidence["security"];
   runtimeEvidence: H3E91ExternalEvidence["runtimeEvidence"];
   railwayEvidence: H3E91ExternalEvidence["railwayEvidence"];
