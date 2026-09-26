@@ -19,7 +19,7 @@ const lifecycleResult = z
       .string()
       .regex(/^[A-Z][A-Z0-9_]{0,63}$/)
       .nullable(),
-    terminalCreatedAt: z.string().datetime({ offset: true }).nullable(),
+    terminalEventAt: z.string().datetime({ offset: true }).nullable(),
     hasStarted: z.boolean(),
     hasTerminal: z.boolean(),
   })

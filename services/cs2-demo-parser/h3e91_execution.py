@@ -64,7 +64,7 @@ class ExecutionRecorder:
         result = response.json()
         allowed = {
             "executionId", "lifecycle", "terminalEventId", "terminalOutcome",
-            "terminalCreatedAt", "hasStarted", "hasTerminal",
+            "terminalEventAt", "hasStarted", "hasTerminal",
         }
         valid_states = {"NONE", "INTENT_ONLY", "STARTED", "FINISHED", "FAILED", "ABORTED", "INVALID"}
         if (
