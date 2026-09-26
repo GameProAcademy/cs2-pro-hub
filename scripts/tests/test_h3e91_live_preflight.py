@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.h3e91_live_preflight import APPROVED_BLOB, collect, git_blob_sha
+from scripts.h3e91_live_preflight import APPROVED_BLOB, collect, collector_structure_valid, git_blob_sha
 
 
 def test_git_blob_hash_matches_git_framing():
@@ -26,6 +26,8 @@ def test_collector_emits_safe_fail_closed_evidence(monkeypatch):
     assert result["transportEvidence"]["anonymousStatus"]["status"] == "UNKNOWN"
     assert result["workflowIdentity"]["collectorWorkflowSha"] == "a" * 40
     assert result["workflowIdentity"]["collectorTriggerCommitSha"] == ""
+    assert result["workflowEvidence"]["approvedPathMatches"]["value"] is True
+    assert result["workflowEvidence"]["oidcStructureValid"]["value"] is True
     rendered = str(result)
     assert "Authorization" not in rendered
     assert "oidcToken" not in rendered
@@ -42,3 +44,11 @@ def test_collector_has_no_execution_or_mutation_surface():
     )
     assert all(term not in source for term in forbidden)
     assert APPROVED_BLOB in source
+
+
+def test_collector_structure_rejects_automatic_and_execution_triggers():
+    source = Path(".github/workflows/h3-e9-1-live-evidence-preflight.yml").read_text()
+    assert collector_structure_valid(source)
+    assert not collector_structure_valid(source.replace("workflow_dispatch:", "push:"))
+    assert not collector_structure_valid(source + "\n  workflow_run:\n")
+    assert not collector_structure_valid(source + "\n    run: python scripts/parser_runtime_attestation.py\n")
