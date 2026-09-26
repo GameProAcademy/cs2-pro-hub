@@ -18,6 +18,7 @@ REPOSITORY = "GameProAcademy/cs2-pro-hub"
 WORKFLOW_NAME = "H.3-E.9.1 Live Evidence Preflight"
 WORKFLOW_PATH = ".github/workflows/h3-e9-1-live-evidence-preflight.yml"
 ATTESTATION_WORKFLOW = ".github/workflows/parser-runtime-attestation.yml"
+APPROVED_COLLECTOR_WORKFLOW = ".github/workflows/h3-e9-1-live-evidence-preflight.yml"
 APPROVED_BLOB = "fae651ed5174aa609e4b07d575105d80a00d0055"
 ENDPOINT = "https://gamepro.network/api/public/parser-attestation"
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
@@ -42,6 +43,13 @@ def safe(value: Any, source: str, observed_at: str, status: str | None = None) -
 
 def git_blob_sha(data: bytes) -> str:
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
+
+def collector_structure_valid(source: str) -> bool:
+    """Fail closed on changes to the manual-only diagnostic workflow structure."""
+    forbidden = (r"(?m)^\s*(?:push|schedule|workflow_run|workflow_call|repository_dispatch):", r"\bactions\s*:\s*write\b", r"/parse\b", r"parser_runtime_attestation\.py", r"\b(?:workflow_dispatches|dispatches|mutation|INSERT|UPDATE|DELETE|TRUNCATE)\b")
+    required = (r"(?m)^on:\s*\n\s+workflow_dispatch:\s*$", r"(?m)^permissions:\s*\n\s+contents:\s*read\s*\n\s+id-token:\s*write\s*$", r"(?m)^\s+if: github\.repository == 'GameProAcademy/cs2-pro-hub' && github\.ref == 'refs/heads/main' && github\.event_name == 'workflow_dispatch'\s*$", r"(?m)^\s+uses: actions/[\w-]+@[a-f0-9]{40}\b")
+    return all(re.search(pattern, source) for pattern in required) and not any(re.search(pattern, source, re.I) for pattern in forbidden)
 
 
 def fetch_json(url: str, *, data: bytes | None = None, headers: dict[str, str] | None = None) -> tuple[int | None, dict[str, Any] | None]:
@@ -72,7 +80,9 @@ def collect() -> dict[str, Any]:
     attestation_bytes = (ROOT / ATTESTATION_WORKFLOW).read_bytes()
     actual_blob = git_blob_sha(attestation_bytes)
     attestation_text = attestation_bytes.decode("utf-8")
-    oidc_structure = bool(re.search(r"workflow_dispatch\s*:", attestation_text) and re.search(r"id-token\s*:\s*write", attestation_text) and "gamepro-parser-attestation" in attestation_text)
+    collector_file = ROOT / WORKFLOW_PATH
+    collector_path_matches = collector_file.is_file() and WORKFLOW_PATH == APPROVED_COLLECTOR_WORKFLOW
+    oidc_structure = collector_path_matches and collector_structure_valid(collector_file.read_text(encoding="utf-8"))
 
     token = os.getenv("RAILWAY_API_TOKEN", "")
     railway: dict[str, Any] | None = None
@@ -109,11 +119,11 @@ def collect() -> dict[str, Any]:
             "collectorTriggerCommitSha": trigger_commit_sha,
         },
         "workflowEvidence": {
-            "approvedPathMatches": safe(ATTESTATION_WORKFLOW == ".github/workflows/parser-runtime-attestation.yml", "GIT_CHECKOUT", observed_at),
+            "approvedPathMatches": safe(collector_path_matches, "GIT_CHECKOUT", observed_at),
             "actualBlobSha": safe(actual_blob, "GIT_BLOB_BYTES", observed_at, "PASS" if actual_blob == APPROVED_BLOB else "BLOCKED"),
             "approvedBlobSha": safe(APPROVED_BLOB, "APPROVED_REGISTRY", observed_at, "PASS"),
             "blobMatches": safe(actual_blob == APPROVED_BLOB, "GIT_BLOB_COMPARISON", observed_at),
-            "oidcStructureValid": safe(oidc_structure, "ATTESTATION_WORKFLOW_SOURCE", observed_at),
+            "oidcStructureValid": safe(oidc_structure, "COLLECTOR_WORKFLOW_SOURCE", observed_at),
             "collectorWorkflowSha": safe(collector_workflow_sha, "GITHUB_WORKFLOW_IDENTITY", observed_at),
         },
         "secretPresence": {
