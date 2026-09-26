@@ -78,6 +78,9 @@ const db = {
 };
 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: db }));
+vi.mock("@/lib/pipeline/h3e91ExecutionRecorder.server", () => ({
+  appExecutionRecorder: () => async () => undefined,
+}));
 
 // ---------------------------------------------------------------- boundaries
 
