@@ -181,7 +181,7 @@ export function buildH3E91ReadinessInput(
       projectId: PARSER_ATTESTATION_EXPECTED.projectId,
       serviceId: PARSER_ATTESTATION_EXPECTED.serviceId,
       environmentId: PARSER_ATTESTATION_EXPECTED.environmentId,
-      workflowPath: external.workflowEvidence.approvedPathMatches.value
+      workflowPath: external.workflowEvidence.approvedPathMatches.value && external.workflowEvidence.approvedPathMatches.status === "PASS"
         ? PARSER_ATTESTATION_EXPECTED.workflowPath
         : "MISMATCH",
       workflowSourceSha: external.workflowEvidence.actualBlobSha.value ?? "UNKNOWN",
@@ -221,7 +221,7 @@ export function buildH3E91ReadinessInput(
       railwayTokenPresent: external.secretPresence.railwayTokenPresent.value,
     },
     workflow: {
-      approvedPath: external.workflowEvidence.approvedPathMatches.value
+      approvedPath: external.workflowEvidence.approvedPathMatches.value && external.workflowEvidence.approvedPathMatches.status === "PASS"
         ? PARSER_ATTESTATION_EXPECTED.workflowPath
         : "MISMATCH",
       approvedSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
@@ -230,7 +230,7 @@ export function buildH3E91ReadinessInput(
       oidcConfigured: external.workflowEvidence.oidcStructureValid.value && external.workflowEvidence.oidcStructureValid.status === "PASS",
     },
     railway: {
-      deploymentIdMatches: external.railwayEvidence.deploymentIdMatches.value,
+      deploymentIdMatches: external.railwayEvidence.deploymentIdMatches.value && external.railwayEvidence.deploymentIdMatches.status === "PASS" && external.railwayEvidence.available.value,
       deploymentStatus: external.railwayEvidence.deploymentStatus.value ?? "UNKNOWN",
       branchMatches: external.railwayEvidence.branchMatches.value,
       parserCommitMatches: external.railwayEvidence.sourceCommitMatches.value,
@@ -241,6 +241,8 @@ export function buildH3E91ReadinessInput(
       serviceMatches: external.railwayEvidence.serviceMatches.value,
       environmentMatches: external.railwayEvidence.environmentMatches.value,
       bothRuntimeDomainsMatch:
+        external.runtimeEvidence.customDomainAvailable.value &&
+        external.runtimeEvidence.railwayDomainAvailable.value &&
         external.runtimeEvidence.bothDomainsMatch.value &&
         external.runtimeEvidence.healthMatches.value &&
         external.runtimeEvidence.parserRevisionMatches.value,
