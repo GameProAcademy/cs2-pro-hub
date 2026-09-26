@@ -278,5 +278,6 @@ def test_durable_execution_identity_survives_claim_retry(monkeypatch):
         asyncio.run(durable_consumer_loop(settings, empty_parse))
     except asyncio.CancelledError:
         pass
-    assert events == ["EXECUTION_INTENT", "EXECUTION_ABORTED", "EXECUTION_INTENT"]
+    assert events == ["EXECUTION_INTENT", "EXECUTION_ABORTED", "EXECUTION_INTENT", "EXECUTION_ABORTED"]
     assert ids[0] == ids[2]
+    assert ids[1] == ids[3]
