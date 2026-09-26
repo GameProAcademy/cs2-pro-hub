@@ -125,7 +125,7 @@ describe("H.3-E.9.1 execution source discovery", () => {
     expect(pocRoute).toContain("STATUS: FEATURE_DISABLED");
     expect(read("src/config/app.ts")).toMatch(/clientDemParserPoc:\s*false/);
     expect(read("src/lib/client-parser/clientParser.service.ts")).toMatch(
-      /import\.meta\.env\.PROD\) throw new ClientParserError\("CLIENT_PARSER_DISABLED"\)/,
+      /import\.meta\.env\.PROD\) throw new ClientParserError\("CLIENT_PARSER_UNAVAILABLE"\)/,
     );
     const reachable = productionRoots
       .slice(0, 2)
