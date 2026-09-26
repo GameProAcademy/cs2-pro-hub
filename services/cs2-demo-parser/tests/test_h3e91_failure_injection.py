@@ -1,6 +1,8 @@
 """Synthetic execution failure injection; no external service or real DEM."""
 
 import asyncio
+import concurrent.futures
+import threading
 
 import httpx
 import pytest
@@ -144,6 +146,61 @@ def test_v1_http_retry_reconstructs_identity_without_reexecuting_parser(client_f
     changed_attempt = client.post("/v1/parse", json={**body, "attempt_number": 2}, headers=auth())
     assert changed_attempt.status_code == 200
     assert len(parser_calls) == 2
+
+
+def test_v1_original_and_two_retries_overlap_without_second_parse(client_factory, monkeypatch):
+    import app
+    import h3e91_execution
+
+    lock = threading.Lock()
+    parser_entered = threading.Event()
+    release_parser = threading.Event()
+    recorded = set()
+    parser_calls = []
+
+    class Recorder:
+        def __init__(self, *_args, **kwargs):
+            self.execution_id = kwargs["execution_id"]
+        def bind_revision(self, _revision):
+            return self
+        async def record(self, kind, _outcome=None):
+            key = (self.execution_id, kind)
+            with lock:
+                replay = key in recorded
+                recorded.add(key)
+            return {"status": "IDEMPOTENT_REPLAY" if replay else "INSERTED"}
+        async def read_lifecycle(self):
+            with lock:
+                kinds = {kind for execution, kind in recorded if execution == self.execution_id}
+            lifecycle = "FINISHED" if "EXECUTION_FINISHED" in kinds else "STARTED" if "EXECUTION_STARTED" in kinds else "INTENT_ONLY"
+            return {"lifecycle": lifecycle}
+
+    async def downloaded(_body, _settings, _parse, *, on_started, **_kwargs):
+        await on_started()
+        parser_calls.append(1)
+        parser_entered.set()
+        assert release_parser.wait(timeout=5)
+        return {"contract_version": 1}
+
+    monkeypatch.setattr(h3e91_execution, "ExecutionRecorder", Recorder)
+    monkeypatch.setattr(app, "_parse_downloaded", downloaded)
+    body = parse_body()
+
+    def post():
+        return client_factory().post("/v1/parse", json=body, headers=auth())
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        original = pool.submit(post)
+        assert parser_entered.wait(timeout=5)
+        retries = [pool.submit(post), pool.submit(post)]
+        retry_responses = [future.result(timeout=5) for future in retries]
+        release_parser.set()
+        original_response = original.result(timeout=5)
+
+    assert original_response.status_code == 200
+    assert [response.status_code for response in retry_responses] == [409, 409]
+    assert parser_calls == [1]
+    assert len({execution for execution, _kind in recorded}) == 1
     assert len({execution for execution, _kind in seen}) == 2
     missing = client.post("/v1/parse", json={k: v for k, v in body.items() if k != "job_id"}, headers=auth())
     assert missing.status_code == 409
