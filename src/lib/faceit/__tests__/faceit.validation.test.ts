@@ -270,6 +270,8 @@ describe("FASE 2.2.1D — worker deadline", () => {
   });
 
   it("aborta a request quando o deadline é mais próximo que o timeout", async () => {
+    vi.useFakeTimers();
+    try {
     const fetchMock = vi.fn(
       (_url: string, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
@@ -288,9 +290,14 @@ describe("FASE 2.2.1D — worker deadline", () => {
       deadlineAt: Date.now() + 20,
     });
     // FASE 2.2.1E: abortar por deadline é parada controlada, não timeout comum.
-    await expect(client.get("/matches/m1")).rejects.toMatchObject({
+    const request = expect(client.get("/matches/m1")).rejects.toMatchObject({
       code: "FACEIT_WORKER_DEADLINE_EXCEEDED",
     });
+    await vi.advanceTimersByTimeAsync(21);
+    await request;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
