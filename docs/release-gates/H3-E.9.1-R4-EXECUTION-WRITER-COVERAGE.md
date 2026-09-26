@@ -28,7 +28,7 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 | Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | NOT_RUN (Docker unavailable locally) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final image and deployed image parity unknown |
 | Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (1,391 web; 239 Python/10 skipped; lint/typecheck; preview build OK) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Final CI and deployed proof remain |
 | Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | NOT_RUN (current revision) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final bundle and deployed bundle parity unknown |
-| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | PASS (`36223301246`) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | External run for final commit unverified |
+| External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | NOT_RUN (current revision) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | External run for final commit unverified |
 
 ## CURRENT BLOCKERS
 
