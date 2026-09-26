@@ -3799,6 +3799,10 @@ export type Database = {
         Returns: Json
       }
       get_demo_retention_metrics: { Args: never; Returns: Json }
+      h3e91_execution_ledger_after_baseline: {
+        Args: { _baseline_started_at: string }
+        Returns: Json
+      }
       h3e91_live_database_evidence: { Args: never; Returns: Json }
       has_role: {
         Args: {

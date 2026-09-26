@@ -16,8 +16,10 @@ import { canonicalAttestationJson } from "@/lib/parserAttestationCrypto.server";
 import { H3E91_APPROVED_WORKFLOW_SHA } from "@/lib/h3e91WorkflowRegistry";
 import { H3E9_EXPECTED_ENDPOINT } from "@/lib/h3e9FinalExecutionReadiness";
 import { H3E91_RAILWAY_SOURCE_COMMIT } from "@/lib/h3e91LiveEvidence";
+import { getH3E91Freshness } from "@/lib/h3e91LiveEvidence";
+import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 
-function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence) {
+function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91DatabaseEvidence, freshness: "FRESH" | "STALE" | "UNKNOWN", baselineValid: boolean) {
   const blockers: Array<
     | "H3E91_DATABASE_EVIDENCE_UNKNOWN"
     | "H3E91_MIGRATION_EVIDENCE_UNKNOWN"
@@ -28,11 +30,14 @@ function getH3E91EvidenceBlockers(external: H3E91ExternalEvidence, db: H3E91Data
     | "H3E9_ANONYMOUS_BOUNDARY_FAILED"
     | "H3E9_WORKFLOW_SOURCE_MISMATCH"
     | "H3E9_DATABASE_SECURITY_INVARIANT_FAILED"
+    | "H3E91_PREFLIGHT_STALE"
   > = [];
+  if (freshness !== "FRESH" || !baselineValid) blockers.push("H3E91_PREFLIGHT_STALE");
   if (
     db.status === "UNKNOWN" ||
     db.realDemoExecutionCount === null ||
-    db.cacheDemoExecutionCount === null
+    db.cacheDemoExecutionCount === null ||
+    db.historicalStartedJobCount === null
   )
     blockers.push("H3E91_DATABASE_EVIDENCE_UNKNOWN");
   if (db.migration.exactMatchCount === null) blockers.push("H3E91_MIGRATION_EVIDENCE_UNKNOWN");
@@ -85,6 +90,7 @@ function unknownDatabaseEvidence(observedAt: string): H3E91DatabaseEvidence {
     attempt10PlusCount: null,
     realDemoExecutionCount: null,
     cacheDemoExecutionCount: null,
+    historicalStartedJobCount: null,
     canonical: { total: null, authorized: null, verified: null, generic: null },
     migration: { version: null, name: null, exactMatchCount: null },
     security: {
@@ -103,6 +109,7 @@ function unknownDatabaseEvidence(observedAt: string): H3E91DatabaseEvidence {
 
 export async function collectH3E91DatabaseEvidence(
   observedAt: string,
+  baselineStartedAt?: string,
 ): Promise<H3E91DatabaseEvidence> {
   const evidence = unknownDatabaseEvidence(observedAt);
   try {
@@ -151,6 +158,40 @@ export async function collectH3E91DatabaseEvidence(
         if (typeof observed === "boolean") evidence.security[key] = observed;
       }
     }
+    if (baselineStartedAt) {
+      const { data: ledger, error: ledgerError } = await supabaseAdmin.rpc(
+        "h3e91_execution_ledger_after_baseline",
+        { _baseline_started_at: baselineStartedAt },
+      );
+      if (!ledgerError && ledger && typeof ledger === "object" && !Array.isArray(ledger)) {
+        const entries = ledger as Record<string, unknown>;
+        const mapping = {
+          historicalStartedJobCount: "historicalStartedJobCount",
+          realDemoExecutionCount: "realDemoExecutionCountAfterBaseline",
+          cacheDemoExecutionCount: "cacheDemoExecutionCountAfterBaseline",
+        } as const;
+        if (entries["baselineValid"] === true && entries["startedAtMissingCount"] === 0 && entries["invalidTimestampsCount"] === 0) {
+          for (const [target, source] of Object.entries(mapping) as Array<[keyof typeof mapping, string]>) {
+            const count = entries[source];
+            if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) evidence[target] = count;
+          }
+          // A mutable job row is a positive signal but cannot prove the absence
+          // of starts: retry/reset or deletion may erase the only timestamp.
+          if (evidence.realDemoExecutionCount === 0) evidence.realDemoExecutionCount = null;
+          if (evidence.cacheDemoExecutionCount === 0) evidence.cacheDemoExecutionCount = null;
+          const attempt9 = entries["attempt9CountAfterBaseline"];
+          const attempt10 = entries["attempt10PlusCountAfterBaseline"];
+          // All-time attempts from the primary RPC still gate the historical lock.
+          if (typeof attempt9 !== "number" || !Number.isSafeInteger(attempt9) || attempt9 < 0 ||
+              typeof attempt10 !== "number" || !Number.isSafeInteger(attempt10) || attempt10 < 0) {
+            evidence.realDemoExecutionCount = null;
+            evidence.cacheDemoExecutionCount = null;
+          } else if (attempt9 > 0 || attempt10 > 0) {
+            evidence.status = "BLOCKED";
+          }
+        }
+      }
+    }
     const countsKnown = [
       evidence.provenanceCount,
       evidence.verifiedProvenanceCount,
@@ -158,17 +199,22 @@ export async function collectH3E91DatabaseEvidence(
       evidence.attempt9Count,
       evidence.attempt10PlusCount,
       ...Object.values(evidence.canonical),
+      evidence.realDemoExecutionCount,
+      evidence.cacheDemoExecutionCount,
+      evidence.historicalStartedJobCount,
     ].every((value) => typeof value === "number");
     const securityKnown = Object.values(evidence.security).every(
       (value) => typeof value === "boolean",
     );
-    // No authoritative database ledger for real or Cache DEM execution exists in
-    // this read surface. Neither feature flags nor an old diagnostic constant
-    // can establish their absence; preserve UNKNOWN until independently proven.
+    // Job starts are positive signals, not immutable proof that no work occurred.
+    // Missing and zero counts stay UNKNOWN until an authoritative ledger exists.
     evidence.status =
       countsKnown && securityKnown && evidence.migration.exactMatchCount !== null
         ? evidence.migration.exactMatchCount === 1 &&
-          Object.values(evidence.security).every(Boolean)
+          Object.values(evidence.security).every(Boolean) &&
+          evidence.provenanceCount === 0 && evidence.nonceCount === 0 &&
+          evidence.attempt9Count === 0 && evidence.attempt10PlusCount === 0 &&
+          evidence.realDemoExecutionCount === 0 && evidence.cacheDemoExecutionCount === 0
           ? "PASS"
           : "BLOCKED"
         : "UNKNOWN";
@@ -179,7 +225,8 @@ export async function collectH3E91DatabaseEvidence(
 }
 
 export async function buildH3E91Artifact(external: H3E91ExternalEvidence): Promise<H3E91Artifact> {
-  const before = await collectH3E91DatabaseEvidence(new Date().toISOString());
+  const baselineStartedAt = new Date().toISOString();
+  const before = await collectH3E91DatabaseEvidence(new Date().toISOString(), baselineStartedAt);
   let status: number | null = null;
   try {
     const response = await fetch(H3E9_EXPECTED_ENDPOINT, {
@@ -193,7 +240,7 @@ export async function buildH3E91Artifact(external: H3E91ExternalEvidence): Promi
   } catch {
     /* Unavailable remains UNKNOWN. */
   }
-  const after = await collectH3E91DatabaseEvidence(new Date().toISOString());
+  const after = await collectH3E91DatabaseEvidence(new Date().toISOString(), baselineStartedAt);
   const safe = <T>(value: T, source: string, valid: boolean) => ({
     source,
     observedAt: new Date().toISOString(),
@@ -241,20 +288,29 @@ export async function buildH3E91Artifact(external: H3E91ExternalEvidence): Promi
       ),
     },
   };
-  return finalizeH3E91Artifact(trusted, after);
+  return finalizeH3E91Artifact(trusted, after, baselineStartedAt);
 }
 
 export function finalizeH3E91Artifact(
   external: H3E91ExternalEvidence,
   databaseEvidence: H3E91DatabaseEvidence,
+  baselineStartedAt: string = external.observedAt,
+  evaluatedAt: string = new Date().toISOString(),
 ): H3E91Artifact {
   const input = buildH3E91ReadinessInput(external, databaseEvidence);
   const finalResult = evaluateH3E9FinalExecutionReadiness(input);
+  const freshness = getH3E91Freshness(external.observedAt, evaluatedAt);
+  const baselineValid = getH3E91Freshness(baselineStartedAt, evaluatedAt) === "FRESH" && Date.parse(baselineStartedAt) >= Date.parse(external.observedAt);
+  const blockers = getH3E91EvidenceBlockers(external, databaseEvidence, freshness, baselineValid);
   const withoutDigest = {
     schemaVersion: H3E91_LIVE_EVIDENCE_SCHEMA_VERSION,
     gate: "H.3-E.9" as const,
     collectorVersion: H3E91_COLLECTOR_VERSION,
     observedAt: external.observedAt,
+    baselineStartedAt,
+    baseline: { startedAt: baselineStartedAt, source: "SERVER_READ_ONLY_PREFLIGHT_BASELINE" as const, semantics: "COUNT_EXECUTION_AFTER_BASELINE_ONLY" as const },
+    freshness,
+    parserRuntimeRevision: `git:${PARSER_ATTESTATION_EXPECTED.commit}`,
     workflowIdentity: external.workflowIdentity,
     collectorWorkflowSha: external.workflowIdentity.collectorWorkflowSha,
     collectorTriggerCommitSha: external.workflowIdentity.collectorTriggerCommitSha,
@@ -272,19 +328,20 @@ export function finalizeH3E91Artifact(
       attempt10PlusCount: databaseEvidence.attempt10PlusCount,
       realDemoExecutionCount: databaseEvidence.realDemoExecutionCount,
       cacheDemoExecutionCount: databaseEvidence.cacheDemoExecutionCount,
+      historicalStartedJobCount: databaseEvidence.historicalStartedJobCount,
     },
     finalResult: {
       ...finalResult,
       blockers: [
         ...new Set([
           ...finalResult.blockers,
-          ...getH3E91EvidenceBlockers(external, databaseEvidence),
+          ...blockers,
         ]),
       ],
-      technicalReadiness: getH3E91EvidenceBlockers(external, databaseEvidence).length
+      technicalReadiness: blockers.length
         ? ("BLOCKED" as const)
         : finalResult.technicalReadiness,
-      status: getH3E91EvidenceBlockers(external, databaseEvidence).length
+      status: blockers.length
         ? ("BLOCKED" as const)
         : finalResult.status,
     },
