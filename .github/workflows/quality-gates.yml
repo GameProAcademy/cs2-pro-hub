@@ -36,10 +36,13 @@ jobs:
         run: bun run test
 
       - name: H3E91 source discovery and sealed-ledger gate
-        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts src/lib/pipeline/__tests__/h3e91ExecutionBridge.test.ts src/lib/pipeline/__tests__/h3e91R41Coverage.test.ts src/lib/pipeline/__tests__/h3e91R41Authority.test.ts
+        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionDiscovery.test.ts src/lib/pipeline/__tests__/h3e91LiveEvidence.test.ts src/lib/pipeline/__tests__/h3e91ExecutionBridge.test.ts src/lib/pipeline/__tests__/h3e91ExecutionRecorder.test.ts src/lib/pipeline/__tests__/h3e91R41Coverage.test.ts src/lib/pipeline/__tests__/h3e91R41Authority.test.ts
 
       - name: H3E91 disposable PostgreSQL writer concurrency
         run: python3 scripts/h3e91-writer-concurrency.py
+
+      - name: H3E91 APP retry and browser isolation regression
+        run: bunx vitest run src/lib/pipeline/__tests__/h3e91ExecutionRecorder.test.ts src/lib/pipeline/__tests__/h3e91BrowserBuildIsolation.test.ts
 
       - name: Typecheck
         run: bunx tsc --noEmit
@@ -86,6 +89,9 @@ jobs:
 
       - name: Run parser test suite
         run: pytest -q
+
+      - name: H3E91 Railway ordering, stable retries and failure injection
+        run: pytest -q tests/test_h3e91_execution.py tests/test_h3e91_failure_injection.py tests/test_worker.py
 
       - name: Verify production parser image excludes reference tools
         working-directory: ${{ github.workspace }}
