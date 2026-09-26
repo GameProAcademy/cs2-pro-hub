@@ -282,8 +282,16 @@ def test_durable_execution_identity_survives_claim_retry(monkeypatch):
         pass
     assert events == ["EXECUTION_INTENT", "EXECUTION_ABORTED", "EXECUTION_INTENT"]
     assert ids[0] == ids[2]
-def test_durable_worker_replayed_intent_suppresses_parser_without_claiming_lifecycle_state(monkeypatch):
-    """INTENT replay alone cannot reveal the terminal state; no parse or queue completion is safe."""
+@pytest.mark.parametrize("lifecycle,status", [
+    ("INTENT_ONLY", "reconciliation_required"),
+    ("STARTED", "reconciliation_required"),
+    ("FINISHED", "queue_reconciled"),
+    ("FAILED", "queue_reconciled"),
+    ("ABORTED", "queue_reconciled"),
+    ("INVALID", "reconciliation_required"),
+])
+def test_durable_worker_replayed_intent_reads_authoritative_state_without_reparse(monkeypatch, lifecycle, status):
+    """Each authoritative replay state suppresses parsing and all new terminal writes."""
     import app
     import worker
     from h3e91_execution import ExecutionRecorder
@@ -297,7 +305,7 @@ def test_durable_worker_replayed_intent_suppresses_parser_without_claiming_lifec
         events.append(event_type)
         return {"status": "IDEMPOTENT_REPLAY"}
 
-    async def bridge(_client, _settings, action, _body):
+    async def bridge(_client, _settings, action, body):
         nonlocal claims
         queue_actions.append(action)
         if action == "claim":
@@ -307,6 +315,9 @@ def test_durable_worker_replayed_intent_suppresses_parser_without_claiming_lifec
             return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111", "message_id": 1, "attempt": 1,
                     "upload_id": "22222222-2222-2222-2222-222222222222", "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
                     "demo_url": "url", "demo_sha256": DEMO_SHA, "file_size": 520}
+        if action == "reconcile":
+            assert body["executionId"]
+            return {"status": status, "lifecycle": lifecycle}
         if action == "complete": return {"status": "processed"}
         return {"accepted": True}
 
@@ -328,4 +339,65 @@ def test_durable_worker_replayed_intent_suppresses_parser_without_claiming_lifec
 
     assert not parser_called
     assert events == ["EXECUTION_INTENT"]
-    assert queue_actions == ["claim", "claim"]
+    assert queue_actions == ["claim", "reconcile", "claim"]
+
+
+def test_finished_completion_ack_loss_reconciles_without_second_parse_or_terminal(monkeypatch):
+    """A persisted FINISHED plus lost queue acknowledgement is reconciled on a fresh claim."""
+    import app
+    import worker
+
+    events = []
+    bridge_actions = []
+    parser_calls = 0
+    claim_count = 0
+    completion_persisted = False
+
+    async def record(_self, event_type, _outcome_code=None):
+        events.append(event_type)
+        if event_type == "EXECUTION_INTENT" and events.count("EXECUTION_INTENT") > 1:
+            return {"status": "IDEMPOTENT_REPLAY"}
+        return {"status": "INSERTED"}
+
+    async def bridge(_client, _settings, action, body):
+        nonlocal claim_count, completion_persisted
+        bridge_actions.append(action)
+        if action == "claim":
+            claim_count += 1
+            if claim_count > 2:
+                raise asyncio.CancelledError()
+            return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
+                    "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                    "demo_url": "https://synthetic.invalid/demo.dem", "demo_sha256": DEMO_SHA,
+                    "file_size": 520, "schema_version": 1}
+        if action == "heartbeat":
+            return {"accepted": True, "cancelled": False}
+        if action == "complete":
+            completion_persisted = True
+            raise RuntimeError("synthetic acknowledgement lost after queue persistence")
+        if action == "reconcile":
+            assert completion_persisted and body["executionId"]
+            return {"status": "queue_reconciled", "lifecycle": "FINISHED"}
+        return {}
+
+    async def durable(*_args, **kwargs):
+        nonlocal parser_calls
+        parser_calls += 1
+        await kwargs["on_started"]()
+        return {"hot": {"schema_version": 1}, "raw": {"artifact_id": "synthetic", "root_digest": DEMO_SHA}}
+
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
+    monkeypatch.setattr(worker, "_bridge", bridge)
+    monkeypatch.setattr(app, "_parse_durable_request", durable)
+    settings = make_settings(bridge_url="https://synthetic.invalid/bridge", bridge_secret="synthetic-test-only")
+    try:
+        asyncio.run(durable_consumer_loop(settings, empty_parse))
+    except asyncio.CancelledError:
+        pass
+
+    assert parser_calls == 1
+    assert events == ["EXECUTION_INTENT", "EXECUTION_STARTED", "EXECUTION_FINISHED", "EXECUTION_INTENT"]
+    assert bridge_actions.count("complete") == 1
+    assert bridge_actions.count("reconcile") == 1
+    assert "fail" not in bridge_actions
