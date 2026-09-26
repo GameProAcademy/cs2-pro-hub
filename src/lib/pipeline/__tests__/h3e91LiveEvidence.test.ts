@@ -169,12 +169,13 @@ describe("H.3-E.9.1 live evidence", () => {
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
     const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
-    expect(artifact.finalResult.technicalReadiness).toBe("READY");
+    expect(artifact.finalResult.technicalReadiness).toBe("BLOCKED");
     expect(artifact.finalResult.status).toBe("BLOCKED");
     expect(artifact.finalResult.blockers).toEqual(
       expect.arrayContaining([
         "H3E9_RETENTION_NOT_AUTHORIZED",
         "H3E9_OPERATOR_AUTHORIZATION_MISSING",
+        "H3E91_EXECUTION_LEDGER_UNKNOWN",
       ]),
     );
   });
