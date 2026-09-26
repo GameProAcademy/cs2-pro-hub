@@ -20,24 +20,24 @@ No Railway deploy, operational parser execution, real DEM/Cache, Attempt 9/10+, 
 
 | PROOF | SOURCE | LIVE_DB_WRITER | SURFACE_LIVE_EXECUTION | SYNTHETIC | CI | DEPLOYED | PROVENANCE | STATUS | BLOCKER |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Writer contract/security/digest | PASS | PASS (live read-only inspection) | UNKNOWN | PASS (disposable DB) | PASS (`36223301246`) | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | Final-revision CI and deployed parity unknown |
+| Writer contract/security/digest | PASS | PASS (live read-only inspection) | UNKNOWN | PASS (disposable DB) | UNKNOWN (current revision) | UNKNOWN | LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | Final-revision CI and deployed parity unknown |
 | HTTP retry identity/reconciliation | PASS | UNKNOWN (zero rows) | UNKNOWN | PASS (lost acknowledgements per state plus simultaneous original and two retries) | UNKNOWN (new revision) | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Deployed runtime proof unknown; transparent result retry absent |
 | Durable retry and terminal-before-complete | PASS (bounded lifecycle and queue reconciliation) | invariant reader applied as 20260926055410; timestamp rename as 20260926055608; source version 20260926053000 absent | UNKNOWN | PASS (mocked per-state read/reconciliation and terminal ordering) | UNKNOWN (new commit) | UNKNOWN | SOURCE_IMPLEMENTED + LIVE_DB_VERIFIED + SYNTHETIC_PROVEN | BLOCKED | FINISHED recovery with real queue persistence and complete failure matrix unproven; deployed parity unknown |
 | PostgreSQL concurrency | PASS | PASS (writer schema) | UNKNOWN | PASS (30 lifecycle scenarios (including paired terminal races) + 50 stress executions) | UNKNOWN (final revision) | UNKNOWN | SYNTHETIC_PROVEN | BLOCKED | Complete independent race matrix and deployed parity remain unknown |
 | APP, Railway and browser isolation | PASS (bounded) | UNKNOWN | UNKNOWN | PASS (bounded ordering/isolation) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Complete injection matrix and deployed proof outstanding |
 | Reference image exclusion | PASS (source allowlist) | NOT_RUN | UNKNOWN | NOT_RUN (Docker unavailable locally) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final image and deployed image parity unknown |
 | Local lint/typecheck/web/parser checks | PASS | NOT_RUN | UNKNOWN | PASS (1,391 web; 239 Python/10 skipped; lint/typecheck; preview build OK) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED + SYNTHETIC_PROVEN | BLOCKED | Final CI and deployed proof remain |
-| Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | PASS (`36223301246`) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final bundle and deployed bundle parity unknown |
+| Browser production-output sealing | PASS (source verifier configured) | NOT_RUN | UNKNOWN | NOT_RUN (current revision) | UNKNOWN (final revision) | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | Final bundle and deployed bundle parity unknown |
 | External CI | PASS (workflow configured) | NOT_RUN | UNKNOWN | PASS (`36223301246`) | UNKNOWN | UNKNOWN | SOURCE_IMPLEMENTED | BLOCKED | External run for final commit unverified |
 
 ## CURRENT BLOCKERS
 
 - `H3E91_DEPLOYED_SOURCE_PARITY_UNKNOWN`, `H3E91_DEPLOYED_BROWSER_BUNDLE_UNKNOWN`, `H3E91_DEPLOYED_IMAGE_UNKNOWN`; Railway remains frozen on its previous deployment.
-- SUPERSEDED CI evidence: Quality Gates run `36222382006` passed for `5d06db444064e4626adcc83360899335a4638e83`, **not** this closure revision. CURRENT-REVISION CI VERIFIED: Quality Gates run `36223301246` completed GREEN on `1db1485a1b2eda4ff4005670f28555234674e144`; deployed Railway parity remains UNKNOWN.
+- SUPERSEDED CI evidence: Quality Gates run `36222382006` passed for `5d06db444064e4626adcc83360899335a4638e83`; run `36223301246` passed for `1db1485a1b2eda4ff4005670f28555234674e144`. Neither verifies this revision; deployed Railway parity remains UNKNOWN.
 - Failure-injection coverage remains bounded, not a complete 26-case deployed-surface matrix. No production ledger writes are needed or authorized for local tests.
 - Live reader is invariant-hardened through managed migration `20260926055410` and returns `terminalEventAt` through `20260926055608`; the earlier source-only filename `20260926053000` is still absent from migration history. Its SQL was executed unchanged by the managed tool, which assigned a new version rather than using that source filename.
 - FINISHED replay recovery is fail-closed when `demo_jobs` lacks a processed/blocked_raw_audit result; the current reconciliation test mocks the lifecycle and database result and does not prove recovery from persisted RAW/HOT state after a lost queue-completion acknowledgement in an integrated disposable database.
-- The disposable 30-case + 50-stress harness, simultaneous HTTP retry, and 20 mocked durable reconciliation cases passed locally. Complete independent race/failure matrices remain unproven. Current-revision external CI is GREEN, including Docker image and browser-output gates, but CI does not establish deployed parity.
+- The disposable 30-case + 50-stress harness and bounded reader snapshot passed for this revision; simultaneous HTTP retry and 24 mocked durable reconciliation cases passed for its predecessor. Complete independent race/failure matrices remain unproven. Current-revision external CI, Docker and browser-output gates are NOT_RUN.
 - Historical assertions below are superseded snapshots; their `NOT_COVERED`, inactive writer, and `COPY . .` statements are **not current source state**.
 
 ## HISTORICAL CHECKPOINTS — SUPERSEDED
