@@ -34,6 +34,22 @@ describe("APP controlled execution recorder", () => {
     expect(first).not.toHaveProperty("_event_digest");
   });
 
+  it("does not collide execution identity across uploads sharing job and attempt", async () => {
+    rpc.mockReset();
+    rpc.mockResolvedValue({ data: { status: "INSERTED" }, error: null });
+
+    const secondUpload = { ...input, uploadId: "33333333-3333-3333-3333-333333333333" };
+    await appExecutionRecorder(input)("EXECUTION_INTENT");
+    await appExecutionRecorder(secondUpload)("EXECUTION_INTENT");
+
+    const first = rpc.mock.calls[0]?.[1];
+    const second = rpc.mock.calls[1]?.[1];
+    expect(first?._execution_id).toBeDefined();
+    expect(second?._execution_id).toBeDefined();
+    expect(first?._execution_id).not.toBe(second?._execution_id);
+    expect(first?._correlation_id).not.toBe(second?._correlation_id);
+  });
+
   it("fails closed on rejection and never sends a parser-success terminal implicitly", async () => {
     rpc.mockReset();
     rpc.mockResolvedValueOnce({
