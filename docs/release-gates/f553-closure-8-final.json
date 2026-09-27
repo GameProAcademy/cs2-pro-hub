@@ -1,5 +1,5 @@
 {
-  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8-R2",
+  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8-R3",
   "final_decision": "BLOCKED",
   "source_lineage": "NOT_PROVEN",
   "full_schema_install": "NOT_PROVEN",
@@ -25,7 +25,7 @@
   "integrated_failure_matrix_passed": false,
   "docker": "NOT_PROVEN",
   "browser": "NOT_PROVEN",
-  "parser_tests": "NOT_EXECUTED_R2; 239_PASS_10_SKIP_R1_LOCAL_IS_NOT_R2_PROOF",
+  "parser_tests": "PASS_R3_LOCAL_SYNTHETIC_239_PASS_10_SKIP; FINAL_CI_NOT_PROVEN",
   "final_ci": "NOT_PROVEN",
   "FINAL_COMMIT": "NOT_VERIFIED_FINAL_COMMIT",
   "FINAL_CI_RUN": "NOT_PROVEN",
@@ -40,6 +40,11 @@
   "r2_supabase_cli_version": "2.118.0",
   "r2_stack_start": "FAIL: failed to inspect container health: docker: command not found (podman also not found)",
   "r2_full_schema_install": "NOT_PROVEN; 0 of 145 applied in a full local stack",
+  "r3_source_revision_at_start": "2350933a5e462c2579cc34f292286e6a8612b58a",
+  "r3_parser_command": "/tmp/f553-r3-parser-venv/bin/pytest -q (services/cs2-demo-parser)",
+  "r3_parser_output": "239 passed, 10 skipped, 161 warnings in 3.42s",
+  "r3_verifier_output": "exit 1: [Errno 2] No such file or directory: 'supabase'; 145 source migrations, 0 integrated races, 0 integrated failures",
+  "r3_ci_query": "Public GitHub Actions API query returned HTTP 404; no authenticated GitHub Actions run/dispatch access established",
   "production_read_only": {
     "ledger": 0,
     "raw_artifacts": 2,
@@ -48,39 +53,30 @@
   },
   "blockers": [
     {
-      "BLOCKER_CODE": "F553_C8_R2_LOCAL_CONTAINER_ENGINE_ABSENT",
-      "COMMAND": "/tmp/f553-r2/supabase start; PATH=/tmp/f553-r2:$PATH python3 scripts/run-f553-closure-8.py",
-      "ACTUAL_OUTPUT": "Supabase CLI 2.118.0 installed; supabase start: failed to inspect container health: docker: command not found (podman also not found); verifier exit 1: Local disposable stack not running; full-stack reset was not executed",
-      "FILE": "scripts/run-f553-closure-8.py",
-      "LINE": 148,
-      "MISSING_PROOF": "Clean installation of all 145 migrations in real disposable services. No SQL migration failure may be asserted before a full-stack reset.",
-      "NEXT_ACTION": "Execute the pinned workflow on a Docker-enabled ubuntu-latest runner, collect its real reset output and repair any proven SQL errors."
-    },
-    {
-      "BLOCKER_CODE": "F553_C8_R2_INTEGRATED_SCENARIOS_UNIMPLEMENTED",
+      "BLOCKER_CODE": "F553_C8_R3_INTEGRATED_HARNESS_ABSENT",
       "COMMAND": "python3 scripts/run-f553-closure-8.py",
-      "ACTUAL_OUTPUT": "Real disposable pgmq visibility/ACK probe added but cannot execute without stack; race_cases_executed=0; failure_cases_executed=0; all integrated gates remain NOT_PROVEN",
+      "ACTUAL_OUTPUT": "exit 1: [Errno 2] No such file or directory: 'supabase'; no executed integrated cases; verifier checks service presence and a limited queue probe, not a FINISHED lifecycle",
       "FILE": "scripts/run-f553-closure-8.py",
-      "LINE": 57,
-      "MISSING_PROOF": "Real pgmq/PostgREST/Storage FINISHED recovery, ACK-loss fresh-worker, FAILED/ABORTED, identity/integrity, exactly-once and 50 distinct executed races/failures. Service presence checks are not integrated proofs.",
-      "NEXT_ACTION": "Implement and execute a local-stack-only integration harness with persisted per-case before/after evidence, then rerun the clean stack gate."
+      "LINE": 217,
+      "MISSING_PROOF": "Disposable full-schema reset, real integrated FINISHED/ACK-loss/fresh-worker/FAILED/ABORTED, identity, integrity, exactly-once and 50 distinct executed races plus 50 failures.",
+      "NEXT_ACTION": "Implement a real local-stack-only integration runner against the actual pipeline and execute it in the pinned Docker-enabled GitHub Actions job, then repair any observed failure."
     },
     {
-      "BLOCKER_CODE": "F553_C8_R2_FINAL_CI_AND_OUTPUT_UNVERIFIED",
-      "COMMAND": "GitHub Actions F553 CLOSURE 8 FINAL on the exact final revision",
-      "ACTUAL_OUTPUT": "No GitHub workflow run ID or conclusion accessible for this revision; Docker image and production-output browser were not executed in R2.",
+      "BLOCKER_CODE": "F553_C8_R3_FINAL_GITHUB_ACTIONS_INACCESSIBLE",
+      "COMMAND": "GET https://api.github.com/repos/GameProAcademy/cs2-pro-hub/actions/runs?per_page=5",
+      "ACTUAL_OUTPUT": "HTTP 404; the checkout remote is a private Lovable project mirror and no GitHub CLI or token is available; no run ID or conclusion obtained",
       "FILE": ".github/workflows/quality-gates.yml",
-      "LINE": 134,
-      "MISSING_PROOF": "Exact-final-revision successful CI, Docker runtime isolation, and production-output browser verification.",
-      "NEXT_ACTION": "Run the full workflow after integrated harness completion; collect run ID, conclusion and browser/Docker evidence. Do not promote on configured-only CI."
+      "LINE": 112,
+      "MISSING_PROOF": "A successful full-stack, Docker, browser and parser workflow run on the exact final revision, with artifacts and run ID.",
+      "NEXT_ACTION": "Provide access to the GitHub repository's Actions execution or synchronize this revision there, then run and inspect the workflow; do not claim configured-only CI as execution."
     }
   ],
   "plain_postgres_probe": "FAIL_NOT_FULL_STACK",
   "full_stack_probe": "START_FAILED_BEFORE_RESET",
   "local_executed": {
-    "parser_tests": "NOT_EXECUTED_R2",
+    "parser_tests": "R3 local synthetic: 239 passed, 10 skipped; final CI unverified",
     "writer_only": "30 lifecycle cases and 50 stress executions",
-    "full_stack": "START_FAILED_DOCKER_ABSENT",
+    "full_stack": "R3 NOT_RUN: Supabase CLI absent; R2 Docker failure is historical",
     "integrated_races": 0,
     "integrated_failures": 0
   }

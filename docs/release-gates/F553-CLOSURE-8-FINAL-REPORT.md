@@ -1,4 +1,10 @@
-# F.5.3-CLOSURE.8-R2 — BLOCKED
+# F.5.3-CLOSURE.8-R3 — BLOCKED
+
+## R3 executed evidence and remaining blockers
+
+Current source revision at the start of this attempt: `2350933a5e462c2579cc34f292286e6a8612b58a`. The complete synthetic parser suite was rerun in a newly created disposable virtual environment: `239 passed, 10 skipped, 161 warnings in 3.42s`; no real DEM was used. The matrix verifier now requires a fresh run ID and time, distinct case identities, before/after digests and actual evidence. Its fresh-matrix rejection check passed. `python3 scripts/run-f553-closure-8.py` exited 1 with `No such file or directory: 'supabase'`, 145 source migrations, zero integrated race and failure cases. The earlier R2 CLI stack-start failure is historical, not current proof of a migration failure.
+
+This checkout's Git remote is a private project mirror rather than an authenticated GitHub Actions remote; no GitHub token or CLI is present. A public query to `GameProAcademy/cs2-pro-hub` returned HTTP 404, so no final-revision workflow run or conclusion could be retrieved. The configured F553 job executes a reset and a limited queue probe, but no real integrated lifecycle/matrix harness exists to make its mandatory gates pass. Production and Railway were not changed. Full-stack schema equivalence, FINISHED, ACK-loss fresh-worker recovery, FAILED/ABORTED, Docker runtime and production-output browser remain **NOT_PROVEN**; the parser test result is local R3 proof only, not final-CI proof. `FINAL_COMMIT`, `FINAL_CI_RUN` and `FINAL_CI_CONCLUSION` remain unverified. Exact blockers are in the machine-readable decision.
 
 **Decision:** BLOCKED. No complete disposable stack installation or integrated lifecycle was demonstrated. No production, Railway, DEM, Attempt 9 or Canonical mutation was performed; `realDemAuthorized=false` and `canonicalAuthorized=false`.
 
