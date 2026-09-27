@@ -198,14 +198,14 @@ def real_job_terminal_probe(env, api_url, key, user_id, outcome):
 
 
 def main():
-    required = ('F553_RUN_ID', 'F553_STARTED_AT', 'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_WORKFLOW', 'GITHUB_JOB')
+    required = ('F553_RUN_ID', 'F553_STARTED_AT', 'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_WORKFLOW', 'GITHUB_JOB', 'GITHUB_REF')
     missing = [key for key in required if not os.environ.get(key)]
     if missing:
         raise RuntimeError('Missing CI run identity: ' + ', '.join(missing))
-    result = {'phase': 'F.5.3-CLOSURE.8-R5.1', 'run_id': os.environ['F553_RUN_ID'],
+    result = {'phase': 'F.5.3-CLOSURE.8-R10', 'evidence_version': 10, 'run_id': os.environ['F553_RUN_ID'],
               'started_at': float(os.environ['F553_STARTED_AT']), 'commit_sha': os.environ['GITHUB_SHA'],
                'workflow_run_id': os.environ['GITHUB_RUN_ID'], 'workflow': os.environ['GITHUB_WORKFLOW'],
-               'job': os.environ['GITHUB_JOB'], 'result': 'BLOCKED',
+               'job': os.environ['GITHUB_JOB'], 'ref': os.environ['GITHUB_REF'], 'result': 'BLOCKED',
                'scope': 'disposable queue recovery and real FAILED/CANCELLED job paths; not FINISHED/HOT/RAW/Storage',
                'realDemAuthorized': False, 'canonicalAuthorized': False,
                'railwayAuthorized': False, 'productionWrites': False}
@@ -281,7 +281,7 @@ def main():
         if not isinstance(user_id, str) or len(user_id) != 36:
             raise RuntimeError('Disposable user creation did not return an identity')
         result['failed_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'failed')
-        result['cancelled_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'aborted')
+        result['cancelled_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'cancelled')
         result['finished_contract'] = finished_contract_probe(env, api_url, key, user_id)
         result['result'] = 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY'
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, RuntimeError) as exc:
@@ -292,6 +292,7 @@ def main():
                 sql(env, f"SELECT pgmq.drop_queue('{queue}');")
             except (OSError, RuntimeError) as exc:
                 result['cleanup_error'] = str(exc)[:200]
+        result['finished_at'] = result['timestamp'] = time.time()
         OUT.write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps({key: result.get(key) for key in ('result', 'error', 'parser_stub_invocation_count', 'archived_count')}))
     return 0 if result['result'] == 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY' and not result.get('cleanup_error') else 1
