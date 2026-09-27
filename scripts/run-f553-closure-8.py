@@ -149,11 +149,12 @@ def main():
     run_id = os.environ.get('F553_RUN_ID') or uuid4().hex
     commit_sha = os.environ.get('GITHUB_SHA')
     workflow_run_id = os.environ.get('GITHUB_RUN_ID')
-    evidence = dict(phase='F.5.3-CLOSURE.8-R7', result='BLOCKED',
+    evidence = dict(phase='F.5.3-CLOSURE.8-R10', evidence_version=10, result='BLOCKED',
                     final_decision='BLOCKED', environment='local_disposable_supabase',
                     run_id=run_id, started_at=started_at,
                     commit_sha=commit_sha, workflow_run_id=workflow_run_id,
-                    workflow_conclusion='NOT_PROVEN',
+                     workflow=os.environ.get('GITHUB_WORKFLOW'), job=os.environ.get('GITHUB_JOB'),
+                     ref=os.environ.get('GITHUB_REF'), workflow_conclusion='NOT_PROVEN',
                     supabase_cli_version=None, postgres_version=None,
                      migration_count=len(MIGRATIONS), applied_versions=[],
                      missing_versions=[], extra_versions=[], duplicate_versions=[],
@@ -169,11 +170,16 @@ def main():
         integration_path = ROOT / 'docs/release-gates/f553-integration-evidence.json'
         if integration_path.exists():
             observed = json.loads(integration_path.read_text())
-            if (observed.get('run_id') == run_id and observed.get('commit_sha') == commit_sha
+            if (observed.get('phase') == evidence['phase']
+                    and observed.get('evidence_version') == evidence['evidence_version']
+                    and observed.get('run_id') == run_id and observed.get('commit_sha') == commit_sha
                     and observed.get('workflow_run_id') == workflow_run_id
                     and observed.get('started_at') == started_at
                      and observed.get('workflow') == os.environ.get('GITHUB_WORKFLOW')
                      and observed.get('job') == os.environ.get('GITHUB_JOB')
+                    and observed.get('ref') == os.environ.get('GITHUB_REF')
+                    and isinstance(observed.get('finished_at'), (int, float))
+                    and observed['finished_at'] >= started_at
                      and observed.get('result') == 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY'):
                 evidence['disposable_queue_recovery'] = observed
                 contract = observed.get('finished_contract', {})
@@ -271,11 +277,10 @@ def main():
         evidence['finished_at'] = time.time()
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
         blocked = [gate for gate, result in evidence['mandatory_gates'].items() if result != 'PASS']
-        if (evidence['full_supabase_install'] == 'PASS' and not blocked
-                and evidence['race_cases_executed'] >= 50 and evidence['failure_cases_executed'] >= 50):
-            evidence['result'] = evidence['final_decision'] = 'CLOSED'
         # An in-progress workflow cannot certify its own conclusion: final_ci
         # must come from independently observed GitHub evidence after completion.
+        # Keep this verifier blocked even if all in-job gates pass; external
+        # attestation of the finished run is a separate prerequisite.
         decision = {key: evidence[key] for key in ('phase', 'final_decision', 'run_id',
                     'started_at', 'finished_at', 'commit_sha', 'workflow_run_id',
                     'workflow_conclusion', 'full_supabase_install', 'migration_count',
@@ -283,7 +288,8 @@ def main():
                     'failure_cases_executed', 'mandatory_gates', 'error')}
         decision.update(railway='LOCKED', real_dem='LOCKED', attempt_9='LOCKED',
                         canonical='LOCKED', realDemAuthorized=False,
-                        canonicalAuthorized=False, blocked_gates=blocked,
+                         canonicalAuthorized=False, railwayAuthorized=False,
+                         productionWrites=False, blocked_gates=blocked,
                          blockers=[{'BLOCKER_CODE': 'F553_R5_INTEGRATED_CI_PROOF_INCOMPLETE',
                                    'COMMAND': 'python3 scripts/run-f553-closure-8.py',
                                    'ACTUAL_OUTPUT': evidence['error'] or 'No verified final CI conclusion or integrated gate evidence',

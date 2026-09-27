@@ -143,11 +143,9 @@ jobs:
       - name: Reset full disposable schema before integration
         run: supabase db reset --local
       - name: Execute disposable queue recovery and existing FAILED / cancelled job paths
-        continue-on-error: true
         run: python3 scripts/f553-integrated-evidence.py
       - name: Verify parser image isolation in this run
         if: always()
-        continue-on-error: true
         run: |
           set -euo pipefail
           docker build --tag gamepro-parser-isolation:f553 services/cs2-demo-parser
@@ -155,7 +153,6 @@ jobs:
           docker image inspect gamepro-parser-isolation:f553 --format '{{.Id}}' > /tmp/f553-image-digest
       - name: Verify parser tests in this run
         if: always()
-        continue-on-error: true
         run: |
           set -euo pipefail
           python3 -m venv /tmp/f553-parser-venv
@@ -168,7 +165,6 @@ jobs:
           bun-version: latest
       - name: Build and check production browser output in this run
         if: always()
-        continue-on-error: true
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
