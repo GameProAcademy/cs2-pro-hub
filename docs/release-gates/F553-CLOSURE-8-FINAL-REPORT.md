@@ -1,6 +1,16 @@
-# F.5.3-CLOSURE.8-R9 — BLOCKED
+# F.5.3-CLOSURE.8-R10 — BLOCKED
 
-## Current R9 decision
+## CURRENT_R10_DECISION
+
+**IMPLEMENTED:** The disposable partial probe and verifier now label newly generated evidence R10, require a matching workflow ref and reject historical integration records. Cancellation is not labelled process abortion. The in-progress verifier cannot declare its own final CI result. Critical checks no longer use `continue-on-error`.
+
+**EXECUTED:** The local verifier exited 1: `supabase` is unavailable in this environment. It recorded 145 source migrations, zero executed race cases and zero executed failure cases. This is not a failed migration. The latest inspected GitHub Quality Gates run, `36299120398`, on historical commit `43a039311ab21a05210f3178c3eaee3f5112b6b3`, ended **failure**. Its 145-migration reset, partial disposable queue/FAILED/CANCELLED probe, Docker image check, parser tests and browser isolation step succeeded; its integrated verifier failed. Artifact `f553-closure-8-disposable-evidence` (ID `10923999270`) is historical, not R10 proof.
+
+**VERIFIED:** Source-level Python syntax, fail-closed local verifier and same-run comparison only. **NOT_PROVEN:** current R10 commit/run/conclusion and integrated FINISHED with RAW/HOT/Storage, job-bound ACK loss and process recovery, parser exactly-once, process abortion, 50 real races, 50 real failures, and independent final seal. **BLOCKED:** 18/18 mandatory gates are unproven for R10. `FINAL_COMMIT`, `FINAL_CI_RUN`, `FINAL_CI_CONCLUSION`, `FINAL_CI_URL`, `FINAL_ARTIFACT_ID` and `FINAL_ARTIFACT_DIGEST` are not asserted.
+
+The existing probe remains partial; no complete R10 integration executor exists. A successful same-commit disposable GitHub run and independently verified post-run conclusion are required before closure. Production and Railway were not changed; `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`. No real DEM, Cache, Attempt 9/10+, Canonical production admission or staged Railway patch was executed.
+
+## Historical R9 decision
 
 **IMPLEMENTED:** The disposable synthetic queue probe now keeps Worker A alive after its persisted claim, kills it with SIGKILL, verifies its signal exit and requires a different Worker B process for archival. The corrected `schema_version=1` and `analysis_version=v1` finalizer fixture remains in place. These are source changes only, not integrated pipeline evidence.
 
