@@ -45,6 +45,63 @@ def sql(env, statement):
     return result.stdout.strip()
 
 
+def sql_rejects(env, statement, expected):
+    """Check a rejected operation without treating unrelated SQL errors as proof."""
+    result = subprocess.run(['psql', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', statement],
+                            env=env, cwd=ROOT, text=True, capture_output=True, timeout=30)
+    if result.returncode == 0 or expected not in result.stderr:
+        raise RuntimeError('Disposable finalizer did not reject the missing precondition as expected')
+
+
+def finished_contract_probe(env, api_url, key, user_id):
+    """Prove only the existing finalizer contract; this is NOT Canonical admission or RAW proof."""
+    upload_id = str(uuid4())
+    digest = hashlib.sha256(upload_id.encode()).hexdigest()
+    sql(env, "INSERT INTO public.uploads(id,user_id,type,file_name,file_size,demo_sha256,status) "
+        f"VALUES ('{upload_id}','{user_id}','demo','disposable-contract.dem',64,'{digest}','pending');")
+    enqueued = json.loads(sql(env, f"SELECT public.enqueue_demo_job('{upload_id}'::uuid,'{user_id}'::uuid);"))
+    if enqueued.get('queued') is not True:
+        raise RuntimeError('Disposable contract enqueue failed')
+    job_id = enqueued['job_id']
+    claimed = json.loads(sql(env, "SELECT public.claim_demo_parse_message('f553-contract-worker',60,1);"))
+    if (claimed.get('status') != 'claimed' or claimed.get('job_id') != job_id
+            or claimed.get('upload_id') != upload_id or claimed.get('demo_sha256') != digest):
+        raise RuntimeError('Disposable contract claim identity mismatch')
+    sql_rejects(env, f"SELECT public.finish_demo_job_processed('{job_id}'::uuid,'{{}}'::jsonb);",
+                'CANONICAL_NOT_PERSISTED')
+    if sql(env, f"SELECT status FROM public.demo_jobs WHERE id='{job_id}';") != 'processing':
+        raise RuntimeError('Rejected finalization changed the job')
+    player_id = sql(env, f"SELECT id FROM public.player_profiles WHERE user_id='{user_id}' LIMIT 1;")
+    if not player_id:
+        raise RuntimeError('Disposable auth user has no player profile')
+    # This row exists only after the disposable stack's clean reset. It supplies
+    # the existing FK/terminalization precondition, never a real parsed match.
+    match_id = str(uuid4())
+    source_id = str(uuid4())
+    sql(env, "INSERT INTO public.matches(id,upload_id,player_id) "
+        f"VALUES ('{match_id}','{upload_id}','{player_id}'); "
+        "INSERT INTO public.match_sources(id,match_id,source,source_contract_version,fetched_at,upload_id,metadata) "
+        f"VALUES ('{source_id}','{match_id}','demo','DISPOSABLE_TERMINALIZATION_FIXTURE',now(),'{upload_id}',"
+        "'{\"disposable_fixture\":true}'::jsonb);")
+    if sql(env, "SELECT public.finish_demo_job_processed("
+           f"'{job_id}'::uuid,'{{\"match_id\":\"{match_id}\"}}'::jsonb);") != 't':
+        raise RuntimeError('Existing finalizer rejected disposable precondition')
+    if sql(env, f"SELECT public.finish_demo_job_processed('{job_id}'::uuid,'{{}}'::jsonb);") != 't':
+        raise RuntimeError('Finalizer replay was not idempotent')
+    state = sql(env, f"SELECT status,match_id FROM public.demo_jobs WHERE id='{job_id}';")
+    http_status, rows = local_http(api_url, key, f'/rest/v1/demo_jobs?id=eq.{job_id}&select=id,status,match_id')
+    if (state != f'processed|{match_id}' or http_status != 200 or len(rows) != 1
+            or rows[0].get('status') != 'processed' or rows[0].get('match_id') != match_id):
+        raise RuntimeError('Finalizer result did not match the local PostgREST read')
+    # Finalization and ACK are distinct contracts. This probe cannot prove ACK.
+    return {'result': 'PASS_DISPOSABLE_TERMINALIZATION_CONTRACT_ONLY',
+            'disposable_fixture': True, 'canonical_admission': False,
+            'raw_committed': False, 'hot_persisted': False, 'queue_ack_proven': False,
+            'job_id': job_id, 'upload_id': upload_id, 'match_id': match_id,
+            'message_id': claimed['message_id'], 'finalizer_replay_idempotent': True,
+            'missing_precondition_rejected': True, 'postgrest_status': http_status}
+
+
 def worker(env, queue, identity, should_ack):
     # Real pgmq visibility, separate OS process, persisted idempotency key.
     message = sql(env, f"SELECT msg_id FROM pgmq.read('{queue}', 1, 1);")
@@ -144,7 +201,8 @@ def main():
                'workflow_run_id': os.environ['GITHUB_RUN_ID'], 'workflow': os.environ['GITHUB_WORKFLOW'],
                'job': os.environ['GITHUB_JOB'], 'result': 'BLOCKED',
                'scope': 'disposable queue recovery and real FAILED/CANCELLED job paths; not FINISHED/HOT/RAW/Storage',
-              'realDemAuthorized': False, 'canonicalAuthorized': False}
+               'realDemAuthorized': False, 'canonicalAuthorized': False,
+               'railwayAuthorized': False, 'productionWrites': False}
     queue = 'f553_' + uuid4().hex
     created = False
     try:
@@ -196,6 +254,7 @@ def main():
             raise RuntimeError('Disposable user creation did not return an identity')
         result['failed_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'failed')
         result['cancelled_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'aborted')
+        result['finished_contract'] = finished_contract_probe(env, api_url, key, user_id)
         result['result'] = 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY'
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, RuntimeError) as exc:
         result['error'] = str(exc)[:240]
