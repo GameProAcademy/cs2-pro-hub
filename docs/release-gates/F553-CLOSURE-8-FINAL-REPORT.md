@@ -1,5 +1,11 @@
 # F.5.3-CLOSURE.8-R11 — BLOCKED
 
+## CURRENT_R11_1_DECISION
+
+**BLOCKED — no completed R11.1 workflow execution.** A separate disposable-only R11.1 producer and independent fail-closed verifier are prepared. Standalone queue, local Storage byte read-back, PostgREST and existing FAILED terminal RPC are diagnostic operations, not integrated parser→RAW→HOT→Storage→ACK proof. The producer deliberately leaves integrated gates NOT_PROVEN, including standalone probes without job binding. No R11.1 race/failure/RAW-corruption matrix was produced, and no completed same-commit GitHub workflow, artifact digest or independent post-completion seal exists. No R11.1 gate is VERIFIED. The earlier runs below are HISTORICAL, never R11.1 PASS evidence. `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`. Production, Railway, real DEM, Cache, Attempt 9/10+ and Canonical remain locked.
+
+**Blocker:** R11.1 still requires a genuine disposable parser boundary and job-bound RAW/HOT/Storage lifecycle, worker A/B recovery, executed 16/50/50 cases and post-completion attestation. The current workspace cannot execute the required disposable Docker stack or trigger a GitHub workflow; source preparation is not operational verification.
+
 ## CURRENT_R11_DECISION
 
 **BLOCKED — not executed or closed.** The latest independently inspected completed GitHub Quality Gates run was `36299761527`, commit `c8d891b808ce6d880683781bd55ab14117e76636`, conclusion `failure`, URL `https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/36299761527`. Its disposable-stack start, full reset, partial queue/FAILED/CANCELLED probes, parser image, parser tests and browser checks succeeded, but the integrated evidence verification step failed. Its historical artifact `f553-closure-8-disposable-evidence` has ID `10925505189` and GitHub-reported digest `sha256:13440ab7fa69a6be17da895372a26500e5fbf0625f1783e77af5df28f49c9e02`; it cannot supply R11 PASS evidence. The latest local code is not attested by that run.
