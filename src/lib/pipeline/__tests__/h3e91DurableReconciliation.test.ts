@@ -158,6 +158,12 @@ describe("durable execution reconciliation", () => {
       { ...persistedHotResult, match_id: "88888888-8888-5888-8888-888888888888" },
     ],
     ["partial persisted HOT result", {}, { ...persistedHotResult, status: "incomplete" }],
+    [
+      "mismatched HOT schema contract",
+      {},
+      { ...persistedHotResult, source_contract_version: "2" },
+    ],
+    ["mismatched HOT parser version", {}, { ...persistedHotResult, source_version: "0.41.0" }],
   ])("does not archive a processed job with %s", async (_case, changedJob, persistedResult) => {
     readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
     maybeSingle.mockResolvedValueOnce({

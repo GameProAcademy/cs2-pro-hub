@@ -306,6 +306,9 @@ export async function reconcileDurableExecution(
         persistedResult.source !== "demo" ||
         typeof persistedResult.source_contract_version !== "string" ||
         persistedResult.source_contract_version.length === 0 ||
+        persistedResult.source_contract_version !== String(job.schema_version) ||
+        typeof persistedResult.source_version !== "string" ||
+        persistedResult.source_version !== job.parser_version ||
         persistedResult.status !== "complete"
       ) {
         return { status: "reconciliation_required", lifecycle: "FINISHED" };
