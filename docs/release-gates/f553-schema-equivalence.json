@@ -1,135 +1,16 @@
 {
-  "disposable_schema_digest": "1922edcdfc55c72ee4c51d251f26f4cda1d1c395629a87199f24c99752ff4533",
-  "full_schema_equivalence": "NOT_PROVEN",
-  "live_schema_digest": "4adb83d11d1574ce274b4d5266a52eb7d454090fc955dc9723d63d88656f7822",
-  "mismatches": [
-    {
-      "disposable": {
-        "anon": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "authenticated": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        },
-        "sandbox_exec": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "service_role": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        }
-      },
-      "field": "grants",
-      "live": {
-        "anon": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "authenticated": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        },
-        "sandbox_exec": {
-          "delete": false,
-          "insert": true,
-          "select": true,
-          "update": false
-        },
-        "service_role": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        }
-      },
-      "table": "raw_evidence_artifacts"
-    },
-    {
-      "disposable": "lovable",
-      "field": "owner",
-      "live": "postgres",
-      "table": "raw_evidence_artifacts"
-    },
-    {
-      "disposable": {
-        "anon": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "authenticated": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        },
-        "sandbox_exec": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "service_role": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        }
-      },
-      "field": "grants",
-      "live": {
-        "anon": {
-          "delete": false,
-          "insert": false,
-          "select": false,
-          "update": false
-        },
-        "authenticated": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        },
-        "sandbox_exec": {
-          "delete": false,
-          "insert": true,
-          "select": true,
-          "update": false
-        },
-        "service_role": {
-          "delete": true,
-          "insert": true,
-          "select": true,
-          "update": true
-        }
-      },
-      "table": "raw_evidence_chunks"
-    },
-    {
-      "disposable": "lovable",
-      "field": "owner",
-      "live": "postgres",
-      "table": "raw_evidence_chunks"
-    }
+  "desired_security_state": "SOURCE_EXCLUDES_LEGACY_SANDBOX_GRANT",
+  "disposable_legacy_grants_only": [
+    "sandbox_exec:SELECT",
+    "sandbox_exec:INSERT"
   ],
-  "phase": "F.5.3-CLOSURE.6",
-  "result": "BLOCKED",
+  "disposable_schema_digest": "4adb83d11d1574ce274b4d5266a52eb7d454090fc955dc9723d63d88656f7822",
+  "full_schema_equivalence": "NOT_PROVEN",
+  "live_equivalence": "PASS",
+  "live_schema_digest": "4adb83d11d1574ce274b4d5266a52eb7d454090fc955dc9723d63d88656f7822",
+  "mismatches": [],
+  "phase": "F.5.3-CLOSURE.7",
+  "result": "PASS",
   "scope": "RAW tables only; not full application schema",
   "source_schema_digest": "9f4803fa6907a64f106f074319c3e59da918e98cc549979750a2d374f4c9ac03",
   "source_version": "20260926070000_reconcile_raw_evidence_schema.sql"
