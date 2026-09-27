@@ -1,5 +1,5 @@
 {
-  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8-R1",
+  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8-R2",
   "final_decision": "BLOCKED",
   "source_lineage": "NOT_PROVEN",
   "full_schema_install": "NOT_PROVEN",
@@ -25,7 +25,7 @@
   "integrated_failure_matrix_passed": false,
   "docker": "NOT_PROVEN",
   "browser": "NOT_PROVEN",
-  "parser_tests": "239_PASS_10_SKIP_R1_LOCAL",
+  "parser_tests": "NOT_EXECUTED_R2; 239_PASS_10_SKIP_R1_LOCAL_IS_NOT_R2_PROOF",
   "final_ci": "NOT_PROVEN",
   "FINAL_COMMIT": "NOT_VERIFIED_FINAL_COMMIT",
   "FINAL_CI_RUN": "NOT_PROVEN",
@@ -36,6 +36,10 @@
   "canonical": "LOCKED",
   "realDemAuthorized": false,
   "canonicalAuthorized": false,
+  "r2_attempted_commit": "b7991b875fd6c1fce969c207416b76641d22a9cd",
+  "r2_supabase_cli_version": "2.118.0",
+  "r2_stack_start": "FAIL: failed to inspect container health: docker: command not found (podman also not found)",
+  "r2_full_schema_install": "NOT_PROVEN; 0 of 145 applied in a full local stack",
   "production_read_only": {
     "ledger": 0,
     "raw_artifacts": 2,
@@ -44,39 +48,39 @@
   },
   "blockers": [
     {
-      "BLOCKER_CODE": "F553_C8_FULL_STACK_UNEXECUTED",
-      "COMMAND": "python3 scripts/run-f553-closure-8.py",
-      "ACTUAL_OUTPUT": "{\"result\":\"NOT_PROVEN\",\"full_supabase_install\":\"NOT_PROVEN\",\"migration_count\":145,\"failed_migration\":null,\"error\":\"[Errno 2] No such file or directory: 'supabase'\",\"race_cases_executed\":0,\"failure_cases_executed\":0}",
+      "BLOCKER_CODE": "F553_C8_R2_LOCAL_CONTAINER_ENGINE_ABSENT",
+      "COMMAND": "/tmp/f553-r2/supabase start; PATH=/tmp/f553-r2:$PATH python3 scripts/run-f553-closure-8.py",
+      "ACTUAL_OUTPUT": "Supabase CLI 2.118.0 installed; supabase start: failed to inspect container health: docker: command not found (podman also not found); verifier exit 1: Local disposable stack not running; full-stack reset was not executed",
       "FILE": "scripts/run-f553-closure-8.py",
-      "LINE": 100,
-      "MISSING_PROOF": "Clean installation of all 145 migrations in a real disposable full stack. The plain PostgreSQL auth-schema error is not a full-stack failure.",
-      "NEXT_ACTION": "Run the pinned full-stack CI job on the final revision, collect its clean reset outcome and fix any source-only migration errors."
+      "LINE": 148,
+      "MISSING_PROOF": "Clean installation of all 145 migrations in real disposable services. No SQL migration failure may be asserted before a full-stack reset.",
+      "NEXT_ACTION": "Execute the pinned workflow on a Docker-enabled ubuntu-latest runner, collect its real reset output and repair any proven SQL errors."
     },
     {
-      "BLOCKER_CODE": "F553_C8_INTEGRATED_SCENARIOS_UNIMPLEMENTED",
+      "BLOCKER_CODE": "F553_C8_R2_INTEGRATED_SCENARIOS_UNIMPLEMENTED",
       "COMMAND": "python3 scripts/run-f553-closure-8.py",
-      "ACTUAL_OUTPUT": "\"race_cases_executed\":0,\"failure_cases_executed\":0; mandatory_gates remain NOT_PROVEN",
+      "ACTUAL_OUTPUT": "Real disposable pgmq visibility/ACK probe added but cannot execute without stack; race_cases_executed=0; failure_cases_executed=0; all integrated gates remain NOT_PROVEN",
       "FILE": "scripts/run-f553-closure-8.py",
-      "LINE": 145,
+      "LINE": 57,
       "MISSING_PROOF": "Real pgmq/PostgREST/Storage FINISHED recovery, ACK-loss fresh-worker, FAILED/ABORTED, identity/integrity, exactly-once and 50 distinct executed races/failures. Service presence checks are not integrated proofs.",
       "NEXT_ACTION": "Implement and execute a local-stack-only integration harness with persisted per-case before/after evidence, then rerun the clean stack gate."
     },
     {
-      "BLOCKER_CODE": "F553_C8_FINAL_CI_AND_OUTPUT_UNVERIFIED",
+      "BLOCKER_CODE": "F553_C8_R2_FINAL_CI_AND_OUTPUT_UNVERIFIED",
       "COMMAND": "GitHub Actions F553 CLOSURE 8 FINAL on the exact final revision",
-      "ACTUAL_OUTPUT": "No final-revision CI run ID or conclusion was observed; Docker image and production-output browser were not executed in this revision.",
+      "ACTUAL_OUTPUT": "No GitHub workflow run ID or conclusion accessible for this revision; Docker image and production-output browser were not executed in R2.",
       "FILE": ".github/workflows/quality-gates.yml",
-      "LINE": 112,
+      "LINE": 134,
       "MISSING_PROOF": "Exact-final-revision successful CI, Docker runtime isolation, and production-output browser verification.",
       "NEXT_ACTION": "Run the full workflow after integrated harness completion; collect run ID, conclusion and browser/Docker evidence. Do not promote on configured-only CI."
     }
   ],
   "plain_postgres_probe": "FAIL_NOT_FULL_STACK",
-  "full_stack_probe": "NOT_EXECUTED",
+  "full_stack_probe": "START_FAILED_BEFORE_RESET",
   "local_executed": {
-    "parser_tests": "239 passed, 10 skipped",
+    "parser_tests": "NOT_EXECUTED_R2",
     "writer_only": "30 lifecycle cases and 50 stress executions",
-    "full_stack": "NOT_EXECUTED",
+    "full_stack": "START_FAILED_DOCKER_ABSENT",
     "integrated_races": 0,
     "integrated_failures": 0
   }
