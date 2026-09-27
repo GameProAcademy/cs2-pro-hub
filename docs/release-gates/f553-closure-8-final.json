@@ -1,9 +1,9 @@
 {
-  "phase": "F.5.3-CLOSURE.8-R4",
+  "phase": "F.5.3-CLOSURE.8-R5",
   "final_decision": "BLOCKED",
-  "run_id": "a796d77d7983459e828c6e0a147f1803",
-  "started_at": 1790484279.3055234,
-  "finished_at": 1790484279.3073647,
+  "run_id": "4be3e7fdd44942248095aa53905e87ae",
+  "started_at": 1790485163.6410825,
+  "finished_at": 1790485163.6421137,
   "commit_sha": null,
   "workflow_run_id": null,
   "workflow_conclusion": "NOT_PROVEN",
@@ -62,13 +62,13 @@
   ],
   "blockers": [
     {
-      "BLOCKER_CODE": "F553_R4_NO_VERIFIED_CI_EXECUTION",
+      "BLOCKER_CODE": "F553_R5_INTEGRATED_CI_PROOF_INCOMPLETE",
       "COMMAND": "python3 scripts/run-f553-closure-8.py",
       "ACTUAL_OUTPUT": "[Errno 2] No such file or directory: 'supabase'",
       "FILE": "scripts/run-f553-closure-8.py",
       "LINE": 173,
       "MISSING_PROOF": "pgmq, postgrest, storage, finished, ack_loss, fresh_worker, failed, aborted, queue_idempotency, hot_raw_identity, raw_integrity, parser_exactly_once, race_matrix, failure_matrix, docker, browser, parser_tests, final_ci",
-      "NEXT_ACTION": "Execute the full disposable integration harness and verify the final GitHub Actions run on the exact commit."
+      "NEXT_ACTION": "Execute and verify all full-stack lifecycle, matrix, Docker, browser, and parser gates in GitHub Actions on the exact commit."
     }
   ]
 }
