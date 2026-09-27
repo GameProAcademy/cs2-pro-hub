@@ -96,6 +96,10 @@ def real_job_terminal_probe(env, api_url, key, user_id, outcome):
         terminal = json.loads(sql(env, "SELECT public.fail_demo_parse_message("
             f"'{job_id}'::uuid,{message_id},0,'f553-failed','PARSER_STUB_FAILURE','disposable fixture',true);"))
         expected = 'failed'
+        stale = json.loads(sql(env, "SELECT public.fail_demo_parse_message("
+            f"'{job_id}'::uuid,{message_id},0,'f553-failed','PARSER_STUB_FAILURE','duplicate delivery',true);"))
+        if stale.get('accepted') is not False:
+            raise RuntimeError('A stale worker changed an already terminal job')
     else:
         cancellation = json.loads(sql(env, f"SELECT public.request_demo_job_cancel('{job_id}'::uuid,'{user_id}'::uuid);"))
         if cancellation.get('status') != 'cancel_requested':
@@ -111,6 +115,11 @@ def real_job_terminal_probe(env, api_url, key, user_id, outcome):
         terminal = {'accepted': rejected.get('status') == 'rejected', 'status': 'cancelled'}
         expected = 'cancelled'
     after = sql(env, f"SELECT status,queue_message_id,dispatch_attempt FROM public.demo_jobs WHERE id='{job_id}';")
+    if outcome == 'failed':
+        # An identical retry cannot produce a second terminal transition.
+        repeated = sql(env, f"SELECT status,queue_message_id,dispatch_attempt FROM public.demo_jobs WHERE id='{job_id}';")
+        if repeated != after:
+            raise RuntimeError('Terminal job changed after stale worker retry')
     archived = sql(env, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={message_id};")
     http_status, rows = local_http(api_url, key, f'/rest/v1/demo_jobs?id=eq.{job_id}&select=id,status,upload_id')
     if (terminal.get('accepted') is not True or terminal.get('status') != expected
@@ -120,6 +129,7 @@ def real_job_terminal_probe(env, api_url, key, user_id, outcome):
     return {'job_id': job_id, 'upload_id': upload_id, 'message_id': message_id,
             'attempt': claimed['attempt'], 'status': expected, 'archive_count': int(archived),
             'postgrest_status': http_status, 'duplicate_enqueue_rejected': True,
+             'stale_terminal_retry_rejected': outcome == 'failed',
             'before_digest': hashlib.sha256(before.encode()).hexdigest(),
             'after_digest': hashlib.sha256(after.encode()).hexdigest(), 'observed_at': time.time()}
 
