@@ -1,8 +1,14 @@
--- Native scheduler for the CS2 demo pipeline.
+-- Native scheduler foundation for the CS2 demo pipeline.
 --
--- Lovable Cloud's Jobs surface is backed by pg_cron. The scheduler credential is
--- generated inside the private database schema and is never committed to Git
--- or embedded in the cron command itself.
+-- Lovable Cloud's production scheduler is backed by pg_cron. The scheduler
+-- credential is generated inside the private database schema and is never
+-- committed to Git or embedded in a queue message.
+--
+-- IMPORTANT: the actual cron job is intentionally NOT created here.
+-- This migration must be safe and side-effect free on a clean disposable
+-- Supabase stack used by CI. Creating a job here would target the production
+-- gamepro.network endpoint from a test database. Production scheduler
+-- activation is an explicit deployment operation, not schema installation.
 
 CREATE SCHEMA IF NOT EXISTS private;
 
@@ -41,33 +47,6 @@ REVOKE ALL ON FUNCTION public.verify_pipeline_cron_secret(text)
 GRANT EXECUTE ON FUNCTION public.verify_pipeline_cron_secret(text)
   TO service_role;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM cron.job
-    WHERE jobname = 'cs2-demo-pipeline'
-  ) THEN
-    PERFORM cron.schedule(
-      'cs2-demo-pipeline',
-      '* * * * *',
-      $job$
-        SELECT net.http_post(
-          url := 'https://gamepro.network/api/public/pipeline-cron',
-          headers := jsonb_build_object(
-            'Content-Type', 'application/json',
-            'Authorization',
-              'Bearer ' || (
-                SELECT token
-                FROM private.pipeline_scheduler_secret
-                WHERE id = true
-              )
-          ),
-          body := '{}'::jsonb,
-          timeout_milliseconds := 60000
-        ) AS request_id;
-      $job$
-    );
-  END IF;
-END
-$$;
+-- Production activation must create the cron job explicitly after verifying
+-- the target environment, endpoint and secret. Never schedule production HTTP
+-- traffic as a side effect of `supabase db reset` or CI migration replay.
