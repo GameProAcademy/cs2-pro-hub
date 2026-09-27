@@ -19,4 +19,4 @@
 - Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
 - Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.
 - Read H3E91 lifecycle only through the minimal service-role RPC; durable replay must reconcile queue state without rerunning the parser or exposing ledger rows.
-- Require committed RAW artifact identity and integrity before FINISHED durable replay can archive a queue message; a terminal job flag alone is not output evidence.
+- Require committed RAW identity/integrity before FINISHED archive; compare RAW schema read-only live vs disposable, never promote source to parity.
