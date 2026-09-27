@@ -108,3 +108,29 @@ jobs:
           tests/test_raw_evidence.py
           tests/test_raw_manifest_audit.py
           tests/test_runtime_contract.py
+
+  f553-closure-8-final:
+    name: F553 CLOSURE 8 FINAL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client and server
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+      - name: Start disposable Supabase services
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Install full source chain in disposable stack
+        run: |
+          supabase start
+          supabase db reset --local
+      - name: Fail closed until integrated evidence is executed
+        run: python3 scripts/run-f553-closure-8.py
+      - name: Tear down disposable services
+        if: always()
+        run: supabase stop --no-backup

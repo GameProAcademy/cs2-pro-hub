@@ -1,0 +1,16 @@
+{
+  "result": "FAIL",
+  "scope": "isolated PostgreSQL migration probe; not full Supabase stack",
+  "migration_count": 145,
+  "applied_versions": [],
+  "failed_migration": "20260903012041_8f9d9da6-b7ae-44a5-94eb-f292e933310e.sql",
+  "error": "ERROR:  schema \"auth\" does not exist",
+  "schema_digest": null,
+  "objects": null,
+  "pgmq": "NOT_PROVEN",
+  "postgrest": "NOT_PROVEN",
+  "storage": "NOT_PROVEN",
+  "cluster_destroyed": true,
+  "postgres_version": "17.9",
+  "shutdown_success": true
+}
