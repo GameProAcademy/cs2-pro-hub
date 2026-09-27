@@ -5,6 +5,9 @@
 -- fail-closed correction before any real DEM is admitted.
 
 ALTER TABLE public.r5_forensic_staging
+  DROP CONSTRAINT IF EXISTS r5_forensic_staging_storage_path_relative_check;
+
+ALTER TABLE public.r5_forensic_staging
   ADD CONSTRAINT r5_forensic_staging_storage_path_relative_check
   CHECK (
     storage_path = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87/0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d.dem'
