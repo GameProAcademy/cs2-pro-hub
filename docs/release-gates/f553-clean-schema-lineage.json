@@ -1,0 +1,48 @@
+{
+  "phase": "F.5.3-CLOSURE.7",
+  "scope": "static RAW dependency order only",
+  "definitions": {
+    "raw_evidence_artifacts": [
+      "20260926070000_reconcile_raw_evidence_schema.sql"
+    ],
+    "raw_evidence_chunks": [
+      "20260926070000_reconcile_raw_evidence_schema.sql"
+    ]
+  },
+  "references": {
+    "raw_evidence_artifacts": [
+      {
+        "file": "20260919110000_g5_rf2_canonical_integrity.sql",
+        "first_line": 190
+      },
+      {
+        "file": "20260919204757_ad4e2032-514d-45e1-8d5f-91cccbe8d3d5.sql",
+        "first_line": 104
+      },
+      {
+        "file": "20260921055331_3b3c9cb0-0872-49be-9693-1e60aa6d51c7.sql",
+        "first_line": 117
+      },
+      {
+        "file": "20260921055555_202993af-f5e4-4908-bc94-54882472b68d.sql",
+        "first_line": 36
+      },
+      {
+        "file": "20260926070000_reconcile_raw_evidence_schema.sql",
+        "first_line": 6
+      }
+    ],
+    "raw_evidence_chunks": [
+      {
+        "file": "20260926070000_reconcile_raw_evidence_schema.sql",
+        "first_line": 32
+      }
+    ]
+  },
+  "violations": [
+    "raw_evidence_artifacts: first reference 20260919110000_g5_rf2_canonical_integrity.sql:190 precedes definition 20260926070000_reconcile_raw_evidence_schema.sql"
+  ],
+  "source_lineage": "FAIL",
+  "full_schema_install": "NOT_PROVEN",
+  "note": "Static ordering cannot prove a clean migration chain or integrated services."
+}

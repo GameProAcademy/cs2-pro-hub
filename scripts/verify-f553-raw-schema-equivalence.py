@@ -79,8 +79,11 @@ def main():
             return invoke(user + ['psql', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1',
                                   '-h', str(base), '-p', str(port), '-d', 'postgres', '-c', query],
                           env=local_env)
-        sql("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE ROLE sandbox_exec; CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$; CREATE TABLE public.uploads(id uuid PRIMARY KEY); CREATE TABLE public.demo_jobs(id uuid PRIMARY KEY);")
+        sql("CREATE ROLE postgres; CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE ROLE sandbox_exec; CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$; CREATE TABLE public.uploads(id uuid PRIMARY KEY); CREATE TABLE public.demo_jobs(id uuid PRIMARY KEY);")
         sql(SOURCE.read_text())
+        # Reproduce historical live metadata ONLY in the disposable catalog.
+        # Neither owner nor legacy sandbox privileges belong to desired source policy.
+        sql("ALTER TABLE public.raw_evidence_artifacts OWNER TO postgres; ALTER TABLE public.raw_evidence_chunks OWNER TO postgres; GRANT SELECT, INSERT ON public.raw_evidence_artifacts, public.raw_evidence_chunks TO sandbox_exec;")
         disposable = json.loads(sql(CATALOG))
     finally:
         if started:
@@ -92,10 +95,13 @@ def main():
             if live[table][field] != disposable[table].get(field):
                 mismatch.append({'table': table, 'field': field,
                                  'live': live[table][field], 'disposable': disposable[table].get(field)})
-    result = {'phase': 'F.5.3-CLOSURE.6', 'scope': snapshot['scope'],
+    result = {'phase': 'F.5.3-CLOSURE.7', 'scope': snapshot['scope'],
               'source_version': SOURCE.name, 'source_schema_digest': hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
               'live_schema_digest': digest(live), 'disposable_schema_digest': digest(disposable),
-              'mismatches': mismatch, 'result': 'PASS' if not mismatch else 'BLOCKED',
+               'mismatches': mismatch, 'result': 'PASS' if not mismatch else 'BLOCKED',
+               'live_equivalence': 'PASS' if not mismatch else 'FAIL',
+               'desired_security_state': 'SOURCE_EXCLUDES_LEGACY_SANDBOX_GRANT',
+               'disposable_legacy_grants_only': ['sandbox_exec:SELECT', 'sandbox_exec:INSERT'],
               'full_schema_equivalence': 'NOT_PROVEN'}
     write(OUT / 'f553-schema-equivalence.json', result)
     print(json.dumps({'result': result['result'], 'mismatch_fields': [f"{m['table']}.{m['field']}" for m in mismatch],
