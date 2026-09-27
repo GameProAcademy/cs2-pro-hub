@@ -10,9 +10,11 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-full-schema-install.json'
@@ -52,6 +54,49 @@ def query(db_url, sql):
     return proc.stdout.strip()
 
 
+def local_queue_probe(db_url):
+    """Exercise real disposable pgmq; never connects outside loopback."""
+    if not local_url(db_url, {54322}):
+        raise RuntimeError('Refused non-local queue endpoint')
+    parsed = urlsplit(db_url)
+    env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
+    env.update(PGHOST=parsed.hostname, PGPORT=str(parsed.port),
+               PGUSER=parsed.username or 'postgres', PGPASSWORD=parsed.password or '',
+               PGDATABASE=parsed.path.lstrip('/') or 'postgres',
+               PGOPTIONS='-c statement_timeout=15000')
+    queue = 'f553_' + uuid4().hex
+    def sql(statement):
+        proc = subprocess.run(['psql', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', statement],
+                              cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
+        if proc.returncode:
+            raise RuntimeError('Disposable queue operation failed: ' +
+                               next((line[:220] for line in proc.stderr.splitlines() if 'ERROR:' in line),
+                                    'unknown database error'))
+        return proc.stdout.strip()
+    created = False
+    try:
+        sql(f"SELECT pgmq.create('{queue}');")
+        created = True
+        message_id = sql(f"SELECT pgmq.send('{queue}', '{{\"fixture\":\"SYNTHETIC_INTEGRATION_FIXTURE\"}}'::jsonb);")
+        if not message_id.isdigit():
+            raise RuntimeError('Queue did not return a message ID')
+        first = sql(f"SELECT msg_id FROM pgmq.read('{queue}', 1, 1);")
+        hidden = sql(f"SELECT msg_id FROM pgmq.read('{queue}', 1, 1);")
+        time.sleep(2)
+        reappeared = sql(f"SELECT msg_id FROM pgmq.read('{queue}', 1, 1);")
+        archived = sql(f"SELECT pgmq.archive('{queue}', {message_id});")
+        time.sleep(2)
+        after_ack = sql(f"SELECT msg_id FROM pgmq.read('{queue}', 1, 1);")
+        if (first, hidden, reappeared, archived, after_ack) != (message_id, '', message_id, 't', ''):
+            raise RuntimeError('Disposable queue visibility or ACK invariant failed')
+        return {'result': 'PASS_DISPOSABLE_QUEUE_ONLY', 'message_id': message_id,
+                'visibility_hidden': True, 'reappeared': True, 'archive_ack': True,
+                'absent_after_ack': True}
+    finally:
+        if created:
+            sql(f"SELECT pgmq.drop_queue('{queue}');")
+
+
 def http_health(url, key, path):
     request = urllib.request.Request(url.rstrip('/') + path,
                                      headers={'apikey': key, 'Authorization': 'Bearer ' + key})
@@ -84,7 +129,7 @@ def main():
                      missing_versions=[], extra_versions=[], duplicate_versions=[],
                     failed_migration=None, failed_migration_line=None, error=None,
                     schema_digest=None, auth='NOT_PROVEN', storage='NOT_PROVEN',
-                    postgrest='NOT_PROVEN', pgmq='NOT_PROVEN', cluster_destroyed=False,
+                     postgrest='NOT_PROVEN', pgmq='NOT_PROVEN', pgmq_execution='NOT_PROVEN', cluster_destroyed=False,
                     plain_postgres_probe='FAIL_NOT_FULL_STACK',
                     full_supabase_install='NOT_PROVEN',
                     race_cases_executed=executed_count('race'),
@@ -125,6 +170,8 @@ def main():
         evidence['auth'] = 'PASS' if query(db_url, "SELECT to_regclass('auth.users') IS NOT NULL;") == 't' else 'FAIL'
         evidence['storage'] = 'PASS_SERVICE_PRESENT' if query(db_url, "SELECT to_regclass('storage.objects') IS NOT NULL;") == 't' else 'FAIL'
         evidence['pgmq'] = 'PASS_EXTENSION_PRESENT' if query(db_url, "SELECT count(*) FROM pg_extension WHERE extname='pgmq';") == '1' else 'FAIL'
+        if evidence['pgmq'] == 'PASS_EXTENSION_PRESENT':
+            evidence['pgmq_execution'] = local_queue_probe(db_url)
         evidence['postgrest'] = http_health(api_url, key, '/rest/v1/')
         storage_http = http_health(api_url, key, '/storage/v1/bucket')
         evidence['storage_http'] = storage_http
