@@ -18,6 +18,7 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-full-schema-install.json'
+DECISION_OUT = ROOT / 'docs/release-gates/f553-closure-8-final.json'
 MIGRATIONS = sorted((ROOT / 'supabase/migrations').glob('*.sql'))
 MANDATORY = ('pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
              'failed', 'aborted', 'queue_idempotency', 'hot_raw_identity',
@@ -233,6 +234,23 @@ def main():
     finally:
         evidence['finished_at'] = time.time()
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
+        blocked = [gate for gate, result in evidence['mandatory_gates'].items() if result != 'PASS']
+        decision = {key: evidence[key] for key in ('phase', 'final_decision', 'run_id',
+                    'started_at', 'finished_at', 'commit_sha', 'workflow_run_id',
+                    'workflow_conclusion', 'full_supabase_install', 'migration_count',
+                    'applied_versions', 'schema_digest', 'race_cases_executed',
+                    'failure_cases_executed', 'mandatory_gates', 'error')}
+        decision.update(railway='LOCKED', real_dem='LOCKED', attempt_9='LOCKED',
+                        canonical='LOCKED', realDemAuthorized=False,
+                        canonicalAuthorized=False, blocked_gates=blocked,
+                        blockers=[{'BLOCKER_CODE': 'F553_R4_NO_VERIFIED_CI_EXECUTION',
+                                   'COMMAND': 'python3 scripts/run-f553-closure-8.py',
+                                   'ACTUAL_OUTPUT': evidence['error'] or 'No verified final CI conclusion or integrated gate evidence',
+                                   'FILE': 'scripts/run-f553-closure-8.py',
+                                   'LINE': 173,
+                                   'MISSING_PROOF': ', '.join(blocked),
+                                   'NEXT_ACTION': 'Execute the full disposable integration harness and verify the final GitHub Actions run on the exact commit.'}])
+        DECISION_OUT.write_text(json.dumps(decision, indent=2) + '\n')
         print(json.dumps({key: evidence[key] for key in ('result', 'full_supabase_install',
                          'migration_count', 'failed_migration', 'error',
                          'race_cases_executed', 'failure_cases_executed')}))
