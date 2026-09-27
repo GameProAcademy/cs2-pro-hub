@@ -44,7 +44,7 @@ def query(db_url, sql):
     env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
     env.update(PGHOST=parsed.hostname, PGPORT=str(parsed.port),
                PGUSER=parsed.username or 'postgres', PGPASSWORD=parsed.password or '',
-               PGDATABASE=parsed.path.lstrip('/') or 'postgres',
+               PGDATABASE=parsed.path.lstrip('/') or 'postgres', PGSSLMODE='disable',
                PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=15000')
     proc = subprocess.run(['psql', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1',
                            '-c', sql], cwd=ROOT, env=env, capture_output=True,
