@@ -187,7 +187,7 @@ def main():
                                                   if version in evidence['missing_versions']), None)
             evidence['result'] = evidence['full_supabase_install'] = 'FAIL'
             raise RuntimeError('Local applied migration history differs from ordered source migration history')
-        catalog = query(db_url, "SELECT coalesce(string_agg(n.nspname||'.'||c.relname||':'||c.relkind, E'\\n' ORDER BY n.nspname,c.relname), '') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth','storage','pgmq');")
+        catalog = query(db_url, "SELECT coalesce(string_agg(n.nspname||'.'||c.relname||':'||c.relkind::text, E'\\n' ORDER BY n.nspname,c.relname), '') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth','storage','pgmq');")
         evidence['schema_digest'] = hashlib.sha256(catalog.encode()).hexdigest()
         evidence['full_supabase_install'] = ('PASS' if evidence['auth'] == 'PASS'
                                               and evidence['storage'] == 'PASS_SERVICE_PRESENT'
