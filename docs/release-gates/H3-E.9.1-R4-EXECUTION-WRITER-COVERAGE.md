@@ -1,3 +1,9 @@
+# F.5.3-CLOSURE.5 — disposable evidence checkpoint (BLOCKED)
+
+Read-only live catalog inspection established the exact column/default/nullability inventory, 19 constraints, 10 indexes, two SELECT policies, zero user triggers and RLS for both RAW tables. `scripts/sql/f553-raw-schema-disposable.sql` reconstructs them on a clean PostgreSQL 17 cluster and passed a fresh-cluster apply; the cluster was destroyed. **This is disposable-only SQL, not a managed source migration or complete schema equivalence.** The managed migration path would apply the SQL to production and is not authorized by the no-production-schema-mutation restriction. `docs/release-gates/f553-schema-equivalence.json` records this gap explicitly.
+
+The FINISHED replay gate now checks RAW job/upload/attempt/SHA-256 identity and digest format in addition to status/audit and existing HOT match/upload/parser/schema binding; 38 focused mocked reconciliation tests pass, including five negative RAW cases. The independent disposable PostgreSQL writer harness passed its existing 30 cases and 50 stress executions. Neither test is integrated FINISHED, lost-ACK fresh-worker, FAILED or ABORTED proof: no real pgmq/finalizer/Storage/HOT/RAW stack was run. The 43+ failure matrix, complete race matrix, exact-revision CI, Docker image, and production browser remain unexecuted. None is assigned PASS. Railway/deployment, production queue/ledger/storage, DEM/Attempt 9, Canonical, and secrets were untouched; `realDemAuthorized=false`, `canonicalAuthorized=false`, Railway parity UNKNOWN. **FINAL DECISION: F.5.3-CLOSURE.5 BLOCKED.**
+
 # H.3-E.9.1-R4.1-C/F.5.3-CLOSURE.4 — final execution evidence reconciliation
 
 ## CLOSURE.4 FINAL REPORT

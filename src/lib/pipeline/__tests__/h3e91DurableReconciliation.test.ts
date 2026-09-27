@@ -29,6 +29,7 @@ const boundJob = {
   worker_id: input.workerId,
   upload_id: "55555555-5555-5555-5555-555555555555",
   attempt_number: 1,
+  demo_sha256: "b".repeat(64),
   match_id: "77777777-7777-5777-8777-777777777777",
   parser_name: "demoparser2",
   parser_version: "0.42.0",
@@ -36,6 +37,10 @@ const boundJob = {
   schema_version: 1,
 };
 const readyArtifact = {
+  job_id: input.jobId,
+  upload_id: boundJob.upload_id,
+  attempt_number: boundJob.attempt_number,
+  demo_sha256: boundJob.demo_sha256,
   status: "ready",
   raw_status: "ready",
   audit_status: "approved",
@@ -126,6 +131,14 @@ describe("durable execution reconciliation", () => {
     ["incomplete RAW", { ...readyArtifact, status: "uploading" }],
     ["unverified digest", { ...readyArtifact, root_digest: null }],
     ["unapproved RAW", { ...readyArtifact, audit_status: "blocked" }],
+    ["RAW for another job", { ...readyArtifact, job_id: "99999999-9999-5999-8999-999999999999" }],
+    [
+      "RAW for another upload",
+      { ...readyArtifact, upload_id: "99999999-9999-5999-8999-999999999999" },
+    ],
+    ["RAW from another attempt", { ...readyArtifact, attempt_number: 2 }],
+    ["RAW for another DEM", { ...readyArtifact, demo_sha256: "c".repeat(64) }],
+    ["RAW with malformed digest", { ...readyArtifact, root_digest: "not-a-digest" }],
   ])("does not archive a processed job with %s", async (_reason, artifact) => {
     readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
     maybeSingle.mockResolvedValueOnce({ data: { ...boundJob, status: "processed" }, error: null });

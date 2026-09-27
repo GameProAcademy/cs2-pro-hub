@@ -1,0 +1,23 @@
+{
+  "phase": "F.5.3-CLOSURE.5",
+  "source_version": "scripts/sql/f553-raw-schema-disposable.sql (disposable only; not a managed migration)",
+  "live_snapshot_version": "2026-09-27 read-only pg_catalog inspection",
+  "disposable_schema_version": "PostgreSQL 17 fresh cluster, only two RAW tables plus minimal FK stubs",
+  "tables": ["public.raw_evidence_artifacts", "public.raw_evidence_chunks"],
+  "live_inventory": {
+    "columns": {"raw_evidence_artifacts": 23, "raw_evidence_chunks": 18},
+    "constraints": {"raw_evidence_artifacts": 10, "raw_evidence_chunks": 9},
+    "indexes": {"raw_evidence_artifacts": 5, "raw_evidence_chunks": 5},
+    "policies": {"raw_evidence_artifacts": 1, "raw_evidence_chunks": 1},
+    "triggers": {"raw_evidence_artifacts": 0, "raw_evidence_chunks": 0},
+    "rls_enabled": true
+  },
+  "disposable_execution": "PASS: disposable RAW SQL applied on fresh PostgreSQL 17; instance destroyed",
+  "mismatches": [
+    "Source recovery exists only under scripts/sql; managed migration creation is restricted to the migration tool, and was not performed because it would change production schema history.",
+    "No automated complete live-versus-disposable catalog equivalence comparison was executed.",
+    "Full dependent functions, pgmq, PostgREST, Storage and complete schema were not installed into the disposable cluster."
+  ],
+  "result": "BLOCKED",
+  "full_schema_equivalence": "NOT_PROVEN"
+}

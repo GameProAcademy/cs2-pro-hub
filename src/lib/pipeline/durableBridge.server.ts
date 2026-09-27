@@ -219,7 +219,7 @@ export async function reconcileDurableExecution(
   const { data: job, error: jobError } = await db
     .from("demo_jobs")
     .select(
-      "status, queue_message_id, dispatch_attempt, worker_id, upload_id, attempt_number, match_id, parser_name, parser_version, parser_revision, schema_version",
+      "status, queue_message_id, dispatch_attempt, worker_id, upload_id, attempt_number, demo_sha256, match_id, parser_name, parser_version, parser_revision, schema_version",
     )
     .eq("id", input.jobId)
     .maybeSingle();
@@ -253,16 +253,25 @@ export async function reconcileDurableExecution(
     // A terminal job flag alone is not proof that RAW/HOT output survived a lost acknowledgement.
     const { data: artifact, error: artifactError } = await db
       .from("raw_evidence_artifacts")
-      .select("status, raw_status, audit_status, root_digest")
+      .select(
+        "job_id, upload_id, attempt_number, demo_sha256, status, raw_status, audit_status, root_digest",
+      )
       .eq("job_id", input.jobId)
       .eq("upload_id", job.upload_id)
       .maybeSingle();
     if (
       artifactError ||
       !artifact ||
+      artifact.job_id !== input.jobId ||
+      artifact.upload_id !== job.upload_id ||
+      artifact.attempt_number !== job.attempt_number ||
+      typeof job.demo_sha256 !== "string" ||
+      !SHA256_PATTERN.test(job.demo_sha256) ||
+      artifact.demo_sha256 !== job.demo_sha256 ||
       artifact.status !== "ready" ||
       artifact.raw_status !== "ready" ||
-      !artifact.root_digest ||
+      typeof artifact.root_digest !== "string" ||
+      !SHA256_PATTERN.test(artifact.root_digest) ||
       !["approved", "blocked"].includes(artifact.audit_status)
     ) {
       return { status: "reconciliation_required", lifecycle: "FINISHED" };
