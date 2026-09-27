@@ -1,0 +1,68 @@
+{
+  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.7",
+  "final_decision": "BLOCKED",
+  "source_lineage": "FAIL",
+  "raw_schema_equivalence": "PASS",
+  "full_schema_install": "NOT_PROVEN",
+  "pgmq": "NOT_PROVEN",
+  "postgrest": "NOT_PROVEN",
+  "storage": "NOT_PROVEN",
+  "finished": "NOT_PROVEN",
+  "ack_loss": "NOT_PROVEN",
+  "fresh_worker": "NOT_PROVEN",
+  "failed": "NOT_PROVEN",
+  "aborted": "NOT_PROVEN",
+  "queue_idempotency": "NOT_PROVEN",
+  "hot_raw_identity": "NOT_PROVEN",
+  "raw_integrity": "NOT_PROVEN",
+  "race_matrix": "NOT_PROVEN",
+  "failure_matrix": "NOT_PROVEN",
+  "docker": "NOT_PROVEN",
+  "browser": "NOT_PROVEN",
+  "parser_tests": "PASS",
+  "final_ci": "NOT_PROVEN",
+  "railway": "LOCKED",
+  "real_dem": "LOCKED",
+  "canonical": "LOCKED",
+  "realDemAuthorized": false,
+  "canonicalAuthorized": false,
+  "FINAL_COMMIT": "NOT_VERIFIED_FINAL_COMMIT",
+  "FINAL_CI_RUN": "NOT_PROVEN",
+  "FINAL_CI_CONCLUSION": "NOT_PROVEN",
+  "local_proofs": {
+    "raw_catalog": "two-table-only live equivalence PASS after disposable-only historical owner and grant reproduction; full schema NOT_PROVEN",
+    "source_preflight": "FAIL: raw_evidence_artifacts first reference at 20260919110000_g5_rf2_canonical_integrity.sql:190 before definition at 20260926070000_reconcile_raw_evidence_schema.sql",
+    "writer": "30 disposable writer scenarios and 50 stress executions PASS; no integrated queue/Storage/RPC",
+    "parser": "239 passed, 10 skipped; synthetic tests only",
+    "production_read_only": "ledger=0, raw_artifacts=2, raw_chunks=49"
+  },
+  "blockers": [
+    {
+      "BLOCKER_CODE": "F553_RAW_SOURCE_ORDER",
+      "EXACT_COMMAND": "python3 scripts/f553-clean-schema-bootstrap.py",
+      "EXACT_OUTPUT": "source_lineage=FAIL; raw_evidence_artifacts: first reference 20260919110000_g5_rf2_canonical_integrity.sql:190 precedes definition 20260926070000_reconcile_raw_evidence_schema.sql; full_schema_install=NOT_PROVEN",
+      "WHY": "The RAW source definition is ordered after an earlier dependent function; two-table isolated equivalence does not prove clean installation.",
+      "MISSING_PROOF": "Full reproducible clean schema installation and equivalence, including dependency ordering.",
+      "WHAT_WAS_COMPLETED": "Read-only catalog parity was reproduced in disposable PostgreSQL without changing production grants.",
+      "EXACT_NEXT_ACTION": "Use the managed migration tool to place RAW source definition before the first dependency without editing production migration history, then run the entire clean chain in a fresh disposable database."
+    },
+    {
+      "BLOCKER_CODE": "F553_INTEGRATED_LIFECYCLE_AND_MATRICES",
+      "EXACT_COMMAND": "python3 scripts/h3e91-writer-concurrency.py",
+      "EXACT_OUTPUT": "PASS: 30 lifecycle scenarios (including paired terminal races) + 50 stress executions; no live database access",
+      "WHY": "Writer-only races cannot establish real pgmq/PostgREST/Storage, ACK loss or HOT/RAW finalization.",
+      "MISSING_PROOF": "FINISHED/ACK-loss/fresh-worker/FAILED/ABORTED, queue and chunk identity, >=50 integrated races and failures.",
+      "WHAT_WAS_COMPLETED": "Disposable writer-only scenarios passed.",
+      "EXACT_NEXT_ACTION": "After clean source install, run a single fail-closed disposable integration runner with real pgmq/PostgREST/Storage and persist case-by-case evidence."
+    },
+    {
+      "BLOCKER_CODE": "F553_PRODUCTION_OUTPUT_AND_FINAL_CI",
+      "EXACT_COMMAND": "bun run build && bun run verify:browser-parser-sealed",
+      "EXACT_OUTPUT": "NOT_RUN; no production-output browser or exact-final-commit CI evidence exists",
+      "WHY": "Source-only assertions and parser unit tests cannot substitute production-output browser, Docker or CI proof.",
+      "MISSING_PROOF": "Browser runtime audit, Docker image gate, and successful final CI run bound to the final commit.",
+      "WHAT_WAS_COMPLETED": "Parser tests: 239 passed, 10 skipped; no real DEM.",
+      "EXACT_NEXT_ACTION": "Run production build, sealed-bundle verification, served-build Playwright checks and Docker gates in CI, then seal the exact final revision and CI run ID."
+    }
+  ]
+}
