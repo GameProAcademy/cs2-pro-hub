@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import time
@@ -225,17 +226,31 @@ def main():
             raise RuntimeError('PGMQ did not issue a message ID')
         child_env = clean_env()
         child_env['F553_LOCAL_DB_URL'] = json.loads(status.stdout)['DB_URL']
-        a = subprocess.run([sys.executable, __file__, '--worker', queue, 'worker-a', 'no-ack'],
-                           cwd=ROOT, env=child_env, capture_output=True, text=True, timeout=30)
-        if a.returncode or a.stdout.strip() != message:
-            raise RuntimeError('Worker A failed to claim and persist the synthetic invocation')
-        before = sql(env, f'SELECT message_id, worker_id FROM f553_disposable.parser_invocations WHERE message_id={message};')
-        if sql(env, f"SELECT count(*) FROM pgmq.q_{queue} WHERE msg_id={message} AND vt > now();") != '1':
-            raise RuntimeError('PGMQ did not hide Worker A message')
+        a = subprocess.Popen([sys.executable, __file__, '--worker', queue, 'worker-a', 'no-ack'],
+                             cwd=ROOT, env=child_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, bufsize=1)
+        try:
+            if a.stdout is None:
+                raise RuntimeError('Worker A stdout unavailable')
+            # The worker emits its claim only after the persistent invocation write.
+            claimed_message = a.stdout.readline().strip()
+            if claimed_message != message or a.poll() is not None:
+                raise RuntimeError('Worker A did not remain alive after the synthetic claim')
+            before = sql(env, f'SELECT message_id, worker_id FROM f553_disposable.parser_invocations WHERE message_id={message};')
+            if sql(env, f"SELECT count(*) FROM pgmq.q_{queue} WHERE msg_id={message} AND vt > now();") != '1':
+                raise RuntimeError('PGMQ did not hide Worker A message')
+            os.kill(a.pid, signal.SIGKILL)
+            if a.wait(timeout=10) != -signal.SIGKILL:
+                raise RuntimeError('Worker A was not killed by SIGKILL')
+            worker_a_pid = a.pid
+        finally:
+            if a.poll() is None:
+                a.kill()
+                a.wait(timeout=10)
         time.sleep(2)
         b = subprocess.run([sys.executable, __file__, '--worker', queue, 'worker-b', 'ack'],
                            cwd=ROOT, env=child_env, capture_output=True, text=True, timeout=30)
-        if b.returncode or b.stdout.strip() != message:
+        if b.returncode or b.stdout.strip() != message or b.pid == worker_a_pid:
             raise RuntimeError('Fresh Worker B failed to reclaim and archive the message')
         count = sql(env, f'SELECT count(*) FROM f553_disposable.parser_invocations WHERE message_id={message};')
         archived = sql(env, f"SELECT count(*) FROM pgmq.a_{queue} WHERE msg_id={message};")
@@ -243,7 +258,9 @@ def main():
         if count != '1' or archived != '1' or sql(env, f"SELECT count(*) FROM pgmq.q_{queue} WHERE msg_id={message};") != '0':
             raise RuntimeError('PGMQ exactly-once idempotency or archive invariant failed')
         result.update(result='PASS_DISPOSABLE_QUEUE_ONLY', message_id=message,
-                      worker_a_id='worker-a', worker_b_id='worker-b', parser_stub_invocation_count=int(count),
+                       worker_a_id='worker-a', worker_b_id='worker-b',
+                       worker_a_pid=worker_a_pid, worker_b_pid=b.pid,
+                       worker_a_sigkill_confirmed=True, parser_stub_invocation_count=int(count),
                       before_digest=hashlib.sha256(before.encode()).hexdigest(),
                       after_digest=hashlib.sha256(after.encode()).hexdigest(),
                       archived_count=int(archived), observed_at=time.time())
@@ -277,7 +294,12 @@ def main():
 if __name__ == '__main__':
     if len(sys.argv) == 5 and sys.argv[1] == '--worker':
         try:
-            print(worker(database_env(os.environ.get('F553_LOCAL_DB_URL', '')), sys.argv[2], sys.argv[3], sys.argv[4] == 'ack'))
+            print(worker(database_env(os.environ.get('F553_LOCAL_DB_URL', '')), sys.argv[2], sys.argv[3], sys.argv[4] == 'ack'), flush=True)
+            if sys.argv[4] == 'no-ack':
+                # Deliberately remain alive until the parent kills this process;
+                # this is still only a synthetic queue probe, not pipeline ACK-loss.
+                while True:
+                    time.sleep(60)
         except (OSError, RuntimeError) as error:
             print(str(error)[:200], file=sys.stderr)
             raise SystemExit(1)
