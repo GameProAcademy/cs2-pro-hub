@@ -149,7 +149,7 @@ def main():
     run_id = os.environ.get('F553_RUN_ID') or uuid4().hex
     commit_sha = os.environ.get('GITHUB_SHA')
     workflow_run_id = os.environ.get('GITHUB_RUN_ID')
-    evidence = dict(phase='F.5.3-CLOSURE.8-R4', result='BLOCKED',
+    evidence = dict(phase='F.5.3-CLOSURE.8-R5', result='BLOCKED',
                     final_decision='BLOCKED', environment='local_disposable_supabase',
                     run_id=run_id, started_at=started_at,
                     commit_sha=commit_sha, workflow_run_id=workflow_run_id,
@@ -166,6 +166,16 @@ def main():
                     failure_cases_executed=0,
                     mandatory_gates={gate: 'NOT_PROVEN' for gate in MANDATORY})
     try:
+        integration_path = ROOT / 'docs/release-gates/f553-integration-evidence.json'
+        if integration_path.exists():
+            observed = json.loads(integration_path.read_text())
+            if (observed.get('run_id') == run_id and observed.get('commit_sha') == commit_sha
+                    and observed.get('workflow_run_id') == workflow_run_id
+                    and observed.get('started_at') == started_at
+                    and observed.get('result') == 'PASS_DISPOSABLE_QUEUE_ONLY'):
+                evidence['disposable_queue_recovery'] = observed
+            else:
+                evidence['disposable_queue_recovery'] = 'INVALID_OR_STALE'
         version = run('supabase', '--version')
         if version.returncode:
             raise RuntimeError('Supabase CLI not available for local disposable verification')
@@ -243,13 +253,13 @@ def main():
         decision.update(railway='LOCKED', real_dem='LOCKED', attempt_9='LOCKED',
                         canonical='LOCKED', realDemAuthorized=False,
                         canonicalAuthorized=False, blocked_gates=blocked,
-                        blockers=[{'BLOCKER_CODE': 'F553_R4_NO_VERIFIED_CI_EXECUTION',
+                         blockers=[{'BLOCKER_CODE': 'F553_R5_INTEGRATED_CI_PROOF_INCOMPLETE',
                                    'COMMAND': 'python3 scripts/run-f553-closure-8.py',
                                    'ACTUAL_OUTPUT': evidence['error'] or 'No verified final CI conclusion or integrated gate evidence',
                                    'FILE': 'scripts/run-f553-closure-8.py',
                                    'LINE': 173,
                                    'MISSING_PROOF': ', '.join(blocked),
-                                   'NEXT_ACTION': 'Execute the full disposable integration harness and verify the final GitHub Actions run on the exact commit.'}])
+                                    'NEXT_ACTION': 'Execute and verify all full-stack lifecycle, matrix, Docker, browser, and parser gates in GitHub Actions on the exact commit.'}])
         DECISION_OUT.write_text(json.dumps(decision, indent=2) + '\n')
         print(json.dumps({key: evidence[key] for key in ('result', 'full_supabase_install',
                          'migration_count', 'failed_migration', 'error',

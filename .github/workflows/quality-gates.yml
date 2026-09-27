@@ -140,6 +140,8 @@ jobs:
           supabase --version
           supabase start
           supabase status
+      - name: Execute real disposable queue recovery with separate workers
+        run: python3 scripts/f553-integrated-evidence.py
       - name: Clean install and verify integrated evidence
         run: python3 scripts/run-f553-closure-8.py
       - name: Preserve actual disposable-stack evidence
@@ -153,6 +155,7 @@ jobs:
             docs/release-gates/f553-race-matrix.json
             docs/release-gates/f553-failure-matrix.json
             docs/release-gates/f553-closure-8-final.json
+            docs/release-gates/f553-integration-evidence.json
           if-no-files-found: warn
       - name: Tear down disposable services
         if: always()
