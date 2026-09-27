@@ -253,7 +253,9 @@ export async function reconcileDurableExecution(
     // A terminal job flag alone is not proof that RAW/HOT output survived a lost acknowledgement.
     const { data: artifact, error: artifactError } = await db
       .from("raw_evidence_artifacts")
-      .select("job_id, upload_id, attempt_number, demo_sha256, status, raw_status, audit_status, root_digest")
+      .select(
+        "job_id, upload_id, attempt_number, demo_sha256, status, raw_status, audit_status, root_digest",
+      )
       .eq("job_id", input.jobId)
       .eq("upload_id", job.upload_id)
       .maybeSingle();

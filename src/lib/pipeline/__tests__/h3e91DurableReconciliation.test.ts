@@ -132,7 +132,10 @@ describe("durable execution reconciliation", () => {
     ["unverified digest", { ...readyArtifact, root_digest: null }],
     ["unapproved RAW", { ...readyArtifact, audit_status: "blocked" }],
     ["RAW for another job", { ...readyArtifact, job_id: "99999999-9999-5999-8999-999999999999" }],
-    ["RAW for another upload", { ...readyArtifact, upload_id: "99999999-9999-5999-8999-999999999999" }],
+    [
+      "RAW for another upload",
+      { ...readyArtifact, upload_id: "99999999-9999-5999-8999-999999999999" },
+    ],
     ["RAW from another attempt", { ...readyArtifact, attempt_number: 2 }],
     ["RAW for another DEM", { ...readyArtifact, demo_sha256: "c".repeat(64) }],
     ["RAW with malformed digest", { ...readyArtifact, root_digest: "not-a-digest" }],
