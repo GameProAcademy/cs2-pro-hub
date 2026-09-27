@@ -248,9 +248,15 @@ def main():
                 a.kill()
                 a.wait(timeout=10)
         time.sleep(2)
-        b = subprocess.run([sys.executable, __file__, '--worker', queue, 'worker-b', 'ack'],
-                           cwd=ROOT, env=child_env, capture_output=True, text=True, timeout=30)
-        if b.returncode or b.stdout.strip() != message or b.pid == worker_a_pid:
+        b = subprocess.Popen([sys.executable, __file__, '--worker', queue, 'worker-b', 'ack'],
+                             cwd=ROOT, env=child_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            b_stdout, _ = b.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            b.kill()
+            b.communicate()
+            raise
+        if b.returncode or b_stdout.strip() != message or b.pid == worker_a_pid:
             raise RuntimeError('Fresh Worker B failed to reclaim and archive the message')
         count = sql(env, f'SELECT count(*) FROM f553_disposable.parser_invocations WHERE message_id={message};')
         archived = sql(env, f"SELECT count(*) FROM pgmq.a_{queue} WHERE msg_id={message};")
