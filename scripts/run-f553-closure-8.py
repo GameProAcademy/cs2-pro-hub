@@ -63,7 +63,7 @@ def local_queue_probe(db_url):
     env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
     env.update(PGHOST=parsed.hostname, PGPORT=str(parsed.port),
                PGUSER=parsed.username or 'postgres', PGPASSWORD=parsed.password or '',
-               PGDATABASE=parsed.path.lstrip('/') or 'postgres',
+               PGDATABASE=parsed.path.lstrip('/') or 'postgres', PGSSLMODE='disable',
                PGOPTIONS='-c statement_timeout=15000')
     queue = 'f553_' + uuid4().hex
     def sql(statement):
