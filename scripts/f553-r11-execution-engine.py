@@ -119,6 +119,9 @@ def main():
                 probe.sql(db, f"SELECT pgmq.drop_queue('{queue_name}');")
 
         attempt('pgmq', queue, lambda o: o['message_id'].isdigit() and o['first'] == o['reappeared'] == o['message_id'] and o['hidden'] == o['after_archive'] == '' and o['archive'] == 't')
+        if evidence['gates']['pgmq'] == 'PASS':
+            evidence['gates']['pgmq'] = 'NOT_PROVEN'
+            evidence['observations']['pgmq']['scope'] = 'queue visibility only; no job-bound worker processing'
 
         def postgrest():
             status_code, body = request(api_url, key, '/rest/v1/demo_jobs?select=id&limit=1')
@@ -149,6 +152,8 @@ def main():
         attempt('storage', storage, lambda o: o['write_status'] in (200, 201)
                 and o['read_status'] == 200 and o['byte_identical']
                 and o['written_sha256'] == o['read_sha256'] and o['bytes'] == 256)
+        if evidence['gates']['storage'] == 'PASS':
+            evidence['gates']['storage'] = 'NOT_PROVEN'
 
         def failed():
             _, body = request(api_url, key, '/auth/v1/admin/users', 'POST',
