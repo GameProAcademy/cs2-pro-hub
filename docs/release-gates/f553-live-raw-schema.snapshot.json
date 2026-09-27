@@ -1,0 +1,485 @@
+{
+  "catalog": {
+    "raw_evidence_artifacts": {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "job_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "upload_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "user_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "attempt_number",
+          "not_null": true,
+          "type": "integer"
+        },
+        {
+          "default": null,
+          "name": "demo_sha256",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "storage_bucket",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "storage_prefix",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "manifest_storage_path",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "schema_version",
+          "not_null": true,
+          "type": "integer"
+        },
+        {
+          "default": "'creating'::text",
+          "name": "status",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": "'pending'::text",
+          "name": "raw_status",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": "'pending'::text",
+          "name": "audit_status",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "root_digest",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "default": "0",
+          "name": "total_bytes",
+          "not_null": true,
+          "type": "bigint"
+        },
+        {
+          "default": "0",
+          "name": "total_chunks",
+          "not_null": true,
+          "type": "integer"
+        },
+        {
+          "default": "0",
+          "name": "total_rows",
+          "not_null": true,
+          "type": "bigint"
+        },
+        {
+          "default": "now()",
+          "name": "created_at",
+          "not_null": true,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": "now()",
+          "name": "updated_at",
+          "not_null": true,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "ready_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "failed_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "error_code",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "error_message",
+          "not_null": false,
+          "type": "text"
+        }
+      ],
+      "comment": null,
+      "constraints": [
+        {
+          "definition": "CHECK (attempt_number >= 1)",
+          "name": "raw_evidence_artifacts_attempt_check"
+        },
+        {
+          "definition": "CHECK (audit_status = ANY (ARRAY['pending'::text, 'running'::text, 'approved'::text, 'limited'::text, 'blocked'::text, 'failed'::text]))",
+          "name": "raw_evidence_artifacts_audit_status_check"
+        },
+        {
+          "definition": "CHECK (total_bytes >= 0)",
+          "name": "raw_evidence_artifacts_bytes_check"
+        },
+        {
+          "definition": "CHECK (total_chunks >= 0)",
+          "name": "raw_evidence_artifacts_chunks_check"
+        },
+        {
+          "definition": "FOREIGN KEY (job_id) REFERENCES demo_jobs(id) ON DELETE RESTRICT",
+          "name": "raw_evidence_artifacts_job_id_fkey"
+        },
+        {
+          "definition": "PRIMARY KEY (id)",
+          "name": "raw_evidence_artifacts_pkey"
+        },
+        {
+          "definition": "CHECK (raw_status = ANY (ARRAY['pending'::text, 'writing'::text, 'ready'::text, 'failed'::text]))",
+          "name": "raw_evidence_artifacts_raw_status_check"
+        },
+        {
+          "definition": "CHECK (total_rows >= 0)",
+          "name": "raw_evidence_artifacts_rows_check"
+        },
+        {
+          "definition": "CHECK (status = ANY (ARRAY['creating'::text, 'uploading'::text, 'verifying'::text, 'ready'::text, 'failed'::text]))",
+          "name": "raw_evidence_artifacts_status_check"
+        },
+        {
+          "definition": "FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT",
+          "name": "raw_evidence_artifacts_upload_id_fkey"
+        }
+      ],
+      "dependencies": [
+        {
+          "constraint": "raw_evidence_artifacts_job_id_fkey",
+          "referenced": "demo_jobs"
+        },
+        {
+          "constraint": "raw_evidence_artifacts_upload_id_fkey",
+          "referenced": "uploads"
+        }
+      ],
+      "force_rls": false,
+      "grants": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": true,
+          "select": true,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "indexes": [
+        {
+          "definition": "CREATE INDEX raw_evidence_artifacts_demo_attempt_idx ON public.raw_evidence_artifacts USING btree (demo_sha256, attempt_number DESC)",
+          "name": "raw_evidence_artifacts_demo_attempt_idx"
+        },
+        {
+          "definition": "CREATE UNIQUE INDEX raw_evidence_artifacts_job_unique ON public.raw_evidence_artifacts USING btree (job_id)",
+          "name": "raw_evidence_artifacts_job_unique"
+        },
+        {
+          "definition": "CREATE UNIQUE INDEX raw_evidence_artifacts_pkey ON public.raw_evidence_artifacts USING btree (id)",
+          "name": "raw_evidence_artifacts_pkey"
+        },
+        {
+          "definition": "CREATE INDEX raw_evidence_artifacts_status_idx ON public.raw_evidence_artifacts USING btree (status)",
+          "name": "raw_evidence_artifacts_status_idx"
+        },
+        {
+          "definition": "CREATE INDEX raw_evidence_artifacts_upload_idx ON public.raw_evidence_artifacts USING btree (upload_id)",
+          "name": "raw_evidence_artifacts_upload_idx"
+        }
+      ],
+      "owner": "postgres",
+      "policies": [
+        {
+          "check": null,
+          "command": "r",
+          "name": "raw_evidence_artifacts_select_own",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "(user_id = auth.uid())"
+        }
+      ],
+      "rls": true,
+      "triggers": []
+    },
+    "raw_evidence_chunks": {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "artifact_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "default": null,
+          "name": "section",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "chunk_index",
+          "not_null": true,
+          "type": "integer"
+        },
+        {
+          "default": null,
+          "name": "storage_path",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "first_row",
+          "not_null": false,
+          "type": "bigint"
+        },
+        {
+          "default": null,
+          "name": "last_row",
+          "not_null": false,
+          "type": "bigint"
+        },
+        {
+          "default": "0",
+          "name": "row_count",
+          "not_null": true,
+          "type": "bigint"
+        },
+        {
+          "default": "0",
+          "name": "byte_size",
+          "not_null": true,
+          "type": "bigint"
+        },
+        {
+          "default": null,
+          "name": "sha256",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "previous_chunk_sha256",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "default": "'pending'::text",
+          "name": "status",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "default": "now()",
+          "name": "created_at",
+          "not_null": true,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "uploaded_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "verified_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "failed_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "default": null,
+          "name": "error_code",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "default": null,
+          "name": "error_message",
+          "not_null": false,
+          "type": "text"
+        }
+      ],
+      "comment": null,
+      "constraints": [
+        {
+          "definition": "FOREIGN KEY (artifact_id) REFERENCES raw_evidence_artifacts(id) ON DELETE RESTRICT",
+          "name": "raw_evidence_chunks_artifact_id_fkey"
+        },
+        {
+          "definition": "CHECK (byte_size >= 0)",
+          "name": "raw_evidence_chunks_bytes_check"
+        },
+        {
+          "definition": "CHECK (chunk_index >= 0)",
+          "name": "raw_evidence_chunks_index_check"
+        },
+        {
+          "definition": "CHECK (length(btrim(storage_path)) > 0)",
+          "name": "raw_evidence_chunks_path_nonempty_check"
+        },
+        {
+          "definition": "PRIMARY KEY (id)",
+          "name": "raw_evidence_chunks_pkey"
+        },
+        {
+          "definition": "CHECK (first_row IS NULL OR last_row IS NULL OR last_row >= first_row)",
+          "name": "raw_evidence_chunks_range_check"
+        },
+        {
+          "definition": "CHECK (row_count >= 0)",
+          "name": "raw_evidence_chunks_rows_check"
+        },
+        {
+          "definition": "CHECK (length(btrim(section)) > 0)",
+          "name": "raw_evidence_chunks_section_nonempty_check"
+        },
+        {
+          "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'uploading'::text, 'stored'::text, 'verified'::text, 'failed'::text]))",
+          "name": "raw_evidence_chunks_status_check"
+        }
+      ],
+      "dependencies": [
+        {
+          "constraint": "raw_evidence_chunks_artifact_id_fkey",
+          "referenced": "raw_evidence_artifacts"
+        }
+      ],
+      "force_rls": false,
+      "grants": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": true,
+          "select": true,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "indexes": [
+        {
+          "definition": "CREATE INDEX raw_evidence_chunks_artifact_idx ON public.raw_evidence_chunks USING btree (artifact_id)",
+          "name": "raw_evidence_chunks_artifact_idx"
+        },
+        {
+          "definition": "CREATE UNIQUE INDEX raw_evidence_chunks_artifact_section_index_unique ON public.raw_evidence_chunks USING btree (artifact_id, section, chunk_index)",
+          "name": "raw_evidence_chunks_artifact_section_index_unique"
+        },
+        {
+          "definition": "CREATE UNIQUE INDEX raw_evidence_chunks_pkey ON public.raw_evidence_chunks USING btree (id)",
+          "name": "raw_evidence_chunks_pkey"
+        },
+        {
+          "definition": "CREATE INDEX raw_evidence_chunks_section_order_idx ON public.raw_evidence_chunks USING btree (artifact_id, section, chunk_index)",
+          "name": "raw_evidence_chunks_section_order_idx"
+        },
+        {
+          "definition": "CREATE INDEX raw_evidence_chunks_status_idx ON public.raw_evidence_chunks USING btree (status)",
+          "name": "raw_evidence_chunks_status_idx"
+        }
+      ],
+      "owner": "postgres",
+      "policies": [
+        {
+          "check": null,
+          "command": "r",
+          "name": "raw_evidence_chunks_select_own",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "(EXISTS ( SELECT 1\n   FROM raw_evidence_artifacts a\n  WHERE ((a.id = raw_evidence_chunks.artifact_id) AND (a.user_id = auth.uid()))))"
+        }
+      ],
+      "rls": true,
+      "triggers": []
+    }
+  },
+  "digest": "4adb83d11d1574ce274b4d5266a52eb7d454090fc955dc9723d63d88656f7822",
+  "scope": "RAW tables only; not full application schema",
+  "source": "live database, read-only SELECT"
+}

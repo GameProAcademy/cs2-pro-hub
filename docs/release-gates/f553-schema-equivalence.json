@@ -1,23 +1,136 @@
 {
-  "phase": "F.5.3-CLOSURE.5",
-  "source_version": "scripts/sql/f553-raw-schema-disposable.sql (disposable only; not a managed migration)",
-  "live_snapshot_version": "2026-09-27 read-only pg_catalog inspection",
-  "disposable_schema_version": "PostgreSQL 17 fresh cluster, only two RAW tables plus minimal FK stubs",
-  "tables": ["public.raw_evidence_artifacts", "public.raw_evidence_chunks"],
-  "live_inventory": {
-    "columns": {"raw_evidence_artifacts": 23, "raw_evidence_chunks": 18},
-    "constraints": {"raw_evidence_artifacts": 10, "raw_evidence_chunks": 9},
-    "indexes": {"raw_evidence_artifacts": 5, "raw_evidence_chunks": 5},
-    "policies": {"raw_evidence_artifacts": 1, "raw_evidence_chunks": 1},
-    "triggers": {"raw_evidence_artifacts": 0, "raw_evidence_chunks": 0},
-    "rls_enabled": true
-  },
-  "disposable_execution": "PASS: disposable RAW SQL applied on fresh PostgreSQL 17; instance destroyed",
+  "disposable_schema_digest": "1922edcdfc55c72ee4c51d251f26f4cda1d1c395629a87199f24c99752ff4533",
+  "full_schema_equivalence": "NOT_PROVEN",
+  "live_schema_digest": "4adb83d11d1574ce274b4d5266a52eb7d454090fc955dc9723d63d88656f7822",
   "mismatches": [
-    "Source recovery exists only under scripts/sql; managed migration creation is restricted to the migration tool, and was not performed because it would change production schema history.",
-    "No automated complete live-versus-disposable catalog equivalence comparison was executed.",
-    "Full dependent functions, pgmq, PostgREST, Storage and complete schema were not installed into the disposable cluster."
+    {
+      "disposable": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "field": "grants",
+      "live": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": true,
+          "select": true,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "table": "raw_evidence_artifacts"
+    },
+    {
+      "disposable": "lovable",
+      "field": "owner",
+      "live": "postgres",
+      "table": "raw_evidence_artifacts"
+    },
+    {
+      "disposable": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "field": "grants",
+      "live": {
+        "anon": {
+          "delete": false,
+          "insert": false,
+          "select": false,
+          "update": false
+        },
+        "authenticated": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        },
+        "sandbox_exec": {
+          "delete": false,
+          "insert": true,
+          "select": true,
+          "update": false
+        },
+        "service_role": {
+          "delete": true,
+          "insert": true,
+          "select": true,
+          "update": true
+        }
+      },
+      "table": "raw_evidence_chunks"
+    },
+    {
+      "disposable": "lovable",
+      "field": "owner",
+      "live": "postgres",
+      "table": "raw_evidence_chunks"
+    }
   ],
+  "phase": "F.5.3-CLOSURE.6",
   "result": "BLOCKED",
-  "full_schema_equivalence": "NOT_PROVEN"
+  "scope": "RAW tables only; not full application schema",
+  "source_schema_digest": "9f4803fa6907a64f106f074319c3e59da918e98cc549979750a2d374f4c9ac03",
+  "source_version": "20260926070000_reconcile_raw_evidence_schema.sql"
 }
