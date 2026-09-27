@@ -50,7 +50,8 @@ def query(db_url, sql):
                            '-c', sql], cwd=ROOT, env=env, capture_output=True,
                           text=True, timeout=30, check=False)
     if proc.returncode:
-        raise RuntimeError('Local database catalog query failed')
+        detail = next((line[:300] for line in proc.stderr.splitlines() if line.strip()), 'unknown psql error')
+        raise RuntimeError(f'Local database catalog query failed: {detail}')
     return proc.stdout.strip()
 
 
