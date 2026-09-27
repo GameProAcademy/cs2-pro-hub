@@ -1,12 +1,12 @@
 {
-  "phase": "F.5.3-CLOSURE.8-R5",
+  "phase": "F.5.3-CLOSURE.8-R5.1",
   "result": "BLOCKED",
   "final_decision": "BLOCKED",
   "environment": "local_disposable_supabase",
-  "run_id": "4be3e7fdd44942248095aa53905e87ae",
-  "started_at": 1790485163.6410825,
-  "commit_sha": null,
-  "workflow_run_id": null,
+  "run_id": "local",
+  "started_at": 1.0,
+  "commit_sha": "local",
+  "workflow_run_id": "local",
   "workflow_conclusion": "NOT_PROVEN",
   "supabase_cli_version": null,
   "postgres_version": null,
@@ -49,5 +49,5 @@
     "parser_tests": "NOT_PROVEN",
     "final_ci": "NOT_PROVEN"
   },
-  "finished_at": 1790485163.6421137
+  "finished_at": 1790486824.3940315
 }
