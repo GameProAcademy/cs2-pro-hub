@@ -140,9 +140,13 @@ jobs:
           supabase --version
           supabase start
           supabase status
+      - name: Reset full disposable schema before integration
+        run: supabase db reset --local
       - name: Execute real disposable queue recovery with separate workers
         run: python3 scripts/f553-integrated-evidence.py
       - name: Clean install and verify integrated evidence
+        env:
+          F553_CLEAN_RESET_COMPLETED: '1'
         run: python3 scripts/run-f553-closure-8.py
       - name: Preserve actual disposable-stack evidence
         if: always()

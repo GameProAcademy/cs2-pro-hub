@@ -190,8 +190,8 @@ def main():
         # Hard refusal: no cloud hosts, arbitrary forwarded endpoints or remote DBs.
         if not (local_url(db_url, {54322}) and local_url(api_url, {54321}) and key):
             raise RuntimeError('Refused: stack does not expose expected loopback-only local endpoints')
-        reset = run('supabase', 'db', 'reset', '--local')
-        if reset.returncode:
+        reset = run('supabase', 'db', 'reset', '--local') if os.environ.get('F553_CLEAN_RESET_COMPLETED') != '1' else None
+        if reset is not None and reset.returncode:
             evidence['result'] = evidence['full_supabase_install'] = 'FAIL'
             # CLI output can include local connection credentials: retain only
             # the bounded migration error, never persist the full command log.
