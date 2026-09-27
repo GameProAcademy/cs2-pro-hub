@@ -1,4 +1,12 @@
-# F.5.3-CLOSURE.8-R6 — BLOCKED
+# F.5.3-CLOSURE.8-R7 — BLOCKED
+
+## Current R7 checkpoint (not an integration attestation)
+
+The processed-job lifecycle contract remains unchanged: `finish_demo_job_processed` rejects a processing job without a committed demo `match_sources` row. The new disposable-only probe first checks that rejection, then inserts a uniquely identified fixture match and source tied to its test upload, calls the **existing** finalizer, checks idempotent replay, and compares the result with local PostgREST. The fixture is explicitly `DISPOSABLE_TERMINALIZATION_FIXTURE`; it is not real Canonical admission and cannot establish the integrated FINISHED gate without RAW/HOT/Storage, worker execution and ACK. No production migration or finalizer was changed. `EXECUTION_ABORTED` is a parser execution event, distinct from the business job statuses; `cancelled` is not relabelled as aborted. An actual process-abort/reconciliation execution remains unproven.
+
+Executed locally: Python syntax checks, whitespace check and refusal of non-disposable database endpoints passed. `python3 scripts/run-f553-closure-8.py` returned `BLOCKED`: 145 source migrations; `full_supabase_install=NOT_PROVEN`; 0/50 race cases, 0/50 failure cases, 0/18 gates PASS; local failure `[Errno 2] No such file or directory: 'supabase'`. The disposable fixture probe itself did not execute locally, so its contract result is **NOT_PROVEN**, not PASS. The authenticated GitHub Quality Gates run `36297595670` on earlier SHA `aea54e6769741f152e96bc673ffa8bdd8a55b91c` ended in **failure**; it does not attest to R7 changes. No final R7 SHA/run/success/artifact seal is established.
+
+BLOCKERS: No executed R7 clean full-stack migration result; no real worker-to-RAW/HOT/Storage/ACK integrated FINISHED or process abort; no 50/50 executed matrices; no same-revision successful final CI. The script's partial FAILED/cancelled checks must not promote these gates. Preserve `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`. Production, Railway, real DEM, Cache, Attempt 9 and Canonical production remain untouched.
 
 ## Current R6 checkpoint (not an integration attestation)
 

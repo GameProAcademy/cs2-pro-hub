@@ -149,7 +149,7 @@ def main():
     run_id = os.environ.get('F553_RUN_ID') or uuid4().hex
     commit_sha = os.environ.get('GITHUB_SHA')
     workflow_run_id = os.environ.get('GITHUB_RUN_ID')
-    evidence = dict(phase='F.5.3-CLOSURE.8-R5.1', result='BLOCKED',
+    evidence = dict(phase='F.5.3-CLOSURE.8-R7', result='BLOCKED',
                     final_decision='BLOCKED', environment='local_disposable_supabase',
                     run_id=run_id, started_at=started_at,
                     commit_sha=commit_sha, workflow_run_id=workflow_run_id,
@@ -176,6 +176,14 @@ def main():
                      and observed.get('job') == os.environ.get('GITHUB_JOB')
                      and observed.get('result') == 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY'):
                 evidence['disposable_queue_recovery'] = observed
+                contract = observed.get('finished_contract', {})
+                if (contract.get('result') == 'PASS_DISPOSABLE_TERMINALIZATION_CONTRACT_ONLY'
+                        and contract.get('disposable_fixture') is True
+                        and contract.get('canonical_admission') is False
+                        and contract.get('raw_committed') is False
+                        and contract.get('hot_persisted') is False
+                        and contract.get('queue_ack_proven') is False):
+                    evidence['disposable_terminalization_contract'] = 'PASS_CONTRACT_ONLY_NOT_FINISHED_GATE'
                 failed = observed.get('failed_job', {})
                 cancelled = observed.get('cancelled_job', {})
                 if (observed.get('archived_count') == 1
