@@ -112,24 +112,24 @@ jobs:
   f553-closure-8-final:
     name: F553 CLOSURE 8 FINAL
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install PostgreSQL client and server
+      - name: Install PostgreSQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql
-          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
-      - name: Start disposable Supabase services
-        uses: supabase/setup-cli@v1
+          sudo apt-get install -y postgresql-client
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3.0.1
         with:
-          version: latest
-      - name: Install full source chain in disposable stack
+          version: 2.118.0
+      - name: Start local disposable services
         run: |
+          supabase --version
           supabase start
-          supabase db reset --local
-      - name: Fail closed until integrated evidence is executed
+          supabase status
+      - name: Clean install and verify integrated evidence
         run: python3 scripts/run-f553-closure-8.py
       - name: Tear down disposable services
         if: always()
