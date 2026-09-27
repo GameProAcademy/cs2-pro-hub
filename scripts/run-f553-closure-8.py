@@ -80,7 +80,8 @@ def executed_count(name):
 def main():
     evidence = dict(result='NOT_PROVEN', environment='local_disposable_supabase',
                     supabase_cli_version=None, postgres_version=None,
-                    migration_count=len(MIGRATIONS), applied_versions=[],
+                     migration_count=len(MIGRATIONS), applied_versions=[],
+                     missing_versions=[], extra_versions=[], duplicate_versions=[],
                     failed_migration=None, failed_migration_line=None, error=None,
                     schema_digest=None, auth='NOT_PROVEN', storage='NOT_PROVEN',
                     postgrest='NOT_PROVEN', pgmq='NOT_PROVEN', cluster_destroyed=False,
@@ -96,7 +97,7 @@ def main():
         evidence['supabase_cli_version'] = version.stdout.strip()
         status = run('supabase', 'status', '-o', 'json')
         if status.returncode:
-            raise RuntimeError('Local Supabase stack not running; start it before verification')
+            raise RuntimeError('Local disposable stack not running; full-stack reset was not executed')
         stack = json.loads(status.stdout)
         db_url = stack.get('DB_URL', '')
         api_url = stack.get('API_URL', '')
@@ -113,9 +114,12 @@ def main():
             evidence['error'] = next((line[:300] for line in reversed(lines)
                                       if 'ERROR:' in line or 'Error:' in line),
                                      'Local clean migration reset failed')
-            match = re.search(r'Applying migration (\S+\.sql)', reset.stdout + reset.stderr)
-            if match:
-                evidence['failed_migration'] = match.group(1)
+            matches = re.findall(r'Applying migration (\S+\.sql)', reset.stdout + reset.stderr)
+            if matches:
+                evidence['failed_migration'] = matches[-1]
+            line_match = re.search(r'(?:^|\n)(?:ERROR:|Error:).*?(?:line|LINE)\s+(\d+)', reset.stderr + '\n' + reset.stdout)
+            if line_match:
+                evidence['failed_migration_line'] = int(line_match.group(1))
             raise RuntimeError('Local clean migration reset failed')
         evidence['postgres_version'] = query(db_url, 'SHOW server_version;')
         evidence['auth'] = 'PASS' if query(db_url, "SELECT to_regclass('auth.users') IS NOT NULL;") == 't' else 'FAIL'
@@ -127,13 +131,14 @@ def main():
         versions = query(db_url, 'SELECT version FROM supabase_migrations.schema_migrations ORDER BY version;').splitlines()
         evidence['applied_versions'] = versions
         expected = [re.match(r'^(\d+)', file.name).group(1) for file in MIGRATIONS]
-        if len(expected) != len(set(expected)):
-            raise RuntimeError('Duplicate source migration versions')
-        missing = [file.name for file, version in zip(MIGRATIONS, expected) if version not in versions]
-        if missing:
-            evidence['failed_migration'] = missing[0]
+        evidence['duplicate_versions'] = sorted({version for version in expected if expected.count(version) > 1})
+        evidence['missing_versions'] = sorted(set(expected) - set(versions))
+        evidence['extra_versions'] = sorted(set(versions) - set(expected))
+        if evidence['duplicate_versions'] or evidence['missing_versions'] or evidence['extra_versions'] or versions != expected:
+            evidence['failed_migration'] = next((file.name for file, version in zip(MIGRATIONS, expected)
+                                                  if version in evidence['missing_versions']), None)
             evidence['result'] = evidence['full_supabase_install'] = 'FAIL'
-            raise RuntimeError('Local stack has unapplied source migrations')
+            raise RuntimeError('Local applied migration history differs from ordered source migration history')
         catalog = query(db_url, "SELECT coalesce(string_agg(n.nspname||'.'||c.relname||':'||c.relkind, E'\\n' ORDER BY n.nspname,c.relname), '') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth','storage','pgmq');")
         evidence['schema_digest'] = hashlib.sha256(catalog.encode()).hexdigest()
         evidence['full_supabase_install'] = ('PASS' if evidence['auth'] == 'PASS'
