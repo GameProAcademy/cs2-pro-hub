@@ -1,4 +1,23 @@
-# F.5.3-CLOSURE.8-R4 — BLOCKED
+# F.5.3-CLOSURE.8-R5 — BLOCKED
+
+## R5 execution checkpoint
+
+The authenticated GitHub Actions run `36295225008` on `396088e7389079ea0ecfbf31a3f33745f1fd5fe8` actually started the disposable stack and applied all 145 migrations. Its F553 job failed at the final verifier, which recorded `full_supabase_install=PASS`, `race_cases_executed=0`, `failure_cases_executed=0`. This run predates R5 and **is not evidence for the R5 revision**. The web, parser and contract jobs succeeded in that prior run; the overall workflow failed.
+
+R5 adds a loopback-only real-PGMQ worker A/B recovery probe using distinct processes and a persistent disposable parser-stub invocation table. It is only a queue recovery test, not a simulated job lifecycle or a substitute for HOT, RAW, Storage, PostgREST, actual parser processing, 50+50 integrated matrices, Docker or browser proof. The workflow resets the disposable schema before the probe, preventing the final verifier's reset from erasing its evidence. Locally, Python compilation and refusal of remote database endpoints passed; the probe refused to execute without a CI identity, and the verifier remained BLOCKED because the local full stack was unavailable. No R5 GitHub Actions run or final conclusion was observed. The machine-readable decision remains BLOCKED.
+
+**Exact unresolved blockers:**
+
+| BLOCKER_CODE | COMMAND | ACTUAL_OUTPUT | FILE / LINE | MISSING_PROOF | NEXT_ACTION |
+| --- | --- | --- | --- | --- | --- |
+| F553_R5_CI_EXECUTION | GitHub Actions Quality Gates on final R5 commit | Latest authenticated run is earlier revision `396088e7`, failure, run `36295225008` | `.github/workflows/quality-gates.yml:112` | Exact R5 revision, successful final workflow ID/conclusion | Wait for synchronized R5 commit, execute workflow on that revision, inspect job logs and artifacts; repair and rerun failures. |
+| F553_R5_INTEGRATED_LIFECYCLE | `python3 scripts/f553-integrated-evidence.py` | No R5 CI execution; this script exercises PGMQ only | `scripts/f553-integrated-evidence.py:53` | Real job/attempt, HOT/RAW/manifest/Storage/PostgREST FINISHED, ACK loss, FAILED, ABORTED and exact-once | Extend the disposable executor using the existing service and SQL interfaces and verify each terminal path. |
+| F553_R5_MATRICES | `python3 scripts/run-f553-closure-8.py` | Local verifier: `race_cases_executed=0`, `failure_cases_executed=0`; prior CI also 0/0 | `scripts/run-f553-closure-8.py:114` | 50 distinct actual race and 50 failure cases with bound run evidence | Generate matrices only from executed disposable scenarios, rerun final verifier. |
+| F553_R5_FINAL_OUTPUT | Quality Gates final job | No R5 Docker runtime/browser/parser artifacts or successful final verifier | `.github/workflows/quality-gates.yml:112` | Complete final CI artifacts and conclusion on exact commit | Execute all remaining gates and inspect authenticated CI result. |
+
+Production and Railway were untouched; real DEM, Cache Run, Attempt 9 and Canonical admission remain locked (`realDemAuthorized=false`, `canonicalAuthorized=false`).
+
+## Historical R4 checkpoint
 
 ## R4 execution and CI blocker
 
