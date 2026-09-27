@@ -1,5 +1,9 @@
 # F.5.3-CLOSURE.8-R7 — BLOCKED
 
+## R8 checkpoint — BLOCKED pending new execution
+
+The earlier GitHub Actions run `36298419135` failed in the disposable executor after the clean 145-migration reset. The reported NOT NULL error on `demo_jobs.schema_version` is caused by the disposable finalizer's positive `{match_id}` result: the finalizer explicitly assigns `schema_version` and `analysis_version` from that JSON, overwriting their column defaults with NULL. The fixture now supplies both values, without modifying the database finalizer or claiming RAW/HOT/Canonical proof. This source repair has not yet passed a new full-stack run; all 18 mandatory integration gates and final same-revision CI remain unproven. Production and Railway remain read-only/locked; `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`.
+
 ## Current R7 checkpoint (not an integration attestation)
 
 The processed-job lifecycle contract remains unchanged: `finish_demo_job_processed` rejects a processing job without a committed demo `match_sources` row. The new disposable-only probe first checks that rejection, then inserts a uniquely identified fixture match and source tied to its test upload, calls the **existing** finalizer, checks idempotent replay, and compares the result with local PostgREST. The fixture is explicitly `DISPOSABLE_TERMINALIZATION_FIXTURE`; it is not real Canonical admission and cannot establish the integrated FINISHED gate without RAW/HOT/Storage, worker execution and ACK. No production migration or finalizer was changed. `EXECUTION_ABORTED` is a parser execution event, distinct from the business job statuses; `cancelled` is not relabelled as aborted. An actual process-abort/reconciliation execution remains unproven.
