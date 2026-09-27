@@ -218,7 +218,9 @@ export async function reconcileDurableExecution(
   const { db, rpc } = await context();
   const { data: job, error: jobError } = await db
     .from("demo_jobs")
-    .select("status, queue_message_id, dispatch_attempt, worker_id, upload_id, attempt_number")
+    .select(
+      "status, queue_message_id, dispatch_attempt, worker_id, upload_id, attempt_number, match_id, parser_name, parser_version, parser_revision, schema_version",
+    )
     .eq("id", input.jobId)
     .maybeSingle();
   if (
@@ -267,6 +269,47 @@ export async function reconcileDurableExecution(
     }
     if (job.status === "processed" && artifact.audit_status !== "approved") {
       return { status: "reconciliation_required", lifecycle: "FINISHED" };
+    }
+    // A processed job is only the terminal envelope. The durable HOT result is
+    // committed through the Canonical demo source and then projected back onto
+    // demo_jobs. Require both sides of that production persistence contract,
+    // bound to this upload and match, before acknowledging a lost queue reply.
+    // blocked_raw_audit is the explicit exception: Canonical/HOT persistence is
+    // intentionally forbidden when RAW admission fails.
+    if (job.status === "processed") {
+      if (
+        typeof job.match_id !== "string" ||
+        typeof job.parser_name !== "string" ||
+        job.parser_name.length === 0 ||
+        typeof job.parser_version !== "string" ||
+        job.parser_version.length === 0 ||
+        typeof job.parser_revision !== "string" ||
+        job.parser_revision.length === 0 ||
+        typeof job.schema_version !== "number" ||
+        !Number.isSafeInteger(job.schema_version) ||
+        job.schema_version < 1
+      ) {
+        return { status: "reconciliation_required", lifecycle: "FINISHED" };
+      }
+      const { data: persistedResult, error: persistedResultError } = await db
+        .from("match_sources")
+        .select("match_id, upload_id, source, source_contract_version, source_version, status")
+        .eq("upload_id", job.upload_id)
+        .eq("match_id", job.match_id)
+        .eq("source", "demo")
+        .maybeSingle();
+      if (
+        persistedResultError ||
+        !persistedResult ||
+        persistedResult.upload_id !== job.upload_id ||
+        persistedResult.match_id !== job.match_id ||
+        persistedResult.source !== "demo" ||
+        typeof persistedResult.source_contract_version !== "string" ||
+        persistedResult.source_contract_version.length === 0 ||
+        persistedResult.status !== "complete"
+      ) {
+        return { status: "reconciliation_required", lifecycle: "FINISHED" };
+      }
     }
     const { data, error } = await rpc("finalize_demo_parse_message", {
       _job_id: input.jobId,
