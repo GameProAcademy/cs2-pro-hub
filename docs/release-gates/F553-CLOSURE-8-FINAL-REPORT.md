@@ -1,4 +1,14 @@
-# F.5.3-CLOSURE.8-R10 — BLOCKED
+# F.5.3-CLOSURE.8-R11 — BLOCKED
+
+## CURRENT_R11_DECISION
+
+**BLOCKED — not executed or closed.** The latest independently inspected completed GitHub Quality Gates run was `36299761527`, commit `c8d891b808ce6d880683781bd55ab14117e76636`, conclusion `failure`. Its disposable-stack start, full reset, partial queue/FAILED/CANCELLED probes, parser image, parser tests and browser checks succeeded, but the integrated evidence verification step failed. This run predates R11 and cannot supply R11 PASS evidence. The latest local code is not attested by that run.
+
+**IMPLEMENTED:** The previous disposable probes reject nonlocal database endpoints and distinguish a terminalization contract fixture from a real RAW/HOT/Storage-backed FINISHED execution. The existing verifier refuses to certify its own GitHub conclusion. **EXECUTED:** only the historical run above, not an R11 execution. **VERIFIED:** no R11 gate. **NOT_PROVEN:** same-run R11 provenance, full-stack installation in an R11 run, job-bound parser/RAW/HOT/Storage FINISHED, worker ACK loss and process-abort recovery, real parser exactly-once, 16 corruption cases, 50 race cases, 50 failure cases, Docker/browser/parser results from that same run, and an independent post-completion CI seal. All 18 R11 mandatory gates remain NOT_PROVEN, not PASS.
+
+The current probe uses a disposable `match_sources` terminalization fixture, and its killed-worker test operates on a synthetic queue instead of the application parser boundary. Neither is admissible as integrated FINISHED, ACK-loss, RAW integrity, HOT identity, Storage read-back or parser exactly-once proof. No complete R11 execution engine or independent post-run verifier is present, so the requested CLOSED state cannot be honestly asserted. No production or Railway operations were performed; `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`. Real DEM, Cache, Attempt 9/10+ and production Canonical remain locked.
+
+**Next action:** implement and run the real disposable parser-to-RAW/HOT/Storage worker lifecycle and failure matrices in one GitHub Actions run, then inspect the completed run and its artifact independently. Do not promote the historical run or the synthetic/contract probes.
 
 ## CURRENT_R10_DECISION
 
