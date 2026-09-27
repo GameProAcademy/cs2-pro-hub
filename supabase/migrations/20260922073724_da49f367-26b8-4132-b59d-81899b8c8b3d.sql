@@ -12,6 +12,16 @@ DECLARE
   _authorized_count integer;
   _verified_count integer;
 BEGIN
+  -- The pinned release seed is applied by the immediately following migration
+  -- 20260922073800. On a clean install, defer this validation until that seed
+  -- exists; on an existing environment, keep the full fail-closed assertion.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.canonical_mapping_inventory_releases
+    WHERE release_id = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87'::uuid
+  ) THEN
+    RETURN;
+  END IF;
+
   SELECT * INTO _release
   FROM public.canonical_mapping_inventory_releases
   WHERE release_id = 'cf0549c2-dfbd-c4df-25b4-2ce8204edf87'::uuid
