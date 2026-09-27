@@ -25,12 +25,12 @@ CREATE TABLE public.raw_evidence_artifacts (
   error_code text,
   error_message text
 );
+GRANT ALL ON public.raw_evidence_artifacts TO authenticated, service_role;
 CREATE INDEX raw_evidence_artifacts_demo_attempt_idx ON public.raw_evidence_artifacts (demo_sha256, attempt_number DESC);
 CREATE UNIQUE INDEX raw_evidence_artifacts_job_unique ON public.raw_evidence_artifacts (job_id);
 CREATE INDEX raw_evidence_artifacts_status_idx ON public.raw_evidence_artifacts (status);
 CREATE INDEX raw_evidence_artifacts_upload_idx ON public.raw_evidence_artifacts (upload_id);
 ALTER TABLE public.raw_evidence_artifacts ENABLE ROW LEVEL SECURITY;
-GRANT ALL ON public.raw_evidence_artifacts TO authenticated, service_role;
 CREATE POLICY raw_evidence_artifacts_select_own ON public.raw_evidence_artifacts FOR SELECT TO authenticated USING (user_id = auth.uid());
 
 CREATE TABLE public.raw_evidence_chunks (
@@ -54,10 +54,10 @@ CREATE TABLE public.raw_evidence_chunks (
   error_message text,
   CONSTRAINT raw_evidence_chunks_range_check CHECK (first_row IS NULL OR last_row IS NULL OR last_row >= first_row)
 );
+GRANT ALL ON public.raw_evidence_chunks TO authenticated, service_role;
 CREATE INDEX raw_evidence_chunks_artifact_idx ON public.raw_evidence_chunks (artifact_id);
 CREATE UNIQUE INDEX raw_evidence_chunks_artifact_section_index_unique ON public.raw_evidence_chunks (artifact_id, section, chunk_index);
 CREATE INDEX raw_evidence_chunks_section_order_idx ON public.raw_evidence_chunks (artifact_id, section, chunk_index);
 CREATE INDEX raw_evidence_chunks_status_idx ON public.raw_evidence_chunks (status);
 ALTER TABLE public.raw_evidence_chunks ENABLE ROW LEVEL SECURITY;
-GRANT ALL ON public.raw_evidence_chunks TO authenticated, service_role;
 CREATE POLICY raw_evidence_chunks_select_own ON public.raw_evidence_chunks FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.raw_evidence_artifacts a WHERE a.id = raw_evidence_chunks.artifact_id AND a.user_id = auth.uid()));
