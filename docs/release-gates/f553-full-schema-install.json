@@ -1,8 +1,13 @@
 {
-  "result": "NOT_PROVEN",
+  "phase": "F.5.3-CLOSURE.8-R4",
+  "result": "BLOCKED",
+  "final_decision": "BLOCKED",
   "environment": "local_disposable_supabase",
-  "run_id": "ee9be6d7905d4f7388a1bc90a3e9a6e9",
-  "started_at": 1790483840.2674556,
+  "run_id": "a796d77d7983459e828c6e0a147f1803",
+  "started_at": 1790484279.3055234,
+  "commit_sha": null,
+  "workflow_run_id": null,
+  "workflow_conclusion": "NOT_PROVEN",
   "supabase_cli_version": null,
   "postgres_version": null,
   "migration_count": 145,
@@ -43,5 +48,6 @@
     "browser": "NOT_PROVEN",
     "parser_tests": "NOT_PROVEN",
     "final_ci": "NOT_PROVEN"
-  }
+  },
+  "finished_at": 1790484279.3073647
 }

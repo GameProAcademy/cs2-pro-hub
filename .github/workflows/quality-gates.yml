@@ -116,6 +116,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Establish disposable run identity and verify Docker
+        run: |
+          set -euo pipefail
+          test -f supabase/config.toml
+          test -n "$(ls supabase/migrations/*.sql)"
+          docker version
+          docker info > /dev/null
+          printf 'F553_RUN_ID=%s\n' "$(python3 -c 'import uuid; print(uuid.uuid4().hex)')" >> "$GITHUB_ENV"
+          printf 'F553_STARTED_AT=%s\n' "$(python3 -c 'import time; print(time.time())')" >> "$GITHUB_ENV"
+          printf 'Runner=%s Kernel=%s SHA=%s Ref=%s WorkflowRun=%s Job=%s UTC=%s\n' "$RUNNER_OS" "$(uname -r)" "$GITHUB_SHA" "$GITHUB_REF" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$(date -u +%FT%TZ)"
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
@@ -126,6 +136,7 @@ jobs:
           version: 2.118.0
       - name: Start local disposable services
         run: |
+          test "$(supabase --version)" = "2.118.0"
           supabase --version
           supabase start
           supabase status
@@ -141,6 +152,7 @@ jobs:
             docs/release-gates/f553-clean-schema-lineage.json
             docs/release-gates/f553-race-matrix.json
             docs/release-gates/f553-failure-matrix.json
+            docs/release-gates/f553-closure-8-final.json
           if-no-files-found: warn
       - name: Tear down disposable services
         if: always()
