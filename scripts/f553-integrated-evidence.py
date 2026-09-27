@@ -98,12 +98,17 @@ def real_job_terminal_probe(env, api_url, key, user_id, outcome):
         expected = 'failed'
     else:
         cancellation = json.loads(sql(env, f"SELECT public.request_demo_job_cancel('{job_id}'::uuid,'{user_id}'::uuid);"))
-        heartbeat = json.loads(sql(env, "SELECT public.heartbeat_demo_parse_message("
-            f"'{job_id}'::uuid,{message_id},0,'f553-aborted',60,NULL);"))
-        if cancellation.get('status') != 'cancel_requested' or heartbeat.get('cancelled') is not True:
-            raise RuntimeError('Worker did not observe the cancellation')
-        terminal = json.loads(sql(env, "SELECT public.fail_demo_parse_message("
-            f"'{job_id}'::uuid,{message_id},0,'f553-aborted','CANCELLED','disposable fixture',true);"))
+        if cancellation.get('status') != 'cancel_requested':
+            raise RuntimeError('Cancellation was not requested')
+        finished = sql(env, f"SELECT public.finish_demo_job_cancelled('{job_id}'::uuid,NULL);")
+        if finished != 't':
+            raise RuntimeError('Real cancellation finalizer refused fixture')
+        # The trigger revokes the worker lease on cancel_requested; terminal
+        # redelivery is then archived by the existing claim RPC, not by a
+        # fabricated worker ACK. Shorten only this disposable message's timer.
+        sql(env, f"SELECT pgmq.set_vt('demo_parse',{message_id},0);")
+        rejected = json.loads(sql(env, "SELECT public.claim_demo_parse_message('f553-cancel-reconcile',60,1);"))
+        terminal = {'accepted': rejected.get('status') == 'rejected', 'status': 'cancelled'}
         expected = 'cancelled'
     after = sql(env, f"SELECT status,queue_message_id,dispatch_attempt FROM public.demo_jobs WHERE id='{job_id}';")
     archived = sql(env, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={message_id};")
@@ -192,7 +197,7 @@ def main():
                 result['cleanup_error'] = str(exc)[:200]
         OUT.write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps({key: result.get(key) for key in ('result', 'error', 'parser_stub_invocation_count', 'archived_count')}))
-    return 0 if result['result'] == 'PASS_DISPOSABLE_QUEUE_ONLY' and not result.get('cleanup_error') else 1
+    return 0 if result['result'] == 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY' and not result.get('cleanup_error') else 1
 
 
 if __name__ == '__main__':

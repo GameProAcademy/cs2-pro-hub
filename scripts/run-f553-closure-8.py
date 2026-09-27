@@ -185,8 +185,9 @@ def main():
                         and failed.get('postgrest_status') == 200
                         and cancelled.get('postgrest_status') == 200):
                     evidence['mandatory_gates']['failed'] = 'PASS'
-                    evidence['mandatory_gates']['aborted'] = 'PASS'
-                    evidence['partial_lifecycle'] = 'PASS_FAILED_CANCELLED_AND_ISOLATED_QUEUE_ONLY'
+                    # Cancellation is not an ABORTED execution proof: the
+                    # lease is revoked before the worker can observe it.
+                    evidence['partial_lifecycle'] = 'PASS_FAILED_AND_CANCELLED_ONLY'
             else:
                 evidence['disposable_queue_recovery'] = 'INVALID_OR_STALE'
         version = run('supabase', '--version')
