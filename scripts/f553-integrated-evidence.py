@@ -281,7 +281,7 @@ def main():
         if not isinstance(user_id, str) or len(user_id) != 36:
             raise RuntimeError('Disposable user creation did not return an identity')
         result['failed_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'failed')
-         result['cancelled_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'cancelled')
+        result['cancelled_job'] = real_job_terminal_probe(env, api_url, key, user_id, 'cancelled')
         result['finished_contract'] = finished_contract_probe(env, api_url, key, user_id)
         result['result'] = 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY'
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, RuntimeError) as exc:
@@ -292,8 +292,8 @@ def main():
                 sql(env, f"SELECT pgmq.drop_queue('{queue}');")
             except (OSError, RuntimeError) as exc:
                 result['cleanup_error'] = str(exc)[:200]
-         result['finished_at'] = result['timestamp'] = time.time()
-         OUT.write_text(json.dumps(result, indent=2) + '\n')
+        result['finished_at'] = result['timestamp'] = time.time()
+        OUT.write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps({key: result.get(key) for key in ('result', 'error', 'parser_stub_invocation_count', 'archived_count')}))
     return 0 if result['result'] == 'PASS_DISPOSABLE_PARTIAL_LIFECYCLE_ONLY' and not result.get('cleanup_error') else 1
 
