@@ -6,11 +6,11 @@
 
 The previous PostgreSQL 17.9-only probe failed because `auth` was absent in a plain database. This is **plain_postgres_probe=FAIL**, not evidence that the full stack or the first migration fails. **full_supabase_install=NOT_PROVEN**. The RAW textual-reference preflight is now **NOT_PROVEN**, not proof of a SQL dependency error: a reference inside a stored function body need not resolve at function creation time. RAW equivalence remains limited to two catalog tables and disposable historical privileges, not the desired source security policy or full schema.
 
-## Executed in this revision
+## Previous R1 results (not R2 proof)
 
 - Local synthetic parser suite: **239 passed, 10 skipped**. Targeted H3E91 parser regressions: **52 passed**. No real DEM.
 - Isolated writer concurrency: **30 lifecycle cases plus 50 stress executions passed**. These are not integrated races or failures.
-- Local full-stack verifier: `python3 scripts/run-f553-closure-8.py` returned `NOT_PROVEN`, 145 migrations expected, 0 integrated races and 0 integrated failures; local full-stack CLI was not present. The executor now requires loopback endpoints, performs a clean local reset, and cannot return success until every mandatory gate has executed proof. The CI workflow uses the pinned official CLI setup and starts/stops a disposable stack; its result has **not** been observed.
+- The R1 verifier returned `NOT_PROVEN`, 145 migrations expected, 0 integrated races and 0 integrated failures. Its service-presence checks are not integrated proof.
 
 ## R2 executed attempt and precise blockers
 
