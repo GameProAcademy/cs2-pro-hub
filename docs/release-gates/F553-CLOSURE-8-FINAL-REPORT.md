@@ -1,4 +1,12 @@
-# F.5.3-CLOSURE.8-R7 — BLOCKED
+# F.5.3-CLOSURE.8-R9 — BLOCKED
+
+## Current R9 decision
+
+**IMPLEMENTED:** The disposable synthetic queue probe now keeps Worker A alive after its persisted claim, kills it with SIGKILL, verifies its signal exit and requires a different Worker B process for archival. The corrected `schema_version=1` and `analysis_version=v1` finalizer fixture remains in place. These are source changes only, not integrated pipeline evidence.
+
+**EXECUTED:** No clean full-stack R9 execution has been observed on this revision. **VERIFIED:** Source-level syntax and fail-closed checks only. **NOT_PROVEN:** integrated RAW/HOT/Storage FINISHED, job-bound ACK loss, process-abort event, exactly-once parser boundary, fifty real races, fifty real failures, Docker/browser/parser results from one run, and final CI conclusion. **BLOCKED:** all 18 mandatory gates remain unproven for R9. Production and Railway stay untouched; `realDemAuthorized=false`, `canonicalAuthorized=false`, `railwayAuthorized=false`, `productionWrites=false`.
+
+No FINAL_COMMIT, FINAL_CI_RUN or FINAL_CI_CONCLUSION is asserted for R9.
 
 ## R8 checkpoint — BLOCKED pending new execution
 
