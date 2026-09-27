@@ -1,4 +1,12 @@
-# F.5.3-CLOSURE.8-R3 — BLOCKED
+# F.5.3-CLOSURE.8-R4 — BLOCKED
+
+## R4 execution and CI blocker
+
+EXECUTED: `python3 -m py_compile scripts/run-f553-closure-8.py` succeeded; `python3 scripts/run-f553-closure-8.py` exited 1, reporting `[Errno 2] No such file or directory: 'supabase'`, 145 source migrations and zero integrated races/failures. The run produced fresh blocked full-schema and decision records with one shared run ID, timestamps and explicit non-authorizing locks. The workflow now checks Docker, Supabase CLI version and disposable inputs before startup and shares one run identity. The verifier rejects stale matrix entries that differ in commit or workflow run. These source changes were validated locally, not executed in GitHub Actions.
+
+FAIL: No clean disposable Supabase installation or integrated scenario executed in this R4 run. `supabase`, Docker and authenticated GitHub Actions execution are unavailable in this environment; the repository remote is a private project mirror and there is no accessible GitHub connector. This does not establish a SQL migration failure. The existing CI job has no integrated lifecycle harness; its limited queue probe is not FINISHED/ACK-loss proof, and the verifier intentionally exits nonzero rather than marking unexecuted gates PASS. The workflow cannot attest its own final conclusion from inside its running job. R4 cannot be declared CLOSED or CI-ready solely on workflow configuration. The missing external access alone is not the only blocker: the real integrated harness, 50+50 distinct executed cases, Docker/browser proof and final-CI sealing must still be implemented and executed.
+
+NOT_PROVEN: full 145-migration install, PGMQ/PostgREST/Storage integrations, FINISHED, ACK loss, fresh worker, FAILED, ABORTED, idempotency, HOT/RAW identity, RAW integrity, exactly-once, race 0/50, failure 0/50, Docker, browser and exact-revision CI run/conclusion. Previous R3 parser and writer-only tests are historical, not R4 integrated or final CI proof. Production and Railway unchanged; real DEM, Attempt 9 and Canonical remain locked. **Decision: BLOCKED.**
 
 ## R3 executed evidence and remaining blockers
 
