@@ -1,3 +1,14 @@
+-- Ensure the approved internal execution role exists on a clean Supabase stack.
+-- Production/Lovable Cloud may already provision it; CREATE ROLE is therefore
+-- guarded and never changes existing role attributes.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'sandbox_exec') THEN
+    CREATE ROLE sandbox_exec NOLOGIN;
+  END IF;
+END
+$$;
+
 REVOKE ALL ON TABLE public.parser_attestation_nonces FROM PUBLIC, anon, authenticated, service_role, sandbox_exec;
 GRANT SELECT, INSERT ON TABLE public.parser_attestation_nonces TO service_role, sandbox_exec;
 
