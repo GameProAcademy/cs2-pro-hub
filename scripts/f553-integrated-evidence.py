@@ -83,8 +83,13 @@ def finished_contract_probe(env, api_url, key, user_id):
         "INSERT INTO public.match_sources(id,match_id,source,source_contract_version,fetched_at,upload_id,metadata) "
         f"VALUES ('{source_id}','{match_id}','demo','DISPOSABLE_TERMINALIZATION_FIXTURE',now(),'{upload_id}',"
         "'{\"disposable_fixture\":true}'::jsonb);")
+    # The finalizer writes schema_version and analysis_version to NOT NULL
+    # columns. An empty result is only valid for the negative precondition
+    # probe above; the positive disposable result must carry both versions.
+    fixture_result = json.dumps({'match_id': match_id, 'schema_version': 1,
+                                 'analysis_version': 'v1'}, separators=(',', ':'))
     if sql(env, "SELECT public.finish_demo_job_processed("
-           f"'{job_id}'::uuid,'{{\"match_id\":\"{match_id}\"}}'::jsonb);") != 't':
+           f"'{job_id}'::uuid,'{fixture_result}'::jsonb);") != 't':
         raise RuntimeError('Existing finalizer rejected disposable precondition')
     if sql(env, f"SELECT public.finish_demo_job_processed('{job_id}'::uuid,'{{}}'::jsonb);") != 't':
         raise RuntimeError('Finalizer replay was not idempotent')
