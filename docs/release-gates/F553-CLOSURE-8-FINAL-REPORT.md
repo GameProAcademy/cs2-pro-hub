@@ -1,4 +1,16 @@
-# F.5.3-CLOSURE.8-R5 — BLOCKED
+# F.5.3-CLOSURE.8-R5.1 — BLOCKED
+
+## R5.1 execution checkpoint
+
+The authenticated Quality Gates run [36295908680](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/36295908680) on `ec6c238e44366b19278775813a654277c538c35a` completed with **failure**. Its parser, contract and web jobs passed. The disposable job started, reset the local stack and passed the separate-process queue recovery step, but its final verifier failed. This is historical R5 evidence, **not** R5.1 evidence. The local R5.1 Python compile, remote-endpoint refusal checks and verifier refusal ran; the latter reported 145 source migrations, zero executed matrices, and `supabase` absent locally. No R5.1 GitHub Actions run has been observed.
+
+R5.1 adds disposable probes of the existing enqueue, claim, permanent-failure and cancellation functions and reads the terminal rows through local PostgREST. These additions have **not** been run against the full disposable stack; they are not FINISHED, true ACK-loss recovery, HOT/RAW/manifest/Storage, exactly-once, or 50/50 matrix proof. The final verifier remains BLOCKED unless all mandatory gates have same-run evidence; cancellation is deliberately not promoted to ABORTED proof. Production, Railway, DEM, Attempt 9 and Canonical were not touched.
+
+| BLOCKER_CODE | COMMAND | ACTUAL_OUTPUT | FILE / LINE | MISSING_PROOF | NEXT_ACTION |
+| --- | --- | --- | --- | --- | --- |
+| F553_R51_FINAL_CI | Quality Gates on R5.1 final SHA | Latest observed run `36295908680` is on older SHA `ec6c238e`, conclusion `failure`; no R5.1 run ID | `.github/workflows/quality-gates.yml:112` | Same-commit successful run and artifacts | Execute the synced R5.1 revision and inspect all job outputs. |
+| F553_R51_LIFECYCLE | `python3 scripts/f553-integrated-evidence.py` | Local stack unavailable; new job probes have no CI execution | `scripts/f553-integrated-evidence.py:59` | Actual FINISHED/HOT/RAW/Storage/ACK-loss/fresh-worker/FAILED/ABORTED/exactly-once integrated paths | Run disposable job probes in CI, then extend against real existing processing interfaces, fixing failures. |
+| F553_R51_MATRICES | `python3 scripts/run-f553-closure-8.py` | Local verifier exited 1; 0 race and 0 failure cases; `supabase` unavailable locally | `scripts/run-f553-closure-8.py:114` | 50/50 distinct executed cases with same-run provenance | Generate matrices only from real executed disposable scenarios, then verify. |
 
 ## R5 execution checkpoint
 
