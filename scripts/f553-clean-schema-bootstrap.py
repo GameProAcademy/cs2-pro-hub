@@ -1,49 +1,48 @@
 #!/usr/bin/env python3
-"""Fail-closed source migration ordering preflight; never contacts a database.
+"""RAW lineage preflight; textual references do not prove SQL dependency errors.
 
-An actual clean install with pgmq, Storage and PostgREST remains a separate gate.
+A successful local full-stack clean reset is the authoritative install gate.
+This report never connects to a production database.
 """
 import json
-import pathlib
+from pathlib import Path
 import re
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-MIGRATIONS = ROOT / "supabase/migrations"
-OUT = ROOT / "docs/release-gates/f553-clean-schema-lineage.json"
-TABLES = ("raw_evidence_artifacts", "raw_evidence_chunks")
+ROOT = Path(__file__).resolve().parents[1]
+MIGRATIONS = ROOT / 'supabase/migrations'
+OUT = ROOT / 'docs/release-gates/f553-clean-schema-lineage.json'
+INSTALL = ROOT / 'docs/release-gates/f553-full-schema-install.json'
+TABLES = ('raw_evidence_artifacts', 'raw_evidence_chunks')
 
 
 def main():
-    files = sorted(MIGRATIONS.glob("*.sql"))
-    references = {}
-    definitions = {}
+    files = sorted(MIGRATIONS.glob('*.sql'))
+    install = json.loads(INSTALL.read_text()) if INSTALL.exists() else {}
+    clean_passed = (install.get('full_supabase_install') == 'PASS'
+                    and install.get('environment') == 'local_disposable_supabase'
+                    and len(install.get('applied_versions', [])) >= len(files))
+    tables = {}
     for table in TABLES:
-        mentions = [(p, [i for i, line in enumerate(p.read_text().splitlines(), 1)
-                        if re.search(rf"\b{table}\b", line)]) for p in files]
-        references[table] = [dict(file=p.name, first_line=lines[0])
-                             for p, lines in mentions if lines]
-        definitions[table] = [p.name for p in files if re.search(
-            rf"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?{table}\b",
-            p.read_text(), re.I)]
-    violations = []
-    for table in TABLES:
-        if len(definitions[table]) != 1:
-            violations.append(f"{table}: expected exactly one defining migration")
-            continue
-        first = references[table][0]
-        if first["file"] != definitions[table][0]:
-            violations.append(f"{table}: first reference {first['file']}:{first['first_line']} precedes definition {definitions[table][0]}")
-    report = {
-        "phase": "F.5.3-CLOSURE.7", "scope": "static RAW dependency order only",
-        "definitions": definitions, "references": references, "violations": violations,
-        "source_lineage": "PASS" if not violations else "FAIL",
-        "full_schema_install": "NOT_PROVEN",
-        "note": "Static ordering cannot prove a clean migration chain or integrated services."
-    }
-    OUT.write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps({k: report[k] for k in ("source_lineage", "violations", "full_schema_install")}))
-    raise SystemExit(0 if not violations else 1)
+        definitions = [file.name for file in files if re.search(
+            rf'\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?{table}\b',
+            file.read_text(), re.I)]
+        mentions = [dict(file=file.name, first_line=next(
+            i for i, line in enumerate(file.read_text().splitlines(), 1)
+            if re.search(rf'\b{table}\b', line)))
+            for file in files if re.search(rf'\b{table}\b', file.read_text())]
+        tables[table] = dict(definition_migration=definitions[0] if len(definitions) == 1 else None,
+                             textual_references=mentions,
+                             first_real_dependency='NOT_PROVEN',
+                             dependency_order_valid='NOT_PROVEN',
+                             clean_install_result='PASS' if clean_passed else 'NOT_PROVEN')
+    report = dict(phase='F.5.3-CLOSURE.8-R1',
+                  scope='Textual references only; stored function bodies may resolve tables at runtime',
+                  tables=tables, source_lineage='PASS' if clean_passed else 'NOT_PROVEN',
+                  full_schema_install='PASS' if clean_passed else 'NOT_PROVEN')
+    OUT.write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps({key: report[key] for key in ('source_lineage', 'full_schema_install')}))
+    return 0 if clean_passed else 1
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    raise SystemExit(main())
