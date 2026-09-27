@@ -19,4 +19,4 @@
 - Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
 - Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.
 - Read H3E91 lifecycle only through the minimal service-role RPC; durable replay must reconcile queue state without rerunning the parser or exposing ledger rows.
-- Require committed RAW before FINISHED; compare RAW read-only. Use legacy grants and match-source fixtures only locally; they prove neither FINISHED nor Canonical/ACK without RAW, HOT and worker ACK.
+- Require committed RAW before FINISHED; compare RAW read-only. Local fixtures, standalone probes and self-attested CI never prove integrated RAW/HOT/ACK or Canonical; keep R11.1 disposable-only and fail-closed.

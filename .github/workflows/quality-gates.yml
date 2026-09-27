@@ -112,7 +112,7 @@ jobs:
   f553-closure-8-final:
     name: F553 CLOSURE 8 FINAL
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -142,6 +142,12 @@ jobs:
           supabase status
       - name: Reset full disposable schema before integration
         run: supabase db reset --local
+      - name: Execute R11.1 disposable evidence engine
+        if: always()
+        run: python3 scripts/f553-r11-execution-engine.py
+      - name: Independently verify R11.1 evidence
+        if: always()
+        run: python3 scripts/f553-r11-final-verifier.py
       - name: Execute disposable queue recovery and existing FAILED / cancelled job paths
         run: python3 scripts/f553-integrated-evidence.py
       - name: Verify parser image isolation in this run
@@ -181,6 +187,12 @@ jobs:
         with:
           name: f553-closure-8-disposable-evidence
           path: |
+            docs/release-gates/f553-r11-execution-evidence.json
+            docs/release-gates/f553-r11-race-matrix.json
+            docs/release-gates/f553-r11-failure-matrix.json
+            docs/release-gates/f553-r11-raw-corruption-matrix.json
+            docs/release-gates/f553-r11-final.json
+            docs/release-gates/F553-CLOSURE-8-R11-FINAL-REPORT.md
             docs/release-gates/f553-full-schema-install.json
             docs/release-gates/f553-clean-schema-lineage.json
             docs/release-gates/f553-race-matrix.json
