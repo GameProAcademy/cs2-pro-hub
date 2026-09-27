@@ -1,8 +1,8 @@
 {
-  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8",
+  "phase": "H.3-E.9.1-R4.3 / F.5.3-CLOSURE.8-R1",
   "final_decision": "BLOCKED",
-  "source_lineage": "FAIL",
-  "full_schema_install": "FAIL",
+  "source_lineage": "NOT_PROVEN",
+  "full_schema_install": "NOT_PROVEN",
   "raw_schema_equivalence": "PASS_SCOPED_TWO_TABLES_ONLY",
   "pgmq": "NOT_PROVEN",
   "postgrest": "NOT_PROVEN",
@@ -25,7 +25,7 @@
   "integrated_failure_matrix_passed": false,
   "docker": "NOT_PROVEN",
   "browser": "NOT_PROVEN",
-  "parser_tests": "239_PASS_10_SKIP",
+  "parser_tests": "239_PASS_10_SKIP_R1_LOCAL",
   "final_ci": "NOT_PROVEN",
   "FINAL_COMMIT": "NOT_VERIFIED_FINAL_COMMIT",
   "FINAL_CI_RUN": "NOT_PROVEN",
@@ -36,27 +36,48 @@
   "canonical": "LOCKED",
   "realDemAuthorized": false,
   "canonicalAuthorized": false,
-  "production_read_only": {"ledger": 0, "raw_artifacts": 2, "raw_chunks": 49, "scope": "read-only counts only; other production audit categories not proven"},
+  "production_read_only": {
+    "ledger": 0,
+    "raw_artifacts": 2,
+    "raw_chunks": 49,
+    "scope": "read-only counts only; other production audit categories not proven"
+  },
   "blockers": [
     {
-      "BLOCKER_CODE": "F553_C8_CLEAN_STACK_MISSING",
+      "BLOCKER_CODE": "F553_C8_FULL_STACK_UNEXECUTED",
       "COMMAND": "python3 scripts/run-f553-closure-8.py",
-      "ACTUAL_OUTPUT": "{\"result\": \"FAIL\", \"migration_count\": 145, \"failed_migration\": \"20260903012041_8f9d9da6-b7ae-44a5-94eb-f292e933310e.sql\", \"error\": \"ERROR:  schema \\\"auth\\\" does not exist\", \"cluster_destroyed\": true}",
-      "FILE": "supabase/migrations/20260903012041_8f9d9da6-b7ae-44a5-94eb-f292e933310e.sql",
-      "LINE": 22,
-      "MISSING_PROOF": "Complete clean installation in real disposable Supabase services and all integrated queue/Storage/RPC lifecycle gates.",
-      "WHAT_WAS_COMPLETED": "PostgreSQL 17.9 private cluster started; first migration executed and its exact SQL error recorded; cluster destroyed.",
-      "NEXT_ACTION": "Execute the new fail-closed CI job with Supabase CLI and Docker, inspect its clean-stack errors, repair source-only migrations without production writes, rerun all integrated scenarios."
+      "ACTUAL_OUTPUT": "{\"result\":\"NOT_PROVEN\",\"full_supabase_install\":\"NOT_PROVEN\",\"migration_count\":145,\"failed_migration\":null,\"error\":\"[Errno 2] No such file or directory: 'supabase'\",\"race_cases_executed\":0,\"failure_cases_executed\":0}",
+      "FILE": "scripts/run-f553-closure-8.py",
+      "LINE": 100,
+      "MISSING_PROOF": "Clean installation of all 145 migrations in a real disposable full stack. The plain PostgreSQL auth-schema error is not a full-stack failure.",
+      "NEXT_ACTION": "Run the pinned full-stack CI job on the final revision, collect its clean reset outcome and fix any source-only migration errors."
     },
     {
-      "BLOCKER_CODE": "F553_C8_STACK_CI_NOT_EXECUTED",
-      "COMMAND": "supabase start; docker version",
-      "ACTUAL_OUTPUT": "bash: supabase: command not found; bash: docker: command not found",
+      "BLOCKER_CODE": "F553_C8_INTEGRATED_SCENARIOS_UNIMPLEMENTED",
+      "COMMAND": "python3 scripts/run-f553-closure-8.py",
+      "ACTUAL_OUTPUT": "\"race_cases_executed\":0,\"failure_cases_executed\":0; mandatory_gates remain NOT_PROVEN",
+      "FILE": "scripts/run-f553-closure-8.py",
+      "LINE": 145,
+      "MISSING_PROOF": "Real pgmq/PostgREST/Storage FINISHED recovery, ACK-loss fresh-worker, FAILED/ABORTED, identity/integrity, exactly-once and 50 distinct executed races/failures. Service presence checks are not integrated proofs.",
+      "NEXT_ACTION": "Implement and execute a local-stack-only integration harness with persisted per-case before/after evidence, then rerun the clean stack gate."
+    },
+    {
+      "BLOCKER_CODE": "F553_C8_FINAL_CI_AND_OUTPUT_UNVERIFIED",
+      "COMMAND": "GitHub Actions F553 CLOSURE 8 FINAL on the exact final revision",
+      "ACTUAL_OUTPUT": "No final-revision CI run ID or conclusion was observed; Docker image and production-output browser were not executed in this revision.",
       "FILE": ".github/workflows/quality-gates.yml",
       "LINE": 112,
-      "MISSING_PROOF": "CI run on final revision, real Docker image, pgmq/PostgREST/Storage, browser production output and >=50 executed integrated cases per matrix.",
-      "WHAT_WAS_COMPLETED": "A dedicated fail-closed CI job was added; existing gates were retained; scoped RAW comparator passed; 30 writer cases plus 50 stress runs and 239 parser tests passed locally.",
-      "NEXT_ACTION": "Run CI on an exact finalized revision, repair failures and persist real per-case results; never report PASS from a configured but unexecuted job."
+      "MISSING_PROOF": "Exact-final-revision successful CI, Docker runtime isolation, and production-output browser verification.",
+      "NEXT_ACTION": "Run the full workflow after integrated harness completion; collect run ID, conclusion and browser/Docker evidence. Do not promote on configured-only CI."
     }
-  ]
+  ],
+  "plain_postgres_probe": "FAIL_NOT_FULL_STACK",
+  "full_stack_probe": "NOT_EXECUTED",
+  "local_executed": {
+    "parser_tests": "239 passed, 10 skipped",
+    "writer_only": "30 lifecycle cases and 50 stress executions",
+    "full_stack": "NOT_EXECUTED",
+    "integrated_races": 0,
+    "integrated_failures": 0
+  }
 }
