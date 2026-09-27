@@ -1,4 +1,49 @@
-# H.3-E.9.1-R4.1-C/F.5.3-CLOSURE.3 — execution evidence proof closure
+# H.3-E.9.1-R4.1-C/F.5.3-CLOSURE.4 — final execution evidence reconciliation
+
+## CLOSURE.4 FINAL REPORT
+
+- FINAL COMMIT: `ac39f0ff570b3744937cee47771abb91efe1f7e4` (source under test; this report is documentation-only)
+- FINAL CI: no externally verifiable run for the final source commit
+- FINAL CI RESULT: `NOT_RUN / NOT_PROVEN`
+- INTEGRATED FINISHED: `NOT_PROVEN`
+- FINISHED ACK LOSS: `NOT_PROVEN`
+- INTEGRATED FAILED: `NOT_PROVEN`
+- INTEGRATED ABORTED: `NOT_PROVEN`
+- HOT PROOF: `SOURCE_IMPLEMENTED / MOCKED_TEST_PASS / INTEGRATED_DB_PROOF_MISSING`; processed replay now requires the complete demo `match_sources` row for the same upload/match and exact parser/schema versions
+- RAW PROOF: `SOURCE_IMPLEMENTED / MOCKED_TEST_PASS / INTEGRATED_DB_PROOF_MISSING`; ready state, digest and audit are checked, but the repository has no migration creating `raw_evidence_artifacts` or `raw_evidence_chunks`
+- QUEUE IDEMPOTENCY: `NOT_PROVEN` against the real finalizer in an integrated disposable stack
+- RACE MATRIX: existing disposable writer harness `30/30` plus 50 stress executions PASS; required complete matrix `INCOMPLETE`
+- FAILURE MATRIX: original `15/15` transport cases retained; required explicit `>=43` machine-readable rows `INCOMPLETE`
+- MIGRATION LINEAGE: `PARTIAL`; authoritative bounded reader lineage PASS, complete disposable application schema unavailable
+- FULL SCHEMA EQUIVALENCE: `NOT_PROVEN`
+- UI RUNTIME: `FAIL` as a closure gate; current active `/` route is `src/routes/index.tsx` and redirects to `/login`, which rendered nonblank with zero uncaught browser exceptions, but production-output runtime sealing was not completed
+- DOCKER: `FAIL / NOT_RUN`; Docker is unavailable locally and no final-commit CI result exists
+- BROWSER: `FAIL / NOT_PROVEN`; source tests pass, but `verify:browser-parser-sealed` returned `H3E91_BROWSER_BUILD_OUTPUT_MISSING`
+- LIVE LEDGER: `0`; read-only audit reconfirmed RLS, one enabled append-only trigger, four unique indexes, owner `postgres`, `SECURITY DEFINER`, empty `search_path`, service-role-only writer/reader execution, and no direct tested-role INSERT
+- RAILWAY: `FROZEN / UNKNOWN PARITY`; deployment `7a540da0-3a69-44c0-9c42-40209f903fa7`, commit `ff0cc222f514c01eda6e26d7bb95271a8b0c9b04`, branch `infra/cs2-parser-worker-v8`, EnvironmentPatch `d66b5a12-a69e-4b9a-87b6-314f75c471cc` remains `STAGED`
+- REAL DEM: `LOCKED`; `realDemAuthorized=false`
+- ATTEMPT 9: `LOCKED / 0`
+- CANONICAL: `LOCKED`; `canonicalAuthorized=false`, 105-state matrix untouched
+- FINAL DECISION: **F.5.3-CLOSURE.4 BLOCKED**
+
+### Remaining blockers
+
+| BLOCKER_CODE | WHY | CURRENT_EVIDENCE | MISSING_PROOF | EXACT_NEXT_ACTION |
+|---|---|---|---|---|
+| `F553_SCHEMA_SOURCE_INCOMPLETE` | Source migrations reference but never create the RAW artifact/chunk relations. | Generated types and runtime code describe them; migration search found no `CREATE TABLE`. | Reproducible complete disposable schema. | Recover the authoritative non-production RAW schema migration into source, review it, and apply the full chain only to a disposable stack. |
+| `F553_INTEGRATED_RECOVERY_NOT_PROVEN` | PostgreSQL lifecycle/queue/finalizer state cannot be replaced by mocks. | Writer harness passes; 33 mocked reconciliation tests pass. | Real FINISHED, committed-response-lost, pre-commit failure, FAILED and ABORTED fresh-worker proofs with parser count one. | Run the required scenarios on a disposable Supabase-compatible stack with pgmq, PostgREST and Storage after the schema gap is repaired. |
+| `F553_HOT_RAW_IDENTITY_NOT_PROVEN` | Source checks do not prove persisted output survived acknowledgement loss. | Fail-closed HOT/RAW identity gates are implemented and unit-tested. | Same-execution HOT row, RAW artifact/chunks, digest/audit and no-duplicate persistence observations in real PostgreSQL/Storage. | Seed only disposable evidence through production persistence contracts and inspect it after fresh-worker reconciliation. |
+| `F553_QUEUE_IDEMPOTENCY_NOT_PROVEN` | Real archive/finalizer semantics were not exercised. | Finalizer SQL and fail-closed response handling were audited. | Valid duplicate completion, response loss and wrong identity calls against pgmq. | Execute the four required finalizer cases through real disposable RPCs and inspect queue/job state. |
+| `F553_RACE_MATRIX_INCOMPLETE` | Existing 30 cases omit required queue/worker/attempt and three-way identity races and do not emit the mandated artifact. | 30/30 lifecycle cases and 50 stress executions pass with independent PostgreSQL connections. | Every required row and persisted invariant result. | Extend the disposable harness without deleting existing cases and emit the specified machine-readable matrix. |
+| `F553_FAILURE_MATRIX_INCOMPLETE` | The required 43+ explicit rows do not exist. | Original 15 transport injections remain; additional mocked worker/reconciliation tests exist separately. | Unified 43+ row artifact with all required fields and real-DB rows where mandated. | Append all required recorder/lifecycle/lease/queue/reconciliation cases and preserve the original 15. |
+| `F553_FINAL_CI_MISSING` | The historical green run does not cover the final source. | Local web tests, typecheck, lint and focused 33-test reconciliation suite pass. | Green Quality Gates run tied to the exact final commit. | Run the existing Quality Gates on the final commit after integrated harnesses are added; record run ID and conclusion. |
+| `F553_DOCKER_NOT_PROVEN` | Local Docker is unavailable and final CI did not run. | Dockerfile allowlist and CI inspection step exist. | Built-image allowlist and non-root runtime result for final commit. | Execute the Docker isolation job in final CI. |
+| `F553_BROWSER_PRODUCTION_NOT_PROVEN` | No retained production build artifact was available. | Active dev route rendered correctly; source/build configuration tests pass. | Production-output sealing plus browser runtime checks against that output. | Produce the CI build artifact, run `verify:browser-parser-sealed`, serve it, and run the browser regression check. |
+| `F553_DEPLOYED_PARITY_UNKNOWN` | CI green is not deployed parity, and Railway changes are prohibited. | Deployment identifiers are recorded and untouched. | Independent source/image parity for the frozen deployment. | Perform a read-only independent parity audit in the separately authorized deployment gate; do not deploy here. |
+
+The missing proofs are not converted to PASS by source implementation, mocked tests, empty production rows, documentation, or the bounded reader snapshot. No prohibited operational action was performed.
+
+# H.3-E.9.1-R4.1-C/F.5.3-CLOSURE.3 — prior execution evidence checkpoint
 
 ## CURRENT STATE
 

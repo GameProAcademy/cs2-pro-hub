@@ -29,12 +29,25 @@ const boundJob = {
   worker_id: input.workerId,
   upload_id: "55555555-5555-5555-5555-555555555555",
   attempt_number: 1,
+  match_id: "77777777-7777-5777-8777-777777777777",
+  parser_name: "demoparser2",
+  parser_version: "0.42.0",
+  parser_revision: "git:synthetic",
+  schema_version: 1,
 };
 const readyArtifact = {
   status: "ready",
   raw_status: "ready",
   audit_status: "approved",
   root_digest: "a".repeat(64),
+};
+const persistedHotResult = {
+  match_id: boundJob.match_id,
+  upload_id: boundJob.upload_id,
+  source: "demo",
+  source_contract_version: "1",
+  source_version: "0.42.0",
+  status: "complete",
 };
 
 const lifecycle = (value: string, outcome: string | null = null) => ({
@@ -77,6 +90,7 @@ describe("durable execution reconciliation", () => {
       error: null,
     });
     maybeSingle.mockResolvedValueOnce({ data: readyArtifact, error: null });
+    maybeSingle.mockResolvedValueOnce({ data: persistedHotResult, error: null });
     rpc.mockResolvedValueOnce({ data: { acknowledged: true }, error: null });
 
     await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
@@ -134,6 +148,57 @@ describe("durable execution reconciliation", () => {
   });
 
   it.each([
+    ["missing match identity", { match_id: null }, persistedHotResult],
+    ["missing parser revision", { parser_revision: null }, persistedHotResult],
+    ["missing schema version", { schema_version: null }, persistedHotResult],
+    ["missing persisted HOT result", {}, null],
+    [
+      "stale persisted HOT result",
+      {},
+      { ...persistedHotResult, match_id: "88888888-8888-5888-8888-888888888888" },
+    ],
+    ["partial persisted HOT result", {}, { ...persistedHotResult, status: "incomplete" }],
+    [
+      "mismatched HOT schema contract",
+      {},
+      { ...persistedHotResult, source_contract_version: "2" },
+    ],
+    ["mismatched HOT parser version", {}, { ...persistedHotResult, source_version: "0.41.0" }],
+  ])("does not archive a processed job with %s", async (_case, changedJob, persistedResult) => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
+    maybeSingle.mockResolvedValueOnce({
+      data: { ...boundJob, status: "processed", ...changedJob },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({ data: readyArtifact, error: null });
+    if (Object.keys(changedJob).length === 0) {
+      maybeSingle.mockResolvedValueOnce({ data: persistedResult, error: null });
+    }
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "FINISHED",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("permits the explicit blocked RAW exception without a HOT result", async () => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "RAW_AUDIT_BLOCKED"));
+    maybeSingle.mockResolvedValueOnce({
+      data: { ...boundJob, status: "blocked_raw_audit" },
+      error: null,
+    });
+    maybeSingle.mockResolvedValueOnce({
+      data: { ...readyArtifact, audit_status: "blocked" },
+      error: null,
+    });
+    rpc.mockResolvedValueOnce({ data: { acknowledged: true }, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
+      status: "queue_reconciled",
+      lifecycle: "FINISHED",
+    });
+  });
+
+  it.each([
     ["expired lease", { acknowledged: false, reason: "lease_expired" }],
     ["stale claim", { acknowledged: false, reason: "claim_not_current" }],
     ["missing queue message", { acknowledged: false, reason: "message_not_archived" }],
@@ -148,6 +213,7 @@ describe("durable execution reconciliation", () => {
       error: null,
     });
     maybeSingle.mockResolvedValueOnce({ data: readyArtifact, error: null });
+    maybeSingle.mockResolvedValueOnce({ data: persistedHotResult, error: null });
     rpc.mockResolvedValueOnce({ data: result, error: null });
     await expect(reconcileDurableExecution(input)).resolves.toEqual({
       status: "reconciliation_required",
