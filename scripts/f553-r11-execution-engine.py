@@ -129,7 +129,7 @@ def main():
                 'attempt_number': 1,
                 'demo_sha256': fixture['sha256'],
                 'worker_id': 'f553-r11-real-parser-worker-a',
-                'worker_pid': process.pid if hasattr(process, 'pid') else parsed['worker_pid'],
+                'worker_pid': parsed['worker_pid'],
                 'worker_start': started_at,
                 'worker_end': finished_at,
                 'worker_exit_code': process.returncode,
@@ -201,7 +201,8 @@ def main():
                 write_status, _ = request(api_url, key, endpoint, 'POST', content)
                 read_status, read_back = request(api_url, key, endpoint)
                 return {'bucket': bucket, 'bucket_state': bucket_state, 'path': path,
-                        'method': 'POST', 'write_status': write_status,
+                        'method': 'POST', 'content_length': len(content),
+                        'write_status': write_status,
                         'read_status': read_status, 'bytes': len(read_back),
                         'written_sha256': hashlib.sha256(content).hexdigest(),
                         'read_sha256': hashlib.sha256(read_back).hexdigest(),
