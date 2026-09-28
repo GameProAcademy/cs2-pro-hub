@@ -57,8 +57,8 @@ def assess(payloads, conclusion='success', digest_override=None, status='complet
 
 
 class FailClosedAttestation(unittest.TestCase):
-    def test_baseline_schema(self):
-        self.assertEqual(assess(fixture()), [])
+    def test_self_reported_baseline_cannot_close(self):
+        self.assertIn('R11_INTEGRATED_BOUNDARY_NOT_INDEPENDENTLY_RECONSTRUCTED', assess(fixture()))
 
     def test_missing_evidence(self):
         data = fixture()
