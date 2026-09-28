@@ -28,7 +28,7 @@ jobs:
           F553_SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           F553_SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           F553_SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
-          F553_SOURCE_REF: ${{ github.event.workflow_run.head_branch }}
+          F553_SOURCE_REF: ${{ github.event.workflow_run.event == 'pull_request' && format('refs/pull/{0}/merge', github.event.workflow_run.pull_requests[0].number) || format('refs/heads/{0}', github.event.workflow_run.head_branch) }}
           F553_ATTESTATION_OUT: docs/release-gates/f553-r11-post-completion.json
         run: python3 scripts/f553-r11-post-completion-attest.py
       - name: Preserve post-completion decision

@@ -140,6 +140,14 @@ def attest(run, jobs, artifacts, archive, identity):
     else:
         if job.get('head_sha') != identity['commit_sha']:
             issues.append('R11_JOB_SHA_MISMATCH')
+    required_jobs = ('Web tests / lint / build', 'CS2 parser tests',
+                     'Contract-sensitive parser tests')
+    for job_name in required_jobs:
+        sibling = next((entry for entry in jobs.get('jobs', []) if entry.get('name') == job_name), None)
+        if (not sibling or sibling.get('status') != 'completed'
+                or sibling.get('conclusion') != 'success'
+                or sibling.get('head_sha') != identity['commit_sha']):
+            issues.append('R11_SIBLING_JOB_NOT_SUCCESSFUL_' + job_name.upper().replace(' ', '_'))
     artifact = next((entry for entry in artifacts.get('artifacts', []) if entry.get('name') == ARTIFACT), None)
     if not artifact or artifact.get('expired') is not False or not artifact.get('digest'):
         return issues + ['R11_ARTIFACT_MISSING_OR_EXPIRED'], None
