@@ -15,10 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout the exact completed execution source
+      - name: Checkout the trusted attestation source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
       - name: Independently inspect completed run and its artifact
         env:
