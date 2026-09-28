@@ -21,6 +21,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from f553.r11.fixture import acquire as acquire_fixture
+from f553.r11.lifecycle import create_disposable_job
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
@@ -143,6 +144,40 @@ def main():
             raise RuntimeError('Refused nonlocal disposable stack or missing local service identity')
         probe = load_probe()
         db = probe.database_env(db_url)
+
+        def claimed_job_parser():
+            fixture_path, fixture = acquire_fixture()
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            with tempfile.TemporaryDirectory(prefix='f553-r11-claimed-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                expected_file.write_text(json.dumps(identity))
+                env = clean | {'F553_LOCAL_DB_URL': db_url, 'F553_LOCAL_API_URL': api_url,
+                               'F553_LOCAL_SERVICE_KEY': key}
+                worker = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file)], cwd=ROOT, env=env,
+                    capture_output=True, text=True, timeout=650)
+                if worker.returncode:
+                    raise RuntimeError('R11_CLAIMED_WORKER_FAILED: ' + worker.stderr[:200])
+                observation = json.loads(worker.stdout)
+            claim = observation['claim']
+            if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
+                    or int(claim['message_id']) != int(identity['message_id'])):
+                raise RuntimeError('R11_JOB_BOUND_PARSER_IDENTITY_INVALID')
+            return {'fixture': fixture, 'identity': identity, 'worker': observation,
+                    'scope': 'real upload/queue/claim/Storage GET/parser; RAW/HOT/FINISHED/ACK and replay not proven'}
+
+        # This is a diagnostic until RAW/HOT/terminalization and retry/replay
+        # share this exact job. Do not promote it to any mandatory gate.
+        try:
+            evidence['observations']['job_bound_diagnostic'] = claimed_job_parser()
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError,
+                urllib.error.URLError) as exc:
+            evidence['blockers'].append({
+                'BLOCKER_CODE': 'R11_JOB_BOUND_LIFECYCLE_INCOMPLETE',
+                'ACTUAL_OUTPUT': str(exc)[:300], 'RUN_ID': evidence['run_id'],
+                'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+            })
 
         def real_parser():
             fixture_path, fixture = acquire_fixture()
