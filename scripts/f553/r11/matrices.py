@@ -19,7 +19,7 @@ from f553.r11.lifecycle import sql
 
 PHASE = "F.5.3-CLOSURE.8-R11.2"
 VERSION = 12
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "docs/release-gates"
 
 
