@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -19,7 +20,7 @@ from urllib.parse import quote, urlsplit
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from f553.r11.job_bound import start as start_job_bound
+from f553.r11.fixture import acquire as acquire_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
@@ -91,7 +92,7 @@ def main():
             evidence['gates'][gate] = 'FAIL'
             evidence['blockers'].append({'BLOCKER_CODE': f'R11_{gate.upper()}_FAILED',
                                          'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                                         'ACTUAL_OUTPUT': str(exc)[:8192], 'FILE': __file__,
+                                         'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__,
                                          'LINE': 0, 'RUN_ID': evidence['run_id'],
                                          'COMMIT_SHA': evidence['commit_sha'],
                                          'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
@@ -110,15 +111,50 @@ def main():
         db = probe.database_env(db_url)
 
         def real_parser():
-            return start_job_bound(db, db_url, api_url, key, probe.sql, request, ROOT)
+            fixture_path, fixture = acquire_fixture()
+            output_path = Path(tempfile.mkdtemp(prefix='f553-r11-parser-')) / 'parser-output.json'
+            command = [sys.executable, str(ROOT / 'scripts/f553/r11/parser_process.py'),
+                       str(fixture_path), str(output_path)]
+            started_at = time.time()
+            process = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=600)
+            finished_at = time.time()
+            if process.returncode != 0 or not output_path.is_file():
+                detail = next((line for line in process.stderr.splitlines() if line.strip()), 'parser process failed')
+                raise RuntimeError(detail[:300])
+            parsed = json.loads(output_path.read_text())
+            return {
+                'fixture': fixture,
+                'upload_id': str(uuid4()),
+                'job_id': str(uuid4()),
+                'attempt_number': 1,
+                'demo_sha256': fixture['sha256'],
+                'worker_id': 'f553-r11-real-parser-worker-a',
+                'worker_pid': parsed['worker_pid'],
+                'worker_start': started_at,
+                'worker_end': finished_at,
+                'worker_exit_code': process.returncode,
+                'parser_execution_id': parsed['parser_execution_id'],
+                'parser_version': parsed['parser_version'],
+                'parser_contract': parsed['parser_contract'],
+                'parser_start': parsed['parser_start'],
+                'parser_finish': parsed['parser_finish'],
+                'parser_exit_code': parsed['parser_exit_code'],
+                'parser_result': parsed['parser_result'],
+                'parser_output_digest': parsed['parser_output_digest'],
+                'players': parsed['players'], 'rounds': parsed['rounds'],
+                'events': parsed['events'],
+                'raw_evidence_present': parsed['raw_evidence_present'],
+                'result': 'PASS',
+            }
 
         attempt('parser_exactly_once', real_parser,
-                lambda o: o['parser_version'] == '0.42.0' and o['worker_exit_code'] == 0
+                lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
+                and o['parser_exit_code'] == 0 and o['raw_evidence_present']
                 and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
         if evidence['gates']['parser_exactly_once'] == 'PASS':
             evidence['gates']['parser_exactly_once'] = 'NOT_PROVEN'
             evidence['observations']['parser_exactly_once']['scope'] = (
-                'job-bound parser boundary; retries/recovery and RAW/HOT exactly-once not proven')
+                'real parser boundary only; not job-bound, retry/replay exactly-once not proven')
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
@@ -153,8 +189,7 @@ def main():
             try:
                 _, bucket_body = request(api_url, key, bucket_endpoint)
             except RuntimeError as exc:
-                if not (str(exc).startswith(('local HTTP 404 GET ', 'local HTTP 400 GET '))
-                        and '"code":"NoSuchBucket"' in str(exc)):
+                if 'local HTTP 404 GET' not in str(exc):
                     raise
                 request(api_url, key, '/storage/v1/bucket', 'POST',
                         json.dumps({'id': bucket, 'name': bucket, 'public': False,
@@ -209,7 +244,7 @@ def main():
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['blockers'].append({'BLOCKER_CODE': 'R11_LOCAL_STACK_UNAVAILABLE',
                                      'COMMAND': 'supabase status -o json',
-                                      'ACTUAL_OUTPUT': str(exc)[:8192], 'FILE': __file__, 'LINE': 0,
+                                     'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__, 'LINE': 0,
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
@@ -228,7 +263,7 @@ def main():
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
                 'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'Job-bound parser remains partial; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
+                'ACTUAL_OUTPUT': 'Fixture acquisition and real parser execution passed; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
                 'FILE': __file__, 'LINE': 0,
                 'MISSING_PROOF': 'integrated RAW/Storage/HOT/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
                 'NEXT_ACTION': 'Bind this parser result to one disposable upload/job/queue lifecycle and emit reconstructable snapshots.',
