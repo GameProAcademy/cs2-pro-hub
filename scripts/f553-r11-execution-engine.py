@@ -153,7 +153,8 @@ def main():
             try:
                 _, bucket_body = request(api_url, key, bucket_endpoint)
             except RuntimeError as exc:
-                if 'local HTTP 404 GET' not in str(exc):
+                if not (str(exc).startswith(('local HTTP 404 GET ', 'local HTTP 400 GET '))
+                        and '"code":"NoSuchBucket"' in str(exc)):
                     raise
                 request(api_url, key, '/storage/v1/bucket', 'POST',
                         json.dumps({'id': bucket, 'name': bucket, 'public': False,
