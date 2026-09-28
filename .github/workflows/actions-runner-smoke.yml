@@ -12,11 +12,11 @@ jobs:
     steps:
       - name: Runner identity
         run: |
-          echo "runner.name=${'{RUNNER_NAME}}"
-          echo "runner.os=${'{RUNNER_OS}}"
-          echo "runner.arch=${'{RUNNER_ARCH}}"
-          echo "sha=${'{GITHUB_SHA}}"
-          test -n "${'{RUNNER_NAME}}"
+          echo "runner.name=$RUNNER_NAME"
+          echo "runner.os=$RUNNER_OS"
+          echo "runner.arch=$RUNNER_ARCH"
+          echo "sha=$GITHUB_SHA"
+          test -n "$RUNNER_NAME"
       - name: Basic execution
         run: |
           python3 - <<'PY'
