@@ -127,11 +127,12 @@ def inspect_evidence(payloads, identity):
 
 def attest(run, jobs, artifacts, archive, identity):
     issues = []
-    if (run.get('status') != 'completed' or run.get('head_sha') != identity['commit_sha']
+    if (run.get('status') != 'completed' or run.get('conclusion') != 'success'
+            or run.get('head_sha') != identity['commit_sha']
             or str(run.get('id')) != identity['workflow_run_id']
             or str(run.get('run_attempt')) != identity['workflow_run_attempt']
             or run.get('name') != identity['workflow'] or run.get('path') != '.github/workflows/quality-gates.yml'):
-        issues.append('R11_WORKFLOW_PROVENANCE_MISMATCH')
+        issues.append('R11_WORKFLOW_NOT_SUCCESSFUL_OR_PROVENANCE_MISMATCH')
     job = next((entry for entry in jobs.get('jobs', []) if entry.get('name') == EXECUTION_JOB), None)
     if not job or job.get('status') != 'completed' or job.get('conclusion') != 'success':
         issues.append('R11_EXECUTION_JOB_NOT_SUCCESSFUL')
@@ -160,10 +161,12 @@ def attest(run, jobs, artifacts, archive, identity):
 
 
 def main():
+    # The attestation workflow has a different run identity from the execution
+    # workflow. These expected fields come from the completed workflow_run event.
     identity = {field: os.environ.get(variable) for field, variable in (
-        ('commit_sha', 'GITHUB_SHA'), ('workflow_run_id', 'GITHUB_RUN_ID'),
-        ('workflow_run_attempt', 'GITHUB_RUN_ATTEMPT'), ('workflow', 'GITHUB_WORKFLOW'),
-        ('ref', 'GITHUB_REF'))}
+        ('commit_sha', 'F553_SOURCE_SHA'), ('workflow_run_id', 'F553_SOURCE_RUN_ID'),
+        ('workflow_run_attempt', 'F553_SOURCE_RUN_ATTEMPT'),
+        ('workflow', 'F553_SOURCE_WORKFLOW'), ('ref', 'F553_SOURCE_REF'))}
     token = os.environ.get('GITHUB_TOKEN')
     issues = []
     digest = None
@@ -181,17 +184,15 @@ def main():
         issues, digest = attest(run, jobs, artifacts, archive, identity)
     except (OSError, KeyError, ValueError, RuntimeError, urllib.error.URLError) as exc:
         issues.append('R11_ATTESTATION_UNAVAILABLE_' + type(exc).__name__.upper())
-    # The workflow itself remains in progress while Job B runs. A separate
-    # completed-workflow witness is still necessary for an overall CI seal.
-    issues.append('R11_OVERALL_WORKFLOW_CONCLUSION_NOT_POST_COMPLETION')
+    decision = 'CLOSED' if not issues else 'BLOCKED'
     result = {'phase': PHASE, 'evidence_version': 12, **identity,
-              'final_decision': 'BLOCKED', 'final_ci': 'NOT_PROVEN',
+              'final_decision': decision, 'final_ci': 'PASS' if not issues else 'NOT_PROVEN',
               'artifact_digest': digest, 'issues': issues,
               **{lock: False for lock in LOCKS}, 'verified_at': time.time()}
     path = Path(os.environ.get('F553_ATTESTATION_OUT', '/tmp/f553-r11-post-completion.json'))
     path.write_text(json.dumps(result, indent=2) + '\n')
-    print(json.dumps({'final_decision': 'BLOCKED', 'issues': issues, 'artifact_digest': digest}))
-    return 1
+    print(json.dumps({'final_decision': decision, 'issues': issues, 'artifact_digest': digest}))
+    return 0 if not issues else 1
 
 
 if __name__ == '__main__':
