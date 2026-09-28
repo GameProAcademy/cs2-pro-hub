@@ -151,7 +151,7 @@ def main():
             with tempfile.TemporaryDirectory(prefix='f553-r11-claimed-') as tmp:
                 expected_file = Path(tmp) / 'expected.json'
                 expected_file.write_text(json.dumps(identity))
-                env = clean | {'F553_LOCAL_DB_URL': db_url, 'F553_LOCAL_API_URL': api_url,
+                env = clean | {'PYTHONPATH': str(ROOT / 'scripts'), 'F553_LOCAL_DB_URL': db_url, 'F553_LOCAL_API_URL': api_url,
                                'F553_LOCAL_SERVICE_KEY': key}
                 worker = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
