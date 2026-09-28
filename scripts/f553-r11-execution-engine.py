@@ -536,11 +536,13 @@ def main():
             '',
             '## Evidence',
             '',
-            '- Integrated lifecycle: real upload -> queue -> claim -> demoparser2 0.42.0 -> RAW -> read-back/integrity -> HOT -> FINISHED -> ACK.',
-            '- Recovery: Worker A SIGKILL/lease expiry and Worker B recovery.',
-            '- ACK loss: FINISHED before ACK, Worker A termination, terminal redelivery reconciliation.',
-            '- PROCESS_ABORTED: real claimed job terminalized through the database failure boundary.',
-            '- Matrices: 50 race cases, 50 failure cases, 16 RAW corruption cases, all backed by executed operations.',
+            f"- Integrated lifecycle observed: {'yes' if 'integrated_lifecycle' in evidence['observations'] else 'no'}",
+            f"- Fresh-worker recovery gate: {evidence['gates'].get('fresh_worker')}",
+            f"- ACK-loss gate: {evidence['gates'].get('ack_loss')}",
+            f"- PROCESS_ABORTED gate: {evidence['gates'].get('aborted')}",
+            f"- Race matrix cases: {evidence.get('observations', {}).get('matrices', {}).get('race', {}).get('case_count', 0)}",
+            f"- Failure matrix cases: {evidence.get('observations', {}).get('matrices', {}).get('failure', {}).get('case_count', 0)}",
+            f"- RAW corruption matrix cases: {evidence.get('observations', {}).get('matrices', {}).get('raw-corruption', {}).get('case_count', 0)}",
             '- final_ci remains NOT_PROVEN by design; independent Job B is required.',
         ])
         (ROOT / 'docs/release-gates/F553-CLOSURE-8-R11-FINAL-REPORT.md').write_text(
