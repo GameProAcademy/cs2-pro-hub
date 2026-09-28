@@ -50,8 +50,10 @@ def assess(payloads, conclusion='success', digest_override=None, status='complet
     run = {'status': status, 'conclusion': conclusion, 'head_sha': IDENTITY['commit_sha'],
            'id': 123, 'run_attempt': 1, 'name': IDENTITY['workflow'],
            'path': '.github/workflows/quality-gates.yml'}
-    jobs = {'jobs': [{'name': attest.EXECUTION_JOB, 'status': 'completed',
-                      'conclusion': 'success', 'head_sha': IDENTITY['commit_sha']}]}
+    jobs = {'jobs': [{'name': name, 'status': 'completed',
+                      'conclusion': 'success', 'head_sha': IDENTITY['commit_sha']}
+                     for name in (attest.EXECUTION_JOB, 'Web tests / lint / build',
+                                  'CS2 parser tests', 'Contract-sensitive parser tests')]}
     artifacts = {'artifacts': [{'name': attest.ARTIFACT, 'expired': False, 'digest': digest}]}
     return attest.attest(run, jobs, artifacts, data, IDENTITY)[0]
 
@@ -107,11 +109,25 @@ class FailClosedAttestation(unittest.TestCase):
         self.assertIn('R11_ARTIFACT_DIGEST_MISMATCH', assess(data, digest_override='sha256:' + '0' * 64))
         self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, conclusion='failure'))
         self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, status='queued'))
+        self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, status='in_progress'))
 
     def test_self_attestation(self):
         data = fixture()
         data['f553-r11-execution-evidence.json']['gates']['final_ci'] = 'PASS'
         self.assertIn('R11_SELF_ATTESTATION', assess(data))
+
+    def test_sibling_failure_blocks_closure(self):
+        data = fixture()
+        encoded = archive(data)
+        run = {'status': 'completed', 'conclusion': 'success',
+               'head_sha': IDENTITY['commit_sha'], 'id': 123, 'run_attempt': 1,
+               'name': IDENTITY['workflow'], 'path': '.github/workflows/quality-gates.yml'}
+        jobs = {'jobs': [{'name': attest.EXECUTION_JOB, 'status': 'completed',
+                          'conclusion': 'success', 'head_sha': IDENTITY['commit_sha']}]}
+        artifacts = {'artifacts': [{'name': attest.ARTIFACT, 'expired': False,
+                                   'digest': 'sha256:' + hashlib.sha256(encoded).hexdigest()}]}
+        issues, _ = attest.attest(run, jobs, artifacts, encoded, IDENTITY)
+        self.assertTrue(any(issue.startswith('R11_SIBLING_JOB_NOT_SUCCESSFUL') for issue in issues))
 
 
 if __name__ == '__main__':

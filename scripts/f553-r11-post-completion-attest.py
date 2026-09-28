@@ -127,8 +127,8 @@ def inspect_evidence(payloads, identity):
 
 def attest(run, jobs, artifacts, archive, identity):
     issues = []
-    run_status_valid = run.get('status') in ('in_progress', 'completed')
-    run_conclusion_valid = run.get('status') == 'in_progress' or run.get('conclusion') == 'success'
+    run_status_valid = run.get('status') == 'completed'
+    run_conclusion_valid = run.get('conclusion') == 'success'
     if (not run_status_valid or not run_conclusion_valid or run.get('head_sha') != identity['commit_sha']
             or str(run.get('id')) != identity['workflow_run_id']
             or str(run.get('run_attempt')) != identity['workflow_run_attempt']
@@ -140,6 +140,14 @@ def attest(run, jobs, artifacts, archive, identity):
     else:
         if job.get('head_sha') != identity['commit_sha']:
             issues.append('R11_JOB_SHA_MISMATCH')
+    required_jobs = ('Web tests / lint / build', 'CS2 parser tests',
+                     'Contract-sensitive parser tests')
+    for job_name in required_jobs:
+        sibling = next((entry for entry in jobs.get('jobs', []) if entry.get('name') == job_name), None)
+        if (not sibling or sibling.get('status') != 'completed'
+                or sibling.get('conclusion') != 'success'
+                or sibling.get('head_sha') != identity['commit_sha']):
+            issues.append('R11_SIBLING_JOB_NOT_SUCCESSFUL_' + job_name.upper().replace(' ', '_'))
     artifact = next((entry for entry in artifacts.get('artifacts', []) if entry.get('name') == ARTIFACT), None)
     if not artifact or artifact.get('expired') is not False or not artifact.get('digest'):
         return issues + ['R11_ARTIFACT_MISSING_OR_EXPIRED'], None

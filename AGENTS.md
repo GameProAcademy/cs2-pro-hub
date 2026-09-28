@@ -19,4 +19,4 @@
 - Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
 - Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.
 - Read H3E91 lifecycle only through the minimal service-role RPC; durable replay must reconcile queue state without rerunning the parser or exposing ledger rows.
-- Require committed RAW before FINISHED; compare it read-only. Keep R11 disposable-only and fail-closed: probes, self-reported matrices and CI metadata cannot prove integrated parser/RAW/HOT/ACK or Canonical; require independent post-run reconstruction.
+- Require committed RAW before FINISHED; compare read-only. R11 stays disposable and fail-closed: probes and claims cannot prove integration; attest independently after the source workflow completes.

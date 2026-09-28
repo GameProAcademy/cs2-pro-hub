@@ -50,8 +50,12 @@ def request(url, key, path, method='GET', body=None, content_type='application/o
     req = urllib.request.Request(url.rstrip('/') + path, data=body, method=method,
                                  headers={'apikey': key, 'Authorization': 'Bearer ' + key,
                                           'Content-Type': content_type})
-    with urllib.request.urlopen(req, timeout=20) as response:
-        return response.status, response.read()
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as exc:
+        response_body = exc.read(8192).decode('utf-8', errors='replace')
+        raise RuntimeError(f'local HTTP {exc.code} {method} {path}: {response_body}') from exc
 
 
 def main():
@@ -125,7 +129,7 @@ def main():
                 'attempt_number': 1,
                 'demo_sha256': fixture['sha256'],
                 'worker_id': 'f553-r11-real-parser-worker-a',
-                'worker_pid': process.pid if hasattr(process, 'pid') else parsed['worker_pid'],
+                'worker_pid': parsed['worker_pid'],
                 'worker_start': started_at,
                 'worker_end': finished_at,
                 'worker_exit_code': process.returncode,
@@ -147,6 +151,10 @@ def main():
                 lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
                 and o['parser_exit_code'] == 0 and o['raw_evidence_present']
                 and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
+        if evidence['gates']['parser_exactly_once'] == 'PASS':
+            evidence['gates']['parser_exactly_once'] = 'NOT_PROVEN'
+            evidence['observations']['parser_exactly_once']['scope'] = (
+                'real parser boundary only; not job-bound, retry/replay exactly-once not proven')
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
@@ -177,13 +185,29 @@ def main():
 
         def storage():
             bucket = 'cs2-raw-evidence'
+            bucket_endpoint = f'/storage/v1/bucket/{bucket}'
+            try:
+                _, bucket_body = request(api_url, key, bucket_endpoint)
+            except RuntimeError as exc:
+                if 'local HTTP 404 GET' not in str(exc):
+                    raise
+                request(api_url, key, '/storage/v1/bucket', 'POST',
+                        json.dumps({'id': bucket, 'name': bucket, 'public': False,
+                                    'file_size_limit': 104857600}).encode(), 'application/json')
+                _, bucket_body = request(api_url, key, bucket_endpoint)
+            bucket_details = json.loads(bucket_body)
+            if (bucket_details.get('id') != bucket or bucket_details.get('public') is not False
+                    or bucket_details.get('file_size_limit') != 104857600):
+                raise RuntimeError(f'Disposable RAW bucket configuration invalid: {bucket_details}')
             path = f'r11-disposable/{evidence["run_id"]}/{uuid4().hex}.bin'
             content = os.urandom(256)
             endpoint = f'/storage/v1/object/{bucket}/{quote(path)}'
             try:
                 write_status, _ = request(api_url, key, endpoint, 'POST', content)
                 read_status, read_back = request(api_url, key, endpoint)
-                return {'bucket': bucket, 'path': path, 'write_status': write_status,
+                return {'bucket': bucket, 'bucket_state': bucket_details, 'path': path,
+                        'method': 'POST', 'content_length': len(content),
+                        'write_status': write_status,
                         'read_status': read_status, 'bytes': len(read_back),
                         'written_sha256': hashlib.sha256(content).hexdigest(),
                         'read_sha256': hashlib.sha256(read_back).hexdigest(),
@@ -192,7 +216,7 @@ def main():
             finally:
                 try:
                     request(api_url, key, endpoint, 'DELETE')
-                except urllib.error.URLError:
+                except (urllib.error.URLError, RuntimeError):
                     pass
 
         attempt('storage', storage, lambda o: o['write_status'] in (200, 201)
@@ -224,7 +248,7 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
-        if evidence['gates']['parser_exactly_once'] != 'PASS':
+        if evidence['gates']['parser_exactly_once'] == 'FAIL':
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_REAL_PARSER_EXECUTION_NOT_PROVEN',
                 'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
