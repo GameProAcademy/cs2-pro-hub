@@ -145,6 +145,51 @@ def main():
         probe = load_probe()
         db = probe.database_env(db_url)
 
+        def failed():
+            fixture_path, fixture = acquire_fixture()
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            duplicate = json.loads(probe.sql(db, f"SELECT public.enqueue_demo_job('{identity['upload_id']}'::uuid,'{identity['user_id']}'::uuid);"))
+            if duplicate.get('queued') is not False or duplicate.get('job_id') != identity['job_id']:
+                raise RuntimeError('R11_FAILED_DUPLICATE_ENQUEUE_NOT_IDEMPOTENT')
+            with tempfile.TemporaryDirectory(prefix='f553-r11-failure-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                expected_file.write_text(json.dumps(identity))
+                env = clean | {'PYTHONPATH': str(ROOT / 'scripts'), 'F553_LOCAL_DB_URL': db_url,
+                               'F553_LOCAL_API_URL': api_url, 'F553_LOCAL_SERVICE_KEY': key}
+                worker = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file), '--inject-parser-failure'],
+                    cwd=ROOT, env=env, capture_output=True, text=True, timeout=650)
+                if worker.returncode:
+                    raise RuntimeError('R11_FAILED_WORKER_FAILED: ' + worker.stderr[:200])
+                observation = json.loads(worker.stdout)
+            claim = observation['claim']
+            if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
+                    or int(claim['message_id']) != int(identity['message_id'])
+                    or claim['storage_path'] != identity['storage_path']
+                    or claim['demo_sha256'] != identity['demo_sha256']
+                    or int(claim['attempt_number']) != identity['attempt_number']):
+                raise RuntimeError('R11_FAILED_CLAIM_IDENTITY_MISMATCH')
+            state = probe.sql(db, f"SELECT status,upload_id,queue_message_id FROM public.demo_jobs WHERE id='{identity['job_id']}';")
+            archived = probe.sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};")
+            stale = json.loads(probe.sql(db, "SELECT public.fail_demo_parse_message("
+                f"'{identity['job_id']}'::uuid,{int(identity['message_id'])},"
+                f"{int(claim['attempt'])},'{observation['worker_id']}',"
+                "'PARSER_FAILURE_INJECTED','Duplicate delivery',true);"))
+            status, body = request(api_url, key, f"/rest/v1/demo_jobs?id=eq.{identity['job_id']}&select=id,status,upload_id")
+            rows = json.loads(body)
+            if (state != f"failed|{identity['upload_id']}|{identity['message_id']}" or archived != '1'
+                    or stale.get('accepted') is not False or status != 200 or len(rows) != 1
+                    or rows[0]['status'] != 'failed' or rows[0]['upload_id'] != identity['upload_id']
+                    or observation['failure']['parser_execution_count'] != 1):
+                raise RuntimeError('R11_FAILED_TERMINAL_REPLAY_OR_ARCHIVE_MISMATCH')
+            return {'fixture': fixture, 'identity': identity, 'worker': observation,
+                    'terminal_state': state, 'archive_count': int(archived),
+                    'stale_retry': stale, 'postgrest_status': status, 'observed_at': time.time()}
+
+        attempt('failed', failed, lambda o: o['terminal_state'].startswith('failed|')
+                and o['archive_count'] == 1 and o['stale_retry']['accepted'] is False)
+
         def claimed_job_parser():
             fixture_path, fixture = acquire_fixture()
             identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
@@ -240,22 +285,6 @@ def main():
         if evidence['gates']['storage'] == 'PASS':
             evidence['gates']['storage'] = 'NOT_PROVEN'
 
-        def failed():
-            _, body = request(api_url, key, '/auth/v1/admin/users', 'POST',
-                              json.dumps({'email': f'r11-{uuid4().hex}@example.invalid',
-                                          'email_confirm': True, 'password': uuid4().hex + uuid4().hex}).encode(),
-                              'application/json')
-            user_id = json.loads(body)['id']
-            return probe.real_job_terminal_probe(db, api_url, key, user_id, 'failed')
-
-        attempt('failed', failed, lambda o: o['status'] == 'failed' and o['archive_count'] == 1
-                and o['postgrest_status'] == 200 and o['duplicate_enqueue_rejected']
-                and o['stale_terminal_retry_rejected'])
-        # FAILED is a real terminal RPC probe, not proof of a parser failure inside
-        # the worker. It must not be promoted as the integrated mandatory gate.
-        if evidence['gates']['failed'] == 'PASS':
-            evidence['gates']['failed'] = 'NOT_PROVEN'
-            evidence['observations']['failed']['scope'] = 'terminal RPC only; parser failure boundary not executed'
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['blockers'].append({'BLOCKER_CODE': 'R11_LOCAL_STACK_UNAVAILABLE',
                                      'COMMAND': 'supabase status -o json',
