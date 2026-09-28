@@ -16,9 +16,7 @@ def local_url(url: str, scheme: str, port: int) -> bool:
     parsed = urlsplit(url)
     return (parsed.scheme == scheme and parsed.hostname in ('127.0.0.1', 'localhost')
             and parsed.port == port and not parsed.fragment and not parsed.query
-            and not parsed.username if scheme == 'http' else
-            parsed.scheme == scheme and parsed.hostname in ('127.0.0.1', 'localhost')
-            and parsed.port == port and not parsed.fragment and not parsed.query)
+            and (scheme != 'http' or not parsed.username))
 
 
 def database_env(url: str) -> dict[str, str]:
@@ -122,7 +120,7 @@ def create_disposable_job(db: dict[str, str], api_url: str, key: str,
     if enqueued.get('queued') is not True or enqueued.get('attempt_number') != 1:
         raise RuntimeError('R11_JOB_NOT_QUEUED')
     row = sql(db, 'SELECT row_to_json(j) FROM (SELECT id,upload_id,user_id,storage_path,demo_sha256,'
-              f'file_size,attempt_number,queue_message_id,dispatch_attempt,status FROM public.demo_jobs WHERE id=\'{job_id}\') j;')
+              f"file_size,attempt_number,queue_message_id,dispatch_attempt,status FROM public.demo_jobs WHERE id='{job_id}') j;")
     job = json.loads(row)
     if (job['id'] != job_id or job['upload_id'] != upload_id or job['user_id'] != user_id
             or job['storage_path'] != storage_path or job['demo_sha256'] != fixture['sha256']
