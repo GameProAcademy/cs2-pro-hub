@@ -179,51 +179,10 @@ def main():
                 'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
             })
 
-        def real_parser():
-            fixture_path, fixture = acquire_fixture()
-            output_path = Path(tempfile.mkdtemp(prefix='f553-r11-parser-')) / 'parser-output.json'
-            command = [sys.executable, str(ROOT / 'scripts/f553/r11/parser_process.py'),
-                       str(fixture_path), str(output_path)]
-            started_at = time.time()
-            process = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=600)
-            finished_at = time.time()
-            if process.returncode != 0 or not output_path.is_file():
-                detail = next((line for line in process.stderr.splitlines() if line.strip()), 'parser process failed')
-                raise RuntimeError(detail[:300])
-            parsed = json.loads(output_path.read_text())
-            return {
-                'fixture': fixture,
-                'upload_id': str(uuid4()),
-                'job_id': str(uuid4()),
-                'attempt_number': 1,
-                'demo_sha256': fixture['sha256'],
-                'worker_id': 'f553-r11-real-parser-worker-a',
-                'worker_pid': parsed['worker_pid'],
-                'worker_start': started_at,
-                'worker_end': finished_at,
-                'worker_exit_code': process.returncode,
-                'parser_execution_id': parsed['parser_execution_id'],
-                'parser_version': parsed['parser_version'],
-                'parser_contract': parsed['parser_contract'],
-                'parser_start': parsed['parser_start'],
-                'parser_finish': parsed['parser_finish'],
-                'parser_exit_code': parsed['parser_exit_code'],
-                'parser_result': parsed['parser_result'],
-                'parser_output_digest': parsed['parser_output_digest'],
-                'players': parsed['players'], 'rounds': parsed['rounds'],
-                'events': parsed['events'],
-                'raw_evidence_present': parsed['raw_evidence_present'],
-                'result': 'PASS',
-            }
-
-        attempt('parser_exactly_once', real_parser,
-                lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
-                and o['parser_exit_code'] == 0 and o['raw_evidence_present']
-                and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
-        if evidence['gates']['parser_exactly_once'] == 'PASS':
-            evidence['gates']['parser_exactly_once'] = 'NOT_PROVEN'
-            evidence['observations']['parser_exactly_once']['scope'] = (
-                'real parser boundary only; not job-bound, retry/replay exactly-once not proven')
+        evidence['observations']['parser_exactly_once'] = {
+            'scope': 'job-bound parser diagnostic only; retry/replay exactly-once not proven',
+            'job_bound_observed': 'job_bound_diagnostic' in evidence['observations'],
+        }
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
