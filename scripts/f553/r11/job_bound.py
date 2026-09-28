@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from f553.r11.integrated import run_integrated
 from f553.r11.lifecycle import database_env, http, ident, object_path, sql
@@ -35,17 +35,31 @@ def recover_terminal(db_url: str, expected: dict) -> dict:
             'checkpoint': 'TERMINAL_REDELIVERY_ACKNOWLEDGED'}
 
 
+def _uuid_field(label: str, value: object) -> str:
+    try:
+        return str(UUID(str(value)))
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise RuntimeError(f'R11_UUID_FIELD_INVALID:{label}:{value!r}') from exc
+
+
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
                   inject_parser_failure: bool = False, defer_ack: bool = False,
-                  checkpoint_file: str | None = None, hold_after_claim: bool = False) -> dict:
+                  checkpoint_file: str | None = None, hold_after_claim: bool = False,
+                  lease_seconds: int = 900) -> dict:
     db = database_env(db_url)
     worker_id = 'r11-disposable-' + uuid4().hex
     started_at = time.time()
-    claimed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',900,1);"))
+    if lease_seconds < 1 or lease_seconds > 3600:
+        raise RuntimeError('R11_LEASE_SECONDS_INVALID')
+    claimed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',{lease_seconds},1);"))
     if claimed.get('status') != 'claimed':
         raise RuntimeError('R11_EXPECTED_JOB_NOT_CLAIMED')
-    if (ident(claimed['job_id']) != ident(expected['job_id'])
-            or ident(claimed['upload_id']) != ident(expected['upload_id'])
+    claimed_job_id = _uuid_field('claim.job_id', claimed.get('job_id'))
+    claimed_upload_id = _uuid_field('claim.upload_id', claimed.get('upload_id'))
+    expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
+    expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
+    if (claimed_job_id != expected_job_id
+            or claimed_upload_id != expected_upload_id
             or int(claimed['message_id']) != int(expected['message_id'])
             or claimed['storage_path'] != expected['storage_path']
             or claimed['demo_sha256'] != expected['demo_sha256']
@@ -140,7 +154,8 @@ def main() -> int:
                                inject_parser_failure='--inject-parser-failure' in flags,
                                defer_ack='--defer-ack' in flags,
                                checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
-                               hold_after_claim='--hold-after-claim' in flags)
+                               hold_after_claim='--hold-after-claim' in flags,
+                               lease_seconds=int(os.environ.get('F553_LEASE_SECONDS', '900')))
     print(json.dumps(result, separators=(',', ':')), flush=True)
     return 0
 
