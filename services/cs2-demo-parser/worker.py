@@ -7,6 +7,7 @@ import json
 import logging
 import resource
 import time
+from urllib.parse import urlparse
 from typing import Any, Callable
 
 import httpx
@@ -24,7 +25,17 @@ async def _bridge(client: httpx.AsyncClient, settings: Settings, action: str, bo
         headers={"authorization": f"Bearer {settings.bridge_secret}"},
         json=body,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        parsed = urlparse(settings.bridge_url)
+        logger.error(
+            "bridge_http_rejection action=%s status=%s host=%s",
+            action,
+            response.status_code,
+            parsed.netloc or "unknown",
+        )
+        raise
     payload = response.json()
     if not isinstance(payload, dict):
         raise RuntimeError("invalid bridge response")
