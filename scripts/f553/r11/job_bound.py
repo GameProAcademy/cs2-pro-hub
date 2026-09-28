@@ -33,7 +33,10 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
               'claim': claimed, 'checkpoint': 'CLAIMED'}
     _, content = http(api_url, key, object_path('demos', claimed['storage_path']))
     digest = hashlib.sha256(content).hexdigest()
-    if len(content) != claimed['file_size'] or digest != claimed['demo_sha256']:
+    if (len(content) != claimed['file_size'] or digest != claimed['demo_sha256']
+            or len(content) != expected['upload_storage']['bytes']
+            or digest != expected['upload_storage']['written_sha256']
+            or digest != expected['upload_storage']['read_sha256']):
         raise RuntimeError('R11_STORAGE_INPUT_IDENTITY_MISMATCH')
     result['input'] = {'input_source': 'claimed_job_storage_path', 'storage_bucket': 'demos',
                        'storage_path': claimed['storage_path'], 'uploaded_size': expected['upload_storage']['bytes'],
