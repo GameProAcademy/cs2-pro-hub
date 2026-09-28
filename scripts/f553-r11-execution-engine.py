@@ -263,28 +263,18 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
-        if evidence['gates']['parser_exactly_once'] == 'FAIL':
-            evidence['blockers'].append({
-                'BLOCKER_CODE': 'R11_REAL_PARSER_EXECUTION_NOT_PROVEN',
-                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'The pinned disposable CS2 fixture did not complete the demoparser2 0.42.0 boundary.',
-                'FILE': __file__, 'LINE': 0,
-                'MISSING_PROOF': 'one real parser execution bound to the verified disposable fixture',
-                'NEXT_ACTION': 'Inspect the parser subprocess observation and correct the first concrete failure.',
-                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
-                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-            })
-        else:
-            evidence['blockers'].append({
-                'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
-                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'Fixture acquisition and real parser execution passed; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
-                'FILE': __file__, 'LINE': 0,
-                'MISSING_PROOF': 'integrated RAW/Storage/HOT/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
-                'NEXT_ACTION': 'Bind this parser result to one disposable upload/job/queue lifecycle and emit reconstructable snapshots.',
-                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
-                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-            })
+        evidence['blockers'].append({
+            'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
+            'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
+            'ACTUAL_OUTPUT': ('Job-bound disposable parser diagnostic completed; downstream lifecycle still unproven.'
+                              if 'job_bound_diagnostic' in evidence['observations'] else
+                              'Job-bound disposable parser diagnostic did not complete.'),
+            'FILE': __file__, 'LINE': 0,
+            'MISSING_PROOF': 'RAW/Storage/HOT/FINISHED/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
+            'NEXT_ACTION': 'Complete and execute the integrated disposable lifecycle; independently attest Job B.',
+            'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
+            'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+        })
         evidence['finished_at'] = time.time()
         evidence['final_decision'] = 'BLOCKED'
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
