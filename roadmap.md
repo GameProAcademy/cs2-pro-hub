@@ -1,5 +1,7 @@
 # CURRENT STATE RECONCILIATION — 2026-09-24
 
+- [ ] F.5.3-CLOSURE.8-R11.2-R5: complete the real disposable Storage-backed lifecycle, RAW/HOT/FINISHED/ACK, crash and ACK-loss recovery, exactly-once, operation-backed 16/50/50 matrices, and independent post-completion reconstruction; keep production/Railway/Canonical/real DEM/Attempt 9+ locked and final_ci fail-closed until Job B.
+
 > This section is the authoritative current-state snapshot. Older phase sections below are retained as historical implementation records and may contain earlier `NOT_RUN` wording.
 
 ## Current milestone
