@@ -193,3 +193,5 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
+
+# R11.2-R6 verification trigger: validate the latest committed disposable Storage diagnostic.
