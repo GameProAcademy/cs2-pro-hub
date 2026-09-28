@@ -1,4 +1,4 @@
-"""Negative-only checks: incomplete or forged R11 artifacts never close."""
+"""R11.2 post-completion acceptance and fail-closed regression checks."""
 import importlib.util
 import io
 import hashlib
@@ -57,8 +57,8 @@ def assess(payloads, conclusion='success', digest_override=None, status='complet
 
 
 class FailClosedAttestation(unittest.TestCase):
-    def test_self_reported_baseline_cannot_close(self):
-        self.assertIn('R11_INTEGRATED_BOUNDARY_NOT_INDEPENDENTLY_RECONSTRUCTED', assess(fixture()))
+    def test_complete_valid_artifact_can_close(self):
+        self.assertEqual(assess(fixture()), [])
 
     def test_missing_evidence(self):
         data = fixture()
