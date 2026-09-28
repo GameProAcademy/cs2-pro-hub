@@ -1,0 +1,40 @@
+name: F553 R11.2 post-completion attestation
+
+on:
+  workflow_run:
+    workflows: [Quality Gates]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  f553-r11-2-post-completion-attestation:
+    name: F553 R11.2 POST-COMPLETION ATTESTATION
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.workflow_run.repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Attest completed source run
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          F553_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          F553_SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          F553_SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          F553_SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+          F553_SOURCE_REF: ${{ github.event.workflow_run.head_branch }}
+          F553_ATTESTATION_OUT: docs/release-gates/f553-r11-post-completion.json
+        run: python3 scripts/f553-r11-post-completion-attest.py
+      - name: Preserve post-completion decision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f553-r11-post-completion-attestation
+          path: docs/release-gates/f553-r11-post-completion.json
+          if-no-files-found: error
