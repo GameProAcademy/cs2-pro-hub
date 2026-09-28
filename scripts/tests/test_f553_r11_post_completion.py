@@ -107,6 +107,7 @@ class FailClosedAttestation(unittest.TestCase):
         self.assertIn('R11_ARTIFACT_DIGEST_MISMATCH', assess(data, digest_override='sha256:' + '0' * 64))
         self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, conclusion='failure'))
         self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, status='queued'))
+        self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, status='in_progress'))
 
     def test_self_attestation(self):
         data = fixture()

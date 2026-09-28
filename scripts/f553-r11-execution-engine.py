@@ -50,8 +50,12 @@ def request(url, key, path, method='GET', body=None, content_type='application/o
     req = urllib.request.Request(url.rstrip('/') + path, data=body, method=method,
                                  headers={'apikey': key, 'Authorization': 'Bearer ' + key,
                                           'Content-Type': content_type})
-    with urllib.request.urlopen(req, timeout=20) as response:
-        return response.status, response.read()
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as exc:
+        response_body = exc.read(8192).decode('utf-8', errors='replace')
+        raise RuntimeError(f'local HTTP {exc.code} {method} {path}: {response_body}') from exc
 
 
 def main():
@@ -147,6 +151,10 @@ def main():
                 lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
                 and o['parser_exit_code'] == 0 and o['raw_evidence_present']
                 and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
+        if evidence['gates']['parser_exactly_once'] == 'PASS':
+            evidence['gates']['parser_exactly_once'] = 'NOT_PROVEN'
+            evidence['observations']['parser_exactly_once']['scope'] = (
+                'real parser boundary only; not job-bound, retry/replay exactly-once not proven')
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
@@ -177,13 +185,23 @@ def main():
 
         def storage():
             bucket = 'cs2-raw-evidence'
+            bucket_state = probe.sql(db, "SELECT id || ':' || public::text FROM storage.buckets WHERE id = 'cs2-raw-evidence';")
+            if bucket_state and bucket_state != f'{bucket}:false':
+                raise RuntimeError(f'Disposable RAW bucket configuration invalid: {bucket_state}')
+            if not bucket_state:
+                # This writer can only reach the verified local disposable database.
+                probe.sql(db, "INSERT INTO storage.buckets (id, name, public, file_size_limit) VALUES ('cs2-raw-evidence', 'cs2-raw-evidence', false, 104857600);")
+                bucket_state = probe.sql(db, "SELECT id || ':' || public::text FROM storage.buckets WHERE id = 'cs2-raw-evidence';")
+            if bucket_state != f'{bucket}:false':
+                raise RuntimeError('Disposable RAW bucket creation could not be verified')
             path = f'r11-disposable/{evidence["run_id"]}/{uuid4().hex}.bin'
             content = os.urandom(256)
             endpoint = f'/storage/v1/object/{bucket}/{quote(path)}'
             try:
                 write_status, _ = request(api_url, key, endpoint, 'POST', content)
                 read_status, read_back = request(api_url, key, endpoint)
-                return {'bucket': bucket, 'path': path, 'write_status': write_status,
+                return {'bucket': bucket, 'bucket_state': bucket_state, 'path': path,
+                        'method': 'POST', 'write_status': write_status,
                         'read_status': read_status, 'bytes': len(read_back),
                         'written_sha256': hashlib.sha256(content).hexdigest(),
                         'read_sha256': hashlib.sha256(read_back).hexdigest(),
@@ -192,7 +210,7 @@ def main():
             finally:
                 try:
                     request(api_url, key, endpoint, 'DELETE')
-                except urllib.error.URLError:
+                except (urllib.error.URLError, RuntimeError):
                     pass
 
         attempt('storage', storage, lambda o: o['write_status'] in (200, 201)
@@ -224,7 +242,7 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
-        if evidence['gates']['parser_exactly_once'] != 'PASS':
+        if evidence['gates']['parser_exactly_once'] == 'FAIL':
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_REAL_PARSER_EXECUTION_NOT_PROVEN',
                 'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',

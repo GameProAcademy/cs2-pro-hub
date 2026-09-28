@@ -127,8 +127,8 @@ def inspect_evidence(payloads, identity):
 
 def attest(run, jobs, artifacts, archive, identity):
     issues = []
-    run_status_valid = run.get('status') in ('in_progress', 'completed')
-    run_conclusion_valid = run.get('status') == 'in_progress' or run.get('conclusion') == 'success'
+    run_status_valid = run.get('status') == 'completed'
+    run_conclusion_valid = run.get('conclusion') == 'success'
     if (not run_status_valid or not run_conclusion_valid or run.get('head_sha') != identity['commit_sha']
             or str(run.get('id')) != identity['workflow_run_id']
             or str(run.get('run_attempt')) != identity['workflow_run_attempt']
