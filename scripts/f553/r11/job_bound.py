@@ -17,7 +17,7 @@ from uuid import uuid4
 from f553.r11.fixture import acquire
 
 
-def start(db, api_url, key, sql, request, root):
+def start(db, db_url, api_url, key, sql, request, root):
     fixture_path, fixture = acquire()
     user_email = f'r11-{uuid4().hex}@example.invalid'
     _, user_body = request(api_url, key, '/auth/v1/admin/users', 'POST',
@@ -56,7 +56,7 @@ def start(db, api_url, key, sql, request, root):
         raise RuntimeError('Real job has no queue message')
     output = Path(tempfile.mkdtemp(prefix='f553-r11-bound-')) / 'worker-output.json'
     worker_id = 'r11-disposable-' + uuid4().hex
-    env = {**os.environ, 'F553_LOCAL_DB_URL': os.environ['F553_LOCAL_DB_URL'],
+    env = {**os.environ, 'F553_LOCAL_DB_URL': db_url,
            'F553_WORKER_ID': worker_id}
     launched = time.time()
     process = subprocess.run([sys.executable, str(Path(__file__)), '--worker',
