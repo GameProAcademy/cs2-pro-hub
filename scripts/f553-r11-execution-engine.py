@@ -209,13 +209,25 @@ def main():
             if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
                     or int(claim['message_id']) != int(identity['message_id'])):
                 raise RuntimeError('R11_JOB_BOUND_PARSER_IDENTITY_INVALID')
+            if observation.get('checkpoint') != 'ACKNOWLEDGED':
+                raise RuntimeError('R11_JOB_BOUND_LIFECYCLE_INCOMPLETE')
             return {'fixture': fixture, 'identity': identity, 'worker': observation,
-                    'scope': 'real upload/queue/claim/Storage GET/parser; RAW/HOT/FINISHED/ACK and replay not proven'}
+                    'scope': 'real upload/queue/claim/Storage GET/parser/RAW/read-back/HOT/FINISHED/ACK'}
 
-        # This is a diagnostic until RAW/HOT/terminalization and retry/replay
-        # share this exact job. Do not promote it to any mandatory gate.
         try:
-            evidence['observations']['job_bound_diagnostic'] = claimed_job_parser()
+            lifecycle = claimed_job_parser()
+            evidence['observations']['integrated_lifecycle'] = lifecycle
+            worker = lifecycle['worker']
+            evidence['gates']['pgmq'] = 'PASS'
+            evidence['gates']['storage'] = 'PASS'
+            evidence['gates']['finished'] = 'PASS'
+            evidence['gates']['hot_raw_identity'] = 'PASS'
+            evidence['gates']['raw_integrity'] = 'PASS'
+            evidence['observations']['parser_exactly_once'] = {
+                'scope': 'successful job-bound lifecycle before recovery matrices',
+                'parser_execution_count': worker['parser_execution_count'],
+                'parser_execution_id': worker['parser']['parser_execution_id'],
+            }
         except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError,
                 urllib.error.URLError) as exc:
             evidence['blockers'].append({
@@ -223,11 +235,6 @@ def main():
                 'ACTUAL_OUTPUT': str(exc)[:300], 'RUN_ID': evidence['run_id'],
                 'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
             })
-
-        evidence['observations']['parser_exactly_once'] = {
-            'scope': 'job-bound parser diagnostic only; retry/replay exactly-once not proven',
-            'job_bound_observed': 'job_bound_diagnostic' in evidence['observations'],
-        }
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
@@ -295,11 +302,11 @@ def main():
         evidence['blockers'].append({
             'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
             'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-            'ACTUAL_OUTPUT': ('Job-bound disposable parser diagnostic completed; downstream lifecycle still unproven.'
-                              if 'job_bound_diagnostic' in evidence['observations'] else
-                              'Job-bound disposable parser diagnostic did not complete.'),
+            'ACTUAL_OUTPUT': ('Integrated happy-path lifecycle completed; recovery and matrices remain unproven.'
+                              if 'integrated_lifecycle' in evidence['observations'] else
+                              'Integrated happy-path lifecycle did not complete.'),
             'FILE': __file__, 'LINE': 0,
-            'MISSING_PROOF': 'RAW/Storage/HOT/FINISHED/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
+            'MISSING_PROOF': 'Worker A/B recovery, ACK loss, PROCESS_ABORTED, exactly-once recovery, and 16/50/50 matrices',
             'NEXT_ACTION': 'Complete and execute the integrated disposable lifecycle; independently attest Job B.',
             'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
             'WORKFLOW_RUN_ID': evidence['workflow_run_id'],

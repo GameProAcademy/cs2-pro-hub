@@ -258,7 +258,10 @@ def persist_hot_and_finish(db: dict[str, str], claim: dict, parsed: dict,
                         f"FROM public.demo_jobs WHERE id='{ident(claim['job_id'])}'")
     if snapshot["status"] != "processed" or snapshot["match_id"] != match_id:
         raise RuntimeError("R11_FINISHED_STATE_MISMATCH")
-    return {"hot": hot, "hot_digest": hot_digest, "match_id": match_id,
+    return {"hot_identity": {"schema_version": hot["schema_version"],
+                              "demo": hot["demo"], "parser": hot["parser"],
+                              "raw": hot["raw"], "quality": hot["quality"]},
+            "hot_digest": hot_digest, "match_id": match_id,
             "match_source_id": match_source_id, "terminal": snapshot}
 
 
@@ -278,7 +281,12 @@ def run_integrated(db: dict[str, str], api_url: str, key: str, claim: dict,
                    worker_id: str, parsed: dict, acknowledge_message: bool = True) -> dict:
     raw, reconstructed = asyncio.run(persist_raw(db, api_url, key, claim, worker_id, parsed))
     completed = persist_hot_and_finish(db, claim, parsed, raw, reconstructed)
-    result = {"raw": raw, "raw_reconstruction": reconstructed, **completed,
+    reconstruction_summary = {"artifact": reconstructed["artifact"],
+                              "chunks": reconstructed["chunks"],
+                              "manifest": reconstructed["manifest"],
+                              "storage": reconstructed["storage"],
+                              "snapshot_digest": reconstructed["snapshot_digest"]}
+    result = {"raw": raw, "raw_reconstruction": reconstruction_summary, **completed,
               "checkpoint": "FINISHED_BEFORE_ACK", "parser_execution_count": 1}
     if acknowledge_message:
         result["ack"] = acknowledge(db, claim)
