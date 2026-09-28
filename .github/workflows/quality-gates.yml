@@ -142,6 +142,8 @@ jobs:
           supabase status
       - name: Reset full disposable schema before integration
         run: supabase db reset --local
+      - name: Install real parser runtime for R11.2
+        run: python3 -m pip install -r services/cs2-demo-parser/requirements.txt
       - name: Execute R11.2 disposable evidence engine
         run: python3 scripts/f553-r11-execution-engine.py
       - name: Verify R11.2 Job A evidence remains fail-closed

@@ -12,11 +12,15 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
 from urllib.parse import quote, urlsplit
 from uuid import uuid4
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from f553.r11.fixture import acquire as acquire_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
@@ -102,6 +106,48 @@ def main():
         probe = load_probe()
         db = probe.database_env(db_url)
 
+        def real_parser():
+            fixture_path, fixture = acquire_fixture()
+            output_path = Path(tempfile.mkdtemp(prefix='f553-r11-parser-')) / 'parser-output.json'
+            command = [sys.executable, str(ROOT / 'scripts/f553/r11/parser_process.py'),
+                       str(fixture_path), str(output_path)]
+            started_at = time.time()
+            process = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=600)
+            finished_at = time.time()
+            if process.returncode != 0 or not output_path.is_file():
+                detail = next((line for line in process.stderr.splitlines() if line.strip()), 'parser process failed')
+                raise RuntimeError(detail[:300])
+            parsed = json.loads(output_path.read_text())
+            return {
+                'fixture': fixture,
+                'upload_id': str(uuid4()),
+                'job_id': str(uuid4()),
+                'attempt_number': 1,
+                'demo_sha256': fixture['sha256'],
+                'worker_id': 'f553-r11-real-parser-worker-a',
+                'worker_pid': process.pid if hasattr(process, 'pid') else parsed['worker_pid'],
+                'worker_start': started_at,
+                'worker_end': finished_at,
+                'worker_exit_code': process.returncode,
+                'parser_execution_id': parsed['parser_execution_id'],
+                'parser_version': parsed['parser_version'],
+                'parser_contract': parsed['parser_contract'],
+                'parser_start': parsed['parser_start'],
+                'parser_finish': parsed['parser_finish'],
+                'parser_exit_code': parsed['parser_exit_code'],
+                'parser_result': parsed['parser_result'],
+                'parser_output_digest': parsed['parser_output_digest'],
+                'players': parsed['players'], 'rounds': parsed['rounds'],
+                'events': parsed['events'],
+                'raw_evidence_present': parsed['raw_evidence_present'],
+                'result': 'PASS',
+            }
+
+        attempt('parser_exactly_once', real_parser,
+                lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
+                and o['parser_exit_code'] == 0 and o['raw_evidence_present']
+                and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
+
         def queue():
             queue_name = 'r11_' + uuid4().hex
             probe.sql(db, f"SELECT pgmq.create('{queue_name}');")
@@ -178,16 +224,28 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
-        evidence['blockers'].append({
-            'BLOCKER_CODE': 'R11_DISPOSABLE_DEM_FIXTURE_UNAVAILABLE',
-            'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-            'ACTUAL_OUTPUT': 'No permitted CS2 DEM fixture is present; the real demoparser2 boundary cannot execute.',
-            'FILE': __file__, 'LINE': 53,
-            'MISSING_PROOF': 'real parser -> RAW/Storage -> HOT -> FINISHED/ACK and 16/50/50 operation-backed matrices',
-            'NEXT_ACTION': 'Provide a redistributable disposable CS2 DEM fixture for CI without authorizing any production or historical DEM.',
-            'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
-            'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-        })
+        if evidence['gates']['parser_exactly_once'] != 'PASS':
+            evidence['blockers'].append({
+                'BLOCKER_CODE': 'R11_REAL_PARSER_EXECUTION_NOT_PROVEN',
+                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
+                'ACTUAL_OUTPUT': 'The pinned disposable CS2 fixture did not complete the demoparser2 0.42.0 boundary.',
+                'FILE': __file__, 'LINE': 0,
+                'MISSING_PROOF': 'one real parser execution bound to the verified disposable fixture',
+                'NEXT_ACTION': 'Inspect the parser subprocess observation and correct the first concrete failure.',
+                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
+                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+            })
+        else:
+            evidence['blockers'].append({
+                'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
+                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
+                'ACTUAL_OUTPUT': 'Fixture acquisition and real parser execution passed; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
+                'FILE': __file__, 'LINE': 0,
+                'MISSING_PROOF': 'integrated RAW/Storage/HOT/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
+                'NEXT_ACTION': 'Bind this parser result to one disposable upload/job/queue lifecycle and emit reconstructable snapshots.',
+                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
+                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+            })
         evidence['finished_at'] = time.time()
         evidence['final_decision'] = 'BLOCKED'
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
