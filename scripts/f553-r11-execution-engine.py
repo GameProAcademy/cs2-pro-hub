@@ -291,199 +291,199 @@ def main():
                 and o['read_status'] == 200 and o['byte_identical']
                 and o['written_sha256'] == o['read_sha256'] and o['bytes'] == 256)
 
-    def worker_env(lease_seconds: int, checkpoint_file: Path | None = None) -> dict[str, str]:
-        env = clean | {
-            'PYTHONPATH': str(ROOT / 'scripts'),
-            'F553_LOCAL_DB_URL': db_url,
-            'F553_LOCAL_API_URL': api_url,
-            'F553_LOCAL_SERVICE_KEY': key,
-            'F553_LEASE_SECONDS': str(lease_seconds),
-        }
-        if checkpoint_file is not None:
-            env['F553_CHECKPOINT_FILE'] = str(checkpoint_file)
-        return env
-
-    def wait_for_checkpoint(path: Path, timeout: float = 30.0) -> dict:
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            if path.is_file():
-                try:
-                    return json.loads(path.read_text())
-                except json.JSONDecodeError:
-                    pass
-            time.sleep(0.25)
-        raise RuntimeError('R11_WORKER_CHECKPOINT_TIMEOUT')
-
-    def terminal_counts(job_id: str, upload_id: str) -> dict:
-        return {
-            'raw_artifacts': int(sql(db, f"SELECT count(*) FROM public.raw_evidence_artifacts WHERE job_id='{job_id}';")),
-            'matches': int(sql(db, f"SELECT count(*) FROM public.matches WHERE upload_id='{upload_id}';")),
-            'match_sources': int(sql(db, f"SELECT count(*) FROM public.match_sources WHERE upload_id='{upload_id}';")),
-            'job_status': sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{job_id}';"),
-            'dispatch_attempt': int(sql(db, f"SELECT dispatch_attempt FROM public.demo_jobs WHERE id='{job_id}';")),
-        }
-
-    def crash_recovery():
-        fixture_path, fixture = acquire_fixture()
-        identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
-        with tempfile.TemporaryDirectory(prefix='f553-r11-crash-') as tmp:
-            expected_file = Path(tmp) / 'expected.json'
-            checkpoint = Path(tmp) / 'worker-a.json'
-            expected_file.write_text(json.dumps(identity))
-            worker_a = subprocess.Popen(
-                [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
-                 '--expected-json', str(expected_file), '--hold-after-claim'],
-                cwd=ROOT, env=worker_env(3, checkpoint),
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            claimed = wait_for_checkpoint(checkpoint)
-            worker_a.kill()
-            worker_a.wait(timeout=20)
-            if worker_a.returncode == 0:
-                raise RuntimeError('R11_WORKER_A_CRASH_NOT_INJECTED')
-            time.sleep(4)
-            worker_b = subprocess.run(
-                [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
-                 '--expected-json', str(expected_file)],
-                cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=650)
-            if worker_b.returncode:
-                raise RuntimeError('R11_WORKER_B_RECOVERY_FAILED: ' + worker_b.stderr[:500])
-            recovered = json.loads(worker_b.stdout)
-        counts = terminal_counts(identity['job_id'], identity['upload_id'])
-        if recovered.get('checkpoint') != 'ACKNOWLEDGED' or recovered['claim']['job_id'] != identity['job_id']:
-            raise RuntimeError('R11_FRESH_WORKER_CHECKPOINT_MISMATCH')
-        if counts['job_status'] != 'processed' or counts['raw_artifacts'] != 1 or counts['matches'] != 1 or counts['match_sources'] != 1:
-            raise RuntimeError('R11_CRASH_RECOVERY_DUPLICATION_OR_TERMINAL_MISMATCH')
-        return {
-            'scenario': 'worker_a_sigkill_then_lease_expiry_worker_b_recovery',
-            'worker_a_pid': claimed['worker_pid'], 'worker_a_exit_code': -9,
-            'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
-            'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
-            'same_job_id': recovered['claim']['job_id'] == identity['job_id'],
-            'same_upload_id': recovered['claim']['upload_id'] == identity['upload_id'],
-            'same_message_id': int(recovered['claim']['message_id']) == int(identity['message_id']),
-            'parser_execution_count_worker_b': recovered.get('parser_execution_count'),
-            'counts': counts, 'observed_at': time.time(),
-        }
-
-    def ack_loss():
-        fixture_path, fixture = acquire_fixture()
-        identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
-        with tempfile.TemporaryDirectory(prefix='f553-r11-ack-loss-') as tmp:
-            expected_file = Path(tmp) / 'expected.json'
-            checkpoint = Path(tmp) / 'worker-a.json'
-            expected_file.write_text(json.dumps(identity))
-            worker_a = subprocess.Popen(
-                [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
-                 '--expected-json', str(expected_file), '--defer-ack'],
-                cwd=ROOT, env=worker_env(3, checkpoint),
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            finished = wait_for_checkpoint(checkpoint, 120.0)
-            if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
+        def worker_env(lease_seconds: int, checkpoint_file: Path | None = None) -> dict[str, str]:
+            env = clean | {
+                'PYTHONPATH': str(ROOT / 'scripts'),
+                'F553_LOCAL_DB_URL': db_url,
+                'F553_LOCAL_API_URL': api_url,
+                'F553_LOCAL_SERVICE_KEY': key,
+                'F553_LEASE_SECONDS': str(lease_seconds),
+            }
+            if checkpoint_file is not None:
+                env['F553_CHECKPOINT_FILE'] = str(checkpoint_file)
+            return env
+    
+        def wait_for_checkpoint(path: Path, timeout: float = 30.0) -> dict:
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                if path.is_file():
+                    try:
+                        return json.loads(path.read_text())
+                    except json.JSONDecodeError:
+                        pass
+                time.sleep(0.25)
+            raise RuntimeError('R11_WORKER_CHECKPOINT_TIMEOUT')
+    
+        def terminal_counts(job_id: str, upload_id: str) -> dict:
+            return {
+                'raw_artifacts': int(sql(db, f"SELECT count(*) FROM public.raw_evidence_artifacts WHERE job_id='{job_id}';")),
+                'matches': int(sql(db, f"SELECT count(*) FROM public.matches WHERE upload_id='{upload_id}';")),
+                'match_sources': int(sql(db, f"SELECT count(*) FROM public.match_sources WHERE upload_id='{upload_id}';")),
+                'job_status': sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{job_id}';"),
+                'dispatch_attempt': int(sql(db, f"SELECT dispatch_attempt FROM public.demo_jobs WHERE id='{job_id}';")),
+            }
+    
+        def crash_recovery():
+            fixture_path, fixture = acquire_fixture()
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            with tempfile.TemporaryDirectory(prefix='f553-r11-crash-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                checkpoint = Path(tmp) / 'worker-a.json'
+                expected_file.write_text(json.dumps(identity))
+                worker_a = subprocess.Popen(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file), '--hold-after-claim'],
+                    cwd=ROOT, env=worker_env(3, checkpoint),
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                claimed = wait_for_checkpoint(checkpoint)
                 worker_a.kill()
                 worker_a.wait(timeout=20)
-                raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
-            before = terminal_counts(identity['job_id'], identity['upload_id'])
-            worker_a.kill()
-            worker_a.wait(timeout=20)
-            time.sleep(4)
-            worker_b = subprocess.run(
-                [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
-                 '--expected-json', str(expected_file), '--recover-terminal'],
-                cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=120)
-            if worker_b.returncode:
-                raise RuntimeError('R11_ACK_LOSS_RECOVERY_FAILED: ' + worker_b.stderr[:500])
-            recovered = json.loads(worker_b.stdout)
-        after = terminal_counts(identity['job_id'], identity['upload_id'])
-        queued = int(sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(identity['message_id'])};"))
-        archived = int(sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};"))
-        if recovered.get('checkpoint') != 'TERMINAL_REDELIVERY_ACKNOWLEDGED' or queued != 0 or archived != 1:
-            raise RuntimeError('R11_ACK_LOSS_QUEUE_RECONCILIATION_MISMATCH')
-        if before['raw_artifacts'] != after['raw_artifacts'] or before['matches'] != after['matches'] or before['match_sources'] != after['match_sources']:
-            raise RuntimeError('R11_ACK_LOSS_DUPLICATED_OUTPUT')
-        return {
-            'scenario': 'worker_a_finished_then_sigkill_before_ack_then_terminal_redelivery',
-            'worker_a_pid': finished['worker_pid'], 'worker_a_exit_code': -9,
-            'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
-            'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
-            'parser_execution_count_worker_b': recovered.get('parser_execution_count'),
-            'queue_count': queued, 'archive_count': archived,
-            'before': before, 'after': after, 'observed_at': time.time(),
-        }
-
-    crash = None
-    ack = None
-    attempt('fresh_worker', lambda: crash_recovery(), lambda o: o['same_job_id'] and o['same_upload_id']
-            and o['same_message_id'] and o['counts']['job_status'] == 'processed'
-            and o['counts']['raw_artifacts'] == 1 and o['counts']['matches'] == 1
-            and o['counts']['match_sources'] == 1)
-    if evidence['gates']['fresh_worker'] == 'PASS':
-        crash = evidence['observations']['fresh_worker']
-        evidence['gates']['parser_exactly_once'] = 'PASS'
-
-    attempt('ack_loss', lambda: ack_loss(), lambda o: o['queue_count'] == 0 and o['archive_count'] == 1
-            and o['before']['raw_artifacts'] == o['after']['raw_artifacts'] == 1
-            and o['before']['matches'] == o['after']['matches'] == 1
-            and o['before']['match_sources'] == o['after']['match_sources'] == 1
-            and o['parser_execution_count_worker_b'] == 0)
-    if evidence['gates']['ack_loss'] == 'PASS':
-        ack = evidence['observations']['ack_loss']
-
-    def aborted():
-        fixture_path, fixture = acquire_fixture()
-        identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
-        with tempfile.TemporaryDirectory(prefix='f553-r11-aborted-') as tmp:
-            expected_file = Path(tmp) / 'expected.json'
-            expected_file.write_text(json.dumps(identity))
-            worker = subprocess.run(
-                [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
-                 '--expected-json', str(expected_file), '--abort-after-claim'],
-                cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=120)
-            if worker.returncode:
-                raise RuntimeError('R11_PROCESS_ABORTED_WORKER_FAILED: ' + worker.stderr[:500])
-            observation = json.loads(worker.stdout)
-        status = sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{identity['job_id']}';")
-        error_code = sql(db, f"SELECT coalesce(error_code,'') FROM public.demo_jobs WHERE id='{identity['job_id']}';")
-        archived = int(sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};"))
-        return {
-            'scenario': 'real_process_aborted_after_claim',
-            'identity': identity,
-            'worker': observation,
-            'job_status': status,
-            'error_code': error_code,
-            'archive_count': archived,
-            'parser_execution_count': observation.get('aborted', {}).get('parser_execution_count', 0),
-            'observed_at': time.time(),
-        }
-
-    attempt('aborted', aborted, lambda o: o['job_status'] == 'failed'
-            and o['error_code'] == 'PROCESS_ABORTED'
-            and o['archive_count'] == 1
-            and o['parser_execution_count'] == 0)
-
-    if evidence['gates']['aborted'] == 'PASS':
-        evidence['observations']['aborted']['scope'] = 'real job claim -> fail_demo_parse_message(PROCESS_ABORTED) -> terminal failure -> ACK/archive'
-
-    if evidence['gates']['failed'] == 'PASS':
-        evidence['gates']['queue_idempotency'] = 'PASS'
-
-    try:
-        matrices = run_all(db, api_url, key, evidence, evidence['observations']['integrated_lifecycle'])
-        evidence['observations']['matrices'] = {
-            name: {'case_count': value['case_count'], 'executed': value['executed']}
-            for name, value in matrices.items()
-        }
-        evidence['gates']['race_matrix'] = 'PASS' if matrices['race']['case_count'] >= 50 and all(
-            case['result'] == 'PASS' for case in matrices['race']['cases']) else 'FAIL'
-        evidence['gates']['failure_matrix'] = 'PASS' if matrices['failure']['case_count'] >= 50 and all(
-            case['result'] == 'PASS' for case in matrices['failure']['cases']) else 'FAIL'
-        evidence['observations']['raw_corruption_matrix'] = {
-            'case_count': matrices['raw-corruption']['case_count'],
-            'all_pass': all(case['result'] == 'PASS' for case in matrices['raw-corruption']['cases']),
-        }
-        evidence['gates']['raw_integrity'] = 'PASS' if evidence['gates']['raw_integrity'] == 'PASS' and (
-            matrices['raw-corruption']['case_count'] >= 16
-            and all(case['result'] == 'PASS' for case in matrices['raw-corruption']['cases'])
-        ) else evidence['gates']['raw_integrity']
+                if worker_a.returncode == 0:
+                    raise RuntimeError('R11_WORKER_A_CRASH_NOT_INJECTED')
+                time.sleep(4)
+                worker_b = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file)],
+                    cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=650)
+                if worker_b.returncode:
+                    raise RuntimeError('R11_WORKER_B_RECOVERY_FAILED: ' + worker_b.stderr[:500])
+                recovered = json.loads(worker_b.stdout)
+            counts = terminal_counts(identity['job_id'], identity['upload_id'])
+            if recovered.get('checkpoint') != 'ACKNOWLEDGED' or recovered['claim']['job_id'] != identity['job_id']:
+                raise RuntimeError('R11_FRESH_WORKER_CHECKPOINT_MISMATCH')
+            if counts['job_status'] != 'processed' or counts['raw_artifacts'] != 1 or counts['matches'] != 1 or counts['match_sources'] != 1:
+                raise RuntimeError('R11_CRASH_RECOVERY_DUPLICATION_OR_TERMINAL_MISMATCH')
+            return {
+                'scenario': 'worker_a_sigkill_then_lease_expiry_worker_b_recovery',
+                'worker_a_pid': claimed['worker_pid'], 'worker_a_exit_code': -9,
+                'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
+                'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
+                'same_job_id': recovered['claim']['job_id'] == identity['job_id'],
+                'same_upload_id': recovered['claim']['upload_id'] == identity['upload_id'],
+                'same_message_id': int(recovered['claim']['message_id']) == int(identity['message_id']),
+                'parser_execution_count_worker_b': recovered.get('parser_execution_count'),
+                'counts': counts, 'observed_at': time.time(),
+            }
+    
+        def ack_loss():
+            fixture_path, fixture = acquire_fixture()
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            with tempfile.TemporaryDirectory(prefix='f553-r11-ack-loss-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                checkpoint = Path(tmp) / 'worker-a.json'
+                expected_file.write_text(json.dumps(identity))
+                worker_a = subprocess.Popen(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file), '--defer-ack'],
+                    cwd=ROOT, env=worker_env(3, checkpoint),
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                finished = wait_for_checkpoint(checkpoint, 120.0)
+                if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
+                    worker_a.kill()
+                    worker_a.wait(timeout=20)
+                    raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
+                before = terminal_counts(identity['job_id'], identity['upload_id'])
+                worker_a.kill()
+                worker_a.wait(timeout=20)
+                time.sleep(4)
+                worker_b = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file), '--recover-terminal'],
+                    cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=120)
+                if worker_b.returncode:
+                    raise RuntimeError('R11_ACK_LOSS_RECOVERY_FAILED: ' + worker_b.stderr[:500])
+                recovered = json.loads(worker_b.stdout)
+            after = terminal_counts(identity['job_id'], identity['upload_id'])
+            queued = int(sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(identity['message_id'])};"))
+            archived = int(sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};"))
+            if recovered.get('checkpoint') != 'TERMINAL_REDELIVERY_ACKNOWLEDGED' or queued != 0 or archived != 1:
+                raise RuntimeError('R11_ACK_LOSS_QUEUE_RECONCILIATION_MISMATCH')
+            if before['raw_artifacts'] != after['raw_artifacts'] or before['matches'] != after['matches'] or before['match_sources'] != after['match_sources']:
+                raise RuntimeError('R11_ACK_LOSS_DUPLICATED_OUTPUT')
+            return {
+                'scenario': 'worker_a_finished_then_sigkill_before_ack_then_terminal_redelivery',
+                'worker_a_pid': finished['worker_pid'], 'worker_a_exit_code': -9,
+                'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
+                'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
+                'parser_execution_count_worker_b': recovered.get('parser_execution_count'),
+                'queue_count': queued, 'archive_count': archived,
+                'before': before, 'after': after, 'observed_at': time.time(),
+            }
+    
+        crash = None
+        ack = None
+        attempt('fresh_worker', lambda: crash_recovery(), lambda o: o['same_job_id'] and o['same_upload_id']
+                and o['same_message_id'] and o['counts']['job_status'] == 'processed'
+                and o['counts']['raw_artifacts'] == 1 and o['counts']['matches'] == 1
+                and o['counts']['match_sources'] == 1)
+        if evidence['gates']['fresh_worker'] == 'PASS':
+            crash = evidence['observations']['fresh_worker']
+            evidence['gates']['parser_exactly_once'] = 'PASS'
+    
+        attempt('ack_loss', lambda: ack_loss(), lambda o: o['queue_count'] == 0 and o['archive_count'] == 1
+                and o['before']['raw_artifacts'] == o['after']['raw_artifacts'] == 1
+                and o['before']['matches'] == o['after']['matches'] == 1
+                and o['before']['match_sources'] == o['after']['match_sources'] == 1
+                and o['parser_execution_count_worker_b'] == 0)
+        if evidence['gates']['ack_loss'] == 'PASS':
+            ack = evidence['observations']['ack_loss']
+    
+        def aborted():
+            fixture_path, fixture = acquire_fixture()
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            with tempfile.TemporaryDirectory(prefix='f553-r11-aborted-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                expected_file.write_text(json.dumps(identity))
+                worker = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file), '--abort-after-claim'],
+                    cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=120)
+                if worker.returncode:
+                    raise RuntimeError('R11_PROCESS_ABORTED_WORKER_FAILED: ' + worker.stderr[:500])
+                observation = json.loads(worker.stdout)
+            status = sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{identity['job_id']}';")
+            error_code = sql(db, f"SELECT coalesce(error_code,'') FROM public.demo_jobs WHERE id='{identity['job_id']}';")
+            archived = int(sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};"))
+            return {
+                'scenario': 'real_process_aborted_after_claim',
+                'identity': identity,
+                'worker': observation,
+                'job_status': status,
+                'error_code': error_code,
+                'archive_count': archived,
+                'parser_execution_count': observation.get('aborted', {}).get('parser_execution_count', 0),
+                'observed_at': time.time(),
+            }
+    
+        attempt('aborted', aborted, lambda o: o['job_status'] == 'failed'
+                and o['error_code'] == 'PROCESS_ABORTED'
+                and o['archive_count'] == 1
+                and o['parser_execution_count'] == 0)
+    
+        if evidence['gates']['aborted'] == 'PASS':
+            evidence['observations']['aborted']['scope'] = 'real job claim -> fail_demo_parse_message(PROCESS_ABORTED) -> terminal failure -> ACK/archive'
+    
+        if evidence['gates']['failed'] == 'PASS':
+            evidence['gates']['queue_idempotency'] = 'PASS'
+    
+        try:
+            matrices = run_all(db, api_url, key, evidence, evidence['observations']['integrated_lifecycle'])
+            evidence['observations']['matrices'] = {
+                name: {'case_count': value['case_count'], 'executed': value['executed']}
+                for name, value in matrices.items()
+            }
+            evidence['gates']['race_matrix'] = 'PASS' if matrices['race']['case_count'] >= 50 and all(
+                case['result'] == 'PASS' for case in matrices['race']['cases']) else 'FAIL'
+            evidence['gates']['failure_matrix'] = 'PASS' if matrices['failure']['case_count'] >= 50 and all(
+                case['result'] == 'PASS' for case in matrices['failure']['cases']) else 'FAIL'
+            evidence['observations']['raw_corruption_matrix'] = {
+                'case_count': matrices['raw-corruption']['case_count'],
+                'all_pass': all(case['result'] == 'PASS' for case in matrices['raw-corruption']['cases']),
+            }
+            evidence['gates']['raw_integrity'] = 'PASS' if evidence['gates']['raw_integrity'] == 'PASS' and (
+                matrices['raw-corruption']['case_count'] >= 16
+                and all(case['result'] == 'PASS' for case in matrices['raw-corruption']['cases'])
+            ) else evidence['gates']['raw_integrity']
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['gates']['race_matrix'] = 'FAIL'
         evidence['gates']['failure_matrix'] = 'FAIL'
