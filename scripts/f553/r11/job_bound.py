@@ -15,6 +15,26 @@ from f553.r11.integrated import run_integrated
 from f553.r11.lifecycle import database_env, http, ident, object_path, sql
 
 
+def recover_terminal(db_url: str, expected: dict) -> dict:
+    """Run in a fresh process and consume a redelivered terminal message without parsing."""
+    db = database_env(db_url)
+    worker_id = 'r11-disposable-recovery-' + uuid4().hex
+    started_at = time.time()
+    observed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',60,1);"))
+    archived = sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(expected['message_id'])};")
+    queued = sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(expected['message_id'])};")
+    state = sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{ident(expected['job_id'])}';")
+    if (observed.get('status') != 'rejected' or observed.get('reason') != 'processed'
+            or archived != '1' or queued != '0' or state != 'processed'):
+        raise RuntimeError('R11_TERMINAL_RECOVERY_MISMATCH')
+    return {'worker_id': worker_id, 'worker_pid': os.getpid(), 'worker_start': started_at,
+            'worker_end': time.time(), 'worker_exit_code': 0, 'claim': observed,
+            'job_id': expected['job_id'], 'upload_id': expected['upload_id'],
+            'message_id': expected['message_id'], 'parser_execution_count': 0,
+            'archive_count': int(archived), 'queue_count': int(queued),
+            'checkpoint': 'TERMINAL_REDELIVERY_ACKNOWLEDGED'}
+
+
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
                   inject_parser_failure: bool = False, defer_ack: bool = False,
                   checkpoint_file: str | None = None, hold_after_claim: bool = False) -> dict:
@@ -108,16 +128,19 @@ def main() -> int:
     if len(sys.argv) < 3 or sys.argv[1] != '--expected-json':
         raise RuntimeError('R11_WORKER_EXPECTED_FILE_REQUIRED')
     flags = set(sys.argv[3:])
-    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim'}):
+    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim', '--recover-terminal'}):
         raise RuntimeError('R11_WORKER_FLAG_INVALID')
     expected = json.loads(Path(sys.argv[2]).read_text())
-    result = process_claim(os.environ.get('F553_LOCAL_DB_URL', ''),
-                           os.environ.get('F553_LOCAL_API_URL', ''),
-                            os.environ.get('F553_LOCAL_SERVICE_KEY', ''), expected,
-                            inject_parser_failure='--inject-parser-failure' in flags,
-                            defer_ack='--defer-ack' in flags,
-                            checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
-                            hold_after_claim='--hold-after-claim' in flags)
+    db_url = os.environ.get('F553_LOCAL_DB_URL', '')
+    if '--recover-terminal' in flags:
+        result = recover_terminal(db_url, expected)
+    else:
+        result = process_claim(db_url, os.environ.get('F553_LOCAL_API_URL', ''),
+                               os.environ.get('F553_LOCAL_SERVICE_KEY', ''), expected,
+                               inject_parser_failure='--inject-parser-failure' in flags,
+                               defer_ack='--defer-ack' in flags,
+                               checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
+                               hold_after_claim='--hold-after-claim' in flags)
     print(json.dumps(result, separators=(',', ':')), flush=True)
     return 0
 
