@@ -36,7 +36,8 @@ def start(db, db_url, api_url, key, sql, request, root):
                 json.dumps({'id': bucket, 'name': bucket, 'public': False,
                             'file_size_limit': 104857600}).encode(), 'application/json')
         _, body = request(api_url, key, f'/storage/v1/bucket/{bucket}')
-    if json.loads(body).get('public') is not False:
+    bucket_details = json.loads(body)
+    if bucket_details.get('public') is not False or bucket_details.get('file_size_limit') != 104857600:
         raise RuntimeError('Disposable demo bucket must be private')
     upload_id = str(uuid4())
     object_path = f'{user_id}/{upload_id}.dem'
@@ -71,8 +72,9 @@ def start(db, db_url, api_url, key, sql, request, root):
     if (claim.get('job_id') != job_id or claim.get('upload_id') != upload_id
             or str(claim.get('message_id')) != queue_message_id
             or claim.get('demo_sha256') != digest or claim.get('user_id') != user_id
-            or parsed.get('worker_pid') != observed['pid']
-            or parsed.get('parser_version') != '0.42.0' or parsed.get('parser_exit_code') != 0):
+            or parsed.get('worker_pid') != observed['parser_pid']
+            or parsed.get('parser_version') != '0.42.0' or parsed.get('parser_exit_code') != 0
+            or parsed.get('raw_evidence_present') is not True):
         raise RuntimeError('Job-bound worker/parser identity mismatch')
     state = sql(db, f"SELECT status,worker_id,queue_message_id FROM public.demo_jobs WHERE id='{job_id}';")
     if state != f'processing|{worker_id}|{queue_message_id}':
@@ -80,7 +82,8 @@ def start(db, db_url, api_url, key, sql, request, root):
     return {'fixture': fixture, 'upload_id': upload_id, 'job_id': job_id,
             'queue_message_id': int(queue_message_id), 'attempt_number': claim['attempt_number'],
             'dispatch_attempt': claim['attempt'], 'demo_sha256': digest,
-            'worker_id': worker_id, 'worker_pid': observed['pid'], 'worker_start': launched,
+            'worker_id': worker_id, 'worker_pid': observed['pid'],
+            'parser_pid': observed['parser_pid'], 'worker_start': launched,
             'worker_end': ended, 'worker_exit_code': process.returncode,
             'parser_execution_id': parsed['parser_execution_id'],
             'parser_version': parsed['parser_version'], 'parser_output_digest': parsed['parser_output_digest'],
@@ -115,7 +118,8 @@ def run_worker():
         raise RuntimeError('Job-bound parser failed: ' + result.stderr[:300])
     parsed = json.loads(parser_out.read_text())
     parsed.pop('output', None)
-    Path(sys.argv[3]).write_text(json.dumps({'claim': claim, 'parser': parsed, 'pid': os.getpid()}))
+    Path(sys.argv[3]).write_text(json.dumps({'claim': claim, 'parser': parsed,
+                                             'pid': os.getpid(), 'parser_pid': parsed['worker_pid']}))
 
 
 if __name__ == '__main__':
