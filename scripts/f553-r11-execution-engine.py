@@ -189,6 +189,8 @@ def main():
 
         attempt('failed', failed, lambda o: o['terminal_state'].startswith('failed|')
                 and o['archive_count'] == 1 and o['stale_retry']['accepted'] is False)
+        if evidence['gates']['failed'] == 'PASS':
+            evidence['gates']['queue_idempotency'] = 'PASS'
 
         def claimed_job_parser():
             fixture_path, fixture = acquire_fixture()
