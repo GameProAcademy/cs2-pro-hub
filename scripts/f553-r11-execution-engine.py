@@ -21,6 +21,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from f553.r11.fixture import acquire as acquire_fixture
+from f553.r11.lifecycle import create_disposable_job
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
@@ -144,51 +145,44 @@ def main():
         probe = load_probe()
         db = probe.database_env(db_url)
 
-        def real_parser():
+        def claimed_job_parser():
             fixture_path, fixture = acquire_fixture()
-            output_path = Path(tempfile.mkdtemp(prefix='f553-r11-parser-')) / 'parser-output.json'
-            command = [sys.executable, str(ROOT / 'scripts/f553/r11/parser_process.py'),
-                       str(fixture_path), str(output_path)]
-            started_at = time.time()
-            process = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=600)
-            finished_at = time.time()
-            if process.returncode != 0 or not output_path.is_file():
-                detail = next((line for line in process.stderr.splitlines() if line.strip()), 'parser process failed')
-                raise RuntimeError(detail[:300])
-            parsed = json.loads(output_path.read_text())
-            return {
-                'fixture': fixture,
-                'upload_id': str(uuid4()),
-                'job_id': str(uuid4()),
-                'attempt_number': 1,
-                'demo_sha256': fixture['sha256'],
-                'worker_id': 'f553-r11-real-parser-worker-a',
-                'worker_pid': parsed['worker_pid'],
-                'worker_start': started_at,
-                'worker_end': finished_at,
-                'worker_exit_code': process.returncode,
-                'parser_execution_id': parsed['parser_execution_id'],
-                'parser_version': parsed['parser_version'],
-                'parser_contract': parsed['parser_contract'],
-                'parser_start': parsed['parser_start'],
-                'parser_finish': parsed['parser_finish'],
-                'parser_exit_code': parsed['parser_exit_code'],
-                'parser_result': parsed['parser_result'],
-                'parser_output_digest': parsed['parser_output_digest'],
-                'players': parsed['players'], 'rounds': parsed['rounds'],
-                'events': parsed['events'],
-                'raw_evidence_present': parsed['raw_evidence_present'],
-                'result': 'PASS',
-            }
+            identity = create_disposable_job(db, api_url, key, fixture_path, fixture)
+            with tempfile.TemporaryDirectory(prefix='f553-r11-claimed-') as tmp:
+                expected_file = Path(tmp) / 'expected.json'
+                expected_file.write_text(json.dumps(identity))
+                env = clean | {'PYTHONPATH': str(ROOT / 'scripts'), 'F553_LOCAL_DB_URL': db_url, 'F553_LOCAL_API_URL': api_url,
+                               'F553_LOCAL_SERVICE_KEY': key}
+                worker = subprocess.run(
+                    [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
+                     '--expected-json', str(expected_file)], cwd=ROOT, env=env,
+                    capture_output=True, text=True, timeout=650)
+                if worker.returncode:
+                    raise RuntimeError('R11_CLAIMED_WORKER_FAILED: ' + worker.stderr[:200])
+                observation = json.loads(worker.stdout)
+            claim = observation['claim']
+            if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
+                    or int(claim['message_id']) != int(identity['message_id'])):
+                raise RuntimeError('R11_JOB_BOUND_PARSER_IDENTITY_INVALID')
+            return {'fixture': fixture, 'identity': identity, 'worker': observation,
+                    'scope': 'real upload/queue/claim/Storage GET/parser; RAW/HOT/FINISHED/ACK and replay not proven'}
 
-        attempt('parser_exactly_once', real_parser,
-                lambda o: o['result'] == 'PASS' and o['parser_version'] == '0.42.0'
-                and o['parser_exit_code'] == 0 and o['raw_evidence_present']
-                and o['players'] > 0 and o['rounds'] > 0 and o['events'] > 0)
-        if evidence['gates']['parser_exactly_once'] == 'PASS':
-            evidence['gates']['parser_exactly_once'] = 'NOT_PROVEN'
-            evidence['observations']['parser_exactly_once']['scope'] = (
-                'real parser boundary only; not job-bound, retry/replay exactly-once not proven')
+        # This is a diagnostic until RAW/HOT/terminalization and retry/replay
+        # share this exact job. Do not promote it to any mandatory gate.
+        try:
+            evidence['observations']['job_bound_diagnostic'] = claimed_job_parser()
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError,
+                urllib.error.URLError) as exc:
+            evidence['blockers'].append({
+                'BLOCKER_CODE': 'R11_JOB_BOUND_LIFECYCLE_INCOMPLETE',
+                'ACTUAL_OUTPUT': str(exc)[:300], 'RUN_ID': evidence['run_id'],
+                'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+            })
+
+        evidence['observations']['parser_exactly_once'] = {
+            'scope': 'job-bound parser diagnostic only; retry/replay exactly-once not proven',
+            'job_bound_observed': 'job_bound_diagnostic' in evidence['observations'],
+        }
 
         def queue():
             queue_name = 'r11_' + uuid4().hex
@@ -269,28 +263,18 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
-        if evidence['gates']['parser_exactly_once'] == 'FAIL':
-            evidence['blockers'].append({
-                'BLOCKER_CODE': 'R11_REAL_PARSER_EXECUTION_NOT_PROVEN',
-                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'The pinned disposable CS2 fixture did not complete the demoparser2 0.42.0 boundary.',
-                'FILE': __file__, 'LINE': 0,
-                'MISSING_PROOF': 'one real parser execution bound to the verified disposable fixture',
-                'NEXT_ACTION': 'Inspect the parser subprocess observation and correct the first concrete failure.',
-                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
-                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-            })
-        else:
-            evidence['blockers'].append({
-                'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
-                'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'Fixture acquisition and real parser execution passed; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
-                'FILE': __file__, 'LINE': 0,
-                'MISSING_PROOF': 'integrated RAW/Storage/HOT/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
-                'NEXT_ACTION': 'Bind this parser result to one disposable upload/job/queue lifecycle and emit reconstructable snapshots.',
-                'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
-                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-            })
+        evidence['blockers'].append({
+            'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
+            'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
+            'ACTUAL_OUTPUT': ('Job-bound disposable parser diagnostic completed; downstream lifecycle still unproven.'
+                              if 'job_bound_diagnostic' in evidence['observations'] else
+                              'Job-bound disposable parser diagnostic did not complete.'),
+            'FILE': __file__, 'LINE': 0,
+            'MISSING_PROOF': 'RAW/Storage/HOT/FINISHED/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
+            'NEXT_ACTION': 'Complete and execute the integrated disposable lifecycle; independently attest Job B.',
+            'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
+            'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+        })
         evidence['finished_at'] = time.time()
         evidence['final_decision'] = 'BLOCKED'
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
