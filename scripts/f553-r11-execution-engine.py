@@ -185,22 +185,27 @@ def main():
 
         def storage():
             bucket = 'cs2-raw-evidence'
-            bucket_state = probe.sql(db, "SELECT id || ':' || public::text FROM storage.buckets WHERE id = 'cs2-raw-evidence';")
-            if bucket_state and bucket_state != f'{bucket}:false':
-                raise RuntimeError(f'Disposable RAW bucket configuration invalid: {bucket_state}')
-            if not bucket_state:
-                # This writer can only reach the verified local disposable database.
-                probe.sql(db, "INSERT INTO storage.buckets (id, name, public, file_size_limit) VALUES ('cs2-raw-evidence', 'cs2-raw-evidence', false, 104857600);")
-                bucket_state = probe.sql(db, "SELECT id || ':' || public::text FROM storage.buckets WHERE id = 'cs2-raw-evidence';")
-            if bucket_state != f'{bucket}:false':
-                raise RuntimeError('Disposable RAW bucket creation could not be verified')
+            bucket_endpoint = f'/storage/v1/bucket/{bucket}'
+            try:
+                _, bucket_body = request(api_url, key, bucket_endpoint)
+            except RuntimeError as exc:
+                if 'local HTTP 404 GET' not in str(exc):
+                    raise
+                request(api_url, key, '/storage/v1/bucket', 'POST',
+                        json.dumps({'id': bucket, 'name': bucket, 'public': False,
+                                    'file_size_limit': 104857600}).encode(), 'application/json')
+                _, bucket_body = request(api_url, key, bucket_endpoint)
+            bucket_details = json.loads(bucket_body)
+            if (bucket_details.get('id') != bucket or bucket_details.get('public') is not False
+                    or bucket_details.get('file_size_limit') != 104857600):
+                raise RuntimeError(f'Disposable RAW bucket configuration invalid: {bucket_details}')
             path = f'r11-disposable/{evidence["run_id"]}/{uuid4().hex}.bin'
             content = os.urandom(256)
             endpoint = f'/storage/v1/object/{bucket}/{quote(path)}'
             try:
                 write_status, _ = request(api_url, key, endpoint, 'POST', content)
                 read_status, read_back = request(api_url, key, endpoint)
-                return {'bucket': bucket, 'bucket_state': bucket_state, 'path': path,
+                return {'bucket': bucket, 'bucket_state': bucket_details, 'path': path,
                         'method': 'POST', 'content_length': len(content),
                         'write_status': write_status,
                         'read_status': read_status, 'bytes': len(read_back),
