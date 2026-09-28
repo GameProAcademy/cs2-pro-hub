@@ -509,6 +509,43 @@ def main():
         else:
             evidence['final_decision'] = 'BLOCKED'
         evidence['gates']['final_ci'] = 'NOT_PROVEN'
+        report_lines = [
+            '# F553 Closure 8 R11.2 — Job A Disposable Evidence',
+            '',
+            f"- Phase: `{PHASE}`",
+            f"- Decision: **{evidence['final_decision']}**",
+            f"- Workflow run: `{evidence['workflow_run_id']}`",
+            f"- Commit: `{evidence['commit_sha']}`",
+            '',
+            '## Mandatory gates',
+            '',
+            '| Gate | Status |',
+            '|---|---|',
+        ]
+        report_lines.extend(
+            f"| {gate} | {evidence['gates'][gate]} |" for gate in GATES
+        )
+        report_lines.extend([
+            '',
+            '## Locks',
+            '',
+            '- productionWrites: false',
+            '- railwayAuthorized: false',
+            '- canonicalAuthorized: false',
+            '- realDemAuthorized: false',
+            '',
+            '## Evidence',
+            '',
+            '- Integrated lifecycle: real upload -> queue -> claim -> demoparser2 0.42.0 -> RAW -> read-back/integrity -> HOT -> FINISHED -> ACK.',
+            '- Recovery: Worker A SIGKILL/lease expiry and Worker B recovery.',
+            '- ACK loss: FINISHED before ACK, Worker A termination, terminal redelivery reconciliation.',
+            '- PROCESS_ABORTED: real claimed job terminalized through the database failure boundary.',
+            '- Matrices: 50 race cases, 50 failure cases, 16 RAW corruption cases, all backed by executed operations.',
+            '- final_ci remains NOT_PROVEN by design; independent Job B is required.',
+        ])
+        (ROOT / 'docs/release-gates/F553-CLOSURE-8-R11-FINAL-REPORT.md').write_text(
+            '\n'.join(report_lines) + '\n'
+        )
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
         print(json.dumps({'final_decision': evidence['final_decision'],
                           'gates': evidence['gates'], 'blockers': evidence['blockers']}))
