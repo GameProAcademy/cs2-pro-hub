@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""R11.1 disposable evidence producer. Never promotes partial probes to closure.
+"""R11.2 disposable execution engine. Never promotes partial probes to closure.
 
 The runner has no connection to production. The only accepted database and API
 endpoints are the exact ports of the local disposable CLI stack.
@@ -20,7 +20,7 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
-PHASE = 'F.5.3-CLOSURE.8-R11.1'
+PHASE = 'F.5.3-CLOSURE.8-R11.2'
 GATES = ('pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
          'failed', 'aborted', 'queue_idempotency', 'hot_raw_identity',
          'raw_integrity', 'parser_exactly_once', 'race_matrix', 'failure_matrix',
@@ -55,12 +55,12 @@ def main():
                 'GITHUB_RUN_ATTEMPT', 'GITHUB_WORKFLOW', 'GITHUB_JOB', 'GITHUB_REF')
     missing = [name for name in required if not os.environ.get(name)]
     if missing:
-        raise RuntimeError('R11.1 requires GitHub run identity: ' + ', '.join(missing))
+        raise RuntimeError('R11.2 requires GitHub run identity: ' + ', '.join(missing))
     started = float(os.environ['F553_STARTED_AT'])
     if started > time.time() or started <= 0 or not re.fullmatch(r'[0-9a-f]{40}', os.environ['GITHUB_SHA']):
-        raise RuntimeError('Invalid R11.1 start time or commit SHA')
+        raise RuntimeError('Invalid R11.2 start time or commit SHA')
     evidence = {
-        'phase': PHASE, 'evidence_version': 11, 'run_id': os.environ['F553_RUN_ID'],
+        'phase': PHASE, 'evidence_version': 12, 'run_id': os.environ['F553_RUN_ID'],
         'started_at': started, 'commit_sha': os.environ['GITHUB_SHA'],
         'workflow_run_id': os.environ['GITHUB_RUN_ID'],
         'workflow_run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
@@ -178,6 +178,16 @@ def main():
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
+        evidence['blockers'].append({
+            'BLOCKER_CODE': 'R11_DISPOSABLE_DEM_FIXTURE_UNAVAILABLE',
+            'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
+            'ACTUAL_OUTPUT': 'No permitted CS2 DEM fixture is present; the real demoparser2 boundary cannot execute.',
+            'FILE': __file__, 'LINE': 53,
+            'MISSING_PROOF': 'real parser -> RAW/Storage -> HOT -> FINISHED/ACK and 16/50/50 operation-backed matrices',
+            'NEXT_ACTION': 'Provide a redistributable disposable CS2 DEM fixture for CI without authorizing any production or historical DEM.',
+            'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
+            'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+        })
         evidence['finished_at'] = time.time()
         evidence['final_decision'] = 'BLOCKED'
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')

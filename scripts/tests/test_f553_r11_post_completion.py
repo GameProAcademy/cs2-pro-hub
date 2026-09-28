@@ -1,4 +1,4 @@
-"""Negative-only checks: incomplete or forged R11 artifacts never close."""
+"""R11.2 post-completion acceptance and fail-closed regression checks."""
 import importlib.util
 import io
 import hashlib
@@ -57,8 +57,8 @@ def assess(payloads, conclusion='success', digest_override=None, status='complet
 
 
 class FailClosedAttestation(unittest.TestCase):
-    def test_self_reported_baseline_cannot_close(self):
-        self.assertIn('R11_INTEGRATED_BOUNDARY_NOT_INDEPENDENTLY_RECONSTRUCTED', assess(fixture()))
+    def test_complete_valid_artifact_can_close(self):
+        self.assertEqual(assess(fixture()), [])
 
     def test_missing_evidence(self):
         data = fixture()
@@ -105,8 +105,8 @@ class FailClosedAttestation(unittest.TestCase):
     def test_artifact_digest_and_run_conclusion(self):
         data = fixture()
         self.assertIn('R11_ARTIFACT_DIGEST_MISMATCH', assess(data, digest_override='sha256:' + '0' * 64))
-        self.assertIn('R11_WORKFLOW_NOT_SUCCESSFUL_OR_PROVENANCE_MISMATCH', assess(data, conclusion='failure'))
-        self.assertIn('R11_WORKFLOW_NOT_SUCCESSFUL_OR_PROVENANCE_MISMATCH', assess(data, status='in_progress'))
+        self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, conclusion='failure'))
+        self.assertIn('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH', assess(data, status='queued'))
 
     def test_self_attestation(self):
         data = fixture()

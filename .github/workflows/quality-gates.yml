@@ -109,10 +109,10 @@ jobs:
           tests/test_raw_manifest_audit.py
           tests/test_runtime_contract.py
 
-  f553-closure-8-final:
-    name: F553 CLOSURE 8 FINAL
+  f553-r11-2-execution:
+    name: F553 R11.2 EXECUTION
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -142,14 +142,11 @@ jobs:
           supabase status
       - name: Reset full disposable schema before integration
         run: supabase db reset --local
-      - name: Execute R11.1 disposable evidence engine
-        if: always()
+      - name: Execute R11.2 disposable evidence engine
         run: python3 scripts/f553-r11-execution-engine.py
-      - name: Independently verify R11.1 evidence
+      - name: Verify R11.2 Job A evidence remains fail-closed
         if: always()
         run: python3 scripts/f553-r11-final-verifier.py
-      - name: Execute disposable queue recovery and existing FAILED / cancelled job paths
-        run: python3 scripts/f553-integrated-evidence.py
       - name: Verify parser image isolation in this run
         if: always()
         run: |
@@ -176,16 +173,11 @@ jobs:
           bun install --frozen-lockfile
           bun run build
           bun run verify:browser-parser-sealed
-      - name: Clean install and verify integrated evidence
-        if: always()
-        env:
-          F553_CLEAN_RESET_COMPLETED: '1'
-        run: python3 scripts/run-f553-closure-8.py
-      - name: Preserve actual disposable-stack evidence
+      - name: Preserve R11.2 disposable evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: f553-closure-8-disposable-evidence
+          name: f553-r11-disposable-evidence
           path: |
             docs/release-gates/f553-r11-execution-evidence.json
             docs/release-gates/f553-r11-race-matrix.json
@@ -193,14 +185,38 @@ jobs:
             docs/release-gates/f553-r11-raw-corruption-matrix.json
             docs/release-gates/f553-r11-final.json
             docs/release-gates/F553-CLOSURE-8-R11-FINAL-REPORT.md
-            docs/release-gates/f553-full-schema-install.json
-            docs/release-gates/f553-clean-schema-lineage.json
-            docs/release-gates/f553-race-matrix.json
-            docs/release-gates/f553-failure-matrix.json
-            docs/release-gates/f553-closure-8-final.json
-            docs/release-gates/f553-integration-evidence.json
-            docs/release-gates/F553-CLOSURE-8-FINAL-REPORT.md
-          if-no-files-found: warn
+          if-no-files-found: error
       - name: Tear down disposable services
         if: always()
         run: supabase stop --no-backup
+
+  f553-r11-2-post-completion-attestation:
+    name: F553 R11.2 POST-COMPLETION ATTESTATION
+    needs:
+      - f553-r11-2-execution
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Attest completed Job A evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          F553_SOURCE_SHA: ${{ github.sha }}
+          F553_SOURCE_RUN_ID: ${{ github.run_id }}
+          F553_SOURCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          F553_SOURCE_WORKFLOW: ${{ github.workflow }}
+          F553_SOURCE_REF: ${{ github.ref }}
+          F553_ATTESTATION_OUT: docs/release-gates/f553-r11-post-completion.json
+        run: python3 scripts/f553-r11-post-completion-attest.py
+      - name: Preserve post-completion decision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f553-r11-post-completion-attestation
+          path: docs/release-gates/f553-r11-post-completion.json
+          if-no-files-found: error

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent, fail-closed R11.1 evidence verifier; never executes business logic."""
+"""Independent, fail-closed R11.2 Job A verifier; never executes business logic."""
 import hashlib
 import json
 import os
@@ -8,7 +8,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1] / 'docs/release-gates'
-PHASE = 'F.5.3-CLOSURE.8-R11.1'
+PHASE = 'F.5.3-CLOSURE.8-R11.2'
 GATES = ('pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
          'failed', 'aborted', 'queue_idempotency', 'hot_raw_identity', 'raw_integrity',
          'parser_exactly_once', 'race_matrix', 'failure_matrix', 'docker', 'browser',
@@ -31,7 +31,7 @@ def main():
     if not evidence:
         issues.append('R11 execution evidence missing')
     elif (not all(expected.values()) or evidence.get('phase') != PHASE
-          or evidence.get('evidence_version') != 11
+          or evidence.get('evidence_version') != 12
           or any(evidence.get(field) != value for field, value in expected.items())):
         issues.append('R11 provenance differs from the current workflow execution')
     else:
@@ -56,7 +56,7 @@ def main():
             issues.append(f'{name}: no executed matrix')
             continue
         cases = matrix.get('cases')
-        if (matrix.get('phase') != PHASE or matrix.get('evidence_version') != 11
+        if (matrix.get('phase') != PHASE or matrix.get('evidence_version') != 12
                 or any(matrix.get(field) != value for field, value in expected.items())
                 or not isinstance(cases, list) or len(cases) < minimum):
             issues.append(f'{name}: invalid provenance or too few cases')
@@ -75,7 +75,7 @@ def main():
                     or not evidence['started_at'] <= case['timestamp'] <= evidence['finished_at']):
                 issues.append(f'{name}: invalid or duplicate executed case'); break
             seen.add(identifier)
-    decision = {'phase': PHASE, 'evidence_version': 11, **expected,
+    decision = {'phase': PHASE, 'evidence_version': 12, **expected,
                 'final_decision': 'BLOCKED', 'mandatory_gates': {gate: gates.get(gate, 'NOT_PROVEN') for gate in GATES},
                 'issues': issues, **{lock: False for lock in LOCKS},
                 'verified_at': time.time(),
