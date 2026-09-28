@@ -12,7 +12,6 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -20,7 +19,6 @@ from urllib.parse import quote, urlsplit
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from f553.r11.fixture import acquire as acquire_fixture
 from f553.r11.job_bound import start as start_job_bound
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,7 +91,7 @@ def main():
             evidence['gates'][gate] = 'FAIL'
             evidence['blockers'].append({'BLOCKER_CODE': f'R11_{gate.upper()}_FAILED',
                                          'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                                         'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__,
+                                         'ACTUAL_OUTPUT': str(exc)[:8192], 'FILE': __file__,
                                          'LINE': 0, 'RUN_ID': evidence['run_id'],
                                          'COMMIT_SHA': evidence['commit_sha'],
                                          'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
@@ -210,7 +208,7 @@ def main():
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['blockers'].append({'BLOCKER_CODE': 'R11_LOCAL_STACK_UNAVAILABLE',
                                      'COMMAND': 'supabase status -o json',
-                                     'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__, 'LINE': 0,
+                                      'ACTUAL_OUTPUT': str(exc)[:8192], 'FILE': __file__, 'LINE': 0,
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
@@ -229,7 +227,7 @@ def main():
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_INTEGRATED_LIFECYCLE_NOT_YET_PROVEN',
                 'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                'ACTUAL_OUTPUT': 'Fixture acquisition and real parser execution passed; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
+                'ACTUAL_OUTPUT': 'Job-bound parser remains partial; RAW/Storage/HOT/ACK and operation-backed matrices remain absent.',
                 'FILE': __file__, 'LINE': 0,
                 'MISSING_PROOF': 'integrated RAW/Storage/HOT/ACK, Worker A/B recovery, PROCESS_ABORTED, and 16/50/50 matrices',
                 'NEXT_ACTION': 'Bind this parser result to one disposable upload/job/queue lifecycle and emit reconstructable snapshots.',

@@ -44,7 +44,7 @@ def start(db, db_url, api_url, key, sql, request, root):
         raise RuntimeError('Fixture bytes changed before upload')
     request(api_url, key, f'/storage/v1/object/{bucket}/{quote(object_path)}', 'POST', content)
     size, digest = len(content), fixture['sha256']
-    sql(db, 'INSERT INTO public.uploads(id,user_id,type,file_name,file_size,content_type,demo_sha256,storage_path,status) '
+    sql(db, 'INSERT INTO public.uploads(id,user_id,type,file_name,file_size,mime_type,demo_sha256,storage_path,status) '
         f"VALUES ('{upload_id}','{user_id}','demo','test_demo.dem',{size},"
         f"'application/octet-stream','{digest}','{object_path}','pending');")
     enqueued = json.loads(sql(db, f"SELECT public.enqueue_demo_job('{upload_id}'::uuid,'{user_id}'::uuid);"))
