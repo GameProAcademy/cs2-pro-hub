@@ -26,7 +26,22 @@ def json_expr(value: object) -> str:
 
 
 def row_json(db: dict[str, str], query: str) -> dict:
-    value = sql(db, f"SELECT row_to_json(r) FROM ({query}) r;")
+    """Return one JSON row for either SELECT or DML ... RETURNING.
+
+    PostgreSQL does not permit INSERT/UPDATE/DELETE directly inside a
+    subquery in the FROM clause. The previous implementation generated
+    SELECT row_to_json(r) FROM (INSERT ... RETURNING ...) r and therefore
+    failed the first integrated RAW operation with a syntax error near
+    INTO. Data-modifying CTEs are the supported PostgreSQL form and keep
+    the returned row semantics identical for the disposable harness.
+    """
+    statement = query.strip().rstrip(";")
+    verb = statement.split(None, 1)[0].upper() if statement else ""
+    if verb in {"INSERT", "UPDATE", "DELETE"}:
+        wrapped = f"WITH dml AS ({statement}) SELECT row_to_json(dml) FROM dml;"
+    else:
+        wrapped = f"SELECT row_to_json(r) FROM ({statement}) r;"
+    value = sql(db, wrapped)
     if not value:
         raise RuntimeError("R11_EXPECTED_DATABASE_ROW")
     return json.loads(value)
