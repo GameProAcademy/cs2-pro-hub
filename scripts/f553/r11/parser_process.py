@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -10,9 +11,19 @@ import time
 import uuid
 
 
+def json_safe(value: object) -> object:
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return value
+
+
 def stable_bytes(value: object) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-                      allow_nan=False, default=str).encode("utf-8")
+    return json.dumps(json_safe(value), sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False, allow_nan=False, default=str).encode("utf-8")
 
 
 def main() -> int:
