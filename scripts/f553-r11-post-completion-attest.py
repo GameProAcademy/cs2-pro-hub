@@ -148,6 +148,8 @@ def attest(run, jobs, artifacts, archive, identity):
     try:
         with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
             names = zipped.namelist()
+            if any(zipped.getinfo(name).file_size > 20 * 1024 * 1024 for name in names):
+                raise ValueError('Oversized evidence member')
             if (len(names) != len(set(names)) or len(names) > 64
                     or any(Path(name).is_absolute() or '..' in Path(name).parts for name in names)):
                 raise ValueError('Invalid archive entries')
