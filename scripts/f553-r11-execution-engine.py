@@ -31,6 +31,17 @@ GATES = ('pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
          'docker', 'browser', 'parser_tests', 'final_ci')
 
 
+class LocalHTTPError(RuntimeError):
+    """Bounded local-only HTTP failure; never include credentials or request bytes."""
+
+    def __init__(self, status, method, path, body):
+        self.status = status
+        self.method = method
+        self.path = path
+        self.body = body
+        super().__init__(f'local HTTP {status} {method} {path}: {body[:8192]}')
+
+
 def local_endpoint(value, scheme, port):
     parsed = urlsplit(value)
     return (parsed.scheme == scheme and parsed.hostname in ('localhost', '127.0.0.1')
@@ -55,7 +66,30 @@ def request(url, key, path, method='GET', body=None, content_type='application/o
             return response.status, response.read()
     except urllib.error.HTTPError as exc:
         response_body = exc.read(8192).decode('utf-8', errors='replace')
-        raise RuntimeError(f'local HTTP {exc.code} {method} {path}: {response_body}') from exc
+        raise LocalHTTPError(exc.code, method, path, response_body) from exc
+
+
+def ensure_bucket(api_url, key, bucket):
+    """Create a private disposable bucket only for an exact missing-bucket response."""
+    endpoint = f'/storage/v1/bucket/{bucket}'
+    try:
+        _, body = request(api_url, key, endpoint)
+    except LocalHTTPError as exc:
+        try:
+            missing = json.loads(exc.body).get('code') == 'NoSuchBucket'
+        except (ValueError, AttributeError):
+            missing = False
+        if exc.method != 'GET' or exc.path != endpoint or exc.status not in (400, 404) or not missing:
+            raise
+        request(api_url, key, '/storage/v1/bucket', 'POST',
+                json.dumps({'id': bucket, 'name': bucket, 'public': False,
+                            'file_size_limit': 104857600}).encode(), 'application/json')
+        _, body = request(api_url, key, endpoint)
+    details = json.loads(body)
+    if (details.get('id') != bucket or details.get('public') is not False
+            or details.get('file_size_limit') != 104857600):
+        raise RuntimeError('Disposable RAW bucket configuration invalid')
+    return details
 
 
 def main():
@@ -185,20 +219,7 @@ def main():
 
         def storage():
             bucket = 'cs2-raw-evidence'
-            bucket_endpoint = f'/storage/v1/bucket/{bucket}'
-            try:
-                _, bucket_body = request(api_url, key, bucket_endpoint)
-            except RuntimeError as exc:
-                if 'local HTTP 404 GET' not in str(exc):
-                    raise
-                request(api_url, key, '/storage/v1/bucket', 'POST',
-                        json.dumps({'id': bucket, 'name': bucket, 'public': False,
-                                    'file_size_limit': 104857600}).encode(), 'application/json')
-                _, bucket_body = request(api_url, key, bucket_endpoint)
-            bucket_details = json.loads(bucket_body)
-            if (bucket_details.get('id') != bucket or bucket_details.get('public') is not False
-                    or bucket_details.get('file_size_limit') != 104857600):
-                raise RuntimeError(f'Disposable RAW bucket configuration invalid: {bucket_details}')
+            bucket_details = ensure_bucket(api_url, key, bucket)
             path = f'r11-disposable/{evidence["run_id"]}/{uuid4().hex}.bin'
             content = os.urandom(256)
             endpoint = f'/storage/v1/object/{bucket}/{quote(path)}'
