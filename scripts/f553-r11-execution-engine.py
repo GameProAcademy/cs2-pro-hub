@@ -484,17 +484,17 @@ def main():
                 matrices['raw-corruption']['case_count'] >= 16
                 and all(case['result'] == 'PASS' for case in matrices['raw-corruption']['cases'])
             ) else evidence['gates']['raw_integrity']
-    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
-        evidence['gates']['race_matrix'] = 'FAIL'
-        evidence['gates']['failure_matrix'] = 'FAIL'
-        evidence['blockers'].append({
-            'BLOCKER_CODE': 'R11_MATRIX_EXECUTION_FAILED',
-            'ACTUAL_OUTPUT': str(exc)[:500],
-            'RUN_ID': evidence['run_id'],
-            'COMMIT_SHA': evidence['commit_sha'],
-            'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
-        })
-
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
+            evidence['gates']['race_matrix'] = 'FAIL'
+            evidence['gates']['failure_matrix'] = 'FAIL'
+            evidence['blockers'].append({
+                'BLOCKER_CODE': 'R11_MATRIX_EXECUTION_FAILED',
+                'ACTUAL_OUTPUT': str(exc)[:500],
+                'RUN_ID': evidence['run_id'],
+                'COMMIT_SHA': evidence['commit_sha'],
+                'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
+            })
+    
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['blockers'].append({'BLOCKER_CODE': 'R11_LOCAL_STACK_UNAVAILABLE',
                                      'COMMAND': 'supabase status -o json',
