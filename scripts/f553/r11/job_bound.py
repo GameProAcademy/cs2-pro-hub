@@ -45,7 +45,7 @@ def _uuid_field(label: str, value: object) -> str:
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
                   inject_parser_failure: bool = False, defer_ack: bool = False,
                   checkpoint_file: str | None = None, hold_after_claim: bool = False,
-                  lease_seconds: int = 900) -> dict:
+                  lease_seconds: int = 900, abort_after_claim: bool = False) -> dict:
     db = database_env(db_url)
     worker_id = 'r11-disposable-' + uuid4().hex
     started_at = time.time()
@@ -69,6 +69,18 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
               'claim': claimed, 'checkpoint': 'CLAIMED'}
     if checkpoint_file:
         Path(checkpoint_file).write_text(json.dumps(result))
+    if abort_after_claim:
+        terminal = json.loads(sql(db, "SELECT public.fail_demo_parse_message("
+            f"'{ident(expected['job_id'])}'::uuid,{int(expected['message_id'])},"
+            f"{int(claimed['attempt'])},'{worker_id}',"
+            "'PROCESS_ABORTED','Disposable PROCESS_ABORTED injection',true);"))
+        if terminal.get('accepted') is not True or terminal.get('status') != 'failed':
+            raise RuntimeError('R11_PROCESS_ABORTED_NOT_TERMINAL')
+        result['aborted'] = {'terminal': terminal, 'parser_execution_count': 0}
+        result['checkpoint'] = 'PROCESS_ABORTED_TERMINALIZED'
+        result['worker_end'] = time.time()
+        result['worker_exit_code'] = 0
+        return result
     if hold_after_claim:
         while True:
             time.sleep(1)
@@ -142,7 +154,7 @@ def main() -> int:
     if len(sys.argv) < 3 or sys.argv[1] != '--expected-json':
         raise RuntimeError('R11_WORKER_EXPECTED_FILE_REQUIRED')
     flags = set(sys.argv[3:])
-    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim', '--recover-terminal'}):
+    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim', '--recover-terminal', '--abort-after-claim'}):
         raise RuntimeError('R11_WORKER_FLAG_INVALID')
     expected = json.loads(Path(sys.argv[2]).read_text())
     db_url = os.environ.get('F553_LOCAL_DB_URL', '')
@@ -155,7 +167,8 @@ def main() -> int:
                                defer_ack='--defer-ack' in flags,
                                checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
                                hold_after_claim='--hold-after-claim' in flags,
-                               lease_seconds=int(os.environ.get('F553_LEASE_SECONDS', '900')))
+                               lease_seconds=int(os.environ.get('F553_LEASE_SECONDS', '900')),
+                               abort_after_claim='--abort-after-claim' in flags)
     print(json.dumps(result, separators=(',', ':')), flush=True)
     return 0
 
