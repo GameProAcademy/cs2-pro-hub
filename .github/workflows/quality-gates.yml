@@ -1,5 +1,6 @@
 name: Quality Gates
 # Independent proof trigger anchor; no product/runtime behavior change.
+# R11.2 disposable verification trigger: run on the committed fail-closed harness.
 
 on:
   push:
