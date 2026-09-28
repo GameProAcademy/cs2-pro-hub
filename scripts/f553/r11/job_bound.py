@@ -11,11 +11,13 @@ import tempfile
 import time
 from uuid import uuid4
 
+from f553.r11.integrated import run_integrated
 from f553.r11.lifecycle import database_env, http, ident, object_path, sql
 
 
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
-                  inject_parser_failure: bool = False) -> dict:
+                  inject_parser_failure: bool = False, defer_ack: bool = False,
+                  checkpoint_file: str | None = None, hold_after_claim: bool = False) -> dict:
     db = database_env(db_url)
     worker_id = 'r11-disposable-' + uuid4().hex
     started_at = time.time()
@@ -31,6 +33,11 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         raise RuntimeError('R11_CLAIM_IDENTITY_MISMATCH')
     result = {'worker_id': worker_id, 'worker_pid': os.getpid(), 'worker_start': started_at,
               'claim': claimed, 'checkpoint': 'CLAIMED'}
+    if checkpoint_file:
+        Path(checkpoint_file).write_text(json.dumps(result))
+    if hold_after_claim:
+        while True:
+            time.sleep(1)
     _, content = http(api_url, key, object_path('demos', claimed['storage_path']))
     digest = hashlib.sha256(content).hexdigest()
     if (len(content) != claimed['file_size'] or digest != claimed['demo_sha256']
@@ -84,20 +91,33 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
             'parser_execution_id', 'parser_version', 'parser_contract', 'parser_start',
             'parser_finish', 'parser_exit_code', 'parser_result', 'parser_output_digest',
             'worker_pid', 'players', 'rounds', 'events', 'raw_evidence_present')}
-        result['checkpoint'] = 'PARSER_COMPLETED_RAW_NOT_PERSISTED'
+        result['checkpoint'] = 'PARSER_COMPLETED'
+        result.update(run_integrated(db, api_url, key, claimed, worker_id, parsed,
+                                     acknowledge_message=not defer_ack))
+        if checkpoint_file:
+            Path(checkpoint_file).write_text(json.dumps(result))
+        if defer_ack:
+            while True:
+                time.sleep(1)
     result['worker_end'] = time.time()
     result['worker_exit_code'] = 0
     return result
 
 
 def main() -> int:
-    if len(sys.argv) not in (3, 4) or sys.argv[1] != '--expected-json' or (len(sys.argv) == 4 and sys.argv[3] != '--inject-parser-failure'):
+    if len(sys.argv) < 3 or sys.argv[1] != '--expected-json':
         raise RuntimeError('R11_WORKER_EXPECTED_FILE_REQUIRED')
+    flags = set(sys.argv[3:])
+    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim'}):
+        raise RuntimeError('R11_WORKER_FLAG_INVALID')
     expected = json.loads(Path(sys.argv[2]).read_text())
     result = process_claim(os.environ.get('F553_LOCAL_DB_URL', ''),
                            os.environ.get('F553_LOCAL_API_URL', ''),
                             os.environ.get('F553_LOCAL_SERVICE_KEY', ''), expected,
-                            inject_parser_failure=len(sys.argv) == 4)
+                            inject_parser_failure='--inject-parser-failure' in flags,
+                            defer_ack='--defer-ack' in flags,
+                            checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
+                            hold_after_claim='--hold-after-claim' in flags)
     print(json.dumps(result, separators=(',', ':')), flush=True)
     return 0
 
