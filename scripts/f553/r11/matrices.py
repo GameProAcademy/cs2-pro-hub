@@ -9,7 +9,6 @@ from __future__ import annotations
 import concurrent.futures
 import hashlib
 import json
-import os
 import time
 from pathlib import Path
 import urllib.error
@@ -95,7 +94,8 @@ def run_race_matrix(db: dict, evidence: dict) -> dict:
         queue = f"r11_race_{evidence['run_id'].replace('-', '')[:12]}_{i:02d}"
         sql(db, f"SELECT pgmq.create('{queue}');")
         try:
-            msg = sql(db, f"SELECT pgmq.send('{queue}', '{{"case":{i}}}'::jsonb);")
+            payload = json.dumps({"case": i}).replace("'", "''")
+            msg = sql(db, f"SELECT pgmq.send('{queue}', '{payload}'::jsonb);")
 
             def read_once() -> str:
                 return sql(db, f"SELECT msg_id FROM pgmq.read('{queue}', 30, 1);")
@@ -145,7 +145,8 @@ def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict) -> dict:
             queue = f"r11_fail_dup_archive_{evidence['run_id'].replace('-', '')[:10]}_{i:02d}"
             sql(db, f"SELECT pgmq.create('{queue}');")
             try:
-                msg = sql(db, f"SELECT pgmq.send('{queue}', '{{"failure_case":{i}}}'::jsonb);")
+                payload = json.dumps({"failure_case": i}).replace("'", "''")
+                msg = sql(db, f"SELECT pgmq.send('{queue}', '{payload}'::jsonb);")
                 first = sql(db, f"SELECT pgmq.archive('{queue}', {msg});")
                 second = sql(db, f"SELECT pgmq.archive('{queue}', {msg});")
                 before = {"message_id": msg, "first_archive": first}
