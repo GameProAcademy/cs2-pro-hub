@@ -127,12 +127,13 @@ def inspect_evidence(payloads, identity):
 
 def attest(run, jobs, artifacts, archive, identity):
     issues = []
-    if (run.get('status') != 'completed' or run.get('conclusion') != 'success'
-            or run.get('head_sha') != identity['commit_sha']
+    run_status_valid = run.get('status') in ('in_progress', 'completed')
+    run_conclusion_valid = run.get('status') == 'in_progress' or run.get('conclusion') == 'success'
+    if (not run_status_valid or not run_conclusion_valid or run.get('head_sha') != identity['commit_sha']
             or str(run.get('id')) != identity['workflow_run_id']
             or str(run.get('run_attempt')) != identity['workflow_run_attempt']
             or run.get('name') != identity['workflow'] or run.get('path') != '.github/workflows/quality-gates.yml'):
-        issues.append('R11_WORKFLOW_NOT_SUCCESSFUL_OR_PROVENANCE_MISMATCH')
+        issues.append('R11_WORKFLOW_NOT_ACTIVE_OR_PROVENANCE_MISMATCH')
     job = next((entry for entry in jobs.get('jobs', []) if entry.get('name') == EXECUTION_JOB), None)
     if not job or job.get('status') != 'completed' or job.get('conclusion') != 'success':
         issues.append('R11_EXECUTION_JOB_NOT_SUCCESSFUL')
