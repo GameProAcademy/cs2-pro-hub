@@ -24,7 +24,7 @@ from f553.r11.fixture import acquire as acquire_fixture
 from f553.r11.lifecycle import create_disposable_job
 from f553.r11.matrices import run_all
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/release-gates/f553-r11-execution-evidence.json'
 PHASE = 'F.5.3-CLOSURE.8-R11.2'
 GATES = ('pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
