@@ -351,7 +351,7 @@ def main():
                     if worker_a.poll() is None:
                         worker_a.kill()
                         worker_a.wait(timeout=20)
-                recovery_wait_seconds = ack_lease_seconds + 5
+                recovery_wait_seconds = 65
                 time.sleep(recovery_wait_seconds)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
@@ -444,7 +444,7 @@ def main():
                     if worker_a.poll() is None:
                         worker_a.kill()
                         worker_a.wait(timeout=20)
-                recovery_wait_seconds = 65
+                recovery_wait_seconds = ack_lease_seconds + 5
                 time.sleep(recovery_wait_seconds)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
