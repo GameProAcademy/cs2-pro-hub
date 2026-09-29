@@ -559,9 +559,16 @@ def main():
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
         evidence['finished_at'] = time.time()
-        non_final = [gate for gate in GATES if gate != 'final_ci']
-        if all(evidence['gates'].get(gate) == 'PASS' for gate in non_final):
-            evidence['final_decision'] = 'READY_FOR_INDEPENDENT_ATTESTATION'
+        execution_owned_gates = (
+            'pgmq', 'postgrest', 'storage', 'finished', 'ack_loss', 'fresh_worker',
+            'failed', 'aborted', 'queue_idempotency', 'hot_raw_identity',
+            'raw_integrity', 'parser_exactly_once', 'race_matrix', 'failure_matrix',
+        )
+        # This step runs before the workflow's independent Docker/browser/parser-test
+        # gates are injected. Do not fail CI merely because those later gates are
+        # still NOT_PROVEN; Job A finalization owns that second-stage aggregation.
+        if all(evidence['gates'].get(gate) == 'PASS' for gate in execution_owned_gates):
+            evidence['final_decision'] = 'READY_FOR_CI_GATE_FINALIZATION'
         else:
             evidence['final_decision'] = 'BLOCKED'
         evidence['gates']['final_ci'] = 'NOT_PROVEN'
