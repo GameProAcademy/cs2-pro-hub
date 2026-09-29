@@ -163,8 +163,8 @@ def main():
                     cwd=ROOT, env=env, capture_output=True, text=True, timeout=650)
                 if worker.returncode:
                     raise RuntimeError(
-                        'R11_FAILED_WORKER_FAILED:stderr=' + worker.stderr[:2000]
-                        + ':stdout=' + worker.stdout[:1000]
+                        'R11_FAILED_WORKER_FAILED:stderr=' + worker.stderr[:6000]
+                        + ':stdout=' + worker.stdout[:3000]
                     )
                 observation = json.loads(worker.stdout)
             claim = observation['claim']
@@ -210,8 +210,8 @@ def main():
                     capture_output=True, text=True, timeout=650)
                 if worker.returncode:
                     raise RuntimeError(
-                        'R11_CLAIMED_WORKER_FAILED:stderr=' + worker.stderr[:2000]
-                        + ':stdout=' + worker.stdout[:1000]
+                        'R11_CLAIMED_WORKER_FAILED:stderr=' + worker.stderr[:12000]
+                        + ':stdout=' + worker.stdout[:5000]
                     )
                 observation = json.loads(worker.stdout)
             claim = observation['claim']
