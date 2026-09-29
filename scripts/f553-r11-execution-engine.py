@@ -339,7 +339,7 @@ def main():
                 worker_a = subprocess.Popen(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
                      '--expected-json', str(expected_file), '--hold-after-claim'],
-                    cwd=ROOT, env=worker_env(3, checkpoint),
+                    cwd=ROOT, env=worker_env(60, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
                     claimed = wait_for_checkpoint(checkpoint)
@@ -351,7 +351,8 @@ def main():
                     if worker_a.poll() is None:
                         worker_a.kill()
                         worker_a.wait(timeout=20)
-                time.sleep(4)
+                recovery_wait_seconds = 65
+                time.sleep(recovery_wait_seconds)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
                      '--expected-json', str(expected_file)],
@@ -371,7 +372,7 @@ def main():
                 'scenario': 'worker_a_sigkill_then_lease_expiry_worker_b_recovery',
                 'worker_a_pid': claimed['worker_pid'], 'worker_a_exit_code': -9,
                 'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
-                'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
+                'lease_seconds_worker_a': 60, 'recovery_wait_seconds': recovery_wait_seconds,
                 'same_job_id': recovered['claim']['job_id'] == identity['job_id'],
                 'same_upload_id': recovered['claim']['upload_id'] == identity['upload_id'],
                 'same_message_id': int(recovered['claim']['message_id']) == int(identity['message_id']),
@@ -389,7 +390,7 @@ def main():
                 worker_a = subprocess.Popen(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
                      '--expected-json', str(expected_file), '--defer-ack'],
-                    cwd=ROOT, env=worker_env(3, checkpoint),
+                    cwd=ROOT, env=worker_env(60, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
                     finished = wait_for_checkpoint(checkpoint, 120.0)
@@ -400,7 +401,8 @@ def main():
                     if worker_a.poll() is None:
                         worker_a.kill()
                         worker_a.wait(timeout=20)
-                time.sleep(4)
+                recovery_wait_seconds = 65
+                time.sleep(recovery_wait_seconds)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
                      '--expected-json', str(expected_file), '--recover-terminal'],
