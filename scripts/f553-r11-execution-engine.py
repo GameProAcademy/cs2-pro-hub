@@ -162,7 +162,10 @@ def main():
                      '--expected-json', str(expected_file), '--inject-parser-failure'],
                     cwd=ROOT, env=env, capture_output=True, text=True, timeout=650)
                 if worker.returncode:
-                    raise RuntimeError('R11_FAILED_WORKER_FAILED: ' + worker.stderr[:200])
+                    raise RuntimeError(
+                        'R11_FAILED_WORKER_FAILED:stderr=' + worker.stderr[:2000]
+                        + ':stdout=' + worker.stdout[:1000]
+                    )
                 observation = json.loads(worker.stdout)
             claim = observation['claim']
             if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
@@ -206,7 +209,10 @@ def main():
                      '--expected-json', str(expected_file)], cwd=ROOT, env=env,
                     capture_output=True, text=True, timeout=650)
                 if worker.returncode:
-                    raise RuntimeError('R11_CLAIMED_WORKER_FAILED: ' + worker.stderr[:200])
+                    raise RuntimeError(
+                        'R11_CLAIMED_WORKER_FAILED:stderr=' + worker.stderr[:2000]
+                        + ':stdout=' + worker.stdout[:1000]
+                    )
                 observation = json.loads(worker.stdout)
             claim = observation['claim']
             if (claim['job_id'] != identity['job_id'] or claim['upload_id'] != identity['upload_id']
@@ -351,7 +357,10 @@ def main():
                      '--expected-json', str(expected_file)],
                     cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=650)
                 if worker_b.returncode:
-                    raise RuntimeError('R11_WORKER_B_RECOVERY_FAILED: ' + worker_b.stderr[:500])
+                    raise RuntimeError(
+                        'R11_WORKER_B_RECOVERY_FAILED:stderr=' + worker_b.stderr[:2000]
+                        + ':stdout=' + worker_b.stdout[:1000]
+                    )
                 recovered = json.loads(worker_b.stdout)
             counts = terminal_counts(identity['job_id'], identity['upload_id'])
             if recovered.get('checkpoint') != 'ACKNOWLEDGED' or recovered['claim']['job_id'] != identity['job_id']:
@@ -397,7 +406,10 @@ def main():
                      '--expected-json', str(expected_file), '--recover-terminal'],
                     cwd=ROOT, env=worker_env(30), capture_output=True, text=True, timeout=120)
                 if worker_b.returncode:
-                    raise RuntimeError('R11_ACK_LOSS_RECOVERY_FAILED: ' + worker_b.stderr[:500])
+                    raise RuntimeError(
+                        'R11_ACK_LOSS_RECOVERY_FAILED:stderr=' + worker_b.stderr[:2000]
+                        + ':stdout=' + worker_b.stdout[:1000]
+                    )
                 recovered = json.loads(worker_b.stdout)
             after = terminal_counts(identity['job_id'], identity['upload_id'])
             queued = int(sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(identity['message_id'])};"))
