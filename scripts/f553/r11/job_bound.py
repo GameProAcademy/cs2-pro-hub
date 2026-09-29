@@ -65,8 +65,10 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
     try:
         claimed_job_id = _uuid_field('claim.job_id', claimed.get('job_id'))
         claimed_upload_id = _uuid_field('claim.upload_id', claimed.get('upload_id'))
+        claimed_user_id = _uuid_field('claim.user_id', claimed.get('user_id'))
         expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
         expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
+        expected_user_id = _uuid_field('expected.user_id', expected.get('user_id'))
     except RuntimeError as exc:
         safe_identity = {
             key: {
@@ -81,6 +83,7 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         ) from exc
     if (claimed_job_id != expected_job_id
             or claimed_upload_id != expected_upload_id
+            or claimed_user_id != expected_user_id
             or int(claimed['message_id']) != int(expected['message_id'])
             or claimed['storage_path'] != expected['storage_path']
             or claimed['demo_sha256'] != expected['demo_sha256']
