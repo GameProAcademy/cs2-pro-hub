@@ -473,7 +473,10 @@ def main():
             evidence['gates']['queue_idempotency'] = 'PASS'
     
         try:
-            matrices = run_all(db, api_url, key, evidence, evidence['observations']['integrated_lifecycle'])
+            lifecycle_observation = evidence['observations'].get('integrated_lifecycle')
+            if not lifecycle_observation:
+                raise RuntimeError('R11_MATRIX_PREREQUISITE_MISSING:integrated_lifecycle')
+            matrices = run_all(db, api_url, key, evidence, lifecycle_observation)
             evidence['observations']['matrices'] = {
                 name: {'case_count': value['case_count'], 'executed': value['executed']}
                 for name, value in matrices.items()
