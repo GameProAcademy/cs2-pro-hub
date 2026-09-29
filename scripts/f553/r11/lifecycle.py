@@ -160,3 +160,4 @@ def create_disposable_job(db: dict[str, str], api_url: str, key: str,
             'attempt_number': 1, 'message_id': job['queue_message_id'],
             'storage_path': storage_path, 'demo_sha256': fixture['sha256'],
             'upload_storage': stored, 'job_snapshot': job}
+# R11.2 CI validation branch: command-tag parsing remains token-based.
