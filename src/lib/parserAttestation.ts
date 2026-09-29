@@ -9,6 +9,7 @@ export const PARSER_ATTESTATION_EXPECTED = {
   branch: "infra/cs2-parser-worker-v8",
   commit: "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
   deploymentId: "207d0b66-dc8f-4ebc-96cd-6a2ef999f62a",
+  deploymentSourceCommit: "65efee000a23f7e5e42aa08c4279e2c3bf3c52fd",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
@@ -198,7 +199,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     deployment["service_id"] !== expected.serviceId ||
     deployment["environment_id"] !== expected.environmentId ||
     deployment["source_branch"] !== expected.branch ||
-    deployment["source_commit"] !== expected.commit ||
+    deployment["source_commit"] !== expected.deploymentSourceCommit ||
     deployment["deployment_status"] !== "SUCCESS" ||
     typeof deployment["query_digest"] !== "string" ||
     !/^[0-9a-f]{64}$/.test(deployment["query_digest"])
