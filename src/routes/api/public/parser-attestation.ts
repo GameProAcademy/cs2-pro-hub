@@ -218,7 +218,6 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
             message: safeMessage,
             details_present: Boolean(error.details),
             hint_present: Boolean(error.hint),
-            status: error.status ?? null,
           });
           return Response.json(
             {
