@@ -273,7 +273,7 @@ def persist_hot_and_finish(db: dict[str, str], claim: dict, parsed: dict,
                 "hot_measurements": hot_payload_measurements(hot)}
     match_source_id = sql(db, "INSERT INTO public.match_sources "
         "(match_id,source,source_contract_version,source_version,fetched_at,status,quality,fingerprint,upload_id,metadata) VALUES "
-        f"('{ident(match_id)}','demo','1','{parsed['parser_version']}',now(),'complete',"
+        f"({sql_scalar_literal(match_id, 'match_sources.match_id')},'demo','1','{parsed['parser_version']}',now(),'complete',"
         f"{json_expr(hot['quality'])},'{hot_digest}','{ident(claim['upload_id'])}',{json_expr(metadata)}) RETURNING id;")
     terminal_payload = {"match_id": match_id, "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "duration_ms": max(1, round((parsed["parser_finish"] - parsed["parser_start"]) * 1000)),
