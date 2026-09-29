@@ -68,9 +68,16 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
         expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
     except RuntimeError as exc:
+        safe_identity = {
+            key: {
+                'type': type(claimed.get(key)).__name__,
+                'repr': repr(claimed.get(key))[:160],
+            }
+            for key in ('job_id', 'upload_id', 'message_id', 'attempt_number')
+        }
         raise RuntimeError(
-            f'{exc}:claim_identity_types='
-            f"{ {key: type(claimed.get(key)).__name__ for key in ('job_id','upload_id','message_id','attempt_number')}!r}"
+            f'{exc}:claim_identity={safe_identity!r}:expected_job={expected.get("job_id")!r}:'
+            f'expected_upload={expected.get("upload_id")!r}'
         ) from exc
     if (claimed_job_id != expected_job_id
             or claimed_upload_id != expected_upload_id
