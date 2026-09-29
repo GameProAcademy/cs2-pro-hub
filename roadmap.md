@@ -5,6 +5,8 @@
 - [x] F.5.3-CLOSURE.8-R11.2-R5/R6/R10/R11: **superseded and closed by the verified R11.2 execution + independent Job B seal above.**
 - [ ] **NEXT:** FASE 2.7.2G.6-R.5.8 controlled attestation readiness. The R11.2 disposable gate is closed, but the first real production attestation has **not** been executed. R5.8 remains fail-closed until protected operator configuration and external preflight are independently GREEN.
 - [ ] Real DEM / Attempt 9+ / final RAW production evidence / Canonical admission / Railway mutation remain **LOCKED**.
+- [x] **R5.8 code repair cycle:** H.3-E.3 is now strictly diagnostic-only (no `actions: write`, no attestation dispatch); Parser Runtime Attestation is `workflow_dispatch`-only on `main`; the approved attestor workflow blob registry was refreshed after the source change; H.3-E.9.1 collector SHA pin was reconciled to the current collector workflow. No secrets, Railway state, DEM, provenance, nonce, Canonical, or production data were mutated.
+- [ ] **R5.8 operational gate remains pending:** protected database HMAC setting, `RAILWAY_API_TOKEN`, live endpoint/runtime preflight, and then an explicit manual attestation dispatch are still required. The attestation workflow has not been executed by these repairs.
 
 > This section is the authoritative current-state snapshot. Older phase sections below are retained as historical implementation records and may contain earlier `NOT_RUN` wording.
 
