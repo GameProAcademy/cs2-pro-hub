@@ -115,6 +115,13 @@ def main():
         'gates': {name: 'NOT_PROVEN' for name in GATES}, 'observations': {}, 'blockers': [],
     }
 
+    def persist_checkpoint() -> None:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = dict(evidence)
+        checkpoint['checkpoint_at'] = time.time()
+        checkpoint['checkpoint'] = True
+        OUT.write_text(json.dumps(checkpoint, indent=2) + '\n')
+
     def attempt(gate, operation, check):
         try:
             observation = operation()
@@ -123,15 +130,16 @@ def main():
                 evidence['gates'][gate] = 'PASS'
             else:
                 raise RuntimeError('Observed operation did not satisfy the gate contract')
-        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError,
-                urllib.error.URLError) as exc:
+        except Exception as exc:
             evidence['gates'][gate] = 'FAIL'
             evidence['blockers'].append({'BLOCKER_CODE': f'R11_{gate.upper()}_FAILED',
                                          'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                                         'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__,
-                                         'LINE': 0, 'RUN_ID': evidence['run_id'],
+                                         'ACTUAL_OUTPUT': f'{type(exc).__name__}: {str(exc)[:300]}',
+                                         'FILE': __file__, 'LINE': 0, 'RUN_ID': evidence['run_id'],
                                          'COMMIT_SHA': evidence['commit_sha'],
                                          'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
+        finally:
+            persist_checkpoint()
 
     try:
         clean = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
