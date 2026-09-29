@@ -221,5 +221,6 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
-        print(str(exc)[:200], file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         raise SystemExit(1) from exc
