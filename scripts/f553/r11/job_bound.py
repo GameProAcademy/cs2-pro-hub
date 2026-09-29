@@ -21,11 +21,21 @@ def recover_terminal(db_url: str, expected: dict) -> dict:
     worker_id = 'r11-disposable-recovery-' + uuid4().hex
     started_at = time.time()
     observed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',60,1);"))
-    archived = sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(expected['message_id'])};")
-    queued = sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(expected['message_id'])};")
+    message_id = int(expected['message_id'])
+    archived = sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={message_id};")
+    queued = sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={message_id};")
     state = sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{ident(expected['job_id'])}';")
-    if (observed.get('status') != 'rejected' or observed.get('reason') != 'processed'
-            or archived != '1' or queued != '0' or state != 'processed'):
+    if observed.get('status') != 'rejected' or observed.get('reason') != 'processed' or state != 'processed':
+        raise RuntimeError('R11_TERMINAL_RECOVERY_MISMATCH')
+    # ACK-loss reconciliation is explicit: if the terminal claim rejection did not
+    # archive the now-visible message, Worker B archives that same message without
+    # reparsing and then verifies the terminal queue state.
+    if queued == '1' and archived == '0':
+        if sql(db, f"SELECT pgmq.archive('demo_parse',{message_id});") != 't':
+            raise RuntimeError('R11_TERMINAL_RECOVERY_ARCHIVE_FAILED')
+        queued = sql(db, f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={message_id};")
+        archived = sql(db, f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={message_id};")
+    if archived != '1' or queued != '0':
         raise RuntimeError('R11_TERMINAL_RECOVERY_MISMATCH')
     return {'worker_id': worker_id, 'worker_pid': os.getpid(), 'worker_start': started_at,
             'worker_end': time.time(), 'worker_exit_code': 0, 'claim': observed,
