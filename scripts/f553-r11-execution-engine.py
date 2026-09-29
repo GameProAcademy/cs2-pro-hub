@@ -241,7 +241,7 @@ def main():
                 urllib.error.URLError) as exc:
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_JOB_BOUND_LIFECYCLE_INCOMPLETE',
-                'ACTUAL_OUTPUT': str(exc)[:300], 'RUN_ID': evidence['run_id'],
+                'ACTUAL_OUTPUT': str(exc)[:6000], 'RUN_ID': evidence['run_id'],
                 'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
             })
 
