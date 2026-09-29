@@ -33,26 +33,37 @@ def database_env(url: str) -> dict[str, str]:
 
 
 def sql(db: dict[str, str], statement: str) -> str:
-    result = subprocess.run(['psql', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', statement],
-                            env=db, capture_output=True, text=True, timeout=40)
+    """Execute one disposable SQL statement and preserve each scalar row losslessly.
+
+    psql's unaligned mode normally emits one row per line, but a large JSON scalar
+    must never be reconstructed by guessing physical line boundaries. Use a NUL
+    record separator so embedded/newline-formatted output cannot be mistaken for
+    row boundaries. JSON text itself cannot contain a raw NUL, so this delimiter is
+    unambiguous for the JSON-producing queries used by the R11 harness.
+    """
+    result = subprocess.run(
+        ['psql', '-X', '-A', '-t', '-q', '-P', 'recordsep_zero=on',
+         '-v', 'ON_ERROR_STOP=1', '-c', statement],
+        env=db, capture_output=True, text=True, timeout=40,
+    )
     if result.returncode:
         error = next((line[:200] for line in result.stderr.splitlines() if 'ERROR:' in line),
                      'R11_DATABASE_OPERATION_FAILED')
         raise RuntimeError(error)
-    # Keep scalar JSON values intact even when psql wraps a wide result across
-    # physical lines. The previous implementation returned only the first line,
-    # truncating json_agg()/row_to_json() values and causing JSONDecodeError in
-    # the integrated RAW finalize path. A data-modifying statement with
-    # RETURNING, however, also emits a trailing command tag such as
-    # "INSERT 0 1"; remove that tag before reconstructing wrapped scalar output.
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    if not lines:
+
+    records = [record for record in result.stdout.split('\x00') if record]
+    if not records:
         return ''
-    if len(lines) == 1:
-        return lines[0]
-    if re.fullmatch(r'(?:INSERT|UPDATE|DELETE|MERGE)\s+\d+(?:\s+\d+)?', lines[-1], re.IGNORECASE):
-        return lines[0]
-    return ''.join(lines)
+
+    # With -t/-q, successful DML may still expose a command tag. Keep the
+    # actual scalar row and discard only a terminal PostgreSQL command tag.
+    while len(records) > 1 and re.fullmatch(
+        r'(?:INSERT|UPDATE|DELETE|MERGE)\\s+\\d+(?:\\s+\\d+)?',
+        records[-1].strip(), re.IGNORECASE,
+    ):
+        records.pop()
+
+    return ''.join(records).strip()
 
 
 def ident(value: str) -> str:
