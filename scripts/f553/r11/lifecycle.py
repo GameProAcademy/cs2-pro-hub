@@ -38,7 +38,11 @@ def sql(db: dict[str, str], statement: str) -> str:
         error = next((line[:200] for line in result.stderr.splitlines() if 'ERROR:' in line),
                      'R11_DATABASE_OPERATION_FAILED')
         raise RuntimeError(error)
-    return result.stdout.strip()
+    # psql appends a command tag (for example INSERT 0 1) after DML
+    # statements that also return a scalar. R11 scalar callers consume the
+    # first data row; retaining the tag corrupts UUID/JSON identity values.
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    return lines[0].strip() if lines else ''
 
 
 def ident(value: str) -> str:
