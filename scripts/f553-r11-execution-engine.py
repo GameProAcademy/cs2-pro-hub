@@ -128,7 +128,7 @@ def main():
             evidence['gates'][gate] = 'FAIL'
             evidence['blockers'].append({'BLOCKER_CODE': f'R11_{gate.upper()}_FAILED',
                                          'COMMAND': 'python3 scripts/f553-r11-execution-engine.py',
-                                         'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__,
+                                         'ACTUAL_OUTPUT': str(exc)[:12000], 'FILE': __file__,
                                          'LINE': 0, 'RUN_ID': evidence['run_id'],
                                          'COMMIT_SHA': evidence['commit_sha'],
                                          'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
@@ -241,7 +241,7 @@ def main():
                 urllib.error.URLError) as exc:
             evidence['blockers'].append({
                 'BLOCKER_CODE': 'R11_JOB_BOUND_LIFECYCLE_INCOMPLETE',
-                'ACTUAL_OUTPUT': str(exc)[:300], 'RUN_ID': evidence['run_id'],
+                'ACTUAL_OUTPUT': str(exc)[:12000], 'RUN_ID': evidence['run_id'],
                 'COMMIT_SHA': evidence['commit_sha'], 'WORKFLOW_RUN_ID': evidence['workflow_run_id'],
             })
 
@@ -519,7 +519,7 @@ def main():
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
         evidence['blockers'].append({'BLOCKER_CODE': 'R11_LOCAL_STACK_UNAVAILABLE',
                                      'COMMAND': 'supabase status -o json',
-                                     'ACTUAL_OUTPUT': str(exc)[:300], 'FILE': __file__, 'LINE': 0,
+                                     'ACTUAL_OUTPUT': str(exc)[:12000], 'FILE': __file__, 'LINE': 0,
                                      'RUN_ID': evidence['run_id'], 'COMMIT_SHA': evidence['commit_sha'],
                                      'WORKFLOW_RUN_ID': evidence['workflow_run_id']})
     finally:
