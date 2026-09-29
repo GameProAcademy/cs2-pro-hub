@@ -119,7 +119,13 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
             f"{int(claimed['attempt'])},'{worker_id}',"
             "'PROCESS_ABORTED','Disposable PROCESS_ABORTED injection',true);"))
         if terminal.get('accepted') is not True or terminal.get('status') != 'failed':
-            raise RuntimeError('R11_PROCESS_ABORTED_NOT_TERMINAL')
+            raise RuntimeError(
+                'R11_PROCESS_ABORTED_NOT_TERMINAL:'
+                f"accepted={terminal.get('accepted')!r}:"
+                f"status={terminal.get('status')!r}:"
+                f"reason={terminal.get('reason')!r}:"
+                f"retry={terminal.get('retry')!r}"
+            )
         result['aborted'] = {'terminal': terminal, 'parser_execution_count': 0}
         result['checkpoint'] = 'PROCESS_ABORTED_TERMINALIZED'
         result['worker_end'] = time.time()
