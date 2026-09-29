@@ -51,13 +51,27 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
     started_at = time.time()
     if lease_seconds < 1 or lease_seconds > 3600:
         raise RuntimeError('R11_LEASE_SECONDS_INVALID')
-    claimed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',{lease_seconds},1);"))
+    try:
+        claim_raw = sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',{lease_seconds},1);")
+        claimed = json.loads(claim_raw)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f'R11_CLAIM_RPC_FAILED:{type(exc).__name__}:{str(exc)[:220]}') from exc
     if claimed.get('status') != 'claimed':
-        raise RuntimeError('R11_EXPECTED_JOB_NOT_CLAIMED')
-    claimed_job_id = _uuid_field('claim.job_id', claimed.get('job_id'))
-    claimed_upload_id = _uuid_field('claim.upload_id', claimed.get('upload_id'))
-    expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
-    expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
+        raise RuntimeError(
+            'R11_EXPECTED_JOB_NOT_CLAIMED:'
+            f"status={claimed.get('status')!r}:reason={claimed.get('reason')!r}:"
+            f"keys={sorted(claimed.keys())!r}"
+        )
+    try:
+        claimed_job_id = _uuid_field('claim.job_id', claimed.get('job_id'))
+        claimed_upload_id = _uuid_field('claim.upload_id', claimed.get('upload_id'))
+        expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
+        expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f'{exc}:claim_identity_types='
+            f"{ {key: type(claimed.get(key)).__name__ for key in ('job_id','upload_id','message_id','attempt_number')}!r}"
+        ) from exc
     if (claimed_job_id != expected_job_id
             or claimed_upload_id != expected_upload_id
             or int(claimed['message_id']) != int(expected['message_id'])
