@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 from uuid import UUID, uuid4
 
 from f553.r11.integrated import run_integrated
@@ -77,15 +78,6 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         except (ValueError, AttributeError, TypeError):
             valid = False
         uuid_validity[field] = {'type': type(value).__name__, 'valid': valid}
-    print(json.dumps({
-        'claim_contract_debug': {
-            'status': claimed.get('status'),
-            'uuid_fields': uuid_validity,
-            'message_id_type': type(claimed.get('message_id')).__name__,
-            'attempt_type': type(claimed.get('attempt')).__name__,
-            'attempt_number_type': type(claimed.get('attempt_number')).__name__,
-        }
-    }, sort_keys=True), file=sys.stderr, flush=True)
     if claimed.get('status') != 'claimed':
         raise RuntimeError(
             'R11_EXPECTED_JOB_NOT_CLAIMED:'
@@ -120,7 +112,11 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
             or int(claimed['attempt_number']) != expected['attempt_number']):
         raise RuntimeError('R11_CLAIM_IDENTITY_MISMATCH')
     result = {'worker_id': worker_id, 'worker_pid': os.getpid(), 'worker_start': started_at,
-              'claim': claimed, 'checkpoint': 'CLAIMED'}
+              'claim': claimed, 'checkpoint': 'CLAIMED',
+              'claim_contract_debug': {'status': claimed.get('status'), 'uuid_fields': uuid_validity,
+                                      'message_id_type': type(claimed.get('message_id')).__name__,
+                                      'attempt_type': type(claimed.get('attempt')).__name__,
+                                      'attempt_number_type': type(claimed.get('attempt_number')).__name__}}
     if checkpoint_file:
         Path(checkpoint_file).write_text(json.dumps(result))
     if abort_after_claim:
@@ -231,5 +227,5 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
-        print(str(exc)[:200], file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         raise SystemExit(1) from exc
