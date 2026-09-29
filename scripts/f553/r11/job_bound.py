@@ -64,7 +64,9 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
             for key in ('status', 'job_id', 'upload_id', 'user_id', 'message_id', 'attempt', 'attempt_number', 'storage_path', 'demo_sha256')
         }
     }, sort_keys=True), file=sys.stderr, flush=True)
-    if claimed.get('status') != 'claimed':\n        raise RuntimeError(\n            'R11_EXPECTED_JOB_NOT_CLAIMED:'
+    if claimed.get('status') != 'claimed':
+        raise RuntimeError(
+            'R11_EXPECTED_JOB_NOT_CLAIMED:'
             f"status={claimed.get('status')!r}:reason={claimed.get('reason')!r}:"
             f"keys={sorted(claimed.keys())!r}"
         )
