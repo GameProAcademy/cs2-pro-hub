@@ -38,11 +38,22 @@ def sql(db: dict[str, str], statement: str) -> str:
         error = next((line[:200] for line in result.stderr.splitlines() if 'ERROR:' in line),
                      'R11_DATABASE_OPERATION_FAILED')
         raise RuntimeError(error)
-    # psql appends a command tag (for example INSERT 0 1) after DML
-    # statements that also return a scalar. R11 scalar callers consume the
-    # first data row; retaining the tag corrupts UUID/JSON identity values.
-    lines = [line for line in result.stdout.splitlines() if line.strip()]
-    return lines[0].strip() if lines else ''
+    # Keep scalar JSON values intact even when psql wraps a wide result across
+    # physical lines. The previous implementation returned only the first line,
+    # truncating json_agg()/row_to_json() values and causing JSONDecodeError in
+    # the integrated RAW finalize path. R11 callers use sql() for one scalar
+    # result; joining wrapped lines reconstructs that scalar without accepting
+    # the trailing command tag produced by data-modifying statements.
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not lines:
+        return ''
+    if len(lines) == 1:
+        return lines[0]
+    # A data-modifying statement with RETURNING can still emit a command tag;
+    # callers that need RETURNING already wrap it in SELECT/CTE and therefore
+    # receive a single scalar. For wrapped scalar output, concatenate the
+    # physical lines exactly as psql emitted them.
+    return ''.join(lines)
 
 
 def ident(value: str) -> str:
