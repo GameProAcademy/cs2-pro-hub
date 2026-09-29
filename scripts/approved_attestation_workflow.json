@@ -1,6 +1,6 @@
 {
   "path": ".github/workflows/parser-runtime-attestation.yml",
-  "source_sha": "ef75b0bd40bd6d7e3438b0041d47a20f065d8ccc",
+  "source_sha": "3070d8bae6c3f02093bbb2595138c913646c2e31",
   "sha_algorithm": "git-blob-sha1",
   "policy": "reviewed-source-content"
 }
