@@ -207,7 +207,13 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           },
         );
         if (error) {
-          console.error(`[parser-attestation] recorder failed: ${error.code}`);
+          console.error("[parser-attestation] recorder failed", {
+            code: error.code ?? null,
+            message: error.message ?? null,
+            details: error.details ?? null,
+            hint: error.hint ?? null,
+            status: error.status ?? null,
+          });
           return Response.json({ error: "ATTESTATION_REJECTED" }, { status: 422 });
         }
         return Response.json(
