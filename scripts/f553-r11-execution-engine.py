@@ -351,7 +351,7 @@ def main():
                     if worker_a.poll() is None:
                         worker_a.kill()
                         worker_a.wait(timeout=20)
-                recovery_wait_seconds = 65
+                recovery_wait_seconds = ack_lease_seconds + 5
                 time.sleep(recovery_wait_seconds)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
@@ -387,10 +387,13 @@ def main():
                 expected_file = Path(tmp) / 'expected.json'
                 checkpoint = Path(tmp) / 'worker-a.json'
                 expected_file.write_text(json.dumps(identity))
+                # Keep the lease comfortably longer than the measured FINISHED path.
+                # This proves FINISHED-before-ACK rather than lease expiry during processing.
+                ack_lease_seconds = 180
                 worker_a = subprocess.Popen(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
                      '--expected-json', str(expected_file), '--defer-ack'],
-                    cwd=ROOT, env=worker_env(60, checkpoint),
+                    cwd=ROOT, env=worker_env(ack_lease_seconds, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
                     # Prove FINISHED-before-ACK from the database contract itself,
@@ -398,9 +401,10 @@ def main():
                     # The checkpoint is only an observation aid; the authoritative
                     # condition is processed job + persisted outputs + message still
                     # queued and not archived.
-                    deadline = time.time() + 300.0
+                    deadline = time.monotonic() + 300.0
                     before = None
-                    while time.time() < deadline:
+                    last_observed = None
+                    while time.monotonic() < deadline:
                         if worker_a.poll() is not None:
                             raise RuntimeError(
                                 f'R11_ACK_LOSS_WORKER_EXITED_BEFORE_FINISH:exit={worker_a.returncode!r}'
@@ -424,7 +428,13 @@ def main():
                             break
                         time.sleep(1)
                     if before is None:
-                        raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
+                        raise RuntimeError(
+                            'R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING:'
+                            + json.dumps({
+                                'worker_poll': worker_a.poll(),
+                                'last_observed': last_observed,
+                            }, sort_keys=True)
+                        )
                     finished = {
                         'worker_pid': worker_a.pid,
                         'checkpoint': 'FINISHED_BEFORE_ACK',
