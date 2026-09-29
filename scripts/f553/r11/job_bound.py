@@ -56,7 +56,15 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         claimed = json.loads(claim_raw)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         raise RuntimeError(f'R11_CLAIM_RPC_FAILED:{type(exc).__name__}:{str(exc)[:220]}') from exc
-    # Emit only non-secret claim field types/values needed to diagnose contract drift.\n    # This is stderr-only and is consumed only when the worker fails.\n    print(json.dumps({\n        'claim_contract_debug': {\n            key: {'type': type(claimed.get(key)).__name__, 'repr': repr(claimed.get(key))[:160]}\n            for key in ('status', 'job_id', 'upload_id', 'user_id', 'message_id', 'attempt', 'attempt_number', 'storage_path', 'demo_sha256')\n        }\n    }, sort_keys=True), file=sys.stderr, flush=True)\n    if claimed.get('status') != 'claimed':\n        raise RuntimeError(\n            'R11_EXPECTED_JOB_NOT_CLAIMED:'
+    # Emit only non-secret claim field types/values needed to diagnose contract drift.
+    # This is stderr-only and is consumed only when the worker fails.
+    print(json.dumps({
+        'claim_contract_debug': {
+            key: {'type': type(claimed.get(key)).__name__, 'repr': repr(claimed.get(key))[:160]}
+            for key in ('status', 'job_id', 'upload_id', 'user_id', 'message_id', 'attempt', 'attempt_number', 'storage_path', 'demo_sha256')
+        }
+    }, sort_keys=True), file=sys.stderr, flush=True)
+    if claimed.get('status') != 'claimed':\n        raise RuntimeError(\n            'R11_EXPECTED_JOB_NOT_CLAIMED:'
             f"status={claimed.get('status')!r}:reason={claimed.get('reason')!r}:"
             f"keys={sorted(claimed.keys())!r}"
         )
