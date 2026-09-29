@@ -207,14 +207,26 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           },
         );
         if (error) {
+          const rawCode = typeof error.code === "string" ? error.code : "";
+          const rawMessage = typeof error.message === "string" ? error.message : "";
+          const safeCode = /^[A-Z0-9_:-]{3,120}$/.test(rawCode) ? rawCode : null;
+          const safeMessage = /^(?:PARSER_ATTESTATION|ATTESTATION|H3E|R5|PARSER_PROVENANCE|PGRST|23505|42501|55000)[A-Z0-9_:-]*$/.test(rawMessage)
+            ? rawMessage
+            : null;
           console.error("[parser-attestation] recorder failed", {
-            code: error.code ?? null,
-            message: error.message ?? null,
-            details: error.details ?? null,
-            hint: error.hint ?? null,
+            code: safeCode,
+            message: safeMessage,
+            details_present: Boolean(error.details),
+            hint_present: Boolean(error.hint),
             status: error.status ?? null,
           });
-          return Response.json({ error: "ATTESTATION_REJECTED" }, { status: 422 });
+          return Response.json(
+            {
+              error: "ATTESTATION_REJECTED",
+              blocker: safeMessage ?? safeCode ?? "RECORDER_REJECTED_UNCLASSIFIED",
+            },
+            { status: 422 },
+          );
         }
         return Response.json(
           {
