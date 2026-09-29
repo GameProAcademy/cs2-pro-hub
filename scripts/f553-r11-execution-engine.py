@@ -393,10 +393,43 @@ def main():
                     cwd=ROOT, env=worker_env(60, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
-                    finished = wait_for_checkpoint(checkpoint, 300.0)
-                    if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
+                    # Prove FINISHED-before-ACK from the database contract itself,
+                    # rather than depending on a child-process checkpoint file.
+                    # The checkpoint is only an observation aid; the authoritative
+                    # condition is processed job + persisted outputs + message still
+                    # queued and not archived.
+                    deadline = time.time() + 300.0
+                    before = None
+                    while time.time() < deadline:
+                        if worker_a.poll() is not None:
+                            raise RuntimeError(
+                                f'R11_ACK_LOSS_WORKER_EXITED_BEFORE_FINISH:exit={worker_a.returncode!r}'
+                            )
+                        observed = terminal_counts(identity['job_id'], identity['upload_id'])
+                        queued_now = int(sql(
+                            db,
+                            f"SELECT count(*) FROM pgmq.q_demo_parse WHERE msg_id={int(identity['message_id'])};"
+                        ))
+                        archived_now = int(sql(
+                            db,
+                            f"SELECT count(*) FROM pgmq.a_demo_parse WHERE msg_id={int(identity['message_id'])};"
+                        ))
+                        if (observed['job_status'] == 'processed'
+                                and observed['raw_artifacts'] == 1
+                                and observed['matches'] == 1
+                                and observed['match_sources'] == 1
+                                and queued_now == 1
+                                and archived_now == 0):
+                            before = observed
+                            break
+                        time.sleep(1)
+                    if before is None:
                         raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
-                    before = terminal_counts(identity['job_id'], identity['upload_id'])
+                    finished = {
+                        'worker_pid': worker_a.pid,
+                        'checkpoint': 'FINISHED_BEFORE_ACK',
+                        'worker_exit_code': None,
+                    }
                 finally:
                     if worker_a.poll() is None:
                         worker_a.kill()
