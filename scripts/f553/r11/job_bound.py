@@ -39,7 +39,7 @@ def _uuid_field(label: str, value: object) -> str:
     try:
         return str(UUID(str(value)))
     except (ValueError, AttributeError, TypeError) as exc:
-        raise RuntimeError(f'R11_UUID_FIELD_INVALID:{label}:{value!r}') from exc
+        raise RuntimeError(f'R11_UUID_FIELD_INVALID:{label}:type={type(value).__name__}:repr={str(value)[:120]!r}') from exc
 
 
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
@@ -56,12 +56,24 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         claimed = json.loads(claim_raw)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         raise RuntimeError(f'R11_CLAIM_RPC_FAILED:{type(exc).__name__}:{str(exc)[:220]}') from exc
-    # Emit only non-secret claim field types/values needed to diagnose contract drift.
-    # This is stderr-only and is consumed only when the worker fails.
+    # Emit only non-secret claim contract diagnostics; never print UUID/SHA values.
+    uuid_fields = ('job_id', 'upload_id', 'user_id')
+    uuid_validity = {}
+    for field in uuid_fields:
+        value = claimed.get(field)
+        try:
+            UUID(str(value))
+            valid = True
+        except (ValueError, AttributeError, TypeError):
+            valid = False
+        uuid_validity[field] = {'type': type(value).__name__, 'valid': valid}
     print(json.dumps({
         'claim_contract_debug': {
-            key: {'type': type(claimed.get(key)).__name__, 'repr': repr(claimed.get(key))[:160]}
-            for key in ('status', 'job_id', 'upload_id', 'user_id', 'message_id', 'attempt', 'attempt_number', 'storage_path', 'demo_sha256')
+            'status': claimed.get('status'),
+            'uuid_fields': uuid_validity,
+            'message_id_type': type(claimed.get('message_id')).__name__,
+            'attempt_type': type(claimed.get('attempt')).__name__,
+            'attempt_number_type': type(claimed.get('attempt_number')).__name__,
         }
     }, sort_keys=True), file=sys.stderr, flush=True)
     if claimed.get('status') != 'claimed':
