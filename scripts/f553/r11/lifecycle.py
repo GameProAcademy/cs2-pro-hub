@@ -58,7 +58,7 @@ def sql(db: dict[str, str], statement: str) -> str:
     # With -t/-q, successful DML may still expose a command tag. Keep the
     # actual scalar row and discard only a terminal PostgreSQL command tag.
     while len(records) > 1 and re.fullmatch(
-        r'(?:INSERT|UPDATE|DELETE|MERGE)\\s+\\d+(?:\\s+\\d+)?',
+        r'(?:INSERT|UPDATE|DELETE|MERGE)\s+\d+(?:\s+\d+)?',
         records[-1].strip(), re.IGNORECASE,
     ):
         records.pop()
