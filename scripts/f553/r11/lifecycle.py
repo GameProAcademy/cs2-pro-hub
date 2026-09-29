@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import urllib.error
 import urllib.request
@@ -56,7 +57,7 @@ def sql(db: dict[str, str], statement: str) -> str:
 
     # With -t/-q, successful DML may still expose a command tag. Keep the
     # actual scalar row and discard only a terminal PostgreSQL command tag.
-    while     while len(records) > 1:
+    while len(records) > 1:
         parts = records[-1].strip().split()
         is_command_tag = (
             len(parts) in (2, 3)
@@ -65,7 +66,9 @@ def sql(db: dict[str, str], statement: str) -> str:
         )
         if not is_command_tag:
             break
-        records.pop()rn ''.join(records).strip()
+        records.pop()
+
+    return ''.join(records).strip()
 
 
 def ident(value: str) -> str:
