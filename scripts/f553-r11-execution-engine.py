@@ -335,11 +335,16 @@ def main():
                      '--expected-json', str(expected_file), '--hold-after-claim'],
                     cwd=ROOT, env=worker_env(3, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                claimed = wait_for_checkpoint(checkpoint)
-                worker_a.kill()
-                worker_a.wait(timeout=20)
-                if worker_a.returncode == 0:
-                    raise RuntimeError('R11_WORKER_A_CRASH_NOT_INJECTED')
+                try:
+                    claimed = wait_for_checkpoint(checkpoint)
+                    worker_a.kill()
+                    worker_a.wait(timeout=20)
+                    if worker_a.returncode == 0:
+                        raise RuntimeError('R11_WORKER_A_CRASH_NOT_INJECTED')
+                finally:
+                    if worker_a.poll() is None:
+                        worker_a.kill()
+                        worker_a.wait(timeout=20)
                 time.sleep(4)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
@@ -377,14 +382,15 @@ def main():
                      '--expected-json', str(expected_file), '--defer-ack'],
                     cwd=ROOT, env=worker_env(3, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                finished = wait_for_checkpoint(checkpoint, 120.0)
-                if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
-                    worker_a.kill()
-                    worker_a.wait(timeout=20)
-                    raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
-                before = terminal_counts(identity['job_id'], identity['upload_id'])
-                worker_a.kill()
-                worker_a.wait(timeout=20)
+                try:
+                    finished = wait_for_checkpoint(checkpoint, 120.0)
+                    if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
+                        raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
+                    before = terminal_counts(identity['job_id'], identity['upload_id'])
+                finally:
+                    if worker_a.poll() is None:
+                        worker_a.kill()
+                        worker_a.wait(timeout=20)
                 time.sleep(4)
                 worker_b = subprocess.run(
                     [sys.executable, str(ROOT / 'scripts/f553/r11/job_bound.py'),
