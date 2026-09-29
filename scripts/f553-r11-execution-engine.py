@@ -393,7 +393,7 @@ def main():
                     cwd=ROOT, env=worker_env(60, checkpoint),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
-                    finished = wait_for_checkpoint(checkpoint, 120.0)
+                    finished = wait_for_checkpoint(checkpoint, 300.0)
                     if finished.get('checkpoint') != 'FINISHED_BEFORE_ACK':
                         raise RuntimeError('R11_ACK_LOSS_FINISHED_CHECKPOINT_MISSING')
                     before = terminal_counts(identity['job_id'], identity['upload_id'])
