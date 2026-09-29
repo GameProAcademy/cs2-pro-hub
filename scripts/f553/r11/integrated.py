@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 import time
+from uuid import UUID
 from urllib.parse import urlsplit
 
 from f553.r11.lifecycle import http, ident, object_path, private_bucket, sql
@@ -19,6 +20,20 @@ if str(PARSER_ROOT) not in sys.path:
 from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter, RAW_BUCKET, SECTION_ORDER, _stable
 
+
+def sql_scalar_literal(value: object, label: str) -> str:
+    """Render a scalar SQL literal without assuming the target column type.
+
+    The disposable harness must tolerate UUID and numeric identity columns.
+    """
+    text = str(value)
+    try:
+        UUID(text)
+        return "'" + text + "'"
+    except (ValueError, AttributeError):
+        if text.isdigit():
+            return text
+    raise RuntimeError(f"R11_SQL_SCALAR_INVALID:{label}:{text!r}")
 
 def json_expr(value: object) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
