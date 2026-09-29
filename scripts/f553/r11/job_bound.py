@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from f553.r11.integrated import run_integrated
 from f553.r11.lifecycle import database_env, http, ident, object_path, sql
@@ -35,17 +35,75 @@ def recover_terminal(db_url: str, expected: dict) -> dict:
             'checkpoint': 'TERMINAL_REDELIVERY_ACKNOWLEDGED'}
 
 
+def _uuid_field(label: str, value: object) -> str:
+    try:
+        return str(UUID(str(value)))
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise RuntimeError(f'R11_UUID_FIELD_INVALID:{label}:type={type(value).__name__}:repr={str(value)[:120]!r}') from exc
+
+
 def process_claim(db_url: str, api_url: str, key: str, expected: dict,
                   inject_parser_failure: bool = False, defer_ack: bool = False,
-                  checkpoint_file: str | None = None, hold_after_claim: bool = False) -> dict:
+                  checkpoint_file: str | None = None, hold_after_claim: bool = False,
+                  lease_seconds: int = 900, abort_after_claim: bool = False) -> dict:
     db = database_env(db_url)
     worker_id = 'r11-disposable-' + uuid4().hex
     started_at = time.time()
-    claimed = json.loads(sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',900,1);"))
+    if lease_seconds < 1 or lease_seconds > 3600:
+        raise RuntimeError('R11_LEASE_SECONDS_INVALID')
+    try:
+        claim_raw = sql(db, f"SELECT public.claim_demo_parse_message('{worker_id}',{lease_seconds},1);")
+        claimed = json.loads(claim_raw)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f'R11_CLAIM_RPC_FAILED:{type(exc).__name__}:{str(exc)[:220]}') from exc
+    # Emit only non-secret claim contract diagnostics; never print UUID/SHA values.
+    uuid_fields = ('job_id', 'upload_id', 'user_id')
+    uuid_validity = {}
+    for field in uuid_fields:
+        value = claimed.get(field)
+        try:
+            UUID(str(value))
+            valid = True
+        except (ValueError, AttributeError, TypeError):
+            valid = False
+        uuid_validity[field] = {'type': type(value).__name__, 'valid': valid}
+    print(json.dumps({
+        'claim_contract_debug': {
+            'status': claimed.get('status'),
+            'uuid_fields': uuid_validity,
+            'message_id_type': type(claimed.get('message_id')).__name__,
+            'attempt_type': type(claimed.get('attempt')).__name__,
+            'attempt_number_type': type(claimed.get('attempt_number')).__name__,
+        }
+    }, sort_keys=True), file=sys.stderr, flush=True)
     if claimed.get('status') != 'claimed':
-        raise RuntimeError('R11_EXPECTED_JOB_NOT_CLAIMED')
-    if (ident(claimed['job_id']) != ident(expected['job_id'])
-            or ident(claimed['upload_id']) != ident(expected['upload_id'])
+        raise RuntimeError(
+            'R11_EXPECTED_JOB_NOT_CLAIMED:'
+            f"status={claimed.get('status')!r}:reason={claimed.get('reason')!r}:"
+            f"keys={sorted(claimed.keys())!r}"
+        )
+    try:
+        claimed_job_id = _uuid_field('claim.job_id', claimed.get('job_id'))
+        claimed_upload_id = _uuid_field('claim.upload_id', claimed.get('upload_id'))
+        claimed_user_id = _uuid_field('claim.user_id', claimed.get('user_id'))
+        expected_job_id = _uuid_field('expected.job_id', expected.get('job_id'))
+        expected_upload_id = _uuid_field('expected.upload_id', expected.get('upload_id'))
+        expected_user_id = _uuid_field('expected.user_id', expected.get('user_id'))
+    except RuntimeError as exc:
+        safe_identity = {
+            key: {
+                'type': type(claimed.get(key)).__name__,
+                'repr': repr(claimed.get(key))[:160],
+            }
+            for key in ('job_id', 'upload_id', 'message_id', 'attempt_number')
+        }
+        raise RuntimeError(
+            f'{exc}:claim_identity={safe_identity!r}:expected_job={expected.get("job_id")!r}:'
+            f'expected_upload={expected.get("upload_id")!r}'
+        ) from exc
+    if (claimed_job_id != expected_job_id
+            or claimed_upload_id != expected_upload_id
+            or claimed_user_id != expected_user_id
             or int(claimed['message_id']) != int(expected['message_id'])
             or claimed['storage_path'] != expected['storage_path']
             or claimed['demo_sha256'] != expected['demo_sha256']
@@ -55,6 +113,18 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
               'claim': claimed, 'checkpoint': 'CLAIMED'}
     if checkpoint_file:
         Path(checkpoint_file).write_text(json.dumps(result))
+    if abort_after_claim:
+        terminal = json.loads(sql(db, "SELECT public.fail_demo_parse_message("
+            f"'{ident(expected['job_id'])}'::uuid,{int(expected['message_id'])},"
+            f"{int(claimed['attempt'])},'{worker_id}',"
+            "'PROCESS_ABORTED','Disposable PROCESS_ABORTED injection',true);"))
+        if terminal.get('accepted') is not True or terminal.get('status') != 'failed':
+            raise RuntimeError('R11_PROCESS_ABORTED_NOT_TERMINAL')
+        result['aborted'] = {'terminal': terminal, 'parser_execution_count': 0}
+        result['checkpoint'] = 'PROCESS_ABORTED_TERMINALIZED'
+        result['worker_end'] = time.time()
+        result['worker_exit_code'] = 0
+        return result
     if hold_after_claim:
         while True:
             time.sleep(1)
@@ -128,7 +198,7 @@ def main() -> int:
     if len(sys.argv) < 3 or sys.argv[1] != '--expected-json':
         raise RuntimeError('R11_WORKER_EXPECTED_FILE_REQUIRED')
     flags = set(sys.argv[3:])
-    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim', '--recover-terminal'}):
+    if not flags.issubset({'--inject-parser-failure', '--defer-ack', '--hold-after-claim', '--recover-terminal', '--abort-after-claim'}):
         raise RuntimeError('R11_WORKER_FLAG_INVALID')
     expected = json.loads(Path(sys.argv[2]).read_text())
     db_url = os.environ.get('F553_LOCAL_DB_URL', '')
@@ -140,7 +210,9 @@ def main() -> int:
                                inject_parser_failure='--inject-parser-failure' in flags,
                                defer_ack='--defer-ack' in flags,
                                checkpoint_file=os.environ.get('F553_CHECKPOINT_FILE'),
-                               hold_after_claim='--hold-after-claim' in flags)
+                               hold_after_claim='--hold-after-claim' in flags,
+                               lease_seconds=int(os.environ.get('F553_LEASE_SECONDS', '900')),
+                               abort_after_claim='--abort-after-claim' in flags)
     print(json.dumps(result, separators=(',', ':')), flush=True)
     return 0
 
@@ -149,5 +221,6 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
-        print(str(exc)[:200], file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         raise SystemExit(1) from exc

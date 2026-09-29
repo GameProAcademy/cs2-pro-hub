@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 import time
+from uuid import UUID
 from urllib.parse import urlsplit
 
 from f553.r11.lifecycle import http, ident, object_path, private_bucket, sql
@@ -20,13 +21,42 @@ from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter, RAW_BUCKET, SECTION_ORDER, _stable
 
 
+def sql_scalar_literal(value: object, label: str) -> str:
+    """Render a scalar SQL literal without assuming the target column type.
+
+    The disposable harness must tolerate UUID and numeric identity columns.
+    """
+    text = str(value)
+    try:
+        UUID(text)
+        return "'" + text + "'"
+    except (ValueError, AttributeError):
+        if text.isdigit():
+            return text
+    raise RuntimeError(f"R11_SQL_SCALAR_INVALID:{label}:{text!r}")
+
 def json_expr(value: object) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return "'" + encoded.replace("'", "''") + "'::jsonb"
 
 
 def row_json(db: dict[str, str], query: str) -> dict:
-    value = sql(db, f"SELECT row_to_json(r) FROM ({query}) r;")
+    """Return one JSON row for either SELECT or DML ... RETURNING.
+
+    PostgreSQL does not permit INSERT/UPDATE/DELETE directly inside a
+    subquery in the FROM clause. The previous implementation generated
+    SELECT row_to_json(r) FROM (INSERT ... RETURNING ...) r and therefore
+    failed the first integrated RAW operation with a syntax error near
+    INTO. Data-modifying CTEs are the supported PostgreSQL form and keep
+    the returned row semantics identical for the disposable harness.
+    """
+    statement = query.strip().rstrip(";")
+    verb = statement.split(None, 1)[0].upper() if statement else ""
+    if verb in {"INSERT", "UPDATE", "DELETE"}:
+        wrapped = f"WITH dml AS ({statement}) SELECT row_to_json(dml) FROM dml;"
+    else:
+        wrapped = f"SELECT row_to_json(r) FROM ({statement}) r;"
+    value = sql(db, wrapped)
     if not value:
         raise RuntimeError("R11_EXPECTED_DATABASE_ROW")
     return json.loads(value)
@@ -243,7 +273,7 @@ def persist_hot_and_finish(db: dict[str, str], claim: dict, parsed: dict,
                 "hot_measurements": hot_payload_measurements(hot)}
     match_source_id = sql(db, "INSERT INTO public.match_sources "
         "(match_id,source,source_contract_version,source_version,fetched_at,status,quality,fingerprint,upload_id,metadata) VALUES "
-        f"('{ident(match_id)}','demo','1','{parsed['parser_version']}',now(),'complete',"
+        f"({sql_scalar_literal(match_id, 'match_sources.match_id')},'demo','1','{parsed['parser_version']}',now(),'complete',"
         f"{json_expr(hot['quality'])},'{hot_digest}','{ident(claim['upload_id'])}',{json_expr(metadata)}) RETURNING id;")
     terminal_payload = {"match_id": match_id, "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "duration_ms": max(1, round((parsed["parser_finish"] - parsed["parser_start"]) * 1000)),

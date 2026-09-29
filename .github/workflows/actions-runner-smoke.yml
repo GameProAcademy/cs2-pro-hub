@@ -1,0 +1,24 @@
+name: Actions Runner Smoke
+
+on:
+  push:
+    branches:
+      - "fix/r11.2-chatgpt-engineering"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Runner identity
+        run: |
+          echo "runner.name=$RUNNER_NAME"
+          echo "runner.os=$RUNNER_OS"
+          echo "runner.arch=$RUNNER_ARCH"
+          echo "sha=$GITHUB_SHA"
+          test -n "$RUNNER_NAME"
+      - name: Basic execution
+        run: |
+          python3 - <<'PY'
+          print("ACTIONS_RUNNER_SMOKE=PASS")
+          PY

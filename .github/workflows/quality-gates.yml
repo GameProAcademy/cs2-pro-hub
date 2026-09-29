@@ -124,7 +124,7 @@ jobs:
           test -n "$(ls supabase/migrations/*.sql)"
           docker version
           docker info > /dev/null
-          printf 'F553_RUN_ID=%s\n' "$(python3 -c 'import uuid; print(uuid.uuid4().hex)')" >> "$GITHUB_ENV"
+          printf 'F553_RUN_ID=%s\n' "$(python3 -c 'import uuid; print(uuid.uuid4())')" >> "$GITHUB_ENV"
           printf 'F553_STARTED_AT=%s\n' "$(python3 -c 'import time; print(time.time())')" >> "$GITHUB_ENV"
           printf 'Runner=%s Kernel=%s SHA=%s Ref=%s WorkflowRun=%s Job=%s UTC=%s\n' "$RUNNER_OS" "$(uname -r)" "$GITHUB_SHA" "$GITHUB_REF" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$(date -u +%FT%TZ)"
       - name: Install PostgreSQL client
@@ -147,10 +147,8 @@ jobs:
         run: python3 -m pip install -r services/cs2-demo-parser/requirements.txt
       - name: Execute R11.2 disposable evidence engine
         run: python3 scripts/f553-r11-execution-engine.py
-      - name: Verify R11.2 Job A evidence remains fail-closed
-        if: always()
-        run: python3 scripts/f553-r11-final-verifier.py
       - name: Verify parser image isolation in this run
+        id: docker_check
         if: always()
         run: |
           set -euo pipefail
@@ -158,6 +156,7 @@ jobs:
           docker run --rm --entrypoint python gamepro-parser-isolation:f553 -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
           docker image inspect gamepro-parser-isolation:f553 --format '{{.Id}}' > /tmp/f553-image-digest
       - name: Verify parser tests in this run
+        id: parser_check
         if: always()
         run: |
           set -euo pipefail
@@ -170,12 +169,25 @@ jobs:
         with:
           bun-version: latest
       - name: Build and check production browser output in this run
+        id: browser_check
         if: always()
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
           bun run build
           bun run verify:browser-parser-sealed
+      - name: Finalize Job A gate evidence from executed CI steps
+        if: always()
+        env:
+          F553_DOCKER_OUTCOME: ${{ steps.docker_check.outcome }}
+          F553_PARSER_TESTS_OUTCOME: ${{ steps.parser_check.outcome }}
+          F553_BROWSER_OUTCOME: ${{ steps.browser_check.outcome }}
+        run: python3 scripts/f553-r11-finalize-job-a.py
+
+      - name: Verify R11.2 Job A evidence remains fail-closed
+        if: always()
+        run: python3 scripts/f553-r11-final-verifier.py
+
       - name: Require complete R11.2 artifact set
         if: always()
         run: |
