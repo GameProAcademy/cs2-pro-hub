@@ -614,7 +614,10 @@ def main():
         OUT.write_text(json.dumps(evidence, indent=2) + '\n')
         print(json.dumps({'final_decision': evidence['final_decision'],
                           'gates': evidence['gates'], 'blockers': evidence['blockers']}))
-    return 0 if evidence.get('final_decision') == 'READY_FOR_INDEPENDENT_ATTESTATION' else 1
+    return 0 if evidence.get('final_decision') in {
+        'READY_FOR_CI_GATE_FINALIZATION',
+        'READY_FOR_INDEPENDENT_ATTESTATION',
+    } else 1
 
 
 if __name__ == '__main__':
