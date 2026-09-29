@@ -424,7 +424,7 @@ def main():
                 'scenario': 'worker_a_finished_then_sigkill_before_ack_then_terminal_redelivery',
                 'worker_a_pid': finished['worker_pid'], 'worker_a_exit_code': -9,
                 'worker_b_pid': recovered['worker_pid'], 'worker_b_exit_code': recovered['worker_exit_code'],
-                'lease_seconds_worker_a': 3, 'recovery_wait_seconds': 4,
+                'lease_seconds_worker_a': 60, 'recovery_wait_seconds': recovery_wait_seconds,
                 'parser_execution_count_worker_b': recovered.get('parser_execution_count'),
                 'queue_count': queued, 'archive_count': archived,
                 'before': before, 'after': after, 'observed_at': time.time(),
