@@ -2,11 +2,6 @@ name: Parser Runtime Attestation
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - H.3-E.3 Final External Preflight
-    types:
-      - completed
 
 permissions:
   contents: read
@@ -18,20 +13,11 @@ jobs:
     # runtime branch is an evidence target, not the workflow source.
     #
     # Manual execution is still available through workflow_dispatch on main.
-    # Automatic execution is permitted only after the exact H.3-E.3 preflight
-    # workflow completes successfully on main. H.3-E.3 itself performs only
-    # secret-presence/connectivity checks and never executes a DEM or writes
-    # parser provenance.
+    # Execution is manual-only after the separate H.3-E.3 preflight is GREEN.
+    # The preflight never dispatches this workflow and never executes a DEM or writes provenance.
     if: >-
       github.repository == 'GameProAcademy/cs2-pro-hub' &&
-      (
-        (github.event_name == 'workflow_dispatch' && github.ref_name == 'main') ||
-        (
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main'
-        )
-      )
+github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
