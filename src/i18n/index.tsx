@@ -37,10 +37,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const next = readStoredLocale() ?? detectBrowserLocale();
-    // Suspended route branches may hydrate after their parent's effects. Wait
-    // for the browser's idle phase so every SSR branch first sees pt-BR.
-    const idleId = window.requestIdleCallback(() => setLocaleState(next), { timeout: 1000 });
-    return () => window.cancelIdleCallback(idleId);
+    // Keep the first client render deterministic for SSR hydration, then
+    // apply the browser preference on the next task. Do not depend on
+    // requestIdleCallback: it is not available in all production browsers.
+    const timer = window.setTimeout(() => setLocaleState(next), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
