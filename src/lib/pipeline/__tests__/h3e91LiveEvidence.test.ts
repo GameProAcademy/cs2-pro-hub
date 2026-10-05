@@ -46,8 +46,8 @@ function external(): H3E91ExternalEvidence {
     },
     workflowEvidence: {
       approvedPathMatches: safe(true),
-      actualBlobSha: safe("fae651ed5174aa609e4b07d575105d80a00d0055"),
-      approvedBlobSha: safe("fae651ed5174aa609e4b07d575105d80a00d0055"),
+      actualBlobSha: safe(H3E91_APPROVED_WORKFLOW_SHA),
+      approvedBlobSha: safe(H3E91_APPROVED_WORKFLOW_SHA),
       blobMatches: safe(true),
       oidcStructureValid: safe(true),
       collectorWorkflowSha: safe(H3E91_APPROVED_WORKFLOW_SHA),
