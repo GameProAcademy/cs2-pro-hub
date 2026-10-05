@@ -39,6 +39,8 @@ jobs:
       - name: Run focused attestation/governance tests
         run: >-
           python -m pytest -q
+           scripts/tests/test_r5_8_3_release_preflight.py
+           scripts/tests/test_r5_8_4_gate_reconciliation.py
           scripts/tests/test_parser_runtime_attestation.py
           scripts/tests/test_h3e91_live_preflight.py
 

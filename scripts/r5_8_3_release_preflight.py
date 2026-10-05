@@ -11,10 +11,18 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Direct execution sets sys.path[0] to scripts/, not the repository root.
+# Add the explicit root before importing the single shared attestation module;
+# this keeps local and GitHub Actions execution independent of PYTHONPATH.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.parser_runtime_attestation import (
     BRANCH, COMMIT, DEPLOYMENT, DEPLOYMENT_SOURCE_COMMIT, ENVIRONMENT,
@@ -22,7 +30,6 @@ from scripts.parser_runtime_attestation import (
     mapping_authority_matches_artifact,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 RAILWAY_API = "https://backboard.railway.com/graphql/v2"
 DOMAINS = (
     "https://parser.gamepro.network/version",
@@ -80,6 +87,9 @@ def railway_binding() -> dict[str, Any]:
     return observed
 
 def main() -> int:
+    if sys.argv[1:] == ["--self-check"]:
+        print("R5_8_3_IMPORT_OK")
+        return 0
     evidence: dict[str, Any] = {
         "schema_version": 1, "operation": "R5.8.3_READ_ONLY_PREFLIGHT",
         "side_effects": False, "checked_at": datetime.now(timezone.utc).isoformat(),

@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout exact source revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: ${{ github.event.workflow_run.repository.full_name }}
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -34,7 +34,7 @@ jobs:
         run: python3 scripts/f553-r11-post-completion-attest.py
       - name: Preserve post-completion decision
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: f553-r11-post-completion-attestation
           path: docs/release-gates/f553-r11-post-completion.json

@@ -1,5 +1,14 @@
 # CURRENT STATE RECONCILIATION — 2026-09-29
 
+## R5.8.3 / R5.8.4 PREPARATION — 2026-10-05
+
+- [x] Make the R5.8.3 workflow entrypoint resolve its shared attestation module without implicit `PYTHONPATH`.
+- [x] Add direct-entrypoint regression coverage and include it in the read-only workflow.
+- [x] Add a pure, fail-closed 32-gate R5.8.4 reconciler with no execution authority.
+- [ ] Observe the automatic R5.8.3 GitHub run and its uploaded evidence artifact after this change reaches `main`.
+- [ ] Run a fresh Runtime Attestation only through a separately authorized manual operator action, then reconcile all 32 gates independently.
+- [ ] Attempt 9, real DEM processing, RAW production persistence and Canonical admission remain blocked.
+
 ## BRIDGE CLAIM RECOVERY — 2026-10-05
 
 - [x] Published authenticated claim returned HTTP 200 with `status=empty` repeatedly while `demo_parse` remained empty; invalid authentication and payloads remained 401/400.
