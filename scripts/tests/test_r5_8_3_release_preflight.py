@@ -29,3 +29,19 @@ def test_preflight_source_remains_read_only():
         "canonical_authorization = true",
     ):
         assert forbidden not in source
+
+def test_nested_runtime_version_payload_is_normalized_before_comparison():
+    from scripts.r5_8_3_release_preflight import EXPECTED_IDENTITY, runtime_identity
+
+    payload = {
+        "parser": {
+            "name": EXPECTED_IDENTITY["name"],
+            "version": EXPECTED_IDENTITY["version"],
+            "revision": EXPECTED_IDENTITY["revision"],
+            "semantic_revision": EXPECTED_IDENTITY["semantic_revision"],
+            "build_revision": EXPECTED_IDENTITY["build_revision"],
+        },
+        "contract_version": EXPECTED_IDENTITY["contract_version"],
+        "runtime": {"production": True},
+    }
+    assert runtime_identity(payload) == EXPECTED_IDENTITY
