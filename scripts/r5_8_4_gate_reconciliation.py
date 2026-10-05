@@ -74,3 +74,68 @@ def reconcile_gates(evidence: Mapping[str, Mapping[str, Any]] | None) -> dict[st
         "attempt_9_authorized": False,
         "canonical_authorized": False,
     }
+
+def reconcile_r5_8_3_preflight(
+    preflight: Mapping[str, Any],
+    *,
+    workflow_run_id: int | str,
+    workflow_run_sha: str,
+    test_suite_passed: bool,
+) -> dict[str, Any]:
+    """Map independently collected R5.8.3 evidence into the 32-gate matrix.
+
+    This is diagnostic only. Missing evidence stays NOT_PROVEN and no gate
+    produced here grants Attempt 9 or Canonical execution authority.
+    """
+    p = preflight if isinstance(preflight, Mapping) else {}
+    railway = p.get("railway") if isinstance(p.get("railway"), Mapping) else {}
+    runtime = p.get("runtime") if isinstance(p.get("runtime"), Mapping) else {}
+    hashes = p.get("critical_hashes") if isinstance(p.get("critical_hashes"), Mapping) else {}
+    workflow = p.get("attestation_workflow") if isinstance(p.get("attestation_workflow"), Mapping) else {}
+    mapping = p.get("mapping_authority") if isinstance(p.get("mapping_authority"), Mapping) else {}
+
+    def ev(status: str, ref: str) -> dict[str, str]:
+        return {"status": status, "evidence_ref": ref}
+
+    verified: dict[str, dict[str, Any]] = {}
+    if mapping.get("inventory_rows") == 105:
+        verified["inventory_105"] = ev("VERIFIED", "r5.8.3.mapping_authority")
+    if mapping.get("generic") == 0:
+        verified["zero_generic"] = ev("VERIFIED", "r5.8.3.mapping_authority")
+    if mapping.get("artifact_matches") is True:
+        verified["mapping_release_valid"] = ev("VERIFIED", "r5.8.3.mapping_authority")
+    if mapping.get("authorized") == 0:
+        verified["canonical_authorization_false"] = ev("VERIFIED", "r5.8.3.mapping_authority")
+    if railway.get("id") == "1b5778de-3eaf-46f1-9ea5-cba381d95313" and railway.get("status") == "SUCCESS":
+        verified["railway_deployment_exact"] = ev("VERIFIED", "r5.8.3.railway")
+    if railway.get("commitHash") == "91aeee853200d0f461d0d36af1781d7fdfa40941":
+        verified["railway_commit_exact"] = ev("VERIFIED", "r5.8.3.railway")
+    if railway.get("branch") == "infra/cs2-parser-worker-v8":
+        verified["railway_branch_exact"] = ev("VERIFIED", "r5.8.3.railway")
+    if runtime and all(
+        isinstance(item, Mapping) and item.get("match") is True
+        for item in runtime.values()
+    ):
+        verified["live_version_exact"] = ev("VERIFIED", "r5.8.3.runtime")
+    if hashes and all(
+        isinstance(item, Mapping) and item.get("match") is True
+        for item in hashes.values()
+    ):
+        verified["critical_hashes_exact"] = ev("VERIFIED", "r5.8.3.critical_hashes")
+    if p.get("oidc_immutable_subject_present") is True:
+        verified["oidc_immutable_subject"] = ev("VERIFIED", "r5.8.3.oidc_subject")
+    if workflow.get("approved") is True:
+        verified["workflow_identity_valid"] = ev("VERIFIED", "r5.8.3.attestation_workflow")
+    if test_suite_passed:
+        verified["remote_ci"] = ev("VERIFIED", f"workflow_run:{workflow_run_id}")
+        verified["python_tests"] = ev("VERIFIED", f"workflow_run:{workflow_run_id}:focused-tests")
+
+    result = reconcile_gates(verified)
+    result["source"] = {
+        "workflow": "R5.8.3 Read-Only Release Preflight",
+        "workflow_run_id": str(workflow_run_id),
+        "workflow_run_sha": workflow_run_sha,
+        "preflight_decision": p.get("decision"),
+        "preflight_failures": list(p.get("failures") or []),
+    }
+    return result
