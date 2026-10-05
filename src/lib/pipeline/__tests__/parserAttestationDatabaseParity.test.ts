@@ -75,12 +75,17 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     },
   );
 
-  it("requires empty state and preserves function security before replacement", () => {
-    expect(migration).toContain("FROM public.parser_runtime_provenance");
-    expect(migration).toContain("FROM public.parser_attestation_nonces");
-    expect(migration).toContain("R5_8_PIN_RECONCILIATION_REQUIRES_EMPTY_ATTESTATION_STATE");
+  it("reconciles the live pin without deleting or rewriting attestation rows", () => {
+    expect(migration).toContain("current successful Railway deployment");
+    expect(migration).toContain("_old_deployment");
+    expect(migration).toContain("_new_deployment");
+    expect(migration).toContain("_old_source_commit");
+    expect(migration).toContain("_new_source_commit");
     expect(migration).toContain("p.prosecdef");
     expect(migration).toContain(`ARRAY['search_path=""']`);
+    expect(migration).not.toMatch(/DELETE\s+FROM\s+public\.parser_runtime_provenance/i);
+    expect(migration).not.toMatch(/TRUNCATE\s+public\.parser_runtime_provenance/i);
+    expect(migration).not.toMatch(/UPDATE\s+public\.parser_runtime_provenance/i);
     expect(migration).not.toMatch(/GRANT\s+EXECUTE/i);
     expect(migration).not.toMatch(/SECURITY\s+INVOKER/i);
   });
