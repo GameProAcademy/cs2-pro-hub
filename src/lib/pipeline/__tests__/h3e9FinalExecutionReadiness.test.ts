@@ -280,7 +280,7 @@ describe("H.3-E.9 final execution readiness", () => {
       resolve("src/lib/pipeline/__tests__/parserAttestationDatabaseParity.test.ts"),
       "utf8",
     );
-    expect(files).toContain("20260925011902_051ef9cf-6adf-4689-9fe2-c2fc86dedc40.sql");
+    expect(files).toContain("20260929103000_reconcile_r58_live_attestation_pins.sql");
     expect(files).toContain("20260929110000_r58_1_recorder_pin_repair.sql");
   });
 });
