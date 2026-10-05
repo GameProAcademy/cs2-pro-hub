@@ -169,9 +169,12 @@ def release_gate_evidence(
         if verified:
             evidence[key] = {"status": "VERIFIED", "evidence_ref": evidence_ref}
 
+    # The mapping artifact itself may be independently verified, but the
+    # mapping gate remains BLOCKED until canonical authorization/admission is
+    # proven. This status is consumed by the server-side attestation contract.
     evidence["mapping_inventory"] = {
-        **({"status": "VERIFIED", "evidence_ref": "payload.mapping_release"}
-           if mapping_artifact_verified else blocked),
+        "status": "BLOCKED",
+        "evidence_ref": "payload.mapping_release" if mapping_artifact_verified else "NOT_PROVEN",
         "inventory_digest": INVENTORY_DIGEST,
         "matrix_digest": MATRIX_DIGEST,
         "row_count": 105,

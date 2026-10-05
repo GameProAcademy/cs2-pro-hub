@@ -104,6 +104,7 @@ def test_release_evidence_is_explicitly_blocked_before_attempt_9():
     assert evidence["mapping_inventory"]["generic_count"] == 0
     assert evidence["mapping_inventory"]["verified_count"] == 0
     assert evidence["mapping_inventory"]["release_id"] == "cf0549c2-dfbd-c4df-25b4-2ce8204edf87"
+    assert evidence["mapping_inventory"]["status"] == "BLOCKED"
 
 
 def test_mapping_authority_digests_match_reviewed_artifacts():
