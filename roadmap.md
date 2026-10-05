@@ -2,14 +2,16 @@
 
 ## R5.8.5 / R5.8.6 LIVE RECONCILIATION — 2026-10-05
 
-- [x] Apply the existing R5.8.5 migration unchanged through the managed mechanism.
+- [x] Apply the R5.8.5 SQL through the managed database mechanism.
 - [x] Verify all four live function definitions, security mode, empty search path, owners, grants, current pins, and removal of stale pins.
 - [x] Prove historical provenance remains distinct from the current runtime identity and remains untouched.
 - [x] Verify Attempt 9/10+ remain zero, Canonical remains 105/0/0/0, and the queue has no active work.
 - [x] Verify both public runtime domains return health/version 200 with demoparser2 0.42.0 and the frozen semantic revision.
 - [x] Verify the successful R5.8.3 main run and its immutable evidence artifact.
 - [x] Run focused Python attestation/reconciliation tests and TypeScript database parity tests.
-- [ ] Final decision remains **BLOCKED**: the managed ledger recorded a generated migration identity, no R5.8.4 GitHub run/artifact is observable, and current-deployment provenance is absent.
+- [x] Remove the duplicate older R5.8.5 migration source after confirming the managed generated migration contains the same SQL, preventing an older unapplied migration from remaining locally.
+- [ ] Observe the new current-main R5.8.3 evidence and its automatically chained R5.8.4 reconciliation artifact.
+- [ ] Fresh current-deployment Runtime Attestation remains pending manual operator dispatch.
 - [ ] Attempt 9, production DEM processing, Canonical admission, Railway mutation, secret mutation, and automatic Runtime Attestation remain prohibited.
 
 ## R5.8.3 EXTERNAL RETRY — 2026-10-05
