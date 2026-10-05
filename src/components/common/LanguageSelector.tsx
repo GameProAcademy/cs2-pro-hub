@@ -1,4 +1,5 @@
 import { Globe } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   Select,
@@ -7,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LOCALE_OPTIONS, type Locale } from "@/i18n/config";
+import { DEFAULT_LOCALE, dictionaries, LOCALE_OPTIONS, type Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +21,19 @@ export function LanguageSelector({
   compact?: boolean | undefined;
 }) {
   const { locale, setLocale, t } = useI18n();
-  const current = LOCALE_OPTIONS.find((o) => o.value === locale);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+
+  // Radix Select hydrates selectively. Keep its first browser render byte-for-byte
+  // aligned with SSR, then expose the stored/browser locale after mount.
+  const renderedLocale = hydrated ? locale : DEFAULT_LOCALE;
+  const current = LOCALE_OPTIONS.find((o) => o.value === renderedLocale);
+  const languageLabel = hydrated ? t("common.language") : dictionaries[DEFAULT_LOCALE]["common.language"];
 
   return (
-    <Select value={locale} onValueChange={(v) => setLocale(v as Locale)}>
+    <Select value={renderedLocale} onValueChange={(v) => setLocale(v as Locale)}>
       <SelectTrigger
-        aria-label={t("common.language")}
+        aria-label={languageLabel}
         className={cn(
           "h-9 w-auto gap-2 border-border/80 bg-card/60 px-3 text-xs font-medium",
           className,
