@@ -16,7 +16,7 @@ from typing import Any, Iterable
 
 PARSER_NAME = "demoparser2"
 PARSER_VERSION = "0.42.0"
-CATALOG_VERSION = 2
+CATALOG_VERSION = 3
 CATALOG_SOURCE = "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
 
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
@@ -132,12 +132,9 @@ CATEGORY_FIELDS = {
 
 CANONICAL_MAPPINGS = {
     "header.map_name": ("header.map", "CanonicalMatch.map"),
-    "header.demo_version_name": ("header.game_version", "CanonicalMatch.gameVersion"),
-    "header.playback_ticks_per_second": ("header.tickrate", "CanonicalMatch.tickrate"),
-    "player_info.steamid": ("players[].steam_id", "CanonicalPlayer.steamId"),
-    "player_info.name": ("players[].name", "CanonicalPlayer.name"),
-    "player_info.team_number": ("players[].side", "CanonicalPlayer.side"),
-    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winnerSide"),
+    "player_info.steamid": ("players[].steam_id", "CanonicalParticipant.steamId64"),
+    "player_info.name": ("players[].name", "CanonicalParticipant.nicknameSnapshot"),
+    "rounds.winner_side": ("rounds[].winner_side", "CanonicalRound.winningSide"),
 }
 DERIVATIONS = {
     "rounds.start_tick": "ordered parser-native round_start.tick",
@@ -172,6 +169,16 @@ class Capability:
     parse_failed_reason: str | None = None
     deterministic_identity: str = ""
     deterministic_digest: str = ""
+    raw_allowed: bool = True
+    derived_allowed: bool = False
+    canonical_allowed: bool = False
+    normalization_status: str = "NOT_RUN"
+    identity_status: str = "NOT_RUN"
+    tick_round_status: str = "NOT_RUN"
+    parity_status: str = "NOT_RUN"
+    determinism_status: str = "NOT_RUN"
+    evidence_status: str = "DECLARED_SOURCE_ONLY"
+    review_status: str = "REVIEWED"
 
 
 def _digest(value: Any) -> str:
@@ -180,6 +187,18 @@ def _digest(value: Any) -> str:
 
 def _with_identity(row: Capability) -> Capability:
     payload = asdict(row)
+    payload["raw_allowed"] = row.classification not in {"UNAVAILABLE", "PARSE_FAILED"}
+    payload["derived_allowed"] = row.classification == "DERIVED"
+    # A declared mapping is not runtime evidence. Canonical remains closed until
+    # the real-demo parity, determinism and admission gates independently pass.
+    payload["canonical_allowed"] = False
+    payload["normalization_status"] = "DECLARED" if row.classification in {"CANONICAL", "DERIVED"} else "NOT_REQUIRED"
+    payload["identity_status"] = "DECLARED" if row.category == "player_info" else "NOT_APPLICABLE"
+    payload["tick_round_status"] = "DECLARED" if row.category in {"rounds", "game_state", "events", "event_fields"} else "NOT_APPLICABLE"
+    payload["parity_status"] = "NOT_RUN"
+    payload["determinism_status"] = "NOT_RUN"
+    payload["evidence_status"] = "DECLARED_SOURCE_ONLY"
+    payload["review_status"] = "REVIEWED" if row.mapping_status != "REVIEW_REQUIRED" else "REVIEW_REQUIRED"
     payload["deterministic_identity"] = f"{row.parser_version}:{row.capability_id}"
     payload["deterministic_digest"] = ""
     payload["deterministic_digest"] = _digest(payload)
@@ -328,8 +347,9 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
         if row["classification"] == "CANONICAL" and (not row.get("app_field") or not row.get("canonical_field")): reasons.append(f"canonical_mapping_missing:{row.get('capability_id')}")
         if row["classification"] == "DERIVED" and not row.get("derivation_rule"): reasons.append(f"derivation_rule_missing:{row.get('capability_id')}")
         if row["classification"] == "RAW_ONLY" and not row.get("reason"): reasons.append(f"raw_only_reason_missing:{row.get('capability_id')}")
-        for required in ("capability_id", "category", "name", "parser_version", "source", "source_kind", "source_reference", "provenance", "runtime_presence", "demo_presence", "availability", "mapping_status", "deterministic_identity", "deterministic_digest"):
+        for required in ("capability_id", "category", "name", "parser_version", "source", "source_kind", "source_reference", "provenance", "runtime_presence", "demo_presence", "availability", "mapping_status", "normalization_status", "identity_status", "tick_round_status", "parity_status", "determinism_status", "evidence_status", "review_status", "deterministic_identity", "deterministic_digest"):
             if not str(row.get(required) or "").strip(): reasons.append(f"capability_metadata_missing:{row.get('capability_id')}:{required}")
+        if row.get("canonical_allowed") is not False: reasons.append(f"canonical_prematurely_allowed:{row.get('capability_id')}")
         if row.get("deterministic_digest") != _digest({**row, "deterministic_digest": ""}): reasons.append(f"capability_digest_mismatch:{row.get('capability_id')}")
     projection = {key: catalog.get(key) for key in ("parser_name", "parser_version", "catalog_version", "catalog_source", "capabilities", "installed_runtime_surface", "mapping_surface")}
     actual = _digest(projection)
