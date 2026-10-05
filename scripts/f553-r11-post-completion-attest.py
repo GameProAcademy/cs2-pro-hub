@@ -102,12 +102,13 @@ def inspect_evidence(payloads, identity):
                     or not isinstance(cases, list) or len(cases) < minimum):
                 raise ValueError('Matrix provenance or count mismatch')
             ids = set()
+            fixtures = set()
             for case in cases:
                 if not isinstance(case, dict):
                     raise ValueError('Invalid case')
                 cid = case.get('case_id')
                 fixture = case.get('fixture_id')
-                if (not cid or cid in ids or not fixture
+                if (not cid or cid in ids or not fixture or fixture in fixtures
                         or case.get('executed') is not True or case.get('result') != 'PASS'
                         or not case.get('category') or not case.get('operation')
                         or not case.get('before_digest') or not case.get('after_digest')
@@ -118,6 +119,7 @@ def inspect_evidence(payloads, identity):
                         or not start <= case['timestamp'] <= end):
                     raise ValueError('Invalid or duplicate case')
                 ids.add(cid)
+                fixtures.add(fixture)
         except (KeyError, ValueError, TypeError):
             issues.append('R11_' + name.upper().replace('-', '_') + '_MATRIX_NOT_PROVEN')
     return issues
