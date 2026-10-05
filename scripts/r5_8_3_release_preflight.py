@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
 from scripts.parser_runtime_attestation import (
     BRANCH, COMMIT, DEPLOYMENT, DEPLOYMENT_SOURCE_COMMIT, ENVIRONMENT,
     EXPECTED_HASHES, PROJECT, REPOSITORY, SERVICE, WORKFLOW_PATH,
-    mapping_authority_matches_artifact,
+    mapping_authority_matches_artifact, runtime_identity,
 )
 
 RAILWAY_API = "https://backboard.railway.com/graphql/v2"
@@ -137,8 +137,9 @@ def main() -> int:
     for url in DOMAINS:
         try:
             body = get_json(url)
-            runtime[url] = {"available": True, "identity": body, "match": body == EXPECTED_IDENTITY}
-            if body != EXPECTED_IDENTITY:
+            identity = runtime_identity(body)
+            runtime[url] = {"available": True, "identity": identity, "raw_response_shape": "nested_parser" if isinstance(body.get("parser"), dict) else "flat", "match": identity == EXPECTED_IDENTITY}
+            if identity != EXPECTED_IDENTITY:
                 failures.append(f"RUNTIME_IDENTITY_MISMATCH:{url}")
         except Exception as exc:
             runtime[url] = {"available": False, "reason": str(exc)}
