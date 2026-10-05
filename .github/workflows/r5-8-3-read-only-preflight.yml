@@ -1,0 +1,45 @@
+name: R5.8.3 Read-Only Release Preflight
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    if: github.repository == 'GameProAcademy/cs2-pro-hub' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Verify read-only release bindings
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: python scripts/r5_8_3_release_preflight.py > r5-8-3-preflight.json
+
+      - name: Run focused attestation/governance tests
+        run: >-
+          python -m pytest -q
+          scripts/tests/test_parser_runtime_attestation.py
+          scripts/tests/test_h3e91_live_preflight.py
+
+      - name: Preserve machine-readable evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r5-8-3-preflight-${{ github.sha }}-${{ github.run_id }}
+          path: r5-8-3-preflight.json
+          if-no-files-found: error
+          retention-days: 14
