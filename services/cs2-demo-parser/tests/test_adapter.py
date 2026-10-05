@@ -128,9 +128,9 @@ def test_round_end_before_first_start_is_ignored_not_paired():
         bombs={"planted": [], "defused": [], "exploded": []},
         tickrate=None,
     )
-    assert rounds == [
-        {"number": 1, "start_tick": 1688, "end_tick": 4774},
-        {"number": 2, "start_tick": 9000, "end_tick": 12000},
+    assert [(r["number"], r["start_tick"], r["end_tick"]) for r in rounds] == [
+        (1, 1688, 4774),
+        (2, 9000, 12000),
     ]
 
 
