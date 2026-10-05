@@ -5,10 +5,10 @@
 - [x] Published authenticated claim returned HTTP 200 with `status=empty` repeatedly while `demo_parse` remained empty; invalid authentication and payloads remained 401/400.
 - [x] Lovable Cloud, database, PGMQ 1.5.1, queue objects, installed durable RPC signatures, migrations and service-only privileges were verified healthy and aligned.
 - [x] Attempt 9/10+ remain zero; Canonical remains 105 total, zero authorized, zero verified and zero generic; no DEM, job, message, RAW, Storage, secret or Railway mutation occurred.
-- [x] Focused TypeScript bridge/RAW/reconciliation tests passed (83 tests) and focused parser/worker tests passed (53 tests).
+- [x] Full TypeScript pipeline suite passed (56 files / 787 tests), focused parser/worker tests passed (53), and R11.2 attestation/storage tests passed (13).
 - [x] Harden R11.2 post-completion attestation so duplicate `fixture_id` values fail closed, matching the existing duplicate `case_id` rule.
 - [ ] Railway polling/log confirmation remains externally unobservable because no Railway connection or token is available in this environment; direct published endpoint polling is healthy, but worker-log absence of new 500s remains `NOT_PROVEN`.
-- [ ] Current-main Quality Gates run must complete successfully after the fail-closed verifier correction; historical R11.2 Job B remains independently successful.
+- [ ] Current-main Quality Gates must run and complete successfully after the fail-closed verifier correction; the preceding run remains in progress and historical R11.2 Job B remains independently successful.
 
 - [x] F.5.3-CLOSURE.8-R11.2: **CLOSED for disposable evidence.** GitHub Quality Gates run `36540857052` on commit `89878a5bda00a34d892722e7664902c71e1a1464` completed successfully. Job A proved the integrated disposable upload → queue → claim → demoparser2 0.42.0 → RAW → private Storage read-back → HOT → FINISHED → ACK lifecycle, Worker A SIGKILL recovery, ACK-loss redelivery without duplicated outputs, PROCESS_ABORTED terminalization, exactly-once recovery, 50 race cases, 50 failure cases and 16 RAW-corruption cases. Docker, browser and parser tests also passed in the same run.
 - [x] F.5.3-CLOSURE.8-R11.2 Job B: **INDEPENDENT POST-COMPLETION ATTESTATION CLOSED.** Attestation run `36541969539` independently reconstructed and verified the exact source run, successful required sibling jobs, immutable evidence artifact and artifact digest `sha256:be1a8a8e0291bd1e15bf7cbdb384d6828671d42949937f9c57135eee6d363a11`, producing `final_ci=PASS` and `final_decision=CLOSED`.
