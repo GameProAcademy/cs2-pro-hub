@@ -129,8 +129,20 @@ def runtime_identity(payload: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def release_gate_evidence() -> dict[str, Any]:
-    blocked = {"status": "BLOCKED", "evidence_ref": "NOT_RUN_BEFORE_ATTEMPT_9"}
+def release_gate_evidence(
+    *,
+    runtime_identity_verified: bool,
+    github_identity_verified: bool,
+    railway_identity_verified: bool,
+    runtime_version_verified: bool,
+    custom_domain_verified: bool,
+    critical_hashes_verified: bool,
+    mapping_artifact_verified: bool,
+) -> dict[str, Any]:
+    # Only mark a gate VERIFIED when this attestation execution itself has
+    # produced the corresponding objective evidence. Server-side state,
+    # production DEM state and Canonical state remain separate gates.
+    blocked = {"status": "BLOCKED", "evidence_ref": "NOT_PROVEN"}
     evidence = {key: dict(blocked) for key in (
         "parser_runtime_identity", "provenance_verified", "provenance_fresh",
         "provenance_immutable", "attestation_valid", "github_source_identity",
@@ -140,8 +152,22 @@ def release_gate_evidence() -> dict[str, Any]:
         "retry_safety", "storage_copy_safety", "no_attempt_10_plus",
         "no_canonical_contamination", "unresolved_required_mapping", "ci",
     )}
+
+    proven = {
+        "parser_runtime_identity": (runtime_identity_verified, "payload.runtime_identity"),
+        "github_source_identity": (github_identity_verified, "payload.workflow_identity"),
+        "railway_deployment_identity": (railway_identity_verified, "payload.deployment_evidence"),
+        "runtime_version": (runtime_version_verified, "payload.runtime_identity"),
+        "custom_domain_binding": (custom_domain_verified, "payload.custom_domain_version"),
+        "critical_file_hashes": (critical_hashes_verified, "payload.critical_file_hashes"),
+    }
+    for key, (verified, evidence_ref) in proven.items():
+        if verified:
+            evidence[key] = {"status": "VERIFIED", "evidence_ref": evidence_ref}
+
     evidence["mapping_inventory"] = {
-        **blocked,
+        **({"status": "VERIFIED", "evidence_ref": "payload.mapping_release"}
+           if mapping_artifact_verified else blocked),
         "inventory_digest": INVENTORY_DIGEST,
         "matrix_digest": MATRIX_DIGEST,
         "row_count": 105,
@@ -170,7 +196,8 @@ def mapping_authority_matches_artifact() -> bool:
 
 def build_attestation() -> dict[str, Any]:
     statuses: list[str] = []
-    if not mapping_authority_matches_artifact():
+    mapping_artifact_verified = mapping_authority_matches_artifact()
+    if not mapping_artifact_verified:
         statuses.append("CANONICAL_MAPPING_AUTHORITY_MISMATCH")
     repository = os.getenv("GITHUB_REPOSITORY", "")
     ref_name = os.getenv("GITHUB_REF_NAME", "")
@@ -198,6 +225,7 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("GITHUB_TRIGGER_COMMIT_INVALID")
     if not re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha):
         statuses.append("GITHUB_WORKFLOW_FILE_COMMIT_INVALID")
+    workflow_source_verified = workflow_source.get("workflow_source_sha") is not None
     expected_workflow_ref = f"{REPOSITORY}/{WORKFLOW_PATH}@"
     if not workflow_ref.startswith(expected_workflow_ref):
         statuses.append("GITHUB_WORKFLOW_REF_MISMATCH")
@@ -281,7 +309,50 @@ def build_attestation() -> dict[str, Any]:
                                "trigger_commit_sha": trigger_commit_sha,
                                "workflow_file_commit_sha": workflow_file_commit_sha,
                                "event_name": event, **workflow_source},
-        "release_gate_evidence": release_gate_evidence(),
+        "release_gate_evidence": release_gate_evidence(
+            runtime_identity_verified=(
+                branch_contains_commit
+                and custom_identity == expected_identity
+                and railway_identity == expected_identity
+                and custom_identity == railway_identity
+            ),
+            github_identity_verified=(
+                repository == REPOSITORY
+                and ref_name == "main"
+                and event == "workflow_dispatch"
+                and bool(run_id)
+                and bool(run_attempt)
+                and bool(re.fullmatch(r"[0-9a-f]{40}", trigger_commit_sha))
+                and bool(re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha))
+                and workflow_ref.startswith(expected_workflow_ref)
+                and workflow_source_verified
+                and workflow_source.get("workflow_source_sha") == json.loads((ROOT / WORKFLOW_REGISTRY_PATH).read_text(encoding="utf-8")).get("source_sha")
+            ),
+            railway_identity_verified=(
+                deployment_evidence is not None
+                and deployment_evidence.get("deployment_id") == DEPLOYMENT
+                and deployment_evidence.get("project_id") == PROJECT
+                and deployment_evidence.get("service_id") == SERVICE
+                and deployment_evidence.get("environment_id") == ENVIRONMENT
+                and deployment_evidence.get("deployment_status") == "SUCCESS"
+                and deployment_evidence.get("source_repository") == REPOSITORY
+                and deployment_evidence.get("source_branch") == BRANCH
+                and deployment_evidence.get("source_commit") == DEPLOYMENT_SOURCE_COMMIT
+            ),
+            runtime_version_verified=(
+                custom_identity == expected_identity
+                and railway_identity == expected_identity
+                and custom_identity == railway_identity
+            ),
+            custom_domain_verified=(
+                custom_identity == expected_identity
+                and isinstance(custom_version, dict)
+                and isinstance(custom_health, dict)
+            ),
+            critical_hashes_verified=(bool(EXPECTED_HASHES) and len(observed_hashes) == len(EXPECTED_HASHES)
+                                     and all(item["match"] for item in observed_hashes.values())),
+            mapping_artifact_verified=mapping_artifact_verified,
+        ),
         "mapping_release": {
             "release_id": MAPPING_RELEASE_ID,
             "inventory_version": "canonical-demo-v2",
