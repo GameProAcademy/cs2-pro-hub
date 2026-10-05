@@ -73,8 +73,12 @@ def approved_workflow_identity(workflow_commit: str) -> dict[str, str]:
 def fetch_json(url: str, *, data: bytes | None = None, headers: dict[str, str] | None = None) -> dict[str, Any]:
     request_headers = {"User-Agent": "gamepro-parser-attestor/2", **(headers or {})}
     request = urllib.request.Request(url, data=data, headers=request_headers, method="POST" if data else "GET")
-    with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - pinned HTTPS endpoints
-        payload = json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - pinned HTTPS endpoints
+            payload = json.load(response)
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:2000]
+        raise ValueError(f"RAILWAY_API_HTTP_{exc.code}:{body}") from exc
     if not isinstance(payload, dict):
         raise ValueError("RUNTIME_RESPONSE_INVALID")
     return payload
@@ -286,7 +290,9 @@ def build_attestation() -> dict[str, Any]:
         "repository": REPOSITORY, "railway_branch": BRANCH,
         "git_commit": COMMIT, "git_tree": tree, "deployment_id": DEPLOYMENT,
         "railway_project_id": PROJECT, "railway_service_id": SERVICE,
-        "railway_environment_id": ENVIRONMENT, "parser_name": "demoparser2",
+        "railway_environment_id": ENVIRONMENT,
+        "deployment_source_commit": DEPLOYMENT_SOURCE_COMMIT,
+        "parser_name": "demoparser2",
         "parser_version": "0.42.0", "contract_version": 1,
         "semantic_revision": f"git:{COMMIT}", "build_revision": f"git:{COMMIT}",
         "runtime_health": {"custom": custom_health, "railway": railway_health},
