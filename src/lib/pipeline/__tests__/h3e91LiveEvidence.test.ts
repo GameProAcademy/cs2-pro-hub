@@ -181,7 +181,7 @@ describe("H.3-E.9.1 live evidence", () => {
     candidate["railwayToken"] = "forbidden";
     expect(h3e91ExternalEvidenceSchema.safeParse(candidate).success).toBe(false);
   });
-  it("produces READY only for fully valid synthetic evidence with explicit synthetic authorizations", () => {
+  it("keeps readiness BLOCKED while parser execution surfaces remain uncovered", () => {
     const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
     artifact.finalResult.retention = {
       status: "AUTHORIZED",
@@ -198,7 +198,8 @@ describe("H.3-E.9.1 live evidence", () => {
       scope: "H3E9_FIRST_VALID_ATTESTATION",
     };
     const reevaluated = evaluateH3E9FinalExecutionReadiness(artifact.finalResult);
-    expect(reevaluated.status).toBe("READY");
+    expect(reevaluated.status).toBe("BLOCKED");
+    expect(reevaluated.blockers).toContain("H3E91_EXECUTION_SURFACE_NOT_COVERED");
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
     const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
