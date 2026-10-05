@@ -8,7 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -31,27 +31,42 @@ interface I18nContextValue {
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
+const LOCALE_CHANGE_EVENT = "cs2pro:locale-change";
+
+function browserLocaleSnapshot(): Locale {
+  return readStoredLocale() ?? detectBrowserLocale();
+}
+
+function serverLocaleSnapshot(): Locale {
+  return DEFAULT_LOCALE;
+}
+
+function subscribeToLocale(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(LOCALE_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(LOCALE_CHANGE_EVENT, onStoreChange);
+  };
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // SSR renders the default locale; the effect below applies the stored or
-  // detected preference after hydration to avoid a hydration mismatch.
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    const next = readStoredLocale() ?? detectBrowserLocale();
-    // Defer the client preference until hydration and Radix's selectively
-    // hydrated controls have committed the server's deterministic locale.
-    const timer = window.setTimeout(() => setLocaleState(next), 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+  // useSyncExternalStore guarantees the server snapshot is reused for the
+  // hydration render before React switches to the stored/browser preference.
+  const locale = useSyncExternalStore(
+    subscribeToLocale,
+    browserLocaleSnapshot,
+    serverLocaleSnapshot,
+  );
 
   useEffect(() => {
     if (typeof document !== "undefined") document.documentElement.lang = locale;
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
     persistLocale(next);
+    window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT));
   }, []);
 
   const value = useMemo<I18nContextValue>(() => {
