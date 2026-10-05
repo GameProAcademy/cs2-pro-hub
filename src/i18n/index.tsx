@@ -39,7 +39,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const next = readStoredLocale() ?? detectBrowserLocale();
-    setLocaleState(next);
+    // Defer the client preference until hydration and Radix's selectively
+    // hydrated controls have committed the server's deterministic locale.
+    const timer = window.setTimeout(() => setLocaleState(next), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
