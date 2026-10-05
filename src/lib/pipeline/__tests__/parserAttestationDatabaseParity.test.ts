@@ -7,7 +7,7 @@ import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
 
 const migration = readFileSync(
-  resolve("supabase/migrations/20260925011902_051ef9cf-6adf-4689-9fe2-c2fc86dedc40.sql"),
+  resolve("supabase/migrations/20260929110000_r58_1_recorder_pin_repair.sql"),
   "utf8",
 );
 const workflowRegistry = JSON.parse(
