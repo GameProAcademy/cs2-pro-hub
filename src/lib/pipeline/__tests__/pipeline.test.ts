@@ -10,6 +10,7 @@ import { safeResetPasswordUrl } from "@/lib/safe-redirect";
 import { assertRawParserOutput } from "@/lib/pipeline/parser/adapter";
 import {
   resolveOwnSteamId,
+  validateCanonicalBundle,
   validateCanonicalMatch,
   validateDemoFile,
 } from "@/lib/pipeline/validator";
@@ -57,6 +58,29 @@ describe("normalizer", () => {
       normalizeParserOutput({ ...syntheticParserOutput, players: [], rounds: [] }),
     ).toThrow(PipelineError);
   });
+
+  it("preserves a source participant without fabricating a Steam ID", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [
+        ...syntheticParserOutput.players,
+        { participant_key: "source-player-5", name: "observed-name", team: "Team Alpha" },
+      ],
+    });
+    expect(normalized.players.at(-1)).toMatchObject({
+      participantKey: "source-player-5",
+      steamId: null,
+      name: "observed-name",
+    });
+  });
+
+  it("drops a player row that has neither a participant key nor Steam evidence", () => {
+    const normalized = normalizeParserOutput({
+      ...syntheticParserOutput,
+      players: [...syntheticParserOutput.players, { name: "nickname-is-not-identity" }],
+    });
+    expect(normalized.players).toHaveLength(syntheticParserOutput.players.length);
+  });
 });
 
 describe("metrics", () => {
@@ -103,6 +127,71 @@ describe("metrics", () => {
 
   it("aggregates utility damage from utility weapons only", () => {
     expect(metrics.utilityDamage).toBe(35);
+  });
+
+  it("resolves participantKey before using separate Steam event evidence", () => {
+    const decoupled = {
+      ...match,
+      players: match.players.map((player) =>
+        player.steamId === ME ? { ...player, participantKey: "participant-local" } : player,
+      ),
+    };
+    const scoped = computeMetrics(decoupled, "participant-local");
+    expect(scoped.participantKey).toBe("participant-local");
+    expect(scoped.steamId).toBe(ME);
+    expect(scoped.kills).toBe(metrics.kills);
+    expect(scoped.damageGiven).toBe(metrics.damageGiven);
+  });
+
+  it("fails closed when the requested participant key does not exist", () => {
+    expect(() => computeMetrics(match, "missing-participant")).toThrowError(
+      expect.objectContaining({ code: "PLAYER_IDENTITY_UNRESOLVED" }),
+    );
+  });
+
+  it("computes correlated metrics for a canonical participant without Steam", () => {
+    const sourceKey = "participant-local";
+    const withoutSteam = {
+      ...match,
+      players: match.players.map((player) =>
+        player.steamId === ME ? { ...player, participantKey: sourceKey, steamId: null } : player,
+      ),
+      rounds: match.rounds.map((round) => ({
+        ...round,
+        sides: Object.fromEntries(
+          Object.entries(round.sides).map(([key, value]) => [key === ME ? sourceKey : key, value]),
+        ),
+        moneyStart: Object.fromEntries(
+          Object.entries(round.moneyStart).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+        moneyEnd: Object.fromEntries(
+          Object.entries(round.moneyEnd).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+        equipmentValue: Object.fromEntries(
+          Object.entries(round.equipmentValue).map(([key, value]) => [
+            key === ME ? sourceKey : key,
+            value,
+          ]),
+        ),
+      })),
+      events: match.events.map((event) => ({
+        ...event,
+        actorSteamId: event.actorSteamId === ME ? sourceKey : event.actorSteamId,
+        victimSteamId: event.victimSteamId === ME ? sourceKey : event.victimSteamId,
+        assisterSteamId: event.assisterSteamId === ME ? sourceKey : event.assisterSteamId,
+      })),
+    };
+    const scoped = computeMetrics(withoutSteam, sourceKey);
+    expect(scoped.participantKey).toBe(sourceKey);
+    expect(scoped.steamId).toBeNull();
+    expect(scoped.kills).toBe(metrics.kills);
+    expect(scoped.roundsPlayed).toBe(metrics.roundsPlayed);
   });
 
   it("produces a bounded source rating that is not the CS2 PRO Score", () => {
@@ -155,6 +244,43 @@ describe("validation and identity", () => {
     expect(() => validateCanonicalMatch({ ...match, rounds: match.rounds.slice(0, 2) })).toThrow(
       PipelineError,
     );
+  });
+
+  it("rejects a canonical match whose round count disagrees with its rows", () => {
+    try {
+      validateCanonicalMatch({ ...match, roundCount: match.rounds.length - 1 });
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/round count mismatch/);
+    }
+  });
+
+  it("rejects impossible round intervals before persistence", () => {
+    const rounds = match.rounds.map((round, index) =>
+      index === 0 ? { ...round, startTick: 100, endTick: 99 } : round,
+    );
+    try {
+      validateCanonicalBundle({ roundCount: rounds.length }, rounds, match.events);
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/ends before it starts/);
+    }
+  });
+
+  it("rejects events outside their proven round interval", () => {
+    const rounds = match.rounds.map((round, index) =>
+      index === 0 ? { ...round, startTick: 100, endTick: 200 } : round,
+    );
+    const events = [{ ...match.events[0]!, roundNumber: 1, tick: 250 }];
+    try {
+      validateCanonicalBundle({ roundCount: rounds.length }, rounds, events);
+      throw new Error("expected validation failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PipelineError);
+      expect((error as PipelineError).detail).toMatch(/outside round/);
+    }
   });
 
   it("resolves the owning player only through an explicit Steam ID", () => {
@@ -218,9 +344,7 @@ describe("parser identity validation", () => {
 describe("KAST denominator", () => {
   it("only counts rounds the resolved Steam ID actually participated in", () => {
     // A player absent from every round of the demo has no denominator at all.
-    const ghost = computeMetrics(match, "76561198000000999");
-    expect(ghost.roundsPlayed).toBe(0);
-    expect(ghost.kast).toBeNull();
+    expect(() => computeMetrics(match, "76561198000000999")).toThrow(PipelineError);
   });
 
   it("excludes rounds without the player from the denominator", () => {
