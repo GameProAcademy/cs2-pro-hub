@@ -29,11 +29,24 @@ async def _bridge(client: httpx.AsyncClient, settings: Settings, action: str, bo
         response.raise_for_status()
     except httpx.HTTPStatusError:
         parsed = urlparse(settings.bridge_url)
+        # The bridge is an external dependency. Keep diagnostics bounded and
+        # never log Authorization or full URLs. The body is sanitized before
+        # entering Railway logs so a future bridge error can be identified
+        # without turning observability into a secret-leak path.
+        try:
+            error_body = response.text[:2000]
+        except Exception:
+            error_body = "<unreadable>"
+        for marker in ("Bearer ", "token=", "access_token=", "refresh_token=", "api_key="):
+            if marker in error_body:
+                error_body = error_body.replace(marker, marker.split("=")[0] + "=<redacted>" if "=" in marker else marker + "<redacted>")
         logger.error(
-            "bridge_http_rejection action=%s status=%s host=%s",
+            "bridge_http_rejection action=%s status=%s host=%s content_type=%s body=%r",
             action,
             response.status_code,
             parsed.netloc or "unknown",
+            response.headers.get("content-type", ""),
+            error_body,
         )
         raise
     payload = response.json()
