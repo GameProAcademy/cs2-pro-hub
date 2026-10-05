@@ -138,8 +138,8 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
   it("uses controlled workflow_dispatch/workflow_run triggers and immutable GitHub repository identity", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toContain("workflow_call:");
-    expect(attestor).toContain('event not in {"workflow_dispatch", "workflow_run"}');
-    expect(attestor).toContain("GITHUB_WORKFLOW_RUN_UPSTREAM_NOT_APPROVED");
+    expect(attestor).toContain('event != "workflow_dispatch"');
+    expect(attestor).not.toContain("GITHUB_WORKFLOW_RUN_UPSTREAM_NOT_APPROVED");
     expect(workflow.match(/uses: [^\n]+@[0-9a-f]{40}/g)).toHaveLength(4);
     expect(workflow).not.toMatch(/uses: [^\n]+@v\d/);
     expect(attestor).toContain("ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED");
