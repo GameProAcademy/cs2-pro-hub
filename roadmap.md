@@ -1,5 +1,17 @@
 # CURRENT STATE RECONCILIATION — 2026-09-29
 
+## R5.8.5 / R5.8.6 LIVE RECONCILIATION — 2026-10-05
+
+- [x] Apply the existing R5.8.5 migration unchanged through the managed mechanism.
+- [x] Verify all four live function definitions, security mode, empty search path, owners, grants, current pins, and removal of stale pins.
+- [x] Prove historical provenance remains distinct from the current runtime identity and remains untouched.
+- [x] Verify Attempt 9/10+ remain zero, Canonical remains 105/0/0/0, and the queue has no active work.
+- [x] Verify both public runtime domains return health/version 200 with demoparser2 0.42.0 and the frozen semantic revision.
+- [x] Verify the successful R5.8.3 main run and its immutable evidence artifact.
+- [x] Run focused Python attestation/reconciliation tests and TypeScript database parity tests.
+- [ ] Final decision remains **BLOCKED**: the managed ledger recorded a generated migration identity, no R5.8.4 GitHub run/artifact is observable, and current-deployment provenance is absent.
+- [ ] Attempt 9, production DEM processing, Canonical admission, Railway mutation, secret mutation, and automatic Runtime Attestation remain prohibited.
+
 ## R5.8.3 EXTERNAL RETRY — 2026-10-05
 
 - [x] Observed failed GitHub run `37295286546` on pre-repair commit `01d3da377299016fe7ba639c397ad62ba7c52a0f`: failure was the old `ModuleNotFoundError: No module named 'scripts'` before the repaired commit reached main.
