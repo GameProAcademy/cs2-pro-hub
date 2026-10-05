@@ -30,13 +30,8 @@ BEGIN
   LOOP
     SELECT pg_catalog.pg_get_functiondef(_function_oid) INTO STRICT _definition;
 
-    FOREACH _old_source IN ARRAY _old_source LOOP
-      _definition := pg_catalog.replace(_definition, _old_source, _new_source);
-    END LOOP;
-
-    FOREACH _old_source IN ARRAY _old_workflow LOOP
-      _definition := pg_catalog.replace(_definition, _old_source, _new_workflow);
-    END LOOP;
+    _definition := pg_catalog.replace(_definition, _old_source, _new_source);
+    _definition := pg_catalog.replace(_definition, _old_workflow, _new_workflow);
 
     FOREACH _old_source IN ARRAY _old_deployments LOOP
       _definition := pg_catalog.replace(_definition, _old_source, _new_deployment);
