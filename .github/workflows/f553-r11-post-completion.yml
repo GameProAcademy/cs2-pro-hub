@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   f553-r11-2-post-completion-attestation:
+    if: github.event.workflow_run.head_branch == 'main'
     name: F553 R11.2 POST-COMPLETION ATTESTATION
     runs-on: ubuntu-latest
     timeout-minutes: 10
