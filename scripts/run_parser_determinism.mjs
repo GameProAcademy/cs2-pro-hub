@@ -36,12 +36,14 @@ if (artifacts.length !== 4 || artifacts.some((path) => !existsSync(path))) {
   const wasm = runs.filter((run) => run.runtime === "WASM");
   const shas = new Set(runs.map((run) => run.demoSha256));
   const parserIdentities = new Set(runs.map((run) => `${run.parserVersion}:${run.parserRevision}`));
-  const catalogIdentities = new Set(runs.map((run) => `${run.catalogVersion}:${run.catalogDigest}`));
-  const contractIdentities = new Set(runs.map((run) => `${run.contractVersion}:${run.contractDigest}`));
-  const runIds = new Set(runs.map((run) => run.runId));
-  const wasmArtifactIdentities = new Set(
-    wasm.map((run) => run.artifactIdentity ?? ""),
+  const catalogIdentities = new Set(
+    runs.map((run) => `${run.catalogVersion}:${run.catalogDigest}`),
   );
+  const contractIdentities = new Set(
+    runs.map((run) => `${run.contractVersion}:${run.contractDigest}`),
+  );
+  const runIds = new Set(runs.map((run) => run.runId));
+  const wasmArtifactIdentities = new Set(wasm.map((run) => run.artifactIdentity ?? ""));
   const valid =
     python.length === 2 &&
     wasm.length === 2 &&
