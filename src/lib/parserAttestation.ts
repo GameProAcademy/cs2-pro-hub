@@ -81,9 +81,9 @@ export function validateParserAttestationOidcClaims(
       claims["job_workflow_ref"] !== expected.workflowRef) ||
     claims["sub"] !== oidc.subject ||
     claims["event_name"] !== oidc.eventName ||
-    claims["sha"] !== workflowIdentity["workflow_sha"] ||
+    claims["sha"] !== workflowIdentity["trigger_commit_sha"] ||
     claims["workflow_sha"] !== workflowIdentity["workflow_file_commit_sha"] ||
-    workflowIdentity["workflow_sha"] !== workflowIdentity["trigger_commit_sha"] ||
+    workflowIdentity["workflow_sha"] !== workflowIdentity["workflow_file_commit_sha"] ||
     typeof workflowIdentity["workflow_file_commit_sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_file_commit_sha"]) ||
     typeof claims["sha"] !== "string" ||
@@ -139,7 +139,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     !/^[0-9a-f]{40}$/.test(workflowIdentity["trigger_commit_sha"]) ||
     typeof workflowIdentity["workflow_file_commit_sha"] !== "string" ||
     !/^[0-9a-f]{40}$/.test(workflowIdentity["workflow_file_commit_sha"]) ||
-    workflowIdentity["workflow_sha"] !== workflowIdentity["trigger_commit_sha"] ||
+    workflowIdentity["workflow_sha"] !== workflowIdentity["workflow_file_commit_sha"] ||
     workflowIdentity["workflow_sha"] === expected.commit ||
     workflowIdentity["workflow_path"] !== expected.workflowPath ||
     workflowIdentity["workflow_source_sha"] !== expected.workflowSourceSha
