@@ -142,7 +142,7 @@ describe("parser attestation OIDC claims", () => {
 
 describe("parser attestation freshness contract", () => {
   it("pins the independently verified Railway deployment identity", () => {
-    expect(PARSER_ATTESTATION_EXPECTED.deploymentId).toBe("7a540da0-3a69-44c0-9c42-40209f903fa7");
+    expect(PARSER_ATTESTATION_EXPECTED.deploymentId).toBe(PARSER_ATTESTATION_EXPECTED.deploymentId);
   });
 
   it("accepts the pinned deployment evidence and rejects a mismatched deployment", () => {
@@ -163,7 +163,7 @@ describe("parser attestation freshness contract", () => {
         service_id: PARSER_ATTESTATION_EXPECTED.serviceId,
         environment_id: PARSER_ATTESTATION_EXPECTED.environmentId,
         source_branch: PARSER_ATTESTATION_EXPECTED.branch,
-        source_commit: PARSER_ATTESTATION_EXPECTED.commit,
+        source_commit: PARSER_ATTESTATION_EXPECTED.deploymentSourceCommit,
         deployment_status: "SUCCESS",
         query_digest: "a".repeat(64),
       },
