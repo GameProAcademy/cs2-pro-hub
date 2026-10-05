@@ -196,7 +196,8 @@ def mapping_authority_matches_artifact() -> bool:
 
 def build_attestation() -> dict[str, Any]:
     statuses: list[str] = []
-    if not mapping_authority_matches_artifact():
+    mapping_artifact_verified = mapping_authority_matches_artifact()
+    if not mapping_artifact_verified:
         statuses.append("CANONICAL_MAPPING_AUTHORITY_MISMATCH")
     repository = os.getenv("GITHUB_REPOSITORY", "")
     ref_name = os.getenv("GITHUB_REF_NAME", "")
@@ -224,6 +225,7 @@ def build_attestation() -> dict[str, Any]:
         statuses.append("GITHUB_TRIGGER_COMMIT_INVALID")
     if not re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha):
         statuses.append("GITHUB_WORKFLOW_FILE_COMMIT_INVALID")
+    workflow_source_verified = workflow_source.get("workflow_source_sha") is not None
     expected_workflow_ref = f"{REPOSITORY}/{WORKFLOW_PATH}@"
     if not workflow_ref.startswith(expected_workflow_ref):
         statuses.append("GITHUB_WORKFLOW_REF_MISMATCH")
@@ -308,9 +310,12 @@ def build_attestation() -> dict[str, Any]:
                                "workflow_file_commit_sha": workflow_file_commit_sha,
                                "event_name": event, **workflow_source},
         "release_gate_evidence": release_gate_evidence(
-            runtime_identity_verified=custom_identity == expected_identity
-            and railway_identity == expected_identity
-            and custom_identity == railway_identity,
+            runtime_identity_verified=(
+                branch_contains_commit
+                and custom_identity == expected_identity
+                and railway_identity == expected_identity
+                and custom_identity == railway_identity
+            ),
             github_identity_verified=(
                 repository == REPOSITORY
                 and ref_name == "main"
@@ -320,9 +325,20 @@ def build_attestation() -> dict[str, Any]:
                 and bool(re.fullmatch(r"[0-9a-f]{40}", trigger_commit_sha))
                 and bool(re.fullmatch(r"[0-9a-f]{40}", workflow_file_commit_sha))
                 and workflow_ref.startswith(expected_workflow_ref)
-                and workflow_source.get("workflow_source_sha") is not None
+                and workflow_source_verified
+                and workflow_source.get("workflow_source_sha") == json.loads((ROOT / WORKFLOW_REGISTRY_PATH).read_text(encoding="utf-8")).get("source_sha")
             ),
-            railway_identity_verified=deployment_evidence is not None,
+            railway_identity_verified=(
+                deployment_evidence is not None
+                and deployment_evidence.get("deployment_id") == DEPLOYMENT
+                and deployment_evidence.get("project_id") == PROJECT
+                and deployment_evidence.get("service_id") == SERVICE
+                and deployment_evidence.get("environment_id") == ENVIRONMENT
+                and deployment_evidence.get("deployment_status") == "SUCCESS"
+                and deployment_evidence.get("source_repository") == REPOSITORY
+                and deployment_evidence.get("source_branch") == BRANCH
+                and deployment_evidence.get("source_commit") == DEPLOYMENT_SOURCE_COMMIT
+            ),
             runtime_version_verified=(
                 custom_identity == expected_identity
                 and railway_identity == expected_identity
@@ -333,8 +349,9 @@ def build_attestation() -> dict[str, Any]:
                 and isinstance(custom_version, dict)
                 and isinstance(custom_health, dict)
             ),
-            critical_hashes_verified=all(item["match"] for item in observed_hashes.values()),
-            mapping_artifact_verified=mapping_authority_matches_artifact(),
+            critical_hashes_verified=(bool(EXPECTED_HASHES) and len(observed_hashes) == len(EXPECTED_HASHES)
+                                     and all(item["match"] for item in observed_hashes.values())),
+            mapping_artifact_verified=mapping_artifact_verified,
         ),
         "mapping_release": {
             "release_id": MAPPING_RELEASE_ID,
