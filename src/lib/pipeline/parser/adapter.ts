@@ -23,6 +23,9 @@ export interface ParseRequest {
   /** Short-lived signed URL the parser worker can download from. */
   signedUrl: string;
   uploadId: string;
+  /** Immutable logical attempt identity for request-level recorder reconstruction. */
+  jobId?: string;
+  attemptNumber?: number;
   fileSize: number;
   demoSha256: string | null;
   /**
@@ -49,7 +52,8 @@ export interface DemoParserAdapter {
  * promoted, but an absent env can NEVER silently unpin production back to
  * "any 0.42.x" worker.
  */
-export const DEPLOYED_WORKER_REVISION = "git:e6c4257864b0b77416838d09acd0b92032fbb55d";
+export const DEPLOYED_WORKER_REVISION = "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76";
+export const DEPLOYED_WORKER_BUILD_REVISION = "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76";
 
 /**
  * Expected parser identity. Environment overrides remain supported for future
@@ -87,8 +91,23 @@ export function isParserRevisionRequired(): boolean {
 /** The full expectation used by the revision lock (identity + contract). */
 export function expectedParserContract(): ExpectedParserIdentity {
   const identity = expectedParserIdentity();
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const production = (env?.["NODE_ENV"] ?? "") === "production";
+  const buildRevision =
+    env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() ||
+    (production ? DEPLOYED_WORKER_BUILD_REVISION : null);
+  const explicitBuildRequirement = (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "")
+    .trim()
+    .toLowerCase();
   return {
     ...identity,
+    buildRevision,
+    buildRevisionRequired:
+      explicitBuildRequirement === "true" || explicitBuildRequirement === "1"
+        ? true
+        : explicitBuildRequirement === "false" || explicitBuildRequirement === "0"
+          ? false
+          : production,
     revisionRequired: isParserRevisionRequired(),
     contractVersion: PARSER_CONTRACT_VERSION,
   };
@@ -121,18 +140,25 @@ export function assertRawParserOutput(value: unknown): RawParserOutput {
         typeof raw.parser.revision === "string" && raw.parser.revision.trim().length > 0
           ? raw.parser.revision.trim()
           : null,
+      semanticRevision:
+        typeof raw.parser.semantic_revision === "string" && raw.parser.semantic_revision.trim()
+          ? raw.parser.semantic_revision.trim()
+          : typeof raw.parser.revision === "string" && raw.parser.revision.trim()
+            ? raw.parser.revision.trim()
+            : null,
+      buildRevision:
+        typeof raw.parser.build_revision === "string" && raw.parser.build_revision.trim()
+          ? raw.parser.build_revision.trim()
+          : null,
     },
     expectedParserContract(),
   );
-  if (!raw.header || typeof raw.header !== "object") {
+  if (!raw.header || typeof raw.header !== "object")
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing header");
-  }
-  if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events)) {
+  if (!Array.isArray(raw.players) || !Array.isArray(raw.rounds) || !Array.isArray(raw.events))
     throw new PipelineError("PARSER_INVALID_RESPONSE", "missing players/rounds/events");
-  }
-  if (raw.warnings != null && !Array.isArray(raw.warnings)) {
+  if (raw.warnings != null && !Array.isArray(raw.warnings))
     throw new PipelineError("PARSER_INVALID_RESPONSE", "warnings must be an array when present");
-  }
   // Contract v1 predates RAW-EVIDENCE-01, so synthetic/legacy callers may omit
   // the envelope. Real ingestion still requires it in persistRawEvidence.
   if (raw.raw_evidence) {
