@@ -194,9 +194,42 @@ def main():
     except (OSError, KeyError, ValueError, RuntimeError, urllib.error.URLError) as exc:
         issues.append('R11_ATTESTATION_UNAVAILABLE_' + type(exc).__name__.upper())
     decision = 'CLOSED' if not issues else 'BLOCKED'
+    ci_gate_evidence = {
+        'remote_ci': {
+            'status': 'VERIFIED' if not issues else 'BLOCKED',
+            'evidence_ref': 'f553-r11-post-completion-attestation',
+            'workflow_run_id': identity['workflow_run_id'],
+            'commit_sha': identity['commit_sha'],
+        },
+        'python_tests': {
+            'status': 'VERIFIED' if not issues else 'BLOCKED',
+            'evidence_ref': 'f553-r11-disposable-evidence.parser_tests',
+        },
+        'r11_2': {
+            'status': 'VERIFIED' if not issues else 'BLOCKED',
+            'evidence_ref': 'f553-r11-disposable-evidence',
+            'artifact_digest': digest,
+        },
+    }
+    # These gates require evidence not produced by this workflow. Keep them
+    # explicitly NOT_PROVEN rather than allowing a successful CI run to
+    # over-claim semantic coverage.
+    not_proven_gates = (
+        'python_wasm_parity', 'determinism', 'persistence_validation',
+        'identity_validation', 'tick_authority', 'retention_guard',
+        'attempt_9_absent', 'metrics_uncontaminated', 'features_uncontaminated',
+        'canonical_uncontaminated', 'runtime_frozen',
+    )
+    attempt9_gate_evidence = {
+        gate: {'status': 'NOT_PROVEN', 'evidence_ref': 'NO_INDEPENDENT_PROOF_IN_THIS_RUN'}
+        for gate in not_proven_gates
+    }
+    attempt9_gate_evidence.update(ci_gate_evidence)
     result = {'phase': PHASE, 'evidence_version': 12, **identity,
               'final_decision': decision, 'final_ci': 'PASS' if not issues else 'NOT_PROVEN',
               'artifact_digest': digest, 'issues': issues,
+              'ci_gate_evidence': ci_gate_evidence,
+              'attempt9_gate_evidence': attempt9_gate_evidence,
               **{lock: False for lock in LOCKS}, 'verified_at': time.time()}
     path = Path(os.environ.get('F553_ATTESTATION_OUT', '/tmp/f553-r11-post-completion.json'))
     path.write_text(json.dumps(result, indent=2) + '\n')
