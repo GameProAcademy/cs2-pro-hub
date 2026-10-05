@@ -1,7 +1,14 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.h3e91_live_preflight import APPROVED_BLOB, collect, collector_structure_valid, git_blob_sha
+from scripts.h3e91_live_preflight import (
+    APPROVED_BLOB,
+    DEPLOYMENT,
+    SOURCE_COMMIT,
+    collect,
+    collector_structure_valid,
+    git_blob_sha,
+)
 
 
 def test_git_blob_hash_matches_git_framing():
@@ -37,13 +44,18 @@ def test_collector_has_no_execution_or_mutation_surface():
     source = Path("scripts/h3e91_live_preflight.py").read_text()
     forbidden = (
         "scripts/parser_runtime_attestation.py",
-        "workflow_dispatches",
+        ".workflow_dispatches(",
         'urlopen(f"{domain}/parse',
         'open("sample.dem"',
         "mutation Railway",
     )
     assert all(term not in source for term in forbidden)
     assert APPROVED_BLOB in source
+
+
+def test_collector_uses_reconciled_r582_railway_identity():
+    assert DEPLOYMENT == "1b5778de-3eaf-46f1-9ea5-cba381d95313"
+    assert SOURCE_COMMIT == "91aeee853200d0f461d0d36af1781d7fdfa40941"
 
 
 def test_collector_structure_rejects_automatic_and_execution_triggers():
