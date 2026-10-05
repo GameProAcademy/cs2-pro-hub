@@ -69,7 +69,15 @@ def test_railway_evidence_rejects_declarative_or_mismatched_data():
 
 
 def test_release_evidence_is_explicitly_blocked_before_attempt_9():
-    evidence = release_gate_evidence()
+    evidence = release_gate_evidence(
+        runtime_identity_verified=False,
+        github_identity_verified=False,
+        railway_identity_verified=False,
+        runtime_version_verified=False,
+        custom_domain_verified=False,
+        critical_hashes_verified=False,
+        mapping_artifact_verified=False,
+    )
     assert len(evidence) == 22
     assert all(item["status"] == "BLOCKED" for item in evidence.values())
     assert evidence["mapping_inventory"]["row_count"] == 105
