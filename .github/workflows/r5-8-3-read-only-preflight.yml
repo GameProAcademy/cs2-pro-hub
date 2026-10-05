@@ -19,6 +19,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch frozen parser branch evidence ref
+        run: |
+          git fetch --no-tags origin infra/cs2-parser-worker-v8:refs/remotes/origin/infra/cs2-parser-worker-v8
+
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
