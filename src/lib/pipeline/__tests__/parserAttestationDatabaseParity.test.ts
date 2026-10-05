@@ -75,7 +75,7 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
   it("requires empty state and preserves function security before replacement", () => {
     expect(migration).toContain("FROM public.parser_runtime_provenance");
     expect(migration).toContain("FROM public.parser_attestation_nonces");
-    expect(migration).toContain("_provenance_count <> 0 OR _nonce_count <> 0");
+    expect(migration).toContain("R5_8_PIN_RECONCILIATION_REQUIRES_EMPTY_ATTESTATION_STATE");
     expect(migration).toContain("p.prosecdef");
     expect(migration).toContain(`ARRAY['search_path=""']`);
     expect(migration).not.toMatch(/GRANT\s+EXECUTE/i);
