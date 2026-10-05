@@ -16,7 +16,7 @@
 
 - [x] Observed failed GitHub run `37295286546` on pre-repair commit `01d3da377299016fe7ba639c397ad62ba7c52a0f`: failure was the old `ModuleNotFoundError: No module named 'scripts'` before the repaired commit reached main.
 - [x] Confirmed the repaired R5.8.3 entrypoint and 20/20 focused local tests are present in `f3230e4e6db0b9ff896bbfcfc3bb94946f82388d`.
-- [ ] Re-run the automatic R5.8.3 preflight on the repaired main revision and inspect its machine-readable artifact.
+- [x] Automatic R5.8.3 preflight run `37386788174` passed on repaired main revision `f85fcc07e15ea740d04d1b2005407208f2ed5779`; its evidence artifact exists with digest `sha256:0bdada5d6887f36df5aca6a6692b981d38ee585b559bb6e6821a4f605fdf4c96`.
 - [ ] Fresh Runtime Attestation remains blocked until R5.8.3 external evidence is GREEN and all independent release gates are reconciled.
 
 ## R5.8.3 / R5.8.4 PREPARATION — 2026-10-05
@@ -24,7 +24,7 @@
 - [x] Make the R5.8.3 workflow entrypoint resolve its shared attestation module without implicit `PYTHONPATH`.
 - [x] Add direct-entrypoint regression coverage and include it in the read-only workflow.
 - [x] Add a pure, fail-closed 32-gate R5.8.4 reconciler with no execution authority.
-- [ ] Observe the automatic R5.8.3 GitHub run and its uploaded evidence artifact after this change reaches `main`.
+- [x] Observe the automatic R5.8.3 GitHub run and its uploaded evidence artifact after this change reaches `main`.
 - [ ] Run a fresh Runtime Attestation only through a separately authorized manual operator action, then reconcile all 32 gates independently.
 - [ ] Attempt 9, real DEM processing, RAW production persistence and Canonical admission remain blocked.
 
