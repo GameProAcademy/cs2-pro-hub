@@ -126,6 +126,20 @@ function main() {
   const wasm = readArtifact(argument("--wasm-artifact"), "WASM");
   if (python.demoSha256 !== sha256 || wasm.demoSha256 !== sha256)
     throw new Error("SAME_DEM_SHA256_REQUIRED");
+  const requiredIdentityKeys = [
+    "parserVersion",
+    "parserRevision",
+    "catalogVersion",
+    "catalogDigest",
+    "contractVersion",
+    "contractDigest",
+  ];
+  for (const key of requiredIdentityKeys) {
+    if (python[key] == null || wasm[key] == null || python[key] !== wasm[key])
+      throw new Error(`PARSER_CONTRACT_IDENTITY_MISMATCH:${key}`);
+  }
+  if (python.status !== "SUCCEEDED" || wasm.status !== "SUCCEEDED")
+    throw new Error("PARSER_ARTIFACT_STATUS_INVALID");
   const comparisons = domains.map((field) => {
     const pythonValue = domainValue(python, field);
     const wasmValue = domainValue(wasm, field);
