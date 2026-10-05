@@ -123,6 +123,9 @@ jobs:
           }, sort_keys=True))
           PY
 
+      - name: Install focused test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+
       - name: Run R5.8.4 reconciler tests
         run: python -m pytest -q --ignore=services/cs2-demo-parser/tests scripts/tests/test_r5_8_4_gate_reconciliation.py
 
