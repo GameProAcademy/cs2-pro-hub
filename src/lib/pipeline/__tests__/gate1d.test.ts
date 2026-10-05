@@ -7,7 +7,11 @@ import {
   submitDemoWithDependencies,
   type SubmitDemoDependencies,
 } from "@/lib/pipeline/client";
-import { assertRawParserOutput, expectedParserIdentity } from "@/lib/pipeline/parser/adapter";
+import {
+  assertRawParserOutput,
+  DEPLOYED_WORKER_REVISION,
+  expectedParserIdentity,
+} from "@/lib/pipeline/parser/adapter";
 import { resumableStorageEndpoint, TUS_CHUNK_BYTES } from "@/lib/pipeline/resumableUpload";
 
 function file(name: string, size: number): File {
@@ -27,11 +31,9 @@ describe("Gate 1D upload boundaries", () => {
   });
 
   it("uses the dedicated storage resumable endpoint and 6 MiB chunks", () => {
-    // Supabase-hosted projects resolve to the dedicated storage hostname.
     expect(resumableStorageEndpoint("https://example.supabase.co")).toBe(
       "https://example.storage.supabase.co/storage/v1/upload/resumable",
     );
-    // Custom domains / local development keep their configured origin.
     expect(resumableStorageEndpoint("https://storage.acme.dev")).toBe(
       "https://storage.acme.dev/storage/v1/upload/resumable",
     );
@@ -54,6 +56,10 @@ describe("Gate 1D upload boundaries", () => {
           duplicate: false,
           duplicateStatus: null,
           existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 1,
+          supersedesJobId: null,
+          replacementReason: null,
         };
       },
       upload: async () => {
@@ -74,6 +80,19 @@ describe("Gate 1D upload boundaries", () => {
     expect(calls).toEqual(["hash", "create", "upload", "enqueue"]);
   });
 
+  it("rejects a malformed calculated SHA before registration", async () => {
+    const { calls, dependencies } = flow({
+      hash: async () => {
+        calls.push("hash");
+        return "a".repeat(67);
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).rejects.toMatchObject({ code: "PROCESSING_ERROR", detail: "INVALID_DEMO_SHA256" });
+    expect(calls).toEqual(["hash"]);
+  });
+
   it("does not enqueue after upload failure or cancellation", async () => {
     for (const error of [new Error("network"), new DOMException("cancelled", "AbortError")]) {
       const { calls, dependencies } = flow({
@@ -89,7 +108,7 @@ describe("Gate 1D upload boundaries", () => {
     }
   });
 
-  for (const status of ["pending", "processed", "failed"] as const) {
+  for (const status of ["pending", "processed"] as const) {
     it(`does not overwrite storage or enqueue an existing ${status} duplicate`, async () => {
       const { calls, dependencies } = flow({
         create: async () => {
@@ -100,19 +119,111 @@ describe("Gate 1D upload boundaries", () => {
             duplicate: true,
             duplicateStatus: status,
             existingJobId: "existing-job",
+            newAttempt: false,
+            attemptNumber: 1,
+            supersedesJobId: null,
+            replacementReason: null,
           };
         },
       });
       await expect(
         submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
-      ).resolves.toEqual({ jobId: "existing-job", duplicate: true });
+      ).resolves.toMatchObject({ jobId: "existing-job", duplicate: true, newAttempt: false });
       expect(calls).toEqual(["hash", "create"]);
     });
   }
+
+  it("recovers a reserved upload without overwriting its private object", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: true,
+          duplicateStatus: "pending",
+          existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 8,
+          supersedesJobId: "old-job",
+          replacementReason: "raw_audit_blocked",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        return { jobId: "recovered-job" };
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).resolves.toMatchObject({ jobId: "recovered-job", duplicate: true, attemptNumber: 8 });
+    expect(calls).toEqual(["hash", "create", "enqueue"]);
+  });
+
+  it("fails closed while a reservation has neither complete bytes nor a job", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "11111111-1111-4111-8111-111111111111",
+          storagePath: "user-id/11111111-1111-4111-8111-111111111111.dem",
+          duplicate: true,
+          duplicateStatus: "pending",
+          existingJobId: null,
+          newAttempt: false,
+          attemptNumber: 8,
+          supersedesJobId: "old-job",
+          replacementReason: "raw_audit_blocked",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        throw new Error("DEMO_NOT_FOUND");
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).rejects.toMatchObject({ code: "PROCESSING_ERROR" });
+    expect(calls).toEqual(["hash", "create", "enqueue"]);
+  });
+
+  it("uploads isolated bytes and polls the new job for a stale replacement", async () => {
+    const { calls, dependencies } = flow({
+      create: async () => {
+        calls.push("create");
+        return {
+          uploadId: "22222222-2222-4222-8222-222222222222",
+          storagePath: "user-id/22222222-2222-4222-8222-222222222222.dem",
+          duplicate: true,
+          duplicateStatus: "failed",
+          existingJobId: null,
+          newAttempt: true,
+          attemptNumber: 2,
+          supersedesJobId: "old-job",
+          replacementReason: "stale",
+        };
+      },
+      enqueue: async () => {
+        calls.push("enqueue");
+        return { jobId: "new-job" };
+      },
+    });
+    await expect(
+      submitDemoWithDependencies(file("match.dem", 64 * 1024), {}, dependencies),
+    ).resolves.toMatchObject({
+      jobId: "new-job",
+      duplicate: true,
+      newAttempt: true,
+      attemptNumber: 2,
+      supersedesJobId: "old-job",
+      replacementReason: "stale",
+    });
+    expect(calls).toEqual(["hash", "create", "upload", "enqueue"]);
+  });
 });
 
 describe("Gate 1D parser identity", () => {
-  const deployedRevision = "git:790eaed77eb8cbed8efaa98e1a4f5f0ac33a8bdd";
+  const deployedRevision = DEPLOYED_WORKER_REVISION;
   const payload = () => ({
     parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
@@ -122,7 +233,7 @@ describe("Gate 1D parser identity", () => {
     events: [],
   });
 
-  it("defaults to demoparser2 0.42.0 and contract 1", () => {
+  it("defaults to demoparser2 0.42.0 and the deployed worker revision", () => {
     expect(expectedParserIdentity()).toEqual({
       name: "demoparser2",
       version: "0.42.0",
