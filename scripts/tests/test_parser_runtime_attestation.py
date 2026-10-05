@@ -57,6 +57,25 @@ def test_railway_evidence_is_derived_from_api_response():
     assert len(proof["query_digest"]) == 64
 
 
+def test_railway_http_errors_are_fail_closed_with_bounded_diagnostics():
+    from urllib.error import HTTPError
+
+    with patch(
+        "scripts.parser_runtime_attestation.urllib.request.urlopen",
+        side_effect=HTTPError(
+            "https://backboard.railway.com/graphql/v2",
+            401,
+            "Unauthorized",
+            {},
+            None,
+        ),
+    ):
+        with pytest.raises(ValueError, match="RAILWAY_API_HTTP_401"):
+            from scripts.parser_runtime_attestation import fetch_json
+
+            fetch_json("https://backboard.railway.com/graphql/v2")
+
+
 def test_railway_evidence_rejects_declarative_or_mismatched_data():
     with pytest.raises(ValueError, match="RAILWAY_API_TOKEN_MISSING"):
         railway_deployment_evidence("")
