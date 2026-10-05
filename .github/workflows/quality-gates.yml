@@ -16,6 +16,9 @@ permissions:
 
 jobs:
   web-quality:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
     name: Web tests / lint / build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -51,6 +54,9 @@ jobs:
         run: bun run verify:browser-parser-sealed
 
   parser-quality:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/infra/cs2-parser-worker-v8') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'infra/cs2-parser-worker-v8')
     name: CS2 parser tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -113,6 +119,9 @@ jobs:
           tests/test_runtime_contract.py
 
   f553-r11-2-execution:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
     name: F553 R11.2 EXECUTION
     runs-on: ubuntu-latest
     timeout-minutes: 180
