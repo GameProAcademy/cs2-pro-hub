@@ -5,7 +5,7 @@
 - [x] Merge A9.1 fail-closed Python/WASM parity and determinism hardening (PR #52) into `main`; merge commit: `1a3b93376019989780f18868e3f0022d459a72de`.
 - [x] Require exact parser version/revision, catalog version/digest, contract version/digest and WASM artifact identity across the four A9.1 runs; invalid artifact status is rejected.
 - [x] Preserve A9.1 as a proof contract only: no DEM execution, persistence, Canonical authorization or Railway mutation is introduced.
-- [x] Parser Runtime Attestation #31 completed successfully on current `main` commit `ee66714001fa9da1d9b55bfdcc452a30c2d07509` according to the operator-observed GitHub run evidence.
+- [x] Parser Runtime Attestation #31 completed successfully against the pre-A9.1 `main` revision `ee66714001fa9da1d9b55bfdcc452a30c2d07509`; the later A9.1 merge is `1a3b93376019989780f18868e3f0022d459a72de`, so #31 is evidence for the pre-merge runtime and must not be reused as proof of the post-A9.1 source state.
 - [x] Railway parser deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313` is independently observed as SUCCESS for branch `infra/cs2-parser-worker-v8`, with parser semantic/build revision `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76` and contract `1`.
 - [ ] Reconcile the complete Attestation #31 artifact/release-gate payload independently before treating individual H.3-E/R5.8 gates as VERIFIED.
 - [ ] Fresh A9.1 real-DEM parity/determinism proof remains NOT_RUN until explicit operator authorization is provided.
