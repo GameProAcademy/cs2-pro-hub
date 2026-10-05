@@ -7,6 +7,10 @@ import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
 
 const migration = readFileSync(
+  resolve("supabase/migrations/20260929103000_reconcile_r58_live_attestation_pins.sql"),
+  "utf8",
+);
+const repairMigration = readFileSync(
   resolve("supabase/migrations/20260929110000_r58_1_recorder_pin_repair.sql"),
   "utf8",
 );
@@ -38,6 +42,8 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(migration).toContain(
       `_new_workflow_sha constant text := '${APPROVED_ATTESTATION_WORKFLOW_SHA}'`,
     );
+    expect(repairMigration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(repairMigration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(
       parity({
         appDeployment: PARSER_ATTESTATION_EXPECTED.deploymentId,
