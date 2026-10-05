@@ -25,6 +25,7 @@ def test_collector_emits_safe_fail_closed_evidence(monkeypatch):
         "GITHUB_WORKFLOW_REF": "GameProAcademy/cs2-pro-hub/.github/workflows/h3-e9-1-live-evidence-preflight.yml@refs/heads/main",
         "GITHUB_WORKFLOW_SHA": "a" * 40,
     }
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     with patch("scripts.h3e91_live_preflight.fetch_json", return_value=(None, None)):
