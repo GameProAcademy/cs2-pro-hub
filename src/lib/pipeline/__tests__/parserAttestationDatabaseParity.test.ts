@@ -6,8 +6,12 @@ import { describe, expect, it } from "vitest";
 import { PARSER_ATTESTATION_EXPECTED } from "@/lib/parserAttestation";
 import { APPROVED_ATTESTATION_WORKFLOW_SHA } from "@/lib/parserAttestationWorkflowRegistry";
 
-const migration = readFileSync(
+const legacyMigration = readFileSync(
   resolve("supabase/migrations/20260929103000_reconcile_r58_live_attestation_pins.sql"),
+  "utf8",
+);
+const migration = readFileSync(
+  resolve("supabase/migrations/20261005090000_r58_2_live_deployment_pin_reconciliation.sql"),
   "utf8",
 );
 const repairMigration = readFileSync(
@@ -36,13 +40,12 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(migration).toContain(
-      `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
-    );
-    expect(migration).toContain(
-      `_new_workflow_sha constant text := '${APPROVED_ATTESTATION_WORKFLOW_SHA}'`,
-    );
-    expect(repairMigration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(migration).not.toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
+    expect(migration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    expect(repairMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
+    expect(legacyMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
+    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(repairMigration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(
       parity({
