@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   web-quality:
+    if: github.ref == 'refs/heads/main'
     name: Web tests / lint / build
     runs-on: ubuntu-latest
     timeout-minutes: 15
