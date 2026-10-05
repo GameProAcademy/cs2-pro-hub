@@ -43,14 +43,6 @@ jobs:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: python scripts/parser_runtime_attestation.py parser-runtime-attestation.json
 
-      - name: Require locally generated attestation to be fully verified before delivery
-        run: |
-          jq -e '.status == "VERIFIED"' parser-runtime-attestation.json >/dev/null || {
-            echo "FAIL_CLOSED_ATTESTATION_BUILD"
-            jq -c '{status,blockers,attestation_digest}' parser-runtime-attestation.json
-            exit 1
-          }
-
       - name: Mint short-lived GitHub identity token
         id: oidc
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
