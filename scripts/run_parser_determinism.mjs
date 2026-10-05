@@ -35,15 +35,33 @@ if (artifacts.length !== 4 || artifacts.some((path) => !existsSync(path))) {
   const python = runs.filter((run) => run.runtime === "PYTHON");
   const wasm = runs.filter((run) => run.runtime === "WASM");
   const shas = new Set(runs.map((run) => run.demoSha256));
-  const identities = new Set(runs.map((run) => `${run.parserVersion}:${run.parserRevision}`));
+  const parserIdentities = new Set(runs.map((run) => `${run.parserVersion}:${run.parserRevision}`));
+  const catalogIdentities = new Set(runs.map((run) => `${run.catalogVersion}:${run.catalogDigest}`));
+  const contractIdentities = new Set(runs.map((run) => `${run.contractVersion}:${run.contractDigest}`));
   const runIds = new Set(runs.map((run) => run.runId));
+  const wasmArtifactIdentities = new Set(
+    wasm.map((run) => run.artifactIdentity ?? ""),
+  );
   const valid =
     python.length === 2 &&
     wasm.length === 2 &&
     shas.size === 1 &&
-    identities.size <= 2 &&
+    parserIdentities.size === 1 &&
+    catalogIdentities.size === 1 &&
+    contractIdentities.size === 1 &&
     runIds.size === 4 &&
-    runs.every((run) => run.status === "SUCCEEDED");
+    wasmArtifactIdentities.size === 1 &&
+    wasm.every((run) => Boolean(run.artifactIdentity)) &&
+    runs.every(
+      (run) =>
+        run.status === "SUCCEEDED" &&
+        typeof run.parserVersion === "string" &&
+        typeof run.parserRevision === "string" &&
+        typeof run.catalogVersion === "string" &&
+        typeof run.catalogDigest === "string" &&
+        typeof run.contractVersion === "number" &&
+        typeof run.contractDigest === "string",
+    );
   const dimensions = [
     "rawDigest",
     "normalizedResultDigest",
