@@ -33,13 +33,14 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // SSR renders the default locale; the effect below applies the stored or
-  // detected preference after hydration to avoid a hydration mismatch.
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
     const next = readStoredLocale() ?? detectBrowserLocale();
-    setLocaleState(next);
+    // Suspended route branches may hydrate after their parent's effects. Wait
+    // for the browser's idle phase so every SSR branch first sees pt-BR.
+    const idleId = window.requestIdleCallback(() => setLocaleState(next), { timeout: 1000 });
+    return () => window.cancelIdleCallback(idleId);
   }, []);
 
   useEffect(() => {
