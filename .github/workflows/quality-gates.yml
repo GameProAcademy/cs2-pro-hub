@@ -1,6 +1,7 @@
 name: Quality Gates
 # Independent proof trigger anchor; no product/runtime behavior change.
 # R11.2 verification dispatch: post-reconciliation CI proof on main.
+# Observable PR proof marker; no runtime behavior change.
 # R11.2 disposable verification trigger: run on the committed fail-closed harness.
 
 on:
