@@ -222,3 +222,5 @@ jobs:
 
 
 # R11.2-R6 verification trigger: validate the latest committed disposable Storage diagnostic.
+
+# H3E.4 final-state proof trigger: validate post-Lovable-sync main without runtime behavior change.
