@@ -210,7 +210,9 @@ export const Route = createFileRoute("/api/public/parser-attestation")({
           const rawCode = typeof error.code === "string" ? error.code : "";
           const rawMessage = typeof error.message === "string" ? error.message : "";
           const safeCode = /^[A-Z0-9_:-]{3,120}$/.test(rawCode) ? rawCode : null;
-          const safeMessage = /^(?:PARSER_ATTESTATION|ATTESTATION|H3E|R5|PARSER_PROVENANCE|PGRST|23505|42501|55000)[A-Z0-9_:-]*$/.test(rawMessage)
+          const safeMessage = /^(?:PARSER_ATTESTATION|ATTESTATION|H3E|R5|PARSER_PROVENANCE|PGRST|23505|42501|55000)[A-Z0-9_:-]*$/.test(
+            rawMessage,
+          )
             ? rawMessage
             : null;
           console.error("[parser-attestation] recorder failed", {
