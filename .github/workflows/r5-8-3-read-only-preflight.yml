@@ -38,11 +38,7 @@ jobs:
 
       - name: Run focused attestation/governance tests
         run: >-
-          python -m pytest -q --ignore=services/cs2-demo-parser/tests
-           scripts/tests/test_r5_8_3_release_preflight.py
-           scripts/tests/test_r5_8_4_gate_reconciliation.py
-          scripts/tests/test_parser_runtime_attestation.py
-          scripts/tests/test_h3e91_live_preflight.py
+          python -m pytest -q --ignore=services/cs2-demo-parser/tests scripts/tests/test_r5_8_3_release_preflight.py scripts/tests/test_r5_8_4_gate_reconciliation.py scripts/tests/test_parser_runtime_attestation.py scripts/tests/test_h3e91_live_preflight.py
 
       - name: Preserve machine-readable evidence
         if: always()
