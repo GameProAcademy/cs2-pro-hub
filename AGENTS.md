@@ -20,3 +20,4 @@
 - Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.
 - Read H3E91 lifecycle only through the minimal service-role RPC; durable replay must reconcile queue state without rerunning the parser or exposing ledger rows.
 - Require committed RAW before FINISHED; keep R11 worker execution loopback-only, reuse production RAW chunking, and attest recovery independently after CI.
+- Treat both R11 matrix case IDs and fixture IDs as unique evidence identities, so duplicated executions fail closed during attestation.
