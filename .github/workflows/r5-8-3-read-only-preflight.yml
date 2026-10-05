@@ -29,6 +29,9 @@ jobs:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: python scripts/r5_8_3_release_preflight.py > r5-8-3-preflight.json
 
+      - name: Install focused test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+
       - name: Run focused attestation/governance tests
         run: >-
           python -m pytest -q
