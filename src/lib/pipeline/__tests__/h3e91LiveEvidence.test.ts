@@ -199,7 +199,8 @@ describe("H.3-E.9.1 live evidence", () => {
     };
     const reevaluated = evaluateH3E9FinalExecutionReadiness(artifact.finalResult);
     expect(reevaluated.status).toBe("BLOCKED");
-    expect(reevaluated.blockers).toContain("H3E91_EXECUTION_SURFACE_NOT_COVERED");
+    expect(reevaluated.technicalReadiness).toBe("BLOCKED");
+    expect(artifact.finalResult.blockers).toContain("H3E91_EXECUTION_SURFACE_NOT_COVERED");
   });
   it("keeps real collector authorization absent and overall result blocked", () => {
     const artifact = finalizeH3E91Artifact(external(), database(), NOW, NOW);
