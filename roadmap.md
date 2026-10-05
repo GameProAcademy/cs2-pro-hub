@@ -1,5 +1,12 @@
 # CURRENT STATE RECONCILIATION — 2026-09-29
 
+## R5.8.3 EXTERNAL RETRY — 2026-10-05
+
+- [x] Observed failed GitHub run `37295286546` on pre-repair commit `01d3da377299016fe7ba639c397ad62ba7c52a0f`: failure was the old `ModuleNotFoundError: No module named 'scripts'` before the repaired commit reached main.
+- [x] Confirmed the repaired R5.8.3 entrypoint and 20/20 focused local tests are present in `f3230e4e6db0b9ff896bbfcfc3bb94946f82388d`.
+- [ ] Re-run the automatic R5.8.3 preflight on the repaired main revision and inspect its machine-readable artifact.
+- [ ] Fresh Runtime Attestation remains blocked until R5.8.3 external evidence is GREEN and all independent release gates are reconciled.
+
 ## R5.8.3 / R5.8.4 PREPARATION — 2026-10-05
 
 - [x] Make the R5.8.3 workflow entrypoint resolve its shared attestation module without implicit `PYTHONPATH`.
