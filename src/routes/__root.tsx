@@ -128,7 +128,7 @@ function RootShell({ children }: { children: ReactNode }) {
   // only in RootComponent leaves the root error/not-found branches outside the
   // tree, where any useT() consumer would read a null context.
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
