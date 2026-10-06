@@ -1,0 +1,83 @@
+name: A9.1 Real DEM Python-WASM Parity & Determinism Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      demo_url:
+        description: Private HTTPS or signed URL (never logged)
+        required: true
+        type: string
+      expected_sha256:
+        description: Exact authorized DEM SHA-256
+        required: true
+        default: 0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d
+        type: string
+      expected_size_bytes:
+        description: Exact authorized DEM size
+        required: true
+        default: "473748061"
+        type: string
+      authorization_ref:
+        description: Independent laboratory authorization reference
+        required: true
+        default: A9.1-M1-CACHE-REAL-DEM
+        type: string
+      filename:
+        description: Authorized DEM filename
+        required: true
+        default: furia-vs-gamerlegion-m1-cache.dem
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-gate:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Install reference dependencies
+        run: pip install -r services/cs2-demo-parser/requirements.txt
+      - name: Verify Node runtime
+        run: node --version
+      - name: Execute isolated four-run gate
+        env:
+          DEMO_URL: ${{ inputs.demo_url }}
+          EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+          EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
+          AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
+          DEMO_FILENAME: ${{ inputs.filename }}
+        run: python scripts/a91/execute.py
+      - name: Upload sanitized bounded reports only
+        if: always() && hashFiles(format('{0}/a91-upload-safe', runner.temp)) != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: a91-real-dem-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/a91-artifacts/a91_real_dem_report.json
+            ${{ runner.temp }}/a91-artifacts/parity_report.json
+            ${{ runner.temp }}/a91-artifacts/determinism_report.json
+            ${{ runner.temp }}/a91-artifacts/python_run_1.json
+            ${{ runner.temp }}/a91-artifacts/python_run_2.json
+            ${{ runner.temp }}/a91-artifacts/wasm_run_1.json
+            ${{ runner.temp }}/a91-artifacts/wasm_run_2.json
+          retention-days: 3
+          if-no-files-found: error
+      - name: Final private-file cleanup
+        if: always()
+        run: |
+          python - <<'PY'
+          import os, shutil
+          from pathlib import Path
+          for path in Path(os.environ['RUNNER_TEMP']).glob('a91-private-*'):
+              shutil.rmtree(path)
+          PY
