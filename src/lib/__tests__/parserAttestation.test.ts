@@ -72,19 +72,39 @@ describe("parser runtime attestation SHA binding", () => {
       exp: now + 120,
       iat: now,
     };
-    const identity = { ...workflowIdentity(), workflow_file_commit_sha: "3333333333333333333333333333333333333333" };
+    const identity = {
+      ...workflowIdentity(),
+      workflow_file_commit_sha: "3333333333333333333333333333333333333333",
+    };
 
-    expect(validateParserAttestationOidcClaims(claims, identity, now)).toContain("OIDC_CLAIMS_MISMATCH");
+    expect(validateParserAttestationOidcClaims(claims, identity, now)).toContain(
+      "OIDC_CLAIMS_MISMATCH",
+    );
   });
 
   it("accepts payloads with distinct trigger and workflow-file commits", () => {
     const expected = PARSER_ATTESTATION_EXPECTED;
     const hashes = {
-      "services/cs2-demo-parser/parser.py": { observed: "9d21670e47ddf330881e95a9d78c19074ccc0aea", match: true },
-      "services/cs2-demo-parser/adapter.py": { observed: "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71", match: true },
-      "services/cs2-demo-parser/worker.py": { observed: "dfc2e67fcb3644be91108079f9096947c16119b3", match: true },
-      "services/cs2-demo-parser/raw_evidence.py": { observed: "750195c1218abd53cfc77b6e8d2fb4a88e31579e", match: true },
-      "services/cs2-demo-parser/settings.py": { observed: "35eecfb06223812137a4a2f17114aae57cb7fe54", match: true },
+      "services/cs2-demo-parser/parser.py": {
+        observed: "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+        match: true,
+      },
+      "services/cs2-demo-parser/adapter.py": {
+        observed: "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+        match: true,
+      },
+      "services/cs2-demo-parser/worker.py": {
+        observed: "50a53b607d26f00b4de05c5e8998611959e27bd1",
+        match: true,
+      },
+      "services/cs2-demo-parser/raw_evidence.py": {
+        observed: "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
+        match: true,
+      },
+      "services/cs2-demo-parser/settings.py": {
+        observed: "35eecfb06223812137a4a2f17114aae57cb7fe54",
+        match: true,
+      },
     };
     const runtimeVersion = {
       name: expected.parser,
@@ -104,8 +124,20 @@ describe("parser runtime attestation SHA binding", () => {
       railway_service_id: expected.serviceId,
       railway_environment_id: expected.environmentId,
       workflow_identity: workflowIdentity(),
-      attestor_source_identity: workflowIdentity(),
-      release_gate_evidence: { mapping_inventory: { status: "BLOCKED", evidence_ref: "payload.mapping_release" } },
+      attestor_source_identity: {
+        repository: PARSER_ATTESTATION_EXPECTED.repository,
+        branch: PARSER_ATTESTATION_EXPECTED.attestorBranch,
+        workflow_ref: PARSER_ATTESTATION_EXPECTED.workflowRef,
+        workflow_sha: workflowFileCommit,
+        trigger_commit_sha: triggerCommit,
+        workflow_file_commit_sha: workflowFileCommit,
+        event_name: PARSER_ATTESTATION_OIDC.eventName,
+        workflow_path: PARSER_ATTESTATION_EXPECTED.workflowPath,
+        workflow_source_sha: PARSER_ATTESTATION_EXPECTED.workflowSourceSha,
+      },
+      release_gate_evidence: {
+        mapping_inventory: { status: "BLOCKED", evidence_ref: "payload.mapping_release" },
+      },
       attested_at: new Date().toISOString(),
       nonce: "a".repeat(64),
       parser_name: expected.parser,
