@@ -227,6 +227,27 @@ test("capability-aware parity retains all domains without treating absence as eq
   delete s.runs[0].playerInventory;
   assert.equal(parityReport(s.runs[0], s.runs[2], FIXTURE.sha256).status, "FAIL");
 });
+test("rejects both-runtimes-unavailable and blocks contradictory capability waivers", () => {
+  const s = setup();
+  s.runs[0].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_PYTHON" };
+  s.runs[2].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
+  const report = parityReport(s.runs[0], s.runs[2], FIXTURE.sha256);
+  const identity = report.comparisons.find((c) => c.field === "player_identity");
+  assert.equal(identity.status, "BLOCKED");
+  assert.equal(identity.mismatch_reason, "BOTH_RUNTIMES_UNAVAILABLE");
+  assert.equal(report.status, "FAIL");
+
+  const contradictory = structuredClone(s.runs[2]);
+  contradictory.domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
+  contradictory.playerInventory = { status: "AVAILABLE", players: [{ steamId: "1" }] };
+  // An unavailable capability marker is only a waiver for the named runtime;
+  // this test locks the rule that the other runtime cannot also be unavailable.
+  const compared = compareDomains(s.runs[0], contradictory);
+  const row = compared.find((c) => c.field === "player_identity");
+  assert.equal(row.status, "BLOCKED");
+  assert.equal(row.mismatch_reason, "BOTH_RUNTIMES_UNAVAILABLE");
+});
+
 test("decision engine accepts an explicit capability exclusion only with both proven gates", () => {
   // Simulated envelopes exercise the decision predicate only, never real evidence.
   const s = setup();
