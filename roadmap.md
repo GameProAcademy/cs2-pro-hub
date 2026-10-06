@@ -2,7 +2,7 @@
 
 ## A9.1 controlled real DEM harness
 
-- [ ] A9.1-R1: implement isolated manual workflow, validation, real WASM runner, final fail-closed decision, security/cleanup tests and documentation (no DEM execution).
+- [x] A9.1-R1: implement isolated manual workflow, validation, real WASM runner, final fail-closed decision, security/cleanup tests and documentation (no DEM execution). Local validation recorded in docs/A9_1_REAL_DEM_EXECUTION.md; deployed browser-bundle proof remains NOT PROVEN.
 - [ ] A9.1-R2: real execution — LOCKED UNTIL MANUAL WORKFLOW DISPATCH.
 - [ ] A9.1-R3: Python × WASM parity — LOCKED UNTIL REAL RUNS.
 - [ ] A9.1-R4: determinism — LOCKED UNTIL REAL RUNS.

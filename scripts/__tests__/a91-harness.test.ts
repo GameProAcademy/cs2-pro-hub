@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 describe("A9.1 isolated harness mechanics — never real execution evidence", () => {
   it("runs Node safety and manifest tests without parsing any DEM", () => {
-    const result = spawnSync("node", ["--test", "scripts/a91/contracts.test.mjs"], {
+    const result = spawnSync("node", ["--test", "scripts/a91/contracts-node-checks.mjs"], {
       encoding: "utf8",
     });
     expect(result.stdout + result.stderr).not.toContain("# fail 1");
