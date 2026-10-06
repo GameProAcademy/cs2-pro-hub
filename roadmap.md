@@ -14,7 +14,33 @@
 - [ ] Fresh real-DEM Python/WASM parity and determinism remain **NOT RUN / NOT PROVEN**.
 - [x] Attempt 9/10+, production DEM, Canonical admission, Railway mutation, staged EnvironmentPatch acceptance and secret mutation remain locked/untouched.
 
-**Current decision:** repository/CI/source synchronization is **PASS**; production execution remains **BLOCKED** until the exact published `828b...` runtime is independently identified, the remaining publication/security subgates are reconciled, and a fresh manually authorized Runtime Attestation #36 is executed and independently verified. Real DEM parity/determinism remains the next downstream evidence gate.
+## H.3-E.5-R — RUNTIME ATTESTATION #36 CLOSEOUT — 2026-10-06
+
+- [x] Parser Runtime Attestation #36 manually executed on main; GitHub run 37443082666, attempt 1, job attest-runtime completed SUCCESS in 14s (19s total).
+- [x] All attestation steps completed: approved-source checkout, frozen Railway branch ancestry check, Python evidence build, GitHub OIDC minting, evidence artifact upload, HMAC signing and server-side delivery.
+- [x] Exactly one evidence artifact was produced: parser-runtime-attestation-37443082666-1, artifact id 11402146519, SHA-256 7df7923b0e66f667ec60dd013b9121cfde0f4530de1a69e3c56086c4f0f831b0.
+- [x] Artifact payload status is VERIFIED with blockers=[]; attestation digest is 7f29380ac369c1f8915ac7982021680f54a4b7ef4de3b13bd51f20221e0436a6.
+- [x] All five critical parser source hashes match, including services/cs2-demo-parser/worker.py = 50a53b607d26f00b4de05c5e8998611959e27bd1.
+- [x] Railway deployment identity is independently verified as deployment 1b5778de-3eaf-46f1-9ea5-cba381d95313, source commit 91aeee853200d0f461d0d36af1781d7fdfa40941, parser demoparser2 0.42.0, contract 1, semantic/build revision 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76.
+- [x] GitHub/OIDC identity is bound to repository GameProAcademy/cs2-pro-hub, branch main, trigger commit 3d9805643af6c8e99802f4f691edf1176c382c63, workflow path .github/workflows/parser-runtime-attestation.yml, workflow source SHA 3070d8bae6c3f02093bbb2595138c913646c2e31, run id 37443082666.
+- [x] The live project DB now contains 3 provenance rows, 3 VERIFIED, and 3 nonces; the new row exactly matches attestation digest 7f29380..., nonce 9acd0b3c..., workflow run 37443082666, and app source commit 3d980564....
+- [x] Historical provenance was not rewritten; the new attestation is a distinct digest-scoped record under R5.8.6.
+- [x] The attestation release-gate payload correctly keeps unrelated gates BLOCKED: real DEM authorization, CI/release evidence, Canonical field gate, attempt sequencing, cleanup safety, tick-domain authority and mapping admission are not falsely promoted by runtime attestation.
+- [ ] Runtime Attestation #36 therefore closes PASS for parser runtime provenance, but it does not authorize Attempt 9, production Cache execution or Canonical admission.
+- [ ] The GitHub runner warnings about Node.js 20 deprecation / future Ubuntu 26 migration are non-blocking maintenance warnings; changing the attestor workflow now would invalidate the current workflow identity and require a new attestation, so no opportunistic change is made in this gate.
+
+## NEXT GATE — A9.1 REAL DEM PYTHON × WASM PARITY + DETERMINISM
+
+- [x] A real authorized Cache DEM is available in the Library: furia-vs-gamerlegion-m1-cache.dem, 473,748,061 bytes, SHA-256 0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d.
+- [x] The repository contains fail-closed parity/determinism comparators requiring the same DEM SHA, exact parser/catalog/contract identity, two Python runs, two WASM runs, four unique run IDs and stable digest equality; canonical authorization remains false.
+- [ ] Execute the real 2×Python + 2×WASM harness against this DEM outside production ingestion, then independently reconcile all domain digests.
+- [ ] Required domains include header, map, tickrate/playback ticks, players/identity, events, rounds, grenades, bomb, damage, deaths, weapons, economy, tick properties and game state.
+- [ ] Require Python/WASM equality for normalized outputs and determinism across both repeated runs; any mismatch is fail-closed.
+- [ ] Do not run Cache Attempt 9, do not enqueue/retry the production job, do not write Canonical, do not mutate Railway, and do not use the historical RAW artifact as a substitute for fresh A9.1 parity.
+- [ ] After parity/determinism PASS, independently reconcile the real-Dem evidence and only then evaluate the next controlled execution gate.
+
+**Current decision:** Runtime Attestation #36 is CLOSED / PASS. The project is now BLOCKED ONLY BY THE NEXT EVIDENCE GATE: fresh real-DEM Python/WASM parity + determinism (plus the separate public-app publication proof, which is not needed to pretend parity exists). Attempt 9 and Canonical remain locked.
+
 
 
 ## POST-LOVABLE COMPLETION RECONCILIATION — 2026-10-06
