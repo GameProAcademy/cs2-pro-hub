@@ -1,5 +1,15 @@
 # CURRENT STATE RECONCILIATION — 2026-09-29
 
+## H.3-E.2 / H.3-E.5 FINAL SAFE PREFLIGHT — 2026-10-06
+
+- [x] Register H.3-E.2 service-only, transaction-local HMAC bridge evidence without reading or exposing secret values.
+- [x] Register H.3-E.5 scoped runtime binding evidence for only the endpoint, transport and HMAC attestation bindings.
+- [x] Verify safe production preflight: anonymous empty recorder POST returns 401; no attestation payload, OIDC token, signature, nonce or release evidence was sent.
+- [x] Verify local gates: TypeScript, lint, public-build validation and 104 test files / 1,419 tests pass; supervised build is green.
+- [x] Preserve database state and locks: historical provenance 2, nonces 2, Attempt 9/10+ zero, Canonical 105/0/0/0; Railway and secrets unchanged.
+- [ ] PR #57 remains open/unmerged and Quality Gates #655 remains historical FAIL; the structure-aware local assertion repair needs an external branch update and green rerun before that item can pass.
+- [ ] Runtime Attestation, real DEM, Attempt 9/10+, Cache Run and Canonical admission remain NOT RUN/BLOCKED pending a separately authorized controlled phase.
+
 ## R5.8.5 / R5.8.6 / A9.1 CURRENT RECONCILIATION — 2026-10-05
 
 - [x] Merge A9.1 fail-closed Python/WASM parity and determinism hardening (PR #52) into `main`; merge commit: `1a3b93376019989780f18868e3f0022d459a72de`.
