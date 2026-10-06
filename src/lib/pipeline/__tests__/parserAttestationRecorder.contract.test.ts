@@ -7,6 +7,10 @@ import { describe, expect, it } from "vitest";
 const route = readFileSync(resolve("src/routes/api/public/parser-attestation.ts"), "utf8");
 const workflow = readFileSync(resolve(".github/workflows/parser-runtime-attestation.yml"), "utf8");
 const server = readFileSync(resolve("src/server.ts"), "utf8");
+const bridgeMigration = readFileSync(
+  resolve("supabase/migrations/20260924075412_bd5954f3-8218-4a10-a059-24b01fa84cc6.sql"),
+  "utf8",
+);
 const workflowRegistry = JSON.parse(
   readFileSync(resolve("scripts/approved_attestation_workflow.json"), "utf8"),
 ) as { path: string; source_sha: string };
@@ -34,6 +38,31 @@ describe("H.3-E.2 protected attestation recorder contract", () => {
     expect(route).not.toMatch(
       /console\.(log|error)\([^)]*(signingSecret|transportSecret|oidcToken)/,
     );
+  });
+
+  it("keeps the bridge transaction-local, service-only, and non-persistent", () => {
+    expect(bridgeMigration).toMatch(
+      /pg_catalog\.set_config\(\s*['"]app\.settings\.parser_attestation_hmac_secret['"]\s*,\s*_hmac_secret\s*,\s*true\s*\)/,
+    );
+    expect(bridgeMigration).toContain(
+      "REVOKE ALL ON FUNCTION public.record_parser_runtime_attestation_with_secret",
+    );
+    expect(bridgeMigration).toContain(
+      "GRANT EXECUTE ON FUNCTION public.record_parser_runtime_attestation_with_secret",
+    );
+    expect(bridgeMigration).toContain("TO service_role");
+    expect(bridgeMigration).toContain("public.record_parser_runtime_attestation(");
+    expect(bridgeMigration).not.toMatch(/INSERT\s+INTO\s+public\.[^\n]*(secret|hmac)/i);
+    expect(bridgeMigration).not.toMatch(/RETURN\s+_hmac_secret/i);
+    expect(bridgeMigration).not.toMatch(/RAISE\s+NOTICE[^\n]*_hmac_secret/i);
+  });
+
+  it("keeps server runtime binding scoped to the attestation secrets only", () => {
+    expect(server).toContain("PARSER_ATTESTATION_TRANSPORT_SECRET");
+    expect(server).toContain("PARSER_ATTESTATION_HMAC_SECRET");
+    expect(server).toContain("PARSER_ATTESTATION_ENDPOINT");
+    expect(server).not.toContain("Object.assign(process.env");
+    expect(server).not.toContain("for (const [key, value] of Object.entries");
   });
 
   it("keeps missing runtime configuration fail-closed without disclosing readiness details", () => {
