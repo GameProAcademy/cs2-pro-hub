@@ -34,7 +34,7 @@ BEGIN
       WHERE a.attrelid = t.oid
         AND a.attnum = ANY (c.conkey)
         AND a.attnum > 0
-    ) = ARRAY[
+    )::text[] = ARRAY[
       'railway_project_id',
       'railway_service_id',
       'railway_environment_id',
