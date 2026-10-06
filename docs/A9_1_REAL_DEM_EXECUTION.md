@@ -58,11 +58,13 @@ Memory exhaustion, timeouts and resource failure remain explicit failures. Unit 
 | ITEM | STATUS | EVIDENCE |
 | --- | --- | --- |
 | A9.1-R1 implementation | IMPLEMENTED | Isolated scripts, manual workflow, safety tests and this document |
-| Full Vitest suite | PASS | 106 files, 1,423 tests; includes Node safety checks and Python harness checks |
-| Python harness mechanics | PASS | 6 synthetic tests; no parser or network calls |
+| Full Vitest suite | PASS | R1.1: 106 files, 1,426 tests; includes Node safety checks and Python harness checks |
+| Python harness mechanics | PASS | R1.1: 12 synthetic tests; no parser or network calls |
+| Node contracts | PASS | 11 tests, including capability exclusions, mismatches, identity and decision cases |
 | ESLint | PASS | Zero errors; nine existing warnings in the full repository |
 | Public build configuration | PASS | `PUBLIC_BUILD_CONFIG_OK` |
 | Automatic compilation | PASS | Observability recorded `build OK` after code edits |
+| Manual TypeScript/build commands | NOT RUN | Platform requires automatic compilation/build; manual build/typecheck was not run |
 | Sealed browser-output inspection | NOT PROVEN | Checker cannot find generated browser output: `H3E91_BROWSER_BUILD_OUTPUT_MISSING`; no manual build was run |
 | Real DEM execution | NOT RUN | No download, real parsing or workflow dispatch performed |
 | Real Python/WASM parity and determinism | NOT PROVEN | Local synthetic tests are not real execution evidence |
@@ -70,3 +72,17 @@ Memory exhaustion, timeouts and resource failure remain explicit failures. Unit 
 | Production changes | NOT RUN | No deployment, Railway, live database or secret mutation performed |
 
 The local Python test intentionally emits `A9.1 FAIL` for missing DEM URL and verifies cleanup and no parser invocation; this is expected negative-test evidence, not a real execution failure. No `.dem` file is tracked. No PR, merge or new release commit was created by this task; repository synchronization is managed by Lovable.
+
+## A9.1-R1.1 delivery reconciliation
+
+| ITEM | STATUS | EVIDENCE |
+| --- | --- | --- |
+| Corrections implemented | PASS | Capability-aware parity, exact five-argument ticks, URL secret/stdin protection, fingerprints and regression tests |
+| Complete R1.1 closure | BLOCKED | Browser-output seal is NOT PROVEN; no fabricated compiler/build or remote CI attestation |
+| Git whitespace / tracked DEM | PASS | git diff --check; git ls-files '*.dem' returns none |
+| A9.1-R2–R5 and A9.2 | BLOCKED | No workflow dispatch or real execution; independent evidence required |
+| Attempt 9 / Canonical / production DEM | BLOCKED | All four authorization/eligibility flags false |
+| Railway / live database / secrets | NOT RUN | No changes or live service calls in this correction |
+| Local source identity checkpoint | VERIFIED | HEAD 79d3f9deb7b753296e2302a87d04d7793165077f; branch edit/edt-31b8930c-5114-49c0-9df6-531d491c507d; sync managed externally, not a release commit |
+
+Files changed: scripts/a91/parity.mjs, contracts.mjs, execute.py, run_wasm_reference.mjs, contracts-node-checks.mjs, test_execute.py; scripts/run_python_wasm_parity.mjs and run_parser_determinism.mjs; scripts/__tests__/a91-harness.test.ts; clientParser.worker.ts and its clientParser.test.ts; the manual a91-real-dem-gate workflow; this document, F2_10_PARITY_REPORT.md, F2_10_DETERMINISM_REPORT.md, roadmap.md and AGENTS.md. No UI page was edited. No real run artifacts were produced; synthetic reports remain temporary.

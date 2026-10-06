@@ -107,6 +107,25 @@ class HarnessTests(unittest.TestCase):
                     run.assert_not_called()
                     self.assertFalse(list(Path(temp).glob("a91-private-*")))
 
+    def test_structure_failure_stops_before_python_or_wasm(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = self.environment("https://example.invalid/a")
+            env.update(RUNNER_TEMP=temp, GITHUB_EVENT_NAME="workflow_dispatch", GITHUB_REF="refs/heads/main")
+            with patch.dict(execute.os.environ, env, clear=True), patch.object(execute, "download", return_value=0), patch.object(execute, "validate_download"), patch.object(execute, "run", return_value=1) as run:
+                self.assertEqual(execute.main(), 1)
+                self.assertEqual(run.call_count, 1)
+                self.assertIn("validate_structure.py", run.call_args.args[0][1])
+                report = json.loads((Path(temp) / "a91-artifacts/a91_real_dem_report.json").read_text())
+                self.assertEqual(report["reason"], "A91_DEM_STRUCTURE_INVALID")
+
+    def test_cleanup_failure_blocks_all_uploads(self):
+        with tempfile.TemporaryDirectory() as temp:
+            with patch.dict(execute.os.environ, {"RUNNER_TEMP": temp}, clear=True), patch.object(execute, "clean", side_effect=ValueError("CLEANUP_FAILURE")), patch.object(execute, "run") as run:
+                self.assertEqual(execute.main(), 1)
+                run.assert_not_called()
+                self.assertFalse((Path(temp) / "a91-upload-safe").exists())
+                self.assertFalse((Path(temp) / "a91-artifacts").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
