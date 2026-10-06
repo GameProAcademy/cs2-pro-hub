@@ -10,9 +10,10 @@ The reviewed workflow must be on `main`, and an operator must independently auth
 - Exact size: **473748061 bytes**
 - SHA-256: `0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d`
 - Authorization reference: `A9.1-M1-CACHE-REAL-DEM`
-- Required manual inputs: `demo_url`, `expected_sha256`, `expected_size_bytes`, `authorization_ref`, `filename`. The URL has no default and must be HTTPS without embedded credentials.
+- Required non-secret manual inputs: `expected_sha256`, `expected_size_bytes`, `authorization_ref`, `filename`, each compared with the exact official pin.
+- The private URL comes only from the future GitHub Actions secret `A91_DEMO_URL`. No URL input exists. Missing secret fails closed as `A91_DEMO_URL_MISSING`; its value is never printed, persisted, or passed in argv. This hardening does not create or change that secret.
 
-These pins are laboratory inputs, not production execution authority. The URL is passed through environment variables, never interpolated into a logged shell command. Curl output is discarded, retries are bounded, redirects are HTTPS-only, and file size is capped. Size, SHA and the existing streaming `validate_demo_structure()` must pass before any parser call. Temporary files live exclusively in `RUNNER_TEMP`.
+These pins are laboratory inputs, not production execution authority. Curl reads its URL configuration from stdin; child environments omit the URL secret. Curl output is discarded, retries are bounded, redirects are HTTPS-only, and file size is capped. Size, SHA and the existing streaming `validate_demo_structure()` must pass before any parser call. Temporary files live exclusively in `RUNNER_TEMP`.
 
 ## Runtime sequence
 
@@ -26,9 +27,23 @@ Bounded samples retain original array order, duplicates, null, zero and false. F
 
 ## Parity is not determinism
 
-Both existing scripts remain in use. Parity compares all 16 existing A9.1 domains conservatively. Missing domains and `NOT_AVAILABLE_ON_WASM` are not equality. `parsePlayerInfo` is absent; player identity is never inferred, so this pinned artifact cannot currently obtain an all-domain parity PASS. The Python and WASM producers also expose different evidence shapes; unexplained mismatches remain FAIL, not normalized away.
+Both existing scripts remain in use. Capability-aware parity preserves all 16 domains: header, map, tickrate, playback_ticks, players, player_identity, events, rounds, grenades, bomb, damage, deaths, weapons, economy, tick_properties and game_state. Comparable evidence must PASS semantic comparison. Explicit `NOT_AVAILABLE_ON_WASM` is `NOT_COMPARABLE`, with `equal=null`: neither equality, error nor PASS for that domain. A gate may PASS with documented capability exclusions only if every comparable domain passes and none is FAIL, NOT_RUN or BLOCKED. Missing Python evidence is not waived by WASM absence. `parsePlayerInfo` is never fabricated or inferred.
+
+The parity digest binds domain, status, comparability, availability, both normalized values and mismatch reason. Cross-runtime domain lists retain exclusions and reasons; field count remains null with `FIELD_LEVEL_COMPARISON_NOT_IMPLEMENTED`, never fabricated. The producers expose different evidence shapes and field requests; unexplained mismatches remain `FAIL / SEMANTIC_MISMATCH`. No local tests establish real parity or guarantee a future real PASS.
+
+The worker and reference use `parseTicks(bytes, properties, ticks, [], false)`; wanted players occupies argument four. The worker records `listUpdatedFields` independently. Singular `parseEvent` calls retain per-event field requests; plural `parseEvents` is exported but not invoked, and no call-success claim is made for it.
+
+### Pinned artifact export audit
+
+- declaredExports: listGameEvents, listUpdatedFields, parseEvent, parseEvents, parseGrenades, parseHeader, parseTicks.
+- observedExports: the same seven functions, verified by initialization-only tests (no parsing).
+- missingExports: parsePlayerInfo, parseChatMessages.
+- upstreamExpectedExports: all nine APIs listed in the pinned upstream surface catalog, including parsePlayerInfo and parseChatMessages. Upstream support with absent runtime exports is `UPSTREAM_SUPPORTED_BUT_RUNTIME_EXPORT_MISSING`, not an implementation license.
+- No artifact reconstruction, parser identity change or inferred player identity occurred. Declared/observed exports do not mean every function was exercised.
 
 Determinism compares two runs **within each runtime** and requires stable nonempty result digests, four unique run IDs, exact counts, common DEM/parser/catalog/contract identity and stable WASM identity. Different runtime results may be individually deterministic while parity fails. The final decision validates identities, rehashes normalized result content, checks report digests, requires both independent gates and rejects `test_fixture_only`. No hash-only or fixture-only PASS is accepted.
+
+Reports expose pythonDeterministic, wasmDeterministic, identityStable, artifactStable, catalogStable, contractStable, demoStable and determinismDecision. Python fingerprints include pythonVersion, platform, demoparser2Version and requirementsDigest; WASM fingerprints include nodeVersion, both artifact hashes and artifactIdentity. These complement pinned identities; they never replace them or include private paths. A9.2 remains LOCKED: A9.1 does not prove 473 MB browser support or change the 128 MiB ceiling.
 
 ## Artifacts, cleanup and locks
 

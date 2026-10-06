@@ -78,7 +78,7 @@ function result(): ClientParseResult {
       runtime: CLIENT_PARSER_RUNTIME,
       buildIdentity: CLIENT_PARSER_BUILD_IDENTITY,
       runtimeSurface: {
-        observedExports: ["listGameEvents", "parseEvent", "parseHeader", "parseTicks"],
+        observedExports: inspectRuntimeSurface(parserMock()).observedExports,
         minimumReady: true,
         runtimeSurfaceDigest: inspectRuntimeSurface(parserMock()).runtimeSurfaceDigest,
       },

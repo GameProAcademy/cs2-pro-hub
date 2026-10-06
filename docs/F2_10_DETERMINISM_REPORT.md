@@ -8,7 +8,11 @@ The determinism evaluator requires the same DEM SHA, exactly two normalized Pyth
 
 Each run carries its own run ID, runtime, DEM SHA-256, parser identity/version/revision, WASM artifact identity when applicable, normalized digest, start time, duration and terminal status. The evaluator requires exactly 2×Python + 2×WASM; extra, failed, mismatched-SHA or identity-inconsistent runs fail closed.
 
-No authorized real DEM exists, so no run manifest or digest has been fabricated. `PYTHON × WASM VERIFIED = NO` and `DETERMINISM VERIFIED = NO`.
+The future fixture identity is pinned, but no real execution occurred in this preparation; no real run manifest or digest has been fabricated. `PYTHON × WASM VERIFIED = NO` and `DETERMINISM VERIFIED = NO`.
+
+## A9.1-R1.1 preparation
+
+The report records pythonDeterministic, wasmDeterministic, identityStable, artifactStable, catalogStable, contractStable, demoStable and determinismDecision. Runtime fingerprints are complementary only. Exactly four unique successful full-file runs and all stable identities are mandatory. Normalized output digests are compared within each runtime, never across run IDs, timestamps or durations. PASS parity plus FAIL determinism, or the converse, remains FAIL. All authorization flags and canonicalEligible remain false. Browser large-DEM A9.2 is LOCKED and separate.
 
 ## F.2.10-L/M/N identity rules
 
