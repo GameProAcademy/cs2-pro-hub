@@ -1913,3 +1913,17 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Adicionar comparação automática entre catálogo e documentação, detectando ausências, extras e duplicatas.
 - [ ] HMAC, OIDC, provenance, parity, determinismo, identidade, integridade forense e tick authority reais continuam ausentes ou não verificados.
 - [ ] Attempt 9/10+, DEM real, Canonical, cleanup, Railway, secrets e histórico não foram executados ou alterados.
+
+## A9.1 + R5.8 — POST-MERGE CORRECTION CLOSEOUT — 2026-10-06
+
+- [x] PR #53 merged by squash as `d7c1b3370dc5a3f0e9eaef45390eed8d7ecef5de`.
+- [x] Repaired stale OIDC test fixtures so trigger commit SHA and workflow-file SHA remain distinct and correctly bound.
+- [x] Repaired `attestor_source_identity` fixture to use the required `branch` field and explicit source identity shape.
+- [x] Removed the stale test reference to deleted migration `20261005195000_r58_5_live_attestation_pin_reconciliation.sql`; no migration was recreated.
+- [x] Reconciled the critical `worker.py` hash with the actual Railway deployment source: `50a53b607d26f00b4de05c5e8998611959e27bd1`.
+- [x] Post-correction Quality Gates #633 / run `37395367754`: **SUCCESS**. Web tests/lint/build and contract-sensitive parser tests passed; F553 R11.2 disposable execution completed successfully.
+- [x] No production DEM, Attempt 9/10+, Canonical admission, provenance mutation, secret mutation, or production database migration was executed.
+- [x] Railway production remained unchanged: deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313` remains **SUCCESS**, 1/1 replica online, zero recent failures/issues.
+- [x] Historical Railway staged patch `d66b5a12-a69b-4b9a-87b6-314f75c471cc` remains uncommitted and was not accepted because it is unrelated to the approved correction scope.
+- [ ] Post-A9.1 real DEM parity/determinism evidence and a new Runtime Attestation remain **NOT RUN / NOT PROVEN** and require separate explicit authorization.
+- [ ] Canonical admission and Attempt 9 remain locked.
