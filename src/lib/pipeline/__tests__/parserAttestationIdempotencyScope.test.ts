@@ -16,7 +16,7 @@ describe("R5.8.6 attestation idempotency scope", () => {
       "ON CONFLICT(attestation_digest) DO NOTHING RETURNING id INTO _id;",
     );
     expect(migration).toContain("WHERE attestation_digest=_attestation_digest");
-    expect(migration).toContain("R5_8_6_OLD_PROVENANCE_IDEMPOTENCY_CONSTRAINT_NOT_FOUND");
+    expect(migration).toContain("IF _constraint_name IS NOT NULL THEN");
   });
 
   it("does not delete or rewrite historical provenance or nonce rows", () => {
