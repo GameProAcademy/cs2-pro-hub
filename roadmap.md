@@ -1941,3 +1941,15 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [ ] Fresh real-DEM Python/WASM parity and determinism remain NOT RUN / NOT PROVEN and require separate explicit operator authorization.
 - [ ] Attempt 9/10+, production DEM processing, Canonical admission, and production data/secret/provenance mutation remain LOCKED.
 - [ ] PR #46 remains conflict-blocked and must not be force-merged.
+
+
+## POST-A9.1 RUNTIME ATTESTATION READINESS — 2026-10-06
+
+- [x] Re-read `.github/workflows/parser-runtime-attestation.yml` from current `main`: workflow is **manual-only** via `workflow_dispatch`, restricted to repository `GameProAcademy/cs2-pro-hub` and `main`.
+- [x] Reconfirm approved attestor workflow blob SHA remains `3070d8bae6c3f02093bbb2595138c913646c2e31`; no workflow-source drift was introduced by the A9.1 correction/documentation commits.
+- [x] Reconfirm the attestor still requires the frozen Railway parser revision `5703b1d88f21ee57fdd1d83722edf30e0f0c6f76` as an ancestor of `infra/cs2-parser-worker-v8`.
+- [x] Reconfirm the attestor still requires the protected Railway/OIDC/HMAC secrets and uploads evidence before delivery.
+- [x] Reconfirm Railway production remains healthy and unchanged at deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313`.
+- [x] No workflow dispatch was simulated, substituted, or triggered indirectly.
+- [ ] Fresh post-A9.1 Runtime Attestation remains **NOT RUN / NOT PROVEN** because the available GitHub connector exposes no `workflow_dispatch` operation. A historical attestation rerun would not be valid evidence for current `main` and must not be used.
+- [ ] Real DEM parity/determinism, Attempt 9/10+, Canonical admission, provenance mutation, secret mutation and Railway mutation remain LOCKED.
