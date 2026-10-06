@@ -8,7 +8,9 @@ The field-level comparator is prepared for header, players, identity, rounds, ev
 
 No Python or WASM reference output was generated. No field or event has runtime parity. `parsePlayerInfo` remains unavailable on the observed WASM surface and cannot be replaced by event-derived identity.
 
-The executable Python reference producer is `services/cs2-demo-parser/python_reference.py`. It accepts only an explicit existing `.dem` path, enforces the unchanged 128 MiB ceiling, hashes the exact bytes, invokes the existing Python parser, emits bounded domain evidence plus a SHA-bound run identity, and leaves `canonicalEligible=false`/`persisted=false`. With no path it returns exactly `NOT_RUN / NO_AUTHORIZED_REAL_DEM_FIXTURE`; it does not discover historical or production data.
+The executable Python reference producer is `services/cs2-demo-parser/python_reference.py`. It accepts only an explicit existing `.dem` path, enforces its existing 1,500 MiB ceiling, hashes the exact bytes, invokes the existing Python parser, emits bounded domain evidence plus a SHA-bound run identity, and leaves `canonicalEligible=false`/`persisted=false`. With no path it returns exactly `NOT_RUN / NO_AUTHORIZED_REAL_DEM_FIXTURE`; it does not discover historical or production data.
+
+The browser/client POC limit remains 128 MiB. A9.1 real-Dem execution is an isolated validation harness and does not constitute production browser support.
 
 The comparator preserves array order and duplicates, sorts object keys only, and distinguishes missing, `null`, `0`, `false`, type mismatch, value mismatch, unavailable API and parse failure. Determinism requires exactly two successful Python runs and two successful WASM runs with the same valid DEM SHA and stable parser/artifact identities.
 

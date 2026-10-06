@@ -143,9 +143,11 @@ function main() {
   const comparisons = domains.map((field) => {
     const pythonValue = domainValue(python, field);
     const wasmValue = domainValue(wasm, field);
+    const unavailable = wasm.domainAvailability?.[field] || python.domainAvailability?.[field];
     const normalizedPython = JSON.parse(stable(pythonValue));
     const normalizedWasm = JSON.parse(stable(wasmValue));
-    const equal = stable(normalizedPython) === stable(normalizedWasm);
+    const missing = pythonValue === null || wasmValue === null;
+    const equal = !unavailable && !missing && stable(normalizedPython) === stable(normalizedWasm);
     return {
       field,
       python_value: pythonValue,
@@ -153,7 +155,8 @@ function main() {
       normalized_python: normalizedPython,
       normalized_wasm: normalizedWasm,
       equal,
-      mismatch_reason: equal ? null : "SEMANTIC_MISMATCH",
+      mismatch_reason:
+        unavailable || (missing ? "MISSING_DOMAIN_EVIDENCE" : equal ? null : "SEMANTIC_MISMATCH"),
     };
   });
   const status = comparisons.every((row) => row.equal) ? "PASS" : "FAIL";
