@@ -331,8 +331,17 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
     try {
       const callStarted = performance.now();
       const fields = parser.listUpdatedFields(bytes);
-      apiCalls.push(apiEvidence("listUpdatedFields", true, true, true, undefined,
-        performance.now() - callStarted, fields));
+      apiCalls.push(
+        apiEvidence(
+          "listUpdatedFields",
+          true,
+          true,
+          true,
+          undefined,
+          performance.now() - callStarted,
+          fields,
+        ),
+      );
     } catch (error) {
       apiCalls.push(apiEvidence("listUpdatedFields", true, true, false, error));
     }
