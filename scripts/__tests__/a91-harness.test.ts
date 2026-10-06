@@ -36,20 +36,46 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(uploadPaths).toBeDefined();
     expect(uploadPaths).not.toMatch(/\*|\.dem\s*$/m);
     expect(uploadPaths?.trim().split("\n")).toHaveLength(7);
-    const names = uploadPaths?.trim().split("\n").map((line) => line.trim().split("/").at(-1)).sort();
-    expect(names).toEqual(["a91_real_dem_report.json", "parity_report.json", "determinism_report.json", "python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json"].sort());
+    const names = uploadPaths
+      ?.trim()
+      .split("\n")
+      .map((line) => line.trim().split("/").at(-1))
+      .sort();
+    expect(names).toEqual(
+      [
+        "a91_real_dem_report.json",
+        "parity_report.json",
+        "determinism_report.json",
+        "python_run_1.json",
+        "python_run_2.json",
+        "wasm_run_1.json",
+        "wasm_run_2.json",
+      ].sort(),
+    );
   });
   it("executes the worker's exact tick-call expression with five mock arguments", () => {
     const source = readFileSync("src/lib/client-parser/clientParser.worker.ts", "utf8");
-    const expression = source.match(/parser\.parseTicks\(bytes,\s*\[\.\.\.CLIENT_TICK_PROPERTIES\],\s*probeTicks,\s*\[\],\s*false\)/)?.[0];
+    const expression = source.match(
+      /parser\.parseTicks\(bytes,\s*\[\.\.\.CLIENT_TICK_PROPERTIES\],\s*probeTicks,\s*\[\],\s*false\)/,
+    )?.[0];
     expect(expression).toBeDefined();
     if (!expression) throw new Error("WORKER_TICK_SIGNATURE_REGRESSION");
     const bytes = new Uint8Array([1]);
     const ticks = new Int32Array([0, 10]);
     let observed: unknown[] = [];
-    const parser = { parseTicks: (...args: unknown[]) => { observed = args; return []; } };
+    const parser = {
+      parseTicks: (...args: unknown[]) => {
+        observed = args;
+        return [];
+      },
+    };
     // Evaluate only the actual call expression, not the worker or a DEM parser.
-    new Function("parser", "bytes", "CLIENT_TICK_PROPERTIES", "probeTicks", `return ${expression}`)(parser, bytes, ["health"], ticks);
+    new Function("parser", "bytes", "CLIENT_TICK_PROPERTIES", "probeTicks", `return ${expression}`)(
+      parser,
+      bytes,
+      ["health"],
+      ticks,
+    );
     expect(observed).toEqual([bytes, ["health"], ticks, [], false]);
     expect(source).toMatch(/wantedPlayers\?: unknown\[\]/);
   });

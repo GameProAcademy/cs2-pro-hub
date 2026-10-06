@@ -102,12 +102,21 @@ if (artifacts.length !== 4 || artifacts.some((path) => !existsSync(path))) {
     demo_sha256: shas.size === 1 ? runs[0].demoSha256 : null,
     runs: runs.map((run) => run.runIdentity ?? { runId: run.runId, runtime: run.runtime }),
     comparisons,
-    pythonDeterministic: valid && comparisons.filter((c) => c.runtime === "PYTHON").every((c) => c.equal),
-    wasmDeterministic: valid && comparisons.filter((c) => c.runtime === "WASM").every((c) => c.equal),
+    pythonDeterministic:
+      valid && comparisons.filter((c) => c.runtime === "PYTHON").every((c) => c.equal),
+    wasmDeterministic:
+      valid && comparisons.filter((c) => c.runtime === "WASM").every((c) => c.equal),
     identityStable: valid,
-    artifactStable: wasm.length === 2 && wasmArtifactIdentities.size === 1 && wasm.every((r) => Boolean(r.artifactIdentity)),
-    catalogStable: catalogIdentities.size === 1 && runs.every((r) => r.catalogVersion != null && Boolean(r.catalogDigest)),
-    contractStable: contractIdentities.size === 1 && runs.every((r) => r.contractVersion != null && Boolean(r.contractDigest)),
+    artifactStable:
+      wasm.length === 2 &&
+      wasmArtifactIdentities.size === 1 &&
+      wasm.every((r) => Boolean(r.artifactIdentity)),
+    catalogStable:
+      catalogIdentities.size === 1 &&
+      runs.every((r) => r.catalogVersion != null && Boolean(r.catalogDigest)),
+    contractStable:
+      contractIdentities.size === 1 &&
+      runs.every((r) => r.contractVersion != null && Boolean(r.contractDigest)),
     demoStable: shas.size === 1 && runs.every((r) => Boolean(r.demoSha256)),
     determinismDecision: status,
     determinism_digest: digest(comparisons),

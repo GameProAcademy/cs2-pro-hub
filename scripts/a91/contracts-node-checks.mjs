@@ -51,16 +51,41 @@ function setup() {
     resultDigest: digest(normalizedResult),
   }));
   for (const run of runs) {
-    for (const key of ["headerEvidence", "mapEvidence", "timingEvidence", "playerInventory", "eventEvidence", "roundEvidence", "grenadeEvidence", "bombEvidence", "damageEvidence", "deathEvidence", "weaponEvidence", "economyEvidence", "tickDomainEvidence"])
+    for (const key of [
+      "headerEvidence",
+      "mapEvidence",
+      "timingEvidence",
+      "playerInventory",
+      "eventEvidence",
+      "roundEvidence",
+      "grenadeEvidence",
+      "bombEvidence",
+      "damageEvidence",
+      "deathEvidence",
+      "weaponEvidence",
+      "economyEvidence",
+      "tickDomainEvidence",
+    ])
       run[key] = { value: [null, 0, false] };
   }
   runs[2].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
   runs[3].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
-  const comparisons = ["PYTHON", "WASM"].map((runtime) => ({ field: "normalizedResultDigest", runtime, equal: true }));
-  return { runs, parity: parityReport(runs[0], runs[2], FIXTURE.sha256), determinism: {
-    status: "PASS", demo_sha256: FIXTURE.sha256, runs: runs.map((r) => ({ runId: r.runId, runtime: r.runtime })),
-    comparisons, determinism_digest: digest(comparisons),
-  } };
+  const comparisons = ["PYTHON", "WASM"].map((runtime) => ({
+    field: "normalizedResultDigest",
+    runtime,
+    equal: true,
+  }));
+  return {
+    runs,
+    parity: parityReport(runs[0], runs[2], FIXTURE.sha256),
+    determinism: {
+      status: "PASS",
+      demo_sha256: FIXTURE.sha256,
+      runs: runs.map((r) => ({ runId: r.runId, runtime: r.runtime })),
+      comparisons,
+      determinism_digest: digest(comparisons),
+    },
+  };
 }
 test("URL and authorization are strict and errors do not echo the URL", () => {
   assert.throws(() => validateUrl(""), /NO_DEM_URL/);
@@ -205,7 +230,7 @@ test("capability-aware parity retains all domains without treating absence as eq
 test("decision engine accepts an explicit capability exclusion only with both proven gates", () => {
   // Simulated envelopes exercise the decision predicate only, never real evidence.
   const s = setup();
-  s.runs.forEach((r) => r.test_fixture_only = false);
+  s.runs.forEach((r) => (r.test_fixture_only = false));
   let result = decide(s.runs, s.parity, s.determinism, surface, manifest);
   assert.equal(result.status, "PASS");
   for (const key of Object.keys(locks)) assert.equal(result[key], false);
@@ -214,7 +239,10 @@ test("decision engine accepts an explicit capability exclusion only with both pr
   s.determinism.status = "PASS";
   s.parity.status = "FAIL";
   assert.equal(decide(s.runs, s.parity, s.determinism, surface, manifest).status, "FAIL");
-  assert.equal(decide(s.runs.slice(0, 2), s.parity, s.determinism, surface, manifest).status, "FAIL");
+  assert.equal(
+    decide(s.runs.slice(0, 2), s.parity, s.determinism, surface, manifest).status,
+    "FAIL",
+  );
   assert.equal(decide(s.runs.slice(2), s.parity, s.determinism, surface, manifest).status, "FAIL");
 });
 test("parity proof cannot omit, duplicate, forge or relabel any dimension", () => {
@@ -232,6 +260,9 @@ test("parity proof cannot omit, duplicate, forge or relabel any dimension", () =
   changed[5].mismatch_reason = "";
   assert.equal(validParityComparisons(changed), false);
   assert.notEqual(digest(changed), s.parity.parity_digest);
-  assert.deepEqual(s.parity.comparisons.map((c) => c.field), [...DOMAINS]);
+  assert.deepEqual(
+    s.parity.comparisons.map((c) => c.field),
+    [...DOMAINS],
+  );
   assert.deepEqual(compareDomains(s.runs[0], s.runs[2]), s.parity.comparisons);
 });

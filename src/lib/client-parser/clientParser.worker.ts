@@ -110,7 +110,13 @@ type WasmApi = {
     player?: unknown[],
     other?: unknown[],
   ) => unknown;
-  parseTicks: (file: Uint8Array, props?: unknown[], ticks?: Int32Array, wantedPlayers?: unknown[], structOfArrays?: boolean) => unknown;
+  parseTicks: (
+    file: Uint8Array,
+    props?: unknown[],
+    ticks?: Int32Array,
+    wantedPlayers?: unknown[],
+    structOfArrays?: boolean,
+  ) => unknown;
   parseGrenades?: (file: Uint8Array) => unknown;
   parsePlayerInfo?: (file: Uint8Array) => unknown;
 };
