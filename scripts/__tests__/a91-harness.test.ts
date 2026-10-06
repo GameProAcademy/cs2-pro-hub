@@ -28,6 +28,9 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(source).not.toContain("contents: write");
     expect(source).toContain("steps.upload-guard.outputs.safe == 'true'");
     expect(source).not.toContain("set -x");
-    expect(source).not.toMatch(/\/\*|\.dem\s*$/m);
+    const uploadPaths = source.split("          path: |")[1]?.split("          retention-days:")[0];
+    expect(uploadPaths).toBeDefined();
+    expect(uploadPaths).not.toMatch(/\*|\.dem\s*$/m);
+    expect(uploadPaths?.trim().split("\n")).toHaveLength(7);
   });
 });
