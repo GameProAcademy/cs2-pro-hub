@@ -18,10 +18,6 @@ const repairMigration = readFileSync(
   resolve("supabase/migrations/20260929110000_r58_1_recorder_pin_repair.sql"),
   "utf8",
 );
-const r58_5Migration = readFileSync(
-  resolve("supabase/migrations/20261005195000_r58_5_live_attestation_pin_reconciliation.sql"),
-  "utf8",
-);
 const workflowRegistry = JSON.parse(
   readFileSync(resolve("scripts/approved_attestation_workflow.json"), "utf8"),
 ) as { source_sha: string };
