@@ -1,14 +1,21 @@
-# CURRENT STATE RECONCILIATION — 2026-09-29
+# CURRENT STATE RECONCILIATION — 2026-10-06
 
-## H.3-E.5-R FINAL RUNTIME PARITY CLOSURE — 2026-10-06
+## H.3-E.5-R FINAL RUNTIME PARITY CLOSURE — CURRENT TRUTH
 
-- [x] Identify synchronized GitHub main/Lovable source `a1e8f9b6d59c0936ffea86f0327ab252524c4a84` and inspect PR #60.
-- [x] Correct the PR #60 route-registration test without `process.cwd()`, retaining all assertions; GitHub PR branch correction is `503b363a57de4b621ac2b8933d3d54d7d414fb84`, with no merge or workflow dispatch.
-- [x] Validate local registration test, ESLint (zero errors), public-build configuration and 105 test files / 1,420 tests; automatic preview build succeeds.
-- [ ] Publication blocked: `verify:browser-parser-sealed` fails with `H3E91_BROWSER_BUILD_OUTPUT_MISSING`; browser bundle/source-map security verification remains NOT PROVEN. PR #60 current-revision CI is pending, not PASS.
-- [x] Read-only public GET at 2026-10-06T08:39:12Z returns HTTP 200 and exact expected fingerprint on gameprohub.lovable.app, gamepro.network and www.gamepro.network; this proves only the fingerprint subgate, not the complete publication revision or milestone.
-- [ ] Complete current-revision CI, generated-browser security evidence and independently identified published revision before any new publication; no publication was requested in this round.
-- [x] Preserve attestation #36, production DEM, Attempt 9/10+ and Canonical locks; no Railway, staged patch, production database or secret mutations.
+- [x] PR #60 route-registration guard was corrected, Quality Gates #666 / run `37437527249` completed **SUCCESS**, and the corrected branch head `503b363a57de4b621ac2b8933d3d54d7d414fb84` was squash-merged.
+- [x] Current GitHub `main` is `828b01b373cdb9afa6dbcd9bd536b3b4ed9cde7a`; compare against `a1e8f9b6d59c0936ffea86f0327ab252524c4a84` is fast-forward-only with PR #60 changes; no force merge was used.
+- [x] PR #60 CI passed the route-registration test, web tests/lint/build, contract-sensitive parser tests and F553 R11.2 disposable execution, including browser isolation and production browser-output build/check.
+- [x] Lovable project `91478977-16c3-4839-ae28-6796024bcfc9` is synchronized to `828b01b373cdb9afa6dbcd9bd536b3b4ed9cde7a`, published=true, status=ready, agentFinished=true.
+- [x] A production publication was explicitly requested through the Lovable deploy operation; deployment id `4168ed02-5716-4665-a707-5b4b7dbba945` was returned as `pending`.
+- [ ] The exact published runtime revision for `828b01b373cdb9afa6dbcd9bd536b3b4ed9cde7a` is **NOT INDEPENDENTLY PROVEN**. The available web/container environment cannot currently resolve/access the public domains, so no current fingerprint claim is being fabricated.
+- [ ] Browser bundle/source-map security evidence remains **NOT PROVEN** as a distinct release subgate; the PR CI result proves the disposable/build checks, not a current public-production source-map inspection.
+- [x] Historical Attestation #31 and all pre-A9.1 provenance remain preserved and are not reused as post-A9.1 evidence.
+- [ ] Fresh post-A9.1 Runtime Attestation #36 remains **NOT RUN / NOT PROVEN**.
+- [ ] Fresh real-DEM Python/WASM parity and determinism remain **NOT RUN / NOT PROVEN**.
+- [x] Attempt 9/10+, production DEM, Canonical admission, Railway mutation, staged EnvironmentPatch acceptance and secret mutation remain locked/untouched.
+
+**Current decision:** repository/CI/source synchronization is **PASS**; production execution remains **BLOCKED** until the exact published `828b...` runtime is independently identified, the remaining publication/security subgates are reconciled, and a fresh manually authorized Runtime Attestation #36 is executed and independently verified. Real DEM parity/determinism remains the next downstream evidence gate.
+
 
 ## POST-LOVABLE COMPLETION RECONCILIATION — 2026-10-06
 
