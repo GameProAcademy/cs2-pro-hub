@@ -8,6 +8,12 @@ The field-level comparator is prepared for header, players, identity, rounds, ev
 
 No Python or WASM reference output was generated. No field or event has runtime parity. `parsePlayerInfo` remains unavailable on the observed WASM surface and cannot be replaced by event-derived identity.
 
+## A9.1-R1.1 capability-aware preparation
+
+All 16 A9.1 domains remain present. Comparable domains require PASS; unavailable runtime APIs yield explicit NOT_COMPARABLE, equal=null and NOT_AVAILABLE_ON_WASM. This exclusion is neither equality nor a domain PASS. Missing evidence without a supported reason, semantic mismatch, parse failure, NOT_RUN or BLOCKED prevents gate PASS. Domain lists and parity_digest bind statuses, availability, normalized values and reasons. Synthetic equal/excluded cases validate mechanics only; real parity is still NOT_RUN.
+
+The pinned artifact exposes seven functions and omits parsePlayerInfo/parseChatMessages. The catalog marks only parsePlayerInfo upstreamSupported=true: UPSTREAM_SUPPORTED_BUT_RUNTIME_EXPORT_MISSING. Chat upstream support is false in the pinned catalog. No reconstruction or inferred identity is authorized. Differences in Python/WASM evidence shapes remain honest FAIL, not silently discarded.
+
 The executable Python reference producer is `services/cs2-demo-parser/python_reference.py`. It accepts only an explicit existing `.dem` path, enforces its existing 1,500 MiB ceiling, hashes the exact bytes, invokes the existing Python parser, emits bounded domain evidence plus a SHA-bound run identity, and leaves `canonicalEligible=false`/`persisted=false`. With no path it returns exactly `NOT_RUN / NO_AUTHORIZED_REAL_DEM_FIXTURE`; it does not discover historical or production data.
 
 The browser/client POC limit remains 128 MiB. A9.1 real-Dem execution is an isolated validation harness and does not constitute production browser support.

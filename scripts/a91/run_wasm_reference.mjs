@@ -135,7 +135,7 @@ export function runWasm(path, authorization) {
     .map((f) => f.propertyName)
     .slice(0, 32);
   const tickValues = wantedTicks.length
-    ? call("parseTicks", [requestedFields, wantedTicks, [], false], {
+    ? call("parseTicks", [requestedFields, new Int32Array(wantedTicks), [], false], {
         requestedFields,
         wantedTicks,
         authoritativeDomain: false,
@@ -181,6 +181,18 @@ export function runWasm(path, authorization) {
         readFileSync(resolve(root, "public/client-parser/demoparser2/0.42.0/demoparser2.js")),
       ),
       wasmSha256: manifest.wasm.sha256,
+    },
+    environmentFingerprint: {
+      nodeVersion: process.version,
+      wasmBindingSha256: manifest.binding.sha256,
+      wasmBinarySha256: manifest.wasm.sha256,
+      artifactIdentity: digest({
+        bindingSha256: manifest.binding.sha256,
+        wasmSha256: manifest.wasm.sha256,
+        sourceCommit: manifest.sourceCommit,
+        sourceTag: manifest.sourceTag,
+        parserVersion: "0.42.0",
+      }),
     },
     apiCalls: calls,
     fieldInventory: sample(fields),

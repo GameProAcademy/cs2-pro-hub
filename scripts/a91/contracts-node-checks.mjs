@@ -13,6 +13,7 @@ import {
   sanitizeReport,
 } from "./contracts.mjs";
 import { loadPinnedParser } from "./run_wasm_reference.mjs";
+import { DOMAINS, parityReport, compareDomains, validParityComparisons } from "./parity.mjs";
 
 const surface = JSON.parse(
   readFileSync("docs/client-parser/upstream-surface-manifest.json", "utf8"),
@@ -49,7 +50,42 @@ function setup() {
     normalizedResultDigest: digest(normalizedResult),
     resultDigest: digest(normalizedResult),
   }));
-  return { runs, parity: { status: "PASS" }, determinism: { status: "PASS" } };
+  for (const run of runs) {
+    for (const key of [
+      "headerEvidence",
+      "mapEvidence",
+      "timingEvidence",
+      "playerInventory",
+      "eventEvidence",
+      "roundEvidence",
+      "grenadeEvidence",
+      "bombEvidence",
+      "damageEvidence",
+      "deathEvidence",
+      "weaponEvidence",
+      "economyEvidence",
+      "tickDomainEvidence",
+    ])
+      run[key] = { value: [null, 0, false] };
+  }
+  runs[2].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
+  runs[3].domainAvailability = { player_identity: "NOT_AVAILABLE_ON_WASM" };
+  const comparisons = ["PYTHON", "WASM"].map((runtime) => ({
+    field: "normalizedResultDigest",
+    runtime,
+    equal: true,
+  }));
+  return {
+    runs,
+    parity: parityReport(runs[0], runs[2], FIXTURE.sha256),
+    determinism: {
+      status: "PASS",
+      demo_sha256: FIXTURE.sha256,
+      runs: runs.map((r) => ({ runId: r.runId, runtime: r.runtime })),
+      comparisons,
+      determinism_digest: digest(comparisons),
+    },
+  };
 }
 test("URL and authorization are strict and errors do not echo the URL", () => {
   assert.throws(() => validateUrl(""), /NO_DEM_URL/);
@@ -171,4 +207,62 @@ test("absence, raw secrets and URLs cannot become uploadable evidence", () => {
     { v: NaN },
   ])
     assert.throws(() => sanitizeReport(value));
+});
+
+test("capability-aware parity retains all domains without treating absence as equality", () => {
+  const s = setup();
+  assert.equal(s.parity.status, "PASS");
+  assert.equal(s.parity.comparisons.length, 16);
+  assert.equal(s.parity.comparablePassCount, 15);
+  assert.equal(s.parity.notComparableCount, 1);
+  const identity = s.parity.comparisons.find((c) => c.field === "player_identity");
+  assert.equal(identity.status, "NOT_COMPARABLE");
+  assert.equal(identity.equal, null);
+  assert.equal(identity.mismatch_reason, "NOT_AVAILABLE_ON_WASM");
+  assert.notEqual(identity.status, "PASS");
+  s.runs[2].headerEvidence = { different: true };
+  assert.equal(parityReport(s.runs[0], s.runs[2], FIXTURE.sha256).status, "FAIL");
+  delete s.runs[2].headerEvidence;
+  assert.equal(parityReport(s.runs[0], s.runs[2], FIXTURE.sha256).status, "FAIL");
+  delete s.runs[0].playerInventory;
+  assert.equal(parityReport(s.runs[0], s.runs[2], FIXTURE.sha256).status, "FAIL");
+});
+test("decision engine accepts an explicit capability exclusion only with both proven gates", () => {
+  // Simulated envelopes exercise the decision predicate only, never real evidence.
+  const s = setup();
+  s.runs.forEach((r) => (r.test_fixture_only = false));
+  let result = decide(s.runs, s.parity, s.determinism, surface, manifest);
+  assert.equal(result.status, "PASS");
+  for (const key of Object.keys(locks)) assert.equal(result[key], false);
+  s.determinism.status = "FAIL";
+  assert.equal(decide(s.runs, s.parity, s.determinism, surface, manifest).status, "FAIL");
+  s.determinism.status = "PASS";
+  s.parity.status = "FAIL";
+  assert.equal(decide(s.runs, s.parity, s.determinism, surface, manifest).status, "FAIL");
+  assert.equal(
+    decide(s.runs.slice(0, 2), s.parity, s.determinism, surface, manifest).status,
+    "FAIL",
+  );
+  assert.equal(decide(s.runs.slice(2), s.parity, s.determinism, surface, manifest).status, "FAIL");
+});
+test("parity proof cannot omit, duplicate, forge or relabel any dimension", () => {
+  const s = setup();
+  for (const status of ["FAIL", "NOT_RUN", "BLOCKED", "COMPARABLE"]) {
+    const comparisons = structuredClone(s.parity.comparisons);
+    comparisons[0].status = status;
+    assert.equal(validParityComparisons(comparisons), false);
+  }
+  assert.equal(validParityComparisons(s.parity.comparisons.slice(1)), false);
+  const duplicate = structuredClone(s.parity.comparisons);
+  duplicate[0].field = duplicate[1].field;
+  assert.equal(validParityComparisons(duplicate), false);
+  const changed = structuredClone(s.parity.comparisons);
+  changed[5].mismatch_reason = "";
+  assert.equal(validParityComparisons(changed), false);
+  assert.notEqual(digest(changed), s.parity.parity_digest);
+  assert.deepEqual(
+    s.parity.comparisons.map((c) => c.field),
+    [...DOMAINS],
+  );
+  assert.deepEqual(compareDomains(s.runs[0], s.runs[2]), s.parity.comparisons);
 });

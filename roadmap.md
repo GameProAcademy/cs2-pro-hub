@@ -2,6 +2,8 @@
 
 ## A9.1 controlled real DEM harness
 
+- [ ] A9.1-R1.1: corrections IMPLEMENTED; synthetic suites and lint PASS; final closure BLOCKED on absent generated browser output (`H3E91_BROWSER_BUILD_OUTPUT_MISSING`) and independent compiler/build evidence; no real execution. See docs/A9_1_REAL_DEM_EXECUTION.md.
+- [ ] A9.2 Browser Large DEM Capability Gate — LOCKED; future 473 MB browser worker, memory/hash/parse/startup/WASM-load/result-size/UI responsiveness/abort/cleanup evidence; not executed here.
 - [x] A9.1-R1: implement isolated manual workflow, validation, real WASM runner, final fail-closed decision, security/cleanup tests and documentation (no DEM execution). Local validation recorded in docs/A9_1_REAL_DEM_EXECUTION.md; deployed browser-bundle proof remains NOT PROVEN.
 - [ ] A9.1-R2: real execution — LOCKED UNTIL MANUAL WORKFLOW DISPATCH.
 - [ ] A9.1-R3: Python × WASM parity — LOCKED UNTIL REAL RUNS.

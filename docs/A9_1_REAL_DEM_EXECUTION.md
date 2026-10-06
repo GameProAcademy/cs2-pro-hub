@@ -10,9 +10,10 @@ The reviewed workflow must be on `main`, and an operator must independently auth
 - Exact size: **473748061 bytes**
 - SHA-256: `0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d`
 - Authorization reference: `A9.1-M1-CACHE-REAL-DEM`
-- Required manual inputs: `demo_url`, `expected_sha256`, `expected_size_bytes`, `authorization_ref`, `filename`. The URL has no default and must be HTTPS without embedded credentials.
+- Required non-secret manual inputs: `expected_sha256`, `expected_size_bytes`, `authorization_ref`, `filename`, each compared with the exact official pin.
+- The private URL comes only from the future GitHub Actions secret `A91_DEMO_URL`. No URL input exists. Missing secret fails closed as `A91_DEMO_URL_MISSING`; its value is never printed, persisted, or passed in argv. This hardening does not create or change that secret.
 
-These pins are laboratory inputs, not production execution authority. The URL is passed through environment variables, never interpolated into a logged shell command. Curl output is discarded, retries are bounded, redirects are HTTPS-only, and file size is capped. Size, SHA and the existing streaming `validate_demo_structure()` must pass before any parser call. Temporary files live exclusively in `RUNNER_TEMP`.
+These pins are laboratory inputs, not production execution authority. Curl reads its URL configuration from stdin; child environments omit the URL secret. Curl output is discarded, retries are bounded, redirects are HTTPS-only, and file size is capped. Size, SHA and the existing streaming `validate_demo_structure()` must pass before any parser call. Temporary files live exclusively in `RUNNER_TEMP`.
 
 ## Runtime sequence
 
@@ -26,9 +27,23 @@ Bounded samples retain original array order, duplicates, null, zero and false. F
 
 ## Parity is not determinism
 
-Both existing scripts remain in use. Parity compares all 16 existing A9.1 domains conservatively. Missing domains and `NOT_AVAILABLE_ON_WASM` are not equality. `parsePlayerInfo` is absent; player identity is never inferred, so this pinned artifact cannot currently obtain an all-domain parity PASS. The Python and WASM producers also expose different evidence shapes; unexplained mismatches remain FAIL, not normalized away.
+Both existing scripts remain in use. Capability-aware parity preserves all 16 domains: header, map, tickrate, playback_ticks, players, player_identity, events, rounds, grenades, bomb, damage, deaths, weapons, economy, tick_properties and game_state. Comparable evidence must PASS semantic comparison. Explicit `NOT_AVAILABLE_ON_WASM` is `NOT_COMPARABLE`, with `equal=null`: neither equality, error nor PASS for that domain. A gate may PASS with documented capability exclusions only if every comparable domain passes and none is FAIL, NOT_RUN or BLOCKED. Missing Python evidence is not waived by WASM absence. `parsePlayerInfo` is never fabricated or inferred.
+
+The parity digest binds domain, status, comparability, availability, both normalized values and mismatch reason. Cross-runtime domain lists retain exclusions and reasons; field count remains null with `FIELD_LEVEL_COMPARISON_NOT_IMPLEMENTED`, never fabricated. The producers expose different evidence shapes and field requests; unexplained mismatches remain `FAIL / SEMANTIC_MISMATCH`. No local tests establish real parity or guarantee a future real PASS.
+
+The worker and reference use `parseTicks(bytes, properties, ticks, [], false)`; wanted players occupies argument four. The worker records `listUpdatedFields` independently. Singular `parseEvent` calls retain per-event field requests; plural `parseEvents` is exported but not invoked, and no call-success claim is made for it.
+
+### Pinned artifact export audit
+
+- declaredExports: listGameEvents, listUpdatedFields, parseEvent, parseEvents, parseGrenades, parseHeader, parseTicks.
+- observedExports: the same seven functions, verified by initialization-only tests (no parsing).
+- missingExports: parsePlayerInfo, parseChatMessages.
+- upstreamExpectedExports: the seven declared functions plus parsePlayerInfo. The pinned catalog marks parsePlayerInfo upstreamSupported=true and parseChatMessages upstreamSupported=false. Player information is therefore `UPSTREAM_SUPPORTED_BUT_RUNTIME_EXPORT_MISSING`, while chat support is not proven upstream. Neither status is an implementation license.
+- No artifact reconstruction, parser identity change or inferred player identity occurred. Declared/observed exports do not mean every function was exercised.
 
 Determinism compares two runs **within each runtime** and requires stable nonempty result digests, four unique run IDs, exact counts, common DEM/parser/catalog/contract identity and stable WASM identity. Different runtime results may be individually deterministic while parity fails. The final decision validates identities, rehashes normalized result content, checks report digests, requires both independent gates and rejects `test_fixture_only`. No hash-only or fixture-only PASS is accepted.
+
+Reports expose pythonDeterministic, wasmDeterministic, identityStable, artifactStable, catalogStable, contractStable, demoStable and determinismDecision. Python fingerprints include pythonVersion, platform, demoparser2Version and requirementsDigest; WASM fingerprints include nodeVersion, both artifact hashes and artifactIdentity. These complement pinned identities; they never replace them or include private paths. A9.2 remains LOCKED: A9.1 does not prove 473 MB browser support or change the 128 MiB ceiling.
 
 ## Artifacts, cleanup and locks
 
@@ -43,11 +58,13 @@ Memory exhaustion, timeouts and resource failure remain explicit failures. Unit 
 | ITEM | STATUS | EVIDENCE |
 | --- | --- | --- |
 | A9.1-R1 implementation | IMPLEMENTED | Isolated scripts, manual workflow, safety tests and this document |
-| Full Vitest suite | PASS | 106 files, 1,423 tests; includes Node safety checks and Python harness checks |
-| Python harness mechanics | PASS | 6 synthetic tests; no parser or network calls |
+| Full Vitest suite | PASS | R1.1: 106 files, 1,426 tests; includes Node safety checks and Python harness checks |
+| Python harness mechanics | PASS | R1.1: 12 synthetic tests; no parser or network calls |
+| Node contracts | PASS | 11 tests, including capability exclusions, mismatches, identity and decision cases |
 | ESLint | PASS | Zero errors; nine existing warnings in the full repository |
 | Public build configuration | PASS | `PUBLIC_BUILD_CONFIG_OK` |
 | Automatic compilation | PASS | Observability recorded `build OK` after code edits |
+| Manual TypeScript/build commands | NOT RUN | Platform requires automatic compilation/build; manual build/typecheck was not run |
 | Sealed browser-output inspection | NOT PROVEN | Checker cannot find generated browser output: `H3E91_BROWSER_BUILD_OUTPUT_MISSING`; no manual build was run |
 | Real DEM execution | NOT RUN | No download, real parsing or workflow dispatch performed |
 | Real Python/WASM parity and determinism | NOT PROVEN | Local synthetic tests are not real execution evidence |
@@ -55,3 +72,17 @@ Memory exhaustion, timeouts and resource failure remain explicit failures. Unit 
 | Production changes | NOT RUN | No deployment, Railway, live database or secret mutation performed |
 
 The local Python test intentionally emits `A9.1 FAIL` for missing DEM URL and verifies cleanup and no parser invocation; this is expected negative-test evidence, not a real execution failure. No `.dem` file is tracked. No PR, merge or new release commit was created by this task; repository synchronization is managed by Lovable.
+
+## A9.1-R1.1 delivery reconciliation
+
+| ITEM | STATUS | EVIDENCE |
+| --- | --- | --- |
+| Corrections implemented | PASS | Capability-aware parity, exact five-argument ticks, URL secret/stdin protection, fingerprints and regression tests |
+| Complete R1.1 closure | BLOCKED | Browser-output seal is NOT PROVEN; no fabricated compiler/build or remote CI attestation |
+| Git whitespace / tracked DEM | PASS | git diff --check; git ls-files '*.dem' returns none |
+| A9.1-R2–R5 and A9.2 | BLOCKED | No workflow dispatch or real execution; independent evidence required |
+| Attempt 9 / Canonical / production DEM | BLOCKED | All four authorization/eligibility flags false |
+| Railway / live database / secrets | NOT RUN | No changes or live service calls in this correction |
+| Local source identity checkpoint | VERIFIED | HEAD 79d3f9deb7b753296e2302a87d04d7793165077f; branch edit/edt-31b8930c-5114-49c0-9df6-531d491c507d; sync managed externally, not a release commit |
+
+Files changed: scripts/a91/parity.mjs, contracts.mjs, execute.py, run_wasm_reference.mjs, contracts-node-checks.mjs, test_execute.py; scripts/run_python_wasm_parity.mjs and run_parser_determinism.mjs; scripts/__tests__/a91-harness.test.ts; clientParser.worker.ts and its clientParser.test.ts; the manual a91-real-dem-gate workflow; this document, F2_10_PARITY_REPORT.md, F2_10_DETERMINISM_REPORT.md, roadmap.md and AGENTS.md. No UI page was edited. No real run artifacts were produced; synthetic reports remain temporary.
