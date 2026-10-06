@@ -10,14 +10,14 @@ import execute
 
 class HarnessTests(unittest.TestCase):
     def test_missing_and_http_url(self):
-        with self.assertRaisesRegex(ValueError, "NO_DEM_URL"):
+        with self.assertRaisesRegex(ValueError, "A91_DEMO_URL_MISSING"):
             execute.inputs({})
         with self.assertRaisesRegex(ValueError, "INVALID_DEM_URL"):
-            execute.inputs({"DEMO_URL": "http://example.invalid"})
+            execute.inputs({"A91_DEMO_URL": "http://example.invalid"})
 
     def test_authorization_mismatch(self):
         with self.assertRaisesRegex(ValueError, "AUTHORIZATION_MISMATCH"):
-            execute.inputs({"DEMO_URL": "https://example.invalid"})
+            execute.inputs({"A91_DEMO_URL": "https://example.invalid"})
 
     def test_file_validation(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -66,6 +66,46 @@ class HarnessTests(unittest.TestCase):
             report = json.loads((Path(temp) / "a91-artifacts/a91_real_dem_report.json").read_text())
             self.assertEqual(report["status"], "FAIL")
             self.assertFalse(report["productionAuthorization"])
+
+    def environment(self, url):
+        return {"A91_DEMO_URL": url, "DEMO_FILENAME": execute.FILENAME, "EXPECTED_SHA256": execute.SHA,
+                "EXPECTED_SIZE_BYTES": str(execute.SIZE), "AUTHORIZATION_REF": execute.AUTH}
+
+    def test_https_and_credential_rejection(self):
+        self.assertEqual(execute.inputs(self.environment("https://example.invalid/a?sig=test")), "https://example.invalid/a?sig=test")
+        for url in ("https://user:pass@example.invalid/a", "https://example.invalid/a\ninvalid"):
+            with self.assertRaisesRegex(ValueError, "INVALID_DEM_URL"):
+                execute.inputs(self.environment(url))
+
+    def test_url_never_in_argv_or_child_environment(self):
+        url = "https://private.example.invalid/a?signature=synthetic"
+        with patch.object(execute.subprocess, "run") as subprocess_run, patch.dict(execute.os.environ, {"A91_DEMO_URL": url}):
+            subprocess_run.return_value.returncode = 0
+            self.assertEqual(execute.download(Path("/tmp/synthetic.dem"), url), 0)
+            argv = subprocess_run.call_args.args[0]
+            kwargs = subprocess_run.call_args.kwargs
+            self.assertNotIn(url, " ".join(argv))
+            self.assertNotIn("A91_DEMO_URL", kwargs["env"])
+            self.assertIn(url.encode(), kwargs["input"])
+            self.assertIn("--config", argv)
+
+    def test_private_host_query_and_header_never_upload(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            for leak in ("private.example.invalid", "?signature=abc", "Authorization: redacted", "A91_DEMO_URL"):
+                (directory / "a91_real_dem_report.json").write_text(json.dumps({"leak": leak}))
+                with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
+                    execute.seal(directory, "https://private.example.invalid/a")
+
+    def test_preparser_download_validation_failure_never_calls_parser(self):
+        for reason in ("A91_DEM_SIZE_MISMATCH", "A91_DEM_SHA256_MISMATCH"):
+            with tempfile.TemporaryDirectory() as temp:
+                env = self.environment("https://example.invalid/a")
+                env.update(RUNNER_TEMP=temp, GITHUB_EVENT_NAME="workflow_dispatch", GITHUB_REF="refs/heads/main")
+                with patch.dict(execute.os.environ, env, clear=True), patch.object(execute, "download", return_value=0), patch.object(execute, "validate_download", side_effect=ValueError(reason)), patch.object(execute, "run") as run:
+                    self.assertEqual(execute.main(), 1)
+                    run.assert_not_called()
+                    self.assertFalse(list(Path(temp).glob("a91-private-*")))
 
 
 if __name__ == "__main__":
