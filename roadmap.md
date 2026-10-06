@@ -1953,3 +1953,19 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] No workflow dispatch was simulated, substituted, or triggered indirectly.
 - [ ] Fresh post-A9.1 Runtime Attestation remains **NOT RUN / NOT PROVEN** because the available GitHub connector exposes no `workflow_dispatch` operation. A historical attestation rerun would not be valid evidence for current `main` and must not be used.
 - [ ] Real DEM parity/determinism, Attempt 9/10+, Canonical admission, provenance mutation, secret mutation and Railway mutation remain LOCKED.
+
+
+## A9.1 + R5.8.6 — POST-MERGE CLOSEOUT — 2026-10-06
+
+- [x] PR #56 merged by squash after Quality Gates #652 completed successfully.
+- [x] Quality Gates #652 / run 37415911896: Web tests/lint/build PASS; Contract-sensitive parser tests PASS; F553 R11.2 disposable execution PASS through artifact completeness, evidence preservation and teardown.
+- [x] R5.8.6 migration correction validated against the disposable schema; absence of the legacy deployment-wide constraint is now tolerated, while presence is still safely removed before the attestation-digest uniqueness boundary is installed.
+- [x] Attestation provenance idempotency is now scoped to `attestation_digest`; exact digest replay resolves the existing provenance row, while distinct attestations may prove the same frozen Railway deployment.
+- [x] PR #56 merge commit: `5385b7d16edd3f4574c39fd9015775b5c36aa903`.
+- [x] No provenance/nonce DELETE, UPDATE or TRUNCATE; no DEM, Attempt 9+, Canonical admission, secret mutation, Railway mutation or Lovable interaction was performed.
+- [ ] Live project-database application of R5.8.6 remains NOT PROVEN because the authoritative DB is Lovable-managed and no independent authorized live-DB evidence is available in this execution context.
+- [ ] Post-A9.1 Runtime Attestation remains NOT RUN / NOT PROVEN.
+- [ ] Fresh real-DEM Python/WASM parity and determinism remain NOT RUN / NOT PROVEN.
+- [ ] Attempt 9/10+, production DEM processing and Canonical admission remain LOCKED.
+
+**Current decision: repository + disposable CI gate CLOSED/PASS; production execution gate remains BLOCKED pending independent live-DB reconciliation and separately authorized post-A9.1 Runtime Attestation.**
