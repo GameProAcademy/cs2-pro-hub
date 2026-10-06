@@ -256,7 +256,11 @@ def build_attestation() -> dict[str, Any]:
         branch_contains_commit = False
         statuses.append("RUNTIME_BRANCH_DOES_NOT_CONTAIN_COMMIT")
 
-    # Critical source hashes attest the exact deployed source commit, not the semantic\n    # demoparser revision. The runtime can report semantic revision 5703... while\n    # Railway deploys source commit 91a...; conflating these identities caused the\n    # server-side recorder to reject otherwise valid post-A9.1 evidence.\n    observed_hashes: dict[str, dict[str, Any]] = {}
+    # Critical source hashes attest the exact deployed source commit, not the semantic
+    # demoparser revision. The runtime can report semantic revision 5703... while
+    # Railway deploys source commit 91a...; conflating these identities caused the
+    # server-side recorder to reject otherwise valid post-A9.1 evidence.
+    observed_hashes: dict[str, dict[str, Any]] = {}
     for path, expected in EXPECTED_HASHES.items():
         try:
             observed = git_blob_sha1(git_object_bytes(f"{DEPLOYMENT_SOURCE_COMMIT}:{path}"))
