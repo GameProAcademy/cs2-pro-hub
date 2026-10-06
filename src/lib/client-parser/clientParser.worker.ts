@@ -103,6 +103,7 @@ function roundEvidenceFromSamples(
 type WasmApi = {
   parseHeader: (file: Uint8Array) => unknown;
   listGameEvents: (file: Uint8Array) => unknown;
+  listUpdatedFields?: (file: Uint8Array) => unknown;
   parseEvent: (file: Uint8Array, name?: string, player?: unknown[], other?: unknown[]) => unknown;
   parseEvents?: (
     file: Uint8Array,
@@ -326,6 +327,18 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
 
   const parseStarted = performance.now();
   const apiCalls: ClientApiCallEvidence[] = [];
+  if (typeof parser.listUpdatedFields === "function") {
+    try {
+      const callStarted = performance.now();
+      const fields = parser.listUpdatedFields(bytes);
+      apiCalls.push(apiEvidence("listUpdatedFields", true, true, true, undefined,
+        performance.now() - callStarted, fields));
+    } catch (error) {
+      apiCalls.push(apiEvidence("listUpdatedFields", true, true, false, error));
+    }
+  } else {
+    apiCalls.push(apiEvidence("listUpdatedFields", false, false, false));
+  }
   progress(command.requestId, "PARSING_HEADER", 0.25, started);
   let header: Record<string, unknown>;
   try {

@@ -23,3 +23,4 @@
 - Treat both R11 matrix case IDs and fixture IDs as unique evidence identities, so duplicated executions fail closed during attestation.
 - Keep R5.8.4 32-gate reconciliation pure and complete-by-construction; missing or malformed evidence is NOT_PROVEN, and even a complete matrix never authorizes Attempt 9 or Canonical.
 - Keep A9.1 tooling under scripts/a91 and manual-only CI, outside production imports; local fixture tests establish mechanics, never execution authority or real parity.
+- Keep capability-aware A9.1 domain comparisons in the isolated pure parity module; explicit incomparability preserves unavailable APIs without granting equality or execution authority.

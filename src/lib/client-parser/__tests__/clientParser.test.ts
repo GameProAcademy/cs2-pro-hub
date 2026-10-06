@@ -35,6 +35,31 @@ import {
   CLIENT_PARSER_CONTRACT_VERSION,
 } from "../clientParser.types";
 
+function parserMock() {
+  return {
+    listGameEvents: (_file: Uint8Array) => ["round_end"],
+    listUpdatedFields: (_file: Uint8Array) => ["health"],
+    parseHeader: (_file: Uint8Array) => ({ map_name: "de_cache", playback_ticks: 128 }),
+    parseEvent: (_file: Uint8Array, _name?: string, _player?: unknown[], _other?: unknown[]) => [{ tick: 64 }],
+    parseEvents: (_file: Uint8Array, _names?: unknown[], _player?: unknown[], _other?: unknown[]) => [{ event_name: "round_end", tick: 64 }],
+    parseGrenades: (_file: Uint8Array) => [],
+    parseTicks: (...args: [Uint8Array, unknown[], Int32Array, unknown[], boolean]) => {
+      if (args.length !== 5 || !Array.isArray(args[3]) || typeof args[4] !== "boolean")
+        throw new Error("INVALID_WASM_TICK_SIGNATURE");
+      return [{ tick: 64, health: 100 }];
+    },
+  };
+}
+
+it("mock rejects a struct-of-arrays flag in the wantedPlayers position", () => {
+  const mock = parserMock();
+  expect(mock.parseTicks(new Uint8Array(), ["health"], new Int32Array([64]), [], false))
+    .toEqual([{ tick: 64, health: 100 }]);
+  // Reflect deliberately bypasses compile-time arity to exercise malformed caller rejection.
+  expect(() => Reflect.apply(mock.parseTicks, mock, [new Uint8Array(), [], new Int32Array(), false]))
+    .toThrow("INVALID_WASM_TICK_SIGNATURE");
+});
+
 function result(): ClientParseResult {
   const value: ClientParseResult = {
     schemaVersion: CLIENT_PARSER_SCHEMA_VERSION,
@@ -46,12 +71,7 @@ function result(): ClientParseResult {
       runtimeSurface: {
         observedExports: ["listGameEvents", "parseEvent", "parseHeader", "parseTicks"],
         minimumReady: true,
-        runtimeSurfaceDigest: inspectRuntimeSurface({
-          listGameEvents() {},
-          parseEvent() {},
-          parseHeader() {},
-          parseTicks() {},
-        }).runtimeSurfaceDigest,
+        runtimeSurfaceDigest: inspectRuntimeSurface(parserMock()).runtimeSurfaceDigest,
       },
       apiCalls: CLIENT_REQUIRED_RUNTIME_EXPORTS.map((api) => ({
         api,
