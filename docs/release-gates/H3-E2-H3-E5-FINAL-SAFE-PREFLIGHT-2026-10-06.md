@@ -34,7 +34,7 @@
 - Database evidence remained unchanged: two VERIFIED historical provenance rows, two nonces, zero Attempt 9, zero Attempt 10+, and Canonical at 105 total / zero generic / zero authorized / zero verified.
 - `UNIQUE(attestation_digest)`, digest-scoped conflict handling and exact-replay requirements remain in place. No deployment-identity uniqueness was added.
 - The current critical worker hash remains `50a53b607d26f00b4de05c5e8998611959e27bd1` in the application registry. Historical migration text is retained unchanged and is not current authority.
-- PR #57 remains open and unmerged. Quality Gates #655 is historical FAIL because its multiline bridge assertion used brittle exact-string matching. The local equivalent now uses structure-aware matching and passes, but no external green rerun is claimed.
+- PR #57 is closed without merge because the same structure-aware bridge assertion correction is already present on current `main` commit `3f3b6ef...`. Quality Gates #655 remains a historical FAIL from the superseded PR branch; no external green rerun is claimed for that old run.
 
 ## Required status report
 
@@ -56,8 +56,8 @@
 | GitHub OIDC | PASS | Cryptographic verification and exact claim/source binding remain required. |
 | Anonymous endpoint preflight | PASS | Empty anonymous production POST returned HTTP 401 `UNAUTHORIZED`. |
 | Browser secret exposure | PASS | Generated-output and rendered-page checks found no attestation secret exposure. |
-| GitHub PR #57 | VERIFIED | Open and unmerged at reviewed head `924434376c254ebae1cf000a3b869d30fd18041d`; local assertion repair is not claimed as pushed. |
-| Quality Gates #655 | FAIL | Historical run failed on the brittle multiline exact-string bridge assertion; no green rerun is claimed. |
+| GitHub PR #57 | CLOSED / REDUNDANT | Closed without merge after confirming its proposed test correction is already present on current `main` commit `3f3b6ef...`. |
+| Quality Gates #655 | HISTORICAL FAIL | Superseded PR run failed on brittle multiline exact-string matching; current `main` contains the structure-aware correction and passed the independent 1,419-test local suite, but remote CI for `3f3...` is not claimed. |
 | Railway | NOT RUN | No deployment, environment or service mutation occurred. |
 | Attempt 9 | NOT RUN | Database count remains zero; no DEM was processed. |
 | Canonical | BLOCKED | 105 total rows; zero generic, authorized or verified rows. |
@@ -66,3 +66,11 @@
 ## Preserved locks
 
 No Runtime Attestation, workflow dispatch, DEM execution, Attempt 9/10+, Cache Run, Canonical admission, Railway mutation, EnvironmentPatch, secret rotation, provenance/nonce deletion, database reset or historical-data modification was performed. The next controlled attestation phase was not started.
+
+## Post-Lovable reconciliation addendum — 2026-10-06
+
+The current `main` revision `3f3b6efaa627cae101bf5683da6322ecada33a53` contains the structure-aware HMAC bridge assertion that was missing from the superseded PR #57 branch. PR #57 was therefore closed without merge to avoid duplicating a correction already present on `main`.
+
+Lovable's completed safe preflight reported 104 test files / 1,419 tests, TypeScript, lint and public-build PASS, plus an anonymous production attestation POST returning 401 `UNAUTHORIZED`. These are treated as implementation/preflight evidence only; they do not constitute a fresh Runtime Attestation or prove post-A9.1 provenance.
+
+The production Railway deployment and staged EnvironmentPatch were not changed. Attempt 9/10+, Canonical admission, DEM execution and Runtime Attestation remain locked/not run.
