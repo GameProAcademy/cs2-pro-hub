@@ -7,6 +7,11 @@
 - [x] Preserve A9.1 as a proof contract only: no DEM execution, persistence, Canonical authorization or Railway mutation is introduced.
 - [x] Parser Runtime Attestation #31 completed successfully against the pre-A9.1 `main` revision `ee66714001fa9da1d9b55bfdcc452a30c2d07509`; the later A9.1 merge is `1a3b93376019989780f18868e3f0022d459a72de`, so #31 is evidence for the pre-merge runtime and must not be reused as proof of the post-A9.1 source state.
 - [x] Railway parser deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313` is independently observed as SUCCESS for branch `infra/cs2-parser-worker-v8`, with parser semantic/build revision `git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76` and contract `1`.
+- [x] Observe current-main R5.8.3 run `37390846678` and R5.8.4 run `37390871643` as successful, with immutable evidence artifacts bound to `9d330aea03bdc0142be431baca767151baed2d2c`.
+- [x] Confirm Attestation #31 persisted one historical VERIFIED provenance row for pre-A9.1 source `ee66714001fa9da1d9b55bfdcc452a30c2d07509`; current-main provenance remains absent.
+- [x] Reconfirm Attempt 9/10+ are zero and Canonical remains 105 total / 0 generic / 0 authorized / 0 verified through read-only database queries.
+- [ ] Repair current-main Quality Gates without weakening validation: two stale OIDC fixtures, one malformed attestor-source fixture, and one removed-migration file reference currently fail the web test job.
+- [ ] Add direct safe tests for the A9.1 script-level identity/status mismatch branches; current coverage proves the no-DEM fail-closed path but not every new mismatch branch.
 - [ ] Reconcile the complete Attestation #31 artifact/release-gate payload independently before treating individual H.3-E/R5.8 gates as VERIFIED.
 - [ ] Fresh A9.1 real-DEM parity/determinism proof remains NOT_RUN until explicit operator authorization is provided.
 - [ ] Attempt 9/10+, production DEM processing, Canonical admission, Railway mutation, secret mutation and automatic Runtime Attestation remain prohibited.
