@@ -11,7 +11,7 @@ import {
 
 const NOW = 1_790_064_000;
 const workflowIdentity = {
-  workflow_sha: "a".repeat(40),
+  workflow_sha: "b".repeat(40),
   trigger_commit_sha: "a".repeat(40),
   workflow_file_commit_sha: "b".repeat(40),
   workflow_path: PARSER_ATTESTATION_EXPECTED.workflowPath,
@@ -33,7 +33,7 @@ function validClaims(): Record<string, unknown> {
     job_workflow_ref: PARSER_ATTESTATION_EXPECTED.workflowRef,
     sub: PARSER_ATTESTATION_OIDC.subject,
     event_name: PARSER_ATTESTATION_OIDC.eventName,
-    sha: workflowIdentity.workflow_sha,
+    sha: workflowIdentity.trigger_commit_sha,
     workflow_sha: workflowIdentity.workflow_file_commit_sha,
     run_id: workflowIdentity.run_id,
     run_attempt: workflowIdentity.run_attempt,
