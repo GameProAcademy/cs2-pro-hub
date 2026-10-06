@@ -59,7 +59,7 @@ if (artifacts.length !== 4 || artifacts.some((path) => !existsSync(path))) {
         run.status === "SUCCEEDED" &&
         typeof run.parserVersion === "string" &&
         typeof run.parserRevision === "string" &&
-        typeof run.catalogVersion === "string" &&
+        (typeof run.catalogVersion === "string" || typeof run.catalogVersion === "number") &&
         typeof run.catalogDigest === "string" &&
         typeof run.contractVersion === "number" &&
         typeof run.contractDigest === "string",

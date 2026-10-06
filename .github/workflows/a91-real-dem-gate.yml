@@ -57,8 +57,19 @@ jobs:
           AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
           DEMO_FILENAME: ${{ inputs.filename }}
         run: python scripts/a91/execute.py
+      - name: Check sanitized upload guard
+        id: upload-guard
+        if: always()
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          safe = (Path(os.environ['RUNNER_TEMP']) / 'a91-upload-safe').is_file()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('safe=' + str(safe).lower() + '\n')
+          PY
       - name: Upload sanitized bounded reports only
-        if: always() && hashFiles(format('{0}/a91-upload-safe', runner.temp)) != ''
+        if: always() && steps.upload-guard.outputs.safe == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: a91-real-dem-evidence-${{ github.run_id }}-${{ github.run_attempt }}
