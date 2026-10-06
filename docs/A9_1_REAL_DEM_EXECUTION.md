@@ -37,3 +37,21 @@ Only seven exact JSON filenames are uploadable: `a91_real_dem_report.json`, `par
 Memory exhaustion, timeouts and resource failure remain explicit failures. Unit fixtures test only the harness mechanism and never establish A9.1 real PASS.
 
 **Canonical authorization=false; Attempt 9 authorization=false; production authorization=false.** Railway, production database, secrets, worker and browser parsing limits are untouched. A9.1-R2/R3/R4/R5 remain locked pending separately authorized real runs and independent review.
+
+## Local validation closeout
+
+| ITEM | STATUS | EVIDENCE |
+| --- | --- | --- |
+| A9.1-R1 implementation | IMPLEMENTED | Isolated scripts, manual workflow, safety tests and this document |
+| Full Vitest suite | PASS | 106 files, 1,423 tests; includes Node safety checks and Python harness checks |
+| Python harness mechanics | PASS | 6 synthetic tests; no parser or network calls |
+| ESLint | PASS | Zero errors; nine existing warnings in the full repository |
+| Public build configuration | PASS | `PUBLIC_BUILD_CONFIG_OK` |
+| Automatic compilation | PASS | Observability recorded `build OK` after code edits |
+| Sealed browser-output inspection | NOT PROVEN | Checker cannot find generated browser output: `H3E91_BROWSER_BUILD_OUTPUT_MISSING`; no manual build was run |
+| Real DEM execution | NOT RUN | No download, real parsing or workflow dispatch performed |
+| Real Python/WASM parity and determinism | NOT PROVEN | Local synthetic tests are not real execution evidence |
+| Attempt 9 and Canonical | BLOCKED | All authorization flags remain false |
+| Production changes | NOT RUN | No deployment, Railway, live database or secret mutation performed |
+
+The local Python test intentionally emits `A9.1 FAIL` for missing DEM URL and verifies cleanup and no parser invocation; this is expected negative-test evidence, not a real execution failure. No `.dem` file is tracked. No PR, merge or new release commit was created by this task; repository synchronization is managed by Lovable.
