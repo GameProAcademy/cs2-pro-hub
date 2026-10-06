@@ -35,6 +35,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as ApiPublicH3e91ExecutionEventRouteImport } from './routes/api/public/h3e91-execution-event'
 import { Route as ApiPublicH3e91ExecutionLifecycleRouteImport } from './routes/api/public/h3e91-execution-lifecycle'
 import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
+import { Route as ApiPublicParserAttestationRuntimeRouteImport } from './routes/api/public/parser-attestation-runtime'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
 import { Route as ApiInternalH3e9PreflightRouteImport } from './routes/api/internal/h3e9/preflight'
 import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
@@ -179,6 +180,12 @@ const ApiPublicParserAttestationRoute =
     path: '/api/public/parser-attestation',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicParserAttestationRuntimeRoute =
+  ApiPublicParserAttestationRuntimeRouteImport.update({
+    id: '/api/public/parser-attestation-runtime',
+    path: '/api/public/parser-attestation-runtime',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPipelineCronRoute = ApiPublicPipelineCronRouteImport.update({
   id: '/api/public/pipeline-cron',
   path: '/api/public/pipeline-cron',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
+  '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
@@ -265,6 +273,7 @@ export interface FileRoutesByTo {
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
+  '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
@@ -299,6 +308,7 @@ export interface FileRoutesById {
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
+  '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
+    | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/admin/'
     | '/api/internal/h3e9/preflight'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
+    | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/admin'
     | '/api/internal/h3e9/preflight'
@@ -397,6 +409,7 @@ export interface FileRouteTypes {
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
+    | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/_authenticated/admin/'
     | '/api/internal/h3e9/preflight'
@@ -414,6 +427,7 @@ export interface RootRouteChildren {
   ApiPublicH3e91ExecutionEventRoute: typeof ApiPublicH3e91ExecutionEventRoute
   ApiPublicH3e91ExecutionLifecycleRoute: typeof ApiPublicH3e91ExecutionLifecycleRoute
   ApiPublicParserAttestationRoute: typeof ApiPublicParserAttestationRoute
+  ApiPublicParserAttestationRuntimeRoute: typeof ApiPublicParserAttestationRuntimeRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
   ApiInternalH3e9PreflightRoute: typeof ApiInternalH3e9PreflightRoute
   ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
@@ -605,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicParserAttestationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/parser-attestation-runtime': {
+      id: '/api/public/parser-attestation-runtime'
+      path: '/api/public/parser-attestation-runtime'
+      fullPath: '/api/public/parser-attestation-runtime'
+      preLoaderRoute: typeof ApiPublicParserAttestationRuntimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/pipeline-cron': {
       id: '/api/public/pipeline-cron'
       path: '/api/public/pipeline-cron'
@@ -709,6 +730,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicH3e91ExecutionEventRoute: ApiPublicH3e91ExecutionEventRoute,
   ApiPublicH3e91ExecutionLifecycleRoute: ApiPublicH3e91ExecutionLifecycleRoute,
   ApiPublicParserAttestationRoute: ApiPublicParserAttestationRoute,
+  ApiPublicParserAttestationRuntimeRoute:
+    ApiPublicParserAttestationRuntimeRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
   ApiInternalH3e9PreflightRoute: ApiInternalH3e9PreflightRoute,
   ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
