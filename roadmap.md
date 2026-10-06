@@ -10,8 +10,8 @@
 - [x] Observe current-main R5.8.3 run `37390846678` and R5.8.4 run `37390871643` as successful, with immutable evidence artifacts bound to `9d330aea03bdc0142be431baca767151baed2d2c`.
 - [x] Confirm Attestation #31 persisted one historical VERIFIED provenance row for pre-A9.1 source `ee66714001fa9da1d9b55bfdcc452a30c2d07509`; current-main provenance remains absent.
 - [x] Reconfirm Attempt 9/10+ are zero and Canonical remains 105 total / 0 generic / 0 authorized / 0 verified through read-only database queries.
-- [ ] Repair current-main Quality Gates without weakening validation: two stale OIDC fixtures, one malformed attestor-source fixture, and one removed-migration file reference currently fail the web test job.
-- [ ] Add direct safe tests for the A9.1 script-level identity/status mismatch branches; current coverage proves the no-DEM fail-closed path but not every new mismatch branch.
+- [x] Repair current-main Quality Gates without weakening validation: stale OIDC fixtures, attestor-source fixture, and removed-migration reference were corrected in PR #53; Quality Gates #633 passed.
+- [x] Add direct safe tests for the A9.1 script-level identity/status mismatch branches; PR #54 added synthetic fail-closed coverage and Quality Gates #640 passed.
 - [ ] Reconcile the complete Attestation #31 artifact/release-gate payload independently before treating individual H.3-E/R5.8 gates as VERIFIED.
 - [ ] Fresh A9.1 real-DEM parity/determinism proof remains NOT_RUN until explicit operator authorization is provided.
 - [ ] Attempt 9/10+, production DEM processing, Canonical admission, Railway mutation, secret mutation and automatic Runtime Attestation remain prohibited.
@@ -1927,3 +1927,17 @@ uma chamada por minuto, sem criar um segundo consumidor concorrente.
 - [x] Historical Railway staged patch `d66b5a12-a69b-4b9a-87b6-314f75c471cc` remains uncommitted and was not accepted because it is unrelated to the approved correction scope.
 - [ ] Post-A9.1 real DEM parity/determinism evidence and a new Runtime Attestation remain **NOT RUN / NOT PROVEN** and require separate explicit authorization.
 - [ ] Canonical admission and Attempt 9 remain locked.
+
+
+## A9.1 SCRIPT-LEVEL COVERAGE CLOSEOUT — 2026-10-06
+
+- [x] Add synthetic direct coverage for A9.1 Python/WASM parity fail-closed branches: no authorized DEM, parser/catalog/contract identity mismatch, DEM SHA mismatch, invalid artifact status, run identity/status mismatch, and digest mismatch.
+- [x] PR #54 merged by squash as `34b6f7d355c4cf69505c7d45acaf56dc5d9a10b9`.
+- [x] Quality Gates #640 / run `37397218059`: **SUCCESS**. Contract-sensitive parser tests passed; web tests/lint/build passed; browser parser isolation passed; F553 R11.2 disposable execution passed; CS2 parser tests remained expected SKIPPED.
+- [x] Test fixtures are synthetic and do not authorize or execute a production DEM, Canonical admission, provenance mutation, secret mutation, Railway mutation, or Runtime Attestation.
+- [x] Railway remains unchanged and healthy: deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313` SUCCESS; 1/1 replica; no recent failures/issues.
+- [x] Historical staged Railway EnvironmentPatch `d66b5a12-a69b-4b9a-87b6-314f75c471cc` remains unaccepted.
+- [ ] Fresh post-A9.1 Runtime Attestation remains NOT RUN / NOT PROVEN and requires separate explicit operator authorization.
+- [ ] Fresh real-DEM Python/WASM parity and determinism remain NOT RUN / NOT PROVEN and require separate explicit operator authorization.
+- [ ] Attempt 9/10+, production DEM processing, Canonical admission, and production data/secret/provenance mutation remain LOCKED.
+- [ ] PR #46 remains conflict-blocked and must not be force-merged.
