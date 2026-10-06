@@ -45,15 +45,12 @@ BEGIN
     ]::text[]
   LIMIT 1;
 
-  IF _constraint_name IS NULL THEN
-    RAISE EXCEPTION 'R5_8_6_OLD_PROVENANCE_IDEMPOTENCY_CONSTRAINT_NOT_FOUND'
-      USING ERRCODE = '55000';
+  IF _constraint_name IS NOT NULL THEN
+    EXECUTE format(
+      'ALTER TABLE public.parser_runtime_provenance DROP CONSTRAINT %I',
+      _constraint_name
+    );
   END IF;
-
-  EXECUTE format(
-    'ALTER TABLE public.parser_runtime_provenance DROP CONSTRAINT %I',
-    _constraint_name
-  );
 END;
 $migration$;
 
