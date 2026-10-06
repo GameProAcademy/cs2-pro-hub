@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
+import { compareDomains, validParityComparisons } from "./parity.mjs";
 
 export const FIXTURE = Object.freeze({
   filename: "furia-vs-gamerlegion-m1-cache.dem",
@@ -104,7 +105,7 @@ export function sanitizeReport(value) {
   const text = stable(value);
   // No URLs, credentials or binary payloads are permitted in uploadable evidence.
   if (
-    /https?:\/\/|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie/i.test(
+    /https?:\/\/|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|Authorization|[?&](?:signature|sig|token|X-Amz-[\w-]+)=/i.test(
       text,
     )
   )
@@ -182,8 +183,8 @@ export function decide(runs, parity, determinism, surface, artifact) {
   if (
     parity?.status !== "PASS" ||
     parity.demo_sha256 !== FIXTURE.sha256 ||
-    parity.comparisons?.length !== 16 ||
-    parity.comparisons.some((c) => c.equal !== true || c.mismatch_reason !== null) ||
+    !validParityComparisons(parity.comparisons) ||
+    digest(parity.comparisons) !== digest(compareDomains(python[0], wasm[0])) ||
     parity.parity_digest !== digest(parity.comparisons)
   )
     return fail("PARITY_MISMATCH");

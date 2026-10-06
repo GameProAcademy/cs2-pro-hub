@@ -110,7 +110,7 @@ type WasmApi = {
     player?: unknown[],
     other?: unknown[],
   ) => unknown;
-  parseTicks: (file: Uint8Array, props?: unknown[], ticks?: Int32Array, soa?: boolean) => unknown;
+  parseTicks: (file: Uint8Array, props?: unknown[], ticks?: Int32Array, wantedPlayers?: unknown[], structOfArrays?: boolean) => unknown;
   parseGrenades?: (file: Uint8Array) => unknown;
   parsePlayerInfo?: (file: Uint8Array) => unknown;
 };
@@ -548,7 +548,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
   if (probeTicks.length) {
     try {
       const callStarted = performance.now();
-      tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, false));
+      tickRows = rows(parser.parseTicks(bytes, [...CLIENT_TICK_PROPERTIES], probeTicks, [], false));
       apiCalls.push(
         apiEvidence(
           "parseTicks",

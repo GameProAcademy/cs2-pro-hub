@@ -2,26 +2,10 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
+import { DOMAINS, parityReport, summarize } from "./a91/parity.mjs";
 
 const NOT_RUN_REASON = "NO_AUTHORIZED_REAL_DEM_FIXTURE";
-const domains = [
-  "header",
-  "map",
-  "tickrate",
-  "playback_ticks",
-  "players",
-  "player_identity",
-  "events",
-  "rounds",
-  "grenades",
-  "bomb",
-  "damage",
-  "deaths",
-  "weapons",
-  "economy",
-  "tick_properties",
-  "game_state",
-];
+const domains = DOMAINS;
 
 function stable(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -51,6 +35,9 @@ function argument(name) {
 function notRun(reason = NOT_RUN_REASON) {
   const comparisons = domains.map((field) => ({
     field,
+    status: "NOT_RUN",
+    comparability: "NOT_RUN",
+    availability: { python: "NOT_RUN", wasm: "NOT_RUN" },
     python_value: null,
     wasm_value: null,
     normalized_python: null,
@@ -65,6 +52,7 @@ function notRun(reason = NOT_RUN_REASON) {
     test_fixture_only: false,
     demo_sha256: null,
     comparisons,
+    ...summarize(comparisons),
     parity_digest: digest(comparisons),
     canonical_authorization: false,
   };
@@ -80,28 +68,6 @@ function readArtifact(path, runtime) {
     throw new Error(`${runtime}_ARTIFACT_INVALID`);
   }
   return parsed;
-}
-
-function domainValue(artifact, domain) {
-  const keys = {
-    header: "headerEvidence",
-    map: "mapEvidence",
-    tickrate: "timingEvidence",
-    playback_ticks: "timingEvidence",
-    players: "playerInventory",
-    player_identity: "playerInventory",
-    events: "eventEvidence",
-    rounds: "roundEvidence",
-    grenades: "grenadeEvidence",
-    bomb: "bombEvidence",
-    damage: "damageEvidence",
-    deaths: "deathEvidence",
-    weapons: "weaponEvidence",
-    economy: "economyEvidence",
-    tick_properties: "tickDomainEvidence",
-    game_state: "normalizedResult",
-  };
-  return artifact[keys[domain]] ?? null;
 }
 
 function main() {
@@ -140,34 +106,8 @@ function main() {
   }
   if (python.status !== "SUCCEEDED" || wasm.status !== "SUCCEEDED")
     throw new Error("PARSER_ARTIFACT_STATUS_INVALID");
-  const comparisons = domains.map((field) => {
-    const pythonValue = domainValue(python, field);
-    const wasmValue = domainValue(wasm, field);
-    const unavailable = wasm.domainAvailability?.[field] || python.domainAvailability?.[field];
-    const normalizedPython = JSON.parse(stable(pythonValue));
-    const normalizedWasm = JSON.parse(stable(wasmValue));
-    const missing = pythonValue === null || wasmValue === null;
-    const equal = !unavailable && !missing && stable(normalizedPython) === stable(normalizedWasm);
-    return {
-      field,
-      python_value: pythonValue,
-      wasm_value: wasmValue,
-      normalized_python: normalizedPython,
-      normalized_wasm: normalizedWasm,
-      equal,
-      mismatch_reason:
-        unavailable || (missing ? "MISSING_DOMAIN_EVIDENCE" : equal ? null : "SEMANTIC_MISMATCH"),
-    };
-  });
-  const status = comparisons.every((row) => row.equal) ? "PASS" : "FAIL";
-  const report = {
-    schema_version: 1,
-    status,
-    demo_sha256: sha256,
-    comparisons,
-    parity_digest: digest(comparisons),
-    canonical_authorization: false,
-  };
+  const report = parityReport(python, wasm, sha256);
+  const status = report.status;
   writeFileSync(outputPath(), `${JSON.stringify(report, null, 2)}\n`);
   console.log(status);
   return status === "PASS" ? 0 : 1;

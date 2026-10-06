@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import platform
+from importlib.metadata import version
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -33,9 +35,9 @@ def digest(value):
 
 
 def inputs(env):
-    url = env.get("DEMO_URL", "")
+    url = env.get("A91_DEMO_URL", "")
     if not url:
-        raise ValueError("NO_DEM_URL")
+        raise ValueError("A91_DEMO_URL_MISSING")
     try:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or "\n" in url or "\r" in url:
@@ -69,26 +71,37 @@ def clean(path):
         raise ValueError("CLEANUP_FAILURE")
 
 
-def run(command, output=None):
+def run(command, output=None, stdin=None):
+    child_env = {k: v for k, v in os.environ.items() if k != "A91_DEMO_URL"}
     try:
         if output:
             with output.open("wb") as target:
-                result = subprocess.run(command, cwd=ROOT, stdout=target, stderr=subprocess.DEVNULL, timeout=1800)
+                result = subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=target, stderr=subprocess.DEVNULL, timeout=1800)
         else:
-            result = subprocess.run(command, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1800)
+            result = subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1800)
         return result.returncode
     except (subprocess.TimeoutExpired, OSError, MemoryError):
         raise ValueError("A91_RUNTIME_RESOURCE_FAILURE") from None
 
 
+def download(path, url):
+    # Curl reads the URL from stdin, never argv, disk, or child environment.
+    escaped = url.replace("\\", "\\\\").replace('"', '\\"')
+    return run(["curl", "--config", "-", "--silent", "--fail", "--location", "--retry", "5",
+                "--retry-all-errors", "--retry-max-time", "300", "--connect-timeout", "30", "--max-time", "600",
+                "--proto", "=https", "--proto-redir", "=https", "--tlsv1.2", "--max-filesize", str(SIZE),
+                "--output", str(path)], stdin=('url = "' + escaped + '"\n').encode())
+
+
 def seal(directory, private_url=""):
+    private_host = urlsplit(private_url).hostname if private_url else None
     for path in directory.iterdir():
         if path.name not in ALLOWED or not path.is_file() or path.is_symlink() or path.stat().st_size > 2 * 1024 * 1024:
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
         text = path.read_text()
         value = json.loads(text)
         stable(value)  # Reject NaN/Infinity.
-        if (private_url and private_url in text) or re.search(r"https?://|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie", text, re.I):
+        if (private_url and private_url in text) or (private_host and private_host in text) or re.search(r"https?://|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|Authorization|[?&](?:signature|sig|token|X-Amz-[\w-]+)=", text, re.I):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
 
 
@@ -103,6 +116,11 @@ def enrich_python(path):
         value[key] = digest(value[source])
     value.update(LOCKS)
     value.update(executionKind="REAL_DEM_FULL_FILE", test_fixture_only=False)
+    value["environmentFingerprint"] = {
+        "pythonVersion": platform.python_version(), "platform": platform.system(),
+        "demoparser2Version": version("demoparser2"),
+        "requirementsDigest": hashlib.sha256((ROOT / "services/cs2-demo-parser/requirements.txt").read_bytes()).hexdigest(),
+    }
     path.write_text(stable(value))
 
 
@@ -117,10 +135,7 @@ def main():
         if os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch" or os.environ.get("GITHUB_REF") != "refs/heads/main":
             raise ValueError("MANUAL_MAIN_REQUIRED")
         demo = temporary / FILENAME
-        # URL only reaches curl's argv; stdout/stderr are discarded and never uploaded.
-        rc = run(["curl", "--silent", "--fail", "--location", "--retry", "5", "--retry-all-errors",
-                  "--proto", "=https", "--proto-redir", "=https", "--tlsv1.2", "--max-filesize", str(SIZE),
-                  "--output", str(demo), "--url", url])
+        rc = download(demo, url)
         if rc:
             raise ValueError("DOWNLOAD_FAILED")
         validate_download(demo)

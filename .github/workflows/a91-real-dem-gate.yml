@@ -3,10 +3,6 @@ name: A9.1 Real DEM Python-WASM Parity & Determinism Gate
 on:
   workflow_dispatch:
     inputs:
-      demo_url:
-        description: Private HTTPS or signed URL (never logged)
-        required: true
-        type: string
       expected_sha256:
         description: Exact authorized DEM SHA-256
         required: true
@@ -51,7 +47,7 @@ jobs:
         run: node --version
       - name: Execute isolated four-run gate
         env:
-          DEMO_URL: ${{ inputs.demo_url }}
+          A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
           EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
           EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
           AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
