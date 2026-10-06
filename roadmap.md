@@ -1,5 +1,22 @@
 # CURRENT STATE RECONCILIATION — 2026-09-29
 
+## POST-LOVABLE COMPLETION RECONCILIATION — 2026-10-06
+
+- [x] Lovable completed the H.3-E.2 / H.3-E.5 safe preflight on current project state; latest synced `main` commit is `3f3b6efaa627cae101bf5683da6322ecada33a53`.
+- [x] Independent inspection confirms the HMAC bridge contract is now present on `main`, including structure-aware transaction-local `set_config(..., true)` coverage and service-only/non-persistent assertions.
+- [x] Lovable reported full local validation PASS: 104 test files / 1,419 tests, TypeScript validation, lint and public-build validation PASS; no attestation secret names/values exposed in generated/browser output.
+- [x] Safe production preflight returned HTTP 401 `UNAUTHORIZED` for an empty anonymous attestation request; this proves only the transport-auth boundary and does not constitute an attestation.
+- [x] The stale PR #57 is now CLOSED without merge because its proposed test correction is already present on `main` in commit `3f3b6ef...`; no duplicate merge was performed.
+- [x] Railway production remains unchanged and healthy: deployment `1b5778de-3eaf-46f1-9ea5-cba381d95313` SUCCESS; staged EnvironmentPatch `d66b5a12-a69b-4b9a-87b6-314f75c471cc` remains STAGED and was not accepted.
+- [x] Live project-DB R5.8.6 reconciliation remains applied: attestation-digest uniqueness, digest-scoped recorder idempotency and current worker hash are reconciled; historical provenance/nonces remain preserved.
+- [ ] Remote GitHub Quality Gates for the new `3f3...` main commit are NOT_PROVEN through the available connector; the 1,419-test result is independent local validation, not a fabricated remote CI result.
+- [ ] Fresh post-A9.1 Runtime Attestation remains NOT RUN / NOT PROVEN.
+- [ ] Fresh real-DEM Python/WASM parity and determinism remain NOT RUN / NOT PROVEN.
+- [ ] Attempt 9/10+, production DEM processing and Canonical admission remain LOCKED.
+
+**Current decision:** H.3-E.2/H.3-E.5 implementation and safe-preflight evidence are PASS; production execution remains BLOCKED until a separately authorized fresh Runtime Attestation is executed and independently reconciled, followed by the still-required real-DEM parity/determinism evidence.
+
+
 ## H.3-E.2 / H.3-E.5 FINAL SAFE PREFLIGHT — 2026-10-06
 
 - [x] Register H.3-E.2 service-only, transaction-local HMAC bridge evidence without reading or exposing secret values.
@@ -7,7 +24,7 @@
 - [x] Verify safe production preflight: anonymous empty recorder POST returns 401; no attestation payload, OIDC token, signature, nonce or release evidence was sent.
 - [x] Verify local gates: TypeScript, lint, public-build validation and 104 test files / 1,419 tests pass; supervised build is green.
 - [x] Preserve database state and locks: historical provenance 2, nonces 2, Attempt 9/10+ zero, Canonical 105/0/0/0; Railway and secrets unchanged.
-- [ ] PR #57 remains open/unmerged and Quality Gates #655 remains historical FAIL; the structure-aware local assertion repair needs an external branch update and green rerun before that item can pass.
+- [x] PR #57 closed without merge because its proposed structural-aware test correction is already present on current `main`.
 - [ ] Runtime Attestation, real DEM, Attempt 9/10+, Cache Run and Canonical admission remain NOT RUN/BLOCKED pending a separately authorized controlled phase.
 
 ## R5.8.5 / R5.8.6 / A9.1 CURRENT RECONCILIATION — 2026-10-05
