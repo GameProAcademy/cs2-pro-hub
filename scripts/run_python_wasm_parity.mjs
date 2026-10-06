@@ -155,7 +155,8 @@ function main() {
       normalized_python: normalizedPython,
       normalized_wasm: normalizedWasm,
       equal,
-      mismatch_reason: unavailable || (missing ? "MISSING_DOMAIN_EVIDENCE" : equal ? null : "SEMANTIC_MISMATCH"),
+      mismatch_reason:
+        unavailable || (missing ? "MISSING_DOMAIN_EVIDENCE" : equal ? null : "SEMANTIC_MISMATCH"),
     };
   });
   const status = comparisons.every((row) => row.equal) ? "PASS" : "FAIL";

@@ -75,13 +75,17 @@ if (artifacts.length !== 4 || artifacts.some((path) => !existsSync(path))) {
   ];
   // Determinism compares reruns within each runtime. Cross-runtime equality is
   // the independent parity gate, not a determinism assumption.
-  const comparisons = [python, wasm].flatMap((runtimeRuns, index) => dimensions.map((field) => ({
-    field,
-    runtime: index === 0 ? "PYTHON" : "WASM",
-    values: runtimeRuns.map((run) => run[field] ?? null),
-    equal: runtimeRuns.length === 2 && runtimeRuns.every((run) => typeof run[field] === "string" && run[field].length > 0) &&
-      new Set(runtimeRuns.map((run) => stable(run[field]))).size === 1,
-  })));
+  const comparisons = [python, wasm].flatMap((runtimeRuns, index) =>
+    dimensions.map((field) => ({
+      field,
+      runtime: index === 0 ? "PYTHON" : "WASM",
+      values: runtimeRuns.map((run) => run[field] ?? null),
+      equal:
+        runtimeRuns.length === 2 &&
+        runtimeRuns.every((run) => typeof run[field] === "string" && run[field].length > 0) &&
+        new Set(runtimeRuns.map((run) => stable(run[field]))).size === 1,
+    })),
+  );
   const status = valid && comparisons.every((row) => row.equal) ? "PASS" : "FAIL";
   report = {
     schema_version: 1,
