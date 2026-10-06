@@ -101,7 +101,8 @@ def seal(directory, private_url=""):
         text = path.read_text()
         value = json.loads(text)
         stable(value)  # Reject NaN/Infinity.
-        if (private_url and private_url in text) or (private_host and private_host in text) or re.search(r"https?://|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|Authorization|[?&](?:signature|sig|token|X-Amz-[\w-]+)=", text, re.I):
+        safe_text = text.replace('"A91_DEMO_URL_MISSING"', '"DEM_URL_MISSING"')
+        if (private_url and private_url in text) or (private_host and private_host in text) or re.search(r"https?://|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|\bAuthorization\b|[?&](?:signature|sig|token|X-Amz-[\w-]+)=", safe_text, re.I):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
 
 

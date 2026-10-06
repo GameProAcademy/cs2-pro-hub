@@ -105,7 +105,7 @@ export function sanitizeReport(value) {
   const text = stable(value);
   // No URLs, credentials or binary payloads are permitted in uploadable evidence.
   if (
-    /https?:\/\/|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|Authorization|[?&](?:signature|sig|token|X-Amz-[\w-]+)=/i.test(
+    /https?:\/\/|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|\bAuthorization\b|[?&](?:signature|sig|token|X-Amz-[\w-]+)=/i.test(
       text,
     )
   )

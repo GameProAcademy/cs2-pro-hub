@@ -75,7 +75,7 @@ export function validParityComparisons(comparisons) {
       (c.comparability === "COMPARABLE" && c.status === "PASS" && c.equal === true && c.mismatch_reason === null && c.availability?.python === "AVAILABLE" && c.availability?.wasm === "AVAILABLE") ||
       (c.comparability === "NOT_COMPARABLE" && c.status === "NOT_COMPARABLE" && c.equal === null &&
         ["NOT_AVAILABLE_ON_WASM", "NOT_AVAILABLE_ON_PYTHON", "NOT_AVAILABLE_ON_PYTHON+NOT_AVAILABLE_ON_WASM"].includes(c.mismatch_reason) &&
-        Object.values(c.availability ?? {}).some((a) => a.startsWith("NOT_AVAILABLE_ON_")))));
+        Object.values(c.availability ?? {}).some((a) => a.startsWith("NOT_AVAILABLE_ON_"))));
 }
 export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
