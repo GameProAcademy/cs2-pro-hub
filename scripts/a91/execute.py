@@ -36,6 +36,7 @@ def digest(value):
 
 def inputs(env):
     url = env.get("A91_DEMO_URL", "")
+    print("A91_DEMO_URL_PRESENT=" + ("true" if url else "false"))
     if not url:
         raise ValueError("A91_DEMO_URL_MISSING")
     try:

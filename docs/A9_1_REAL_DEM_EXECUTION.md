@@ -38,7 +38,7 @@ The worker and reference use `parseTicks(bytes, properties, ticks, [], false)`; 
 - declaredExports: listGameEvents, listUpdatedFields, parseEvent, parseEvents, parseGrenades, parseHeader, parseTicks.
 - observedExports: the same seven functions, verified by initialization-only tests (no parsing).
 - missingExports: parsePlayerInfo, parseChatMessages.
-- upstreamExpectedExports: all nine APIs listed in the pinned upstream surface catalog, including parsePlayerInfo and parseChatMessages. Upstream support with absent runtime exports is `UPSTREAM_SUPPORTED_BUT_RUNTIME_EXPORT_MISSING`, not an implementation license.
+- upstreamExpectedExports: the seven declared functions plus parsePlayerInfo. The pinned catalog marks parsePlayerInfo upstreamSupported=true and parseChatMessages upstreamSupported=false. Player information is therefore `UPSTREAM_SUPPORTED_BUT_RUNTIME_EXPORT_MISSING`, while chat support is not proven upstream. Neither status is an implementation license.
 - No artifact reconstruction, parser identity change or inferred player identity occurred. Declared/observed exports do not mean every function was exercised.
 
 Determinism compares two runs **within each runtime** and requires stable nonempty result digests, four unique run IDs, exact counts, common DEM/parser/catalog/contract identity and stable WASM identity. Different runtime results may be individually deterministic while parity fails. The final decision validates identities, rehashes normalized result content, checks report digests, requires both independent gates and rejects `test_fixture_only`. No hash-only or fixture-only PASS is accepted.
