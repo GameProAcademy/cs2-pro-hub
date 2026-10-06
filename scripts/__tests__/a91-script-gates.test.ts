@@ -15,11 +15,7 @@ type Report = {
 };
 
 function run(script: string, args: string[], cwd = process.cwd()) {
-  const result = spawnSync("node", [script, ...args], {
-    cwd,
-    encoding: "utf8",
-  });
-
+  const result = spawnSync("node", [script, ...args], { cwd, encoding: "utf8" });
   return {
     code: result.status ?? 1,
     stdout: result.stdout ?? "",
@@ -33,7 +29,6 @@ function readJson(path: string): Report {
 
 function withFixture<T>(callback: (dir: string) => T): T {
   const dir = mkdtempSync(join(tmpdir(), "a91-gate-"));
-
   try {
     return callback(dir);
   } finally {
@@ -57,15 +52,10 @@ function writeDemoFixture(dir: string) {
       sizeBytes: bytes.byteLength,
     }),
   );
-
   return { path, authorization, sha256 };
 }
 
-function artifact(
-  runtime: "PYTHON" | "WASM",
-  runId: string,
-  demoSha256: string,
-) {
+function artifact(runtime: "PYTHON" | "WASM", runId: string, demoSha256: string) {
   return {
     status: "SUCCEEDED",
     runtime,
@@ -77,8 +67,7 @@ function artifact(
     catalogDigest: "catalog-digest",
     contractVersion: 1,
     contractDigest: "contract-digest",
-    artifactIdentity:
-      runtime === "WASM" ? "wasm-test-artifact" : undefined,
+    artifactIdentity: runtime === "WASM" ? "wasm-test-artifact" : undefined,
     rawDigest: "raw",
     normalizedResultDigest: "normalized",
     eventDigest: "event",
@@ -107,37 +96,30 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
       const demo = writeDemoFixture(dir);
       const python = artifact("PYTHON", "py-1", demo.sha256);
       const wasm = artifact("WASM", "wasm-1", demo.sha256);
-
       wasm.catalogDigest = "different";
 
       const pythonPath = join(dir, "python.json");
       const wasmPath = join(dir, "wasm.json");
       const output = join(dir, "report.json");
-
       writeFileSync(pythonPath, JSON.stringify(python));
       writeFileSync(wasmPath, JSON.stringify(wasm));
 
-      const result = run(
-        parity,
-        [
-          "--demo",
-          demo.path,
-          "--authorization",
-          demo.authorization,
-          "--python-artifact",
-          pythonPath,
-          "--wasm-artifact",
-          wasmPath,
-          "--output",
-          output,
-        ],
-      );
+      const result = run(parity, [
+        "--demo",
+        demo.path,
+        "--authorization",
+        demo.authorization,
+        "--python-artifact",
+        pythonPath,
+        "--wasm-artifact",
+        wasmPath,
+        "--output",
+        output,
+      ]);
       const report = readJson(output);
 
       expect(result.code).toBe(2);
-      expect(report.reason).toBe(
-        "PARSER_CONTRACT_IDENTITY_MISMATCH:catalogDigest",
-      );
+      expect(report.reason).toBe("PARSER_CONTRACT_IDENTITY_MISMATCH:catalogDigest");
       expect(report.canonical_authorization).toBe(false);
     }));
 
@@ -147,31 +129,21 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
       const pythonPath = join(dir, "python.json");
       const wasmPath = join(dir, "wasm.json");
       const output = join(dir, "report.json");
+      writeFileSync(pythonPath, JSON.stringify(artifact("PYTHON", "py-1", demo.sha256)));
+      writeFileSync(wasmPath, JSON.stringify(artifact("WASM", "wasm-1", "wrong-demo-sha")));
 
-      writeFileSync(
+      const result = run(parity, [
+        "--demo",
+        demo.path,
+        "--authorization",
+        demo.authorization,
+        "--python-artifact",
         pythonPath,
-        JSON.stringify(artifact("PYTHON", "py-1", demo.sha256)),
-      );
-      writeFileSync(
+        "--wasm-artifact",
         wasmPath,
-        JSON.stringify(artifact("WASM", "wasm-1", "wrong-demo-sha")),
-      );
-
-      const result = run(
-        parity,
-        [
-          "--demo",
-          demo.path,
-          "--authorization",
-          demo.authorization,
-          "--python-artifact",
-          pythonPath,
-          "--wasm-artifact",
-          wasmPath,
-          "--output",
-          output,
-        ],
-      );
+        "--output",
+        output,
+      ]);
 
       expect(result.code).toBe(2);
       expect(readJson(output).reason).toBe("SAME_DEM_SHA256_REQUIRED");
@@ -182,36 +154,29 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
       const demo = writeDemoFixture(dir);
       const python = artifact("PYTHON", "py-1", demo.sha256);
       const wasm = artifact("WASM", "wasm-1", demo.sha256);
-
       python.status = "FAILED";
 
       const pythonPath = join(dir, "python.json");
       const wasmPath = join(dir, "wasm.json");
       const output = join(dir, "report.json");
-
       writeFileSync(pythonPath, JSON.stringify(python));
       writeFileSync(wasmPath, JSON.stringify(wasm));
 
-      const result = run(
-        parity,
-        [
-          "--demo",
-          demo.path,
-          "--authorization",
-          demo.authorization,
-          "--python-artifact",
-          pythonPath,
-          "--wasm-artifact",
-          wasmPath,
-          "--output",
-          output,
-        ],
-      );
+      const result = run(parity, [
+        "--demo",
+        demo.path,
+        "--authorization",
+        demo.authorization,
+        "--python-artifact",
+        pythonPath,
+        "--wasm-artifact",
+        wasmPath,
+        "--output",
+        output,
+      ]);
 
       expect(result.code).toBe(2);
-      expect(readJson(output).reason).toBe(
-        "PYTHON_ARTIFACT_INVALID",
-      );
+      expect(readJson(output).reason).toBe("PYTHON_ARTIFACT_INVALID");
     }));
 
   it("rejects determinism when run identity/status is invalid", () =>
@@ -225,25 +190,17 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
 
       specs.forEach(([id, runtime], index) => {
         const runData = artifact(runtime, id, "demo-sha");
-
         if (index === 3) runData.parserRevision = "different";
         if (index === 2) runData.status = "FAILED";
-
-        writeFileSync(
-          join(dir, id + ".json"),
-          JSON.stringify(runData),
-        );
+        writeFileSync(join(dir, id + ".json"), JSON.stringify(runData));
       });
 
       const output = join(dir, "report.json");
-      const result = run(
-        determinism,
-        [
-          ...specs.map(([id]) => join(dir, id + ".json")),
-          "--output",
-          output,
-        ],
-      );
+      const result = run(determinism, [
+        ...specs.map(([id]) => join(dir, id + ".json")),
+        "--output",
+        output,
+      ]);
       const report = readJson(output);
 
       expect(result.code).toBe(2);
@@ -263,24 +220,16 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
 
       specs.forEach(([id, runtime], index) => {
         const runData = artifact(runtime, id, "demo-sha");
-
         if (index === 3) runData.resultDigest = "different";
-
-        writeFileSync(
-          join(dir, id + ".json"),
-          JSON.stringify(runData),
-        );
+        writeFileSync(join(dir, id + ".json"), JSON.stringify(runData));
       });
 
       const output = join(dir, "report.json");
-      const result = run(
-        determinism,
-        [
-          ...specs.map(([id]) => join(dir, id + ".json")),
-          "--output",
-          output,
-        ],
-      );
+      const result = run(determinism, [
+        ...specs.map(([id]) => join(dir, id + ".json")),
+        "--output",
+        output,
+      ]);
       const report = readJson(output);
 
       expect(result.code).toBe(2);
