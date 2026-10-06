@@ -1,5 +1,13 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## A9.1 controlled real DEM harness
+
+- [ ] A9.1-R1: implement isolated manual workflow, validation, real WASM runner, final fail-closed decision, security/cleanup tests and documentation (no DEM execution).
+- [ ] A9.1-R2: real execution — LOCKED UNTIL MANUAL WORKFLOW DISPATCH.
+- [ ] A9.1-R3: Python × WASM parity — LOCKED UNTIL REAL RUNS.
+- [ ] A9.1-R4: determinism — LOCKED UNTIL REAL RUNS.
+- [ ] A9.1-R5: independent gate decision — LOCKED.
+
 ## H.3-E.5-R FINAL RUNTIME PARITY CLOSURE — CURRENT TRUTH
 
 - [x] PR #60 route-registration guard was corrected, Quality Gates #666 / run `37437527249` completed **SUCCESS**, and the corrected branch head `503b363a57de4b621ac2b8933d3d54d7d414fb84` was squash-merged.

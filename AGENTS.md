@@ -22,3 +22,4 @@
 - Require committed RAW before FINISHED; keep R11 worker execution loopback-only, reuse production RAW chunking, and attest recovery independently after CI.
 - Treat both R11 matrix case IDs and fixture IDs as unique evidence identities, so duplicated executions fail closed during attestation.
 - Keep R5.8.4 32-gate reconciliation pure and complete-by-construction; missing or malformed evidence is NOT_PROVEN, and even a complete matrix never authorizes Attempt 9 or Canonical.
+- Keep A9.1 tooling under scripts/a91 and manual-only CI, outside production imports; local fixture tests establish mechanics, never execution authority or real parity.
