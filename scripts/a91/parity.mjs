@@ -69,6 +69,17 @@ export function compareDomains(python, wasm) {
         equal: null,
         mismatch_reason: "INVALID_OR_FAILED_DOMAIN_EVIDENCE",
       };
+    if (
+      pythonAvailability.startsWith("NOT_AVAILABLE_ON_") &&
+      wasmAvailability.startsWith("NOT_AVAILABLE_ON_")
+    )
+      return {
+        ...base,
+        comparability: "BLOCKED",
+        status: "BLOCKED",
+        equal: null,
+        mismatch_reason: "BOTH_RUNTIMES_UNAVAILABLE",
+      };
     // A missing counterpart must not be concealed by the other runtime's absence.
     if (Object.values(available).includes("MISSING"))
       return {
@@ -147,12 +158,9 @@ export function validParityComparisons(comparisons) {
         (c.comparability === "NOT_COMPARABLE" &&
           c.status === "NOT_COMPARABLE" &&
           c.equal === null &&
-          [
-            "NOT_AVAILABLE_ON_WASM",
-            "NOT_AVAILABLE_ON_PYTHON",
-            "NOT_AVAILABLE_ON_PYTHON+NOT_AVAILABLE_ON_WASM",
-          ].includes(c.mismatch_reason) &&
-          Object.values(c.availability ?? {}).some((a) => a.startsWith("NOT_AVAILABLE_ON_"))),
+          ["NOT_AVAILABLE_ON_WASM", "NOT_AVAILABLE_ON_PYTHON"].includes(c.mismatch_reason) &&
+          Object.values(c.availability ?? {}).some((a) => a.startsWith("NOT_AVAILABLE_ON_")) &&
+          !Object.values(c.availability ?? {}).every((a) => a.startsWith("NOT_AVAILABLE_ON_")))
     )
   );
 }
