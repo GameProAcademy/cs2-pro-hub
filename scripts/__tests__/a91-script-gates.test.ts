@@ -177,6 +177,43 @@ describe("A9.1 parity/determinism fail-closed branches", () => {
       expect(readJson(output).reason).toBe("SAME_DEM_SHA256_REQUIRED");
     }));
 
+  it("rejects parity when an artifact has invalid status", () =>
+    withFixture((dir) => {
+      const demo = writeDemoFixture(dir);
+      const python = artifact("PYTHON", "py-1", demo.sha256);
+      const wasm = artifact("WASM", "wasm-1", demo.sha256);
+
+      python.status = "FAILED";
+
+      const pythonPath = join(dir, "python.json");
+      const wasmPath = join(dir, "wasm.json");
+      const output = join(dir, "report.json");
+
+      writeFileSync(pythonPath, JSON.stringify(python));
+      writeFileSync(wasmPath, JSON.stringify(wasm));
+
+      const result = run(
+        parity,
+        [
+          "--demo",
+          demo.path,
+          "--authorization",
+          demo.authorization,
+          "--python-artifact",
+          pythonPath,
+          "--wasm-artifact",
+          wasmPath,
+          "--output",
+          output,
+        ],
+      );
+
+      expect(result.code).toBe(2);
+      expect(readJson(output).reason).toBe(
+        "PYTHON_ARTIFACT_INVALID",
+      );
+    }));
+
   it("rejects determinism when run identity/status is invalid", () =>
     withFixture((dir) => {
       const specs = [
