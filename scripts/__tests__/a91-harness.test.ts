@@ -35,22 +35,14 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     const uploadPaths = source.split("          path: |")[1]?.split("          retention-days:")[0];
     expect(uploadPaths).toBeDefined();
     expect(uploadPaths).not.toMatch(/\*|\.dem\s*$/m);
-    expect(uploadPaths?.trim().split("\n")).toHaveLength(7);
+    expect(uploadPaths?.trim().split("\n")).toHaveLength(3);
     const names = uploadPaths
       ?.trim()
       .split("\n")
       .map((line) => line.trim().split("/").at(-1))
       .sort();
     expect(names).toEqual(
-      [
-        "a91_real_dem_report.json",
-        "parity_report.json",
-        "determinism_report.json",
-        "python_run_1.json",
-        "python_run_2.json",
-        "wasm_run_1.json",
-        "wasm_run_2.json",
-      ].sort(),
+      ["a91_real_dem_report.json", "parity_report.json", "determinism_report.json"].sort(),
     );
   });
   it("executes the worker's exact tick-call expression with five mock arguments", () => {
