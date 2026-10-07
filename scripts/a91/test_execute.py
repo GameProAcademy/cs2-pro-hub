@@ -45,15 +45,23 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "CLEANUP_FAILURE"):
                 execute.clean(Path(temp))
 
-    def test_seal_rejects_url_and_dem(self):
+    def test_seal_allows_public_url_but_rejects_private_url_and_dem(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
             report = directory / "a91_real_dem_report.json"
+
+            # Benign public URLs are valid parser evidence and must not be
+            # rejected merely because they use https://.
+            report.write_text(json.dumps({"source": "https://example.com/public-evidence"}))
+            execute.seal(directory)
+
+            # The authorized private DEM URL remains forbidden.
             report.write_text(json.dumps({"private": "https://example.invalid/signed"}))
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
-                execute.seal(directory)
+                execute.seal(directory, "https://example.invalid/signed")
+
+            # Raw DEM files must never reach the sanitized upload area.
             report.write_text(json.dumps({"status": "FAIL", **execute.LOCKS}))
-            execute.seal(directory)
             (directory / "synthetic.dem").touch()
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory)
@@ -92,7 +100,16 @@ class HarnessTests(unittest.TestCase):
     def test_private_host_query_and_header_never_upload(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
-            for leak in ("private.example.invalid", "?signature=abc", "Authorization: redacted", "A91_DEMO_URL"):
+
+            # The private DEM URL remains forbidden.
+            (directory / "a91_real_dem_report.json").write_text(
+                json.dumps({"leak": "https://private.example.invalid/a"})
+            )
+            with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
+                execute.seal(directory, "https://private.example.invalid/a")
+
+            # Credential-bearing URL/query/header patterns remain forbidden.
+            for leak in ("?signature=abc", "Authorization: redacted", "A91_DEMO_URL"):
                 (directory / "a91_real_dem_report.json").write_text(json.dumps({"leak": leak}))
                 with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                     execute.seal(directory, "https://private.example.invalid/a")
