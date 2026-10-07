@@ -108,9 +108,7 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
     if (value.trim() === "A91_DEMO_URL") throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (privateUrl && value.includes(privateUrl)) throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (/\b(?:password|cookie)\s*[:=]/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
-    if (
-      /(?:^|[?&])(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)=/i.test(value)
-    )
+    if (/(?:^|[?&])(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)=/i.test(value))
       throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (value.includes("://")) {
       let parsed;
