@@ -11,8 +11,10 @@ import {
   locks,
   validateDemo,
   validateManifests,
-  sanitizeReport,
+  sanitizePrivateRuntimeEvidence,
 } from "./contracts.mjs";
+
+import { createTelemetry, failureEvidence } from "./diagnostics.mjs";
 
 const root = resolve(new URL("../..", import.meta.url).pathname);
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -40,7 +42,8 @@ export function loadPinnedParser(surface, manifest) {
     TextDecoder,
     TextEncoder,
     URL,
-    console,
+    // Parser console output stays out of Actions logs; thrown errors are classified.
+    console: { log() {}, warn() {}, error() {} },
     Uint8Array,
     Uint32Array,
     DataView,
@@ -55,40 +58,61 @@ export function loadPinnedParser(surface, manifest) {
 }
 export function runWasm(path, authorization) {
   const started = performance.now();
-  const bytes = validateDemo(path, authorization);
-  const structural = spawnSync(
-    "python3",
-    [resolve(root, "scripts/a91/validate_structure.py"), path],
-    { encoding: "utf8" },
-  );
-  if (structural.status !== 0) throw new Error("A91_DEM_STRUCTURE_INVALID");
-  const surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
-  const manifest = json(
-    resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"),
-  );
-  const parser = loadPinnedParser(surface, manifest);
+  const telemetry = createTelemetry();
+  telemetry.snapshot("before_demo_validation");
+  const bytes = telemetry.step("validate", () => validateDemo(path, authorization));
+  telemetry.step("structure_validation", () => {
+    const structural = spawnSync(
+      "python3",
+      [resolve(root, "scripts/a91/validate_structure.py"), path],
+      { encoding: "utf8", maxBuffer: 1024 * 1024, timeout: 1800000 },
+    );
+    if (structural.error || structural.signal) throw new Error("A91_RUNTIME_RESOURCE_FAILURE");
+    if (structural.status !== 0) throw new Error("A91_DEM_STRUCTURE_INVALID");
+  });
+  let surface;
+  let manifest;
+  const parser = telemetry.step("wasm_load", () => {
+    surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
+    manifest = json(
+      resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"),
+    );
+    return loadPinnedParser(surface, manifest);
+  });
   const calls = [];
   const call = (api, args, request = {}) => {
-    try {
-      const result = parser[api](bytes, ...args);
-      const outputDigest = digest(result);
-      calls.push({
-        api,
-        status: "SUCCEEDED",
-        ...request,
-        outputDigest,
-        count: Array.isArray(result) ? result.length : null,
-        returnedFields: Array.isArray(result)
-          ? [
-              ...new Set(result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : []))),
-            ].sort()
-          : Object.keys(result ?? {}),
-      });
-      return result;
-    } catch {
-      calls.push({ api, status: "PARSE_FAILED", ...request });
-      return null;
-    }
+    const stageName = {
+      parseHeader: "parse_header",
+      listGameEvents: "list_game_events",
+      listUpdatedFields: "list_updated_fields",
+      parseEvent: "parse_events",
+      parseGrenades: "parse_grenades",
+      parseTicks: "parse_ticks",
+    }[api];
+    return telemetry.step(
+      stageName,
+      () => {
+        if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
+        const result = parser[api](bytes, ...args);
+        const outputDigest = digest(result);
+        calls.push({
+          api,
+          status: "SUCCEEDED",
+          ...request,
+          outputDigest,
+          count: Array.isArray(result) ? result.length : null,
+          returnedFields: Array.isArray(result)
+            ? [
+                ...new Set(
+                  result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
+                ),
+              ].sort()
+            : Object.keys(result ?? {}),
+        });
+        return result;
+      },
+      true,
+    );
   };
   const header = call("parseHeader", []);
   const inventory = call("listGameEvents", []);
@@ -130,6 +154,14 @@ export function runWasm(path, authorization) {
   const ticks = Number(header?.playback_ticks);
   const wantedTicks =
     Number.isSafeInteger(ticks) && ticks > 0 ? [0, Math.floor(ticks / 2), ticks - 1] : [];
+  if (wantedTicks.length === 0)
+    telemetry.step(
+      "parse_ticks",
+      () => {
+        throw new Error("WASM_PARSE_FAILURE");
+      },
+      true,
+    );
   const requestedFields = surface.fields
     .filter((f) => f.sourceApi === "parseTicks" && f.runtimeRequestable)
     .map((f) => f.propertyName)
@@ -143,6 +175,7 @@ export function runWasm(path, authorization) {
     : null;
   // Keep identity absence explicit; never infer players from events or ticks.
   calls.push({ api: "parsePlayerInfo", status: "NOT_AVAILABLE_ON_WASM" });
+  telemetry.snapshot("before_normalization");
   const normalizedResult = {
     header,
     events,
@@ -150,7 +183,7 @@ export function runWasm(path, authorization) {
     ticks: sample(tickValues),
     playerIdentity: { status: "NOT_AVAILABLE_ON_WASM" },
   };
-  const normalizedResultDigest = digest(normalizedResult);
+  const normalizedResultDigest = telemetry.step("normalization", () => digest(normalizedResult));
   const failed = calls.some((c) => c.status === "PARSE_FAILED") || wantedTicks.length === 0;
   const byName = (predicate) => events.filter((e) => predicate(e.eventName));
   const artifact = {
@@ -233,10 +266,13 @@ export function runWasm(path, authorization) {
     roundDigest: digest(byName((n) => n.startsWith("round_"))),
     playerDigest: digest({ status: "NOT_AVAILABLE_ON_WASM" }),
     durationMs: performance.now() - started,
+    ...telemetry.evidence(),
     ...locks,
     persisted: false,
   };
-  sanitizeReport(artifact);
+  telemetry.snapshot("before_private_sanitize");
+  telemetry.step("private_sanitize", () => sanitizePrivateRuntimeEvidence(artifact));
+  Object.assign(artifact, telemetry.evidence());
   return artifact;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
@@ -244,29 +280,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const output = arg("--output");
   try {
     const result = runWasm(arg("--demo"), json(arg("--authorization")));
-    writeFileSync(output, sanitizeReport(result));
+    writeFileSync(output, sanitizePrivateRuntimeEvidence(result), { mode: 0o600 });
     process.exitCode = result.status === "SUCCEEDED" ? 0 : 1;
   } catch (error) {
-    const reason =
-      error instanceof RangeError
-        ? "A91_RUNTIME_RESOURCE_FAILURE"
-        : [
-              "A91_DEM_SIZE_MISMATCH",
-              "A91_DEM_SHA256_MISMATCH",
-              "AUTHORIZATION_MISMATCH",
-              "MISSING_DEM",
-              "WRONG_DEM_EXTENSION",
-              "A91_DEM_STRUCTURE_INVALID",
-              "WASM_ARTIFACT_IDENTITY_MISMATCH",
-              "UNSUPPORTED_WASM_API",
-              "CATALOG_MISMATCH",
-              "CONTRACT_MISMATCH",
-              "A91_RUNTIME_RESOURCE_FAILURE",
-            ].includes(error?.message)
-          ? error.message
-          : "WASM_RUN_FAILED";
-    if (output) writeFileSync(output, JSON.stringify({ status: "FAIL", reason, ...locks }));
-    console.error(reason);
+    const failure = failureEvidence(error);
+    if (output) writeFileSync(output, sanitizePrivateRuntimeEvidence(failure), { mode: 0o600 });
+    console.error(failure.reason);
     process.exitCode = 1;
   }
 }
