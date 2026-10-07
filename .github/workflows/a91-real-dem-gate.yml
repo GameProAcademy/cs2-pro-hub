@@ -73,10 +73,6 @@ jobs:
             ${{ runner.temp }}/a91-artifacts/a91_real_dem_report.json
             ${{ runner.temp }}/a91-artifacts/parity_report.json
             ${{ runner.temp }}/a91-artifacts/determinism_report.json
-            ${{ runner.temp }}/a91-artifacts/python_run_1.json
-            ${{ runner.temp }}/a91-artifacts/python_run_2.json
-            ${{ runner.temp }}/a91-artifacts/wasm_run_1.json
-            ${{ runner.temp }}/a91-artifacts/wasm_run_2.json
           retention-days: 3
           if-no-files-found: error
       - name: Final private-file cleanup
