@@ -319,18 +319,31 @@ def main():
         failed_target = None
         failed_diagnostics = temporary / "parity_diagnostics.json"
         # Always evaluate both gates, even if parity fails. Determinism is independent.
-        run(["node", "scripts/run_python_wasm_parity.mjs", "--demo", str(demo), "--authorization", str(auth_path),
+        parity_rc = run(["node", "scripts/run_python_wasm_parity.mjs", "--demo", str(demo), "--authorization", str(auth_path),
              "--python-artifact", str(temporary / "python_run_1.json"), "--wasm-artifact", str(temporary / "wasm_run_1.json"),
               "--output", str(output / "parity_report.json")], diagnostics=failed_diagnostics)
+        if parity_rc and not (output / "parity_report.json").is_file():
+            reason = "PARITY_EXECUTION_FAILED"
         stage = "determinism"
         failed_diagnostics = temporary / "determinism_diagnostics.json"
-        run(["node", "scripts/run_parser_determinism.mjs", *[str(temporary / name) for name in
+        determinism_rc = run(["node", "scripts/run_parser_determinism.mjs", *[str(temporary / name) for name in
              ("python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json")],
               "--output", str(output / "determinism_report.json")], diagnostics=failed_diagnostics)
+        if determinism_rc and not (output / "determinism_report.json").is_file():
+            reason = "DETERMINISM_EXECUTION_FAILED"
         stage = "finalization"
         failed_diagnostics = temporary / "finalize_diagnostics.json"
-        if run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=failed_diagnostics):
-            reason = "A91_GATE_FAILED"
+        final_rc = run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=failed_diagnostics)
+        if final_rc:
+            # Prefer the normalized decision produced by finalize_report over the
+            # generic child-exit code, so parity/determinism failures remain
+            # diagnosable in the bounded public report.
+            try:
+                final_report = json.loads((output / "a91_real_dem_report.json").read_text())
+                normalized_reason = final_report.get("reason")
+                reason = normalized_reason if isinstance(normalized_reason, str) and normalized_reason else "A91_GATE_FAILED"
+            except Exception:
+                reason = reason or "A91_GATE_FAILED"
     except ValueError as error:
         reason = str(error)
     except Exception:
@@ -374,7 +387,7 @@ def main():
         "A91_DEMO_URL_MISSING", "MANUAL_MAIN_REQUIRED", "PYTHON_RUN_FAILED",
         "WASM_RUN_FAILED", "WASM_ARTIFACT_IDENTITY_MISMATCH",
         "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH", "CONTRACT_MISMATCH",
-        "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED",
+        "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED", "PARITY_EXECUTION_FAILED", "DETERMINISM_EXECUTION_FAILED",
     }
     allowed_failure_reasons |= WASM_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
     if reason:
