@@ -322,14 +322,14 @@ def main():
         parity_rc = run(["node", "scripts/run_python_wasm_parity.mjs", "--demo", str(demo), "--authorization", str(auth_path),
              "--python-artifact", str(temporary / "python_run_1.json"), "--wasm-artifact", str(temporary / "wasm_run_1.json"),
               "--output", str(output / "parity_report.json")], diagnostics=failed_diagnostics)
-        if parity_rc and not (output / "parity_report.json").is_file():
+        if parity_rc and not (output / "parity_report.json").is_file() and reason is None:
             reason = "PARITY_EXECUTION_FAILED"
         stage = "determinism"
         failed_diagnostics = temporary / "determinism_diagnostics.json"
         determinism_rc = run(["node", "scripts/run_parser_determinism.mjs", *[str(temporary / name) for name in
              ("python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json")],
               "--output", str(output / "determinism_report.json")], diagnostics=failed_diagnostics)
-        if determinism_rc and not (output / "determinism_report.json").is_file():
+        if determinism_rc and not (output / "determinism_report.json").is_file() and reason is None:
             reason = "DETERMINISM_EXECUTION_FAILED"
         stage = "finalization"
         failed_diagnostics = temporary / "finalize_diagnostics.json"
