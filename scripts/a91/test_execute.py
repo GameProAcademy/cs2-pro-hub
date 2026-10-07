@@ -48,47 +48,59 @@ class HarnessTests(unittest.TestCase):
     def test_seal_allows_public_url_but_rejects_private_url_and_dem(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
-            report = directory / "a91_real_dem_report.json"
+            public_reports = (
+                "a91_real_dem_report.json",
+                "parity_report.json",
+                "determinism_report.json",
+            )
 
-            # Benign public URLs are valid parser evidence and must not be
-            # rejected merely because they use https://.
-            report.write_text(json.dumps({"source": "https://example.com/public-evidence"}))
+            def write_reports(value):
+                for name in public_reports:
+                    (directory / name).write_text(json.dumps(value))
+
+            write_reports({"source": "https://example.com/public-evidence"})
             execute.seal(directory)
 
-            # The authorized private DEM URL remains forbidden.
-            report.write_text(json.dumps({"private": "https://example.invalid/signed"}))
+            write_reports({"private": "https://example.invalid/signed"})
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory, "https://example.invalid/signed")
 
-            # Metadata keys are harmless; public parser evidence URLs are allowed.
-            report.write_text(json.dumps({
+            write_reports({
                 "authorization": {"authorizationRef": execute.AUTH},
                 "source": "https://example.com/public-evidence",
-            }))
+            })
             execute.seal(directory)
 
-            # The previous 2 MiB ceiling was too small for bounded real-demo
-            # event evidence. The new hard ceiling is still finite and explicit.
-            report.write_text(json.dumps({"padding": "x" * (3 * 1024 * 1024)}))
+            write_reports({"padding": "x" * (3 * 1024 * 1024)})
             execute.seal(directory)
 
-            # Credential-bearing query values remain forbidden.
-            report.write_text(json.dumps({"url": "https://example.com/evidence?signature=secret"}))
+            write_reports({"url": "https://example.com/evidence?signature=secret"})
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory)
 
-            # Raw DEM files must never reach the sanitized upload area.
-            report.write_text(json.dumps({"status": "FAIL", **execute.LOCKS}))
+            write_reports({"status": "FAIL", **execute.LOCKS})
             (directory / "synthetic.dem").touch()
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory)
 
-            # Full per-runtime evidence remains private runner state; only bounded
-            # gate reports are eligible for upload artifacts.
             (directory / "synthetic.dem").unlink()
             (directory / "python_run_1.json").write_text(json.dumps({"status": "SUCCEEDED"}))
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory)
+
+    def test_stage_failure_preserves_specific_reason(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = self.environment("https://example.invalid/a")
+            env.update(RUNNER_TEMP=temp, GITHUB_EVENT_NAME="workflow_dispatch", GITHUB_REF="refs/heads/main")
+            with patch.dict(execute.os.environ, env, clear=True), patch.object(execute, "download", return_value=0), patch.object(execute, "validate_download"), patch.object(execute, "run", return_value=1):
+                self.assertEqual(execute.main(), 1)
+                base = Path(temp) / "a91-artifacts"
+                report = json.loads((base / "a91_real_dem_report.json").read_text())
+                parity = json.loads((base / "parity_report.json").read_text())
+                determinism = json.loads((base / "determinism_report.json").read_text())
+                self.assertEqual(report["reason"], "A91_DEM_STRUCTURE_INVALID")
+                self.assertEqual(parity["status"], "NOT_RUN")
+                self.assertEqual(determinism["status"], "NOT_RUN")
 
     def test_missing_url_orchestrator_cleans_and_never_parses(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(execute.os.environ, {"RUNNER_TEMP": temp}, clear=True), patch.object(execute, "run") as run:
