@@ -3,11 +3,12 @@
 ## A9.1 post-Run #8 laboratory hardening — 2026-10-07
 
 - [x] Separate bounded public/private evidence, capture private child diagnostics and WASM stage/memory telemetry, preserve all gate criteria, and validate regression tests: 106 files / 1426 tests PASS; lint 0 errors / 9 warnings; automatic build OK. Exact manual/main-only/read-only YAML and three-report upload allowlist verified.
-- [x] Document the manual next-run prerequisites and conceptual A9.2 gate; no DEM execution, production changes or authorization. Run #8 root cause remains NOT PROVEN without private evidence; browser deployed-bundle proof remains blocked by missing generated output.
+- [x] Document the manual next-run prerequisites and conceptual A9.2 gate; no DEM execution, production changes or authorization. Run #8 root cause remains NOT PROVEN without private evidence.
+- [x] Keep A9.1 and A9.2 independently gated: missing browser deployed-bundle proof (`H3E91_BROWSER_BUILD_OUTPUT_MISSING`) is an A9.2/browser-release blocker, not an A9.1 real-DEM parity blocker.
 
 ## A9.1 controlled real DEM harness
 
-- [ ] A9.1-R1.1: corrections IMPLEMENTED; synthetic suites and lint PASS; final closure BLOCKED on absent generated browser output (`H3E91_BROWSER_BUILD_OUTPUT_MISSING`) and independent compiler/build evidence; no real execution. See docs/A9_1_REAL_DEM_EXECUTION.md.
+- [x] A9.1-R1.1: corrections IMPLEMENTED; synthetic suites and lint PASS; A9.1 is ready for its separate manual real-DEM execution gate. Browser-output proof is tracked separately under A9.2 and does not block A9.1.
 - [ ] A9.2 Browser Large DEM Capability Gate — LOCKED; future 473 MB browser worker, memory/hash/parse/startup/WASM-load/result-size/UI responsiveness/abort/cleanup evidence; not executed here.
 - [x] A9.1-R1: implement isolated manual workflow, validation, real WASM runner, final fail-closed decision, security/cleanup tests and documentation (no DEM execution). Local validation recorded in docs/A9_1_REAL_DEM_EXECUTION.md; deployed browser-bundle proof remains NOT PROVEN.
 - [ ] A9.1-R2: real execution — LOCKED UNTIL MANUAL WORKFLOW DISPATCH.
@@ -54,7 +55,7 @@
 - [ ] Do not run Cache Attempt 9, do not enqueue/retry the production job, do not write Canonical, do not mutate Railway, and do not use the historical RAW artifact as a substitute for fresh A9.1 parity.
 - [ ] After parity/determinism PASS, independently reconcile the real-Dem evidence and only then evaluate the next controlled execution gate.
 
-**Current decision:** Runtime Attestation #36 is CLOSED / PASS. The project is now BLOCKED ONLY BY THE NEXT EVIDENCE GATE: fresh real-DEM Python/WASM parity + determinism (plus the separate public-app publication proof, which is not needed to pretend parity exists). Attempt 9 and Canonical remain locked.
+**Current decision:** Runtime Attestation #36 is CLOSED / PASS. The project is now BLOCKED by the next evidence gate: fresh real-DEM Python/WASM parity + determinism. A9.2 browser capability remains separately locked until A9.1 PASS. Attempt 9 and Canonical remain locked.
 
 
 
