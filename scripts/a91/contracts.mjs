@@ -65,7 +65,7 @@ export function validateDemo(path, authorization) {
     authorization.source !== "LOCAL_FILE" ||
     authorization.provenance !== "LOCAL_FILE" ||
     !authorization.receivedAt ||
-    path.split(/[\\/]/).at(-1) !== authorization.filename
+    path.split(/[\/]/).at(-1) !== authorization.filename
   )
     throw new Error("AUTHORIZATION_MISMATCH");
   validateMetadata(
@@ -103,10 +103,11 @@ export function validateManifests(surface, artifact) {
 }
 function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
   if (typeof value === "string") {
-    if (/Bearer\\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (/Bearer\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (value.trim() === "A91_DEMO_URL") throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (privateUrl && value.includes(privateUrl)) throw new Error("ARTIFACT_SECURITY_FAILURE");
-    if (/\\b(?:password|cookie)\\s*[:=]/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (/\b(?:password|cookie)\s*[:=]/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (/(?:^|[?&])(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)=/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (value.includes("://")) {
       let parsed;
       try { parsed = new URL(value); } catch { throw new Error("ARTIFACT_SECURITY_FAILURE"); }
@@ -115,7 +116,7 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
         if (privateUrl && value === privateUrl) throw new Error("ARTIFACT_SECURITY_FAILURE");
         if (privateHost && parsed.hostname === privateHost) throw new Error("ARTIFACT_SECURITY_FAILURE");
         for (const [name] of parsed.searchParams) {
-          if (/^(?:signature|sig|token|access_token|refresh_token|X-Amz-[\\w-]+)$/i.test(name))
+          if (/^(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)$/i.test(name))
             throw new Error("ARTIFACT_SECURITY_FAILURE");
         }
       }
