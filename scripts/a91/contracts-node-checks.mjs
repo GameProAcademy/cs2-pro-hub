@@ -201,9 +201,15 @@ test("absence, raw secrets and URLs cannot become uploadable evidence", () => {
   assert.notEqual(digest([false]), digest([null]));
   assert.notEqual(digest([1, 2]), digest([2, 1]));
   assert.notEqual(digest([1, 1]), digest([1]));
+  assert.doesNotThrow(() =>
+    sanitizeReport({
+      authorization: { authorizationRef: "A9.1-M1-CACHE-REAL-DEM" },
+      source: "https://example.com/public-evidence",
+    }),
+  );
   for (const value of [
     { url: "https://example.invalid/private?signature=x" },
-    { token: "Bearer private" },
+    { token: "Bearer private-token-value" },
     { v: NaN },
   ])
     assert.throws(() => sanitizeReport(value));
