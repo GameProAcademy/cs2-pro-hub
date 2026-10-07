@@ -10,6 +10,7 @@ export const FIXTURE = Object.freeze({
 });
 export const MAX_DEMO_BYTES = 1500 * 1024 * 1024;
 export const MAX_REPORT_BYTES = 8 * 1024 * 1024;
+export const MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES = 256 * 1024 * 1024;
 export const locks = {
   canonicalEligible: false,
   canonicalAuthorization: false,
@@ -107,6 +108,7 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
       throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (value.trim() === "A91_DEMO_URL") throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (privateUrl && value.includes(privateUrl)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (/\bAuthorization\s*:/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (/\b(?:password|cookie)\s*[:=]/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
     if (/(?:^|[?&])(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)=/i.test(value))
       throw new Error("ARTIFACT_SECURITY_FAILURE");
@@ -138,11 +140,18 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
     Object.values(value).forEach((item) => assertSafeEvidenceValues(item, privateUrl, privateHost));
 }
 
-export function sanitizeReport(value, privateUrl = "") {
+function sanitizeEvidence(value, privateUrl, limit, overflow) {
   const text = stable(value);
   assertSafeEvidenceValues(value, privateUrl, privateUrl ? new URL(privateUrl).hostname : null);
-  if (Buffer.byteLength(text) > MAX_REPORT_BYTES) throw new Error("A91_RUNTIME_RESOURCE_FAILURE");
+  if (Buffer.byteLength(text) > limit) throw new Error(overflow);
   return text;
+}
+export function sanitizePublicReport(value, privateUrl = "") {
+  return sanitizeEvidence(value, privateUrl, MAX_REPORT_BYTES, "A91_RUNTIME_RESOURCE_FAILURE");
+}
+export const sanitizeReport = sanitizePublicReport;
+export function sanitizePrivateRuntimeEvidence(value, privateUrl = "") {
+  return sanitizeEvidence(value, privateUrl, MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES, "WASM_PRIVATE_EVIDENCE_TOO_LARGE");
 }
 export function decide(runs, parity, determinism, surface, artifact) {
   const base = {
