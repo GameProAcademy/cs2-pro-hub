@@ -160,7 +160,7 @@ export function validParityComparisons(comparisons) {
           c.equal === null &&
           ["NOT_AVAILABLE_ON_WASM", "NOT_AVAILABLE_ON_PYTHON"].includes(c.mismatch_reason) &&
           Object.values(c.availability ?? {}).some((a) => a.startsWith("NOT_AVAILABLE_ON_")) &&
-          !Object.values(c.availability ?? {}).every((a) => a.startsWith("NOT_AVAILABLE_ON_")))
+          !Object.values(c.availability ?? {}).every((a) => a.startsWith("NOT_AVAILABLE_ON_"))),
     )
   );
 }
