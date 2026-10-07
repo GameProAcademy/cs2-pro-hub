@@ -20,8 +20,7 @@ FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
 SIZE = 473748061
 SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
 AUTH = "A9.1-M1-CACHE-REAL-DEM"
-ALLOWED = {"a91_real_dem_report.json", "parity_report.json", "determinism_report.json",
-           "python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json"}
+ALLOWED = {"a91_real_dem_report.json", "parity_report.json", "determinism_report.json"}
 MAX_REPORT_BYTES = 8 * 1024 * 1024
 LOCKS = {"canonicalAuthorization": False, "attempt9Authorization": False,
          "productionAuthorization": False, "canonicalEligible": False}
