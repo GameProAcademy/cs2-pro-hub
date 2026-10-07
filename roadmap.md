@@ -2,8 +2,8 @@
 
 ## A9.1 post-Run #8 laboratory hardening — 2026-10-07
 
-- [ ] Separate bounded public/private evidence, capture private child diagnostics and WASM stage/memory telemetry, preserve all gate criteria, and validate regression tests.
-- [ ] Document the manual next-run prerequisites and conceptual A9.2 gate; no execution, production changes or authorization.
+- [x] Separate bounded public/private evidence, capture private child diagnostics and WASM stage/memory telemetry, preserve all gate criteria, and validate regression tests: 106 files / 1426 tests PASS; lint 0 errors / 9 warnings; automatic build OK. Exact manual/main-only/read-only YAML and three-report upload allowlist verified.
+- [x] Document the manual next-run prerequisites and conceptual A9.2 gate; no DEM execution, production changes or authorization. Run #8 root cause remains NOT PROVEN without private evidence; browser deployed-bundle proof remains blocked by missing generated output.
 
 ## A9.1 controlled real DEM harness
 

@@ -102,3 +102,12 @@ Run #8 on `f662eff4bbbe0975e442076c628342c5715e46c` failed the four-run gate acc
 ### A9.2 conceptual prerequisite contract — BLOCKED / NOT RUN
 
 Only after independently reviewing a complete real A9.1 PASS may a separately approved A9.2 implementation test the exact **473748061-byte** file (approximately 451.80 MiB, not 473 MiB). A9.2 must use browser File input, local-only processing, no server upload, a Worker and pinned WASM; verify file SHA/size, memory, duration, UI responsiveness, cancellation, cleanup, worker termination, ArrayBuffer/Blob release, retry and normalized failures. The existing browser ceiling remains **128 MiB**. Node success cannot prove browser support; no frontend or browser execution is introduced by this preparation.
+
+### Local validation of hardening
+
+- Full Vitest suite: **106 files / 1426 tests PASS**. The large-envelope Node and Python subprocess tests have bounded 30-second test budgets; production parser limits are unchanged.
+- Node safety/diagnostics: 17 tests PASS; Python unittest discovery: 17 tests PASS. Four standalone public-seal test functions also passed via direct invocation; pytest itself was unavailable.
+- Workflow YAML parsed successfully: manual-only, main-only, contents read-only and exact three-report upload allowlist verified.
+- Lint: 0 errors / 9 warnings. Formatting and diff checks passed; automatic preview compilation reported build OK.
+- Public build configuration check passed. Browser-output isolation proof remains **NOT PROVEN** (`H3E91_BROWSER_BUILD_OUTPUT_MISSING`); no manual build was run.
+- These are local mechanics checks, not real DEM parity/determinism, deployed-source parity or execution authorization. No DEM download/parse or workflow dispatch occurred.
