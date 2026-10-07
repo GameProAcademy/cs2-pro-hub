@@ -74,7 +74,9 @@ export function runWasm(path, authorization) {
   let manifest;
   const parser = telemetry.step("wasm_load", () => {
     surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
-    manifest = json(resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"));
+    manifest = json(
+      resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"),
+    );
     return loadPinnedParser(surface, manifest);
   });
   const calls = [];
@@ -153,7 +155,13 @@ export function runWasm(path, authorization) {
   const wantedTicks =
     Number.isSafeInteger(ticks) && ticks > 0 ? [0, Math.floor(ticks / 2), ticks - 1] : [];
   if (wantedTicks.length === 0)
-    telemetry.step("parse_ticks", () => { throw new Error("WASM_PARSE_FAILURE"); }, true);
+    telemetry.step(
+      "parse_ticks",
+      () => {
+        throw new Error("WASM_PARSE_FAILURE");
+      },
+      true,
+    );
   const requestedFields = surface.fields
     .filter((f) => f.sourceApi === "parseTicks" && f.runtimeRequestable)
     .map((f) => f.propertyName)
