@@ -221,6 +221,12 @@ test("capability-aware parity retains all domains without treating absence as eq
   assert.equal(s.parity.comparisons.length, 16);
   assert.equal(s.parity.comparablePassCount, 15);
   assert.equal(s.parity.notComparableCount, 1);
+  for (const comparison of s.parity.comparisons) {
+    assert.match(comparison.python_digest, /^[0-9a-f]{64}$/);
+    assert.match(comparison.wasm_digest, /^[0-9a-f]{64}$/);
+    assert.equal("python_value" in comparison, false);
+    assert.equal("wasm_value" in comparison, false);
+  }
   const identity = s.parity.comparisons.find((c) => c.field === "player_identity");
   assert.equal(identity.status, "NOT_COMPARABLE");
   assert.equal(identity.equal, null);
