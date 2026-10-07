@@ -38,6 +38,11 @@ const evidenceKeys = {
 };
 // Only explicit runtime-specific absence is a capability exemption. Unknown
 // declarations and failed parses cannot be used to waive a required comparison.
+// The uploadable parity report intentionally stores digests, not raw evidence.
+// Raw runtime evidence remains private to the isolated job and is never
+// published as a GitHub artifact. This prevents DEM-contained URLs or other
+// sensitive strings from crossing the artifact boundary while preserving an
+// independently reproducible equality decision.
 function availability(artifact, field, runtime) {
   const declared = artifact.domainAvailability?.[field];
   if (declared === `NOT_AVAILABLE_ON_${runtime}`) return declared;
@@ -56,10 +61,8 @@ export function compareDomains(python, wasm) {
     const base = {
       field,
       availability: available,
-      python_value: pythonValue,
-      wasm_value: wasmValue,
-      normalized_python: pythonValue,
-      normalized_wasm: wasmValue,
+      python_digest: digest(pythonValue),
+      wasm_digest: digest(wasmValue),
     };
     if (Object.values(available).includes("BLOCKED"))
       return {
@@ -98,7 +101,7 @@ export function compareDomains(python, wasm) {
         equal: null,
         mismatch_reason: absence.join("+"),
       };
-    const equal = digest(pythonValue) === digest(wasmValue);
+    const equal = base.python_digest === base.wasm_digest;
     return {
       ...base,
       comparability: "COMPARABLE",
@@ -149,6 +152,12 @@ export function validParityComparisons(comparisons) {
     comparisons.some((c) => c.comparability === "COMPARABLE") &&
     comparisons.every(
       (c) =>
+        typeof c.python_digest === "string" &&
+        /^[0-9a-f]{64}$/.test(c.python_digest) &&
+        typeof c.wasm_digest === "string" &&
+        /^[0-9a-f]{64}$/.test(c.wasm_digest) &&
+        !("python_value" in c) &&
+        !("wasm_value" in c) &&
         (c.comparability === "COMPARABLE" &&
           c.status === "PASS" &&
           c.equal === true &&
@@ -167,12 +176,13 @@ export function validParityComparisons(comparisons) {
 export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
   return {
-    schema_version: 2,
+    schema_version: 3,
     status: validParityComparisons(comparisons) ? "PASS" : "FAIL",
     demo_sha256: sha,
     comparisons,
     ...summarize(comparisons),
     parity_digest: digest(comparisons),
     canonical_authorization: false,
+    evidencePolicy: "DIGEST_ONLY_PUBLIC_PARITY;RAW_RUNTIME_EVIDENCE_PRIVATE",
   };
 }
