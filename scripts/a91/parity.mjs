@@ -152,13 +152,13 @@ export function validParityComparisons(comparisons) {
     comparisons.some((c) => c.comparability === "COMPARABLE") &&
     comparisons.every(
       (c) =>
-        typeof c.python_digest === "string" &&
-        /^[0-9a-f]{64}$/.test(c.python_digest) &&
-        typeof c.wasm_digest === "string" &&
-        /^[0-9a-f]{64}$/.test(c.wasm_digest) &&
-        !("python_value" in c) &&
-        !("wasm_value" in c) &&
-        (c.comparability === "COMPARABLE" &&
+        (typeof c.python_digest === "string" &&
+          /^[0-9a-f]{64}$/.test(c.python_digest) &&
+          typeof c.wasm_digest === "string" &&
+          /^[0-9a-f]{64}$/.test(c.wasm_digest) &&
+          !("python_value" in c) &&
+          !("wasm_value" in c) &&
+          c.comparability === "COMPARABLE" &&
           c.status === "PASS" &&
           c.equal === true &&
           c.mismatch_reason === null &&
