@@ -139,8 +139,15 @@ def _assert_safe_evidence_values(value, private_url="", private_host=None):
 
 def seal(directory, private_url=""):
     private_host = urlsplit(private_url).hostname if private_url else None
-    for path in directory.iterdir():
-        if path.name not in ALLOWED or not path.is_file() or path.is_symlink():
+    # The working directory also contains private per-runtime evidence
+    # (python_run_*.json / wasm_run_*.json). Those files are intentionally
+    # never uploadable. Seal only the explicit public artifact allowlist;
+    # the workflow upload step independently enumerates these same three
+    # files. This prevents private raw evidence from becoming a false
+    # security failure while preserving the public artifact boundary.
+    for name in sorted(ALLOWED):
+        path = directory / name
+        if not path.is_file() or path.is_symlink():
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
         if path.stat().st_size > MAX_REPORT_BYTES:
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
