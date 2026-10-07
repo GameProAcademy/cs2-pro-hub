@@ -98,7 +98,9 @@ def _assert_safe_evidence_values(value, private_url="", private_host=None):
     if isinstance(value, str):
         if re.search(r"Bearer\s+[A-Za-z0-9._~+/=-]{8,}", value, re.I):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
-        if "A91_DEMO_URL" in value.upper():
+        if value.strip() == "A91_DEMO_URL":
+            raise ValueError("ARTIFACT_SECURITY_FAILURE")
+        if private_url and private_url in value:
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
         if re.search(r"\b(?:password|cookie)\s*[:=]", value, re.I):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
