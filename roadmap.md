@@ -1,5 +1,10 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## A9.1 post-Run #8 laboratory hardening — 2026-10-07
+
+- [ ] Separate bounded public/private evidence, capture private child diagnostics and WASM stage/memory telemetry, preserve all gate criteria, and validate regression tests.
+- [ ] Document the manual next-run prerequisites and conceptual A9.2 gate; no execution, production changes or authorization.
+
 ## A9.1 controlled real DEM harness
 
 - [ ] A9.1-R1.1: corrections IMPLEMENTED; synthetic suites and lint PASS; final closure BLOCKED on absent generated browser output (`H3E91_BROWSER_BUILD_OUTPUT_MISSING`) and independent compiler/build evidence; no real execution. See docs/A9_1_REAL_DEM_EXECUTION.md.
