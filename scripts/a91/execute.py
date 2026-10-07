@@ -209,7 +209,9 @@ def _assert_safe_evidence_values(value, private_url="", private_host=None):
         # Metadata keys such as "authorizationRef" are not secret values.
         # Scan values recursively to avoid false positives on harmless keys.
         for key, item in value.items():
-            if re.fullmatch(r"(?:Authorization|password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)", key, re.I):
+            if re.fullmatch(r"(?:password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)", key, re.I):
+                raise ValueError("ARTIFACT_SECURITY_FAILURE")
+            if key.lower() == "authorization" and not (key == "authorization" and isinstance(item, dict)):
                 raise ValueError("ARTIFACT_SECURITY_FAILURE")
             _assert_safe_evidence_values(item, private_url, private_host)
 
@@ -293,6 +295,7 @@ def main():
                          "receivedAt": datetime.now(timezone.utc).isoformat()}
         auth_path = temporary / "authorization.json"
         auth_path.write_text(stable(authorization))
+        os.chmod(auth_path, 0o600)
         for index in (1, 2):
             stage = f"python_run_{index}"
             target = temporary / f"python_run_{index}.json"
