@@ -60,6 +60,23 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory, "https://example.invalid/signed")
 
+            # Metadata keys are harmless; public parser evidence URLs are allowed.
+            report.write_text(json.dumps({
+                "authorization": {"authorizationRef": execute.AUTH},
+                "source": "https://example.com/public-evidence",
+            }))
+            execute.seal(directory)
+
+            # The previous 2 MiB ceiling was too small for bounded real-demo
+            # event evidence. The new hard ceiling is still finite and explicit.
+            report.write_text(json.dumps({"padding": "x" * (3 * 1024 * 1024)}))
+            execute.seal(directory)
+
+            # Credential-bearing query values remain forbidden.
+            report.write_text(json.dumps({"url": "https://example.com/evidence?signature=secret"}))
+            with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
+                execute.seal(directory)
+
             # Raw DEM files must never reach the sanitized upload area.
             report.write_text(json.dumps({"status": "FAIL", **execute.LOCKS}))
             (directory / "synthetic.dem").touch()
