@@ -43,6 +43,12 @@ jobs:
           python-version: "3.12"
       - name: Install reference dependencies
         run: pip install -r services/cs2-demo-parser/requirements.txt
+      - name: Setup pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.9.0"
+          check-latest: false
+          package-manager-cache: false
       - name: Verify Node runtime and runner resources
         run: |
           node --version
