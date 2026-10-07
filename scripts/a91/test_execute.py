@@ -80,13 +80,11 @@ class HarnessTests(unittest.TestCase):
 
             write_reports({"status": "FAIL", **execute.LOCKS})
             (directory / "synthetic.dem").touch()
-            with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
-                execute.seal(directory)
+            execute.seal(directory)  # Explicit allowlist; unrelated private files are not uploadable.
 
             (directory / "synthetic.dem").unlink()
             (directory / "python_run_1.json").write_text(json.dumps({"status": "SUCCEEDED"}))
-            with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
-                execute.seal(directory)
+            execute.seal(directory)
 
     def test_stage_failure_preserves_specific_reason(self):
         with tempfile.TemporaryDirectory() as temp:

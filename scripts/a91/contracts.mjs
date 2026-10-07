@@ -137,7 +137,11 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
     return;
   }
   if (value && typeof value === "object")
-    Object.values(value).forEach((item) => assertSafeEvidenceValues(item, privateUrl, privateHost));
+    Object.entries(value).forEach(([key, item]) => {
+      if (/^(?:Authorization|password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)$/i.test(key))
+        throw new Error("ARTIFACT_SECURITY_FAILURE");
+      assertSafeEvidenceValues(item, privateUrl, privateHost);
+    });
 }
 
 function sanitizeEvidence(value, privateUrl, limit, overflow) {
