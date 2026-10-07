@@ -14,10 +14,11 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
       ],
       {
         encoding: "utf8",
+        timeout: 30000,
       },
     );
     expect(result.status, result.stdout + result.stderr).toBe(0);
-  });
+  }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
   it("runs synthetic Python validation, cleanup and no-execution tests", () => {
     const result = spawnSync(
       "python3",
