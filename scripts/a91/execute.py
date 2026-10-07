@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import platform
+import threading
 from importlib.metadata import version
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,12 @@ SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
 AUTH = "A9.1-M1-CACHE-REAL-DEM"
 ALLOWED = {"a91_real_dem_report.json", "parity_report.json", "determinism_report.json"}
 MAX_REPORT_BYTES = 8 * 1024 * 1024
+MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES = 256 * 1024 * 1024
+MAX_PRIVATE_STDERR_BYTES = 1024 * 1024
+WASM_REASONS = {"WASM_RUNTIME_RESOURCE_FAILURE", "WASM_MEMORY_ALLOCATION_FAILURE",
+    "WASM_RUNTIME_TRAP", "WASM_PARSE_FAILURE", "WASM_PRIVATE_EVIDENCE_TOO_LARGE",
+    "WASM_ARTIFACT_IDENTITY_MISMATCH", "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH",
+    "CONTRACT_MISMATCH", "PARSER_IDENTITY_MISMATCH", "ARTIFACT_SECURITY_FAILURE"}
 LOCKS = {"canonicalAuthorization": False, "attempt9Authorization": False,
          "productionAuthorization": False, "canonicalEligible": False}
 
@@ -72,17 +79,85 @@ def clean(path):
         raise ValueError("CLEANUP_FAILURE")
 
 
-def run(command, output=None, stdin=None):
+def classify_child_failure(returncode, stderr, wasm=False):
+    # A signal/timeout establishes resource failure; text only refines a known failed child.
+    if returncode == 0:
+        return None
+    text = stderr.decode("utf-8", errors="replace")
+    if wasm and re.search(r"out of memory|allocation fail|memory (?:grow|allocation)|cannot allocate", text, re.I):
+        return "WASM_MEMORY_ALLOCATION_FAILURE"
+    if returncode < 0:
+        return "WASM_RUNTIME_RESOURCE_FAILURE" if wasm else "A91_RUNTIME_RESOURCE_FAILURE"
+    if wasm and re.search(r"RuntimeError|wasm trap", text, re.I):
+        return "WASM_RUNTIME_TRAP"
+    if wasm and "RangeError" in text:
+        return "WASM_RUNTIME_RESOURCE_FAILURE"
+    normalized = text.strip()
+    if normalized in WASM_REASONS:
+        return normalized
+    return "A91_RUNTIME_RESOURCE_FAILURE"
+
+
+def run(command, output=None, stdin=None, diagnostics=None):
     child_env = {k: v for k, v in os.environ.items() if k != "A91_DEMO_URL"}
+    if diagnostics is None:
+        try:
+            if output:
+                with output.open("wb") as target:
+                    return subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=target,
+                                          stderr=subprocess.DEVNULL, timeout=1800).returncode
+            return subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL, timeout=1800).returncode
+        except (subprocess.TimeoutExpired, OSError, MemoryError):
+            raise ValueError("A91_RUNTIME_RESOURCE_FAILURE") from None
+    # Drain stderr continuously; retain at most 1 MiB and hash the whole stream.
+    # Never print it, put it in a report, or permit an unbounded PIPE buffer.
+    h = hashlib.sha256()
+    retained = bytearray()
+    read_failed = []
+    stderr_path = diagnostics.with_suffix(".stderr")
+    def drain(stream):
+        try:
+            with stderr_path.open("wb") as target:
+                os.chmod(stderr_path, 0o600)
+                for chunk in iter(lambda: stream.read(65536), b""):
+                    h.update(chunk)
+                    bounded = chunk[:max(0, MAX_PRIVATE_STDERR_BYTES - len(retained))]
+                    target.write(bounded)
+                    retained.extend(bounded)
+        except Exception:
+            read_failed.append(True)
+    target = output.open("wb") if output else open(os.devnull, "wb")
     try:
         if output:
-            with output.open("wb") as target:
-                result = subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=target, stderr=subprocess.DEVNULL, timeout=1800)
-        else:
-            result = subprocess.run(command, input=stdin, env=child_env, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1800)
-        return result.returncode
-    except (subprocess.TimeoutExpired, OSError, MemoryError):
-        raise ValueError("A91_RUNTIME_RESOURCE_FAILURE") from None
+            os.chmod(output, 0o600)
+        with subprocess.Popen(command, env=child_env, cwd=ROOT, stdout=target,
+                              stdin=subprocess.PIPE if stdin else subprocess.DEVNULL,
+                              stderr=subprocess.PIPE) as child:
+            thread = threading.Thread(target=drain, args=(child.stderr,))
+            thread.start()
+            try:
+                if stdin and child.stdin:
+                    child.stdin.write(stdin)
+                    child.stdin.close()
+                rc = child.wait(timeout=1800)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait()
+                rc = -9
+            finally:
+                thread.join()
+    except (OSError, MemoryError):
+        rc = -1
+    finally:
+        target.close()
+    if read_failed:
+        rc = -1
+    diagnostic = {"exitStatus": rc, "signal": -rc if rc < 0 else None,
+                  "errorDigest": h.hexdigest(), "reason": classify_child_failure(rc, bytes(retained), "run_wasm_reference.mjs" in " ".join(command))}
+    diagnostics.write_text(stable(diagnostic))
+    os.chmod(diagnostics, 0o600)
+    return rc
 
 
 def download(path, url):
@@ -133,7 +208,9 @@ def _assert_safe_evidence_values(value, private_url="", private_host=None):
     elif isinstance(value, dict):
         # Metadata keys such as "authorizationRef" are not secret values.
         # Scan values recursively to avoid false positives on harmless keys.
-        for item in value.values():
+        for key, item in value.items():
+            if re.fullmatch(r"(?:Authorization|password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)", key, re.I):
+                raise ValueError("ARTIFACT_SECURITY_FAILURE")
             _assert_safe_evidence_values(item, private_url, private_host)
 
 
@@ -157,7 +234,17 @@ def seal(directory, private_url=""):
             _assert_safe_evidence_values(value, private_url, private_host)
         except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
             raise ValueError("ARTIFACT_SECURITY_FAILURE") from None
-def enrich_python(path):
+def sanitize_private_runtime_evidence(value, private_url=""):
+    text = stable(value)
+    _assert_safe_evidence_values(value, private_url, urlsplit(private_url).hostname if private_url else None)
+    if len(text.encode()) > MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
+        raise ValueError("PYTHON_PRIVATE_EVIDENCE_TOO_LARGE")
+    return text
+
+
+def enrich_python(path, private_url=""):
+    if path.stat().st_size > MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
+        raise ValueError("PYTHON_PRIVATE_EVIDENCE_TOO_LARGE")
     value = json.loads(path.read_text())
     if value.get("status") != "SUCCEEDED" or value.get("demoSha256") != SHA or value.get("demoSizeBytes") != SIZE:
         raise ValueError("PYTHON_RUN_FAILED")
@@ -173,7 +260,8 @@ def enrich_python(path):
         "demoparser2Version": version("demoparser2"),
         "requirementsDigest": hashlib.sha256((ROOT / "services/cs2-demo-parser/requirements.txt").read_bytes()).hexdigest(),
     }
-    path.write_text(stable(value))
+    path.write_text(sanitize_private_runtime_evidence(value, private_url))
+    os.chmod(path, 0o600)
 
 
 def main():
@@ -182,15 +270,22 @@ def main():
     temporary = Path(tempfile.mkdtemp(prefix="a91-private-", dir=os.environ["RUNNER_TEMP"]))
     url = ""
     reason = None
+    failure_metadata = {}
+    stage = "inputs"
+    failed_target = None
+    failed_diagnostics = None
     try:
         url = inputs(os.environ)
         if os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch" or os.environ.get("GITHUB_REF") != "refs/heads/main":
             raise ValueError("MANUAL_MAIN_REQUIRED")
         demo = temporary / FILENAME
+        stage = "download"
         rc = download(demo, url)
         if rc:
             raise ValueError("DOWNLOAD_FAILED")
+        stage = "validate_demo"
         validate_download(demo)
+        stage = "structure_validation"
         if run([sys.executable, str(ROOT / "scripts/a91/validate_structure.py"), str(demo)]):
             raise ValueError("A91_DEM_STRUCTURE_INVALID")
         authorization = {"authorizedDemo": True, "provenance": "LOCAL_FILE", "filename": FILENAME,
@@ -199,28 +294,62 @@ def main():
         auth_path = temporary / "authorization.json"
         auth_path.write_text(stable(authorization))
         for index in (1, 2):
-            target = output / f"python_run_{index}.json"
-            if run([sys.executable, str(ROOT / "services/cs2-demo-parser/python_reference.py"), str(demo), stable(authorization)], target):
+            stage = f"python_run_{index}"
+            target = temporary / f"python_run_{index}.json"
+            failed_target = target
+            failed_diagnostics = temporary / f"python_run_{index}_diagnostics.json"
+            if run([sys.executable, str(ROOT / "services/cs2-demo-parser/python_reference.py"), str(demo), stable(authorization)], target, diagnostics=failed_diagnostics):
                 raise ValueError("PYTHON_RUN_FAILED")
-            enrich_python(target)
+            enrich_python(target, url)
         for index in (1, 2):
+            stage = f"wasm_run_{index}"
+            failed_target = temporary / f"wasm_run_{index}.json"
+            failed_diagnostics = temporary / f"wasm_run_{index}_diagnostics.json"
             if run(["node", "--max-old-space-size=6144", "scripts/a91/run_wasm_reference.mjs",
-                    "--demo", str(demo), "--authorization", str(auth_path), "--output", str(output / f"wasm_run_{index}.json")]):
+                    "--demo", str(demo), "--authorization", str(auth_path), "--output", str(failed_target)], diagnostics=failed_diagnostics):
                 raise ValueError("WASM_RUN_FAILED")
+            if failed_target.stat().st_size > MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
+                raise ValueError("WASM_PRIVATE_EVIDENCE_TOO_LARGE")
+            evidence = json.loads(failed_target.read_text())
+            _assert_safe_evidence_values(evidence, url, urlsplit(url).hostname)
+        stage = "parity"
         # Always evaluate both gates, even if parity fails. Determinism is independent.
         run(["node", "scripts/run_python_wasm_parity.mjs", "--demo", str(demo), "--authorization", str(auth_path),
-             "--python-artifact", str(output / "python_run_1.json"), "--wasm-artifact", str(output / "wasm_run_1.json"),
-             "--output", str(output / "parity_report.json")])
-        run(["node", "scripts/run_parser_determinism.mjs", *[str(output / name) for name in
+             "--python-artifact", str(temporary / "python_run_1.json"), "--wasm-artifact", str(temporary / "wasm_run_1.json"),
+             "--output", str(output / "parity_report.json")], diagnostics=temporary / "parity_diagnostics.json")
+        stage = "determinism"
+        run(["node", "scripts/run_parser_determinism.mjs", *[str(temporary / name) for name in
              ("python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json")],
-             "--output", str(output / "determinism_report.json")])
-        if run(["node", "scripts/a91/finalize_report.mjs", str(output)]):
+             "--output", str(output / "determinism_report.json")], diagnostics=temporary / "determinism_diagnostics.json")
+        stage = "finalization"
+        if run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=temporary / "finalize_diagnostics.json"):
             reason = "A91_GATE_FAILED"
     except ValueError as error:
         reason = str(error)
     except Exception:
         reason = "A91_RUNTIME_RESOURCE_FAILURE"
     finally:
+        # Project only allowlisted normalized fields BEFORE deleting all private evidence.
+        if reason:
+            failure_metadata = {"stage": stage}
+            if failed_diagnostics and failed_diagnostics.is_file():
+                try:
+                    diagnostic = json.loads(failed_diagnostics.read_text())
+                    failure_metadata["errorDigest"] = diagnostic["errorDigest"]
+                    if reason in {"WASM_RUN_FAILED", "PYTHON_RUN_FAILED"} and diagnostic.get("reason") in WASM_REASONS | {"A91_RUNTIME_RESOURCE_FAILURE"}:
+                        reason = diagnostic["reason"]
+                except Exception:
+                    pass
+            if failed_target and failed_target.is_file() and failed_target.stat().st_size <= MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
+                try:
+                    failure = json.loads(failed_target.read_text())
+                    if failure.get("reason") in WASM_REASONS:
+                        reason = failure["reason"]
+                    known_stages = {"validate", "structure_validation", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize"}
+                    if failure.get("failedStage") in known_stages:
+                        failure_metadata["stage"] = failure["failedStage"]
+                except Exception:
+                    pass
         try:
             clean(temporary)
         except Exception:
@@ -240,25 +369,14 @@ def main():
         "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH", "CONTRACT_MISMATCH",
         "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED",
     }
+    allowed_failure_reasons |= WASM_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
     if reason:
-        # run_wasm_reference writes a bounded failure artifact before exiting.
-        # Surface its normalized reason without exposing that private artifact.
-        for index in (1, 2):
-            candidate = output / f"wasm_run_{index}.json"
-            if reason == "WASM_RUN_FAILED" and candidate.is_file():
-                try:
-                    candidate_reason = json.loads(candidate.read_text()).get("reason")
-                    if candidate_reason in allowed_failure_reasons:
-                        reason = candidate_reason
-                except Exception:
-                    pass
-                break
-
         public_reason = reason if reason in allowed_failure_reasons else "A91_RUNTIME_RESOURCE_FAILURE"
         public = {
             "schema_version": 1,
             "status": "FAIL",
             "reason": public_reason,
+            **failure_metadata,
             **LOCKS,
         }
         report_path = output / "a91_real_dem_report.json"

@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { FIXTURE, decide, sanitizeReport } from "./contracts.mjs";
 
 const directory = resolve(process.argv[2]);
+const publicDirectory = resolve(process.argv[3] ?? process.argv[2]);
+const readPublic = (name) => JSON.parse(readFileSync(resolve(publicDirectory, name), "utf8"));
 const read = (name) => JSON.parse(readFileSync(resolve(directory, name), "utf8"));
 const surface = readFileSync("docs/client-parser/upstream-surface-manifest.json", "utf8");
 const manifest = JSON.parse(
@@ -11,8 +13,8 @@ const manifest = JSON.parse(
 const runs = ["python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json"].map(
   read,
 );
-const parity = read("parity_report.json");
-const determinism = read("determinism_report.json");
+const parity = readPublic("parity_report.json");
+const determinism = readPublic("determinism_report.json");
 const catalog = JSON.parse(surface);
 const decision = decide(runs, parity, determinism, catalog, manifest);
 const report = {
@@ -67,5 +69,5 @@ const report = {
       .every((c) => c.equal),
   },
 };
-writeFileSync(resolve(directory, "a91_real_dem_report.json"), sanitizeReport(report));
+writeFileSync(resolve(publicDirectory, "a91_real_dem_report.json"), sanitizeReport(report));
 process.exitCode = decision.status === "PASS" ? 0 : 1;
