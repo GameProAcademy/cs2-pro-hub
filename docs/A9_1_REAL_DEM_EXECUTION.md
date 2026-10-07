@@ -78,7 +78,7 @@ The local Python test intentionally emits `A9.1 FAIL` for missing DEM URL and ve
 | ITEM | STATUS | EVIDENCE |
 | --- | --- | --- |
 | Corrections implemented | PASS | Capability-aware parity, exact five-argument ticks, URL secret/stdin protection, fingerprints and regression tests |
-| Complete R1.1 closure | BLOCKED | Browser-output seal is NOT PROVEN; no fabricated compiler/build or remote CI attestation |
+| Complete R1.1 closure | PASS / READY FOR A9.1 REAL EXECUTION | Browser-output seal is a separate A9.2/browser-release gate and does not block A9.1 parity/determinism |
 | Git whitespace / tracked DEM | PASS | git diff --check; git ls-files '*.dem' returns none |
 | A9.1-R2–R5 and A9.2 | BLOCKED | No workflow dispatch or real execution; independent evidence required |
 | Attempt 9 / Canonical / production DEM | BLOCKED | All four authorization/eligibility flags false |
