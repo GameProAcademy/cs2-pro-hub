@@ -59,7 +59,7 @@ export function loadPinnedParser(surface, manifest) {
 export function runWasm(path, authorization) {
   const started = performance.now();
   const telemetry = createTelemetry();
-  telemetry.snapshot("before_demo_validation");
+  telemetry.snapshot("before_validate");
   const bytes = telemetry.step("validate", () => validateDemo(path, authorization));
   telemetry.step("structure_validation", () => {
     const structural = spawnSync(
