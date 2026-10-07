@@ -83,6 +83,13 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
                 execute.seal(directory)
 
+            # Full per-runtime evidence remains private runner state; only bounded
+            # gate reports are eligible for upload artifacts.
+            (directory / "synthetic.dem").unlink()
+            (directory / "python_run_1.json").write_text(json.dumps({"status": "SUCCEEDED"}))
+            with self.assertRaisesRegex(ValueError, "ARTIFACT_SECURITY_FAILURE"):
+                execute.seal(directory)
+
     def test_missing_url_orchestrator_cleans_and_never_parses(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(execute.os.environ, {"RUNNER_TEMP": temp}, clear=True), patch.object(execute, "run") as run:
             self.assertEqual(execute.main(), 1)
