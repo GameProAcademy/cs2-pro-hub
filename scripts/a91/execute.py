@@ -102,6 +102,8 @@ def _assert_safe_evidence_values(value, private_url="", private_host=None):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
         if re.search(r"\b(?:password|cookie)\s*[:=]", value, re.I):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
+        if re.search(r"\bAuthorization\s*:", value, re.I):
+            raise ValueError("ARTIFACT_SECURITY_FAILURE")
         if "://" in value:
             try:
                 parsed = urlsplit(value)
