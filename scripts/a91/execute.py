@@ -103,7 +103,22 @@ def seal(directory, private_url=""):
         value = json.loads(text)
         stable(value)  # Reject NaN/Infinity.
         safe_text = text.replace('"A91_DEMO_URL_MISSING"', '"DEM_URL_MISSING"')
-        if (private_url and private_url in text) or (private_host and private_host in text) or re.search(r"https?://|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|\bAuthorization\b|[?&](?:signature|sig|token|X-Amz-[\w-]+)=", safe_text, re.I):
+        # Public URLs are not secrets by themselves. Reject only the authorized
+        # private DEM URL/host or credential-bearing URL/token patterns. The
+        # previous generic https?:// rule incorrectly rejected benign URLs
+        # emitted by real parser evidence and destroyed otherwise sanitized
+        # reports after a successful four-run execution.
+        secret_pattern = re.compile(
+            r"Bearer\\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|"
+            r"password|cookie|A91_DEMO_URL|\\bAuthorization\\b|"
+            r"[?&](?:signature|sig|token|X-Amz-[\\w-]+)=",
+            re.I,
+        )
+        if (
+            (private_url and private_url in text)
+            or (private_host and private_host in text)
+            or secret_pattern.search(safe_text)
+        ):
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
 
 
