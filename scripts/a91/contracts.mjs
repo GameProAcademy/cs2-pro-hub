@@ -145,7 +145,10 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
       )
         throw new Error("ARTIFACT_SECURITY_FAILURE");
       // Lowercase authorization is existing non-secret fixture metadata, not an HTTP header.
-      if (/^authorization$/i.test(key) && !(key === "authorization" && item && typeof item === "object" && !Array.isArray(item)))
+      if (
+        /^authorization$/i.test(key) &&
+        !(key === "authorization" && item && typeof item === "object" && !Array.isArray(item))
+      )
         throw new Error("ARTIFACT_SECURITY_FAILURE");
       assertSafeEvidenceValues(item, privateUrl, privateHost);
     });
