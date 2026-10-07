@@ -109,9 +109,9 @@ def seal(directory, private_url=""):
         # emitted by real parser evidence and destroyed otherwise sanitized
         # reports after a successful four-run execution.
         secret_pattern = re.compile(
-            r"Bearer\\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|"
-            r"password|cookie|A91_DEMO_URL|\\bAuthorization\\b|"
-            r"[?&](?:signature|sig|token|X-Amz-[\\w-]+)=",
+            r"Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|"
+            r"password|cookie|A91_DEMO_URL|\bAuthorization\b|"
+            r"[?&](?:signature|sig|token|X-Amz-[\w-]+)=",
             re.I,
         )
         if (
