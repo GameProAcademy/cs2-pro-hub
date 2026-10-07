@@ -316,16 +316,20 @@ def main():
             evidence = json.loads(failed_target.read_text())
             _assert_safe_evidence_values(evidence, url, urlsplit(url).hostname)
         stage = "parity"
+        failed_target = None
+        failed_diagnostics = temporary / "parity_diagnostics.json"
         # Always evaluate both gates, even if parity fails. Determinism is independent.
         run(["node", "scripts/run_python_wasm_parity.mjs", "--demo", str(demo), "--authorization", str(auth_path),
              "--python-artifact", str(temporary / "python_run_1.json"), "--wasm-artifact", str(temporary / "wasm_run_1.json"),
-             "--output", str(output / "parity_report.json")], diagnostics=temporary / "parity_diagnostics.json")
+              "--output", str(output / "parity_report.json")], diagnostics=failed_diagnostics)
         stage = "determinism"
+        failed_diagnostics = temporary / "determinism_diagnostics.json"
         run(["node", "scripts/run_parser_determinism.mjs", *[str(temporary / name) for name in
              ("python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json")],
-             "--output", str(output / "determinism_report.json")], diagnostics=temporary / "determinism_diagnostics.json")
+              "--output", str(output / "determinism_report.json")], diagnostics=failed_diagnostics)
         stage = "finalization"
-        if run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=temporary / "finalize_diagnostics.json"):
+        failed_diagnostics = temporary / "finalize_diagnostics.json"
+        if run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=failed_diagnostics):
             reason = "A91_GATE_FAILED"
     except ValueError as error:
         reason = str(error)
