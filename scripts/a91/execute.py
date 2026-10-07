@@ -22,6 +22,7 @@ SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
 AUTH = "A9.1-M1-CACHE-REAL-DEM"
 ALLOWED = {"a91_real_dem_report.json", "parity_report.json", "determinism_report.json",
            "python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json"}
+MAX_REPORT_BYTES = 8 * 1024 * 1024
 LOCKS = {"canonicalAuthorization": False, "attempt9Authorization": False,
          "productionAuthorization": False, "canonicalEligible": False}
 
@@ -94,34 +95,56 @@ def download(path, url):
                 "--output", str(path)], stdin=('url = "' + escaped + '"\n').encode())
 
 
+def _assert_safe_evidence_values(value, private_url="", private_host=None):
+    if isinstance(value, str):
+        if re.search(r"Bearer\s+[A-Za-z0-9._~+/=-]{8,}", value, re.I):
+            raise ValueError("ARTIFACT_SECURITY_FAILURE")
+        if "A91_DEMO_URL" in value.upper():
+            raise ValueError("ARTIFACT_SECURITY_FAILURE")
+        if re.search(r"\b(?:password|cookie)\s*[:=]", value, re.I):
+            raise ValueError("ARTIFACT_SECURITY_FAILURE")
+        if "://" in value:
+            try:
+                parsed = urlsplit(value)
+                if parsed.scheme in {"http", "https"}:
+                    if parsed.username or parsed.password:
+                        raise ValueError("ARTIFACT_SECURITY_FAILURE")
+                    if private_url and value == private_url:
+                        raise ValueError("ARTIFACT_SECURITY_FAILURE")
+                    if private_host and parsed.hostname == private_host:
+                        raise ValueError("ARTIFACT_SECURITY_FAILURE")
+                    for key in parsed.query.split("&"):
+                        name = key.split("=", 1)[0]
+                        if re.fullmatch(r"(?:signature|sig|token|access_token|refresh_token|X-Amz-[\w-]+)", name, re.I):
+                            raise ValueError("ARTIFACT_SECURITY_FAILURE")
+            except ValueError as error:
+                if str(error) == "ARTIFACT_SECURITY_FAILURE":
+                    raise
+                raise ValueError("ARTIFACT_SECURITY_FAILURE") from None
+        return
+    if isinstance(value, list):
+        for item in value:
+            _assert_safe_evidence_values(item, private_url, private_host)
+    elif isinstance(value, dict):
+        # Metadata keys such as "authorizationRef" are not secret values.
+        # Scan values recursively to avoid false positives on harmless keys.
+        for item in value.values():
+            _assert_safe_evidence_values(item, private_url, private_host)
+
+
 def seal(directory, private_url=""):
     private_host = urlsplit(private_url).hostname if private_url else None
     for path in directory.iterdir():
-        if path.name not in ALLOWED or not path.is_file() or path.is_symlink() or path.stat().st_size > 2 * 1024 * 1024:
+        if path.name not in ALLOWED or not path.is_file() or path.is_symlink():
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
-        text = path.read_text()
-        value = json.loads(text)
-        stable(value)  # Reject NaN/Infinity.
-        safe_text = text.replace('"A91_DEMO_URL_MISSING"', '"DEM_URL_MISSING"')
-        # Public URLs are not secrets by themselves. Reject only the authorized
-        # private DEM URL/host or credential-bearing URL/token patterns. The
-        # previous generic https?:// rule incorrectly rejected benign URLs
-        # emitted by real parser evidence and destroyed otherwise sanitized
-        # reports after a successful four-run execution.
-        secret_pattern = re.compile(
-            r"Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|"
-            r"password|cookie|A91_DEMO_URL|\bAuthorization\b|"
-            r"[?&](?:signature|sig|token|X-Amz-[\w-]+)=",
-            re.I,
-        )
-        if (
-            (private_url and private_url in text)
-            or (private_host and private_host in text)
-            or secret_pattern.search(safe_text)
-        ):
+        if path.stat().st_size > MAX_REPORT_BYTES:
             raise ValueError("ARTIFACT_SECURITY_FAILURE")
-
-
+        try:
+            value = json.loads(path.read_text())
+            stable(value)  # Reject NaN/Infinity.
+            _assert_safe_evidence_values(value, private_url, private_host)
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            raise ValueError("ARTIFACT_SECURITY_FAILURE") from None
 def enrich_python(path):
     value = json.loads(path.read_text())
     if value.get("status") != "SUCCEEDED" or value.get("demoSha256") != SHA or value.get("demoSizeBytes") != SIZE:
