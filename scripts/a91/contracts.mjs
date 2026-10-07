@@ -138,7 +138,11 @@ function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
   }
   if (value && typeof value === "object")
     Object.entries(value).forEach(([key, item]) => {
-      if (/^(?:Authorization|password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)$/i.test(key))
+      if (
+        /^(?:Authorization|password|cookies?|access_token|refresh_token|signature|sig|X-Amz-[\w-]+|A91_DEMO_URL)$/i.test(
+          key,
+        )
+      )
         throw new Error("ARTIFACT_SECURITY_FAILURE");
       assertSafeEvidenceValues(item, privateUrl, privateHost);
     });
@@ -155,7 +159,12 @@ export function sanitizePublicReport(value, privateUrl = "") {
 }
 export const sanitizeReport = sanitizePublicReport;
 export function sanitizePrivateRuntimeEvidence(value, privateUrl = "") {
-  return sanitizeEvidence(value, privateUrl, MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES, "WASM_PRIVATE_EVIDENCE_TOO_LARGE");
+  return sanitizeEvidence(
+    value,
+    privateUrl,
+    MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES,
+    "WASM_PRIVATE_EVIDENCE_TOO_LARGE",
+  );
 }
 export function decide(runs, parity, determinism, surface, artifact) {
   const base = {

@@ -62,13 +62,13 @@ export function runWasm(path, authorization) {
   telemetry.snapshot("before_demo_validation");
   const bytes = telemetry.step("validate", () => validateDemo(path, authorization));
   telemetry.step("structure_validation", () => {
-  const structural = spawnSync(
-    "python3",
-    [resolve(root, "scripts/a91/validate_structure.py"), path],
-    { encoding: "utf8", maxBuffer: 1024 * 1024, timeout: 1800000 },
-  );
-  if (structural.error || structural.signal) throw new Error("A91_RUNTIME_RESOURCE_FAILURE");
-  if (structural.status !== 0) throw new Error("A91_DEM_STRUCTURE_INVALID");
+    const structural = spawnSync(
+      "python3",
+      [resolve(root, "scripts/a91/validate_structure.py"), path],
+      { encoding: "utf8", maxBuffer: 1024 * 1024, timeout: 1800000 },
+    );
+    if (structural.error || structural.signal) throw new Error("A91_RUNTIME_RESOURCE_FAILURE");
+    if (structural.status !== 0) throw new Error("A91_DEM_STRUCTURE_INVALID");
   });
   const surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
   const manifest = json(
@@ -77,25 +77,38 @@ export function runWasm(path, authorization) {
   const parser = telemetry.step("wasm_load", () => loadPinnedParser(surface, manifest));
   const calls = [];
   const call = (api, args, request = {}) => {
-    const stageName = { parseHeader: "parse_header", listGameEvents: "list_game_events", listUpdatedFields: "list_updated_fields", parseEvent: "parse_events", parseGrenades: "parse_grenades", parseTicks: "parse_ticks" }[api];
-    return telemetry.step(stageName, () => {
-      if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
-      const result = parser[api](bytes, ...args);
-      const outputDigest = digest(result);
-      calls.push({
-        api,
-        status: "SUCCEEDED",
-        ...request,
-        outputDigest,
-        count: Array.isArray(result) ? result.length : null,
-        returnedFields: Array.isArray(result)
-          ? [
-              ...new Set(result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : []))),
-            ].sort()
-          : Object.keys(result ?? {}),
-      });
-      return result;
-    }, true);
+    const stageName = {
+      parseHeader: "parse_header",
+      listGameEvents: "list_game_events",
+      listUpdatedFields: "list_updated_fields",
+      parseEvent: "parse_events",
+      parseGrenades: "parse_grenades",
+      parseTicks: "parse_ticks",
+    }[api];
+    return telemetry.step(
+      stageName,
+      () => {
+        if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
+        const result = parser[api](bytes, ...args);
+        const outputDigest = digest(result);
+        calls.push({
+          api,
+          status: "SUCCEEDED",
+          ...request,
+          outputDigest,
+          count: Array.isArray(result) ? result.length : null,
+          returnedFields: Array.isArray(result)
+            ? [
+                ...new Set(
+                  result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
+                ),
+              ].sort()
+            : Object.keys(result ?? {}),
+        });
+        return result;
+      },
+      true,
+    );
   };
   const header = call("parseHeader", []);
   const inventory = call("listGameEvents", []);
