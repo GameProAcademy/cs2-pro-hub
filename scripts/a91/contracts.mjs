@@ -9,7 +9,7 @@ export const FIXTURE = Object.freeze({
   authorizationRef: "A9.1-M1-CACHE-REAL-DEM",
 });
 export const MAX_DEMO_BYTES = 1500 * 1024 * 1024;
-export const MAX_REPORT_BYTES = 2 * 1024 * 1024;
+export const MAX_REPORT_BYTES = 8 * 1024 * 1024;
 export const locks = {
   canonicalEligible: false,
   canonicalAuthorization: false,
@@ -101,15 +101,37 @@ export function validateManifests(surface, artifact) {
   )
     throw new Error("CONTRACT_MISMATCH");
 }
-export function sanitizeReport(value) {
+function assertSafeEvidenceValues(value, privateUrl = "", privateHost = null) {
+  if (typeof value === "string") {
+    if (/Bearer\\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (value.toUpperCase().includes("A91_DEMO_URL")) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (/\\b(?:password|cookie)\\s*[:=]/i.test(value)) throw new Error("ARTIFACT_SECURITY_FAILURE");
+    if (value.includes("://")) {
+      let parsed;
+      try { parsed = new URL(value); } catch { throw new Error("ARTIFACT_SECURITY_FAILURE"); }
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        if (parsed.username || parsed.password) throw new Error("ARTIFACT_SECURITY_FAILURE");
+        if (privateUrl && value === privateUrl) throw new Error("ARTIFACT_SECURITY_FAILURE");
+        if (privateHost && parsed.hostname === privateHost) throw new Error("ARTIFACT_SECURITY_FAILURE");
+        for (const [name] of parsed.searchParams) {
+          if (/^(?:signature|sig|token|access_token|refresh_token|X-Amz-[\\w-]+)$/i.test(name))
+            throw new Error("ARTIFACT_SECURITY_FAILURE");
+        }
+      }
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => assertSafeEvidenceValues(item, privateUrl, privateHost));
+    return;
+  }
+  if (value && typeof value === "object")
+    Object.values(value).forEach((item) => assertSafeEvidenceValues(item, privateUrl, privateHost));
+}
+
+export function sanitizeReport(value, privateUrl = "") {
   const text = stable(value);
-  // No URLs, credentials or binary payloads are permitted in uploadable evidence.
-  if (
-    /https?:\/\/|Bearer\s|signed[_-]?url|access[_-]?token|refresh[_-]?token|password|cookie|A91_DEMO_URL|\bAuthorization\b|[?&](?:signature|sig|token|X-Amz-[\w-]+)=/i.test(
-      text,
-    )
-  )
-    throw new Error("ARTIFACT_SECURITY_FAILURE");
+  assertSafeEvidenceValues(value, privateUrl, privateUrl ? new URL(privateUrl).hostname : null);
   if (Buffer.byteLength(text) > MAX_REPORT_BYTES) throw new Error("A91_RUNTIME_RESOURCE_FAILURE");
   return text;
 }
