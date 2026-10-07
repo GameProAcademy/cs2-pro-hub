@@ -1,5 +1,15 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## A9.1 Run #9 postmortem and runner hardening — 2026-10-07
+
+- [x] Run #9 completed as GitHub Actions run 37663923729 on main commit cf98cf715997a77da05f51cddbfcb62381864f81; execution failed after 3m23s while the sanitized three-report artifact uploaded successfully. The failure is therefore not an artifact-upload/security-layer failure.
+- [x] Independent runner log review confirms the job used Ubuntu 24.04, Node.js 22.23.3, Python 3.12.14 and demoparser2 0.42.0; the old Node-20 action warnings were non-fatal but the action pins were outdated after GitHub's Node-20 retirement.
+- [x] Correct the A9.1 workflow to pin Ubuntu 24.04, checkout v7.0.1, setup-python v7.0.0, upload-artifact v7.0.1 and Node 24.9.0 for reproducible WASM execution.
+- [x] Add a bounded public-decision log line containing only status/reason/stage/failedStage/errorDigest; no raw stderr, DEM content, URL or private evidence is exposed.
+- [x] Add runner resource telemetry (CPU, RAM, disk, ulimit) before the real execution.
+- [ ] Run #9 exact normalized root cause remains NOT PROVEN from public logs alone because the execution step intentionally emitted only the generic final decision; the uploaded bounded artifact remains the authoritative failure evidence. The next run will print its allowlisted decision directly in the job log.
+- [ ] No conclusion is permitted yet that the failure is WASM memory, parser corruption, parity mismatch or determinism mismatch.
+
 ## A9.1 post-Run #8 laboratory hardening — 2026-10-07
 
 - [x] Separate bounded public/private evidence, capture private child diagnostics and WASM stage/memory telemetry, preserve all gate criteria, and validate regression tests: 106 files / 1426 tests PASS; lint 0 errors / 9 warnings; automatic build OK. Exact manual/main-only/read-only YAML and three-report upload allowlist verified.
