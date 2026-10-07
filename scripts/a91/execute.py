@@ -225,10 +225,56 @@ def main():
             clean(temporary)
         except Exception:
             reason = "CLEANUP_FAILURE"
-    if reason and not (output / "a91_real_dem_report.json").exists():
-        (output / "a91_real_dem_report.json").write_text(stable({"schema_version": 1, "status": "FAIL", "reason": reason, **LOCKS}))
-    if reason == "CLEANUP_FAILURE":
-        (output / "a91_real_dem_report.json").write_text(stable({"schema_version": 1, "status": "FAIL", "reason": reason, **LOCKS}))
+
+    # Never let the artifact-seal layer mask the actual gate failure. If a
+    # stage stops before parity/determinism/finalization can produce all
+    # reports, create bounded public NOT_RUN reports containing only a
+    # whitelist of safe stage reasons. Private runtime evidence remains
+    # non-uploadable.
+    allowed_failure_reasons = {
+        "A91_DEM_SIZE_MISMATCH", "A91_DEM_SHA256_MISMATCH",
+        "A91_DEM_STRUCTURE_INVALID", "DOWNLOAD_FAILED", "MISSING_DEM",
+        "WRONG_DEM_EXTENSION", "AUTHORIZATION_MISMATCH", "INVALID_DEM_URL",
+        "A91_DEMO_URL_MISSING", "MANUAL_MAIN_REQUIRED", "PYTHON_RUN_FAILED",
+        "WASM_RUN_FAILED", "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE",
+        "A91_GATE_FAILED",
+    }
+    if reason:
+        # run_wasm_reference writes a bounded failure artifact before exiting.
+        # Surface its normalized reason without exposing that private artifact.
+        for index in (1, 2):
+            candidate = output / f"wasm_run_{index}.json"
+            if reason == "WASM_RUN_FAILED" and candidate.is_file():
+                try:
+                    candidate_reason = json.loads(candidate.read_text()).get("reason")
+                    if candidate_reason in allowed_failure_reasons:
+                        reason = candidate_reason
+                except Exception:
+                    pass
+                break
+
+        public_reason = reason if reason in allowed_failure_reasons else "A91_RUNTIME_RESOURCE_FAILURE"
+        public = {
+            "schema_version": 1,
+            "status": "FAIL",
+            "reason": public_reason,
+            **LOCKS,
+        }
+        report_path = output / "a91_real_dem_report.json"
+        if not report_path.exists() or reason != "A91_GATE_FAILED":
+            report_path.write_text(stable(public))
+        for name, stage in (
+            ("parity_report.json", "PARITY_NOT_REACHED"),
+            ("determinism_report.json", "DETERMINISM_NOT_REACHED"),
+        ):
+            path = output / name
+            if not path.exists():
+                path.write_text(stable({
+                    "schema_version": 1,
+                    "status": "NOT_RUN",
+                    "reason": public_reason,
+                    "stage": stage,
+                }))
     try:
         seal(output, url)
     except Exception:
