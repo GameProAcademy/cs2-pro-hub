@@ -37,6 +37,8 @@ MAX_SAMPLE = 1000
 MAX_GRENADE_SAMPLE = 256
 MAX_TICK_FIELDS = 32
 MAX_DEMO_BYTES = 1_500 * 1024 * 1024
+RECORD_CHUNK_ROWS = 2048
+PROGRESS_PATH = Path(__import__("os").environ["A91_PROGRESS_PATH"]) if __import__("os").environ.get("A91_PROGRESS_PATH") else None
 
 
 def stable(value: Any) -> str:
@@ -136,17 +138,70 @@ def validate(path: Path, authorization: dict[str, Any]) -> None:
         raise RuntimeError("A91_DEM_SHA256_MISMATCH")
 
 
-def records(frame: Any) -> list[dict[str, Any]]:
-    if frame is None:
-        return []
-    if isinstance(frame, list):
-        return [normalize(row) for row in frame if isinstance(normalize(row), dict)]
-    to_dict = getattr(frame, "to_dict", None)
-    if callable(to_dict):
-        rows = to_dict(orient="records")
-        return [normalize(row) for row in rows if isinstance(normalize(row), dict)]
-    return []
+def progress(stage: str) -> None:
+    if PROGRESS_PATH is None:
+        return
+    try:
+        PROGRESS_PATH.write_text(stage + "\n", encoding="utf-8")
+    except Exception:
+        pass
 
+
+def iter_normalized_records(frame: Any):
+    """Yield normalized records without materializing an entire DataFrame."""
+    if frame is None:
+        return
+    if isinstance(frame, list):
+        for row in frame:
+            normalized = normalize(row)
+            if isinstance(normalized, dict):
+                yield normalized
+        return
+    to_dict = getattr(frame, "to_dict", None)
+    if not callable(to_dict):
+        return
+    iloc = getattr(frame, "iloc", None)
+    total = len(frame)
+    if iloc is None:
+        rows = to_dict(orient="records")
+        for row in rows:
+            normalized = normalize(row)
+            if isinstance(normalized, dict):
+                yield normalized
+        return
+    for start in range(0, total, RECORD_CHUNK_ROWS):
+        chunk = frame.iloc[start : start + RECORD_CHUNK_ROWS]
+        for row in chunk.to_dict(orient="records"):
+            normalized = normalize(row)
+            if isinstance(normalized, dict):
+                yield normalized
+        del chunk
+
+
+def summarize_records(frame: Any, sample_limit: int = MAX_SAMPLE) -> dict[str, Any]:
+    """Digest records with bounded Python memory; retain only a small sample."""
+    hasher = hashlib.sha256()
+    hasher.update(b"[")
+    first = True
+    count = 0
+    returned_fields: set[str] = set()
+    samples: list[dict[str, Any]] = []
+    for row in iter_normalized_records(frame):
+        if not first:
+            hasher.update(b",")
+        first = False
+        hasher.update(stable(row).encode("utf-8"))
+        count += 1
+        returned_fields.update(row.keys())
+        if len(samples) < sample_limit:
+            samples.append(row)
+    hasher.update(b"]")
+    return {"digest": hasher.hexdigest(), "count": count, "returnedFields": sorted(returned_fields), "samples": samples}
+
+
+def records(frame: Any) -> list[dict[str, Any]]:
+    """Bounded materialization for domains known to remain small."""
+    return list(iter_normalized_records(frame))
 
 def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
     player = [
@@ -162,14 +217,14 @@ def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
     return player, other
 
 
-def parse_event(parser: DemoParser, event: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def parse_event(parser: DemoParser, event: dict[str, Any]) -> dict[str, Any]:
     name = event["eventName"]
+    progress("parse_event:" + name)
     player, other = event_request(event)
     frame = parser.parse_event(name, player=player, other=other)
-    value = records(frame)
-    returned = sorted({key for row in value for key in row})
+    summary = summarize_records(frame)
     requested = player + other
-    evidence = {
+    return {
         "eventName": name,
         "status": "SUCCEEDED",
         "requestedPlayerFields": player,
@@ -178,13 +233,12 @@ def parse_event(parser: DemoParser, event: dict[str, Any]) -> tuple[list[dict[st
             *[item for item in event.get("playerFields", []) if item.get("requestAllowed") is True],
             *[item for item in event.get("otherFields", []) if item.get("requestAllowed") is True],
         ],
-        "unavailableFields": [field for field in requested if field not in returned],
-        "count": len(value),
-        "fullDigest": digest(value),
-        "returnedFields": returned,
-        "samples": sample(value),
+        "unavailableFields": [field for field in requested if field not in summary["returnedFields"]],
+        "count": summary["count"],
+        "fullDigest": summary["digest"],
+        "returnedFields": summary["returnedFields"],
+        "samples": summary["samples"],
     }
-    return value, evidence
 
 
 def main() -> int:
@@ -202,8 +256,9 @@ def main() -> int:
     fields = normalize(parser.list_updated_fields())
 
     events: list[dict[str, Any]] = []
+    progress("parse_events:start")
     for event in surface["events"]:
-        value, evidence = parse_event(parser, event)
+        evidence = parse_event(parser, event)
         events.append(
             {
                 "eventName": evidence["eventName"],
@@ -213,10 +268,9 @@ def main() -> int:
                 "samples": evidence["samples"],
             }
         )
-        # Do not retain the complete DataFrame or its rows after digest/sample.
-        del value
 
-    grenades = records(parser.parse_grenades())
+    progress("parse_grenades")
+    grenade_summary = summarize_records(parser.parse_grenades(), MAX_GRENADE_SAMPLE)
     ticks_total = header.get("playback_ticks")
     wanted_ticks = (
         [0, int(ticks_total) // 2, int(ticks_total) - 1]
@@ -230,24 +284,23 @@ def main() -> int:
         for item in surface["fields"]
         if item.get("sourceApi") == "parseTicks" and item.get("runtimeRequestable") is True
     ][:MAX_TICK_FIELDS]
-    tick_values = (
-        records(parser.parse_ticks(requested_fields, ticks=wanted_ticks))
-        if wanted_ticks
-        else []
-    )
+    progress("parse_ticks")
+    tick_summary = summarize_records(parser.parse_ticks(requested_fields, ticks=wanted_ticks)) if wanted_ticks else {"digest": digest([]), "count": 0, "returnedFields": [], "samples": []}
 
     # Python has player-info support; WASM is explicitly unavailable. Keep the
     # difference explicit so parity becomes NOT_COMPARABLE rather than inferred.
-    players = records(parser.parse_player_info())
+    progress("parse_player_info")
+    player_summary = summarize_records(parser.parse_player_info(), 128)
+    progress("finalize")
 
     normalized_result = {
         "header": header,
         "events": events,
-        "grenades": sample(grenades, MAX_GRENADE_SAMPLE),
-        "ticks": sample(tick_values),
+        "grenades": grenade_summary["samples"],
+        "ticks": tick_summary["samples"],
         "playerIdentity": {
             "status": "AVAILABLE_ON_PYTHON",
-            "value": sample(players, 128),
+            "value": player_summary["samples"],
         },
     }
 
@@ -287,16 +340,16 @@ def main() -> int:
                 }
                 for item in events
             ],
-            {"api": "parseGrenades", "status": "SUCCEEDED", "outputDigest": digest(grenades), "count": len(grenades)},
+            {"api": "parseGrenades", "status": "SUCCEEDED", "outputDigest": grenade_summary["digest"], "count": grenade_summary["count"]},
             {
                 "api": "parseTicks",
                 "status": "SUCCEEDED",
                 "wantedTicks": wanted_ticks,
                 "requestedFields": requested_fields,
-                "outputDigest": digest(tick_values),
-                "count": len(tick_values),
+                "outputDigest": tick_summary["digest"],
+                "count": tick_summary["count"],
             },
-            {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": digest(players), "count": len(players)},
+            {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": player_summary["digest"], "count": player_summary["count"]},
         ],
         "fieldInventory": sample(fields),
         "eventInventory": sample(inventory, 1024),
@@ -311,12 +364,12 @@ def main() -> int:
         },
         "eventEvidence": events,
         "roundEvidence": by_name(lambda name: name.startswith("round_")),
-        "grenadeEvidence": sample(grenades, MAX_GRENADE_SAMPLE),
+        "grenadeEvidence": grenade_summary["samples"],
         "bombEvidence": by_name(lambda name: name.startswith("bomb_")),
         "deathEvidence": by_name(lambda name: name == "player_death"),
         "damageEvidence": by_name(lambda name: name == "player_hurt"),
         "weaponEvidence": by_name(lambda name: name.startswith("weapon_") or name.startswith("item_")),
-        "economyEvidence": {"status": "BOUNDED_TICK_PROBE", "value": sample(tick_values)},
+        "economyEvidence": {"status": "BOUNDED_TICK_PROBE", "value": tick_summary["samples"]},
         "tickDomainEvidence": {
             "requestedFields": requested_fields,
             "wantedTicks": wanted_ticks,
@@ -330,9 +383,9 @@ def main() -> int:
             [{"api": item["eventName"], "digest": item["fullDigest"]} for item in events]
         ),
         "eventDigest": digest(events),
-        "tickDigest": digest(tick_values),
+        "tickDigest": tick_summary["digest"],
         "roundDigest": digest(by_name(lambda name: name.startswith("round_"))),
-        "playerDigest": digest(players),
+        "playerDigest": player_summary["digest"],
         "durationMs": round((time.perf_counter() - started) * 1000, 3),
         "canonicalEligible": False,
         "canonicalAuthorization": False,
