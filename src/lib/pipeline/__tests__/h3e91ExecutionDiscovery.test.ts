@@ -21,6 +21,7 @@ const executablePatterns = [
   /\basyncio\.to_thread\(parse\s*,/g,
   /\bparse_demo_file\s*\(/g,
   /\bparser\.(?:parseTicks|parseEvent|parseHeader|parseEvents|parseGrenades|parsePlayerInfo)\s*\(/g,
+  /\bparser\.parse_(?:ticks|event|events|header|grenades|player_info)\s*\(/g,
   /\bnew Worker\(new URL\("\.\/clientParser\.worker\.ts"/g,
 ];
 
@@ -108,9 +109,11 @@ describe("H.3-E.9.1 execution source discovery", () => {
     });
     expect(Object.fromEntries(sites)).toEqual({
       "services/cs2-demo-parser/app.py": 1,
-      "services/cs2-demo-parser/python_reference.py": 1,
       "services/cs2-demo-parser/worker.py": 1,
     });
+    expect(read("services/cs2-demo-parser/python_reference.py")).toMatch(
+      /from demoparser2 import DemoParser/,
+    );
     expect(read("src/components/pipeline/ClientParserPoc.tsx")).toContain("ClientParserService");
     const pocRoute = read("src/routes/_authenticated/client-parser-poc.tsx");
     expect(pocRoute).not.toMatch(/import\s*(?:\(|[^;]*from).*ClientParserPoc/);
