@@ -240,9 +240,7 @@ export function runWasm(path, authorization, options = {}) {
       parserVersion: "0.42.0",
     }),
     wasmArtifact: {
-      bindingSha256: sha(
-        readFileSync(resolve(root, "public/client-parser/demoparser2/0.42.0/demoparser2.js")),
-      ),
+      bindingSha256: manifest.binding.sha256,
       wasmSha256: manifest.wasm.sha256,
     },
     environmentFingerprint: {
