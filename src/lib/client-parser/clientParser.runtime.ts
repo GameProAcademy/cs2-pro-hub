@@ -1,4 +1,5 @@
 import { sha256Text, stableClientJson } from "./clientParser.hash";
+import { throwIfFatalWasmError } from "./clientParser.errors";
 import {
   CLIENT_PARSER_BUILD_IDENTITY,
   CLIENT_PARSER_NAME,
@@ -125,7 +126,8 @@ export function playerInventoryFromRuntime(
         teamNumber: safeNumber(row["team_number"] ?? row["teamNumber"]),
       }));
     return { status: "AVAILABLE", count: players.length, players };
-  } catch {
+  } catch (error) {
+    throwIfFatalWasmError(error);
     return { status: "PARSE_FAILED", count: null, players: [] };
   }
 }

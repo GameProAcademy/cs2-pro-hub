@@ -25,3 +25,6 @@
 - Keep A9.1 tooling under scripts/a91 and manual-only CI, outside production imports; local fixture tests establish mechanics, never execution authority or real parity.
 - Keep capability-aware A9.1 domain comparisons in the isolated pure parity module; explicit incomparability preserves unavailable APIs without granting equality or execution authority.
 - Keep A9.1 private runtime envelopes and child diagnostics separate from public reports, remove private files before upload, and exclude operational telemetry from semantic digests so observability cannot weaken gates or leak evidence.
+- Keep browser parse lifecycle resources in per-execution closures with one ownership token; stale async callbacks must never clean up a newer execution.
+- Keep app data-state and future metric/Coach traceability schemas separate from authorization evaluators; render contracts must never grant execution authority.
+- Require emitted browser entries before bundle-seal scanning and include source maps; empty or server-only output cannot prove browser isolation.

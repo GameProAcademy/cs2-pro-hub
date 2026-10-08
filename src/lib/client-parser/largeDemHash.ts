@@ -29,6 +29,10 @@ export function hashLargeDemInWorker(
   options: { signal?: AbortSignal; onProgress?: (progress: LargeDemHashProgress) => void } = {},
 ): Promise<{ sha256: string; bytesRead: number }> {
   return new Promise((resolve, reject) => {
+    if (options.signal?.aborted) {
+      reject(new DOMException("Hash cancelled", "AbortError"));
+      return;
+    }
     const worker = new Worker(new URL("./largeDemHash.worker.ts", import.meta.url), {
       type: "module",
       name: "gamepro-large-dem-hash",
@@ -39,16 +43,19 @@ export function hashLargeDemInWorker(
       if (settled) return;
       settled = true;
       options.signal?.removeEventListener("abort", abort);
+      worker.onmessage = null;
+      worker.onerror = null;
+      worker.onmessageerror = null;
       worker.terminate();
       if (error) reject(error);
       else if (result) resolve(result);
       else reject(new Error("LARGE_DEM_HASH_FAILED"));
     };
     const abort = () => {
-      worker.postMessage({ type: "CANCEL", requestId });
       finish(new DOMException("Hash cancelled", "AbortError"));
     };
     worker.onerror = () => finish(new Error("LARGE_DEM_HASH_FAILED"));
+    worker.onmessageerror = () => finish(new Error("LARGE_DEM_HASH_FAILED"));
     worker.onmessage = (event: MessageEvent<unknown>) => {
       if (!isLargeDemHashWorkerEvent(event.data)) {
         finish(new Error("LARGE_DEM_HASH_FAILED"));
@@ -74,6 +81,10 @@ export function hashLargeDemInWorker(
       return;
     }
     options.signal?.addEventListener("abort", abort, { once: true });
-    worker.postMessage({ type: "HASH", requestId, file });
+    try {
+      worker.postMessage({ type: "HASH", requestId, file });
+    } catch {
+      finish(new Error("LARGE_DEM_HASH_FAILED"));
+    }
   });
 }
