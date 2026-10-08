@@ -59,6 +59,17 @@ def main() -> int:
     if old_prof not in parse_demo:
         raise RuntimeError("parse_demo first Instant::now target not found")
     parse_demo = parse_demo.replace(old_prof, new_prof, 1)
+    old_first_elapsed = '''        if _prof {
+            eprintln!("[prof] first_pass: {:.3}s", _t.elapsed().as_secs_f64());
+        }
+'''
+    new_first_elapsed = '''        if _prof {
+            eprintln!("[prof] first_pass: {:.3}s", _t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
+        }
+'''
+    if old_first_elapsed not in parse_demo:
+        raise RuntimeError("parse_demo first-pass timer target not found")
+    parse_demo = parse_demo.replace(old_first_elapsed, new_first_elapsed, 1)
 
     old_second = '''        let prof = std::env::var("CS2_PROF").is_ok();
         let mut t = std::time::Instant::now();
