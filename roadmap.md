@@ -2,9 +2,10 @@
 
 ## App-side hardening / A9.2 preparation — 2026-10-08
 
-- [ ] Harden per-execution Worker ownership, startup/URL/postMessage failures, cancellation, duplicate READY and stale async callbacks; prove with synthetic tests only.
-- [ ] Prepare explicit app-state and future evidence/Coach contracts, preserving DEMO_ONLY and all authorization locks.
-- [ ] Review browser-output checker, run regression tests/lint, inspect automatic build and public app flows, and deliver A–N evidence report.
+- [x] Harden per-execution Worker ownership, startup/URL/postMessage failures, cancellation, duplicate READY and stale async callbacks; 21 synthetic lifecycle tests, no real DEM.
+- [x] Prepare explicit app-state and future evidence/Coach contracts, preserving DEMO_ONLY and all authorization locks; additive snapshots only, universal UI migration not claimed.
+- [x] Review browser-output checker, run regression tests/lint, inspect automatic build and public app flows, and deliver A–N evidence report: docs/release-gates/APP-SIDE-HARDENING-A92-PREPARATION-2026-10-08.md. Final 108 files / 1463 tests; changed-file lint clean; automatic build OK.
+- [ ] External scope blocker: full lint fails on protected A9.1 wasm_smoke.mjs formatting; independently permitted source correction required. Official browser output and authenticated/real-Worker proof remain missing; no publish.
 - [ ] External blocker: independently approved A9.1/A9.2 real evidence and deployed-bundle review; no real DEM, workflow dispatch, parser/pin/manifest/parity/determinism/Canonical/Railway/database/secret changes permitted.
 
 ## GitHub / Lovable forensic reconciliation — 2026-10-08
