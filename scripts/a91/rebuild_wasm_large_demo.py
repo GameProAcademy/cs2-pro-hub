@@ -43,6 +43,77 @@ def main() -> int:
     if actual != UPSTREAM_COMMIT:
         raise RuntimeError(f"upstream identity mismatch: {actual} != {UPSTREAM_COMMIT}")
 
+    # wasm32-unknown-unknown traps on unconditional std::time::Instant::now().
+    # Keep upstream profiling behavior on native targets, but make the two
+    # parser-entry profiling timestamps lazy exactly as the WASM remediation
+    # evidence requires. This is a source-level compatibility patch only;
+    # it does not alter parsed DEM data or parser output.
+    parse_demo_src = UPSTREAM / "src/parser/src/parse_demo.rs"
+    parse_demo = parse_demo_src.read_text()
+    old_prof = '''        let _prof = std::env::var("CS2_PROF").is_ok();
+        let _t = std::time::Instant::now();
+'''
+    new_prof = '''        let _prof = std::env::var("CS2_PROF").is_ok();
+        let _t = _prof.then(std::time::Instant::now);
+'''
+    if old_prof not in parse_demo:
+        raise RuntimeError("parse_demo first Instant::now target not found")
+    parse_demo = parse_demo.replace(old_prof, new_prof, 1)
+
+    old_second = '''        let prof = std::env::var("CS2_PROF").is_ok();
+        let mut t = std::time::Instant::now();
+'''
+    new_second = '''        let prof = std::env::var("CS2_PROF").is_ok();
+        let mut t = prof.then(std::time::Instant::now);
+'''
+    if old_second not in parse_demo:
+        raise RuntimeError("parse_demo second Instant::now target not found")
+    parse_demo = parse_demo.replace(old_second, new_second, 1)
+
+    old_elapsed = '''        if prof { eprintln!("[prof] second_pass start(): {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+'''
+    new_elapsed = '''        if prof {
+            eprintln!("[prof] second_pass start(): {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
+            t = prof.then(std::time::Instant::now);
+        }
+'''
+    if old_elapsed not in parse_demo:
+        raise RuntimeError("parse_demo second-pass timer reset target not found")
+    parse_demo = parse_demo.replace(old_elapsed, new_elapsed, 1)
+
+    old_create = '''        if prof { eprintln!("[prof] create_output: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+'''
+    new_create = '''        if prof {
+            eprintln!("[prof] create_output: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
+            t = prof.then(std::time::Instant::now);
+        }
+'''
+    if old_create not in parse_demo:
+        raise RuntimeError("parse_demo create-output timer reset target not found")
+    parse_demo = parse_demo.replace(old_create, new_create, 1)
+
+    old_combine = '''        if prof { eprintln!("[prof] combine_outputs: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+'''
+    new_combine = '''        if prof {
+            eprintln!("[prof] combine_outputs: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
+            t = prof.then(std::time::Instant::now);
+        }
+'''
+    if old_combine not in parse_demo:
+        raise RuntimeError("parse_demo combine-output timer reset target not found")
+    parse_demo = parse_demo.replace(old_combine, new_combine, 1)
+
+    old_post = '''        if prof { eprintln!("[prof] post-proc: {:.3}s", t.elapsed().as_secs_f64()); }
+'''
+    new_post = '''        if prof {
+            eprintln!("[prof] post-proc: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
+        }
+'''
+    if old_post not in parse_demo:
+        raise RuntimeError("parse_demo post-processing timer target not found")
+    parse_demo = parse_demo.replace(old_post, new_post, 1)
+    parse_demo_src.write_text(parse_demo)
+
     wasm_src = UPSTREAM / "src/wasm/src/lib.rs"
     source = wasm_src.read_text()
     old = """    let output = parser.parse_header_only(&file).unwrap();
@@ -105,6 +176,7 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
     manifest_data["buildRemediation"] = {
         "parseHeaderErrorPropagation": True,
         "parseHeaderParseProjectiles": False,
+        "lazyWasmInstantProfiling": True,
         "wasmStackBytes": 8388608,
         "rustVersion": RUST_VERSION,
         "wasmPackVersion": WASM_PACK_VERSION,
