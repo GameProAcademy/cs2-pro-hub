@@ -172,13 +172,20 @@ describe("synthetic lifecycle mechanics, never DEM/parity proof", () => {
     expect(worker().terminate).toHaveBeenCalledOnce();
   });
   it("cleans up INIT postMessage failure", async () => {
-    vi.stubGlobal("Worker", class extends SyntheticWorker {
-      constructor() {
-        super();
-        this.postMessage.mockImplementation(() => { throw new Error("private INIT failure"); });
-      }
+    vi.stubGlobal(
+      "Worker",
+      class extends SyntheticWorker {
+        constructor() {
+          super();
+          this.postMessage.mockImplementation(() => {
+            throw new Error("private INIT failure");
+          });
+        }
+      },
+    );
+    await expect(new ClientParserService().parse(file())).rejects.toMatchObject({
+      code: "CLIENT_WORKER_FAILED",
     });
-    await expect(new ClientParserService().parse(file())).rejects.toMatchObject({ code: "CLIENT_WORKER_FAILED" });
     expect(worker().terminate).toHaveBeenCalledOnce();
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -186,14 +193,18 @@ describe("synthetic lifecycle mechanics, never DEM/parity proof", () => {
     hash.mockResolvedValue({ sha256: "a".repeat(64), bytesRead: 0 });
     const pending = new ClientParserService().parse(file());
     const assertion = expect(pending).rejects.toMatchObject({ code: "CLIENT_HASH_FAILED" });
-    await worker().emit("READY", { wasmLoadMs: 1 }); await assertion;
+    await worker().emit("READY", { wasmLoadMs: 1 });
+    await assertion;
     expect(worker().postMessage).toHaveBeenCalledOnce();
     expect(worker().terminate).toHaveBeenCalledOnce();
   });
   it("contains throwing progress callbacks", async () => {
-    const pending = new ClientParserService().parse(file(), () => { throw new Error("consumer error"); });
+    const pending = new ClientParserService().parse(file(), () => {
+      throw new Error("consumer error");
+    });
     const assertion = expect(pending).rejects.toMatchObject({ code: "CLIENT_WORKER_FAILED" });
-    await worker().emit("PROGRESS", { stage: "INIT", progress: 0, elapsedMs: 0 }); await assertion;
+    await worker().emit("PROGRESS", { stage: "INIT", progress: 0, elapsedMs: 0 });
+    await assertion;
     expect(worker().terminate).toHaveBeenCalledOnce();
   });
   it.each([
