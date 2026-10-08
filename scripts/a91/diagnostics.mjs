@@ -21,16 +21,35 @@ export const FAILURE_CODES = new Set([
   "ARTIFACT_SECURITY_FAILURE",
   "A91_RUNTIME_RESOURCE_FAILURE",
 ]);
-export function classifyWasmError(error, parsing = false) {
-  if (FAILURE_CODES.has(error?.message)) return error.message;
+function trapDetail(error) {
+  const name = error?.name ?? error?.constructor?.name ?? "Error";
+  const message = typeof error?.message === "string" ? error.message : "";
+  const normalized = message.trim().toLowerCase();
+  if (/out of memory|memory allocation|cannot allocate|allocation failed/.test(normalized))
+    return "memory_allocation";
+  if (/out of bounds|bounds check/.test(normalized)) return "out_of_bounds";
+  if (/unreachable/.test(normalized)) return "unreachable";
+  if (/stack overflow|call stack|stack exhausted/.test(normalized)) return "stack_overflow";
+  if (/divide by zero/.test(normalized)) return "divide_by_zero";
+  if (/integer overflow/.test(normalized)) return "integer_overflow";
+  if (name === "RuntimeError" || error instanceof WebAssembly.RuntimeError) return "runtime_error_other";
+  return null;
+}
+function classifyWasmErrorDetail(error, parsing = false) {
+  if (FAILURE_CODES.has(error?.message))
+    return { reason: error.message, trapDetail: null };
   const name = error?.name ?? error?.constructor?.name;
   const message = typeof error?.message === "string" ? error.message : "";
   if (/out of memory|allocation fail|memory (?:grow|allocation)|cannot allocate/i.test(message))
-    return "WASM_MEMORY_ALLOCATION_FAILURE";
-  if (error instanceof RangeError || name === "RangeError") return "WASM_RUNTIME_RESOURCE_FAILURE";
+    return { reason: "WASM_MEMORY_ALLOCATION_FAILURE", trapDetail: "memory_allocation" };
+  if (error instanceof RangeError || name === "RangeError")
+    return { reason: "WASM_RUNTIME_RESOURCE_FAILURE", trapDetail: "range_error" };
   if (error instanceof WebAssembly.RuntimeError || name === "RuntimeError")
-    return "WASM_RUNTIME_TRAP";
-  return parsing ? "WASM_PARSE_FAILURE" : "A91_RUNTIME_RESOURCE_FAILURE";
+    return { reason: "WASM_RUNTIME_TRAP", trapDetail: trapDetail(error) };
+  return { reason: parsing ? "WASM_PARSE_FAILURE" : "A91_RUNTIME_RESOURCE_FAILURE", trapDetail: null };
+}
+export function classifyWasmError(error, parsing = false) {
+  return classifyWasmErrorDetail(error, parsing).reason;
 }
 export function createTelemetry() {
   const executionTimeline = [];
@@ -64,8 +83,21 @@ export function createTelemetry() {
       failedStage = name;
       snapshot(`failed_${name}`, startedAt);
       // Attach only bounded, normalized diagnostics; no raw exception crosses the boundary.
-      const failure = new Error(classifyWasmError(error, parsing));
-      failure.diagnostics = { stage, failedStage, executionTimeline, memoryPeaks };
+      // The original RuntimeError text is never emitted. Only a small allowlisted
+      // classification, a digest, and bounded runtime identity are retained.
+      const detail = classifyWasmErrorDetail(error, parsing);
+      const failure = new Error(detail.reason);
+      failure.diagnostics = {
+        stage,
+        failedStage,
+        executionTimeline,
+        memoryPeaks,
+        trapDetail: detail.trapDetail,
+        errorName: error?.name ?? error?.constructor?.name ?? "Error",
+        errorMessageDigest: sha(String(error?.message ?? "UNKNOWN_ERROR")),
+        wasmMemoryBytesBefore: error?.wasmMemoryBytesBefore ?? null,
+        wasmMemoryBytesAfter: error?.wasmMemoryBytesAfter ?? null,
+      };
       throw failure;
     }
   }
@@ -79,6 +111,11 @@ export function failureEvidence(error) {
   return {
     status: "FAIL",
     reason: classifyWasmError(error),
+    trapDetail: error?.diagnostics?.trapDetail ?? null,
+    errorName: error?.diagnostics?.errorName ?? null,
+    errorMessageDigest: error?.diagnostics?.errorMessageDigest ?? null,
+    wasmMemoryBytesBefore: error?.diagnostics?.wasmMemoryBytesBefore ?? null,
+    wasmMemoryBytesAfter: error?.diagnostics?.wasmMemoryBytesAfter ?? null,
     ...locks,
     ...(error?.diagnostics ?? { stage: "before_validate", failedStage: "validate" }),
     errorDigest: sha(String(error?.message ?? "UNKNOWN_ERROR")),
