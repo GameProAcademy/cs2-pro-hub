@@ -1,0 +1,69 @@
+name: A9.1 One-Time Run 10 Launcher
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/a91-run10-launcher.yml
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch-and-clean:
+    if: ${{ !contains(github.event.head_commit.message, '[a91-launcher-cleanup]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch A9.1 on current main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --location \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/a91-real-dem-gate.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"expected_sha256":"0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d","expected_size_bytes":"473748061","authorization_ref":"A9.1-M1-CACHE-REAL-DEM","filename":"furia-vs-gamerlegion-m1-cache.dem"}}'
+
+      - name: Wait for dispatched Run 10 to be created on this launcher commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LAUNCH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            run=$(curl --fail-with-body --silent --show-error --location \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/a91-real-dem-gate.yml/runs?event=workflow_dispatch&branch=main&per_page=20")
+            if echo "${run}" | jq -e --arg sha "${LAUNCH_SHA}" '.workflow_runs[] | select(.head_sha == $sha)' >/dev/null; then
+              echo "A9.1 Run 10 created for launcher commit ${LAUNCH_SHA}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timed out waiting for A9.1 Run 10 creation for ${LAUNCH_SHA}" >&2
+          exit 1
+
+      - name: Remove one-time launcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/.github/workflows/a91-run10-launcher.yml"
+          sha=$(curl --fail-with-body --silent --show-error --location \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" "${api}" | jq -r '.sha')
+          curl --fail-with-body --silent --show-error --location \
+            -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "${api}" \
+            -d "{\"message\":\"chore(a91): remove one-time Run 10 launcher [a91-launcher-cleanup]\",\"sha\":\"${sha}\",\"branch\":\"main\"}"
