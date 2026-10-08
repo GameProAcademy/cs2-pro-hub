@@ -308,8 +308,17 @@ def main():
             stage = f"wasm_run_{index}"
             failed_target = temporary / f"wasm_run_{index}.json"
             failed_diagnostics = temporary / f"wasm_run_{index}_diagnostics.json"
-            if run(["node", "--max-old-space-size=6144", "scripts/a91/run_wasm_reference.mjs",
-                    "--demo", str(demo), "--authorization", str(auth_path), "--output", str(failed_target)], diagnostics=failed_diagnostics):
+            wasm_command = [
+                "node", "--max-old-space-size=6144", "scripts/a91/run_wasm_reference.mjs",
+                "--demo", str(demo), "--authorization", str(auth_path), "--output", str(failed_target),
+            ]
+            wasm_dir = os.environ.get("A91_WASM_ARTIFACT_DIR", "").strip()
+            wasm_manifest = os.environ.get("A91_WASM_MANIFEST", "").strip()
+            if wasm_dir:
+                wasm_command.extend(["--wasm-dir", wasm_dir])
+            if wasm_manifest:
+                wasm_command.extend(["--wasm-manifest", wasm_manifest])
+            if run(wasm_command, diagnostics=failed_diagnostics):
                 raise ValueError("WASM_RUN_FAILED")
             if failed_target.stat().st_size > MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
                 raise ValueError("WASM_PRIVATE_EVIDENCE_TOO_LARGE")
