@@ -173,7 +173,7 @@ jobs:
 
       - name: Upload remediation evidence
         if: always()
-        uses: actions/upload-artifact@cf430e0c7a8d5a9f3f0d9c9f6b9d1b0c6f5e7d8c
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: a91-wasm-remediation-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
