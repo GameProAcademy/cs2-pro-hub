@@ -43,6 +43,43 @@ def main() -> int:
     if actual != UPSTREAM_COMMIT:
         raise RuntimeError(f"upstream identity mismatch: {actual} != {UPSTREAM_COMMIT}")
 
+    # Hermeticize the pinned upstream build. The generated protobuf/map/message-type
+    # sources are already committed at the pinned revision, while upstream's original
+    # build scripts redundantly clone GameTracking-CS2 and invoke prost-build/protoc.
+    # Keep the generated sources byte-for-byte and replace both generators with no-ops.
+    generated_sources = [
+        UPSTREAM / "src/csgoproto/src/protobuf.rs",
+        UPSTREAM / "src/csgoproto/src/maps.rs",
+        UPSTREAM / "src/csgoproto/src/message_type.rs",
+    ]
+    for generated in generated_sources:
+        if not generated.is_file() or generated.stat().st_size == 0:
+            raise RuntimeError(f"missing committed generated source: {generated}")
+
+    csgoproto_build = UPSTREAM / "src/csgoproto/build.rs"
+    parser_build = UPSTREAM / "src/parser/build.rs"
+    csgoproto_build.write_text(
+        'fn main() {\n'
+        '    println!("cargo::rerun-if-changed=src/protobuf.rs");\n'
+        '    println!("cargo::rerun-if-changed=src/maps.rs");\n'
+        '    println!("cargo::rerun-if-changed=src/message_type.rs");\n'
+        '}\n'
+    )
+    parser_build.write_text(
+        'fn main() {\n'
+        '    println!("cargo::rerun-if-changed=../csgoproto/src/protobuf.rs");\n'
+        '}\n'
+    )
+
+    csgoproto_manifest = UPSTREAM / "src/csgoproto/Cargo.toml"
+    cargo_text = csgoproto_manifest.read_text()
+    build_deps = '''[build-dependencies]
+prost-build = "0.13.3"
+'''
+    if build_deps not in cargo_text:
+        raise RuntimeError("csgoproto prost-build dependency target not found")
+    csgoproto_manifest.write_text(cargo_text.replace(build_deps, "", 1))
+
     # wasm32-unknown-unknown traps on unconditional std::time::Instant::now().
     # Keep upstream profiling behavior on native targets, but make the two
     # parser-entry profiling timestamps lazy exactly as the WASM remediation
@@ -189,6 +226,10 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
         "parseHeaderParseProjectiles": False,
         "lazyWasmInstantProfiling": True,
         "wasmStackBytes": 8388608,
+        "hermeticGeneratedSources": True,
+        "hermeticBuildScripts": True,
+        "protocRequired": False,
+        "gametrackingNetworkRequired": False,
         "rustVersion": RUST_VERSION,
         "wasmPackVersion": WASM_PACK_VERSION,
         "buildMode": "release",
