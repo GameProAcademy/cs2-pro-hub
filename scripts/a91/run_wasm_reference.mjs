@@ -79,6 +79,28 @@ export function runWasm(path, authorization) {
     );
     return loadPinnedParser(surface, manifest);
   });
+  // Large real DEMs are passed through wasm-bindgen as one Uint8Array. The generated
+  // binding first mallocs the entire input inside WASM linear memory. Pre-grow a bounded
+  // envelope before the first parse call so the allocator does not have to satisfy a
+  // ~474 MB contiguous request while simultaneously growing the heap. This is a runtime
+  // safety/capability preparation only; it does not change the parser or DEM bytes.
+  const WASM_PAGE_BYTES = 64 * 1024;
+  const LARGE_DEM_MEMORY_FLOOR_BYTES = 768 * 1024 * 1024;
+  const LARGE_DEM_MEMORY_HEADROOM_BYTES = 256 * 1024 * 1024;
+  telemetry.step("wasm_memory_prepare", () => {
+    if (!(parser.memory instanceof WebAssembly.Memory))
+      throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
+    const targetBytes = Math.max(
+      LARGE_DEM_MEMORY_FLOOR_BYTES,
+      bytes.length + LARGE_DEM_MEMORY_HEADROOM_BYTES,
+    );
+    const targetPages = Math.ceil(targetBytes / WASM_PAGE_BYTES);
+    const currentPages = parser.memory.buffer.byteLength / WASM_PAGE_BYTES;
+    if (currentPages < targetPages) parser.memory.grow(targetPages - currentPages);
+    const finalBytes = parser.memory.buffer.byteLength;
+    if (finalBytes < bytes.length) throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
+  });
+
   const calls = [];
   const call = (api, args, request = {}) => {
     const stageName = {
