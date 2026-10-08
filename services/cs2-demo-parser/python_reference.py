@@ -1,7 +1,15 @@
-"""Bounded Python reference-artifact producer for an authorized real CS2 DEM.
+"""A9.1 lightweight Python reference producer.
 
-This module never discovers or chooses a fixture implicitly. The caller must
-pass an explicit file path. Without one it emits the official NOT_RUN status.
+This is deliberately NOT the production RAW/forensic parser path. A9.1 proves
+cross-runtime parity and determinism on the authorized real DEM. It must query
+only the same bounded domains as the pinned WASM reference and must not retain
+the production adapter's full event/tick/grenade material in memory.
+
+The previous implementation called services/cs2-demo-parser/parser.py, which
+parses every discovered event, builds RAW evidence, performs production
+post-processing and retains large intermediate structures. On the 473 MB real
+DEM that path terminated as A91_RUNTIME_RESOURCE_FAILURE during python_run_1.
+The A9.1 reference path is intentionally isolated from that production path.
 """
 
 from __future__ import annotations
@@ -9,48 +17,90 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import platform
 import sys
 import time
 import uuid
 from pathlib import Path
 from typing import Any
 
-from errors import (
-    AUTHORIZED_DEM_METADATA_MISMATCH,
-    AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS,
-    EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED,
-    NO_AUTHORIZED_REAL_DEM,
-    NO_AUTHORIZED_REAL_DEM_FIXTURE,
-)
-from parser import parse_demo_file
+from demoparser2 import DemoParser
 
-MAX_DEMO_BYTES = 1_500 * 1024 * 1024
+ROOT = Path(__file__).resolve().parents[2]
+FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
+SIZE = 473748061
+SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
 PARSER_VERSION = "0.42.0"
 PARSER_REVISION = "d3767705dc5846d73ed29db50eaeda58778dc934"
-SURFACE_MANIFEST_PATH = Path(__file__).resolve().parents[2] / "docs/client-parser/upstream-surface-manifest.json"
+MANIFEST = ROOT / "docs/client-parser/upstream-surface-manifest.json"
+MAX_SAMPLE = 1000
+MAX_GRENADE_SAMPLE = 256
+MAX_TICK_FIELDS = 32
 
 
-def _stable_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+def stable(value: Any) -> str:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
 
 
-def _digest(value: Any) -> str:
-    return hashlib.sha256(_stable_json(value).encode()).hexdigest()
+def digest(value: Any) -> str:
+    return hashlib.sha256(stable(value).encode("utf-8")).hexdigest()
 
 
-def _manifest() -> dict[str, Any]:
-    with SURFACE_MANIFEST_PATH.open(encoding="utf-8") as handle:
-        value = json.load(handle)
+def normalize(value: Any) -> Any:
+    """Convert pandas/numpy values to JSON values without inventing data."""
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {str(k): normalize(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [normalize(v) for v in value]
+    item = getattr(value, "item", None)
+    if callable(item):
+        try:
+            return normalize(item())
+        except Exception:
+            pass
+    to_dict = getattr(value, "to_dict", None)
+    if callable(to_dict):
+        try:
+            return normalize(to_dict(orient="records"))
+        except TypeError:
+            try:
+                return normalize(to_dict())
+            except Exception:
+                pass
+    return str(value)
+
+
+def sample(value: Any, limit: int = MAX_SAMPLE) -> Any:
+    value = normalize(value)
+    if isinstance(value, list):
+        return [sample(v, limit) for v in value[:limit]]
+    if isinstance(value, dict):
+        return {k: sample(v, limit) for k, v in value.items()}
+    return value
+
+
+def read_manifest() -> dict[str, Any]:
+    value = json.loads(MANIFEST.read_text(encoding="utf-8"))
     if value.get("provenance", {}).get("commit") != PARSER_REVISION:
-        raise ValueError("catalog_parser_revision_mismatch")
+        raise RuntimeError("PARSER_IDENTITY_MISMATCH")
     catalog_payload = {
         "provenance": value["provenance"],
         "apis": value["apis"],
         "fields": value["fields"],
         "events": value["events"],
     }
-    if _digest(catalog_payload) != value.get("catalogDigest"):
-        raise ValueError("catalog_digest_mismatch")
+    if digest(catalog_payload) != value.get("catalogDigest"):
+        raise RuntimeError("CATALOG_MISMATCH")
     contract_payload = {
         "contractVersion": value["contractVersion"],
         "catalogVersion": value["catalogVersion"],
@@ -58,215 +108,246 @@ def _manifest() -> dict[str, Any]:
         "limits": value["limits"],
         "policies": value["policies"],
     }
-    if _digest(contract_payload) != value.get("contractDigest"):
-        raise ValueError("contract_digest_mismatch")
+    if digest(contract_payload) != value.get("contractDigest"):
+        raise RuntimeError("CONTRACT_MISMATCH")
     return value
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
+def validate(path: Path, authorization: dict[str, Any]) -> None:
+    if not path.is_file() or path.suffix.lower() != ".dem":
+        raise RuntimeError("EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED")
+    size = path.stat().st_size
+    if (
+        authorization.get("authorizedDemo") is not True
+        or authorization.get("source") != "LOCAL_FILE"
+        or authorization.get("provenance") != "LOCAL_FILE"
+        or authorization.get("filename") != path.name
+        or authorization.get("sizeBytes") != size
+        or authorization.get("sha256") != SHA
+        or size != SIZE
+    ):
+        raise RuntimeError("AUTHORIZED_DEM_METADATA_MISMATCH")
+    h = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+            h.update(chunk)
+    if h.hexdigest() != SHA:
+        raise RuntimeError("A91_DEM_SHA256_MISMATCH")
 
 
-def _finite(value: Any) -> bool:
-    if isinstance(value, bool) or value is None or isinstance(value, str):
-        return True
-    if isinstance(value, (int, float)):
-        return math.isfinite(float(value))
-    if isinstance(value, list):
-        return all(_finite(item) for item in value)
-    if isinstance(value, dict):
-        return all(isinstance(key, str) and _finite(item) for key, item in value.items())
-    return False
+def records(frame: Any) -> list[dict[str, Any]]:
+    if frame is None:
+        return []
+    if isinstance(frame, list):
+        return [normalize(row) for row in frame if isinstance(normalize(row), dict)]
+    to_dict = getattr(frame, "to_dict", None)
+    if callable(to_dict):
+        rows = to_dict(orient="records")
+        return [normalize(row) for row in rows if isinstance(normalize(row), dict)]
+    return []
 
 
-def _bounded(value: Any, limit: int = 1_000) -> Any:
-    if isinstance(value, list):
-        return [_bounded(item, limit) for item in value[:limit]]
-    if isinstance(value, dict):
-        return {str(key): _bounded(item, limit) for key, item in sorted(value.items())[:256]}
-    return value
-
-
-def _domain(output: dict[str, Any], key: str, fallback: Any) -> Any:
-    value = output.get(key, fallback)
-    return _bounded(value)
-
-
-def build_python_reference(path_value: str | None, authorization: dict[str, Any] | None = None) -> dict[str, Any]:
-    if not path_value:
-        return {
-            "status": "NOT_RUN",
-            "reason": NO_AUTHORIZED_REAL_DEM_FIXTURE,
-            "canonicalEligible": False,
-            "persisted": False,
-        }
-    path = Path(path_value)
-    if not path.is_file() or path.suffix.lower() != ".dem":
-        raise ValueError(EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED)
-    if not authorization or authorization.get("authorizedDemo") is not True:
-        raise ValueError(NO_AUTHORIZED_REAL_DEM)
-    required_authorization = {"provenance", "filename", "sha256", "sizeBytes", "source", "authorizationRef", "receivedAt"}
-    if not required_authorization.issubset(authorization) or authorization.get("source") != "LOCAL_FILE":
-        raise ValueError(NO_AUTHORIZED_REAL_DEM)
-    size = path.stat().st_size
-    if size < 1 or size > MAX_DEMO_BYTES:
-        raise ValueError(AUTHORIZED_DEM_SIZE_OUT_OF_BOUNDS)
-    started = time.perf_counter()
-    started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    demo_sha = _sha256(path)
-    if authorization["filename"] != path.name or authorization["sizeBytes"] != size or authorization["sha256"] != demo_sha:
-        raise ValueError(AUTHORIZED_DEM_METADATA_MISMATCH)
-    surface = _manifest()
-    output = parse_demo_file(str(path))
-    raw = output.get("raw_evidence") or {}
-    header = _domain(output, "header", {})
-    players = _domain(output, "players", [])
-    events = _domain(output, "events", [])
-    rounds = _domain(output, "rounds", [])
-    grenades = _bounded(raw.get("grenade_samples") or [])
-    field_inventory = sorted(
-        {
-            str(key)
-            for section in (header, *players, *events, *rounds, *grenades)
-            if isinstance(section, dict)
-            for key in section
-        }
-    )
-    event_inventory = [
-        str(item.get("event_name"))
-        for item in raw.get("event_coverage") or []
-        if isinstance(item, dict) and item.get("event_name") is not None
+def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
+    player = [
+        item["field"]
+        for item in event.get("playerFields", [])
+        if item.get("requestAllowed") is True
     ]
-    normalized_result = _bounded(
-        {"header": header, "players": players, "events": events, "rounds": rounds, "grenades": grenades}
-    )
-    normalized_digest = hashlib.sha256(
-        json.dumps(normalized_result, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-    ).hexdigest()
-    run_id = f"python:{demo_sha}:{uuid.uuid4()}"
-    generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    field_evidence = [
-        {
-            "field": item["propertyName"],
-            "upstreamSupported": item["upstreamSupported"],
-            "requested": False,
-            "parsed": item["propertyName"] in field_inventory,
-            "value": None,
-            "evidenceRefs": item["evidenceRefs"],
-            "status": "OBSERVED_IN_BOUNDED_OUTPUT" if item["propertyName"] in field_inventory else "NOT_OBSERVED",
-        }
-        for item in surface["fields"]
+    other = [
+        item["field"]
+        for item in event.get("otherFields", [])
+        if item.get("requestAllowed") is True
     ]
-    event_evidence = [
-        {
-            "eventName": item["eventName"],
-            "catalogued": True,
-            "observed": item["eventName"] in event_inventory,
-            "requestCatalogDigest": surface["catalogDigest"],
-            "evidenceRefs": item["evidenceRefs"],
-        }
-        for item in surface["events"]
-    ]
-    grenade_evidence = [
-        {
-            "raw": item,
-            "normalizedGrenadeType": None,
-            "normalizedGrenadeIdentity": None,
-            "normalizedPosition": None,
-            "lifecycle": "UNRESOLVED",
-            "normalization": "RAW_ONLY",
-        }
-        for item in grenades
-    ]
-    tick_evidence = {
-        "source": "python_raw_evidence",
-        "probeType": "BOUNDED_REFERENCE",
-        "authoritativeDomain": False,
-        "value": _bounded(raw.get("forensic_contract_v2", {}).get("tick_domain", {})),
+    return player, other
+
+
+def parse_event(parser: DemoParser, event: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    name = event["eventName"]
+    player, other = event_request(event)
+    frame = parser.parse_event(name, player=player, other=other)
+    value = records(frame)
+    returned = sorted({key for row in value for key in row})
+    requested = player + other
+    evidence = {
+        "eventName": name,
+        "status": "SUCCEEDED",
+        "requestedPlayerFields": player,
+        "requestedOtherFields": other,
+        "requestEvidence": [
+            *[item for item in event.get("playerFields", []) if item.get("requestAllowed") is True],
+            *[item for item in event.get("otherFields", []) if item.get("requestAllowed") is True],
+        ],
+        "unavailableFields": [field for field in requested if field not in returned],
+        "count": len(value),
+        "fullDigest": digest(value),
+        "returnedFields": returned,
+        "samples": sample(value),
     }
-    artifact: dict[str, Any] = {
+    return value, evidence
+
+
+def main() -> int:
+    path = Path(sys.argv[1]) if len(sys.argv) >= 2 else None
+    authorization = json.loads(sys.argv[2]) if len(sys.argv) == 3 else None
+    if path is None or authorization is None:
+        raise RuntimeError("NO_AUTHORIZED_REAL_DEM")
+    validate(path, authorization)
+    surface = read_manifest()
+    started = time.perf_counter()
+    parser = DemoParser(str(path))
+
+    header = normalize(parser.parse_header())
+    inventory = normalize(parser.list_game_events())
+    fields = normalize(parser.list_updated_fields())
+
+    events: list[dict[str, Any]] = []
+    for event in surface["events"]:
+        value, evidence = parse_event(parser, event)
+        events.append(
+            {
+                "eventName": evidence["eventName"],
+                "status": evidence["status"],
+                "count": evidence["count"],
+                "fullDigest": evidence["fullDigest"],
+                "samples": evidence["samples"],
+            }
+        )
+        # Do not retain the complete DataFrame or its rows after digest/sample.
+        del value
+
+    grenades = records(parser.parse_grenades())
+    ticks_total = header.get("playback_ticks")
+    wanted_ticks = (
+        [0, int(ticks_total) // 2, int(ticks_total) - 1]
+        if isinstance(ticks_total, (int, float))
+        and not isinstance(ticks_total, bool)
+        and int(ticks_total) > 0
+        else []
+    )
+    requested_fields = [
+        item["propertyName"]
+        for item in surface["fields"]
+        if item.get("sourceApi") == "parseTicks" and item.get("runtimeRequestable") is True
+    ][:MAX_TICK_FIELDS]
+    tick_values = (
+        records(parser.parse_ticks(requested_fields, ticks=wanted_ticks))
+        if wanted_ticks
+        else []
+    )
+
+    # Python has player-info support; WASM is explicitly unavailable. Keep the
+    # difference explicit so parity becomes NOT_COMPARABLE rather than inferred.
+    players = records(parser.parse_player_info())
+
+    normalized_result = {
+        "header": header,
+        "events": events,
+        "grenades": sample(grenades, MAX_GRENADE_SAMPLE),
+        "ticks": sample(tick_values),
+        "playerIdentity": {
+            "status": "AVAILABLE_ON_PYTHON",
+            "value": sample(players, 128),
+        },
+    }
+
+    by_name = lambda predicate: [item for item in events if predicate(item["eventName"])]
+    artifact = {
         "artifactVersion": 2,
-        "runId": run_id,
         "runtime": "PYTHON",
-        "demoSha256": demo_sha,
-        "demoSizeBytes": size,
-        "parserName": "demoparser2-python",
+        "runId": f"python:{SHA}:{uuid.uuid4()}",
+        "executionKind": "REAL_DEM_FULL_FILE",
+        "test_fixture_only": False,
+        "status": "SUCCEEDED",
+        "reason": None,
+        "demoSha256": SHA,
+        "demoSizeBytes": SIZE,
         "parserVersion": PARSER_VERSION,
         "parserRevision": PARSER_REVISION,
         "catalogVersion": surface["catalogVersion"],
-        "contractVersion": surface["contractVersion"],
         "catalogDigest": surface["catalogDigest"],
+        "contractVersion": surface["contractVersion"],
         "contractDigest": surface["contractDigest"],
-        "generatedAt": generated_at,
-        "sections": ["header", "players", "events", "rounds", "grenades", "ticks"],
-        "fieldEvidence": field_evidence,
-        "eventEvidence": event_evidence,
-        "roundEvidence": rounds,
-        "grenadeEvidence": grenade_evidence,
-        "tickEvidence": tick_evidence,
-        "fieldInventory": field_inventory,
-        "eventInventory": event_inventory,
-        "playerInventory": players,
-        "roundInventory": rounds,
-        "grenadeInventory": grenades,
+        "artifactIdentity": None,
+        "environmentFingerprint": {
+            "pythonVersion": platform.python_version(),
+            "platform": platform.platform(),
+        },
+        "apiCalls": [
+            {"api": "parseHeader", "status": "SUCCEEDED", "outputDigest": digest(header)},
+            {"api": "listGameEvents", "status": "SUCCEEDED", "outputDigest": digest(inventory), "count": len(inventory)},
+            {"api": "listUpdatedFields", "status": "SUCCEEDED", "outputDigest": digest(fields), "count": len(fields)},
+            *[
+                {
+                    "api": "parseEvent",
+                    "status": "SUCCEEDED",
+                    "eventName": item["eventName"],
+                    "count": item["count"],
+                    "outputDigest": item["fullDigest"],
+                }
+                for item in events
+            ],
+            {"api": "parseGrenades", "status": "SUCCEEDED", "outputDigest": digest(grenades), "count": len(grenades)},
+            {
+                "api": "parseTicks",
+                "status": "SUCCEEDED",
+                "wantedTicks": wanted_ticks,
+                "requestedFields": requested_fields,
+                "outputDigest": digest(tick_values),
+                "count": len(tick_values),
+            },
+            {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": digest(players), "count": len(players)},
+        ],
+        "fieldInventory": sample(fields),
+        "eventInventory": sample(inventory, 1024),
+        "eventInventoryDigest": digest(inventory),
         "headerEvidence": header,
-        "tickDomainEvidence": _bounded(raw.get("forensic_contract_v2", {}).get("tick_domain", {})),
-        "timingEvidence": _bounded({"header": output.get("header", {}), "rounds": output.get("rounds", [])}),
-        "mapEvidence": _bounded({"map": (output.get("header") or {}).get("map")}),
-        "scoreEvidence": _bounded({"rounds": output.get("rounds", [])}),
-        "teamEvidence": _bounded({"players": output.get("players", [])}),
-        "bombEvidence": _bounded([item for item in output.get("events", []) if str(item.get("type", "")).startswith("bomb_")]),
-        "deathEvidence": _bounded([item for item in output.get("events", []) if item.get("type") == "player_death"]),
-        "damageEvidence": _bounded([item for item in output.get("events", []) if item.get("type") == "player_hurt"]),
-        "economyEvidence": _bounded(raw.get("economy_coverage") or []),
-        "weaponEvidence": _bounded([item for item in output.get("events", []) if str(item.get("type", "")).startswith(("weapon_", "item_"))]),
-        "positionEvidence": _bounded(raw.get("tick_samples") or []),
-        "aimEvidence": _bounded(raw.get("tick_samples") or []),
+        "mapEvidence": {"map": header.get("map_name")},
+        "timingEvidence": {"header": header},
+        "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": sample(players, 128)},
+        "domainAvailability": {
+            "players": "AVAILABLE",
+            "player_identity": "AVAILABLE",
+        },
+        "eventEvidence": events,
+        "roundEvidence": by_name(lambda name: name.startswith("round_")),
+        "grenadeEvidence": sample(grenades, MAX_GRENADE_SAMPLE),
+        "bombEvidence": by_name(lambda name: name.startswith("bomb_")),
+        "deathEvidence": by_name(lambda name: name == "player_death"),
+        "damageEvidence": by_name(lambda name: name == "player_hurt"),
+        "weaponEvidence": by_name(lambda name: name.startswith("weapon_") or name.startswith("item_")),
+        "economyEvidence": {"status": "BOUNDED_TICK_PROBE", "value": sample(tick_values)},
+        "tickDomainEvidence": {
+            "requestedFields": requested_fields,
+            "wantedTicks": wanted_ticks,
+            "authoritativeDomain": False,
+            "value": sample(tick_values),
+        },
         "normalizedResult": normalized_result,
-        "normalizedResultDigest": normalized_digest,
-        "resultDigest": normalized_digest,
-        "startedAt": started_at,
-        "durationMs": 0,
-        "status": "SUCCEEDED",
-        "evidenceStatus": "BOUNDED_REFERENCE",
+        "normalizedResultDigest": digest(normalized_result),
+        "resultDigest": digest(normalized_result),
+        "rawDigest": digest(
+            [{"api": item["eventName"], "digest": item["fullDigest"]} for item in events]
+        ),
+        "eventDigest": digest(events),
+        "tickDigest": digest(tick_values),
+        "roundDigest": digest(by_name(lambda name: name.startswith("round_"))),
+        "playerDigest": digest(players),
+        "durationMs": round((time.perf_counter() - started) * 1000, 3),
         "canonicalEligible": False,
+        "canonicalAuthorization": False,
+        "attempt9Authorization": False,
+        "productionAuthorization": False,
         "persisted": False,
     }
-    artifact["runIdentity"] = {
-        "runId": artifact["runId"],
-        "runtime": "PYTHON",
-        "demoSha256": demo_sha,
-        "parserIdentity": artifact["parserName"],
-        "parserVersion": PARSER_VERSION,
-        "parserRevision": PARSER_REVISION,
-        "artifactIdentity": None,
-        "catalogVersion": surface["catalogVersion"],
-        "catalogDigest": surface["catalogDigest"],
-        "contractVersion": surface["contractVersion"],
-        "contractDigest": surface["contractDigest"],
-        "normalizedDigest": normalized_digest,
-        "startedAt": started_at,
-        "durationMs": 0,
-        "status": "SUCCEEDED",
-    }
-    artifact["durationMs"] = round((time.perf_counter() - started) * 1_000, 3)
-    artifact["runIdentity"]["durationMs"] = artifact["durationMs"]
-    if not _finite(artifact):
-        raise ValueError("python_reference_contains_non_finite_value")
-    return artifact
-
-
-def main(argv: list[str]) -> int:
-    path_value = argv[1] if len(argv) >= 2 else None
-    authorization = json.loads(argv[2]) if len(argv) == 3 else None
-    artifact = build_python_reference(path_value, authorization)
-    print(json.dumps(artifact, sort_keys=True, separators=(",", ":")))
-    return 0 if artifact.get("status") == "SUCCEEDED" else 2
+    print(json.dumps(artifact, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False))
+    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    try:
+        raise SystemExit(main())
+    except Exception as error:
+        # stderr is private to the isolated runner. Keep stdout empty on failure
+        # so execute.py never mistakes a partial artifact for success.
+        print(str(error), file=sys.stderr)
+        raise
