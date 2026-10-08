@@ -34,6 +34,7 @@ import {
 } from "@/data/demoPlayer";
 import { demoLessons } from "@/data/lessons";
 import type { SkillArea, TrainingHorizon } from "@/types";
+import { appDataState, demoDnaSchema, demoCoachSchema } from "@/lib/appDataContracts";
 
 /** True while the UI is rendering demonstration values. */
 export const isDemoSource = () => DEMO_DATA;
@@ -48,6 +49,9 @@ export const getMapPerformance = () => demoMapPerformance;
 export const getSideSplit = () => demoSideSplit;
 export const getTrainingPlans = () => demoTrainingPlans;
 export const getCoachHistory = () => demoCoachMessages;
+/** Future app boundary; no switch to real data is implemented by these snapshots. */
+export const getPlayerDnaState = () => appDataState("DEMO_ONLY", demoPlayerDna, demoDnaSchema);
+export const getCoachHistoryState = () => appDataState("DEMO_ONLY", demoCoachMessages, demoCoachSchema);
 export const getProfile = () => demoProfile;
 export const getAnalysis = () => demoAnalysis;
 
