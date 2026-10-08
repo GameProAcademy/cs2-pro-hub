@@ -357,7 +357,7 @@ def main() -> int:
         "headerEvidence": header,
         "mapEvidence": {"map": header.get("map_name")},
         "timingEvidence": {"header": header},
-        "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": sample(players, 128)},
+        "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": player_summary["samples"]},
         "domainAvailability": {
             "players": "AVAILABLE",
             "player_identity": "AVAILABLE",
@@ -374,7 +374,7 @@ def main() -> int:
             "requestedFields": requested_fields,
             "wantedTicks": wanted_ticks,
             "authoritativeDomain": False,
-            "value": sample(tick_values),
+            "value": tick_summary["samples"],
         },
         "normalizedResult": normalized_result,
         "normalizedResultDigest": digest(normalized_result),
