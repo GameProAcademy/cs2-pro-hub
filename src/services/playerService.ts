@@ -51,7 +51,8 @@ export const getTrainingPlans = () => demoTrainingPlans;
 export const getCoachHistory = () => demoCoachMessages;
 /** Future app boundary; no switch to real data is implemented by these snapshots. */
 export const getPlayerDnaState = () => appDataState("DEMO_ONLY", demoPlayerDna, demoDnaSchema);
-export const getCoachHistoryState = () => appDataState("DEMO_ONLY", demoCoachMessages, demoCoachSchema);
+export const getCoachHistoryState = () =>
+  appDataState("DEMO_ONLY", demoCoachMessages, demoCoachSchema);
 export const getProfile = () => demoProfile;
 export const getAnalysis = () => demoAnalysis;
 

@@ -3,7 +3,9 @@ import path from "node:path";
 
 const roots = [".output", "dist"].filter((candidate) => fs.existsSync(candidate));
 if (roots.length === 0)
-  throw new Error("H3E91_BROWSER_BUILD_OUTPUT_MISSING: run the official build before this verifier; checked .output and dist");
+  throw new Error(
+    "H3E91_BROWSER_BUILD_OUTPUT_MISSING: run the official build before this verifier; checked .output and dist",
+  );
 
 const forbidden = [
   "gamepro-client-parser-poc",
@@ -20,10 +22,12 @@ const walk = (directory) => {
 };
 roots.forEach(walk);
 // A server-only directory or empty output cannot establish browser coverage.
-const browserEntries = files.filter((file) =>
-  /(?:^|[\\/])(?:public|client|assets)[\\/]/.test(file) && /\.(?:js|mjs|html)$/.test(file),
+const browserEntries = files.filter(
+  (file) =>
+    /(?:^|[\\/])(?:public|client|assets)[\\/]/.test(file) && /\.(?:js|mjs|html)$/.test(file),
 );
-if (browserEntries.length === 0) throw new Error("H3E91_BROWSER_BUILD_OUTPUT_MISSING: no emitted browser entries");
+if (browserEntries.length === 0)
+  throw new Error("H3E91_BROWSER_BUILD_OUTPUT_MISSING: no emitted browser entries");
 
 for (const file of files) {
   const source = fs.readFileSync(file, "utf8");

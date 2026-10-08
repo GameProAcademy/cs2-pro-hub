@@ -50,21 +50,29 @@ describe("R4.1 production bundle seal verifier", () => {
     const cwd = mkdtempSync(join(tmpdir(), "h3e91-incomplete-build-"));
     try {
       mkdirSync(join(cwd, ".output/server"), { recursive: true });
-      if (kind === "server-only") writeFileSync(join(cwd, ".output/server/entry.mjs"), "export default {};");
+      if (kind === "server-only")
+        writeFileSync(join(cwd, ".output/server/entry.mjs"), "export default {};");
       const result = spawnSync(process.execPath, [checker], { cwd, encoding: "utf8" });
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain("H3E91_BROWSER_BUILD_OUTPUT_MISSING");
-    } finally { rmSync(cwd, { recursive: true, force: true }); }
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
   it("rejects forbidden parser references in source maps", () => {
     const cwd = mkdtempSync(join(tmpdir(), "h3e91-map-build-"));
     try {
       mkdirSync(join(cwd, "dist/assets"), { recursive: true });
       writeFileSync(join(cwd, "dist/assets/entry.js"), "console.log('synthetic');");
-      writeFileSync(join(cwd, "dist/assets/entry.js.map"), '{"sources":["clientParser.worker.ts"]}');
+      writeFileSync(
+        join(cwd, "dist/assets/entry.js.map"),
+        '{"sources":["clientParser.worker.ts"]}',
+      );
       const result = spawnSync(process.execPath, [checker], { cwd, encoding: "utf8" });
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain("H3E91_BROWSER_PARSER_IN_PRODUCTION_BUILD");
-    } finally { rmSync(cwd, { recursive: true, force: true }); }
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 });

@@ -64,19 +64,24 @@ export class ClientParserService {
       // Consumer callbacks are never allowed to escape the lifecycle boundary.
       const progress = (value: ClientParserProgress) => {
         if (!isActive()) return;
-        try { onProgress?.(value); }
-        catch { finish(new ClientParserError("CLIENT_WORKER_FAILED")); }
+        try {
+          onProgress?.(value);
+        } catch {
+          finish(new ClientParserError("CLIENT_WORKER_FAILED"));
+        }
       };
       try {
         const requestId = crypto.randomUUID();
         const baseUrl = window.location.href;
         const scriptUrl = trustedRuntimeUrl(
           (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_SCRIPT_URL"] as string | undefined) ??
-            CLIENT_WASM_BINDING_URL, baseUrl,
+            CLIENT_WASM_BINDING_URL,
+          baseUrl,
         );
         const wasmUrl = trustedRuntimeUrl(
           (import.meta.env["VITE_CLIENT_DEM_PARSER_WASM_BINARY_URL"] as string | undefined) ??
-            CLIENT_WASM_BINARY_URL, baseUrl,
+            CLIENT_WASM_BINARY_URL,
+          baseUrl,
         );
         if (!scriptUrl || !wasmUrl) {
           finish(new ClientParserError("CLIENT_WASM_ARTIFACT_INVALID"));
@@ -92,11 +97,17 @@ export class ClientParserService {
           name: "gamepro-client-parser-poc",
         });
         const currentWorker = worker;
-        timeout = setTimeout(() => finish(new ClientParserError("CLIENT_PARSE_TIMEOUT")), CLIENT_PARSE_TIMEOUT_MS);
+        timeout = setTimeout(
+          () => finish(new ClientParserError("CLIENT_PARSE_TIMEOUT")),
+          CLIENT_PARSE_TIMEOUT_MS,
+        );
         const post = (command: unknown) => {
           if (!isActive()) return;
-          try { currentWorker.postMessage(command); }
-          catch { finish(new ClientParserError("CLIENT_WORKER_FAILED")); }
+          try {
+            currentWorker.postMessage(command);
+          } catch {
+            finish(new ClientParserError("CLIENT_WORKER_FAILED"));
+          }
         };
         currentWorker.onerror = () => {
           if (isActive()) finish(new ClientParserError("CLIENT_WORKER_FAILED"));
@@ -121,9 +132,12 @@ export class ClientParserService {
               const hashStarted = performance.now();
               const { sha256, bytesRead } = await hashLargeDemInWorker(file, {
                 signal: hashAbortController.signal,
-                onProgress: ({ bytesRead, bytesTotal }) => progress({
-                  stage: "HASHING", progress: bytesTotal > 0 ? bytesRead / bytesTotal : 1, elapsedMs: 0,
-                }),
+                onProgress: ({ bytesRead, bytesTotal }) =>
+                  progress({
+                    stage: "HASHING",
+                    progress: bytesTotal > 0 ? bytesRead / bytesTotal : 1,
+                    elapsedMs: 0,
+                  }),
               });
               if (!isActive() || hashAbortController.signal.aborted) return;
               if (bytesRead !== file.size || !/^[0-9a-f]{64}$/.test(sha256)) {
@@ -132,19 +146,29 @@ export class ClientParserService {
               }
               phase = "PARSING";
               post({
-                type: "PARSE", requestId, file,
+                type: "PARSE",
+                requestId,
+                file,
                 capability: CLIENT_DEMO_PARSER_CAPABILITY,
                 hashDurationMs: performance.now() - hashStarted,
                 authorization: {
-                  authorizedDemo: true, provenance: "LOCAL_USER_SELECTION",
-                  filename: file.name, sha256, sizeBytes: file.size, source: "LOCAL_FILE",
-                  authorizationRef: `local-selection:${requestId}`, receivedAt: new Date().toISOString(),
+                  authorizedDemo: true,
+                  provenance: "LOCAL_USER_SELECTION",
+                  filename: file.name,
+                  sha256,
+                  sizeBytes: file.size,
+                  source: "LOCAL_FILE",
+                  authorizationRef: `local-selection:${requestId}`,
+                  receivedAt: new Date().toISOString(),
                 },
               });
             } catch {
-              if (isActive()) finish(new ClientParserError(
-                hashAbortController.signal.aborted ? "CLIENT_CANCELLED" : "CLIENT_HASH_FAILED",
-              ));
+              if (isActive())
+                finish(
+                  new ClientParserError(
+                    hashAbortController.signal.aborted ? "CLIENT_CANCELLED" : "CLIENT_HASH_FAILED",
+                  ),
+                );
             }
           } else if (event.type === "COMPLETE") {
             if (phase !== "PARSING") {
@@ -158,7 +182,14 @@ export class ClientParserService {
             finish(new ClientParserError("CLIENT_CANCELLED"));
           }
         };
-        post({ type: "INIT", requestId, scriptUrl, wasmUrl, expectedBindingSha256, expectedWasmSha256 });
+        post({
+          type: "INIT",
+          requestId,
+          scriptUrl,
+          wasmUrl,
+          expectedBindingSha256,
+          expectedWasmSha256,
+        });
       } catch {
         finish(new ClientParserError("CLIENT_WORKER_FAILED"));
       }

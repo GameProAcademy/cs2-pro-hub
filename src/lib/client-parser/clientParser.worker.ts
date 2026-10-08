@@ -37,7 +37,11 @@ import {
   type ClientParserErrorCode,
 } from "./clientParser.types";
 import { readContiguousDemoInput } from "./clientParser.input";
-import { ClientParserError, fatalWasmErrorCode, throwIfFatalWasmError } from "./clientParser.errors";
+import {
+  ClientParserError,
+  fatalWasmErrorCode,
+  throwIfFatalWasmError,
+} from "./clientParser.errors";
 import {
   CLIENT_AUDIT_CATALOG_DIGEST,
   CLIENT_PARSER_CONTRACT_DIGEST,
