@@ -306,8 +306,7 @@ def main():
         if not wasm_dir or not wasm_manifest:
             raise ValueError("WASM_ARTIFACT_IDENTITY_MISMATCH")
         smoke_rc = run([
-            "node", "--max-old-space-size=6144", "scripts/a91/wasm_smoke.mjs",
-            "--demo", str(demo), "--authorization", str(auth_path),
+            "node", "--max-old-space-size=1024", "scripts/a91/wasm_smoke.mjs",
             "--wasm-dir", wasm_dir, "--wasm-manifest", wasm_manifest,
         ], diagnostics=wasm_smoke_diagnostics)
         if smoke_rc:
