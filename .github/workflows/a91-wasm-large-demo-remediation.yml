@@ -1,0 +1,210 @@
+name: A9.1 WASM Large-Demo Remediation & Promotion
+run-name: A9.1 WASM Large-Demo Remediation & Promotion #${{ github.run_number }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha256:
+        description: Exact authorized DEM SHA-256
+        required: true
+        default: 0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d
+        type: string
+      expected_size_bytes:
+        description: Exact authorized DEM size
+        required: true
+        default: "473748061"
+        type: string
+      authorization_ref:
+        description: Independent laboratory authorization reference
+        required: true
+        default: A9.1-M1-CACHE-REAL-DEM
+        type: string
+      filename:
+        description: Authorized DEM filename
+        required: true
+        default: furia-vs-gamerlegion-m1-cache.dem
+        type: string
+      promote_on_pass:
+        description: Replace the pinned browser WASM artifact only after the real DEM gate passes
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-and-gate:
+    if: "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      UPSTREAM_COMMIT: d3767705dc5846d73ed29db50eaeda58778dc934
+      UPSTREAM_TAG: v0.42.0
+      RUST_VERSION: 1.91.1
+      WASM_PACK_VERSION: 0.13.1
+      DEM_SHA256: ${{ inputs.expected_sha256 }}
+      DEM_SIZE: ${{ inputs.expected_size_bytes }}
+      DEM_AUTH: ${{ inputs.authorization_ref }}
+      DEM_FILENAME: ${{ inputs.filename }}
+    steps:
+      - name: Checkout reviewed project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: true
+
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install "${RUST_VERSION}" --profile minimal
+          rustup target add wasm32-unknown-unknown --toolchain "${RUST_VERSION}"
+          rustup default "${RUST_VERSION}"
+          rustc --version
+          cargo --version
+
+      - name: Install pinned wasm-pack
+        run: |
+          cargo +"${RUST_VERSION}" install wasm-pack --version "${WASM_PACK_VERSION}" --locked
+          wasm-pack --version
+
+      - name: Fetch exact upstream source
+        run: |
+          rm -rf "${RUNNER_TEMP}/demoparser-upstream"
+          git clone --filter=blob:none https://github.com/LaihoE/demoparser.git "${RUNNER_TEMP}/demoparser-upstream"
+          cd "${RUNNER_TEMP}/demoparser-upstream"
+          git checkout --detach "${UPSTREAM_COMMIT}"
+          test "$(git rev-parse HEAD)" = "${UPSTREAM_COMMIT}"
+
+      - name: Apply audited WASM corrections
+        run: |
+          cd "${RUNNER_TEMP}/demoparser-upstream"
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("src/wasm/src/lib.rs")
+          s = p.read_text()
+          old = """    let output = parser.parse_header_only(&file).unwrap();
+    let mut hm: HashMap<String, String> = HashMap::default();
+    hm.extend(output);
+"""
+          new = """    let output = match parser.parse_header_only(&file) {
+        Ok(output) => output,
+        Err(e) => return Err(JsError::new(&format!("{}", e))),
+    };
+    let mut hm: HashMap<String, String> = HashMap::default();
+    hm.extend(output);
+"""
+          if old not in s:
+              raise SystemExit("parseHeader unwrap target not found")
+          s = s.replace(old, new, 1)
+          old_flag = "        parse_projectiles: true,\n        only_header: true,"
+          new_flag = "        parse_projectiles: false,\n        only_header: true,"
+          if old_flag not in s:
+              raise SystemExit("parseHeader parse_projectiles target not found")
+          s = s.replace(old_flag, new_flag, 1)
+          p.write_text(s)
+          PY
+          mkdir -p .cargo
+          cat > .cargo/config.toml <<'EOF'
+          [target.wasm32-unknown-unknown]
+          rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
+          EOF
+          grep -n -A4 -B4 "pub fn parseHeader" src/wasm/src/lib.rs
+          cat .cargo/config.toml
+
+      - name: Build audited WASM artifact
+        run: |
+          cd "${RUNNER_TEMP}/demoparser-upstream"
+          wasm-pack build src/wasm --target no-modules --release --out-dir "${RUNNER_TEMP}/wasm-pkg" --mode no-install
+          test -s "${RUNNER_TEMP}/wasm-pkg/demoparser2.js"
+          test -s "${RUNNER_TEMP}/wasm-pkg/demoparser2_bg.wasm"
+          sha256sum "${RUNNER_TEMP}/wasm-pkg/demoparser2.js"
+          sha256sum "${RUNNER_TEMP}/wasm-pkg/demoparser2_bg.wasm"
+
+      - name: Materialize temporary pinned manifest
+        env:
+          PROJECT_ROOT: ${{ github.workspace }}
+          WASM_PKG: ${{ runner.temp }}/wasm-pkg
+          MANIFEST_OUT: ${{ runner.temp }}/artifact-manifest.json
+          BUILD_UPSTREAM_COMMIT: ${{ env.UPSTREAM_COMMIT }}
+          BUILD_RUST_VERSION: ${{ env.RUST_VERSION }}
+          BUILD_WASM_PACK_VERSION: ${{ env.WASM_PACK_VERSION }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ["PROJECT_ROOT"])
+          pkg = pathlib.Path(os.environ["WASM_PKG"])
+          src = root / "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"
+          out = pathlib.Path(os.environ["MANIFEST_OUT"])
+          m = json.loads(src.read_text())
+          binding = pkg / "demoparser2.js"
+          wasm = pkg / "demoparser2_bg.wasm"
+          m["status"] = "VERIFIED_UPSTREAM_SOURCE_ARTIFACT_WITH_A91_LARGE_DEM_REMEDIATION"
+          m["sourceTag"] = "v0.42.0"
+          m["sourceCommit"] = os.environ["BUILD_UPSTREAM_COMMIT"]
+          m["binding"] = {"file":"demoparser2.js","bytes":binding.stat().st_size,"sha256":hashlib.sha256(binding.read_bytes()).hexdigest()}
+          m["wasm"] = {"file":"demoparser2_bg.wasm","bytes":wasm.stat().st_size,"sha256":hashlib.sha256(wasm.read_bytes()).hexdigest()}
+          m["buildRemediation"] = {
+            "parseHeaderErrorPropagation": True,
+            "parseHeaderParseProjectiles": False,
+            "wasmStackBytes": 8388608,
+            "rustVersion": os.environ["BUILD_RUST_VERSION"],
+            "wasmPackVersion": os.environ["BUILD_WASM_PACK_VERSION"],
+            "buildMode": "release",
+            "target": "wasm32-unknown-unknown",
+            "wasmBindgenTarget": "no-modules"
+          }
+          out.write_text(json.dumps(m, indent=2)+"\n")
+          PY
+
+      - name: Install project Python dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r services/cs2-demo-parser/requirements.txt
+
+      - name: Verify project and remediation source
+        run: |
+          python --version
+          rustc --version
+          wasm-pack --version
+          free -h
+          df -h "${RUNNER_TEMP}"
+
+      - name: Execute real A9.1 gate against rebuilt WASM
+        env:
+          A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
+          A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
+          A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
+          EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+          EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
+          AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
+          DEMO_FILENAME: ${{ inputs.filename }}
+        run: |
+          python scripts/a91/execute.py
+
+      - name: Upload remediation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: a91-wasm-remediation-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/a91-artifacts/a91_real_dem_report.json
+            ${{ runner.temp }}/a91-artifacts/parity_report.json
+            ${{ runner.temp }}/a91-artifacts/determinism_report.json
+            ${{ runner.temp }}/artifact-manifest.json
+            ${{ runner.temp }}/wasm-pkg/demoparser2.js
+            ${{ runner.temp }}/wasm-pkg/demoparser2_bg.wasm
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Promote rebuilt WASM artifact
+        if: success() && inputs.promote_on_pass
+        run: |
+          set -euo pipefail
+          target="public/client-parser/demoparser2/0.42.0"
+          cp "${RUNNER_TEMP}/wasm-pkg/demoparser2.js" "${target}/demoparser2.js"
+          cp "${RUNNER_TEMP}/wasm-pkg/demoparser2_bg.wasm" "${target}/demoparser2_bg.wasm"
+          cp "${RUNNER_TEMP}/artifact-manifest.json" "${target}/artifact-manifest.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${target}/demoparser2.js" "${target}/demoparser2_bg.wasm" "${target}/artifact-manifest.json"
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(a91): promote large-demo WASM remediation after real gate"
+          git push
