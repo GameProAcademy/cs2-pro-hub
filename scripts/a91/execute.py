@@ -100,6 +100,8 @@ def classify_child_failure(returncode, stderr, wasm=False):
 
 def run(command, output=None, stdin=None, diagnostics=None):
     child_env = {k: v for k, v in os.environ.items() if k != "A91_DEMO_URL"}
+    if diagnostics is not None and "python_reference.py" in " ".join(command):
+        child_env["A91_PROGRESS_PATH"] = str(diagnostics.with_suffix(".progress"))
     if diagnostics is None:
         try:
             if output:
@@ -155,8 +157,18 @@ def run(command, output=None, stdin=None, diagnostics=None):
         rc = -1
     command_text = " ".join(command)
     is_wasm_child = "run_wasm_reference.mjs" in command_text or "wasm_smoke.mjs" in command_text
+    progress_path = diagnostics.with_suffix(".progress")
+    last_stage = None
+    if progress_path.is_file():
+        try:
+            value = progress_path.read_text(encoding="utf-8").strip().splitlines()
+            last_stage = value[-1] if value else None
+        except Exception:
+            last_stage = None
     diagnostic = {"exitStatus": rc, "signal": -rc if rc < 0 else None,
                   "errorDigest": h.hexdigest(), "reason": classify_child_failure(rc, bytes(retained), is_wasm_child)}
+    if last_stage:
+        diagnostic["lastStage"] = last_stage
     diagnostics.write_text(stable(diagnostic))
     os.chmod(diagnostics, 0o600)
     return rc
