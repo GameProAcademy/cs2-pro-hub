@@ -101,7 +101,8 @@ test("URL and authorization are strict and errors do not echo the URL", () => {
   assert.throws(() => validateDemo("wrong.txt", {}), /WRONG_DEM_EXTENSION/);
 });
 test("pinned WASM initializes and exports are verified without any DEM parse", () => {
-  const parser = loadPinnedParser(surface, manifest);
+  const { parser, wasmExports } = loadPinnedParser(surface, manifest);
+  assert.ok(wasmExports.memory instanceof WebAssembly.Memory);
   for (const api of manifest.declaredExports) assert.equal(typeof parser[api], "function");
   assert.equal(parser.parsePlayerInfo, undefined);
   assert.throws(

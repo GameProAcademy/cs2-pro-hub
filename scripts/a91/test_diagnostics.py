@@ -13,7 +13,9 @@ class DiagnosticsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             env = {"RUNNER_TEMP": raw, "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main",
                    "A91_DEMO_URL": "https://private.example.invalid/demo", "DEMO_FILENAME": execute.FILENAME,
-                   "EXPECTED_SHA256": execute.SHA, "EXPECTED_SIZE_BYTES": str(execute.SIZE), "AUTHORIZATION_REF": execute.AUTH}
+                   "EXPECTED_SHA256": execute.SHA, "EXPECTED_SIZE_BYTES": str(execute.SIZE), "AUTHORIZATION_REF": execute.AUTH,
+                   "A91_WASM_ARTIFACT_DIR": str(Path(raw) / "synthetic-wasm"),
+                   "A91_WASM_MANIFEST": str(Path(raw) / "synthetic-manifest.json")}
             def child(command, output=None, stdin=None, diagnostics=None):
                 if "run_wasm_reference.mjs" in " ".join(command):
                     target = Path(command[command.index("--output") + 1])

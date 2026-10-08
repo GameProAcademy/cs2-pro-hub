@@ -1,5 +1,14 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## GitHub / Lovable forensic reconciliation — 2026-10-08
+
+- [x] Verify live GitHub main against local tree without reverting externally implemented parser corrections: main/HEAD 05a5bea, tree c35eaa8, read-only ref rechecked.
+- [x] Audit app, parser/Worker, database/security and validated-data consumers read-only; record evidence and unknowns in docs/release-gates/GITHUB-LOVABLE-FORENSIC-RECONCILIATION-2026-10-08.md.
+- [x] Correct two stale A9.1 tests for the reviewed loader return and required artifact envelope; final 106 files / 1427 tests PASS, no DEM. Parser/runtime/pins unchanged.
+- [x] Deliver A–L audit, 19-case matrix, risk register and next gate; real execution, Attempt 9+, Canonical, Railway and secrets remain locked.
+- [ ] External blocker: independently reviewed real A9.1 four-run parity/determinism evidence (last observed real gate #15 failed; remediation #11 in progress).
+- [ ] External approval blocker: A9.2 browser lifecycle/race/terminal taxonomy/memory/deployed-bundle proofs and real DNA/Coach consumers require a separately approved phase; no production authority granted by this audit.
+
 ## A9.1 Run #9 postmortem — independent correction pass — 2026-10-08
 
 - [x] Independently confirmed GitHub Actions Run #9 (37663923729) failed in the isolated four-run execution step after 3m23s; the sanitized three-report artifact uploaded successfully, so the failure was not an artifact-upload/security-boundary failure.
