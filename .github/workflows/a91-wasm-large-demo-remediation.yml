@@ -43,6 +43,7 @@ jobs:
       UPSTREAM_TAG: v0.42.0
       RUST_VERSION: 1.91.1
       WASM_PACK_VERSION: 0.13.1
+      WASM_BINDGEN_VERSION: 0.2.100
       DEM_SHA256: ${{ inputs.expected_sha256 }}
       DEM_SIZE: ${{ inputs.expected_size_bytes }}
       DEM_AUTH: ${{ inputs.authorization_ref }}
@@ -67,10 +68,13 @@ jobs:
           rustc --version
           cargo --version
 
-      - name: Install pinned wasm-pack
+      - name: Install pinned wasm-pack and wasm-bindgen CLI
         run: |
           cargo +"${RUST_VERSION}" install wasm-pack --version "${WASM_PACK_VERSION}" --locked
+          cargo +"${RUST_VERSION}" install wasm-bindgen-cli --version "${WASM_BINDGEN_VERSION}" --locked
           wasm-pack --version
+          wasm-bindgen --version
+          test "$(wasm-bindgen --version | awk '{print $2}')" = "${WASM_BINDGEN_VERSION}"
 
       - name: Execute isolated hermetic A9.1 remediation + real DEM gate
         env:
