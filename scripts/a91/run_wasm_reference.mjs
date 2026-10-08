@@ -24,9 +24,11 @@ const sample = (value, limit = 1000) => {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, sample(v, limit)]));
   return value;
 };
-export function loadPinnedParser(surface, manifest) {
+export function loadPinnedParser(surface, manifest, directoryOverride = null) {
   validateManifests(surface, manifest);
-  const directory = resolve(root, "public/client-parser/demoparser2/0.42.0");
+  const directory = directoryOverride
+    ? resolve(directoryOverride)
+    : resolve(root, "public/client-parser/demoparser2/0.42.0");
   const binding = readFileSync(resolve(directory, "demoparser2.js"));
   const wasm = readFileSync(resolve(directory, "demoparser2_bg.wasm"));
   if (
@@ -58,7 +60,7 @@ export function loadPinnedParser(surface, manifest) {
     if (typeof parser[name] !== "function") throw new Error("UNSUPPORTED_WASM_API");
   return { parser, wasmExports };
 }
-export function runWasm(path, authorization) {
+export function runWasm(path, authorization, options = {}) {
   const started = performance.now();
   const telemetry = createTelemetry();
   telemetry.snapshot("before_validate");
@@ -76,10 +78,11 @@ export function runWasm(path, authorization) {
   let manifest;
   const loaded = telemetry.step("wasm_load", () => {
     surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
-    manifest = json(
-      resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"),
-    );
-    return loadPinnedParser(surface, manifest);
+    const manifestPath = options.manifestPath
+      ? resolve(options.manifestPath)
+      : resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json");
+    manifest = json(manifestPath);
+    return loadPinnedParser(surface, manifest, options.artifactDir ?? null);
   });
   const parser = loaded.parser;
   const wasmExports = loaded.wasmExports;
@@ -306,7 +309,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const arg = (name) => process.argv[process.argv.indexOf(name) + 1];
   const output = arg("--output");
   try {
-    const result = runWasm(arg("--demo"), json(arg("--authorization")));
+    const result = runWasm(arg("--demo"), json(arg("--authorization")), {
+      artifactDir: process.argv.includes("--wasm-dir") ? arg("--wasm-dir") : null,
+      manifestPath: process.argv.includes("--wasm-manifest") ? arg("--wasm-manifest") : null,
+    });
     writeFileSync(output, sanitizePrivateRuntimeEvidence(result), { mode: 0o600 });
     process.exitCode = result.status === "SUCCEEDED" ? 0 : 1;
   } catch (error) {
