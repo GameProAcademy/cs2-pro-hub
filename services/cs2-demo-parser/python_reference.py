@@ -36,6 +36,7 @@ MANIFEST = ROOT / "docs/client-parser/upstream-surface-manifest.json"
 MAX_SAMPLE = 1000
 MAX_GRENADE_SAMPLE = 256
 MAX_TICK_FIELDS = 32
+MAX_DEMO_BYTES = 1_500 * 1024 * 1024
 
 
 def stable(value: Any) -> str:
