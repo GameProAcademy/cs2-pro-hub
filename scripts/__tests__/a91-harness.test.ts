@@ -79,6 +79,14 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(observed).toEqual([bytes, ["health"], ticks, [], false]);
     expect(source).toMatch(/wantedPlayers\?: unknown\[\]/);
   });
+  it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
+    const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
+    expect(source).toMatch(/const wasmExports = parser\.initSync\(wasm\);/);
+    expect(source).toMatch(/return \{ parser, wasmExports \};/);
+    expect(source).toMatch(/wasmExports\.memory instanceof WebAssembly\.Memory/);
+    expect(source).not.toMatch(/parser\.memory/);
+  });
+
   it("never tracks a DEM file", () => {
     const result = spawnSync("git", ["ls-files", "*.dem"], { encoding: "utf8" });
     expect(result.status).toBe(0);
