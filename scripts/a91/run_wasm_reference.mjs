@@ -51,10 +51,12 @@ export function loadPinnedParser(surface, manifest) {
   });
   vm.runInContext(`${binding.toString()}\n globalThis.a91Parser = wasm_bindgen;`, context);
   const parser = context.a91Parser;
-  parser.initSync(wasm);
+  const wasmExports = parser.initSync(wasm);
+  if (!(wasmExports?.memory instanceof WebAssembly.Memory))
+    throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
   for (const name of manifest.declaredExports)
     if (typeof parser[name] !== "function") throw new Error("UNSUPPORTED_WASM_API");
-  return parser;
+  return { parser, wasmExports };
 }
 export function runWasm(path, authorization) {
   const started = performance.now();
@@ -72,13 +74,16 @@ export function runWasm(path, authorization) {
   });
   let surface;
   let manifest;
-  const parser = telemetry.step("wasm_load", () => {
+  const loaded = telemetry.step("wasm_load", () => {
     surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
     manifest = json(
       resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"),
     );
     return loadPinnedParser(surface, manifest);
   });
+  const parser = loaded.parser;
+  const wasmExports = loaded.wasmExports;
+
   // Large real DEMs are passed through wasm-bindgen as one Uint8Array. The generated
   // binding first mallocs the entire input inside WASM linear memory. Pre-grow a bounded
   // envelope before the first parse call so the allocator does not have to satisfy a
@@ -88,16 +93,16 @@ export function runWasm(path, authorization) {
   const LARGE_DEM_MEMORY_FLOOR_BYTES = 768 * 1024 * 1024;
   const LARGE_DEM_MEMORY_HEADROOM_BYTES = 256 * 1024 * 1024;
   telemetry.step("wasm_memory_prepare", () => {
-    if (!(parser.memory instanceof WebAssembly.Memory))
+    if (!(wasmExports.memory instanceof WebAssembly.Memory))
       throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
     const targetBytes = Math.max(
       LARGE_DEM_MEMORY_FLOOR_BYTES,
       bytes.length + LARGE_DEM_MEMORY_HEADROOM_BYTES,
     );
     const targetPages = Math.ceil(targetBytes / WASM_PAGE_BYTES);
-    const currentPages = parser.memory.buffer.byteLength / WASM_PAGE_BYTES;
-    if (currentPages < targetPages) parser.memory.grow(targetPages - currentPages);
-    const finalBytes = parser.memory.buffer.byteLength;
+    const currentPages = wasmExports.memory.buffer.byteLength / WASM_PAGE_BYTES;
+    if (currentPages < targetPages) wasmExports.memory.grow(targetPages - currentPages);
+    const finalBytes = wasmExports.memory.buffer.byteLength;
     if (finalBytes < bytes.length) throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
   });
 
