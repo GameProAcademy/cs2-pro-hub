@@ -221,6 +221,21 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
         "bytes": wasm.stat().st_size,
         "sha256": sha256(wasm),
     }
+    # The checked-in upstream manifest historically described an unpinned
+    # reference build. A9.1 is a controlled laboratory build with the source
+    # commit and toolchain explicitly pinned by the workflow. Replace that
+    # stale PARTIAL declaration so generated evidence describes the build
+    # that actually produced the artifact without claiming bit-for-bit
+    # reproducibility across arbitrary machines.
+    manifest_data["reproducibility"] = {
+        "status": "CONTROLLED_BUILD_PINNED",
+        "reason": "A9.1 pins the upstream source commit plus Rust, wasm-pack, and wasm-bindgen versions for this controlled runner build.",
+        "sourceCommit": UPSTREAM_COMMIT,
+        "rustVersion": RUST_VERSION,
+        "wasmPackVersion": WASM_PACK_VERSION,
+        "wasmBindgenVersion": os.environ["WASM_BINDGEN_VERSION"],
+        "matchesUpstreamArtifact": False,
+    }
     manifest_data["buildRemediation"] = {
         "parseHeaderErrorPropagation": True,
         "parseHeaderParseProjectiles": False,
