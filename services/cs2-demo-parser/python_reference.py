@@ -24,8 +24,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from demoparser2 import DemoParser
-
 ROOT = Path(__file__).resolve().parents[2]
 FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
 SIZE = 473748061
@@ -217,7 +215,7 @@ def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
     return player, other
 
 
-def parse_event(parser: DemoParser, event: dict[str, Any]) -> dict[str, Any]:
+def parse_event(parser: Any, event: dict[str, Any]) -> dict[str, Any]:
     name = event["eventName"]
     progress("parse_event:" + name)
     player, other = event_request(event)
@@ -251,6 +249,9 @@ def main() -> int:
     progress("read_manifest")
     surface = read_manifest()
     started = time.perf_counter()
+    progress("python_import_demoparser2")
+    from demoparser2 import DemoParser
+
     progress("parser_init")
     parser = DemoParser(str(path))
 
