@@ -1,6 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { validateDemo } from "./contracts.mjs";
 import { loadPinnedParser } from "./run_wasm_reference.mjs";
 
