@@ -67,21 +67,13 @@ jobs:
           rustc --version
           cargo --version
 
-      - name: Install pinned protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          protoc --version
-          command -v protoc
-
       - name: Install pinned wasm-pack
         run: |
           cargo +"${RUST_VERSION}" install wasm-pack --version "${WASM_PACK_VERSION}" --locked
           wasm-pack --version
 
-      - name: Execute isolated A9.1 remediation + real DEM gate
+      - name: Execute isolated hermetic A9.1 remediation + real DEM gate
         env:
-          PROTOC: /usr/bin/protoc
           RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
           A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
           A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
