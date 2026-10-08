@@ -29,6 +29,11 @@ WASM_REASONS = {"WASM_RUNTIME_RESOURCE_FAILURE", "WASM_MEMORY_ALLOCATION_FAILURE
     "WASM_RUNTIME_TRAP", "WASM_PARSE_FAILURE", "WASM_PRIVATE_EVIDENCE_TOO_LARGE",
     "WASM_ARTIFACT_IDENTITY_MISMATCH", "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH",
     "CONTRACT_MISMATCH", "PARSER_IDENTITY_MISMATCH", "ARTIFACT_SECURITY_FAILURE"}
+PYTHON_REASONS = {
+    "NO_AUTHORIZED_REAL_DEM", "EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED",
+    "AUTHORIZED_DEM_METADATA_MISMATCH", "A91_DEM_SHA256_MISMATCH",
+    "PARSER_IDENTITY_MISMATCH", "CATALOG_MISMATCH", "CONTRACT_MISMATCH",
+}
 LOCKS = {"canonicalAuthorization": False, "attempt9Authorization": False,
          "productionAuthorization": False, "canonicalEligible": False}
 
@@ -95,6 +100,17 @@ def classify_child_failure(returncode, stderr, wasm=False):
     normalized = text.strip()
     if normalized in WASM_REASONS:
         return normalized
+    if not wasm:
+        lines = [line.strip() for line in normalized.splitlines() if line.strip()]
+        if lines:
+            last_line = lines[-1]
+            for prefix in ("RuntimeError:", "ValueError:", "Exception:"):
+                if last_line.startswith(prefix):
+                    candidate = last_line[len(prefix):].strip()
+                    if candidate in PYTHON_REASONS:
+                        return candidate
+            if last_line in PYTHON_REASONS:
+                return last_line
     return "A91_RUNTIME_RESOURCE_FAILURE"
 
 
@@ -431,6 +447,9 @@ def main():
         "A91_DEMO_URL_MISSING", "MANUAL_MAIN_REQUIRED", "PYTHON_RUN_FAILED",
         "WASM_RUN_FAILED", "WASM_ARTIFACT_IDENTITY_MISMATCH",
         "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH", "CONTRACT_MISMATCH",
+        "NO_AUTHORIZED_REAL_DEM", "EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED",
+        "AUTHORIZED_DEM_METADATA_MISMATCH", "A91_DEM_SHA256_MISMATCH",
+        "PARSER_IDENTITY_MISMATCH",
         "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED", "PARITY_EXECUTION_FAILED", "DETERMINISM_EXECUTION_FAILED",
     }
     allowed_failure_reasons |= WASM_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
