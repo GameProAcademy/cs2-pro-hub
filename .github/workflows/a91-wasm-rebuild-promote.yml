@@ -119,27 +119,34 @@ jobs:
           sha256sum "${RUNNER_TEMP}/wasm-pkg/demoparser2_bg.wasm"
 
       - name: Materialize temporary pinned manifest
+        env:
+          PROJECT_ROOT: ${{ github.workspace }}
+          WASM_PKG: ${{ runner.temp }}/wasm-pkg
+          MANIFEST_OUT: ${{ runner.temp }}/artifact-manifest.json
+          BUILD_UPSTREAM_COMMIT: ${{ env.UPSTREAM_COMMIT }}
+          BUILD_RUST_VERSION: ${{ env.RUST_VERSION }}
+          BUILD_WASM_PACK_VERSION: ${{ env.WASM_PACK_VERSION }}
         run: |
           python - <<'PY'
-          import hashlib, json, pathlib
-          root = pathlib.Path("${GITHUB_WORKSPACE}")
-          pkg = pathlib.Path("${RUNNER_TEMP}/wasm-pkg")
+          import hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ["PROJECT_ROOT"])
+          pkg = pathlib.Path(os.environ["WASM_PKG"])
           src = root / "public/client-parser/demoparser2/0.42.0/artifact-manifest.json"
-          out = pathlib.Path("${RUNNER_TEMP}/artifact-manifest.json")
+          out = pathlib.Path(os.environ["MANIFEST_OUT"])
           m = json.loads(src.read_text())
           binding = pkg / "demoparser2.js"
           wasm = pkg / "demoparser2_bg.wasm"
           m["status"] = "VERIFIED_UPSTREAM_SOURCE_ARTIFACT_WITH_A91_LARGE_DEM_REMEDIATION"
           m["sourceTag"] = "v0.42.0"
-          m["sourceCommit"] = "${UPSTREAM_COMMIT}"
+          m["sourceCommit"] = os.environ["BUILD_UPSTREAM_COMMIT"]
           m["binding"] = {"file":"demoparser2.js","bytes":binding.stat().st_size,"sha256":hashlib.sha256(binding.read_bytes()).hexdigest()}
           m["wasm"] = {"file":"demoparser2_bg.wasm","bytes":wasm.stat().st_size,"sha256":hashlib.sha256(wasm.read_bytes()).hexdigest()}
           m["buildRemediation"] = {
             "parseHeaderErrorPropagation": True,
             "parseHeaderParseProjectiles": False,
             "wasmStackBytes": 8388608,
-            "rustVersion": "${RUST_VERSION}",
-            "wasmPackVersion": "${WASM_PACK_VERSION}",
+            "rustVersion": os.environ["BUILD_RUST_VERSION"],
+            "wasmPackVersion": os.environ["BUILD_WASM_PACK_VERSION"],
             "buildMode": "release",
             "target": "wasm32-unknown-unknown",
             "wasmBindgenTarget": "no-modules"
