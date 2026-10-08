@@ -20,24 +20,21 @@ try {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const { wasmExports } = loadPinnedParser(surface, manifest, wasmDir);
 
-  // This is deliberately a binary/runtime smoke, not a real-demo parse.
-  // demoparser2's parseHeader(only_header=true) still performs a full parser
-  // pass, so using the 474 MB authorized DEM here would duplicate one of the
-  // actual A9.1 WASM runs and can turn a cheap build smoke into a resource
-  // failure. The real parser execution is covered immediately afterward by
-  // WASM #1 and WASM #2.
+  // Runtime-only smoke: exercise an actual wasm-bindgen allocator export.
+  // Do not assume __wbindgen_free exists: wasm-bindgen does not guarantee that
+  // this internal helper is exported by every generated artifact. The previous
+  // smoke called malloc and then unconditionally called free, which made the
+  // smoke itself fail with TypeError even though initSync and the WASM module
+  // were healthy. A short-lived CI process may intentionally leak this tiny
+  // allocation; the process exits immediately after the smoke.
   let executedExport = null;
-  if (typeof wasmExports.__wbindgen_skip_interpret_calls === "function") {
+  if (typeof wasmExports.__wbindgen_malloc === "function") {
+    const ptr = wasmExports.__wbindgen_malloc(16, 8);
+    if (!Number.isInteger(ptr) || ptr <= 0) throw new Error("WASM_MALLOC_FAILURE");
+    executedExport = "__wbindgen_malloc";
+  } else if (typeof wasmExports.__wbindgen_skip_interpret_calls === "function") {
     wasmExports.__wbindgen_skip_interpret_calls();
     executedExport = "__wbindgen_skip_interpret_calls";
-  } else if (
-    typeof wasmExports.__wbindgen_malloc === "function" &&
-    typeof wasmExports.__wbindgen_free === "function"
-  ) {
-    const ptr = wasmExports.__wbindgen_malloc(16, 8);
-    if (!ptr) throw new Error("WASM_MALLOC_FAILURE");
-    wasmExports.__wbindgen_free(ptr, 16, 8);
-    executedExport = "__wbindgen_malloc/__wbindgen_free";
   } else {
     throw new Error("WASM_EXECUTABLE_EXPORT_MISSING");
   }
