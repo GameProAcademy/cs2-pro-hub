@@ -153,8 +153,10 @@ def run(command, output=None, stdin=None, diagnostics=None):
         target.close()
     if read_failed:
         rc = -1
+    command_text = " ".join(command)
+    is_wasm_child = "run_wasm_reference.mjs" in command_text or "wasm_smoke.mjs" in command_text
     diagnostic = {"exitStatus": rc, "signal": -rc if rc < 0 else None,
-                  "errorDigest": h.hexdigest(), "reason": classify_child_failure(rc, bytes(retained), "run_wasm_reference.mjs" in " ".join(command))}
+                  "errorDigest": h.hexdigest(), "reason": classify_child_failure(rc, bytes(retained), is_wasm_child)}
     diagnostics.write_text(stable(diagnostic))
     os.chmod(diagnostics, 0o600)
     return rc
@@ -296,6 +298,22 @@ def main():
         auth_path = temporary / "authorization.json"
         auth_path.write_text(stable(authorization))
         os.chmod(auth_path, 0o600)
+
+        stage = "wasm_smoke"
+        wasm_smoke_diagnostics = temporary / "wasm_smoke_diagnostics.json"
+        wasm_dir = os.environ.get("A91_WASM_ARTIFACT_DIR", "").strip()
+        wasm_manifest = os.environ.get("A91_WASM_MANIFEST", "").strip()
+        if not wasm_dir or not wasm_manifest:
+            raise ValueError("WASM_ARTIFACT_IDENTITY_MISMATCH")
+        smoke_rc = run([
+            "node", "--max-old-space-size=6144", "scripts/a91/wasm_smoke.mjs",
+            "--demo", str(demo), "--authorization", str(auth_path),
+            "--wasm-dir", wasm_dir, "--wasm-manifest", wasm_manifest,
+        ], diagnostics=wasm_smoke_diagnostics)
+        if smoke_rc:
+            failed_diagnostics = wasm_smoke_diagnostics
+            raise ValueError("WASM_RUN_FAILED")
+
         for index in (1, 2):
             stage = f"python_run_{index}"
             target = temporary / f"python_run_{index}.json"
@@ -374,7 +392,7 @@ def main():
                     failure = json.loads(failed_target.read_text())
                     if failure.get("reason") in WASM_REASONS:
                         reason = failure["reason"]
-                    known_stages = {"validate", "structure_validation", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize"}
+                    known_stages = {"validate", "structure_validation", "wasm_smoke", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize"}
                     if failure.get("failedStage") in known_stages:
                         failure_metadata["stage"] = failure["failedStage"]
                 except Exception:
