@@ -246,13 +246,19 @@ def main() -> int:
     authorization = json.loads(sys.argv[2]) if len(sys.argv) == 3 else None
     if path is None or authorization is None:
         raise RuntimeError("NO_AUTHORIZED_REAL_DEM")
+    progress("validate")
     validate(path, authorization)
+    progress("read_manifest")
     surface = read_manifest()
     started = time.perf_counter()
+    progress("parser_init")
     parser = DemoParser(str(path))
 
+    progress("parse_header")
     header = normalize(parser.parse_header())
+    progress("list_game_events")
     inventory = normalize(parser.list_game_events())
+    progress("list_updated_fields")
     fields = normalize(parser.list_updated_fields())
 
     events: list[dict[str, Any]] = []
