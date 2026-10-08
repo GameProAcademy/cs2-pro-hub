@@ -71,7 +71,31 @@ export function isClientParserWorkerEvent(value: unknown): value is ClientParser
   if (event["type"] === "READY")
     return typeof event["wasmLoadMs"] === "number" && Number.isFinite(event["wasmLoadMs"]);
   if (event["type"] === "COMPLETE")
-    return Boolean(event["envelope"] && typeof event["envelope"] === "object");
-  if (event["type"] === "ERROR") return typeof event["code"] === "string";
+    return Boolean(
+      event["envelope"] && typeof event["envelope"] === "object" &&
+      !Array.isArray(event["envelope"]) &&
+      "result" in event["envelope"] && "manifest" in event["envelope"] &&
+      event["envelope"].result && typeof event["envelope"].result === "object" &&
+      !Array.isArray(event["envelope"].result) &&
+      event["envelope"].manifest && typeof event["envelope"].manifest === "object" &&
+      !Array.isArray(event["envelope"].manifest),
+    );
+  if (event["type"] === "ERROR") return (
+    typeof event["code"] === "string" && CLIENT_WORKER_ERROR_CODES.has(event["code"])
+  );
   return event["type"] === "CANCELLED";
 }
+
+// Never forward arbitrary worker strings (which could contain private diagnostics).
+const CLIENT_WORKER_ERROR_CODES: ReadonlySet<string> = new Set<ClientParserErrorCode>([
+  "CLIENT_PARSER_UNAVAILABLE", "CLIENT_WASM_ARTIFACT_UNAVAILABLE", "CLIENT_WASM_ARTIFACT_INVALID",
+  "CLIENT_WASM_LOAD_FAILED", "CLIENT_WASM_INTEGRITY_MISMATCH", "CLIENT_WASM_EXPORTS_MISSING",
+  "CLIENT_WASM_INIT_FAILED", "CLIENT_WASM_RUNTIME_ERROR", "CLIENT_WASM_RUNTIME_TRAP",
+  "CLIENT_WASM_MEMORY_FAILURE", "CLIENT_WORKER_FAILED", "CLIENT_DEMO_INVALID",
+  "CLIENT_DEMO_TOO_LARGE", "CLIENT_HASH_FAILED", "CLIENT_PARSE_FAILED", "CLIENT_DEMO_PARSE_FAILED",
+  "CLIENT_DEMO_UNSUPPORTED", "CLIENT_DEMO_CORRUPTED", "CLIENT_PAYLOAD_TOO_LARGE",
+  "CLIENT_PARITY_MISMATCH", "CLIENT_PARITY_NOT_AVAILABLE", "CLIENT_RESULT_INVALID",
+  "CLIENT_RESULT_TOO_LARGE", "CLIENT_PARSE_TIMEOUT", "CLIENT_CONTRACT_MISMATCH",
+  "CLIENT_PARSER_IDENTITY_MISMATCH", "CLIENT_RESULT_DIGEST_MISMATCH", "CLIENT_CANCELLED",
+  "CLIENT_STALE_RESULT",
+]);

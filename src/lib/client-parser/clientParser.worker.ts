@@ -37,6 +37,7 @@ import {
   type ClientParserErrorCode,
 } from "./clientParser.types";
 import { readContiguousDemoInput } from "./clientParser.input";
+import { ClientParserError, fatalWasmErrorCode, throwIfFatalWasmError } from "./clientParser.errors";
 import {
   CLIENT_AUDIT_CATALOG_DIGEST,
   CLIENT_PARSER_CONTRACT_DIGEST,
@@ -152,6 +153,9 @@ function assertActive(requestId: string) {
   if (cancelled.has(requestId)) throw new Error("CLIENT_CANCELLED");
 }
 function errorCode(error: unknown): ClientParserErrorCode {
+  if (error instanceof ClientParserError) return error.code;
+  const fatal = fatalWasmErrorCode(error);
+  if (fatal) return fatal;
   const message = error instanceof Error ? error.message : "";
   if (message === "CLIENT_CANCELLED") return "CLIENT_CANCELLED";
   if (
@@ -208,7 +212,7 @@ function apiEvidence(
           ? "EXPORT_PRESENT"
           : "CALL_FAILED",
     errorType: error instanceof Error ? error.name : error === undefined ? null : "UnknownError",
-    errorMessage: rawMessage ? rawMessage.slice(0, 160) : null,
+    errorMessage: rawMessage ? errorCode(error) : null,
     durationMs,
     resultBytes: callSucceeded
       ? new TextEncoder().encode(stableClientJson(result ?? null)).byteLength
@@ -271,7 +275,8 @@ async function initialize(command: Extract<ClientParserCommand, { type: "INIT" }
   if (typeof candidate !== "function") throw new Error("CLIENT_WASM_LOAD_FAILED");
   try {
     await candidate(wasmBytes);
-  } catch {
+  } catch (error) {
+    throwIfFatalWasmError(error);
     throw new Error("CLIENT_WASM_INIT_FAILED");
   }
   runtimeSurface = inspectRuntimeSurface(candidate as unknown as Record<string, unknown>);
@@ -343,6 +348,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
         ),
       );
     } catch (error) {
+      throwIfFatalWasmError(error);
       apiCalls.push(apiEvidence("listUpdatedFields", true, true, false, error));
     }
   } else {
@@ -365,6 +371,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       ),
     );
   } catch (error) {
+    throwIfFatalWasmError(error);
     apiCalls.push(apiEvidence("parseHeader", true, true, false, error));
     throw new Error("CLIENT_DEMO_PARSE_FAILED");
   }
@@ -388,6 +395,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       ),
     );
   } catch (error) {
+    throwIfFatalWasmError(error);
     apiCalls.push(apiEvidence("listGameEvents", true, true, false, error));
     discoveryStatus = "PARSE_FAILED";
     discoveredEvents = [];
@@ -476,6 +484,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
         ),
       );
     } catch (error) {
+      throwIfFatalWasmError(error);
       parseEventFailure = error;
       apiCalls.push(
         apiEvidence("parseEvent", true, true, false, error, null, undefined, {
@@ -542,6 +551,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
       parsedEventDigests.push(sha256Text(encoded));
       parseEventSucceeded = true;
     } catch (error) {
+      throwIfFatalWasmError(error);
       parseEventFailure = error;
     }
   }
@@ -589,6 +599,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
         ),
       );
     } catch (error) {
+      throwIfFatalWasmError(error);
       apiCalls.push(apiEvidence("parseTicks", true, true, false, error));
       tickStatus = "PARSE_FAILED";
     }
@@ -680,6 +691,7 @@ async function parse(command: Extract<ClientParserCommand, { type: "PARSE" }>) {
         }),
       );
     } catch (error) {
+      throwIfFatalWasmError(error);
       grenadeEvidence = { ...grenadeEvidence, status: "PARSE_FAILED", semanticStatus: "FAIL" };
       apiCalls.push(
         apiEvidence("parseGrenades", true, true, false, error, performance.now() - callStarted),
