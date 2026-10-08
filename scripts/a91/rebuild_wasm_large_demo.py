@@ -232,6 +232,7 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
         "gametrackingNetworkRequired": False,
         "rustVersion": RUST_VERSION,
         "wasmPackVersion": WASM_PACK_VERSION,
+        "wasmBindgenVersion": os.environ["WASM_BINDGEN_VERSION"],
         "buildMode": "release",
         "target": "wasm32-unknown-unknown",
         "wasmBindgenTarget": "no-modules",
