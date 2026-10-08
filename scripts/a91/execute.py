@@ -57,8 +57,16 @@ def inputs(env):
             raise ValueError()
     except ValueError:
         raise ValueError("INVALID_DEM_URL") from None
-    if (env.get("DEMO_FILENAME") != FILENAME or env.get("EXPECTED_SHA256") != SHA or
-            env.get("EXPECTED_SIZE_BYTES") != str(SIZE) or env.get("AUTHORIZATION_REF") != AUTH):
+    # Emit only boolean metadata checks: never print the signed URL, its host,
+    # query string, or any credential-bearing component.
+    checks = {
+        "filename_match": env.get("DEMO_FILENAME") == FILENAME,
+        "sha256_match": env.get("EXPECTED_SHA256") == SHA,
+        "size_match": env.get("EXPECTED_SIZE_BYTES") == str(SIZE),
+        "authorization_ref_match": env.get("AUTHORIZATION_REF") == AUTH,
+    }
+    print("A91_INPUT_CHECKS=" + stable(checks), flush=True)
+    if not all(checks.values()):
         raise ValueError("AUTHORIZATION_MISMATCH")
     return url
 
@@ -400,8 +408,12 @@ def main():
                 reason = reason or "A91_GATE_FAILED"
     except ValueError as error:
         reason = str(error)
-    except Exception:
+        # Safe, bounded stage/reason diagnostics make early preflight failures
+        # actionable while ensuring no URL, secret, or raw exception is logged.
+        print(f"A91_STAGE_FAILURE stage={stage} reason={reason}", flush=True)
+    except Exception as error:
         reason = "A91_RUNTIME_RESOURCE_FAILURE"
+        print(f"A91_STAGE_FAILURE stage={stage} reason={reason} error_type={type(error).__name__}", flush=True)
     finally:
         # Project only allowlisted normalized fields BEFORE deleting all private evidence.
         if reason:
