@@ -239,6 +239,38 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
     }
     MANIFEST.write_text(json.dumps(manifest_data, indent=2) + "\n")
 
+    # The A9.1 laboratory runner is intentionally independent from the
+    # Railway production image. The Python reference still requires the exact
+    # demoparser2 0.42.0 wheel, so install it explicitly in the ephemeral
+    # runner before execute.py imports the reference module. This is pinned,
+    # disposable, and never changes the production Railway environment.
+    run(
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-cache-dir",
+        "demoparser2==0.42.0",
+    )
+    verify = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import importlib.metadata as m; "
+                "import demoparser2; "
+                "from demoparser2 import DemoParser; "
+                "assert m.version('demoparser2') == '0.42.0'; "
+                "print('A9.1 Python demoparser2 import PASS', demoparser2.__file__)"
+            ),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    if verify.returncode != 0:
+        raise RuntimeError("PYTHON_REFERENCE_DEPENDENCY_IMPORT_FAILED")
+
     env = os.environ.copy()
     env["A91_WASM_ARTIFACT_DIR"] = str(WASM_PKG)
     env["A91_WASM_MANIFEST"] = str(MANIFEST)
