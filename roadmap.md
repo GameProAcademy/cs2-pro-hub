@@ -1,5 +1,18 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## A9.1 Run #9 postmortem — independent correction pass — 2026-10-08
+
+- [x] Independently confirmed GitHub Actions Run #9 (37663923729) failed in the isolated four-run execution step after 3m23s; the sanitized three-report artifact uploaded successfully, so the failure was not an artifact-upload/security-boundary failure.
+- [x] Independently confirmed the Run #9 public log did not expose the normalized child failure reason; the artifact/private evidence boundary intentionally prevented raw stderr from appearing in public logs.
+- [x] Audited the post-Run #9 WASM memory hardening and found a concrete implementation defect: run_wasm_reference.mjs attempted parser.memory, but the no-modules wasm-bindgen wrapper exposes memory through the object returned by initSync(), while parser is the wrapper function/object.
+- [x] Corrected the A9.1 runner to retain the wasmExports returned by parser.initSync(wasm), validate wasmExports.memory, and pre-grow the actual WASM linear memory through that export.
+- [x] Added a static regression guard proving the runner uses initSync exports and contains no parser.memory access.
+- [ ] A9.1 real execution remains NOT RUN after this correction. No workflow dispatch was performed automatically; fresh Run #10 evidence must be generated separately.
+- [ ] No conclusion is permitted yet that the original Run #9 failure was caused by WASM memory. The defect above is independently proven in the post-Run #9 code path, but causality for Run #9 itself remains NOT_PROVEN without its private report.
+- [ ] A9.2 browser capability, Attempt 9+, production DEM, Canonical admission, Railway mutation and secret mutation remain LOCKED.
+
+## A9.1 Run #9 postmortem — runner hardening — 2026-10-07
+
 ## A9.1 Run #9 postmortem and runner hardening — 2026-10-07
 
 - [x] Run #9 completed as GitHub Actions run 37663923729 on main commit cf98cf715997a77da05f51cddbfcb62381864f81; execution failed after 3m23s while the sanitized three-report artifact uploaded successfully. The failure is therefore not an artifact-upload/security-layer failure.
