@@ -394,6 +394,12 @@ def main():
                 try:
                     diagnostic = json.loads(failed_diagnostics.read_text())
                     failure_metadata["errorDigest"] = diagnostic["errorDigest"]
+                    if diagnostic.get("lastStage"):
+                        failure_metadata["lastChildStage"] = diagnostic["lastStage"]
+                    if diagnostic.get("exitStatus") is not None:
+                        failure_metadata["childExitStatus"] = diagnostic["exitStatus"]
+                    if diagnostic.get("signal") is not None:
+                        failure_metadata["childSignal"] = diagnostic["signal"]
                     if reason in {"WASM_RUN_FAILED", "PYTHON_RUN_FAILED"} and diagnostic.get("reason") in WASM_REASONS | {"A91_RUNTIME_RESOURCE_FAILURE"}:
                         reason = diagnostic["reason"]
                 except Exception:
