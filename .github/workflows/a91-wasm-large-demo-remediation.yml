@@ -82,7 +82,7 @@ jobs:
       - name: Execute isolated A9.1 remediation + real DEM gate
         env:
           PROTOC: /usr/bin/protoc
-          RUSTFLAGS: --cfg getrandom_backend=wasm_js
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
           A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
           A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
         run: |
