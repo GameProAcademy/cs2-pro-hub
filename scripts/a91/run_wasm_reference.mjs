@@ -123,11 +123,13 @@ export function runWasm(path, authorization, options = {}) {
       stageName,
       () => {
         if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
-        const result = parser[api](bytes, ...args);
+        const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
+        try {
+          const result = parser[api](bytes, ...args);
         const outputDigest = digest(result);
-        calls.push({
-          api,
-          status: "SUCCEEDED",
+          calls.push({
+            api,
+            status: "SUCCEEDED",
           ...request,
           outputDigest,
           count: Array.isArray(result) ? result.length : null,
@@ -139,7 +141,12 @@ export function runWasm(path, authorization, options = {}) {
               ].sort()
             : Object.keys(result ?? {}),
         });
-        return result;
+          return result;
+        } catch (error) {
+          error.wasmMemoryBytesBefore = memoryBefore;
+          error.wasmMemoryBytesAfter = wasmExports.memory?.buffer?.byteLength ?? null;
+          throw error;
+        }
       },
       true,
     );
