@@ -428,6 +428,16 @@ def main():
                     known_stages = {"validate", "structure_validation", "wasm_smoke", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize"}
                     if failure.get("failedStage") in known_stages:
                         failure_metadata["stage"] = failure["failedStage"]
+                    for key in (
+                        "trapDetail",
+                        "errorName",
+                        "errorMessageDigest",
+                        "wasmMemoryBytesBefore",
+                        "wasmMemoryBytesAfter",
+                    ):
+                        value = failure.get(key)
+                        if value is not None:
+                            failure_metadata[key] = value
                 except Exception:
                     pass
         try:
