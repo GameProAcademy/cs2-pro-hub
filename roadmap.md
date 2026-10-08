@@ -1,5 +1,12 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## GitHub / Lovable forensic reconciliation — 2026-10-08
+
+- [ ] Verify live GitHub main against local tree without reverting externally implemented parser corrections.
+- [ ] Audit app, parser/Worker, database/security and validated-data consumers read-only; record evidence and unknowns.
+- [ ] Implement only necessary app-side compatibility corrections and run relevant no-DEM tests.
+- [ ] Deliver A–L audit, risk register and next gate; keep real execution, Attempt 9+, Canonical, Railway and secrets locked.
+
 ## A9.1 Run #9 postmortem — independent correction pass — 2026-10-08
 
 - [x] Independently confirmed GitHub Actions Run #9 (37663923729) failed in the isolated four-run execution step after 3m23s; the sanitized three-report artifact uploaded successfully, so the failure was not an artifact-upload/security-boundary failure.
