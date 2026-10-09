@@ -12,6 +12,7 @@ from python_reference import (
     normalize,
     sample,
     summarize_records,
+    tick_request,
     validate,
 )
 
@@ -62,6 +63,39 @@ def test_event_request_only_includes_explicitly_allowed_fields():
         ],
     }
     assert event_request(event) == (["attacker_name"], ["weapon"])
+
+
+def test_tick_request_excludes_project_aliases_not_supported_upstream():
+    surface = {
+        "fields": [
+            {
+                "propertyName": "tick",
+                "sourceApi": "parseTicks",
+                "runtimeRequestable": True,
+                "upstreamSupported": False,
+            },
+            {
+                "propertyName": "X",
+                "sourceApi": "parseTicks",
+                "runtimeRequestable": True,
+                "upstreamSupported": True,
+            },
+            {
+                "propertyName": "not-requestable",
+                "sourceApi": "parseTicks",
+                "runtimeRequestable": False,
+                "upstreamSupported": True,
+            },
+            {
+                "propertyName": "player_death",
+                "sourceApi": "parseEvent",
+                "runtimeRequestable": True,
+                "upstreamSupported": True,
+            },
+        ],
+    }
+    assert tick_request(surface) == ["X"]
+    assert tick_request(surface, limit=0) == []
 
 
 def test_demo_size_ceiling_is_explicitly_bounded():
