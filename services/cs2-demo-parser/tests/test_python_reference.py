@@ -26,7 +26,7 @@ def test_normalize_handles_non_finite_values_without_inventing_numbers():
 
 def test_sample_bounds_lists_recursively_and_preserves_scalar_values():
     assert sample([{"values": list(range(5))}, None, False, 4], limit=2) == [
-        {"values": [0, 1, 2, 3, 4]},
+        {"values": [0, 1]},
         None,
     ]
     assert sample({"value": False}) == {"value": False}
