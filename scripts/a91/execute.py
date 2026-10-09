@@ -57,12 +57,25 @@ def inputs(env):
             raise ValueError()
     except ValueError:
         raise ValueError("INVALID_DEM_URL") from None
+    # Inputs copied from the workflow-dispatch form can carry leading/trailing
+    # whitespace or uppercase hex. Canonicalize only the representation; never
+    # relax the authorized digest or the later hash of the downloaded DEM bytes.
+    expected_sha_raw = env.get("EXPECTED_SHA256", "")
+    expected_sha = expected_sha_raw.strip().lower()
+    dem_sha_raw = env.get("DEM_SHA256", "")
+    dem_sha = dem_sha_raw.strip().lower()
+    expected_sha_format_valid = bool(re.fullmatch(r"[0-9a-f]{64}", expected_sha))
+    dem_sha_format_valid = bool(re.fullmatch(r"[0-9a-f]{64}", dem_sha))
+
     # Emit only boolean metadata checks: never print the signed URL, its host,
     # query string, or any credential-bearing component.
     checks = {
         "filename_match": env.get("DEMO_FILENAME") == FILENAME,
-        "sha256_match": env.get("EXPECTED_SHA256") == SHA,
-        "size_match": env.get("EXPECTED_SIZE_BYTES") == str(SIZE),
+        "expected_sha_format_valid": expected_sha_format_valid,
+        "dem_sha_format_valid": dem_sha_format_valid,
+        "sha256_match": expected_sha_format_valid and expected_sha == SHA,
+        "dem_sha256_match": dem_sha_format_valid and dem_sha == SHA,
+        "size_match": env.get("EXPECTED_SIZE_BYTES", "").strip() == str(SIZE),
         "authorization_ref_match": env.get("AUTHORIZATION_REF") == AUTH,
     }
     print("A91_INPUT_CHECKS=" + stable(checks), flush=True)
