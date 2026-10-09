@@ -7,9 +7,10 @@ const publicDirectory = resolve(process.argv[3] ?? process.argv[2]);
 const readPublic = (name) => JSON.parse(readFileSync(resolve(publicDirectory, name), "utf8"));
 const read = (name) => JSON.parse(readFileSync(resolve(directory, name), "utf8"));
 const surface = readFileSync("docs/client-parser/upstream-surface-manifest.json", "utf8");
-const manifest = JSON.parse(
-  readFileSync("public/client-parser/demoparser2/0.42.0/artifact-manifest.json", "utf8"),
-);
+// The remediation workflow builds a fresh WASM artifact in RUNNER_TEMP.
+ // Finalization must validate that exact manifest, not the checked-in browser artifact.
+const manifestPath = process.argv[4] ?? "public/client-parser/demoparser2/0.42.0/artifact-manifest.json";
+const manifest = JSON.parse(readFileSync(resolve(manifestPath), "utf8"));
 const runs = ["python_run_1.json", "python_run_2.json", "wasm_run_1.json", "wasm_run_2.json"].map(
   read,
 );
