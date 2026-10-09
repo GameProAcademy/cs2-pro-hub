@@ -112,13 +112,9 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(workflow).toMatch(
       /workflow_run:\s*\n\s+workflows:\s*\[Quality Gates\]\s*\n\s+types:\s*\[completed\]\s*\n\s+branches:\s*\[main\]/,
     );
-    expect(workflow).not.toContain(
-      "if: github.event.workflow_run.head_branch == 'main'",
-    );
+    expect(workflow).not.toContain("if: github.event.workflow_run.head_branch == 'main'");
     expect(workflow).toContain("persist-credentials: false");
-    expect(workflow).toMatch(
-      /permissions:\s*\n\s+actions:\s*read\s*\n\s+contents:\s*read/,
-    );
+    expect(workflow).toMatch(/permissions:\s*\n\s+actions:\s*read\s*\n\s+contents:\s*read/);
   });
   it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
     const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
