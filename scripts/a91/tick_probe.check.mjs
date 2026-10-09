@@ -40,21 +40,35 @@ assert.deepEqual(probe.wantedTicks, [0, 100, 199]);
 assert.equal(probe.frameCount, 4);
 assert.equal(probe.authoritativeDomain, false);
 
-assert.throws(
-  () => deriveDemoTickProbe(new Uint8Array(64)),
-  /A91_DEMO_FRAME_SCAN_INVALID/
-);
-assert.throws(
-  () => deriveDemoTickProbe(demo.slice(0, -2)),
-  /A91_DEMO_FRAME_SCAN_INVALID/
-);
+assert.throws(() => deriveDemoTickProbe(new Uint8Array(64)), /A91_DEMO_FRAME_SCAN_INVALID/);
+assert.throws(() => deriveDemoTickProbe(demo.slice(0, -2)), /A91_DEMO_FRAME_SCAN_INVALID/);
 
 const syntheticSurface = {
   fields: [
-    { propertyName: "tick", sourceApi: "parseTicks", runtimeRequestable: true, upstreamSupported: false },
-    { propertyName: "X", sourceApi: "parseTicks", runtimeRequestable: true, upstreamSupported: true },
-    { propertyName: "not-requestable", sourceApi: "parseTicks", runtimeRequestable: false, upstreamSupported: true },
-    { propertyName: "player_death", sourceApi: "parseEvent", runtimeRequestable: true, upstreamSupported: true },
+    {
+      propertyName: "tick",
+      sourceApi: "parseTicks",
+      runtimeRequestable: true,
+      upstreamSupported: false,
+    },
+    {
+      propertyName: "X",
+      sourceApi: "parseTicks",
+      runtimeRequestable: true,
+      upstreamSupported: true,
+    },
+    {
+      propertyName: "not-requestable",
+      sourceApi: "parseTicks",
+      runtimeRequestable: false,
+      upstreamSupported: true,
+    },
+    {
+      propertyName: "player_death",
+      sourceApi: "parseEvent",
+      runtimeRequestable: true,
+      upstreamSupported: true,
+    },
   ],
 };
 assert.deepEqual(selectRuntimeTickFields(syntheticSurface), ["X"]);
