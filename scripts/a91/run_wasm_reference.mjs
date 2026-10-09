@@ -34,7 +34,10 @@ const sample = (value, limit = 1000) => {
  * cross-realm safe because parser instances run in a vm context.
  */
 export function normalizeWasmValue(value) {
-  if (value === null || typeof value !== "object") return value;
+  // serde-wasm-bindgen defaults Option::None to undefined; the Python
+  // reference normalizes missing cell values to JSON null.
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(normalizeWasmValue);
   const tag = Object.prototype.toString.call(value);
   if (tag === "[object Map]") {
