@@ -307,6 +307,23 @@ def sanitize_private_runtime_evidence(value, private_url=""):
     return text
 
 
+def is_final_decision_report(path, stage):
+    """Recognize the sanitized rich gate decision so failure projection cannot erase it."""
+    if stage != "finalization" or not path.is_file() or path.is_symlink():
+        return False
+    try:
+        report = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return False
+    return (
+        report.get("status") == "FAIL"
+        and isinstance(report.get("reason"), str)
+        and bool(report["reason"])
+        and isinstance(report.get("parity"), dict)
+        and isinstance(report.get("determinism"), dict)
+    )
+
+
 def enrich_python(path, private_url=""):
     if path.stat().st_size > MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES:
         raise ValueError("PYTHON_PRIVATE_EVIDENCE_TOO_LARGE")
@@ -510,7 +527,13 @@ def main():
             **LOCKS,
         }
         report_path = output / "a91_real_dem_report.json"
-        if not report_path.exists() or reason != "A91_GATE_FAILED":
+        # finalize_report already writes a sanitized report with domain-level
+        # parity mismatches and determinism details. Keep that report on a
+        # gate decision failure; the compact fallback would otherwise overwrite
+        # it and, because PARITY_MISMATCH is not an early-stage reason, mask it
+        # as A91_RUNTIME_RESOURCE_FAILURE.
+        preserve_final_decision = is_final_decision_report(report_path, stage)
+        if not report_path.exists() or (reason != "A91_GATE_FAILED" and not preserve_final_decision):
             report_path.write_text(stable(public))
         for name, stage in (
             ("parity_report.json", "PARITY_NOT_REACHED"),

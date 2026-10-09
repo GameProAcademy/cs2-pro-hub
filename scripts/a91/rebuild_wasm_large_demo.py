@@ -66,6 +66,7 @@ def main() -> int:
     # spending time building the pinned WASM toolchain.
     run(sys.executable, "scripts/a91/test_input_metadata.py", cwd=ROOT)
     run(sys.executable, "scripts/a91/test_demo_tick_probe.py", cwd=ROOT)
+    run("node", "scripts/a91/wasm_value_normalization.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/header_probe.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/tick_probe.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)

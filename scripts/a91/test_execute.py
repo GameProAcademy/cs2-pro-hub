@@ -86,6 +86,30 @@ class HarnessTests(unittest.TestCase):
             (directory / "python_run_1.json").write_text(json.dumps({"status": "SUCCEEDED"}))
             execute.seal(directory)
 
+    def test_finalization_preserves_rich_parity_failure_report(self):
+        with tempfile.TemporaryDirectory() as temp:
+            report_path = Path(temp) / "a91_real_dem_report.json"
+            rich_report = {
+                "schema_version": 1,
+                "status": "FAIL",
+                "reason": "PARITY_MISMATCH",
+                "parity": {
+                    "status": "FAIL",
+                    "mismatches": [{"field": "header", "reason": "SEMANTIC_MISMATCH"}],
+                },
+                "determinism": {"status": "PASS", "comparisons": []},
+            }
+            report_path.write_text(json.dumps(rich_report))
+            self.assertTrue(execute.is_final_decision_report(report_path, "finalization"))
+            self.assertFalse(execute.is_final_decision_report(report_path, "python_run_1"))
+            # Exercise the exact finalization decision guard used by main().
+            preserve = execute.is_final_decision_report(report_path, "finalization")
+            if not preserve:
+                report_path.write_text(json.dumps({"status": "FAIL", "reason": "A91_RUNTIME_RESOURCE_FAILURE"}))
+            final = json.loads(report_path.read_text())
+            self.assertEqual(final["reason"], "PARITY_MISMATCH")
+            self.assertEqual(final["parity"]["mismatches"][0]["field"], "header")
+
     def test_stage_failure_preserves_specific_reason(self):
         with tempfile.TemporaryDirectory() as temp:
             env = self.environment("https://example.invalid/a")
