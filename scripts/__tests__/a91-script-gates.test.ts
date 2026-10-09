@@ -81,7 +81,10 @@ function artifact(runtime: "PYTHON" | "WASM", runId: string, demoSha256: string)
 
 describe("A9.1 parity/determinism fail-closed branches", () => {
   it("compares shared game state without the separately unavailable WASM player identity", () => {
-    const sharedState = { header: { map_name: "de_mirage" }, events: [{ eventName: "round_start" }] };
+    const sharedState = {
+      header: { map_name: "de_mirage" },
+      events: [{ eventName: "round_start" }],
+    };
     const python = {
       normalizedResult: {
         ...sharedState,
