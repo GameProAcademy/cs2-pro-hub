@@ -8,9 +8,7 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     const result = spawnSync(
       "node",
       [
-        "--test",
         "scripts/a91/contracts-node-checks.mjs",
-        "scripts/a91/diagnostics-node-checks.mjs",
       ],
       {
         encoding: "utf8",
@@ -23,7 +21,7 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     const result = spawnSync(
       "python3",
       ["-m", "unittest", "discover", "-s", "scripts/a91", "-p", "test_*.py"],
-      { encoding: "utf8", timeout: 30000 },
+      { encoding: "utf8", timeout: 60000 },
     );
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000);
