@@ -30,7 +30,7 @@ def demo_bytes() -> bytes:
     header = bytearray(16)
     header[:8] = b"PBDEMS2\x00"
     header[8:12] = (2).to_bytes(4, "little")
-    return bytes(header) + frame(1, 0, b"header") + frame(3, 100) + frame(3, 200) + frame(4, 0xFFFFFFFF, b"")
+    return bytes(header) + frame(1, 0, b"header") + frame(3, 100) + frame(3, 200) + frame(0, 0xFFFFFFFF, b"")
 
 
 with tempfile.TemporaryDirectory() as directory:
