@@ -97,6 +97,13 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(script).not.toContain("INPUT_PROMOTE_ON_PASS");
     expect(script).not.toContain("git push");
     expect(script).not.toContain("git commit");
+
+    const buildScript = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
+    expect(buildScript).toContain("def child_environment(");
+    expect(buildScript).toContain("env=child_environment()");
+    expect(buildScript).toContain("env=gate_env");
+    const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
+    expect(gateScript).toContain("if k not in sensitive_inputs");
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
