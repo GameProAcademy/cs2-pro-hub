@@ -49,6 +49,7 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(source).toContain("steps.upload-guard.outputs.safe == 'true'");
     expect(source).not.toContain("set -x");
     expect(source).toContain("A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}");
+    expect(source).toContain("DEM_SHA256: ${{ inputs.expected_sha256 }}");
     expect(source).not.toContain("demo_url:");
     expect(source).not.toMatch(/inputs\.demo_url|contents: write|railway|supabase|deploy/i);
     expect(source).toContain("if: always()");
