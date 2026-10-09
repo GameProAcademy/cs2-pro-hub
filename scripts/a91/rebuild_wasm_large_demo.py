@@ -297,7 +297,7 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
     env["A91_WASM_MANIFEST"] = str(MANIFEST)
     run(sys.executable, "scripts/a91/execute.py", cwd=ROOT)
 
-    if os.environ.get("INPUT_PROMOTE_ON_PASS", "true").lower() == "true":
+    if os.environ.get("INPUT_PROMOTE_ON_PASS", "false").lower() == "true":
         target = ROOT / "public/client-parser/demoparser2/0.42.0"
         shutil.copy2(binding, target / "demoparser2.js")
         shutil.copy2(wasm, target / "demoparser2_bg.wasm")
