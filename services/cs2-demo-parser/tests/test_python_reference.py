@@ -68,6 +68,77 @@ def test_demo_size_ceiling_is_explicitly_bounded():
     assert MAX_DEMO_BYTES == 1_500 * 1024 * 1024
 
 
+def test_reference_requires_explicit_authorization_for_real_demo(tmp_path: Path):
+    path = tmp_path / "local.dem"
+    path.write_bytes(b"demo")
+    with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+        validate(path, {})
+    with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+        validate(path, {"authorizedDemo": False})
+
+
+def test_reference_rejects_unapproved_source_and_provenance(tmp_path: Path):
+    path = tmp_path / "local.dem"
+    path.write_bytes(b"demo")
+    common = {
+        "authorizedDemo": True,
+        "source": "LOCAL_FILE",
+        "provenance": "LOCAL_FILE",
+        "filename": path.name,
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sizeBytes": 473748061,
+    }
+    for key, value in (("source", "REMOTE"), ("provenance", "LOCAL_USER_SELECTION")):
+        authorization = {**common, key: value}
+        with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+            validate(path, authorization)
+
+
+def test_reference_rejects_incorrect_filename_size_and_hash_metadata(tmp_path: Path):
+    path = tmp_path / "furia-vs-gamerlegion-m1-cache.dem"
+    path.write_bytes(b"demo")
+    valid_shape = {
+        "authorizedDemo": True,
+        "source": "LOCAL_FILE",
+        "provenance": "LOCAL_FILE",
+        "filename": path.name,
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sizeBytes": path.stat().st_size,
+    }
+    cases = (
+        {**valid_shape, "filename": "other.dem"},
+        {**valid_shape, "sizeBytes": 473748061},
+        {**valid_shape, "sha256": "0" * 64},
+    )
+    for authorization in cases:
+        with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+            validate(path, authorization)
+
+
+def test_reference_rejects_wrong_content_digest_after_metadata_gate(tmp_path: Path, monkeypatch):
+    from types import SimpleNamespace
+
+    path = tmp_path / "furia-vs-gamerlegion-m1-cache.dem"
+    path.write_bytes(b"not-the-authorized-demo")
+    real_stat = path.stat
+
+    def authorized_size_stat(*args, **kwargs):
+        value = real_stat(*args, **kwargs)
+        return SimpleNamespace(st_size=473748061, st_mode=value.st_mode)
+
+    monkeypatch.setattr(type(path), "stat", lambda self, *args, **kwargs: authorized_size_stat(*args, **kwargs))
+    authorization = {
+        "authorizedDemo": True,
+        "source": "LOCAL_FILE",
+        "provenance": "LOCAL_FILE",
+        "filename": path.name,
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sizeBytes": 473748061,
+    }
+    with pytest.raises(RuntimeError, match="A91_DEM_SHA256_MISMATCH"):
+        validate(path, authorization)
+
+
 def test_validate_fails_closed_for_non_dem_path(tmp_path: Path):
     path = tmp_path / "not-a-demo.txt"
     path.write_bytes(b"x")
