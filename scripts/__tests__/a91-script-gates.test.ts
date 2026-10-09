@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { compareDomains } from "../a91/parity.mjs";
 
 const parity = join(process.cwd(), "scripts/run_python_wasm_parity.mjs");
 const determinism = join(process.cwd(), "scripts/run_parser_determinism.mjs");
@@ -79,6 +80,29 @@ function artifact(runtime: "PYTHON" | "WASM", runId: string, demoSha256: string)
 }
 
 describe("A9.1 parity/determinism fail-closed branches", () => {
+  it("compares shared game state without the separately unavailable WASM player identity", () => {
+    const sharedState = {
+      header: { map_name: "de_mirage" },
+      events: [{ eventName: "round_start" }],
+    };
+    const python = {
+      normalizedResult: {
+        ...sharedState,
+        playerIdentity: { status: "AVAILABLE_ON_PYTHON", value: [{ steamid: "synthetic" }] },
+      },
+    };
+    const wasm = {
+      normalizedResult: {
+        ...sharedState,
+        playerIdentity: { status: "NOT_AVAILABLE_ON_WASM" },
+      },
+    };
+
+    const comparison = compareDomains(python, wasm).find((row) => row.field === "game_state");
+    expect(comparison?.status).toBe("PASS");
+    expect(comparison?.equal).toBe(true);
+  });
+
   it("keeps parity NOT_RUN without an authorized real DEM", () =>
     withFixture((dir) => {
       const output = join(dir, "report.json");

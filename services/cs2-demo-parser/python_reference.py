@@ -203,6 +203,13 @@ def records(frame: Any) -> list[dict[str, Any]]:
     """Bounded materialization for domains known to remain small."""
     return list(iter_normalized_records(frame))
 
+def canonical_string_inventory(value: Any, name: str) -> list[str]:
+    """Sort set-backed string inventories without changing their semantic content."""
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise RuntimeError(f"{name}_INVENTORY_SHAPE_INVALID")
+    return sorted(value)
+
+
 def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
     player = [
         item["field"]
@@ -270,9 +277,9 @@ def main() -> int:
     progress("parse_header")
     header = normalize(parser.parse_header())
     progress("list_game_events")
-    inventory = normalize(parser.list_game_events())
+    inventory = canonical_string_inventory(normalize(parser.list_game_events()), "GAME_EVENTS")
     progress("list_updated_fields")
-    fields = normalize(parser.list_updated_fields())
+    fields = canonical_string_inventory(normalize(parser.list_updated_fields()), "UPDATED_FIELDS")
 
     events: list[dict[str, Any]] = []
     progress("parse_events:start")

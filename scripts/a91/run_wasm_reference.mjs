@@ -119,6 +119,16 @@ export function deriveDemoTickProbe(bytes) {
   };
 }
 
+export function canonicalizeInventory(api, result) {
+  if (api !== "listGameEvents" && api !== "listUpdatedFields") return result;
+  if (!Array.isArray(result) || !result.every((value) => typeof value === "string"))
+    throw new Error("WASM_INVENTORY_SHAPE_INVALID");
+  // These APIs expose set-backed inventories upstream. Their order is not
+  // semantic and can vary across fresh parser instances, so canonicalize before
+  // digesting to avoid false determinism failures.
+  return [...result].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+}
+
 export function selectRuntimeTickFields(surface, limit = 32) {
   return surface.fields
     .filter(
@@ -213,7 +223,8 @@ export function runWasm(path, authorization, options = {}) {
         if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
         const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
         try {
-          const result = parser[api](inputBytes, ...args);
+          const rawResult = parser[api](inputBytes, ...args);
+          const result = canonicalizeInventory(api, rawResult);
           const outputDigest = digest(result);
           calls.push({
             api,

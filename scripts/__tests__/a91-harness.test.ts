@@ -11,10 +11,11 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     });
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
-  it("runs standalone tick/header probe regressions without treating them as Vitest suites", () => {
+  it("runs standalone tick/header/inventory regressions without treating them as Vitest suites", () => {
     for (const script of [
       "scripts/a91/tick_probe.check.mjs",
       "scripts/a91/header_probe.check.mjs",
+      "scripts/a91/inventory_determinism.check.mjs",
     ]) {
       const result = spawnSync("node", [script], {
         encoding: "utf8",
@@ -49,6 +50,7 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(source).toContain("steps.upload-guard.outputs.safe == 'true'");
     expect(source).not.toContain("set -x");
     expect(source).toContain("A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}");
+    expect(source).toContain("DEM_SHA256: ${{ inputs.expected_sha256 }}");
     expect(source).not.toContain("demo_url:");
     expect(source).not.toMatch(/inputs\.demo_url|contents: write|railway|supabase|deploy/i);
     expect(source).toContain("if: always()");
@@ -110,6 +112,17 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(script).toContain("env=gate_env");
     const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
     expect(gateScript).toContain("if k not in sensitive_inputs");
+    expect(gateScript).toContain(
+      '"scripts/a91/finalize_report.mjs", str(temporary), str(output), wasm_manifest',
+    );
+    expect(script).toContain(
+      'run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)',
+    );
+    const finalizer = readFileSync("scripts/a91/finalize_report.mjs", "utf8");
+    expect(finalizer).toContain("process.argv[4]");
+    expect(finalizer).toContain("resolve(manifestPath)");
+    const wasmRunner = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
+    expect(wasmRunner).toContain("canonicalizeInventory(api, rawResult)");
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
