@@ -24,6 +24,34 @@ const sample = (value, limit = 1000) => {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, sample(v, limit)]));
   return value;
 };
+
+/**
+ * serde-wasm-bindgen serializes Rust maps as JavaScript Map instances by
+ * default. A9.1's canonical JSON digest and Python reference use object/dict
+ * records; Object.entries(new Map(...)) is empty and silently discards every
+ * parsed field. Normalize all WASM return values at the boundary before any
+ * digest, sample, or domain projection is computed. The tag check is
+ * cross-realm safe because parser instances run in a vm context.
+ */
+export function normalizeWasmValue(value) {
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map(normalizeWasmValue);
+  const tag = Object.prototype.toString.call(value);
+  if (tag === "[object Map]") {
+    const entries = Array.from(value.entries(), ([key, item]) => {
+      if (typeof key !== "string") throw new Error("A91_WASM_MAP_KEY_INVALID");
+      return [key, normalizeWasmValue(item)];
+    });
+    return Object.fromEntries(entries);
+  }
+  if (ArrayBuffer.isView(value)) return Array.from(value, normalizeWasmValue);
+  if (tag === "[object Object]") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizeWasmValue(item)]),
+    );
+  }
+  return value;
+}
 export function getHeaderProbeBytes(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 20)
     throw new Error("A91_HEADER_PREFIX_INVALID");
@@ -224,7 +252,8 @@ export function runWasm(path, authorization, options = {}) {
         const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
         try {
           const rawResult = parser[api](inputBytes, ...args);
-          const result = canonicalizeInventory(api, rawResult);
+          const normalizedValue = normalizeWasmValue(rawResult);
+          const result = canonicalizeInventory(api, normalizedValue);
           const outputDigest = digest(result);
           calls.push({
             api,
