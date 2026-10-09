@@ -265,7 +265,10 @@ def summarize_records(frame: Any, sample_limit: int = MAX_SAMPLE) -> dict[str, A
         count += 1
         returned_fields.update(row.keys())
         if len(samples) < sample_limit:
-            samples.append(row)
+            # Mirror the WASM runner's recursive sample(value, limit) behavior.
+            # Keep the full-record digest above unchanged; this only bounds the
+            # retained sample and makes nested arrays/objects structurally equal.
+            samples.append(sample(row, sample_limit))
     hasher.update(b"]")
     return {"digest": hasher.hexdigest(), "count": count, "returnedFields": sorted(returned_fields), "samples": samples}
 
