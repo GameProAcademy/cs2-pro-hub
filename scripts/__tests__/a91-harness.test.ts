@@ -11,7 +11,13 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     });
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
-  it("runs standalone tick/header/inventory regressions without treating them as Vitest suites", () => {
+  it("runs standalone tick/header/inventory and WASM map normalization regressions without treating them as Vitest suites", () => {
+    const normalization = spawnSync("node", ["scripts/a91/wasm_value_normalization.check.mjs"], {
+      encoding: "utf8",
+      timeout: 30000,
+    });
+    expect(normalization.status, normalization.stdout + normalization.stderr).toBe(0);
+    expect(normalization.stdout).toContain("A91_WASM_MAP_NORMALIZATION_PASS");
     for (const script of [
       "scripts/a91/tick_probe.check.mjs",
       "scripts/a91/header_probe.check.mjs",
@@ -148,7 +154,8 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(finalizer).toContain("process.argv[4]");
     expect(finalizer).toContain("resolve(manifestPath)");
     const wasmRunner = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
-    expect(wasmRunner).toContain("canonicalizeInventory(api, rawResult)");
+    expect(wasmRunner).toContain("normalizeWasmValue(rawResult)");
+    expect(wasmRunner).toContain("canonicalizeInventory(api, normalizedValue)");
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
