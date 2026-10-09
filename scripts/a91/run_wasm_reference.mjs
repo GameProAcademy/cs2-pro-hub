@@ -96,12 +96,15 @@ export function deriveDemoTickProbe(bytes) {
     if (frameSize > bytes.byteLength - offset)
       throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
 
-    // Upstream casts the frame tick varint to signed i32.
+    // Upstream casts frame ticks to signed i32. DEM_STOP is a sentinel, not
+    // a playable tick, so count its frame but exclude it from tick candidates.
     const frameTick = tickRaw <= 0x7fffffff ? tickRaw : tickRaw - 0x100000000;
-    if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick))
-      maxFrameTick = frameTick;
+    const commandType = (command & 0x40) === 0x40 ? command & ~0x40 : command;
     offset += frameSize;
     frameCount += 1;
+    if (commandType === 4) break;
+    if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick))
+      maxFrameTick = frameTick;
   }
 
   if (frameCount === 0 || maxFrameTick === null || maxFrameTick < 2)
