@@ -32,7 +32,7 @@ let updated = raw;
 for (const key of ["normalizedResultDigest", "resultDigest"]) {
   const pattern = new RegExp(`("${key}"\\s*:\\s*")[0-9a-f]{64}(")`);
   const matches = updated.match(pattern);
-  if (!matches || updated.match(new RegExp(`"${key}"\\s*:` , "g"))?.length !== 1) {
+  if (!matches || updated.match(new RegExp(`"${key}"\\s*:`, "g"))?.length !== 1) {
     throw new Error("RESULT_DIGEST_INPUT_INVALID");
   }
   updated = updated.replace(pattern, `$1${resultDigest}$2`);
