@@ -24,7 +24,7 @@ function makeDemo() {
     ...frame(1, 0, [0x01, 0x02, 0x03]),
     ...frame(3, 100),
     ...frame(3, 200),
-    ...frame(4, 0xffffffff, []),
+    ...frame(0, 0xffffffff, []),
   ];
   const bytes = new Uint8Array(prefix.length + suffix.length);
   bytes.set(prefix, 0);
