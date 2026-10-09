@@ -120,6 +120,13 @@ export function deriveDemoTickProbe(bytes) {
   };
 }
 
+export function selectRuntimeTickFields(surface, limit = 32) {
+  return surface.fields
+    .filter((field) => field.sourceApi === "parseTicks" && field.runtimeRequestable && field.upstreamSupported)
+    .map((field) => field.propertyName)
+    .slice(0, limit);
+}
+
 export function loadPinnedParser(surface, manifest, directoryOverride = null) {
   validateManifests(surface, manifest);
   const directory = directoryOverride
@@ -290,10 +297,10 @@ export function runWasm(path, authorization, options = {}) {
   const grenades = call("parseGrenades", []);
   const tickProbe = telemetry.step("frame_tick_probe", () => deriveDemoTickProbe(bytes));
   const wantedTicks = tickProbe.wantedTicks;
-  const requestedFields = surface.fields
-    .filter((f) => f.sourceApi === "parseTicks" && f.runtimeRequestable)
-    .map((f) => f.propertyName)
-    .slice(0, 32);
+  // Request only fields independently confirmed in the pinned upstream source.
+  // Catalogued-but-unsupported project aliases (for example `tick`) can cause
+  // an entire parseTicks call to fail; keep those aliases out of runtime requests.
+  const requestedFields = selectRuntimeTickFields(surface);
   const tickValues = call("parseTicks", [requestedFields, new Int32Array(wantedTicks), [], false], {
     requestedFields,
     wantedTicks,
