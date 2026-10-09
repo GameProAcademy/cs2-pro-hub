@@ -61,6 +61,62 @@ export function getHeaderProbeBytes(bytes) {
   return bytes.subarray(0, requiredLength);
 }
 
+export function deriveDemoTickProbe(bytes) {
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength < 19)
+    throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+  const magic = [0x50, 0x42, 0x44, 0x45, 0x4d, 0x53, 0x32, 0x00];
+  if (magic.some((value, index) => bytes[index] !== value))
+    throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+
+  let offset = 16;
+  let frameCount = 0;
+  let maxFrameTick = null;
+  const readVarint = (cleanEof = false) => {
+    let value = 0;
+    for (let index = 0; index < 5; index += 1) {
+      if (offset >= bytes.byteLength) {
+        if (cleanEof && index === 0) return null;
+        throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+      }
+      const byte = bytes[offset++];
+      value |= (byte & 0x7f) << (7 * index);
+      if ((byte & 0x80) === 0) return value >>> 0;
+    }
+    throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+  };
+
+  while (offset < bytes.byteLength) {
+    // Match the upstream frame-loop minimum-header guard. One or two trailing
+    // bytes are not a complete frame and are ignored just as upstream does.
+    if (bytes.byteLength - offset < 3) break;
+    const command = readVarint(true);
+    if (command === null) break;
+    const tickRaw = readVarint();
+    const frameSize = readVarint();
+    if (frameSize > bytes.byteLength - offset)
+      throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+
+    // Upstream casts the frame tick varint to signed i32.
+    const frameTick = tickRaw <= 0x7fffffff ? tickRaw : tickRaw - 0x100000000;
+    if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick))
+      maxFrameTick = frameTick;
+    offset += frameSize;
+    frameCount += 1;
+  }
+
+  if (frameCount === 0 || maxFrameTick === null || maxFrameTick < 2)
+    throw new Error("A91_TICK_PROBE_RANGE_MISSING");
+
+  const wantedTicks = [...new Set([0, Math.floor(maxFrameTick / 2), maxFrameTick - 1])];
+  return {
+    source: "DEM_FRAME_HEADER_SCAN",
+    maxFrameTick,
+    wantedTicks,
+    frameCount,
+    authoritativeDomain: false,
+  };
+}
+
 export function loadPinnedParser(surface, manifest, directoryOverride = null) {
   validateManifests(surface, manifest);
   const directory = directoryOverride
@@ -229,28 +285,23 @@ export function runWasm(path, authorization, options = {}) {
     });
   }
   const grenades = call("parseGrenades", []);
-  const ticks = Number(header?.playback_ticks);
-  const wantedTicks =
-    Number.isSafeInteger(ticks) && ticks > 0 ? [0, Math.floor(ticks / 2), ticks - 1] : [];
-  if (wantedTicks.length === 0)
-    telemetry.step(
-      "parse_ticks",
-      () => {
-        throw new Error("WASM_PARSE_FAILURE");
-      },
-      true,
-    );
+  const tickProbe = telemetry.step("frame_tick_probe", () => deriveDemoTickProbe(bytes));
+  const wantedTicks = tickProbe.wantedTicks;
   const requestedFields = surface.fields
     .filter((f) => f.sourceApi === "parseTicks" && f.runtimeRequestable)
     .map((f) => f.propertyName)
     .slice(0, 32);
-  const tickValues = wantedTicks.length
-    ? call("parseTicks", [requestedFields, new Int32Array(wantedTicks), [], false], {
-        requestedFields,
-        wantedTicks,
-        authoritativeDomain: false,
-      })
-    : null;
+  const tickValues = call("parseTicks", [requestedFields, new Int32Array(wantedTicks), [], false], {
+    requestedFields,
+    wantedTicks,
+    tickProbeSource: tickProbe.source,
+    maxFrameTick: tickProbe.maxFrameTick,
+    authoritativeDomain: false,
+  });
+  if (!Array.isArray(tickValues) || tickValues.length === 0)
+    telemetry.step("parse_ticks_validation", () => {
+      throw new Error("A91_TICK_PROBE_EMPTY");
+    }, true);
   // Keep identity absence explicit; never infer players from events or ticks.
   calls.push({ api: "parsePlayerInfo", status: "NOT_AVAILABLE_ON_WASM" });
   telemetry.snapshot("before_normalization");
@@ -309,7 +360,7 @@ export function runWasm(path, authorization, options = {}) {
     eventInventoryDigest: digest(inventory),
     headerEvidence: header,
     mapEvidence: { map: header?.map_name ?? null },
-    timingEvidence: { header },
+    timingEvidence: { header, tickProbe },
     playerInventory: { status: "NOT_AVAILABLE_ON_WASM" },
     domainAvailability: {
       players: "NOT_AVAILABLE_ON_WASM",
@@ -324,6 +375,8 @@ export function runWasm(path, authorization, options = {}) {
     weaponEvidence: byName((n) => n.startsWith("weapon_") || n.startsWith("item_")),
     economyEvidence: { status: "BOUNDED_TICK_PROBE", value: sample(tickValues) },
     tickDomainEvidence: {
+      tickProbeSource: tickProbe.source,
+      maxFrameTick: tickProbe.maxFrameTick,
       requestedFields,
       wantedTicks,
       authoritativeDomain: false,
