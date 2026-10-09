@@ -84,17 +84,19 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(observed).toEqual([bytes, ["health"], ticks, [], false]);
     expect(source).toMatch(/wantedPlayers\?: unknown\[\]/);
   });
-  it("keeps the real DEM remediation promotion opt-in and fail-closed by default", () => {
+  it("keeps the real DEM gate read-only and requires a reviewed PR for promotion", () => {
     const workflow = readFileSync(
       resolve(".github/workflows/a91-wasm-large-demo-remediation.yml"),
       "utf8",
     );
-    const promotionInput = workflow.match(
-      /promote_on_pass:[\s\S]*?default:\s*(true|false)[\s\S]*?type:\s*boolean/,
-    );
-    expect(promotionInput?.[1]).toBe("false");
+    expect(workflow).toMatch(/permissions:\s*\n\s+contents:\s*read/);
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).not.toContain("promote_on_pass");
+    expect(workflow).not.toContain("contents: write");
     const script = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
-    expect(script).toContain('os.environ.get("INPUT_PROMOTE_ON_PASS", "false").lower() == "true"');
+    expect(script).not.toContain("INPUT_PROMOTE_ON_PASS");
+    expect(script).not.toContain("git push");
+    expect(script).not.toContain("git commit");
   });
   it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
     const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
