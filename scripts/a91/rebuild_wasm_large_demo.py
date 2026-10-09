@@ -68,6 +68,7 @@ def main() -> int:
     run(sys.executable, "scripts/a91/test_demo_tick_probe.py", cwd=ROOT)
     run("node", "scripts/a91/header_probe.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/tick_probe.check.mjs", cwd=ROOT)
+    run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)
     shutil.rmtree(UPSTREAM, ignore_errors=True)
     run("git", "clone", "--filter=blob:none", "https://github.com/LaihoE/demoparser.git", str(UPSTREAM))
     run("git", "checkout", "--detach", UPSTREAM_COMMIT, cwd=UPSTREAM)
