@@ -16,15 +16,11 @@ assert.deepEqual(actual, {
   rows: [{ x: 1.5, y: 2.5 }],
 });
 
-const normalizedMapArray = normalizeWasmValue([
-  new Map([["map_name", "de_cache"]]),
-]);
+const normalizedMapArray = normalizeWasmValue([new Map([["map_name", "de_cache"]])]);
 assert.equal(normalizedMapArray.length, 1);
 assert.equal(normalizedMapArray[0].map_name, "de_cache");
 
-const normalizedMissingField = normalizeWasmValue(
-  new Map([["missing_field", undefined]]),
-);
+const normalizedMissingField = normalizeWasmValue(new Map([["missing_field", undefined]]));
 assert.equal(normalizedMissingField.missing_field, null);
 assert.deepEqual(Object.keys(normalizedMissingField), ["missing_field"]);
 
