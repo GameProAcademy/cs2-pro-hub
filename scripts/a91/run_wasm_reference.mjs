@@ -38,7 +38,9 @@ export function normalizeWasmValue(value) {
   // reference normalizes missing cell values to JSON null.
   if (value === undefined || value === null) return null;
   if (typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(normalizeWasmValue);
+  // Rebuild arrays in this realm too: arrays returned from a VM context
+  // retain foreign prototypes when Array.prototype.map is invoked on them.
+  if (Array.isArray(value)) return Array.from(value, normalizeWasmValue);
   const tag = Object.prototype.toString.call(value);
   if (tag === "[object Map]") {
     const entries = Array.from(value.entries(), ([key, item]) => {
