@@ -147,7 +147,7 @@ def test_reference_rejects_unapproved_source_and_provenance(tmp_path: Path):
         "source": "LOCAL_FILE",
         "provenance": "LOCAL_FILE",
         "filename": path.name,
-        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
         "sizeBytes": 473748061,
     }
     for key, value in (("source", "REMOTE"), ("provenance", "LOCAL_USER_SELECTION")):
@@ -164,7 +164,7 @@ def test_reference_rejects_incorrect_filename_size_and_hash_metadata(tmp_path: P
         "source": "LOCAL_FILE",
         "provenance": "LOCAL_FILE",
         "filename": path.name,
-        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
         "sizeBytes": path.stat().st_size,
     }
     cases = (
@@ -194,7 +194,7 @@ def test_reference_rejects_wrong_content_digest_after_metadata_gate(tmp_path: Pa
         "source": "LOCAL_FILE",
         "provenance": "LOCAL_FILE",
         "filename": path.name,
-        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b00dd4d446b4ec8ae3d",
+        "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
         "sizeBytes": 473748061,
     }
     with pytest.raises(RuntimeError, match="A91_DEM_SHA256_MISMATCH"):
