@@ -16,6 +16,8 @@ assert.deepEqual(actual, {
   rows: [{ x: 1.5, y: 2.5 }],
 });
 assert.deepEqual(normalizeWasmValue([new Map([["map_name", "de_cache"]])]), [{ map_name: "de_cache" }]);
+assert.deepEqual(normalizeWasmValue(new Map([["missing_field", undefined]])), { missing_field: null });
+assert.equal(normalizeWasmValue(undefined), null);
 assert.equal(normalizeWasmValue(null), null);
 assert.equal(normalizeWasmValue("value"), "value");
 assert.deepEqual(normalizeWasmValue(new Uint8Array([1, 2, 3])), [1, 2, 3]);
