@@ -60,12 +60,22 @@ def derive_tick_probe(path: str | Path) -> dict:
             if payload_size > size - payload_start:
                 raise ValueError("A91_DEMO_FRAME_SCAN_INVALID")
 
-            # Upstream casts frame tick varints to i32.
+            # Upstream casts frame ticks to i32. A DEM_STOP tick is a
+            # sentinel, not a playable tick, so the stop frame is counted but
+            # excluded from the candidate probe range.
             tick = tick_raw if tick_raw <= MAX_I32 else tick_raw - (MAX_U32 + 1)
-            if tick >= 0 and (max_tick is None or tick > max_tick):
-                max_tick = tick
             handle.seek(payload_size, 1)
             frame_count += 1
+            if (command & 0x40) == 0x40:
+                # A compressed stop command cannot be decoded safely without
+                # Snappy; record its header, but never treat it as a tick.
+                command_type = command & ~0x40
+            else:
+                command_type = command
+            if command_type == 4:
+                break
+            if tick >= 0 and (max_tick is None or tick > max_tick):
+                max_tick = tick
 
     if frame_count == 0 or max_tick is None or max_tick < 2:
         raise ValueError("A91_TICK_PROBE_RANGE_MISSING")
