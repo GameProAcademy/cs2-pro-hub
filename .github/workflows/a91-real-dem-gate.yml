@@ -31,7 +31,13 @@ jobs:
   isolated-gate:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
+    env:
+      UPSTREAM_COMMIT: d3767705dc5846d73ed29db50eaeda58778dc934
+      UPSTREAM_TAG: v0.42.0
+      RUST_VERSION: 1.91.1
+      WASM_PACK_VERSION: 0.13.1
+      WASM_BINDGEN_VERSION: 0.2.100
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,6 +55,20 @@ jobs:
           node-version: "24.9.0"
           check-latest: false
           package-manager-cache: false
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install "${RUST_VERSION}" --profile minimal
+          rustup target add wasm32-unknown-unknown --toolchain "${RUST_VERSION}"
+          rustup default "${RUST_VERSION}"
+          rustc --version
+          cargo --version
+      - name: Install pinned wasm-pack and wasm-bindgen CLI
+        run: |
+          cargo +"${RUST_VERSION}" install wasm-pack --version "${WASM_PACK_VERSION}" --locked
+          cargo +"${RUST_VERSION}" install wasm-bindgen-cli --version "${WASM_BINDGEN_VERSION}" --locked
+          wasm-pack --version
+          wasm-bindgen --version
+          test "$(wasm-bindgen --version | awk '{print $2}')" = "${WASM_BINDGEN_VERSION}"
       - name: Verify Node runtime and runner resources
         run: |
           node --version
@@ -60,15 +80,21 @@ jobs:
           df -h "$RUNNER_TEMP"
           echo "ULIMIT:"
           ulimit -a
-      - name: Execute isolated four-run gate
+      - name: Execute isolated hermetic A9.1 remediation + real DEM gate
         env:
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
+          A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
+          A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
           A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
           EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
           DEM_SHA256: ${{ inputs.expected_sha256 }}
           EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
+          DEM_SIZE: ${{ inputs.expected_size_bytes }}
           AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
+          DEM_AUTH: ${{ inputs.authorization_ref }}
           DEMO_FILENAME: ${{ inputs.filename }}
-        run: python scripts/a91/execute.py
+          DEM_FILENAME: ${{ inputs.filename }}
+        run: python scripts/a91/rebuild_wasm_large_demo.py
       - name: Print bounded gate decision
         if: always()
         run: |
