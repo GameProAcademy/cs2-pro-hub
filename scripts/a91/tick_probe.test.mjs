@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { deriveDemoTickProbe } from "./run_wasm_reference.mjs";
+import { deriveDemoTickProbe, selectRuntimeTickFields } from "./run_wasm_reference.mjs";
 
 function varint(value) {
   value >>>= 0;
@@ -50,3 +50,14 @@ assert.throws(
 );
 
 process.stdout.write("A9.1 WASM DEM tick-probe regression tests PASS\n");
+
+
+const syntheticSurface = {
+  fields: [
+    { propertyName: "tick", sourceApi: "parseTicks", runtimeRequestable: true, upstreamSupported: false },
+    { propertyName: "X", sourceApi: "parseTicks", runtimeRequestable: true, upstreamSupported: true },
+    { propertyName: "not-requestable", sourceApi: "parseTicks", runtimeRequestable: false, upstreamSupported: true },
+    { propertyName: "player_death", sourceApi: "parseEvent", runtimeRequestable: true, upstreamSupported: true },
+  ],
+};
+assert.deepEqual(selectRuntimeTickFields(syntheticSurface), ["X"]);
