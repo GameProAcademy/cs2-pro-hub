@@ -251,6 +251,29 @@ class HarnessTests(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
 
+    def test_python_reference_samples_recursively_match_wasm_shape(self):
+        reference_path = Path(__file__).resolve().parents[2] / "services/cs2-demo-parser/python_reference.py"
+        spec = importlib.util.spec_from_file_location("a91_python_reference_samples", reference_path)
+        reference = importlib.util.module_from_spec(spec)
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(reference)
+
+        rows = [
+            {"tick": 1, "nested": {"positions": [1, 2, 3], "labels": ["a", "b", "c"]}},
+            {"tick": 2, "nested": {"positions": [4, 5, 6], "labels": ["d", "e", "f"]}},
+            {"tick": 3, "nested": {"positions": [7, 8, 9], "labels": ["g", "h", "i"]}},
+        ]
+        summary = reference.summarize_records(rows, sample_limit=2)
+
+        self.assertEqual(summary["count"], 3)
+        self.assertEqual(
+            summary["samples"],
+            [reference.sample(row, 2) for row in rows[:2]],
+        )
+        # Sampling must not truncate the complete digest or record count.
+        self.assertEqual(summary["digest"], reference.digest(rows))
+        self.assertEqual(summary["returnedFields"], ["nested", "tick"])
+
     def test_python_stable_matches_ecmascript_number_formatting(self):
         # Compare the canonical bytes against the same sorted-key JSON.stringify
         # algorithm used by the JS parity runner, including exponent thresholds,
