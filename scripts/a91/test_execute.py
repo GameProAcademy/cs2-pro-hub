@@ -1,5 +1,6 @@
 """Synthetic mechanics only. No parser calls or network access."""
 import hashlib
+import importlib.util
 import json
 import subprocess
 import tempfile
@@ -275,7 +276,12 @@ process.stdout.write(stable(JSON.parse(process.argv[1])));
             capture_output=True,
             text=True,
         )
-        self.assertEqual(execute.stable(value), result.stdout)
+        reference_path = Path(__file__).resolve().parents[2] / "services/cs2-demo-parser/python_reference.py"
+        spec = importlib.util.spec_from_file_location("a91_python_reference", reference_path)
+        reference = importlib.util.module_from_spec(spec)
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(reference)
+        self.assertEqual(reference.stable(value), result.stdout)
 
 if __name__ == "__main__":
     unittest.main()
