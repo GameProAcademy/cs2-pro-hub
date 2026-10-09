@@ -51,6 +51,32 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(source).not.toContain("set -x");
     expect(source).toContain("A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}");
     expect(source).toContain("DEM_SHA256: ${{ inputs.expected_sha256 }}");
+    // The real-DEM workflow must build its isolated WASM artifact before execute.py;
+    // calling execute.py directly cannot satisfy the required artifact/manifest inputs.
+    expect(source).toContain("run: python scripts/a91/rebuild_wasm_large_demo.py");
+    expect(source).not.toContain("run: python scripts/a91/execute.py");
+    for (const pinned of [
+      "UPSTREAM_COMMIT: d3767705dc5846d73ed29db50eaeda58778dc934",
+      "UPSTREAM_TAG: v0.42.0",
+      "RUST_VERSION: 1.91.1",
+      "WASM_PACK_VERSION: 0.13.1",
+      "WASM_BINDGEN_VERSION: 0.2.100",
+    ]) {
+      expect(source).toContain(pinned);
+    }
+    const remediationWorkflow = readFileSync(
+      resolve(".github/workflows/a91-wasm-large-demo-remediation.yml"),
+      "utf8",
+    );
+    for (const pinned of [
+      "UPSTREAM_COMMIT: d3767705dc5846d73ed29db50eaeda58778dc934",
+      "UPSTREAM_TAG: v0.42.0",
+      "RUST_VERSION: 1.91.1",
+      "WASM_PACK_VERSION: 0.13.1",
+      "WASM_BINDGEN_VERSION: 0.2.100",
+    ]) {
+      expect(remediationWorkflow).toContain(pinned);
+    }
     expect(source).not.toContain("demo_url:");
     expect(source).not.toMatch(/inputs\.demo_url|contents: write|railway|supabase|deploy/i);
     expect(source).toContain("if: always()");
