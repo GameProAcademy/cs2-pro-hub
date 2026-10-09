@@ -27,7 +27,7 @@ on:
       promote_on_pass:
         description: Replace pinned browser WASM only after the real gate passes
         required: true
-        default: true
+        default: false
         type: boolean
 
 permissions:
