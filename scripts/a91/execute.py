@@ -27,12 +27,14 @@ MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES = 256 * 1024 * 1024
 MAX_PRIVATE_STDERR_BYTES = 1024 * 1024
 WASM_REASONS = {"WASM_RUNTIME_RESOURCE_FAILURE", "WASM_MEMORY_ALLOCATION_FAILURE",
     "WASM_RUNTIME_TRAP", "WASM_PARSE_FAILURE", "WASM_PRIVATE_EVIDENCE_TOO_LARGE",
+    "A91_DEMO_FRAME_SCAN_INVALID", "A91_TICK_PROBE_RANGE_MISSING", "A91_TICK_PROBE_EMPTY",
     "WASM_ARTIFACT_IDENTITY_MISMATCH", "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH",
     "CONTRACT_MISMATCH", "PARSER_IDENTITY_MISMATCH", "ARTIFACT_SECURITY_FAILURE"}
 PYTHON_REASONS = {
     "NO_AUTHORIZED_REAL_DEM", "EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED",
     "AUTHORIZED_DEM_METADATA_MISMATCH", "A91_DEM_SHA256_MISMATCH",
     "PARSER_IDENTITY_MISMATCH", "CATALOG_MISMATCH", "CONTRACT_MISMATCH",
+    "A91_DEMO_FRAME_SCAN_INVALID", "A91_TICK_PROBE_RANGE_MISSING", "A91_TICK_PROBE_EMPTY",
 }
 LOCKS = {"canonicalAuthorization": False, "attempt9Authorization": False,
          "productionAuthorization": False, "canonicalEligible": False}
@@ -441,7 +443,7 @@ def main():
                         failure_metadata["childExitStatus"] = diagnostic["exitStatus"]
                     if diagnostic.get("signal") is not None:
                         failure_metadata["childSignal"] = diagnostic["signal"]
-                    if reason in {"WASM_RUN_FAILED", "PYTHON_RUN_FAILED"} and diagnostic.get("reason") in WASM_REASONS | {"A91_RUNTIME_RESOURCE_FAILURE"}:
+                    if reason in {"WASM_RUN_FAILED", "PYTHON_RUN_FAILED"} and diagnostic.get("reason") in WASM_REASONS | PYTHON_REASONS | {"A91_RUNTIME_RESOURCE_FAILURE"}:
                         reason = diagnostic["reason"]
                 except Exception:
                     pass
@@ -450,7 +452,7 @@ def main():
                     failure = json.loads(failed_target.read_text())
                     if failure.get("reason") in WASM_REASONS:
                         reason = failure["reason"]
-                    known_stages = {"validate", "structure_validation", "wasm_smoke", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize"}
+                    known_stages = {"validate", "structure_validation", "wasm_smoke", "wasm_load", "parse_header", "list_game_events", "list_updated_fields", "parse_events", "parse_grenades", "parse_ticks", "normalization", "private_sanitize", "frame_tick_probe", "parse_ticks_validation"}
                     if failure.get("failedStage") in known_stages:
                         failure_metadata["stage"] = failure["failedStage"]
                     for key in (
@@ -487,7 +489,7 @@ def main():
         "PARSER_IDENTITY_MISMATCH",
         "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED", "PARITY_EXECUTION_FAILED", "DETERMINISM_EXECUTION_FAILED",
     }
-    allowed_failure_reasons |= WASM_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
+    allowed_failure_reasons |= WASM_REASONS | PYTHON_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
     if reason:
         public_reason = reason if reason in allowed_failure_reasons else "A91_RUNTIME_RESOURCE_FAILURE"
         public = {
