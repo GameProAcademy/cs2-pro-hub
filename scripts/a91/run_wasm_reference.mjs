@@ -87,14 +87,17 @@ export function runWasm(path, authorization, options = {}) {
   const parser = loaded.parser;
   const wasmExports = loaded.wasmExports;
 
-  // Large real DEMs are passed through wasm-bindgen as one Uint8Array. The generated
-  // binding first mallocs the entire input inside WASM linear memory. Pre-grow a bounded
-  // envelope before the first parse call so the allocator does not have to satisfy a
-  // ~474 MB contiguous request while simultaneously growing the heap. This is a runtime
-  // safety/capability preparation only; it does not change the parser or DEM bytes.
+  // Large real DEMs cross the wasm-bindgen boundary as one Uint8Array, so the
+  // generated wrapper first allocates and copies the entire input into WASM memory.
+  // Upstream parse_header_only still performs a full first pass; on the 473,748,061-byte
+  // A9.1 fixture, a 256 MiB margin only pre-grew to 768 MiB and the wrapper then grew
+  // memory to 1,279,983,616 bytes immediately before a RuntimeError: unreachable in
+  // parseHeader. Reserve a larger bounded envelope BEFORE the wrapper copies the input,
+  // avoiding a large allocator request racing memory.grow. This changes neither parser
+  // semantics nor DEM bytes. Browser viability still requires separate memory testing.
   const WASM_PAGE_BYTES = 64 * 1024;
   const LARGE_DEM_MEMORY_FLOOR_BYTES = 768 * 1024 * 1024;
-  const LARGE_DEM_MEMORY_HEADROOM_BYTES = 256 * 1024 * 1024;
+  const LARGE_DEM_MEMORY_HEADROOM_BYTES = 1536 * 1024 * 1024;
   telemetry.step("wasm_memory_prepare", () => {
     if (!(wasmExports.memory instanceof WebAssembly.Memory))
       throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
