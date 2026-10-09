@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from scripts.a91.tick_probe import derive_tick_probe
 FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
 SIZE = 473748061
 SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
@@ -278,21 +280,18 @@ def main() -> int:
 
     progress("parse_grenades")
     grenade_summary = summarize_records(parser.parse_grenades(), MAX_GRENADE_SAMPLE)
-    ticks_total = header.get("playback_ticks")
-    wanted_ticks = (
-        [0, int(ticks_total) // 2, int(ticks_total) - 1]
-        if isinstance(ticks_total, (int, float))
-        and not isinstance(ticks_total, bool)
-        and int(ticks_total) > 0
-        else []
-    )
+    progress("scan_demo_tick_probe")
+    tick_probe = derive_tick_probe(path)
+    wanted_ticks = tick_probe["wantedTicks"]
     requested_fields = [
         item["propertyName"]
         for item in surface["fields"]
         if item.get("sourceApi") == "parseTicks" and item.get("runtimeRequestable") is True
     ][:MAX_TICK_FIELDS]
     progress("parse_ticks")
-    tick_summary = summarize_records(parser.parse_ticks(requested_fields, ticks=wanted_ticks)) if wanted_ticks else {"digest": digest([]), "count": 0, "returnedFields": [], "samples": []}
+    tick_summary = summarize_records(parser.parse_ticks(requested_fields, ticks=wanted_ticks))
+    if tick_summary["count"] == 0:
+        raise RuntimeError("A91_TICK_PROBE_EMPTY")
 
     # Python has player-info support; WASM is explicitly unavailable. Keep the
     # difference explicit so parity becomes NOT_COMPARABLE rather than inferred.
@@ -353,6 +352,8 @@ def main() -> int:
                 "status": "SUCCEEDED",
                 "wantedTicks": wanted_ticks,
                 "requestedFields": requested_fields,
+                "tickProbeSource": tick_probe["source"],
+                "maxFrameTick": tick_probe["maxFrameTick"],
                 "outputDigest": tick_summary["digest"],
                 "count": tick_summary["count"],
             },
@@ -363,7 +364,7 @@ def main() -> int:
         "eventInventoryDigest": digest(inventory),
         "headerEvidence": header,
         "mapEvidence": {"map": header.get("map_name")},
-        "timingEvidence": {"header": header},
+        "timingEvidence": {"header": header, "tickProbe": tick_probe},
         "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": player_summary["samples"]},
         "domainAvailability": {
             "players": "AVAILABLE",
@@ -378,6 +379,8 @@ def main() -> int:
         "weaponEvidence": by_name(lambda name: name.startswith("weapon_") or name.startswith("item_")),
         "economyEvidence": {"status": "BOUNDED_TICK_PROBE", "value": tick_summary["samples"]},
         "tickDomainEvidence": {
+            "tickProbeSource": tick_probe["source"],
+            "maxFrameTick": tick_probe["maxFrameTick"],
             "requestedFields": requested_fields,
             "wantedTicks": wanted_ticks,
             "authoritativeDomain": False,
