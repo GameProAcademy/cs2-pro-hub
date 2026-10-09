@@ -11,6 +11,12 @@ on:
     branches: [main, infra/cs2-parser-worker-v8]
   workflow_dispatch:
 
+# Keep only the newest CI run per PR/branch; superseded runs must not burn
+# resources on the 11-minute disposable F553 integration harness.
+concurrency:
+  group: quality-gates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

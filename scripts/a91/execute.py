@@ -138,7 +138,17 @@ def classify_child_failure(returncode, stderr, wasm=False):
 
 
 def run(command, output=None, stdin=None, diagnostics=None):
-    child_env = {k: v for k, v in os.environ.items() if k != "A91_DEMO_URL"}
+    sensitive_inputs = {
+        "A91_DEMO_URL",
+        "EXPECTED_SHA256",
+        "EXPECTED_SIZE_BYTES",
+        "AUTHORIZATION_REF",
+        "DEMO_FILENAME",
+        "DEM_SHA256",
+        "DEM_SIZE",
+        "DEM_AUTH",
+    }
+    child_env = {k: v for k, v in os.environ.items() if k not in sensitive_inputs}
     if diagnostics is not None and "python_reference.py" in " ".join(command):
         child_env["A91_PROGRESS_PATH"] = str(diagnostics.with_suffix(".progress"))
     if diagnostics is None:

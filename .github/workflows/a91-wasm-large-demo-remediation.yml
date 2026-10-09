@@ -24,14 +24,9 @@ on:
         required: true
         default: furia-vs-gamerlegion-m1-cache.dem
         type: string
-      promote_on_pass:
-        description: Replace pinned browser WASM only after the real gate passes
-        required: true
-        default: true
-        type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   rebuild-and-gate:
@@ -44,21 +39,11 @@ jobs:
       RUST_VERSION: 1.91.1
       WASM_PACK_VERSION: 0.13.1
       WASM_BINDGEN_VERSION: 0.2.100
-      DEM_SHA256: ${{ inputs.expected_sha256 }}
-      DEM_SIZE: ${{ inputs.expected_size_bytes }}
-      DEM_AUTH: ${{ inputs.authorization_ref }}
-      DEM_FILENAME: ${{ inputs.filename }}
-      A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
-      EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
-      EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
-      AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
-      DEMO_FILENAME: ${{ inputs.filename }}
-      INPUT_PROMOTE_ON_PASS: ${{ inputs.promote_on_pass }}
     steps:
       - name: Checkout reviewed project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Install pinned Rust toolchain
         run: |
@@ -81,6 +66,15 @@ jobs:
           RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
           A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
           A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
+          DEM_SHA256: ${{ inputs.expected_sha256 }}
+          DEM_SIZE: ${{ inputs.expected_size_bytes }}
+          DEM_AUTH: ${{ inputs.authorization_ref }}
+          DEM_FILENAME: ${{ inputs.filename }}
+          A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
+          EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+          EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
+          AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
+          DEMO_FILENAME: ${{ inputs.filename }}
         run: |
           python scripts/a91/rebuild_wasm_large_demo.py
 

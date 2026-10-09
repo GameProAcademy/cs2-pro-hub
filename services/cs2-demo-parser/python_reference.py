@@ -216,6 +216,16 @@ def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
     ]
     return player, other
 
+def tick_request(surface: dict[str, Any], limit: int = MAX_TICK_FIELDS) -> list[str]:
+    """Match the WASM gate: request only runtime fields supported upstream."""
+    return [
+        item["propertyName"]
+        for item in surface.get("fields", [])
+        if item.get("sourceApi") == "parseTicks"
+        and item.get("runtimeRequestable") is True
+        and item.get("upstreamSupported") is True
+    ][:limit]
+
 
 def parse_event(parser: Any, event: dict[str, Any]) -> dict[str, Any]:
     name = event["eventName"]
@@ -283,11 +293,7 @@ def main() -> int:
     progress("scan_demo_tick_probe")
     tick_probe = derive_tick_probe(path)
     wanted_ticks = tick_probe["wantedTicks"]
-    requested_fields = [
-        item["propertyName"]
-        for item in surface["fields"]
-        if item.get("sourceApi") == "parseTicks" and item.get("runtimeRequestable") is True
-    ][:MAX_TICK_FIELDS]
+    requested_fields = tick_request(surface)
     progress("parse_ticks")
     tick_summary = summarize_records(parser.parse_ticks(requested_fields, ticks=wanted_ticks))
     if tick_summary["count"] == 0:

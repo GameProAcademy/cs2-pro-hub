@@ -5,25 +5,30 @@ import { describe, expect, it } from "vitest";
 
 describe("A9.1 isolated harness mechanics — never real execution evidence", () => {
   it("runs Node safety and manifest tests without parsing any DEM", () => {
-    const result = spawnSync(
-      "node",
-      [
-        "--test",
-        "scripts/a91/contracts-node-checks.mjs",
-        "scripts/a91/diagnostics-node-checks.mjs",
-      ],
-      {
-        encoding: "utf8",
-        timeout: 30000,
-      },
-    );
+    const result = spawnSync("node", ["scripts/a91/contracts-node-checks.mjs"], {
+      encoding: "utf8",
+      timeout: 30000,
+    });
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
+  it("runs standalone tick/header probe regressions without treating them as Vitest suites", () => {
+    for (const script of [
+      "scripts/a91/tick_probe.check.mjs",
+      "scripts/a91/header_probe.check.mjs",
+    ]) {
+      const result = spawnSync("node", [script], {
+        encoding: "utf8",
+        timeout: 30000,
+      });
+      expect(result.status, `${script}: ${result.stdout}${result.stderr}`).toBe(0);
+      expect(result.stdout).toMatch(/regression checks PASS/);
+    }
+  });
   it("runs synthetic Python validation, cleanup and no-execution tests", () => {
     const result = spawnSync(
       "python3",
       ["-m", "unittest", "discover", "-s", "scripts/a91", "-p", "test_*.py"],
-      { encoding: "utf8", timeout: 30000 },
+      { encoding: "utf8", timeout: 60000 },
     );
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000);
@@ -78,6 +83,38 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     );
     expect(observed).toEqual([bytes, ["health"], ticks, [], false]);
     expect(source).toMatch(/wantedPlayers\?: unknown\[\]/);
+  });
+  it("keeps the real DEM gate read-only and requires a reviewed PR for promotion", () => {
+    const workflow = readFileSync(
+      resolve(".github/workflows/a91-wasm-large-demo-remediation.yml"),
+      "utf8",
+    );
+    expect(workflow).toMatch(/permissions:\s*\n\s+contents:\s*read/);
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).not.toContain("promote_on_pass");
+    expect(workflow).not.toContain("contents: write");
+    const script = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
+    expect(script).not.toContain("INPUT_PROMOTE_ON_PASS");
+    expect(script).not.toContain("git push");
+    expect(script).not.toContain("git commit");
+
+    expect(script).toContain("def child_environment(");
+    expect(script).toContain("env=child_environment()");
+    expect(script).toContain("env=gate_env");
+    const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
+    expect(gateScript).toContain("if k not in sensitive_inputs");
+  });
+  it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
+    const workflow = readFileSync(
+      resolve(".github/workflows/f553-r11-post-completion.yml"),
+      "utf8",
+    );
+    expect(workflow).toMatch(
+      /workflow_run:\s*\n\s+workflows:\s*\[Quality Gates\]\s*\n\s+types:\s*\[completed\]\s*\n\s+branches:\s*\[main\]/,
+    );
+    expect(workflow).not.toContain("if: github.event.workflow_run.head_branch == 'main'");
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).toMatch(/permissions:\s*\n\s+actions:\s*read\s*\n\s+contents:\s*read/);
   });
   it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
     const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");

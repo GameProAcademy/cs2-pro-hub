@@ -22,9 +22,35 @@ RUST_VERSION = os.environ["RUST_VERSION"]
 WASM_PACK_VERSION = os.environ["WASM_PACK_VERSION"]
 
 
-def run(*args: str, cwd: pathlib.Path | None = None) -> None:
+DEM_INPUT_ENV_KEYS = (
+    "A91_DEMO_URL",
+    "EXPECTED_SHA256",
+    "EXPECTED_SIZE_BYTES",
+    "AUTHORIZATION_REF",
+    "DEMO_FILENAME",
+    "DEM_SHA256",
+    "DEM_SIZE",
+    "DEM_AUTH",
+)
+
+
+def child_environment(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Do not leak signed DEM URLs or authorization inputs to build subprocesses."""
+    env = os.environ.copy()
+    for key in DEM_INPUT_ENV_KEYS:
+        env.pop(key, None)
+    if extra:
+        env.update(extra)
+    return env
+
+
+def run(
+    *args: str,
+    cwd: pathlib.Path | None = None,
+    env: dict[str, str] | None = None,
+) -> None:
     print("+", " ".join(args), flush=True)
-    subprocess.run(args, cwd=cwd, check=True)
+    subprocess.run(args, cwd=cwd, env=child_environment(env), check=True)
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -45,7 +71,7 @@ def main() -> int:
     shutil.rmtree(UPSTREAM, ignore_errors=True)
     run("git", "clone", "--filter=blob:none", "https://github.com/LaihoE/demoparser.git", str(UPSTREAM))
     run("git", "checkout", "--detach", UPSTREAM_COMMIT, cwd=UPSTREAM)
-    actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=UPSTREAM, text=True).strip()
+    actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=UPSTREAM, text=True, env=child_environment()).strip()
     if actual != UPSTREAM_COMMIT:
         raise RuntimeError(f"upstream identity mismatch: {actual} != {UPSTREAM_COMMIT}")
 
@@ -287,29 +313,25 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
             ),
         ],
         cwd=ROOT,
+        env=child_environment(),
         check=True,
     )
     if verify.returncode != 0:
         raise RuntimeError("PYTHON_REFERENCE_DEPENDENCY_IMPORT_FAILED")
 
-    env = os.environ.copy()
-    env["A91_WASM_ARTIFACT_DIR"] = str(WASM_PKG)
-    env["A91_WASM_MANIFEST"] = str(MANIFEST)
-    run(sys.executable, "scripts/a91/execute.py", cwd=ROOT)
+    # Restore the authorized DEM inputs only for the isolated gate process.
+    # All preceding clone/build/package-install children receive a scrubbed env.
+    gate_env = child_environment()
+    for key in DEM_INPUT_ENV_KEYS:
+        if key in os.environ:
+            gate_env[key] = os.environ[key]
+    gate_env["A91_WASM_ARTIFACT_DIR"] = str(WASM_PKG)
+    gate_env["A91_WASM_MANIFEST"] = str(MANIFEST)
+    run(sys.executable, "scripts/a91/execute.py", cwd=ROOT, env=gate_env)
 
-    if os.environ.get("INPUT_PROMOTE_ON_PASS", "true").lower() == "true":
-        target = ROOT / "public/client-parser/demoparser2/0.42.0"
-        shutil.copy2(binding, target / "demoparser2.js")
-        shutil.copy2(wasm, target / "demoparser2_bg.wasm")
-        shutil.copy2(MANIFEST, target / "artifact-manifest.json")
-        run("git", "config", "user.name", "github-actions[bot]", cwd=ROOT)
-        run("git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com", cwd=ROOT)
-        run("git", "add", str(target / "demoparser2.js"), str(target / "demoparser2_bg.wasm"), str(target / "artifact-manifest.json"), cwd=ROOT)
-        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT)
-        if staged.returncode != 0:
-            run("git", "commit", "-m", "fix(a91): promote large-demo WASM remediation after real gate", cwd=ROOT)
-            run("git", "push", cwd=ROOT)
-
+    # Never mutate the default branch from a long-running parser/DEM gate.
+    # Successful output remains a short-lived evidence artifact; any later
+    # browser-WASM promotion must be reviewed and merged as a separate PR.
     print("A9.1 controlled remediation completed successfully.", flush=True)
     return 0
 

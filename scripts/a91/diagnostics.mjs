@@ -35,12 +35,12 @@ function trapDetail(error) {
   if (/stack overflow|call stack|stack exhausted/.test(normalized)) return "stack_overflow";
   if (/divide by zero/.test(normalized)) return "divide_by_zero";
   if (/integer overflow/.test(normalized)) return "integer_overflow";
-  if (name === "RuntimeError" || error instanceof WebAssembly.RuntimeError) return "runtime_error_other";
+  if (name === "RuntimeError" || error instanceof WebAssembly.RuntimeError)
+    return "runtime_error_other";
   return null;
 }
 function classifyWasmErrorDetail(error, parsing = false) {
-  if (FAILURE_CODES.has(error?.message))
-    return { reason: error.message, trapDetail: null };
+  if (FAILURE_CODES.has(error?.message)) return { reason: error.message, trapDetail: null };
   const name = error?.name ?? error?.constructor?.name;
   const message = typeof error?.message === "string" ? error.message : "";
   if (/out of memory|allocation fail|memory (?:grow|allocation)|cannot allocate/i.test(message))
@@ -49,7 +49,10 @@ function classifyWasmErrorDetail(error, parsing = false) {
     return { reason: "WASM_RUNTIME_RESOURCE_FAILURE", trapDetail: "range_error" };
   if (error instanceof WebAssembly.RuntimeError || name === "RuntimeError")
     return { reason: "WASM_RUNTIME_TRAP", trapDetail: trapDetail(error) };
-  return { reason: parsing ? "WASM_PARSE_FAILURE" : "A91_RUNTIME_RESOURCE_FAILURE", trapDetail: null };
+  return {
+    reason: parsing ? "WASM_PARSE_FAILURE" : "A91_RUNTIME_RESOURCE_FAILURE",
+    trapDetail: null,
+  };
 }
 export function classifyWasmError(error, parsing = false) {
   return classifyWasmErrorDetail(error, parsing).reason;

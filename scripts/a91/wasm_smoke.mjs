@@ -51,12 +51,13 @@ try {
   );
 } catch (error) {
   const message = error?.message || String(error);
-  if (/RuntimeError|wasm trap|unreachable|out of bounds/i.test(message))
+  if (/RuntimeError|wasm trap|unreachable|out of bounds/i.test(message)) {
     process.stderr.write("WASM_RUNTIME_TRAP\n");
-  else if (/allocation|out of memory|memory grow|cannot allocate|malloc/i.test(message))
+  } else if (/allocation|out of memory|memory grow|cannot allocate|malloc/i.test(message)) {
     process.stderr.write("WASM_MEMORY_ALLOCATION_FAILURE\n");
-  else
+  } else {
     process.stderr.write(message + "\n");
+  }
   process.exitCode = 1;
 }
 

@@ -93,8 +93,7 @@ export function deriveDemoTickProbe(bytes) {
     if (command === null) break;
     const tickRaw = readVarint();
     const frameSize = readVarint();
-    if (frameSize > bytes.byteLength - offset)
-      throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
+    if (frameSize > bytes.byteLength - offset) throw new Error("A91_DEMO_FRAME_SCAN_INVALID");
 
     // Upstream casts frame ticks to signed i32. DEM_STOP is a sentinel, not
     // a playable tick, so count its frame but exclude it from tick candidates.
@@ -118,6 +117,16 @@ export function deriveDemoTickProbe(bytes) {
     frameCount,
     authoritativeDomain: false,
   };
+}
+
+export function selectRuntimeTickFields(surface, limit = 32) {
+  return surface.fields
+    .filter(
+      (field) =>
+        field.sourceApi === "parseTicks" && field.runtimeRequestable && field.upstreamSupported,
+    )
+    .map((field) => field.propertyName)
+    .slice(0, limit);
 }
 
 export function loadPinnedParser(surface, manifest, directoryOverride = null) {
@@ -205,21 +214,21 @@ export function runWasm(path, authorization, options = {}) {
         const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
         try {
           const result = parser[api](inputBytes, ...args);
-        const outputDigest = digest(result);
+          const outputDigest = digest(result);
           calls.push({
             api,
             status: "SUCCEEDED",
-          ...request,
-          outputDigest,
-          count: Array.isArray(result) ? result.length : null,
-          returnedFields: Array.isArray(result)
-            ? [
-                ...new Set(
-                  result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
-                ),
-              ].sort()
-            : Object.keys(result ?? {}),
-        });
+            ...request,
+            outputDigest,
+            count: Array.isArray(result) ? result.length : null,
+            returnedFields: Array.isArray(result)
+              ? [
+                  ...new Set(
+                    result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
+                  ),
+                ].sort()
+              : Object.keys(result ?? {}),
+          });
           return result;
         } catch (error) {
           error.wasmMemoryBytesBefore = memoryBefore;
@@ -290,10 +299,10 @@ export function runWasm(path, authorization, options = {}) {
   const grenades = call("parseGrenades", []);
   const tickProbe = telemetry.step("frame_tick_probe", () => deriveDemoTickProbe(bytes));
   const wantedTicks = tickProbe.wantedTicks;
-  const requestedFields = surface.fields
-    .filter((f) => f.sourceApi === "parseTicks" && f.runtimeRequestable)
-    .map((f) => f.propertyName)
-    .slice(0, 32);
+  // Request only fields independently confirmed in the pinned upstream source.
+  // Catalogued-but-unsupported project aliases (for example `tick`) can cause
+  // an entire parseTicks call to fail; keep those aliases out of runtime requests.
+  const requestedFields = selectRuntimeTickFields(surface);
   const tickValues = call("parseTicks", [requestedFields, new Int32Array(wantedTicks), [], false], {
     requestedFields,
     wantedTicks,
@@ -301,10 +310,15 @@ export function runWasm(path, authorization, options = {}) {
     maxFrameTick: tickProbe.maxFrameTick,
     authoritativeDomain: false,
   });
-  if (!Array.isArray(tickValues) || tickValues.length === 0)
-    telemetry.step("parse_ticks_validation", () => {
-      throw new Error("A91_TICK_PROBE_EMPTY");
-    }, true);
+  if (!Array.isArray(tickValues) || tickValues.length === 0) {
+    telemetry.step(
+      "parse_ticks_validation",
+      () => {
+        throw new Error("A91_TICK_PROBE_EMPTY");
+      },
+      true,
+    );
+  }
   // Keep identity absence explicit; never infer players from events or ticks.
   calls.push({ api: "parsePlayerInfo", status: "NOT_AVAILABLE_ON_WASM" });
   telemetry.snapshot("before_normalization");
