@@ -122,13 +122,24 @@ class HarnessTests(unittest.TestCase):
 
     def test_url_never_in_argv_or_child_environment(self):
         url = "https://private.example.invalid/a?signature=synthetic"
-        with patch.object(execute.subprocess, "run") as subprocess_run, patch.dict(execute.os.environ, {"A91_DEMO_URL": url}):
+        sensitive = {
+            "A91_DEMO_URL": url,
+            "EXPECTED_SHA256": execute.SHA,
+            "EXPECTED_SIZE_BYTES": str(execute.SIZE),
+            "AUTHORIZATION_REF": execute.AUTH,
+            "DEMO_FILENAME": execute.FILENAME,
+            "DEM_SHA256": execute.SHA,
+            "DEM_SIZE": str(execute.SIZE),
+            "DEM_AUTH": execute.AUTH,
+        }
+        with patch.object(execute.subprocess, "run") as subprocess_run, patch.dict(execute.os.environ, sensitive, clear=True):
             subprocess_run.return_value.returncode = 0
             self.assertEqual(execute.download(Path("/tmp/synthetic.dem"), url), 0)
             argv = subprocess_run.call_args.args[0]
             kwargs = subprocess_run.call_args.kwargs
             self.assertNotIn(url, " ".join(argv))
-            self.assertNotIn("A91_DEMO_URL", kwargs["env"])
+            for key in sensitive:
+                self.assertNotIn(key, kwargs["env"])
             self.assertIn(url.encode(), kwargs["input"])
             self.assertIn("--config", argv)
 
