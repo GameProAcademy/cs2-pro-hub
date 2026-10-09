@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 
 import pytest
+import python_reference
 
 from python_reference import (
     MAX_DEMO_BYTES,
     event_request,
     iter_normalized_records,
     normalize,
+    read_manifest,
     sample,
     summarize_records,
     tick_request,
@@ -96,6 +99,31 @@ def test_tick_request_excludes_project_aliases_not_supported_upstream():
     }
     assert tick_request(surface) == ["X"]
     assert tick_request(surface, limit=0) == []
+
+
+def test_shared_manifest_digests_are_verified():
+    manifest = read_manifest()
+    assert manifest["catalogVersion"] == 5
+    assert manifest["contractVersion"] == 4
+    assert len(manifest["catalogDigest"]) == 64
+    assert len(manifest["contractDigest"]) == 64
+
+
+def test_manifest_catalog_tampering_fails_closed(tmp_path: Path, monkeypatch):
+    manifest = json.loads(python_reference.MANIFEST.read_text(encoding="utf-8"))
+    manifest["fields"].append(
+        {
+            "propertyName": "injected_unsupported_alias",
+            "sourceApi": "parseTicks",
+            "runtimeRequestable": True,
+            "upstreamSupported": False,
+        }
+    )
+    tampered_path = tmp_path / "tampered-manifest.json"
+    tampered_path.write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(python_reference, "MANIFEST", tampered_path)
+    with pytest.raises(RuntimeError, match="CATALOG_MISMATCH"):
+        read_manifest()
 
 
 def test_demo_size_ceiling_is_explicitly_bounded():
