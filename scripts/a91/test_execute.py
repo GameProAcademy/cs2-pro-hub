@@ -1,5 +1,6 @@
 """Synthetic mechanics only. No parser calls or network access."""
 import hashlib
+import importlib.util
 import json
 import subprocess
 import tempfile
@@ -249,6 +250,38 @@ class HarnessTests(unittest.TestCase):
                 text=True,
             )
             self.assertNotEqual(result.returncode, 0)
+
+    def test_python_stable_matches_ecmascript_number_formatting(self):
+        # Compare the canonical bytes against the same sorted-key JSON.stringify
+        # algorithm used by the JS parity runner, including exponent thresholds,
+        # negative zero, nested values, and integers beyond JS's safe range.
+        value = {
+            "nested": [1.0, 1e-6, 1e-7, 1e20, 1e21, -0.0, 1.2345678901234567],
+            "unsafeInteger": 9007199254740993,
+            "text": "é",
+        }
+        js = r"""
+const stable = (value) => {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+  return `{${Object.keys(value).sort().map((key) =>
+    `${JSON.stringify(key)}:${stable(value[key])}`).join(",")}}`;
+};
+process.stdout.write(stable(JSON.parse(process.argv[1])));
+"""
+        payload = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+        result = subprocess.run(
+            ["node", "-e", js, payload],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        reference_path = Path(__file__).resolve().parents[2] / "services/cs2-demo-parser/python_reference.py"
+        spec = importlib.util.spec_from_file_location("a91_python_reference", reference_path)
+        reference = importlib.util.module_from_spec(spec)
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(reference)
+        self.assertEqual(reference.stable(value), result.stdout)
 
 if __name__ == "__main__":
     unittest.main()
