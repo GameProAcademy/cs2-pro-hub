@@ -64,6 +64,7 @@ jobs:
         env:
           A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
           EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+          DEM_SHA256: ${{ inputs.expected_sha256 }}
           EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
           AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
           DEMO_FILENAME: ${{ inputs.filename }}
