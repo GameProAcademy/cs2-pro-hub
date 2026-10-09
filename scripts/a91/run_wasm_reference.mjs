@@ -103,8 +103,7 @@ export function deriveDemoTickProbe(bytes) {
     offset += frameSize;
     frameCount += 1;
     if (commandType === 0) break;
-    if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick))
-      maxFrameTick = frameTick;
+    if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick)) maxFrameTick = frameTick;
   }
 
   if (frameCount === 0 || maxFrameTick === null || maxFrameTick < 2)
@@ -122,7 +121,10 @@ export function deriveDemoTickProbe(bytes) {
 
 export function selectRuntimeTickFields(surface, limit = 32) {
   return surface.fields
-    .filter((field) => field.sourceApi === "parseTicks" && field.runtimeRequestable && field.upstreamSupported)
+    .filter(
+      (field) =>
+        field.sourceApi === "parseTicks" && field.runtimeRequestable && field.upstreamSupported,
+    )
     .map((field) => field.propertyName)
     .slice(0, limit);
 }
@@ -212,21 +214,21 @@ export function runWasm(path, authorization, options = {}) {
         const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
         try {
           const result = parser[api](inputBytes, ...args);
-        const outputDigest = digest(result);
+          const outputDigest = digest(result);
           calls.push({
             api,
             status: "SUCCEEDED",
-          ...request,
-          outputDigest,
-          count: Array.isArray(result) ? result.length : null,
-          returnedFields: Array.isArray(result)
-            ? [
-                ...new Set(
-                  result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
-                ),
-              ].sort()
-            : Object.keys(result ?? {}),
-        });
+            ...request,
+            outputDigest,
+            count: Array.isArray(result) ? result.length : null,
+            returnedFields: Array.isArray(result)
+              ? [
+                  ...new Set(
+                    result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
+                  ),
+                ].sort()
+              : Object.keys(result ?? {}),
+          });
           return result;
         } catch (error) {
           error.wasmMemoryBytesBefore = memoryBefore;
@@ -308,10 +310,15 @@ export function runWasm(path, authorization, options = {}) {
     maxFrameTick: tickProbe.maxFrameTick,
     authoritativeDomain: false,
   });
-  if (!Array.isArray(tickValues) || tickValues.length === 0)
-    telemetry.step("parse_ticks_validation", () => {
-      throw new Error("A91_TICK_PROBE_EMPTY");
-    }, true);
+  if (!Array.isArray(tickValues) || tickValues.length === 0) {
+    telemetry.step(
+      "parse_ticks_validation",
+      () => {
+        throw new Error("A91_TICK_PROBE_EMPTY");
+      },
+      true,
+    );
+  }
   // Keep identity absence explicit; never infer players from events or ticks.
   calls.push({ api: "parsePlayerInfo", status: "NOT_AVAILABLE_ON_WASM" });
   telemetry.snapshot("before_normalization");
