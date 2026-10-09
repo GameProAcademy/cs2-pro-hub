@@ -24,6 +24,13 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
       expect(result.stdout).toMatch(/regression checks PASS/);
     }
   });
+  it("keeps the A9.1 runner aligned with the renamed probe regression scripts", () => {
+    const runner = readFileSync(resolve("scripts/a91/rebuild_wasm_large_demo.py"), "utf8");
+    expect(runner).toContain("scripts/a91/header_probe.check.mjs");
+    expect(runner).toContain("scripts/a91/tick_probe.check.mjs");
+    expect(runner).not.toContain("scripts/a91/header_probe.test.mjs");
+    expect(runner).not.toContain("scripts/a91/tick_probe.test.mjs");
+  });
   it("runs synthetic Python validation, cleanup and no-execution tests", () => {
     const result = spawnSync(
       "python3",
