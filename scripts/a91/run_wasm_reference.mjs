@@ -102,7 +102,7 @@ export function deriveDemoTickProbe(bytes) {
     const commandType = (command & 0x40) === 0x40 ? command & ~0x40 : command;
     offset += frameSize;
     frameCount += 1;
-    if (commandType === 4) break;
+    if (commandType === 0) break;
     if (frameTick >= 0 && (maxFrameTick === null || frameTick > maxFrameTick))
       maxFrameTick = frameTick;
   }
