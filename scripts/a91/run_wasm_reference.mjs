@@ -1,11 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { randomUUID, webcrypto } from "node:crypto";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import vm from "node:vm";
 import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
-import { webcrypto } from "node:crypto";
 import {
   digest,
   sha,
