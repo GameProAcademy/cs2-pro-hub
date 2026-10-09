@@ -237,6 +237,7 @@ class HarnessTests(unittest.TestCase):
             expected = hashlib.sha256('{"x":1,"y":1e-7,"z":"é"}'.encode("utf-8")).hexdigest()
             self.assertEqual(actual["normalizedResultDigest"], expected)
             self.assertEqual(actual["resultDigest"], expected)
+            self.assertIn('"x": 1.0', path.read_text())
 
     def test_python_digest_reseal_rejects_invalid_artifact(self):
         with tempfile.TemporaryDirectory() as temp:
