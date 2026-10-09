@@ -21,24 +21,18 @@ fullDemo.set(payload, offset);
 
 const probe = getHeaderProbeBytes(fullDemo);
 assert.equal(probe.byteLength, offset + payload.length + 1);
-assert.ok(probe.byteLength < fullDemo.byteLength, "header probe must avoid copying the complete demo");
+assert.ok(
+  probe.byteLength < fullDemo.byteLength,
+  "header probe must avoid copying the complete demo",
+);
 assert.deepEqual(Array.from(probe.subarray(offset, offset + payload.length)), Array.from(payload));
 
-assert.throws(
-  () => getHeaderProbeBytes(new Uint8Array(64)),
-  /A91_DEM_HEADER_MAGIC_INVALID/
-);
+assert.throws(() => getHeaderProbeBytes(new Uint8Array(64)), /A91_DEM_HEADER_MAGIC_INVALID/);
 
 const compressedHeader = fullDemo.slice();
 compressedHeader[16] = 0x41;
-assert.throws(
-  () => getHeaderProbeBytes(compressedHeader),
-  /A91_HEADER_FRAME_UNSUPPORTED/
-);
+assert.throws(() => getHeaderProbeBytes(compressedHeader), /A91_HEADER_FRAME_UNSUPPORTED/);
 
 const truncated = fullDemo.slice(0, offset + payload.length);
-assert.throws(
-  () => getHeaderProbeBytes(truncated),
-  /A91_HEADER_PREFIX_TRUNCATED/
-);
+assert.throws(() => getHeaderProbeBytes(truncated), /A91_HEADER_PREFIX_TRUNCATED/);
 process.stdout.write("A9.1 header-prefix regression checks PASS\n");
