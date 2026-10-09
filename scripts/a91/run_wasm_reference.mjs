@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import vm from "node:vm";
 import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
+import { webcrypto } from "node:crypto";
 import {
   digest,
   sha,
@@ -24,6 +25,43 @@ const sample = (value, limit = 1000) => {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, sample(v, limit)]));
   return value;
 };
+export function getHeaderProbeBytes(bytes) {
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength < 20)
+    throw new Error("A91_HEADER_PREFIX_INVALID");
+  const magic = [0x50, 0x42, 0x44, 0x45, 0x4d, 0x53, 0x32, 0x00]; // PBDEMS2\0
+  if (magic.some((value, index) => bytes[index] !== value))
+    throw new Error("A91_DEM_HEADER_MAGIC_INVALID");
+
+  let offset = 16;
+  const readVarint = (label) => {
+    let value = 0;
+    let shift = 0;
+    for (let index = 0; index < 5; index += 1) {
+      if (offset >= bytes.byteLength) throw new Error("A91_HEADER_PREFIX_TRUNCATED");
+      const byte = bytes[offset++];
+      value |= (byte & 0x7f) << shift;
+      if ((byte & 0x80) === 0) return value >>> 0;
+      shift += 7;
+    }
+    throw new Error(`A91_HEADER_VARINT_INVALID:${label}`);
+  };
+
+  const command = readVarint("command");
+  readVarint("tick");
+  const frameBytes = readVarint("frame_size");
+  // Upstream parse_header_only reads the first frame directly and does not
+  // decompress it. DEM_FileHeader is command 1 and must be uncompressed.
+  if ((command & 0x40) !== 0 || (command & ~0x40) !== 1)
+    throw new Error("A91_HEADER_FRAME_UNSUPPORTED");
+  if (frameBytes > 1024 * 1024) throw new Error("A91_HEADER_FRAME_TOO_LARGE");
+
+  // Rust's slice_packet_bytes uses a strict >= end check, so include one
+  // trailing byte beyond the frame payload as well as the complete header.
+  const requiredLength = offset + frameBytes + 1;
+  if (requiredLength > bytes.byteLength) throw new Error("A91_HEADER_PREFIX_TRUNCATED");
+  return bytes.subarray(0, requiredLength);
+}
+
 export function loadPinnedParser(surface, manifest, directoryOverride = null) {
   validateManifests(surface, manifest);
   const directory = directoryOverride
@@ -41,6 +79,7 @@ export function loadPinnedParser(surface, manifest, directoryOverride = null) {
   // Run the exact no-modules binding without rewriting it or importing browser code.
   const context = vm.createContext({
     WebAssembly,
+    crypto: webcrypto,
     TextDecoder,
     TextEncoder,
     URL,
@@ -87,33 +126,12 @@ export function runWasm(path, authorization, options = {}) {
   const parser = loaded.parser;
   const wasmExports = loaded.wasmExports;
 
-  // Large real DEMs cross the wasm-bindgen boundary as one Uint8Array, so the
-  // generated wrapper first allocates and copies the entire input into WASM memory.
-  // Upstream parse_header_only still performs a full first pass; on the 473,748,061-byte
-  // A9.1 fixture, a 256 MiB margin only pre-grew to 768 MiB and the wrapper then grew
-  // memory to 1,279,983,616 bytes immediately before a RuntimeError: unreachable in
-  // parseHeader. Reserve a larger bounded envelope BEFORE the wrapper copies the input,
-  // avoiding a large allocator request racing memory.grow. This changes neither parser
-  // semantics nor DEM bytes. Browser viability still requires separate memory testing.
   const WASM_PAGE_BYTES = 64 * 1024;
   const LARGE_DEM_MEMORY_FLOOR_BYTES = 768 * 1024 * 1024;
   const LARGE_DEM_MEMORY_HEADROOM_BYTES = 1536 * 1024 * 1024;
-  telemetry.step("wasm_memory_prepare", () => {
-    if (!(wasmExports.memory instanceof WebAssembly.Memory))
-      throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
-    const targetBytes = Math.max(
-      LARGE_DEM_MEMORY_FLOOR_BYTES,
-      bytes.length + LARGE_DEM_MEMORY_HEADROOM_BYTES,
-    );
-    const targetPages = Math.ceil(targetBytes / WASM_PAGE_BYTES);
-    const currentPages = wasmExports.memory.buffer.byteLength / WASM_PAGE_BYTES;
-    if (currentPages < targetPages) wasmExports.memory.grow(targetPages - currentPages);
-    const finalBytes = wasmExports.memory.buffer.byteLength;
-    if (finalBytes < bytes.length) throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
-  });
 
   const calls = [];
-  const call = (api, args, request = {}) => {
+  const call = (api, args = [], request = {}, inputBytes = bytes) => {
     const stageName = {
       parseHeader: "parse_header",
       listGameEvents: "list_game_events",
@@ -128,7 +146,7 @@ export function runWasm(path, authorization, options = {}) {
         if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
         const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
         try {
-          const result = parser[api](bytes, ...args);
+          const result = parser[api](inputBytes, ...args);
         const outputDigest = digest(result);
           calls.push({
             api,
@@ -154,7 +172,28 @@ export function runWasm(path, authorization, options = {}) {
       true,
     );
   };
-  const header = call("parseHeader", []);
+  // parse_header_only reads only the DEM header and first frame. Sending the
+  // whole 474 MB file through wasm-bindgen needlessly allocates/copies all bytes
+  // into WASM memory before this header-only operation.
+  const headerProbe = getHeaderProbeBytes(bytes);
+  const header = call("parseHeader", [], { inputByteLength: headerProbe.byteLength }, headerProbe);
+
+  // Reserve the large-demo working envelope only after the lightweight header
+  // probe. The bulk APIs still receive and parse the complete, hash-validated DEM.
+  telemetry.step("wasm_memory_prepare", () => {
+    if (!(wasmExports.memory instanceof WebAssembly.Memory))
+      throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
+    const targetBytes = Math.max(
+      LARGE_DEM_MEMORY_FLOOR_BYTES,
+      bytes.length + LARGE_DEM_MEMORY_HEADROOM_BYTES,
+    );
+    const targetPages = Math.ceil(targetBytes / WASM_PAGE_BYTES);
+    const currentPages = wasmExports.memory.buffer.byteLength / WASM_PAGE_BYTES;
+    if (currentPages < targetPages) wasmExports.memory.grow(targetPages - currentPages);
+    const finalBytes = wasmExports.memory.buffer.byteLength;
+    if (finalBytes < bytes.length) throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
+  });
+
   const inventory = call("listGameEvents", []);
   const fields = call("listUpdatedFields", []);
   const events = [];
