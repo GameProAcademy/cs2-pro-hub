@@ -399,6 +399,10 @@ def main():
             if run([sys.executable, str(ROOT / "services/cs2-demo-parser/python_reference.py"), str(demo), stable(authorization)], target, diagnostics=failed_diagnostics):
                 raise ValueError("PYTHON_RUN_FAILED")
             enrich_python(target, url)
+            # Python's json.dumps and ECMAScript JSON.stringify serialize some floats differently.
+            # Recompute the integrity digest using the same canonicalizer as parity/finalization.
+            if run(["node", "--max-old-space-size=6144", "scripts/a91/normalize_python_digest.mjs", str(target)]):
+                raise ValueError("RESULT_DIGEST_INVALID")
         for index in (1, 2):
             stage = f"wasm_run_{index}"
             failed_target = temporary / f"wasm_run_{index}.json"
@@ -514,7 +518,7 @@ def main():
         "NO_AUTHORIZED_REAL_DEM", "EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED",
         "AUTHORIZED_DEM_METADATA_MISMATCH", "A91_DEM_SHA256_MISMATCH",
         "PARSER_IDENTITY_MISMATCH",
-        "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED", "PARITY_EXECUTION_FAILED", "DETERMINISM_EXECUTION_FAILED",
+        "A91_RUNTIME_RESOURCE_FAILURE", "CLEANUP_FAILURE", "A91_GATE_FAILED", "PARITY_EXECUTION_FAILED", "DETERMINISM_EXECUTION_FAILED", "RESULT_DIGEST_INVALID",
     }
     allowed_failure_reasons |= WASM_REASONS | PYTHON_REASONS | {"PYTHON_PRIVATE_EVIDENCE_TOO_LARGE"}
     if reason:
