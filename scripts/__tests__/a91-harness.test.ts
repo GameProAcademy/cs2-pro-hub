@@ -111,6 +111,10 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(script).toContain("env=gate_env");
     const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
     expect(gateScript).toContain("if k not in sensitive_inputs");
+    expect(gateScript).toContain('"scripts/a91/finalize_report.mjs", str(temporary), str(output), wasm_manifest');
+    const finalizer = readFileSync("scripts/a91/finalize_report.mjs", "utf8");
+    expect(finalizer).toContain("process.argv[4]");
+    expect(finalizer).toContain("resolve(manifestPath)");
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
