@@ -15,8 +15,14 @@ assert.deepEqual(actual, {
   nested: { attacker_name: "player-a", damage: 87 },
   rows: [{ x: 1.5, y: 2.5 }],
 });
-assert.deepEqual(normalizeWasmValue([new Map([["map_name", "de_cache"]])]), [{ map_name: "de_cache" }]);
-assert.deepEqual(normalizeWasmValue(new Map([["missing_field", undefined]])), { missing_field: null });
+assert.deepEqual(
+  normalizeWasmValue([new Map([["map_name", "de_cache"]])]),
+  [{ map_name: "de_cache" }],
+);
+assert.deepEqual(
+  normalizeWasmValue(new Map([["missing_field", undefined]])),
+  { missing_field: null },
+);
 assert.equal(normalizeWasmValue(undefined), null);
 assert.equal(normalizeWasmValue(null), null);
 assert.equal(normalizeWasmValue("value"), "value");
