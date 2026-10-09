@@ -36,6 +36,8 @@ def sha256(path: pathlib.Path) -> str:
 
 
 def main() -> int:
+    # Validate workflow-dispatch metadata normalization before expensive setup.
+    run(sys.executable, "scripts/a91/test_input_metadata.py", cwd=ROOT)
     # Regression test: header-only WASM calls must not copy the entire large DEM.
     run("node", "scripts/a91/header_probe.test.mjs", cwd=ROOT)
     shutil.rmtree(UPSTREAM, ignore_errors=True)
