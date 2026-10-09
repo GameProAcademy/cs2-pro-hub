@@ -124,7 +124,7 @@ jobs:
           from pathlib import Path
           safe = (Path(os.environ['RUNNER_TEMP']) / 'a91-upload-safe').is_file()
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('safe=' + str(safe).lower() + '\\n')
+              output.write('safe=' + str(safe).lower() + '\n')
           PY
       - name: Upload sanitized bounded reports only
         if: always() && steps.upload-guard.outputs.safe == 'true'
