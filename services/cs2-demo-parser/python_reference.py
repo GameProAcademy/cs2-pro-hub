@@ -41,14 +41,85 @@ RECORD_CHUNK_ROWS = 2048
 PROGRESS_PATH = Path(__import__("os").environ["A91_PROGRESS_PATH"]) if __import__("os").environ.get("A91_PROGRESS_PATH") else None
 
 
+def _ecmascript_number(value: int | float) -> str:
+    """Format a JSON number like ECMAScript JSON.stringify/NumberToString.
+
+    Python's json.dumps keeps integral floats as `1.0` and pads exponent
+    digits (for example `1e-07`). JavaScript emits `1` and `1e-7`.
+    The A9.1 digests must hash the same canonical bytes in both runtimes.
+    """
+    if isinstance(value, int) and not isinstance(value, bool):
+        if abs(value) <= 2**53 - 1:
+            return str(value)
+        # JavaScript JSON.parse represents JSON numbers as IEEE-754 doubles.
+        # Mirror that conversion rather than hashing Python's wider integer.
+        try:
+            value = float(value)
+        except OverflowError as error:
+            raise ValueError("JSON_NUMBER_OUT_OF_RANGE") from error
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("NON_FINITE_JSON_NUMBER")
+    if number == 0:
+        return "0"  # Includes negative zero, as JSON.stringify does.
+
+    negative = number < 0
+    raw = repr(abs(number)).lower()
+    if "e" in raw:
+        mantissa, exponent_text = raw.split("e", 1)
+        exponent = int(exponent_text)
+    else:
+        mantissa, exponent = raw, 0
+    if "." in mantissa:
+        whole, fraction = mantissa.split(".", 1)
+    else:
+        whole, fraction = mantissa, ""
+    digits = whole + fraction
+    decimal_position = len(whole) + exponent
+    while len(digits) > 1 and digits.startswith("0"):
+        digits = digits[1:]
+        decimal_position -= 1
+    while len(digits) > 1 and digits.endswith("0"):
+        digits = digits[:-1]
+
+    if decimal_position > 0 and decimal_position <= 21:
+        if decimal_position >= len(digits):
+            result = digits + ("0" * (decimal_position - len(digits)))
+        else:
+            result = digits[:decimal_position] + "." + digits[decimal_position:]
+    elif decimal_position <= 0 and decimal_position > -6:
+        result = "0." + ("0" * (-decimal_position)) + digits
+    else:
+        exponent_value = decimal_position - 1
+        exponent_sign = "+" if exponent_value >= 0 else "-"
+        result = digits[0]
+        if len(digits) > 1:
+            result += "." + digits[1:]
+        result += "e" + exponent_sign + str(abs(exponent_value))
+    return ("-" if negative else "") + result
+
+
 def stable(value: Any) -> str:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
+    """Sorted-key canonical JSON with ECMAScript-compatible number formatting."""
+    if value is None:
+        return "null"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, (int, float)):
+        return _ecmascript_number(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    if isinstance(value, (list, tuple)):
+        return "[" + ",".join(stable(item) for item in value) + "]"
+    if isinstance(value, dict):
+        if not all(isinstance(key, str) for key in value):
+            raise ValueError("NON_STRING_JSON_OBJECT_KEY")
+        return "{" + ",".join(
+            stable(key) + ":" + stable(value[key]) for key in sorted(value)
+        ) + "}"
+    raise ValueError("UNSUPPORTED_JSON_VALUE")
 
 
 def digest(value: Any) -> str:
