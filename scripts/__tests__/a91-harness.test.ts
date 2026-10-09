@@ -90,7 +90,7 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
       "utf8",
     );
     const promotionInput = workflow.match(
-      /promote_on_pass:[\\s\\S]*?default:\\s*(true|false)[\\s\\S]*?type:\\s*boolean/,
+      /promote_on_pass:[\s\S]*?default:\s*(true|false)[\s\S]*?type:\s*boolean/,
     );
     expect(promotionInput?.[1]).toBe("false");
     const script = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
