@@ -11,10 +11,11 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     });
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
-  it("runs standalone tick/header probe regressions without treating them as Vitest suites", () => {
+  it("runs standalone tick/header/inventory regressions without treating them as Vitest suites", () => {
     for (const script of [
       "scripts/a91/tick_probe.check.mjs",
       "scripts/a91/header_probe.check.mjs",
+      "scripts/a91/inventory_determinism.check.mjs",
     ]) {
       const result = spawnSync("node", [script], {
         encoding: "utf8",
