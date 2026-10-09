@@ -420,7 +420,7 @@ def main():
             reason = "DETERMINISM_EXECUTION_FAILED"
         stage = "finalization"
         failed_diagnostics = temporary / "finalize_diagnostics.json"
-        final_rc = run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output)], diagnostics=failed_diagnostics)
+        final_rc = run(["node", "scripts/a91/finalize_report.mjs", str(temporary), str(output), wasm_manifest], diagnostics=failed_diagnostics)
         if final_rc:
             # Prefer the normalized decision produced by finalize_report over the
             # generic child-exit code, so parity/determinism failures remain
