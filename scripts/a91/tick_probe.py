@@ -72,7 +72,7 @@ def derive_tick_probe(path: str | Path) -> dict:
                 command_type = command & ~0x40
             else:
                 command_type = command
-            if command_type == 4:
+            if command_type == 0:
                 break
             if tick >= 0 and (max_tick is None or tick > max_tick):
                 max_tick = tick
