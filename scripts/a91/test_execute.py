@@ -1,6 +1,7 @@
 """Synthetic mechanics only. No parser calls or network access."""
 import hashlib
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
