@@ -214,5 +214,39 @@ class HarnessTests(unittest.TestCase):
                 self.assertFalse((Path(temp) / "a91-artifacts").exists())
 
 
+    def test_python_digest_is_resealed_with_ecmascript_canonicalization(self):
+        # These values serialize differently under Python json.dumps and JS JSON.stringify.
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "python_run_1.json"
+            value = {
+                "runtime": "PYTHON",
+                "status": "SUCCEEDED",
+                "normalizedResult": {"x": 1.0, "y": 1e-7, "z": "é"},
+                "normalizedResultDigest": "0" * 64,
+                "resultDigest": "0" * 64,
+            }
+            path.write_text(json.dumps(value))
+            subprocess.run(
+                ["node", str(Path(__file__).with_name("normalize_python_digest.mjs")), str(path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            actual = json.loads(path.read_text())
+            expected = hashlib.sha256('{"x":1,"y":1e-7,"z":"é"}'.encode("utf-8")).hexdigest()
+            self.assertEqual(actual["normalizedResultDigest"], expected)
+            self.assertEqual(actual["resultDigest"], expected)
+
+    def test_python_digest_reseal_rejects_invalid_artifact(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "python_run_1.json"
+            path.write_text(json.dumps({"runtime": "PYTHON", "status": "FAILED"}))
+            result = subprocess.run(
+                ["node", str(Path(__file__).with_name("normalize_python_digest.mjs")), str(path)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+
 if __name__ == "__main__":
     unittest.main()
