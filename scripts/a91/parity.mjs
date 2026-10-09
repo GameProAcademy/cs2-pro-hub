@@ -36,6 +36,16 @@ const evidenceKeys = {
   tick_properties: "tickDomainEvidence",
   game_state: "normalizedResult",
 };
+function comparableEvidence(artifact, field) {
+  const value = artifact[evidenceKeys[field]] ?? null;
+  if (field !== "game_state" || !value || typeof value !== "object" || Array.isArray(value))
+    return value;
+  // Player identity is an explicitly separate capability domain: Python has
+  // parse_player_info while this WASM API does not. Exclude only that property
+  // from aggregate game-state parity; player_identity remains NOT_COMPARABLE.
+  const { playerIdentity: _playerIdentity, ...sharedState } = value;
+  return sharedState;
+}
 // Only explicit runtime-specific absence is a capability exemption. Unknown
 // declarations and failed parses cannot be used to waive a required comparison.
 // The uploadable parity report intentionally stores digests, not raw evidence.
@@ -53,8 +63,8 @@ function availability(artifact, field, runtime) {
 }
 export function compareDomains(python, wasm) {
   return DOMAINS.map((field) => {
-    const pythonValue = python[evidenceKeys[field]] ?? null;
-    const wasmValue = wasm[evidenceKeys[field]] ?? null;
+    const pythonValue = comparableEvidence(python, field);
+    const wasmValue = comparableEvidence(wasm, field);
     const pythonAvailability = availability(python, field, "PYTHON");
     const wasmAvailability = availability(wasm, field, "WASM");
     const available = { python: pythonAvailability, wasm: wasmAvailability };
