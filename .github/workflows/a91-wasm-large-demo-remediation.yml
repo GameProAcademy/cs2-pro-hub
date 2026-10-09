@@ -24,14 +24,9 @@ on:
         required: true
         default: furia-vs-gamerlegion-m1-cache.dem
         type: string
-      promote_on_pass:
-        description: Replace pinned browser WASM only after the real gate passes
-        required: true
-        default: false
-        type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   rebuild-and-gate:
@@ -53,12 +48,11 @@ jobs:
       EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
       AUTHORIZATION_REF: ${{ inputs.authorization_ref }}
       DEMO_FILENAME: ${{ inputs.filename }}
-      INPUT_PROMOTE_ON_PASS: ${{ inputs.promote_on_pass }}
     steps:
       - name: Checkout reviewed project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Install pinned Rust toolchain
         run: |
