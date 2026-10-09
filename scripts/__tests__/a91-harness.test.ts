@@ -5,16 +5,10 @@ import { describe, expect, it } from "vitest";
 
 describe("A9.1 isolated harness mechanics — never real execution evidence", () => {
   it("runs Node safety and manifest tests without parsing any DEM", () => {
-    const result = spawnSync(
-      "node",
-      [
-        "scripts/a91/contracts-node-checks.mjs",
-      ],
-      {
-        encoding: "utf8",
-        timeout: 30000,
-      },
-    );
+    const result = spawnSync("node", ["scripts/a91/contracts-node-checks.mjs"], {
+      encoding: "utf8",
+      timeout: 30000,
+    });
     expect(result.status, result.stdout + result.stderr).toBe(0);
   }, 30000); // The envelope regression serializes 256 MiB; this is a test-only budget, not a parser limit.
   it("runs standalone tick/header probe regressions without treating them as Vitest suites", () => {
