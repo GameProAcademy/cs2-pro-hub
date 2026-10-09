@@ -98,10 +98,9 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(script).not.toContain("git push");
     expect(script).not.toContain("git commit");
 
-    const buildScript = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
-    expect(buildScript).toContain("def child_environment(");
-    expect(buildScript).toContain("env=child_environment()");
-    expect(buildScript).toContain("env=gate_env");
+    expect(script).toContain("def child_environment(");
+    expect(script).toContain("env=child_environment()");
+    expect(script).toContain("env=gate_env");
     const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
     expect(gateScript).toContain("if k not in sensitive_inputs");
   });
@@ -117,7 +116,9 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
       "if: github.event.workflow_run.head_branch == 'main'",
     );
     expect(workflow).toContain("persist-credentials: false");
-    expect(workflow).toMatch(/permissions:\s*\n\s+actions:\s*read\s*\n\s+contents:\s*read/);
+    expect(workflow).toMatch(
+      /permissions:\s*\n\s+actions:\s*read\s*\n\s+contents:\s*read/,
+    );
   });
   it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
     const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
