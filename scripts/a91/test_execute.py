@@ -111,6 +111,7 @@ class HarnessTests(unittest.TestCase):
 
     def environment(self, url):
         return {"A91_DEMO_URL": url, "DEMO_FILENAME": execute.FILENAME, "EXPECTED_SHA256": execute.SHA,
+                "DEM_SHA256": execute.SHA, "DEM_SIZE": str(execute.SIZE), "DEM_AUTH": execute.AUTH,
                 "EXPECTED_SIZE_BYTES": str(execute.SIZE), "AUTHORIZATION_REF": execute.AUTH}
 
     def test_https_and_credential_rejection(self):
