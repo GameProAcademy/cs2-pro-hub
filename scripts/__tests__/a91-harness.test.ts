@@ -112,8 +112,12 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(script).toContain("env=gate_env");
     const gateScript = readFileSync("scripts/a91/execute.py", "utf8");
     expect(gateScript).toContain("if k not in sensitive_inputs");
-    expect(gateScript).toContain('"scripts/a91/finalize_report.mjs", str(temporary), str(output), wasm_manifest');
-    expect(script).toContain('run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)');
+    expect(gateScript).toContain(
+      '"scripts/a91/finalize_report.mjs", str(temporary), str(output), wasm_manifest',
+    );
+    expect(script).toContain(
+      'run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)',
+    );
     const finalizer = readFileSync("scripts/a91/finalize_report.mjs", "utf8");
     expect(finalizer).toContain("process.argv[4]");
     expect(finalizer).toContain("resolve(manifestPath)");
