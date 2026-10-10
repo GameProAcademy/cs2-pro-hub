@@ -66,12 +66,8 @@ export function normalizeWasmValue(value) {
  */
 export function normalizeEventRows(value, expectedEventName) {
   if (!Array.isArray(value) || typeof expectedEventName !== "string" || !expectedEventName)
-    throw new Error("A91_WASM_EVENT_SHAPE_INVALID");
-  return value.map((row) => {
-    if (!row || typeof row !== "object" || Array.isArray(row))
-      throw new Error("A91_WASM_EVENT_ROW_INVALID");
-    if (!Object.hasOwn(row, "event_name")) return row;
-    if (row.event_name !== expectedEventName) throw new Error("A91_WASM_EVENT_NAME_MISMATCH");
+    expect(() => normalizeEventRows({}, "player_death")).toThrow("A91_WASM_EVENT_SHAPE_INVALID");
+    expect(() => normalizeEventRows([null], "player_death")).toThrow("A91_WASM_EVENT_ROW_INVALID");
     const semanticFields = { ...row };
     delete semanticFields.event_name;
     return semanticFields;
