@@ -1,0 +1,1114 @@
+{
+  "vectorsVersion": 1,
+  "canonicalContractVersion": 2,
+  "inputEncoding": {
+    "u64": "64-bit identifier in the runtime's NATIVE carrier: Python int (numpy uint64), JavaScript decimal string (the WASM wrapper's representation)",
+    "bigint": "integer in the widest native integer carrier: Python int, JavaScript BigInt",
+    "f64": "IEEE-754 double given as text so NaN, Infinity and -0 survive JSON",
+    "lossy_u64": "the identifier already converted to a double: the lossy path that must fail closed",
+    "undefined": "JavaScript undefined / pandas NA",
+    "absent": "the key is not present in the row"
+  },
+  "values": [
+    {
+      "name": "null stays null",
+      "field": "x",
+      "input": null,
+      "text": "null",
+      "cls": "null"
+    },
+    {
+      "name": "undefined / pandas NA is null",
+      "field": "x",
+      "input": {
+        "$": "undefined"
+      },
+      "text": "null",
+      "cls": "null"
+    },
+    {
+      "name": "zero is not null",
+      "field": "x",
+      "input": 0,
+      "text": "0",
+      "cls": "integer"
+    },
+    {
+      "name": "false is not null",
+      "field": "x",
+      "input": false,
+      "text": "false",
+      "cls": "bool"
+    },
+    {
+      "name": "empty string is not null",
+      "field": "x",
+      "input": "",
+      "text": "\"\"",
+      "cls": "string"
+    },
+    {
+      "name": "empty list is not null",
+      "field": "x",
+      "input": [],
+      "text": "[]",
+      "cls": "array"
+    },
+    {
+      "name": "NaN canonicalizes to null",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "NaN"
+      },
+      "text": "null",
+      "cls": "null"
+    },
+    {
+      "name": "Infinity canonicalizes to null",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "Infinity"
+      },
+      "text": "null",
+      "cls": "null"
+    },
+    {
+      "name": "negative zero is 0",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "-0"
+      },
+      "text": "0",
+      "cls": "integer"
+    },
+    {
+      "name": "integral float is class integer",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "1376"
+      },
+      "text": "1376",
+      "cls": "integer"
+    },
+    {
+      "name": "negative integral float",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "-1972"
+      },
+      "text": "-1972",
+      "cls": "integer"
+    },
+    {
+      "name": "f32 widened to double keeps shortest round-trip digits",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "0.10000000149011612"
+      },
+      "text": "0.10000000149011612",
+      "cls": "float"
+    },
+    {
+      "name": "small exponent threshold",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "1e-7"
+      },
+      "text": "1e-7",
+      "cls": "float"
+    },
+    {
+      "name": "no exponent at 1e-6",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "0.000001"
+      },
+      "text": "0.000001",
+      "cls": "float"
+    },
+    {
+      "name": "large exponent threshold",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "1e21"
+      },
+      "text": "1e+21",
+      "cls": "float"
+    },
+    {
+      "name": "1e20 integral double beyond 2^53 is class float",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "1e20"
+      },
+      "text": "100000000000000000000",
+      "cls": "float"
+    },
+    {
+      "name": "smallest denormal",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "5e-324"
+      },
+      "text": "5e-324",
+      "cls": "float"
+    },
+    {
+      "name": "17 significant digits",
+      "field": "x",
+      "input": {
+        "$": "f64",
+        "v": "1.2345678901234567"
+      },
+      "text": "1.2345678901234567",
+      "cls": "float"
+    },
+    {
+      "name": "max safe integer",
+      "field": "x",
+      "input": {
+        "$": "bigint",
+        "v": "9007199254740991"
+      },
+      "text": "9007199254740991",
+      "cls": "integer"
+    },
+    {
+      "name": "integer above 2^53 outside the u64 registry fails closed",
+      "field": "x",
+      "input": {
+        "$": "bigint",
+        "v": "9007199254740993"
+      },
+      "error": "UNREGISTERED_BIG_INTEGER"
+    },
+    {
+      "name": "Steam ID keeps every digit",
+      "field": "steamid",
+      "input": {
+        "$": "u64",
+        "v": "76561198012345679"
+      },
+      "text": "\"76561198012345679\"",
+      "cls": "u64"
+    },
+    {
+      "name": "Steam ID in an event field",
+      "field": "attacker_steamid",
+      "input": "76561198012345679",
+      "text": "\"76561198012345679\"",
+      "cls": "u64"
+    },
+    {
+      "name": "Steam ID zero (bot) is the string 0",
+      "field": "steamid",
+      "input": {
+        "$": "u64",
+        "v": "0"
+      },
+      "text": "\"0\"",
+      "cls": "u64"
+    },
+    {
+      "name": "u64 maximum",
+      "field": "steamid",
+      "input": {
+        "$": "u64",
+        "v": "18446744073709551615"
+      },
+      "text": "\"18446744073709551615\"",
+      "cls": "u64"
+    },
+    {
+      "name": "u64 above range fails",
+      "field": "steamid",
+      "input": "18446744073709551616",
+      "error": "U64_INVALID"
+    },
+    {
+      "name": "u64 with leading zero fails",
+      "field": "steamid",
+      "input": "0123",
+      "error": "U64_INVALID"
+    },
+    {
+      "name": "non-numeric text in a u64 field fails",
+      "field": "user_steamid",
+      "input": "BOT",
+      "error": "U64_INVALID"
+    },
+    {
+      "name": "Steam ID that went through a double fails closed",
+      "field": "steamid",
+      "input": {
+        "$": "lossy_u64",
+        "v": "76561198012345679"
+      },
+      "error": "U64_PRECISION_LOST"
+    },
+    {
+      "name": "missing Steam ID is null, not zero",
+      "field": "assister_steamid",
+      "input": {
+        "$": "f64",
+        "v": "NaN"
+      },
+      "text": "null",
+      "cls": "null"
+    },
+    {
+      "name": "id-like text field outside the registry may be empty",
+      "field": "weapon_originalowner_xuid",
+      "input": "",
+      "text": "\"\"",
+      "cls": "string"
+    },
+    {
+      "name": "string that looks numeric stays a string",
+      "field": "weapon_itemid",
+      "input": "17",
+      "text": "\"17\"",
+      "cls": "string"
+    },
+    {
+      "name": "string is not trimmed or case folded",
+      "field": "name",
+      "input": " Player ",
+      "text": "\" Player \"",
+      "cls": "string"
+    },
+    {
+      "name": "control characters use JSON short and \\u00xx escapes",
+      "field": "name",
+      "input": "a\tb\u0001\"\\",
+      "text": "\"a\\tb\\u0001\\\"\\\\\"",
+      "cls": "string"
+    },
+    {
+      "name": "non-ASCII is not escaped",
+      "field": "name",
+      "input": "é€😀",
+      "text": "\"é€😀\"",
+      "cls": "string"
+    },
+    {
+      "name": "object keys sort by UTF-16 code units, not code points",
+      "field": "x",
+      "input": {
+        "￿": 1,
+        "😀": 2,
+        "a": 3
+      },
+      "text": "{\"a\":3,\"😀\":2,\"￿\":1}",
+      "cls": "object"
+    },
+    {
+      "name": "nested arrays keep order and nulls",
+      "field": "x",
+      "input": [
+        3,
+        null,
+        [
+          1,
+          {
+            "$": "f64",
+            "v": "0.5"
+          }
+        ],
+        "b"
+      ],
+      "text": "[3,null,[1,0.5],\"b\"]",
+      "cls": "array"
+    },
+    {
+      "name": "u64 rule applies to keys inside objects",
+      "field": "x",
+      "input": {
+        "steamid": {
+          "$": "u64",
+          "v": "76561198012345679"
+        },
+        "tick": 5
+      },
+      "text": "{\"steamid\":\"76561198012345679\",\"tick\":5}",
+      "cls": "object"
+    },
+    {
+      "name": "list of Steam IDs under a u64 field",
+      "field": "spectators_steamid",
+      "input": [
+        {
+          "$": "u64",
+          "v": "76561198012345679"
+        },
+        {
+          "$": "u64",
+          "v": "1"
+        }
+      ],
+      "text": "[\"76561198012345679\",\"1\"]",
+      "cls": "array"
+    }
+  ],
+  "tables": [
+    {
+      "name": "identical semantics, runtime-native carriers",
+      "table": "ticks",
+      "rows": [
+        {
+          "tick": 1000,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "X": {
+            "$": "f64",
+            "v": "1376"
+          },
+          "health": 100,
+          "name": "a"
+        },
+        {
+          "tick": 1000,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345680"
+          },
+          "X": {
+            "$": "f64",
+            "v": "-1972.5"
+          },
+          "health": 0,
+          "name": "b"
+        },
+        {
+          "tick": 5000,
+          "steamid": {
+            "$": "u64",
+            "v": "0"
+          },
+          "X": null,
+          "health": {
+            "$": "f64",
+            "v": "NaN"
+          },
+          "name": ""
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "ticks",
+        "rowCount": 3,
+        "fields": [
+          "X",
+          "health",
+          "name",
+          "steamid",
+          "tick"
+        ],
+        "tableDigest": "7562e4cc05eadd73b7b155af8b650147c751285a4d2863452bfe17bf818ba9cb",
+        "multisetDigest": "bc47714d16efa4ab89ac4a2c2c43f87a0e86cf6e046662366e66543f8d2b4279",
+        "columns": {
+          "X": {
+            "digest": "e9b4257d411d1bfb3ca8deadf9bdc487da46b7ee51f9ea2d1b8e4f1d9785573a",
+            "classes": {
+              "null": 1,
+              "bool": 0,
+              "integer": 1,
+              "float": 1,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "health": {
+            "digest": "96134a7da79a7b01023fe5cd0fe763698a744a5051ef9274d7568d3cf7b284e9",
+            "classes": {
+              "null": 1,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "name": {
+            "digest": "678fce020b460dee023d8db97610f5b3226cefd5973e63e7b019e14bce7470ba",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 3,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "cb29e80a29df9fbdd88050c546773dddcdfec2e63f6d05bbcd9f49275caf1c88",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 3,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "bb9e307888b82793f160bd4aebb0fd4fc5c21b0253b00fc51b6381ff82cefb5e",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 3,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "row key absent equals explicit null (rule R8)",
+      "table": "event:player_death",
+      "rows": [
+        {
+          "tick": 1,
+          "user_steamid": "76561198012345679",
+          "assister_steamid": {
+            "$": "absent"
+          },
+          "headshot": true
+        },
+        {
+          "tick": 2,
+          "user_steamid": "76561198012345680",
+          "assister_steamid": "76561198012345679",
+          "headshot": false
+        },
+        {
+          "tick": 2,
+          "user_steamid": "76561198012345680",
+          "assister_steamid": "76561198012345679",
+          "headshot": false
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "event:player_death",
+        "rowCount": 3,
+        "fields": [
+          "assister_steamid",
+          "headshot",
+          "tick",
+          "user_steamid"
+        ],
+        "tableDigest": "5beaa8e2cb6928783d279fb9fb08cc93b8d287c882a9df6b2cc7d8c7d2a87255",
+        "multisetDigest": "66bcea8dcb93c6be8a0f56914b37069670806831d290c4858ca16d3a5e90e65e",
+        "columns": {
+          "assister_steamid": {
+            "digest": "89ad220587d2099c5de46df6dd38c0d0a4ace2ec3a1a3df9d7351cebafc88be7",
+            "classes": {
+              "null": 1,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 2,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "headshot": {
+            "digest": "5266715bd40df03dee74b5f1158c03c94bbec1290d9a2558f261ca9ea0ee8038",
+            "classes": {
+              "null": 0,
+              "bool": 3,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "afda04f356f70d99164052544b33af96044d03f3b0c5edaa7ba1e29c0be5c89a",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 3,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "user_steamid": {
+            "digest": "38df45f8bda35441ecc41e2581c8de818c53a26feda8f8b3a17eee6247d17e3f",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 3,
+              "array": 0,
+              "object": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "field first appears after the first row",
+      "table": "event:late_field",
+      "blockRows": 2,
+      "rows": [
+        {
+          "tick": 1
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4,
+          "extra": "x"
+        },
+        {
+          "tick": 5,
+          "extra": null
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "event:late_field",
+        "rowCount": 5,
+        "fields": [
+          "extra",
+          "tick"
+        ],
+        "tableDigest": "5f6deebd6cac9260561ea15ce241c9220c1f5a9813d76613abcdd117cf7cd928",
+        "multisetDigest": "2ba97342a07a42182812e0ae34f7e88fd7de7f24890ed7b3bb034eb2bec80f52",
+        "columns": {
+          "extra": {
+            "digest": "bdaf22ba74e55fd324dddb105f8d5114cc1fda054b099025801d71a0b608acbf",
+            "classes": {
+              "null": 4,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 1,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "0dec67d2e28231b4d9ffea6e6ebeca660b96c349d4106e8f9af01d6814723379",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 5,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "grenade domain filter: known anomaly excluded (stale entity id), multiple blocks",
+      "table": "grenades",
+      "blockRows": 2,
+      "rows": [
+        {
+          "grenade_type": "CSmokeGrenadeProjectile",
+          "x": {
+            "$": "f64",
+            "v": "1.5"
+          },
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 10,
+          "grenade_entity_id": 40
+        },
+        {
+          "grenade_type": "CSmokeGrenade",
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 10,
+          "grenade_entity_id": 41
+        },
+        {
+          "grenade_type": "CSmokeGrenade",
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345680"
+          },
+          "tick": 11,
+          "grenade_entity_id": 41
+        },
+        {
+          "grenade_type": "CKnife",
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "0"
+          },
+          "tick": 11,
+          "grenade_entity_id": 41
+        },
+        {
+          "grenade_type": "CSmokeGrenadeProjectile",
+          "x": {
+            "$": "f64",
+            "v": "2"
+          },
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 12,
+          "grenade_entity_id": 40
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "grenades",
+        "rowCount": 4,
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
+        "tableDigest": "9005c451486ced1f58c3069c80cfa24c44c8081bcaef6f7b37925f55b3486f6a",
+        "multisetDigest": "67bb1328c80ac249aec2a2b1417efcf08107294cffbdfba073b898346b5c92e5",
+        "columns": {
+          "grenade_entity_id": {
+            "digest": "f4546a67303de2b5c4fcacd56a45f135e1beffa6d5cbe173027d6aee63c09936",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 4,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "grenade_type": {
+            "digest": "3f778f61d2307692efd82e1e10451681468128bcf4843a9f2938f2655d6972bc",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 4,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "58528e344e2134d8d0abcc00a96bb4bcacc48d96a5c98ad2b4fe7335fb469719",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 4,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "01016b125515e4125c62d2332a05e889ec947c24ea51fd819a7a8101b57dfe93",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 4,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "x": {
+            "digest": "f395f2dd5d08c97c025917d4bd02bf3a7ffafed44c0b3fe87a6881da051d1194",
+            "classes": {
+              "null": 2,
+              "bool": 0,
+              "integer": 1,
+              "float": 1,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "CLEAN"
+        },
+        "breakdown": {
+          "grenade_type": {
+            "CSmokeGrenade": 2,
+            "CSmokeGrenadeProjectile": 2
+          }
+        }
+      },
+      "expectedExclusions": {
+        "rawRowCount": 5,
+        "count": 1,
+        "byValue": {
+          "CKnife": 1
+        },
+        "unclassifiedClassRows": 0,
+        "unclassifiedByValue": {},
+        "unexplainedRows": 0,
+        "excludedRowsDigest": "78043f9aa19443088f1eefe0fa8e0eaad52ea39db8086376efd7980fbbea142a"
+      }
+    },
+    {
+      "name": "empty table",
+      "table": "event:empty",
+      "rows": [],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "event:empty",
+        "rowCount": 0,
+        "fields": [],
+        "tableDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "multisetDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "columns": {}
+      }
+    },
+    {
+      "name": "grenade domain filter: VIOLATED by a class outside the known anomaly",
+      "table": "grenades",
+      "rows": [
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 1
+        },
+        {
+          "grenade_type": "CChicken",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 2
+        },
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 3
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "grenades",
+        "rowCount": 2,
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
+        "tableDigest": "e15b9c511291c381c9dfbe53d12a591e32aacebb1f0d922bc64512d9fed6c193",
+        "multisetDigest": "6e65c360caaf4eecff7fc8aa4b1a67ef32ef1aa2fd10a22596aa2d60f5f5878f",
+        "columns": {
+          "grenade_entity_id": {
+            "digest": "27b3c8efaf44833ff3381a31797bddee5c0ec3a4263950377553d906bcfc5124",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "grenade_type": {
+            "digest": "c2b8780bb381dd0add9daa473cd4f2b60187d9ce28c7e1270db8e91b8ddcb2bb",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 2,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "26a4368300192647288254433f95ddbbd7eb661a69136018ba7aad186688988f",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 2,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "58ad59dd9ca165e82f3293c6cc85cac489f2d8323016462aa4b0f91586965d9d",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "x": {
+            "digest": "25571ef72397c5de8783a26ecfebd72c26fbaa033d47969b9b72c0287f64d178",
+            "classes": {
+              "null": 2,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "VIOLATED"
+        },
+        "breakdown": {
+          "grenade_type": {
+            "CSmokeGrenade": 2
+          }
+        }
+      },
+      "expectedExclusions": {
+        "rawRowCount": 3,
+        "count": 1,
+        "byValue": {
+          "CChicken": 1
+        },
+        "unclassifiedClassRows": 1,
+        "unclassifiedByValue": {
+          "CChicken": 1
+        },
+        "unexplainedRows": 0,
+        "excludedRowsDigest": "5c1a57825834b997054a04a04988d949eb8d4080cc8402e65f95aa2a22740f74"
+      }
+    },
+    {
+      "name": "grenade domain filter: VIOLATED by an excluded row whose entity id never was a grenade",
+      "table": "grenades",
+      "rows": [
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 1
+        },
+        {
+          "grenade_type": "CKnife",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 2
+        },
+        {
+          "grenade_type": "CFlashbang",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 3
+        },
+        {
+          "grenade_type": "CKnife",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 4
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "grenades",
+        "rowCount": 2,
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
+        "tableDigest": "618b6dd25252347a51b83f42613db0e4c29860c9d474f9aa5115f71b669eaf65",
+        "multisetDigest": "ae1b99736d8db94a55080447d3a648183eaa71a368b8f947017240212d2d7c2c",
+        "columns": {
+          "grenade_entity_id": {
+            "digest": "bf4740435de932a9a526163c3043ca5f1ef84f64b28011c229d04aa516d1eaf1",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "grenade_type": {
+            "digest": "82e7164cd2d21821de9368dbf0a964304f47334d618d7a5535d48539100f1691",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 2,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "26a4368300192647288254433f95ddbbd7eb661a69136018ba7aad186688988f",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 2,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "58ad59dd9ca165e82f3293c6cc85cac489f2d8323016462aa4b0f91586965d9d",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "x": {
+            "digest": "25571ef72397c5de8783a26ecfebd72c26fbaa033d47969b9b72c0287f64d178",
+            "classes": {
+              "null": 2,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "VIOLATED"
+        },
+        "breakdown": {
+          "grenade_type": {
+            "CFlashbang": 1,
+            "CSmokeGrenade": 1
+          }
+        }
+      },
+      "expectedExclusions": {
+        "rawRowCount": 4,
+        "count": 2,
+        "byValue": {
+          "CKnife": 2
+        },
+        "unclassifiedClassRows": 0,
+        "unclassifiedByValue": {},
+        "unexplainedRows": 1,
+        "excludedRowsDigest": "8fb7e948dd088b2c7cf5ccbf14425222c18b2732f49cfe53c5c795464acdd4f6"
+      }
+    }
+  ]
+}

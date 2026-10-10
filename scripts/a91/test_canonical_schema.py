@@ -1,0 +1,161 @@
+"""Shared-vector conformance for the Python canonicalizer.
+
+Runs the SAME canonical/vectors.json as canonical_schema.check.mjs. Inputs are
+decoded into this runtime's native carriers (Python int for 64-bit ids, where
+JavaScript receives decimal strings), and every expected text, class, error
+and table digest must match byte for byte.
+"""
+import json
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import canonical_schema as canonical  # noqa: E402
+
+VECTORS = json.loads((Path(__file__).resolve().parent / "canonical" / "vectors.json").read_text(encoding="utf-8"))
+ABSENT = object()
+
+
+class NAType:  # same type name pandas uses for pd.NA
+    pass
+
+
+def decode(value):
+    if isinstance(value, list):
+        return [decode(item) for item in value]
+    if isinstance(value, dict):
+        tag = value.get("$")
+        if isinstance(tag, str):
+            if tag in ("u64", "bigint"):
+                return int(value["v"])  # numpy uint64 / Python int carrier
+            if tag == "f64":
+                return float(value["v"])
+            if tag == "lossy_u64":
+                return float(int(value["v"]))
+            if tag == "undefined":
+                return NAType()
+            if tag == "absent":
+                return ABSENT
+            raise AssertionError(f"unknown vector tag {tag}")
+        decoded = {key: decode(item) for key, item in value.items()}
+        return {key: item for key, item in decoded.items() if item is not ABSENT}
+    return value
+
+
+class CanonicalVectorTests(unittest.TestCase):
+    def test_contract_version_matches_vectors(self):
+        self.assertEqual(VECTORS["canonicalContractVersion"], canonical.CANONICAL_CONTRACT_VERSION)
+
+    def test_value_vectors(self):
+        for vector in VECTORS["values"]:
+            with self.subTest(vector["name"]):
+                value = decode(vector["input"])
+                if "error" in vector:
+                    with self.assertRaises(canonical.CanonicalError) as caught:
+                        canonical.canonicalize_value(value, vector["field"])
+                    self.assertEqual(caught.exception.code, vector["error"])
+                else:
+                    self.assertEqual(
+                        canonical.canonicalize_value(value, vector["field"]),
+                        (vector["text"], vector["cls"]),
+                    )
+
+    def test_table_vectors(self):
+        for vector in VECTORS["tables"]:
+            with self.subTest(vector["name"]):
+                options = {"block_rows": vector["blockRows"]} if "blockRows" in vector else {}
+                result = canonical.summarize_rows(vector["table"], [decode(row) for row in vector["rows"]], **options)
+                self.assertEqual(result["summary"], vector["expected"])
+                exclusions = result["diagnostics"]["exclusions"]
+                if exclusions is None:
+                    self.assertNotIn("expectedExclusions", vector)
+                    self.assertNotIn("domainFilter", result["summary"])
+                    self.assertEqual(result["summary"]["rowCount"], len(vector["rows"]))
+                else:
+                    # Rule R13: same classification, by class, as the JavaScript runtime.
+                    facts = {k: v for k, v in exclusions.items() if k not in ("rule", "field")}
+                    self.assertEqual(facts, vector["expectedExclusions"])
+                    self.assertEqual(exclusions["rawRowCount"], len(vector["rows"]))
+                    self.assertEqual(
+                        result["summary"]["domainFilter"]["status"],
+                        "VIOLATED" if "VIOLATED" in vector["name"] else "CLEAN",
+                    )
+
+    def test_domain_row_filter_is_fail_closed_and_scoped(self):
+        for bad in ({"tick": 1, "grenade_entity_id": 1}, {"grenade_type": None, "grenade_entity_id": 1},
+                    {"grenade_type": 7, "grenade_entity_id": 1}):
+            with self.assertRaises(canonical.CanonicalError) as caught:
+                canonical.summarize_rows("grenades", [bad])
+            self.assertEqual(caught.exception.code, "DOMAIN_FILTER_FIELD_INVALID")
+        import decimal
+        import fractions
+
+        for bad in ({"grenade_type": "CKnife"}, {"grenade_type": "CKnife", "grenade_entity_id": None},
+                    {"grenade_type": "CKnife", "grenade_entity_id": "x"},
+                    # Same carriers JavaScript rejects: text that looks numeric, bytes,
+                    # booleans and exact-number types are not entity ids.
+                    {"grenade_type": "CKnife", "grenade_entity_id": "8"},
+                    {"grenade_type": "CKnife", "grenade_entity_id": " 8 "},
+                    {"grenade_type": "CKnife", "grenade_entity_id": b"8"},
+                    {"grenade_type": "CKnife", "grenade_entity_id": True},
+                    {"grenade_type": "CKnife", "grenade_entity_id": decimal.Decimal(8)},
+                    {"grenade_type": "CKnife", "grenade_entity_id": fractions.Fraction(8)},
+                    {"grenade_type": "CKnife", "grenade_entity_id": 2**53},
+                    {"grenade_type": "CKnife", "grenade_entity_id": 1.5},
+                    {"grenade_type": "CKnife", "grenade_entity_id": float("nan")}):
+            with self.assertRaises(canonical.CanonicalError) as caught:
+                canonical.summarize_rows("grenades", [bad])
+            self.assertEqual(caught.exception.code, "DOMAIN_FILTER_ENTITY_ID_INVALID")
+        grenade = lambda kind, entity, tick: {"grenade_type": kind, "grenade_entity_id": entity, "tick": tick}
+        clean = canonical.summarize_rows("grenades", [
+            grenade("CHEGrenade", 5, 1), grenade("CKnife", 5, 2), grenade("CWeaponGlock", 5, 3),
+            grenade("CC4", 5, 4), grenade("CFlashbang", 6, 5)])
+        self.assertEqual(clean["summary"]["rowCount"], 2)
+        self.assertEqual(clean["summary"]["domainFilter"]["status"], "CLEAN")
+        self.assertEqual(clean["diagnostics"]["exclusions"]["byValue"], {"CC4": 1, "CKnife": 1, "CWeaponGlock": 1})
+        too_late = canonical.summarize_rows("grenades", [grenade("CKnife", 5, 1), grenade("CHEGrenade", 5, 2)])
+        self.assertEqual(too_late["summary"]["domainFilter"]["status"], "VIOLATED")
+        self.assertEqual(too_late["diagnostics"]["exclusions"]["unexplainedRows"], 1)
+        for kind in ("CChicken", "CPlantedC4", "CCSPlayerPawnGrenadeHolder", "CInferno"):
+            result = canonical.summarize_rows("grenades", [grenade("CHEGrenade", 5, 1), grenade(kind, 5, 2)])
+            self.assertEqual(result["summary"]["domainFilter"]["status"], "VIOLATED", kind)
+            self.assertEqual(result["diagnostics"]["exclusions"]["unclassifiedByValue"], {kind: 1})
+        # A domain row whose id is not an integer carrier explains nothing later
+        # (identical in JavaScript): the excluded row on id 8 stays unexplained.
+        for domain_id in ("8", None, True):
+            mixed = canonical.summarize_rows("grenades", [grenade("CHEGrenade", domain_id, 1), grenade("CKnife", 8, 2)])
+            self.assertEqual(mixed["summary"]["domainFilter"]["status"], "VIOLATED", domain_id)
+        # Integral floats and numpy integers are ids, exactly like JS numbers.
+        self.assertEqual(
+            canonical.summarize_rows("grenades", [grenade("CHEGrenade", 5.0, 1), grenade("CKnife", 5, 2)])["summary"]["domainFilter"]["status"],
+            "CLEAN",
+        )
+        try:
+            import numpy
+        except ImportError:  # the web CI job has no numpy; the parser job does
+            numpy = None
+        if numpy is not None:
+            rows = [grenade("CHEGrenade", numpy.int32(5), 1), grenade("CKnife", numpy.int64(5), 2)]
+            self.assertEqual(canonical.summarize_rows("grenades", rows)["summary"]["domainFilter"]["status"], "CLEAN")
+            with self.assertRaises(canonical.CanonicalError):
+                canonical.summarize_rows("grenades", [grenade("CKnife", numpy.bool_(True), 1)])
+        untouched = canonical.summarize_rows("event:weapon_fire", [grenade("CKnife", 5, 1)])
+        self.assertEqual(untouched["summary"]["rowCount"], 1)
+        self.assertIsNone(untouched["diagnostics"]["exclusions"])
+
+    def test_python_cannot_silently_round_a_steam_id(self):
+        exact = 76561198012345679
+        self.assertNotEqual(int(float(exact)), exact)  # the double really is lossy
+        self.assertEqual(canonical.canonical_text(exact, "steamid"), '"76561198012345679"')
+        with self.assertRaises(canonical.CanonicalError) as caught:
+            canonical.canonical_text(float(exact), "steamid")
+        self.assertEqual(caught.exception.code, "U64_PRECISION_LOST")
+
+    def test_null_is_never_zero_false_or_empty(self):
+        texts = {canonical.canonical_text(value, "x") for value in (None, 0, False, "", [])}
+        self.assertEqual(len(texts), 5)
+
+
+if __name__ == "__main__":
+    unittest.main()
