@@ -183,16 +183,103 @@ export function validParityComparisons(comparisons) {
     )
   );
 }
+function sortedStrings(values) {
+  return [...new Set(Array.isArray(values) ? values.filter((value) => typeof value === "string") : [])].sort();
+}
+function difference(left, right) {
+  const a = sortedStrings(left);
+  const b = sortedStrings(right);
+  return {
+    python_only: a.filter((value) => !b.includes(value)),
+    wasm_only: b.filter((value) => !a.includes(value)),
+  };
+}
+// Publish only names, counts, requested field names and SHA-256 digests.
+// Raw rows/samples and player identifiers are deliberately excluded.
+export function diagnoseRuntimeCalls(python, wasm) {
+  const pythonCalls = Array.isArray(python.apiCalls) ? python.apiCalls : [];
+  const wasmCalls = Array.isArray(wasm.apiCalls) ? wasm.apiCalls : [];
+  const pythonEvents = new Map((python.eventEvidence ?? []).filter((x) => x?.eventName).map((x) => [x.eventName, x]));
+  const wasmEvents = new Map((wasm.eventEvidence ?? []).filter((x) => x?.eventName).map((x) => [x.eventName, x]));
+  const pythonCallEvents = new Map(pythonCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
+  const wasmCallEvents = new Map(wasmCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
+  const eventNames = [...new Set([...pythonEvents.keys(), ...wasmEvents.keys(), ...pythonCallEvents.keys(), ...wasmCallEvents.keys()])].sort();
+  const events = eventNames.map((eventName) => {
+    const pe = pythonEvents.get(eventName) ?? {};
+    const we = wasmEvents.get(eventName) ?? {};
+    const pc = pythonCallEvents.get(eventName) ?? {};
+    const wc = wasmCallEvents.get(eventName) ?? {};
+    const pythonFields = pe.returnedFields ?? pc.returnedFields ?? [];
+    const wasmFields = wc.returnedFields ?? we.returnedFields ?? [];
+    const fieldDifference = difference(pythonFields, wasmFields);
+    const pythonCount = pe.count ?? pc.count ?? null;
+    const wasmCount = we.count ?? wc.count ?? null;
+    const pythonDigest = pe.fullDigest ?? pc.outputDigest ?? null;
+    const wasmDigest = we.fullDigest ?? wc.outputDigest ?? null;
+    const requestDifference = {
+      player: difference(pe.requestedPlayerFields ?? pc.requestedPlayerFields, we.requestedPlayerFields ?? wc.requestedPlayerFields),
+      other: difference(pe.requestedOtherFields ?? pc.requestedOtherFields, we.requestedOtherFields ?? wc.requestedOtherFields),
+    };
+    const reasons = [];
+    if (pythonCount !== wasmCount) reasons.push("ROW_COUNT_MISMATCH");
+    if (pythonDigest !== wasmDigest) reasons.push("OUTPUT_DIGEST_MISMATCH");
+    if (fieldDifference.python_only.length || fieldDifference.wasm_only.length) reasons.push("RETURNED_FIELD_SET_MISMATCH");
+    if (requestDifference.player.python_only.length || requestDifference.player.wasm_only.length ||
+        requestDifference.other.python_only.length || requestDifference.other.wasm_only.length) reasons.push("REQUEST_FIELD_SET_MISMATCH");
+    if (!pythonEvents.has(eventName) || !wasmEvents.has(eventName)) reasons.push("EVENT_EVIDENCE_MISSING");
+    return {
+      event_name: eventName, status: reasons.length ? "FAIL" : "PASS", reasons,
+      python_count: pythonCount, wasm_count: wasmCount,
+      python_digest: pythonDigest, wasm_digest: wasmDigest,
+      returned_field_difference: fieldDifference, requested_field_difference: requestDifference,
+    };
+  });
+  const call = (calls, api) => calls.find((item) => item?.api === api) ?? null;
+  const pc = call(pythonCalls, "parseGrenades");
+  const wc = call(wasmCalls, "parseGrenades");
+  const pt = call(pythonCalls, "parseTicks");
+  const wt = call(wasmCalls, "parseTicks");
+  const summarizeCall = (left, right, label) => ({
+    domain: label,
+    status: left && right && left.count === right.count && left.outputDigest === right.outputDigest ? "PASS" : "FAIL",
+    python_count: left?.count ?? null, wasm_count: right?.count ?? null,
+    python_digest: left?.outputDigest ?? null, wasm_digest: right?.outputDigest ?? null,
+    requested_fields: label === "parseTicks" ? {
+      difference: difference(left?.requestedFields, right?.requestedFields),
+      python_wanted_ticks: left?.wantedTicks ?? null, wasm_wanted_ticks: right?.wantedTicks ?? null,
+      wanted_ticks_equal: JSON.stringify(left?.wantedTicks ?? null) === JSON.stringify(right?.wantedTicks ?? null),
+    } : undefined,
+  });
+  const grenade = summarizeCall(pc, wc, "parseGrenades");
+  const ticks = summarizeCall(pt, wt, "parseTicks");
+  const firstDivergence = events.find((event) => event.status === "FAIL") ?? [grenade, ticks].find((item) => item.status === "FAIL") ?? null;
+  return {
+    schema_version: 1,
+    evidence_policy: "SANITIZED_CALL_DIAGNOSTICS_ONLY_NO_RAW_RECORDS",
+    event_count: events.length,
+    event_pass_count: events.filter((event) => event.status === "PASS").length,
+    event_fail_count: events.filter((event) => event.status === "FAIL").length,
+    first_divergence: firstDivergence ? { domain: firstDivergence.event_name ?? firstDivergence.domain, reasons: firstDivergence.reasons ?? [firstDivergence.status] } : null,
+    events,
+    grenade: grenade,
+    ticks,
+    runtime_api_inventory: {
+      python_api_names: sortedStrings(pythonCalls.map((item) => item.api)),
+      wasm_api_names: sortedStrings(wasmCalls.map((item) => item.api)),
+    },
+  };
+}
 export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
   return {
-    schema_version: 3,
+    schema_version: 4,
     status: validParityComparisons(comparisons) ? "PASS" : "FAIL",
     demo_sha256: sha,
     comparisons,
     ...summarize(comparisons),
+    semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,
-    evidencePolicy: "DIGEST_ONLY_PUBLIC_PARITY;RAW_RUNTIME_EVIDENCE_PRIVATE",
+    evidencePolicy: "DIGEST_ONLY_PUBLIC_PARITY;SANITIZED_CALL_DIAGNOSTICS;RAW_RUNTIME_EVIDENCE_PRIVATE",
   };
 }
