@@ -1,0 +1,73 @@
+name: Queue Semantics Probe
+
+# Executes the durable demo-parse queue functions on a DISPOSABLE local
+# database built from supabase/migrations and records what they guarantee.
+# It never connects to the managed database: the probe refuses any non-local
+# host. Supplementary evidence, path-filtered on purpose; not a required check.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/queue/**"
+      - ".github/workflows/queue-semantics-probe.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: queue-semantics-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Queue semantics on a disposable database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359
+        with:
+          version: 2.118.0
+      - name: Start local disposable services
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+        run: |
+          set -euo pipefail
+          test "$(supabase --version)" = "2.118.0"
+          supabase start
+      - name: Build the disposable schema from the repository migrations
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+        run: supabase db reset --local
+      - name: Run the queue semantics probe
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python3 scripts/queue/queue_semantics_probe.py | tee "$RUNNER_TEMP/queue-semantics-report.json"
+      - name: Upload the probe report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: queue-semantics-report
+          path: ${{ runner.temp }}/queue-semantics-report.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Tear down disposable services
+        if: always()
+        run: supabase stop --no-backup
