@@ -136,11 +136,7 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     expect(() =>
       normalizeEventRows([{ event_name: "round_start", tick: 1 }], "player_death"),
     ).toThrow("A91_WASM_EVENT_NAME_MISMATCH");
-    expect(() => normalizeEventRows([null], "player_death")).toThrow(
-      "A91_WASM_EVENT_ROW_INVALID",
-    );
-    expect(() => normalizeEventRows({}, "player_death")).toThrow(
-      "A91_WASM_EVENT_SHAPE_INVALID",
-    );
+    expect(() => normalizeEventRows([null], "player_death")).toThrow("A91_WASM_EVENT_ROW_INVALID");
+    expect(() => normalizeEventRows({}, "player_death")).toThrow("A91_WASM_EVENT_SHAPE_INVALID");
   });
 });
