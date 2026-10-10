@@ -394,6 +394,8 @@ assert.throws(
     assert.equal(grenadeDomain(report).status, "BLOCKED");
     assert.deepEqual(rawTable(report).wasm.unclassified_by_class, { CChicken: 1 });
     assert.equal(rawTable(report).wasm.domain_filter_status, "VIOLATED");
+    // The field-level view agrees: never PASS for a violated table.
+    assert.equal(tableVerdict(report, "grenades").status, "BLOCKED");
   }
 
   // (f) ...even when BOTH runtimes return the very same unclassified row, so
@@ -411,6 +413,64 @@ assert.throws(
     assert.equal(grenadeDomain(report).status, "BLOCKED");
     assert.equal(report.status, "FAIL");
     assert.equal(report.raw_output_diagnostics.status, "EQUAL"); // raw equal, still not valid
+  }
+
+  // (f2) The same excluded rows give the same chained digest in both runtimes,
+  //      so raw output can be checked for determinism outside the semantic digest.
+  {
+    const extra = [row("CKnife", 131), row("CC4", 132)];
+    const source = clone(fixture);
+    source.grenades.push(...extra);
+    const report = parityReport(
+      pythonArtifact({ appendGrenades: extra }),
+      wasmArtifact(source),
+      SHA,
+    );
+    assert.equal(report.status, "PASS");
+    assert.match(rawTable(report).python.excluded_rows_digest, /^[0-9a-f]{64}$/);
+    assert.equal(
+      rawTable(report).python.excluded_rows_digest,
+      rawTable(report).wasm.excluded_rows_digest,
+    );
+    assert.equal(report.raw_output_diagnostics.status, "EQUAL");
+  }
+
+  // (f3) Fail closed: a filtered table without a CLEAN status is never valid
+  //      evidence — missing status, unknown status, or VIOLATED hidden behind
+  //      a self-declared "not available".
+  for (const tamper of [
+    (table) => delete table.domainFilter,
+    (table) => (table.domainFilter = { rule: "R13_DOMAIN_ROW_FILTER", status: "OK" }),
+    (table) => (table.domainFilter = null),
+  ]) {
+    const report = parityReport(
+      python,
+      wasmArtifact(fixture, (artifact) => {
+        tamper(artifact.grenadeEvidence.table);
+      }),
+      SHA,
+    );
+    assert.equal(grenadeDomain(report).status, "BLOCKED");
+    assert.equal(report.status, "FAIL");
+    assert.equal(tableVerdict(report, "grenades").status, "BLOCKED");
+    assert.ok(tableVerdict(report, "grenades").divergence_classes.includes("DOMAIN_FILTER"));
+  }
+  {
+    const source = clone(fixture);
+    source.grenades.push(row("CChicken", 131));
+    const report = parityReport(
+      python,
+      wasmArtifact(source, (artifact) => {
+        artifact.domainAvailability = {
+          ...artifact.domainAvailability,
+          grenades: "NOT_AVAILABLE_ON_WASM",
+          game_state: "NOT_AVAILABLE_ON_WASM",
+        };
+      }),
+      SHA,
+    );
+    assert.equal(grenadeDomain(report).status, "BLOCKED");
+    assert.equal(report.status, "FAIL");
   }
 
   // (g) A known class on an entity id that never was a grenade is unexplained.

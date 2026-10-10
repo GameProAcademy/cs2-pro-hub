@@ -43,7 +43,15 @@
     "round_start_equip_value"
   ],
   "valueClasses": ["null", "bool", "integer", "float", "string", "u64", "array", "object"],
-  "divergenceClasses": ["FIELD_PRESENCE", "ROW_COUNT", "NULLABILITY", "TYPE", "VALUE", "ROW_ORDER"],
+  "divergenceClasses": [
+    "FIELD_PRESENCE",
+    "ROW_COUNT",
+    "NULLABILITY",
+    "TYPE",
+    "VALUE",
+    "ROW_ORDER",
+    "DOMAIN_FILTER"
+  ],
   "rules": {
     "R1_NULL": "null, undefined, pandas NA/NaT and non-finite floats canonicalize to JSON null. null is never zero, false or an empty string.",
     "R2_U64": "Fields listed in u64DecimalFields are 64-bit identifiers. Canonical form is the exact decimal string. A float in such a field, or a JavaScript number, is U64_PRECISION_LOST and fails closed; so does non-decimal text (U64_INVALID). A 64-bit column the registry does not list fails closed in the Python reference as UNREGISTERED_U64_FIELD. Text fields that merely end in an id-like name (for example weapon_originalowner_xuid, which the parser emits as a possibly empty string) are plain strings.",

@@ -410,7 +410,13 @@
         "canonicalContractVersion": 2,
         "table": "ticks",
         "rowCount": 3,
-        "fields": ["X", "health", "name", "steamid", "tick"],
+        "fields": [
+          "X",
+          "health",
+          "name",
+          "steamid",
+          "tick"
+        ],
         "tableDigest": "7562e4cc05eadd73b7b155af8b650147c751285a4d2863452bfe17bf818ba9cb",
         "multisetDigest": "bc47714d16efa4ab89ac4a2c2c43f87a0e86cf6e046662366e66543f8d2b4279",
         "columns": {
@@ -511,7 +517,12 @@
         "canonicalContractVersion": 2,
         "table": "event:player_death",
         "rowCount": 3,
-        "fields": ["assister_steamid", "headshot", "tick", "user_steamid"],
+        "fields": [
+          "assister_steamid",
+          "headshot",
+          "tick",
+          "user_steamid"
+        ],
         "tableDigest": "5beaa8e2cb6928783d279fb9fb08cc93b8d287c882a9df6b2cc7d8c7d2a87255",
         "multisetDigest": "66bcea8dcb93c6be8a0f56914b37069670806831d290c4858ca16d3a5e90e65e",
         "columns": {
@@ -597,7 +608,10 @@
         "canonicalContractVersion": 2,
         "table": "event:late_field",
         "rowCount": 5,
-        "fields": ["extra", "tick"],
+        "fields": [
+          "extra",
+          "tick"
+        ],
         "tableDigest": "5f6deebd6cac9260561ea15ce241c9220c1f5a9813d76613abcdd117cf7cd928",
         "multisetDigest": "2ba97342a07a42182812e0ae34f7e88fd7de7f24890ed7b3bb034eb2bec80f52",
         "columns": {
@@ -696,7 +710,13 @@
         "canonicalContractVersion": 2,
         "table": "grenades",
         "rowCount": 4,
-        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
         "tableDigest": "9005c451486ced1f58c3069c80cfa24c44c8081bcaef6f7b37925f55b3486f6a",
         "multisetDigest": "67bb1328c80ac249aec2a2b1417efcf08107294cffbdfba073b898346b5c92e5",
         "columns": {
@@ -785,7 +805,8 @@
         },
         "unclassifiedClassRows": 0,
         "unclassifiedByValue": {},
-        "unexplainedRows": 0
+        "unexplainedRows": 0,
+        "excludedRowsDigest": "78043f9aa19443088f1eefe0fa8e0eaad52ea39db8086376efd7980fbbea142a"
       }
     },
     {
@@ -841,7 +862,13 @@
         "canonicalContractVersion": 2,
         "table": "grenades",
         "rowCount": 2,
-        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
         "tableDigest": "e15b9c511291c381c9dfbe53d12a591e32aacebb1f0d922bc64512d9fed6c193",
         "multisetDigest": "6e65c360caaf4eecff7fc8aa4b1a67ef32ef1aa2fd10a22596aa2d60f5f5878f",
         "columns": {
@@ -931,7 +958,8 @@
         "unclassifiedByValue": {
           "CChicken": 1
         },
-        "unexplainedRows": 0
+        "unexplainedRows": 0,
+        "excludedRowsDigest": "5c1a57825834b997054a04a04988d949eb8d4080cc8402e65f95aa2a22740f74"
       }
     },
     {
@@ -983,7 +1011,13 @@
         "canonicalContractVersion": 2,
         "table": "grenades",
         "rowCount": 2,
-        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "fields": [
+          "grenade_entity_id",
+          "grenade_type",
+          "steamid",
+          "tick",
+          "x"
+        ],
         "tableDigest": "618b6dd25252347a51b83f42613db0e4c29860c9d474f9aa5115f71b669eaf65",
         "multisetDigest": "ae1b99736d8db94a55080447d3a648183eaa71a368b8f947017240212d2d7c2c",
         "columns": {
@@ -1072,7 +1106,8 @@
         },
         "unclassifiedClassRows": 0,
         "unclassifiedByValue": {},
-        "unexplainedRows": 1
+        "unexplainedRows": 1,
+        "excludedRowsDigest": "8fb7e948dd088b2c7cf5ccbf14425222c18b2732f49cfe53c5c795464acdd4f6"
       }
     }
   ]

@@ -147,6 +147,10 @@ export class TableAccumulator {
     this.unclassified = new Map();
     this.unclassifiedCount = 0;
     this.unexplainedCount = 0;
+    // Chained digest of the excluded rows, in emission order: lets raw output
+    // be checked for run-to-run determinism although it is outside every
+    // semantic digest.
+    this.excludedRowsDigest = sha256("");
     this.finished = false;
   }
 
@@ -182,6 +186,17 @@ export class TableAccumulator {
     }
     if (anomaly.requirePriorDomainRowForEntityId && !this.domainEntityIds.has(entityId))
       this.unexplainedCount += 1;
+    const scratch = { absent: 0, nonFinite: 0 };
+    const parts = [];
+    for (const [field, item] of entries) {
+      const { text, cls } = canonicalizeValue(item, field, scratch);
+      if (cls !== "null") parts.push([field, text]);
+    }
+    parts.sort((left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0));
+    const rowHash = sha256(
+      `{${parts.map(([field, text]) => `${JSON.stringify(field)}:${text}`).join(",")}}`,
+    );
+    this.excludedRowsDigest = sha256(this.excludedRowsDigest + rowHash);
     this.excluded.set(value, (this.excluded.get(value) ?? 0) + 1);
     this.excludedCount += 1;
     if (this.excluded.size > CONTRACT.maxCategoricalValues)
@@ -328,6 +343,7 @@ export class TableAccumulator {
               unclassifiedClassRows: this.unclassifiedCount,
               unclassifiedByValue: sortedCounts(this.unclassified),
               unexplainedRows: this.unexplainedCount,
+              excludedRowsDigest: this.excludedRowsDigest,
             }
           : null,
       },

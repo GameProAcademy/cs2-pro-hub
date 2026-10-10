@@ -205,6 +205,24 @@ across a segment boundary, while the WASM build parses in one pass.
 | Compare projectile classes only (`*Projectile`) | drops 416,915 real inventory-grenade rows from the comparison on the fixture                                          |
 | Call `parse_grenades(grenades=False)` in both   | same loss of coverage; it is what the deployed worker does, but it is a different table                               |
 
+### Known limits of the rule
+
+- "Earlier domain row with the same entity id" never expires. Once an id was a
+  grenade, any number of later rows of an allowlisted class on that id are
+  accepted as the anomaly. The parser gives no delete signal in this table, so
+  the rule cannot tell where a stale run should end; that is why the 9,211
+  extra WASM rows on the fixture are accepted.
+- Excluded rows are outside every semantic digest. Their run-to-run stability
+  is checked separately through `excluded_rows_digest` (a chained digest of
+  the excluded rows in emission order), which the public gate compares between
+  the two runs of each runtime.
+- The comparator is fail closed for filtered tables: any status other than
+  `CLEAN` (missing, unknown, `VIOLATED`) blocks the domain, and the check runs
+  before a runtime's self-declared unavailability.
+- Entity ids must be integer carriers in both runtimes (JS safe integers;
+  Python/numpy integers or integral floats). Text such as `"8"`, booleans and
+  exact-number types are rejected identically.
+
 ### Not proven
 
 That the real A9.1 demo contains only anomaly classes from the closed list. If

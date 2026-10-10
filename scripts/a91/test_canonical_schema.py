@@ -88,8 +88,20 @@ class CanonicalVectorTests(unittest.TestCase):
             with self.assertRaises(canonical.CanonicalError) as caught:
                 canonical.summarize_rows("grenades", [bad])
             self.assertEqual(caught.exception.code, "DOMAIN_FILTER_FIELD_INVALID")
+        import decimal
+        import fractions
+
         for bad in ({"grenade_type": "CKnife"}, {"grenade_type": "CKnife", "grenade_entity_id": None},
                     {"grenade_type": "CKnife", "grenade_entity_id": "x"},
+                    # Same carriers JavaScript rejects: text that looks numeric, bytes,
+                    # booleans and exact-number types are not entity ids.
+                    {"grenade_type": "CKnife", "grenade_entity_id": "8"},
+                    {"grenade_type": "CKnife", "grenade_entity_id": " 8 "},
+                    {"grenade_type": "CKnife", "grenade_entity_id": b"8"},
+                    {"grenade_type": "CKnife", "grenade_entity_id": True},
+                    {"grenade_type": "CKnife", "grenade_entity_id": decimal.Decimal(8)},
+                    {"grenade_type": "CKnife", "grenade_entity_id": fractions.Fraction(8)},
+                    {"grenade_type": "CKnife", "grenade_entity_id": 2**53},
                     {"grenade_type": "CKnife", "grenade_entity_id": 1.5},
                     {"grenade_type": "CKnife", "grenade_entity_id": float("nan")}):
             with self.assertRaises(canonical.CanonicalError) as caught:
@@ -109,6 +121,25 @@ class CanonicalVectorTests(unittest.TestCase):
             result = canonical.summarize_rows("grenades", [grenade("CHEGrenade", 5, 1), grenade(kind, 5, 2)])
             self.assertEqual(result["summary"]["domainFilter"]["status"], "VIOLATED", kind)
             self.assertEqual(result["diagnostics"]["exclusions"]["unclassifiedByValue"], {kind: 1})
+        # A domain row whose id is not an integer carrier explains nothing later
+        # (identical in JavaScript): the excluded row on id 8 stays unexplained.
+        for domain_id in ("8", None, True):
+            mixed = canonical.summarize_rows("grenades", [grenade("CHEGrenade", domain_id, 1), grenade("CKnife", 8, 2)])
+            self.assertEqual(mixed["summary"]["domainFilter"]["status"], "VIOLATED", domain_id)
+        # Integral floats and numpy integers are ids, exactly like JS numbers.
+        self.assertEqual(
+            canonical.summarize_rows("grenades", [grenade("CHEGrenade", 5.0, 1), grenade("CKnife", 5, 2)])["summary"]["domainFilter"]["status"],
+            "CLEAN",
+        )
+        try:
+            import numpy
+        except ImportError:  # the web CI job has no numpy; the parser job does
+            numpy = None
+        if numpy is not None:
+            rows = [grenade("CHEGrenade", numpy.int32(5), 1), grenade("CKnife", numpy.int64(5), 2)]
+            self.assertEqual(canonical.summarize_rows("grenades", rows)["summary"]["domainFilter"]["status"], "CLEAN")
+            with self.assertRaises(canonical.CanonicalError):
+                canonical.summarize_rows("grenades", [grenade("CKnife", numpy.bool_(True), 1)])
         untouched = canonical.summarize_rows("event:weapon_fire", [grenade("CKnife", 5, 1)])
         self.assertEqual(untouched["summary"]["rowCount"], 1)
         self.assertIsNone(untouched["diagnostics"]["exclusions"])

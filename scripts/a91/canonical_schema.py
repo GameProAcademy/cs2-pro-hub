@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import numbers
 import re
 from pathlib import Path
 from typing import Any
@@ -176,17 +177,21 @@ def _empty_classes() -> dict[str, int]:
 
 
 def _safe_integer(value: Any) -> int | None:
-    """Entity ids arrive as Python or numpy integers (or integral floats)."""
-    if value is None or isinstance(value, bool):
+    """Entity id carriers: Python/numpy integers, or an integral float.
+
+    Mirrors Number.isSafeInteger in canonical_schema.mjs. Text, bytes, Decimal,
+    booleans (including numpy.bool_) and non-integral numbers are NOT ids.
+    """
+    if value is None or isinstance(value, bool) or type(value).__name__ in ("bool_", "bool"):
         return None
-    try:
+    if isinstance(value, numbers.Integral):
         number = int(value)
-    except (TypeError, ValueError, OverflowError):
-        return None
-    try:
-        if float(value) != number:
+    elif isinstance(value, float) or (type(value).__module__ == "numpy" and isinstance(value, numbers.Real)):
+        as_float = float(value)
+        if not math.isfinite(as_float) or not as_float.is_integer():
             return None
-    except (TypeError, ValueError, OverflowError):
+        number = int(as_float)
+    else:
         return None
     return number if abs(number) <= 2**53 - 1 else None
 
@@ -215,6 +220,10 @@ class TableAccumulator:
         self.unclassified: dict[str, int] = {}
         self.unclassified_count = 0
         self.unexplained_count = 0
+        # Chained digest of the excluded rows, in emission order: lets raw
+        # output be checked for run-to-run determinism although it is outside
+        # every semantic digest.
+        self.excluded_rows_digest = _sha256("")
         self.finished = False
 
     def _admit(self, row: dict[str, Any]) -> bool:
@@ -244,6 +253,15 @@ class TableAccumulator:
             self.unclassified_count += 1
         if anomaly["requirePriorDomainRowForEntityId"] and entity_id not in self.domain_entity_ids:
             self.unexplained_count += 1
+        scratch = {"absent": 0, "nonFinite": 0}
+        parts = []
+        for field, item in row.items():
+            text, cls = canonicalize_value(item, field, scratch)
+            if cls != "null":
+                parts.append((field, text))
+        parts.sort(key=lambda pair: _utf16_key(pair[0]))
+        row_hash = _sha256("{" + ",".join(f"{canonical_string(field)}:{text}" for field, text in parts) + "}")
+        self.excluded_rows_digest = _sha256(self.excluded_rows_digest + row_hash)
         self.excluded[value] = self.excluded.get(value, 0) + 1
         self.excluded_count += 1
         if len(self.excluded) > CONTRACT["maxCategoricalValues"]:
@@ -375,6 +393,7 @@ class TableAccumulator:
                     "unclassifiedClassRows": self.unclassified_count,
                     "unclassifiedByValue": dict(sorted(self.unclassified.items())),
                     "unexplainedRows": self.unexplained_count,
+                    "excludedRowsDigest": self.excluded_rows_digest,
                 }
                 if self.row_filter
                 else None,

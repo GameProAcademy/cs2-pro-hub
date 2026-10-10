@@ -1,3 +1,4 @@
+import { CONTRACT } from "./canonical_schema.mjs";
 import { digest } from "./contracts.mjs";
 import { compareObjects, compareTables, structuralSymmetry } from "./field_compare.mjs";
 
@@ -37,12 +38,24 @@ const evidenceKeys = {
   tick_properties: "tickDomainEvidence",
   game_state: "normalizedResult",
 };
+const FILTERED_TABLES = new Set(Object.keys(CONTRACT.domainRowFilters ?? {}));
+/** True when a table that the contract filters does not carry a CLEAN status. */
+export const domainFilterNotClean = (table) =>
+  Boolean(table) &&
+  typeof table === "object" &&
+  FILTERED_TABLES.has(table.table) &&
+  table.domainFilter?.status !== "CLEAN";
+/**
+ * Fail closed (rule R13): every summary of a filtered table found in this
+ * evidence must say CLEAN. A missing status, an unknown status or VIOLATED all
+ * block the domain.
+ */
 function domainFilterViolated(value) {
   if (!value || typeof value !== "object") return false;
   const tables = [value.table, value.grenades, value.ticks];
   if (Array.isArray(value)) for (const item of value) tables.push(item?.table);
   if (Array.isArray(value.events)) for (const item of value.events) tables.push(item?.table);
-  return tables.some((table) => table?.domainFilter?.status === "VIOLATED");
+  return tables.some(domainFilterNotClean);
 }
 function comparableEvidence(artifact, field) {
   const value = artifact[evidenceKeys[field]] ?? null;
@@ -62,15 +75,15 @@ function comparableEvidence(artifact, field) {
 // sensitive strings from crossing the artifact boundary while preserving an
 // independently reproducible equality decision.
 function availability(artifact, field, runtime) {
+  // Contract rule R13 first: a table whose domain row filter is not CLEAN is
+  // not valid evidence. This is checked before any self-declared
+  // unavailability, and it holds even if both runtimes report the same thing.
+  if (domainFilterViolated(artifact[evidenceKeys[field]])) return "BLOCKED";
   const declared = artifact.domainAvailability?.[field];
   if (declared === `NOT_AVAILABLE_ON_${runtime}`) return declared;
   if (declared && declared !== "AVAILABLE") return "BLOCKED";
   const value = artifact[evidenceKeys[field]];
   if (value?.status === "PARSE_FAILED" || value?.status === "FAILED") return "BLOCKED";
-  // Contract rule R13: a table whose domain row filter met a row it cannot
-  // classify as the documented anomaly is not valid evidence. This holds even
-  // if both runtimes report the same violation.
-  if (domainFilterViolated(value)) return "BLOCKED";
   return value === undefined || value === null ? "MISSING" : "AVAILABLE";
 }
 export function compareDomains(python, wasm) {
@@ -418,11 +431,12 @@ export function envelopeSymmetry(python, wasm) {
 }
 
 const safeClassCounts = (byValue) => {
-  // Parser entity class names only; anything else is folded into OTHER so a
-  // free-form string can never reach the public report.
+  // Shape filter, not an allowlist: only strings shaped like a parser entity
+  // class name (C + letter + word characters) are published as keys; anything
+  // else, including all-digit strings, is folded into OTHER.
   const counts = {};
   for (const [key, count] of Object.entries(byValue ?? {})) {
-    const name = /^[A-Za-z0-9_]{1,64}$/.test(key) ? key : "OTHER";
+    const name = /^C[A-Za-z][A-Za-z0-9_]{0,61}$/.test(key) ? key : "OTHER";
     counts[name] = (counts[name] ?? 0) + count;
   }
   return Object.fromEntries(
@@ -455,6 +469,7 @@ export function rawOutputDiagnostics(python, wasm) {
       unclassified_class_rows: item?.unclassifiedClassRows ?? null,
       unclassified_by_class: item ? safeClassCounts(item.unclassifiedByValue) : null,
       rows_without_prior_domain_row: item?.unexplainedRows ?? null,
+      excluded_rows_digest: item?.excludedRowsDigest ?? null,
       domain_filter_status: table?.summary?.domainFilter?.status ?? null,
     });
     const pythonSide = side(left, pythonTables[name]);
@@ -491,7 +506,21 @@ export function diagnoseFields(python, wasm) {
   const pythonTables = artifactTables(python);
   const wasmTables = artifactTables(wasm);
   const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
-  const tables = names.map((name) => compareTables(pythonTables[name], wasmTables[name]));
+  const tables = names.map((name) => {
+    const verdict = compareTables(pythonTables[name], wasmTables[name]);
+    const notClean = [pythonTables[name]?.summary, wasmTables[name]?.summary].some(
+      domainFilterNotClean,
+    );
+    return notClean
+      ? {
+          ...verdict,
+          status: "BLOCKED",
+          divergence_classes: [
+            ...new Set([...(verdict.divergence_classes ?? []), "DOMAIN_FILTER"]),
+          ],
+        }
+      : verdict;
+  });
   const header = compareObjects("header", python?.headerEvidence, wasm?.headerEvidence);
   const all = [header, ...tables];
   const failing = all.filter((item) => item.status !== "PASS");

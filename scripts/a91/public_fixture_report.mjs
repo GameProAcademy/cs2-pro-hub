@@ -83,7 +83,11 @@ check(
 //    divergence that disappears also fails until the expectation is updated in
 //    review. Parity itself is reported as measured, never upgraded.
 const diagnostics = parity.field_diagnostics;
-const failingDomains = parity.comparisons.filter((c) => c.status === "FAIL").map((c) => c.field);
+// Anything that is not PASS or an explicit NOT_COMPARABLE counts as diverging,
+// so a BLOCKED domain can never slip through an empty ratchet.
+const failingDomains = parity.comparisons
+  .filter((c) => !["PASS", "NOT_COMPARABLE"].includes(c.status))
+  .map((c) => c.field);
 const failingTables = diagnostics.tables.filter((t) => t.status !== "PASS").map((t) => t.table);
 const notComparable = parity.comparisons
   .filter((c) => c.status === "NOT_COMPARABLE")
@@ -124,6 +128,8 @@ check(
         side?.domain_filter_status === "CLEAN" &&
         side.unclassified_class_rows === 0 &&
         side.rows_without_prior_domain_row === 0 &&
+        [side.raw_rows, side.domain_rows, side.excluded_rows].every(Number.isSafeInteger) &&
+        side.domain_rows > 0 &&
         side.raw_rows === side.domain_rows + side.excluded_rows,
     ) &&
     rawGrenades.python.domain_rows === rawGrenades.wasm.domain_rows,
@@ -137,6 +143,25 @@ check(
     raw.status === expectations.rawOutput.status &&
     rawGrenades?.raw_rows_equal === (expectations.rawOutput.status === "EQUAL"),
   { rawStatus: raw?.status ?? null },
+);
+// Raw output is outside every semantic digest, so its run-to-run stability is
+// checked here on its own: both runs of each runtime must have excluded the
+// same rows, in the same order.
+const exclusionFacts = (run) => run.tableDiagnostics?.grenades?.exclusions ?? null;
+check(
+  "raw_output_is_deterministic_within_each_runtime",
+  [
+    [python1, python2],
+    [wasm1, wasm2],
+  ].every(
+    ([first, second]) =>
+      /^[0-9a-f]{64}$/.test(exclusionFacts(first)?.excludedRowsDigest ?? "") &&
+      JSON.stringify(exclusionFacts(first)) === JSON.stringify(exclusionFacts(second)),
+  ),
+  {
+    pythonExcludedRowsDigest: exclusionFacts(python1)?.excludedRowsDigest ?? null,
+    wasmExcludedRowsDigest: exclusionFacts(wasm1)?.excludedRowsDigest ?? null,
+  },
 );
 // Regression pin for this one fixed input (not a semantic rule): the measured
 // raw figures. A change means the parser build or the fixture changed.
@@ -162,7 +187,10 @@ const grenadeCall = memory?.calls.find((call) => call.api === "parseGrenades");
 check(
   "wasm_memory_within_fixture_limit",
   [wasm1, wasm2].every(
-    (run) => run.wasmMemoryEvidence?.peakBytes <= expectations.limits.wasmPeakBytes,
+    (run) =>
+      Number.isSafeInteger(run.wasmMemoryEvidence?.peakBytes) &&
+      run.wasmMemoryEvidence.peakBytes > 0 &&
+      run.wasmMemoryEvidence.peakBytes <= expectations.limits.wasmPeakBytes,
   ),
   { peakBytes: memory?.peakBytes ?? null, limitBytes: expectations.limits.wasmPeakBytes },
 );

@@ -97,6 +97,10 @@ for (const bad of [
   { grenade_type: "CKnife", grenade_entity_id: null },
   { grenade_type: "CKnife", grenade_entity_id: "8" },
   { grenade_type: "CKnife", grenade_entity_id: 1.5 },
+  { grenade_type: "CKnife", grenade_entity_id: " 8 " },
+  { grenade_type: "CKnife", grenade_entity_id: true },
+  { grenade_type: "CKnife", grenade_entity_id: 2 ** 53 },
+  { grenade_type: "CKnife", grenade_entity_id: 8n },
 ])
   assert.throws(() => summarizeRows("grenades", [bad]), /DOMAIN_FILTER_ENTITY_ID_INVALID/);
 {
@@ -123,6 +127,37 @@ for (const bad of [
     assert.equal(result.summary.domainFilter.status, "VIOLATED", type);
     assert.deepEqual(result.diagnostics.exclusions.unclassifiedByValue, { [type]: 1 });
   }
+  // A domain row whose id is not an integer carrier explains nothing later
+  // (identical in Python): the excluded row on id 8 stays unexplained.
+  for (const domainId of ["8", null, true]) {
+    const mixed = summarizeRows("grenades", [
+      grenade("CHEGrenade", domainId, 1),
+      grenade("CKnife", 8, 2),
+    ]);
+    assert.equal(mixed.summary.domainFilter.status, "VIOLATED", String(domainId));
+  }
+  assert.equal(
+    summarizeRows("grenades", [grenade("CHEGrenade", 5.0, 1), grenade("CKnife", 5, 2)]).summary
+      .domainFilter.status,
+    "CLEAN",
+  );
+  // Explicit expectations, independent of the counters under test.
+  assert.deepEqual(
+    {
+      count: clean.diagnostics.exclusions.count,
+      unclassified: clean.diagnostics.exclusions.unclassifiedClassRows,
+      unexplained: clean.diagnostics.exclusions.unexplainedRows,
+      raw: clean.diagnostics.exclusions.rawRowCount,
+    },
+    { count: 3, unclassified: 0, unexplained: 0, raw: 5 },
+  );
+  // The chained digest of excluded rows depends on their content and order.
+  const order = (rows) => summarizeRows("grenades", rows).diagnostics.exclusions.excludedRowsDigest;
+  const base = [grenade("CHEGrenade", 5, 1), grenade("CKnife", 5, 2), grenade("CC4", 5, 3)];
+  assert.match(order(base), /^[0-9a-f]{64}$/);
+  assert.equal(order(base), order(base.map((row) => ({ ...row }))));
+  assert.notEqual(order(base), order([base[0], base[2], base[1]]));
+  assert.notEqual(order(base), order([base[0], base[1], grenade("CC4", 5, 4)]));
   // The status is part of the semantic summary: it changes the digest input.
   assert.notDeepEqual(clean.summary.domainFilter, tooLate.summary.domainFilter);
   // Tables without a declared filter are never filtered.
