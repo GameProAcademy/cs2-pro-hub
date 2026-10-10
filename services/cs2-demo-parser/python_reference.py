@@ -366,6 +366,13 @@ def main() -> int:
                 "count": evidence["count"],
                 "fullDigest": evidence["fullDigest"],
                 "samples": evidence["samples"],
+                # Retain call-contract evidence privately for the parity comparator.
+                # The public report projects only sanitized field names/counts/digests.
+                "requestedPlayerFields": evidence["requestedPlayerFields"],
+                "requestedOtherFields": evidence["requestedOtherFields"],
+                "requestEvidence": evidence["requestEvidence"],
+                "returnedFields": evidence["returnedFields"],
+                "unavailableFields": evidence["unavailableFields"],
             }
         )
 
@@ -430,6 +437,11 @@ def main() -> int:
                     "eventName": item["eventName"],
                     "count": item["count"],
                     "outputDigest": item["fullDigest"],
+                    "requestedPlayerFields": item["requestedPlayerFields"],
+                    "requestedOtherFields": item["requestedOtherFields"],
+                    "requestEvidence": item["requestEvidence"],
+                    "returnedFields": item["returnedFields"],
+                    "unavailableFields": item["unavailableFields"],
                 }
                 for item in events
             ],
