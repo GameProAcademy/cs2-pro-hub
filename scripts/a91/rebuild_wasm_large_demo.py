@@ -233,8 +233,8 @@ prost-build = "0.13.3"
     if grenade_end < 0:
         raise RuntimeError("parseGrenades function boundary not found")
     grenade_fn = source[grenade_start:grenade_end]
-    old_grenade_flag = "        parse_projectiles: false,\\n        only_header: false,"
-    new_grenade_flag = "        parse_projectiles: true,\\n        only_header: false,"
+    old_grenade_flag = "        parse_projectiles: false,\n        only_header: false,"
+    new_grenade_flag = "        parse_projectiles: true,\n        only_header: false,"
     if grenade_fn.count(old_grenade_flag) != 1:
         raise RuntimeError("parseGrenades projectile parity target not unique")
     grenade_fn = grenade_fn.replace(old_grenade_flag, new_grenade_flag, 1)
