@@ -128,7 +128,12 @@ def digest(value: Any) -> str:
 
 def normalize(value: Any) -> Any:
     """Convert pandas/numpy values to JSON values without inventing data."""
-    if value is None or isinstance(value, (str, bool, int)):
+    # pandas nullable/Arrow-backed columns expose missing scalars such as
+    # pd.NA and pd.NaT, which have no .item() method. Stringifying them as
+    # "<NA>" or "NaT" makes Python's digest differ from WASM's JSON null.
+    if value is None or type(value).__name__ in {"NAType", "NaTType"}:
+        return None
+    if isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
         return value if math.isfinite(value) else None
