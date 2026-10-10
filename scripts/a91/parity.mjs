@@ -199,8 +199,12 @@ function difference(left, right) {
 export function diagnoseRuntimeCalls(python, wasm) {
   const pythonCalls = Array.isArray(python.apiCalls) ? python.apiCalls : [];
   const wasmCalls = Array.isArray(wasm.apiCalls) ? wasm.apiCalls : [];
-  const pythonEvents = new Map((python.eventEvidence ?? []).filter((x) => x?.eventName).map((x) => [x.eventName, x]));
-  const wasmEvents = new Map((wasm.eventEvidence ?? []).filter((x) => x?.eventName).map((x) => [x.eventName, x]));
+  // Diagnostics are supplemental: malformed/missing event evidence must not crash
+  // the contract harness. Core parity still evaluates the original evidence shape.
+  const pythonEventEvidence = Array.isArray(python.eventEvidence) ? python.eventEvidence : [];
+  const wasmEventEvidence = Array.isArray(wasm.eventEvidence) ? wasm.eventEvidence : [];
+  const pythonEvents = new Map(pythonEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]));
+  const wasmEvents = new Map(wasmEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]));
   const pythonCallEvents = new Map(pythonCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
   const wasmCallEvents = new Map(wasmCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
   const eventNames = [...new Set([...pythonEvents.keys(), ...wasmEvents.keys(), ...pythonCallEvents.keys(), ...wasmCallEvents.keys()])];
