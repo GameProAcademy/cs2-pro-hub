@@ -450,7 +450,13 @@ def main() -> int:
                 }
                 for item in events
             ],
-            {"api": "parseGrenades", "status": "SUCCEEDED", "outputDigest": grenade_summary["digest"], "count": grenade_summary["count"]},
+            {
+                "api": "parseGrenades",
+                "status": "SUCCEEDED",
+                "outputDigest": grenade_summary["digest"],
+                "count": grenade_summary["count"],
+                "returnedFields": grenade_summary["returnedFields"],
+            },
             {
                 "api": "parseTicks",
                 "status": "SUCCEEDED",
@@ -460,6 +466,7 @@ def main() -> int:
                 "maxFrameTick": tick_probe["maxFrameTick"],
                 "outputDigest": tick_summary["digest"],
                 "count": tick_summary["count"],
+                "returnedFields": tick_summary["returnedFields"],
             },
             {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": player_summary["digest"], "count": player_summary["count"]},
         ],
