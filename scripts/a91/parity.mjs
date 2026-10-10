@@ -278,35 +278,42 @@ export function diagnoseRuntimeCalls(python, wasm) {
   const wc = call(wasmCalls, "parseGrenades");
   const pt = call(pythonCalls, "parseTicks");
   const wt = call(wasmCalls, "parseTicks");
-  const summarizeCall = (left, right, label) => ({
-    domain: label,
-    status:
-      left &&
-      right &&
-      left.count === right.count &&
-      left.outputDigest === right.outputDigest &&
-      (label !== "parseTicks" ||
-        (JSON.stringify(left.requestedFields ?? null) ===
-          JSON.stringify(right.requestedFields ?? null) &&
-          JSON.stringify(left.wantedTicks ?? null) === JSON.stringify(right.wantedTicks ?? null)))
-        ? "PASS"
-        : "FAIL",
-    python_count: left?.count ?? null,
-    wasm_count: right?.count ?? null,
-    python_digest: left?.outputDigest ?? null,
-    wasm_digest: right?.outputDigest ?? null,
-    requested_fields:
-      label === "parseTicks"
-        ? {
-            difference: difference(left?.requestedFields, right?.requestedFields),
-            python_wanted_ticks: left?.wantedTicks ?? null,
-            wasm_wanted_ticks: right?.wantedTicks ?? null,
-            wanted_ticks_equal:
-              JSON.stringify(left?.wantedTicks ?? null) ===
-              JSON.stringify(right?.wantedTicks ?? null),
-          }
-        : undefined,
-  });
+  const summarizeCall = (left, right, label) => {
+    const fieldDifference = difference(left?.returnedFields, right?.returnedFields);
+    const requestedFieldsEqual =
+      JSON.stringify(left?.requestedFields ?? null) ===
+      JSON.stringify(right?.requestedFields ?? null);
+    const wantedTicksEqual =
+      JSON.stringify(left?.wantedTicks ?? null) === JSON.stringify(right?.wantedTicks ?? null);
+    const countsEqual = left && right && left.count === right.count;
+    const digestsEqual = left && right && left.outputDigest === right.outputDigest;
+    const returnedFieldsEqual =
+      fieldDifference.python_only.length === 0 && fieldDifference.wasm_only.length === 0;
+    const callContractEqual =
+      label !== "parseTicks" || (requestedFieldsEqual && wantedTicksEqual);
+    return {
+      domain: label,
+      status: countsEqual && digestsEqual && returnedFieldsEqual && callContractEqual ? "PASS" : "FAIL",
+      python_count: left?.count ?? null,
+      wasm_count: right?.count ?? null,
+      python_digest: left?.outputDigest ?? null,
+      wasm_digest: right?.outputDigest ?? null,
+      returned_field_difference: fieldDifference,
+      returned_fields: {
+        python: sortedStrings(left?.returnedFields),
+        wasm: sortedStrings(right?.returnedFields),
+      },
+      requested_fields:
+        label === "parseTicks"
+          ? {
+              difference: difference(left?.requestedFields, right?.requestedFields),
+              python_wanted_ticks: left?.wantedTicks ?? null,
+              wasm_wanted_ticks: right?.wantedTicks ?? null,
+              wanted_ticks_equal: wantedTicksEqual,
+            }
+          : undefined,
+    };
+  };
   const grenade = summarizeCall(pc, wc, "parseGrenades");
   const ticks = summarizeCall(pt, wt, "parseTicks");
   const firstDivergence =
