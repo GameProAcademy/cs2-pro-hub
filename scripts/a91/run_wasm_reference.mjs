@@ -278,7 +278,9 @@ export function runWasm(path, authorization, options = {}) {
           const rawResult = parser[api](inputBytes, ...args);
           const normalizedValue = normalizeWasmValue(rawResult);
           const apiValue =
-            api === "parseEvent" ? normalizeEventRows(normalizedValue, request.eventName) : normalizedValue;
+            api === "parseEvent"
+              ? normalizeEventRows(normalizedValue, request.eventName)
+              : normalizedValue;
           const result = canonicalizeInventory(api, apiValue);
           const outputDigest = digest(result);
           calls.push({
