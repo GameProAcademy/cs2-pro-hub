@@ -55,7 +55,7 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     };
     const report = diagnoseRuntimeCalls(python, wasm);
     expect(report.grenade.status).toBe("FAIL");
-    expect(report.ticks.status).toBe("PASS"); // same output count/digest, request mismatch separately exposed
+    expect(report.ticks.status).toBe("FAIL"); // request drift is itself a parity failure
     expect(report.ticks.requested_fields.difference.python_only).toEqual(["Y"]);
     expect(report.ticks.requested_fields.difference.wasm_only).toEqual(["Z"]);
     expect(report.ticks.requested_fields.wanted_ticks_equal).toBe(false);
