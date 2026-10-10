@@ -72,3 +72,23 @@ permanently without running the parser
 durable replay must reconcile without rerunning the parser. Its effect is
 at-most-once parsing per upload attempt: a transient failure is final unless
 a new attempt is created.
+
+## Proposed fix (draft migration, not applied anywhere)
+
+`supabase/migrations/20261010190000_bound_demo_parse_redelivery.sql` replaces
+`claim_demo_parse_message` with the same body plus one guard: when a message
+is read again while its job is still `processing` and `read_ct` exceeds 2
+(the original delivery and one redelivery), the dispatch is closed the way
+`recover_stale_demo_jobs` closes a stale one — a counted retry while retries
+remain, otherwise terminal `JOB_STALE`. No table, column, grant or other
+function changes.
+
+Probe on a second disposable database with the migration applied (153
+migrations): 12 of 12 scenarios; the crashed-worker scenario now ends after
+6 deliveries (2 per dispatch × 3 dispatches) in `failed` / `JOB_STALE`, and
+every other guarantee above is unchanged.
+
+Not proven: behaviour on the managed database's pgmq version, and the effect
+on a job that legitimately needs more than two lease periods without a
+heartbeat (the worker heartbeats every 60 s against a 900 s lease, so a live
+worker never reaches the guard).
