@@ -123,6 +123,7 @@ jobs:
           tests/test_raw_evidence.py
           tests/test_raw_manifest_audit.py
           tests/test_runtime_contract.py
+          tests/test_python_reference.py
 
   f553-r11-2-execution:
     if: >-
