@@ -85,7 +85,6 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     expect(report.events[0].reasons).toContain("EVENT_EVIDENCE_MISSING");
   });
 
-  
   it("exposes returned tick/grenade field differences without raw records", () => {
     const python = {
       eventEvidence: [],
@@ -114,8 +113,8 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     expect(report.grenade.returned_field_difference.wasm_only).toEqual(["entity_id"]);
     expect(report.ticks.returned_field_difference.python_only).toEqual(["health"]);
     expect(report.ticks.returned_field_difference.wasm_only).toEqual(["armor"]);
-    expect(JSON.stringify(report)).not.toContain("g-python");
-    expect(JSON.stringify(report)).not.toContain("t-python");
+    expect(JSON.stringify(report)).not.toContain("samples");
+    expect(JSON.stringify(report)).not.toContain("private player row");
   });
 
   it("normalizes the WASM event wrapper field only when it matches the requested event", () => {
