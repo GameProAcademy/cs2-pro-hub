@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { diagnoseRuntimeCalls } from "./parity.mjs";
 
-const event = (
-  eventName,
-  count,
-  fullDigest,
-  returnedFields = ["tick", "userid"],
-) => ({
+const event = (eventName, count, fullDigest, returnedFields = ["tick", "userid"]) => ({
   eventName,
   count,
   fullDigest,
