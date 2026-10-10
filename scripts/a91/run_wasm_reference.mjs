@@ -57,6 +57,26 @@ export function normalizeWasmValue(value) {
   }
   return value;
 }
+
+/**
+ * Python parse_event returns only requested fields; the WASM wrapper exposes
+ * the same rows with a redundant event_name discriminator attached. Remove
+ * that wrapper-only column only after validating every value against the
+ * requested event, so a malformed or mixed-event result fails closed.
+ */
+export function normalizeEventRows(value, expectedEventName) {
+  if (!Array.isArray(value) || typeof expectedEventName !== "string" || !expectedEventName)
+    throw new Error("A91_WASM_EVENT_SHAPE_INVALID");
+  return value.map((row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row))
+      throw new Error("A91_WASM_EVENT_ROW_INVALID");
+    if (!Object.hasOwn(row, "event_name")) return row;
+    if (row.event_name !== expectedEventName) throw new Error("A91_WASM_EVENT_NAME_MISMATCH");
+    const semanticFields = { ...row };
+    delete semanticFields.event_name;
+    return semanticFields;
+  });
+}
 export function getHeaderProbeBytes(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 20)
     throw new Error("A91_HEADER_PREFIX_INVALID");
@@ -258,7 +278,11 @@ export function runWasm(path, authorization, options = {}) {
         try {
           const rawResult = parser[api](inputBytes, ...args);
           const normalizedValue = normalizeWasmValue(rawResult);
-          const result = canonicalizeInventory(api, normalizedValue);
+          const apiValue =
+            api === "parseEvent"
+              ? normalizeEventRows(normalizedValue, request.eventName)
+              : normalizedValue;
+          const result = canonicalizeInventory(api, apiValue);
           const outputDigest = digest(result);
           calls.push({
             api,

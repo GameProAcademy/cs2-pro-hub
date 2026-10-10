@@ -28,6 +28,17 @@ def test_normalize_handles_non_finite_values_without_inventing_numbers():
     }
 
 
+def test_normalize_maps_pandas_nullable_scalars_to_json_null():
+    import pandas as pd
+
+    assert normalize(pd.NA) is None
+    assert normalize(pd.NaT) is None
+    assert normalize({"missing": pd.NA, "not_a_time": pd.NaT}) == {
+        "missing": None,
+        "not_a_time": None,
+    }
+
+
 def test_sample_bounds_lists_recursively_and_preserves_scalar_values():
     assert sample([{"values": list(range(5))}, None, False, 4], limit=2) == [
         {"values": [0, 1]},

@@ -128,7 +128,12 @@ def digest(value: Any) -> str:
 
 def normalize(value: Any) -> Any:
     """Convert pandas/numpy values to JSON values without inventing data."""
-    if value is None or isinstance(value, (str, bool, int)):
+    # pandas nullable/Arrow-backed columns expose missing scalars such as
+    # pd.NA and pd.NaT, which have no .item() method. Stringifying them as
+    # "<NA>" or "NaT" makes Python's digest differ from WASM's JSON null.
+    if value is None or type(value).__name__ in {"NAType", "NaTType"}:
+        return None
+    if isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
         return value if math.isfinite(value) else None
@@ -445,7 +450,13 @@ def main() -> int:
                 }
                 for item in events
             ],
-            {"api": "parseGrenades", "status": "SUCCEEDED", "outputDigest": grenade_summary["digest"], "count": grenade_summary["count"]},
+            {
+                "api": "parseGrenades",
+                "status": "SUCCEEDED",
+                "outputDigest": grenade_summary["digest"],
+                "count": grenade_summary["count"],
+                "returnedFields": grenade_summary["returnedFields"],
+            },
             {
                 "api": "parseTicks",
                 "status": "SUCCEEDED",
@@ -455,6 +466,7 @@ def main() -> int:
                 "maxFrameTick": tick_probe["maxFrameTick"],
                 "outputDigest": tick_summary["digest"],
                 "count": tick_summary["count"],
+                "returnedFields": tick_summary["returnedFields"],
             },
             {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": player_summary["digest"], "count": player_summary["count"]},
         ],

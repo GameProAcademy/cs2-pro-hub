@@ -218,6 +218,27 @@ prost-build = "0.13.3"
     if old_flag not in source:
         raise RuntimeError("parseHeader parse_projectiles target not found")
     source = source.replace(old_flag, new_flag, 1)
+
+    # The pinned Python parse_grenades path enables projectile parsing, while
+    # the pinned WASM wrapper hard-codes it off. This changes the semantics of
+    # parseGrenades (the real run showed 4,550,843 Python rows vs 2,551,710 WASM
+    # rows). Scope the parity remediation to parseGrenades only; do not alter
+    # parseEvent, parseTicks or the header-only path.
+    grenade_marker = "pub fn parseGrenades("
+    grenade_start = source.find(grenade_marker)
+    if grenade_start < 0:
+        raise RuntimeError("parseGrenades source target not found")
+    next_fn_marker = "\n#[wasm_bindgen]\npub fn parseHeader("
+    grenade_end = source.find(next_fn_marker, grenade_start)
+    if grenade_end < 0:
+        raise RuntimeError("parseGrenades function boundary not found")
+    grenade_fn = source[grenade_start:grenade_end]
+    old_grenade_flag = "        parse_projectiles: false,\n        only_header: false,"
+    new_grenade_flag = "        parse_projectiles: true,\n        only_header: false,"
+    if grenade_fn.count(old_grenade_flag) != 1:
+        raise RuntimeError("parseGrenades projectile parity target not unique")
+    grenade_fn = grenade_fn.replace(old_grenade_flag, new_grenade_flag, 1)
+    source = source[:grenade_start] + grenade_fn + source[grenade_end:]
     wasm_src.write_text(source)
 
     cargo = UPSTREAM / ".cargo/config.toml"
@@ -273,6 +294,8 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
     manifest_data["buildRemediation"] = {
         "parseHeaderErrorPropagation": True,
         "parseHeaderParseProjectiles": False,
+        "parseGrenadesProjectiles": True,
+        "parseGrenadesProjectilesReason": "Mirror pinned Python parse_grenades ParserInputs; source-level A9.1 parity remediation.",
         "lazyWasmInstantProfiling": True,
         "wasmStackBytes": 8388608,
         "hermeticGeneratedSources": True,
