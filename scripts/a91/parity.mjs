@@ -289,8 +289,7 @@ export function diagnoseRuntimeCalls(python, wasm) {
     const digestsEqual = left && right && left.outputDigest === right.outputDigest;
     const returnedFieldsEqual =
       fieldDifference.python_only.length === 0 && fieldDifference.wasm_only.length === 0;
-    const callContractEqual =
-      label !== "parseTicks" || (requestedFieldsEqual && wantedTicksEqual);
+    const callContractEqual = label !== "parseTicks" || (requestedFieldsEqual && wantedTicksEqual);
     return {
       domain: label,
       status:
