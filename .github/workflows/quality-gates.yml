@@ -115,15 +115,13 @@ jobs:
           cache-dependency-path: services/cs2-demo-parser/requirements-dev.txt
       - name: Install parser dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
-      - name: Run round-boundary, output-contract and RAW evidence tests
-        run: >-
-          pytest -q
-          tests/test_adapter.py
-          tests/test_output_contract.py
-          tests/test_raw_evidence.py
-          tests/test_raw_manifest_audit.py
-          tests/test_runtime_contract.py
-          tests/test_python_reference.py
+      # No hand-maintained file list: a list silently skips whatever is not on
+      # it. Collection is proven complete first, then the whole suite runs.
+      - name: Prove every parser test file is collected
+        working-directory: ${{ github.workspace }}
+        run: python scripts/ci/verify_parser_test_collection.py
+      - name: Run the complete parser suite
+        run: pytest -q -rs
 
   f553-r11-2-execution:
     if: >-
@@ -247,3 +245,32 @@ jobs:
 # R11.2-R6 verification trigger: validate the latest committed disposable Storage diagnostic.
 
 # H3E.4 final-state proof trigger: validate post-Lovable-sync main without runtime behavior change.
+
+  # One check that is never absent on main and fails when any gate above did
+  # not SUCCEED. A skipped or cancelled gate is a failure here, so a job that
+  # stops running cannot go unnoticed. This is the single check to mark as
+  # required if branch protection is enabled for main.
+  main-required-gates:
+    if: >-
+      always() &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main'))
+    name: Main required gates
+    needs: [web-quality, contract-gate, f553-r11-2-execution]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every main gate to have succeeded
+        env:
+          WEB_QUALITY: ${{ needs.web-quality.result }}
+          CONTRACT_GATE: ${{ needs.contract-gate.result }}
+          F553_R11_2: ${{ needs.f553-r11-2-execution.result }}
+        run: |
+          set -euo pipefail
+          status=0
+          for gate in WEB_QUALITY CONTRACT_GATE F553_R11_2; do
+            result="${!gate}"
+            printf 'MAIN_GATE %s=%s\n' "$gate" "$result"
+            if [ "$result" != "success" ]; then status=1; fi
+          done
+          exit "$status"
