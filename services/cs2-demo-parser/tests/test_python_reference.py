@@ -238,3 +238,90 @@ def test_validate_rejects_missing_or_unapproved_authorization(tmp_path: Path):
 def test_no_real_demo_is_read_or_required_by_synthetic_unit_tests():
     # The tests above exercise only in-memory rows and temporary tiny files.
     assert True
+
+
+# --- canonical parity contract v1 -------------------------------------------------
+
+
+def _vector_table(name: str) -> dict:
+    vectors = json.loads(
+        (python_reference.ROOT / "scripts/a91/canonical/vectors.json").read_text(encoding="utf-8")
+    )
+    return next(item for item in vectors["tables"] if item["name"] == name)
+
+
+def test_summarize_table_on_a_real_dataframe_matches_the_shared_javascript_vector():
+    """pandas/numpy carriers (uint64 ids, float32, NaN for null) -> the JS digests."""
+    import numpy as np
+    import pandas as pd
+
+    frame = pd.DataFrame(
+        {
+            "tick": np.array([1000, 1000, 5000], dtype="int32"),
+            "steamid": np.array([76561198012345679, 76561198012345680, 0], dtype="uint64"),
+            "X": np.array([1376.0, -1972.5, np.nan], dtype="float32"),
+            # A nullable int32 column arrives from pandas as float64 with NaN.
+            "health": np.array([100.0, 0.0, np.nan], dtype="float64"),
+            "name": ["a", "b", ""],
+        }
+    )
+    summary = python_reference.summarize_table("ticks", frame)["summary"]
+    assert summary == _vector_table("identical semantics, runtime-native carriers")["expected"]
+    assert summary["columns"]["steamid"]["classes"]["u64"] == 3
+    assert summary["columns"]["health"]["classes"] == {
+        "null": 1, "bool": 0, "integer": 2, "float": 0, "string": 0, "u64": 0, "array": 0, "object": 0,
+    }
+
+
+def test_rounded_steam_id_column_fails_closed():
+    """A nullable uint64 column that pandas turned into float64 has lost digits."""
+    import numpy as np
+    import pandas as pd
+
+    frame = pd.DataFrame({"attacker_player_steamid": np.array([7.656119801234568e16, np.nan])})
+    with pytest.raises(ValueError, match="A91_CANONICAL_U64_PRECISION_LOST:attacker_player_steamid"):
+        python_reference.summarize_table("event:player_hurt", frame)
+
+
+def test_unregistered_uint64_column_fails_closed():
+    import numpy as np
+    import pandas as pd
+
+    frame = pd.DataFrame({"some_new_id": np.array([1, 2], dtype="uint64")})
+    with pytest.raises(RuntimeError, match="A91_CANONICAL_UNREGISTERED_U64_FIELD:some_new_id"):
+        python_reference.summarize_table("ticks", frame)
+
+
+def test_event_request_never_asks_for_the_property_python_returns_rounded():
+    event = {
+        "playerFields": [
+            {"field": "player_steamid", "requestAllowed": True},
+            {"field": "team_num", "requestAllowed": True},
+        ],
+        "otherFields": [],
+    }
+    assert event_request(event) == (["team_num"], [])
+
+
+def test_semantic_evidence_contains_no_call_metadata():
+    table = python_reference.summarize_table("event:round_start", [{"tick": 1}])["summary"]
+    ticks = python_reference.summarize_table("ticks", [{"tick": 0, "balance": 800}])["summary"]
+    evidence = python_reference.build_semantic_evidence(
+        header={"map_name": "de_test"},
+        events=[{"eventName": "round_start", "status": "SUCCEEDED", "table": table}],
+        grenades=python_reference.summarize_table("grenades", [])["summary"],
+        ticks=ticks,
+        tick_probe={"source": "DEM_FRAME_HEADER_SCAN", "maxFrameTick": 2},
+        requested_fields=["balance"],
+        wanted_ticks=[0],
+    )
+    assert sorted(evidence["eventEvidence"][0]) == ["eventName", "status", "table"]
+    assert evidence["roundEvidence"] == evidence["eventEvidence"]
+    assert evidence["economyEvidence"]["fields"] == ["balance"]
+    text = json.dumps(evidence)
+    for forbidden in ("requestedPlayerFields", "returnedFields", "unavailableFields", "samples"):
+        assert forbidden not in text
+    no_economy = python_reference.economy_projection(
+        python_reference.summarize_table("ticks", [{"tick": 0}])["summary"]
+    )
+    assert no_economy == {"status": "FAILED", "reason": "NO_ECONOMY_FIELDS"}

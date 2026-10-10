@@ -27,6 +27,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from scripts.a91.tick_probe import derive_tick_probe
+from scripts.a91 import canonical_schema as canonical
 FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
 SIZE = 473748061
 SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
@@ -51,12 +52,12 @@ def _ecmascript_number(value: int | float) -> str:
     if isinstance(value, int) and not isinstance(value, bool):
         if abs(value) <= 2**53 - 1:
             return str(value)
-        # JavaScript JSON.parse represents JSON numbers as IEEE-754 doubles.
-        # Mirror that conversion rather than hashing Python's wider integer.
-        try:
-            value = float(value)
-        except OverflowError as error:
-            raise ValueError("JSON_NUMBER_OUT_OF_RANGE") from error
+        # A JSON number above 2^53 cannot survive JavaScript's IEEE-754 doubles.
+        # Rounding it here (the previous behaviour) silently corrupted 64-bit
+        # identifiers such as Steam IDs. Identifiers must travel as canonical
+        # decimal strings (scripts/a91/canonical contract rule R2); anything
+        # else fails closed.
+        raise ValueError("JSON_INTEGER_PRECISION_LOSS")
     number = float(value)
     if not math.isfinite(number):
         raise ValueError("NON_FINITE_JSON_NUMBER")
@@ -282,6 +283,113 @@ def records(frame: Any) -> list[dict[str, Any]]:
     """Bounded materialization for domains known to remain small."""
     return list(iter_normalized_records(frame))
 
+U64_DTYPES = {"uint64", "UInt64", "uint64[pyarrow]"}
+
+
+def assert_u64_columns_registered(frame: Any) -> None:
+    """A 64-bit column the contract does not know about fails closed."""
+    dtypes = getattr(frame, "dtypes", None)
+    items = getattr(dtypes, "items", None)
+    if not callable(items):
+        return
+    for column, dtype in items():
+        if str(dtype) in U64_DTYPES and not canonical.is_u64_field(str(column)):
+            raise RuntimeError(f"A91_CANONICAL_UNREGISTERED_U64_FIELD:{column}")
+
+
+def iter_raw_records(frame: Any):
+    """Yield native row dicts in emission order without materializing the frame."""
+    if frame is None:
+        return
+    if isinstance(frame, list):
+        for row in frame:
+            if isinstance(row, dict):
+                yield row
+        return
+    if not callable(getattr(frame, "to_dict", None)):
+        return
+    if getattr(frame, "iloc", None) is None:
+        yield from frame.to_dict(orient="records")
+        return
+    for start in range(0, len(frame), RECORD_CHUNK_ROWS):
+        chunk = frame.iloc[start : start + RECORD_CHUNK_ROWS]
+        yield from chunk.to_dict(orient="records")
+        del chunk
+
+
+def summarize_table(name: str, frame: Any) -> dict[str, Any]:
+    """Canonical contract v1 summary of one table, in bounded memory.
+
+    Values go to the canonicalizer in their native carriers (numpy uint64 for
+    64-bit ids, float32/NaN for nullable columns); no lossy pre-normalization
+    happens on the way.
+    """
+    assert_u64_columns_registered(frame)
+    accumulator = canonical.TableAccumulator(name)
+    for row in iter_raw_records(frame):
+        accumulator.add_row(row)
+    result = accumulator.finish()
+    columns = getattr(frame, "columns", None)
+    if columns is not None and result["summary"]["rowCount"] == 0:
+        # An empty DataFrame still declares its columns; an empty row list does not.
+        result["declaredFields"] = sorted(str(column) for column in columns)
+    return result
+
+
+def economy_projection(table: dict[str, Any]) -> dict[str, Any]:
+    """Economy domain = the contract's economy columns of the tick table."""
+    fields = [field for field in canonical.CONTRACT["economyFields"] if field in table["columns"]]
+    if not fields:
+        return {"status": "FAILED", "reason": "NO_ECONOMY_FIELDS"}
+    return {
+        "status": "TICK_PROJECTION",
+        "canonicalContractVersion": table["canonicalContractVersion"],
+        "rowCount": table["rowCount"],
+        "fields": fields,
+        "columns": {field: table["columns"][field] for field in fields},
+    }
+
+
+def build_semantic_evidence(
+    *,
+    header: dict[str, Any],
+    events: list[dict[str, Any]],
+    grenades: dict[str, Any],
+    ticks: dict[str, Any],
+    tick_probe: dict[str, Any],
+    requested_fields: list[str],
+    wanted_ticks: list[int],
+) -> dict[str, Any]:
+    """Semantic evidence shared by every Python artifact.
+
+    scripts/a91/run_wasm_reference.mjs buildSemanticEvidence() must return the
+    same keys with the same shapes (contract rule R11);
+    scripts/a91/cross_runtime.check.mjs enforces it.
+    """
+    by_name = lambda predicate: [item for item in events if predicate(item["eventName"])]
+    return {
+        "headerEvidence": header,
+        "mapEvidence": {"map": header.get("map_name")},
+        "timingEvidence": {"header": header, "tickProbe": tick_probe},
+        "eventEvidence": events,
+        "roundEvidence": by_name(lambda name: name.startswith("round_")),
+        "grenadeEvidence": {"table": grenades},
+        "bombEvidence": by_name(lambda name: name.startswith("bomb_")),
+        "deathEvidence": by_name(lambda name: name == "player_death"),
+        "damageEvidence": by_name(lambda name: name == "player_hurt"),
+        "weaponEvidence": by_name(lambda name: name.startswith("weapon_") or name.startswith("item_")),
+        "economyEvidence": economy_projection(ticks),
+        "tickDomainEvidence": {
+            "tickProbeSource": tick_probe["source"],
+            "maxFrameTick": tick_probe["maxFrameTick"],
+            "requestedFields": requested_fields,
+            "wantedTicks": wanted_ticks,
+            "authoritativeDomain": False,
+            "table": ticks,
+        },
+    }
+
+
 def canonical_string_inventory(value: Any, name: str) -> list[str]:
     """Sort set-backed string inventories without changing their semantic content."""
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
@@ -289,11 +397,18 @@ def canonical_string_inventory(value: Any, name: str) -> list[str]:
     return sorted(value)
 
 
+def lossy_reference_player_fields() -> list[str]:
+    return list(canonical.CONTRACT["referenceLossyRequestFields"]["eventPlayer"])
+
+
 def event_request(event: dict[str, Any]) -> tuple[list[str], list[str]]:
+    # Contract rule R12: properties the Python binding can only deliver rounded
+    # (nullable 64-bit ids become float64) are not requested at all.
+    lossy = set(lossy_reference_player_fields())
     player = [
         item["field"]
         for item in event.get("playerFields", [])
-        if item.get("requestAllowed") is True
+        if item.get("requestAllowed") is True and item["field"] not in lossy
     ]
     other = [
         item["field"]
@@ -314,26 +429,42 @@ def tick_request(surface: dict[str, Any], limit: int = MAX_TICK_FIELDS) -> list[
 
 
 def parse_event(parser: Any, event: dict[str, Any]) -> dict[str, Any]:
+    """Return {"semantic": ..., "call": ..., "diagnostics": ...} for one event.
+
+    `semantic` has exactly the keys the WASM producer emits (contract rule R11);
+    requested/returned field lists are call evidence and live beside it.
+    """
     name = event["eventName"]
     progress("parse_event:" + name)
     player, other = event_request(event)
     frame = parser.parse_event(name, player=player, other=other)
-    summary = summarize_records(frame)
+    table = summarize_table("event:" + name, frame)
+    summary = table["summary"]
     requested = player + other
+    returned = summary["fields"] or table.get("declaredFields", [])
     return {
-        "eventName": name,
-        "status": "SUCCEEDED",
-        "requestedPlayerFields": player,
-        "requestedOtherFields": other,
-        "requestEvidence": [
-            *[item for item in event.get("playerFields", []) if item.get("requestAllowed") is True],
-            *[item for item in event.get("otherFields", []) if item.get("requestAllowed") is True],
-        ],
-        "unavailableFields": [field for field in requested if field not in summary["returnedFields"]],
-        "count": summary["count"],
-        "fullDigest": summary["digest"],
-        "returnedFields": summary["returnedFields"],
-        "samples": summary["samples"],
+        "semantic": {"eventName": name, "status": "SUCCEEDED", "table": summary},
+        "call": {
+            "api": "parseEvent",
+            "status": "SUCCEEDED",
+            "eventName": name,
+            "count": summary["rowCount"],
+            "outputDigest": summary["tableDigest"],
+            "requestedPlayerFields": player,
+            "requestedOtherFields": other,
+            "requestEvidence": [
+                *[item for item in event.get("playerFields", []) if item.get("requestAllowed") is True],
+                *[item for item in event.get("otherFields", []) if item.get("requestAllowed") is True],
+            ],
+            "returnedFields": returned,
+            "unavailableFields": [field for field in requested if field not in returned],
+            "excludedRequestFields": [
+                item["field"]
+                for item in event.get("playerFields", [])
+                if item.get("requestAllowed") is True and item["field"] in lossy_reference_player_fields()
+            ],
+        },
+        "diagnostics": table["diagnostics"],
     }
 
 
@@ -361,57 +492,83 @@ def main() -> int:
     fields = canonical_string_inventory(normalize(parser.list_updated_fields()), "UPDATED_FIELDS")
 
     events: list[dict[str, Any]] = []
+    event_calls: list[dict[str, Any]] = []
+    table_diagnostics: dict[str, Any] = {}
     progress("parse_events:start")
     for event in surface["events"]:
         evidence = parse_event(parser, event)
-        events.append(
-            {
-                "eventName": evidence["eventName"],
-                "status": evidence["status"],
-                "count": evidence["count"],
-                "fullDigest": evidence["fullDigest"],
-                "samples": evidence["samples"],
-                # Retain call-contract evidence privately for the parity comparator.
-                # The public report projects only sanitized field names/counts/digests.
-                "requestedPlayerFields": evidence["requestedPlayerFields"],
-                "requestedOtherFields": evidence["requestedOtherFields"],
-                "requestEvidence": evidence["requestEvidence"],
-                "returnedFields": evidence["returnedFields"],
-                "unavailableFields": evidence["unavailableFields"],
-            }
-        )
+        events.append(evidence["semantic"])
+        event_calls.append(evidence["call"])
+        table_diagnostics["event:" + event["eventName"]] = evidence["diagnostics"]
 
     progress("parse_grenades")
-    grenade_summary = summarize_records(parser.parse_grenades(), MAX_GRENADE_SAMPLE)
+    grenade_table = summarize_table("grenades", parser.parse_grenades())
+    grenade_summary = grenade_table["summary"]
+    table_diagnostics["grenades"] = grenade_table["diagnostics"]
     progress("scan_demo_tick_probe")
     tick_probe = derive_tick_probe(path)
     wanted_ticks = tick_probe["wantedTicks"]
     requested_fields = tick_request(surface)
     progress("parse_ticks")
-    tick_summary = summarize_records(parser.parse_ticks(requested_fields, ticks=wanted_ticks))
-    if tick_summary["count"] == 0:
+    tick_table = summarize_table("ticks", parser.parse_ticks(requested_fields, ticks=wanted_ticks))
+    tick_summary = tick_table["summary"]
+    table_diagnostics["ticks"] = tick_table["diagnostics"]
+    if tick_summary["rowCount"] == 0:
         raise RuntimeError("A91_TICK_PROBE_EMPTY")
 
     # Python has player-info support; WASM is explicitly unavailable. Keep the
     # difference explicit so parity becomes NOT_COMPARABLE rather than inferred.
     progress("parse_player_info")
-    player_summary = summarize_records(parser.parse_player_info(), 128)
+    player_summary = summarize_table("players", parser.parse_player_info())["summary"]
     progress("finalize")
 
+    # Semantic evidence only (contract rule R11): the same keys, in the same
+    # shape, as scripts/a91/run_wasm_reference.mjs. Table summaries carry the
+    # full-table digests, so determinism now covers every row, not a sample.
     normalized_result = {
         "header": header,
         "events": events,
-        "grenades": grenade_summary["samples"],
-        "ticks": tick_summary["samples"],
+        "grenades": grenade_summary,
+        "ticks": tick_summary,
         "playerIdentity": {
             "status": "AVAILABLE_ON_PYTHON",
-            "value": player_summary["samples"],
+            "value": player_summary,
         },
     }
+    api_calls = [
+        {"api": "parseHeader", "status": "SUCCEEDED", "outputDigest": digest(header)},
+        {"api": "listGameEvents", "status": "SUCCEEDED", "outputDigest": digest(inventory), "count": len(inventory)},
+        {"api": "listUpdatedFields", "status": "SUCCEEDED", "outputDigest": digest(fields), "count": len(fields)},
+        *event_calls,
+        {
+            "api": "parseGrenades",
+            "status": "SUCCEEDED",
+            "outputDigest": grenade_summary["tableDigest"],
+            "count": grenade_summary["rowCount"],
+            "returnedFields": grenade_summary["fields"],
+        },
+        {
+            "api": "parseTicks",
+            "status": "SUCCEEDED",
+            "wantedTicks": wanted_ticks,
+            "requestedFields": requested_fields,
+            "tickProbeSource": tick_probe["source"],
+            "maxFrameTick": tick_probe["maxFrameTick"],
+            "outputDigest": tick_summary["tableDigest"],
+            "count": tick_summary["rowCount"],
+            "returnedFields": tick_summary["fields"],
+        },
+        {
+            "api": "parsePlayerInfo",
+            "status": "SUCCEEDED",
+            "outputDigest": player_summary["tableDigest"],
+            "count": player_summary["rowCount"],
+        },
+    ]
 
     by_name = lambda predicate: [item for item in events if predicate(item["eventName"])]
     artifact = {
-        "artifactVersion": 2,
+        "artifactVersion": 3,
         "runtime": "PYTHON",
         "runId": f"python:{SHA}:{uuid.uuid4()}",
         "executionKind": "REAL_DEM_FULL_FILE",
@@ -426,87 +583,49 @@ def main() -> int:
         "catalogDigest": surface["catalogDigest"],
         "contractVersion": surface["contractVersion"],
         "contractDigest": surface["contractDigest"],
+        "canonicalContract": {
+            "version": canonical.CANONICAL_CONTRACT_VERSION,
+            "digest": canonical.CANONICAL_CONTRACT_DIGEST,
+        },
         "artifactIdentity": None,
         "environmentFingerprint": {
             "pythonVersion": platform.python_version(),
             "platform": platform.platform(),
         },
-        "apiCalls": [
-            {"api": "parseHeader", "status": "SUCCEEDED", "outputDigest": digest(header)},
-            {"api": "listGameEvents", "status": "SUCCEEDED", "outputDigest": digest(inventory), "count": len(inventory)},
-            {"api": "listUpdatedFields", "status": "SUCCEEDED", "outputDigest": digest(fields), "count": len(fields)},
-            *[
-                {
-                    "api": "parseEvent",
-                    "status": "SUCCEEDED",
-                    "eventName": item["eventName"],
-                    "count": item["count"],
-                    "outputDigest": item["fullDigest"],
-                    "requestedPlayerFields": item["requestedPlayerFields"],
-                    "requestedOtherFields": item["requestedOtherFields"],
-                    "requestEvidence": item["requestEvidence"],
-                    "returnedFields": item["returnedFields"],
-                    "unavailableFields": item["unavailableFields"],
-                }
-                for item in events
-            ],
-            {
-                "api": "parseGrenades",
-                "status": "SUCCEEDED",
-                "outputDigest": grenade_summary["digest"],
-                "count": grenade_summary["count"],
-                "returnedFields": grenade_summary["returnedFields"],
-            },
-            {
-                "api": "parseTicks",
-                "status": "SUCCEEDED",
-                "wantedTicks": wanted_ticks,
-                "requestedFields": requested_fields,
-                "tickProbeSource": tick_probe["source"],
-                "maxFrameTick": tick_probe["maxFrameTick"],
-                "outputDigest": tick_summary["digest"],
-                "count": tick_summary["count"],
-                "returnedFields": tick_summary["returnedFields"],
-            },
-            {"api": "parsePlayerInfo", "status": "SUCCEEDED", "outputDigest": player_summary["digest"], "count": player_summary["count"]},
-        ],
+        "apiCalls": api_calls,
         "fieldInventory": sample(fields),
         "eventInventory": sample(inventory, 1024),
         "eventInventoryDigest": digest(inventory),
-        "headerEvidence": header,
-        "mapEvidence": {"map": header.get("map_name")},
-        "timingEvidence": {"header": header, "tickProbe": tick_probe},
-        "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": player_summary["samples"]},
+        **build_semantic_evidence(
+            header=header,
+            events=events,
+            grenades=grenade_summary,
+            ticks=tick_summary,
+            tick_probe=tick_probe,
+            requested_fields=requested_fields,
+            wanted_ticks=wanted_ticks,
+        ),
+        "playerInventory": {"status": "AVAILABLE_ON_PYTHON", "value": player_summary},
         "domainAvailability": {
             "players": "AVAILABLE",
             "player_identity": "AVAILABLE",
         },
-        "eventEvidence": events,
-        "roundEvidence": by_name(lambda name: name.startswith("round_")),
-        "grenadeEvidence": grenade_summary["samples"],
-        "bombEvidence": by_name(lambda name: name.startswith("bomb_")),
-        "deathEvidence": by_name(lambda name: name == "player_death"),
-        "damageEvidence": by_name(lambda name: name == "player_hurt"),
-        "weaponEvidence": by_name(lambda name: name.startswith("weapon_") or name.startswith("item_")),
-        "economyEvidence": {"status": "BOUNDED_TICK_PROBE", "value": tick_summary["samples"]},
-        "tickDomainEvidence": {
-            "tickProbeSource": tick_probe["source"],
-            "maxFrameTick": tick_probe["maxFrameTick"],
-            "requestedFields": requested_fields,
-            "wantedTicks": wanted_ticks,
-            "authoritativeDomain": False,
-            "value": tick_summary["samples"],
-        },
+        # Private, non-semantic diagnostics (block digests, bounded samples).
+        # Used only to localize a divergence; never hashed into any gate digest.
+        "tableDiagnostics": table_diagnostics,
         "normalizedResult": normalized_result,
         "normalizedResultDigest": digest(normalized_result),
         "resultDigest": digest(normalized_result),
         "rawDigest": digest(
-            [{"api": item["eventName"], "digest": item["fullDigest"]} for item in events]
+            [
+                {"api": item["api"], "eventName": item.get("eventName"), "digest": item["outputDigest"]}
+                for item in api_calls
+            ]
         ),
         "eventDigest": digest(events),
-        "tickDigest": tick_summary["digest"],
+        "tickDigest": tick_summary["tableDigest"],
         "roundDigest": digest(by_name(lambda name: name.startswith("round_"))),
-        "playerDigest": player_summary["digest"],
+        "playerDigest": player_summary["tableDigest"],
         "durationMs": round((time.perf_counter() - started) * 1000, 3),
         "canonicalEligible": False,
         "canonicalAuthorization": False,
