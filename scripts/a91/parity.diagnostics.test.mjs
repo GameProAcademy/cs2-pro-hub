@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { diagnoseRuntimeCalls } from "./parity.mjs";
 
-const event = (eventName, count, fullDigest, returnedFields = ["tick", "userid"]) => ({
-  eventName, count, fullDigest, returnedFields,
+const event = (
+  eventName,
+  count,
+  fullDigest,
+  returnedFields = ["tick", "userid"],
+) => ({
+  eventName,
+  count,
+  fullDigest,
+  returnedFields,
 });
 const call = (api, count, outputDigest, extra = {}) => ({
-  api, status: "SUCCEEDED", count, outputDigest, ...extra,
+  api,
+  status: "SUCCEEDED",
+  count,
+  outputDigest,
+  ...extra,
 });
 
 describe("A9.1 sanitized semantic diagnostics", () => {
@@ -22,7 +34,10 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     const wasm = {
       eventEvidence: [event("round_start", 1, "a"), event("player_death", 1, "different")],
       apiCalls: [
-        call("parseEvent", 1, "a", { eventName: "round_start", returnedFields: ["tick", "userid"] }),
+        call("parseEvent", 1, "a", {
+          eventName: "round_start",
+          returnedFields: ["tick", "userid"],
+        }),
         call("parseEvent", 1, "different", { eventName: "player_death", returnedFields: ["tick"] }),
         call("parseGrenades", 4, "g"),
         call("parseTicks", 6, "t", { requestedFields: ["X", "Y"], wantedTicks: [1, 2] }),
