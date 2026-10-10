@@ -52,6 +52,19 @@ const report = {
         normalizedDigest: r.normalizedResultDigest,
         artifactIdentity: r.artifactIdentity,
         durationMs: r.durationMs,
+        // Operational figures only (bytes per API call class and the fixed
+        // stage labels of the artifact's own probe); no parser output.
+        wasmMemory: r.wasmMemoryEvidence
+          ? {
+              budgetBytes: r.wasmMemoryEvidence.budgetBytes,
+              hardLimitBytes: r.wasmMemoryEvidence.hardLimitBytes,
+              peakBytes: r.wasmMemoryEvidence.peakBytes,
+              instancePerCall: r.wasmMemoryEvidence.instancePerCall,
+              grenadeOutput: r.wasmMemoryEvidence.grenadeOutput,
+              grenadeProbe:
+                r.wasmMemoryEvidence.calls.find((c) => c.api === "parseGrenades")?.probe ?? null,
+            }
+          : null,
       })),
   },
   parity: {
