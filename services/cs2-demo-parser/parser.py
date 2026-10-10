@@ -24,6 +24,7 @@ call already in flight.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from adapter import build_raw_parser_output
@@ -84,8 +85,32 @@ _EVENT_TABLES = tuple(name for name in EVENT_CANDIDATES if name not in ("round_s
 _EVENT_OTHER_PROPS = ("total_rounds_played", "is_warmup_period", "game_time")
 
 
+# Conditions that describe the PROCESS, not the demo: resource exhaustion and
+# cancellation/shutdown. A capability handler must never record them as "this
+# stream has no data" and carry on, because downstream that is indistinguishable
+# from a demo that legitimately lacks the stream. They end the parse instead.
+# (demoparser2 Rust panics surface as pyo3 PanicException, a BaseException that
+# is NOT in this tuple: those remain capability-level evidence as before.)
+NON_DEMO_FAILURES: tuple[type[BaseException], ...] = (
+    MemoryError,
+    KeyboardInterrupt,
+    SystemExit,
+    GeneratorExit,
+    asyncio.CancelledError,
+)
+
+
+def _reraise_non_demo_failure(exc: BaseException) -> None:
+    if isinstance(exc, NON_DEMO_FAILURES):
+        raise exc
+
+
 def classify_parser_exception(exc: BaseException) -> BaseException:
     """Return a semantic demo error when there is positive evidence, else exc."""
+    if isinstance(exc, NON_DEMO_FAILURES):
+        # Never relabel resource exhaustion or cancellation as a property of
+        # the demo, whatever words its message happens to contain.
+        return exc
     message = str(exc).lower()
     if any(token in message for token in _CORRUPTED_SIGNATURES):
         return CorruptedDemoError(str(exc))
@@ -116,11 +141,13 @@ def _parse_event_with_context(
     try:
         frame = demo.parse_event(name, [], list(_EVENT_OTHER_PROPS))
         return _records(frame), None
-    except Exception:
+    except Exception as first:
+        _reraise_non_demo_failure(first)
         try:
             frame = demo.parse_event(name)
             return _records(frame), None
         except Exception as exc:
+            _reraise_non_demo_failure(exc)
             return None, exc
 
 
@@ -131,6 +158,7 @@ def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
     try:
         return {str(name) for name in method()}, None
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
         return set(EVENT_CANDIDATES), exc
 
 
@@ -153,6 +181,7 @@ def _parse_ticks(
         step = max(1, len(rows) // TICK_SAMPLE_LIMIT)
         return rows[::step][:TICK_SAMPLE_LIMIT], None
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
         return [], exc
 
 
@@ -177,6 +206,7 @@ def _discover_updated_fields(demo: Any) -> tuple[list[str], BaseException | None
                         discovered.add(value.strip())
         return sorted(discovered), None
     except BaseException as exc:  # noqa: BLE001 - retained as forensic evidence
+        _reraise_non_demo_failure(exc)
         return [], exc
 
 
@@ -220,6 +250,9 @@ def _audit_full_tick_domain(
                     interval_summaries.append(summary)
                 del rows
             except BaseException as exc:  # noqa: BLE001 - fail-closed evidence
+                # Do not keep issuing parse_ticks for the remaining intervals
+                # after the process ran out of memory or was cancelled.
+                _reraise_non_demo_failure(exc)
                 kind, message = safe_error(exc)
                 batches.append({"properties": requested, "requested_interval": [first_tick, last_tick], "row_count": 0, "ticks": [], "players": [], "error": f"{kind}: {message}"})
                 for summary in summarize_rows([], requested, error=exc):
@@ -236,6 +269,7 @@ def _parse_grenades(demo: Any) -> tuple[list[dict[str, Any]], BaseException | No
     try:
         return _records(method()), None
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
         return [], exc
 
 
@@ -522,6 +556,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["players"] = _records(demo.parse_player_info())
         raw["player_info_error"] = None
     except Exception as exc:  # noqa: BLE001 - preserved as forensic evidence
+        _reraise_non_demo_failure(exc)
         raw["players"] = []
         raw["player_info_error"] = exc
         warnings.append("player_info_unavailable")

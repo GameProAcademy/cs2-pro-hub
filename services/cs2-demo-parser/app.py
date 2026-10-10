@@ -119,7 +119,9 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             parse_ms = round((time.perf_counter() - parse_started) * 1000)
             parser_memory = parse_memory_snapshot()
         except asyncio.TimeoutError:
-            raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
+            logger.error("parser timeout failure_class=%s", E.RESOURCE_EXHAUSTED)
+            raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.",
+                              failure_class=E.RESOURCE_EXHAUSTED) from None
         except InvalidDemoError:
             raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.") from None
         except CorruptedDemoError:
@@ -129,8 +131,14 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         except WorkerError:
             raise
         except BaseException as exc:
-            logger.exception("parser internal failure: %s", type(exc).__name__)
-            raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.") from None
+            # Wire code unchanged (PARSER_ERROR). The failure class separates
+            # "ran out of memory" and "was cancelled" from "the parser failed
+            # on this demo" in the logs and on the in-process error object.
+            failure_class = E.classify_exception(exc)
+            logger.exception("parser internal failure: %s failure_class=%s",
+                             type(exc).__name__, failure_class)
+            raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.",
+                              failure_class=failure_class) from None
     finally:
         _cleanup(path)
 
