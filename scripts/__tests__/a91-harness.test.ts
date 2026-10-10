@@ -155,7 +155,9 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(finalizer).toContain("resolve(manifestPath)");
     const wasmRunner = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
     expect(wasmRunner).toContain("normalizeWasmValue(rawResult)");
-    expect(wasmRunner).toContain("canonicalizeInventory(api, normalizedValue)");
+    expect(wasmRunner).toContain("normalizeEventRows(normalizedValue, request.eventName)");
+    expect(wasmRunner).toContain("canonicalizeInventory(api, apiValue)");
+    expect(wasmRunner).not.toContain("canonicalizeInventory(api, normalizedValue)");
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
