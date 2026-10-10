@@ -1,0 +1,340 @@
+{
+  "files": {
+    "Dockerfile": {
+      "contract_pin": "efc28e8609351ee8ad8cba2cdd19a4f68b30e7ca",
+      "deployed": "efc28e8609351ee8ad8cba2cdd19a4f68b30e7ca",
+      "main": "febe09f6236a65e8ab6ff5bd6f487470db5f31ec",
+      "state": "DIFFERS"
+    },
+    "README.md": {
+      "contract_pin": "a07241b2802a9c49dfe9789bee2034e828771c83",
+      "deployed": "a07241b2802a9c49dfe9789bee2034e828771c83",
+      "main": "a07241b2802a9c49dfe9789bee2034e828771c83",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "adapter.py": {
+      "contract_pin": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+      "deployed": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+      "main": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "app.py": {
+      "contract_pin": "7995670c41ed743d98da34309546443de000cceb",
+      "deployed": "5a800e971a5b48fad594d0acaa368ac581135586",
+      "main": "e40d65e2fb734a44c49767e21794383b152b9cc0",
+      "state": "DIFFERS"
+    },
+    "capability_catalog.py": {
+      "contract_pin": "bc7cf69251cdad4c3f897b7dcaed56bdf19eab2e",
+      "deployed": "10772aa786d61593010a1d11f2fa3f7fbe274785",
+      "main": "10772aa786d61593010a1d11f2fa3f7fbe274785",
+      "state": "DIFFERS"
+    },
+    "demo_integrity.py": {
+      "contract_pin": "3cb4291d657b8cb23f12731c46742e810e01c597",
+      "deployed": "3cb4291d657b8cb23f12731c46742e810e01c597",
+      "main": "3cb4291d657b8cb23f12731c46742e810e01c597",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "docs/cache-g2-raw-coverage.md": {
+      "contract_pin": "b65738ea7c57e29705c807fef5b9a20b8bb01ca1",
+      "deployed": "b65738ea7c57e29705c807fef5b9a20b8bb01ca1",
+      "main": "b65738ea7c57e29705c807fef5b9a20b8bb01ca1",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "docs/cache-g3-independent-raw-audit.md": {
+      "contract_pin": "b2114112706b53897d7eb763faf0f63e42638342",
+      "deployed": "b2114112706b53897d7eb763faf0f63e42638342",
+      "main": "b2114112706b53897d7eb763faf0f63e42638342",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "docs/cache-g4-railway-parity-audit.md": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "4ea7c90fbe429da97a67188a59d1e121613da89f",
+      "state": "ONLY_IN_MAIN"
+    },
+    "errors.py": {
+      "contract_pin": "b7f229f52a4db55e2df255d21df14077b1e8301d",
+      "deployed": "b7f229f52a4db55e2df255d21df14077b1e8301d",
+      "main": "ec01ea96861109144e9ae603e5e20b35ae20d08e",
+      "state": "DIFFERS"
+    },
+    "forensic_audit.py": {
+      "contract_pin": "5ae0955a507a4786733830c40d8e1174dba658d4",
+      "deployed": "5ae0955a507a4786733830c40d8e1174dba658d4",
+      "main": "7ec54197cf7df9d19f8293e7fe9a39b3d3c34be1",
+      "state": "DIFFERS"
+    },
+    "h3e91_execution.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "c939f67d7fa4990e24d295690c637e2c0dc737a2",
+      "state": "ONLY_IN_MAIN"
+    },
+    "hot_payload.py": {
+      "contract_pin": "041c66a30dde55d8237b4e6b07f02375b2e09817",
+      "deployed": "041c66a30dde55d8237b4e6b07f02375b2e09817",
+      "main": "041c66a30dde55d8237b4e6b07f02375b2e09817",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "parser.py": {
+      "contract_pin": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+      "deployed": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+      "main": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "parser_child.py": {
+      "contract_pin": "ec116904e163dc322c31419a0abaf8836bf440f8",
+      "deployed": "2a7d47a48c140764beb24f445dff38cf5bd6bd49",
+      "main": null,
+      "state": "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN"
+    },
+    "parser_isolated.py": {
+      "contract_pin": "87d47d34211e628691734888888880f4ffb02177",
+      "deployed": "f3ad363d39e7ccfd3731497a992a779a6507a214",
+      "main": null,
+      "state": "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN"
+    },
+    "pytest.ini": {
+      "contract_pin": "4584de7e860925957a2daa58cfb4de8acc1e4802",
+      "deployed": "4584de7e860925957a2daa58cfb4de8acc1e4802",
+      "main": "4584de7e860925957a2daa58cfb4de8acc1e4802",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "python_reference.py": {
+      "contract_pin": "3936ab2a6c6adc778f17c631e6d2a2d8477ab7d2",
+      "deployed": "3936ab2a6c6adc778f17c631e6d2a2d8477ab7d2",
+      "main": "0c5f6eb5902519c2c475ae473d4b367d28c13e66",
+      "state": "DIFFERS"
+    },
+    "raw_artifact.py": {
+      "contract_pin": "8e52e35041cd7618655954733910d32f92835d92",
+      "deployed": "8e52e35041cd7618655954733910d32f92835d92",
+      "main": "8e52e35041cd7618655954733910d32f92835d92",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "raw_evidence.py": {
+      "contract_pin": "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
+      "deployed": "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
+      "main": "46df350b5298531ffc01409172f690ba161328de",
+      "state": "DIFFERS"
+    },
+    "raw_manifest_audit.py": {
+      "contract_pin": "f8437df672391c7889b77e4962c98b5e8c9a1119",
+      "deployed": "f8437df672391c7889b77e4962c98b5e8c9a1119",
+      "main": "f8437df672391c7889b77e4962c98b5e8c9a1119",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "requirements-dev.txt": {
+      "contract_pin": "a945ebbd124af40cf1cbf413616c8e7686d6095d",
+      "deployed": "a945ebbd124af40cf1cbf413616c8e7686d6095d",
+      "main": "a945ebbd124af40cf1cbf413616c8e7686d6095d",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "requirements.txt": {
+      "contract_pin": "c5caead735f64450ecefb07b16ffa72808409962",
+      "deployed": "c5caead735f64450ecefb07b16ffa72808409962",
+      "main": "c5caead735f64450ecefb07b16ffa72808409962",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "runtime_evidence.py": {
+      "contract_pin": null,
+      "deployed": "f9e1ec79230c5bfeae0f5a9f5dc65468f83a826b",
+      "main": "f9e1ec79230c5bfeae0f5a9f5dc65468f83a826b",
+      "state": "ONLY_IN_MAIN_AND_DEPLOYED"
+    },
+    "settings.py": {
+      "contract_pin": "35eecfb06223812137a4a2f17114aae57cb7fe54",
+      "deployed": "35eecfb06223812137a4a2f17114aae57cb7fe54",
+      "main": "35eecfb06223812137a4a2f17114aae57cb7fe54",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/conftest.py": {
+      "contract_pin": "f69a7f4e69ff18a988b8ab40d3e554312f97a40d",
+      "deployed": "f69a7f4e69ff18a988b8ab40d3e554312f97a40d",
+      "main": "05be7d4704ac134fc5baee716447f84690ed4814",
+      "state": "DIFFERS"
+    },
+    "tests/fixtures/cache_raw_audit_g2.json": {
+      "contract_pin": "9ffa812943cee3ff63c4ec97576ec59e6814fe64",
+      "deployed": "9ffa812943cee3ff63c4ec97576ec59e6814fe64",
+      "main": "9ffa812943cee3ff63c4ec97576ec59e6814fe64",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_adapter.py": {
+      "contract_pin": "b0bf3b18217c3e40ebbae2b883ff385d7a03a31d",
+      "deployed": "9716347b30dfe89c0ed854558da4d9cc84d49cdd",
+      "main": "8b958580817716749e18ebe82644176c6aa1103c",
+      "state": "DIFFERS"
+    },
+    "tests/test_contract.py": {
+      "contract_pin": "449fc1bd4de0569914ab45aa2013590380cf7f76",
+      "deployed": "449fc1bd4de0569914ab45aa2013590380cf7f76",
+      "main": "449fc1bd4de0569914ab45aa2013590380cf7f76",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_demo_integrity.py": {
+      "contract_pin": "3e585b500c092ebe11522bed7f5a337d093a823d",
+      "deployed": "3e585b500c092ebe11522bed7f5a337d093a823d",
+      "main": "3e585b500c092ebe11522bed7f5a337d093a823d",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_download.py": {
+      "contract_pin": "e9214b2206cc2f66ff59f9f2e428d81c22bb2f1e",
+      "deployed": "e9214b2206cc2f66ff59f9f2e428d81c22bb2f1e",
+      "main": "e9214b2206cc2f66ff59f9f2e428d81c22bb2f1e",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_event_capability_matrix.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "10029ecad239f220f5e4d5ad543c304b9c35ef67",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_forensic_audit_v2.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "bc5e9d07a8d1300bdca313a0dde69f93542679e2",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_h3e91_execution.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "36a9f93183b247292ffd8e63e303dee6665f77a6",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_h3e91_failure_injection.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "c23542e12261a46780813763b9efd341c4eff575",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_hot_payload.py": {
+      "contract_pin": "277ad719cc408ed7d46f0cb519b2ed36b46ed706",
+      "deployed": "277ad719cc408ed7d46f0cb519b2ed36b46ed706",
+      "main": "277ad719cc408ed7d46f0cb519b2ed36b46ed706",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_output_contract.py": {
+      "contract_pin": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
+      "deployed": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
+      "main": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_parser_semantics.py": {
+      "contract_pin": "954e2fc561f9e1a35c6ea03eb8af9572be63ebf8",
+      "deployed": "954e2fc561f9e1a35c6ea03eb8af9572be63ebf8",
+      "main": "954e2fc561f9e1a35c6ea03eb8af9572be63ebf8",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_production_image_contract.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "558e0b401022916c68444ccffd600e4655038a61",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_python_reference.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "32dc92126d69f283b1e13e6438615183310349bb",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_raw_artifact.py": {
+      "contract_pin": "aed21ea18f9dc4d14be780efaba667a91924d281",
+      "deployed": "aed21ea18f9dc4d14be780efaba667a91924d281",
+      "main": "aed21ea18f9dc4d14be780efaba667a91924d281",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_raw_evidence.py": {
+      "contract_pin": "a2c232c72eeb86c395145d6dc2f14bbd4032a1e9",
+      "deployed": "a2c232c72eeb86c395145d6dc2f14bbd4032a1e9",
+      "main": "a2c232c72eeb86c395145d6dc2f14bbd4032a1e9",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_raw_manifest_audit.py": {
+      "contract_pin": "e0c083a4276708ba1e6862f0fc242c885f4a1688",
+      "deployed": "e0c083a4276708ba1e6862f0fc242c885f4a1688",
+      "main": "e0c083a4276708ba1e6862f0fc242c885f4a1688",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_real_demo.py": {
+      "contract_pin": "84299b619cef4f8dc13042744cde79d4fa0c9ba2",
+      "deployed": "84299b619cef4f8dc13042744cde79d4fa0c9ba2",
+      "main": "84299b619cef4f8dc13042744cde79d4fa0c9ba2",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_revision.py": {
+      "contract_pin": "26fbe1e7144a6a07f05009dc0c94465d1fe2b67c",
+      "deployed": "26fbe1e7144a6a07f05009dc0c94465d1fe2b67c",
+      "main": "64f58041a16b3ac442f6a396c3c7679a5abf29bd",
+      "state": "DIFFERS"
+    },
+    "tests/test_runtime_contract.py": {
+      "contract_pin": "b7a5141f1e639e48f279480c8fcd5a3cd480bf34",
+      "deployed": "b7a5141f1e639e48f279480c8fcd5a3cd480bf34",
+      "main": "b7a5141f1e639e48f279480c8fcd5a3cd480bf34",
+      "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_runtime_evidence.py": {
+      "contract_pin": null,
+      "deployed": "c9c1061136344b85255c17a87a756456813366dd",
+      "main": "c9c1061136344b85255c17a87a756456813366dd",
+      "state": "ONLY_IN_MAIN_AND_DEPLOYED"
+    },
+    "tests/test_runtime_parity_manifest.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "80703bc798c0ee324604ffa7d6aee2f347da6473",
+      "state": "ONLY_IN_MAIN"
+    },
+    "tests/test_worker.py": {
+      "contract_pin": "58b64d3251fcafac1b55d42a6f588ae5ac82cf65",
+      "deployed": "58b64d3251fcafac1b55d42a6f588ae5ac82cf65",
+      "main": "11c986ba529cd212d0914f23e13524fccf0f6bfa",
+      "state": "DIFFERS"
+    },
+    "worker.py": {
+      "contract_pin": "dfc2e67fcb3644be91108079f9096947c16119b3",
+      "deployed": "50a53b607d26f00b4de05c5e8998611959e27bd1",
+      "main": "b28376888127c9bcc83164b944c28d92a1a336f6",
+      "state": "DIFFERS"
+    },
+    "worker_main.py": {
+      "contract_pin": "9358d8680087eb70311e65c743db2bccb43f93cb",
+      "deployed": "0369c89d07bd65ba205d411e8b63e854fc58c328",
+      "main": null,
+      "state": "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN"
+    }
+  },
+  "history": {
+    "deployed..contract_pin": {
+      "merge_base": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+      "only_left": 20,
+      "only_right": 0
+    },
+    "main..contract_pin": {
+      "merge_base": null,
+      "only_left": 956,
+      "only_right": 1120
+    },
+    "main..deployed": {
+      "merge_base": null,
+      "only_left": 956,
+      "only_right": 1140
+    }
+  },
+  "refs": {
+    "contract_pin": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+    "deployed": "91aeee853200d0f461d0d36af1781d7fdfa40941",
+    "main": "c433fcc264927ba7e0c8272b1ed89482a3a09128"
+  },
+  "summary": {
+    "DIFFERS": 12,
+    "IDENTICAL_IN_ALL": 25,
+    "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN": 3,
+    "ONLY_IN_MAIN": 9,
+    "ONLY_IN_MAIN_AND_DEPLOYED": 2
+  },
+  "tree": "services/cs2-demo-parser"
+}
