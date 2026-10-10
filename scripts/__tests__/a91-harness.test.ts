@@ -176,10 +176,13 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(finalizer).toContain("process.argv[4]");
     expect(finalizer).toContain("resolve(manifestPath)");
     const wasmRunner = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
-    expect(wasmRunner).toContain("normalizeWasmValue(rawResult)");
-    expect(wasmRunner).toContain("normalizeEventRows(normalizedValue, request.eventName)");
-    expect(wasmRunner).toContain("canonicalizeInventory(api, apiValue)");
-    expect(wasmRunner).not.toContain("canonicalizeInventory(api, normalizedValue)");
+    // Inventories are still normalized; event tables are validated row by row
+    // (event_name discriminator) while streaming into the canonical summary.
+    expect(wasmRunner).toContain("canonicalizeInventory(api, normalizeWasmValue(rawResult))");
+    expect(wasmRunner).toContain("summarizeEventRows(tableName, rawResult, request.eventName)");
+    expect(wasmRunner).toContain(
+      'if (value !== expectedEventName) throw new Error("A91_WASM_EVENT_NAME_MISMATCH")',
+    );
   });
   it("filters post-completion attestation at the workflow trigger instead of creating skipped jobs", () => {
     const workflow = readFileSync(
@@ -195,10 +198,53 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
   });
   it("keeps WASM memory access bound to initSync exports, not the wrapper closure", () => {
     const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
-    expect(source).toMatch(/const wasmExports = parser\.initSync\(wasm\);/);
+    expect(source).toMatch(/const wasmExports = context\.a91Init\(artifact\.module\);/);
     expect(source).toMatch(/return \{ parser, wasmExports \};/);
     expect(source).toMatch(/wasmExports\.memory instanceof WebAssembly\.Memory/);
     expect(source).not.toMatch(/parser\.memory/);
+  });
+
+  it("keeps the WASM memory remediation honest: fresh instance, columns, no pre-grow", () => {
+    const source = readFileSync("scripts/a91/run_wasm_reference.mjs", "utf8");
+    // The unfounded memory pre-grow workaround is gone and must not come back.
+    expect(source).not.toContain("wasm_memory_prepare");
+    expect(source).not.toContain("memory.grow(");
+    expect(source).toContain("let instance = instantiateParser(artifactHandle);");
+    expect(source).toContain('api === "parseGrenades" ? "parseGrenadesColumns" : api');
+    expect(source).toContain('throw new Error("WASM_MEMORY_BUDGET_EXCEEDED")');
+    // Projectile extraction stays enabled and is applied by the shared patch module.
+    const patches = readFileSync("scripts/a91/wasm_patches.py", "utf8");
+    expect(patches).toContain('"parseGrenadesProjectiles": True');
+    expect(patches).toContain("parse_projectiles: true,\\n        only_header: false,");
+    const rebuild = readFileSync("scripts/a91/rebuild_wasm_large_demo.py", "utf8");
+    expect(rebuild).toContain("wasm_patches.apply_all(UPSTREAM)");
+    expect(rebuild).toContain("*wasm_patches.ADDED_EXPORTS");
+    const result = spawnSync("node", ["scripts/a91/wasm_memory.check.mjs"], {
+      encoding: "utf8",
+      timeout: 60000,
+    });
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+  }, 60000);
+
+  it("keeps the public-fixture gate automatic, secret-free and unable to authorize A9.1", () => {
+    const workflow = readFileSync(".github/workflows/a91-public-fixture-gate.yml", "utf8");
+    expect(workflow).not.toContain("secrets.");
+    expect(workflow).not.toContain("A91_DEMO_URL");
+    expect(workflow).toMatch(/permissions:\s*\n\s+contents:\s*read/);
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).toContain("run: python scripts/a91/public_fixture_gate.py");
+    const gate = readFileSync("scripts/a91/public_fixture_gate.py", "utf8");
+    expect(gate).toContain("A91_PUBLIC_FIXTURE_GATE_REFUSES_REAL_DEM_INPUTS");
+    expect(gate).not.toContain("execute.py");
+    expect(gate).not.toContain("furia-vs-gamerlegion");
+    const report = readFileSync("scripts/a91/public_fixture_report.mjs", "utf8");
+    expect(report).toContain("test_fixture_only: true");
+    expect(report).toContain("proves_real_demo: false");
+    expect(report).toContain('realDecision.reason === "REAL_EXECUTION_NOT_PROVEN"');
+    // The manual real-DEM workflow keeps its trigger and its own entry point.
+    const real = readFileSync(".github/workflows/a91-real-dem-gate.yml", "utf8");
+    expect(real).not.toMatch(/^\s+(push|pull_request):/m);
+    expect(real).not.toContain("public_fixture");
   });
 
   it("never tracks a DEM file", () => {

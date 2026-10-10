@@ -11,6 +11,7 @@ import sys
 import tempfile
 import platform
 import threading
+import time
 from importlib.metadata import version
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +26,7 @@ ALLOWED = {"a91_real_dem_report.json", "parity_report.json", "determinism_report
 MAX_REPORT_BYTES = 8 * 1024 * 1024
 MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES = 256 * 1024 * 1024
 MAX_PRIVATE_STDERR_BYTES = 1024 * 1024
-WASM_REASONS = {"WASM_RUNTIME_RESOURCE_FAILURE", "WASM_MEMORY_ALLOCATION_FAILURE",
+WASM_REASONS = {"WASM_RUNTIME_RESOURCE_FAILURE", "WASM_MEMORY_ALLOCATION_FAILURE", "WASM_MEMORY_BUDGET_EXCEEDED",
     "WASM_RUNTIME_TRAP", "WASM_PARSE_FAILURE", "WASM_PRIVATE_EVIDENCE_TOO_LARGE",
     "A91_DEMO_FRAME_SCAN_INVALID", "A91_TICK_PROBE_RANGE_MISSING", "A91_TICK_PROBE_EMPTY",
     "WASM_ARTIFACT_IDENTITY_MISMATCH", "UNSUPPORTED_WASM_API", "CATALOG_MISMATCH",
@@ -223,6 +224,34 @@ def run(command, output=None, stdin=None, diagnostics=None):
     return rc
 
 
+WASM_PROBE_STAGES = {"not_entered", "entered_input_copied", "parsed_columns_built",
+                     "rows_materialized", "serialized_to_js", "unknown"}
+WASM_PROBE_NUMBERS = ("rows", "bytesNow", "bytesAfterInputCopy", "bytesAfterParse",
+                      "bytesAfterRowMaterialization", "bytesAfterSerialization")
+
+
+def sanitize_wasm_probe(value):
+    """Project the artifact's stage/memory probe to a fixed label plus bounded integers."""
+    if not isinstance(value, dict) or value.get("lastStage") not in WASM_PROBE_STAGES:
+        return None
+    probe = {"lastStage": value["lastStage"]}
+    for key in WASM_PROBE_NUMBERS:
+        item = value.get(key)
+        if item is None:
+            probe[key] = None
+        elif isinstance(item, int) and not isinstance(item, bool) and 0 <= item <= 2**32:
+            probe[key] = item
+        else:
+            return None
+    return probe
+
+
+def stage_mark(stage, started):
+    # Stage name and elapsed seconds only: keeps long child runs observable in
+    # the Actions log without exposing any input or parser output.
+    print(f"A91_STAGE_START stage={stage} elapsed_s={time.monotonic() - started:.0f}", flush=True)
+
+
 def download(path, url):
     # Curl reads the URL from stdin, never argv, disk, or child environment.
     escaped = url.replace("\\", "\\\\").replace('"', '\\"')
@@ -356,6 +385,7 @@ def main():
     stage = "inputs"
     failed_target = None
     failed_diagnostics = None
+    gate_started = time.monotonic()
     try:
         url = inputs(os.environ)
         if os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch" or os.environ.get("GITHUB_REF") != "refs/heads/main":
@@ -393,6 +423,7 @@ def main():
 
         for index in (1, 2):
             stage = f"python_run_{index}"
+            stage_mark(stage, gate_started)
             target = temporary / f"python_run_{index}.json"
             failed_target = target
             failed_diagnostics = temporary / f"python_run_{index}_diagnostics.json"
@@ -405,10 +436,11 @@ def main():
                 raise ValueError("RESULT_DIGEST_INVALID")
         for index in (1, 2):
             stage = f"wasm_run_{index}"
+            stage_mark(stage, gate_started)
             failed_target = temporary / f"wasm_run_{index}.json"
             failed_diagnostics = temporary / f"wasm_run_{index}_diagnostics.json"
             wasm_command = [
-                "node", "--max-old-space-size=6144", "scripts/a91/run_wasm_reference.mjs",
+                "node", "--expose-gc", "--max-old-space-size=6144", "scripts/a91/run_wasm_reference.mjs",
                 "--demo", str(demo), "--authorization", str(auth_path), "--output", str(failed_target),
             ]
             wasm_dir = os.environ.get("A91_WASM_ARTIFACT_DIR", "").strip()
@@ -424,6 +456,7 @@ def main():
             evidence = json.loads(failed_target.read_text())
             _assert_safe_evidence_values(evidence, url, urlsplit(url).hostname)
         stage = "parity"
+        stage_mark(stage, gate_started)
         failed_target = None
         failed_diagnostics = temporary / "parity_diagnostics.json"
         # Always evaluate both gates, even if parity fails. Determinism is independent.
@@ -496,6 +529,9 @@ def main():
                         value = failure.get(key)
                         if value is not None:
                             failure_metadata[key] = value
+                    probe = sanitize_wasm_probe(failure.get("wasmProbe"))
+                    if probe is not None:
+                        failure_metadata["wasmProbe"] = probe
                 except Exception:
                     pass
         try:

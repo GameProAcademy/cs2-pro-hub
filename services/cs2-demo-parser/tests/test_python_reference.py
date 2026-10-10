@@ -207,9 +207,54 @@ def test_reference_rejects_wrong_content_digest_after_metadata_gate(tmp_path: Pa
         "filename": path.name,
         "sha256": "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
         "sizeBytes": 473748061,
+        "authorizationRef": "A9.1-M1-CACHE-REAL-DEM",
     }
     with pytest.raises(RuntimeError, match="A91_DEM_SHA256_MISMATCH"):
         validate(path, authorization)
+    # The authorization reference selects the profile; without it nothing is authorized.
+    with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+        validate(path, {k: v for k, v in authorization.items() if k != "authorizationRef"})
+
+
+def test_public_fixture_profile_is_separate_and_marked_test_only(tmp_path: Path, monkeypatch):
+    from types import SimpleNamespace
+    from python_reference import PROFILES
+
+    public_ref = "A9.1-PUBLIC-FIXTURE-DEMOPARSER-TEST-DEMO"
+    public = PROFILES[public_ref]
+    real = PROFILES["A9.1-M1-CACHE-REAL-DEM"]
+    assert public["testFixtureOnly"] is True and real["testFixtureOnly"] is False
+    assert public["executionKind"] == "PUBLIC_FIXTURE_FULL_FILE"
+    assert real["executionKind"] == "REAL_DEM_FULL_FILE"
+    assert public["sha"] != real["sha"] and public["size"] != real["size"]
+
+    path = tmp_path / "test_demo.dem"
+    path.write_bytes(b"not-the-public-fixture")
+    real_stat = path.stat
+    monkeypatch.setattr(
+        type(path), "stat",
+        lambda self, *a, **k: SimpleNamespace(st_size=public["size"], st_mode=real_stat(*a, **k).st_mode),
+    )
+    authorization = {
+        "authorizedDemo": True,
+        "source": "LOCAL_FILE",
+        "provenance": "LOCAL_FILE",
+        "filename": path.name,
+        "sha256": public["sha"],
+        "sizeBytes": public["size"],
+        "authorizationRef": public_ref,
+    }
+    # Metadata matches the public profile, so the content digest is what rejects it.
+    with pytest.raises(RuntimeError, match="A91_DEM_SHA256_MISMATCH"):
+        validate(path, authorization)
+    # Profiles never mix: public bytes under the real reference, or the reverse.
+    for crossed in (
+        {**authorization, "authorizationRef": "A9.1-M1-CACHE-REAL-DEM"},
+        {**authorization, "sha256": real["sha"]},
+        {**authorization, "authorizationRef": "A9.1-UNKNOWN"},
+    ):
+        with pytest.raises(RuntimeError, match="AUTHORIZED_DEM_METADATA_MISMATCH"):
+            validate(path, crossed)
 
 
 def test_validate_fails_closed_for_non_dem_path(tmp_path: Path):
