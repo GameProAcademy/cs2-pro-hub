@@ -203,7 +203,7 @@ export function diagnoseRuntimeCalls(python, wasm) {
   const wasmEvents = new Map((wasm.eventEvidence ?? []).filter((x) => x?.eventName).map((x) => [x.eventName, x]));
   const pythonCallEvents = new Map(pythonCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
   const wasmCallEvents = new Map(wasmCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
-  const eventNames = [...new Set([...pythonEvents.keys(), ...wasmEvents.keys(), ...pythonCallEvents.keys(), ...wasmCallEvents.keys()])].sort();
+  const eventNames = [...new Set([...pythonEvents.keys(), ...wasmEvents.keys(), ...pythonCallEvents.keys(), ...wasmCallEvents.keys()])];
   const events = eventNames.map((eventName) => {
     const pe = pythonEvents.get(eventName) ?? {};
     const we = wasmEvents.get(eventName) ?? {};
@@ -241,7 +241,7 @@ export function diagnoseRuntimeCalls(python, wasm) {
   const wt = call(wasmCalls, "parseTicks");
   const summarizeCall = (left, right, label) => ({
     domain: label,
-    status: left && right && left.count === right.count && left.outputDigest === right.outputDigest ? "PASS" : "FAIL",
+    status: left && right && left.count === right.count && left.outputDigest === right.outputDigest && (label !== "parseTicks" || (JSON.stringify(left.requestedFields ?? null) === JSON.stringify(right.requestedFields ?? null) && JSON.stringify(left.wantedTicks ?? null) === JSON.stringify(right.wantedTicks ?? null))) ? "PASS" : "FAIL",
     python_count: left?.count ?? null, wasm_count: right?.count ?? null,
     python_digest: left?.outputDigest ?? null, wasm_digest: right?.outputDigest ?? null,
     requested_fields: label === "parseTicks" ? {
