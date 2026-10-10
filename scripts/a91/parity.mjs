@@ -288,8 +288,7 @@ export function diagnoseRuntimeCalls(python, wasm) {
       (label !== "parseTicks" ||
         (JSON.stringify(left.requestedFields ?? null) ===
           JSON.stringify(right.requestedFields ?? null) &&
-          JSON.stringify(left.wantedTicks ?? null) ===
-          JSON.stringify(right.wantedTicks ?? null)))
+          JSON.stringify(left.wantedTicks ?? null) === JSON.stringify(right.wantedTicks ?? null)))
         ? "PASS"
         : "FAIL",
     python_count: left?.count ?? null,
