@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { diagnoseRuntimeCalls } from "./parity.mjs";
+import { normalizeEventRows } from "./run_wasm_reference.mjs";
 
 const event = (eventName, count, fullDigest, returnedFields = ["tick", "userid"]) => ({
   eventName,
@@ -115,5 +116,32 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     expect(report.ticks.returned_field_difference.wasm_only).toEqual(["armor"]);
     expect(JSON.stringify(report)).not.toContain("g-python");
     expect(JSON.stringify(report)).not.toContain("t-python");
+  });
+
+  it("normalizes the WASM event wrapper field only when it matches the requested event", () => {
+    expect(
+      normalizeEventRows(
+        [
+          { event_name: "player_death", tick: 20, userid: 3 },
+          { event_name: "player_death", tick: 21, userid: 4 },
+        ],
+        "player_death",
+      ),
+    ).toEqual([
+      { tick: 20, userid: 3 },
+      { tick: 21, userid: 4 },
+    ]);
+    expect(normalizeEventRows([{ tick: 20, userid: 3 }], "player_death")).toEqual([
+      { tick: 20, userid: 3 },
+    ]);
+    expect(() =>
+      normalizeEventRows([{ event_name: "round_start", tick: 1 }], "player_death"),
+    ).toThrow("A91_WASM_EVENT_NAME_MISMATCH");
+    expect(() => normalizeEventRows([null], "player_death")).toThrow(
+      "A91_WASM_EVENT_ROW_INVALID",
+    );
+    expect(() => normalizeEventRows({}, "player_death")).toThrow(
+      "A91_WASM_EVENT_SHAPE_INVALID",
+    );
   });
 });
