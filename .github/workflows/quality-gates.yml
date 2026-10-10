@@ -124,6 +124,8 @@ jobs:
           tests/test_raw_manifest_audit.py
           tests/test_runtime_contract.py
           tests/test_python_reference.py
+          tests/test_non_demo_failures.py
+          tests/test_parser_semantics.py
 
   f553-r11-2-execution:
     if: >-
