@@ -184,7 +184,11 @@ export function validParityComparisons(comparisons) {
   );
 }
 function sortedStrings(values) {
-  return [...new Set(Array.isArray(values) ? values.filter((value) => typeof value === "string") : [])].sort();
+  return [
+    ...new Set(
+      Array.isArray(values) ? values.filter((value) => typeof value === "string") : [],
+    ),
+  ].sort();
 }
 function difference(left, right) {
   const a = sortedStrings(left);
@@ -203,11 +207,34 @@ export function diagnoseRuntimeCalls(python, wasm) {
   // the contract harness. Core parity still evaluates the original evidence shape.
   const pythonEventEvidence = Array.isArray(python.eventEvidence) ? python.eventEvidence : [];
   const wasmEventEvidence = Array.isArray(wasm.eventEvidence) ? wasm.eventEvidence : [];
-  const pythonEvents = new Map(pythonEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]));
-  const wasmEvents = new Map(wasmEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]));
-  const pythonCallEvents = new Map(pythonCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
-  const wasmCallEvents = new Map(wasmCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]));
-  const eventNames = [...new Set([...pythonEvents.keys(), ...wasmEvents.keys(), ...pythonCallEvents.keys(), ...wasmCallEvents.keys()])];
+  const pythonEvents = new Map(
+    pythonEventEvidence
+      .filter((x) => x?.eventName)
+      .map((x) => [x.eventName, x]),
+  );
+  const wasmEvents = new Map(
+    wasmEventEvidence
+      .filter((x) => x?.eventName)
+      .map((x) => [x.eventName, x]),
+  );
+  const pythonCallEvents = new Map(
+    pythonCalls
+      .filter((x) => x?.api === "parseEvent" && x.eventName)
+      .map((x) => [x.eventName, x]),
+  );
+  const wasmCallEvents = new Map(
+    wasmCalls
+      .filter((x) => x?.api === "parseEvent" && x.eventName)
+      .map((x) => [x.eventName, x]),
+  );
+  const eventNames = [
+    ...new Set([
+      ...pythonEvents.keys(),
+      ...wasmEvents.keys(),
+      ...pythonCallEvents.keys(),
+      ...wasmCallEvents.keys(),
+    ]),
+  ];
   const events = eventNames.map((eventName) => {
     const pe = pythonEvents.get(eventName) ?? {};
     const we = wasmEvents.get(eventName) ?? {};
@@ -221,21 +248,39 @@ export function diagnoseRuntimeCalls(python, wasm) {
     const pythonDigest = pe.fullDigest ?? pc.outputDigest ?? null;
     const wasmDigest = we.fullDigest ?? wc.outputDigest ?? null;
     const requestDifference = {
-      player: difference(pe.requestedPlayerFields ?? pc.requestedPlayerFields, we.requestedPlayerFields ?? wc.requestedPlayerFields),
-      other: difference(pe.requestedOtherFields ?? pc.requestedOtherFields, we.requestedOtherFields ?? wc.requestedOtherFields),
+      player: difference(
+        pe.requestedPlayerFields ?? pc.requestedPlayerFields,
+        we.requestedPlayerFields ?? wc.requestedPlayerFields,
+      ),
+      other: difference(
+        pe.requestedOtherFields ?? pc.requestedOtherFields,
+        we.requestedOtherFields ?? wc.requestedOtherFields,
+      ),
     };
     const reasons = [];
     if (pythonCount !== wasmCount) reasons.push("ROW_COUNT_MISMATCH");
     if (pythonDigest !== wasmDigest) reasons.push("OUTPUT_DIGEST_MISMATCH");
-    if (fieldDifference.python_only.length || fieldDifference.wasm_only.length) reasons.push("RETURNED_FIELD_SET_MISMATCH");
-    if (requestDifference.player.python_only.length || requestDifference.player.wasm_only.length ||
-        requestDifference.other.python_only.length || requestDifference.other.wasm_only.length) reasons.push("REQUEST_FIELD_SET_MISMATCH");
-    if (!pythonEvents.has(eventName) || !wasmEvents.has(eventName)) reasons.push("EVENT_EVIDENCE_MISSING");
+    if (fieldDifference.python_only.length || fieldDifference.wasm_only.length)
+      reasons.push("RETURNED_FIELD_SET_MISMATCH");
+    if (
+      requestDifference.player.python_only.length ||
+      requestDifference.player.wasm_only.length ||
+      requestDifference.other.python_only.length ||
+      requestDifference.other.wasm_only.length
+    )
+      reasons.push("REQUEST_FIELD_SET_MISMATCH");
+    if (!pythonEvents.has(eventName) || !wasmEvents.has(eventName))
+      reasons.push("EVENT_EVIDENCE_MISSING");
     return {
-      event_name: eventName, status: reasons.length ? "FAIL" : "PASS", reasons,
-      python_count: pythonCount, wasm_count: wasmCount,
-      python_digest: pythonDigest, wasm_digest: wasmDigest,
-      returned_field_difference: fieldDifference, requested_field_difference: requestDifference,
+      event_name: eventName,
+      status: reasons.length ? "FAIL" : "PASS",
+      reasons,
+      python_count: pythonCount,
+      wasm_count: wasmCount,
+      python_digest: pythonDigest,
+      wasm_digest: wasmDigest,
+      returned_field_difference: fieldDifference,
+      requested_field_difference: requestDifference,
     };
   });
   const call = (calls, api) => calls.find((item) => item?.api === api) ?? null;
@@ -245,27 +290,54 @@ export function diagnoseRuntimeCalls(python, wasm) {
   const wt = call(wasmCalls, "parseTicks");
   const summarizeCall = (left, right, label) => ({
     domain: label,
-    status: left && right && left.count === right.count && left.outputDigest === right.outputDigest && (label !== "parseTicks" || (JSON.stringify(left.requestedFields ?? null) === JSON.stringify(right.requestedFields ?? null) && JSON.stringify(left.wantedTicks ?? null) === JSON.stringify(right.wantedTicks ?? null))) ? "PASS" : "FAIL",
-    python_count: left?.count ?? null, wasm_count: right?.count ?? null,
-    python_digest: left?.outputDigest ?? null, wasm_digest: right?.outputDigest ?? null,
-    requested_fields: label === "parseTicks" ? {
-      difference: difference(left?.requestedFields, right?.requestedFields),
-      python_wanted_ticks: left?.wantedTicks ?? null, wasm_wanted_ticks: right?.wantedTicks ?? null,
-      wanted_ticks_equal: JSON.stringify(left?.wantedTicks ?? null) === JSON.stringify(right?.wantedTicks ?? null),
-    } : undefined,
+    status:
+      left &&
+      right &&
+      left.count === right.count &&
+      left.outputDigest === right.outputDigest &&
+      (label !== "parseTicks" ||
+        (JSON.stringify(left.requestedFields ?? null) ===
+          JSON.stringify(right.requestedFields ?? null) &&
+          JSON.stringify(left.wantedTicks ?? null) ===
+            JSON.stringify(right.wantedTicks ?? null)))
+        ? "PASS"
+        : "FAIL",
+    python_count: left?.count ?? null,
+    wasm_count: right?.count ?? null,
+    python_digest: left?.outputDigest ?? null,
+    wasm_digest: right?.outputDigest ?? null,
+    requested_fields:
+      label === "parseTicks"
+        ? {
+            difference: difference(left?.requestedFields, right?.requestedFields),
+            python_wanted_ticks: left?.wantedTicks ?? null,
+            wasm_wanted_ticks: right?.wantedTicks ?? null,
+            wanted_ticks_equal:
+              JSON.stringify(left?.wantedTicks ?? null) ===
+              JSON.stringify(right?.wantedTicks ?? null),
+          }
+        : undefined,
   });
   const grenade = summarizeCall(pc, wc, "parseGrenades");
   const ticks = summarizeCall(pt, wt, "parseTicks");
-  const firstDivergence = events.find((event) => event.status === "FAIL") ?? [grenade, ticks].find((item) => item.status === "FAIL") ?? null;
+  const firstDivergence =
+    events.find((event) => event.status === "FAIL") ??
+    [grenade, ticks].find((item) => item.status === "FAIL") ??
+    null;
   return {
     schema_version: 1,
     evidence_policy: "SANITIZED_CALL_DIAGNOSTICS_ONLY_NO_RAW_RECORDS",
     event_count: events.length,
     event_pass_count: events.filter((event) => event.status === "PASS").length,
     event_fail_count: events.filter((event) => event.status === "FAIL").length,
-    first_divergence: firstDivergence ? { domain: firstDivergence.event_name ?? firstDivergence.domain, reasons: firstDivergence.reasons ?? [firstDivergence.status] } : null,
+    first_divergence: firstDivergence
+      ? {
+          domain: firstDivergence.event_name ?? firstDivergence.domain,
+          reasons: firstDivergence.reasons ?? [firstDivergence.status],
+        }
+      : null,
     events,
-    grenade: grenade,
+    grenade,
     ticks,
     runtime_api_inventory: {
       python_api_names: sortedStrings(pythonCalls.map((item) => item.api)),
