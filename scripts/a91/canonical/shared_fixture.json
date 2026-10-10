@@ -1,0 +1,36 @@
+{
+  "fixtureVersion": 1,
+  "description": "Synthetic cross-runtime fixture. Values are tagged like canonical/vectors.json so each runtime receives its NATIVE carriers (Python int for 64-bit ids, JavaScript decimal strings). Synthetic data proves the comparator and the two canonicalizers; it is never evidence about a real demo.",
+  "header": { "map_name": "de_synthetic", "server_name": "fixture", "network_protocol": "14000" },
+  "tickProbe": { "source": "DEM_FRAME_HEADER_SCAN", "maxFrameTick": 400, "wantedTicks": [0, 200, 399], "frameCount": 401, "authoritativeDomain": false },
+  "requestedFields": ["X", "health", "balance"],
+  "events": {
+    "player_death": [
+      { "tick": 100, "user_name": "alpha", "user_steamid": "76561198012345679", "attacker_name": "bravo", "attacker_steamid": "76561198012345680", "assister_steamid": { "$": "f64", "v": "NaN" }, "assister_name": { "$": "f64", "v": "NaN" }, "headshot": true, "distance": { "$": "f64", "v": "12.5" }, "dmg_health": 100, "weapon": "ak47" },
+      { "tick": 150, "user_name": "bravo", "user_steamid": "76561198012345680", "attacker_name": "alpha", "attacker_steamid": "76561198012345679", "assister_steamid": "76561198012345681", "assister_name": "charlie", "headshot": false, "distance": { "$": "f64", "v": "7" }, "dmg_health": 0, "weapon": "" }
+    ],
+    "player_hurt": [
+      { "tick": 99, "user_steamid": "76561198012345679", "attacker_steamid": "76561198012345680", "dmg_health": 27, "hitgroup": "chest" },
+      { "tick": 99, "user_steamid": "76561198012345679", "attacker_steamid": "76561198012345680", "dmg_health": 27, "hitgroup": "chest" },
+      { "tick": 100, "user_steamid": "76561198012345679", "attacker_steamid": "76561198012345680", "dmg_health": 73, "hitgroup": "head" }
+    ],
+    "round_start": [{ "tick": 1, "round": 1, "timelimit": 115 }],
+    "round_end": [{ "tick": 390, "round": 1, "winner": "CT", "reason": "ct_killed" }],
+    "bomb_planted": [],
+    "weapon_fire": [
+      { "tick": 98, "user_steamid": "76561198012345680", "weapon": "weapon_ak47", "silenced": false },
+      { "tick": 99, "user_steamid": "76561198012345680", "weapon": "weapon_ak47", "silenced": false }
+    ]
+  },
+  "grenades": [
+    { "grenade_type": "CSmokeGrenadeProjectile", "grenade_entity_id": 211, "x": { "$": "f64", "v": "-388.875" }, "y": { "$": "f64", "v": "1295.46875" }, "z": { "$": "f64", "v": "-5120" }, "tick": 120, "steamid": { "$": "u64", "v": "76561198012345679" }, "name": "alpha" },
+    { "grenade_type": "CSmokeGrenadeProjectile", "grenade_entity_id": 211, "x": { "$": "f64", "v": "-380.5" }, "y": { "$": "f64", "v": "1290.25" }, "z": { "$": "f64", "v": "-5100" }, "tick": 121, "steamid": { "$": "u64", "v": "76561198012345679" }, "name": "alpha" },
+    { "grenade_type": "CFlashbang", "grenade_entity_id": 305, "x": { "$": "f64", "v": "NaN" }, "y": { "$": "f64", "v": "NaN" }, "z": { "$": "f64", "v": "NaN" }, "tick": 121, "steamid": { "$": "u64", "v": "76561198012345680" }, "name": "bravo" }
+  ],
+  "ticks": [
+    { "tick": 0, "steamid": { "$": "u64", "v": "76561198012345679" }, "name": "alpha", "X": { "$": "f64", "v": "1376" }, "health": 100, "balance": 800 },
+    { "tick": 0, "steamid": { "$": "u64", "v": "76561198012345680" }, "name": "bravo", "X": { "$": "f64", "v": "-1972.03125" }, "health": 100, "balance": 800 },
+    { "tick": 200, "steamid": { "$": "u64", "v": "76561198012345679" }, "name": "alpha", "X": { "$": "f64", "v": "1400.5" }, "health": 0, "balance": 0 },
+    { "tick": 200, "steamid": { "$": "u64", "v": "76561198012345680" }, "name": "bravo", "X": { "$": "f64", "v": "-1900" }, "health": 43, "balance": 3250 }
+  ]
+}
