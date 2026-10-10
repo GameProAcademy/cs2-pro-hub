@@ -300,3 +300,17 @@ test("parity proof cannot omit, duplicate, forge or relabel any dimension", () =
   );
   assert.deepEqual(compareDomains(s.runs[0], s.runs[2]), s.parity.comparisons);
 });
+
+test("semantic diagnostics tolerate non-array event evidence", () => {
+  const s = setup();
+  assert.doesNotThrow(() => parityReport(s.runs[0], s.runs[2], FIXTURE.sha256));
+  assert.equal(s.parity.status, "PASS");
+  assert.equal(s.parity.semantic_diagnostics.event_count, 0);
+  assert.equal(s.parity.semantic_diagnostics.event_fail_count, 0);
+  // Synthetic contract fixtures must still be unable to authorize real execution.
+  const decision = decide(s.runs, s.parity, s.determinism, surface, manifest);
+  assert.equal(decision.status, "FAIL");
+  assert.equal(decision.reason, "REAL_EXECUTION_NOT_PROVEN");
+  assert.equal(decision.canonicalEligible, false);
+  assert.equal(decision.productionAuthorization, false);
+});
