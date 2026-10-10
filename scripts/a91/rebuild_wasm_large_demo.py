@@ -228,7 +228,7 @@ prost-build = "0.13.3"
     grenade_start = source.find(grenade_marker)
     if grenade_start < 0:
         raise RuntimeError("parseGrenades source target not found")
-    next_fn_marker = "\\n#[wasm_bindgen]\\npub fn parseHeader("
+    next_fn_marker = "\n#[wasm_bindgen]\npub fn parseHeader("
     grenade_end = source.find(next_fn_marker, grenade_start)
     if grenade_end < 0:
         raise RuntimeError("parseGrenades function boundary not found")
