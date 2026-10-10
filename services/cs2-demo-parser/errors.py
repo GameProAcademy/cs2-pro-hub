@@ -86,17 +86,95 @@ class WorkerConfigurationError(RuntimeError):
     """
 
 
+# --- internal failure classes (NOT wire codes) -----------------------------
+# What kind of failure happened, independent of the wire code the APP sees.
+# The wire protocol is unchanged: each class maps onto an EXISTING code below,
+# and the class itself travels only in server-side logs and on the in-process
+# WorkerError object. Promoting a class to the wire (for example emitting a
+# dedicated code for RESOURCE_EXHAUSTED) is a coordinated worker + APP change
+# and is deliberately not done here. See docs/PARSER_FAILURE_TAXONOMY.md.
+NO_DATA = "NO_DATA"  # the demo does not contain the stream; never an error
+PARSER_FAILURE = "PARSER_FAILURE"  # the parser failed on this demo/capability
+RESOURCE_EXHAUSTED = "RESOURCE_EXHAUSTED"  # memory or time ran out
+CANCELLED = "CANCELLED"  # shutdown or cancellation interrupted the work
+INVALID_OUTPUT = "INVALID_OUTPUT"  # output outside the declared contract
+
+FAILURE_CLASSES: tuple[str, ...] = (
+    NO_DATA,
+    PARSER_FAILURE,
+    RESOURCE_EXHAUSTED,
+    CANCELLED,
+    INVALID_OUTPUT,
+)
+
+# Existing wire code used for each failure class. NO_DATA has none: it is a
+# capability state (NOT_PRESENT_IN_DEMO / AVAILABLE_BUT_EMPTY), not a failure.
+FAILURE_CLASS_WIRE_CODE: dict[str, str] = {
+    PARSER_FAILURE: PARSER_ERROR,
+    RESOURCE_EXHAUSTED: PARSER_ERROR,
+    CANCELLED: PARSER_ERROR,
+    INVALID_OUTPUT: PARSER_ERROR,
+}
+
+# POSIX signals that end a parser child, by what they mean for the job.
+_SIGNAL_CLASS: dict[int, str] = {
+    9: RESOURCE_EXHAUSTED,  # SIGKILL: what the kernel/cgroup OOM killer sends
+    24: RESOURCE_EXHAUSTED,  # SIGXCPU: CPU time limit
+    25: RESOURCE_EXHAUSTED,  # SIGXFSZ: file size limit
+    15: CANCELLED,  # SIGTERM: orderly shutdown (deploy, scale-down)
+    2: CANCELLED,  # SIGINT
+    1: CANCELLED,  # SIGHUP
+}
+
+
+def classify_exception(exc: BaseException) -> str:
+    """Failure class of an exception raised while parsing. Never NO_DATA."""
+    import asyncio
+
+    if isinstance(exc, (MemoryError, TimeoutError, asyncio.TimeoutError)):
+        return RESOURCE_EXHAUSTED
+    if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit, GeneratorExit)):
+        return CANCELLED
+    return PARSER_FAILURE
+
+
+def classify_child_exit(returncode: int | None, *, timed_out: bool = False) -> str | None:
+    """Failure class of a parser child process, or None when it succeeded.
+
+    `returncode` follows subprocess semantics: negative N means "killed by
+    signal N". A child that is killed is never a statement about the demo.
+    Crash signals (SIGSEGV, SIGABRT, SIGBUS, ...) are PARSER_FAILURE.
+    """
+    if timed_out:
+        return RESOURCE_EXHAUSTED
+    if returncode is None:
+        return PARSER_FAILURE
+    if returncode == 0:
+        return None
+    if returncode < 0:
+        return _SIGNAL_CLASS.get(-returncode, PARSER_FAILURE)
+    # Shells report "killed by signal N" as 128+N; some supervisors pass it on.
+    if returncode > 128 and (returncode - 128) in _SIGNAL_CLASS:
+        return _SIGNAL_CLASS[returncode - 128]
+    return PARSER_FAILURE
+
+
 class WorkerError(Exception):
     """An error with a wire code + HTTP status + externally safe message."""
 
-    def __init__(self, status_code: int, error_code: str, message: str) -> None:
+    def __init__(self, status_code: int, error_code: str, message: str, *,
+                 failure_class: str | None = None) -> None:
         if error_code not in WORKER_ERROR_CODES:
             # Never invent a code outside the official matrix.
             raise WorkerConfigurationError(f"unknown worker error code: {error_code}")
+        if failure_class is not None and failure_class not in FAILURE_CLASSES:
+            raise WorkerConfigurationError(f"unknown failure class: {failure_class}")
         super().__init__(message)
         self.status_code = status_code
         self.error_code = error_code
         self.message = message
+        # Internal only: never part of envelope(), never sent to the APP.
+        self.failure_class = failure_class
 
     def envelope(self) -> dict[str, dict[str, str]]:
         return {"detail": {"error_code": self.error_code, "message": self.message}}
