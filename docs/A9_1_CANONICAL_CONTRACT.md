@@ -120,31 +120,93 @@ emitting rows for the new entity. How many leak depends on where parsing starts,
 multithreaded Python build and the single-threaded WASM build disagree. This contract does
 not hide that: the domain stays `FAIL` until a separate, versioned contract decision is taken.
 
-## Contract v2 — grenade domain row filter (rule R13)
+## Contract v2 — grenade domain (rule R13)
 
 Status: **proposal, needs the owner's decision.** It changes which rows count
-as the grenade domain.
+as the grenade domain. It does not relax the comparator.
 
-**Fact.** The pinned parser treats an entity as a projectile when its class
-name contains `Projectile`, `Grenade` or `Flash` and does not contain `Player`
-(`LaihoE/demoparser@d3767705`, `src/parser/src/second_pass/entities.rs:388`).
-It keeps the entity id in a set and emits one row per tick for every id in the
-set. When a later entity of another class reuses the id, rows of that class are
-emitted too.
+### Three layers, kept apart
 
-**Measured on the public fixture.** Python 517,048 rows, WASM 526,259. The
-difference is entirely in `CC4`, `CKnife` and `CWeaponGlock`. Keeping only rows
-that satisfy the parser's own predicate gives 504,320 rows in both runtimes,
-equal in sequence and in every field.
+| Layer              | What it is                                                                | How it is treated                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1. Raw output      | every row `parse_grenades` / `parseGrenades` returned                     | counted per runtime and published in `raw_output_diagnostics`; status `EQUAL` or `DIVERGENT`; never a parity dimension |
+| 2. Semantic domain | rows whose `grenade_type` satisfies the parser's own projectile predicate | compared strictly: sequence, every field, digest equality                                                              |
+| 3. Known anomaly   | rows outside the domain that are explained as stale entity ids            | excluded, counted by class; anything not explained blocks the domain                                                   |
 
-**Rule.** The `grenades` table keeps only rows whose `grenade_type` satisfies
-that predicate. Excluded rows are counted by class in each runtime and both
-counts are published in `contract_exclusions` of the parity report. A null or
-non-string `grenade_type` fails closed (`DOMAIN_FILTER_FIELD_INVALID`).
+### Facts (pinned parser `LaihoE/demoparser@d3767705`)
 
-**What it does not do.** It does not hide a divergence among grenade rows: an
-extra row of a real grenade class, or one changed value, still fails
-(`cross_runtime.check.mjs`). It does not make excluded counts a parity
-dimension; they are reported, and they differ (12,728 vs 21,939 on the fixture).
+- **Predicate.** `check_entity_type` classifies an entity as a projectile when
+  its class name contains `Projectile`, `Grenade` or `Flash` and does not
+  contain `Player` (`src/parser/src/second_pass/entities.rs:388`).
+- **Mechanism.** On entity creation the id is inserted into `projectiles` only
+  when the class is a projectile (`entities.rs:340-341`); it is removed only on
+  an explicit delete (`entities.rs:80`). When an id is re-created with a
+  non-projectile class, nothing removes it, so `collect_projectiles` keeps
+  emitting a row per tick with the new class. Upstream `main` (`45ca85a`,
+  2026-10-05) has the same code.
+- **Documented meaning.** Upstream documents `parse_grenades` as returning
+  "all coordinates of all grenades along with info about thrower", with
+  `entity_id` identifying the grenade (`documentation/python/README.md:132`).
+  Rows of class `CC4`, `CKnife` or `CWeaponGlock` are outside that meaning.
 
-**Not proven.** That the real A9.1 demo behaves like the public fixture.
+### Measured on the public fixture (both runtimes, every row)
+
+|                                                    | Python wheel  | WASM build    |
+| -------------------------------------------------- | ------------- | ------------- |
+| Raw rows                                           | 517,048       | 526,259       |
+| Domain rows                                        | 504,320       | 504,320       |
+| Anomaly rows                                       | 12,728        | 21,939        |
+| Anomaly rows whose entity id was a grenade earlier | 12,728 (100%) | 21,939 (100%) |
+| Distinct entity ids involved                       | 4             | 4             |
+| Tick range of anomaly rows                         | 65–3,841      | 65–8,258      |
+
+- The 504,320 domain rows are equal in sequence and in every field.
+- Every Python anomaly row is also a WASM anomaly row; the 9,211 extra WASM
+  rows are the same four ids continuing from tick 3,842 to 8,258.
+- Observed transitions: `CSmokeGrenadeProjectile`→`CC4`,
+  `CHEGrenadeProjectile`→`CWeaponGlock`, `CHEGrenade`→`CKnife`,
+  `CFlashbangProjectile`→`CWeaponGlock`.
+
+**Hypothesis (not confirmed in code):** the Python wheel stops earlier because
+it parses the demo in parallel segments and the stale set does not carry
+across a segment boundary, while the WASM build parses in one pass.
+
+### The rule
+
+1. A row is in the domain iff `grenade_type` satisfies the predicate.
+2. A row outside the domain is accepted as a known anomaly only if **both**
+   hold: its class is in the closed list `knownAnomaly` (`CC4`, `CAK47`,
+   `CDEagle`, or a `CWeapon*` / `CKnife*` / `CItem*` class), **and** the same
+   table already contains an earlier domain row with the same entity id.
+3. Any other excluded row sets `domainFilter.status = "VIOLATED"` in the table
+   summary. The comparator then reports the domain as `BLOCKED` and parity
+   fails, even when both runtimes return the identical unexplained row.
+4. A `grenade_type` that is null or not a string, or an excluded row without an
+   integer entity id, aborts the table (fail closed).
+
+### What it does not do
+
+- It does not hide a divergence among grenade rows: one extra row of a real
+  grenade class, or one changed value, still fails (`cross_runtime.check.mjs`,
+  cases c and d).
+- It does not exclude a new entity class quietly: `CChicken`, `CPlantedC4`,
+  `CInferno` or any class outside the closed list blocks the domain (cases e, f).
+- It does not use fixed counts as the rule. The counts above are a regression
+  pin for one fixed input; the rule is checked row by row.
+- It does not make raw output equal. `raw_output_diagnostics.status` stays
+  `DIVERGENT` on the fixture next to a semantic `PASS`.
+
+### Alternatives considered
+
+| Alternative                                     | Why not                                                                                                               |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Keep v1 (compare raw rows)                      | `grenades` can never pass while the two builds keep different stale sets; the failure says nothing about grenade data |
+| Patch the WASM build to drop stale ids          | the Python wheel is the pinned reference and cannot be patched; raw output would still differ                         |
+| Compare projectile classes only (`*Projectile`) | drops 416,915 real inventory-grenade rows from the comparison on the fixture                                          |
+| Call `parse_grenades(grenades=False)` in both   | same loss of coverage; it is what the deployed worker does, but it is a different table                               |
+
+### Not proven
+
+That the real A9.1 demo contains only anomaly classes from the closed list. If
+it contains another class the gate will block and name it; the list is then
+extended in review, not automatically.

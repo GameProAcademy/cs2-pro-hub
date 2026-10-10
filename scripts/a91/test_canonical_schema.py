@@ -70,33 +70,47 @@ class CanonicalVectorTests(unittest.TestCase):
                 exclusions = result["diagnostics"]["exclusions"]
                 if exclusions is None:
                     self.assertNotIn("expectedExclusions", vector)
+                    self.assertNotIn("domainFilter", result["summary"])
                     self.assertEqual(result["summary"]["rowCount"], len(vector["rows"]))
                 else:
-                    # Rule R13: same rows excluded, by value, as the JavaScript runtime.
+                    # Rule R13: same classification, by class, as the JavaScript runtime.
+                    facts = {k: v for k, v in exclusions.items() if k not in ("rule", "field")}
+                    self.assertEqual(facts, vector["expectedExclusions"])
+                    self.assertEqual(exclusions["rawRowCount"], len(vector["rows"]))
                     self.assertEqual(
-                        {"count": exclusions["count"], "byValue": exclusions["byValue"]},
-                        vector["expectedExclusions"],
+                        result["summary"]["domainFilter"]["status"],
+                        "VIOLATED" if "VIOLATED" in vector["name"] else "CLEAN",
                     )
-                    self.assertEqual(result["summary"]["rowCount"] + exclusions["count"], len(vector["rows"]))
 
     def test_domain_row_filter_is_fail_closed_and_scoped(self):
-        for bad in ({"tick": 1}, {"grenade_type": None, "tick": 1}, {"grenade_type": 7, "tick": 1}):
+        for bad in ({"tick": 1, "grenade_entity_id": 1}, {"grenade_type": None, "grenade_entity_id": 1},
+                    {"grenade_type": 7, "grenade_entity_id": 1}):
             with self.assertRaises(canonical.CanonicalError) as caught:
                 canonical.summarize_rows("grenades", [bad])
             self.assertEqual(caught.exception.code, "DOMAIN_FILTER_FIELD_INVALID")
-        rows = [
-            {"grenade_type": "CKnife", "tick": 1},
-            {"grenade_type": "CCSPlayerPawnGrenadeHolder", "tick": 2},
-            {"grenade_type": "CFlashbang", "tick": 3},
-        ]
-        filtered = canonical.summarize_rows("grenades", rows)
-        self.assertEqual(filtered["summary"]["rowCount"], 1)
-        self.assertEqual(
-            filtered["diagnostics"]["exclusions"]["byValue"],
-            {"CCSPlayerPawnGrenadeHolder": 1, "CKnife": 1},
-        )
-        untouched = canonical.summarize_rows("event:weapon_fire", rows)
-        self.assertEqual(untouched["summary"]["rowCount"], 3)
+        for bad in ({"grenade_type": "CKnife"}, {"grenade_type": "CKnife", "grenade_entity_id": None},
+                    {"grenade_type": "CKnife", "grenade_entity_id": "x"},
+                    {"grenade_type": "CKnife", "grenade_entity_id": 1.5},
+                    {"grenade_type": "CKnife", "grenade_entity_id": float("nan")}):
+            with self.assertRaises(canonical.CanonicalError) as caught:
+                canonical.summarize_rows("grenades", [bad])
+            self.assertEqual(caught.exception.code, "DOMAIN_FILTER_ENTITY_ID_INVALID")
+        grenade = lambda kind, entity, tick: {"grenade_type": kind, "grenade_entity_id": entity, "tick": tick}
+        clean = canonical.summarize_rows("grenades", [
+            grenade("CHEGrenade", 5, 1), grenade("CKnife", 5, 2), grenade("CWeaponGlock", 5, 3),
+            grenade("CC4", 5, 4), grenade("CFlashbang", 6, 5)])
+        self.assertEqual(clean["summary"]["rowCount"], 2)
+        self.assertEqual(clean["summary"]["domainFilter"]["status"], "CLEAN")
+        self.assertEqual(clean["diagnostics"]["exclusions"]["byValue"], {"CC4": 1, "CKnife": 1, "CWeaponGlock": 1})
+        too_late = canonical.summarize_rows("grenades", [grenade("CKnife", 5, 1), grenade("CHEGrenade", 5, 2)])
+        self.assertEqual(too_late["summary"]["domainFilter"]["status"], "VIOLATED")
+        self.assertEqual(too_late["diagnostics"]["exclusions"]["unexplainedRows"], 1)
+        for kind in ("CChicken", "CPlantedC4", "CCSPlayerPawnGrenadeHolder", "CInferno"):
+            result = canonical.summarize_rows("grenades", [grenade("CHEGrenade", 5, 1), grenade(kind, 5, 2)])
+            self.assertEqual(result["summary"]["domainFilter"]["status"], "VIOLATED", kind)
+            self.assertEqual(result["diagnostics"]["exclusions"]["unclassifiedByValue"], {kind: 1})
+        untouched = canonical.summarize_rows("event:weapon_fire", [grenade("CKnife", 5, 1)])
+        self.assertEqual(untouched["summary"]["rowCount"], 1)
         self.assertIsNone(untouched["diagnostics"]["exclusions"])
 
     def test_python_cannot_silently_round_a_steam_id(self):

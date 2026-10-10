@@ -38,7 +38,7 @@ const [python1, python2, wasm1, wasm2] = runs;
 
 const checks = [];
 const check = (name, pass, detail = {}) =>
-  checks.push({ name, status: pass ? "PASS" : "FAIL", ...detail });
+  checks.push({ ...detail, name, status: pass ? "PASS" : "FAIL" });
 const sameSet = (left, right) =>
   left.length === right.length && [...left].sort().join("\n") === [...right].sort().join("\n");
 const gc = () => typeof globalThis.gc === "function" && globalThis.gc();
@@ -111,21 +111,44 @@ check(
   sameSet(notComparable, expectations.notComparableDomains),
   { observed: notComparable.sort(), expected: [...expectations.notComparableDomains].sort() },
 );
-// Contract rule R13: what the grenade row filter kept out must be exactly the
-// measured, documented set. Another class or another count fails.
-const exclusions = parity.contract_exclusions ?? [];
-const grenadeExclusion = exclusions.find((item) => item.table === "grenades");
-const expectedExclusion = expectations.contractExclusions.grenades;
+// Contract rule R13, checked semantically first: in BOTH runtimes every row
+// kept out of the grenade domain must be a known anomaly class on an entity id
+// that was a grenade earlier. This is what protects against silent exclusion.
+const raw = parity.raw_output_diagnostics;
+const rawGrenades = raw?.tables?.find((item) => item.table === "grenades");
 check(
-  "contract_exclusions_match_ratchet",
-  exclusions.length === 1 &&
-    grenadeExclusion?.python_excluded_rows === expectedExclusion.pythonExcludedRows &&
-    grenadeExclusion?.wasm_excluded_rows === expectedExclusion.wasmExcludedRows &&
-    grenadeExclusion?.python_domain_rows === expectedExclusion.domainRows &&
-    grenadeExclusion?.wasm_domain_rows === expectedExclusion.domainRows &&
-    sameSet(Object.keys(grenadeExclusion.python_excluded_by_class), expectedExclusion.classes) &&
-    sameSet(Object.keys(grenadeExclusion.wasm_excluded_by_class), expectedExclusion.classes),
-  { observed: exclusions },
+  "grenade_domain_filter_is_clean_in_both_runtimes",
+  raw?.tables?.length === 1 &&
+    [rawGrenades?.python, rawGrenades?.wasm].every(
+      (side) =>
+        side?.domain_filter_status === "CLEAN" &&
+        side.unclassified_class_rows === 0 &&
+        side.rows_without_prior_domain_row === 0 &&
+        side.raw_rows === side.domain_rows + side.excluded_rows,
+    ) &&
+    rawGrenades.python.domain_rows === rawGrenades.wasm.domain_rows,
+  { python: rawGrenades?.python ?? null, wasm: rawGrenades?.wasm ?? null },
+);
+// The raw output of the two runtimes is NOT equal on this fixture, and the
+// report must keep saying so next to a semantic PASS.
+check(
+  "raw_output_divergence_stays_visible",
+  raw?.scope === "RAW_PARSER_OUTPUT_NOT_A_PARITY_DIMENSION" &&
+    raw.status === expectations.rawOutput.status &&
+    rawGrenades?.raw_rows_equal === (expectations.rawOutput.status === "EQUAL"),
+  { rawStatus: raw?.status ?? null },
+);
+// Regression pin for this one fixed input (not a semantic rule): the measured
+// raw figures. A change means the parser build or the fixture changed.
+const pin = expectations.rawOutput.grenades;
+check(
+  "raw_output_figures_match_fixture_pin",
+  rawGrenades?.python.raw_rows === pin.pythonRawRows &&
+    rawGrenades?.wasm.raw_rows === pin.wasmRawRows &&
+    rawGrenades?.python.domain_rows === pin.domainRows &&
+    sameSet(Object.keys(rawGrenades.python.excluded_by_class), pin.excludedClasses) &&
+    sameSet(Object.keys(rawGrenades.wasm.excluded_by_class), pin.excludedClasses),
+  { expected: pin },
 );
 check(
   "parity_status_is_reported_not_forced",
@@ -270,7 +293,7 @@ const report = {
     emptyInBothTableCount: diagnostics.empty_in_both_table_count,
     fieldCount: diagnostics.field_count,
     fieldPassCount: diagnostics.field_pass_count,
-    contractExclusions: exclusions,
+    rawOutputDiagnostics: raw ?? null,
     divergingDomains: failingDomains.sort(),
     divergingTables: diagnostics.tables
       .filter((table) => table.status !== "PASS")

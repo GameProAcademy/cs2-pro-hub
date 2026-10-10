@@ -49,63 +49,117 @@ for (const vector of vectors.tables) {
   if (rows.length && fields.every((field) => field in rows[0]))
     assert.deepEqual(columnar.summary, summary, `${vector.name} (columnar)`);
   assert.equal(diagnostics.samples.length, Math.min(summary.rowCount, 256));
-  // Rule R13: rows outside the domain are counted by value, never dropped silently.
+  // Rule R13: rows outside the domain are counted by class, never dropped
+  // silently, and each must be explainable as the documented anomaly.
+  const exclusionFacts = (item) => {
+    const { rule: _rule, field: _field, ...facts } = item;
+    return facts;
+  };
   if (write && diagnostics.exclusions)
-    vector.expectedExclusions = {
-      count: diagnostics.exclusions.count,
-      byValue: diagnostics.exclusions.byValue,
-    };
+    vector.expectedExclusions = exclusionFacts(diagnostics.exclusions);
   if (diagnostics.exclusions) {
     assert.deepEqual(
-      { count: diagnostics.exclusions.count, byValue: diagnostics.exclusions.byValue },
+      exclusionFacts(diagnostics.exclusions),
       vector.expectedExclusions,
-      `${vector.name} (exclusions)`,
+      vector.name,
     );
+    assert.equal(diagnostics.exclusions.rawRowCount, rows.length);
     assert.equal(summary.rowCount + diagnostics.exclusions.count, rows.length);
-    assert.deepEqual(
-      {
-        count: columnar.diagnostics.exclusions.count,
-        byValue: columnar.diagnostics.exclusions.byValue,
-      },
-      vector.expectedExclusions,
+    assert.deepEqual(exclusionFacts(columnar.diagnostics.exclusions), vector.expectedExclusions);
+    assert.equal(
+      summary.domainFilter.status,
+      diagnostics.exclusions.unclassifiedClassRows || diagnostics.exclusions.unexplainedRows
+        ? "VIOLATED"
+        : "CLEAN",
+    );
+    assert.equal(
+      summary.domainFilter.status,
+      vector.name.includes("VIOLATED") ? "VIOLATED" : "CLEAN",
     );
   } else {
     assert.equal(vector.expectedExclusions, undefined);
+    assert.equal(summary.domainFilter, undefined);
     assert.equal(summary.rowCount, rows.length);
   }
 }
-
-// Rule R13 is fail-closed and scoped: a missing/non-string filter field aborts
-// the table, and tables without a declared filter are never filtered.
-for (const bad of [{ tick: 1 }, { grenade_type: null, tick: 1 }, { grenade_type: 7, tick: 1 }])
-  assert.throws(() => summarizeRows("grenades", [bad]), /DOMAIN_FILTER_FIELD_INVALID/);
-{
-  const rows = [
-    { grenade_type: "CKnife", tick: 1 },
-    { grenade_type: "CCSPlayerPawnGrenadeHolder", tick: 2 },
-    { grenade_type: "CFlashbang", tick: 3 },
-  ];
-  const filtered = summarizeRows("grenades", rows);
-  assert.equal(filtered.summary.rowCount, 1);
-  assert.deepEqual(filtered.diagnostics.exclusions.byValue, {
-    CCSPlayerPawnGrenadeHolder: 1,
-    CKnife: 1,
-  });
-  const untouched = summarizeRows("event:weapon_fire", rows);
-  assert.equal(untouched.summary.rowCount, 3);
-  assert.equal(untouched.diagnostics.exclusions, null);
-  // The filter is exactly the contract's declaration (upstream entities.rs:388).
-  assert.deepEqual(CONTRACT.domainRowFilters, {
-    grenades: {
-      field: "grenade_type",
-      includeAnySubstring: ["Projectile", "Grenade", "Flash"],
-      excludeAnySubstring: ["Player"],
-      source: CONTRACT.domainRowFilters.grenades.source,
-      excludedRowsReport: "COUNT_BY_VALUE_PER_RUNTIME",
-    },
-  });
-}
 if (write) writeFileSync(path, `${JSON.stringify(vectors, null, 2)}\n`);
+
+// Rule R13 is fail-closed and scoped.
+for (const bad of [
+  { tick: 1, grenade_entity_id: 1 },
+  { grenade_type: null, grenade_entity_id: 1 },
+  { grenade_type: 7, grenade_entity_id: 1 },
+])
+  assert.throws(() => summarizeRows("grenades", [bad]), /DOMAIN_FILTER_FIELD_INVALID/);
+// An excluded row without a usable entity id cannot be explained: abort.
+for (const bad of [
+  { grenade_type: "CKnife" },
+  { grenade_type: "CKnife", grenade_entity_id: null },
+  { grenade_type: "CKnife", grenade_entity_id: "8" },
+  { grenade_type: "CKnife", grenade_entity_id: 1.5 },
+])
+  assert.throws(() => summarizeRows("grenades", [bad]), /DOMAIN_FILTER_ENTITY_ID_INVALID/);
+{
+  const grenade = (type, id, tick) => ({ grenade_type: type, grenade_entity_id: id, tick });
+  // Known anomaly: non-grenade equipment class on an id that was a grenade before.
+  const clean = summarizeRows("grenades", [
+    grenade("CHEGrenade", 5, 1),
+    grenade("CKnife", 5, 2),
+    grenade("CWeaponGlock", 5, 3),
+    grenade("CC4", 5, 4),
+    grenade("CFlashbang", 6, 5),
+  ]);
+  assert.equal(clean.summary.rowCount, 2);
+  assert.equal(clean.summary.domainFilter.status, "CLEAN");
+  assert.deepEqual(clean.diagnostics.exclusions.byValue, { CC4: 1, CKnife: 1, CWeaponGlock: 1 });
+  // The prior row must come BEFORE; a later grenade row does not explain it.
+  const tooLate = summarizeRows("grenades", [grenade("CKnife", 5, 1), grenade("CHEGrenade", 5, 2)]);
+  assert.equal(tooLate.summary.domainFilter.status, "VIOLATED");
+  assert.equal(tooLate.diagnostics.exclusions.unexplainedRows, 1);
+  // A class outside the anomaly allowlist is never excluded quietly, even on a
+  // reused id, and "Player" classes are not grenades.
+  for (const type of ["CChicken", "CPlantedC4", "CCSPlayerPawnGrenadeHolder", "CInferno"]) {
+    const result = summarizeRows("grenades", [grenade("CHEGrenade", 5, 1), grenade(type, 5, 2)]);
+    assert.equal(result.summary.domainFilter.status, "VIOLATED", type);
+    assert.deepEqual(result.diagnostics.exclusions.unclassifiedByValue, { [type]: 1 });
+  }
+  // The status is part of the semantic summary: it changes the digest input.
+  assert.notDeepEqual(clean.summary.domainFilter, tooLate.summary.domainFilter);
+  // Tables without a declared filter are never filtered.
+  const untouched = summarizeRows("event:weapon_fire", [grenade("CKnife", 5, 1)]);
+  assert.equal(untouched.summary.rowCount, 1);
+  assert.equal(untouched.diagnostics.exclusions, null);
+  assert.equal(untouched.summary.domainFilter, undefined);
+  // Every grenade class the pinned parser can emit as a projectile stays in the
+  // domain; the filter is exactly the upstream predicate (entities.rs:388).
+  for (const type of [
+    "CSmokeGrenade",
+    "CSmokeGrenadeProjectile",
+    "CHEGrenade",
+    "CHEGrenadeProjectile",
+    "CFlashbang",
+    "CFlashbangProjectile",
+    "CMolotovGrenade",
+    "CMolotovProjectile",
+    "CIncendiaryGrenade",
+    "CDecoyGrenade",
+    "CDecoyProjectile",
+    "CBaseCSGrenadeProjectile",
+  ])
+    assert.equal(summarizeRows("grenades", [grenade(type, 1, 1)]).summary.rowCount, 1, type);
+  const filter = CONTRACT.domainRowFilters.grenades;
+  assert.deepEqual(filter.includeAnySubstring, ["Projectile", "Grenade", "Flash"]);
+  assert.deepEqual(filter.excludeAnySubstring, ["Player"]);
+  assert.equal(filter.knownAnomaly.requirePriorDomainRowForEntityId, true);
+  // No anomaly class may overlap the domain predicate.
+  for (const name of [...filter.knownAnomaly.classExact, ...filter.knownAnomaly.classPrefixes])
+    assert.equal(
+      filter.includeAnySubstring.some((part) => name.includes(part)),
+      false,
+      name,
+    );
+}
+
 console.log(
   `A9.1 canonical contract v${CANONICAL_CONTRACT_VERSION} JavaScript vector checks PASS (${vectors.values.length} values, ${vectors.tables.length} tables)`,
 );

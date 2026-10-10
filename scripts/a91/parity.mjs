@@ -37,6 +37,13 @@ const evidenceKeys = {
   tick_properties: "tickDomainEvidence",
   game_state: "normalizedResult",
 };
+function domainFilterViolated(value) {
+  if (!value || typeof value !== "object") return false;
+  const tables = [value.table, value.grenades, value.ticks];
+  if (Array.isArray(value)) for (const item of value) tables.push(item?.table);
+  if (Array.isArray(value.events)) for (const item of value.events) tables.push(item?.table);
+  return tables.some((table) => table?.domainFilter?.status === "VIOLATED");
+}
 function comparableEvidence(artifact, field) {
   const value = artifact[evidenceKeys[field]] ?? null;
   if (field !== "game_state" || !value || typeof value !== "object" || Array.isArray(value))
@@ -60,6 +67,10 @@ function availability(artifact, field, runtime) {
   if (declared && declared !== "AVAILABLE") return "BLOCKED";
   const value = artifact[evidenceKeys[field]];
   if (value?.status === "PARSE_FAILED" || value?.status === "FAILED") return "BLOCKED";
+  // Contract rule R13: a table whose domain row filter met a row it cannot
+  // classify as the documented anomaly is not valid evidence. This holds even
+  // if both runtimes report the same violation.
+  if (domainFilterViolated(value)) return "BLOCKED";
   return value === undefined || value === null ? "MISSING" : "AVAILABLE";
 }
 export function compareDomains(python, wasm) {
@@ -420,33 +431,55 @@ const safeClassCounts = (byValue) => {
 };
 
 /**
- * Contract rule R13: rows a domain row filter kept out of a comparable table.
- * Always published, per runtime, so an exclusion can never be silent. Counts
- * of excluded rows are NOT a parity dimension: by definition they are rows
- * that do not belong to the domain.
+ * RAW OUTPUT diagnostics (contract rule R13, layer 1). For every table with a
+ * domain row filter: what each runtime actually returned, what was kept as the
+ * semantic domain and what was set aside as the known anomaly. This is an
+ * independent diagnostic. It never feeds the parity status: semantic parity is
+ * decided on domain rows only, and a difference in raw output stays visible
+ * here as DIVERGENT instead of being folded into a PASS or a FAIL.
  */
-export function contractExclusions(python, wasm) {
+export function rawOutputDiagnostics(python, wasm) {
   const pythonTables = artifactTables(python);
   const wasmTables = artifactTables(wasm);
   const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
-  const result = [];
+  const tables = [];
   for (const name of names) {
     const left = pythonTables[name]?.diagnostics?.exclusions ?? null;
     const right = wasmTables[name]?.diagnostics?.exclusions ?? null;
     if (!left && !right) continue;
-    result.push({
+    const side = (item, table) => ({
+      raw_rows: item?.rawRowCount ?? null,
+      domain_rows: table?.summary?.rowCount ?? null,
+      excluded_rows: item?.count ?? null,
+      excluded_by_class: item ? safeClassCounts(item.byValue) : null,
+      unclassified_class_rows: item?.unclassifiedClassRows ?? null,
+      unclassified_by_class: item ? safeClassCounts(item.unclassifiedByValue) : null,
+      rows_without_prior_domain_row: item?.unexplainedRows ?? null,
+      domain_filter_status: table?.summary?.domainFilter?.status ?? null,
+    });
+    const pythonSide = side(left, pythonTables[name]);
+    const wasmSide = side(right, wasmTables[name]);
+    tables.push({
       table: name,
       rule: "R13_DOMAIN_ROW_FILTER",
-      python_excluded_rows: left?.count ?? null,
-      wasm_excluded_rows: right?.count ?? null,
-      excluded_rows_equal: left !== null && right !== null && left.count === right.count,
-      python_excluded_by_class: left ? safeClassCounts(left.byValue) : null,
-      wasm_excluded_by_class: right ? safeClassCounts(right.byValue) : null,
-      python_domain_rows: pythonTables[name]?.summary?.rowCount ?? null,
-      wasm_domain_rows: wasmTables[name]?.summary?.rowCount ?? null,
+      raw_rows_equal:
+        pythonSide.raw_rows !== null &&
+        pythonSide.raw_rows === wasmSide.raw_rows &&
+        JSON.stringify(pythonSide.excluded_by_class) === JSON.stringify(wasmSide.excluded_by_class),
+      python: pythonSide,
+      wasm: wasmSide,
     });
   }
-  return result;
+  return {
+    schema_version: 1,
+    scope: "RAW_PARSER_OUTPUT_NOT_A_PARITY_DIMENSION",
+    status: !tables.length
+      ? "NOT_APPLICABLE"
+      : tables.every((item) => item.raw_rows_equal)
+        ? "EQUAL"
+        : "DIVERGENT",
+    tables,
+  };
 }
 
 /**
@@ -510,7 +543,7 @@ export function parityReport(python, wasm, sha) {
     crossRuntimeComparableFieldPassCount: fieldDiagnostics.field_pass_count,
     crossRuntimeComparableFieldCountReason: null,
     field_diagnostics: fieldDiagnostics,
-    contract_exclusions: contractExclusions(python, wasm),
+    raw_output_diagnostics: rawOutputDiagnostics(python, wasm),
     semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,

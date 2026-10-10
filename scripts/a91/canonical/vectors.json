@@ -631,7 +631,7 @@
       }
     },
     {
-      "name": "categorical breakdown and multiple blocks",
+      "name": "grenade domain filter: known anomaly excluded (stale entity id), multiple blocks",
       "table": "grenades",
       "blockRows": 2,
       "rows": [
@@ -645,7 +645,8 @@
             "$": "u64",
             "v": "76561198012345679"
           },
-          "tick": 10
+          "tick": 10,
+          "grenade_entity_id": 40
         },
         {
           "grenade_type": "CSmokeGrenade",
@@ -654,7 +655,8 @@
             "$": "u64",
             "v": "76561198012345679"
           },
-          "tick": 10
+          "tick": 10,
+          "grenade_entity_id": 41
         },
         {
           "grenade_type": "CSmokeGrenade",
@@ -663,7 +665,8 @@
             "$": "u64",
             "v": "76561198012345680"
           },
-          "tick": 11
+          "tick": 11,
+          "grenade_entity_id": 41
         },
         {
           "grenade_type": "CKnife",
@@ -672,7 +675,8 @@
             "$": "u64",
             "v": "0"
           },
-          "tick": 11
+          "tick": 11,
+          "grenade_entity_id": 41
         },
         {
           "grenade_type": "CSmokeGrenadeProjectile",
@@ -684,17 +688,31 @@
             "$": "u64",
             "v": "76561198012345679"
           },
-          "tick": 12
+          "tick": 12,
+          "grenade_entity_id": 40
         }
       ],
       "expected": {
         "canonicalContractVersion": 2,
         "table": "grenades",
         "rowCount": 4,
-        "fields": ["grenade_type", "steamid", "tick", "x"],
-        "tableDigest": "2a5609099707ced8cc80d90a44df0d777cdcd5001530517ec0a279d9aa4b0841",
-        "multisetDigest": "6359d5726cc10d8816ef6120d74ec73d0bda71ad1a2a6b2ca0af4d498785a39b",
+        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "tableDigest": "9005c451486ced1f58c3069c80cfa24c44c8081bcaef6f7b37925f55b3486f6a",
+        "multisetDigest": "67bb1328c80ac249aec2a2b1417efcf08107294cffbdfba073b898346b5c92e5",
         "columns": {
+          "grenade_entity_id": {
+            "digest": "f4546a67303de2b5c4fcacd56a45f135e1beffa6d5cbe173027d6aee63c09936",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 4,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
           "grenade_type": {
             "digest": "3f778f61d2307692efd82e1e10451681468128bcf4843a9f2938f2655d6972bc",
             "classes": {
@@ -748,6 +766,10 @@
             }
           }
         },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "CLEAN"
+        },
         "breakdown": {
           "grenade_type": {
             "CSmokeGrenade": 2,
@@ -756,10 +778,14 @@
         }
       },
       "expectedExclusions": {
+        "rawRowCount": 5,
         "count": 1,
         "byValue": {
           "CKnife": 1
-        }
+        },
+        "unclassifiedClassRows": 0,
+        "unclassifiedByValue": {},
+        "unexplainedRows": 0
       }
     },
     {
@@ -774,6 +800,279 @@
         "tableDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "multisetDigest": "0000000000000000000000000000000000000000000000000000000000000000",
         "columns": {}
+      }
+    },
+    {
+      "name": "grenade domain filter: VIOLATED by a class outside the known anomaly",
+      "table": "grenades",
+      "rows": [
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 1
+        },
+        {
+          "grenade_type": "CChicken",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 2
+        },
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 3
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "grenades",
+        "rowCount": 2,
+        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "tableDigest": "e15b9c511291c381c9dfbe53d12a591e32aacebb1f0d922bc64512d9fed6c193",
+        "multisetDigest": "6e65c360caaf4eecff7fc8aa4b1a67ef32ef1aa2fd10a22596aa2d60f5f5878f",
+        "columns": {
+          "grenade_entity_id": {
+            "digest": "27b3c8efaf44833ff3381a31797bddee5c0ec3a4263950377553d906bcfc5124",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "grenade_type": {
+            "digest": "c2b8780bb381dd0add9daa473cd4f2b60187d9ce28c7e1270db8e91b8ddcb2bb",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 2,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "26a4368300192647288254433f95ddbbd7eb661a69136018ba7aad186688988f",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 2,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "58ad59dd9ca165e82f3293c6cc85cac489f2d8323016462aa4b0f91586965d9d",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "x": {
+            "digest": "25571ef72397c5de8783a26ecfebd72c26fbaa033d47969b9b72c0287f64d178",
+            "classes": {
+              "null": 2,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "VIOLATED"
+        },
+        "breakdown": {
+          "grenade_type": {
+            "CSmokeGrenade": 2
+          }
+        }
+      },
+      "expectedExclusions": {
+        "rawRowCount": 3,
+        "count": 1,
+        "byValue": {
+          "CChicken": 1
+        },
+        "unclassifiedClassRows": 1,
+        "unclassifiedByValue": {
+          "CChicken": 1
+        },
+        "unexplainedRows": 0
+      }
+    },
+    {
+      "name": "grenade domain filter: VIOLATED by an excluded row whose entity id never was a grenade",
+      "table": "grenades",
+      "rows": [
+        {
+          "grenade_type": "CSmokeGrenade",
+          "grenade_entity_id": 7,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 1
+        },
+        {
+          "grenade_type": "CKnife",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 2
+        },
+        {
+          "grenade_type": "CFlashbang",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 3
+        },
+        {
+          "grenade_type": "CKnife",
+          "grenade_entity_id": 8,
+          "x": null,
+          "steamid": {
+            "$": "u64",
+            "v": "76561198012345679"
+          },
+          "tick": 4
+        }
+      ],
+      "expected": {
+        "canonicalContractVersion": 2,
+        "table": "grenades",
+        "rowCount": 2,
+        "fields": ["grenade_entity_id", "grenade_type", "steamid", "tick", "x"],
+        "tableDigest": "618b6dd25252347a51b83f42613db0e4c29860c9d474f9aa5115f71b669eaf65",
+        "multisetDigest": "ae1b99736d8db94a55080447d3a648183eaa71a368b8f947017240212d2d7c2c",
+        "columns": {
+          "grenade_entity_id": {
+            "digest": "bf4740435de932a9a526163c3043ca5f1ef84f64b28011c229d04aa516d1eaf1",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "grenade_type": {
+            "digest": "82e7164cd2d21821de9368dbf0a964304f47334d618d7a5535d48539100f1691",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 2,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "steamid": {
+            "digest": "26a4368300192647288254433f95ddbbd7eb661a69136018ba7aad186688988f",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 2,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "tick": {
+            "digest": "58ad59dd9ca165e82f3293c6cc85cac489f2d8323016462aa4b0f91586965d9d",
+            "classes": {
+              "null": 0,
+              "bool": 0,
+              "integer": 2,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          },
+          "x": {
+            "digest": "25571ef72397c5de8783a26ecfebd72c26fbaa033d47969b9b72c0287f64d178",
+            "classes": {
+              "null": 2,
+              "bool": 0,
+              "integer": 0,
+              "float": 0,
+              "string": 0,
+              "u64": 0,
+              "array": 0,
+              "object": 0
+            }
+          }
+        },
+        "domainFilter": {
+          "rule": "R13_DOMAIN_ROW_FILTER",
+          "status": "VIOLATED"
+        },
+        "breakdown": {
+          "grenade_type": {
+            "CFlashbang": 1,
+            "CSmokeGrenade": 1
+          }
+        }
+      },
+      "expectedExclusions": {
+        "rawRowCount": 4,
+        "count": 2,
+        "byValue": {
+          "CKnife": 2
+        },
+        "unclassifiedClassRows": 0,
+        "unclassifiedByValue": {},
+        "unexplainedRows": 1
       }
     }
   ]

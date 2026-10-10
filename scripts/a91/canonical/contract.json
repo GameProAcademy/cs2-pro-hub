@@ -23,7 +23,15 @@
       "includeAnySubstring": ["Projectile", "Grenade", "Flash"],
       "excludeAnySubstring": ["Player"],
       "source": "LaihoE/demoparser@d3767705 src/parser/src/second_pass/entities.rs:388 (EntityType::Projectile predicate)",
-      "excludedRowsReport": "COUNT_BY_VALUE_PER_RUNTIME"
+      "excludedRowsReport": "COUNT_BY_CLASS_PER_RUNTIME_PLUS_RAW_ROW_COUNTS",
+      "entityIdField": "grenade_entity_id",
+      "knownAnomaly": {
+        "name": "STALE_ENTITY_ID",
+        "description": "A row of a non-grenade equipment class emitted because the parser kept a deleted projectile's entity id and a later entity reused it.",
+        "requirePriorDomainRowForEntityId": true,
+        "classExact": ["CC4", "CAK47", "CDEagle"],
+        "classPrefixes": ["CWeapon", "CKnife", "CItem"]
+      }
     }
   },
   "economyFields": [
@@ -49,6 +57,6 @@
     "R10_EVENT_DISCRIMINATOR": "The WASM wrapper attaches event_name to every event row. It must equal the requested event for every row and is then treated as call metadata, not as a semantic field.",
     "R12_LOSSY_REFERENCE_FIELDS": "A field whose value the Python reference cannot deliver exactly (referenceLossyRequestFields) is not requested from either runtime, and the exclusion is reported. It is never requested and then ignored, and never compared after rounding.",
     "R11_METADATA": "Requested fields, returned field lists, timings, memory and run identifiers are call evidence. They are never part of semantic evidence or semantic digests.",
-    "R13_DOMAIN_ROW_FILTER": "A table listed in domainRowFilters keeps only rows whose filter field is a string that contains at least one includeAnySubstring and no excludeAnySubstring. For grenades this is the parser's own definition of a projectile entity; rows of any other class are emitted only because the parser keeps a deleted projectile's entity id and a later entity reuses it. Excluded rows are never dropped silently: each runtime counts them by value, the parity report publishes both counts, and a filter field that is null or not a string fails closed as DOMAIN_FILTER_FIELD_INVALID."
+    "R13_DOMAIN_ROW_FILTER": "Three layers are kept apart. (1) RAW OUTPUT: every row the parser returned; its row count and class breakdown are published per runtime as a diagnostic and are never a parity dimension. (2) SEMANTIC DOMAIN: for a table listed in domainRowFilters, the rows whose filter field is a string containing at least one includeAnySubstring and no excludeAnySubstring. For grenades this is the parser's own definition of a projectile entity. Only these rows are compared, strictly. (3) KNOWN ANOMALY: a row outside the domain is accepted as excluded only if BOTH hold: its class is in knownAnomaly (classExact or classPrefixes), and its entity id already appeared in an earlier domain row of the same table. Any other excluded row marks the table domainFilter.status VIOLATED, which blocks the domain in the comparator; nothing is excluded silently. A filter field that is null or not a string, or a missing/non-integer entity id on an excluded row, fails closed."
   }
 }

@@ -314,13 +314,13 @@ assert.throws(
   assert.equal(tableVerdict(report, "grenades").status, "BLOCKED");
 }
 
-// Contract v2, rule R13: rows of non-grenade classes (stale entity ids) are
-// outside the grenade domain. They are reported per runtime, and the filter
-// cannot hide a divergence among real grenade rows.
+// Contract v2, rule R13. Three layers: raw output (diagnostic), semantic
+// domain (compared strictly), known anomaly (excluded only when explained).
 {
-  const stale = (grenadeType, tick) => ({
+  const reusedId = fixture.grenades[0].grenade_entity_id; // a grenade id seen earlier
+  const row = (grenadeType, tick, entityId = reusedId) => ({
     grenade_type: grenadeType,
-    grenade_entity_id: 77,
+    grenade_entity_id: entityId,
     x: { $: "f64", v: "NaN" },
     y: { $: "f64", v: "NaN" },
     z: { $: "f64", v: "NaN" },
@@ -328,41 +328,100 @@ assert.throws(
     steamid: { $: "u64", v: "76561198012345680" },
     name: "bravo",
   });
-  const source = clone(fixture);
-  // Interleaved, not appended: the surviving rows must keep their order.
-  source.grenades.splice(1, 0, stale("CKnife", 120), stale("CC4", 120));
-  source.grenades.push(stale("CWeaponGlock", 130));
-  const report = parityReport(python, wasmArtifact(source), SHA);
-  assert.equal(report.status, "PASS", JSON.stringify(report.field_diagnostics.first_divergence));
-  assert.equal(domainStatus(report).grenades, "PASS");
-  assert.equal(tableVerdict(report, "grenades").status, "PASS");
-  assert.deepEqual(report.contract_exclusions, [
-    {
-      table: "grenades",
-      rule: "R13_DOMAIN_ROW_FILTER",
-      python_excluded_rows: 0,
-      wasm_excluded_rows: 3,
-      excluded_rows_equal: false,
-      python_excluded_by_class: {},
-      wasm_excluded_by_class: { CC4: 1, CKnife: 1, CWeaponGlock: 1 },
-      python_domain_rows: fixture.grenades.length,
-      wasm_domain_rows: fixture.grenades.length,
-    },
-  ]);
-  assert.equal(JSON.stringify(report).includes("bravo"), false);
+  const grenadeDomain = (report) => report.comparisons.find((c) => c.field === "grenades");
+  const rawTable = (report) =>
+    report.raw_output_diagnostics.tables.find((item) => item.table === "grenades");
 
-  // One extra row of a real grenade class in one runtime still fails.
-  const diverged = clone(fixture);
-  diverged.grenades.push(stale("CSmokeGrenade", 131));
-  const failing = parityReport(python, wasmArtifact(diverged), SHA);
-  assert.equal(failing.status, "FAIL");
-  assert.equal(domainStatus(failing).grenades, "FAIL");
-  assert.ok(tableVerdict(failing, "grenades").divergence_classes.includes("ROW_COUNT"));
+  // (a) Identical raw output: the raw diagnostic says EQUAL.
+  {
+    const report = parityReport(python, wasmArtifact(), SHA);
+    assert.equal(report.raw_output_diagnostics.status, "EQUAL");
+    assert.equal(rawTable(report).python.excluded_rows, 0);
+    assert.equal(rawTable(report).python.domain_filter_status, "CLEAN");
+  }
 
-  // A changed value inside a real grenade row still fails.
-  const changed = clone(fixture);
-  changed.grenades[0].tick += 1;
-  assert.equal(domainStatus(parityReport(python, wasmArtifact(changed), SHA)).grenades, "FAIL");
+  // (b) Known anomaly in one runtime only: semantic parity holds, and the raw
+  //     difference is reported on its own as DIVERGENT, not hidden and not a FAIL.
+  {
+    const source = clone(fixture);
+    // Interleaved after the row that makes the id a grenade id: order must survive.
+    source.grenades.splice(1, 0, row("CKnife", 120), row("CC4", 120));
+    source.grenades.push(row("CWeaponGlock", 130));
+    const report = parityReport(python, wasmArtifact(source), SHA);
+    assert.equal(report.status, "PASS", JSON.stringify(report.field_diagnostics.first_divergence));
+    assert.equal(grenadeDomain(report).status, "PASS");
+    assert.equal(tableVerdict(report, "grenades").status, "PASS");
+    assert.equal(report.raw_output_diagnostics.scope, "RAW_PARSER_OUTPUT_NOT_A_PARITY_DIMENSION");
+    assert.equal(report.raw_output_diagnostics.status, "DIVERGENT");
+    const raw = rawTable(report);
+    assert.equal(raw.raw_rows_equal, false);
+    assert.equal(raw.python.raw_rows, fixture.grenades.length);
+    assert.equal(raw.wasm.raw_rows, fixture.grenades.length + 3);
+    assert.equal(raw.python.domain_rows, raw.wasm.domain_rows);
+    assert.deepEqual(raw.wasm.excluded_by_class, { CC4: 1, CKnife: 1, CWeaponGlock: 1 });
+    assert.equal(raw.wasm.unclassified_class_rows, 0);
+    assert.equal(raw.wasm.rows_without_prior_domain_row, 0);
+    assert.equal(raw.wasm.domain_filter_status, "CLEAN");
+    assert.equal(JSON.stringify(report).includes("bravo"), false);
+  }
+
+  // (c) One extra row of a REAL grenade class in one runtime still fails.
+  {
+    const source = clone(fixture);
+    source.grenades.push(row("CSmokeGrenade", 131));
+    const report = parityReport(python, wasmArtifact(source), SHA);
+    assert.equal(report.status, "FAIL");
+    assert.equal(grenadeDomain(report).status, "FAIL");
+    assert.ok(tableVerdict(report, "grenades").divergence_classes.includes("ROW_COUNT"));
+  }
+
+  // (d) One changed value inside a real grenade row still fails.
+  {
+    const source = clone(fixture);
+    source.grenades[0].tick += 1;
+    const report = parityReport(python, wasmArtifact(source), SHA);
+    assert.equal(report.status, "FAIL");
+    assert.equal(grenadeDomain(report).status, "FAIL");
+  }
+
+  // (e) A class outside the anomaly allowlist is never excluded quietly:
+  //     the domain is BLOCKED and parity fails.
+  {
+    const source = clone(fixture);
+    source.grenades.push(row("CChicken", 131));
+    const report = parityReport(python, wasmArtifact(source), SHA);
+    assert.equal(report.status, "FAIL");
+    assert.equal(grenadeDomain(report).status, "BLOCKED");
+    assert.deepEqual(rawTable(report).wasm.unclassified_by_class, { CChicken: 1 });
+    assert.equal(rawTable(report).wasm.domain_filter_status, "VIOLATED");
+  }
+
+  // (f) ...even when BOTH runtimes return the very same unclassified row, so
+  //     equal digests cannot turn an unexplained exclusion into a PASS.
+  {
+    const extra = [row("CChicken", 131)];
+    const source = clone(fixture);
+    source.grenades.push(...extra);
+    const report = parityReport(
+      pythonArtifact({ appendGrenades: extra }),
+      wasmArtifact(source),
+      SHA,
+    );
+    assert.equal(grenadeDomain(report).python_digest, grenadeDomain(report).wasm_digest);
+    assert.equal(grenadeDomain(report).status, "BLOCKED");
+    assert.equal(report.status, "FAIL");
+    assert.equal(report.raw_output_diagnostics.status, "EQUAL"); // raw equal, still not valid
+  }
+
+  // (g) A known class on an entity id that never was a grenade is unexplained.
+  {
+    const source = clone(fixture);
+    source.grenades.push(row("CKnife", 131, 99991));
+    const report = parityReport(python, wasmArtifact(source), SHA);
+    assert.equal(report.status, "FAIL");
+    assert.equal(grenadeDomain(report).status, "BLOCKED");
+    assert.equal(rawTable(report).wasm.rows_without_prior_domain_row, 1);
+  }
 }
 
 console.log(

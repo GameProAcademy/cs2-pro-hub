@@ -5,15 +5,16 @@
   "divergingTables": [],
   "notComparableDomains": ["player_identity", "players"],
   "divergenceNotes": {
-    "none": "Under canonical contract v2 no comparable domain diverges on the public fixture. See contractExclusions for the rows rule R13 keeps out of the grenade domain."
+    "none": "Under canonical contract v2 no comparable domain diverges on the public fixture. Raw output still differs; see rawOutput."
   },
-  "contractExclusions": {
+  "rawOutput": {
+    "status": "DIVERGENT",
+    "note": "Raw parser output differs between the Python wheel and the WASM build on this fixture: both emit stale-entity-id rows from tick 65; Python stops at tick 3841, WASM continues to tick 8258. Every Python anomaly row is also a WASM anomaly row. This is a diagnostic, kept visible; it is not a parity dimension. The figures below pin this one input; the semantic rule is checked separately.",
     "grenades": {
-      "pythonExcludedRows": 12728,
-      "wasmExcludedRows": 21939,
+      "pythonRawRows": 517048,
+      "wasmRawRows": 526259,
       "domainRows": 504320,
-      "classes": ["CC4", "CKnife", "CWeaponGlock"],
-      "note": "Non-grenade entity classes emitted through reused entity ids (upstream entities.rs:388 predicate, stale projectile id set). Measured, not assumed: any other class, or any change in these counts, fails the gate."
+      "excludedClasses": ["CC4", "CKnife", "CWeaponGlock"]
     }
   },
   "limits": {

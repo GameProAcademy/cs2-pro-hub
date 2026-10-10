@@ -175,6 +175,22 @@ def _empty_classes() -> dict[str, int]:
     return {name: 0 for name in CONTRACT["valueClasses"]}
 
 
+def _safe_integer(value: Any) -> int | None:
+    """Entity ids arrive as Python or numpy integers (or integral floats)."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    try:
+        if float(value) != number:
+            return None
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return number if abs(number) <= 2**53 - 1 else None
+
+
 class TableAccumulator:
     """Streaming, bounded-memory table summary (see canonical_schema.mjs)."""
 
@@ -194,6 +210,11 @@ class TableAccumulator:
         self.row_filter = CONTRACT.get("domainRowFilters", {}).get(name)
         self.excluded: dict[str, int] = {}
         self.excluded_count = 0
+        # Rule R13 layer 3: evidence that an excluded row is the known anomaly.
+        self.domain_entity_ids: set[int] = set()
+        self.unclassified: dict[str, int] = {}
+        self.unclassified_count = 0
+        self.unexplained_count = 0
         self.finished = False
 
     def _admit(self, row: dict[str, Any]) -> bool:
@@ -204,10 +225,25 @@ class TableAccumulator:
         value = row.get(row_filter["field"])
         if not isinstance(value, str):
             raise CanonicalError("DOMAIN_FILTER_FIELD_INVALID", self.name)
+        entity_id = _safe_integer(row.get(row_filter["entityIdField"]))
         if any(part in value for part in row_filter["includeAnySubstring"]) and not any(
             part in value for part in row_filter["excludeAnySubstring"]
         ):
+            if entity_id is not None:
+                self.domain_entity_ids.add(entity_id)
             return True
+        # Outside the domain: accepted only as the documented anomaly.
+        if entity_id is None:
+            raise CanonicalError("DOMAIN_FILTER_ENTITY_ID_INVALID", self.name)
+        anomaly = row_filter["knownAnomaly"]
+        known_class = value in anomaly["classExact"] or any(
+            value.startswith(prefix) for prefix in anomaly["classPrefixes"]
+        )
+        if not known_class:
+            self.unclassified[value] = self.unclassified.get(value, 0) + 1
+            self.unclassified_count += 1
+        if anomaly["requirePriorDomainRowForEntityId"] and entity_id not in self.domain_entity_ids:
+            self.unexplained_count += 1
         self.excluded[value] = self.excluded.get(value, 0) + 1
         self.excluded_count += 1
         if len(self.excluded) > CONTRACT["maxCategoricalValues"]:
@@ -305,6 +341,13 @@ class TableAccumulator:
             "multisetDigest": format(self.multiset, "064x"),
             "columns": columns,
         }
+        if self.row_filter:
+            # Semantic on purpose: a violated filter must change the digest and is
+            # read by the comparator, which blocks the domain. Status only.
+            summary["domainFilter"] = {
+                "rule": "R13_DOMAIN_ROW_FILTER",
+                "status": "VIOLATED" if self.unclassified_count or self.unexplained_count else "CLEAN",
+            }
         if self.breakdown_fields:
             summary["breakdown"] = {
                 field: {
@@ -326,8 +369,12 @@ class TableAccumulator:
                 "exclusions": {
                     "rule": "R13_DOMAIN_ROW_FILTER",
                     "field": self.row_filter["field"],
+                    "rawRowCount": self.row_count + self.excluded_count,
                     "count": self.excluded_count,
                     "byValue": dict(sorted(self.excluded.items())),
+                    "unclassifiedClassRows": self.unclassified_count,
+                    "unclassifiedByValue": dict(sorted(self.unclassified.items())),
+                    "unexplainedRows": self.unexplained_count,
                 }
                 if self.row_filter
                 else None,
