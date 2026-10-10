@@ -63,12 +63,16 @@ describe("A9.1 sanitized semantic diagnostics", () => {
         call("parseTicks", 6, "t", { requestedFields: ["X", "Z"], wantedTicks: [1, 3] }),
       ],
     };
+    python.apiCalls[1].returnedFields = ["X", "Y"];
+    wasm.apiCalls[1].returnedFields = ["X", "Z"];
     const report = diagnoseRuntimeCalls(python, wasm);
     expect(report.grenade.status).toBe("FAIL");
-    expect(report.ticks.status).toBe("FAIL"); // request drift is itself a parity failure
+    expect(report.ticks.status).toBe("FAIL"); // request/output drift is itself a parity failure
     expect(report.ticks.requested_fields.difference.python_only).toEqual(["Y"]);
     expect(report.ticks.requested_fields.difference.wasm_only).toEqual(["Z"]);
     expect(report.ticks.requested_fields.wanted_ticks_equal).toBe(false);
+    expect(report.ticks.returned_field_difference.python_only).toEqual(["Y"]);
+    expect(report.ticks.returned_field_difference.wasm_only).toEqual(["Z"]);
   });
 
   it("fails closed when per-event evidence is missing", () => {
@@ -78,5 +82,38 @@ describe("A9.1 sanitized semantic diagnostics", () => {
     );
     expect(report.events[0].status).toBe("FAIL");
     expect(report.events[0].reasons).toContain("EVENT_EVIDENCE_MISSING");
+  });
+
+  
+  it("exposes returned tick/grenade field differences without raw records", () => {
+    const python = {
+      eventEvidence: [],
+      apiCalls: [
+        call("parseGrenades", 9, "g-python", { returnedFields: ["tick", "grenade_type"] }),
+        call("parseTicks", 2, "t-python", {
+          requestedFields: ["X"],
+          wantedTicks: [0, 1],
+          returnedFields: ["X", "health"],
+        }),
+      ],
+    };
+    const wasm = {
+      eventEvidence: [],
+      apiCalls: [
+        call("parseGrenades", 9, "g-wasm", { returnedFields: ["tick", "entity_id"] }),
+        call("parseTicks", 2, "t-wasm", {
+          requestedFields: ["X"],
+          wantedTicks: [0, 1],
+          returnedFields: ["X", "armor"],
+        }),
+      ],
+    };
+    const report = diagnoseRuntimeCalls(python, wasm);
+    expect(report.grenade.returned_field_difference.python_only).toEqual(["grenade_type"]);
+    expect(report.grenade.returned_field_difference.wasm_only).toEqual(["entity_id"]);
+    expect(report.ticks.returned_field_difference.python_only).toEqual(["health"]);
+    expect(report.ticks.returned_field_difference.wasm_only).toEqual(["armor"]);
+    expect(JSON.stringify(report)).not.toContain("g-python");
+    expect(JSON.stringify(report)).not.toContain("t-python");
   });
 });
