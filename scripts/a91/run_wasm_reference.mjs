@@ -72,7 +72,8 @@ export function normalizeEventRows(value, expectedEventName) {
       throw new Error("A91_WASM_EVENT_ROW_INVALID");
     if (!Object.hasOwn(row, "event_name")) return row;
     if (row.event_name !== expectedEventName) throw new Error("A91_WASM_EVENT_NAME_MISMATCH");
-    const { event_name: _eventName, ...semanticFields } = row;
+    const semanticFields = { ...row };
+    delete semanticFields.event_name;
     return semanticFields;
   });
 }
