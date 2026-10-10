@@ -185,9 +185,7 @@ export function validParityComparisons(comparisons) {
 }
 function sortedStrings(values) {
   return [
-    ...new Set(
-      Array.isArray(values) ? values.filter((value) => typeof value === "string") : [],
-    ),
+    ...new Set(Array.isArray(values) ? values.filter((value) => typeof value === "string") : []),
   ].sort();
 }
 function difference(left, right) {
@@ -208,24 +206,16 @@ export function diagnoseRuntimeCalls(python, wasm) {
   const pythonEventEvidence = Array.isArray(python.eventEvidence) ? python.eventEvidence : [];
   const wasmEventEvidence = Array.isArray(wasm.eventEvidence) ? wasm.eventEvidence : [];
   const pythonEvents = new Map(
-    pythonEventEvidence
-      .filter((x) => x?.eventName)
-      .map((x) => [x.eventName, x]),
+    pythonEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]),
   );
   const wasmEvents = new Map(
-    wasmEventEvidence
-      .filter((x) => x?.eventName)
-      .map((x) => [x.eventName, x]),
+    wasmEventEvidence.filter((x) => x?.eventName).map((x) => [x.eventName, x]),
   );
   const pythonCallEvents = new Map(
-    pythonCalls
-      .filter((x) => x?.api === "parseEvent" && x.eventName)
-      .map((x) => [x.eventName, x]),
+    pythonCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]),
   );
   const wasmCallEvents = new Map(
-    wasmCalls
-      .filter((x) => x?.api === "parseEvent" && x.eventName)
-      .map((x) => [x.eventName, x]),
+    wasmCalls.filter((x) => x?.api === "parseEvent" && x.eventName).map((x) => [x.eventName, x]),
   );
   const eventNames = [
     ...new Set([
@@ -299,7 +289,7 @@ export function diagnoseRuntimeCalls(python, wasm) {
         (JSON.stringify(left.requestedFields ?? null) ===
           JSON.stringify(right.requestedFields ?? null) &&
           JSON.stringify(left.wantedTicks ?? null) ===
-            JSON.stringify(right.wantedTicks ?? null)))
+          JSON.stringify(right.wantedTicks ?? null)))
         ? "PASS"
         : "FAIL",
     python_count: left?.count ?? null,
@@ -356,6 +346,7 @@ export function parityReport(python, wasm, sha) {
     semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,
-    evidencePolicy: "DIGEST_ONLY_PUBLIC_PARITY;SANITIZED_CALL_DIAGNOSTICS;RAW_RUNTIME_EVIDENCE_PRIVATE",
+    evidencePolicy:
+      "DIGEST_ONLY_PUBLIC_PARITY;SANITIZED_CALL_DIAGNOSTICS;RAW_RUNTIME_EVIDENCE_PRIVATE",
   };
 }
