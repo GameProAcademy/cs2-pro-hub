@@ -6,21 +6,21 @@ ou execução com a demo real foi feito nesta sessão.
 
 ## 1. Branch, HEAD, último commit
 
-| Item | Valor |
-| --- | --- |
-| Branch atual | `feat/a91-grenade-domain-contract-v2` |
+| Item                     | Valor                                           |
+| ------------------------ | ----------------------------------------------- |
+| Branch atual             | `feat/a91-grenade-domain-contract-v2`           |
 | Commit base desta branch | `a64c372e11f52426a5a9988da07b260d85e1f7d4` (P1) |
-| `main` na última leitura | `c433fcc264927ba7e0c8272b1ed89482a3a09128` |
+| `main` na última leitura | `c433fcc264927ba7e0c8272b1ed89482a3a09128`      |
 
 Este arquivo entra junto com um commit WIP nesta branch (ver seção 3).
 
 ## 2. Pull requests desta sessão
 
-| PR | Branch → base | HEAD | Estado | CI no HEAD |
-| --- | --- | --- | --- | --- |
-| #72 P0 contrato canônico | `fix/a91-p0-canonical-parity-contract` → `main` | `52878a8` | aberto, `clean`, não mergeado | Web OK, Contract-sensitive OK, F553 R11.2 OK, `CS2 parser tests` **skipped** |
-| #73 P1 memória WASM | `fix/a91-p1-wasm-memory-columnar` → `main` (empilhado sobre #72) | `a64c372` | aberto, `clean`, não mergeado | os três acima OK + `Python/WASM harness on public fixture` OK (run 38037605439), `CS2 parser tests` **skipped** |
-| #74 exceções não recuperáveis | `fix/parser-nonrecoverable-exceptions` → `main` | `3342db9` | aberto, **draft**, não mergeado | Web OK, Contract-sensitive OK, F553 R11.2 OK, `CS2 parser tests` **skipped** |
+| PR                            | Branch → base                                                    | HEAD      | Estado                          | CI no HEAD                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------- | --------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| #72 P0 contrato canônico      | `fix/a91-p0-canonical-parity-contract` → `main`                  | `52878a8` | aberto, `clean`, não mergeado   | Web OK, Contract-sensitive OK, F553 R11.2 OK, `CS2 parser tests` **skipped**                                    |
+| #73 P1 memória WASM           | `fix/a91-p1-wasm-memory-columnar` → `main` (empilhado sobre #72) | `a64c372` | aberto, `clean`, não mergeado   | os três acima OK + `Python/WASM harness on public fixture` OK (run 38037605439), `CS2 parser tests` **skipped** |
+| #74 exceções não recuperáveis | `fix/parser-nonrecoverable-exceptions` → `main`                  | `3342db9` | aberto, **draft**, não mergeado | Web OK, Contract-sensitive OK, F553 R11.2 OK, `CS2 parser tests` **skipped**                                    |
 
 `CS2 parser tests` é pulado em qualquer PR para `main` por condição do próprio
 workflow (`.github/workflows/quality-gates.yml:63-65`, só roda para
@@ -31,15 +31,16 @@ Nenhum PR foi aberto para o contrato v2 de granadas.
 ## 3. Arquivos alterados
 
 ### Commitados e enviados
+
 - #72 (`52878a8`): contrato canônico v1 — `scripts/a91/canonical/*`,
   `canonical_schema.{mjs,py}`, `field_compare.mjs`, `cross_runtime.check.mjs`,
   `parity.mjs`, `run_wasm_reference.mjs`, `python_reference.py`, testes,
   `docs/A9_1_CANONICAL_CONTRACT.md`.
 - #73 (`a64c372`, 17 arquivos, +1751/−241): `.github/workflows/a91-public-fixture-gate.yml`,
   `docs/A9_1_WASM_MEMORY.md`, `scripts/a91/{wasm_patches.py, wasm_memory.check.mjs,
-  public_fixture_gate.py, public_fixture_report.mjs, public_fixture_expectations.json,
-  run_wasm_reference.mjs, rebuild_wasm_large_demo.py, contracts.mjs, diagnostics.mjs,
-  execute.py, finalize_report.mjs, test_execute.py}`, `scripts/__tests__/a91-harness.test.ts`,
+public_fixture_gate.py, public_fixture_report.mjs, public_fixture_expectations.json,
+run_wasm_reference.mjs, rebuild_wasm_large_demo.py, contracts.mjs, diagnostics.mjs,
+execute.py, finalize_report.mjs, test_execute.py}`, `scripts/__tests__/a91-harness.test.ts`,
   `services/cs2-demo-parser/{python_reference.py, tests/test_python_reference.py}`.
 - #74 (`3342db9`): `services/cs2-demo-parser/parser.py`,
   `services/cs2-demo-parser/tests/test_non_demo_failures.py`,
@@ -47,6 +48,7 @@ Nenhum PR foi aberto para o contrato v2 de granadas.
   contract-sensitive).
 
 ### WIP desta branch (contrato v2 de granadas) — NÃO validado por completo
+
 `scripts/a91/canonical/contract.json`, `canonical/vectors.json`,
 `canonical_schema.check.mjs`, `canonical_schema.mjs`, `canonical_schema.py`,
 `cross_runtime.check.mjs`, `parity.mjs`, `public_fixture_expectations.json`,
@@ -58,20 +60,23 @@ Observação: o Prettier chegou a reformatar `canonical/shared_fixture.json`
 ## 4. Testes executados
 
 ### P1 (`a64c372`) — todos concluídos
-| Comando | Resultado |
-| --- | --- |
-| `vitest run` (scripts, vitest avulso em `/home/claude/vt`) | 25/25 |
-| `python3 -m unittest discover -s scripts/a91 -p "test_*.py"` | 28/28 |
-| `pytest -q` em `services/cs2-demo-parser` | 252 passed, 10 skipped |
-| `node scripts/a91/contracts-node-checks.mjs` | 13 pass, 0 fail |
-| checks avulsos (`wasm_value_normalization`, `header_probe`, `tick_probe`, `inventory_determinism`, `canonical_schema`, `cross_runtime`, `wasm_memory`) | todos PASS |
-| `public_fixture_gate.py` local (WASM pré-compilado do laboratório) | 17/17 checks, 8m21s |
-| CI do PR #73 | verde, incluindo build fixado (Rust 1.91.1, wasm-pack 0.13.1) e o gate público; passo do gate 5m30s |
+
+| Comando                                                                                                                                                | Resultado                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `vitest run` (scripts, vitest avulso em `/home/claude/vt`)                                                                                             | 25/25                                                                                               |
+| `python3 -m unittest discover -s scripts/a91 -p "test_*.py"`                                                                                           | 28/28                                                                                               |
+| `pytest -q` em `services/cs2-demo-parser`                                                                                                              | 252 passed, 10 skipped                                                                              |
+| `node scripts/a91/contracts-node-checks.mjs`                                                                                                           | 13 pass, 0 fail                                                                                     |
+| checks avulsos (`wasm_value_normalization`, `header_probe`, `tick_probe`, `inventory_determinism`, `canonical_schema`, `cross_runtime`, `wasm_memory`) | todos PASS                                                                                          |
+| `public_fixture_gate.py` local (WASM pré-compilado do laboratório)                                                                                     | 17/17 checks, 8m21s                                                                                 |
+| CI do PR #73                                                                                                                                           | verde, incluindo build fixado (Rust 1.91.1, wasm-pack 0.13.1) e o gate público; passo do gate 5m30s |
 
 ### #74 (`3342db9`)
+
 `pytest -q` completo: 259 passed, 10 skipped. `tests/test_non_demo_failures.py`: 13/13.
 
 ### WIP v2 (não commitado quando medido)
+
 Rodados depois da implementação do filtro, **antes** das últimas edições em
 `public_fixture_expectations.json` / `public_fixture_report.mjs`:
 `canonical_schema.check.mjs` PASS (v2, 38 valores, 5 tabelas),
@@ -80,6 +85,7 @@ Rodados depois da implementação do filtro, **antes** das últimas edições em
 **Não rodados ainda no estado atual:** vitest, unittest, pytest e o gate público.
 
 ### Comandos que falharam e o que foi feito
+
 - `bun install` / `npm install` no repo: registro npm do Lovable bloqueado no
   ambiente. A suíte web completa só roda no CI (verde nos três PRs).
 - Download do artefato e do log do run 38037605439 pela API: bloqueado pelo
@@ -98,6 +104,7 @@ Rodados depois da implementação do filtro, **antes** das últimas edições em
 simétricos, comparação por campo, 12 divergências intencionais detectadas.
 
 **P1 (#73):** pronto para revisão, CI verde.
+
 - Causa do trap reproduzida sem demo: tabela sintética de 4.550.843 linhas +
   473.748.061 bytes de lastro, caminho row-major → `RuntimeError: unreachable`
   em 65.536 páginas (4.294.967.296 bytes), último estágio `parsed_columns_built`
@@ -157,6 +164,7 @@ No GitHub (durável): branches `fix/a91-p0-canonical-parity-contract`,
 `feat/a91-grenade-domain-contract-v2` (com este checkpoint) e os PRs #72, #73, #74.
 
 Só existe no contêiner desta sessão (se perder, é reconstruível):
+
 - Fixture pública: `LaihoE/demoparser@4131a4fc` `src/parser/test_demo.dem`,
   60.601.900 bytes, sha256 `84a1a419…22cb2`.
 - Build WASM de laboratório: é o que `rebuild_wasm_large_demo.build_wasm_artifact()`
@@ -165,6 +173,7 @@ Só existe no contêiner desta sessão (se perder, é reconstruível):
 - Evidências anexadas pelo proprietário (artefatos e logs dos runs #24 e #25).
 
 Achados da Fase D já levantados (leitura, ainda não escritos no relatório final):
+
 - `main`, `91aeee8` (deploy) e `5703b1d` (pin) não têm histórico comum entre
   `main` e os outros dois; `parser.py`, `adapter.py`, `settings.py`,
   `raw_artifact.py` são idênticos byte a byte nos três.
@@ -178,3 +187,14 @@ Achados da Fase D já levantados (leitura, ainda não escritos no relatório fin
 - `RESOURCE_LIMIT` existe em `src/lib/pipeline/errors.ts` mas nada o emite.
 - R11.2 roda em Postgres local descartável no SHA de `main`; não prova nada
   sobre o worker implantado.
+
+## Atualização 06:10 BRT — contrato v2 validado localmente
+
+Rodado no estado desta branch: checks avulsos PASS, `unittest` 29/29, vitest
+25/25, `pytest` 252 passed / 10 skipped, Prettier limpo, gate público local
+18/18 checks. Paridade na fixture pública sob v2: `PASS`, 14/14 domínios
+comparáveis, 40/40 tabelas, 511/511 campos; exclusões publicadas: Python
+12.728 (`CC4` 3.776, `CKnife` 3.776, `CWeaponGlock` 5.176), WASM 21.939
+(`CC4` 6.639, `CKnife` 6.953, `CWeaponGlock` 8.347); domínio 504.320 linhas
+em ambos. Os critérios da seção 7.2 foram atendidos. Próxima ação: relatório
+final (seções A–I).
