@@ -293,7 +293,8 @@ export function diagnoseRuntimeCalls(python, wasm) {
       label !== "parseTicks" || (requestedFieldsEqual && wantedTicksEqual);
     return {
       domain: label,
-      status: countsEqual && digestsEqual && returnedFieldsEqual && callContractEqual ? "PASS" : "FAIL",
+      status:
+        countsEqual && digestsEqual && returnedFieldsEqual && callContractEqual ? "PASS" : "FAIL",
       python_count: left?.count ?? null,
       wasm_count: right?.count ?? null,
       python_digest: left?.outputDigest ?? null,
