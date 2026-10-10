@@ -67,6 +67,37 @@ class CanonicalVectorTests(unittest.TestCase):
                 options = {"block_rows": vector["blockRows"]} if "blockRows" in vector else {}
                 result = canonical.summarize_rows(vector["table"], [decode(row) for row in vector["rows"]], **options)
                 self.assertEqual(result["summary"], vector["expected"])
+                exclusions = result["diagnostics"]["exclusions"]
+                if exclusions is None:
+                    self.assertNotIn("expectedExclusions", vector)
+                    self.assertEqual(result["summary"]["rowCount"], len(vector["rows"]))
+                else:
+                    # Rule R13: same rows excluded, by value, as the JavaScript runtime.
+                    self.assertEqual(
+                        {"count": exclusions["count"], "byValue": exclusions["byValue"]},
+                        vector["expectedExclusions"],
+                    )
+                    self.assertEqual(result["summary"]["rowCount"] + exclusions["count"], len(vector["rows"]))
+
+    def test_domain_row_filter_is_fail_closed_and_scoped(self):
+        for bad in ({"tick": 1}, {"grenade_type": None, "tick": 1}, {"grenade_type": 7, "tick": 1}):
+            with self.assertRaises(canonical.CanonicalError) as caught:
+                canonical.summarize_rows("grenades", [bad])
+            self.assertEqual(caught.exception.code, "DOMAIN_FILTER_FIELD_INVALID")
+        rows = [
+            {"grenade_type": "CKnife", "tick": 1},
+            {"grenade_type": "CCSPlayerPawnGrenadeHolder", "tick": 2},
+            {"grenade_type": "CFlashbang", "tick": 3},
+        ]
+        filtered = canonical.summarize_rows("grenades", rows)
+        self.assertEqual(filtered["summary"]["rowCount"], 1)
+        self.assertEqual(
+            filtered["diagnostics"]["exclusions"]["byValue"],
+            {"CCSPlayerPawnGrenadeHolder": 1, "CKnife": 1},
+        )
+        untouched = canonical.summarize_rows("event:weapon_fire", rows)
+        self.assertEqual(untouched["summary"]["rowCount"], 3)
+        self.assertIsNone(untouched["diagnostics"]["exclusions"])
 
     def test_python_cannot_silently_round_a_steam_id(self):
         exact = 76561198012345679

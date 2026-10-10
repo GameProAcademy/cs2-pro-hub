@@ -132,7 +132,30 @@ export class TableAccumulator {
     this.samples = [];
     this.observed = { absent: 0, nonFinite: 0 };
     this.breakdown = Object.fromEntries(this.breakdownFields.map((field) => [field, new Map()]));
+    this.rowFilter = CONTRACT.domainRowFilters?.[name] ?? null;
+    this.excluded = new Map();
+    this.excludedCount = 0;
     this.finished = false;
+  }
+
+  /** Rule R13: true when the row belongs to the domain; excluded rows are counted. */
+  #admit(entries) {
+    const filter = this.rowFilter;
+    if (!filter) return true;
+    let value;
+    for (const [field, item] of entries) if (field === filter.field) value = item;
+    if (typeof value !== "string")
+      throw new CanonicalError("DOMAIN_FILTER_FIELD_INVALID", this.name);
+    if (
+      filter.includeAnySubstring.some((part) => value.includes(part)) &&
+      !filter.excludeAnySubstring.some((part) => value.includes(part))
+    )
+      return true;
+    this.excluded.set(value, (this.excluded.get(value) ?? 0) + 1);
+    this.excludedCount += 1;
+    if (this.excluded.size > CONTRACT.maxCategoricalValues)
+      throw new CanonicalError("CATEGORICAL_OVERFLOW", filter.field);
+    return false;
   }
 
   #column(field) {
@@ -162,6 +185,7 @@ export class TableAccumulator {
           ? Object.entries(row)
           : null;
     if (!entries) throw new CanonicalError("ROW_SHAPE_INVALID", this.name);
+    if (!this.#admit(entries)) return;
     const seen = new Set();
     const parts = [];
     const sample = this.samples.length < this.sampleRows ? {} : null;
@@ -254,6 +278,19 @@ export class TableAccumulator {
         columnBlockDigests,
         samples: this.samples,
         observed: this.observed,
+        // Rule R13: counts only (parser class names), published by the parity report.
+        exclusions: this.rowFilter
+          ? {
+              rule: "R13_DOMAIN_ROW_FILTER",
+              field: this.rowFilter.field,
+              count: this.excludedCount,
+              byValue: Object.fromEntries(
+                Array.from(this.excluded.entries()).sort((left, right) =>
+                  left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0,
+                ),
+              ),
+            }
+          : null,
       },
     };
   }

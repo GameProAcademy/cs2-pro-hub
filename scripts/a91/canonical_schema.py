@@ -191,7 +191,28 @@ class TableAccumulator:
         self.samples: list[dict[str, Any]] = []
         self.observed = {"absent": 0, "nonFinite": 0}
         self.breakdown: dict[str, dict[str, int]] = {field: {} for field in self.breakdown_fields}
+        self.row_filter = CONTRACT.get("domainRowFilters", {}).get(name)
+        self.excluded: dict[str, int] = {}
+        self.excluded_count = 0
         self.finished = False
+
+    def _admit(self, row: dict[str, Any]) -> bool:
+        """Rule R13: True when the row belongs to the domain; excluded rows are counted."""
+        row_filter = self.row_filter
+        if not row_filter:
+            return True
+        value = row.get(row_filter["field"])
+        if not isinstance(value, str):
+            raise CanonicalError("DOMAIN_FILTER_FIELD_INVALID", self.name)
+        if any(part in value for part in row_filter["includeAnySubstring"]) and not any(
+            part in value for part in row_filter["excludeAnySubstring"]
+        ):
+            return True
+        self.excluded[value] = self.excluded.get(value, 0) + 1
+        self.excluded_count += 1
+        if len(self.excluded) > CONTRACT["maxCategoricalValues"]:
+            raise CanonicalError("CATEGORICAL_OVERFLOW", row_filter["field"])
+        return False
 
     def _column(self, field: str) -> dict[str, Any]:
         column = self.columns.get(field)
@@ -213,6 +234,8 @@ class TableAccumulator:
             raise CanonicalError("TABLE_FINISHED", self.name)
         if not isinstance(row, dict):
             raise CanonicalError("ROW_SHAPE_INVALID", self.name)
+        if not self._admit(row):
+            return
         seen = set()
         parts = []
         sample = {} if len(self.samples) < self.sample_rows else None
@@ -299,6 +322,15 @@ class TableAccumulator:
                 "columnBlockDigests": column_block_digests,
                 "samples": self.samples,
                 "observed": self.observed,
+                # Rule R13: counts only (parser class names), published by the parity report.
+                "exclusions": {
+                    "rule": "R13_DOMAIN_ROW_FILTER",
+                    "field": self.row_filter["field"],
+                    "count": self.excluded_count,
+                    "byValue": dict(sorted(self.excluded.items())),
+                }
+                if self.row_filter
+                else None,
             },
         }
 

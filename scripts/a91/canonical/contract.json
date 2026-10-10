@@ -1,6 +1,6 @@
 {
   "contractName": "a91-canonical-parity",
-  "canonicalContractVersion": 1,
+  "canonicalContractVersion": 2,
   "status": "LABORATORY_PARITY_CONTRACT_NO_PRODUCTION_AUTHORITY",
   "blockRows": 4096,
   "sampleRows": 256,
@@ -17,6 +17,15 @@
   "categoricalBreakdown": {
     "grenades": ["grenade_type"]
   },
+  "domainRowFilters": {
+    "grenades": {
+      "field": "grenade_type",
+      "includeAnySubstring": ["Projectile", "Grenade", "Flash"],
+      "excludeAnySubstring": ["Player"],
+      "source": "LaihoE/demoparser@d3767705 src/parser/src/second_pass/entities.rs:388 (EntityType::Projectile predicate)",
+      "excludedRowsReport": "COUNT_BY_VALUE_PER_RUNTIME"
+    }
+  },
   "economyFields": [
     "balance",
     "start_balance",
@@ -26,14 +35,7 @@
     "round_start_equip_value"
   ],
   "valueClasses": ["null", "bool", "integer", "float", "string", "u64", "array", "object"],
-  "divergenceClasses": [
-    "FIELD_PRESENCE",
-    "ROW_COUNT",
-    "NULLABILITY",
-    "TYPE",
-    "VALUE",
-    "ROW_ORDER"
-  ],
+  "divergenceClasses": ["FIELD_PRESENCE", "ROW_COUNT", "NULLABILITY", "TYPE", "VALUE", "ROW_ORDER"],
   "rules": {
     "R1_NULL": "null, undefined, pandas NA/NaT and non-finite floats canonicalize to JSON null. null is never zero, false or an empty string.",
     "R2_U64": "Fields listed in u64DecimalFields are 64-bit identifiers. Canonical form is the exact decimal string. A float in such a field, or a JavaScript number, is U64_PRECISION_LOST and fails closed; so does non-decimal text (U64_INVALID). A 64-bit column the registry does not list fails closed in the Python reference as UNREGISTERED_U64_FIELD. Text fields that merely end in an id-like name (for example weapon_originalowner_xuid, which the parser emits as a possibly empty string) are plain strings.",
@@ -46,6 +48,7 @@
     "R9_ROW_ORDER": "Row order is the parser emission order and is significant. Equal row multisets in a different order are classified ROW_ORDER and fail.",
     "R10_EVENT_DISCRIMINATOR": "The WASM wrapper attaches event_name to every event row. It must equal the requested event for every row and is then treated as call metadata, not as a semantic field.",
     "R12_LOSSY_REFERENCE_FIELDS": "A field whose value the Python reference cannot deliver exactly (referenceLossyRequestFields) is not requested from either runtime, and the exclusion is reported. It is never requested and then ignored, and never compared after rounding.",
-    "R11_METADATA": "Requested fields, returned field lists, timings, memory and run identifiers are call evidence. They are never part of semantic evidence or semantic digests."
+    "R11_METADATA": "Requested fields, returned field lists, timings, memory and run identifiers are call evidence. They are never part of semantic evidence or semantic digests.",
+    "R13_DOMAIN_ROW_FILTER": "A table listed in domainRowFilters keeps only rows whose filter field is a string that contains at least one includeAnySubstring and no excludeAnySubstring. For grenades this is the parser's own definition of a projectile entity; rows of any other class are emitted only because the parser keeps a deleted projectile's entity id and a later entity reuses it. Excluded rows are never dropped silently: each runtime counts them by value, the parity report publishes both counts, and a filter field that is null or not a string fails closed as DOMAIN_FILTER_FIELD_INVALID."
   }
 }

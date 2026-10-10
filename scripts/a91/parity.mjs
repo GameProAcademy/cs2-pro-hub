@@ -406,6 +406,49 @@ export function envelopeSymmetry(python, wasm) {
   return { symmetric: issues.length === 0, issues };
 }
 
+const safeClassCounts = (byValue) => {
+  // Parser entity class names only; anything else is folded into OTHER so a
+  // free-form string can never reach the public report.
+  const counts = {};
+  for (const [key, count] of Object.entries(byValue ?? {})) {
+    const name = /^[A-Za-z0-9_]{1,64}$/.test(key) ? key : "OTHER";
+    counts[name] = (counts[name] ?? 0) + count;
+  }
+  return Object.fromEntries(
+    Object.entries(counts).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
+};
+
+/**
+ * Contract rule R13: rows a domain row filter kept out of a comparable table.
+ * Always published, per runtime, so an exclusion can never be silent. Counts
+ * of excluded rows are NOT a parity dimension: by definition they are rows
+ * that do not belong to the domain.
+ */
+export function contractExclusions(python, wasm) {
+  const pythonTables = artifactTables(python);
+  const wasmTables = artifactTables(wasm);
+  const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
+  const result = [];
+  for (const name of names) {
+    const left = pythonTables[name]?.diagnostics?.exclusions ?? null;
+    const right = wasmTables[name]?.diagnostics?.exclusions ?? null;
+    if (!left && !right) continue;
+    result.push({
+      table: name,
+      rule: "R13_DOMAIN_ROW_FILTER",
+      python_excluded_rows: left?.count ?? null,
+      wasm_excluded_rows: right?.count ?? null,
+      excluded_rows_equal: left !== null && right !== null && left.count === right.count,
+      python_excluded_by_class: left ? safeClassCounts(left.byValue) : null,
+      wasm_excluded_by_class: right ? safeClassCounts(right.byValue) : null,
+      python_domain_rows: pythonTables[name]?.summary?.rowCount ?? null,
+      wasm_domain_rows: wasmTables[name]?.summary?.rowCount ?? null,
+    });
+  }
+  return result;
+}
+
 /**
  * Field-level diagnostics for every canonical table plus the header. Output is
  * sanitized by construction: field names, classes, counts, row indices and
@@ -458,7 +501,7 @@ export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
   const fieldDiagnostics = diagnoseFields(python, wasm);
   return {
-    schema_version: 5,
+    schema_version: 6,
     status: validParityComparisons(comparisons) ? "PASS" : "FAIL",
     demo_sha256: sha,
     comparisons,
@@ -467,6 +510,7 @@ export function parityReport(python, wasm, sha) {
     crossRuntimeComparableFieldPassCount: fieldDiagnostics.field_pass_count,
     crossRuntimeComparableFieldCountReason: null,
     field_diagnostics: fieldDiagnostics,
+    contract_exclusions: contractExclusions(python, wasm),
     semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,

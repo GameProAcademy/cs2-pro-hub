@@ -1,12 +1,20 @@
 {
   "schemaVersion": 1,
   "purpose": "Strict ratchet for the automatic public-fixture regression gate. It records what was MEASURED on the public upstream test demo; it is not a statement about the real A9.1 demo and it authorizes nothing.",
-  "divergingDomains": ["game_state", "grenades"],
-  "divergingTables": ["grenades"],
+  "divergingDomains": [],
+  "divergingTables": [],
   "notComparableDomains": ["player_identity", "players"],
   "divergenceNotes": {
-    "grenades": "Row counts differ between the Python wheel and the WASM build of the same pinned commit only for non-grenade entity classes (CC4, CKnife, CWeaponGlock): upstream keeps deleted projectile entity ids in a set that later, reused ids still match. The nine grenade/projectile classes are equal. Resolving this is a versioned contract change that needs owner approval; it is deliberately NOT hidden here.",
-    "game_state": "Composite domain that includes the grenade table; diverges only because grenades diverges."
+    "none": "Under canonical contract v2 no comparable domain diverges on the public fixture. See contractExclusions for the rows rule R13 keeps out of the grenade domain."
+  },
+  "contractExclusions": {
+    "grenades": {
+      "pythonExcludedRows": 12728,
+      "wasmExcludedRows": 21939,
+      "domainRows": 504320,
+      "classes": ["CC4", "CKnife", "CWeaponGlock"],
+      "note": "Non-grenade entity classes emitted through reused entity ids (upstream entities.rs:388 predicate, stale projectile id set). Measured, not assumed: any other class, or any change in these counts, fails the gate."
+    }
   },
   "limits": {
     "wasmPeakBytes": 402653184,

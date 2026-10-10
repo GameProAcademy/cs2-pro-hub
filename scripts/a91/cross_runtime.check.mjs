@@ -305,13 +305,64 @@ assert.throws(
     wasmArtifact(fixture, (artifact) => {
       artifact.grenadeEvidence.table = {
         ...artifact.grenadeEvidence.table,
-        canonicalContractVersion: 2,
+        canonicalContractVersion: CANONICAL_CONTRACT_VERSION + 1,
       };
     }),
     SHA,
   );
   assert.equal(report.status, "FAIL");
   assert.equal(tableVerdict(report, "grenades").status, "BLOCKED");
+}
+
+// Contract v2, rule R13: rows of non-grenade classes (stale entity ids) are
+// outside the grenade domain. They are reported per runtime, and the filter
+// cannot hide a divergence among real grenade rows.
+{
+  const stale = (grenadeType, tick) => ({
+    grenade_type: grenadeType,
+    grenade_entity_id: 77,
+    x: { $: "f64", v: "NaN" },
+    y: { $: "f64", v: "NaN" },
+    z: { $: "f64", v: "NaN" },
+    tick,
+    steamid: { $: "u64", v: "76561198012345680" },
+    name: "bravo",
+  });
+  const source = clone(fixture);
+  // Interleaved, not appended: the surviving rows must keep their order.
+  source.grenades.splice(1, 0, stale("CKnife", 120), stale("CC4", 120));
+  source.grenades.push(stale("CWeaponGlock", 130));
+  const report = parityReport(python, wasmArtifact(source), SHA);
+  assert.equal(report.status, "PASS", JSON.stringify(report.field_diagnostics.first_divergence));
+  assert.equal(domainStatus(report).grenades, "PASS");
+  assert.equal(tableVerdict(report, "grenades").status, "PASS");
+  assert.deepEqual(report.contract_exclusions, [
+    {
+      table: "grenades",
+      rule: "R13_DOMAIN_ROW_FILTER",
+      python_excluded_rows: 0,
+      wasm_excluded_rows: 3,
+      excluded_rows_equal: false,
+      python_excluded_by_class: {},
+      wasm_excluded_by_class: { CC4: 1, CKnife: 1, CWeaponGlock: 1 },
+      python_domain_rows: fixture.grenades.length,
+      wasm_domain_rows: fixture.grenades.length,
+    },
+  ]);
+  assert.equal(JSON.stringify(report).includes("bravo"), false);
+
+  // One extra row of a real grenade class in one runtime still fails.
+  const diverged = clone(fixture);
+  diverged.grenades.push(stale("CSmokeGrenade", 131));
+  const failing = parityReport(python, wasmArtifact(diverged), SHA);
+  assert.equal(failing.status, "FAIL");
+  assert.equal(domainStatus(failing).grenades, "FAIL");
+  assert.ok(tableVerdict(failing, "grenades").divergence_classes.includes("ROW_COUNT"));
+
+  // A changed value inside a real grenade row still fails.
+  const changed = clone(fixture);
+  changed.grenades[0].tick += 1;
+  assert.equal(domainStatus(parityReport(python, wasmArtifact(changed), SHA)).grenades, "FAIL");
 }
 
 console.log(

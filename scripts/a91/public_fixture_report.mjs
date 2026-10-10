@@ -111,6 +111,22 @@ check(
   sameSet(notComparable, expectations.notComparableDomains),
   { observed: notComparable.sort(), expected: [...expectations.notComparableDomains].sort() },
 );
+// Contract rule R13: what the grenade row filter kept out must be exactly the
+// measured, documented set. Another class or another count fails.
+const exclusions = parity.contract_exclusions ?? [];
+const grenadeExclusion = exclusions.find((item) => item.table === "grenades");
+const expectedExclusion = expectations.contractExclusions.grenades;
+check(
+  "contract_exclusions_match_ratchet",
+  exclusions.length === 1 &&
+    grenadeExclusion?.python_excluded_rows === expectedExclusion.pythonExcludedRows &&
+    grenadeExclusion?.wasm_excluded_rows === expectedExclusion.wasmExcludedRows &&
+    grenadeExclusion?.python_domain_rows === expectedExclusion.domainRows &&
+    grenadeExclusion?.wasm_domain_rows === expectedExclusion.domainRows &&
+    sameSet(Object.keys(grenadeExclusion.python_excluded_by_class), expectedExclusion.classes) &&
+    sameSet(Object.keys(grenadeExclusion.wasm_excluded_by_class), expectedExclusion.classes),
+  { observed: exclusions },
+);
 check(
   "parity_status_is_reported_not_forced",
   parity.status === (failingDomains.length ? "FAIL" : "PASS"),
@@ -254,6 +270,7 @@ const report = {
     emptyInBothTableCount: diagnostics.empty_in_both_table_count,
     fieldCount: diagnostics.field_count,
     fieldPassCount: diagnostics.field_pass_count,
+    contractExclusions: exclusions,
     divergingDomains: failingDomains.sort(),
     divergingTables: diagnostics.tables
       .filter((table) => table.status !== "PASS")

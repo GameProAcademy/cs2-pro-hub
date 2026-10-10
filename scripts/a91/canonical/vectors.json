@@ -1,6 +1,6 @@
 {
   "vectorsVersion": 1,
-  "canonicalContractVersion": 1,
+  "canonicalContractVersion": 2,
   "inputEncoding": {
     "u64": "64-bit identifier in the runtime's NATIVE carrier: Python int (numpy uint64), JavaScript decimal string (the WASM wrapper's representation)",
     "bigint": "integer in the widest native integer carrier: Python int, JavaScript BigInt",
@@ -407,16 +407,10 @@
         }
       ],
       "expected": {
-        "canonicalContractVersion": 1,
+        "canonicalContractVersion": 2,
         "table": "ticks",
         "rowCount": 3,
-        "fields": [
-          "X",
-          "health",
-          "name",
-          "steamid",
-          "tick"
-        ],
+        "fields": ["X", "health", "name", "steamid", "tick"],
         "tableDigest": "7562e4cc05eadd73b7b155af8b650147c751285a4d2863452bfe17bf818ba9cb",
         "multisetDigest": "bc47714d16efa4ab89ac4a2c2c43f87a0e86cf6e046662366e66543f8d2b4279",
         "columns": {
@@ -514,15 +508,10 @@
         }
       ],
       "expected": {
-        "canonicalContractVersion": 1,
+        "canonicalContractVersion": 2,
         "table": "event:player_death",
         "rowCount": 3,
-        "fields": [
-          "assister_steamid",
-          "headshot",
-          "tick",
-          "user_steamid"
-        ],
+        "fields": ["assister_steamid", "headshot", "tick", "user_steamid"],
         "tableDigest": "5beaa8e2cb6928783d279fb9fb08cc93b8d287c882a9df6b2cc7d8c7d2a87255",
         "multisetDigest": "66bcea8dcb93c6be8a0f56914b37069670806831d290c4858ca16d3a5e90e65e",
         "columns": {
@@ -605,13 +594,10 @@
         }
       ],
       "expected": {
-        "canonicalContractVersion": 1,
+        "canonicalContractVersion": 2,
         "table": "event:late_field",
         "rowCount": 5,
-        "fields": [
-          "extra",
-          "tick"
-        ],
+        "fields": ["extra", "tick"],
         "tableDigest": "5f6deebd6cac9260561ea15ce241c9220c1f5a9813d76613abcdd117cf7cd928",
         "multisetDigest": "2ba97342a07a42182812e0ae34f7e88fd7de7f24890ed7b3bb034eb2bec80f52",
         "columns": {
@@ -702,50 +688,45 @@
         }
       ],
       "expected": {
-        "canonicalContractVersion": 1,
+        "canonicalContractVersion": 2,
         "table": "grenades",
-        "rowCount": 5,
-        "fields": [
-          "grenade_type",
-          "steamid",
-          "tick",
-          "x"
-        ],
-        "tableDigest": "48aa3d6fcad53b471664af70780d84101af002d7e4863c276fb1b5112f37344f",
-        "multisetDigest": "fe07cd8648259cbe0b09b7088d3bcc1f7b30612202526feaebc86683d11f8ec1",
+        "rowCount": 4,
+        "fields": ["grenade_type", "steamid", "tick", "x"],
+        "tableDigest": "2a5609099707ced8cc80d90a44df0d777cdcd5001530517ec0a279d9aa4b0841",
+        "multisetDigest": "6359d5726cc10d8816ef6120d74ec73d0bda71ad1a2a6b2ca0af4d498785a39b",
         "columns": {
           "grenade_type": {
-            "digest": "a227f15083a0b611903a002aecd0a61be083b6e2248df2263982572a6c98439f",
+            "digest": "3f778f61d2307692efd82e1e10451681468128bcf4843a9f2938f2655d6972bc",
             "classes": {
               "null": 0,
               "bool": 0,
               "integer": 0,
               "float": 0,
-              "string": 5,
+              "string": 4,
               "u64": 0,
               "array": 0,
               "object": 0
             }
           },
           "steamid": {
-            "digest": "3c1a82251a21ebab5bf81279f34e61f28ea45608f7e4c2723c1edfdbc2b7af0a",
+            "digest": "58528e344e2134d8d0abcc00a96bb4bcacc48d96a5c98ad2b4fe7335fb469719",
             "classes": {
               "null": 0,
               "bool": 0,
               "integer": 0,
               "float": 0,
               "string": 0,
-              "u64": 5,
+              "u64": 4,
               "array": 0,
               "object": 0
             }
           },
           "tick": {
-            "digest": "508d03ee2b6565d70c34565c39c73f9736884fe2b6bc4b4853363554bfbfc498",
+            "digest": "01016b125515e4125c62d2332a05e889ec947c24ea51fd819a7a8101b57dfe93",
             "classes": {
               "null": 0,
               "bool": 0,
-              "integer": 5,
+              "integer": 4,
               "float": 0,
               "string": 0,
               "u64": 0,
@@ -754,9 +735,9 @@
             }
           },
           "x": {
-            "digest": "a20b19a44eeb495288edbe3a470587e8b5149c9fbc1073257a7285959677868e",
+            "digest": "f395f2dd5d08c97c025917d4bd02bf3a7ffafed44c0b3fe87a6881da051d1194",
             "classes": {
-              "null": 3,
+              "null": 2,
               "bool": 0,
               "integer": 1,
               "float": 1,
@@ -769,10 +750,15 @@
         },
         "breakdown": {
           "grenade_type": {
-            "CKnife": 1,
             "CSmokeGrenade": 2,
             "CSmokeGrenadeProjectile": 2
           }
+        }
+      },
+      "expectedExclusions": {
+        "count": 1,
+        "byValue": {
+          "CKnife": 1
         }
       }
     },
@@ -781,7 +767,7 @@
       "table": "event:empty",
       "rows": [],
       "expected": {
-        "canonicalContractVersion": 1,
+        "canonicalContractVersion": 2,
         "table": "event:empty",
         "rowCount": 0,
         "fields": [],
