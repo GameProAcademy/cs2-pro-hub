@@ -11,6 +11,9 @@ on:
     paths:
       - "supabase/migrations/**"
       - "scripts/queue/**"
+      - "services/cs2-demo-parser/worker.py"
+      - "services/cs2-demo-parser/h3e91_execution.py"
+      - "src/lib/pipeline/durableBridge.server.ts"
       - ".github/workflows/queue-semantics-probe.yml"
   workflow_dispatch:
 
@@ -60,12 +63,33 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/queue/queue_semantics_probe.py | tee "$RUNNER_TEMP/queue-semantics-report.json"
-      - name: Upload the probe report
+      - name: Set up Python for the worker
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Install the worker dependencies
+        run: python -m pip install -r services/cs2-demo-parser/requirements.txt
+      - name: Run the recovery protocol probe (real worker loop, real queue functions, real ledger)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python scripts/queue/recovery_protocol_probe.py | tee "$RUNNER_TEMP/queue-recovery-report.json"
+      - name: Publish the probe verdicts as annotations
+        if: always()
+        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json"
+      - name: Upload the probe reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: queue-semantics-report
-          path: ${{ runner.temp }}/queue-semantics-report.json
+          path: |
+            ${{ runner.temp }}/queue-semantics-report.json
+            ${{ runner.temp }}/queue-recovery-report.json
           if-no-files-found: warn
           retention-days: 14
       - name: Tear down disposable services

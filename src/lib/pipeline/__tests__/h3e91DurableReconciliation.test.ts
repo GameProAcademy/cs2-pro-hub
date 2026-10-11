@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { reconcileDurableExecution } from "@/lib/pipeline/durableBridge.server";
+import { durableExecutionId, reconcileDurableExecution } from "@/lib/pipeline/durableBridge.server";
 
 const rpc = vi.hoisted(() => vi.fn());
 const maybeSingle = vi.hoisted(() => vi.fn());
@@ -20,8 +20,12 @@ const input = {
   messageId: 7,
   attempt: 2,
   workerId: "worker-1",
-  executionId: "e92a9a08-6268-5322-9678-5e9f4fea1f20",
+  // uuid5(NAMESPACE_URL, "h3e91:durable:<job>:1:<upload>:dispatch:2"), computed
+  // with Python's uuid module: the worker and the bridge must agree.
+  executionId: "bc77abbf-bd05-5091-b526-269c6bca2e16",
 };
+// Same job, dispatch 0: the identity that existed before dispatches had their own.
+const DISPATCH_ZERO_EXECUTION_ID = "e92a9a08-6268-5322-9678-5e9f4fea1f20";
 
 const boundJob = {
   queue_message_id: input.messageId,
@@ -73,7 +77,25 @@ describe("durable execution reconciliation", () => {
     maybeSingle.mockResolvedValue({ data: { ...boundJob, status: "processing" }, error: null });
   });
 
-  it.each(["NONE", "INTENT_ONLY", "STARTED", "INVALID"])(
+  it("gives every dispatch of a job its own execution identity and keeps dispatch 0 unchanged", () => {
+    const id = (dispatch: number) =>
+      durableExecutionId(input.jobId, boundJob.attempt_number, boundJob.upload_id, dispatch);
+    expect(id(0)).toBe(DISPATCH_ZERO_EXECUTION_ID);
+    expect(id(2)).toBe(input.executionId);
+    expect(new Set([id(0), id(1), id(2), id(3)]).size).toBe(4);
+    for (const invalid of [-1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])
+      expect(() => id(invalid)).toThrow();
+  });
+
+  it("refuses an execution identity that belongs to another dispatch of the same job", async () => {
+    await expect(
+      reconcileDurableExecution({ ...input, executionId: DISPATCH_ZERO_EXECUTION_ID }),
+    ).resolves.toEqual({ status: "reconciliation_required", lifecycle: "UNKNOWN" });
+    expect(readLifecycle).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each(["NONE", "INVALID"])(
     "keeps %s fail-closed without touching queue state",
     async (state) => {
       readLifecycle.mockResolvedValueOnce(lifecycle(state));
@@ -84,6 +106,52 @@ describe("durable execution reconciliation", () => {
       expect(rpc).not.toHaveBeenCalled();
     },
   );
+
+  it.each(["INTENT_ONLY", "STARTED"])(
+    "closes a redelivered dispatch left at %s instead of replaying its identity",
+    async (state) => {
+      readLifecycle.mockResolvedValueOnce(lifecycle(state));
+      rpc.mockResolvedValueOnce({
+        data: { accepted: true, status: "pending", retry: true },
+        error: null,
+      });
+      await expect(reconcileDurableExecution(input)).resolves.toEqual({
+        status: "dispatch_abandoned",
+        lifecycle: state,
+        queue: { accepted: true, status: "pending", retry: true },
+      });
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(rpc).toHaveBeenCalledWith("abandon_demo_parse_dispatch", {
+        _job_id: input.jobId,
+        _message_id: input.messageId,
+        _attempt: input.attempt,
+        _worker_id: input.workerId,
+        _lifecycle: state,
+      });
+    },
+  );
+
+  it.each([
+    ["the first holder of the dispatch", "not_a_redelivery"],
+    ["an expired lease", "lease_expired"],
+    ["a superseded claim", "claim_not_current"],
+    ["a pending cancellation", "cancellation_pending"],
+  ])("does not report an abandoned dispatch for %s", async (_case, reason) => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("STARTED"));
+    rpc.mockResolvedValueOnce({ data: { accepted: false, reason }, error: null });
+    await expect(reconcileDurableExecution(input)).resolves.toEqual({
+      status: "reconciliation_required",
+      lifecycle: "STARTED",
+    });
+  });
+
+  it("surfaces a database error while closing an abandoned dispatch", async () => {
+    readLifecycle.mockResolvedValueOnce(lifecycle("STARTED"));
+    rpc.mockResolvedValueOnce({ data: null, error: { message: "unavailable" } });
+    await expect(reconcileDurableExecution(input)).rejects.toMatchObject({
+      code: "PERSISTENCE_ERROR",
+    });
+  });
 
   it("acknowledges a persisted FINISHED only when the job already has an authoritative result", async () => {
     readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
@@ -110,7 +178,7 @@ describe("durable execution reconciliation", () => {
     });
   });
 
-  it("never fabricates completion for FINISHED when persisted job output is absent", async () => {
+  it("never fabricates completion for FINISHED when the result never committed: the dispatch is closed for a new execution", async () => {
     readLifecycle.mockResolvedValueOnce(lifecycle("FINISHED", "PARSE_SUCCEEDED"));
     maybeSingle.mockResolvedValueOnce({
       data: {
@@ -119,11 +187,20 @@ describe("durable execution reconciliation", () => {
       },
       error: null,
     });
-    await expect(reconcileDurableExecution(input)).resolves.toEqual({
-      status: "reconciliation_required",
+    rpc.mockResolvedValueOnce({
+      data: { accepted: true, status: "pending", retry: true },
+      error: null,
+    });
+    await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
+      status: "dispatch_abandoned",
       lifecycle: "FINISHED",
     });
-    expect(rpc).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith(
+      "abandon_demo_parse_dispatch",
+      expect.objectContaining({ _lifecycle: "FINISHED" }),
+    );
+    expect(rpc).not.toHaveBeenCalledWith("finalize_demo_parse_message", expect.anything());
   });
 
   it.each([
@@ -300,7 +377,32 @@ describe("durable execution reconciliation", () => {
       });
       expect(rpc).toHaveBeenCalledWith(
         "fail_demo_parse_message",
-        expect.objectContaining({ _error_code: "WORKER_INTERRUPTED" }),
+        expect.objectContaining({ _error_code: "WORKER_INTERRUPTED", _permanent: false }),
+      );
+    },
+  );
+
+  // A lost `fail` must be classified exactly like a delivered one.
+  it.each([
+    ["FAILED", "PARSE_TIMEOUT", false],
+    ["FAILED", "PARSER_ERROR", false],
+    ["FAILED", "CORRUPTED_DEMO", true],
+    ["FAILED", "PAYLOAD_TOO_LARGE", true],
+    ["ABORTED", "DOWNLOAD_ERROR", false],
+    ["ABORTED", "HASH_MISMATCH", true],
+    ["ABORTED", "LEASE_REJECTED", false],
+  ])(
+    "reconciles a lost failure report %s/%s with permanent=%s",
+    async (state, outcome, permanent) => {
+      readLifecycle.mockResolvedValueOnce(lifecycle(state, outcome));
+      rpc.mockResolvedValueOnce({ data: { accepted: true }, error: null });
+      await expect(reconcileDurableExecution(input)).resolves.toMatchObject({
+        status: "queue_reconciled",
+        lifecycle: state,
+      });
+      expect(rpc).toHaveBeenCalledWith(
+        "fail_demo_parse_message",
+        expect.objectContaining({ _error_code: outcome, _permanent: permanent }),
       );
     },
   );
