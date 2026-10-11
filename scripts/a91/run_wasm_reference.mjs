@@ -15,6 +15,71 @@ import {
 } from "./contracts.mjs";
 
 import { createTelemetry, failureEvidence } from "./diagnostics.mjs";
+import {
+  CANONICAL_CONTRACT_DIGEST,
+  CANONICAL_CONTRACT_VERSION,
+  CONTRACT,
+  summarizeRows,
+} from "./canonical_schema.mjs";
+
+/** Canonical table name for each table-producing API (contract v1). */
+export function tableNameFor(api, request = {}) {
+  if (api === "parseEvent") return `event:${request.eventName}`;
+  if (api === "parseGrenades") return "grenades";
+  if (api === "parseTicks") return "ticks";
+  return null;
+}
+
+/** Economy domain = the contract's economy columns of the tick table. */
+export function economyProjection(table) {
+  const fields = CONTRACT.economyFields.filter((field) => Object.hasOwn(table.columns, field));
+  if (fields.length === 0) return { status: "FAILED", reason: "NO_ECONOMY_FIELDS" };
+  return {
+    status: "TICK_PROJECTION",
+    canonicalContractVersion: table.canonicalContractVersion,
+    rowCount: table.rowCount,
+    fields,
+    columns: Object.fromEntries(fields.map((field) => [field, table.columns[field]])),
+  };
+}
+
+/**
+ * Semantic evidence shared by every WASM artifact. python_reference.py's
+ * build_semantic_evidence() must return the same keys with the same shapes
+ * (contract rule R11); scripts/a91/cross_runtime.check.mjs enforces it.
+ */
+export function buildSemanticEvidence({
+  header,
+  events,
+  grenades,
+  ticks,
+  tickProbe,
+  requestedFields,
+  wantedTicks,
+}) {
+  const byName = (predicate) => events.filter((event) => predicate(event.eventName));
+  return {
+    headerEvidence: header,
+    mapEvidence: { map: header?.map_name ?? null },
+    timingEvidence: { header, tickProbe },
+    eventEvidence: events,
+    roundEvidence: byName((name) => name.startsWith("round_")),
+    grenadeEvidence: { table: grenades },
+    bombEvidence: byName((name) => name.startsWith("bomb_")),
+    deathEvidence: byName((name) => name === "player_death"),
+    damageEvidence: byName((name) => name === "player_hurt"),
+    weaponEvidence: byName((name) => name.startsWith("weapon_") || name.startsWith("item_")),
+    economyEvidence: economyProjection(ticks),
+    tickDomainEvidence: {
+      tickProbeSource: tickProbe.source,
+      maxFrameTick: tickProbe.maxFrameTick,
+      requestedFields,
+      wantedTicks,
+      authoritativeDomain: false,
+      table: ticks,
+    },
+  };
+}
 
 const root = resolve(new URL("../..", import.meta.url).pathname);
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -261,6 +326,7 @@ export function runWasm(path, authorization, options = {}) {
   const LARGE_DEM_MEMORY_HEADROOM_BYTES = 1536 * 1024 * 1024;
 
   const calls = [];
+  const tableDiagnostics = {};
   const call = (api, args = [], request = {}, inputBytes = bytes) => {
     const stageName = {
       parseHeader: "parse_header",
@@ -283,6 +349,24 @@ export function runWasm(path, authorization, options = {}) {
               ? normalizeEventRows(normalizedValue, request.eventName)
               : normalizedValue;
           const result = canonicalizeInventory(api, apiValue);
+          const tableName = tableNameFor(api, request);
+          if (tableName) {
+            // Table APIs go through canonical contract v1: identifiers stay
+            // exact, the digest covers every row, and only a bounded private
+            // sample is retained. The summary is the semantic evidence.
+            if (!Array.isArray(result)) throw new Error("A91_WASM_TABLE_SHAPE_INVALID");
+            const table = summarizeRows(tableName, result);
+            tableDiagnostics[tableName] = table.diagnostics;
+            calls.push({
+              api,
+              status: "SUCCEEDED",
+              ...request,
+              outputDigest: table.summary.tableDigest,
+              count: table.summary.rowCount,
+              returnedFields: table.summary.fields,
+            });
+            return table.summary;
+          }
           const outputDigest = digest(result);
           calls.push({
             api,
@@ -290,13 +374,7 @@ export function runWasm(path, authorization, options = {}) {
             ...request,
             outputDigest,
             count: Array.isArray(result) ? result.length : null,
-            returnedFields: Array.isArray(result)
-              ? [
-                  ...new Set(
-                    result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
-                  ),
-                ].sort()
-              : Object.keys(result ?? {}),
+            returnedFields: Array.isArray(result) ? [] : Object.keys(result ?? {}),
           });
           return result;
         } catch (error) {
@@ -334,19 +412,26 @@ export function runWasm(path, authorization, options = {}) {
   const fields = call("listUpdatedFields", []);
   const events = [];
   for (const event of surface.events) {
+    // Contract rule R12: properties the Python reference can only deliver
+    // rounded are not requested from either runtime; exclusions are reported.
+    const lossy = CONTRACT.referenceLossyRequestFields.eventPlayer;
+    const excludedRequestFields = event.playerFields
+      .filter((f) => f.requestAllowed && lossy.includes(f.field))
+      .map((f) => f.field);
     const requestedPlayerFields = event.playerFields
-      .filter((f) => f.requestAllowed)
+      .filter((f) => f.requestAllowed && !lossy.includes(f.field))
       .map((f) => f.field);
     const requestedOtherFields = event.otherFields
       .filter((f) => f.requestAllowed)
       .map((f) => f.field);
-    const value = call(
+    const table = call(
       "parseEvent",
       [event.eventName, requestedPlayerFields, requestedOtherFields],
       {
         eventName: event.eventName,
         requestedPlayerFields,
         requestedOtherFields,
+        excludedRequestFields,
         requestEvidence: [...event.playerFields, ...event.otherFields].filter(
           (f) => f.requestAllowed,
         ),
@@ -357,13 +442,9 @@ export function runWasm(path, authorization, options = {}) {
     evidence.unavailableFields = [...requestedPlayerFields, ...requestedOtherFields].filter(
       (f) => !returned.includes(f),
     );
-    events.push({
-      eventName: event.eventName,
-      status: evidence.status,
-      count: Array.isArray(value) ? value.length : null,
-      fullDigest: value === null ? null : digest(value),
-      samples: sample(value),
-    });
+    // Semantic evidence only (contract rule R11): exactly the keys the
+    // Python producer emits. Request/return lists stay in apiCalls.
+    events.push({ eventName: event.eventName, status: evidence.status, table });
   }
   const grenades = call("parseGrenades", []);
   const tickProbe = telemetry.step("frame_tick_probe", () => deriveDemoTickProbe(bytes));
@@ -379,7 +460,7 @@ export function runWasm(path, authorization, options = {}) {
     maxFrameTick: tickProbe.maxFrameTick,
     authoritativeDomain: false,
   });
-  if (!Array.isArray(tickValues) || tickValues.length === 0) {
+  if (!tickValues || tickValues.rowCount === 0) {
     telemetry.step(
       "parse_ticks_validation",
       () => {
@@ -394,15 +475,15 @@ export function runWasm(path, authorization, options = {}) {
   const normalizedResult = {
     header,
     events,
-    grenades: sample(grenades, 256),
-    ticks: sample(tickValues),
+    grenades,
+    ticks: tickValues,
     playerIdentity: { status: "NOT_AVAILABLE_ON_WASM" },
   };
   const normalizedResultDigest = telemetry.step("normalization", () => digest(normalizedResult));
   const failed = calls.some((c) => c.status === "PARSE_FAILED") || wantedTicks.length === 0;
   const byName = (predicate) => events.filter((e) => predicate(e.eventName));
   const artifact = {
-    artifactVersion: 2,
+    artifactVersion: 3,
     runtime: "WASM",
     runId: `wasm:${randomUUID()}`,
     executionKind: "REAL_DEM_FULL_FILE",
@@ -417,6 +498,7 @@ export function runWasm(path, authorization, options = {}) {
     catalogDigest: surface.catalogDigest,
     contractVersion: surface.contractVersion,
     contractDigest: surface.contractDigest,
+    canonicalContract: { version: CANONICAL_CONTRACT_VERSION, digest: CANONICAL_CONTRACT_DIGEST },
     artifactIdentity: digest({
       bindingSha256: manifest.binding.sha256,
       wasmSha256: manifest.wasm.sha256,
@@ -444,30 +526,23 @@ export function runWasm(path, authorization, options = {}) {
     fieldInventory: sample(fields),
     eventInventory: sample(inventory, 1024),
     eventInventoryDigest: digest(inventory),
-    headerEvidence: header,
-    mapEvidence: { map: header?.map_name ?? null },
-    timingEvidence: { header, tickProbe },
+    ...buildSemanticEvidence({
+      header,
+      events,
+      grenades,
+      ticks: tickValues,
+      tickProbe,
+      requestedFields,
+      wantedTicks,
+    }),
     playerInventory: { status: "NOT_AVAILABLE_ON_WASM" },
     domainAvailability: {
       players: "NOT_AVAILABLE_ON_WASM",
       player_identity: "NOT_AVAILABLE_ON_WASM",
     },
-    eventEvidence: events,
-    roundEvidence: byName((n) => n.startsWith("round_")),
-    grenadeEvidence: sample(grenades, 256),
-    bombEvidence: byName((n) => n.startsWith("bomb_")),
-    deathEvidence: byName((n) => n === "player_death"),
-    damageEvidence: byName((n) => n === "player_hurt"),
-    weaponEvidence: byName((n) => n.startsWith("weapon_") || n.startsWith("item_")),
-    economyEvidence: { status: "BOUNDED_TICK_PROBE", value: sample(tickValues) },
-    tickDomainEvidence: {
-      tickProbeSource: tickProbe.source,
-      maxFrameTick: tickProbe.maxFrameTick,
-      requestedFields,
-      wantedTicks,
-      authoritativeDomain: false,
-      value: sample(tickValues),
-    },
+    // Private, non-semantic diagnostics (block digests, bounded samples).
+    // Used only to localize a divergence; never hashed into any gate digest.
+    tableDiagnostics,
     normalizedResult,
     normalizedResultDigest,
     resultDigest: normalizedResultDigest,
@@ -477,7 +552,7 @@ export function runWasm(path, authorization, options = {}) {
         .map((c) => ({ api: c.api, eventName: c.eventName ?? null, digest: c.outputDigest })),
     ),
     eventDigest: digest(events),
-    tickDigest: digest(tickValues),
+    tickDigest: tickValues.tableDigest,
     roundDigest: digest(byName((n) => n.startsWith("round_"))),
     playerDigest: digest({ status: "NOT_AVAILABLE_ON_WASM" }),
     durationMs: performance.now() - started,
