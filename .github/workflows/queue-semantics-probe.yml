@@ -60,6 +60,24 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/queue/queue_semantics_probe.py | tee "$RUNNER_TEMP/queue-semantics-report.json"
+      - name: Run the canonical persistence idempotency probe (synthetic fixture, disposable database)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python3 scripts/queue/canonical_persistence_probe.py | tee "$RUNNER_TEMP/canonical-persistence-report.json"
+          python3 - "$RUNNER_TEMP/canonical-persistence-report.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1]))
+          rows = [item for item in report["scenarios"]]
+          print("::notice title=Canonical persistence probe::" + json.dumps({
+              "status": report["status"], "passed": sum(1 for r in rows if r["status"] == "PASS"), "total": len(rows),
+              "not_passed": [r["scenario"] for r in rows if r["status"] != "PASS"]}, separators=(",", ":")))
+          PY
       - name: Upload the probe report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
