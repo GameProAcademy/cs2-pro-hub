@@ -10,7 +10,7 @@ import json
 from collections import Counter
 from typing import Any
 
-from raw_artifact import _stable
+from raw_artifact import _stable_portable
 from raw_evidence import mapping_inventory
 
 ALLOWED_MAPPING_STATUSES = frozenset({
@@ -62,7 +62,7 @@ def validate_manifest_identity(manifest: dict[str, Any], expected: dict[str, Any
 def validate_audit_digest(manifest: dict[str, Any]) -> str:
     evidence = _object(manifest.get("audit_evidence"), "audit_evidence")
     expected = manifest.get("audit_evidence_digest")
-    actual = hashlib.sha256(_stable(evidence)).hexdigest()
+    actual = hashlib.sha256(_stable_portable(evidence)).hexdigest()
     if not isinstance(expected, str) or len(expected) != 64 or actual != expected:
         raise ValueError("audit_evidence_digest_mismatch")
     return actual

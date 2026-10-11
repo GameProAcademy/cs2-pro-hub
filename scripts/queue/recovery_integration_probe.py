@@ -283,6 +283,11 @@ def scenario(name: str):
             try:
                 item = new_item()
                 expected = fn(item) or {}
+                # The job turns terminal one statement before its message is
+                # acknowledged; observe after that has settled.
+                settle = time.monotonic() + 10
+                while time.monotonic() < settle and job(item["job_id"])["status"] in TERMINAL and facts(item)["queued_messages"]:
+                    time.sleep(0.25)
                 time.sleep(1.0)
                 seen = facts(item)
                 entry.update(seen)

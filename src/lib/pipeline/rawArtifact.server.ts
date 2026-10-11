@@ -245,7 +245,13 @@ function physicalSemanticProjection(
           status: row["status"] ?? null,
           reason: row["reason"] ?? null,
         }))
-        .sort((a, b) => String(a.raw_field).localeCompare(String(b.raw_field)))
+        // Array order is part of the digest: code-unit order, as the worker's
+        // sorted(key=str(raw_field)), not locale collation.
+        .sort((a, b) => {
+          const left = String(a.raw_field);
+          const right = String(b.raw_field);
+          return left < right ? -1 : left > right ? 1 : 0;
+        })
     : [];
   const contract =
     forensic?.["forensic_contract_v2"] &&

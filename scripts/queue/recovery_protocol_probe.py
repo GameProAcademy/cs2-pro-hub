@@ -174,6 +174,11 @@ def scenario(name: str):
             entry = {"scenario": name}
             try:
                 expected = fn(item) or {}
+                # The job turns terminal one statement before its message is
+                # acknowledged; observe after that has settled.
+                settle = time.monotonic() + 3
+                while time.monotonic() < settle and terminal(item["job"]) and facts(item["job"])["queued_messages"]:
+                    time.sleep(0.1)
                 observed = facts(item["job"])
                 entry.update(observed)
                 invariants(item["job"], observed)
