@@ -44,7 +44,8 @@ from errors import (
     UnsupportedDemoError,
     WorkerError,
 )
-from parser import parse_demo_file
+from parser import parse_demo_file  # noqa: F401 - in-process boundary, kept importable for tests and tools
+from parser_isolated import parse_demo_file_isolated
 from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
@@ -113,13 +114,21 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
                 except Exception:
                     raise WorkerError(503, E.PARSER_ERROR, "Execution recording failed before parsing.") from None
             parse_started = time.perf_counter()
-            parsed = await asyncio.wait_for(
-                asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
-            )
+            run_isolated = getattr(parse, "run_async", None)
+            if run_isolated is not None:
+                # Killable boundary: a timeout or a cancellation terminates the
+                # parser process instead of abandoning a running thread.
+                parsed = await run_isolated(path, settings.parse_timeout_seconds)
+            else:
+                parsed = await asyncio.wait_for(
+                    asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
+                )
             parse_ms = round((time.perf_counter() - parse_started) * 1000)
             parser_memory = parse_memory_snapshot()
         except asyncio.TimeoutError:
-            raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.") from None
+            logger.error("parser timeout failure_class=%s", E.RESOURCE_EXHAUSTED)
+            raise WorkerError(504, E.PARSE_TIMEOUT, "Parsing timed out.",
+                              failure_class=E.RESOURCE_EXHAUSTED) from None
         except InvalidDemoError:
             raise WorkerError(422, E.INVALID_DEMO_FORMAT, "File is not a valid CS2 demo.") from None
         except CorruptedDemoError:
@@ -129,8 +138,14 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         except WorkerError:
             raise
         except BaseException as exc:
-            logger.exception("parser internal failure: %s", type(exc).__name__)
-            raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.") from None
+            # Wire code unchanged (PARSER_ERROR). The failure class separates
+            # "ran out of memory" and "was cancelled" from "the parser failed
+            # on this demo" in the logs and on the in-process error object.
+            failure_class = E.classify_exception(exc)
+            logger.exception("parser internal failure: %s failure_class=%s",
+                             type(exc).__name__, failure_class)
+            raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.",
+                              failure_class=failure_class) from None
     finally:
         _cleanup(path)
 
@@ -318,7 +333,8 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Raises `WorkerConfigurationError` when config fails closed."""
     resolved = settings or load_settings()
-    parse = parse_fn or parse_demo_file
+    # Production parses in a killable child process. Tests inject parse_fn.
+    parse = parse_fn or parse_demo_file_isolated
     app = FastAPI(title="cs2-demo-parser", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = resolved
     app.state.parse_fn = parse
