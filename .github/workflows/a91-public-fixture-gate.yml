@@ -1,0 +1,95 @@
+name: A9.1 Public Fixture Regression Gate
+
+# Automatic regression gate for the A9.1 harness on the PUBLIC upstream test
+# demo. It is NOT the A9.1 gate: it never receives the real demo, its URL or
+# any secret, its artifacts are test_fixture_only, and it authorizes nothing.
+# The manual real-DEM workflow (a91-real-dem-gate.yml) is unchanged.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/a91/**"
+      - "scripts/run_python_wasm_parity.mjs"
+      - "scripts/run_parser_determinism.mjs"
+      - "services/cs2-demo-parser/python_reference.py"
+      - "services/cs2-demo-parser/requirements.txt"
+      - "docs/client-parser/upstream-surface-manifest.json"
+      - ".github/workflows/a91-public-fixture-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/a91/**"
+      - "scripts/run_python_wasm_parity.mjs"
+      - "scripts/run_parser_determinism.mjs"
+      - "services/cs2-demo-parser/python_reference.py"
+      - "services/cs2-demo-parser/requirements.txt"
+      - "docs/client-parser/upstream-surface-manifest.json"
+      - ".github/workflows/a91-public-fixture-gate.yml"
+
+concurrency:
+  group: a91-public-fixture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  public-fixture:
+    name: Python/WASM harness on public fixture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      UPSTREAM_COMMIT: d3767705dc5846d73ed29db50eaeda58778dc934
+      UPSTREAM_TAG: v0.42.0
+      RUST_VERSION: 1.91.1
+      WASM_PACK_VERSION: 0.13.1
+      WASM_BINDGEN_VERSION: 0.2.100
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install reference dependencies
+        run: pip install -r services/cs2-demo-parser/requirements.txt
+      - name: Setup pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.9.0"
+          check-latest: false
+          package-manager-cache: false
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install "${RUST_VERSION}" --profile minimal
+          rustup target add wasm32-unknown-unknown --toolchain "${RUST_VERSION}"
+          rustup default "${RUST_VERSION}"
+      - name: Install pinned wasm-pack and wasm-bindgen CLI
+        run: |
+          cargo +"${RUST_VERSION}" install wasm-pack --version "${WASM_PACK_VERSION}" --locked
+          cargo +"${RUST_VERSION}" install wasm-bindgen-cli --version "${WASM_BINDGEN_VERSION}" --locked
+          test "$(wasm-bindgen --version | awk '{print $2}')" = "${WASM_BINDGEN_VERSION}"
+      - name: Runner resources
+        run: |
+          nproc
+          free -h
+      - name: Build pinned WASM and run the public-fixture regression gate
+        env:
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
+          A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
+          A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
+        run: python scripts/a91/public_fixture_gate.py
+      - name: Upload bounded public-fixture reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: a91-public-fixture-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/a91-public-fixture-artifacts/a91_public_fixture_report.json
+            ${{ runner.temp }}/a91-public-fixture-artifacts/parity_report.json
+            ${{ runner.temp }}/a91-public-fixture-artifacts/determinism_report.json
+          if-no-files-found: warn
+          retention-days: 14

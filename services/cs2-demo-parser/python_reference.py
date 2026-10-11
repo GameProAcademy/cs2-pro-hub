@@ -31,6 +31,26 @@ from scripts.a91 import canonical_schema as canonical
 FILENAME = "furia-vs-gamerlegion-m1-cache.dem"
 SIZE = 473748061
 SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
+AUTH = "A9.1-M1-CACHE-REAL-DEM"
+# Public upstream test demo used ONLY by the automatic regression gate. Mirrors
+# PUBLIC_FIXTURE in scripts/a91/contracts.mjs: artifacts produced from it carry
+# test_fixture_only and a distinct executionKind, both rejected by decide().
+PROFILES = {
+    AUTH: {
+        "filename": FILENAME,
+        "size": SIZE,
+        "sha": SHA,
+        "executionKind": "REAL_DEM_FULL_FILE",
+        "testFixtureOnly": False,
+    },
+    "A9.1-PUBLIC-FIXTURE-DEMOPARSER-TEST-DEMO": {
+        "filename": "test_demo.dem",
+        "size": 60601900,
+        "sha": "84a1a4191302bdd2a3bbb5a727842093744b1fb1a228aeec630369e44b622cb2",
+        "executionKind": "PUBLIC_FIXTURE_FULL_FILE",
+        "testFixtureOnly": True,
+    },
+}
 PARSER_VERSION = "0.42.0"
 PARSER_REVISION = "d3767705dc5846d73ed29db50eaeda58778dc934"
 MANIFEST = ROOT / "docs/client-parser/upstream-surface-manifest.json"
@@ -193,26 +213,30 @@ def read_manifest() -> dict[str, Any]:
     return value
 
 
-def validate(path: Path, authorization: dict[str, Any]) -> None:
+def validate(path: Path, authorization: dict[str, Any]) -> dict[str, Any]:
     if not path.is_file() or path.suffix.lower() != ".dem":
         raise RuntimeError("EXPLICIT_AUTHORIZED_DEM_PATH_REQUIRED")
     size = path.stat().st_size
+    profile = PROFILES.get(authorization.get("authorizationRef"))
     if (
-        authorization.get("authorizedDemo") is not True
+        profile is None
+        or authorization.get("authorizedDemo") is not True
         or authorization.get("source") != "LOCAL_FILE"
         or authorization.get("provenance") != "LOCAL_FILE"
         or authorization.get("filename") != path.name
+        or path.name != profile["filename"]
         or authorization.get("sizeBytes") != size
-        or authorization.get("sha256") != SHA
-        or size != SIZE
+        or authorization.get("sha256") != profile["sha"]
+        or size != profile["size"]
     ):
         raise RuntimeError("AUTHORIZED_DEM_METADATA_MISMATCH")
     h = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             h.update(chunk)
-    if h.hexdigest() != SHA:
+    if h.hexdigest() != profile["sha"]:
         raise RuntimeError("A91_DEM_SHA256_MISMATCH")
+    return profile
 
 
 def progress(stage: str) -> None:
@@ -474,7 +498,7 @@ def main() -> int:
     if path is None or authorization is None:
         raise RuntimeError("NO_AUTHORIZED_REAL_DEM")
     progress("validate")
-    validate(path, authorization)
+    profile = validate(path, authorization)
     progress("read_manifest")
     surface = read_manifest()
     started = time.perf_counter()
@@ -570,13 +594,13 @@ def main() -> int:
     artifact = {
         "artifactVersion": 3,
         "runtime": "PYTHON",
-        "runId": f"python:{SHA}:{uuid.uuid4()}",
-        "executionKind": "REAL_DEM_FULL_FILE",
-        "test_fixture_only": False,
+        "runId": f"python:{profile['sha']}:{uuid.uuid4()}",
+        "executionKind": profile["executionKind"],
+        "test_fixture_only": profile["testFixtureOnly"],
         "status": "SUCCEEDED",
         "reason": None,
-        "demoSha256": SHA,
-        "demoSizeBytes": SIZE,
+        "demoSha256": profile["sha"],
+        "demoSizeBytes": profile["size"],
         "parserVersion": PARSER_VERSION,
         "parserRevision": PARSER_REVISION,
         "catalogVersion": surface["catalogVersion"],

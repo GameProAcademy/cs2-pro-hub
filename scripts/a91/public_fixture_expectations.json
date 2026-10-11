@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Strict ratchet for the automatic public-fixture regression gate. It records what was MEASURED on the public upstream test demo; it is not a statement about the real A9.1 demo and it authorizes nothing.",
+  "divergingDomains": ["game_state", "grenades"],
+  "divergingTables": ["grenades"],
+  "notComparableDomains": ["player_identity", "players"],
+  "divergenceNotes": {
+    "grenades": "Row counts differ between the Python wheel and the WASM build of the same pinned commit only for non-grenade entity classes (CC4, CKnife, CWeaponGlock): upstream keeps deleted projectile entity ids in a set that later, reused ids still match. The nine grenade/projectile classes are equal. Resolving this is a versioned contract change that needs owner approval; it is deliberately NOT hidden here.",
+    "game_state": "Composite domain that includes the grenade table; diverges only because grenades diverges."
+  },
+  "limits": {
+    "wasmPeakBytes": 402653184,
+    "runDurationMs": 900000,
+    "syntheticColumnMajorBytes": 2147483648
+  },
+  "syntheticScale": {
+    "rows": 4550843,
+    "ballastBytes": 473748061,
+    "note": "Row count and input size of the real A9.1 demo as recorded in run #24/#25 public reports; rows are synthetic."
+  }
+}

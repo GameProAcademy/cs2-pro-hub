@@ -312,5 +312,18 @@ process.stdout.write(stable(JSON.parse(process.argv[1])));
             with self.assertRaisesRegex(ValueError, "JSON_INTEGER_PRECISION_LOSS"):
                 reference.stable({"steamid": unsafe})
 
+    def test_wasm_probe_projection_is_bounded_and_fail_closed(self):
+        probe = {"lastStage": "parsed_columns_built", "rows": 4550843, "bytesNow": 4294967296,
+                 "bytesAfterInputCopy": 478412800, "bytesAfterParse": 1410334720,
+                 "bytesAfterRowMaterialization": None, "bytesAfterSerialization": None}
+        self.assertEqual(execute.sanitize_wasm_probe(probe), probe)
+        # Extra keys are dropped; only the fixed label and bounded integers survive.
+        self.assertEqual(execute.sanitize_wasm_probe({**probe, "name": "player", "note": "x"}), probe)
+        for bad in (None, [], {}, {**probe, "lastStage": "https://example.invalid/demo"},
+                    {**probe, "rows": "4550843"}, {**probe, "bytesNow": -1},
+                    {**probe, "bytesNow": 2**40}, {**probe, "rows": True}, {**probe, "rows": 1.5}):
+            self.assertIsNone(execute.sanitize_wasm_probe(bad))
+        self.assertIn("WASM_MEMORY_BUDGET_EXCEEDED", execute.WASM_REASONS)
+
 if __name__ == "__main__":
     unittest.main()
