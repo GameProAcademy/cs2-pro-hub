@@ -45,7 +45,12 @@ def _write(result_path: Path, payload: dict) -> None:
     )
     try:
         with handle:
-            json.dump(payload, handle, ensure_ascii=False, allow_nan=False)
+            # NaN and infinities are real values in parser output (unset float
+            # properties). Python's json writes and reads them back unchanged,
+            # so the result crosses the process boundary exactly as the
+            # in-process call returned it. Refusing them here failed every
+            # real demo.
+            json.dump(payload, handle, ensure_ascii=False, allow_nan=True)
         os.replace(handle.name, result_path)
     except BaseException:
         try:
@@ -76,7 +81,12 @@ def run(demo_path: str, result_path: Path) -> int:
         return 3 if isinstance(exc, NON_DEMO_FAILURES) else 0
     else:
         payload = {"ok": True, "result": result}
-    _write(result_path, payload)
+    try:
+        _write(result_path, payload)
+    except (TypeError, ValueError, RecursionError) as exc:
+        # The parser returned something that cannot cross the boundary. That is
+        # an output defect of this run, reported as such, not a crash.
+        _write(result_path, {"ok": False, "error_type": type(exc).__name__, "failure_class": E.INVALID_OUTPUT})
     return 0
 
 
