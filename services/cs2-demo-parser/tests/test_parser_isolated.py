@@ -295,3 +295,64 @@ def test_real_child_module_rejects_a_non_demo_and_refuses_to_run_standalone(tmp_
     done = subprocess.run([sys.executable, "-m", "parser_child", str(bad), str(result)],
                           cwd=os.path.dirname(parser_isolated.__file__), env=env, capture_output=True, timeout=60)
     assert done.returncode == 77 and not result.exists()
+
+
+# ---- the REAL child module, with only the parser function replaced ----------
+def real_child(monkeypatch, tmp_path, parser_body: str) -> None:
+    """Run the real `parser_child` module as __main__; a stub `parser` module supplies the result."""
+    stub = tmp_path / "stub"
+    stub.mkdir(exist_ok=True)
+    (stub / "parser.py").write_text("NON_DEMO_FAILURES = (MemoryError, KeyboardInterrupt, SystemExit)\n" + parser_body)
+    code = ("import runpy, sys\n"
+            f"sys.path.insert(0, {str(stub)!r})\n"
+            "sys.argv = ['parser_child', sys.argv[1], sys.argv[2]]\n"
+            "runpy.run_module('parser_child', run_name='__main__')\n")
+    monkeypatch.setattr(parser_isolated, "_command", lambda demo, result: [sys.executable, "-c", code, demo, str(result)])
+
+
+def same(left, right) -> bool:
+    """Deep equality where NaN equals NaN."""
+    if isinstance(left, float) and isinstance(right, float):
+        return (left != left and right != right) or left == right
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(same(left[key], right[key]) for key in left)
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(same(a, b) for a, b in zip(left, right))
+    return type(left) is type(right) and left == right
+
+
+@pytest.mark.parametrize("runner", [run_sync, run_async])
+def test_nan_and_infinite_floats_cross_the_real_child_boundary_unchanged(monkeypatch, tmp_path, runner):
+    """Real demos carry NaN for unset float properties. The child refused them
+    (allow_nan=False) and exited 1, so every real demo failed as PARSER_ERROR."""
+    real_child(monkeypatch, tmp_path,
+               "def parse_demo_file(_path):\n"
+               "    return {'header': {'map': 'de_test'}, 'players': [{'x': float('nan'), 'y': float('inf'),\n"
+               "            'z': float('-inf'), 'n': None, 'k': 1, 'f': 0.1, 's': 'é', 'b': True}],\n"
+               "            'rounds': [], 'events': [[1, 2.5, 'a']], 'warnings': []}\n")
+    expected = {"header": {"map": "de_test"}, "players": [{"x": float("nan"), "y": float("inf"), "z": float("-inf"),
+                                                           "n": None, "k": 1, "f": 0.1, "s": "é", "b": True}],
+                "rounds": [], "events": [[1, 2.5, "a"]], "warnings": []}
+    assert same(runner(), expected)
+
+
+@pytest.mark.parametrize("runner", [run_sync, run_async])
+def test_a_result_that_cannot_be_serialized_is_invalid_output_not_a_crash(monkeypatch, tmp_path, runner):
+    real_child(monkeypatch, tmp_path,
+               "def parse_demo_file(_path):\n    return {'header': {'blob': b'bytes'}, 'players': []}\n")
+    with pytest.raises(WorkerError) as caught:
+        runner()
+    assert caught.value.error_code == E.PARSER_ERROR and caught.value.failure_class == E.INVALID_OUTPUT
+
+
+@pytest.mark.parametrize("runner", [run_sync, run_async])
+def test_typed_demo_errors_and_memory_errors_from_the_real_child(monkeypatch, tmp_path, runner):
+    real_child(monkeypatch, tmp_path,
+               "from errors import CorruptedDemoError\n"
+               "def parse_demo_file(_path):\n    raise CorruptedDemoError('x')\n")
+    with pytest.raises(CorruptedDemoError):
+        runner()
+    real_child(monkeypatch, tmp_path, "def parse_demo_file(_path):\n    raise MemoryError()\n")
+    with pytest.raises(WorkerError) as caught:
+        runner()
+    assert caught.value.failure_class == E.RESOURCE_EXHAUSTED
