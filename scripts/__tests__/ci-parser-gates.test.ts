@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -78,10 +79,56 @@ describe("Quality Gates: parser tests cannot be silently skipped on main", () =>
       .filter(([name, block]) => name !== "main-required-gates" && runsOnMainPullRequests(block))
       .map(([name]) => name);
     expect(needs.sort()).toEqual(mainJobs.sort());
-    for (const name of needs) expect(gate).toContain(`needs.${name}.result`);
-    expect(gate).toContain('if [ "$result" != "success" ]; then status=1; fi');
+    // The verdict comes from the tested evaluator, fed with the whole needs context.
+    expect(gate).toContain("NEEDS_JSON: ${{ toJSON(needs) }}");
+    expect(gate).toContain("run: python3 scripts/ci/require_main_gates.py");
     expect(gate).not.toContain("continue-on-error");
+    const evaluator = readFileSync(resolve("scripts/ci/require_main_gates.py"), "utf8");
+    const declared = (name: string) =>
+      [
+        ...evaluator
+          .slice(evaluator.indexOf(`${name} = {`))
+          .split("}")[0]
+          .matchAll(/^\s+"([a-z0-9-]+)":/gm),
+      ].map((match) => match[1]);
+    // Required in the evaluator == aggregated in `needs` == every main job.
+    expect(declared("REQUIRED").sort()).toEqual(mainJobs.sort());
+    // Every other job of the workflow is explicitly declared not applicable.
+    const others = Object.keys(all).filter(
+      (name) => name !== "main-required-gates" && !mainJobs.includes(name),
+    );
+    expect(declared("NOT_APPLICABLE").sort()).toEqual(others.sort());
   });
+
+  it("blocks on failure, cancellation, skip and absence of each gate (evaluator self-test)", () => {
+    const result = spawnSync(
+      "python3",
+      ["-m", "unittest", "discover", "-s", "scripts/ci", "-p", "test_*.py"],
+      {
+        encoding: "utf8",
+        timeout: 60000,
+      },
+    );
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    const evaluate = (needs: unknown) =>
+      spawnSync("python3", ["scripts/ci/require_main_gates.py"], {
+        encoding: "utf8",
+        env: { ...process.env, NEEDS_JSON: JSON.stringify(needs), GITHUB_STEP_SUMMARY: "" },
+      });
+    const green = {
+      "web-quality": { result: "success" },
+      "contract-gate": { result: "success" },
+      "f553-r11-2-execution": { result: "success" },
+    };
+    expect(evaluate(green).status).toBe(0);
+    for (const job of Object.keys(green))
+      for (const outcome of ["failure", "cancelled", "skipped"]) {
+        const run = evaluate({ ...green, [job]: { result: outcome } });
+        expect(run.status, `${job}=${outcome}`).toBe(1);
+        expect(run.stdout).toContain("Main required gates: BLOCKED");
+      }
+    expect(evaluate({ "web-quality": { result: "success" } }).status).toBe(1);
+  }, 60000);
 
   it("preserves the R11.2 gate and its own in-run parser suite", () => {
     const r11 = all["f553-r11-2-execution"];

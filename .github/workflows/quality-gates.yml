@@ -260,17 +260,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Self-test the gate evaluator
+        run: python3 -m unittest discover -s scripts/ci -p "test_*.py"
       - name: Require every main gate to have succeeded
         env:
-          WEB_QUALITY: ${{ needs.web-quality.result }}
-          CONTRACT_GATE: ${{ needs.contract-gate.result }}
-          F553_R11_2: ${{ needs.f553-r11-2-execution.result }}
-        run: |
-          set -euo pipefail
-          status=0
-          for gate in WEB_QUALITY CONTRACT_GATE F553_R11_2; do
-            result="${!gate}"
-            printf 'MAIN_GATE %s=%s\n' "$gate" "$result"
-            if [ "$result" != "success" ]; then status=1; fi
-          done
-          exit "$status"
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 scripts/ci/require_main_gates.py
