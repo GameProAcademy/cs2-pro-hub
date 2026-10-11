@@ -1,3 +1,4 @@
+import { CONTRACT } from "./canonical_schema.mjs";
 import { digest } from "./contracts.mjs";
 import { compareObjects, compareTables, structuralSymmetry } from "./field_compare.mjs";
 
@@ -37,6 +38,25 @@ const evidenceKeys = {
   tick_properties: "tickDomainEvidence",
   game_state: "normalizedResult",
 };
+const FILTERED_TABLES = new Set(Object.keys(CONTRACT.domainRowFilters ?? {}));
+/** True when a table that the contract filters does not carry a CLEAN status. */
+export const domainFilterNotClean = (table) =>
+  Boolean(table) &&
+  typeof table === "object" &&
+  FILTERED_TABLES.has(table.table) &&
+  table.domainFilter?.status !== "CLEAN";
+/**
+ * Fail closed (rule R13): every summary of a filtered table found in this
+ * evidence must say CLEAN. A missing status, an unknown status or VIOLATED all
+ * block the domain.
+ */
+function domainFilterViolated(value) {
+  if (!value || typeof value !== "object") return false;
+  const tables = [value.table, value.grenades, value.ticks];
+  if (Array.isArray(value)) for (const item of value) tables.push(item?.table);
+  if (Array.isArray(value.events)) for (const item of value.events) tables.push(item?.table);
+  return tables.some(domainFilterNotClean);
+}
 function comparableEvidence(artifact, field) {
   const value = artifact[evidenceKeys[field]] ?? null;
   if (field !== "game_state" || !value || typeof value !== "object" || Array.isArray(value))
@@ -55,6 +75,10 @@ function comparableEvidence(artifact, field) {
 // sensitive strings from crossing the artifact boundary while preserving an
 // independently reproducible equality decision.
 function availability(artifact, field, runtime) {
+  // Contract rule R13 first: a table whose domain row filter is not CLEAN is
+  // not valid evidence. This is checked before any self-declared
+  // unavailability, and it holds even if both runtimes report the same thing.
+  if (domainFilterViolated(artifact[evidenceKeys[field]])) return "BLOCKED";
   const declared = artifact.domainAvailability?.[field];
   if (declared === `NOT_AVAILABLE_ON_${runtime}`) return declared;
   if (declared && declared !== "AVAILABLE") return "BLOCKED";
@@ -406,6 +430,73 @@ export function envelopeSymmetry(python, wasm) {
   return { symmetric: issues.length === 0, issues };
 }
 
+const safeClassCounts = (byValue) => {
+  // Shape filter, not an allowlist: only strings shaped like a parser entity
+  // class name (C + letter + word characters) are published as keys; anything
+  // else, including all-digit strings, is folded into OTHER.
+  const counts = {};
+  for (const [key, count] of Object.entries(byValue ?? {})) {
+    const name = /^C[A-Za-z][A-Za-z0-9_]{0,61}$/.test(key) ? key : "OTHER";
+    counts[name] = (counts[name] ?? 0) + count;
+  }
+  return Object.fromEntries(
+    Object.entries(counts).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
+};
+
+/**
+ * RAW OUTPUT diagnostics (contract rule R13, layer 1). For every table with a
+ * domain row filter: what each runtime actually returned, what was kept as the
+ * semantic domain and what was set aside as the known anomaly. This is an
+ * independent diagnostic. It never feeds the parity status: semantic parity is
+ * decided on domain rows only, and a difference in raw output stays visible
+ * here as DIVERGENT instead of being folded into a PASS or a FAIL.
+ */
+export function rawOutputDiagnostics(python, wasm) {
+  const pythonTables = artifactTables(python);
+  const wasmTables = artifactTables(wasm);
+  const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
+  const tables = [];
+  for (const name of names) {
+    const left = pythonTables[name]?.diagnostics?.exclusions ?? null;
+    const right = wasmTables[name]?.diagnostics?.exclusions ?? null;
+    if (!left && !right) continue;
+    const side = (item, table) => ({
+      raw_rows: item?.rawRowCount ?? null,
+      domain_rows: table?.summary?.rowCount ?? null,
+      excluded_rows: item?.count ?? null,
+      excluded_by_class: item ? safeClassCounts(item.byValue) : null,
+      unclassified_class_rows: item?.unclassifiedClassRows ?? null,
+      unclassified_by_class: item ? safeClassCounts(item.unclassifiedByValue) : null,
+      rows_without_prior_domain_row: item?.unexplainedRows ?? null,
+      excluded_rows_digest: item?.excludedRowsDigest ?? null,
+      domain_filter_status: table?.summary?.domainFilter?.status ?? null,
+    });
+    const pythonSide = side(left, pythonTables[name]);
+    const wasmSide = side(right, wasmTables[name]);
+    tables.push({
+      table: name,
+      rule: "R13_DOMAIN_ROW_FILTER",
+      raw_rows_equal:
+        pythonSide.raw_rows !== null &&
+        pythonSide.raw_rows === wasmSide.raw_rows &&
+        JSON.stringify(pythonSide.excluded_by_class) === JSON.stringify(wasmSide.excluded_by_class),
+      python: pythonSide,
+      wasm: wasmSide,
+    });
+  }
+  return {
+    schema_version: 1,
+    scope: "RAW_PARSER_OUTPUT_NOT_A_PARITY_DIMENSION",
+    status: !tables.length
+      ? "NOT_APPLICABLE"
+      : tables.every((item) => item.raw_rows_equal)
+        ? "EQUAL"
+        : "DIVERGENT",
+    tables,
+  };
+}
+
 /**
  * Field-level diagnostics for every canonical table plus the header. Output is
  * sanitized by construction: field names, classes, counts, row indices and
@@ -415,7 +506,21 @@ export function diagnoseFields(python, wasm) {
   const pythonTables = artifactTables(python);
   const wasmTables = artifactTables(wasm);
   const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
-  const tables = names.map((name) => compareTables(pythonTables[name], wasmTables[name]));
+  const tables = names.map((name) => {
+    const verdict = compareTables(pythonTables[name], wasmTables[name]);
+    const notClean = [pythonTables[name]?.summary, wasmTables[name]?.summary].some(
+      domainFilterNotClean,
+    );
+    return notClean
+      ? {
+          ...verdict,
+          status: "BLOCKED",
+          divergence_classes: [
+            ...new Set([...(verdict.divergence_classes ?? []), "DOMAIN_FILTER"]),
+          ],
+        }
+      : verdict;
+  });
   const header = compareObjects("header", python?.headerEvidence, wasm?.headerEvidence);
   const all = [header, ...tables];
   const failing = all.filter((item) => item.status !== "PASS");
@@ -458,7 +563,7 @@ export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
   const fieldDiagnostics = diagnoseFields(python, wasm);
   return {
-    schema_version: 5,
+    schema_version: 6,
     status: validParityComparisons(comparisons) ? "PASS" : "FAIL",
     demo_sha256: sha,
     comparisons,
@@ -467,6 +572,7 @@ export function parityReport(python, wasm, sha) {
     crossRuntimeComparableFieldPassCount: fieldDiagnostics.field_pass_count,
     crossRuntimeComparableFieldCountReason: null,
     field_diagnostics: fieldDiagnostics,
+    raw_output_diagnostics: rawOutputDiagnostics(python, wasm),
     semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,

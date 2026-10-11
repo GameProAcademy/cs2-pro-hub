@@ -25,7 +25,11 @@ def main() -> int:
         table = reference.summarize_table("event:" + name, [decode(row) for row in rows])
         diagnostics["event:" + name] = table["diagnostics"]
         events.append({"eventName": name, "status": "SUCCEEDED", "table": table["summary"]})
-    grenades = reference.summarize_table("grenades", [decode(row) for row in fixture["grenades"]])
+    grenade_rows = list(fixture["grenades"])
+    if mutation and mutation.get("appendGrenades"):
+        # Lets a check put the SAME extra rows into both runtimes.
+        grenade_rows += mutation["appendGrenades"]
+    grenades = reference.summarize_table("grenades", [decode(row) for row in grenade_rows])
     ticks = reference.summarize_table("ticks", [decode(row) for row in fixture["ticks"]])
     diagnostics["grenades"] = grenades["diagnostics"]
     diagnostics["ticks"] = ticks["diagnostics"]

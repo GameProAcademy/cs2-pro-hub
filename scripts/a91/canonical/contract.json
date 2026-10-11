@@ -1,6 +1,6 @@
 {
   "contractName": "a91-canonical-parity",
-  "canonicalContractVersion": 1,
+  "canonicalContractVersion": 2,
   "status": "LABORATORY_PARITY_CONTRACT_NO_PRODUCTION_AUTHORITY",
   "blockRows": 4096,
   "sampleRows": 256,
@@ -17,6 +17,23 @@
   "categoricalBreakdown": {
     "grenades": ["grenade_type"]
   },
+  "domainRowFilters": {
+    "grenades": {
+      "field": "grenade_type",
+      "includeAnySubstring": ["Projectile", "Grenade", "Flash"],
+      "excludeAnySubstring": ["Player"],
+      "source": "LaihoE/demoparser@d3767705 src/parser/src/second_pass/entities.rs:388 (EntityType::Projectile predicate)",
+      "excludedRowsReport": "COUNT_BY_CLASS_PER_RUNTIME_PLUS_RAW_ROW_COUNTS",
+      "entityIdField": "grenade_entity_id",
+      "knownAnomaly": {
+        "name": "STALE_ENTITY_ID",
+        "description": "A row of a non-grenade equipment class emitted because the parser kept a deleted projectile's entity id and a later entity reused it.",
+        "requirePriorDomainRowForEntityId": true,
+        "classExact": ["CC4", "CAK47", "CDEagle"],
+        "classPrefixes": ["CWeapon", "CKnife", "CItem"]
+      }
+    }
+  },
   "economyFields": [
     "balance",
     "start_balance",
@@ -32,7 +49,8 @@
     "NULLABILITY",
     "TYPE",
     "VALUE",
-    "ROW_ORDER"
+    "ROW_ORDER",
+    "DOMAIN_FILTER"
   ],
   "rules": {
     "R1_NULL": "null, undefined, pandas NA/NaT and non-finite floats canonicalize to JSON null. null is never zero, false or an empty string.",
@@ -46,6 +64,7 @@
     "R9_ROW_ORDER": "Row order is the parser emission order and is significant. Equal row multisets in a different order are classified ROW_ORDER and fail.",
     "R10_EVENT_DISCRIMINATOR": "The WASM wrapper attaches event_name to every event row. It must equal the requested event for every row and is then treated as call metadata, not as a semantic field.",
     "R12_LOSSY_REFERENCE_FIELDS": "A field whose value the Python reference cannot deliver exactly (referenceLossyRequestFields) is not requested from either runtime, and the exclusion is reported. It is never requested and then ignored, and never compared after rounding.",
-    "R11_METADATA": "Requested fields, returned field lists, timings, memory and run identifiers are call evidence. They are never part of semantic evidence or semantic digests."
+    "R11_METADATA": "Requested fields, returned field lists, timings, memory and run identifiers are call evidence. They are never part of semantic evidence or semantic digests.",
+    "R13_DOMAIN_ROW_FILTER": "Three layers are kept apart. (1) RAW OUTPUT: every row the parser returned; its row count and class breakdown are published per runtime as a diagnostic and are never a parity dimension. (2) SEMANTIC DOMAIN: for a table listed in domainRowFilters, the rows whose filter field is a string containing at least one includeAnySubstring and no excludeAnySubstring. For grenades this is the parser's own definition of a projectile entity. Only these rows are compared, strictly. (3) KNOWN ANOMALY: a row outside the domain is accepted as excluded only if BOTH hold: its class is in knownAnomaly (classExact or classPrefixes), and its entity id already appeared in an earlier domain row of the same table. Any other excluded row marks the table domainFilter.status VIOLATED, which blocks the domain in the comparator; nothing is excluded silently. A filter field that is null or not a string, or a missing/non-integer entity id on an excluded row, fails closed."
   }
 }

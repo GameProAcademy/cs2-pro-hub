@@ -118,6 +118,13 @@ const NULL_LINE = "null";
  * parser emission order; nothing but one block (CONTRACT.blockRows) of
  * canonical cell text and CONTRACT.sampleRows sample rows is retained.
  */
+const sortedCounts = (map) =>
+  Object.fromEntries(
+    Array.from(map.entries()).sort((left, right) =>
+      left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0,
+    ),
+  );
+
 export class TableAccumulator {
   constructor(name, options = {}) {
     this.name = name;
@@ -132,7 +139,69 @@ export class TableAccumulator {
     this.samples = [];
     this.observed = { absent: 0, nonFinite: 0 };
     this.breakdown = Object.fromEntries(this.breakdownFields.map((field) => [field, new Map()]));
+    this.rowFilter = CONTRACT.domainRowFilters?.[name] ?? null;
+    this.excluded = new Map();
+    this.excludedCount = 0;
+    // Rule R13 layer 3: evidence that an excluded row is the known anomaly.
+    this.domainEntityIds = new Set();
+    this.unclassified = new Map();
+    this.unclassifiedCount = 0;
+    this.unexplainedCount = 0;
+    // Chained digest of the excluded rows, in emission order: lets raw output
+    // be checked for run-to-run determinism although it is outside every
+    // semantic digest.
+    this.excludedRowsDigest = sha256("");
     this.finished = false;
+  }
+
+  /** Rule R13: true when the row belongs to the domain; excluded rows are counted. */
+  #admit(entries) {
+    const filter = this.rowFilter;
+    if (!filter) return true;
+    let value;
+    let entityId;
+    for (const [field, item] of entries) {
+      if (field === filter.field) value = item;
+      if (field === filter.entityIdField) entityId = item;
+    }
+    if (typeof value !== "string")
+      throw new CanonicalError("DOMAIN_FILTER_FIELD_INVALID", this.name);
+    const inDomain =
+      filter.includeAnySubstring.some((part) => value.includes(part)) &&
+      !filter.excludeAnySubstring.some((part) => value.includes(part));
+    if (inDomain) {
+      if (Number.isSafeInteger(entityId)) this.domainEntityIds.add(entityId);
+      return true;
+    }
+    // Outside the domain: accepted only as the documented anomaly.
+    if (!Number.isSafeInteger(entityId))
+      throw new CanonicalError("DOMAIN_FILTER_ENTITY_ID_INVALID", this.name);
+    const anomaly = filter.knownAnomaly;
+    const knownClass =
+      anomaly.classExact.includes(value) ||
+      anomaly.classPrefixes.some((prefix) => value.startsWith(prefix));
+    if (!knownClass) {
+      this.unclassified.set(value, (this.unclassified.get(value) ?? 0) + 1);
+      this.unclassifiedCount += 1;
+    }
+    if (anomaly.requirePriorDomainRowForEntityId && !this.domainEntityIds.has(entityId))
+      this.unexplainedCount += 1;
+    const scratch = { absent: 0, nonFinite: 0 };
+    const parts = [];
+    for (const [field, item] of entries) {
+      const { text, cls } = canonicalizeValue(item, field, scratch);
+      if (cls !== "null") parts.push([field, text]);
+    }
+    parts.sort((left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0));
+    const rowHash = sha256(
+      `{${parts.map(([field, text]) => `${JSON.stringify(field)}:${text}`).join(",")}}`,
+    );
+    this.excludedRowsDigest = sha256(this.excludedRowsDigest + rowHash);
+    this.excluded.set(value, (this.excluded.get(value) ?? 0) + 1);
+    this.excludedCount += 1;
+    if (this.excluded.size > CONTRACT.maxCategoricalValues)
+      throw new CanonicalError("CATEGORICAL_OVERFLOW", filter.field);
+    return false;
   }
 
   #column(field) {
@@ -162,6 +231,7 @@ export class TableAccumulator {
           ? Object.entries(row)
           : null;
     if (!entries) throw new CanonicalError("ROW_SHAPE_INVALID", this.name);
+    if (!this.#admit(entries)) return;
     const seen = new Set();
     const parts = [];
     const sample = this.samples.length < this.sampleRows ? {} : null;
@@ -233,6 +303,14 @@ export class TableAccumulator {
       multisetDigest: this.multiset.toString(16).padStart(64, "0"),
       columns,
     };
+    if (this.rowFilter)
+      // Semantic on purpose: a violated filter must change the digest and is
+      // read by the comparator, which blocks the domain. Status only; the
+      // per-runtime counts stay in diagnostics.
+      summary.domainFilter = {
+        rule: "R13_DOMAIN_ROW_FILTER",
+        status: this.unclassifiedCount || this.unexplainedCount ? "VIOLATED" : "CLEAN",
+      };
     if (this.breakdownFields.length) {
       summary.breakdown = Object.fromEntries(
         this.breakdownFields.map((field) => [
@@ -254,6 +332,20 @@ export class TableAccumulator {
         columnBlockDigests,
         samples: this.samples,
         observed: this.observed,
+        // Rule R13: counts only (parser class names), published by the parity report.
+        exclusions: this.rowFilter
+          ? {
+              rule: "R13_DOMAIN_ROW_FILTER",
+              field: this.rowFilter.field,
+              rawRowCount: this.rowCount + this.excludedCount,
+              count: this.excludedCount,
+              byValue: sortedCounts(this.excluded),
+              unclassifiedClassRows: this.unclassifiedCount,
+              unclassifiedByValue: sortedCounts(this.unclassified),
+              unexplainedRows: this.unexplainedCount,
+              excludedRowsDigest: this.excludedRowsDigest,
+            }
+          : null,
       },
     };
   }

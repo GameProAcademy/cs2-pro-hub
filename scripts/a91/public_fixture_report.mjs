@@ -38,7 +38,7 @@ const [python1, python2, wasm1, wasm2] = runs;
 
 const checks = [];
 const check = (name, pass, detail = {}) =>
-  checks.push({ name, status: pass ? "PASS" : "FAIL", ...detail });
+  checks.push({ ...detail, name, status: pass ? "PASS" : "FAIL" });
 const sameSet = (left, right) =>
   left.length === right.length && [...left].sort().join("\n") === [...right].sort().join("\n");
 const gc = () => typeof globalThis.gc === "function" && globalThis.gc();
@@ -83,7 +83,11 @@ check(
 //    divergence that disappears also fails until the expectation is updated in
 //    review. Parity itself is reported as measured, never upgraded.
 const diagnostics = parity.field_diagnostics;
-const failingDomains = parity.comparisons.filter((c) => c.status === "FAIL").map((c) => c.field);
+// Anything that is not PASS or an explicit NOT_COMPARABLE counts as diverging,
+// so a BLOCKED domain can never slip through an empty ratchet.
+const failingDomains = parity.comparisons
+  .filter((c) => !["PASS", "NOT_COMPARABLE"].includes(c.status))
+  .map((c) => c.field);
 const failingTables = diagnostics.tables.filter((t) => t.status !== "PASS").map((t) => t.table);
 const notComparable = parity.comparisons
   .filter((c) => c.status === "NOT_COMPARABLE")
@@ -111,6 +115,66 @@ check(
   sameSet(notComparable, expectations.notComparableDomains),
   { observed: notComparable.sort(), expected: [...expectations.notComparableDomains].sort() },
 );
+// Contract rule R13, checked semantically first: in BOTH runtimes every row
+// kept out of the grenade domain must be a known anomaly class on an entity id
+// that was a grenade earlier. This is what protects against silent exclusion.
+const raw = parity.raw_output_diagnostics;
+const rawGrenades = raw?.tables?.find((item) => item.table === "grenades");
+check(
+  "grenade_domain_filter_is_clean_in_both_runtimes",
+  raw?.tables?.length === 1 &&
+    [rawGrenades?.python, rawGrenades?.wasm].every(
+      (side) =>
+        side?.domain_filter_status === "CLEAN" &&
+        side.unclassified_class_rows === 0 &&
+        side.rows_without_prior_domain_row === 0 &&
+        [side.raw_rows, side.domain_rows, side.excluded_rows].every(Number.isSafeInteger) &&
+        side.domain_rows > 0 &&
+        side.raw_rows === side.domain_rows + side.excluded_rows,
+    ) &&
+    rawGrenades.python.domain_rows === rawGrenades.wasm.domain_rows,
+  { python: rawGrenades?.python ?? null, wasm: rawGrenades?.wasm ?? null },
+);
+// The raw output of the two runtimes is NOT equal on this fixture, and the
+// report must keep saying so next to a semantic PASS.
+check(
+  "raw_output_divergence_stays_visible",
+  raw?.scope === "RAW_PARSER_OUTPUT_NOT_A_PARITY_DIMENSION" &&
+    raw.status === expectations.rawOutput.status &&
+    rawGrenades?.raw_rows_equal === (expectations.rawOutput.status === "EQUAL"),
+  { rawStatus: raw?.status ?? null },
+);
+// Raw output is outside every semantic digest, so its run-to-run stability is
+// checked here on its own: both runs of each runtime must have excluded the
+// same rows, in the same order.
+const exclusionFacts = (run) => run.tableDiagnostics?.grenades?.exclusions ?? null;
+check(
+  "raw_output_is_deterministic_within_each_runtime",
+  [
+    [python1, python2],
+    [wasm1, wasm2],
+  ].every(
+    ([first, second]) =>
+      /^[0-9a-f]{64}$/.test(exclusionFacts(first)?.excludedRowsDigest ?? "") &&
+      JSON.stringify(exclusionFacts(first)) === JSON.stringify(exclusionFacts(second)),
+  ),
+  {
+    pythonExcludedRowsDigest: exclusionFacts(python1)?.excludedRowsDigest ?? null,
+    wasmExcludedRowsDigest: exclusionFacts(wasm1)?.excludedRowsDigest ?? null,
+  },
+);
+// Regression pin for this one fixed input (not a semantic rule): the measured
+// raw figures. A change means the parser build or the fixture changed.
+const pin = expectations.rawOutput.grenades;
+check(
+  "raw_output_figures_match_fixture_pin",
+  rawGrenades?.python.raw_rows === pin.pythonRawRows &&
+    rawGrenades?.wasm.raw_rows === pin.wasmRawRows &&
+    rawGrenades?.python.domain_rows === pin.domainRows &&
+    sameSet(Object.keys(rawGrenades.python.excluded_by_class), pin.excludedClasses) &&
+    sameSet(Object.keys(rawGrenades.wasm.excluded_by_class), pin.excludedClasses),
+  { expected: pin },
+);
 check(
   "parity_status_is_reported_not_forced",
   parity.status === (failingDomains.length ? "FAIL" : "PASS"),
@@ -123,7 +187,10 @@ const grenadeCall = memory?.calls.find((call) => call.api === "parseGrenades");
 check(
   "wasm_memory_within_fixture_limit",
   [wasm1, wasm2].every(
-    (run) => run.wasmMemoryEvidence?.peakBytes <= expectations.limits.wasmPeakBytes,
+    (run) =>
+      Number.isSafeInteger(run.wasmMemoryEvidence?.peakBytes) &&
+      run.wasmMemoryEvidence.peakBytes > 0 &&
+      run.wasmMemoryEvidence.peakBytes <= expectations.limits.wasmPeakBytes,
   ),
   { peakBytes: memory?.peakBytes ?? null, limitBytes: expectations.limits.wasmPeakBytes },
 );
@@ -254,6 +321,7 @@ const report = {
     emptyInBothTableCount: diagnostics.empty_in_both_table_count,
     fieldCount: diagnostics.field_count,
     fieldPassCount: diagnostics.field_pass_count,
+    rawOutputDiagnostics: raw ?? null,
     divergingDomains: failingDomains.sort(),
     divergingTables: diagnostics.tables
       .filter((table) => table.status !== "PASS")
