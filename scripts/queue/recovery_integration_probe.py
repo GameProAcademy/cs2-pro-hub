@@ -213,6 +213,7 @@ def facts(item: dict) -> dict:
                               f"'[]'::jsonb) from public.demo_job_dispatch_closures where job_id='{job_id}'"))
     return {
         "job_status": state["status"], "error_code": state["error_code"], "retry_count": state["retry_count"],
+        "job_message": (state["error_message"] or "")[:160],
         "parser_executions": sum(1 for e in events if e["type"] == "EXECUTION_STARTED"),
         "execution_identities": len({e["execution"] for e in events}),
         "terminals": sorted(f"{e['type'].replace('EXECUTION_', '')}:{e['outcome']}" for e in events
@@ -349,15 +350,28 @@ def s_happy(item):
 
 @scenario("recoverable_parse_timeout_kills_the_parser_and_the_retry_really_parses_again")
 def s_timeout(item):
-    start_worker(parse_timeout=1.0)
+    start_worker("worker-impatient", parse_timeout=1.0)
+    wait_for(lambda: FAULTS.count("claim", job=item["job_id"], status="claimed") == 1, 60, "the first lease")
+    # The impatient worker would also take the retry and time out again; keep it
+    # away from the queue so the retry goes to a worker that can finish.
+    FAULTS.arm("claim", "before", worker="worker-impatient", times=9999)
     wait_for(lambda: job(item["job_id"])["retry_count"] == 1, 240, "the timed out dispatch to be retried")
     assert wait_for(no_parser_process, 20, "the timed out parser process to be gone")
-    stop_workers()
-    start_worker()
+    start_worker("worker-patient")
     state = done(item)
     assert state["status"] in SUCCESS, state
     return {"parser_executions": 2, "execution_identities": 2, "retry_count": 1, "fail_calls": 1, "complete_calls": 1,
             "terminals": ["FAILED:PARSE_TIMEOUT", "FINISHED:PARSE_SUCCEEDED"], "closures": []}
+
+
+@scenario("a_parse_that_always_times_out_stops_at_the_retry_limit_with_a_real_execution_each")
+def s_timeout_exhausted(item):
+    start_worker(parse_timeout=1.0)
+    state = done(item, 300)
+    assert state["status"] == "failed" and state["error_code"] == "PARSER_TIMEOUT", state
+    assert wait_for(no_parser_process, 20, "no parser process left")
+    return {"parser_executions": 3, "execution_identities": 3, "retry_count": 3, "fail_calls": 3, "complete_calls": 0,
+            "terminals": ["FAILED:PARSE_TIMEOUT"] * 3, "raw_artifacts": 0}
 
 
 @scenario("sigkill_during_parse_is_reconciled_and_reexecuted_under_a_new_identity")
@@ -524,7 +538,7 @@ def s_kill_download(item):
 
 
 RESULTS_NOTES: dict = {}
-SCENARIOS = [s_happy, s_timeout, s_sigkill, s_complete_lost, s_ack_lost, s_fail_lost, s_raw_before, s_raw_after,
+SCENARIOS = [s_happy, s_timeout, s_timeout_exhausted, s_sigkill, s_complete_lost, s_ack_lost, s_fail_lost, s_raw_before, s_raw_after,
              s_stale, s_concurrency, s_heartbeat, s_undecidable, s_kill_download]
 
 

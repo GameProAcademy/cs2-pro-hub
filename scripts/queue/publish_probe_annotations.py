@@ -27,7 +27,7 @@ def summarize(path: Path) -> dict:
     }
 
 
-DETAIL_KEYS = ("scenario", "status", "detail", "job_status", "error_code", "retry_count", "parser_executions",
+DETAIL_KEYS = ("scenario", "status", "detail", "job_status", "job_message", "error_code", "retry_count", "parser_executions",
                "execution_identities", "terminals", "leases", "complete_calls", "fail_calls", "raw_status", "raw_audit",
                "raw_chunks", "raw_chunks_verified", "raw_objects", "queued_messages", "closures", "canonical",
                "bridge_calls", "bridge_log", "worker_logs", "last_bridge_calls", "seconds")
@@ -55,11 +55,13 @@ def details(path: Path) -> list[str]:
     for item in [s for s in scenarios if s.get("status") != "PASS"][:8]:
         text = json.dumps(clean({key: item[key] for key in DETAIL_KEYS if key in item}), sort_keys=True, separators=(",", ":"))
         lines.append(f"::error title=Queue probe failure::{text[:3800]}")
-    passed = {str(s.get("scenario"))[:70]: [s.get("seconds"), s.get("parser_executions"), s.get("retry_count"), s.get("job_status")]
+    passed = {str(s.get("scenario"))[:70]: [s.get("seconds"), s.get("parser_executions"), s.get("retry_count"), s.get("job_status"),
+                                             s.get("raw_chunks"), s.get("raw_objects")]
               for s in scenarios if s.get("status") == "PASS" and "seconds" in s}
     if passed:
-        context = {key: report.get(key) for key in ("pgmq_version", "postgres_version", "notes", "demo") if key in report}
-        lines.append(f"::notice title=Queue probe passed scenarios::{json.dumps(clean({'context': context, 'seconds_executions_retries_status': passed}), sort_keys=True, separators=(',', ':'))[:3800]}")
+        context = {key: report.get(key) for key in ("pgmq_version", "postgres_version", "notes") if key in report}
+        context["first_job_message"] = next((s.get("job_message") for s in scenarios if s.get("job_message")), None)
+        lines.append(f"::notice title=Queue probe passed scenarios::{json.dumps(clean({'context': context, 'seconds_executions_retries_status_chunks_objects': passed}), sort_keys=True, separators=(',', ':'))[:3800]}")
     return lines
 
 

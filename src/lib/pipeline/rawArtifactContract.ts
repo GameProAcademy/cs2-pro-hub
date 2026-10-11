@@ -189,8 +189,7 @@ export function validateRawForensicContractV2(
       reasons.push(`forensic_v2_canonical_mapping_missing:${rawField}`);
   }
   const reconciliation = contract["capability_reconciliation"] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (
     reconciliation?.["status"] !== "PASS" ||
     reconciliation?.["unresolved_count"] !== 0 ||
