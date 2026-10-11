@@ -271,6 +271,7 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
     total = 0
     handle = tempfile.NamedTemporaryFile(prefix="demo-", suffix=".dem", delete=False)
     path = handle.name
+    downloaded = False
     try:
         timeout = httpx.Timeout(settings.download_timeout_seconds)
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
@@ -289,23 +290,22 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
                         )
                     digest.update(chunk)
                     handle.write(chunk)
+        downloaded = True
     except WorkerError:
-        handle.close()
-        _cleanup(path)
         raise
     except httpx.TimeoutException:
-        handle.close()
-        _cleanup(path)
         raise WorkerError(504, E.DOWNLOAD_TIMEOUT, "Demo download timed out.") from None
     except httpx.HTTPError:
-        handle.close()
-        _cleanup(path)
         raise WorkerError(502, E.DOWNLOAD_ERROR, "Demo could not be downloaded.") from None
     except OSError:
-        handle.close()
-        _cleanup(path)
         raise WorkerError(502, E.DOWNLOAD_ERROR, "Demo could not be read.") from None
-    handle.close()
+    finally:
+        # Every exit that does not hand the file to the caller removes it,
+        # including cancellation and any exception not listed above: a partial
+        # demo must never be left on disk.
+        handle.close()
+        if not downloaded:
+            _cleanup(path)
     return path, digest.hexdigest(), total
 
 
