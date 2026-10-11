@@ -356,3 +356,45 @@ def test_typed_demo_errors_and_memory_errors_from_the_real_child(monkeypatch, tm
     with pytest.raises(WorkerError) as caught:
         runner()
     assert caught.value.failure_class == E.RESOURCE_EXHAUSTED
+
+
+# ---- the parser must not outlive a worker that is killed ---------------------
+def test_the_parser_child_dies_when_its_worker_is_sigkilled(tmp_path):
+    """A worker killed by SIGKILL cannot clean up. The child runs in its own
+    session, so killing the worker's group does not reach it; the kernel must."""
+    service = str(Path(parser_isolated.__file__).resolve().parent)
+    stub = tmp_path / "stub"
+    stub.mkdir()
+    pid_file = tmp_path / "child.pid"
+    (stub / "parser.py").write_text(
+        "import os, time\nNON_DEMO_FAILURES = (MemoryError,)\n"
+        f"def parse_demo_file(_path):\n    open({str(pid_file)!r}, 'w').write(str(os.getpid()))\n    time.sleep(600)\n")
+    worker_code = (
+        "import sys\n"
+        f"sys.path.insert(0, {service!r})\n"
+        "import parser_isolated\n"
+        f"stub = {str(stub)!r}\n"
+        "code = ('import runpy, sys\\n' + f'sys.path.insert(0, {stub!r})\\n' +\n"
+        "        \"sys.argv = ['parser_child', sys.argv[1], sys.argv[2]]\\n\" +\n"
+        "        \"runpy.run_module('parser_child', run_name='__main__')\\n\")\n"
+        "parser_isolated._command = lambda demo, result: [sys.executable, '-c', code, demo, str(result)]\n"
+        "parser_isolated.parse_demo_file_isolated('demo.dem', 600)\n"
+    )
+    worker = subprocess.Popen([sys.executable, "-c", worker_code], cwd=service, start_new_session=True,
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 20
+        while not pid_file.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        child_pid = int(pid_file.read_text())
+        assert alive(child_pid) and alive(worker.pid)
+        os.killpg(worker.pid, signal.SIGKILL)  # the worker's group; the child is in its own session
+        worker.wait()
+        assert wait_dead(child_pid, 10), "the parser child outlived its SIGKILLed worker"
+    finally:
+        if worker.poll() is None:
+            os.killpg(worker.pid, signal.SIGKILL)
+        try:
+            os.kill(int(pid_file.read_text()), signal.SIGKILL)
+        except (OSError, ValueError):
+            pass
