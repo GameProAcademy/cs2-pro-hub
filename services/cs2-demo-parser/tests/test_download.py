@@ -117,3 +117,67 @@ def test_download_never_reports_invalid_demo_format(client_factory, with_transpo
     ):
         with_transport(stream)
         assert code(_post(client_factory())) != E.INVALID_DEMO_FORMAT
+
+
+# ---- a partial demo is never left on disk ----------------------------------
+import asyncio  # noqa: E402
+import glob  # noqa: E402
+import os  # noqa: E402
+
+
+def _leftovers(directory) -> list[str]:
+    return sorted(os.path.basename(path) for path in glob.glob(os.path.join(str(directory), "demo-*.dem")))
+
+
+class _HangingStream(_FakeStream):
+    def __init__(self, reached: asyncio.Event):
+        super().__init__(200)
+        self._reached = reached
+
+    async def aiter_bytes(self):
+        yield b"x" * 64
+        self._reached.set()
+        await asyncio.sleep(3600)
+
+
+def test_a_cancelled_download_leaves_no_partial_demo(monkeypatch, tmp_path):
+    monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
+
+    async def scenario():
+        reached = asyncio.Event()
+        monkeypatch.setattr(app_module.httpx, "AsyncClient",
+                            lambda **_kwargs: _FakeClient(lambda: _HangingStream(reached)))
+        task = asyncio.ensure_future(
+            app_module._download("https://synthetic.invalid/demo.dem", 4096, make_settings()))
+        await reached.wait()
+        assert len(_leftovers(tmp_path)) == 1  # the partial file exists while downloading
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(scenario())
+    assert _leftovers(tmp_path) == []
+
+
+@pytest.mark.parametrize("failure", [
+    RuntimeError("unexpected transport state"), KeyError("x"), MemoryError(),
+    httpx.ReadError("reset"), httpx.ReadTimeout("slow"), OSError("disk"),
+])
+def test_any_failed_download_leaves_no_partial_demo(monkeypatch, tmp_path, failure):
+    monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
+    monkeypatch.setattr(app_module.httpx, "AsyncClient",
+                        lambda **_kwargs: _FakeClient(lambda: _FakeStream(200, raise_exc=failure)))
+    with pytest.raises(BaseException):  # noqa: B017 - the type is asserted elsewhere; here only the file matters
+        asyncio.run(app_module._download("https://synthetic.invalid/demo.dem", 4096, make_settings()))
+    assert _leftovers(tmp_path) == []
+
+
+def test_a_successful_download_hands_exactly_one_file_to_the_caller(monkeypatch, tmp_path):
+    monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
+    monkeypatch.setattr(app_module.httpx, "AsyncClient",
+                        lambda **_kwargs: _FakeClient(lambda: _FakeStream(200, chunks=(b"ab", b"cd"))))
+    path, _digest, size = asyncio.run(
+        app_module._download("https://synthetic.invalid/demo.dem", 4, make_settings()))
+    assert size == 4 and _leftovers(tmp_path) == [os.path.basename(path)]
+    with open(path, "rb") as handle:
+        assert handle.read() == b"abcd"
