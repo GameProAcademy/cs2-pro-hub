@@ -100,7 +100,7 @@ before the change. State before: 149 recorded migrations, last
 | `20261011130000` in one transaction with a hash guard                 | applied; `persist_canonical_observation` = `d313725d…`; ACL unchanged                                                                                                                                                                                                                            |
 | Probe inside a transaction that was rolled back                       | first holder cannot abandon; redelivery is delivery 2; later holder abandons to a new dispatch; fourth delivery refused, `JOB_STALE` / `delivery_limit`; two closure rows; no queue message left; repeated canonical write keeps 10 `NULL` confidences; fewer rounds leaves 1 `match_rounds` row |
 | Residue after the rollback                                            | none: 12 jobs, 1 match, 2 users, 0 queued, 0 closure rows, 0 probe uploads or sources                                                                                                                                                                                                            |
-| `20261011140000`                                                      | see below                                                                                                                                                                                                                                                                                        |
+| `20261011140000`                                                      | applied; table ACL is now `service_role=r`, no access for `anon` or `authenticated`                                                                                                                                                                                                              |
 
 The applied statements were not inserted into
 `supabase_migrations.schema_migrations`: that table belongs to the platform's
@@ -113,3 +113,12 @@ migration only granted `SELECT`. `20261011140000` makes the grants explicit.
 
 Not changed by any of this: the ten participant rows that already hold
 `identity_confidence = 0`; the published app; the deployed worker.
+
+Re-read at 20:47 UTC, after all three steps: the six function hashes equal the
+"after" column, 12 jobs (9 `failed`, 1 `processed`, 1 `cancelled`,
+1 `blocked_raw_audit`), empty queue, no closure rows, 1 match, 149 recorded
+migrations. The scheduled job `cs2-demo-pipeline` (every minute, calls the
+published app's `pipeline-cron` route) reported 180 of 180 successful runs and
+180 of 180 HTTP 200 answers in the three hours that contain the change, so the
+published app works against the new schema. No demo was submitted in that
+window; the last job is from 2026-09-19.
