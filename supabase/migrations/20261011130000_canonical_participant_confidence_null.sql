@@ -1,17 +1,24 @@
--- persist_canonical_observation: a repeated write must not turn an unknown
--- participant identity confidence into 0.
+-- persist_canonical_observation: two idempotency defects on a repeated write.
 --
 -- Evidence (scripts/queue/canonical_persistence_probe.py, disposable database):
--- the first write of an observation whose participants carry no confidence
--- stores NULL; writing the SAME observation again (a retried job, a lost
--- acknowledgement, a re-execution) stored 0 for all ten participants, because
--- the upsert computed GREATEST(COALESCE(old, 0), COALESCE(new, 0)).
--- That breaks NULL != ZERO and makes the routine non-idempotent.
 --
--- The routine below is the current definition with that one expression
--- changed. Nothing else differs. Grants are unchanged (CREATE OR REPLACE keeps
--- them). NOT applied to any real environment by this change. It does not
--- rewrite rows that already hold 0.
+-- 1. NULL became 0. The first write of an observation whose participants carry
+--    no identity confidence stores NULL; writing the SAME observation again (a
+--    retried job, a lost acknowledgement, a re-execution) stored 0 for all ten
+--    participants: GREATEST(COALESCE(old, 0), COALESCE(new, 0)). That breaks
+--    NULL != ZERO. Now GREATEST(old, new): PostgreSQL's GREATEST ignores NULL
+--    arguments and is NULL only when all are.
+--
+-- 2. Rounds of a previous, larger observation survived. When the source that
+--    is authoritative for rounds wrote fewer rounds than before, round_players
+--    and round_events were replaced but the extra match_rounds rows stayed.
+--    Now those rows are deleted in the same transaction, only inside the block
+--    that already requires round authority (a lower-priority source can still
+--    not touch rounds).
+--
+-- The routine below is the current definition with those two changes and
+-- nothing else. Grants are unchanged (CREATE OR REPLACE keeps them). It does
+-- not rewrite existing rows: a stored 0 is left as it is.
 
 CREATE OR REPLACE FUNCTION public.persist_canonical_observation(_bundle jsonb, _owner_player_id uuid DEFAULT NULL::uuid, _upload_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb
@@ -294,6 +301,16 @@ BEGIN
     -- survive (evolution, not destruction).
     DELETE FROM public.round_events WHERE match_id = _match_id;
     DELETE FROM public.round_players WHERE match_id = _match_id;
+    -- A round that the authoritative observation no longer contains is not a
+    -- round of this match. Without this, a re-execution that yields fewer
+    -- rounds left the extra match_rounds rows behind (with no events and no
+    -- players), contradicting matches.round_count. Rounds still present keep
+    -- being updated in place below, so their player-scoped columns survive.
+    DELETE FROM public.match_rounds mr
+     WHERE mr.match_id = _match_id
+       AND NOT EXISTS (
+         SELECT 1 FROM jsonb_array_elements(_bundle->'rounds') AS b(value)
+          WHERE (b.value->>'roundNumber')::integer = mr.round_number);
 
     FOR _row IN SELECT value FROM jsonb_array_elements(_bundle->'rounds') LOOP
       INSERT INTO public.match_rounds (

@@ -270,10 +270,43 @@ def s_replace():
     assert again["match_id"] == first["match_id"]
     # Events and per-round player rows are replaced, never appended to.
     assert one["round_events"]["rows"] == 2 and one["round_players"]["rows"] == 10, one
-    # OBSERVATION, by design of the routine ("ROUND rows are updated in place"):
-    # match_rounds rows of rounds absent from the new observation are kept.
-    return {"events_after_3_rounds": 6, "events_after_1_round": 2,
-            "match_rounds_rows_kept_after_shrink": one["match_rounds"]["rows"]}
+    # Rounds the authoritative observation no longer contains are removed too.
+    assert one["match_rounds"]["rows"] == 1, one
+    assert int(sql(f"select round_count from public.matches where id='{first['match_id']}'")) == 1
+    return {"events_after_3_rounds": 6, "events_after_1_round": 2, "match_rounds_rows_after_shrink": 1}
+
+
+@scenario("rounds_still_present_are_updated_in_place_and_keep_player_scoped_columns")
+def s_rounds_in_place():
+    upload, fingerprint = fresh()
+    first = persist(bundle(fingerprint, rounds=3), upload)
+    match = first["match_id"]
+    ids = json.loads(sql(f"select jsonb_object_agg(round_number, id) from public.match_rounds where match_id='{match}'"))
+    sql(f"update public.match_rounds set player_money_start = 4100, buy_context = 'full_buy' where match_id='{match}' and round_number = 1")
+    persist(bundle(fingerprint, rounds=2), upload)
+    kept = json.loads(sql("select jsonb_agg(jsonb_build_object('n', round_number, 'id', id, 'money', player_money_start, "
+                          f"'buy', buy_context) order by round_number) from public.match_rounds where match_id='{match}'"))
+    assert [row["n"] for row in kept] == [1, 2], kept
+    assert kept[0]["id"] == ids["1"] and kept[1]["id"] == ids["2"], kept  # same rows, not re-created
+    assert kept[0]["money"] == 4100 and kept[0]["buy"] == "full_buy", kept
+    return {"rounds_kept": 2, "round_3_removed": True}
+
+
+@scenario("a_lower_priority_source_cannot_remove_rounds")
+def s_lower_priority():
+    upload, fingerprint = fresh()
+    first = persist(bundle(fingerprint, rounds=3), upload)
+    match = first["match_id"]
+    weaker = bundle(fingerprint, rounds=1)
+    weaker["observation"].update({"source": "faceit", "sourceContractVersion": "faceit-v1",
+                                  "externalMatchId": "probe-" + uuid.uuid4().hex, "fingerprint": None})
+    for participant in weaker["participants"]:
+        participant["source"] = "faceit"
+    text = json.dumps(weaker).replace("'", "''")
+    js(f"select public.persist_canonical_observation_attached('{text}'::jsonb, null, null, '{match}')")
+    state = snapshot(match)
+    assert state["match_rounds"]["rows"] == 3 and state["round_events"]["rows"] == 6, state
+    return {"rounds_after_weaker_source": 3}
 
 
 @scenario("the_same_demo_from_a_second_upload_does_not_create_a_second_match")
@@ -304,7 +337,7 @@ def s_roles():
     return {"denied": denied}
 
 
-SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_second_upload, s_roles]
+SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles]
 
 
 def main() -> int:
