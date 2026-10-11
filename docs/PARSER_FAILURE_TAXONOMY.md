@@ -16,15 +16,15 @@ the classes to the wire is a proposal that needs the owner's decision.
 
 ## What exists today, and where it lands
 
-| Situation                                                        | Before                                                                             | Now (this change)                                                                              |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Stream absent from the demo                                      | capability state `NOT_PRESENT_IN_DEMO` / `AVAILABLE_BUT_EMPTY` (`raw_evidence.py`) | unchanged; this is `NO_DATA` and never a wire error                                            |
-| Exception or panic in one capability                             | capability state `PARSE_FAILED`, parse continues                                   | unchanged; `PARSER_FAILURE` at capability level                                                |
-| `MemoryError` inside a capability                                | empty table, parse continues, job ends `blocked_raw_audit` (permanent)             | propagates; wire `PARSER_ERROR`, class `RESOURCE_EXHAUSTED`                                    |
-| Parse timeout                                                    | wire `PARSE_TIMEOUT`                                                               | same code, class `RESOURCE_EXHAUSTED`                                                          |
-| Cancellation during parse                                        | wire `PARSER_ERROR`                                                                | same code, class `CANCELLED`                                                                   |
-| Any other exception                                              | wire `PARSER_ERROR`                                                                | same code, class `PARSER_FAILURE`                                                              |
-| Child process killed by signal (isolation, deployed branch only) | wire `PARSER_ERROR`, signal only in logs (`parser_isolated.py@91aeee8:83-93`)      | `classify_child_exit` is implemented and tested here; it is NOT wired into the deployed branch |
+| Situation                            | Before                                                                                                                                     | Now (this change)                                                                                                                                                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stream absent from the demo          | capability state `NOT_PRESENT_IN_DEMO` / `AVAILABLE_BUT_EMPTY` (`raw_evidence.py`)                                                         | unchanged; this is `NO_DATA` and never a wire error                                                                                                                                                                                                                             |
+| Exception or panic in one capability | capability state `PARSE_FAILED`, parse continues                                                                                           | unchanged; `PARSER_FAILURE` at capability level                                                                                                                                                                                                                                 |
+| `MemoryError` inside a capability    | empty table, parse continues, job ends `blocked_raw_audit` (permanent)                                                                     | propagates; wire `PARSER_ERROR`, class `RESOURCE_EXHAUSTED`                                                                                                                                                                                                                     |
+| Parse timeout                        | wire `PARSE_TIMEOUT`                                                                                                                       | same code, class `RESOURCE_EXHAUSTED`                                                                                                                                                                                                                                           |
+| Cancellation during parse            | wire `PARSER_ERROR`                                                                                                                        | same code, class `CANCELLED`                                                                                                                                                                                                                                                    |
+| Any other exception                  | wire `PARSER_ERROR`                                                                                                                        | same code, class `PARSER_FAILURE`                                                                                                                                                                                                                                               |
+| Child process killed by signal       | did not exist on `main` (in-process thread); on the deployed line any non-zero exit is `PARSER_ERROR` (`parser_isolated.py@91aeee8:83-93`) | `main` now parses in a child process (`parser_isolated.py`, `parser_child.py`): SIGKILL → `RESOURCE_EXHAUSTED`, SIGTERM/SIGINT → `CANCELLED`, SIGSEGV/SIGABRT/other non-zero → `PARSER_FAILURE`, missing or malformed result → `INVALID_OUTPUT`. The deployed line is unchanged |
 
 The class is carried on the in-process `WorkerError.failure_class` and in the
 log line `failure_class=...`. `WorkerError.envelope()` is byte-identical to
@@ -78,3 +78,32 @@ re-delivery without a second parse
 (`test_worker.py::test_durable_worker_replayed_intent_reads_authoritative_state_without_reparse`),
 HTTP retries without re-execution
 (`test_h3e91_failure_injection.py::test_v1_http_retry_reconstructs_identity_without_reexecuting_parser`).
+
+## Isolation on `main` (this change)
+
+- The parse runs in `parser_child`, started by `parser_isolated` in its own
+  session. A timeout or a cancellation kills the whole process group, so no
+  parser work continues after the request that started it. Before, the timeout
+  only stopped waiting on a thread that kept running.
+- Exit status takes precedence: a child that was killed or crashed is never
+  trusted, whatever file it left behind.
+- `RESOURCE_EXHAUSTED` and `CANCELLED` reported by the child are accepted only
+  together with its failure exit status (3).
+- Optional `PARSER_CHILD_MEMORY_BYTES` sets an address-space limit for the
+  child, turning an out-of-memory condition into a `MemoryError` inside it.
+  It is not set anywhere by this change.
+- The child changes no parser behaviour: it calls `parser.parse_demo_file`.
+  It does not carry the deployed line's `grenades=False` or tick-query cap.
+- The runtime image allowlist gains exactly these two modules (Dockerfile, the
+  two CI assertions, `test_production_image_contract.py`, and the execution
+  surface discovery test).
+
+## RAW persistence failure (this change)
+
+A failure that is not a `WorkerError` (RAW chunk too large, failed chunk
+upload, bridge error) used to end with a failed ledger terminal and no queue
+notification; the job stayed leased until expiry. Now, once the failed
+terminal is recorded, the worker sends `fail` (`PARSER_ERROR`, transient) and
+never `complete`. If the terminal cannot be recorded the queue is still not
+told, and after a recorded `FINISHED` a lost acknowledgement is still left to
+reconciliation.

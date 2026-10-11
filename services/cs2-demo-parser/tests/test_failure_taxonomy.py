@@ -295,17 +295,130 @@ def test_resource_failure_in_the_durable_loop_fails_the_job_and_never_completes(
     assert terminals == [("EXECUTION_FAILED", "PARSER_ERROR")]
 
 
-def test_raw_write_failure_never_completes_and_records_an_interrupted_terminal(monkeypatch):
-    """KNOWN GAP, pinned as it is today: a RuntimeError from the RAW writer
-    (RAW_CHUNK_TOO_LARGE, a failed chunk upload) is not a WorkerError, so the
-    queue is NOT told `fail`. The ledger gets a failed terminal; the job is
-    released only when its lease expires."""
+def test_raw_write_failure_reports_fail_once_and_never_completes(monkeypatch):
+    """A RuntimeError from the RAW writer (RAW_CHUNK_TOO_LARGE, a failed chunk
+    upload) is not a WorkerError. It must still end in a failed ledger terminal
+    AND a `fail` to the queue, never `complete`."""
+    for error in (RuntimeError("RAW_CHUNK_TOO_LARGE"), RuntimeError("RAW_ARTIFACT_TOO_LARGE"), ValueError("raw manifest")):
+        async def durable(*_args, error=error, **kwargs):
+            await kwargs["on_started"]()
+            raise error
+
+        calls, events = _consumer_run(monkeypatch, durable)
+        assert "complete" not in calls
+        assert calls.count("fail") == 1
+        terminals = [event for event in events if event[0] != "EXECUTION_INTENT" and event[0] != "EXECUTION_STARTED"]
+        assert terminals == [("EXECUTION_FAILED", "WORKER_INTERRUPTED")]
+        # Ledger first, queue second.
+        assert ("EXECUTION_FINISHED", "PARSE_SUCCEEDED") not in events
+
+
+def test_failure_before_the_parse_starts_is_aborted_and_reported(monkeypatch):
+    async def durable(*_args, **_kwargs):
+        raise RuntimeError("download plumbing failed before start")
+
+    calls, events = _consumer_run(monkeypatch, durable)
+    assert "complete" not in calls and calls.count("fail") == 1
+    assert ("EXECUTION_ABORTED", "WORKER_INTERRUPTED") in events
+    assert not any(event[0] == "EXECUTION_STARTED" for event in events)
+
+
+def test_lost_ack_after_finished_never_sends_fail_or_a_second_terminal(monkeypatch):
+    """RAW is persisted and FINISHED is recorded; then `complete` is lost. The
+    job must not be failed: reconciliation acknowledges it later."""
+    import app
+    import worker
+    from h3e91_execution import ExecutionRecorder
+    from worker import durable_consumer_loop
+
+    calls: list[str] = []
+    events: list[tuple[str, str | None]] = []
+
+    async def record(_self, event_type, outcome_code=None):
+        events.append((event_type, outcome_code))
+        return {"status": "INSERTED"}
+
+    async def bridge(_client, _settings, action, _body):
+        calls.append(action)
+        if action == "claim":
+            if calls.count("claim") > 1:
+                raise asyncio.CancelledError()
+            return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
+                    "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                    "demo_url": "https://synthetic.invalid/demo.dem", "demo_sha256": DEMO_SHA,
+                    "file_size": 520, "schema_version": 1}
+        if action == "complete":
+            raise RuntimeError("acknowledgement lost")
+        return {"accepted": True, "cancelled": False}
+
+    async def durable(*_args, **kwargs):
+        await kwargs["on_started"]()
+        return {"hot": {"schema_version": 1}, "raw": {"artifact_id": "a", "root_digest": DEMO_SHA}}
+
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
+    monkeypatch.setattr(worker, "_bridge", bridge)
+    monkeypatch.setattr(app, "_parse_durable_request", durable)
+    settings = make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                             bridge_secret="synthetic-test-only")
+    try:
+        asyncio.run(durable_consumer_loop(settings, empty_parse))
+    except asyncio.CancelledError:
+        pass
+    assert "fail" not in calls
+    assert [event for event in events if event[0] in ("EXECUTION_FINISHED", "EXECUTION_FAILED", "EXECUTION_ABORTED")] == [
+        ("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
+    ]
+
+
+def test_missing_terminal_evidence_suppresses_the_queue_failure(monkeypatch):
+    """If the failed terminal cannot be recorded, the queue is not told either:
+    reconciliation owns the job (unchanged rule)."""
+    import app
+    import worker
+    from h3e91_execution import ExecutionRecorder
+    from worker import durable_consumer_loop
+
+    calls: list[str] = []
+
+    async def record(_self, event_type, _outcome_code=None):
+        if event_type in ("EXECUTION_FAILED", "EXECUTION_ABORTED"):
+            raise RuntimeError("ledger unavailable")
+        return {"status": "INSERTED"}
+
+    async def bridge(_client, _settings, action, _body):
+        calls.append(action)
+        if action == "claim":
+            if calls.count("claim") > 1:
+                raise asyncio.CancelledError()
+            return {"status": "claimed", "job_id": "11111111-1111-1111-1111-111111111111",
+                    "message_id": 7, "attempt": 0, "upload_id": "22222222-2222-2222-2222-222222222222",
+                    "user_id": "33333333-3333-3333-3333-333333333333", "attempt_number": 1,
+                    "demo_url": "https://synthetic.invalid/demo.dem", "demo_sha256": DEMO_SHA,
+                    "file_size": 520, "schema_version": 1}
+        return {"accepted": True, "cancelled": False}
+
     async def durable(*_args, **kwargs):
         await kwargs["on_started"]()
         raise RuntimeError("RAW_CHUNK_TOO_LARGE")
 
+    monkeypatch.setattr(ExecutionRecorder, "record", record)
+    monkeypatch.setattr(worker, "_bridge", bridge)
+    monkeypatch.setattr(app, "_parse_durable_request", durable)
+    settings = make_settings(bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                             bridge_secret="synthetic-test-only")
+    try:
+        asyncio.run(durable_consumer_loop(settings, empty_parse))
+    except asyncio.CancelledError:
+        pass
+    assert "fail" not in calls and "complete" not in calls
+
+
+def test_cancellation_during_raw_persistence_propagates_without_ack(monkeypatch):
+    async def durable(*_args, **kwargs):
+        await kwargs["on_started"]()
+        raise asyncio.CancelledError()
+
     calls, events = _consumer_run(monkeypatch, durable)
-    assert "complete" not in calls  # never a success
-    assert ("EXECUTION_FAILED", "WORKER_INTERRUPTED") in events
+    assert "complete" not in calls and "fail" not in calls
     assert ("EXECUTION_FINISHED", "PARSE_SUCCEEDED") not in events
-    assert "fail" not in calls  # the gap: no queue notification

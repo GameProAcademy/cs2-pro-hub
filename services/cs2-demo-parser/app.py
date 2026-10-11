@@ -44,7 +44,8 @@ from errors import (
     UnsupportedDemoError,
     WorkerError,
 )
-from parser import parse_demo_file
+from parser import parse_demo_file  # noqa: F401 - in-process boundary, kept importable for tests and tools
+from parser_isolated import parse_demo_file_isolated
 from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
@@ -113,9 +114,15 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
                 except Exception:
                     raise WorkerError(503, E.PARSER_ERROR, "Execution recording failed before parsing.") from None
             parse_started = time.perf_counter()
-            parsed = await asyncio.wait_for(
-                asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
-            )
+            run_isolated = getattr(parse, "run_async", None)
+            if run_isolated is not None:
+                # Killable boundary: a timeout or a cancellation terminates the
+                # parser process instead of abandoning a running thread.
+                parsed = await run_isolated(path, settings.parse_timeout_seconds)
+            else:
+                parsed = await asyncio.wait_for(
+                    asyncio.to_thread(parse, path), timeout=settings.parse_timeout_seconds
+                )
             parse_ms = round((time.perf_counter() - parse_started) * 1000)
             parser_memory = parse_memory_snapshot()
         except asyncio.TimeoutError:
@@ -326,7 +333,8 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Raises `WorkerConfigurationError` when config fails closed."""
     resolved = settings or load_settings()
-    parse = parse_fn or parse_demo_file
+    # Production parses in a killable child process. Tests inject parse_fn.
+    parse = parse_fn or parse_demo_file_isolated
     app = FastAPI(title="cs2-demo-parser", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = resolved
     app.state.parse_fn = parse
