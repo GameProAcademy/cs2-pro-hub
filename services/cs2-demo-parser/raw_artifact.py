@@ -63,6 +63,64 @@ def _stable(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _es_number(number: float) -> str:
+    """ECMAScript Number::toString for a finite double (RFC 8785 3.2.2.3)."""
+    if number == 0:
+        return "0"
+    negative = number < 0
+    raw = repr(abs(number)).lower()
+    mantissa, exponent = raw.split("e", 1) if "e" in raw else (raw, "0")
+    whole, _, fraction = mantissa.partition(".")
+    digits = whole + fraction
+    position = len(whole) + int(exponent)
+    while len(digits) > 1 and digits.startswith("0"):
+        digits = digits[1:]
+        position -= 1
+    while len(digits) > 1 and digits.endswith("0"):
+        digits = digits[:-1]
+    if 0 < position <= 21:
+        text = digits + "0" * (position - len(digits)) if position >= len(digits) else digits[:position] + "." + digits[position:]
+    elif -6 < position <= 0:
+        text = "0." + "0" * (-position) + digits
+    else:
+        exp = position - 1
+        text = digits[0] + ("." + digits[1:] if len(digits) > 1 else "") + "e" + ("+" if exp >= 0 else "-") + str(abs(exp))
+    return ("-" if negative else "") + text
+
+
+def _portable(value: Any) -> str:
+    if value is None:
+        return "null"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, float):
+        return _es_number(value) if math.isfinite(value) else "null"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, dict):
+        items = sorted(value.items(), key=lambda item: str(item[0]).encode("utf-16-be", "surrogatepass"))
+        return "{" + ",".join(json.dumps(str(key), ensure_ascii=False) + ":" + _portable(item) for key, item in items) + "}"
+    if isinstance(value, (list, tuple)):
+        return "[" + ",".join(_portable(item) for item in value) + "]"
+    raise TypeError(f"not portable: {type(value).__name__}")
+
+
+def _stable_portable(value: Any) -> bytes:
+    """Canonical JSON for a digest the APP recomputes after a JSON round trip.
+
+    The APP only sees what JSON carried: it cannot tell 0.0 from 0, and it
+    sorts keys by UTF-16 code unit. So numbers are written the way ECMAScript
+    prints them and keys in that order. `_stable` (repr floats) stays for the
+    RAW chunk lines, whose bytes are hashed as they are and never re-derived.
+    For values without floats this is byte-identical to `_stable`.
+    """
+    return _portable(value).encode("utf-8")
+
+
 def _records(value: Any) -> Iterable[Any]:
     if value is None:
         return
@@ -144,14 +202,14 @@ def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, A
         "parser_identity": contract.get("parser"),
         "catalog_digest": contract.get("catalog_digest"),
         "capability_count": len(catalog.get("capabilities") or []),
-        "capability_digest": hashlib.sha256(_stable(catalog.get("capabilities") or [])).hexdigest(),
+        "capability_digest": hashlib.sha256(_stable_portable(catalog.get("capabilities") or [])).hexdigest(),
         "tick_domain": (contract.get("full_tick_audit") or {}).get("tick_domain_source"),
         "tick_coverage": contract.get("full_tick_audit"),
         "property_inventory": contract.get("property_inventory"),
         "semantic_inventories": contract.get("semantic_inventories"),
         "forensic_contract_digest": contract.get("deterministic_digest"),
     }
-    projection["digest"] = hashlib.sha256(_stable(projection)).hexdigest()
+    projection["digest"] = hashlib.sha256(_stable_portable(projection)).hexdigest()
     return projection
 
 
@@ -185,7 +243,7 @@ def _audit_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
 
 
 def _audit_evidence_digest(evidence: dict[str, Any]) -> str:
-    return hashlib.sha256(_stable(_audit_evidence(evidence))).hexdigest()
+    return hashlib.sha256(_stable_portable(_audit_evidence(evidence))).hexdigest()
 
 
 def _grenade_measurements(rows: Any) -> dict[str, Any]:

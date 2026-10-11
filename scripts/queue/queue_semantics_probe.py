@@ -191,6 +191,10 @@ def delivery_cap_installed() -> bool:
                "like '%delivery_limit%'") == "t"
 
 
+def recovery_protocol_installed() -> bool:
+    return sql("select count(*) from pg_proc where proname = 'abandon_demo_parse_dispatch'") == "1"
+
+
 def s_crashed_worker_redelivery():
     """A worker that dies mid-parse never calls fail. The lease lapses and the
     same message is delivered again. Without a delivery cap retry_count never
@@ -221,10 +225,17 @@ def s_crashed_worker_redelivery():
             assert claimed > state["max_retries"] + 1
             return {"deliveries_without_fail": claimed, "retry_count": state["retry_count"],
                     "max_retries": state["max_retries"], "pgmq_read_ct": 12}
-        # Two deliveries per dispatch (the original and one redelivery), for
-        # the first dispatch and each retry, then a terminal JOB_STALE.
         assert state["status"] == "failed" and state["error_code"] == "JOB_STALE", state
-        assert claimed == 2 * (state["max_retries"] + 1), (claimed, state)
+        if recovery_protocol_installed():
+            # Nobody reconciles here (claims only, no worker): three leases for
+            # the one dispatch, then a terminal with no automatic retry. With a
+            # live worker the redelivery is reconciled instead; that path is
+            # exercised by recovery_protocol_probe.py.
+            assert claimed == 3 and state["retry_count"] == 1, (claimed, state)
+        else:
+            # Two deliveries per dispatch (the original and one redelivery), for
+            # the first dispatch and each retry, then a terminal JOB_STALE.
+            assert claimed == 2 * (state["max_retries"] + 1), (claimed, state)
         assert state["lease_live"] is not True
         assert claim("worker-last").get("status") == "empty"
         return {"deliveries_before_terminal": claimed, "delivery_limit_rejections": rejected,
@@ -381,6 +392,7 @@ def main() -> int:
         "delivery_semantics": "AT_LEAST_ONCE_WITH_SINGLE_ACTIVE_LEASE_AND_FENCING",
         "exactly_once": "NOT_CLAIMED",
         "delivery_cap_installed": delivery_cap_installed(),
+        "recovery_protocol_installed": recovery_protocol_installed(),
         "known_defects": [item["scenario"] for item in RESULTS if item["kind"] == "KNOWN_DEFECT" and item["status"] == "PASS"],
         "scenarios": RESULTS,
     }

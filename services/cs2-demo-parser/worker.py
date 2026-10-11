@@ -33,6 +33,23 @@ async def _bridge(client: httpx.AsyncClient, settings: Settings, action: str, bo
     return payload
 
 
+def durable_execution_id(job_id: str, attempt_number: int, upload_id: str, dispatch_attempt: int) -> str:
+    """One execution identity per DISPATCH of a job.
+
+    The job identity (job, upload, logical attempt) is unchanged. Dispatch 0
+    keeps the original name, so identities already in the ledger stay valid; a
+    counted retry (dispatch >= 1) is a new execution and really runs the parser.
+    A redelivery of the SAME dispatch maps to the same identity and is only
+    ever reconciled. Mirrored by durableExecutionId in durableBridge.server.ts.
+    """
+    if isinstance(dispatch_attempt, bool) or not isinstance(dispatch_attempt, int) or dispatch_attempt < 0:
+        raise RuntimeError("invalid dispatch attempt")
+    name = f"h3e91:durable:{job_id}:{attempt_number}:{upload_id}"
+    if dispatch_attempt > 0:
+        name += f":dispatch:{dispatch_attempt}"
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, name))
+
+
 def _worker_error_code(error: WorkerError) -> str:
     """Keep the wire taxonomy; the APP owns the sole worker-to-pipeline mapping."""
     return error.error_code
@@ -75,7 +92,7 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                         client, settings, upload_id=claim["upload_id"], surface="RAILWAY_DURABLE_WORKER",
                         job_id=identity["jobId"], attempt_number=claim["attempt_number"],
                         demo_sha256=claim["demo_sha256"], file_size=claim["file_size"],
-                        execution_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:{identity['jobId']}:{claim['attempt_number']}:{claim['upload_id']}")),
+                        execution_id=durable_execution_id(identity["jobId"], claim["attempt_number"], claim["upload_id"], identity["attempt"]),
                         correlation_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"h3e91:durable:correlation:{identity['jobId']}:{claim['attempt_number']}:{claim['upload_id']}")),
                     ).bind_revision(settings.revision)
                     intent_result = await recorder.record("EXECUTION_INTENT")

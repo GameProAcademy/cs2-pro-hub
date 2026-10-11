@@ -37,6 +37,10 @@ itself was not executed by the probe.
 
 ### Known defect: a crashed worker is redelivered without bound
 
+> A replacement protocol is proposed in `docs/QUEUE_RECOVERY_PROTOCOL.md`
+> (migration not applied anywhere real). The text below describes the schema
+> on `main`.
+
 `claim_demo_parse_message` (`20260916103513…sql:64-73`) re-claims a
 `processing` job whose lease expired, with the same message and the same
 `retry_count`. `retry_count` only moves in `fail_demo_parse_message` and in

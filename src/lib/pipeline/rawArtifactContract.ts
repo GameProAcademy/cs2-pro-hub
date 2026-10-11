@@ -16,8 +16,12 @@ export const RAW_ARTIFACT_SECTION_ORDER = [
 export function stableRawArtifactJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableRawArtifactJson).join(",")}]`;
   if (value && typeof value === "object") {
+    // Code-unit order, the same order Python's json.dumps(sort_keys=True) gives
+    // the worker for every key it emits. localeCompare is locale collation: it
+    // put "name" before "PlayerID" where the worker has "PlayerID" first, so
+    // the digest of any evidence with a capitalised field name never matched.
     const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
-      a.localeCompare(b),
+      a < b ? -1 : a > b ? 1 : 0,
     );
     return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableRawArtifactJson(item)}`).join(",")}}`;
   }

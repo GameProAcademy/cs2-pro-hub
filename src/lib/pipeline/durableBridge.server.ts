@@ -24,11 +24,27 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const UUID_URL_NAMESPACE = Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex");
 
-/** Matches Python uuid.uuid5(uuid.NAMESPACE_URL, ...) in the durable worker. */
-function durableExecutionId(jobId: string, attemptNumber: number, uploadId: string): string {
+/**
+ * Matches durable_execution_id in the durable worker (uuid5, NAMESPACE_URL).
+ *
+ * One execution identity per DISPATCH of a job. Dispatch 0 keeps the original
+ * name, so identities already in the ledger stay valid. A counted retry
+ * (dispatch >= 1) is a new execution and really runs the parser; a redelivery
+ * of the same dispatch maps to the same identity and is only reconciled.
+ */
+export function durableExecutionId(
+  jobId: string,
+  attemptNumber: number,
+  uploadId: string,
+  dispatchAttempt: number,
+): string {
+  if (!Number.isSafeInteger(dispatchAttempt) || dispatchAttempt < 0) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid dispatch attempt");
+  }
+  const suffix = dispatchAttempt > 0 ? `:dispatch:${dispatchAttempt}` : "";
   const digest = createHash("sha1")
     .update(UUID_URL_NAMESPACE)
-    .update(`h3e91:durable:${jobId}:${attemptNumber}:${uploadId}`, "utf8")
+    .update(`h3e91:durable:${jobId}:${attemptNumber}:${uploadId}${suffix}`, "utf8")
     .digest();
   const bytes = Buffer.from(digest.subarray(0, 16));
   bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
@@ -231,7 +247,11 @@ export async function reconcileDurableExecution(
     job.worker_id !== input.workerId ||
     typeof job.upload_id !== "string" ||
     typeof job.attempt_number !== "number" ||
-    durableExecutionId(input.jobId, job.attempt_number, job.upload_id) !== input.executionId
+    typeof job.dispatch_attempt !== "number" ||
+    !Number.isSafeInteger(job.dispatch_attempt) ||
+    job.dispatch_attempt < 0 ||
+    durableExecutionId(input.jobId, job.attempt_number, job.upload_id, job.dispatch_attempt) !==
+      input.executionId
   ) {
     return { status: "reconciliation_required", lifecycle: "UNKNOWN" };
   }
@@ -242,8 +262,30 @@ export async function reconcileDurableExecution(
   if (lifecycle.lifecycle === "INVALID" || lifecycle.lifecycle === "NONE") {
     return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
   }
-  if (lifecycle.lifecycle === "INTENT_ONLY" || lifecycle.lifecycle === "STARTED") {
-    return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+  // The previous holder of this dispatch began an execution and left no
+  // usable result: no terminal at all, or a FINISHED terminal whose completion
+  // never committed (the HOT result only existed in that worker's memory).
+  // This identity is never executed again. The dispatch is closed and the job
+  // gets a NEW dispatch, hence a new execution identity, while retries remain;
+  // otherwise it ends in an explicit terminal. The database refuses this for
+  // the first holder of a dispatch and for an expired or superseded lease.
+  if (
+    lifecycle.lifecycle === "INTENT_ONLY" ||
+    lifecycle.lifecycle === "STARTED" ||
+    (lifecycle.lifecycle === "FINISHED" && job.status === "processing")
+  ) {
+    const { data, error } = await rpc("abandon_demo_parse_dispatch", {
+      _job_id: input.jobId,
+      _message_id: input.messageId,
+      _attempt: input.attempt,
+      _worker_id: input.workerId,
+      _lifecycle: lifecycle.lifecycle,
+    });
+    if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+    if ((data as { accepted?: boolean } | null)?.accepted !== true) {
+      return { status: "reconciliation_required", lifecycle: lifecycle.lifecycle };
+    }
+    return { status: "dispatch_abandoned", lifecycle: lifecycle.lifecycle, queue: data };
   }
 
   if (lifecycle.lifecycle === "FINISHED") {
@@ -336,14 +378,20 @@ export async function reconcileDurableExecution(
     return { status: "queue_reconciled", lifecycle: "FINISHED", queue: data };
   }
 
+  // A failure terminal whose `fail` never reached the queue. Permanence comes
+  // from the same matrix as a delivered `fail`, so losing the acknowledgement
+  // cannot turn a retryable failure into a permanent one (or the reverse). The
+  // recorded outcome stays the error code: it is the evidence.
+  const outcome = lifecycle.terminalOutcome ?? `EXECUTION_${lifecycle.lifecycle}`;
+  const mapped = mapParserErrorCode(outcome);
   const { data, error } = await rpc("fail_demo_parse_message", {
     _job_id: input.jobId,
     _message_id: input.messageId,
     _attempt: input.attempt,
     _worker_id: input.workerId,
-    _error_code: lifecycle.terminalOutcome ?? `EXECUTION_${lifecycle.lifecycle}`,
+    _error_code: outcome,
     _error_message: "Authoritative execution terminal reconciled without parser replay.",
-    _permanent: lifecycle.lifecycle === "FAILED",
+    _permanent: mapped.permanent,
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
   if ((data as { accepted?: boolean } | null)?.accepted !== true) {
