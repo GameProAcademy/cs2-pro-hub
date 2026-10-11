@@ -519,6 +519,17 @@ def s_abandon_guards(item):
             raise AssertionError(f"{role} could call abandon_demo_parse_dispatch")
         except RuntimeError as error:
             assert "permission denied" in str(error), error
+    # The closure trail is read-only for the service role, even where default
+    # privileges would have made a new table writable.
+    sql("alter default privileges in schema public grant all on tables to service_role")
+    acl = sql("select has_table_privilege('service_role','public.demo_job_dispatch_closures','SELECT')::text || ':' || "
+              "(has_table_privilege('service_role','public.demo_job_dispatch_closures','INSERT') or "
+              "has_table_privilege('service_role','public.demo_job_dispatch_closures','UPDATE') or "
+              "has_table_privilege('service_role','public.demo_job_dispatch_closures','DELETE') or "
+              "has_table_privilege('service_role','public.demo_job_dispatch_closures','TRUNCATE'))::text")
+    assert acl == "true:false", acl
+    for role in ("anon", "authenticated"):
+        assert sql(f"select has_table_privilege('{role}','public.demo_job_dispatch_closures','SELECT')::text") == "false"
     for role in ("anon", "authenticated", "service_role"):
         try:
             sql(f"set role {role}; select public.close_demo_parse_dispatch('{item['job']}', 'stale_sweep', null, true)")

@@ -86,3 +86,30 @@ There is no managed snapshot taken by this change: the tools available here
 cannot create one. The rollback file plus the fact that no table data is
 rewritten (one column added with a default, one empty table created) is the
 recovery path.
+
+## Applied to the managed database (2026-10-11)
+
+Project `gafvvcsnotcczgktourw` (PostgreSQL 17.6, pgmq 1.5.1), identified by the
+project id in `supabase/config.toml` and by the function hashes above matching
+before the change. State before: 149 recorded migrations, last
+`20261005231726`; 12 jobs, none open; queue empty.
+
+| Step                                                                  | Result                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `20261011120000` in one transaction with a hash guard before `COMMIT` | applied; five function hashes equal the "after" column                                                                                                                                                                                                                                           |
+| `20261011130000` in one transaction with a hash guard                 | applied; `persist_canonical_observation` = `d313725d…`; ACL unchanged                                                                                                                                                                                                                            |
+| Probe inside a transaction that was rolled back                       | first holder cannot abandon; redelivery is delivery 2; later holder abandons to a new dispatch; fourth delivery refused, `JOB_STALE` / `delivery_limit`; two closure rows; no queue message left; repeated canonical write keeps 10 `NULL` confidences; fewer rounds leaves 1 `match_rounds` row |
+| Residue after the rollback                                            | none: 12 jobs, 1 match, 2 users, 0 queued, 0 closure rows, 0 probe uploads or sources                                                                                                                                                                                                            |
+| `20261011140000`                                                      | see below                                                                                                                                                                                                                                                                                        |
+
+The applied statements were not inserted into
+`supabase_migrations.schema_migrations`: that table belongs to the platform's
+own tooling and already disagrees with the repository (see above). Function
+hashes, the column and the table are the record.
+
+Found while verifying: the managed database's default privileges gave
+`service_role` every right on the new closure table (`arwdDxtm`), although the
+migration only granted `SELECT`. `20261011140000` makes the grants explicit.
+
+Not changed by any of this: the ten participant rows that already hold
+`identity_confidence = 0`; the published app; the deployed worker.
