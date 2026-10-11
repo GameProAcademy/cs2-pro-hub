@@ -43,10 +43,22 @@ const classified: Record<string, { classification: string }> = {
   "services/cs2-demo-parser/parser.py": {
     classification: "PRODUCTION_EXECUTION_SURFACE:SHARED_PARSER_IMPLEMENTATION",
   },
+  // Child process of the two Railway surfaces above. It is reached only through
+  // parser_isolated from app.py (which records the execution) and refuses to
+  // run without the parent handshake; it is not an independent entry point.
+  "services/cs2-demo-parser/parser_child.py": {
+    classification:
+      "PRODUCTION_EXECUTION_SURFACE:ISOLATED_CHILD_OF_RAILWAY_DURABLE_WORKER+RAILWAY_V1_PARSE",
+  },
   "services/cs2-demo-parser/python_reference.py": {
     classification: "TEST_ONLY:REFERENCE_CLI_IMAGE_EXCLUDED",
   },
 };
+
+const runtimeImageFiles = () =>
+  read("services/cs2-demo-parser/Dockerfile")
+    .match(/^COPY (.+app\.py.+) \.\/$/m)?.[1]
+    ?.split(/\s+/) ?? [];
 
 describe("H.3-E.9.1 execution source discovery", () => {
   it("fails if an unclassified parser invocation is added in production source", () => {
@@ -109,8 +121,17 @@ describe("H.3-E.9.1 execution source discovery", () => {
     });
     expect(Object.fromEntries(sites)).toEqual({
       "services/cs2-demo-parser/app.py": 1,
+      "services/cs2-demo-parser/parser_child.py": 1,
       "services/cs2-demo-parser/worker.py": 1,
     });
+    // The child is not a stand-alone command: it requires the parent handshake,
+    // and only parser_isolated (called from the recorded surfaces) launches it.
+    expect(read("services/cs2-demo-parser/parser_child.py")).toMatch(
+      /if os\.environ\.get\(PARENT_ENV\) != str\(os\.getppid\(\)\):\s+return 77/,
+    );
+    expect(read("services/cs2-demo-parser/parser_isolated.py")).toMatch(/"-m", "parser_child"/);
+    expect(runtimeImageFiles()).toContain("parser_child.py");
+    expect(runtimeImageFiles()).toContain("parser_isolated.py");
     expect(read("services/cs2-demo-parser/python_reference.py")).toMatch(
       /from demoparser2 import DemoParser/,
     );

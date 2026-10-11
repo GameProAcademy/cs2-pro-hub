@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = {
     "adapter.py", "app.py", "capability_catalog.py", "demo_integrity.py",
     "errors.py", "forensic_audit.py", "h3e91_execution.py", "hot_payload.py", "parser.py",
+    "parser_child.py", "parser_isolated.py",
     "raw_artifact.py", "raw_evidence.py", "runtime_evidence.py",
     "settings.py", "worker.py",
 }
