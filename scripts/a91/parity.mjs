@@ -1,4 +1,5 @@
 import { digest } from "./contracts.mjs";
+import { compareObjects, compareTables, structuralSymmetry } from "./field_compare.mjs";
 
 export const DOMAINS = Object.freeze([
   "header",
@@ -230,13 +231,13 @@ export function diagnoseRuntimeCalls(python, wasm) {
     const we = wasmEvents.get(eventName) ?? {};
     const pc = pythonCallEvents.get(eventName) ?? {};
     const wc = wasmCallEvents.get(eventName) ?? {};
-    const pythonFields = pe.returnedFields ?? pc.returnedFields ?? [];
-    const wasmFields = wc.returnedFields ?? we.returnedFields ?? [];
+    const pythonFields = pe.table?.fields ?? pe.returnedFields ?? pc.returnedFields ?? [];
+    const wasmFields = we.table?.fields ?? wc.returnedFields ?? we.returnedFields ?? [];
     const fieldDifference = difference(pythonFields, wasmFields);
-    const pythonCount = pe.count ?? pc.count ?? null;
-    const wasmCount = we.count ?? wc.count ?? null;
-    const pythonDigest = pe.fullDigest ?? pc.outputDigest ?? null;
-    const wasmDigest = we.fullDigest ?? wc.outputDigest ?? null;
+    const pythonCount = pe.table?.rowCount ?? pe.count ?? pc.count ?? null;
+    const wasmCount = we.table?.rowCount ?? we.count ?? wc.count ?? null;
+    const pythonDigest = pe.table?.tableDigest ?? pe.fullDigest ?? pc.outputDigest ?? null;
+    const wasmDigest = we.table?.tableDigest ?? we.fullDigest ?? wc.outputDigest ?? null;
     const requestDifference = {
       player: difference(
         pe.requestedPlayerFields ?? pc.requestedPlayerFields,
@@ -271,6 +272,11 @@ export function diagnoseRuntimeCalls(python, wasm) {
       wasm_digest: wasmDigest,
       returned_field_difference: fieldDifference,
       requested_field_difference: requestDifference,
+      // Contract rule R12: fields deliberately not requested from either runtime.
+      excluded_request_fields: {
+        python: sortedStrings(pc.excludedRequestFields),
+        wasm: sortedStrings(wc.excludedRequestFields),
+      },
     };
   });
   const call = (calls, api) => calls.find((item) => item?.api === api) ?? null;
@@ -341,14 +347,126 @@ export function diagnoseRuntimeCalls(python, wasm) {
     },
   };
 }
+/** Canonical tables carried by one runtime artifact, keyed by table name. */
+export function artifactTables(artifact) {
+  const tables = {};
+  const diagnostics = artifact?.tableDiagnostics ?? {};
+  const add = (summary) => {
+    if (summary && typeof summary === "object" && typeof summary.table === "string")
+      tables[summary.table] = { summary, diagnostics: diagnostics[summary.table] ?? null };
+  };
+  for (const event of Array.isArray(artifact?.eventEvidence) ? artifact.eventEvidence : [])
+    add(event?.table);
+  add(artifact?.grenadeEvidence?.table);
+  add(artifact?.tickDomainEvidence?.table);
+  return tables;
+}
+
+const keyList = (value) =>
+  value && typeof value === "object" && !Array.isArray(value) ? Object.keys(value).sort() : null;
+
+/**
+ * Envelope symmetry (contract rule R11): semantic evidence objects must have
+ * the same keys in both runtimes. Call metadata belongs in apiCalls. This is
+ * the regression guard for one producer growing extra envelope keys.
+ */
+export function envelopeSymmetry(python, wasm) {
+  const issues = [];
+  const check = (path, left, right) => {
+    const a = keyList(left);
+    const b = keyList(right);
+    if (JSON.stringify(a) !== JSON.stringify(b))
+      issues.push({ path, python_keys: a, wasm_keys: b });
+  };
+  const events = (artifact) =>
+    new Map(
+      (Array.isArray(artifact?.eventEvidence) ? artifact.eventEvidence : [])
+        .filter((item) => item?.eventName)
+        .map((item) => [item.eventName, item]),
+    );
+  const pythonEvents = events(python);
+  const wasmEvents = events(wasm);
+  for (const name of [...new Set([...pythonEvents.keys(), ...wasmEvents.keys()])].sort())
+    check(`eventEvidence[${name}]`, pythonEvents.get(name), wasmEvents.get(name));
+  for (const key of [
+    "grenadeEvidence",
+    "tickDomainEvidence",
+    "economyEvidence",
+    "mapEvidence",
+    "timingEvidence",
+  ])
+    check(key, python?.[key], wasm?.[key]);
+  const shared = (artifact) => {
+    const value = artifact?.normalizedResult;
+    if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+    const { playerIdentity: _playerIdentity, ...rest } = value;
+    return rest;
+  };
+  check("normalizedResult", shared(python), shared(wasm));
+  return { symmetric: issues.length === 0, issues };
+}
+
+/**
+ * Field-level diagnostics for every canonical table plus the header. Output is
+ * sanitized by construction: field names, classes, counts, row indices and
+ * digests only. It explains a FAIL; it can never turn one into a PASS.
+ */
+export function diagnoseFields(python, wasm) {
+  const pythonTables = artifactTables(python);
+  const wasmTables = artifactTables(wasm);
+  const names = [...new Set([...Object.keys(pythonTables), ...Object.keys(wasmTables)])].sort();
+  const tables = names.map((name) => compareTables(pythonTables[name], wasmTables[name]));
+  const header = compareObjects("header", python?.headerEvidence, wasm?.headerEvidence);
+  const all = [header, ...tables];
+  const failing = all.filter((item) => item.status !== "PASS");
+  const firstField = failing[0]?.fields?.find((item) => item.status !== "PASS") ?? null;
+  return {
+    schema_version: 1,
+    evidence_policy: "FIELD_NAMES_CLASSES_COUNTS_INDICES_DIGESTS_ONLY_NO_VALUES",
+    canonical_contract: {
+      python: python?.canonicalContract ?? null,
+      wasm: wasm?.canonicalContract ?? null,
+      equal:
+        Boolean(python?.canonicalContract?.digest) &&
+        python?.canonicalContract?.digest === wasm?.canonicalContract?.digest &&
+        python?.canonicalContract?.version === wasm?.canonicalContract?.version,
+    },
+    envelope_symmetry: envelopeSymmetry(python, wasm),
+    structural_symmetry: structuralSymmetry(pythonTables, wasmTables),
+    table_count: tables.length,
+    table_pass_count: tables.filter((item) => item.status === "PASS").length,
+    table_fail_count: tables.filter((item) => item.status !== "PASS").length,
+    // A table with zero rows in both runtimes is equal but proves nothing.
+    empty_in_both_table_count: tables.filter((item) => item.empty_in_both).length,
+    field_count: all.reduce((total, item) => total + (item.field_count ?? 0), 0),
+    field_pass_count: all.reduce((total, item) => total + (item.field_pass_count ?? 0), 0),
+    first_divergence: failing.length
+      ? {
+          table: failing[0].table,
+          divergence_classes: failing[0].divergence_classes,
+          field: firstField?.field ?? null,
+          divergence: firstField?.divergence ?? null,
+          sample_row: firstField?.first_divergent_sample_row ?? null,
+        }
+      : null,
+    header,
+    tables,
+  };
+}
+
 export function parityReport(python, wasm, sha) {
   const comparisons = compareDomains(python, wasm);
+  const fieldDiagnostics = diagnoseFields(python, wasm);
   return {
-    schema_version: 4,
+    schema_version: 5,
     status: validParityComparisons(comparisons) ? "PASS" : "FAIL",
     demo_sha256: sha,
     comparisons,
     ...summarize(comparisons),
+    crossRuntimeComparableFieldCount: fieldDiagnostics.field_count,
+    crossRuntimeComparableFieldPassCount: fieldDiagnostics.field_pass_count,
+    crossRuntimeComparableFieldCountReason: null,
+    field_diagnostics: fieldDiagnostics,
     semantic_diagnostics: diagnoseRuntimeCalls(python, wasm),
     parity_digest: digest(comparisons),
     canonical_authorization: false,

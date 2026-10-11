@@ -31,10 +31,32 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
       expect(result.stdout).toMatch(/regression checks PASS/);
     }
   });
+  it("runs the canonical contract vectors and the cross-runtime comparator checks", () => {
+    for (const [script, marker] of [
+      ["scripts/a91/canonical_schema.check.mjs", "JavaScript vector checks PASS"],
+      ["scripts/a91/cross_runtime.check.mjs", "cross-runtime contract checks PASS"],
+    ] as const) {
+      const result = spawnSync("node", [script], { encoding: "utf8", timeout: 60000 });
+      expect(result.status, `${script}: ${result.stdout}${result.stderr}`).toBe(0);
+      expect(result.stdout).toContain(marker);
+    }
+    // The same vectors must be consumed by the Python implementation.
+    const python = readFileSync(resolve("scripts/a91/test_canonical_schema.py"), "utf8");
+    expect(python).toContain('"canonical" / "vectors.json"');
+    // Both producers must build semantic evidence through the shared builders.
+    expect(readFileSync(resolve("scripts/a91/run_wasm_reference.mjs"), "utf8")).toContain(
+      "...buildSemanticEvidence({",
+    );
+    expect(readFileSync(resolve("services/cs2-demo-parser/python_reference.py"), "utf8")).toContain(
+      "**build_semantic_evidence(",
+    );
+  }, 60000);
   it("keeps the A9.1 runner aligned with the renamed probe regression scripts", () => {
     const runner = readFileSync(resolve("scripts/a91/rebuild_wasm_large_demo.py"), "utf8");
     expect(runner).toContain("scripts/a91/header_probe.check.mjs");
     expect(runner).toContain("scripts/a91/tick_probe.check.mjs");
+    expect(runner).toContain("scripts/a91/canonical_schema.check.mjs");
+    expect(runner).toContain("scripts/a91/cross_runtime.check.mjs");
     expect(runner).not.toContain("scripts/a91/header_probe.test.mjs");
     expect(runner).not.toContain("scripts/a91/tick_probe.test.mjs");
   });
