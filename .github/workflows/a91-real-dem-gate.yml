@@ -126,6 +126,14 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('safe=' + str(safe).lower() + '\n')
           PY
+      # The same sealed, public values as the uploaded reports, attached to the
+      # check run itself so the decision can be audited without the artifact.
+      - name: Publish bounded decision as check annotations
+        if: always() && steps.upload-guard.outputs.safe == 'true'
+        run: python scripts/a91/publish_annotations.py real "$RUNNER_TEMP/a91-artifacts"
+      - name: State that no sealed decision is available
+        if: always() && steps.upload-guard.outputs.safe != 'true'
+        run: echo '::notice title=A91 decision::{"sealedReports":"NOT_AVAILABLE"}'
       - name: Upload sanitized bounded reports only
         if: always() && steps.upload-guard.outputs.safe == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

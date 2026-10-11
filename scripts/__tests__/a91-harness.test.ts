@@ -247,6 +247,18 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(real).not.toContain("public_fixture");
   });
 
+  it("publishes decisions as annotations only from sealed reports and through the sanitizer", () => {
+    const real = readFileSync(".github/workflows/a91-real-dem-gate.yml", "utf8");
+    expect(real).toContain(
+      "if: always() && steps.upload-guard.outputs.safe == 'true'\n        run: python scripts/a91/publish_annotations.py real",
+    );
+    expect(real).toContain("workflow_dispatch:");
+    expect(real).not.toMatch(/^\s+(push|pull_request|schedule|workflow_run):/m);
+    const publisher = readFileSync("scripts/a91/publish_annotations.py", "utf8");
+    expect(publisher).toContain('SAFE_TEXT = re.compile(r"^[A-Za-z0-9_.:+\\-]{0,96}$")');
+    expect(publisher).not.toMatch(/os\.environ|A91_DEMO_URL|requests|urllib/);
+  });
+
   it("never tracks a DEM file", () => {
     const result = spawnSync("git", ["ls-files", "*.dem"], { encoding: "utf8" });
     expect(result.status).toBe(0);
