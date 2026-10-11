@@ -82,6 +82,9 @@ jobs:
           A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
           A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
         run: python scripts/a91/public_fixture_gate.py
+      - name: Publish the gate result as check annotations
+        if: always()
+        run: python scripts/a91/publish_annotations.py public-fixture "$RUNNER_TEMP/a91-public-fixture-artifacts"
       - name: Upload bounded public-fixture reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
