@@ -1,7 +1,11 @@
 # Worker reconciliation: what runs, what CI tests, and how to converge
 
-Read-only analysis. Nothing in Railway, the managed database or the deployed
-branch was changed. Every step of the plan needs the owner's authorization.
+Analysis as of 2026-10-10. Since then stages 3 and 6 of the plan are on
+`main` (isolation: #74, #84, #86; build identity: #87; orphan temp files: #85)
+and the queue recovery protocol is merged (#81). The trees in section 2 are
+compared at `main` = `2c5cded`; the file counts are not regenerated. What is
+deployed has not changed. The deployment sequence and the reasons the
+production worker was not replaced are in `WORKER_DEPLOYMENT_RUNBOOK.md`.
 
 ## 1. What runs in production (Railway, read on 2026-10-10)
 
