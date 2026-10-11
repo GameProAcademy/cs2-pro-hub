@@ -6,6 +6,7 @@ export const FAILURE_CODES = new Set([
   "WASM_MEMORY_ALLOCATION_FAILURE",
   "WASM_RUNTIME_TRAP",
   "WASM_PARSE_FAILURE",
+  "WASM_MEMORY_BUDGET_EXCEEDED",
   "A91_DEMO_FRAME_SCAN_INVALID",
   "A91_TICK_PROBE_RANGE_MISSING",
   "A91_TICK_PROBE_EMPTY",
@@ -103,6 +104,9 @@ export function createTelemetry() {
         errorMessageDigest: sha(String(error?.message ?? "UNKNOWN_ERROR")),
         wasmMemoryBytesBefore: error?.wasmMemoryBytesBefore ?? null,
         wasmMemoryBytesAfter: error?.wasmMemoryBytesAfter ?? null,
+        // Stage and memory the artifact itself recorded before the failure
+        // (numbers and a fixed stage label only).
+        wasmProbe: error?.wasmProbe ?? null,
       };
       throw failure;
     }
@@ -122,6 +126,7 @@ export function failureEvidence(error) {
     errorMessageDigest: error?.diagnostics?.errorMessageDigest ?? null,
     wasmMemoryBytesBefore: error?.diagnostics?.wasmMemoryBytesBefore ?? null,
     wasmMemoryBytesAfter: error?.diagnostics?.wasmMemoryBytesAfter ?? null,
+    wasmProbe: error?.diagnostics?.wasmProbe ?? null,
     ...locks,
     ...(error?.diagnostics ?? { stage: "before_validate", failedStage: "validate" }),
     errorDigest: sha(String(error?.message ?? "UNKNOWN_ERROR")),

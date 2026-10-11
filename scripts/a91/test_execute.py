@@ -277,10 +277,13 @@ class HarnessTests(unittest.TestCase):
     def test_python_stable_matches_ecmascript_number_formatting(self):
         # Compare the canonical bytes against the same sorted-key JSON.stringify
         # algorithm used by the JS parity runner, including exponent thresholds,
-        # negative zero, nested values, and integers beyond JS's safe range.
+        # negative zero and nested values. Integers beyond JS's safe range are
+        # NOT part of this equality any more: rounding them to a double (the
+        # previous behaviour) corrupted 64-bit identifiers. They must fail
+        # closed here and travel as canonical decimal strings instead.
         value = {
             "nested": [1.0, 1e-6, 1e-7, 1e20, 1e21, -0.0, 1.2345678901234567],
-            "unsafeInteger": 9007199254740993,
+            "maxSafeInteger": 9007199254740991,
             "text": "é",
         }
         js = r"""
@@ -305,6 +308,22 @@ process.stdout.write(stable(JSON.parse(process.argv[1])));
         assert spec is not None and spec.loader is not None
         spec.loader.exec_module(reference)
         self.assertEqual(reference.stable(value), result.stdout)
+        for unsafe in (9007199254740993, 76561198012345679):
+            with self.assertRaisesRegex(ValueError, "JSON_INTEGER_PRECISION_LOSS"):
+                reference.stable({"steamid": unsafe})
+
+    def test_wasm_probe_projection_is_bounded_and_fail_closed(self):
+        probe = {"lastStage": "parsed_columns_built", "rows": 4550843, "bytesNow": 4294967296,
+                 "bytesAfterInputCopy": 478412800, "bytesAfterParse": 1410334720,
+                 "bytesAfterRowMaterialization": None, "bytesAfterSerialization": None}
+        self.assertEqual(execute.sanitize_wasm_probe(probe), probe)
+        # Extra keys are dropped; only the fixed label and bounded integers survive.
+        self.assertEqual(execute.sanitize_wasm_probe({**probe, "name": "player", "note": "x"}), probe)
+        for bad in (None, [], {}, {**probe, "lastStage": "https://example.invalid/demo"},
+                    {**probe, "rows": "4550843"}, {**probe, "bytesNow": -1},
+                    {**probe, "bytesNow": 2**40}, {**probe, "rows": True}, {**probe, "rows": 1.5}):
+            self.assertIsNone(execute.sanitize_wasm_probe(bad))
+        self.assertIn("WASM_MEMORY_BUDGET_EXCEEDED", execute.WASM_REASONS)
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,31 @@ export const FIXTURE = Object.freeze({
   sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
   authorizationRef: "A9.1-M1-CACHE-REAL-DEM",
 });
+/**
+ * Public upstream test demo used ONLY by the automatic regression gate. It is
+ * a different authorization profile on purpose: artifacts produced from it are
+ * marked test_fixture_only with executionKind PUBLIC_FIXTURE_FULL_FILE, and
+ * decide() rejects all three markers, so it can never authorize A9.1.
+ */
+export const PUBLIC_FIXTURE = Object.freeze({
+  filename: "test_demo.dem",
+  sizeBytes: 60601900,
+  sha256: "84a1a4191302bdd2a3bbb5a727842093744b1fb1a228aeec630369e44b622cb2",
+  authorizationRef: "A9.1-PUBLIC-FIXTURE-DEMOPARSER-TEST-DEMO",
+  sourceCommit: "4131a4fc02fda291b22421c20e1ca33f149535a7",
+  sourcePath: "src/parser/test_demo.dem",
+});
+export function fixtureProfile(authorizationRef) {
+  if (authorizationRef === FIXTURE.authorizationRef)
+    return { fixture: FIXTURE, executionKind: "REAL_DEM_FULL_FILE", testFixtureOnly: false };
+  if (authorizationRef === PUBLIC_FIXTURE.authorizationRef)
+    return {
+      fixture: PUBLIC_FIXTURE,
+      executionKind: "PUBLIC_FIXTURE_FULL_FILE",
+      testFixtureOnly: true,
+    };
+  throw new Error("AUTHORIZATION_MISMATCH");
+}
 export const MAX_DEMO_BYTES = 1500 * 1024 * 1024;
 export const MAX_REPORT_BYTES = 8 * 1024 * 1024;
 export const MAX_PRIVATE_RUNTIME_EVIDENCE_BYTES = 256 * 1024 * 1024;
@@ -40,11 +65,11 @@ export function validateUrl(value) {
   }
 }
 export function validateMetadata(filename, sizeBytes, expectedSha, authorizationRef) {
+  const { fixture } = fixtureProfile(authorizationRef);
   if (
-    filename !== FIXTURE.filename ||
-    sizeBytes !== FIXTURE.sizeBytes ||
-    expectedSha !== FIXTURE.sha256 ||
-    authorizationRef !== FIXTURE.authorizationRef
+    filename !== fixture.filename ||
+    sizeBytes !== fixture.sizeBytes ||
+    expectedSha !== fixture.sha256
   )
     throw new Error("AUTHORIZATION_MISMATCH");
 }

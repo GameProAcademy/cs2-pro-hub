@@ -11,6 +11,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import wasm_patches  # noqa: E402
+
 
 ROOT = pathlib.Path(os.environ["GITHUB_WORKSPACE"])
 TMP = pathlib.Path(os.environ.get("RUNNER_TEMP", "/tmp"))
@@ -61,7 +64,7 @@ def sha256(path: pathlib.Path) -> str:
     return h.hexdigest()
 
 
-def main() -> int:
+def preflight() -> None:
     # Validate workflow-dispatch metadata normalization and tick discovery before
     # spending time building the pinned WASM toolchain.
     run(sys.executable, "scripts/a91/test_input_metadata.py", cwd=ROOT)
@@ -70,6 +73,21 @@ def main() -> int:
     run("node", "scripts/a91/header_probe.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/tick_probe.check.mjs", cwd=ROOT)
     run("node", "scripts/a91/inventory_determinism.check.mjs", cwd=ROOT)
+    # Canonical parity contract: both implementations must agree on the shared
+    # vectors and the comparator must detect every intentional divergence
+    # before any toolchain build or real-DEM download is paid for.
+    run(sys.executable, "scripts/a91/test_canonical_schema.py", cwd=ROOT)
+    run("node", "scripts/a91/canonical_schema.check.mjs", cwd=ROOT)
+    run("node", "scripts/a91/cross_runtime.check.mjs", cwd=ROOT)
+    run("node", "scripts/a91/wasm_memory.check.mjs", cwd=ROOT)
+
+
+def build_wasm_artifact() -> None:
+    """Build the pinned, patched WASM artifact and its manifest.
+
+    Shared verbatim by the manual real-DEM gate and the automatic
+    public-fixture gate so both exercise the same binary.
+    """
     shutil.rmtree(UPSTREAM, ignore_errors=True)
     run("git", "clone", "--filter=blob:none", "https://github.com/LaihoE/demoparser.git", str(UPSTREAM))
     run("git", "checkout", "--detach", UPSTREAM_COMMIT, cwd=UPSTREAM)
@@ -77,169 +95,9 @@ def main() -> int:
     if actual != UPSTREAM_COMMIT:
         raise RuntimeError(f"upstream identity mismatch: {actual} != {UPSTREAM_COMMIT}")
 
-    # Hermeticize the pinned upstream build. The generated protobuf/map/message-type
-    # sources are already committed at the pinned revision, while upstream's original
-    # build scripts redundantly clone GameTracking-CS2 and invoke prost-build/protoc.
-    # Keep the generated sources byte-for-byte and replace both generators with no-ops.
-    generated_sources = [
-        UPSTREAM / "src/csgoproto/src/protobuf.rs",
-        UPSTREAM / "src/csgoproto/src/maps.rs",
-        UPSTREAM / "src/csgoproto/src/message_type.rs",
-    ]
-    for generated in generated_sources:
-        if not generated.is_file() or generated.stat().st_size == 0:
-            raise RuntimeError(f"missing committed generated source: {generated}")
-
-    csgoproto_build = UPSTREAM / "src/csgoproto/build.rs"
-    parser_build = UPSTREAM / "src/parser/build.rs"
-    csgoproto_build.write_text(
-        'fn main() {\n'
-        '    println!("cargo::rerun-if-changed=src/protobuf.rs");\n'
-        '    println!("cargo::rerun-if-changed=src/maps.rs");\n'
-        '    println!("cargo::rerun-if-changed=src/message_type.rs");\n'
-        '}\n'
-    )
-    parser_build.write_text(
-        'fn main() {\n'
-        '    println!("cargo::rerun-if-changed=../csgoproto/src/protobuf.rs");\n'
-        '}\n'
-    )
-
-    csgoproto_manifest = UPSTREAM / "src/csgoproto/Cargo.toml"
-    cargo_text = csgoproto_manifest.read_text()
-    build_deps = '''[build-dependencies]
-prost-build = "0.13.3"
-'''
-    if build_deps not in cargo_text:
-        raise RuntimeError("csgoproto prost-build dependency target not found")
-    csgoproto_manifest.write_text(cargo_text.replace(build_deps, "", 1))
-
-    # wasm32-unknown-unknown traps on unconditional std::time::Instant::now().
-    # Keep upstream profiling behavior on native targets, but make the two
-    # parser-entry profiling timestamps lazy exactly as the WASM remediation
-    # evidence requires. This is a source-level compatibility patch only;
-    # it does not alter parsed DEM data or parser output.
-    parse_demo_src = UPSTREAM / "src/parser/src/parse_demo.rs"
-    parse_demo = parse_demo_src.read_text()
-    old_prof = '''        let _prof = std::env::var("CS2_PROF").is_ok();
-        let _t = std::time::Instant::now();
-'''
-    new_prof = '''        let _prof = std::env::var("CS2_PROF").is_ok();
-        let _t = _prof.then(std::time::Instant::now);
-'''
-    if old_prof not in parse_demo:
-        raise RuntimeError("parse_demo first Instant::now target not found")
-    parse_demo = parse_demo.replace(old_prof, new_prof, 1)
-    old_first_elapsed = '''        if _prof {
-            eprintln!("[prof] first_pass: {:.3}s", _t.elapsed().as_secs_f64());
-        }
-'''
-    new_first_elapsed = '''        if _prof {
-            eprintln!("[prof] first_pass: {:.3}s", _t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
-        }
-'''
-    if old_first_elapsed not in parse_demo:
-        raise RuntimeError("parse_demo first-pass timer target not found")
-    parse_demo = parse_demo.replace(old_first_elapsed, new_first_elapsed, 1)
-
-    old_second = '''        let prof = std::env::var("CS2_PROF").is_ok();
-        let mut t = std::time::Instant::now();
-'''
-    new_second = '''        let prof = std::env::var("CS2_PROF").is_ok();
-        let mut t = prof.then(std::time::Instant::now);
-'''
-    if old_second not in parse_demo:
-        raise RuntimeError("parse_demo second Instant::now target not found")
-    parse_demo = parse_demo.replace(old_second, new_second, 1)
-
-    old_elapsed = '''        if prof { eprintln!("[prof] second_pass start(): {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
-'''
-    new_elapsed = '''        if prof {
-            eprintln!("[prof] second_pass start(): {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
-            t = prof.then(std::time::Instant::now);
-        }
-'''
-    if old_elapsed not in parse_demo:
-        raise RuntimeError("parse_demo second-pass timer reset target not found")
-    parse_demo = parse_demo.replace(old_elapsed, new_elapsed, 1)
-
-    old_create = '''        if prof { eprintln!("[prof] create_output: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
-'''
-    new_create = '''        if prof {
-            eprintln!("[prof] create_output: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
-            t = prof.then(std::time::Instant::now);
-        }
-'''
-    if old_create not in parse_demo:
-        raise RuntimeError("parse_demo create-output timer reset target not found")
-    parse_demo = parse_demo.replace(old_create, new_create, 1)
-
-    old_combine = '''        if prof { eprintln!("[prof] combine_outputs: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
-'''
-    new_combine = '''        if prof {
-            eprintln!("[prof] combine_outputs: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
-            t = prof.then(std::time::Instant::now);
-        }
-'''
-    if old_combine not in parse_demo:
-        raise RuntimeError("parse_demo combine-output timer reset target not found")
-    parse_demo = parse_demo.replace(old_combine, new_combine, 1)
-
-    old_post = '''        if prof { eprintln!("[prof] post-proc: {:.3}s", t.elapsed().as_secs_f64()); }
-'''
-    new_post = '''        if prof {
-            eprintln!("[prof] post-proc: {:.3}s", t.as_ref().expect("profiling timer").elapsed().as_secs_f64());
-        }
-'''
-    if old_post not in parse_demo:
-        raise RuntimeError("parse_demo post-processing timer target not found")
-    parse_demo = parse_demo.replace(old_post, new_post, 1)
-    parse_demo_src.write_text(parse_demo)
-
-    wasm_src = UPSTREAM / "src/wasm/src/lib.rs"
-    source = wasm_src.read_text()
-    old = """    let output = parser.parse_header_only(&file).unwrap();
-    let mut hm: HashMap<String, String> = HashMap::default();
-    hm.extend(output);
-"""
-    new = """    let output = match parser.parse_header_only(&file) {
-        Ok(output) => output,
-        Err(e) => return Err(JsError::new(&format!("{}", e))),
-    };
-    let mut hm: HashMap<String, String> = HashMap::default();
-    hm.extend(output);
-"""
-    if old not in source:
-        raise RuntimeError("parseHeader unwrap target not found")
-    source = source.replace(old, new, 1)
-
-    old_flag = "        parse_projectiles: true,\n        only_header: true,"
-    new_flag = "        parse_projectiles: false,\n        only_header: true,"
-    if old_flag not in source:
-        raise RuntimeError("parseHeader parse_projectiles target not found")
-    source = source.replace(old_flag, new_flag, 1)
-
-    # The pinned Python parse_grenades path enables projectile parsing, while
-    # the pinned WASM wrapper hard-codes it off. This changes the semantics of
-    # parseGrenades (the real run showed 4,550,843 Python rows vs 2,551,710 WASM
-    # rows). Scope the parity remediation to parseGrenades only; do not alter
-    # parseEvent, parseTicks or the header-only path.
-    grenade_marker = "pub fn parseGrenades("
-    grenade_start = source.find(grenade_marker)
-    if grenade_start < 0:
-        raise RuntimeError("parseGrenades source target not found")
-    next_fn_marker = "\n#[wasm_bindgen]\npub fn parseHeader("
-    grenade_end = source.find(next_fn_marker, grenade_start)
-    if grenade_end < 0:
-        raise RuntimeError("parseGrenades function boundary not found")
-    grenade_fn = source[grenade_start:grenade_end]
-    old_grenade_flag = "        parse_projectiles: false,\n        only_header: false,"
-    new_grenade_flag = "        parse_projectiles: true,\n        only_header: false,"
-    if grenade_fn.count(old_grenade_flag) != 1:
-        raise RuntimeError("parseGrenades projectile parity target not unique")
-    grenade_fn = grenade_fn.replace(old_grenade_flag, new_grenade_flag, 1)
-    source = source[:grenade_start] + grenade_fn + source[grenade_end:]
-    wasm_src.write_text(source)
+    # Every source-level change to the pinned upstream lives in wasm_patches.py
+    # so the real-DEM gate and the public-fixture gate build the SAME artifact.
+    build_remediation = wasm_patches.apply_all(UPSTREAM)
 
     cargo = UPSTREAM / ".cargo/config.toml"
     cargo.parent.mkdir(parents=True, exist_ok=True)
@@ -291,17 +149,11 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
         "wasmBindgenVersion": os.environ["WASM_BINDGEN_VERSION"],
         "matchesUpstreamArtifact": False,
     }
+    manifest_data["declaredExports"] = sorted(
+        {*manifest_data["declaredExports"], *wasm_patches.ADDED_EXPORTS}
+    )
     manifest_data["buildRemediation"] = {
-        "parseHeaderErrorPropagation": True,
-        "parseHeaderParseProjectiles": False,
-        "parseGrenadesProjectiles": True,
-        "parseGrenadesProjectilesReason": "Mirror pinned Python parse_grenades ParserInputs; source-level A9.1 parity remediation.",
-        "lazyWasmInstantProfiling": True,
-        "wasmStackBytes": 8388608,
-        "hermeticGeneratedSources": True,
-        "hermeticBuildScripts": True,
-        "protocRequired": False,
-        "gametrackingNetworkRequired": False,
+        **build_remediation,
         "rustVersion": RUST_VERSION,
         "wasmPackVersion": WASM_PACK_VERSION,
         "wasmBindgenVersion": os.environ["WASM_BINDGEN_VERSION"],
@@ -310,6 +162,11 @@ rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]
         "wasmBindgenTarget": "no-modules",
     }
     MANIFEST.write_text(json.dumps(manifest_data, indent=2) + "\n")
+
+
+def main() -> int:
+    preflight()
+    build_wasm_artifact()
 
     # The A9.1 laboratory runner is intentionally independent from the
     # Railway production image. The Python reference still requires the exact

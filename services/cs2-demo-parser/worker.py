@@ -170,11 +170,25 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                     else:
                         logger.warning("queue completion failed after terminal evidence; refusing second terminal type=%s", type(error).__name__)
                 except (httpx.HTTPError, KeyError, ValueError, RuntimeError) as error:
+                    # A failure that is not a WorkerError: RAW persistence
+                    # (RAW_CHUNK_TOO_LARGE, a failed chunk upload), a bridge
+                    # error, a malformed claim. No parse result was acknowledged.
                     if not terminal_recorded and not terminal_attempted and not (start_attempted and not started) and "H3E91_RECORDING_" not in str(error):
                         try:
                             await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "WORKER_INTERRUPTED")
                         except Exception:
                             logger.error("terminal evidence unavailable; reconciliation required job=%s", identity["jobId"])
+                        else:
+                            # The ledger now holds a failed terminal, so the queue
+                            # is told as well instead of leaving the job leased
+                            # until expiry. Never `complete`: RAW is not claimed
+                            # to be persisted. The bridge marks any non-ready RAW
+                            # artifact of this job as failed.
+                            try:
+                                await _bridge(client, settings, "fail", {**identity, "errorCode": "PARSER_ERROR",
+                                                                         "detail": "Worker interrupted before completion."})
+                            except Exception:
+                                logger.warning("queue failure notification unavailable; terminal evidence retained job=%s", identity["jobId"])
                     logger.warning("durable job interrupted type=%s", type(error).__name__)
                 finally:
                     stop.set()

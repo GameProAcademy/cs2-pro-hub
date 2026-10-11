@@ -10,11 +10,158 @@ import {
   sha,
   locks,
   validateDemo,
+  fixtureProfile,
   validateManifests,
   sanitizePrivateRuntimeEvidence,
 } from "./contracts.mjs";
 
 import { createTelemetry, failureEvidence } from "./diagnostics.mjs";
+import {
+  CANONICAL_CONTRACT_DIGEST,
+  CANONICAL_CONTRACT_VERSION,
+  CONTRACT,
+  TableAccumulator,
+  summarizeColumns,
+  summarizeRows,
+} from "./canonical_schema.mjs";
+
+export const WASM_PAGE_BYTES = 64 * 1024;
+/**
+ * Explicit per-call ceiling for WASM linear memory. wasm32 cannot address
+ * more than 4 GiB (65,536 pages); a call that needs more than this budget is
+ * reported as WASM_MEMORY_BUDGET_EXCEEDED instead of being left to trap at
+ * the hard limit. Measured need for the 474 MB reference shape with
+ * column-major output is about 1.4 GiB.
+ */
+export const WASM_MEMORY_BUDGET_BYTES = 3 * 1024 * 1024 * 1024;
+
+/** Decode the Uint32Array returned by the artifact's a91MemoryProbe export. */
+export function decodeMemoryProbe(values) {
+  if (!values || values.length < 7) return null;
+  const pages = (index) => (values[index] ? values[index] * WASM_PAGE_BYTES : null);
+  return {
+    lastStage:
+      {
+        0: "not_entered",
+        1: "entered_input_copied",
+        2: "parsed_columns_built",
+        4: "rows_materialized",
+        5: "serialized_to_js",
+      }[values[0]] ?? "unknown",
+    rows: values[1],
+    bytesNow: pages(2),
+    bytesAfterInputCopy: pages(3),
+    bytesAfterParse: pages(4),
+    bytesAfterRowMaterialization: pages(5),
+    bytesAfterSerialization: pages(6),
+  };
+}
+
+const entriesOf = (row) =>
+  Object.prototype.toString.call(row) === "[object Map]"
+    ? row.entries()
+    : row && typeof row === "object" && !Array.isArray(row)
+      ? Object.entries(row)
+      : null;
+
+/**
+ * Streaming equivalent of normalizeWasmValue + normalizeEventRows +
+ * summarizeRows for event tables: validates the event_name discriminator of
+ * every row (contract rule R10) and feeds the accumulator without building a
+ * second copy of the table.
+ */
+export function summarizeEventRows(tableName, rows, expectedEventName) {
+  if (!Array.isArray(rows) || typeof expectedEventName !== "string" || !expectedEventName)
+    throw new Error("A91_WASM_EVENT_SHAPE_INVALID");
+  const discriminator = CONTRACT.eventRowDiscriminator;
+  const accumulator = new TableAccumulator(tableName);
+  for (const row of rows) {
+    const entries = entriesOf(row);
+    if (!entries) throw new Error("A91_WASM_EVENT_ROW_INVALID");
+    const semantic = {};
+    for (const [key, value] of entries) {
+      if (key === discriminator) {
+        if (value !== expectedEventName) throw new Error("A91_WASM_EVENT_NAME_MISMATCH");
+        continue;
+      }
+      semantic[key] = value;
+    }
+    accumulator.addRow(semantic);
+  }
+  return accumulator.finish();
+}
+
+/** Column-major table (Map or object of field -> array) to a canonical summary. */
+export function summarizeColumnTable(tableName, value) {
+  const entries = entriesOf(value);
+  if (!entries) throw new Error("A91_WASM_TABLE_SHAPE_INVALID");
+  const columns = {};
+  for (const [field, column] of entries) {
+    if (typeof field !== "string" || !(Array.isArray(column) || ArrayBuffer.isView(column)))
+      throw new Error("A91_WASM_TABLE_SHAPE_INVALID");
+    columns[field] = column;
+  }
+  return summarizeColumns(tableName, columns);
+}
+
+/** Canonical table name for each table-producing API (contract v1). */
+export function tableNameFor(api, request = {}) {
+  if (api === "parseEvent") return `event:${request.eventName}`;
+  if (api === "parseGrenades") return "grenades";
+  if (api === "parseTicks") return "ticks";
+  return null;
+}
+
+/** Economy domain = the contract's economy columns of the tick table. */
+export function economyProjection(table) {
+  const fields = CONTRACT.economyFields.filter((field) => Object.hasOwn(table.columns, field));
+  if (fields.length === 0) return { status: "FAILED", reason: "NO_ECONOMY_FIELDS" };
+  return {
+    status: "TICK_PROJECTION",
+    canonicalContractVersion: table.canonicalContractVersion,
+    rowCount: table.rowCount,
+    fields,
+    columns: Object.fromEntries(fields.map((field) => [field, table.columns[field]])),
+  };
+}
+
+/**
+ * Semantic evidence shared by every WASM artifact. python_reference.py's
+ * build_semantic_evidence() must return the same keys with the same shapes
+ * (contract rule R11); scripts/a91/cross_runtime.check.mjs enforces it.
+ */
+export function buildSemanticEvidence({
+  header,
+  events,
+  grenades,
+  ticks,
+  tickProbe,
+  requestedFields,
+  wantedTicks,
+}) {
+  const byName = (predicate) => events.filter((event) => predicate(event.eventName));
+  return {
+    headerEvidence: header,
+    mapEvidence: { map: header?.map_name ?? null },
+    timingEvidence: { header, tickProbe },
+    eventEvidence: events,
+    roundEvidence: byName((name) => name.startsWith("round_")),
+    grenadeEvidence: { table: grenades },
+    bombEvidence: byName((name) => name.startsWith("bomb_")),
+    deathEvidence: byName((name) => name === "player_death"),
+    damageEvidence: byName((name) => name === "player_hurt"),
+    weaponEvidence: byName((name) => name.startsWith("weapon_") || name.startsWith("item_")),
+    economyEvidence: economyProjection(ticks),
+    tickDomainEvidence: {
+      tickProbeSource: tickProbe.source,
+      maxFrameTick: tickProbe.maxFrameTick,
+      requestedFields,
+      wantedTicks,
+      authoritativeDomain: false,
+      table: ticks,
+    },
+  };
+}
 
 const root = resolve(new URL("../..", import.meta.url).pathname);
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -192,7 +339,12 @@ export function selectRuntimeTickFields(surface, limit = 32) {
     .slice(0, limit);
 }
 
-export function loadPinnedParser(surface, manifest, directoryOverride = null) {
+/**
+ * Verify the pinned binding/binary against the manifest and compile the
+ * module ONCE. Instances are created per call (instantiateParser) so that
+ * WASM linear memory, which can only grow, never accumulates across calls.
+ */
+export function loadPinnedArtifact(surface, manifest, directoryOverride = null) {
   validateManifests(surface, manifest);
   const directory = directoryOverride
     ? resolve(directoryOverride)
@@ -206,6 +358,15 @@ export function loadPinnedParser(surface, manifest, directoryOverride = null) {
     wasm.length !== manifest.wasm.bytes
   )
     throw new Error("WASM_ARTIFACT_IDENTITY_MISMATCH");
+  return {
+    bindingSource: binding.toString(),
+    module: new WebAssembly.Module(wasm),
+    declaredExports: manifest.declaredExports,
+  };
+}
+
+/** A fresh instance (fresh linear memory) of the verified artifact. */
+export function instantiateParser(artifact) {
   // Run the exact no-modules binding without rewriting it or importing browser code.
   const context = vm.createContext({
     WebAssembly,
@@ -220,20 +381,31 @@ export function loadPinnedParser(surface, manifest, directoryOverride = null) {
     DataView,
     ArrayBuffer,
   });
-  vm.runInContext(`${binding.toString()}\n globalThis.a91Parser = wasm_bindgen;`, context);
+  vm.runInContext(
+    `${artifact.bindingSource}\n globalThis.a91Parser = wasm_bindgen;\n` +
+      // The options object must be created inside this realm: wasm-bindgen
+      // recognises it by comparing its prototype with this realm's Object.
+      "globalThis.a91Init = (module) => wasm_bindgen.initSync({ module });",
+    context,
+  );
   const parser = context.a91Parser;
-  const wasmExports = parser.initSync(wasm);
-  if (!(wasmExports?.memory instanceof WebAssembly.Memory))
+  const wasmExports = context.a91Init(artifact.module);
+  if (!(wasmExports && wasmExports.memory instanceof WebAssembly.Memory))
     throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
-  for (const name of manifest.declaredExports)
+  for (const name of artifact.declaredExports)
     if (typeof parser[name] !== "function") throw new Error("UNSUPPORTED_WASM_API");
   return { parser, wasmExports };
+}
+
+export function loadPinnedParser(surface, manifest, directoryOverride = null) {
+  return instantiateParser(loadPinnedArtifact(surface, manifest, directoryOverride));
 }
 export function runWasm(path, authorization, options = {}) {
   const started = performance.now();
   const telemetry = createTelemetry();
   telemetry.snapshot("before_validate");
   const bytes = telemetry.step("validate", () => validateDemo(path, authorization));
+  const profile = fixtureProfile(authorization.authorizationRef);
   telemetry.step("structure_validation", () => {
     const structural = spawnSync(
       "python3",
@@ -245,22 +417,18 @@ export function runWasm(path, authorization, options = {}) {
   });
   let surface;
   let manifest;
-  const loaded = telemetry.step("wasm_load", () => {
+  const artifactHandle = telemetry.step("wasm_load", () => {
     surface = json(resolve(root, "docs/client-parser/upstream-surface-manifest.json"));
     const manifestPath = options.manifestPath
       ? resolve(options.manifestPath)
       : resolve(root, "public/client-parser/demoparser2/0.42.0/artifact-manifest.json");
     manifest = json(manifestPath);
-    return loadPinnedParser(surface, manifest, options.artifactDir ?? null);
+    return loadPinnedArtifact(surface, manifest, options.artifactDir ?? null);
   });
-  const parser = loaded.parser;
-  const wasmExports = loaded.wasmExports;
-
-  const WASM_PAGE_BYTES = 64 * 1024;
-  const LARGE_DEM_MEMORY_FLOOR_BYTES = 768 * 1024 * 1024;
-  const LARGE_DEM_MEMORY_HEADROOM_BYTES = 1536 * 1024 * 1024;
 
   const calls = [];
+  const memoryCalls = [];
+  const tableDiagnostics = {};
   const call = (api, args = [], request = {}, inputBytes = bytes) => {
     const stageName = {
       parseHeader: "parse_header",
@@ -273,16 +441,57 @@ export function runWasm(path, authorization, options = {}) {
     return telemetry.step(
       stageName,
       () => {
-        if (typeof parser[api] !== "function") throw new Error("UNSUPPORTED_WASM_API");
-        const memoryBefore = wasmExports.memory?.buffer?.byteLength ?? null;
+        // One fresh instance per API call: linear memory starts at the module
+        // minimum, so no call inherits another call's high-water mark and the
+        // recorded figures are that call's own need.
+        let instance = instantiateParser(artifactHandle);
+        const { parser, wasmExports } = instance;
+        // Grenades use the column-major export: same ParserInputs, same
+        // columns, no per-row HashMap. See docs/A9_1_WASM_MEMORY.md.
+        const exportName = api === "parseGrenades" ? "parseGrenadesColumns" : api;
+        if (typeof parser[exportName] !== "function") throw new Error("UNSUPPORTED_WASM_API");
+        const memoryBefore = wasmExports.memory.buffer.byteLength;
+        const memory = { api, eventName: request.eventName ?? null, initialBytes: memoryBefore };
+        const probe = () => {
+          try {
+            return typeof parser.a91MemoryProbe === "function"
+              ? decodeMemoryProbe(parser.a91MemoryProbe())
+              : null;
+          } catch {
+            return null;
+          }
+        };
         try {
-          const rawResult = parser[api](inputBytes, ...args);
-          const normalizedValue = normalizeWasmValue(rawResult);
-          const apiValue =
-            api === "parseEvent"
-              ? normalizeEventRows(normalizedValue, request.eventName)
-              : normalizedValue;
-          const result = canonicalizeInventory(api, apiValue);
+          const rawResult = parser[exportName](inputBytes, ...args);
+          memory.finalBytes = wasmExports.memory.buffer.byteLength;
+          if (api === "parseGrenades") memory.probe = probe();
+          if (memory.finalBytes > WASM_MEMORY_BUDGET_BYTES)
+            throw new Error("WASM_MEMORY_BUDGET_EXCEEDED");
+          const tableName = tableNameFor(api, request);
+          if (tableName) {
+            // Table APIs go through canonical contract v1 in ONE streaming
+            // pass over what the wrapper returned: identifiers stay exact, the
+            // digest covers every row, and only a bounded private sample is
+            // retained. No normalized copy of the table is built.
+            const table =
+              api === "parseEvent"
+                ? summarizeEventRows(tableName, rawResult, request.eventName)
+                : api === "parseGrenades"
+                  ? summarizeColumnTable(tableName, rawResult)
+                  : summarizeRows(tableName, rawResult);
+            tableDiagnostics[tableName] = table.diagnostics;
+            calls.push({
+              api,
+              status: "SUCCEEDED",
+              ...request,
+              outputDigest: table.summary.tableDigest,
+              count: table.summary.rowCount,
+              returnedFields: table.summary.fields,
+            });
+            memoryCalls.push(memory);
+            return table.summary;
+          }
+          const result = canonicalizeInventory(api, normalizeWasmValue(rawResult));
           const outputDigest = digest(result);
           calls.push({
             api,
@@ -290,19 +499,20 @@ export function runWasm(path, authorization, options = {}) {
             ...request,
             outputDigest,
             count: Array.isArray(result) ? result.length : null,
-            returnedFields: Array.isArray(result)
-              ? [
-                  ...new Set(
-                    result.flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : [])),
-                  ),
-                ].sort()
-              : Object.keys(result ?? {}),
+            returnedFields: Array.isArray(result) ? [] : Object.keys(result ?? {}),
           });
+          memoryCalls.push(memory);
           return result;
         } catch (error) {
           error.wasmMemoryBytesBefore = memoryBefore;
           error.wasmMemoryBytesAfter = wasmExports.memory?.buffer?.byteLength ?? null;
+          error.wasmProbe = probe();
           throw error;
+        } finally {
+          // Drop the instance so its linear memory can be reclaimed before the
+          // next call allocates a new one.
+          instance = null;
+          if (typeof globalThis.gc === "function") globalThis.gc();
         }
       },
       true,
@@ -314,39 +524,30 @@ export function runWasm(path, authorization, options = {}) {
   const headerProbe = getHeaderProbeBytes(bytes);
   const header = call("parseHeader", [], { inputByteLength: headerProbe.byteLength }, headerProbe);
 
-  // Reserve the large-demo working envelope only after the lightweight header
-  // probe. The bulk APIs still receive and parse the complete, hash-validated DEM.
-  telemetry.step("wasm_memory_prepare", () => {
-    if (!(wasmExports.memory instanceof WebAssembly.Memory))
-      throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
-    const targetBytes = Math.max(
-      LARGE_DEM_MEMORY_FLOOR_BYTES,
-      bytes.length + LARGE_DEM_MEMORY_HEADROOM_BYTES,
-    );
-    const targetPages = Math.ceil(targetBytes / WASM_PAGE_BYTES);
-    const currentPages = wasmExports.memory.buffer.byteLength / WASM_PAGE_BYTES;
-    if (currentPages < targetPages) wasmExports.memory.grow(targetPages - currentPages);
-    const finalBytes = wasmExports.memory.buffer.byteLength;
-    if (finalBytes < bytes.length) throw new Error("WASM_MEMORY_ALLOCATION_FAILURE");
-  });
-
   const inventory = call("listGameEvents", []);
   const fields = call("listUpdatedFields", []);
   const events = [];
   for (const event of surface.events) {
+    // Contract rule R12: properties the Python reference can only deliver
+    // rounded are not requested from either runtime; exclusions are reported.
+    const lossy = CONTRACT.referenceLossyRequestFields.eventPlayer;
+    const excludedRequestFields = event.playerFields
+      .filter((f) => f.requestAllowed && lossy.includes(f.field))
+      .map((f) => f.field);
     const requestedPlayerFields = event.playerFields
-      .filter((f) => f.requestAllowed)
+      .filter((f) => f.requestAllowed && !lossy.includes(f.field))
       .map((f) => f.field);
     const requestedOtherFields = event.otherFields
       .filter((f) => f.requestAllowed)
       .map((f) => f.field);
-    const value = call(
+    const table = call(
       "parseEvent",
       [event.eventName, requestedPlayerFields, requestedOtherFields],
       {
         eventName: event.eventName,
         requestedPlayerFields,
         requestedOtherFields,
+        excludedRequestFields,
         requestEvidence: [...event.playerFields, ...event.otherFields].filter(
           (f) => f.requestAllowed,
         ),
@@ -357,13 +558,9 @@ export function runWasm(path, authorization, options = {}) {
     evidence.unavailableFields = [...requestedPlayerFields, ...requestedOtherFields].filter(
       (f) => !returned.includes(f),
     );
-    events.push({
-      eventName: event.eventName,
-      status: evidence.status,
-      count: Array.isArray(value) ? value.length : null,
-      fullDigest: value === null ? null : digest(value),
-      samples: sample(value),
-    });
+    // Semantic evidence only (contract rule R11): exactly the keys the
+    // Python producer emits. Request/return lists stay in apiCalls.
+    events.push({ eventName: event.eventName, status: evidence.status, table });
   }
   const grenades = call("parseGrenades", []);
   const tickProbe = telemetry.step("frame_tick_probe", () => deriveDemoTickProbe(bytes));
@@ -379,7 +576,7 @@ export function runWasm(path, authorization, options = {}) {
     maxFrameTick: tickProbe.maxFrameTick,
     authoritativeDomain: false,
   });
-  if (!Array.isArray(tickValues) || tickValues.length === 0) {
+  if (!tickValues || tickValues.rowCount === 0) {
     telemetry.step(
       "parse_ticks_validation",
       () => {
@@ -394,19 +591,19 @@ export function runWasm(path, authorization, options = {}) {
   const normalizedResult = {
     header,
     events,
-    grenades: sample(grenades, 256),
-    ticks: sample(tickValues),
+    grenades,
+    ticks: tickValues,
     playerIdentity: { status: "NOT_AVAILABLE_ON_WASM" },
   };
   const normalizedResultDigest = telemetry.step("normalization", () => digest(normalizedResult));
   const failed = calls.some((c) => c.status === "PARSE_FAILED") || wantedTicks.length === 0;
   const byName = (predicate) => events.filter((e) => predicate(e.eventName));
   const artifact = {
-    artifactVersion: 2,
+    artifactVersion: 3,
     runtime: "WASM",
     runId: `wasm:${randomUUID()}`,
-    executionKind: "REAL_DEM_FULL_FILE",
-    test_fixture_only: false,
+    executionKind: profile.executionKind,
+    test_fixture_only: profile.testFixtureOnly,
     status: failed ? "FAILED" : "SUCCEEDED",
     reason: failed ? "WASM_RUN_FAILED" : null,
     demoSha256: sha(bytes),
@@ -417,6 +614,7 @@ export function runWasm(path, authorization, options = {}) {
     catalogDigest: surface.catalogDigest,
     contractVersion: surface.contractVersion,
     contractDigest: surface.contractDigest,
+    canonicalContract: { version: CANONICAL_CONTRACT_VERSION, digest: CANONICAL_CONTRACT_DIGEST },
     artifactIdentity: digest({
       bindingSha256: manifest.binding.sha256,
       wasmSha256: manifest.wasm.sha256,
@@ -444,29 +642,32 @@ export function runWasm(path, authorization, options = {}) {
     fieldInventory: sample(fields),
     eventInventory: sample(inventory, 1024),
     eventInventoryDigest: digest(inventory),
-    headerEvidence: header,
-    mapEvidence: { map: header?.map_name ?? null },
-    timingEvidence: { header, tickProbe },
+    ...buildSemanticEvidence({
+      header,
+      events,
+      grenades,
+      ticks: tickValues,
+      tickProbe,
+      requestedFields,
+      wantedTicks,
+    }),
     playerInventory: { status: "NOT_AVAILABLE_ON_WASM" },
     domainAvailability: {
       players: "NOT_AVAILABLE_ON_WASM",
       player_identity: "NOT_AVAILABLE_ON_WASM",
     },
-    eventEvidence: events,
-    roundEvidence: byName((n) => n.startsWith("round_")),
-    grenadeEvidence: sample(grenades, 256),
-    bombEvidence: byName((n) => n.startsWith("bomb_")),
-    deathEvidence: byName((n) => n === "player_death"),
-    damageEvidence: byName((n) => n === "player_hurt"),
-    weaponEvidence: byName((n) => n.startsWith("weapon_") || n.startsWith("item_")),
-    economyEvidence: { status: "BOUNDED_TICK_PROBE", value: sample(tickValues) },
-    tickDomainEvidence: {
-      tickProbeSource: tickProbe.source,
-      maxFrameTick: tickProbe.maxFrameTick,
-      requestedFields,
-      wantedTicks,
-      authoritativeDomain: false,
-      value: sample(tickValues),
+    // Private, non-semantic diagnostics (block digests, bounded samples).
+    // Used only to localize a divergence; never hashed into any gate digest.
+    tableDiagnostics,
+    // Operational evidence, never a semantic input: WASM linear memory per
+    // call (each call runs in a fresh instance) and the explicit budget.
+    wasmMemoryEvidence: {
+      budgetBytes: WASM_MEMORY_BUDGET_BYTES,
+      hardLimitBytes: 65536 * WASM_PAGE_BYTES,
+      instancePerCall: true,
+      grenadeOutput: "COLUMN_MAJOR",
+      peakBytes: memoryCalls.reduce((peak, item) => Math.max(peak, item.finalBytes ?? 0), 0),
+      calls: memoryCalls,
     },
     normalizedResult,
     normalizedResultDigest,
@@ -477,7 +678,7 @@ export function runWasm(path, authorization, options = {}) {
         .map((c) => ({ api: c.api, eventName: c.eventName ?? null, digest: c.outputDigest })),
     ),
     eventDigest: digest(events),
-    tickDigest: digest(tickValues),
+    tickDigest: tickValues.tableDigest,
     roundDigest: digest(byName((n) => n.startsWith("round_"))),
     playerDigest: digest({ status: "NOT_AVAILABLE_ON_WASM" }),
     durationMs: performance.now() - started,
