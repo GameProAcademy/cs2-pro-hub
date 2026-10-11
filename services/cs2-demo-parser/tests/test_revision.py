@@ -109,6 +109,8 @@ def test_version_reports_the_running_identity(client_factory):
         "parser": {"name": "demoparser2", "version": "0.42.0", "revision": SHA,
                    "semantic_revision": SHA, "build_revision": None},
         "contract_version": 1,
+        # No image here: the build commit is unknown and says so.
+        "build": {"commit": None, "embedded": False, "source": None, "declared_revision_matches": None},
     }
 
 
