@@ -1,9 +1,9 @@
 # Demo-parse queue: recovery protocol
 
-Status: **proposed, not applied anywhere real.** The migration
-`20261011120000_demo_parse_recovery_protocol.sql` has only been run on a
-disposable database. The deployed worker (`91aeee8`) does not contain this
-code. Nothing here authorizes Canonical, Attempt 9 or a deploy.
+Status: merged to `main`. Whether the migration is applied to the managed
+database, and what runs in production, is recorded in
+`QUEUE_RECOVERY_ROLLOUT.md`; the deployed worker (`91aeee8`) does not contain
+this code. Nothing here authorizes Canonical, Attempt 9 or a deploy.
 
 Delivery is **at-least-once**. A parser may run more than once for a job. What
 the protocol guarantees is at most one committed result per job and a bounded,
@@ -91,42 +91,85 @@ Recovering a terminal `JOB_STALE` is the existing explicit path,
 
 ## Evidence
 
-`scripts/queue/recovery_protocol_probe.py` runs the production
-`durable_consumer_loop` as real processes against a loopback bridge backed by
-the real queue functions, pgmq and the real execution ledger in a disposable
-database. Crashes are real `SIGKILL`s; lost requests and acknowledgements are
-connections dropped at an exact protocol point; time is an expired lease.
+Two probes, both on a disposable database. Crashes are real `SIGKILL`s; lost
+requests and acknowledgements are connections dropped at an exact protocol
+point; time is an expired lease.
 
-- New protocol: 22 of 22 scenarios pass. Every scenario also checks: at most
-  one committed RAW effect and one committed observation effect per job; each
-  parser execution has a `STARTED` row; one terminal per identity; a terminal
-  job has no queue message left.
-- Previous protocol (`--protocol legacy`, main's schema and worker tree): 4 of
-  5 fail — the four defects above.
+### End to end (`scripts/queue/recovery_integration_probe.py`)
 
-`h3e91DurableReconciliation.test.ts` (52 tests) covers the TypeScript bridge
-decisions; `tests/test_execution_identity.py` covers the worker.
+Production code on the whole path, on the Supabase local stack (PostgreSQL
+17.6, pgmq 1.5.1 — the versions the managed database reports):
 
-### What the probe does not cover
+- worker: `uvicorn app:app`, the image's own command, `ENVIRONMENT=production`:
+  https download, isolated parser child, demoparser2, RAW artifact writer;
+- bridge: the application's TypeScript route handlers with supabase-js
+  (`scripts/queue/integration/bridge_host.ts` hosts them unchanged);
+- storage: the stack's Storage API; demo: the pinned public fixture (60.6 MB).
 
-- The TypeScript bridge as a running process. The loopback bridge mirrors its
-  `reconcile`, `fail` and `complete` decisions; the TypeScript itself is unit
-  tested with a mocked database.
-- RAW chunk storage and the Canonical/HOT persistence. They are replaced by
-  two idempotent effect rows per job. `initializeRawArtifact`,
-  `decideRawChunkRecovery` and `finalizeRawArtifact` are written to be
-  re-entrant per job, but that was not executed here.
-- Download, demoparser2 and RAW chunking in the worker: the parse step is
-  scripted.
+14 of 14 scenarios pass in CI:
+
+| Scenario                                               | Executions | Result                                                    |
+| ------------------------------------------------------ | ---------- | --------------------------------------------------------- |
+| download → parse → 29 RAW chunks → complete → ACK      | 1          | terminal, 30 objects (29 chunks + manifest)               |
+| parse timeout (parser killed), retry by another worker | 2          | new identity, terminal                                    |
+| parse always times out                                 | 3          | `failed` / `PARSER_TIMEOUT` at the retry limit            |
+| worker `SIGKILL`ed during parse                        | 2          | abandoned at `STARTED`, new identity, terminal            |
+| `complete` lost before commit                          | 2          | abandoned at `FINISHED`, RAW artifact reused              |
+| acknowledgement lost after commit                      | 1          | nothing changes                                           |
+| `fail` lost                                            | 2          | reconciled as retryable, retry parses                     |
+| RAW chunk upload lost before storage commit            | 2          | dispatch fails, retry completes                           |
+| RAW chunk stored, answer lost                          | 2          | dispatch fails, retry rewrites, no duplicate object       |
+| stale worker that lost its lease                       | 2          | cannot write RAW or complete                              |
+| three workers, one job                                 | 1          | one lease                                                 |
+| heartbeats during a real parse                         | 1          | lease renewed                                             |
+| reconciliation cannot decide                           | 1 (+1)     | `JOB_STALE` / `delivery_limit`; `retry_demo_job` recovers |
+| worker `SIGKILL`ed during download                     | 1          | abandoned at `INTENT_ONLY`, terminal                      |
+
+Checked in every scenario: at most one RAW artifact per job; every chunk
+verified; storage objects = chunks + manifest; one terminal per execution
+identity; no queue message left for a terminal job; no parser process and no
+temporary file left by a worker that was allowed to stop.
+
+Defects this probe found in code already on `main`, each fixed and tested:
+
+- the isolated parser child refused `NaN` and failed every real demo (#84);
+- the bridge and the worker computed different digests for the same RAW
+  evidence (`localeCompare` key order; `0.0` against `0`), so
+  `raw-artifact-finalize` failed for every real demo (this change);
+- the parser child outlived a `SIGKILL`ed worker (#86);
+- a worker killed during download leaves the partial demo (#85).
+
+What it does not reach: every successful job ends `blocked_raw_audit`, because
+the application's RAW admission blocks the public fixture
+(`raw_artifact_audit:blocked`). That gate was not touched, so the Canonical
+write is **not** exercised end to end; its idempotency is measured separately
+(`canonical_persistence_probe.py`). The bridge runs with `NODE_ENV=test`: in
+production its event bridge refuses durable execution events.
+
+### Protocol (`scripts/queue/recovery_protocol_probe.py`)
+
+The production `durable_consumer_loop` with a scripted parse step and a
+loopback bridge over the real queue functions and ledger. Fast, 22 scenarios,
+including ones the end-to-end probe does not have (crash on every dispatch,
+crash between result commit and acknowledgement, permanent failures, abandon
+guards and grants).
+
+- New protocol: 22 of 22.
+- Previous protocol (`--protocol legacy`, the schema and worker tree before
+  this change): 4 of 5 fail — the four defects above.
+
+`h3e91DurableReconciliation.test.ts` (52 tests) covers the bridge decisions;
+`tests/test_execution_identity.py` the worker.
+
+### Still not exercised
+
 - A holder whose `complete` is still running in the bridge when its lease
-  expires (it would need more than one visibility window). Not exercised.
+  expires (it needs more than one visibility window).
+- A graceful shutdown in the middle of a job: the worker stops without
+  recording a terminal, and the dispatch waits for its lease to expire before
+  it is reconciled. Correct, but slow; not changed here.
 
-## Before this can be applied
+## Applying it
 
-1. Decide to apply the migration to the managed database (not done here).
-2. Deploy bridge and worker together: an old worker with the new bridge, or
-   the reverse, disagree on the identity of dispatches ≥ 1 and reconciliation
-   answers `reconciliation_required` (fail-closed, bounded by rule 5).
-3. In production the event bridge still answers
-   `H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED`, so this worker path does not
-   execute there until deployed-source parity is proven.
+See `QUEUE_RECOVERY_ROLLOUT.md` for the order, the compatibility matrix and
+the rollback.
