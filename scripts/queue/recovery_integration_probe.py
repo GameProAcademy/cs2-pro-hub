@@ -89,7 +89,11 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
         ["bun", "scripts/queue/integration/bridge_host.ts", "0"], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
         start_new_session=True,
         env={**os.environ, "SUPABASE_URL": f"https://localhost:{api_port}", "SUPABASE_SERVICE_ROLE_KEY": STACK["key"],
-             "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "NODE_ENV": "test", "NODE_EXTRA_CA_CERTS": str(cert)},
+             "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "NODE_ENV": "test", "NODE_EXTRA_CA_CERTS": str(cert),
+             # The application accepts one pinned worker revision. This is its own
+             # promotion override, pointed at the revision under test; the revision
+             # lock itself stays on.
+             "DEMO_PARSER_EXPECTED_REVISION": REVISION, "DEMO_PARSER_REVISION_REQUIRED": "true"},
     )
     deadline = time.monotonic() + 90
     while time.monotonic() < deadline:
