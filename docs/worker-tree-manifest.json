@@ -3,7 +3,7 @@
     "Dockerfile": {
       "contract_pin": "efc28e8609351ee8ad8cba2cdd19a4f68b30e7ca",
       "deployed": "efc28e8609351ee8ad8cba2cdd19a4f68b30e7ca",
-      "main": "febe09f6236a65e8ab6ff5bd6f487470db5f31ec",
+      "main": "7f12eab3460c38effc2b68d418dac3b73d9763e1",
       "state": "DIFFERS"
     },
     "README.md": {
@@ -21,7 +21,7 @@
     "app.py": {
       "contract_pin": "7995670c41ed743d98da34309546443de000cceb",
       "deployed": "5a800e971a5b48fad594d0acaa368ac581135586",
-      "main": "e40d65e2fb734a44c49767e21794383b152b9cc0",
+      "main": "818e5947c13076b98483b9c16bbc561769db3b39",
       "state": "DIFFERS"
     },
     "capability_catalog.py": {
@@ -57,7 +57,7 @@
     "errors.py": {
       "contract_pin": "b7f229f52a4db55e2df255d21df14077b1e8301d",
       "deployed": "b7f229f52a4db55e2df255d21df14077b1e8301d",
-      "main": "ec01ea96861109144e9ae603e5e20b35ae20d08e",
+      "main": "4e60358534a0b9198ff206d28d10705b3d189d15",
       "state": "DIFFERS"
     },
     "forensic_audit.py": {
@@ -81,20 +81,20 @@
     "parser.py": {
       "contract_pin": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
       "deployed": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
-      "main": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
-      "state": "IDENTICAL_IN_ALL"
+      "main": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+      "state": "DIFFERS"
     },
     "parser_child.py": {
       "contract_pin": "ec116904e163dc322c31419a0abaf8836bf440f8",
       "deployed": "2a7d47a48c140764beb24f445dff38cf5bd6bd49",
-      "main": null,
-      "state": "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN"
+      "main": "d598dedb57e7b0f1624ace72c78b3e2c53567a44",
+      "state": "DIFFERS"
     },
     "parser_isolated.py": {
       "contract_pin": "87d47d34211e628691734888888880f4ffb02177",
       "deployed": "f3ad363d39e7ccfd3731497a992a779a6507a214",
-      "main": null,
-      "state": "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN"
+      "main": "66cbc040008536dc6d846a0de3ff7df36fd474a2",
+      "state": "DIFFERS"
     },
     "pytest.ini": {
       "contract_pin": "4584de7e860925957a2daa58cfb4de8acc1e4802",
@@ -105,7 +105,7 @@
     "python_reference.py": {
       "contract_pin": "3936ab2a6c6adc778f17c631e6d2a2d8477ab7d2",
       "deployed": "3936ab2a6c6adc778f17c631e6d2a2d8477ab7d2",
-      "main": "0c5f6eb5902519c2c475ae473d4b367d28c13e66",
+      "main": "c704c063c61384a6ff6d5798a65543c842f511de",
       "state": "DIFFERS"
     },
     "raw_artifact.py": {
@@ -192,6 +192,12 @@
       "main": "10029ecad239f220f5e4d5ad543c304b9c35ef67",
       "state": "ONLY_IN_MAIN"
     },
+    "tests/test_failure_taxonomy.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "fa6bbc597b5e14c4a6908bbe45f158286e7220ec",
+      "state": "ONLY_IN_MAIN"
+    },
     "tests/test_forensic_audit_v2.py": {
       "contract_pin": null,
       "deployed": null,
@@ -216,11 +222,23 @@
       "main": "277ad719cc408ed7d46f0cb519b2ed36b46ed706",
       "state": "IDENTICAL_IN_ALL"
     },
+    "tests/test_non_demo_failures.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "8b3f12b913164bfea249a1f2452f88a732e7d05d",
+      "state": "ONLY_IN_MAIN"
+    },
     "tests/test_output_contract.py": {
       "contract_pin": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
       "deployed": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
       "main": "187e56d500ca7abbafa8e688781b9d66c7db5e1c",
       "state": "IDENTICAL_IN_ALL"
+    },
+    "tests/test_parser_isolated.py": {
+      "contract_pin": null,
+      "deployed": null,
+      "main": "c648b3bf553a07ef89cf60b542e6fc2d230dee48",
+      "state": "ONLY_IN_MAIN"
     },
     "tests/test_parser_semantics.py": {
       "contract_pin": "954e2fc561f9e1a35c6ea03eb8af9572be63ebf8",
@@ -231,13 +249,13 @@
     "tests/test_production_image_contract.py": {
       "contract_pin": null,
       "deployed": null,
-      "main": "558e0b401022916c68444ccffd600e4655038a61",
+      "main": "c546f71e103e8843c3db8cc9dd6660173ada6af5",
       "state": "ONLY_IN_MAIN"
     },
     "tests/test_python_reference.py": {
       "contract_pin": null,
       "deployed": null,
-      "main": "32dc92126d69f283b1e13e6438615183310349bb",
+      "main": "7b685150830c2736eb17f1e613f917ebbfe35918",
       "state": "ONLY_IN_MAIN"
     },
     "tests/test_raw_artifact.py": {
@@ -297,7 +315,7 @@
     "worker.py": {
       "contract_pin": "dfc2e67fcb3644be91108079f9096947c16119b3",
       "deployed": "50a53b607d26f00b4de05c5e8998611959e27bd1",
-      "main": "b28376888127c9bcc83164b944c28d92a1a336f6",
+      "main": "7d037da612766b9cfb96bb7512ba00b28b7645dd",
       "state": "DIFFERS"
     },
     "worker_main.py": {
@@ -309,31 +327,25 @@
   },
   "history": {
     "deployed..contract_pin": {
-      "merge_base": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
-      "only_left": 20,
-      "only_right": 0
+      "status": "NOT_DETERMINABLE_SHALLOW_CLONE"
     },
     "main..contract_pin": {
-      "merge_base": null,
-      "only_left": 956,
-      "only_right": 1120
+      "status": "NOT_DETERMINABLE_SHALLOW_CLONE"
     },
     "main..deployed": {
-      "merge_base": null,
-      "only_left": 956,
-      "only_right": 1140
+      "status": "NOT_DETERMINABLE_SHALLOW_CLONE"
     }
   },
   "refs": {
     "contract_pin": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
     "deployed": "91aeee853200d0f461d0d36af1781d7fdfa40941",
-    "main": "c433fcc264927ba7e0c8272b1ed89482a3a09128"
+    "main": "2c5cded1453df43f80e42b2a4f9b5608d3147947"
   },
   "summary": {
-    "DIFFERS": 12,
-    "IDENTICAL_IN_ALL": 25,
-    "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN": 3,
-    "ONLY_IN_MAIN": 9,
+    "DIFFERS": 15,
+    "IDENTICAL_IN_ALL": 24,
+    "ONLY_IN_DEPLOYED_AND_CONTRACT_PIN": 1,
+    "ONLY_IN_MAIN": 12,
     "ONLY_IN_MAIN_AND_DEPLOYED": 2
   },
   "tree": "services/cs2-demo-parser"

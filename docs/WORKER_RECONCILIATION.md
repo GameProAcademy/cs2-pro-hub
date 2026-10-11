@@ -29,23 +29,33 @@ Not read, on purpose: variable values. So the revision the worker reports
 
 | Name           | Commit    | Role                                                                      |
 | -------------- | --------- | ------------------------------------------------------------------------- |
-| `main`         | `c433fcc` | what Quality Gates and R11.2 test                                         |
+| `main`         | `2c5cded` | what Quality Gates and R11.2 test                                         |
 | `deployed`     | `91aeee8` | what Railway built                                                        |
 | `contract_pin` | `5703b1d` | the revision the app accepts (`src/lib/pipeline/parser/adapter.ts:55-56`) |
 
-History: `main` shares no commit with the other two (956 vs 1,140 and 1,120
-exclusive commits). `deployed` is 20 commits ahead of `contract_pin`.
+History (GitHub compare API, read 2026-10-11): the worker lines forked from
+`main`'s history at `d4b63ba` (2026-09-15). Since then `main` has 1,991
+commits the worker lines do not have; `deployed` has 82 of its own and
+`contract_pin` 62. `deployed` is 20 commits ahead of `contract_pin`.
 
-Files: 25 identical in all three, 12 differ, 9 only in `main`, 3 only in
-`deployed` and `contract_pin`, 2 only in `main` and `deployed`.
+> Correction. Earlier versions of this document said `main` shares no commit
+> with the other two. That was an artifact of a shallow clone, whose boundary
+> hid the merge base. The generator now refuses to report history from a
+> shallow clone (`NOT_DETERMINABLE_SHALLOW_CLONE` in the manifest); the numbers
+> above come from GitHub. The file comparison below was never affected: it
+> compares blob ids at the three commits.
+
+Files: 24 identical in all three, 15 differ, 12 only in `main`, 1 only in
+`deployed` and `contract_pin` (`worker_main.py`), 2 only in `main` and
+`deployed`.
 
 ## 3. Behaviour differences that matter
 
 | Area                     | `main`                                                                               | `deployed` (`91aeee8`)                                                                              | `contract_pin` (`5703b1d`)  |
 | ------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------- |
-| Parse isolation          | in-process thread (`app.py:118-120`)                                                 | child process via `worker_main.py` → `parser_isolated.py`                                           | same files, older versions  |
-| Child exit / signals     | not applicable                                                                       | any non-zero exit → `PARSER_ERROR`; signal only logged (`parser_isolated.py:83-93`); no `setrlimit` | same                        |
-| Timeout                  | `asyncio.wait_for` on a thread that cannot be interrupted                            | `subprocess.run(timeout=…)` kills the child                                                         | same                        |
+| Parse isolation          | child process, own session (`parser_isolated.py`, `parser_child.py`), since #74      | child process via `worker_main.py` → `parser_isolated.py`                                           | same files, older versions  |
+| Child exit / signals     | classified by exit status first (`classify_child_exit`); optional `RLIMIT_AS`        | any non-zero exit → `PARSER_ERROR`; signal only logged (`parser_isolated.py:83-93`); no `setrlimit` | same                        |
+| Timeout                  | kills the child's process group (`parser_isolated.py`)                               | `subprocess.run(timeout=…)` kills the child                                                         | same                        |
 | Grenades                 | `parse_grenades()` (all grenade rows)                                                | `parse_grenades(grenades=False)` (`parser_child.py:125`)                                            | not present in that version |
 | Tick query               | unbounded request for the sampled ticks                                              | capped by `TICK_QUERY_LIMIT`, default 128 (`parser_child.py:46`)                                    | —                           |
 | Capability catalog       | `CATALOG_VERSION = 3`                                                                | `CATALOG_VERSION = 3`                                                                               | `CATALOG_VERSION = 2`       |
@@ -58,18 +68,25 @@ Files: 25 identical in all three, 12 differ, 9 only in `main`, 3 only in
 Consequences:
 
 1. Quality Gates and R11.2 on `main` say nothing about the deployed worker.
-2. `main` cannot be deployed as the worker without losing isolation: the three
-   isolation files are absent and the image allowlist would reject them.
+2. `main` now has its own isolation boundary (#74), but it is a different
+   implementation from the deployed one: same file names, different contents,
+   and `main` has no `worker_main.py` (it starts the consumer loop from
+   `app.py`). The two were not reconciled; `main`'s is tested, the deployed
+   one is not.
 3. The app accepts revision `5703b1d`, the build is `91aeee8`, and the two
    differ in catalog version. If the env vars say `5703b1d`, artifacts are
    stamped with a revision that did not produce them (hypothesis: values unread).
 4. The deployed worker already narrows grenade output to projectiles. That is a
    third definition of "grenades", next to the Python reference and WASM.
-5. No test in any tree imports `parser_isolated`, `parser_child` or `worker_main`.
+5. On the deployed and pinned trees no test imports `parser_isolated`,
+   `parser_child` or `worker_main`. On `main`, `tests/test_parser_isolated.py`
+   exercises the boundary with real child processes.
 
 ## 4. Plan
 
-Each stage is a separate, reviewable change. None is started.
+Each stage is a separate, reviewable change. Stage 3 is done on `main` (#74,
+with its own implementation rather than a port of the deployed files); the
+others are not started.
 
 | #   | Stage                                                                                                                                                                                        | Depends on                                                                | Touches production?                                                                              | Acceptance                                                                                         |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -77,7 +94,7 @@ Each stage is a separate, reviewable change. None is started.
 | 2   | Tests for the isolation boundary, written against the deployed files in a PR to the deployed branch: child killed by SIGKILL / SIGSEGV, timeout, typed errors, result-file corruption        | —                                                                         | **merging deploys** (watch path) unless the owner pauses deploys or merges with "Wait for CI" on | tests fail on a deliberately broken boundary and pass on the current one                           |
 | 3   | Bring isolation to `main`: add `worker_main.py`, `parser_child.py`, `parser_isolated.py` and wire `classify_child_exit`; extend the image allowlist in the Dockerfile and both CI assertions | #74 (failure classes), stage 2 tests                                      | no                                                                                               | R11.2 green; image-contents assertion updated in the same PR; new tests cover the child path       |
 | 4   | Decide the grenade definition for production (`grenades=False` or all grenade rows) and make reference, WASM and worker agree, or document the difference in the output contract             | #75 decision                                                              | no                                                                                               | one written definition; the parity contract and the worker cite it                                 |
-| 5   | Decide where H3E91 lives: port it to the deployed line, or accept that the deployed worker is outside the ledger                                                                             | owner decision; #78 if the redelivery bound is wanted first               | no                                                                                               | the ledger either covers the deployed surface or the report says it does not                       |
+| 5   | Decide where H3E91 lives: port it to the deployed line, or accept that the deployed worker is outside the ledger                                                                             | owner decision; #81 if the recovery protocol is wanted first              | no                                                                                               | the ledger either covers the deployed surface or the report says it does not                       |
 | 6   | Make build identity real: bake the git SHA into the image at build time, separate from the contract revision                                                                                 | stage 1                                                                   | no (code)                                                                                        | `/version` shows both; the app checks the contract revision, the attestation records the build SHA |
 | 7   | Turn on "Wait for CI" for the service                                                                                                                                                        | the deployed branch must have a workflow on `push` that covers the worker | **yes (setting)**                                                                                | a failing workflow skips the deployment; verified on a throwaway commit                            |
 | 8   | Choose one deploy branch and retire the other lines                                                                                                                                          | stages 3–6                                                                | **yes (source branch)**                                                                          | the deployed commit is an ancestor of the branch CI gates                                          |

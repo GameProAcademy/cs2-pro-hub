@@ -16,7 +16,7 @@ import sys
 
 TREE = "services/cs2-demo-parser"
 REFS = {
-    "main": "c433fcc264927ba7e0c8272b1ed89482a3a09128",
+    "main": "2c5cded1453df43f80e42b2a4f9b5608d3147947",
     "deployed": "91aeee853200d0f461d0d36af1781d7fdfa40941",
     "contract_pin": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
 }
@@ -57,8 +57,16 @@ def main() -> int:
         }
     pairs = {}
     names = list(refs)
+    # A shallow clone cuts history at its boundary: a merge base beyond it is
+    # invisible and the commit counts are truncated. An earlier version of this
+    # manifest reported "no common history" for exactly that reason. History is
+    # only reported from a complete clone.
+    shallow = git("rev-parse", "--is-shallow-repository").strip() == "true"
     for index, left in enumerate(names):
         for right in names[index + 1:]:
+            if shallow:
+                pairs[f"{left}..{right}"] = {"status": "NOT_DETERMINABLE_SHALLOW_CLONE"}
+                continue
             ahead, behind = git("rev-list", "--left-right", "--count", f"{refs[left]}...{refs[right]}").split()
             pairs[f"{left}..{right}"] = {
                 "merge_base": merge_base(refs[left], refs[right]),
