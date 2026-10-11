@@ -50,6 +50,7 @@ from hot_payload import build_hot_payload, hot_payload_measurements
 from raw_artifact import ArtifactContext, RawArtifactWriter
 from raw_evidence import finalize_evidence, prepare_evidence
 from runtime_evidence import collect_runtime_evidence, parse_memory_snapshot
+from settings import image_build_identity
 from settings import (
     DURABLE_HOT_HARD_MAX_BYTES,
     PARSER_NAME,
@@ -351,6 +352,19 @@ def create_app(
         },
         "contract_version": resolved.contract_version,
     }
+    # What was compiled, read from the image, next to what the deployment
+    # declares. `declared_revision_matches` is null when the image carries no
+    # commit; false means the configured revision names another build.
+    image = image_build_identity()
+    declared = resolved.build_revision or resolved.revision
+    identity["build"] = {
+        "commit": image["commit"],
+        "embedded": image["embedded"],
+        "source": image["source"],
+        "declared_revision_matches": (declared == f"git:{image['commit']}") if image["embedded"] else None,
+    }
+    logger.info("build_identity embedded=%s commit=%s declared_revision_matches=%s",
+                image["embedded"], image["commit"], identity["build"]["declared_revision_matches"])
 
     @app.exception_handler(WorkerError)
     async def _worker_error(_: Request, exc: WorkerError) -> JSONResponse:

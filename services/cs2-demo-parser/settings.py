@@ -37,6 +37,28 @@ _OPAQUE_REVISION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+/-]{6,127}$")
 FORBIDDEN_REVISIONS = frozenset({"pypi-0.42.0", "pypi-" + PARSER_VERSION, "unknown", "none"})
 
 
+def image_build_identity(directory: str | None = None) -> dict[str, object]:
+    """The commit this image was built from, as written into the image at build time.
+
+    Read from BUILD_INFO.json next to the code (see the Dockerfile). It is not
+    configuration: no environment variable can change it. Outside an image
+    built that way (tests, local runs) the commit is unknown and says so.
+    """
+    import json
+    from pathlib import Path
+
+    path = Path(directory or Path(__file__).resolve().parent) / "BUILD_INFO.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"commit": None, "embedded": False, "source": None}
+    commit = data.get("commit") if isinstance(data, dict) else None
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        return {"commit": None, "embedded": False, "source": None}
+    source = data.get("source") if data.get("source") in ("railway", "build-arg") else None
+    return {"commit": commit, "embedded": True, "source": source}
+
+
 def is_valid_revision(value: str | None) -> bool:
     if value is None:
         return False

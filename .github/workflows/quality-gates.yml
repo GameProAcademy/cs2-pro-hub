@@ -95,8 +95,9 @@ jobs:
       - name: Verify production parser image excludes reference tools
         working-directory: ${{ github.workspace }}
         run: |
-          docker build --tag gamepro-parser-isolation:ci services/cs2-demo-parser
-          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","parser_child.py","parser_isolated.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
+          docker build --build-arg BUILD_COMMIT_SHA="$GITHUB_SHA" --tag gamepro-parser-isolation:ci services/cs2-demo-parser
+          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","parser_child.py","parser_isolated.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt","BUILD_INFO.json"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
+          docker run --rm --entrypoint python gamepro-parser-isolation:ci -c 'import json,sys; info=json.load(open("/app/BUILD_INFO.json")); assert info == {"commit": sys.argv[1], "source": "build-arg"}, info; sys.path.insert(0, "/app"); from settings import image_build_identity; assert image_build_identity() == {"commit": sys.argv[1], "embedded": True, "source": "build-arg"}' "$GITHUB_SHA"
   contract-gate:
     name: Contract-sensitive parser tests
     runs-on: ubuntu-latest
@@ -175,8 +176,9 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          docker build --tag gamepro-parser-isolation:f553 services/cs2-demo-parser
-          docker run --rm --entrypoint python gamepro-parser-isolation:f553 -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","parser_child.py","parser_isolated.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
+          docker build --build-arg BUILD_COMMIT_SHA="$GITHUB_SHA" --tag gamepro-parser-isolation:f553 services/cs2-demo-parser
+          docker run --rm --entrypoint python gamepro-parser-isolation:f553 -c 'import os,pathlib; p=pathlib.Path("/app"); expected={"adapter.py","app.py","capability_catalog.py","demo_integrity.py","errors.py","forensic_audit.py","h3e91_execution.py","hot_payload.py","parser.py","parser_child.py","parser_isolated.py","raw_artifact.py","raw_evidence.py","runtime_evidence.py","settings.py","worker.py","requirements.txt","BUILD_INFO.json"}; actual={str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}; assert actual == expected, actual ^ expected; assert os.geteuid() != 0'
+          docker run --rm --entrypoint python gamepro-parser-isolation:f553 -c 'import json,sys; info=json.load(open("/app/BUILD_INFO.json")); assert info == {"commit": sys.argv[1], "source": "build-arg"}, info; sys.path.insert(0, "/app"); from settings import image_build_identity; assert image_build_identity() == {"commit": sys.argv[1], "embedded": True, "source": "build-arg"}' "$GITHUB_SHA"
           docker image inspect gamepro-parser-isolation:f553 --format '{{.Id}}' > /tmp/f553-image-digest
       - name: Verify parser tests in this run
         id: parser_check

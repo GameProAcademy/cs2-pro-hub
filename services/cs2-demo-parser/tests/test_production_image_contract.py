@@ -22,3 +22,10 @@ def test_runtime_image_has_explicit_complete_allowlist():
     assert set(copies[0].split()) == RUNTIME
     assert "python_reference.py" not in dockerfile.split("COPY requirements.txt ./", 1)[1].split("# Non-root runtime", 1)[0]
     assert all((ROOT / name).is_file() for name in RUNTIME)
+
+def test_the_image_records_the_commit_it_was_built_from():
+    dockerfile = (ROOT / "Dockerfile").read_text()
+    assert "ARG RAILWAY_GIT_COMMIT_SHA" in dockerfile and "ARG BUILD_COMMIT_SHA" in dockerfile
+    assert "BUILD_INFO.json" in dockerfile
+    # Written before the user switch and before chown, so the runtime user can read but the file is part of /app.
+    assert dockerfile.index("BUILD_INFO.json") < dockerfile.index("USER 10001")
