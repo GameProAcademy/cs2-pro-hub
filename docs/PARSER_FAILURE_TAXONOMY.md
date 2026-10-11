@@ -39,7 +39,9 @@ before; `WORKER_ERROR_CODES` is unchanged (asserted by
 - The APP already declares `RESOURCE_LIMIT` as a pipeline error and treats it
   as permanent (`src/lib/pipeline/errors.ts:51,78`), and `retry_demo_job`
   already lists it. Nothing emits it.
-- The deployed worker is built from another branch with unrelated history. A
+- The deployed worker is built from another branch that forked from `main`'s
+  history at `d4b63ba` and has diverged (82 commits of its own; `main` is 1,991
+  ahead). A
   wire change has to land there too, and merging to that branch deploys.
 
 ## Proposed coordinated change (not implemented)
