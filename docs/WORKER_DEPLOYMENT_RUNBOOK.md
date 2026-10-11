@@ -81,8 +81,8 @@ Turning it on is safe at any time: it can only skip deployments.
 
 One change: the key `deploy` set to `{}` in the environment patch. The live
 configuration already has a populated `deploy` block; an empty object merged
-onto it changes no field. It is a leftover of an edit that was reverted in the
-dashboard without discarding the draft. Decision: **discard**. Applying it
+onto it changes no field. How it got there is not recorded; a dashboard edit that was undone without
+discarding the draft would leave exactly this (hypothesis). Decision: **discard**. Applying it
 ("Deploy" on the staged-changes banner) would change nothing in the
 configuration but would start a new production deployment of the branch head.
 Discarding is a dashboard action (the banner's "Discard"); the API used here
