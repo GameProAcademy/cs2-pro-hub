@@ -39,6 +39,28 @@ def _apply_memory_limit() -> None:
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
+def _die_with_parent(expected_parent: int) -> None:
+    """Ask the kernel to SIGKILL this process when the worker that started it dies.
+
+    The child runs in its own session so the worker can kill the whole parser
+    group on a timeout. The other direction was missing: a worker killed by
+    SIGKILL (OOM, forced restart) left the parser running, holding memory and
+    writing a result nobody would read. PR_SET_PDEATHSIG closes that. The parent
+    is checked again afterwards because it may have died before the call.
+    Linux only; elsewhere this is a no-op and the previous behaviour remains.
+    """
+    if not sys.platform.startswith("linux"):
+        return
+    import ctypes
+    import signal
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(1, int(signal.SIGKILL), 0, 0, 0) != 0:  # 1 = PR_SET_PDEATHSIG
+        raise OSError(ctypes.get_errno(), "prctl(PR_SET_PDEATHSIG) failed")
+    if os.getppid() != expected_parent:
+        os._exit(78)
+
+
 def _write(result_path: Path, payload: dict) -> None:
     handle = tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", dir=result_path.parent, prefix=result_path.name + ".", suffix=".tmp", delete=False
@@ -98,6 +120,7 @@ def main(argv: list[str]) -> int:
     # would run outside the execution ledger its parent records into.
     if os.environ.get(PARENT_ENV) != str(os.getppid()):
         return 77
+    _die_with_parent(os.getppid())
     _apply_memory_limit()
     return run(argv[1], Path(argv[2]))
 
