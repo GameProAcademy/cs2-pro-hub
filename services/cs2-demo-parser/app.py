@@ -309,6 +309,59 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
     return path, digest.hexdigest(), total
 
 
+#: Only names this worker creates itself: the downloaded demo, the parser
+#: child's result file and that file's atomic-write temporary.
+_ORPHAN_NAME = re.compile(r"^(demo-[A-Za-z0-9_]{1,32}\.dem|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
+
+
+def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None, now: float | None = None) -> dict[str, int]:
+    """Remove temporary files left by a worker that was killed.
+
+    A SIGKILL (container OOM, restart) during a download or a parse leaves the
+    demo on disk: no in-process cleanup can run. This runs once at startup.
+
+    It removes a file only when ALL of these hold:
+      - its name matches a pattern this worker creates;
+      - it is a regular file, not a symlink, directly in the temp directory;
+      - it belongs to the current user;
+      - it has not been modified for longer than a download plus a parse can
+        take, so a file another live execution is still writing or reading is
+        never touched.
+    Everything is resolved relative to an open directory handle, so a name
+    cannot point outside it. Names are never logged.
+    """
+    import stat
+
+    root = directory or tempfile.gettempdir()
+    min_age = settings.download_timeout_seconds + settings.parse_timeout_seconds + 120.0
+    current = time.time() if now is None else now
+    removed = bytes_removed = kept = 0
+    try:
+        handle = os.open(root, os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError:
+        logger.warning("temp_sweep unavailable")
+        return {"removed": 0, "bytes": 0, "kept": 0}
+    try:
+        for name in os.listdir(handle):
+            if not _ORPHAN_NAME.fullmatch(name):
+                continue
+            try:
+                info = os.lstat(name, dir_fd=handle)
+                if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid()
+                        or current - info.st_mtime < min_age):
+                    kept += 1
+                    continue
+                os.unlink(name, dir_fd=handle)
+                removed += 1
+                bytes_removed += info.st_size
+            except OSError:
+                kept += 1
+    finally:
+        os.close(handle)
+    logger.info("temp_sweep removed=%s bytes=%s kept=%s min_age_seconds=%s", removed, bytes_removed, kept, round(min_age))
+    return {"removed": removed, "bytes": bytes_removed, "kept": kept}
+
+
 def _cleanup(path: str) -> None:
     try:
         os.unlink(path)
@@ -442,6 +495,10 @@ def create_app(
                 logger.error("terminal execution evidence unavailable job=%s attempt=%s", body.job_id, body.attempt_number)
                 raise WorkerError(503, E.PARSER_ERROR, "Execution recording unavailable; reconciliation required.") from None
         return response
+
+    @app.on_event("startup")
+    async def _sweep_orphans() -> None:
+        sweep_orphan_temp_files(resolved)
 
     if resolved.bridge_url and resolved.bridge_secret:
         from worker import durable_consumer_loop
