@@ -500,3 +500,95 @@ H.3-E activation gate still fails its R5.8.3/R5.8.4 decisions on stale pins
 (run 38306322120) until the re-pin PR; D2 (`PARSER_REVISION`) is not applied;
 applying these migrations to the managed database is a separate, separately
 authorized operation.
+
+## 13. D2 resolved by evidence, and why R5.8.3 / R5.8.4 looked green (2026-10-12, after #97)
+
+### 13.1 What runs, measured independently
+
+| Source (read-only, 2026-10-12 ~23:10 UTC)                | Observation                                                                                                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Railway `list-deployments` (SUCCESS)                     | active deployment `3ad4b1fe-9b9e-4fec-b79a-4215d27aab29`, commit `10815fb44e165963adfaf07f71c474ca628f4b7f`, branch `main`; every later push `SKIPPED` (#94–#97)                       |
+| Railway service config                                   | source `GameProAcademy/cs2-pro-hub@main`, root `services/cs2-demo-parser`                                                                                                              |
+| `/version` (Railway domain)                              | `parser.semantic_revision = git:5703b1d8…`, `parser.build_revision = git:10815fb4…`, `build.commit = 10815fb4…`, `build.embedded = true`, `declared_revision_matches = true`           |
+| `/health`                                                | `{"status":"ok"}`                                                                                                                                                                      |
+| git, worker tree `services/cs2-demo-parser`              | `10815fb4` = `main` = `8120c12a`; `5703b1d8` = `bf25eb86`                                                                                                                              |
+| git, critical blobs at `5703b1d8` / `10815fb4`           | `parser.py` `9d21670e`/`981f6261`; `adapter.py` `34ce0f19`/`34ce0f19`; `worker.py` `dfc2e67f`/`ecaac396`; `raw_evidence.py` `750195c1`/`46df350b`; `settings.py` `35eecfb0`/`dc76db86` |
+| `git diff 5703b1d8 10815fb4 -- services/cs2-demo-parser` | 39 files; `parser.py` changes failure semantics (`NON_DEMO_FAILURES`: cancellation and resource exhaustion now end the parse instead of being recorded as missing demo data)           |
+
+**Proven:** `git:5703b1d8…` does not describe the deployed code: 4 of the 5
+critical files and the parser's failure behaviour differ. The only revision
+the evidence supports for the running image is its own build commit,
+`git:10815fb44e165963adfaf07f71c474ca628f4b7f` (the first commit of `main`
+with worker tree `8120c12a`; its parent `a5dcdfdb` has `0bea75c3`).
+
+**Why `declared_revision_matches: true` did not show it:**
+`services/cs2-demo-parser/app.py:412-417` compares
+`PARSER_BUILD_REVISION or PARSER_REVISION` with the embedded commit. With
+`PARSER_BUILD_REVISION` set, `PARSER_REVISION` (the semantic revision) is never
+compared with anything. The H.3-E activation gate inherited the same blind
+spot (`evaluate_runtime` checked only that flag).
+
+**Every pin still names the removed runtime.** `scripts/parser_runtime_attestation.py:19-31`
+(branch `infra/cs2-parser-worker-v8`, commit `5703b1d8`, deployment `1b5778de`,
+source `91aeee85`, worker blob `50a53b60`), `src/lib/parserAttestation.ts`, the
+managed recorder (section 7), `.github/workflows/parser-runtime-attestation.yml:33-34`
+and `.github/workflows/cs2-parser-worker-ci.yml:44-46`. The worker blob
+`50a53b60` exists only at `91aeee85`/`f88b6453`; the deployed one is `ecaac396`.
+Consequently any real attestation of the current runtime would be rejected by
+the managed recorder (binding and critical-hash checks), and the existing
+VERIFIED rows record `deployment_commit = 5703b1d8` for deployment `1b5778de`,
+whose Railway source was `91aeee85`.
+
+### 13.2 Why R5.8.3 and R5.8.4 were `success` while blocked
+
+1. `r5-8-3-read-only-preflight.yml`: `python … | tee r5-8-3-preflight.json`
+   without `shell: bash`; the default `bash -e {0}` has no `pipefail`, so the
+   pipeline's status was `tee`'s (0) and a BLOCKED preflight (exit 1) passed.
+   It was the only `| tee` in the repository without `pipefail`.
+2. `r5-8-4-gate-reconciliation.yml`: the reconcile step printed `decision` and
+   always exited 0; `test_suite_passed=True` was hard-coded and ran _before_
+   the tests; it checked out `main` instead of the source run's commit.
+3. The governance tests in `scripts/tests/` ran only after a merge to main,
+   never on a pull request.
+
+No workflow still depends on `github.event.before` (that cause was removed by #94).
+
+### 13.3 Fix (this PR)
+
+- R5.8.3 writes its evidence itself (`R583_EVIDENCE_OUT`, no pipe), runs under
+  `set -euo pipefail`, exits 1 unless GREEN, uploads the evidence anyway and
+  publishes `::error title=R5.8.3 decision::{decision, failures}`. Tests run first.
+  It now also checks, against git and independently of every pin, that the
+  semantic revision names a commit whose worker tree is the build's
+  (`SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD`), and that `build_revision`
+  is the embedded commit.
+- R5.8.4 runs for R5.8.3 runs that succeeded _or failed_, checks out their
+  commit, derives `remote_ci`/`python_tests` from the R5.8.3 run's own
+  focused-test step, runs its tests first, publishes its decision and exits 1
+  unless the 32-gate matrix is complete.
+- The activation gate reads the evidence of failed R5.8.3/R5.8.4 runs (so it
+  reports the real reason instead of SKIPPED, while the run itself still counts
+  as FAIL), and checks the semantic revision as above.
+- The governance tests run on every pull request (`Contract-sensitive parser tests`).
+
+### 13.4 What remains blocked, and why it cannot be fixed in the repository alone
+
+R5.8.4's matrix includes `python_wasm_parity`, `determinism`,
+`persistence_validation`, `provenance_verified`, `hmac_configured`,
+`transport_secret_configured`, `railway_token_configured`, `endpoint_configured`,
+`oidc_operational`, `live_health_exact`, `tick_authority`, `retention_guard`,
+`attempt_9_absent`, `metrics_uncontaminated`, `features_uncontaminated`,
+`canonical_uncontaminated`, `runtime_frozen` and `db_git_digest_parity`, none of
+which R5.8.3 evidence can prove. Several are _outputs_ of the real-DEM run. By
+construction R5.8.4 is BLOCKED before that run; this PR makes that visible, it
+does not and must not turn it into PASS.
+
+The identity chain needs, in order, operations outside the repository:
+
+1. Railway `PARSER_REVISION = git:10815fb44e165963adfaf07f71c474ca628f4b7f`
+   (changing a variable creates a new deployment id);
+2. a re-pin PR naming that deployment id, branch `main`, build/semantic
+   `10815fb4`, and the current critical blobs, with a new recorder migration;
+3. applying that migration to the managed database;
+4. a fresh attestation through the approved workflow.
+   Each needs its own authorization.
