@@ -79,6 +79,35 @@ def test_ambiguous_insert_retry_reuses_event_identity():
     asyncio.run(run())
 
 
+
+def test_embedded_worker_build_commit_is_included_in_every_event(monkeypatch):
+    expected = "a" * 40
+    monkeypatch.setattr("h3e91_execution.image_build_identity", lambda: {
+        "commit": expected, "embedded": True, "source": "BUILD_INFO.json"
+    })
+    received = []
+
+    async def transport(request):
+        received.append(json.loads(request.content.decode()))
+        return httpx.Response(201, json={"status": "INSERTED"})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            recorder = ExecutionRecorder(
+                client,
+                make_settings(
+                    bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
+                    bridge_secret="synthetic-test-only",
+                ),
+                upload_id="11111111-1111-1111-1111-111111111111",
+                surface="RAILWAY_DURABLE_WORKER",
+            )
+            await recorder.record("EXECUTION_INTENT")
+        assert received[0]["workerBuildCommit"] == expected
+
+    asyncio.run(run())
+
+
 def test_execution_identity_changes_when_upload_changes():
     settings = make_settings(
         bridge_url="https://synthetic.invalid/api/public/pipeline-worker",
