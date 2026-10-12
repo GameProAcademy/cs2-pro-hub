@@ -12,12 +12,6 @@ ALTER TABLE public.h3e91_execution_evidence_ledger
 ALTER TABLE public.h3e91_execution_evidence_ledger
   VALIDATE CONSTRAINT h3e91_worker_build_commit_format;
 
-ALTER TABLE public.h3e91_execution_evidence_ledger
-  ADD CONSTRAINT h3e91_railway_build_commit_required
-  CHECK (event_id IS NULL OR source <> 'RAILWAY' OR (worker_build_commit IS NOT NULL AND worker_build_commit ~ '^[0-9a-f]{40}$')) NOT VALID;
-ALTER TABLE public.h3e91_execution_evidence_ledger
-  VALIDATE CONSTRAINT h3e91_railway_build_commit_required;
-
 CREATE OR REPLACE FUNCTION public.h3e91_record_execution_event(_event_id uuid, _execution_id uuid, _event_type text, _upload_id uuid, _correlation_id uuid, _job_id uuid, _attempt_number integer, _demo_sha256 text, _file_size bigint, _parser_name text, _parser_version text, _parser_revision text, _execution_surface text, _source text, _metadata_digest text, _outcome_code text, _event_version integer, _worker_build_commit text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $writer$
 DECLARE _canonical text; _digest text; _same public.h3e91_execution_evidence_ledger%ROWTYPE; _prior public.h3e91_execution_evidence_ledger%ROWTYPE; _current public.h3e91_execution_evidence_ledger%ROWTYPE; _at timestamptz;
 BEGIN
