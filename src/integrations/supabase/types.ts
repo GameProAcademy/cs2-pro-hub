@@ -539,6 +539,53 @@ export type Database = {
           },
         ]
       }
+      demo_job_dispatch_closures: {
+        Row: {
+          closed_at: string
+          delivery_count: number
+          dispatch_attempt: number
+          id: number
+          job_id: string
+          lifecycle: string | null
+          queue_message_id: number | null
+          reason: string
+          retried: boolean
+          upload_id: string
+        }
+        Insert: {
+          closed_at?: string
+          delivery_count: number
+          dispatch_attempt: number
+          id?: never
+          job_id: string
+          lifecycle?: string | null
+          queue_message_id?: number | null
+          reason: string
+          retried: boolean
+          upload_id: string
+        }
+        Update: {
+          closed_at?: string
+          delivery_count?: number
+          dispatch_attempt?: number
+          id?: never
+          job_id?: string
+          lifecycle?: string | null
+          queue_message_id?: number | null
+          reason?: string
+          retried?: boolean
+          upload_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_job_dispatch_closures_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_jobs: {
         Row: {
           analysis_version: string
@@ -565,6 +612,7 @@ export type Database = {
           declared_nickname: string | null
           declared_participant_key: string | null
           deletion_reason: string | null
+          delivery_count: number
           demo_sha256: string | null
           dispatch_attempt: number | null
           dispatched_at: string | null
@@ -640,6 +688,7 @@ export type Database = {
           declared_nickname?: string | null
           declared_participant_key?: string | null
           deletion_reason?: string | null
+          delivery_count?: number
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
@@ -715,6 +764,7 @@ export type Database = {
           declared_nickname?: string | null
           declared_participant_key?: string | null
           deletion_reason?: string | null
+          delivery_count?: number
           demo_sha256?: string | null
           dispatch_attempt?: number | null
           dispatched_at?: string | null
@@ -3677,6 +3727,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abandon_demo_parse_dispatch: {
+        Args: {
+          _attempt: number
+          _job_id: string
+          _lifecycle: string
+          _message_id: number
+          _worker_id: string
+        }
+        Returns: Json
+      }
       assert_attempt_9_authorized: {
         Args: { _staging_id?: string }
         Returns: Json
@@ -3778,6 +3838,15 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_oauth_states: { Args: never; Returns: number }
+      close_demo_parse_dispatch: {
+        Args: {
+          _allow_retry: boolean
+          _job_id: string
+          _lifecycle: string
+          _reason: string
+        }
+        Returns: boolean
+      }
       create_canonical_mapping_inventory_release: {
         Args: { _release: Json; _rows: Json }
         Returns: string
