@@ -155,7 +155,13 @@ CREATE FUNCTION pg_temp.drift(_alter text, _sql text) RETURNS jsonb LANGUAGE plp
 DECLARE _detail text;
 BEGIN
   BEGIN
-    EXECUTE _alter;
+    BEGIN
+      EXECUTE _alter;
+    EXCEPTION WHEN OTHERS THEN
+      -- A drift that cannot be set up is a probe defect, never a migration result.
+      RAISE EXCEPTION 'PROBE_DRIFT_SETUP_FAILED' USING ERRCODE = 'P0002',
+        DETAIL = SQLSTATE || ': ' || SQLERRM;
+    END;
     RAISE EXCEPTION 'PROBE_UNDO' USING DETAIL = pg_temp.run(_sql)::text;
   EXCEPTION WHEN raise_exception THEN
     GET STACKED DIAGNOSTICS _detail = PG_EXCEPTION_DETAIL;
@@ -293,7 +299,7 @@ INSERT INTO probe_result SELECT 'reapplied', pg_temp.recorder();
     fn = "public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)"
     scenario("d1_property_drift_fails_closed", f"""
 INSERT INTO probe_result SELECT 'comment', pg_temp.drift($a$COMMENT ON FUNCTION {fn} IS 'probe'$a$, {literal(MIGRATION)});
-INSERT INTO probe_result SELECT 'owner', pg_temp.drift($a$ALTER FUNCTION {fn} OWNER TO service_role$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'owner', pg_temp.drift($a$CREATE ROLE r5_8_7_probe_owner NOLOGIN; GRANT r5_8_7_probe_owner TO CURRENT_USER; GRANT USAGE, CREATE ON SCHEMA public TO r5_8_7_probe_owner; ALTER FUNCTION {fn} OWNER TO r5_8_7_probe_owner$a$, {literal(MIGRATION)});
 INSERT INTO probe_result SELECT 'search_path', pg_temp.drift($a$ALTER FUNCTION {fn} SET search_path = public$a$, {literal(MIGRATION)});
 INSERT INTO probe_result SELECT 'security_invoker', pg_temp.drift($a$ALTER FUNCTION {fn} SECURITY INVOKER$a$, {literal(MIGRATION)});
 INSERT INTO probe_result SELECT 'public_execute', pg_temp.drift($a$GRANT EXECUTE ON FUNCTION {fn} TO PUBLIC$a$, {literal(MIGRATION)});
