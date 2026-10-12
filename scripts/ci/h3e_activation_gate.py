@@ -427,6 +427,35 @@ def render(evidence: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+SAFE_DETAIL_KEYS = ("reason", "observed", "decision", "failures", "blockers", "missing", "probe",
+                    "build_commit", "railway_commit", "main_head", "expected_name", "error")
+
+
+def _escape(text: str) -> str:
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def annotations(evidence: dict[str, Any]) -> list[str]:
+    """Workflow commands that surface the decision as check annotations.
+
+    The evidence artifact holds everything; annotations repeat the decision and
+    the reason of each stage that did not pass, from an allow-list of fields
+    that can never contain a secret value.
+    """
+    stages = evidence["stages"]
+    overview = ", ".join(f"{name}={value['status']}" for name, value in stages.items())
+    lines = ["::notice title=H.3-E activation gate::"
+             + _escape(f"decision={evidence['decision']} target={evidence['target_sha']} {overview}")]
+    for name, value in stages.items():
+        if value["status"] == PASS:
+            continue
+        details = {k: value[k] for k in SAFE_DETAIL_KEYS if k in value}
+        level = "error" if value["status"] == FAIL else "warning"
+        lines.append(f"::{level} title=H.3-E stage {name}::"
+                     + _escape(f"{value['status']} " + json.dumps(details, sort_keys=True)))
+    return lines[:20]
+
+
 def main() -> int:
     env = dict(os.environ)
     root = Path(__file__).resolve().parents[2]
@@ -444,6 +473,8 @@ def main() -> int:
     out.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     text = render(evidence)
     print(text)
+    for line in annotations(evidence):
+        print(line)
     summary = env.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as handle:
