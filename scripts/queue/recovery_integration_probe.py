@@ -629,6 +629,7 @@ def main() -> int:
         "postgres_version": sql("show server_version"),
         "delivery_semantics": "AT_LEAST_ONCE_EXECUTION_WITH_AT_MOST_ONE_COMMITTED_RESULT_PER_JOB",
         "exactly_once_execution": "NOT_CLAIMED",
+        "probe_run_id": PROBE_RUN_ID,
         "notes": RESULTS_NOTES,
         "scenarios": RESULTS,
     }, indent=1, sort_keys=True))
