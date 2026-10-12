@@ -204,7 +204,9 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     if build.get("declared_revision_matches") is not True:
         return stage(FAIL, reason="DECLARED_REVISION_MISMATCH", build_commit=commit)
     if railway is None or railway.get("status") != "SUCCESS":
-        return stage(BLOCKED, reason="RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED", build_commit=commit)
+        failure = railway or {}
+        return stage(BLOCKED, reason="RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED", build_commit=commit,
+                     error=failure.get("error"), observed=failure.get("messages") or failure.get("observed"))
     if railway.get("commitHash") != commit:
         return stage(FAIL, reason="RAILWAY_DEPLOYMENT_COMMIT_MISMATCH", build_commit=commit,
                      railway_commit=railway.get("commitHash"))
@@ -274,19 +276,26 @@ class Io:
         return {"status": status, "body": body,
                 "error": body.get("error") if isinstance(body, dict) else None}
 
-    def railway_active(self, token: str) -> dict[str, Any] | None:
-        query = ("query($input:DeploymentListInput!){deployments(input:$input,first:1)"
-                 "{edges{node{id status meta}}}}")
-        payload = json.dumps({"query": query, "variables": {"input": {**RAILWAY, "status": {"successfulOnly": True}}}})
+    def railway_active(self, token: str) -> dict[str, Any]:
+        """Newest SUCCESS deployment of the service, or {"error": ...} explaining why not."""
+        query = ("query($input:DeploymentListInput!){deployments(input:$input,first:20)"
+                 "{edges{node{id status createdAt meta}}}}")
+        payload = json.dumps({"query": query, "variables": {"input": dict(RAILWAY)}})
         result = self.http(RAILWAY_API, method="POST", data=payload.encode(), headers={
             "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
-        body = (result or {}).get("body") or {}
-        if not result or result["status"] != 200 or body.get("errors"):
-            return None
+        if not result:
+            return {"error": "RAILWAY_API_UNREACHABLE"}
+        body = result.get("body") if isinstance(result.get("body"), dict) else {}
+        if result["status"] != 200 or body.get("errors"):
+            messages = [str((e or {}).get("message", ""))[:160] for e in (body.get("errors") or [])][:3]
+            return {"error": f"RAILWAY_API_HTTP_{result['status']}", "messages": messages}
         edges = (((body.get("data") or {}).get("deployments") or {}).get("edges") or [])
-        if len(edges) != 1:
-            return None
-        node = edges[0].get("node") or {}
+        nodes = [e.get("node") or {} for e in edges if isinstance(e, dict)]
+        live = sorted((n for n in nodes if n.get("status") == "SUCCESS"),
+                      key=lambda n: str(n.get("createdAt") or ""), reverse=True)
+        if not live:
+            return {"error": "RAILWAY_NO_SUCCESS_DEPLOYMENT", "observed": len(nodes)}
+        node = live[0]
         meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
         return {"id": node.get("id"), "status": node.get("status"),
                 "commitHash": meta.get("commitHash") or meta.get("commit"), "branch": meta.get("branch")}
