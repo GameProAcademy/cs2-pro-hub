@@ -22,6 +22,7 @@ MIGRATIONS = (
     "20260926055410_78035044-68bf-4c19-8e0d-59fc694c9129.sql",
     "20260926055608_fba19e9c-70c1-4bd7-b215-ba70061fe6a9.sql",
     "20260926061355_43467a07-e56a-41de-8f02-c988fda5823e.sql",
+    "20261012100000_h3e91_worker_build_identity.sql",
 )
 BASE = (ROOT / "supabase/migrations/20260926013427_db74f397-2274-4c39-ba28-c6a87d80e314.sql").read_text().split(
     "-- Correct the previously deployed mutable-job diagnostic:"
@@ -90,7 +91,7 @@ def main():
             if base is None:
                 base = [str(uuid.uuid4()), str(uuid.uuid4()), "EXECUTION_INTENT",
                         str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4()), 1,
-                        None, None, None, None, None, "APP_REMOTE_PARSER", "APP", None, None, 1]
+                        None, None, None, None, None, "APP_REMOTE_PARSER", "APP", None, None, 1, None]
             row = base.copy()
             row[0], row[2] = str(uuid.uuid4()), kind
             if kind != "EXECUTION_INTENT":
@@ -217,7 +218,7 @@ def main():
                 actual = sql(f"SELECT event_digest FROM public.h3e91_execution_evidence_ledger WHERE execution_id='{execution}'")
                 # Writer canonical array begins with version and omits version
                 # from the end of the caller's argument order.
-                canonical = json.dumps([intent[16], *intent[:16]], ensure_ascii=False)
+                canonical = json.dumps([intent[16], *intent[:16], intent[17]], ensure_ascii=False)
                 assert actual == hashlib.sha256(canonical.encode("utf8")).hexdigest(), (actual, canonical)
             lifecycle = json.loads(sql(f"SELECT public.h3e91_read_execution_lifecycle('{execution}')::text"))
             expected_lifecycle = {
@@ -247,6 +248,27 @@ def main():
             # races in two psql subprocesses, each opening its own DB session.
             for i in range(50):
                 stress_one(i)
+        # Build identity persistence tests use only synthetic Railway metadata.
+        worker_intent = event("EXECUTION_INTENT")
+        worker_intent[12] = "RAILWAY_DURABLE_WORKER"
+        worker_intent[13] = "RAILWAY"
+        worker_intent[17] = "c" * 40
+        assert_result(worker_intent, "INSERTED")
+        stored_commit = sql(f"SELECT worker_build_commit FROM public.h3e91_execution_evidence_ledger WHERE event_id='{worker_intent[0]}'")
+        assert stored_commit == "c" * 40, stored_commit
+        assert_result(worker_intent, "IDEMPOTENT_REPLAY")
+        conflict = worker_intent.copy()
+        conflict[17] = "d" * 40
+        assert_result(conflict, "REJECTED", "EVENT_ID_CONFLICT")
+        stored_after_conflict = sql(f"SELECT worker_build_commit FROM public.h3e91_execution_evidence_ledger WHERE event_id='{worker_intent[0]}'")
+        assert stored_after_conflict == "c" * 40, stored_after_conflict
+        malformed = event("EXECUTION_INTENT")
+        malformed[12] = "RAILWAY_DURABLE_WORKER"
+        malformed[13] = "RAILWAY"
+        malformed[17] = "not-a-commit"
+        assert_result(malformed, "REJECTED", "WORKER_BUILD_IDENTITY_REQUIRED")
+        assert sql("SELECT has_function_privilege('service_role','public.h3e91_record_execution_event(uuid,uuid,text,uuid,uuid,uuid,integer,text,bigint,text,text,text,text,text,text,text,integer)'::regprocedure,'EXECUTE')") == "f"
+        print("PASS: worker build identity persisted; replay idempotent; conflicting/malformed identity rejected; legacy writer revoked")
         print("PASS: 30 lifecycle scenarios (including paired terminal races) + 50 stress executions; no live database access")
     finally:
         if started:
