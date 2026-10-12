@@ -569,7 +569,7 @@ No workflow still depends on `github.event.before` (that cause was removed by #9
 - The activation gate reads the evidence of failed R5.8.3/R5.8.4 runs (so it
   reports the real reason instead of SKIPPED, while the run itself still counts
   as FAIL), and checks the semantic revision as above.
-- The governance tests run on every pull request (`Contract-sensitive parser tests`).
+- The governance tests run on every pull request (a step of `Main required gates`, so the three-gate contract is unchanged).
 
 ### 13.4 What remains blocked, and why it cannot be fixed in the repository alone
 
