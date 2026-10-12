@@ -124,6 +124,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
         start_new_session=True,
         env={**os.environ, "SUPABASE_URL": f"https://localhost:{api_port}", "SUPABASE_SERVICE_ROLE_KEY": STACK["key"],
              "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "NODE_ENV": "test", "NODE_EXTRA_CA_CERTS": str(cert),
+             "H3E91_EXPECTED_WORKER_BUILD_COMMIT": PROBE_WORKER_BUILD_COMMIT,
              # The application accepts one pinned worker revision. This is its own
              # promotion override, pointed at the revision under test; the revision
              # lock itself stays on.
@@ -374,7 +375,11 @@ def done(item: dict, timeout: float = 420.0) -> dict:
             and call.get("http") == 409
         ]
         if rejected_intents:
-            raise AssertionError(f"execution intent rejected by ledger (HTTP 409); probe_run_id={item.get('probe_run_id', 'unknown')}; parser must remain suppressed")
+            rejection_code = rejected_intents[-1].get("code") or "CODE_NOT_REPORTED"
+            raise AssertionError(
+                f"execution intent rejected by ledger (HTTP 409; code={rejection_code}); "
+                f"probe_run_id={item.get('probe_run_id', 'unknown')}; parser must remain suppressed"
+            )
         state = job(item["job_id"])
         if state["status"] in TERMINAL:
             return state
