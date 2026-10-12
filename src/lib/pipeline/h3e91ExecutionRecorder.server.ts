@@ -66,6 +66,9 @@ export function appExecutionRecorder(input: {
         _metadata_digest: null,
         _outcome_code: outcomeCode,
         _event_version: 1,
+        // APP events are explicitly non-worker events. The 18-argument writer
+        // requires NULL here and rejects any APP event claiming a worker build.
+        _worker_build_commit: null,
       } as never,
     );
     const result = data as { status?: string; code?: string } | null;
