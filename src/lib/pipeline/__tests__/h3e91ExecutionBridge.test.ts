@@ -69,7 +69,10 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "1111111111111111111111111111111111111111" }),
+          body: JSON.stringify({
+            ...sample,
+            workerBuildCommit: "1111111111111111111111111111111111111111",
+          }),
         }),
       );
       expect(mismatched.status).toBe(503);
