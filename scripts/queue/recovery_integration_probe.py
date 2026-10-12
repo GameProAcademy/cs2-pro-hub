@@ -62,7 +62,7 @@ def ensure_probe_build_identity() -> None:
     ).stdout.strip()).lower()
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE")
-    BUILD_INFO_PATH.write_text(json.dumps({"commit": commit, "source": "build-arg"}) + "\\n", encoding="utf-8")
+    BUILD_INFO_PATH.write_text(json.dumps({"commit": commit, "source": "build-arg"}) + "\n", encoding="utf-8")
     PROBE_BUILD_INFO_CREATED = True
 
 
