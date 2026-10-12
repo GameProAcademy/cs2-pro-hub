@@ -9,7 +9,7 @@
 
 The production Railway worker was previously observed on branch `infra/cs2-parser-worker-v8`, with an older start command `python worker_main.py`. The worker tree on `main` uses the Dockerfile under `services/cs2-demo-parser` and starts `uvicorn app:app`. These are not interchangeable deployments.
 
-PR #89 adds `workerBuildCommit` to the worker-to-app event and checks it against `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in production before the database RPC. The bridge's current RPC call does **not** yet pass that field to the database. Therefore the identity is currently validated at HTTP ingress but is not independently persisted as a dedicated ledger column. Do not describe this as durable identity audit evidence until Phase 1 has been implemented, migrated in a disposable database, and verified.
+PR #89 adds `workerBuildCommit` to the worker-to-app event and checks it against `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in production before the database RPC. The current `main` branch still lacks the persistence argument. This review branch patches the bridge to pass `_worker_build_commit` and adds an incremental SQL overload plus disposable-writer assertions. This is not yet proof of live persistence: the migration must pass CI and a disposable PostgreSQL run, and the actual managed function/table definition must be compared before any production application.
 
 The earlier runbook recorded `Wait for CI` as off and a staged Railway patch `d66b5a12-a69e-4b9a-87b6-314f75c471cc`. Those are historical observations, not proof of the current dashboard state. Re-read the current Railway UI before acting. Do not apply the staged patch; discard it after verifying its contents because applying it may trigger a deployment.
 
