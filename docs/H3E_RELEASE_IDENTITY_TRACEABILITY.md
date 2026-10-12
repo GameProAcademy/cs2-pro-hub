@@ -4,16 +4,20 @@ Observed 2026-10-12, `main` = `fb044b37`. Nothing in Railway, the managed
 database, Lovable or any secret was changed. Database reads were `SELECT`
 statements on catalog and history tables.
 
-**Status: STOPPED twice.**
+**Status (2026-10-12, 18:30 -03).**
 
-1. The managed database's attestation recorder is not the function the
-   repository migrations build (section 3). The owner chose the Live definition
-   (decision D1, 2026-10-12 17:59 -03).
-2. While preparing that reconciliation, a second divergence appeared in a
-   dependency of the same function: the managed database has no
-   `parser_runtime_provenance_deployment_identity_idx`, and every database
-   built from the repository has it (section 6). Following the instruction to
-   stop on any further divergence, the D1 migration was **not written**.
+- D1 (Live recorder is authoritative): migration
+  `20261012200000_r5_8_7_reconcile_attestation_recorder_live_definition.sql`
+  written and tested on disposable databases (section 10). Not applied to the
+  managed database.
+- D3 (keep `parser_runtime_provenance_deployment_identity_idx`): the index is
+  untouched in every migration. The investigation in section 9 finds that
+  R5.8.6's documented intent was to **remove** deployment-scoped uniqueness,
+  and that the managed database holds two VERIFIED attestations of one
+  deployment, so the index cannot be restored there without deleting history.
+  D3 and that evidence conflict; the owner must reconcile them before any
+  further attestation work (section 9.5).
+- D2: prepared only (section 8).
 
 Source tags: **[api]** Railway / GitHub API or logs, **[db]** read-only query
 on the managed database, **[repo]** repository inspection, **[disposable]**
@@ -122,7 +126,7 @@ the repository cannot reproduce. Either is a production decision.
   to that value by hand. The alternative keeps `git:5703b1d…`, which section 1
   shows does not describe the running parser.
 
-## 5. What the PR will contain once D1 and D2 are decided
+## 5. Original plan (superseded by sections 9 and 10)
 
 1. Repository-only reconciliation migration for the recorder (D1), guarded by the Live hash.
 2. Re-pin migration: the same guarded `pg_get_functiondef` + `replace` +
@@ -245,3 +249,123 @@ Manual procedure, later, in this order:
 6. Run the H.3-E activation gate; it must report PASS before any attestation.
 
 Rollback of step 3: set `PARSER_REVISION=git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76` again, or redeploy `3ad4b1fe` from the Railway history.
+
+## 9. D3: what `parser_runtime_provenance_deployment_identity_idx` was for, and why it is gone from the managed database
+
+Decision D3 (2026-10-12 18:05 -03): keep the index; investigate the managed
+database. The index is not changed by anything in this PR.
+
+### 9.1 Origin
+
+`20260921080334_7925a88b-….sql:52` creates it as `CREATE UNIQUE INDEX` over
+`(railway_project_id, railway_service_id, railway_environment_id,
+deployment_id, deployment_commit, semantic_revision, build_revision)`, and the
+recorder of that time used exactly that tuple as its `ON CONFLICT` target
+**[repo]**. The managed database recorded that version **[db]**.
+
+### 9.2 R5.8.6's intent is explicit: remove deployment-scoped uniqueness
+
+- Migration header (`20261006120000_…sql:3-15`): the deployment identity "makes
+  a second legitimate attestation for the same deployment impossible";
+  "different attestations may prove the same frozen deployment" **[repo]**.
+- PR #56 (merged 2026-10-06 05:11 UTC, `5385b7d1`), "Root cause confirmed":
+  Runtime Attestations #32 and #33 were rejected with
+  `PARSER_ATTESTATION_IDEMPOTENCY_CONFLICT` because "the first successful
+  attestation consumes the entire frozen deployment identity"; correction:
+  "remove the deployment-wide uniqueness constraint", "make
+  `attestation_digest` the idempotency key", "preserve nonce uniqueness as the
+  replay barrier" **[api]**.
+- Test `parserAttestationIdempotencyScope.test.ts`: "moves provenance
+  uniqueness from deployment identity to attestation digest" **[repo]**.
+- `roadmap.md:83`: Runtime Attestation #36 was recorded as "a distinct
+  digest-scoped record under R5.8.6" for the same deployment **[repo]**.
+
+No document, test or migration found states that one provenance row per
+deployment is a security requirement. The replay protections the recorder
+relies on are the nonce primary key, the `attestation_digest` uniqueness, the
+5-minute freshness window, the HMAC signature and the OIDC workflow binding.
+
+### 9.3 Why the repository still has the index
+
+The first R5.8.6 draft raised `R5_8_6_OLD_PROVENANCE_IDEMPOTENCY_CONSTRAINT_NOT_FOUND`
+when no **constraint** over those columns existed. Commit `d6944799`
+(2026-10-06 01:44 -03, "fix(db): tolerate absent legacy attestation
+constraint") turned that into "drop it if present". The object was an
+**index**, never a constraint, so on every repository build the lookup finds
+nothing and the index stays **[repo]** **[disposable]**. The test kept passing
+because it only checks the migration text.
+
+### 9.4 State of the managed database [db]
+
+| Item                                   | Value                                                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Indexes on `parser_runtime_provenance` | `parser_runtime_provenance_pkey (id)`, `parser_runtime_provenance_attestation_digest_key (attestation_digest)` |
+| Unique / primary constraints           | the same two                                                                                                   |
+| Provenance rows                        | 3, all `VERIFIED`                                                                                              |
+| Rows per deployment identity           | `1b5778de…` / `5703b1d…`: **2**; `207d0b66…` / `5703b1d…`: 1                                                   |
+| Nonces                                 | 3                                                                                                              |
+| Recorded statement dropping the index  | none                                                                                                           |
+
+The two rows for `1b5778de` exist only because the index is absent. The index
+was dropped outside the migration history **[inferred]**, before Runtime
+Attestation #36 (run 37443082666, 2026-10-06 09:27 UTC) **[inferred from the
+row count]**.
+
+### 9.5 Consequences of keeping the index (D3) — measured on a disposable database
+
+| Case                                                                                   | Repository build (index present)                                                                                                                                                                                                        | Managed-like (index absent)                        |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| First attestation of a deployment                                                      | accepted                                                                                                                                                                                                                                | accepted                                           |
+| Exact replay                                                                           | rejected, `23505` on `parser_attestation_nonces_pkey`                                                                                                                                                                                   | the same                                           |
+| Second, distinct attestation of the same deployment                                    | **rejected**, raw `23505` on `parser_runtime_provenance_deployment_identity_idx`, not caught by `ON CONFLICT (attestation_digest)` (the endpoint would see an unexpected database error, not `PARSER_ATTESTATION_IDEMPOTENCY_CONFLICT`) | accepted; 2 rows                                   |
+| `CREATE UNIQUE INDEX …deployment_identity_idx` over two attestations of one deployment | —                                                                                                                                                                                                                                       | **fails**, `23505` "could not create unique index" |
+
+Security reading: the index adds no replay protection beyond the nonce and
+digest uniqueness; it limits each deployment to one provenance row for ever.
+Restoring it on the managed database would require deleting a VERIFIED
+provenance row, which this project forbids. Keeping it in the repository keeps
+fresh builds behaving unlike production for every re-attestation.
+
+What remains for the owner: confirm D3 against section 9.2, or replace it.
+This PR does not change the index either way.
+
+## 10. D1 migration and tests
+
+`supabase/migrations/20261012200000_r5_8_7_reconcile_attestation_recorder_live_definition.sql`
+
+- Starting states accepted: `md5(prosrc)` `fe3250af…` (managed; no-op) or
+  `5ea1ffff…` (repository build; exactly one occurrence of `dfc2e67f…` replaced
+  by `50a53b60…`, then `fe3250af…` asserted). Anything else:
+  `R5_8_7_RECORDER_UNEXPECTED_DEFINITION`, SQLSTATE `55000`, nothing changed.
+- Checked before and after: identity arguments, result `uuid`, `plpgsql`,
+  function kind, `SECURITY DEFINER`, volatile, not strict,
+  `search_path=""`, owner `postgres`, `EXECUTE` for `service_role` and not for
+  `anon`, `authenticated`, `sandbox_exec` or `PUBLIC`, and the comment.
+- A single `DO` block: no explicit `BEGIN`/`COMMIT`, no data, no grant, no index.
+- Rollback for repository builds only:
+  `docs/rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql`.
+  On the managed database the migration changes nothing, so there is nothing
+  to roll back there; that file must not be run against it.
+
+Probe `scripts/queue/attestation_recorder_reconciliation_probe.py`, run in the
+Queue Semantics workflow on the Supabase local stack after `supabase db reset`.
+Every scenario runs in a transaction that is rolled back, with a throwaway HMAC
+key set for that transaction. Results on the local disposable database
+(PostgreSQL 16, built from all repository migrations, then this one):
+
+| Scenario                                                          | Result                                                                                                            |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| reset build has the managed definition and properties             | PASS — `fe3250af…`, owner `postgres`, `SECURITY DEFINER`, `search_path=""`, `service_role` only                   |
+| re-run is a no-op                                                 | PASS — `xmin` of the function unchanged                                                                           |
+| unexpected definition fails closed and changes nothing            | PASS — `55000` `R5_8_7_RECORDER_UNEXPECTED_DEFINITION`, function unchanged                                        |
+| changed grant (`anon`) fails closed                               | PASS — `55000` `R5_8_7_RECORDER_GRANTS_INVALID (before)`                                                          |
+| rollback restores the repository definition, migration re-applies | PASS — `5ea1ffff…` then `fe3250af…`; on the old definition the managed blob is rejected and the old blob accepted |
+| managed blob accepted, old blob rejected                          | PASS — `PARSER_ATTESTATION_CRITICAL_HASH_MISMATCH` for `dfc2e67f…`                                                |
+| with the deployment index                                         | PASS — second attestation `23505` on the index; replay `23505` on the nonce; 1 row                                |
+| without the deployment index                                      | PASS — second attestation accepted, 2 rows; replay rejected; restoring the index fails `23505`                    |
+
+Also: `parserAttestationRecorderReconciliation.contract.test.ts` (4 tests,
+PASS locally) and the existing attestation contract tests (49 tests, PASS
+locally; `parserAttestationEnvelope.test.ts` did not load in the local runner
+for a missing `zod` module, unrelated). CI on this PR runs the probe on
+PostgreSQL 17 (Supabase local stack) and the full suites.
