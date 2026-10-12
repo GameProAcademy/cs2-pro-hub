@@ -82,7 +82,7 @@ def main():
         assert sql("SELECT count(*) FROM pg_index WHERE indrelid='public.h3e91_execution_evidence_ledger'::regclass AND indisunique") != "0"
         print("PASS: migration lineage SOURCE_AND_LIVE final reader; SUPERSEDED source-only duplicates absent; live schema snapshot matched")
         assert sql("SELECT has_table_privilege('service_role','public.h3e91_execution_evidence_ledger','INSERT')") == "f"
-        assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_record_execution_event'") == "t"
+        assert sql("SELECT has_function_privilege('service_role', p.oid, 'EXECUTE') FROM pg_proc p WHERE p.proname='h3e91_record_execution_event' AND p.pronargs = 18") == "t"
         assert sql("SELECT has_function_privilege('service_role',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_read_execution_lifecycle'") == "t"
         for role in ("anon", "authenticated", "sandbox_exec"):
             assert sql(f"SELECT has_function_privilege('{role}',p.oid,'EXECUTE') FROM pg_proc p WHERE proname='h3e91_read_execution_lifecycle'") == "f"
