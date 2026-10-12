@@ -70,7 +70,7 @@ artifact name.
 
 ## Tests
 
-`scripts/ci/test_h3e_activation_gate.py`, 30 cases, offline (all network and
+`scripts/ci/test_h3e_activation_gate.py`, 31 cases, offline (all network and
 git calls go through a fake). It runs inside `Main required gates` on every PR
 and push, and as the first step of the gate itself.
 

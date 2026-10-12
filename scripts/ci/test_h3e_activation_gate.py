@@ -258,6 +258,11 @@ class Negative(unittest.TestCase):
         world.railway = None
         evidence, _ = evaluate(world)
         self.assertDecision(evidence, "BLOCKED", "runtime", "BLOCKED", "RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED")
+        world = World()
+        world.railway = {"error": "RAILWAY_API_HTTP_200", "messages": ["Problem processing request"]}
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "BLOCKED", "runtime", "BLOCKED", "RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED")
+        self.assertEqual(evidence["stages"]["runtime"]["error"], "RAILWAY_API_HTTP_200")
 
     def test_artifact_for_another_commit_is_rejected(self):
         world = World()
@@ -354,6 +359,27 @@ class Negative(unittest.TestCase):
     def test_invalid_target_fails(self):
         evidence, _ = evaluate(target="")
         self.assertEqual(evidence["decision"], "FAIL")
+
+
+class RailwayQuery(unittest.TestCase):
+    def query(self, response):
+        io_ = gate.Io("", Path("."))
+        io_.http = lambda *a, **k: response
+        return io_.railway_active("token")
+
+    def test_picks_newest_success_and_reports_errors(self):
+        body = {"data": {"deployments": {"edges": [
+            {"node": {"id": "old", "status": "REMOVED", "createdAt": "2026-10-05", "meta": {"commitHash": "a" * 40}}},
+            {"node": {"id": "new", "status": "SUCCESS", "createdAt": "2026-10-12", "meta": {"commitHash": BUILD, "branch": "main"}}},
+            {"node": {"id": "older", "status": "SUCCESS", "createdAt": "2026-10-01", "meta": {"commitHash": "b" * 40}}},
+            {"node": {"id": "skip", "status": "SKIPPED", "createdAt": "2026-10-12T20", "meta": {}}}]}}}
+        self.assertEqual(self.query({"status": 200, "body": body})["id"], "new")
+        self.assertEqual(self.query(None), {"error": "RAILWAY_API_UNREACHABLE"})
+        failed = self.query({"status": 200, "body": {"errors": [{"message": "Not Authorized"}]}})
+        self.assertEqual(failed["error"], "RAILWAY_API_HTTP_200")
+        self.assertEqual(failed["messages"], ["Not Authorized"])
+        self.assertEqual(self.query({"status": 200, "body": {"data": {"deployments": {"edges": []}}}})["error"],
+                         "RAILWAY_NO_SUCCESS_DEPLOYMENT")
 
 
 class Annotations(unittest.TestCase):
