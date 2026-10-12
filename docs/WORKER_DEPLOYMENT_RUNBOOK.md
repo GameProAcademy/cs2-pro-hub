@@ -5,13 +5,40 @@
 **Baseline:** PR #89 merge commit `a5dcdfdb6716743025f5159c073b13db2172aee0`.
 **Production rule:** do not send real jobs to a new worker until every gate below is evidenced. Do not weaken RAW admission, Canonical, parser parity, or Attempt 9 gates.
 
-## Current known state and hard stop
+## Observed state, 2026-10-12 (19:20 UTC)
 
-The production Railway worker was previously observed on branch `infra/cs2-parser-worker-v8`, with an older start command `python worker_main.py`. The worker tree on `main` uses the Dockerfile under `services/cs2-demo-parser` and starts `uvicorn app:app`. These are not interchangeable deployments.
+Source of each fact in brackets: **[api]** Railway or GitHub API / logs,
+**[db]** read-only query on the managed database, **[repo]** repository
+inspection, **[inferred]**, **[unverified]**.
 
-PR #89 adds `workerBuildCommit` to the worker-to-app event and checks it against `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in production before the database RPC. The current `main` branch still lacks the persistence argument. This review branch patches the bridge to pass `_worker_build_commit` and adds an incremental SQL overload plus disposable-writer assertions. This is not yet proof of live persistence: the migration must pass CI and a disposable PostgreSQL run, and the actual managed function/table definition must be compared before any production application.
+**Railway worker — keep the homologated image.**
 
-The earlier runbook recorded `Wait for CI` as off and a staged Railway patch `d66b5a12-a69e-4b9a-87b6-314f75c471cc`. Those are historical observations, not proof of the current dashboard state. Re-read the current Railway UI before acting. Do not apply the staged patch; discard it after verifying its contents because applying it may trigger a deployment.
+- Service `cs2-demo-parser`, branch `main`, root `services/cs2-demo-parser`, `Dockerfile`, health check `/health`, `checkSuites: false`, no staged changes **[api]**.
+- Active deployment `3ad4b1fe-9b9e-4fec-b79a-4215d27aab29`, `SUCCESS`, commit `10815fb44e165963adfaf07f71c474ca628f4b7f`, image `sha256:59fb7841ac35218c1a228b3246ebf5066d4cde2e0590031c4ac4df27574bba1f`; the build log shows `BUILD_INFO.json` written from `RAILWAY_GIT_COMMIT_SHA = 10815fb4…` **[api]**.
+- `/version` on the Railway domain: `build.commit` `10815fb4…`, `embedded: true`, `source: railway`, `declared_revision_matches: true`; `/health` `{"status":"ok"}` **[api]**. `parser.gamepro.network` was not read from here **[unverified]**.
+- Deployments of `7e6eb463` (`232e2089`, `28e3236b`, `8acd4672`) are `SKIPPED`: `railway.snapshot_diff: no changes detected in watch paths` **[api]**. The worker tree is `8120c12a0db34bb4f187ac628ba7c5ea9b03cecf` at both `10815fb4` and `7e6eb463` **[repo]**. Nothing the image contains changed, so the skip is correct.
+- Decision: keep `10815fb4` as the homologated image. A rebuild would only rewrite `BUILD_INFO.json` and make `PARSER_BUILD_REVISION` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` disagree with it. Parity with `main` is proven by tree identity, which the H.3-E activation gate checks on every push (`docs/H3E_ACTIVATION_GATE.md`).
+- The watch patterns also list `/src/lib/pipeline/**`, `/scripts/queue/**`, `/supabase/migrations/**`, `/.github/workflows/**`. A commit touching `src/lib/pipeline` was still skipped **[api]**, which suggests the diff only sees the root directory snapshot **[inferred]**. Those paths do not enter the image either way.
+
+**Managed database — migration `20261012100000` is applied.**
+
+- `supabase_migrations.schema_migrations` has `20261012100000` / `h3e91_worker_build_identity`, one statement whose SHA-256 is `18b65f9622786b704f0e6086051c69c0cad8b620ba835f8fed72a86e59708d96` (the repository file), `idempotency_key` `sha256:18b65f96…`, `created_by` `owner-authorized:h3e91-20261012100000`; 150 rows **[db]**.
+- Ledger: 22 columns, `worker_build_commit text NULL`; constraint `h3e91_worker_build_commit_format` validated; 0 rows; ACL `postgres=arwdDxtm, service_role=m, sandbox_exec=r` **[db]**.
+- Writers, both `SECURITY DEFINER`, owner `postgres`, `search_path=""` **[db]**:
+  - 18 arguments (`… _event_version integer, _worker_build_commit text`), `md5(prosrc)` `fa0c32b7c5ba9b8fa74df2140ce0eab6` = the repository migration applied to a disposable database, `EXECUTE` for `postgres` and `service_role` only;
+  - 17 arguments, `md5(prosrc)` `7032fe9fae471fd6d924b4c3a8ea89c1`, `EXECUTE` for `postgres` only.
+- `sandbox_exec` can no longer insert into the ledger; `anon`, `authenticated`, `sandbox_exec` cannot execute the 18-argument writer **[db]**.
+- An earlier read on the same day showed the migration absent; it was applied between the two reads **[db]**. The application time is not recorded by the history table.
+
+**Application — not verifiable from here.**
+
+- Whether the published app has `H3E91_EXPECTED_WORKER_BUILD_COMMIT`, and its value, cannot be read without the Lovable project settings **[unverified]**. If set, it must be `10815fb44e165963adfaf07f71c474ca628f4b7f`; production rejects events with `H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED` when it is not a 40-hex SHA **[repo]**.
+- `src/lib/pipeline/jobs.server.ts` keeps `H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED` in production **[repo]**.
+
+**Release gates.**
+
+- H.3-E.5 and H.3-E.6 are replaced by the H.3-E activation gate; see `docs/H3E_ACTIVATION_GATE.md`.
+- R5.8.3 and the attestation workflow still pin the retired deployment `1b5778de`, branch `infra/cs2-parser-worker-v8` and build revision `5703b1d…` (`scripts/parser_runtime_attestation.py`) **[repo]**. Until they are re-pinned to the homologated image, R5.8.3's decision cannot be green, and neither can the activation gate.
 
 ## Phase 1 — Resolve H3E91 build-identity persistence
 
@@ -20,6 +47,7 @@ The earlier runbook recorded `Wait for CI` as off and a staged Railway patch `d6
 Use a nullable column for backward-compatible historical rows, but require a valid full lowercase SHA-1-shaped commit (`^[0-9a-f]{40}$`) for every new production event from `source = 'RAILWAY'`. Keep the app-side comparison as a separate ingress check; the database column is audit evidence, not a replacement for authentication.
 
 Required end state:
+
 - `worker_build_commit` is persisted on each event row.
 - The database writer validates the value and rejects malformed non-null values.
 - The app passes the field to the writer RPC.
@@ -39,8 +67,7 @@ Do not remove the production checks that reject an unset `H3E91_EXPECTED_WORKER_
 
 ```ts
 const validBuildCommit =
-  event.workerBuildCommit !== null &&
-  /^[0-9a-f]{40}$/.test(event.workerBuildCommit);
+  event.workerBuildCommit !== null && /^[0-9a-f]{40}$/.test(event.workerBuildCommit);
 
 if (event.source === "RAILWAY" && !validBuildCommit) {
   return Response.json({ code: "H3E91_WORKER_BUILD_IDENTITY_MISSING" }, { status: 503 });
@@ -70,6 +97,7 @@ The candidate migration is `supabase/migrations/20261012100000_h3e91_worker_buil
 The TypeScript bridge now passes `_worker_build_commit: event.workerBuildCommit`; the bridge unit test asserts the exact RPC argument. The Python recorder already reads the identity from embedded `BUILD_INFO.json` and includes `workerBuildCommit` in each event. Runtime environment variables must not override the embedded identity.
 
 **The migration is committed only on this review branch; it has not been applied to the managed database.** Before production migration:
+
 1. Read the real managed function/table metadata using a read-only connection.
 2. Compare live writer/table semantics to the source migration; regenerate if drift exists.
 3. Run the migration and writer concurrency/identity tests on disposable PostgreSQL.
@@ -90,6 +118,7 @@ Keep that value sourced from `image_build_identity()`. Add/retain a test that wr
 ### 1.5 Required proof artifact
 
 Run the relevant unit tests, queue semantics probe, and real worker/bridge/storage E2E against disposable services. Save the reports. Required assertions:
+
 - matching identity → one ledger row with `worker_build_commit = expected SHA`;
 - missing/mismatched identity → HTTP 503 and zero new ledger rows;
 - duplicate replay → one row, same identity;
@@ -115,16 +144,17 @@ URL: repository → **Settings → Rules → Rulesets** → ruleset `main-protec
 
 Configure variables only in the server-side environment/secrets facility used by the published Lovable Cloud application. Do not expose these in browser code, client-prefixed variables, logs, or public build output.
 
-| Key | Exact value rule | Purpose |
-|---|---|---|
-| `H3E91_EXPECTED_WORKER_BUILD_COMMIT` | Exact lowercase 40-character commit SHA embedded in the *homologated worker image* | H3E91 ingress allowlist |
-| `DEMO_PARSER_EXPECTED_REVISION` | Exact parser revision string reported by the homologated worker's `/version` endpoint, normally `git:<40-char SHA>` if that is what the adapter contract expects | Adapter revision pin |
-| `DEMO_PIPELINE_BRIDGE_SECRET` | Existing secret value, unchanged and shared only with the trusted worker | Bearer authentication |
-| `DEMO_PIPELINE_BRIDGE_URL` | Existing canonical server-side app base URL used by the worker | Bridge destination |
+| Key                                  | Exact value rule                                                                                                                                                 | Purpose                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `H3E91_EXPECTED_WORKER_BUILD_COMMIT` | Exact lowercase 40-character commit SHA embedded in the _homologated worker image_                                                                               | H3E91 ingress allowlist |
+| `DEMO_PARSER_EXPECTED_REVISION`      | Exact parser revision string reported by the homologated worker's `/version` endpoint, normally `git:<40-char SHA>` if that is what the adapter contract expects | Adapter revision pin    |
+| `DEMO_PIPELINE_BRIDGE_SECRET`        | Existing secret value, unchanged and shared only with the trusted worker                                                                                         | Bearer authentication   |
+| `DEMO_PIPELINE_BRIDGE_URL`           | Existing canonical server-side app base URL used by the worker                                                                                                   | Bridge destination      |
 
 Do not guess the commit or revision from the current `main` SHA alone: the worker image's `BUILD_INFO.json` must confirm the embedded commit. Keep all existing unrelated app secrets unchanged. Never paste secret values into this runbook or chat.
 
 Before publication:
+
 1. Deploy the worker to a separate non-production Railway service.
 2. Read `/version`; require HTTP 200, `build.embedded = true`, and a full commit SHA.
 3. Confirm the parser revision returned by `/version` exactly matches the adapter's expected revision.
@@ -141,7 +171,8 @@ If the Lovable UI does not provide a supported server-side environment setting f
 In Railway, open project → environment **production** → service **cs2-demo-parser** → **Settings → Source**.
 
 Before changing anything:
-- Record current deployment ID, commit, branch, root directory, start command, variables *by name only*, health check, replica count, and resource limits.
+
+- Record current deployment ID, commit, branch, root directory, start command, variables _by name only_, health check, replica count, and resource limits.
 - Confirm **Wait for CI** is ON and the current connected GitHub repository has a successful non-skipped workflow/check suite for the exact target commit.
 - Inspect staged changes. Discard the previously observed staged patch only after verifying it is the empty `deploy: {}` patch; do not click Deploy on that patch.
 - Keep the old deployment available for rollback.
@@ -171,6 +202,7 @@ printf '\n'
 ```
 
 Pass criteria:
+
 - `/health` returns HTTP 200.
 - `/version` returns HTTP 200 and reports the embedded build identity.
 - `build.embedded` is true and `build.commit` is a full 40-character SHA.
@@ -182,6 +214,7 @@ Then call the repository's supported runtime preflight against the homologation 
 ### 4.4 Production cutover
 
 Only after Phase 1–3 pass:
+
 1. Publish the app with the verified expected worker commit.
 2. Verify the published app's health/build and one matching-identity bridge event against a disposable or explicitly approved controlled test scope.
 3. Change the production service source branch to `main`, root directory to `services/cs2-demo-parser`, and remove the legacy Start Command override.
@@ -193,6 +226,7 @@ Only after Phase 1–3 pass:
 ### 4.5 Rollback
 
 If any health/version/preflight/bridge/ledger check fails:
+
 - Stop routing jobs to the new service.
 - Restore the previous Railway deployment/branch and its previous start command.
 - Restore the app-side expected worker commit to the last known compatible worker only if that pairing was independently verified.
@@ -213,7 +247,6 @@ If any health/version/preflight/bridge/ledger check fails:
 - [ ] Rollback target is available.
 
 **Current decision:** do not perform the production cutover merely because PR #89 and CI are green. The database writer migration and positive durable-identity proof are mandatory release gates.
-
 
 ## Controlled smoke-test protocol (post-deploy)
 

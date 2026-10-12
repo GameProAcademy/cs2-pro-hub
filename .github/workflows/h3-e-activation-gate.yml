@@ -1,0 +1,68 @@
+name: H.3-E Activation Gate
+
+# Replaces the one-shot H.3-E.5 / H.3-E.6 workflows. Those ran only when the
+# previous head of main was one fixed commit, so every later push skipped them
+# and a skipped job proved nothing. This gate runs for every new head of main,
+# after Quality Gates and its F553 post-completion attestation have finished,
+# and can be re-run by hand. It is read-only: it never dispatches a workflow,
+# submits an attestation, runs a demo, writes provenance or changes Railway.
+# Its decision is PASS only when every stage proved PASS for the current head.
+on:
+  workflow_run:
+    workflows: [F553 R11.2 post-completion attestation]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: h3e-activation-gate-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  activation-gate:
+    name: H.3-E activation gate
+    if: >-
+      github.repository == 'GameProAcademy/cs2-pro-hub' &&
+      ((github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository) ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Checkout the target commit of main with history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Self-test the gate evaluator
+        run: python3 -m unittest scripts/ci/test_h3e_activation_gate.py
+
+      - name: Evaluate prerequisites, transport and runtime parity
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          H3E_TARGET_SHA: ${{ env.TARGET_SHA }}
+          H3E_EVIDENCE_OUT: h3e-activation-gate.json
+          PARSER_ATTESTATION_ENDPOINT: ${{ secrets.PARSER_ATTESTATION_ENDPOINT }}
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          PARSER_ATTESTATION_HMAC_SECRET: ${{ secrets.PARSER_ATTESTATION_HMAC_SECRET }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: python3 scripts/ci/h3e_activation_gate.py
+
+      - name: Preserve the decision and its evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: h3e-activation-gate-${{ env.TARGET_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: h3e-activation-gate.json
+          if-no-files-found: error
+          retention-days: 30
