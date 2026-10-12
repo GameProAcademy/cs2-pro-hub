@@ -177,7 +177,6 @@ class BridgeEdge:
                     edge.faults.record(point=point, worker=worker, job=job or (answer.get("job_id") if isinstance(answer, dict) else None),
                                        http=status, status=answer.get("status") if isinstance(answer, dict) else None,
                                        code=answer.get("code") if isinstance(answer, dict) else None,
-                                       code=answer.get("code") if isinstance(answer, dict) else None,
                                        accepted=answer.get("accepted") if isinstance(answer, dict) else None)
                     edge.faults.fire(point, "after", worker)
                     data = b"".join(captured)
