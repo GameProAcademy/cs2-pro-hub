@@ -44,6 +44,37 @@ WORK = Path(tempfile.mkdtemp(prefix="queue-e2e-"))
 RESULTS: list[dict] = []
 WORKERS: list[dict] = []
 
+BUILD_INFO_PATH = ROOT / "services" / "cs2-demo-parser" / "BUILD_INFO.json"
+PROBE_BUILD_INFO_CREATED = False
+
+
+def ensure_probe_build_identity() -> None:
+    """Give the source-checkout E2E worker the same immutable identity contract as an image.
+
+    This is local-disposable test setup only. Never overwrite a real image's
+    BUILD_INFO.json and never source the identity from a runtime env variable.
+    """
+    global PROBE_BUILD_INFO_CREATED
+    if BUILD_INFO_PATH.exists():
+        return
+    commit = (os.environ.get("GITHUB_SHA") or subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=True
+    ).stdout.strip()).lower()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE")
+    BUILD_INFO_PATH.write_text(json.dumps({"commit": commit, "source": "build-arg"}) + "\\n", encoding="utf-8")
+    PROBE_BUILD_INFO_CREATED = True
+
+
+def cleanup_probe_build_identity() -> None:
+    global PROBE_BUILD_INFO_CREATED
+    if PROBE_BUILD_INFO_CREATED:
+        try:
+            BUILD_INFO_PATH.unlink()
+        except FileNotFoundError:
+            pass
+        PROBE_BUILD_INFO_CREATED = False
+
 
 def stack() -> dict:
     data = json.loads(subprocess.run(["supabase", "status", "-o", "json"], capture_output=True, text=True,
@@ -107,6 +138,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
 
 
 def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0, heartbeat: float = 2.0) -> dict:
+    ensure_probe_build_identity()
     index = len(list(WORK.glob("worker-*.log")))
     tmp = WORK / f"tmp-{index}"
     tmp.mkdir()
@@ -143,6 +175,7 @@ def stop_workers() -> None:
                 kill_group(process.pid)
                 process.wait()
     WORKERS.clear()
+    cleanup_probe_build_identity()
 
 
 def tail(path: Path, lines: int = 12) -> str:
@@ -324,7 +357,23 @@ def scenario(name: str):
 
 
 def done(item: dict, timeout: float = 420.0) -> dict:
-    return wait_for(lambda: (lambda s: s if s["status"] in TERMINAL else None)(job(item["job_id"])), timeout, "a terminal job status")
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        # A rejected intent cannot become terminal because the worker correctly
+        # suppresses parsing. Fail immediately instead of burning the full 420 s.
+        rejected_intents = [
+            call for call in FAULTS.calls
+            if call.get("point") == "event:EXECUTION_INTENT"
+            and call.get("job") == item["job_id"]
+            and call.get("http") == 409
+        ]
+        if rejected_intents:
+            raise AssertionError("execution intent rejected by ledger (HTTP 409); parser must remain suppressed")
+        state = job(item["job_id"])
+        if state["status"] in TERMINAL:
+            return state
+        time.sleep(0.25)
+    raise AssertionError("timed out waiting for a terminal job status")
 
 
 def kill_worker(entry: dict) -> None:
