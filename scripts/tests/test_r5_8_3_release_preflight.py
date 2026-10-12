@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -60,6 +61,9 @@ def test_semantic_revision_is_checked_against_git_not_against_the_worker_flag():
     from scripts.r5_8_3_release_preflight import semantic_identity_failures
 
     if not (_have(DEPLOYED) and _have(OLD_SEMANTIC)):
+        # On GitHub Actions the workflows fetch full history, so a missing
+        # commit is a broken gate, never a reason to skip silently.
+        assert not os.environ.get("GITHUB_ACTIONS"), "full history required on CI"
         pytest.skip("history not fetched")
     build = {"commit": DEPLOYED, "embedded": True, "source": "railway", "declared_revision_matches": True}
     observed_2026_10_12 = {"semantic_revision": f"git:{OLD_SEMANTIC}", "build_revision": f"git:{DEPLOYED}"}
