@@ -103,6 +103,9 @@ from f553.r11.fixture import acquire as acquire_fixture  # noqa: E402
 from f553.r11.lifecycle import create_disposable_job, database_env, private_bucket  # noqa: E402
 from worker import durable_execution_id  # noqa: E402
 
+# Run-scoped trace marker for synthetic probe observations.
+PROBE_RUN_ID = str(uuid.uuid4())
+
 refuse_non_local()
 FAULTS = Faults()
 DB_ENV = database_env(STACK["db"])
@@ -304,7 +307,10 @@ def invariants(item: dict, seen: dict) -> None:
 
 
 def new_item() -> dict:
-    return create_disposable_job(DB_ENV, STACK["api"], STACK["key"], FIXTURE_PATH, FIXTURE)
+    item = create_disposable_job(DB_ENV, STACK["api"], STACK["key"], FIXTURE_PATH, FIXTURE)
+    # The factory generates fresh UUIDs; retain this invocation ID in the report context.
+    item["probe_run_id"] = PROBE_RUN_ID
+    return item
 
 
 def scenario(name: str):
@@ -368,7 +374,7 @@ def done(item: dict, timeout: float = 420.0) -> dict:
             and call.get("http") == 409
         ]
         if rejected_intents:
-            raise AssertionError("execution intent rejected by ledger (HTTP 409); parser must remain suppressed")
+            raise AssertionError(f"execution intent rejected by ledger (HTTP 409); probe_run_id={item.get('probe_run_id', 'unknown')}; parser must remain suppressed")
         state = job(item["job_id"])
         if state["status"] in TERMINAL:
             return state
