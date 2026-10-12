@@ -4,10 +4,16 @@ Observed 2026-10-12, `main` = `fb044b37`. Nothing in Railway, the managed
 database, Lovable or any secret was changed. Database reads were `SELECT`
 statements on catalog and history tables.
 
-**Status: re-pin STOPPED.** The managed database's attestation recorder is not
-the function the repository migrations build. The release-identity migration
-would have to be written against one of the two, and choosing between them is
-an owner decision, not something to improvise. Evidence in section 3.
+**Status: STOPPED twice.**
+
+1. The managed database's attestation recorder is not the function the
+   repository migrations build (section 3). The owner chose the Live definition
+   (decision D1, 2026-10-12 17:59 -03).
+2. While preparing that reconciliation, a second divergence appeared in a
+   dependency of the same function: the managed database has no
+   `parser_runtime_provenance_deployment_identity_idx`, and every database
+   built from the repository has it (section 6). Following the instruction to
+   stop on any further divergence, the D1 migration was **not written**.
 
 Source tags: **[api]** Railway / GitHub API or logs, **[db]** read-only query
 on the managed database, **[repo]** repository inspection, **[disposable]**
@@ -104,14 +110,14 @@ would fail its own pre-condition on Live (or, without one, silently overwrite
 an out-of-band change); one written against Live would encode a definition
 the repository cannot reproduce. Either is a production decision.
 
-## 4. Decisions needed before the PR can be written
+## 4. Decisions (D1 and D2 taken 2026-10-12 17:59 -03)
 
-- **D1. Which recorder is authoritative.** Recommended: Live (`50a53b60…`),
+- **D1. Which recorder is authoritative.** Decided: Live. Recommended: Live (`50a53b60…`),
   because the application has required that value since `a9a2e9ea`. Then the
   first migration is a repository-only reconciliation that reproduces the Live
   body exactly, guarded on Live by `md5(prosrc) = fe3250af…` so it is a no-op
   there and fails closed on any other definition.
-- **D2. Semantic revision.** Recommended: `git:10815fb44e165963adfaf07f71c474ca628f4b7f`
+- **D2. Semantic revision.** Decided: prepare, do not change Railway yet (section 8). Recommended: `git:10815fb44e165963adfaf07f71c474ca628f4b7f`
   for both semantic and build, which requires setting Railway `PARSER_REVISION`
   to that value by hand. The alternative keeps `git:5703b1d…`, which section 1
   shows does not describe the running parser.
@@ -137,3 +143,105 @@ the repository cannot reproduce. Either is a production decision.
    variables (manual); migrations through the authorized single-request
    procedure; app publication (manual, Lovable); then the H.3-E gate must report
    PASS before any attestation is dispatched.
+
+## 6. Second divergence: a unique index the managed database does not have
+
+Found while comparing every dependency of `record_parser_runtime_attestation`
+between the managed database **[db]** and a database built from all repository
+migrations **[disposable]**.
+
+| Object                              | Managed database                                               | Repository build                                                                                                                                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parser_runtime_provenance` indexes | `…_attestation_digest_key (attestation_digest)`, `…_pkey (id)` | the same two **plus** `parser_runtime_provenance_deployment_identity_idx` UNIQUE `(railway_project_id, railway_service_id, railway_environment_id, deployment_id, deployment_commit, semantic_revision, build_revision)` |
+
+Evidence:
+
+- `20260921080334_7925a88b-….sql:52` creates that index with `CREATE UNIQUE INDEX` **[repo]**. The managed database recorded that version **[db]**.
+- `20261006120000_r5_8_6_attestation_idempotency_scope.sql` intends to remove the deployment-scoped uniqueness ("different attestations may prove the same frozen deployment"), but it only drops a **constraint** with those columns. The uniqueness is an **index**, so on a repository build nothing is dropped **[repo]** **[disposable]**.
+- That version is not recorded in the managed database, yet its effects are there (`…_attestation_digest_key`, `ON CONFLICT (attestation_digest)` in the recorder) and the index is gone **[db]**. No recorded statement drops the index **[db]**. It was removed outside the migration history **[inferred]**.
+
+Effect: on a repository build, a second attestation for the same deployment
+identity fails in the recorder's `INSERT` with a unique violation that
+`ON CONFLICT (attestation_digest)` does not catch. On the managed database it
+is accepted, which is what R5.8.6 says it wants. The two databases behave
+differently for the very function D1 reconciles.
+
+Everything else compared equal: the five other pin-bearing functions; for the
+recorder the signature, result type, language, owner `postgres`,
+`SECURITY DEFINER`, `search_path=""`, volatility, strictness, parallel safety,
+`EXECUTE` for `postgres` and `service_role` only, and the comment;
+`parser_attestation_nonces` and `parser_runtime_provenance` columns, constraints,
+triggers and trigger functions (`md5` `622bbb2b…`, `8a10c243…`, `21baae34…`);
+table ACLs apart from `MAINTAIN` (`m`), which exists only on PostgreSQL 17.
+
+Needed from the owner (D3): whether the D1 reconciliation should also bring
+repository builds in line with the managed database by dropping
+`parser_runtime_provenance_deployment_identity_idx` when present (a no-op on
+the managed database, a real change on every fresh build), or whether the index
+should stay and the managed database is the one to be reviewed.
+
+## 7. Reference definition of the Live recorder
+
+`docs/reference/record_parser_runtime_attestation.live-2026-10-12.sql`.
+
+- It is the repository build's `pg_get_functiondef` with exactly one
+  substitution: the `worker.py` blob `dfc2e67f…` → `50a53b60…` (one occurrence).
+- `md5` of that definition (file content without its final newline) =
+  `c69a1a801e8377b2121c6d07c2b91a39`, equal to `md5(pg_get_functiondef(…))`
+  read on the managed database **[db]** **[disposable]**.
+- `md5` of the body = `fe3250af2b461f03f459adf36b43ec21`, equal to
+  `md5(prosrc)` on the managed database.
+- It reads the HMAC secret with `current_setting('app.settings.parser_attestation_hmac_secret', true)`;
+  no secret value is in the file.
+
+The D1 migration, once D3 is decided, would: accept only `md5(prosrc)` =
+`fe3250af…` (no-op, managed database) or `5ea1ffff…` (repository build, apply
+the one substitution and assert `fe3250af…` afterwards); fail closed on any
+other value; assert owner, `SECURITY DEFINER`, `search_path`, `EXECUTE` grants
+and the comment before and after; carry no `BEGIN`/`COMMIT` of its own.
+
+## 8. D2: semantic revision `git:10815fb44e165963adfaf07f71c474ca628f4b7f` (prepared, not applied)
+
+Candidate: set Railway `PARSER_REVISION` to the build commit, so semantic and
+build revision name the same code.
+
+Validation that it should represent this build:
+
+- The worker documents `PARSER_REVISION` as the identifier of "the deployed
+  build" (`services/cs2-demo-parser/settings.py:6`) **[repo]**.
+- The declared value `git:5703b1d…` names a tree that differs from the image
+  in 17 worker files, `parser.py` included **[repo]**.
+- `parser.py` of the image equals that of `2c5cded`, the commit whose parser
+  was validated on the real demo by A9.1 (run 38112341484) **[repo]**.
+- Not yet validated: whether anything outside this repository (stored
+  provenance rows, reports, Canonical rows) keys data on `git:5703b1d…`.
+  `r5_real_dem_execution_gate` contains it **[db]**; a read-only scan of the
+  tables that store `semantic_revision` is still to be done **[unverified]**.
+
+Consequences of the change, once made:
+
+| Component                                                                               | Effect                                                                                        | Required counterpart                                                                                                                                  |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Worker `/version`                                                                       | `revision` and `semantic_revision` become `git:10815fb4…`                                     | none                                                                                                                                                  |
+| App revision lock (`adapter.ts:55`, env `DEMO_PARSER_EXPECTED_REVISION`)                | rejects the worker (`PARSER_IDENTITY_MISMATCH`) until the expected revision is the same value | code change + Lovable publication, or the Lovable variable                                                                                            |
+| Attestation recorder, `assert_verified_parser_provenance`, `r5_real_dem_execution_gate` | still expect `git:5703b1d…`                                                                   | re-pin migration                                                                                                                                      |
+| R5.8.3, attestation script, `parserAttestation.ts`                                      | still expect `git:5703b1d…` for both fields                                                   | re-pin PR                                                                                                                                             |
+| A Railway variable change                                                               | Railway starts a new deployment                                                               | confirm afterwards that `build.commit` is still `10815fb4…`; if Railway built a newer commit, `PARSER_BUILD_REVISION` and every build pin must follow |
+
+Tests that must exist before the change (part of the re-pin PR):
+
+- worker: `/version` reports the two fields from `PARSER_REVISION` / `PARSER_BUILD_REVISION`, and `declared_revision_matches` compares the build revision with `BUILD_INFO.json`;
+- app: a worker whose semantic revision differs from the expected one is rejected; a worker whose build revision differs is rejected; both pins come from separate fields;
+- database (disposable): the re-pinned recorder accepts the new identity and rejects `git:5703b1d…`, a removed deployment (`1b5778de`), a wrong critical hash, and a payload whose `custom_domain_version` disagrees with `railway_domain_version`;
+- gate: H.3-E stage `runtime` stays PASS and R5.8.3 decision becomes green only when all of the above agree.
+
+Manual procedure, later, in this order:
+
+1. Merge the re-pin PR (app and scripts) without publishing.
+2. Apply the reconciliation and re-pin migrations through the authorized single-request procedure; verify with read-only queries.
+3. Railway → `cs2-demo-parser` → Variables: `PARSER_REVISION=git:10815fb44e165963adfaf07f71c474ca628f4b7f`. Leave `PARSER_BUILD_REVISION` unchanged. Deploy the staged change.
+4. Wait for `SUCCESS`; read `/version`: `revision`, `semantic_revision` and `build_revision` = `git:10815fb4…`, `build.commit` = `10815fb4…`, `declared_revision_matches: true`.
+5. Lovable: publish the app (and set `H3E91_EXPECTED_WORKER_BUILD_COMMIT` if not set).
+6. Run the H.3-E activation gate; it must report PASS before any attestation.
+
+Rollback of step 3: set `PARSER_REVISION=git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76` again, or redeploy `3ad4b1fe` from the Railway history.
