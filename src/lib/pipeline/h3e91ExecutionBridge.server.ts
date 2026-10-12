@@ -20,7 +20,10 @@ const base = z
     parserName: z.string().min(1).max(128).nullable(),
     parserVersion: z.string().min(1).max(128).nullable(),
     parserRevision: z.string().min(1).max(128).nullable(),
-    workerBuildCommit: z.string().regex(/^[0-9a-f]{40}$/).nullable(),
+    workerBuildCommit: z
+      .string()
+      .regex(/^[0-9a-f]{40}$/)
+      .nullable(),
     metadataDigest: digest.nullable(),
     executionSurface: z.enum(["APP_REMOTE_PARSER", "RAILWAY_DURABLE_WORKER", "RAILWAY_V1_PARSE"]),
     source: z.enum(["APP", "RAILWAY"]),
@@ -112,7 +115,10 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
   if (process.env["NODE_ENV"] === "production") {
     const expectedBuild = process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? "";
     if (!/^[0-9a-f]{40}$/.test(expectedBuild)) {
-      return Response.json({ code: "H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED" }, { status: 503 });
+      return Response.json(
+        { code: "H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED" },
+        { status: 503 },
+      );
     }
     if (event.workerBuildCommit !== expectedBuild) {
       return Response.json({ code: "H3E91_WORKER_BUILD_IDENTITY_MISMATCH" }, { status: 503 });
