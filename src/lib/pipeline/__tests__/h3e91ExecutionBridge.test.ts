@@ -115,6 +115,7 @@ describe("H3E91 bridge staging", () => {
           _execution_id: sample.executionId,
           _execution_surface: "RAILWAY_V1_PARSE",
           _source: "RAILWAY",
+          _worker_build_commit: sample.workerBuildCommit,
         }),
       );
     } finally {
