@@ -60,3 +60,53 @@ describe("R5.8.7 attestation recorder reconciliation", () => {
     expect(code).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/im);
   });
 });
+
+const r588 = readFileSync(
+  resolve("supabase/migrations/20261012210000_r5_8_8_drop_deployment_identity_uniqueness.sql"),
+  "utf8",
+);
+const r588Rollback = readFileSync(
+  resolve(
+    "docs/rollback/20261012210000_r5_8_8_deployment_uniqueness_rollback_repository_builds_only.sql",
+  ),
+  "utf8",
+);
+
+describe("R5.8.8 deployment-scoped provenance uniqueness (D3 option a)", () => {
+  const code = r588.replace(/^\s*--.*$/gm, "");
+
+  it("drops only the index R5.8.6 meant to remove, and only with its original definition", () => {
+    expect(code).toContain(
+      "_index_name constant text := 'parser_runtime_provenance_deployment_identity_idx'",
+    );
+    expect(code).toContain(
+      "USING btree (railway_project_id, railway_service_id, railway_environment_id, deployment_id, '",
+    );
+    expect(code).toContain("pg_catalog.format('DROP INDEX public.%I', _index_name)");
+    expect(code.match(/DROP\s/g)).toHaveLength(1);
+    expect(code).toContain("R5_8_8_UNEXPECTED_INDEX_DEFINITION");
+    expect(code).toContain("R5_8_8_UNEXPECTED_DEPLOYMENT_UNIQUENESS");
+    expect(code).toContain("R5_8_8_DEPLOYMENT_INDEX_ALREADY_ABSENT");
+  });
+
+  it("requires the replay controls and the reconciled recorder before and after", () => {
+    expect(code).toContain("'UNIQUE (attestation_digest)'");
+    expect(code).toContain("'PRIMARY KEY (nonce)'");
+    expect(code).toContain("'fe3250af2b461f03f459adf36b43ec21'");
+    expect(code).toContain("ARRAY['before', 'after']");
+  });
+
+  it("changes no data or grant and adds nothing", () => {
+    expect(code).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE)\s+(INTO\s+)?public\./i);
+    expect(code).not.toMatch(/\b(GRANT|REVOKE)\b/i);
+    // The only CREATE is inside the string literal describing the expected index.
+    expect(code.replace(/'[^']*'/g, "''")).not.toMatch(/\bCREATE\b/i);
+    expect(code).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/im);
+  });
+
+  it("has a rollback that refuses instead of deleting attestations", () => {
+    expect(r588Rollback).toContain("R5_8_8_ROLLBACK_WOULD_REQUIRE_DELETING_ATTESTATIONS");
+    expect(r588Rollback).toContain("HAVING count(*) > 1");
+    expect(r588Rollback).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE)\b/i);
+  });
+});

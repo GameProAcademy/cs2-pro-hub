@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Probe of migration R5.8.7 and of provenance uniqueness, on a DISPOSABLE database.
+"""Probe of migrations R5.8.7 and R5.8.8 and of the attestation controls, on a DISPOSABLE database.
 
 Runs ONLY against a local database built from supabase/migrations; it refuses
 any other host. Every scenario runs inside one transaction that is rolled back,
@@ -13,11 +13,14 @@ What it proves:
   on any other definition, and can be rolled back on repository builds;
 - after it, an attestation carrying the managed worker blob (50a53b60…) is
   accepted and one carrying the old repository blob (dfc2e67f…) is rejected;
-- with parser_runtime_provenance_deployment_identity_idx (repository builds) a
-  second, distinct attestation for the same deployment is rejected, while the
-  same attestation without the index (as on the managed database) is accepted;
-- an exact replay is rejected in both cases (nonce primary key);
-- restoring the index over two attestations of one deployment fails.
+- R5.8.8 removes parser_runtime_provenance_deployment_identity_idx when it has
+  the expected definition, is a no-op that changes nothing when it is absent
+  (the managed database's state), and fails closed on anything unexpected;
+- after both, two distinct attestations of one deployment coexist, while an
+  exact replay, a reused nonce, a duplicated digest and invalid attestations
+  (signature, digest, freshness, binding, critical hash, missing key) are
+  rejected by the control responsible for each;
+- the R5.8.8 rollback refuses rather than delete any attestation.
 """
 from __future__ import annotations
 
@@ -33,6 +36,8 @@ from queue_semantics_probe import DB, HOST, PORT, USER, refuse_non_local  # noqa
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION = ROOT / "supabase/migrations/20261012200000_r5_8_7_reconcile_attestation_recorder_live_definition.sql"
 ROLLBACK = ROOT / "docs/rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql"
+MIGRATION_R588 = ROOT / "supabase/migrations/20261012210000_r5_8_8_drop_deployment_identity_uniqueness.sql"
+ROLLBACK_R588 = ROOT / "docs/rollback/20261012210000_r5_8_8_deployment_uniqueness_rollback_repository_builds_only.sql"
 MANAGED_MD5 = "fe3250af2b461f03f459adf36b43ec21"
 REPOSITORY_MD5 = "5ea1ffff4fc874ca50f0081b9c9a5e71"
 MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
@@ -64,7 +69,7 @@ EXCEPTION WHEN OTHERS THEN
   GET STACKED DIAGNOSTICS _state = RETURNED_SQLSTATE, _message = MESSAGE_TEXT;
   RETURN jsonb_build_object('ok', false, 'sqlstate', _state, 'message', _message);
 END $f$;
-CREATE FUNCTION pg_temp.attest(_run text, _worker_blob text) RETURNS jsonb LANGUAGE plpgsql AS $f$
+CREATE FUNCTION pg_temp.attest(_run text, _worker_blob text, _tamper text DEFAULT '') RETURNS jsonb LANGUAGE plpgsql AS $f$
 DECLARE
   _at timestamptz := date_trunc('milliseconds', now()) - interval '1 second';
   _nonce text := md5(_run) || md5(_run || ':nonce');
@@ -80,6 +85,7 @@ DECLARE
   _id uuid;
   _state text; _message text; _constraint text;
 BEGIN
+  IF _tamper = 'stale' THEN _at := _at - interval '10 minutes'; END IF;
   _version := jsonb_build_object('revision', _sem, 'semantic_revision', _sem, 'build_revision', _sem);
   _payload := jsonb_build_object(
     'schema_version', '3', 'repository', 'GameProAcademy/cs2-pro-hub',
@@ -122,19 +128,53 @@ BEGIN
       'services/cs2-demo-parser/settings.py', jsonb_build_object('observed', '35eecfb06223812137a4a2f17114aae57cb7fe54', 'match', true)),
     'attested_at', to_char(_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
     'nonce', _nonce);
+  IF _tamper = 'deployment' THEN
+    _payload := jsonb_set(_payload, '{deployment_id}', to_jsonb('3ad4b1fe-9b9e-4fec-b79a-4215d27aab29'::text));
+  END IF;
   _canonical := _payload::text;
   _digest := encode(extensions.digest(convert_to(_canonical, 'UTF8'), 'sha256'), 'hex');
   _signature := encode(extensions.hmac(convert_to(_canonical, 'UTF8'),
     convert_to(current_setting('app.settings.parser_attestation_hmac_secret'), 'UTF8'), 'sha256'), 'hex');
+  IF _tamper = 'signature' THEN _signature := repeat('0', 64); END IF;
+  IF _tamper = 'digest' THEN _digest := repeat('0', 64); END IF;
+  IF _tamper = 'nosecret' THEN PERFORM set_config('app.settings.parser_attestation_hmac_secret', '', true); END IF;
   BEGIN
     _id := public.record_parser_runtime_attestation(_canonical, _payload, _digest, _signature,
       _payload -> 'release_gate_evidence', _at, _nonce);
+    IF _tamper = 'nosecret' THEN PERFORM set_config('app.settings.parser_attestation_hmac_secret', repeat('s', 48), true); END IF;
     RETURN jsonb_build_object('ok', true, 'digest', _digest);
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS _state = RETURNED_SQLSTATE, _message = MESSAGE_TEXT, _constraint = CONSTRAINT_NAME;
+    IF _tamper = 'nosecret' THEN PERFORM set_config('app.settings.parser_attestation_hmac_secret', repeat('s', 48), true); END IF;
     RETURN jsonb_build_object('ok', false, 'sqlstate', _state, 'message', _message, 'constraint', _constraint);
   END;
 END $f$;
+CREATE FUNCTION pg_temp.catalog() RETURNS jsonb LANGUAGE sql AS $f$
+  SELECT jsonb_build_object(
+    'relations', (SELECT md5(string_agg(c.oid::text || ':' || c.relname || ':' || c.relkind::text || ':' || c.xmin::text, ',' ORDER BY c.oid))
+                  FROM pg_class c WHERE c.relnamespace = 'public'::regnamespace),
+    'constraints', (SELECT md5(string_agg(c.oid::text || ':' || c.xmin::text, ',' ORDER BY c.oid))
+                    FROM pg_constraint c WHERE c.connamespace = 'public'::regnamespace),
+    'functions', (SELECT md5(string_agg(p.oid::text || ':' || p.xmin::text, ',' ORDER BY p.oid))
+                  FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace),
+    'object_set', (SELECT md5(string_agg(c.relname || ':' || c.relkind::text, ',' ORDER BY c.relname))
+                   FROM pg_class c WHERE c.relnamespace = 'public'::regnamespace
+                     AND c.relname <> 'parser_runtime_provenance_deployment_identity_idx'),
+    'provenance', (SELECT jsonb_build_object('rows', count(*), 'md5', md5(coalesce(string_agg(t::text, ',' ORDER BY t.id), '')))
+                   FROM public.parser_runtime_provenance t),
+    'nonces', (SELECT jsonb_build_object('rows', count(*), 'md5', md5(coalesce(string_agg(t::text, ',' ORDER BY t.nonce), '')))
+               FROM public.parser_attestation_nonces t))
+$f$;
+CREATE FUNCTION pg_temp.controls() RETURNS jsonb LANGUAGE sql AS $f$
+  SELECT jsonb_build_object(
+    'deployment_index', to_regclass('public.parser_runtime_provenance_deployment_identity_idx') IS NOT NULL,
+    'provenance_digest_key', EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.parser_runtime_provenance'::regclass
+      AND conname = 'parser_runtime_provenance_attestation_digest_key' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'),
+    'nonce_pkey', EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.parser_attestation_nonces'::regclass
+      AND contype = 'p' AND pg_get_constraintdef(oid) = 'PRIMARY KEY (nonce)'),
+    'nonce_digest_key', EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.parser_attestation_nonces'::regclass
+      AND contype = 'u' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'))
+$f$;
 """
 EPILOGUE = r"""
 SELECT 'RESULT:' || coalesce(jsonb_object_agg(k, v), '{}'::jsonb)::text FROM probe_result;
@@ -174,85 +214,186 @@ def expect(observed: dict, key: str, **wanted) -> list[str]:
             if value.get(field) != want]
 
 
-MIGRATE = f"pg_temp.run({literal(MIGRATION)})" if MIGRATION.exists() else "NULL"
-ROLL_BACK = f"pg_temp.run({literal(ROLLBACK)})" if ROLLBACK.exists() else "NULL"
+MIGRATE = f"pg_temp.run({literal(MIGRATION)})"
+ROLL_BACK = f"pg_temp.run({literal(ROLLBACK)})"
+MIGRATE_R588 = f"pg_temp.run({literal(MIGRATION_R588)})"
+ROLL_BACK_R588 = f"pg_temp.run({literal(ROLLBACK_R588)})"
+DEPLOYMENT_ROWS = """to_jsonb((SELECT count(*) FROM public.parser_runtime_provenance
+  WHERE deployment_id = '1b5778de-3eaf-46f1-9ea5-cba381d95313' AND status = 'VERIFIED'))"""
+ORIGINAL_INDEX = (f"CREATE UNIQUE INDEX {INDEX} ON public.parser_runtime_provenance (railway_project_id, "
+                  "railway_service_id, railway_environment_id, deployment_id, deployment_commit, semantic_revision, build_revision)")
+
+
+def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]:
+    value = o.get(key) or {}
+    problems = expect(o, key, ok=False, sqlstate=sqlstate)
+    if not str(value.get("message", "")).startswith(prefix):
+        problems.append(f"{key}.message={value.get('message')!r} expected prefix {prefix!r}")
+    return problems
 
 
 def main() -> int:
     refuse_non_local()
 
-    scenario("reset_build_has_managed_definition_and_properties", """
+    # ----- R5.8.7 (D1): recorder definition
+    scenario("d1_reset_build_has_managed_recorder_and_properties", """
 INSERT INTO probe_result SELECT 'recorder', pg_temp.recorder();
 """, lambda o: expect(o, "recorder", md5=MANAGED_MD5, owner="postgres", secdef=True,
                      config=['search_path=""'], service_role=True, anon=False, authenticated=False))
 
-    scenario("rerun_is_a_no_op", f"""
+    scenario("d1_rerun_is_a_no_op", f"""
 INSERT INTO probe_result SELECT 'before', pg_temp.recorder();
 INSERT INTO probe_result SELECT 'migration', {MIGRATE};
 INSERT INTO probe_result SELECT 'after', pg_temp.recorder();
 """, lambda o: expect(o, "migration", ok=True) + expect(o, "after", md5=MANAGED_MD5, xmin=(o.get("before") or {}).get("xmin")))
 
-    scenario("unexpected_definition_fails_closed_and_changes_nothing", f"""
+    scenario("d1_unexpected_definition_fails_closed_and_changes_nothing", f"""
 DO $d$ BEGIN EXECUTE replace(pg_get_functiondef('public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure),
   'PARSER_ATTESTATION_INVALID_INPUT', 'PARSER_ATTESTATION_INVALID_INPUT_PROBE'); END $d$;
 INSERT INTO probe_result SELECT 'diverged', pg_temp.recorder();
 INSERT INTO probe_result SELECT 'migration', {MIGRATE};
 INSERT INTO probe_result SELECT 'after', pg_temp.recorder();
-""", lambda o: expect(o, "migration", ok=False, sqlstate="55000")
-        + ([] if str((o.get("migration") or {}).get("message", "")).startswith("R5_8_7_RECORDER_UNEXPECTED_DEFINITION")
-           else ["migration message is not R5_8_7_RECORDER_UNEXPECTED_DEFINITION"])
+""", lambda o: failed(o, "migration", "R5_8_7_RECORDER_UNEXPECTED_DEFINITION")
         + expect(o, "after", md5=(o.get("diverged") or {}).get("md5"), xmin=(o.get("diverged") or {}).get("xmin")))
 
-    scenario("changed_grant_fails_closed", f"""
+    scenario("d1_changed_grant_fails_closed", f"""
 GRANT EXECUTE ON FUNCTION public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text) TO anon;
 INSERT INTO probe_result SELECT 'migration', {MIGRATE};
-""", lambda o: expect(o, "migration", ok=False, sqlstate="55000"))
+""", lambda o: failed(o, "migration", "R5_8_7_RECORDER_GRANTS_INVALID"))
 
-    scenario("rollback_restores_repository_definition_and_migration_reapplies", f"""
+    scenario("d1_rollback_restores_repository_definition_and_migration_reapplies", f"""
 INSERT INTO probe_result SELECT 'rollback', {ROLL_BACK};
 INSERT INTO probe_result SELECT 'rolled_back', pg_temp.recorder();
 INSERT INTO probe_result SELECT 'managed_blob_on_old_definition', pg_temp.attest('probe-rollback-a', '{MANAGED_BLOB}');
 INSERT INTO probe_result SELECT 'old_blob_on_old_definition', pg_temp.attest('probe-rollback-b', '{REPOSITORY_BLOB}');
+INSERT INTO probe_result SELECT 'r588_needs_reconciled_recorder', {MIGRATE_R588};
 INSERT INTO probe_result SELECT 'migration', {MIGRATE};
 INSERT INTO probe_result SELECT 'reapplied', pg_temp.recorder();
 """, lambda o: expect(o, "rollback", ok=True) + expect(o, "rolled_back", md5=REPOSITORY_MD5)
         + expect(o, "managed_blob_on_old_definition", ok=False, message="PARSER_ATTESTATION_CRITICAL_HASH_MISMATCH")
         + expect(o, "old_blob_on_old_definition", ok=True)
+        + failed(o, "r588_needs_reconciled_recorder", "R5_8_8_RECORDER_NOT_RECONCILED")
         + expect(o, "migration", ok=True)
         + expect(o, "reapplied", md5=MANAGED_MD5, owner="postgres", secdef=True,
                  service_role=True, anon=False, authenticated=False))
 
-    scenario("managed_blob_accepted_old_blob_rejected", f"""
-INSERT INTO probe_result SELECT 'managed_blob', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'old_blob', pg_temp.attest('probe-x', '{REPOSITORY_BLOB}');
-""", lambda o: expect(o, "managed_blob", ok=True)
-        + expect(o, "old_blob", ok=False, message="PARSER_ATTESTATION_CRITICAL_HASH_MISMATCH"))
+    # ----- R5.8.8 (D3 option a): deployment-scoped uniqueness
+    scenario("r588_reset_build_has_no_deployment_uniqueness_and_keeps_replay_controls", """
+INSERT INTO probe_result SELECT 'controls', pg_temp.controls();
+""", lambda o: expect(o, "controls", deployment_index=False, provenance_digest_key=True,
+                     nonce_pkey=True, nonce_digest_key=True))
 
-    scenario("with_deployment_index_second_attestation_rejected_replay_rejected", f"""
-INSERT INTO probe_result SELECT 'index_present', to_jsonb(to_regclass('public.{INDEX}') IS NOT NULL);
-INSERT INTO probe_result SELECT 'first', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
+    scenario("r588_absent_index_rerun_changes_no_data_or_object", f"""
+INSERT INTO probe_result SELECT 'a', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'b', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'before', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+INSERT INTO probe_result SELECT 'after', pg_temp.catalog();
+""", lambda o: expect(o, "a", ok=True) + expect(o, "b", ok=True) + expect(o, "migration", ok=True)
+        + ([] if o.get("before") == o.get("after") else ["catalog or data changed by a no-op run"])
+        + ([] if ((o.get("before") or {}).get("provenance") or {}).get("rows") == 2 else ["expected 2 provenance rows"]))
+
+    scenario("r588_drops_index_with_expected_definition_only", f"""
+INSERT INTO probe_result SELECT 'before', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'create', pg_temp.run('{ORIGINAL_INDEX}');
+INSERT INTO probe_result SELECT 'controls_before', pg_temp.controls();
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+INSERT INTO probe_result SELECT 'controls_after', pg_temp.controls();
+INSERT INTO probe_result SELECT 'after', pg_temp.catalog();
+""", lambda o: expect(o, "create", ok=True) + expect(o, "controls_before", deployment_index=True)
+        + expect(o, "migration", ok=True)
+        + expect(o, "controls_after", deployment_index=False, provenance_digest_key=True, nonce_pkey=True, nonce_digest_key=True)
+        + [f"{k} changed" for k in ("object_set", "constraints", "functions", "provenance", "nonces")
+           if (o.get("before") or {}).get(k) != (o.get("after") or {}).get(k)])
+
+    scenario("r588_unexpected_index_definition_fails_closed", f"""
+INSERT INTO probe_result SELECT 'create', pg_temp.run('CREATE UNIQUE INDEX {INDEX} ON public.parser_runtime_provenance (deployment_id)');
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+INSERT INTO probe_result SELECT 'controls', pg_temp.controls();
+""", lambda o: expect(o, "create", ok=True) + failed(o, "migration", "R5_8_8_UNEXPECTED_INDEX_DEFINITION")
+        + expect(o, "controls", deployment_index=True))
+
+    scenario("r588_other_deployment_uniqueness_fails_closed", f"""
+INSERT INTO probe_result SELECT 'create', pg_temp.run('CREATE UNIQUE INDEX probe_other_deployment_key ON public.parser_runtime_provenance (build_revision, semantic_revision, deployment_commit, deployment_id, railway_environment_id, railway_service_id, railway_project_id)');
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+""", lambda o: expect(o, "create", ok=True) + failed(o, "migration", "R5_8_8_UNEXPECTED_DEPLOYMENT_UNIQUENESS"))
+
+    scenario("r588_missing_digest_key_fails_closed", f"""
+ALTER TABLE public.parser_runtime_provenance DROP CONSTRAINT parser_runtime_provenance_attestation_digest_key;
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+""", lambda o: failed(o, "migration", "R5_8_8_REPLAY_CONTROLS_MISSING"))
+
+    # ----- controls after both migrations
+    scenario("two_distinct_attestations_of_one_deployment_coexist", f"""
+INSERT INTO probe_result SELECT 'a', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'b', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'verified_rows', {DEPLOYMENT_ROWS};
+""", lambda o: expect(o, "a", ok=True) + expect(o, "b", ok=True)
+        + ([] if o.get("verified_rows") == 2 else [f"verified_rows={o.get('verified_rows')} expected 2"]))
+
+    scenario("replay_reused_nonce_and_duplicate_digest_rejected", f"""
+INSERT INTO probe_result SELECT 'a', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
 INSERT INTO probe_result SELECT 'replay', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'second', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'rows', to_jsonb((SELECT count(*) FROM public.parser_runtime_provenance
-  WHERE deployment_id = '1b5778de-3eaf-46f1-9ea5-cba381d95313'));
-""", lambda o: ([] if o.get("index_present") is True else ["index absent on a repository build"])
-        + expect(o, "first", ok=True)
+INSERT INTO probe_result SELECT 'stale_reuse_of_nonce', pg_temp.run($q$INSERT INTO public.parser_attestation_nonces
+  (nonce, attestation_digest, workflow_run_id, workflow_run_attempt, attested_at, expires_at)
+  SELECT nonce, repeat('e', 64), 'probe-reuse', '1', attested_at, expires_at FROM public.parser_attestation_nonces LIMIT 1$q$);
+INSERT INTO probe_result SELECT 'nonce_digest', pg_temp.run($q$INSERT INTO public.parser_attestation_nonces
+  (nonce, attestation_digest, workflow_run_id, workflow_run_attempt, attested_at, expires_at)
+  SELECT repeat('f', 64), attestation_digest, 'probe-reuse', '1', attested_at, expires_at FROM public.parser_attestation_nonces LIMIT 1$q$);
+INSERT INTO probe_result SELECT 'provenance_digest', pg_temp.run($q$INSERT INTO public.parser_runtime_provenance
+  SELECT (jsonb_populate_record(NULL::public.parser_runtime_provenance, to_jsonb(p) || jsonb_build_object('id', gen_random_uuid()))).*
+  FROM public.parser_runtime_provenance p LIMIT 1$q$);
+INSERT INTO probe_result SELECT 'rows', {DEPLOYMENT_ROWS};
+""", lambda o: expect(o, "a", ok=True)
         + expect(o, "replay", ok=False, sqlstate="23505", constraint="parser_attestation_nonces_pkey")
-        + expect(o, "second", ok=False, sqlstate="23505", constraint=INDEX)
+        + expect(o, "stale_reuse_of_nonce", ok=False, sqlstate="23505")
+        + expect(o, "nonce_digest", ok=False, sqlstate="23505")
+        + expect(o, "provenance_digest", ok=False, sqlstate="23505")
+        + [m for m in (str((o.get("nonce_digest") or {}).get("message", "")),) if "attestation_digest_key" not in m]
+        + [m for m in (str((o.get("provenance_digest") or {}).get("message", "")),)
+           if "parser_runtime_provenance_attestation_digest_key" not in m]
         + ([] if o.get("rows") == 1 else [f"rows={o.get('rows')} expected 1"]))
 
-    scenario("without_deployment_index_second_attestation_accepted", f"""
-DROP INDEX public.{INDEX};
-INSERT INTO probe_result SELECT 'first', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'second', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'replay', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
-INSERT INTO probe_result SELECT 'rows', to_jsonb((SELECT count(*) FROM public.parser_runtime_provenance
-  WHERE deployment_id = '1b5778de-3eaf-46f1-9ea5-cba381d95313'));
-INSERT INTO probe_result SELECT 'restore_index', pg_temp.run('CREATE UNIQUE INDEX {INDEX} ON public.parser_runtime_provenance (railway_project_id, railway_service_id, railway_environment_id, deployment_id, deployment_commit, semantic_revision, build_revision)');
-""", lambda o: expect(o, "first", ok=True) + expect(o, "second", ok=True)
-        + expect(o, "replay", ok=False, sqlstate="23505", constraint="parser_attestation_nonces_pkey")
-        + ([] if o.get("rows") == 2 else [f"rows={o.get('rows')} expected 2"])
-        + expect(o, "restore_index", ok=False, sqlstate="23505"))
+    scenario("invalid_attestations_rejected_by_their_controls", f"""
+INSERT INTO probe_result SELECT 'signature', pg_temp.attest('probe-s', '{MANAGED_BLOB}', 'signature');
+INSERT INTO probe_result SELECT 'digest', pg_temp.attest('probe-d', '{MANAGED_BLOB}', 'digest');
+INSERT INTO probe_result SELECT 'stale', pg_temp.attest('probe-t', '{MANAGED_BLOB}', 'stale');
+INSERT INTO probe_result SELECT 'deployment', pg_temp.attest('probe-p', '{MANAGED_BLOB}', 'deployment');
+INSERT INTO probe_result SELECT 'old_blob', pg_temp.attest('probe-h', '{REPOSITORY_BLOB}');
+INSERT INTO probe_result SELECT 'no_key', pg_temp.attest('probe-k', '{MANAGED_BLOB}', 'nosecret');
+INSERT INTO probe_result SELECT 'rows', to_jsonb((SELECT count(*) FROM public.parser_runtime_provenance));
+""", lambda o: expect(o, "signature", ok=False, message="PARSER_ATTESTATION_SIGNATURE_INVALID")
+        + expect(o, "digest", ok=False, message="PARSER_ATTESTATION_DIGEST_MISMATCH")
+        + expect(o, "stale", ok=False, message="PARSER_ATTESTATION_FRESHNESS_INVALID")
+        + expect(o, "deployment", ok=False, message="PARSER_ATTESTATION_BINDING_INVALID")
+        + expect(o, "old_blob", ok=False, message="PARSER_ATTESTATION_CRITICAL_HASH_MISMATCH")
+        + expect(o, "no_key", ok=False, message="PARSER_ATTESTATION_SECRET_NOT_CONFIGURED")
+        + ([] if o.get("rows") == 0 else [f"rows={o.get('rows')} expected 0"]))
+
+    scenario("r588_rollback_never_deletes_attestations", f"""
+INSERT INTO probe_result SELECT 'a', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'b', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'before', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'rollback_over_two', {ROLL_BACK_R588};
+INSERT INTO probe_result SELECT 'after', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'controls', pg_temp.controls();
+""", lambda o: expect(o, "a", ok=True) + expect(o, "b", ok=True)
+        + failed(o, "rollback_over_two", "R5_8_8_ROLLBACK_WOULD_REQUIRE_DELETING_ATTESTATIONS")
+        + ([] if o.get("before") == o.get("after") else ["rollback changed data or objects"])
+        + expect(o, "controls", deployment_index=False))
+
+    scenario("r588_rollback_and_reapply_on_a_single_attestation", f"""
+INSERT INTO probe_result SELECT 'a', pg_temp.attest('probe-a', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'rollback', {ROLL_BACK_R588};
+INSERT INTO probe_result SELECT 'restored', pg_temp.controls();
+INSERT INTO probe_result SELECT 'b_with_index', pg_temp.attest('probe-b', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
+INSERT INTO probe_result SELECT 'b_without_index', pg_temp.attest('probe-b2', '{MANAGED_BLOB}');
+INSERT INTO probe_result SELECT 'rows', {DEPLOYMENT_ROWS};
+""", lambda o: expect(o, "a", ok=True) + expect(o, "rollback", ok=True) + expect(o, "restored", deployment_index=True)
+        + expect(o, "b_with_index", ok=False, sqlstate="23505", constraint=INDEX)
+        + expect(o, "migration", ok=True) + expect(o, "b_without_index", ok=True)
+        + ([] if o.get("rows") == 2 else [f"rows={o.get('rows')} expected 2"]))
 
     ok = all(item["status"] == "PASS" for item in RESULTS)
     print(json.dumps({

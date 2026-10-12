@@ -9,6 +9,9 @@
 -- fe3250af2b461f03f459adf36b43ec21, and fails closed from any other state.
 -- Owner, SECURITY DEFINER, search_path, grants and comment are kept by
 -- CREATE OR REPLACE and checked by the migration if it is applied again.
+-- It reads and writes no provenance or nonce row, so it can never require
+-- deleting a VERIFIED attestation. After it, 20261012210000 (R5.8.8) fails
+-- closed (R5_8_8_RECORDER_NOT_RECONCILED) until R5.8.7 is applied again.
 DO $rollback$
 DECLARE
   _fn constant regprocedure :=

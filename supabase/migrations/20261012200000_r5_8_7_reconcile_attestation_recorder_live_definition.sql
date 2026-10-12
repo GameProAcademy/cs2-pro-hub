@@ -18,7 +18,8 @@
 --
 -- Signature, result, language, owner, SECURITY DEFINER, search_path, volatility,
 -- EXECUTE grants and the comment are asserted before and after.
--- parser_runtime_provenance_deployment_identity_idx is not touched (decision D3).
+-- Deployment-scoped provenance uniqueness is handled separately by
+-- 20261012210000_r5_8_8 (decision D3, option a).
 -- No table data, provenance row, nonce, grant, Attempt 9, Canonical state,
 -- secret or Railway resource is read or written.
 DO $migration$
