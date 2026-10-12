@@ -356,6 +356,25 @@ class Negative(unittest.TestCase):
         self.assertEqual(evidence["decision"], "FAIL")
 
 
+class Annotations(unittest.TestCase):
+    def test_annotations_carry_decision_and_reasons_but_never_secret_values(self):
+        world = World()
+        world.r583_doc.update(decision="BLOCKED", failures=["RAILWAY_DEPLOYMENT_BINDING_MISMATCH"])
+        evidence, _ = evaluate(world, env=dict(SECRETS, PARSER_ATTESTATION_HMAC_SECRET=""))
+        lines = gate.annotations(evidence)
+        self.assertTrue(lines[0].startswith("::notice title=H.3-E activation gate::decision=FAIL"))
+        joined = "\n".join(lines)
+        self.assertIn("RAILWAY_DEPLOYMENT_BINDING_MISMATCH", joined)
+        self.assertIn("PARSER_ATTESTATION_HMAC_SECRET", joined)  # the name of the missing secret
+        for value in SECRETS.values():
+            if len(value) >= 32:
+                self.assertNotIn(value, joined)
+        self.assertTrue(all("\n" not in line for line in lines))
+
+    def test_escaping(self):
+        self.assertEqual(gate._escape("a%b\nc"), "a%25b%0Ac")
+
+
 class Decide(unittest.TestCase):
     def test_skipped_is_never_pass(self):
         self.assertEqual(gate.decide({"a": {"status": "PASS"}, "b": {"status": "SKIPPED"}}), "BLOCKED")

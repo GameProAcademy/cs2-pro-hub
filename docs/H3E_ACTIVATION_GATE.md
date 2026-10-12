@@ -58,7 +58,9 @@ and the image is not rebuilt, the stage fails with `WORKER_TREE_DIFFERS`.
 
 Statuses: `PASS`, `FAIL`, `BLOCKED`, `SKIPPED`. Decision `PASS` only when every
 stage is `PASS`; any `FAIL` gives `FAIL`; otherwise `BLOCKED`. `SKIPPED` is
-never evidence. The job succeeds only on `PASS`, and the evidence artifact
+never evidence. The job succeeds only on `PASS`; the decision and the reason
+of every stage that did not pass are also emitted as check annotations
+(allow-listed fields only, no secret values), and the evidence artifact
 `h3e-activation-gate-<sha>-<run_id>-<attempt>` is uploaded in every case.
 
 Manual runs (`workflow_dispatch` on `main`) evaluate the same commit rules, so
@@ -68,7 +70,7 @@ artifact name.
 
 ## Tests
 
-`scripts/ci/test_h3e_activation_gate.py`, 28 cases, offline (all network and
+`scripts/ci/test_h3e_activation_gate.py`, 30 cases, offline (all network and
 git calls go through a fake). It runs inside `Main required gates` on every PR
 and push, and as the first step of the gate itself.
 
