@@ -94,6 +94,8 @@ def main():
                         None, None, None, None, None, "APP_REMOTE_PARSER", "APP", None, None, 1, None]
             row = base.copy()
             row[0], row[2] = str(uuid.uuid4()), kind
+            if row[13] == "RAILWAY" and row[17] is None:
+                row[17] = "c" * 40
             if kind != "EXECUTION_INTENT":
                 row[7:12] = ["a" * 64, 520, "parser", "0.42.0", "git:synthetic"]
             if kind in ("EXECUTION_FINISHED", "EXECUTION_FAILED", "EXECUTION_ABORTED"):
