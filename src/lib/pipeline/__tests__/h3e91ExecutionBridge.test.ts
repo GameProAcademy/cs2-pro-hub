@@ -20,7 +20,7 @@ const sample = {
   parserName: null,
   parserVersion: null,
   parserRevision: null,
-  workerBuildCommit: "0000000000000000000000000000000000000000,
+  workerBuildCommit: "0000000000000000000000000000000000000000",
   metadataDigest: null,
   executionSurface: "RAILWAY_V1_PARSE",
   source: "RAILWAY",
@@ -67,7 +67,7 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "1111111111111111111111111111111111111111 }),
+          body: JSON.stringify({ ...sample, workerBuildCommit: "1111111111111111111111111111111111111111" }),
         }),
       );
       expect(mismatched.status).toBe(503);
@@ -102,7 +102,7 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "0000000000000000000000000000000000000000 }),
+          body: JSON.stringify({ ...sample, workerBuildCommit: "0000000000000000000000000000000000000000" }),
         }),
       );
       expect(response.status).toBe(201);
