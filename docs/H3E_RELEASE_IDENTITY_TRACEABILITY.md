@@ -344,32 +344,13 @@ migration is in section 11.
   `anon`, `authenticated`, `sandbox_exec` or `PUBLIC`, and the comment.
 - A single `DO` block: no explicit `BEGIN`/`COMMIT`, no data, no grant, no index.
 - Rollback for repository builds only:
-  `docs/rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql`.
-  On the managed database the migration changes nothing, so there is nothing
-  to roll back there; that file must not be run against it.
+  `docs/rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql`
+  (section 11). On the managed database the migration changes nothing, so
+  there is nothing to roll back there, and the rollback refuses to run there.
 
-Probe `scripts/queue/attestation_recorder_reconciliation_probe.py`, run in the
-Queue Semantics workflow on the Supabase local stack after `supabase db reset`.
-Every scenario runs in a transaction that is rolled back, with a throwaway HMAC
-key set for that transaction. Results on the local disposable database
-(PostgreSQL 16, built from all repository migrations, then this one):
-
-| Scenario                                                          | Result                                                                                                            |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| reset build has the managed definition and properties             | PASS — `fe3250af…`, owner `postgres`, `SECURITY DEFINER`, `search_path=""`, `service_role` only                   |
-| re-run is a no-op                                                 | PASS — `xmin` of the function unchanged                                                                           |
-| unexpected definition fails closed and changes nothing            | PASS — `55000` `R5_8_7_RECORDER_UNEXPECTED_DEFINITION`, function unchanged                                        |
-| changed grant (`anon`) fails closed                               | PASS — `55000` `R5_8_7_RECORDER_GRANTS_INVALID (before)`                                                          |
-| rollback restores the repository definition, migration re-applies | PASS — `5ea1ffff…` then `fe3250af…`; on the old definition the managed blob is rejected and the old blob accepted |
-| managed blob accepted, old blob rejected                          | PASS — `PARSER_ATTESTATION_CRITICAL_HASH_MISMATCH` for `dfc2e67f…`                                                |
-| with the deployment index                                         | PASS — second attestation `23505` on the index; replay `23505` on the nonce; 1 row                                |
-| without the deployment index                                      | PASS — second attestation accepted, 2 rows; replay rejected; restoring the index fails `23505`                    |
-
-Also: `parserAttestationRecorderReconciliation.contract.test.ts` (4 tests,
-PASS locally) and the existing attestation contract tests (49 tests, PASS
-locally; `parserAttestationEnvelope.test.ts` did not load in the local runner
-for a missing `zod` module, unrelated). CI on this PR runs the probe on
-PostgreSQL 17 (Supabase local stack) and the full suites.
+The tests of this migration are in section 11 together with R5.8.8's (the
+eight-scenario table that was here described an earlier revision of the probe
+and has been replaced).
 
 ## 11. R5.8.8: finish R5.8.6 (D3 option a)
 
@@ -388,47 +369,64 @@ A new corrective migration; no historical migration is edited.
 All checks run before and after. No data, grant, or other object is changed;
 no explicit `BEGIN`/`COMMIT`.
 
-Rollbacks, both for repository builds only, never for the managed database:
+Rollbacks, both for repository builds only, never for the managed database.
+Each begins with an enforced guard, not only a comment: when
+`supabase_migrations.schema_migrations.created_by` exists and holds a row
+written by the platform (`created_by = 'apikey@lovable.dev'`, which is how the
+managed history marks Lovable-applied migrations; 144 of its 150 rows were observed
+read-only on 2026-10-12), the rollback raises
+`R5_8_7_ROLLBACK_REFUSED_ON_MANAGED_DATABASE` /
+`R5_8_8_ROLLBACK_REFUSED_ON_MANAGED_DATABASE` (`55000`) before reading or
+changing anything. Builds made by `supabase db reset` or by the tests have no
+such row.
 
 - R5.8.8: `docs/rollback/20261012210000_r5_8_8_…` re-creates the index, and
   refuses (`R5_8_8_ROLLBACK_WOULD_REQUIRE_DELETING_ATTESTATIONS`) when two
   rows share a deployment identity. It contains no `DELETE`, `UPDATE` or
-  `TRUNCATE`. On the managed database it would refuse anyway (two VERIFIED
-  rows for `1b5778de`).
+  `TRUNCATE`, so it can never remove or rewrite a VERIFIED attestation; it
+  also refuses when the index is already present.
 - R5.8.7: `docs/rollback/20261012200000_r5_8_7_…` replaces only the function
-  body and touches no row. On the managed database R5.8.7 changes nothing, so
-  there is nothing to roll back there.
+  body (from `fe3250af…` to `5ea1ffff…`, failing closed from any other state)
+  and reads or writes no row. After it, R5.8.8 fails closed
+  (`R5_8_8_RECORDER_NOT_RECONCILED`) until R5.8.7 is applied again.
 
 ### Test results
 
 Probe `scripts/queue/attestation_recorder_reconciliation_probe.py`; every
 scenario in a transaction that is rolled back, synthetic attestations signed
-with a throwaway key. Local run on a disposable database built from all 158
-repository migrations (PostgreSQL 16): **16/16 PASS**, and afterwards 0
-provenance rows, 0 nonces, recorder `fe3250af…`, index absent.
+with a throwaway key (`repeat('s', 48)`, set with `set_config(…, true)`), and
+the probe refuses any non-local host. Each scenario asserts the specific
+SQLSTATE and message, or the catalog/row fingerprints, that it expects; the
+CI annotation carries the per-scenario result, so the evidence is the probe's
+own decision, not the job's colour. Results in section 12.
 
-| Scenario                                                             | Evidence                                                                                                                                                                                                                       |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| R5.8.7: reset build has the managed recorder and its properties      | `fe3250af…`, owner `postgres`, `SECURITY DEFINER`, `search_path=""`, `service_role` only                                                                                                                                       |
-| R5.8.7: re-run is a no-op                                            | function `xmin` unchanged                                                                                                                                                                                                      |
-| R5.8.7: unexpected definition fails closed                           | `R5_8_7_RECORDER_UNEXPECTED_DEFINITION`, function unchanged                                                                                                                                                                    |
-| R5.8.7: changed grant fails closed                                   | `R5_8_7_RECORDER_GRANTS_INVALID (before)`                                                                                                                                                                                      |
-| R5.8.7: rollback and re-apply                                        | `5ea1ffff…` then `fe3250af…`; R5.8.8 refuses while rolled back                                                                                                                                                                 |
-| R5.8.8: reset build                                                  | index absent; digest key on provenance, nonce primary key, digest key on nonces present                                                                                                                                        |
-| R5.8.8: index already absent, two attestations stored (managed-like) | fingerprints of relations (oid, name, kind, `xmin`), constraints, functions, and full row digests of provenance and nonces identical before and after                                                                          |
-| R5.8.8: index with the original definition                           | dropped; set of other objects, constraints, functions and data unchanged                                                                                                                                                       |
-| R5.8.8: index with another definition                                | `R5_8_8_UNEXPECTED_INDEX_DEFINITION`, index kept                                                                                                                                                                               |
-| R5.8.8: other unique index over the deployment columns               | `R5_8_8_UNEXPECTED_DEPLOYMENT_UNIQUENESS`                                                                                                                                                                                      |
-| R5.8.8: digest key missing                                           | `R5_8_8_REPLAY_CONTROLS_MISSING (before)`                                                                                                                                                                                      |
-| two distinct attestations of one deployment                          | both accepted, 2 VERIFIED rows                                                                                                                                                                                                 |
-| exact replay / reused nonce / duplicated digest                      | `23505` on `parser_attestation_nonces_pkey` (replay and reused nonce), `parser_attestation_nonces_attestation_digest_key`, `parser_runtime_provenance_attestation_digest_key`                                                  |
-| invalid attestations                                                 | `PARSER_ATTESTATION_SIGNATURE_INVALID` (`42501`), `…_DIGEST_MISMATCH`, `…_FRESHNESS_INVALID`, `…_BINDING_INVALID` (deployment `3ad4b1fe`), `…_CRITICAL_HASH_MISMATCH` (`dfc2e67f…`), `…_SECRET_NOT_CONFIGURED`; 0 rows written |
-| R5.8.8 rollback over two attestations                                | refuses; data and objects unchanged                                                                                                                                                                                            |
-| R5.8.8 rollback over one attestation, then re-apply                  | index restored, second attestation rejected `23505` on the index; migration drops it again, second attestation accepted                                                                                                        |
+| Scenario                                                                  | Expected evidence                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `d1_reset_build_has_managed_recorder_and_properties`                      | `fe3250af…`, owner `postgres`, `SECURITY DEFINER`, `search_path=""`, `service_role` only                                                                                                                                       |
+| `d1_rerun_is_a_no_op`                                                     | function `xmin` unchanged                                                                                                                                                                                                      |
+| `d1_unexpected_definition_fails_closed_and_changes_nothing`               | `R5_8_7_RECORDER_UNEXPECTED_DEFINITION`, function unchanged                                                                                                                                                                    |
+| `d1_changed_grant_fails_closed`                                           | `R5_8_7_RECORDER_GRANTS_INVALID (before)` for `anon`                                                                                                                                                                           |
+| `d1_property_drift_fails_closed`                                          | comment → `…_COMMENT_INVALID`; owner, `search_path`, `SECURITY INVOKER` → `…_PROPERTIES_INVALID`; `EXECUTE` to `PUBLIC`, `service_role` revoked → `…_GRANTS_INVALID`; recorder unchanged                                       |
+| `d1_rollback_restores_repository_definition_and_migration_reapplies`      | `5ea1ffff…` then `fe3250af…`; on the old definition the managed blob is rejected and the old one accepted; R5.8.8 refuses while rolled back                                                                                    |
+| `rollbacks_refuse_on_a_managed_database`                                  | both rollbacks `…_REFUSED_ON_MANAGED_DATABASE` with a platform history row; catalog and rows identical before and after; recorder `fe3250af…`                                                                                  |
+| `r588_reset_build_has_no_deployment_uniqueness_and_keeps_replay_controls` | index absent; digest key on provenance, nonce primary key, digest key on nonces present                                                                                                                                        |
+| `r588_absent_index_rerun_changes_no_data_or_object`                       | with two attestations stored (managed-like): fingerprints of relations (oid, name, kind, `xmin`), constraints, functions, and full row digests identical                                                                       |
+| `r588_drops_index_with_expected_definition_only`                          | dropped; other objects, constraints, functions and data unchanged                                                                                                                                                              |
+| `r588_unexpected_index_definition_fails_closed`                           | `R5_8_8_UNEXPECTED_INDEX_DEFINITION`, index kept                                                                                                                                                                               |
+| `r588_other_deployment_uniqueness_fails_closed`                           | `R5_8_8_UNEXPECTED_DEPLOYMENT_UNIQUENESS`                                                                                                                                                                                      |
+| `r588_missing_digest_key_fails_closed`                                    | `R5_8_8_REPLAY_CONTROLS_MISSING (before)`                                                                                                                                                                                      |
+| `r588_missing_nonce_controls_fail_closed`                                 | nonce primary key or nonce digest key dropped → `R5_8_8_REPLAY_CONTROLS_MISSING (before)`                                                                                                                                      |
+| `r588_constraint_backed_index_fails_closed`                               | the index backing a `UNIQUE` constraint → `R5_8_8_UNEXPECTED_INDEX_DEFINITION`                                                                                                                                                 |
+| `two_distinct_attestations_of_one_deployment_coexist`                     | both accepted, 2 VERIFIED rows                                                                                                                                                                                                 |
+| `replay_reused_nonce_and_duplicate_digest_rejected`                       | `23505` on `parser_attestation_nonces_pkey` (replay and reused nonce), `parser_attestation_nonces_attestation_digest_key`, `parser_runtime_provenance_attestation_digest_key`                                                  |
+| `invalid_attestations_rejected_by_their_controls`                         | `PARSER_ATTESTATION_SIGNATURE_INVALID` (`42501`), `…_DIGEST_MISMATCH`, `…_FRESHNESS_INVALID`, `…_BINDING_INVALID` (deployment `3ad4b1fe`), `…_CRITICAL_HASH_MISMATCH` (`dfc2e67f…`), `…_SECRET_NOT_CONFIGURED`; 0 rows written |
+| `r588_rollback_never_deletes_attestations`                                | over two attestations: `R5_8_8_ROLLBACK_WOULD_REQUIRE_DELETING_ATTESTATIONS`; data and objects unchanged                                                                                                                       |
+| `r588_rollback_and_reapply_on_a_single_attestation`                       | index restored, second attestation rejected `23505` on the index; migration drops it again, second attestation accepted                                                                                                        |
 
 Contract tests `parserAttestationRecorderReconciliation.contract.test.ts`
-(8 tests) and the existing attestation suites: 57 pass locally
-(`parserAttestationEnvelope.test.ts` does not load locally, missing `zod`).
+(9 tests: text-level guarantees — accepted hashes, only the worker blob
+substituted, no `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`GRANT`/`REVOKE`, a
+single `DROP`, rollbacks guarded and free of `DELETE`/`TRUNCATE`/`UPDATE`).
 
 ### Future operational sequence (each step separately authorized)
 
@@ -443,3 +441,62 @@ Contract tests `parserAttestationRecorderReconciliation.contract.test.ts`
 4. Railway `PARSER_REVISION` (D2), Lovable variables and publication, as in
    section 8.
 5. H.3-E activation gate PASS before any attestation is requested.
+
+## 12. Final independent review (2026-10-12, requested 19:07 -03)
+
+Scope: the final diff of both migrations, both rollbacks, the probe, the
+contract tests and the workflow step. Nothing was applied to the managed
+database; Railway, secrets and Lovable were not touched; no attestation was
+requested; no DEM, Attempt 9 or Canonical write. `H3E91_DEPLOYED_SOURCE_PARITY_UNVERIFIED`
+is preserved. D2 remains pending.
+
+### Problems found by the review, and fixed
+
+1. **Rollbacks restricted to repository builds only by comments.** Both now
+   refuse with an enforced guard on the managed history marker (section 11);
+   covered by `rollbacks_refuse_on_a_managed_database`. Commit `b7b15e71`.
+2. **Documented fail-closed states without a test** (owner, `search_path`,
+   `SECURITY INVOKER`, comment, `PUBLIC`/`service_role` grants; nonce controls;
+   constraint-backed index). Four scenarios added, the probe went from 16 to 20.
+   Commit `b7b15e71`.
+3. **The new owner-drift case failed on PostgreSQL 17 in CI**
+   ([run 38315025867](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/38315025867),
+   annotation `d1_property_drift_fails_closed` FAIL, 19/20) while passing on
+   PostgreSQL 16 locally. Cause: on the Supabase stack `postgres` is not a
+   superuser and cannot make `service_role` the recorder owner, so the drift
+   setup itself failed (`pg_temp.drift … line 7 at EXECUTE`) before the
+   migration ran — a probe defect, not a migration defect, but exactly what a
+   green-only reading would have missed. Fix: the owner drift uses a
+   transaction-scoped `NOLOGIN` role, and any drift that cannot be set up now
+   raises `PROBE_DRIFT_SETUP_FAILED` with its cause. Commit `6c88eed1`.
+4. Count in this document corrected: 144 of the 150 managed history rows carry
+   `created_by = 'apikey@lovable.dev'` (read-only query, 2026-10-12).
+
+### Evidence
+
+| Criterion                                                                                      | Evidence                                                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R5.8.7 changes no data, permission, or the managed definition                                  | Migration contains no `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`GRANT`/`REVOKE`/index DDL (contract test); on `fe3250af…` it only emits a notice (`d1_rerun_is_a_no_op`: function `xmin` unchanged); properties, grants and comment asserted before and after                                |
+| R5.8.8 deletes or modifies no attestation                                                      | Only statement with effect is one `DROP INDEX` of the exact original definition; `r588_absent_index_rerun_changes_no_data_or_object` proves identical row digests with two attestations stored                                                                                            |
+| Fail closed on any unexpected state                                                            | 9 distinct `55000` errors exercised by scenarios (sections 11 table)                                                                                                                                                                                                                      |
+| PostgreSQL 16                                                                                  | Local disposable cluster, database built from all 158 repository migrations: probe 20/20 PASS on `6c88eed1`; temporary role not left behind (0 rows in `pg_roles`)                                                                                                                        |
+| PostgreSQL 17                                                                                  | Supabase local stack after `supabase db reset`, [run 38316203964, job 115033692550](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/38316203964/job/115033692550): annotation `ATTESTATION_RECORDER_RECONCILIATION` 20/20 PASS, other probes 13/13, 22/22, 12/12               |
+| Re-run and rollback                                                                            | `d1_rerun_is_a_no_op`, `r588_absent_index_rerun_changes_no_data_or_object`, `d1_rollback_…_reapplies`, `r588_rollback_and_reapply_on_a_single_attestation` on both versions                                                                                                               |
+| Rollbacks never need deleting VERIFIED attestations                                            | R5.8.8 rollback contains no `DELETE`/`UPDATE`/`TRUNCATE` and refuses over two rows (`r588_rollback_never_deletes_attestations`); R5.8.7 rollback touches no row                                                                                                                           |
+| Workflow exposes no secrets, sends no real attestation, writes nothing to the managed database | Step env is only `QUEUE_PROBE_PGHOST=127.0.0.1`, port `54322`, the local stack's default password; no `secrets.*`; workflow `permissions: contents: read`; probe calls `refuse_non_local()`, reports `LOCAL_DISPOSABLE_ONLY`, signs with a throwaway key and rolls back every transaction |
+| Managed database still in the expected starting state                                          | Read-only query (2026-10-12): PostgreSQL 17.6, recorder `fe3250af…`, deployment index absent, 3/3 replay controls, 3 provenance rows, 3 nonces, 150 history rows, neither `20261012200000` nor `20261012210000` recorded                                                                  |
+
+Files: [R5.8.7](../supabase/migrations/20261012200000_r5_8_7_reconcile_attestation_recorder_live_definition.sql),
+[R5.8.8](../supabase/migrations/20261012210000_r5_8_8_drop_deployment_identity_uniqueness.sql),
+[R5.8.7 rollback](rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql),
+[R5.8.8 rollback](rollback/20261012210000_r5_8_8_deployment_uniqueness_rollback_repository_builds_only.sql),
+[probe](../scripts/queue/attestation_recorder_reconciliation_probe.py),
+[contract tests](../src/lib/pipeline/__tests__/parserAttestationRecorderReconciliation.contract.test.ts),
+[workflow](../.github/workflows/queue-semantics-probe.yml),
+[Live reference](reference/record_parser_runtime_attestation.live-2026-10-12.sql).
+
+Limits that remain (not blockers for merging; blockers for later steps): the
+H.3-E activation gate still fails its R5.8.3/R5.8.4 decisions on stale pins
+(run 38306322120) until the re-pin PR; D2 (`PARSER_REVISION`) is not applied;
+applying these migrations to the managed database is a separate, separately
+authorized operation.
