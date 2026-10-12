@@ -90,9 +90,19 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/queue/canonical_persistence_probe.py | tee "$RUNNER_TEMP/canonical-persistence-report.json"
+      - name: Run the attestation recorder reconciliation probe (R5.8.7, synthetic, rolled back)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python scripts/queue/attestation_recorder_reconciliation_probe.py | tee "$RUNNER_TEMP/attestation-recorder-report.json"
       - name: Publish the probe verdicts as annotations
         if: always()
-        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json"
+        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json"
       - name: Upload the probe reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -102,6 +112,7 @@ jobs:
             ${{ runner.temp }}/queue-semantics-report.json
             ${{ runner.temp }}/queue-recovery-report.json
             ${{ runner.temp }}/canonical-persistence-report.json
+            ${{ runner.temp }}/attestation-recorder-report.json
           if-no-files-found: warn
           retention-days: 14
       - name: Tear down disposable services
