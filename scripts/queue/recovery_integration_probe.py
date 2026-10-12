@@ -46,6 +46,7 @@ WORKERS: list[dict] = []
 
 BUILD_INFO_PATH = ROOT / "services" / "cs2-demo-parser" / "BUILD_INFO.json"
 PROBE_BUILD_INFO_CREATED = False
+PROBE_WORKER_BUILD_COMMIT = ""
 
 
 def ensure_probe_build_identity() -> None:
@@ -54,8 +55,16 @@ def ensure_probe_build_identity() -> None:
     This is local-disposable test setup only. Never overwrite a real image's
     BUILD_INFO.json and never source the identity from a runtime env variable.
     """
-    global PROBE_BUILD_INFO_CREATED
+    global PROBE_BUILD_INFO_CREATED, PROBE_WORKER_BUILD_COMMIT
     if BUILD_INFO_PATH.exists():
+        try:
+            info = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE") from error
+        commit = str(info.get("commit", "")).lower() if isinstance(info, dict) else ""
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
+            raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE")
+        PROBE_WORKER_BUILD_COMMIT = commit
         return
     commit = (os.environ.get("GITHUB_SHA") or subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=True
@@ -64,6 +73,7 @@ def ensure_probe_build_identity() -> None:
         raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE")
     BUILD_INFO_PATH.write_text(json.dumps({"commit": commit, "source": "build-arg"}) + "\n", encoding="utf-8")
     PROBE_BUILD_INFO_CREATED = True
+    PROBE_WORKER_BUILD_COMMIT = commit
 
 
 def cleanup_probe_build_identity() -> None:
@@ -606,6 +616,7 @@ def main() -> int:
     global FIXTURE_PATH, FIXTURE, API_EDGE, BRIDGE_EDGE_PORT
     only = sys.argv[1] if len(sys.argv) > 1 else None
     FIXTURE_PATH, FIXTURE = acquire_fixture()
+    ensure_probe_build_identity()
     private_bucket(STACK["api"], STACK["key"], "cs2-raw-evidence")
     API_EDGE = ApiEdge(FAULTS, 54321, WORK)
     _, api_port = API_EDGE.serve()
