@@ -20,7 +20,7 @@ const sample = {
   parserName: null,
   parserVersion: null,
   parserRevision: null,
-  workerBuildCommit: "a".repeat(40),
+  workerBuildCommit: "0000000000000000000000000000000000000000,
   metadataDigest: null,
   executionSurface: "RAILWAY_V1_PARSE",
   source: "RAILWAY",
@@ -59,7 +59,7 @@ describe("H3E91 bridge staging", () => {
 
   it("fails closed in production when the worker image build is missing or mismatched", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "a".repeat(40));
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "0000000000000000000000000000000000000000);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockClear();
     try {
@@ -67,7 +67,7 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "b".repeat(40) }),
+          body: JSON.stringify({ ...sample, workerBuildCommit: "1111111111111111111111111111111111111111 }),
         }),
       );
       expect(mismatched.status).toBe(503);
@@ -91,7 +91,7 @@ describe("H3E91 bridge staging", () => {
 
   it("accepts a matching production worker build and records the event through the database RPC", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "a".repeat(40));
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "0000000000000000000000000000000000000000);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockResolvedValueOnce({
       data: { status: "INSERTED", eventId: sample.eventId },
@@ -102,7 +102,7 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "a".repeat(40) }),
+          body: JSON.stringify({ ...sample, workerBuildCommit: "0000000000000000000000000000000000000000 }),
         }),
       );
       expect(response.status).toBe(201);
