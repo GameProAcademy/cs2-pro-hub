@@ -7,6 +7,8 @@ import {
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc } }));
 
+const MOCK_WORKER_BUILD_COMMIT = "0000000000000000000000000000000000000000";
+
 const sample = {
   protocol: "H3E91_EXECUTION_BRIDGE_V1",
   eventId: "b3685a02-6d38-4f19-8b19-7c9810808773",
@@ -20,7 +22,7 @@ const sample = {
   parserName: null,
   parserVersion: null,
   parserRevision: null,
-  workerBuildCommit: "a".repeat(40),
+  workerBuildCommit: MOCK_WORKER_BUILD_COMMIT,
   metadataDigest: null,
   executionSurface: "RAILWAY_V1_PARSE",
   source: "RAILWAY",
@@ -59,7 +61,7 @@ describe("H3E91 bridge staging", () => {
 
   it("fails closed in production when the worker image build is missing or mismatched", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "a".repeat(40));
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockClear();
     try {
@@ -67,7 +69,10 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "b".repeat(40) }),
+          body: JSON.stringify({
+            ...sample,
+            workerBuildCommit: "1111111111111111111111111111111111111111",
+          }),
         }),
       );
       expect(mismatched.status).toBe(503);
@@ -91,7 +96,7 @@ describe("H3E91 bridge staging", () => {
 
   it("accepts a matching production worker build and records the event through the database RPC", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "a".repeat(40));
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockResolvedValueOnce({
       data: { status: "INSERTED", eventId: sample.eventId },
@@ -102,7 +107,7 @@ describe("H3E91 bridge staging", () => {
         new Request("http://localhost/api/public/h3e91-execution-event", {
           method: "POST",
           headers: { authorization: "Bearer synthetic-test-only" },
-          body: JSON.stringify({ ...sample, workerBuildCommit: "a".repeat(40) }),
+          body: JSON.stringify({ ...sample, workerBuildCommit: MOCK_WORKER_BUILD_COMMIT }),
         }),
       );
       expect(response.status).toBe(201);
@@ -115,6 +120,7 @@ describe("H3E91 bridge staging", () => {
           _execution_id: sample.executionId,
           _execution_surface: "RAILWAY_V1_PARSE",
           _source: "RAILWAY",
+          _worker_build_commit: sample.workerBuildCommit,
         }),
       );
     } finally {

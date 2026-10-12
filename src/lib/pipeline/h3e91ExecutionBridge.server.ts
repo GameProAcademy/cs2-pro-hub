@@ -146,6 +146,7 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
         _metadata_digest: event.metadataDigest,
         _outcome_code: event.outcomeCode,
         _event_version: event.eventVersion,
+        _worker_build_commit: event.workerBuildCommit,
       } as never,
     );
     if (error || !data || typeof data !== "object")

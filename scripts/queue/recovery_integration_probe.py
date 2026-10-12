@@ -44,6 +44,37 @@ WORK = Path(tempfile.mkdtemp(prefix="queue-e2e-"))
 RESULTS: list[dict] = []
 WORKERS: list[dict] = []
 
+BUILD_INFO_PATH = ROOT / "services" / "cs2-demo-parser" / "BUILD_INFO.json"
+PROBE_BUILD_INFO_CREATED = False
+
+
+def ensure_probe_build_identity() -> None:
+    """Give the source-checkout E2E worker the same immutable identity contract as an image.
+
+    This is local-disposable test setup only. Never overwrite a real image's
+    BUILD_INFO.json and never source the identity from a runtime env variable.
+    """
+    global PROBE_BUILD_INFO_CREATED
+    if BUILD_INFO_PATH.exists():
+        return
+    commit = (os.environ.get("GITHUB_SHA") or subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=True
+    ).stdout.strip()).lower()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise RuntimeError("E2E_WORKER_BUILD_IDENTITY_UNAVAILABLE")
+    BUILD_INFO_PATH.write_text(json.dumps({"commit": commit, "source": "build-arg"}) + "\n", encoding="utf-8")
+    PROBE_BUILD_INFO_CREATED = True
+
+
+def cleanup_probe_build_identity() -> None:
+    global PROBE_BUILD_INFO_CREATED
+    if PROBE_BUILD_INFO_CREATED:
+        try:
+            BUILD_INFO_PATH.unlink()
+        except FileNotFoundError:
+            pass
+        PROBE_BUILD_INFO_CREATED = False
+
 
 def stack() -> dict:
     data = json.loads(subprocess.run(["supabase", "status", "-o", "json"], capture_output=True, text=True,
@@ -72,6 +103,9 @@ from f553.r11.fixture import acquire as acquire_fixture  # noqa: E402
 from f553.r11.lifecycle import create_disposable_job, database_env, private_bucket  # noqa: E402
 from worker import durable_execution_id  # noqa: E402
 
+# Run-scoped trace marker for synthetic probe observations.
+PROBE_RUN_ID = str(uuid.uuid4())
+
 refuse_non_local()
 FAULTS = Faults()
 DB_ENV = database_env(STACK["db"])
@@ -90,6 +124,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
         start_new_session=True,
         env={**os.environ, "SUPABASE_URL": f"https://localhost:{api_port}", "SUPABASE_SERVICE_ROLE_KEY": STACK["key"],
              "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "NODE_ENV": "test", "NODE_EXTRA_CA_CERTS": str(cert),
+             "H3E91_EXPECTED_WORKER_BUILD_COMMIT": PROBE_WORKER_BUILD_COMMIT,
              # The application accepts one pinned worker revision. This is its own
              # promotion override, pointed at the revision under test; the revision
              # lock itself stays on.
@@ -107,6 +142,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
 
 
 def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0, heartbeat: float = 2.0) -> dict:
+    ensure_probe_build_identity()
     index = len(list(WORK.glob("worker-*.log")))
     tmp = WORK / f"tmp-{index}"
     tmp.mkdir()
@@ -143,6 +179,7 @@ def stop_workers() -> None:
                 kill_group(process.pid)
                 process.wait()
     WORKERS.clear()
+    cleanup_probe_build_identity()
 
 
 def tail(path: Path, lines: int = 12) -> str:
@@ -271,7 +308,10 @@ def invariants(item: dict, seen: dict) -> None:
 
 
 def new_item() -> dict:
-    return create_disposable_job(DB_ENV, STACK["api"], STACK["key"], FIXTURE_PATH, FIXTURE)
+    item = create_disposable_job(DB_ENV, STACK["api"], STACK["key"], FIXTURE_PATH, FIXTURE)
+    # The factory generates fresh UUIDs; retain this invocation ID in the report context.
+    item["probe_run_id"] = PROBE_RUN_ID
+    return item
 
 
 def scenario(name: str):
@@ -324,7 +364,27 @@ def scenario(name: str):
 
 
 def done(item: dict, timeout: float = 420.0) -> dict:
-    return wait_for(lambda: (lambda s: s if s["status"] in TERMINAL else None)(job(item["job_id"])), timeout, "a terminal job status")
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        # A rejected intent cannot become terminal because the worker correctly
+        # suppresses parsing. Fail immediately instead of burning the full 420 s.
+        rejected_intents = [
+            call for call in FAULTS.calls
+            if call.get("point") == "event:EXECUTION_INTENT"
+            and call.get("job") == item["job_id"]
+            and call.get("http") == 409
+        ]
+        if rejected_intents:
+            rejection_code = rejected_intents[-1].get("code") or "CODE_NOT_REPORTED"
+            raise AssertionError(
+                f"execution intent rejected by ledger (HTTP 409; code={rejection_code}); "
+                f"probe_run_id={item.get('probe_run_id', 'unknown')}; parser must remain suppressed"
+            )
+        state = job(item["job_id"])
+        if state["status"] in TERMINAL:
+            return state
+        time.sleep(0.25)
+    raise AssertionError("timed out waiting for a terminal job status")
 
 
 def kill_worker(entry: dict) -> None:
@@ -574,6 +634,7 @@ def main() -> int:
         "postgres_version": sql("show server_version"),
         "delivery_semantics": "AT_LEAST_ONCE_EXECUTION_WITH_AT_MOST_ONE_COMMITTED_RESULT_PER_JOB",
         "exactly_once_execution": "NOT_CLAIMED",
+        "probe_run_id": PROBE_RUN_ID,
         "notes": RESULTS_NOTES,
         "scenarios": RESULTS,
     }, indent=1, sort_keys=True))
