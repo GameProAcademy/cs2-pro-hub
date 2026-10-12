@@ -6,6 +6,7 @@ workflow, parser, storage, queue, Railway, or Canonical execution surface.
 """
 from __future__ import annotations
 
+import json
 from typing import Any, Mapping
 
 GATES = (
@@ -139,3 +140,47 @@ def reconcile_r5_8_3_preflight(
         "preflight_failures": list(p.get("failures") or []),
     }
     return result
+
+
+R583_JOB_NAME = "preflight"
+R583_TEST_STEP = "Run focused attestation/governance tests"
+READY = "READY_FOR_OPERATOR_REVIEW"
+
+
+def focused_tests_passed(jobs: Any) -> bool:
+    """Whether the R5.8.3 run's own focused-test step succeeded.
+
+    Read from the source run's job record, never assumed: exactly one
+    `preflight` job, and in it exactly one focused-test step that concluded
+    `success`. Anything else (missing, skipped, cancelled, duplicated) is False.
+    """
+    if not isinstance(jobs, list):
+        return False
+    matching = [j for j in jobs if isinstance(j, Mapping) and j.get("name") == R583_JOB_NAME]
+    if len(matching) != 1:
+        return False
+    steps = [s for s in (matching[0].get("steps") or [])
+             if isinstance(s, Mapping) and s.get("name") == R583_TEST_STEP]
+    return len(steps) == 1 and steps[0].get("conclusion") == "success"
+
+
+def annotations(result: Mapping[str, Any]) -> list[str]:
+    """Workflow commands carrying the decision and blockers (gate names only)."""
+    ready = result.get("decision") == READY and not result.get("blockers")
+    source = result.get("source") if isinstance(result.get("source"), Mapping) else {}
+    text = json.dumps({
+        "decision": result.get("decision"),
+        "verified": sum(1 for v in (result.get("gates") or {}).values() if v.get("status") == "VERIFIED"),
+        "gate_count": result.get("gate_count"),
+        "blockers": list(result.get("blockers") or []),
+        "preflight_decision": source.get("preflight_decision"),
+        "preflight_failures": list(source.get("preflight_failures") or []),
+    }, sort_keys=True).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    return [f"::{'notice' if ready else 'error'} title=R5.8.4 decision::{text}"]
+
+
+def exit_code(result: Mapping[str, Any]) -> int:
+    """0 only for a complete matrix; a green job never carries a BLOCKED decision."""
+    if result.get("attempt_9_authorized") or result.get("canonical_authorized"):
+        return 1
+    return 0 if result.get("decision") == READY and not result.get("blockers") else 1

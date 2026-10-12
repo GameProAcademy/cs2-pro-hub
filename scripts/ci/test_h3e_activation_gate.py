@@ -62,7 +62,8 @@ class World:
             f"r5-8-4-gate-reconciliation-{r583_id}-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
         }
         self.digest_override = {}
-        self.version = {"parser": {"name": "demoparser2"}, "contract_version": 1,
+        self.version = {"parser": {"name": "demoparser2", "semantic_revision": f"git:{BUILD}",
+                                   "build_revision": f"git:{BUILD}"}, "contract_version": 1,
                         "build": {"commit": BUILD, "embedded": True, "source": "railway",
                                   "declared_revision_matches": True}}
         self.version_by_host = {}
@@ -247,11 +248,75 @@ class Negative(unittest.TestCase):
              "HOSTS_REPORT_DIFFERENT_BUILDS"),
             (lambda w: w.railway.update(commitHash="b" * 40), "RAILWAY_DEPLOYMENT_COMMIT_MISMATCH"),
             (lambda w: w.ancestors.discard((BUILD, TARGET)), "BUILD_COMMIT_NOT_ON_TARGET_HISTORY"),
+            (lambda w: w.version["parser"].update(build_revision="git:" + "c" * 40), "BUILD_REVISION_NOT_EMBEDDED_COMMIT"),
+            (lambda w: w.version["parser"].update(semantic_revision="pypi-0.42.0"), "SEMANTIC_REVISION_INVALID"),
+            (lambda w: w.version["parser"].update(semantic_revision=None), "SEMANTIC_REVISION_INVALID"),
+            (lambda w: w.version_by_host.update({gate.HOSTS[1]: {"parser": dict(w.version["parser"], semantic_revision="git:" + "d" * 40),
+                                                               "build": dict(w.version["build"])}}),
+             "HOSTS_REPORT_DIFFERENT_REVISIONS"),
         ):
             world = World()
             mutate(world)
             evidence, _ = evaluate(world)
             self.assertDecision(evidence, "FAIL", "runtime", "FAIL", reason)
+
+    def test_failed_r583_and_r584_runs_still_report_their_decisions(self):
+        # A BLOCKED preflight now fails its job; the gate must still read why.
+        world = World()
+        world.runs["r5_8_3"][0]["conclusion"] = "failure"
+        world.runs["r5_8_4"][0]["conclusion"] = "failure"
+        world.r583_doc.update(decision="BLOCKED", failures=["RUNTIME_IDENTITY_MISMATCH:x"])
+        world.r584_doc.update(decision="BLOCKED", blockers=["python_wasm_parity"])
+        evidence, _ = evaluate(world)
+        stages = evidence["stages"]
+        self.assertEqual(evidence["decision"], "FAIL")
+        self.assertEqual(stages["r5_8_3"]["reason"], "RUN_NOT_SUCCESS")
+        self.assertEqual(stages["r5_8_3_artifact"]["status"], "PASS")
+        self.assertEqual(stages["r5_8_3_decision"]["reason"], "R583_DECISION_NOT_GREEN")
+        self.assertEqual(stages["r5_8_3_decision"]["failures"], ["RUNTIME_IDENTITY_MISMATCH:x"])
+        self.assertEqual(stages["r5_8_4_artifact"]["status"], "PASS")
+        self.assertEqual(stages["r5_8_4_decision"]["blockers"], ["python_wasm_parity"])
+
+    def test_cancelled_or_running_r583_is_not_read_as_evidence(self):
+        for conclusion, status in (("cancelled", "completed"), (None, "in_progress"), ("skipped", "completed")):
+            world = World()
+            world.runs["r5_8_3"][0].update(conclusion=conclusion, status=status)
+            evidence, _ = evaluate(world)
+            self.assertNotEqual(evidence["decision"], "PASS")
+            self.assertEqual(evidence["stages"]["r5_8_3_decision"]["status"], "SKIPPED")
+
+    def test_semantic_revision_must_describe_the_deployed_tree(self):
+        # The state observed on 2026-10-12: build 10815fb4 (tree 8120c12a) but
+        # PARSER_REVISION still names 5703b1d8, whose worker tree differs, while
+        # declared_revision_matches is true because it only compares the build.
+        old = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
+        world = World()
+        world.version["parser"]["semantic_revision"] = f"git:{old}"
+        world.trees[old] = "bf25eb865d7f735b0f26dd533f5b70ee52bb68ef"
+        world.ancestors.add((old, TARGET))
+        evidence, _ = evaluate(world)
+        self.assertTrue(world.version["build"]["declared_revision_matches"])
+        self.assertDecision(evidence, "FAIL", "runtime", "FAIL", "SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+        # Not on the target's history (for example only on another branch): refused.
+        world.ancestors.discard((old, TARGET))
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "FAIL", "runtime", "FAIL", "SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY")
+        # Unknown to git: refused, never assumed.
+        world = World()
+        world.version["parser"]["semantic_revision"] = "git:" + "e" * 40
+        world.ancestors.add(("e" * 40, TARGET))
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "FAIL", "runtime", "FAIL", "SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+
+    def test_semantic_revision_of_an_earlier_commit_with_the_same_tree_passes(self):
+        earlier = "a5dcdfdb6716743025f5159c073b13db2172aee0"
+        world = World()
+        world.version["parser"]["semantic_revision"] = f"git:{earlier}"
+        world.trees[earlier] = TREE
+        world.ancestors.add((earlier, TARGET))
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["decision"], "PASS", evidence["stages"]["runtime"])
+        self.assertEqual(evidence["stages"]["runtime"]["semantic_revision"], f"git:{earlier}")
 
     def test_railway_unverified_blocks(self):
         world = World()

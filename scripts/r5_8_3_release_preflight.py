@@ -45,6 +45,47 @@ def git_blob_sha(path_spec: str) -> str:
     data = subprocess.check_output(("git", "cat-file", "blob", path_spec), cwd=ROOT)
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
 
+WORKER_DIR = "services/cs2-demo-parser"
+
+
+def worker_tree(commit: str) -> str | None:
+    out = subprocess.run(("git", "rev-parse", f"{commit}:{WORKER_DIR}"), cwd=ROOT,
+                         capture_output=True, text=True, check=False)
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] | None) -> list[str]:
+    """Check the semantic revision against git, independently of every pin.
+
+    The worker's `declared_revision_matches` only compares the build revision
+    with the embedded commit. The semantic revision must name a commit whose
+    worker tree is the tree the image was built from.
+    """
+    build = build if isinstance(build, dict) else {}
+    commit = build.get("commit")
+    if build.get("embedded") is not True or not isinstance(commit, str) or len(commit) != 40:
+        return ["BUILD_IDENTITY_NOT_EMBEDDED"]
+    failures = []
+    if identity.get("build_revision") != f"git:{commit}":
+        failures.append("BUILD_REVISION_NOT_EMBEDDED_COMMIT")
+    semantic = identity.get("semantic_revision")
+    semantic_commit = semantic[4:] if isinstance(semantic, str) and semantic.startswith("git:") else ""
+    built = worker_tree(commit)
+    if built is None:
+        failures.append("BUILD_COMMIT_UNKNOWN_TO_GIT")
+    elif len(semantic_commit) != 40 or worker_tree(semantic_commit) != built:
+        failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+    return failures
+
+
+def annotations(evidence: dict[str, Any]) -> list[str]:
+    """Workflow commands carrying the decision; only codes, never secret values."""
+    level = "notice" if evidence.get("decision") == "GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT" else "error"
+    text = json.dumps({"decision": evidence.get("decision"), "failures": evidence.get("failures")},
+                      sort_keys=True).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    return [f"::{level} title=R5.8.3 decision::{text}"]
+
+
 def get_json(url: str, *, data: bytes | None = None, headers: dict[str, str] | None = None) -> Any:
     req = urllib.request.Request(
         url, data=data,
@@ -138,9 +179,14 @@ def main() -> int:
         try:
             body = get_json(url)
             identity = runtime_identity(body)
-            runtime[url] = {"available": True, "identity": identity, "raw_response_shape": "nested_parser" if isinstance(body.get("parser"), dict) else "flat", "match": identity == EXPECTED_IDENTITY}
+            semantic_failures = semantic_identity_failures(identity, body.get("build"))
+            runtime[url] = {"available": True, "identity": identity, "build": body.get("build"),
+                            "raw_response_shape": "nested_parser" if isinstance(body.get("parser"), dict) else "flat",
+                            "semantic_identity_failures": semantic_failures,
+                            "match": identity == EXPECTED_IDENTITY and not semantic_failures}
             if identity != EXPECTED_IDENTITY:
                 failures.append(f"RUNTIME_IDENTITY_MISMATCH:{url}")
+            failures.extend(f"{code}:{url}" for code in semantic_failures)
         except Exception as exc:
             runtime[url] = {"available": False, "reason": str(exc)}
             failures.append(f"RUNTIME_ENDPOINT_UNAVAILABLE:{url}")
@@ -156,7 +202,14 @@ def main() -> int:
         failures.append("MAPPING_AUTHORITY_MISMATCH")
     evidence["decision"] = "GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT" if not failures else "BLOCKED"
     evidence["failures"] = failures
-    print(json.dumps(evidence, sort_keys=True, separators=(",", ":")))
+    out = os.getenv("R583_EVIDENCE_OUT")
+    document = json.dumps(evidence, sort_keys=True, separators=(",", ":"))
+    if out:
+        Path(out).write_text(document + "\n", encoding="utf-8")
+        for line in annotations(evidence):
+            print(line)
+    else:
+        print(document)
     return 0 if not failures else 1
 
 if __name__ == "__main__":

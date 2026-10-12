@@ -1,5 +1,8 @@
 name: R5.8.3 Read-Only Release Preflight
 
+# The job fails when the preflight decision is not GREEN. Its evidence artifact
+# is uploaded either way, so R5.8.4 and the H.3-E activation gate can read why.
+
 on:
   push:
     branches: [main]
@@ -28,17 +31,24 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify read-only release bindings
-        env:
-          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
-        run: python scripts/r5_8_3_release_preflight.py | tee r5-8-3-preflight.json
-
       - name: Install focused test dependency
-        run: python -m pip install --disable-pip-version-check pytest
+        run: python -m pip install --disable-pip-version-check pytest pyyaml
 
+      # The tests run first so that a BLOCKED preflight below cannot hide them.
       - name: Run focused attestation/governance tests
         run: >-
           python -m pytest -q --ignore=services/cs2-demo-parser/tests scripts/tests/test_r5_8_3_release_preflight.py scripts/tests/test_r5_8_4_gate_reconciliation.py scripts/tests/test_parser_runtime_attestation.py scripts/tests/test_h3e91_live_preflight.py
+
+      # The evidence is written by the script itself (no pipe), so the step's exit
+      # status is the preflight's own decision: GREEN exits 0, BLOCKED exits 1.
+      - name: Verify read-only release bindings
+        shell: bash
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          R583_EVIDENCE_OUT: r5-8-3-preflight.json
+        run: |
+          set -euo pipefail
+          python scripts/r5_8_3_release_preflight.py
 
       - name: Preserve machine-readable evidence
         if: always()

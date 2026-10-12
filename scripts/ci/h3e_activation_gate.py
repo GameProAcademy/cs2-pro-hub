@@ -17,7 +17,9 @@ For one target commit of main (the current head) this gate proves, or refuses:
   runtime        both worker hosts answer /health and /version, report one
                  embedded build commit whose declared revision matches, Railway's
                  active deployment was built from that commit, and that commit's
-                 `services/cs2-demo-parser` tree is identical to the target's.
+                 `services/cs2-demo-parser` tree is identical to the target's;
+                 the declared semantic revision names a commit of the target's
+                 history whose worker tree is that same deployed tree.
 
 Every stage is PASS, FAIL, BLOCKED or SKIPPED. Only PASS everywhere gives the
 decision PASS. SKIPPED is never evidence. The gate never dispatches a workflow,
@@ -98,6 +100,20 @@ def evaluate_run(run: dict[str, Any] | None, *, name: str) -> dict[str, Any]:
         # skipped, cancelled, failure, neutral, timed_out: none of them is evidence.
         return stage(FAIL, reason="RUN_NOT_SUCCESS", observed=run.get("conclusion"), **common)
     return stage(PASS, **common)
+
+
+def evaluate_producer(run: dict[str, Any] | None, *, name: str) -> dict[str, Any]:
+    """Whether a run's evidence may be read: the right workflow, completed, and
+    finished as success or failure. R5.8.3 and R5.8.4 fail when their decision
+    is not green, and their evidence still says why; the run itself is judged
+    separately by `evaluate_run`, so reading it never turns a failure into a pass."""
+    if run is None:
+        return stage(BLOCKED, reason="RUN_NOT_FOUND")
+    if run.get("name") != name:
+        return stage(FAIL, reason="WORKFLOW_NAME_MISMATCH")
+    if run.get("status") != "completed" or run.get("conclusion") not in ("success", "failure"):
+        return stage(BLOCKED, reason="EVIDENCE_RUN_NOT_FINISHED", observed=run.get("conclusion") or run.get("status"))
+    return stage(PASS)
 
 
 def evaluate_job(jobs: list[dict[str, Any]], *, job_name: str) -> dict[str, Any]:
@@ -203,6 +219,23 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
         return stage(FAIL, reason="BUILD_IDENTITY_SOURCE_UNKNOWN")
     if build.get("declared_revision_matches") is not True:
         return stage(FAIL, reason="DECLARED_REVISION_MISMATCH", build_commit=commit)
+    # `declared_revision_matches` compares PARSER_BUILD_REVISION (or, without it,
+    # PARSER_REVISION) with the embedded commit, so once a build revision is set
+    # it says nothing about the semantic revision. That one is checked here,
+    # against git, independently of what the worker reports about it: it must
+    # name a commit of the target's history whose worker tree is the deployed one.
+    parsers = [((versions[h].get("parser") or {})) for h in HOSTS]
+    semantics = {str(p.get("semantic_revision")) for p in parsers}
+    declared_builds = {str(p.get("build_revision")) for p in parsers}
+    if len(semantics) != 1 or len(declared_builds) != 1:
+        return stage(FAIL, reason="HOSTS_REPORT_DIFFERENT_REVISIONS", build_commit=commit)
+    semantic, declared_build = semantics.pop(), declared_builds.pop()
+    if declared_build != f"git:{commit}":
+        return stage(FAIL, reason="BUILD_REVISION_NOT_EMBEDDED_COMMIT", build_commit=commit,
+                     observed=declared_build)
+    semantic_commit = semantic[4:] if semantic.startswith("git:") else ""
+    if not SHA.match(semantic_commit):
+        return stage(FAIL, reason="SEMANTIC_REVISION_INVALID", build_commit=commit, observed=semantic)
     if railway is None or railway.get("status") != "SUCCESS":
         failure = railway or {}
         return stage(BLOCKED, reason="RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED", build_commit=commit,
@@ -215,7 +248,14 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     built, target = tree(commit), tree(target_sha)
     if not built or built != target:
         return stage(FAIL, reason="WORKER_TREE_DIFFERS", build_commit=commit, build_tree=built, target_tree=target)
+    if not is_ancestor(semantic_commit, target_sha):
+        return stage(FAIL, reason="SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY", build_commit=commit,
+                     observed=semantic)
+    if tree(semantic_commit) != built:
+        return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
+                     observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built)
     return stage(PASS, build_commit=commit, worker_tree=built, railway_deployment=railway.get("id"),
+                 semantic_revision=semantic,
                  note="identical worker tree; a rebuild would only relabel the image")
 
 
@@ -331,7 +371,7 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
         out["main_required_gates"] = evaluate_job(jobs, job_name="Main required gates")
     else:
         out["main_required_gates"] = stage(SKIPPED, reason="QUALITY_GATES_NOT_PASS")
-    if out["r5_8_3"]["status"] == PASS:
+    if evaluate_producer(runs["r5_8_3"], name=WORKFLOWS["r5_8_3"][1])["status"] == PASS:
         run_id = runs["r5_8_3"]["id"]
         meta, blob = find_artifact(io, f"r5-8-3-preflight-{sha}-{run_id}")
         integrity, document = evaluate_artifact(meta, blob, run_id=run_id, expected_name=f"r5-8-3-preflight-{sha}-{run_id}")
@@ -346,7 +386,7 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
                 producer_run = io.github(f"/actions/runs/{producer.get('id')}")
             except Exception:
                 producer_run = None
-            check = evaluate_run(producer_run, name=WORKFLOWS["r5_8_4"][1])
+            check = evaluate_producer(producer_run, name=WORKFLOWS["r5_8_4"][1])
             integrity = integrity if check["status"] == PASS else check
         out["r5_8_4_artifact"] = integrity
         out["r5_8_4_decision"] = (evaluate_r584(document, r583_run_id=run_id, sha=sha)
@@ -354,7 +394,7 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
                                   else stage(SKIPPED, reason="NO_VALID_ARTIFACT"))
     else:
         for key in ("r5_8_3_artifact", "r5_8_3_decision", "r5_8_4_artifact", "r5_8_4_decision"):
-            out[key] = stage(SKIPPED, reason="R583_RUN_NOT_PASS")
+            out[key] = stage(SKIPPED, reason="R583_RUN_NOT_FINISHED")
     return out
 
 
