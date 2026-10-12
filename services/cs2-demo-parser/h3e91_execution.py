@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from settings import PARSER_NAME, PARSER_VERSION, Settings
+from settings import PARSER_NAME, PARSER_VERSION, Settings, image_build_identity
 
 
 class ExecutionRecorder:
@@ -23,6 +23,10 @@ class ExecutionRecorder:
         self.client = client
         self.secret = settings.bridge_secret
         self.settings_revision = settings.revision
+        # Image identity comes from BUILD_INFO.json written at image build time;
+        # unlike runtime environment variables, it cannot be silently retagged.
+        build_identity = image_build_identity()
+        self.worker_build_commit = build_identity.get("commit") if build_identity.get("embedded") is True else None
         self.execution_id = execution_id or str(uuid.uuid4())
         self.correlation_id = correlation_id or str(uuid.uuid4())
         # Stable per execution and transition, including retries after a lost response.
@@ -36,6 +40,7 @@ class ExecutionRecorder:
             "attemptNumber": attempt_number, "demoSha256": demo_sha256, "fileSize": file_size,
             "executionSurface": surface, "source": "RAILWAY", "eventVersion": 1,
             "metadataDigest": None,
+            "workerBuildCommit": self.worker_build_commit,
         }
 
     async def record(self, event_type: str, outcome_code: str | None = None) -> dict[str, Any]:
