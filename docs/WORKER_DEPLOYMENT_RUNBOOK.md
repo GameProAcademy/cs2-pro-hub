@@ -49,20 +49,33 @@ if (event.source === "RAILWAY" && !validBuildCommit) {
 
 Place this check after parsing/authentication and before any database RPC. Keep it scoped to the Railway source so unrelated legacy app events are not silently reclassified.
 
-### 1.3 SQL writer migration — required, not yet applied
+### 1.3 Exact source signature and incremental migration
 
-The migration must be additive and must be based on the **actual deployed** definition of `public.h3e91_record_execution_event` and its ledger table. Do not guess the table name, parameter order, return type, grants, or security-definer settings. Before authoring the migration, retrieve the function definition and table DDL from the managed project and compare them with the repository's current migration chain.
+The source-defined writer signature in migration `20260926031627_12654b87-3876-4c60-8916-6a0f296adda8.sql` is:
 
-The migration must:
-1. Add `worker_build_commit text NULL` to the actual H3E91 event ledger table.
-2. Add a CHECK constraint allowing NULL for historical rows and requiring non-NULL values to match `^[0-9a-f]{40}$` for new Railway rows (use a NOT VALID / validation sequence if existing rows could violate it).
-3. Replace the writer function with the same full existing signature plus `_worker_build_commit text`; preserve every existing validation, advisory lock, digest, idempotency, privilege, and return contract.
-4. Include the field in the INSERT column/value lists and in any event digest only if the established digest contract explicitly includes immutable event identity. Do not change a digest contract implicitly.
-5. On idempotent replay, compare the incoming identity with the stored identity and reject a conflict; never overwrite the first accepted identity.
-6. Reapply the exact existing EXECUTE grants and ensure the function owner/security-definer/search_path are unchanged.
-7. Include rollback SQL and a disposable-PostgreSQL test proving valid identity inserts, malformed identity rejects, same-event/same-identity replay is idempotent, and same-event/different-identity replay rejects without mutation.
+```sql
+public.h3e91_record_execution_event(
+  _event_id uuid, _execution_id uuid, _event_type text, _upload_id uuid,
+  _correlation_id uuid, _job_id uuid, _attempt_number integer,
+  _demo_sha256 text, _file_size bigint, _parser_name text,
+  _parser_version text, _parser_revision text, _execution_surface text,
+  _source text, _metadata_digest text, _outcome_code text, _event_version integer
+) RETURNS jsonb
+```
 
-**Do not apply this migration to the managed production database until the real function/table definitions have been captured, the migration hash reviewed, and the disposable test passes.** The previously applied queue/Canonical/grants migrations are not a substitute for this schema change.
+The source ledger is `public.h3e91_execution_evidence_ledger`. Migration `20260926013427_...` creates it; later migrations add event identity fields and the writer. **This signature is verified against repository migrations, not freshly introspected from the live managed database in this change.** Before production application, compare the live `pg_get_functiondef`, `pg_get_function_identity_arguments`, table columns, owner, `prosecdef`, `proconfig`, and grants. If the managed definition differs, regenerate the migration from the live definition instead of overwriting unknown changes.
+
+The candidate migration is `supabase/migrations/20261012100000_h3e91_worker_build_identity.sql`. It adds nullable `worker_build_commit text` (legacy rows remain NULL), validates the SHA format when present, and adds an 18-argument overload that requires a lowercase 40-character SHA for every new Railway event, rejects build identity on APP events, includes the identity in the event digest and INSERT, and rejects subsequent lifecycle transitions with a different build identity. It preserves the writer's existing transition checks, advisory locks, digest, return contract and SECURITY DEFINER behavior. It revokes `service_role` EXECUTE on the legacy 17-argument overload, making old callers fail closed rather than insert events without identity.
+
+The TypeScript bridge now passes `_worker_build_commit: event.workerBuildCommit`; the bridge unit test asserts the exact RPC argument. The Python recorder already reads the identity from embedded `BUILD_INFO.json` and includes `workerBuildCommit` in each event. Runtime environment variables must not override the embedded identity.
+
+**The migration is committed only on this review branch; it has not been applied to the managed database.** Before production migration:
+1. Read the real managed function/table metadata using a read-only connection.
+2. Compare live writer/table semantics to the source migration; regenerate if drift exists.
+3. Run the migration and writer concurrency/identity tests on disposable PostgreSQL.
+4. Prove valid identity inserts, malformed/missing Railway identity rejects, identical replay is idempotent, conflicting identity rejects without mutation, and old 17-argument calls fail closed.
+5. Verify all historical rows are unchanged, existing unknown identities remain NULL, and owner/security/grants are correct.
+6. Only after review and disposable PASS, use the separately authorized managed migration procedure with exact hashes and post-apply read-only verification.
 
 ### 1.4 Python payload
 
@@ -200,3 +213,76 @@ If any health/version/preflight/bridge/ledger check fails:
 - [ ] Rollback target is available.
 
 **Current decision:** do not perform the production cutover merely because PR #89 and CI are green. The database writer migration and positive durable-identity proof are mandatory release gates.
+
+
+## Controlled smoke-test protocol (post-deploy)
+
+**Never send a synthetic execution event to the production ledger.** A fake job ID would still create durable audit data. Production smoke tests below are read-only; the positive bridge write must run against a homologation app/bridge connected to disposable PostgreSQL. This avoids contaminating production metrics, RAW, Canonical, queue, or Attempt 9.
+
+### A. Read-only worker endpoints
+
+```sh
+set -euo pipefail
+BASE_URL="https://<worker-domain>"
+EXPECTED_WORKER_COMMIT="<verified-40-char-lowercase-image-sha>"
+health="$(curl --fail-with-body --silent --show-error "$BASE_URL/health")"
+printf '%s\n' "$health"
+version="$(curl --fail-with-body --silent --show-error "$BASE_URL/version")"
+printf '%s\n' "$version"
+printf '%s' "$version" | jq -e --arg sha "$EXPECTED_WORKER_COMMIT" \
+  '.build.embedded == true and .build.commit == $sha'
+printf '%s' "$version" | jq -e \
+  '.parser.revision != null and .contract_version != null'
+```
+
+Pass criteria: both endpoints return HTTP 200; `/version` reports `build.embedded: true`, the exact embedded commit, parser revision and contract version. Compare the exact parser revision with `DEMO_PARSER_EXPECTED_REVISION`. Do not print environment variables or secrets. These calls do not write data.
+
+### B. Synthetic positive bridge event — disposable database ONLY
+
+Run this only against a non-production app deployment configured with `NODE_ENV=production` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` equal to the verified image SHA, connected to a disposable database. Never point it at the published production app or managed production DB.
+
+```sh
+set -euo pipefail
+set +x
+export BRIDGE_URL="https://<homologation-app-domain>/api/public/h3e91-execution-event"
+read -rsp 'Homologation bridge secret: ' DEMO_PIPELINE_BRIDGE_SECRET; echo
+export DEMO_PIPELINE_BRIDGE_SECRET
+export WORKER_BUILD_COMMIT="<verified-40-char-lowercase-image-sha>"
+
+curl --fail-with-body --silent --show-error \\
+  -H "Authorization: Bearer $DEMO_PIPELINE_BRIDGE_SECRET" \\
+  -H 'Content-Type: application/json' -X POST "$BRIDGE_URL" \\
+  --data-binary @- <<JSON
+{
+  "protocol":"H3E91_EXECUTION_BRIDGE_V1",
+  "eventId":"b3685a02-6d38-4f19-8b19-7c9810808773",
+  "executionId":"8d1b3d98-ddde-4500-bb8e-039d69907b9d",
+  "uploadId":"bf506999-b9bf-409b-b3ae-8545e617caab",
+  "correlationId":"37db9ea7-2af0-4ee2-b154-e0d6a5ec5d90",
+  "jobId":"2f8a2c6c-2b77-4c60-8b2e-2f8a2c6c0001",
+  "attemptNumber":1,
+  "demoSha256":null,"fileSize":null,
+  "parserName":null,"parserVersion":null,"parserRevision":null,
+  "workerBuildCommit":"$WORKER_BUILD_COMMIT",
+  "metadataDigest":null,
+  "executionSurface":"RAILWAY_DURABLE_WORKER","source":"RAILWAY",
+  "eventVersion":1,"outcomeCode":null,"eventType":"EXECUTION_INTENT"
+}
+JSON
+unset DEMO_PIPELINE_BRIDGE_SECRET
+```
+
+Expected first response: HTTP 201, `status = INSERTED`. Repeating the identical payload should return HTTP 200, `status = IDEMPOTENT_REPLAY`. Verify in disposable PostgreSQL that the row stores `worker_build_commit = WORKER_BUILD_COMMIT`. A mismatched SHA against the app's expected commit must return HTTP 503 `H3E91_WORKER_BUILD_IDENTITY_MISMATCH` before RPC. Test same-event conflicting identity directly in the disposable DB harness and verify the original row is unchanged.
+
+The synthetic `jobId` is a UUID-shaped ledger reference only; it is not inserted into `demo_jobs` and does not dispatch a queue job. Do not send a terminal event or parse a DEM for this smoke test.
+
+### C. No-contamination and cleanup checks
+
+- Compare production `demo_jobs`, `uploads`, H3E91 ledger, queue, Canonical tables and product metrics read-only before/after; require zero delta. The synthetic ledger event/replay must exist only in disposable PostgreSQL.
+- Confirm no DEM bytes, RAW artifact or Canonical row was created.
+- For parser E2E, use the existing disposable-database CI harness and a public fixture. Check cleanup evidence for success, failure, timeout and cancellation; HTTP 200 alone does not prove temporary-file cleanup.
+- Retain redacted artifacts and remove the disposable service/database after testing. Never print secrets or signed URLs.
+
+### D. Production gate
+
+Production may receive read-only `/health` and `/version` checks until the managed writer migration is reviewed/applied and the durable positive path has been proven. A synthetic production event is not an acceptable smoke test. Green endpoints prove liveness/build identity, not ledger persistence or authorization for RAW, Canonical, or Attempt 9.
