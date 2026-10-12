@@ -149,6 +149,19 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'sqlstate', _state, 'message', _message, 'constraint', _constraint);
   END;
 END $f$;
+CREATE FUNCTION pg_temp.drift(_alter text, _sql text) RETURNS jsonb LANGUAGE plpgsql AS $f$
+-- Apply a drift, run _sql against it, then undo the drift by raising: the result
+-- travels out in the error detail, so every case starts from the same state.
+DECLARE _detail text;
+BEGIN
+  BEGIN
+    EXECUTE _alter;
+    RAISE EXCEPTION 'PROBE_UNDO' USING DETAIL = pg_temp.run(_sql)::text;
+  EXCEPTION WHEN raise_exception THEN
+    GET STACKED DIAGNOSTICS _detail = PG_EXCEPTION_DETAIL;
+  END;
+  RETURN _detail::jsonb;
+END $f$;
 CREATE FUNCTION pg_temp.catalog() RETURNS jsonb LANGUAGE sql AS $f$
   SELECT jsonb_build_object(
     'relations', (SELECT md5(string_agg(c.oid::text || ':' || c.relname || ':' || c.relkind::text || ':' || c.xmin::text, ',' ORDER BY c.oid))
@@ -277,6 +290,38 @@ INSERT INTO probe_result SELECT 'reapplied', pg_temp.recorder();
         + expect(o, "reapplied", md5=MANAGED_MD5, owner="postgres", secdef=True,
                  service_role=True, anon=False, authenticated=False))
 
+    fn = "public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)"
+    scenario("d1_property_drift_fails_closed", f"""
+INSERT INTO probe_result SELECT 'comment', pg_temp.drift($a$COMMENT ON FUNCTION {fn} IS 'probe'$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'owner', pg_temp.drift($a$ALTER FUNCTION {fn} OWNER TO service_role$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'search_path', pg_temp.drift($a$ALTER FUNCTION {fn} SET search_path = public$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'security_invoker', pg_temp.drift($a$ALTER FUNCTION {fn} SECURITY INVOKER$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'public_execute', pg_temp.drift($a$GRANT EXECUTE ON FUNCTION {fn} TO PUBLIC$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'service_role_revoked', pg_temp.drift($a$REVOKE EXECUTE ON FUNCTION {fn} FROM service_role$a$, {literal(MIGRATION)});
+INSERT INTO probe_result SELECT 'unchanged', pg_temp.recorder();
+""", lambda o: failed(o, "comment", "R5_8_7_RECORDER_COMMENT_INVALID")
+        + failed(o, "owner", "R5_8_7_RECORDER_PROPERTIES_INVALID")
+        + failed(o, "search_path", "R5_8_7_RECORDER_PROPERTIES_INVALID")
+        + failed(o, "security_invoker", "R5_8_7_RECORDER_PROPERTIES_INVALID")
+        + failed(o, "public_execute", "R5_8_7_RECORDER_GRANTS_INVALID")
+        + failed(o, "service_role_revoked", "R5_8_7_RECORDER_GRANTS_INVALID")
+        + expect(o, "unchanged", md5=MANAGED_MD5, owner="postgres", secdef=True, config=['search_path=""'],
+                 service_role=True, anon=False))
+
+    managed_history = ("ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS created_by text; "
+                       "INSERT INTO supabase_migrations.schema_migrations (version, created_by) "
+                       "VALUES ('29991231000000', 'apikey@lovable.dev')")
+    scenario("rollbacks_refuse_on_a_managed_database", f"""
+INSERT INTO probe_result SELECT 'before', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'r587_rollback', pg_temp.drift($a${managed_history}$a$, {literal(ROLLBACK)});
+INSERT INTO probe_result SELECT 'r588_rollback', pg_temp.drift($a${managed_history}$a$, {literal(ROLLBACK_R588)});
+INSERT INTO probe_result SELECT 'after', pg_temp.catalog();
+INSERT INTO probe_result SELECT 'recorder', pg_temp.recorder();
+""", lambda o: failed(o, "r587_rollback", "R5_8_7_ROLLBACK_REFUSED_ON_MANAGED_DATABASE")
+        + failed(o, "r588_rollback", "R5_8_8_ROLLBACK_REFUSED_ON_MANAGED_DATABASE")
+        + ([] if o.get("before") == o.get("after") else ["data or objects changed"])
+        + expect(o, "recorder", md5=MANAGED_MD5))
+
     # ----- R5.8.8 (D3 option a): deployment-scoped uniqueness
     scenario("r588_reset_build_has_no_deployment_uniqueness_and_keeps_replay_controls", """
 INSERT INTO probe_result SELECT 'controls', pg_temp.controls();
@@ -322,6 +367,18 @@ INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
 ALTER TABLE public.parser_runtime_provenance DROP CONSTRAINT parser_runtime_provenance_attestation_digest_key;
 INSERT INTO probe_result SELECT 'migration', {MIGRATE_R588};
 """, lambda o: failed(o, "migration", "R5_8_8_REPLAY_CONTROLS_MISSING"))
+
+    scenario("r588_missing_nonce_controls_fail_closed", f"""
+INSERT INTO probe_result SELECT 'nonce_pkey', pg_temp.drift($a$ALTER TABLE public.parser_attestation_nonces DROP CONSTRAINT parser_attestation_nonces_pkey$a$, {literal(MIGRATION_R588)});
+INSERT INTO probe_result SELECT 'nonce_digest', pg_temp.drift($a$ALTER TABLE public.parser_attestation_nonces DROP CONSTRAINT parser_attestation_nonces_attestation_digest_key$a$, {literal(MIGRATION_R588)});
+INSERT INTO probe_result SELECT 'controls', pg_temp.controls();
+""", lambda o: failed(o, "nonce_pkey", "R5_8_8_REPLAY_CONTROLS_MISSING")
+        + failed(o, "nonce_digest", "R5_8_8_REPLAY_CONTROLS_MISSING")
+        + expect(o, "controls", nonce_pkey=True, nonce_digest_key=True, provenance_digest_key=True))
+
+    scenario("r588_constraint_backed_index_fails_closed", f"""
+INSERT INTO probe_result SELECT 'case', pg_temp.drift($a${ORIGINAL_INDEX}; ALTER TABLE public.parser_runtime_provenance ADD CONSTRAINT {INDEX} UNIQUE USING INDEX {INDEX}$a$, {literal(MIGRATION_R588)});
+""", lambda o: failed(o, "case", "R5_8_8_UNEXPECTED_INDEX_DEFINITION"))
 
     # ----- controls after both migrations
     scenario("two_distinct_attestations_of_one_deployment_coexist", f"""

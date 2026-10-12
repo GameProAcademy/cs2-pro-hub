@@ -51,7 +51,7 @@ describe("R5.8.7 attestation recorder reconciliation", () => {
     }
   });
 
-  it("changes no data, grant or index, and keeps the deployment identity index (D3)", () => {
+  it("changes no data, grant or index; deployment uniqueness is left to R5.8.8", () => {
     const code = migration.replace(/^\s*--.*$/gm, "");
     expect(code).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE)\s+(INTO\s+)?public\./i);
     expect(code).not.toMatch(/\b(GRANT|REVOKE)\b/i);
@@ -102,6 +102,18 @@ describe("R5.8.8 deployment-scoped provenance uniqueness (D3 option a)", () => {
     // The only CREATE is inside the string literal describing the expected index.
     expect(code.replace(/'[^']*'/g, "''")).not.toMatch(/\bCREATE\b/i);
     expect(code).not.toMatch(/^\s*(BEGIN|COMMIT)\s*;/im);
+  });
+
+  it("has rollbacks restricted to repository builds", () => {
+    const r587Rollback = readFileSync(
+      resolve("docs/rollback/20261012200000_r5_8_7_recorder_rollback_repository_builds_only.sql"),
+      "utf8",
+    );
+    for (const rollback of [r587Rollback, r588Rollback]) {
+      expect(rollback).toContain("_REFUSED_ON_MANAGED_DATABASE");
+      expect(rollback).toContain("created_by = ''apikey@lovable.dev''");
+      expect(rollback).not.toMatch(/\b(DELETE|TRUNCATE)\b/i);
+    }
   });
 
   it("has a rollback that refuses instead of deleting attestations", () => {

@@ -3,7 +3,8 @@
 -- On the managed database the migration changes nothing (it starts at, and
 -- leaves, md5 fe3250af2b461f03f459adf36b43ec21). Its rollback there is "do
 -- nothing"; running this file there would replace the managed definition with
--- the old repository one. Do not run it against the managed database.
+-- the old repository one. Do not run it against the managed database; it
+-- refuses (R5_8_7_ROLLBACK_REFUSED_ON_MANAGED_DATABASE) when it recognises one.
 --
 -- Restores md5(prosrc) 5ea1ffff4fc874ca50f0081b9c9a5e71 from
 -- fe3250af2b461f03f459adf36b43ec21, and fails closed from any other state.
@@ -16,9 +17,23 @@ DO $rollback$
 DECLARE
   _fn constant regprocedure :=
     'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  _label constant text := 'R5_8_7_ROLLBACK';
+  _managed boolean;
   _md5 text;
   _definition text;
 BEGIN
+  -- Refuse on the managed database. Its migration history carries rows written
+  -- by the platform (created_by = 'apikey@lovable.dev'); repository builds made
+  -- by the Supabase CLI or by tests do not.
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_attribute a
+             WHERE a.attrelid = pg_catalog.to_regclass('supabase_migrations.schema_migrations')
+               AND a.attname = 'created_by' AND NOT a.attisdropped) THEN
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations '
+            'WHERE created_by = ''apikey@lovable.dev'')' INTO _managed;
+    IF _managed THEN
+      RAISE EXCEPTION '%_REFUSED_ON_MANAGED_DATABASE', _label USING ERRCODE = '55000';
+    END IF;
+  END IF;
   SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_catalog.pg_proc p WHERE p.oid = _fn;
   IF _md5 <> 'fe3250af2b461f03f459adf36b43ec21' THEN
     RAISE EXCEPTION 'R5_8_7_ROLLBACK_UNEXPECTED_DEFINITION: %', _md5 USING ERRCODE = '55000';
