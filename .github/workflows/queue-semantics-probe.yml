@@ -125,7 +125,7 @@ jobs:
               raise SystemExit(0)
           d = json.loads(text[text.index("RESULT:") + 7:])
           summary = {k: d[k] for k in ("probe", "status", "passed", "total", "target_md5", "database", "deployment_id", "values_source", "build_commit", "semantic_commit") if k in d}
-          summary["not_passed"] = [s["scenario"] for s in d["scenarios"] if s["status"] != "PASS"]
+          summary["not_passed"] = {s["scenario"]: str(s.get("detail"))[:400] for s in d["scenarios"] if s["status"] != "PASS"}
           level = "notice" if d["status"] == "PASS" else "error"
           print(f"::{level} title=R5.8.9 disposable::" + json.dumps(summary, sort_keys=True))
           PY
@@ -143,6 +143,7 @@ jobs:
             ${{ runner.temp }}/queue-recovery-report.json
             ${{ runner.temp }}/canonical-persistence-report.json
             ${{ runner.temp }}/attestation-recorder-report.json
+            ${{ runner.temp }}/r5-8-9-report.txt
           if-no-files-found: warn
           retention-days: 14
       - name: Tear down disposable services
