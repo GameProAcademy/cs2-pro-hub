@@ -1,5 +1,12 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## Bridge identity publication — 2026-10-13
+
+- [x] Confirm PR #108 is merged and already present; read both published application endpoints and both worker /version endpoints twice. Served image commit is stable, but deployment identity is not independently available from these endpoints.
+- [x] Remove identity-only whitespace normalization to match the unchanged strict production bridge predicate; 15 focused TypeScript tests and 48 offline activation tests PASS.
+- [ ] BLOCKED pending independent confirmation of the final reconciliation runtime: observed image c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d, declared build/bridge expectation 10815fb44e165963adfaf07f71c474ca628f4b7f, semantic revision 5703b1d88f21ee57fdd1d83722edf30e0f0c6f76, declared_revision_matches=false. No configuration or publication while contradictory.
+- [x] Deliver identity evidence and remaining independent pre-DEM blockers; no database writes or parser execution. Published bridge remains BRIDGE_IDENTITY_NOT_PUBLISHED.
+
 ## App-side hardening / A9.2 preparation — 2026-10-08
 
 - [x] Harden per-execution Worker ownership, startup/URL/postMessage failures, cancellation, duplicate READY and stale async callbacks; 21 synthetic lifecycle tests, no real DEM.

@@ -16,6 +16,7 @@
 - Keep parser production images on an explicit runtime source allowlist; reference CLI and tests must stay out because their parse entrypoints would evade production ledger coverage.
 - Keep the browser parser POC unreachable from production routes and reject production service calls; source and CI checks are preparation, not deployed-bundle proof.
 - Keep the H3E91 event bridge authenticated, bounded and database-backed; failed recording must stop parsing, and source-only coverage never establishes deployed parity.
+- Keep the public bridge identity predicate byte-exact with the production bridge configuration predicate; never normalize a value that the bridge rejects, so diagnostics cannot falsely report configuration.
 - Treat the R4.1 proof evaluator as pure diagnostic audit-readiness logic, never as DEM or Canonical authorization; even all local proofs cannot substitute deployed-source parity.
 - Bind `/v1/parse` retries to the authenticated job/upload/attempt envelope and reconstruct recorder IDs from it; random per-request IDs cannot prove retry idempotency.
 - Read H3E91 lifecycle only through the minimal service-role RPC; durable replay must reconcile queue state without rerunning the parser or exposing ledger rows.
