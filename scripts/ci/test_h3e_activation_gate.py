@@ -733,3 +733,27 @@ class BridgeIdentity(unittest.TestCase):
         world.endpoint_down = {gate.HOSTS[0]}
         evidence, _ = evaluate(world)
         self.assertEqual(evidence["stages"]["bridge_identity"]["reason"], "SERVED_BUILD_UNAVAILABLE")
+
+    def test_every_bridge_problem_is_reported_in_one_run(self):
+        # The published state of 2026-10-13: expectation 10815fb4, served c8c6d6ec, not enforced.
+        world = World()
+        served = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+        world.version_by_host.update({h: {"parser": dict(world.version["parser"]),
+                                          "build": dict(world.version["build"], commit=served)}
+                                      for h in gate.HOSTS})
+        world.fingerprint["bridge"].update(enforced=False)
+        evidence, _ = evaluate(world)
+        bridge = evidence["stages"]["bridge_identity"]
+        self.assertEqual(bridge["reason"], "BRIDGE_IDENTITY_NOT_ENFORCED")
+        self.assertEqual(bridge["problems"], ["BRIDGE_IDENTITY_NOT_ENFORCED", "BRIDGE_EXPECTED_BUILD_MISMATCH"])
+        self.assertEqual(bridge["observed"]["served_build_commits"], [served])
+        self.assertEqual(bridge["observed"]["expected_worker_build_commit"], BUILD)
+        self.assertIs(bridge["observed"]["enforced"], False)
+
+    def test_an_unconfigured_expectation_is_never_echoed(self):
+        world = World()
+        world.fingerprint["bridge"].update(expectedWorkerBuildCommit="not-a-commit", configured=True)
+        evidence, _ = evaluate(world)
+        bridge = evidence["stages"]["bridge_identity"]
+        self.assertEqual(bridge["problems"], ["BRIDGE_EXPECTED_BUILD_UNCONFIGURED"])
+        self.assertIsNone(bridge["observed"]["expected_worker_build_commit"])
