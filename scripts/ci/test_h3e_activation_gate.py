@@ -749,6 +749,8 @@ class BridgeIdentity(unittest.TestCase):
         self.assertEqual(bridge["observed"]["served_build_commits"], [served])
         self.assertEqual(bridge["observed"]["expected_worker_build_commit"], BUILD)
         self.assertIs(bridge["observed"]["enforced"], False)
+        line = next(l for l in gate.annotations(evidence) if "stage bridge_identity" in l)
+        self.assertIn("BRIDGE_EXPECTED_BUILD_MISMATCH", line)  # every problem reaches the check annotation
 
     def test_an_unconfigured_expectation_is_never_echoed(self):
         world = World()
