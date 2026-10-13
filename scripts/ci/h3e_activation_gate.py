@@ -20,6 +20,16 @@ For one target commit of main (the current head) this gate proves, or refuses:
                  `services/cs2-demo-parser` tree is identical to the target's;
                  the declared semantic revision names a commit of the target's
                  history whose worker tree is that same deployed tree.
+  persistence    the Queue Semantics probes of the target commit (disposable
+                 database, synthetic, rolled back) all report PASS;
+  predem_matrix  the 28 pre-DEM gates of the R5.8.4 matrix are VERIFIED, using
+                 R5.8.4 for the gates it collects and the stages above for
+                 remote_ci, transport, endpoint and persistence. Post-DEM gates
+                 (parity, determinism, tick authority, runtime frozen) are
+                 outputs of the laboratory run and are never consulted here.
+
+PASS is the pre-DEM approval: an operator may dispatch the A9.1 laboratory run
+for this exact commit, citing this run. It is never production authority.
 
 Every stage is PASS, FAIL, BLOCKED or SKIPPED. Only PASS everywhere gives the
 decision PASS. SKIPPED is never evidence. The gate never dispatches a workflow,
@@ -58,7 +68,17 @@ WORKFLOWS = {
     "f553_post_completion": ("f553-r11-post-completion.yml", "F553 R11.2 post-completion attestation", "workflow_run"),
     "r5_8_3": ("r5-8-3-read-only-preflight.yml", "R5.8.3 Read-Only Release Preflight", "push"),
     "r5_8_4": ("r5-8-4-gate-reconciliation.yml", "R5.8.4 Read-Only Gate Reconciliation", "workflow_run"),
+    "queue_semantics": ("queue-semantics-probe.yml", "Queue Semantics Probe", "push"),
 }
+QUEUE_JOBS = ("Queue semantics on a disposable database",
+              "Queue recovery end to end (real worker, real bridge, real storage)")
+#: Every probe that proves persistence, idempotency, recovery and the recorder on
+#: a disposable database. Each must report PASS with nothing left unpassed.
+PERSISTENCE_PROBES = frozenset({
+    "DEMO_PARSE_QUEUE_SEMANTICS", "DEMO_PARSE_RECOVERY_PROTOCOL", "CANONICAL_PERSISTENCE_IDEMPOTENCY",
+    "ATTESTATION_RECORDER_RECONCILIATION", "DEMO_PARSE_RECOVERY_END_TO_END",
+})
+PREDEM_READY = "READY_FOR_PREDEM_REVIEW"
 R583_GREEN = "GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT"
 R584_GREEN = "READY_FOR_OPERATOR_REVIEW"
 SIDE_EFFECTS = {
@@ -161,17 +181,99 @@ def evaluate_r583(document: dict[str, Any], *, sha: str) -> dict[str, Any]:
 
 
 def evaluate_r584(document: dict[str, Any], *, r583_run_id: Any, sha: str) -> dict[str, Any]:
+    """Integrity of the R5.8.4 matrix for this commit, and its own scope.
+
+    R5.8.4 can never be READY as a whole before the real-DEM laboratory run:
+    its post-DEM gates are outputs of that run. What it must prove here is that
+    every gate it collects (from R5.8.3) is VERIFIED and that no post-DEM gate
+    is claimed in advance. The remaining pre-DEM gates are judged by
+    `evaluate_predem` with the evidence this gate collects itself.
+    """
     source = document.get("source") if isinstance(document.get("source"), dict) else {}
     if str(source.get("workflow_run_id")) != str(r583_run_id) or source.get("workflow_run_sha") != sha:
         return stage(FAIL, reason="R584_EVIDENCE_FOR_ANOTHER_R583_RUN")
     if document.get("side_effects") is not False:
         return stage(FAIL, reason="R584_SIDE_EFFECTS_NOT_FALSE")
-    if document.get("decision") != R584_GREEN or document.get("blockers"):
-        return stage(FAIL, reason="R584_DECISION_NOT_READY", decision=document.get("decision"),
-                     blockers=list(document.get("blockers") or []))
     if document.get("attempt_9_authorized") or document.get("canonical_authorized"):
         return stage(FAIL, reason="R584_CLAIMS_AUTHORIZATION")
-    return stage(PASS, decision=document.get("decision"))
+    phases = document.get("phases") if isinstance(document.get("phases"), dict) else {}
+    pre, post = phases.get("pre_dem"), phases.get("post_dem")
+    gates = document.get("gates") if isinstance(document.get("gates"), dict) else {}
+    own = document.get("own_scope") if isinstance(document.get("own_scope"), dict) else {}
+    if (document.get("schema_version") != 2 or not isinstance(pre, dict) or not isinstance(post, dict)
+            or len(gates) != 32 or not isinstance(own.get("gates"), list) or not own["gates"]):
+        return stage(FAIL, reason="R584_MATRIX_MALFORMED")
+    claimed = sorted(g for g in post.get("gates") or [] if (gates.get(g) or {}).get("status") == "VERIFIED")
+    if claimed or post.get("predem_approval") is not None:
+        return stage(FAIL, reason="R584_POST_DEM_CLAIMED_BEFORE_THE_RUN", observed=claimed)
+    if own.get("blockers"):
+        return stage(FAIL, reason="R584_OWN_SCOPE_NOT_VERIFIED", blockers=list(own["blockers"]))
+    return stage(PASS, decision=document.get("predem_decision"))
+
+
+def evaluate_persistence(annotations_by_job: dict[str, list[dict[str, Any]] | None]) -> dict[str, Any]:
+    """The disposable-database probes of the target commit, from their own reports."""
+    seen: dict[str, dict[str, Any]] = {}
+    for job in QUEUE_JOBS:
+        listed = annotations_by_job.get(job)
+        if listed is None:
+            return stage(BLOCKED, reason="QUEUE_JOB_NOT_FOUND", observed=job)
+        for item in listed:
+            if item.get("title") != "Queue probe":
+                continue
+            try:
+                summary = json.loads(item.get("message") or "")
+            except ValueError:
+                return stage(FAIL, reason="QUEUE_PROBE_REPORT_UNREADABLE")
+            name = summary.get("probe")
+            if name in seen:
+                return stage(FAIL, reason="QUEUE_PROBE_REPORTED_TWICE", observed=name)
+            seen[name] = summary
+    missing = sorted(PERSISTENCE_PROBES - set(seen))
+    if missing:
+        return stage(BLOCKED, reason="QUEUE_PROBE_MISSING", missing=missing)
+    failing = sorted(n for n in PERSISTENCE_PROBES
+                     if seen[n].get("status") != "PASS" or seen[n].get("not_passed") or seen[n].get("known_defects")
+                     or not isinstance(seen[n].get("total"), int) or seen[n]["total"] < 1
+                     or seen[n].get("passed") != seen[n]["total"])
+    if failing:
+        return stage(FAIL, reason="QUEUE_PROBE_NOT_PASS", observed=failing)
+    return stage(PASS, probes={n: f"{seen[n]['passed']}/{seen[n]['total']}" for n in sorted(PERSISTENCE_PROBES)})
+
+
+#: Pre-DEM gates of the R5.8.4 matrix that this activation gate proves itself.
+ACTIVATION_COLLECTED = {
+    "remote_ci": ("quality_gates", "main_required_gates", "f553_post_completion"),
+    "transport_secret_configured": ("transport",),
+    "endpoint_configured": ("transport",),
+    "persistence_validation": ("persistence",),
+}
+
+
+def evaluate_predem(document: dict[str, Any] | None, stages: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """The complete pre-DEM matrix: R5.8.4's gates plus the ones proven here.
+
+    Post-DEM gates are not consulted at all. A pre-DEM gate counts only when it
+    is VERIFIED; there is no default, override or manual waiver.
+    """
+    if not isinstance(document, dict):
+        return stage(BLOCKED, reason="R584_MATRIX_UNAVAILABLE")
+    gates = document.get("gates") if isinstance(document.get("gates"), dict) else {}
+    pre = ((document.get("phases") or {}).get("pre_dem") or {}).get("gates") or []
+    matrix: dict[str, str] = {}
+    for gate in pre:
+        if gate in ACTIVATION_COLLECTED:
+            proven = all((stages.get(s) or {}).get("status") == PASS for s in ACTIVATION_COLLECTED[gate])
+            matrix[gate] = "VERIFIED" if proven else "NOT_PROVEN"
+        else:
+            matrix[gate] = (gates.get(gate) or {}).get("status") or "NOT_PROVEN"
+    blockers = sorted(g for g, status in matrix.items() if status != "VERIFIED")
+    if len(matrix) != 28:
+        return stage(FAIL, reason="PREDEM_MATRIX_INCOMPLETE", observed=len(matrix))
+    if blockers:
+        collectors = sorted({(gates.get(g) or {}).get("collector") or "H.3-E activation gate" for g in blockers})
+        return stage(BLOCKED, reason="PREDEM_GATES_NOT_VERIFIED", blockers=blockers, missing=collectors)
+    return stage(PASS, decision=PREDEM_READY, verified=len(matrix))
 
 
 def evaluate_transport(*, secrets_present: dict[str, bool], endpoint_matches: bool,
@@ -361,6 +463,7 @@ def find_artifact(io: Io, name: str) -> tuple[dict[str, Any] | None, bytes | Non
 
 def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
+    r584_document: dict[str, Any] | None = None
     runs: dict[str, dict[str, Any] | None] = {}
     for key, (path, name, event) in WORKFLOWS.items():
         listed = io.github(f"/actions/workflows/{path}/runs?head_sha={sha}&per_page=50").get("workflow_runs") or []
@@ -392,9 +495,22 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
         out["r5_8_4_decision"] = (evaluate_r584(document, r583_run_id=run_id, sha=sha)
                                   if document is not None and integrity["status"] == PASS
                                   else stage(SKIPPED, reason="NO_VALID_ARTIFACT"))
+        if document is not None and integrity["status"] == PASS and out["r5_8_4_decision"]["status"] != FAIL:
+            r584_document = document
     else:
         for key in ("r5_8_3_artifact", "r5_8_3_decision", "r5_8_4_artifact", "r5_8_4_decision"):
             out[key] = stage(SKIPPED, reason="R583_RUN_NOT_FINISHED")
+    if out["queue_semantics"]["status"] == PASS:
+        jobs = io.github(f"/actions/runs/{runs['queue_semantics']['id']}/jobs?filter=latest&per_page=100").get("jobs") or []
+        by_job: dict[str, list[dict[str, Any]] | None] = {}
+        for name in QUEUE_JOBS:
+            matching = [j for j in jobs if j.get("name") == name]
+            by_job[name] = (io.github(f"/check-runs/{matching[0]['id']}/annotations?per_page=100")
+                            if len(matching) == 1 else None)
+        out["persistence"] = evaluate_persistence(by_job)
+    else:
+        out["persistence"] = stage(SKIPPED, reason="QUEUE_SEMANTICS_NOT_PASS")
+    out["_r584_document"] = r584_document  # consumed by run_gate, never reported
     return out
 
 
@@ -452,6 +568,9 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
         stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
     else:
         stages["runtime"] = stage(SKIPPED, reason="TARGET_NOT_PASS")
+    r584_document = stages.pop("_r584_document", None)
+    stages["predem_matrix"] = evaluate_predem(r584_document, stages)
+    decision = decide(stages)
     return {
         "schema_version": 1,
         "operation": "H3E_ACTIVATION_GATE",
@@ -460,9 +579,14 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
         "trigger": {"event": env.get("GITHUB_EVENT_NAME"), "run_id": env.get("GITHUB_RUN_ID"),
                     "run_attempt": env.get("GITHUB_RUN_ATTEMPT"), "ref": env.get("GITHUB_REF")},
         "stages": stages,
-        "decision": decide(stages),
+        "decision": decision,
+        # PASS here is the pre-DEM approval: it allows an operator to dispatch
+        # the A9.1 laboratory run for this exact commit, citing this run. It is
+        # never production, Attempt 9 or Canonical authority.
+        "predem_decision": PREDEM_READY if decision == PASS else "BLOCKED",
         "side_effects": dict(SIDE_EFFECTS),
-        "authorizes": {"attempt_9": False, "canonical": False, "real_dem": False},
+        "authorizes": {"attempt_9": False, "canonical": False, "real_dem_production": False,
+                       "real_dem_laboratory_dispatch": decision == PASS},
     }
 
 
@@ -476,7 +600,7 @@ def render(evidence: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-SAFE_DETAIL_KEYS = ("reason", "observed", "decision", "failures", "blockers", "missing", "probe",
+SAFE_DETAIL_KEYS = ("reason", "observed", "decision", "failures", "blockers", "missing", "probe", "probes",
                     "build_commit", "railway_commit", "main_head", "expected_name", "error")
 
 

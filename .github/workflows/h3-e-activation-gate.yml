@@ -9,7 +9,8 @@ name: H.3-E Activation Gate
 # Its decision is PASS only when every stage proved PASS for the current head.
 on:
   workflow_run:
-    workflows: [F553 R11.2 post-completion attestation]
+    # Whichever of the two finishes last sees the complete evidence of the commit.
+    workflows: [F553 R11.2 post-completion attestation, Queue Semantics Probe]
     types: [completed]
     branches: [main]
   workflow_dispatch:

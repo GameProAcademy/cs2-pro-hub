@@ -6,6 +6,10 @@ name: Queue Semantics Probe
 # host. Supplementary evidence, path-filtered on purpose; not a required check.
 
 on:
+  # Every head of main gets its own disposable-database evidence (no path
+  # filter): the H.3-E activation gate reads it as the persistence gate.
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
     paths:

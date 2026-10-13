@@ -15,6 +15,35 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location("h3e_activation_gate", Path(__file__).with_name("h3e_activation_gate.py"))
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
+spec = importlib.util.spec_from_file_location(
+    "r5_8_4_gate_reconciliation", Path(__file__).resolve().parents[1] / "r5_8_4_gate_reconciliation.py")
+r584 = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(r584)
+
+
+def r584_document(r583_id, *, verified_pre=None):
+    """A real R5.8.4 matrix (schema 2) built by the reconciler itself.
+
+    By default every pre-DEM gate collected outside this activation gate is
+    VERIFIED: the world in which each collector delivered. Tests remove gates
+    to model what is actually missing. Post-DEM gates are never set.
+    """
+    own = {g for g in r584.PRE_DEM_GATES if g not in gate.ACTIVATION_COLLECTED}
+    chosen = own if verified_pre is None else set(verified_pre)
+    doc = r584.reconcile_gates({g: {"status": "VERIFIED", "evidence_ref": f"test:{g}"} for g in chosen})
+    doc["source"] = {"workflow_run_id": str(r583_id), "workflow_run_sha": TARGET}
+    in_scope = [g for g in r584.PRE_DEM_GATES if r584.GATE_SPECS[g][1] == r584.R583]
+    doc["own_scope"] = {"gates": in_scope, "blockers": [g for g in in_scope if g not in chosen]}
+    return doc
+
+
+def queue_annotations(job):
+    probes = {gate.QUEUE_JOBS[0]: ("DEMO_PARSE_QUEUE_SEMANTICS", "DEMO_PARSE_RECOVERY_PROTOCOL",
+                                   "CANONICAL_PERSISTENCE_IDEMPOTENCY", "ATTESTATION_RECORDER_RECONCILIATION"),
+              gate.QUEUE_JOBS[1]: ("DEMO_PARSE_RECOVERY_END_TO_END",)}[job]
+    return [{"title": "Queue probe", "message": json.dumps(
+        {"probe": name, "status": "PASS", "passed": 7, "total": 7, "not_passed": [], "known_defects": []})}
+        for name in probes] + [{"title": "Queue probe passed scenarios", "message": "{}"}]
 
 TARGET = "7e6eb4639bb90ceb8ad3c167f27069475a6d5672"
 BUILD = "10815fb44e165963adfaf07f71c474ca628f4b7f"
@@ -54,9 +83,9 @@ class World:
         r584_id = self.runs["r5_8_4"][0]["id"]
         self.r583_doc = {"github": {"sha": TARGET}, "side_effects": False,
                          "decision": gate.R583_GREEN, "failures": []}
-        self.r584_doc = {"side_effects": False, "decision": gate.R584_GREEN, "blockers": [],
-                         "attempt_9_authorized": False, "canonical_authorized": False,
-                         "source": {"workflow_run_id": str(r583_id), "workflow_run_sha": TARGET}}
+        self.r584_doc = r584_document(r583_id)
+        self.queue_jobs = [{"id": 31, "name": gate.QUEUE_JOBS[0]}, {"id": 32, "name": gate.QUEUE_JOBS[1]}]
+        self.queue_annotations = {31: queue_annotations(gate.QUEUE_JOBS[0]), 32: queue_annotations(gate.QUEUE_JOBS[1])}
         self.artifacts = {
             f"r5-8-3-preflight-{TARGET}-{r583_id}": (r583_id, "r5-8-3-preflight.json", "r583_doc"),
             f"r5-8-4-gate-reconciliation-{r583_id}-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
@@ -94,7 +123,12 @@ class FakeIo:
             key = next(k for k, (p, _, _) in gate.WORKFLOWS.items() if p == workflow)
             return {"workflow_runs": copy.deepcopy(w.runs[key])}
         if path.endswith("/jobs?filter=latest&per_page=100"):
+            run_id = int(path.split("/")[3])
+            if any(r["id"] == run_id for r in w.runs["queue_semantics"]):
+                return {"jobs": copy.deepcopy(w.queue_jobs)}
             return {"jobs": copy.deepcopy(w.jobs)}
+        if path.startswith("/check-runs/") and "/annotations" in path:
+            return copy.deepcopy(w.queue_annotations[int(path.split("/")[2])])
         if path.startswith("/actions/artifacts?name="):
             name = path.split("name=")[1].split("&")[0]
             if name not in w.artifacts:
@@ -162,7 +196,11 @@ class Positive(unittest.TestCase):
         self.assertEqual(evidence["stages"]["runtime"]["worker_tree"], TREE)
         self.assertTrue(evidence["stages"]["r5_8_3_artifact"]["digest"].startswith("sha256:"))
         self.assertEqual(set(evidence["side_effects"].values()), {"NOT_RUN"})
-        self.assertEqual(set(evidence["authorizes"].values()), {False})
+        self.assertEqual(evidence["predem_decision"], "READY_FOR_PREDEM_REVIEW")
+        self.assertEqual(evidence["authorizes"], {"attempt_9": False, "canonical": False,
+                                                  "real_dem_production": False, "real_dem_laboratory_dispatch": True})
+        self.assertEqual(evidence["stages"]["persistence"]["status"], "PASS")
+        self.assertEqual(evidence["stages"]["predem_matrix"]["verified"], 28)
 
     def test_push_without_worker_change_passes_on_tree_identity_not_on_build_label(self):
         # The image was built from an older commit; the worker tree is identical.
@@ -266,7 +304,7 @@ class Negative(unittest.TestCase):
         world.runs["r5_8_3"][0]["conclusion"] = "failure"
         world.runs["r5_8_4"][0]["conclusion"] = "failure"
         world.r583_doc.update(decision="BLOCKED", failures=["RUNTIME_IDENTITY_MISMATCH:x"])
-        world.r584_doc.update(decision="BLOCKED", blockers=["python_wasm_parity"])
+        world.r584_doc["own_scope"]["blockers"] = ["live_version_exact"]
         evidence, _ = evaluate(world)
         stages = evidence["stages"]
         self.assertEqual(evidence["decision"], "FAIL")
@@ -275,7 +313,7 @@ class Negative(unittest.TestCase):
         self.assertEqual(stages["r5_8_3_decision"]["reason"], "R583_DECISION_NOT_GREEN")
         self.assertEqual(stages["r5_8_3_decision"]["failures"], ["RUNTIME_IDENTITY_MISMATCH:x"])
         self.assertEqual(stages["r5_8_4_artifact"]["status"], "PASS")
-        self.assertEqual(stages["r5_8_4_decision"]["blockers"], ["python_wasm_parity"])
+        self.assertEqual(stages["r5_8_4_decision"]["blockers"], ["live_version_exact"])
 
     def test_cancelled_or_running_r583_is_not_read_as_evidence(self):
         for conclusion, status in (("cancelled", "completed"), (None, "in_progress"), ("skipped", "completed")):
@@ -364,11 +402,82 @@ class Negative(unittest.TestCase):
         self.assertDecision(evidence, "FAIL", "r5_8_3_decision", "FAIL", "R583_DECISION_NOT_GREEN")
         self.assertEqual(evidence["stages"]["r5_8_3_decision"]["failures"], ["RAILWAY_DEPLOYMENT_BINDING_MISMATCH"])
 
+    def test_predem_blocked_by_gates_the_repository_cannot_prove(self):
+        # The real state: collectors that need a fresh attestation or an
+        # authorized read of the managed database have delivered nothing.
+        world = World()
+        r583_id = world.runs["r5_8_3"][0]["id"]
+        external = {g for g in r584.PRE_DEM_GATES
+                    if r584.GATE_SPECS[g][1] in (r584.FRESH_ATTESTATION, r584.MANAGED_DB_READ)}
+        own = {g for g in r584.PRE_DEM_GATES if g not in gate.ACTIVATION_COLLECTED}
+        world.r584_doc = r584_document(r583_id, verified_pre=own - external)
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "BLOCKED", "predem_matrix", "BLOCKED", "PREDEM_GATES_NOT_VERIFIED")
+        self.assertEqual(set(evidence["stages"]["predem_matrix"]["blockers"]), external)
+        self.assertEqual(evidence["predem_decision"], "BLOCKED")
+        self.assertFalse(evidence["authorizes"]["real_dem_laboratory_dispatch"])
+
+    def test_post_dem_claims_before_the_run_fail(self):
+        world = World()
+        doc = world.r584_doc
+        doc["gates"]["determinism"]["status"] = "VERIFIED"
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "FAIL", "r5_8_4_decision", "FAIL", "R584_POST_DEM_CLAIMED_BEFORE_THE_RUN")
+
+    def test_activation_collected_gates_need_their_own_stages(self):
+        for mutate, stage_name in (
+            (lambda w: w.transport.update(auth=(401, "UNAUTHORIZED")), "transport"),
+            (lambda w: w.queue_annotations[31].pop(0), "persistence"),
+        ):
+            world = World()
+            mutate(world)
+            evidence, _ = evaluate(world)
+            self.assertNotEqual(evidence["decision"], "PASS")
+            self.assertEqual(evidence["predem_decision"], "BLOCKED")
+            self.assertIn(evidence["stages"]["predem_matrix"]["status"], ("BLOCKED",))
+
+    def test_persistence_probe_problems(self):
+        cases = []
+        world = World(); world.queue_annotations[32] = []; cases.append((world, "BLOCKED", "QUEUE_PROBE_MISSING"))
+        world = World(); world.queue_jobs = world.queue_jobs[:1]; cases.append((world, "BLOCKED", "QUEUE_JOB_NOT_FOUND"))
+        world = World()
+        bad = json.loads(world.queue_annotations[31][0]["message"]); bad.update(status="FAIL", not_passed=["x"])
+        world.queue_annotations[31][0]["message"] = json.dumps(bad); cases.append((world, "FAIL", "QUEUE_PROBE_NOT_PASS"))
+        world = World()
+        bad = json.loads(world.queue_annotations[31][0]["message"]); bad.update(passed=6)
+        world.queue_annotations[31][0]["message"] = json.dumps(bad); cases.append((world, "FAIL", "QUEUE_PROBE_NOT_PASS"))
+        world = World(); world.queue_annotations[32].append(dict(world.queue_annotations[31][0]))
+        cases.append((world, "FAIL", "QUEUE_PROBE_REPORTED_TWICE"))
+        world = World(); world.queue_annotations[31][0]["message"] = "not json"
+        cases.append((world, "FAIL", "QUEUE_PROBE_REPORT_UNREADABLE"))
+        for world, status, reason in cases:
+            evidence, _ = evaluate(world)
+            self.assertEqual(evidence["stages"]["persistence"]["status"], status, reason)
+            self.assertEqual(evidence["stages"]["persistence"]["reason"], reason)
+            self.assertNotEqual(evidence["decision"], "PASS")
+
+    def test_queue_run_missing_for_the_commit_blocks(self):
+        world = World()
+        world.runs["queue_semantics"] = []
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["persistence"]["status"], "SKIPPED")
+        self.assertEqual(evidence["predem_decision"], "BLOCKED")
+
     def test_r584_blocked_or_bound_to_another_run_fails(self):
         world = World()
-        world.r584_doc.update(decision="BLOCKED", blockers=["remote_ci"])
+        world.r584_doc["own_scope"]["blockers"] = ["live_version_exact"]
         evidence, _ = evaluate(world)
-        self.assertDecision(evidence, "FAIL", "r5_8_4_decision", "FAIL", "R584_DECISION_NOT_READY")
+        self.assertDecision(evidence, "FAIL", "r5_8_4_decision", "FAIL", "R584_OWN_SCOPE_NOT_VERIFIED")
+        for mutate in (lambda d: d.update(schema_version=1), lambda d: d["gates"].pop("determinism"),
+                       lambda d: d.pop("own_scope"), lambda d: d.update(phases={})):
+            world = World()
+            mutate(world.r584_doc)
+            evidence, _ = evaluate(world)
+            self.assertDecision(evidence, "FAIL", "r5_8_4_decision", "FAIL", "R584_MATRIX_MALFORMED")
+        world = World()
+        world.r584_doc["canonical_authorized"] = True
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "FAIL", "r5_8_4_decision", "FAIL", "R584_CLAIMS_AUTHORIZATION")
         world = World()
         world.r584_doc["source"]["workflow_run_id"] = "1"
         evidence, _ = evaluate(world)
