@@ -382,13 +382,14 @@ def s_quarantine():
         f"insert into public.match_metrics(match_id) values ({m})",
         f"insert into public.match_features(match_id) values ({m})",
         # TRUNCATE skips row triggers; the statement guard refuses it.
-        "truncate public.round_events",
-        "truncate public.matches cascade",
+        # (client_min_messages: the cascade NOTICE would otherwise hide the error line.)
+        "set client_min_messages = warning; truncate public.round_events",
+        "set client_min_messages = warning; truncate public.matches cascade",
     ):
         refused(query, "CANONICAL_MATCH_QUARANTINED")
     for query in (f"update public.canonical_match_quarantine set reason = reason where match_id = {m}",
                   f"delete from public.canonical_match_quarantine where match_id = {m}",
-                  "truncate public.canonical_match_quarantine cascade"):
+                  "set client_min_messages = warning; truncate public.canonical_match_quarantine cascade"):
         refused(query, "CANONICAL_QUARANTINE_IMMUTABLE")
     after = snapshot(match_id)
     assert after == before, {"before": before, "after": after}
