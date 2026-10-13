@@ -37,6 +37,7 @@ import { Route as ApiPublicH3e91ExecutionLifecycleRouteImport } from './routes/a
 import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
 import { Route as ApiPublicParserAttestationRuntimeRouteImport } from './routes/api/public/parser-attestation-runtime'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
+import { Route as ApiPublicPredemManagedSnapshotRouteImport } from './routes/api/public/predem-managed-snapshot'
 import { Route as ApiInternalH3e9PreflightRouteImport } from './routes/api/internal/h3e9/preflight'
 import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
 import { Route as ApiPublicIntegrationsFaceitCallbackRouteImport } from './routes/api/public/integrations/faceit/callback'
@@ -191,6 +192,12 @@ const ApiPublicPipelineCronRoute = ApiPublicPipelineCronRouteImport.update({
   path: '/api/public/pipeline-cron',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPredemManagedSnapshotRoute =
+  ApiPublicPredemManagedSnapshotRouteImport.update({
+    id: '/api/public/predem-managed-snapshot',
+    path: '/api/public/predem-managed-snapshot',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInternalH3e9PreflightRoute =
   ApiInternalH3e9PreflightRouteImport.update({
     id: '/api/internal/h3e9/preflight',
@@ -243,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
+  '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -275,6 +283,7 @@ export interface FileRoutesByTo {
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
+  '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
+  '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
+    | '/api/public/predem-managed-snapshot'
     | '/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
+    | '/api/public/predem-managed-snapshot'
     | '/admin'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -411,6 +423,7 @@ export interface FileRouteTypes {
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
+    | '/api/public/predem-managed-snapshot'
     | '/_authenticated/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -429,6 +442,7 @@ export interface RootRouteChildren {
   ApiPublicParserAttestationRoute: typeof ApiPublicParserAttestationRoute
   ApiPublicParserAttestationRuntimeRoute: typeof ApiPublicParserAttestationRuntimeRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
+  ApiPublicPredemManagedSnapshotRoute: typeof ApiPublicPredemManagedSnapshotRoute
   ApiInternalH3e9PreflightRoute: typeof ApiInternalH3e9PreflightRoute
   ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
   ApiPublicIntegrationsFaceitCallbackRoute: typeof ApiPublicIntegrationsFaceitCallbackRoute
@@ -633,6 +647,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPipelineCronRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/predem-managed-snapshot': {
+      id: '/api/public/predem-managed-snapshot'
+      path: '/api/public/predem-managed-snapshot'
+      fullPath: '/api/public/predem-managed-snapshot'
+      preLoaderRoute: typeof ApiPublicPredemManagedSnapshotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/h3e9/preflight': {
       id: '/api/internal/h3e9/preflight'
       path: '/api/internal/h3e9/preflight'
@@ -733,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicParserAttestationRuntimeRoute:
     ApiPublicParserAttestationRuntimeRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
+  ApiPublicPredemManagedSnapshotRoute: ApiPublicPredemManagedSnapshotRoute,
   ApiInternalH3e9PreflightRoute: ApiInternalH3e9PreflightRoute,
   ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
   ApiPublicIntegrationsFaceitCallbackRoute:

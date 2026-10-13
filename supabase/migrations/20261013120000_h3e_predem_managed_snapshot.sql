@@ -13,7 +13,7 @@ SET search_path = ''
 AS $snapshot$
   WITH body AS (
     SELECT jsonb_build_object(
-      'schema_version', 1,
+      'schema_version', 2,
       'snapshot_at', pg_catalog.to_char(pg_catalog.clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
       'database', jsonb_build_object(
         'name', pg_catalog.current_database(),
@@ -53,7 +53,39 @@ AS $snapshot$
         FROM (SELECT l.execution_id FROM public.h3e91_execution_evidence_ledger l GROUP BY l.execution_id
               HAVING count(DISTINCT l.worker_build_commit) > 1 OR count(DISTINCT l.parser_revision) > 1
                   OR count(DISTINCT l.upload_id) > 1) c),
-      'retention', public.get_demo_retention_metrics()
+      'retention', public.get_demo_retention_metrics(),
+      -- The 20 most recent VERIFIED attestations, identity fields only (no attestation
+      -- body, signature value, nonce or secret): what the recorder accepted.
+      'provenance', (SELECT jsonb_build_object(
+          'verified_rows', (SELECT count(*) FROM public.parser_runtime_provenance WHERE status = 'VERIFIED'),
+          'latest', COALESCE(jsonb_agg(r.item ORDER BY r.created_at DESC), '[]'::jsonb))
+        FROM (SELECT p.created_at, jsonb_build_object(
+                'created_at', pg_catalog.to_char(p.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                'deployment_id', p.deployment_id,
+                'railway_project_id', p.railway_project_id,
+                'railway_service_id', p.railway_service_id,
+                'railway_environment_id', p.railway_environment_id,
+                'railway_branch', p.railway_branch,
+                'git_commit', p.deployment_commit,
+                'deployment_source_commit', p.deployment_proof ->> 'source_commit',
+                'deployment_status', p.deployment_proof ->> 'deployment_status',
+                'semantic_revision', p.semantic_revision,
+                'build_revision', p.build_revision,
+                'verification_method', p.verification_method,
+                'attestation_version', p.attestation_version,
+                'signature_is_hmac_sha256_hex', p.attestation_signature ~ '^[0-9a-f]{64}$',
+                'attestor_provider', p.attestor_identity ->> 'provider',
+                'workflow_event', p.workflow_identity ->> 'event_name',
+                'workflow_ref', p.workflow_identity ->> 'workflow_ref',
+                'workflow_source_sha', p.workflow_identity ->> 'workflow_source_sha',
+                'workflow_run_id', p.workflow_identity ->> 'run_id',
+                'critical_hashes', (SELECT jsonb_object_agg(h.key, jsonb_build_object(
+                                      'observed', h.value ->> 'observed', 'match', h.value -> 'match'))
+                                    FROM jsonb_each(p.critical_source_hashes) h)) AS item
+              FROM public.parser_runtime_provenance p
+              WHERE p.status = 'VERIFIED'
+              ORDER BY p.created_at DESC
+              LIMIT 20) r)
     ) AS doc
   )
   SELECT doc || jsonb_build_object('digest', pg_catalog.encode(extensions.digest(pg_catalog.convert_to(doc::text, 'UTF8'), 'sha256'), 'hex'))
