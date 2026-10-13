@@ -1,4 +1,4 @@
-# `canonical_uncontaminated` and the managed-database snapshot — proposal (not approved)
+# `canonical_uncontaminated` and the managed-database snapshot — approved rule, production data remains blocked
 
 ## 1. What the repository defines
 
@@ -25,10 +25,12 @@ created 2026-09-11, `match_sources.source_version = demoparser2@0.42.0`; first V
 | ADMISSION_ONLY    | no inventory row is authorized for Canonical admission (`authorized_count = 0`)                                                                                                                     | PASS             |
 
 ADMISSION_ONLY duplicates `canonical_authorization_false` and would make this gate meaningless; STRICT_PROVENANCE
-matches the gate's wording. Neither is approved. **The gate stays NOT_PROVEN** (`CANONICAL_RULE = None` in
-`scripts/predem/managed_snapshot.py`; a test keeps it so). No production row is changed to make it pass.
-Deciding STRICT_PROVENANCE implies deciding what to do with the existing row (keep and fail, quarantine, or
-re-derive after a verified run) — a production-data decision outside this repository.
+matches the gate's wording. **Decision: adopt `STRICT_PROVENANCE`.** `ADMISSION_ONLY` is rejected because it duplicates
+`canonical_authorization_false` and makes this gate meaningless. The evaluator returns FAIL when a
+pre-provenance canonical row exists, VERIFIED only when the measured violation count is exactly zero, and
+NOT_PROVEN when the count is missing or invalid. This decision defines the evidence rule only; it does not
+authorize changing production data. The existing row therefore keeps this gate at FAIL until an independently
+authorized remediation and fresh snapshot establish otherwise. No production row is changed.
 
 ## 4. Snapshot collector
 
