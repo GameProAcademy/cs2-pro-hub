@@ -17,11 +17,7 @@ export const Route = createFileRoute("/api/public/parser-attestation-runtime")({
     handlers: {
       // `bridge` is read at request time: the worker build the execution
       // bridge accepts (a commit hash, not a secret).
-      GET: () =>
-        Response.json(
-          { ...FINGERPRINT, bridge: bridgeWorkerIdentity(process.env) },
-          { status: 200 },
-        ),
+      GET: () => Response.json({ ...FINGERPRINT, bridge: bridgeWorkerIdentity() }, { status: 200 }),
     },
   },
 });

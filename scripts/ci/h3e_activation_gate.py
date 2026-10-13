@@ -429,14 +429,23 @@ def evaluate_bridge(fingerprint: dict[str, Any] | None, versions: dict[str, Any]
         return stage(BLOCKED, reason="SERVED_BUILD_UNAVAILABLE")
     served = {((versions.get(h) or {}).get("build") or {}).get("commit") for h in HOSTS}
     expected = bridge.get("expectedWorkerBuildCommit")
+    configured = (bridge.get("configured") is True and isinstance(expected, str) and bool(SHA.match(expected)))
+    # Every problem is reported, so one run shows all that must change; the
+    # first one in this order is the stage reason.
+    problems = []
     if bridge.get("enforced") is not True:
-        return stage(FAIL, reason="BRIDGE_IDENTITY_NOT_ENFORCED")
-    if bridge.get("configured") is not True or not isinstance(expected, str) or not SHA.match(expected):
-        return stage(FAIL, reason="BRIDGE_EXPECTED_BUILD_UNCONFIGURED")
-    if served != {expected}:
-        return stage(FAIL, reason="BRIDGE_EXPECTED_BUILD_MISMATCH", observed=sorted(map(str, served)),
-                     build_commit=expected)
-    return stage(PASS, build_commit=expected)
+        problems.append("BRIDGE_IDENTITY_NOT_ENFORCED")
+    if not configured:
+        problems.append("BRIDGE_EXPECTED_BUILD_UNCONFIGURED")
+    elif served != {expected}:
+        problems.append("BRIDGE_EXPECTED_BUILD_MISMATCH")
+    observed = {"expected_worker_build_commit": expected if configured else None,
+                "served_build_commits": sorted(map(str, served)),
+                "enforced": bridge.get("enforced"), "configured": bridge.get("configured")}
+    if problems:
+        return stage(FAIL, reason=problems[0], problems=problems, observed=observed,
+                     build_commit=expected if configured else None)
+    return stage(PASS, build_commit=expected, observed=observed)
 
 
 def collect_bridge(io: Io) -> dict[str, Any]:
@@ -732,7 +741,7 @@ def render(evidence: dict[str, Any]) -> str:
 
 
 SAFE_DETAIL_KEYS = ("category", "reason", "observed", "decision", "failures", "blockers", "missing", "verified",
-                    "probe", "probes",
+                    "probe", "probes", "problems",
                     "build_commit", "railway_commit", "main_head", "expected_name", "error")
 
 
