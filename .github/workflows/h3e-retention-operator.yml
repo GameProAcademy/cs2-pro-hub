@@ -1,0 +1,55 @@
+name: H.3-E Retention Operator
+
+# Manual, main-only. Calls the authenticated application route that resolves the
+# two objects keeping retention_guard failing, through the official Storage API.
+# The targets are fixed in src/lib/pipeline/h3eRetentionOperator.server.ts; deletion
+# is refused unless the official reference fixture is proven present and intact.
+# Never touches the real DEM bytes, never parses anything.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: inspect | delete_mismatched_job_object | delete_orphan_object
+        required: true
+        default: inspect
+        type: choice
+        options:
+          - inspect
+          - delete_mismatched_job_object
+          - delete_orphan_object
+
+permissions:
+  contents: read
+
+concurrency:
+  group: h3e-retention-operator
+  cancel-in-progress: false
+
+jobs:
+  operate:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Call the retention operator route
+        env:
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.request
+          request = urllib.request.Request(
+              "https://gamepro.network/api/public/h3e-retention-operator",
+              data=json.dumps({"action": os.environ["ACTION"]}).encode(), method="POST",
+              headers={"authorization": "Bearer " + os.environ["PARSER_ATTESTATION_TRANSPORT_SECRET"],
+                       "content-type": "application/json", "User-Agent": "gamepro-h3e-retention-operator/1"})
+          try:
+              with urllib.request.urlopen(request, timeout=120) as response:
+                  status, body = response.status, json.loads(response.read().decode())
+          except urllib.error.HTTPError as error:
+              status, body = error.code, {"error": "HTTP_" + str(error.code)}
+          # Outcome codes and booleans only (the route returns no path, URL or secret).
+          print("::notice title=H3E retention operator::" + json.dumps({"status": status, **body}, sort_keys=True))
+          raise SystemExit(0 if status == 200 and not str(body.get("outcome", "")).startswith(("FAILED", "REFUSED", "DELETE_NOT")) else 1)
+          PY

@@ -77,7 +77,13 @@ describe("A9.1 isolated harness mechanics — never real execution evidence", ()
     expect(source).not.toContain("contents: write");
     expect(source).toContain("steps.upload-guard.outputs.safe == 'true'");
     expect(source).not.toContain("set -x");
-    expect(source).toContain("A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}");
+    // The DEM source is the official reference fixture, resolved by the application after
+    // it re-proves the fixture identity; no secret URL of unknown destination is used.
+    expect(source).not.toContain("secrets.A91_DEMO_URL");
+    expect(source).toContain("A91_FIXTURE_SOURCE: official-r5-forensic-staging");
+    expect(source).toContain(
+      "PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}",
+    );
     expect(source).toContain("DEM_SHA256: ${{ inputs.expected_sha256 }}");
     // The real-DEM workflow must build its isolated WASM artifact before execute.py;
     // calling execute.py directly cannot satisfy the required artifact/manifest inputs.
