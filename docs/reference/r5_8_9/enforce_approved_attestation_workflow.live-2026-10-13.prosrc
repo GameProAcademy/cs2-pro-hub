@@ -1,0 +1,33 @@
+
+BEGIN
+  IF NEW.attestation_version <> 3
+     OR NEW.verification_method <> 'GITHUB_ACTIONS_SIGNED_ATTESTATION_V3'
+     OR NEW.workflow_identity IS NULL
+     OR jsonb_typeof(NEW.workflow_identity) <> 'object'
+     OR NEW.workflow_identity->>'repository' <> 'GameProAcademy/cs2-pro-hub'
+     OR NEW.workflow_identity->>'ref_name' <> 'main'
+     OR NEW.workflow_identity->>'workflow_ref' <> 'GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main'
+     OR NEW.workflow_identity->>'workflow_path' <> '.github/workflows/parser-runtime-attestation.yml'
+     OR NEW.workflow_identity->>'workflow_source_sha' <> '3070d8bae6c3f02093bbb2595138c913646c2e31'
+     OR NEW.workflow_identity->>'workflow_sha' !~ '^[0-9a-f]{40}$'
+     OR NEW.workflow_identity->>'trigger_commit_sha' !~ '^[0-9a-f]{40}$'
+     OR NEW.workflow_identity->>'workflow_file_commit_sha' !~ '^[0-9a-f]{40}$'
+     OR NEW.workflow_identity->>'workflow_sha' IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha'
+     OR NEW.workflow_identity->>'workflow_sha' = NEW.deployment_commit
+     OR NEW.app_source_commit IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha'
+     OR NEW.attestation_payload IS NULL
+     OR jsonb_typeof(NEW.attestation_payload) <> 'object'
+     OR NEW.attestation_payload->>'schema_version' <> '3'
+     OR NEW.release_gate_evidence IS DISTINCT FROM NEW.attestation_payload->'release_gate_evidence'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'repository' <> 'GameProAcademy/cs2-pro-hub'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'branch' <> 'main'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'workflow_sha' IS DISTINCT FROM NEW.workflow_identity->>'workflow_sha'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'trigger_commit_sha' IS DISTINCT FROM NEW.workflow_identity->>'trigger_commit_sha'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'workflow_file_commit_sha' IS DISTINCT FROM NEW.workflow_identity->>'workflow_file_commit_sha'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'workflow_path' <> '.github/workflows/parser-runtime-attestation.yml'
+     OR NEW.attestation_payload->'attestor_source_identity'->>'workflow_source_sha' <> '3070d8bae6c3f02093bbb2595138c913646c2e31'
+  THEN
+    RAISE EXCEPTION 'ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED' USING ERRCODE='55000';
+  END IF;
+  RETURN NEW;
+END;

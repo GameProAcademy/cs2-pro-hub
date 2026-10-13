@@ -91,6 +91,8 @@ def main() -> int:
 COMMITTED_SPEC = ROOT / "docs/reference/r5_8_9/spec.json"
 COMMITTED_MIGRATION = ROOT / "supabase/migrations/20261013130000_r5_8_9_repin_attestation_recorder.sql"
 COMMITTED_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
+COMMITTED_BOUNDARY = ROOT / "supabase/migrations/20261013130100_r5_8_9b_repin_provenance_boundary.sql"
+COMMITTED_BOUNDARY_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 
 
 def validate() -> int:
@@ -101,8 +103,16 @@ def validate() -> int:
         # text must be exactly what the generator produces from that spec.
         spec = json.loads(COMMITTED_SPEC.read_text(encoding="utf-8"))
         migration, rollback = COMMITTED_MIGRATION.read_text(encoding="utf-8"), COMMITTED_ROLLBACK.read_text(encoding="utf-8")
-        if migration != r5_8_9.migration_sql(spec) or rollback != r5_8_9.rollback_sql(spec):
+        import r5_8_9_boundary  # noqa: PLC0415
+        boundary = COMMITTED_BOUNDARY.read_text(encoding="utf-8")
+        boundary_rollback = COMMITTED_BOUNDARY_ROLLBACK.read_text(encoding="utf-8")
+        if (migration != r5_8_9.migration_sql(spec) or rollback != r5_8_9.rollback_sql(spec)
+                or boundary != r5_8_9_boundary.migration_sql(spec)
+                or boundary_rollback != r5_8_9_boundary.rollback_sql(spec)):
             raise RuntimeError("COMMITTED_R5_8_9_ARTIFACTS_DIFFER_FROM_GENERATOR_OUTPUT")
+        # The recorder and the persistence boundary move together, in that order;
+        # the rollback undoes them in reverse.
+        migration, rollback = migration + "\n" + boundary, boundary_rollback + "\n" + rollback
         target = r5_8_9.target_md5(spec)
         build, semantic, values_source = spec["build_commit"], spec["semantic_commit"], "committed spec"
     else:

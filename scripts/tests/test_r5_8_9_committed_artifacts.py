@@ -51,3 +51,26 @@ def _full_history() -> bool:
 @pytest.mark.skipif(not _full_history(), reason="needs full history and origin/main")
 def test_spec_passes_the_generator_verification():
     assert r5_8_9.verify(SPEC) == []
+
+
+def test_committed_boundary_artifacts_are_the_generator_output():
+    import r5_8_9_boundary as boundary
+    assert (ROOT / "supabase/migrations/20261013130100_r5_8_9b_repin_provenance_boundary.sql").read_text() \
+        == boundary.migration_sql(SPEC)
+    assert (ROOT / "docs/reference/r5_8_9/rollback_boundary.sql").read_text() == boundary.rollback_sql(SPEC)
+    assert {n: boundary.target_md5(n, SPEC) for n in boundary.FUNCTIONS} == {
+        "assert_verified_parser_provenance": "b1576ce0d085e7bc1961d37b34a432f2",
+        "enforce_approved_attestation_workflow": "b9412b87a12d51a4fa0e68bafd23735a"}
+
+
+def test_boundary_targets_carry_only_the_new_pins():
+    import r5_8_9_boundary as boundary
+    for name in boundary.FUNCTIONS:
+        body = boundary.target_body(name, SPEC)
+        assert SPEC["workflow_source_sha"] in body
+        for old in (boundary.OLD_BRANCH, boundary.OLD_DEPLOYMENT, boundary.OLD_COMMIT, boundary.OLD_WORKFLOW):
+            assert old not in body
+    body = boundary.target_body("assert_verified_parser_provenance", SPEC)
+    assert f"_p.build_revision<>'git:{SPEC['build_commit']}'" in body
+    assert f"_p.semantic_revision<>'git:{SPEC['semantic_commit']}'" in body
+    assert f"_p.deployment_id<>'{SPEC['deployment_id']}'" in body

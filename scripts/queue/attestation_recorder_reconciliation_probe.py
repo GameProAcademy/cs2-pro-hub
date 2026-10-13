@@ -46,9 +46,11 @@ INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
 # R5.8.9 is part of the repository chain: a reset build ends at its target. The
 # R5.8.7/R5.8.8 scenarios below describe the state before it, so every script
-# first records the reset-build recorder and then applies the committed R5.8.9
-# rollback (managed-safe, row-free) inside the same rolled-back transaction.
+# first records the reset-build recorder and then applies the committed R5.8.9b
+# and R5.8.9 rollbacks (managed-safe, row-free) inside the same rolled-back
+# transaction.
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
+R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
 
 PRELUDE = r"""
@@ -59,6 +61,7 @@ CREATE TEMP TABLE probe_baseline ON COMMIT DROP AS
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
 DO $r589_baseline$ BEGIN
   IF (SELECT reset_md5 FROM probe_baseline) = '__R589_TARGET__' THEN
+    EXECUTE __R589B_ROLLBACK__;
     EXECUTE __R589_ROLLBACK__;
   END IF;
 END $r589_baseline$;
@@ -209,8 +212,8 @@ CREATE FUNCTION pg_temp.controls() RETURNS jsonb LANGUAGE sql AS $f$
       AND contype = 'u' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'))
 $f$;
 """
-def _r589_literal() -> str:
-    text = R589_ROLLBACK.read_text(encoding="utf-8")
+def _r589_literal(path: Path = R589_ROLLBACK) -> str:
+    text = path.read_text(encoding="utf-8")
     assert "$r589_rollback$" not in text
     return "$r589_rollback$" + text + "$r589_rollback$"
 
@@ -218,7 +221,9 @@ def _r589_literal() -> str:
 def render_prelude(template: str) -> str:
     """Insert the R5.8.9 baseline step. Callers that substitute pins in the
     prelude must do so on the template, so the embedded rollback stays intact."""
-    return template.replace("__R589_TARGET__", R589_TARGET_MD5).replace("__R589_ROLLBACK__", _r589_literal())
+    return (template.replace("__R589_TARGET__", R589_TARGET_MD5)
+            .replace("__R589B_ROLLBACK__", _r589_literal(R589B_ROLLBACK))
+            .replace("__R589_ROLLBACK__", _r589_literal()))
 
 
 PRELUDE_TEMPLATE = PRELUDE
