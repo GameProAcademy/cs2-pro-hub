@@ -118,3 +118,8 @@ def test_the_sql_is_read_only_and_least_privilege():
     # aggregates only: no column that could carry personal data is selected
     for column in ("user_id", "email", "storage_path", "payload", "secret", "external_match_id"):
         assert column not in body
+
+
+def test_the_migration_is_exactly_the_reviewed_sql():
+    migration = ROOT / "supabase/migrations/20261013120000_h3e_predem_managed_snapshot.sql"
+    assert migration.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
