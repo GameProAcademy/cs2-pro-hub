@@ -101,10 +101,26 @@ def test_an_unusable_snapshot_proves_nothing():
         assert {v["status"] for v in result["gates"].values()} == {"NOT_PROVEN"}
 
 
-def test_canonical_stays_unproven_until_a_rule_is_approved():
+def test_strict_provenance_rule_fails_on_the_existing_unverified_row():
+    result = run(MANAGED_2026_10_13)["gates"]["canonical_uncontaminated"]
+    assert ms.CANONICAL_RULE == "STRICT_PROVENANCE"
+    assert result["status"] == "FAIL"
+    assert result["reason"] == "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE"
+    assert result["evidence"]["strict_provenance_violations"] == 1
+
+
+def test_strict_provenance_passes_only_with_zero_provenance_violations():
     clean = bad(("canonical", "matches_created_before_first_verified_provenance"), 0)
-    assert run(clean)["gates"]["canonical_uncontaminated"]["status"] == "NOT_PROVEN"
-    assert ms.CANONICAL_RULE is None
+    result = run(clean)["gates"]["canonical_uncontaminated"]
+    assert result["status"] == "VERIFIED"
+    assert result["reason"] == "NO_CANONICAL_ROWS_PRECEDE_VERIFIED_PROVENANCE"
+
+
+def test_missing_or_invalid_canonical_provenance_count_is_not_proven():
+    for value in (None, "0", -1, True):
+        result = run(bad(("canonical", "matches_created_before_first_verified_provenance"), value))["gates"]["canonical_uncontaminated"]
+        assert result["status"] == "NOT_PROVEN"
+        assert result["reason"] == "CANONICAL_PROVENANCE_EVIDENCE_MISSING"
 
 
 def test_the_sql_is_read_only_and_least_privilege():
