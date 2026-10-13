@@ -302,3 +302,18 @@ def test_missing_runtime_pins_or_provenance_section_prove_nothing():
     for value in (None, [], {"latest": "x", "verified_rows": 1}, {"latest": [], "verified_rows": True}):
         gates = run(bad(("provenance",), value))["gates"]
         assert {gates[g]["status"] for g in ("provenance_verified", "hmac_configured", "oidc_operational")} == {"NOT_PROVEN"}
+
+
+def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec():
+    sys.path.insert(0, str(ROOT / "scripts/ci"))
+    import h3e_activation_gate as gate
+    pins = gate.snapshot_pins(ROOT)
+    assert pins["recorder_md5"] == "d7c325bac1a98c6a7cac67a0f18ba08b"
+    runtime = pins["runtime"]
+    assert runtime["deployment_id"] == "09b50029-2508-4267-bb1d-28c5e99b95db"
+    assert (runtime["semantic_commit"], runtime["build_commit"]) == (
+        "10815fb44e165963adfaf07f71c474ca628f4b7f", "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d")
+    assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
+    assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
+    # The fixture of the active runtime is exactly what the gate will expect.
+    assert {k: runtime[k] for k in ACTIVE} == ACTIVE

@@ -64,11 +64,11 @@ No production row is changed.
   operator observation, not CI evidence: the gates remain NOT_PROVEN in the activation gate until an
   authorized collector delivers the snapshot.
 
-## 5. What is needed to make it CI evidence (each external, needs authorization)
+## 5. CI evidence path (this change)
 
-1. Apply the migration that creates the function (same text as `managed_snapshot.sql`; draft PR).
-2. A read path for CI: an application route authenticated with the existing CI transport secret, calling
-   the function through the service role and returning the document unchanged; or a dedicated database
-   role allowed to execute only this function. Either needs a Lovable publication or a database role/secret.
-3. Canonical rule decided (STRICT_PROVENANCE); remediation of the existing row needs separate authorization.
-4. Investigate the retention mismatch and the stalled cleanup (read-only; no deletion).
+1. Migration `20261013120000_h3e_predem_managed_snapshot.sql` (identical to `managed_snapshot.sql`, schema v2,
+   adds the 20 newest VERIFIED provenance identities).
+2. `GET /api/public/predem-managed-snapshot` (transport secret, no-store, document unchanged, digest-only log).
+3. Activation stage `managed_snapshot`: evaluates the document with pins from the committed R5.8.9 spec; the 7
+   database gates and `provenance_verified`, `hmac_configured`, `oidc_operational` are taken only from it.
+4. Effective only after the migration is applied to the managed database and the application is published.
