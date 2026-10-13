@@ -422,8 +422,29 @@ def s_quarantine_roles():
     return {"denied": denied}
 
 
+@scenario("the_v3_managed_snapshot_reports_the_quarantine_and_every_guard_enforced")
+def s_quarantine_snapshot():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "predem"))
+    import managed_snapshot as ms  # noqa: PLC0415
+    doc = js("select public.h3e_predem_managed_snapshot()")
+    q = doc["canonical"]["quarantine"]
+    assert doc["schema_version"] == ms.SCHEMA_VERSION == 3, doc["schema_version"]
+    assert set(q["guards"]) == ms.QUARANTINE_GUARDS and all(v is True for v in q["guards"].values()), q["guards"]
+    assert q["quarantined_matches"] >= 1 and q["quarantined_with_status"] >= 1, q
+    assert q["quarantined_completed"] == 0 and q["quarantined_derived_rows"] == 0, q
+    assert q["quarantined_with_status"] + q["unquarantined_with_status"] == doc["canonical"]["matches_with_status"], q
+    # A disabled guard is reported as such. BEGIN without COMMIT: the session ends rolled back.
+    disabled = js("begin; alter table public.match_metrics disable trigger canonical_quarantine_guard; "
+                  "select public.h3e_predem_managed_snapshot()->'canonical'->'quarantine'->'guards'")
+    assert disabled["match_metrics:canonical_quarantine_guard"] is False, disabled
+    assert sum(v is False for v in disabled.values()) == 1, disabled
+    assert sql("select tgenabled from pg_trigger where tgrelid = 'public.match_metrics'::regclass "
+               "and tgname = 'canonical_quarantine_guard'") == "O"
+    return {"quarantine": {k: v for k, v in q.items() if k != "guards"}, "guards": len(q["guards"])}
+
+
 SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles,
-             s_quarantine_scope, s_quarantine_roles, s_quarantine]
+             s_quarantine_scope, s_quarantine_roles, s_quarantine, s_quarantine_snapshot]
 
 
 def main() -> int:
