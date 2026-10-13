@@ -4,6 +4,38 @@ Status at `main` `da453dc1` (2026-10-12): **no step below has been executed.** E
 external step needs its own specific authorization. Values marked _pending_ cannot
 be known before the preceding step and must never be guessed.
 
+## 0. Update 2026-10-13 ~01:50 UTC — the runtime changed after a repository merge
+
+The merge of #104 (`c8c6d6ec`, which changed no file under `services/cs2-demo-parser`)
+triggered a Railway deployment: **`c0aa8a55-a2a8-43e4-924e-0966171cddcf`, SUCCESS, commit
+`c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d`, created 01:35:16**. Every other merge of the same
+session (#97–#103) was `SKIPPED`. Why this one deployed is **not established** (the service
+watch patterns include `/.github/workflows/**`, which #99 and #101 also touched and were
+skipped). Facts, read-only:
+
+| Fact                                                                                                                                                                                                                                             | Source                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Worker tree of `c8c6d6ec` = `8120c12a` (same as `10815fb4`): the served code is unchanged                                                                                                                                                        | git                                                       |
+| `/version` (Railway domain, uncached): `build.commit = c8c6d6ec…`, `parser.build_revision = git:10815fb4…`, `parser.semantic_revision = git:5703b1d8…`, `declared_revision_matches = false`; `/health` ok                                        | worker                                                    |
+| H.3-E activation run 38333095422: `runtime` FAIL `DECLARED_REVISION_MISMATCH`                                                                                                                                                                    | GitHub annotations                                        |
+| H3E91 execution events now carry `workerBuildCommit = c8c6d6ec`; in production the bridge returns 503 `H3E91_WORKER_BUILD_IDENTITY_MISMATCH` unless `H3E91_EXPECTED_WORKER_BUILD_COMMIT` (a Lovable variable, not visible from GitHub) equals it | `src/lib/pipeline/h3e91ExecutionBridge.server.ts:115-124` |
+| No `demo_jobs` update since 2026-09-22 and no execution event in the last 48 h: no production execution has been affected yet                                                                                                                    | read-only query 01:51 UTC                                 |
+| Deployment startup logs: normal; only `/health` and `/version` requests                                                                                                                                                                          | Railway logs                                              |
+
+Consequences for this plan:
+
+- The serving deployment is `c0aa8a55`, not `3ad4b1fe`; `3ad4b1fe` remains a rollback target.
+- E1 must now set **both** `PARSER_BUILD_REVISION = git:c8c6d6ec…` (or whatever commit the
+  serving image was built from at that time) and `PARSER_REVISION` (any commit of main whose
+  worker tree is `8120c12a`, e.g. `10815fb4`; the gates accept either).
+- **A freeze is a precondition of the re-pin**: as long as a merge to main can rebuild the
+  worker, the build commit — and with it the deployment id, the recorder pins and the
+  bridge expectation — can change at any merge. Options (external, need authorization):
+  disable automatic deploys of `cs2-demo-parser` from `main`, or narrow its watch patterns to
+  `services/cs2-demo-parser/**` and verify the behaviour.
+- Lovable `H3E91_EXPECTED_WORKER_BUILD_COMMIT` must equal the serving build commit before the
+  next real execution, or every execution is refused (fail-closed, but an outage of parsing).
+
 ## 1. Facts this plan rests on (read-only, 2026-10-12 ~23:10 UTC)
 
 | Fact                                                                                                                                                                                                                         | Source                                                                                  |
