@@ -82,3 +82,28 @@ None of this is evidence about the managed database.
 
 Rollback: `docs/reference/h3e_quarantine/rollback_20261014120100.sql` (restores v2), then
 `rollback_20261014120000.sql` (refuses while any match is quarantined).
+
+## 7. Audit of privileged paths and the existing row (managed database, 2026-10-13 ~22:40Z)
+
+Measured with session-local probes that roll back (`RAISE` at the end of a `DO` block; nothing persisted):
+
+| Role                                                                             | `session_replication_role = replica`            | `ALTER TABLE … DISABLE TRIGGER` | Effect on the guards                                                   |
+| -------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `service_role` (app server, worker, RPCs)                                        | DENIED                                          | DENIED (not owner)              | bound by every guard                                                   |
+| `postgres` (table owner, migration/admin role)                                   | ALLOWED                                         | ALLOWED (owner)                 | can bypass: break-glass, not an app path                               |
+| `sandbox_exec` (LOGIN, BYPASSRLS, INSERT on 56 tables, not owner, not superuser) | not testable (`SET ROLE` refused to `postgres`) | not owner                       | BYPASSRLS does not skip triggers; bound unless it can set replica mode |
+
+- Row triggers fire for every role, BYPASSRLS included; only `session_replication_role = replica` or a disabled
+  trigger skips them. The snapshot detects a **persistently** disabled guard (`tgenabled`), and the disposable probe
+  proves it. It cannot detect a transient `replica` session or a disable-and-re-enable inside one transaction by
+  the owner. That residual risk is the database owner's break-glass capability, outside every application path.
+- TRUNCATE: statement-level guards on the 8 tables and on the registry refuse it while any match is quarantined
+  (proven on PostgreSQL 17, including `TRUNCATE matches CASCADE`).
+
+### `round_count = 24` vs 25 `match_rounds` rows (not changed)
+
+Round 25 has 0 events and `start_tick 246747 < end_tick 253251`, while rounds 1–24 carry `end_tick` values lower
+than their own `start_tick` (round 1: start 1688, end 1). The legacy (pre-provenance) mapping paired each round's
+start with the previous round's end, which leaves a trailing synthetic round. This is an integrity defect of that
+ingestion, consistent with `canonical_status = 'partial'`, and a further reason the row must stay ineligible. The
+quarantine preserves it as evidence; nothing is realigned or deleted.
