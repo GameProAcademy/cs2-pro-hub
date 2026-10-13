@@ -56,6 +56,7 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 WORKER_DIR = "services/cs2-demo-parser"
 ATTESTATION_ENDPOINT = "https://gamepro.network/api/public/parser-attestation"
+RUNTIME_FINGERPRINT_ENDPOINT = "https://gamepro.network/api/public/parser-attestation-runtime"
 HOSTS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 RAILWAY_API = "https://backboard.railway.com/graphql/v2"
 RAILWAY = {
@@ -103,6 +104,10 @@ APPROVED, REJECTED = "APPROVED", "REJECTED"
 MISSING, INVALID, STALE = "EVIDENCE_MISSING", "EVIDENCE_INVALID", "EVIDENCE_STALE"
 RUNNING, INFRASTRUCTURE, NOT_EVALUATED = "STILL_RUNNING", "INFRASTRUCTURE_FAILURE", "NOT_EVALUATED"
 REASON_CATEGORY: dict[str, str] = {
+    **dict.fromkeys(("BRIDGE_IDENTITY_NOT_PUBLISHED",), MISSING),
+    **dict.fromkeys(("BRIDGE_EXPECTED_BUILD_UNCONFIGURED", "BRIDGE_EXPECTED_BUILD_MISMATCH",
+                     "BRIDGE_IDENTITY_NOT_ENFORCED"), REJECTED),
+    **dict.fromkeys(("BRIDGE_IDENTITY_UNREACHABLE", "SERVED_BUILD_UNAVAILABLE"), INFRASTRUCTURE),
     **dict.fromkeys(("ARTIFACT_NOT_FOUND", "RUN_NOT_FOUND", "JOB_NOT_FOUND_EXACTLY_ONCE", "QUEUE_JOB_NOT_FOUND",
                      "QUEUE_PROBE_MISSING", "NO_ARTIFACT", "PREDEM_GATES_NOT_VERIFIED"), MISSING),
     **dict.fromkeys(("RUN_NOT_COMPLETED", "EVIDENCE_RUN_NOT_FINISHED", "R583_RUN_NOT_FINISHED"), RUNNING),
@@ -408,6 +413,42 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
                  note="identical worker tree; a rebuild would only relabel the image")
 
 
+def evaluate_bridge(fingerprint: dict[str, Any] | None, versions: dict[str, Any]) -> dict[str, Any]:
+    """The build the execution bridge accepts must be the build both hosts serve.
+
+    The bridge returns 503 to every execution event of any other build, so a
+    mismatch makes the worker unable to record (and therefore to parse).
+    """
+    if not isinstance(fingerprint, dict):
+        return stage(BLOCKED, reason="BRIDGE_IDENTITY_UNREACHABLE")
+    bridge = fingerprint.get("bridge")
+    if not isinstance(bridge, dict):
+        # The application version serving this route predates the field.
+        return stage(BLOCKED, reason="BRIDGE_IDENTITY_NOT_PUBLISHED")
+    if any(not isinstance(versions.get(h), dict) for h in HOSTS):
+        return stage(BLOCKED, reason="SERVED_BUILD_UNAVAILABLE")
+    served = {((versions.get(h) or {}).get("build") or {}).get("commit") for h in HOSTS}
+    expected = bridge.get("expectedWorkerBuildCommit")
+    if bridge.get("enforced") is not True:
+        return stage(FAIL, reason="BRIDGE_IDENTITY_NOT_ENFORCED")
+    if bridge.get("configured") is not True or not isinstance(expected, str) or not SHA.match(expected):
+        return stage(FAIL, reason="BRIDGE_EXPECTED_BUILD_UNCONFIGURED")
+    if served != {expected}:
+        return stage(FAIL, reason="BRIDGE_EXPECTED_BUILD_MISMATCH", observed=sorted(map(str, served)),
+                     build_commit=expected)
+    return stage(PASS, build_commit=expected)
+
+
+def collect_bridge(io: Io) -> dict[str, Any]:
+    response = io.http(RUNTIME_FINGERPRINT_ENDPOINT)
+    fingerprint = response["body"] if response and response.get("status") == 200 else None
+    versions = {}
+    for host in HOSTS:
+        version = io.http(f"{host}/version")
+        versions[host] = version["body"] if version and version["status"] == 200 else None
+    return evaluate_bridge(fingerprint, versions)
+
+
 def decide(stages: dict[str, dict[str, Any]]) -> str:
     statuses = [s.get("status") for s in stages.values()]
     if not statuses or any(s not in (PASS, FAIL, BLOCKED, SKIPPED) for s in statuses):
@@ -649,6 +690,7 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
     stages.update(guarded("transport", lambda: {"transport": collect_transport(io, env)}))
     if stages["target"]["status"] == PASS:
         stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
+        stages.update(guarded("bridge_identity", lambda: {"bridge_identity": collect_bridge(io)}))
     else:
         stages["runtime"] = stage(SKIPPED, reason="TARGET_NOT_PASS")
     r584_document = stages.pop("_r584_document", None)
