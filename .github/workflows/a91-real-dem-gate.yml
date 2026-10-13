@@ -125,7 +125,10 @@ jobs:
           RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
           A91_WASM_ARTIFACT_DIR: ${{ runner.temp }}/wasm-pkg
           A91_WASM_MANIFEST: ${{ runner.temp }}/artifact-manifest.json
-          A91_DEMO_URL: ${{ secrets.A91_DEMO_URL }}
+          # The DEM comes from the official reference fixture (r5_forensic_staging), resolved by
+          # the application after it re-proves the fixture's identity; bytes are verified again.
+          A91_FIXTURE_SOURCE: official-r5-forensic-staging
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
           EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
           DEM_SHA256: ${{ inputs.expected_sha256 }}
           EXPECTED_SIZE_BYTES: ${{ inputs.expected_size_bytes }}
@@ -218,4 +221,3 @@ jobs:
           for path in Path(os.environ['RUNNER_TEMP']).glob('a91-private-*'):
               shutil.rmtree(path)
           PY
-

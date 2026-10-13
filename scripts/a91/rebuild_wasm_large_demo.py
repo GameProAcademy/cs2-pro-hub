@@ -37,10 +37,15 @@ DEM_INPUT_ENV_KEYS = (
 )
 
 
+# Credentials that only this process uses (to resolve the official fixture); never
+# passed to any child, the gate process included.
+PARENT_ONLY_ENV_KEYS = ("PARSER_ATTESTATION_TRANSPORT_SECRET",)
+
+
 def child_environment(extra: dict[str, str] | None = None) -> dict[str, str]:
     """Do not leak signed DEM URLs or authorization inputs to build subprocesses."""
     env = os.environ.copy()
-    for key in DEM_INPUT_ENV_KEYS:
+    for key in DEM_INPUT_ENV_KEYS + PARENT_ONLY_ENV_KEYS:
         env.pop(key, None)
     if extra:
         env.update(extra)
@@ -207,6 +212,18 @@ def main() -> int:
     for key in DEM_INPUT_ENV_KEYS:
         if key in os.environ:
             gate_env[key] = os.environ[key]
+    if os.environ.get("A91_FIXTURE_SOURCE") == "official-r5-forensic-staging":
+        # Resolved only now, after the build, so the 30-minute signed URL is fresh
+        # when execute.py downloads; an explicit secret URL is never mixed in.
+        sys.path.insert(0, str(ROOT / "scripts" / "a91"))
+        import reference_fixture  # noqa: PLC0415
+
+        if os.environ.get("A91_DEMO_URL"):
+            raise RuntimeError("A91_FIXTURE_SOURCE_AMBIGUOUS")
+        gate_env["A91_DEMO_URL"] = reference_fixture.resolve(
+            os.environ.get("PARSER_ATTESTATION_TRANSPORT_SECRET", "")
+        )
+        print("A91_FIXTURE_SOURCE=" + reference_fixture.SOURCE, flush=True)
     gate_env["A91_WASM_ARTIFACT_DIR"] = str(WASM_PKG)
     gate_env["A91_WASM_MANIFEST"] = str(MANIFEST)
     run(sys.executable, "scripts/a91/execute.py", cwd=ROOT, env=gate_env)

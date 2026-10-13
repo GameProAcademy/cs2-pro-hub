@@ -391,6 +391,32 @@ export async function reconcileOrphanDemoUploads(
   return Number(data ?? 0);
 }
 
+/**
+ * The official G.6 verified deletion for ONE named job, independent of the
+ * fail-closed batch switch (DEMO_CLEANUP_EXECUTION_ENABLED): the database gate
+ * (claim_demo_cleanup_job -> evaluate_demo_deletion_gate) decides eligibility,
+ * Storage confirms absence before the claim is finished, and any failure releases
+ * the claim through fail_demo_cleanup. Only an authenticated operator route calls it.
+ */
+export async function cleanupDemoJobVerified(jobId: string): Promise<"verified" | "alreadyAbsent"> {
+  const db = await admin();
+  const { data, error } = await db.rpc(
+    "claim_demo_cleanup_job" as never,
+    { _job_id: jobId, _claim_seconds: DEMO_CLEANUP_CLAIM_SECONDS } as never,
+  );
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  const payload = data as { claimed?: unknown; reason?: unknown } | null;
+  if (payload?.claimed !== true) {
+    throw new PipelineError(
+      "CLEANUP_ERROR",
+      `CLAIM_REFUSED:${String(payload?.reason ?? "UNKNOWN")}`,
+    );
+  }
+  const claim = cleanupClaim(payload);
+  if (!claim || claim.job_id !== jobId) throw new PipelineError("CLEANUP_ERROR", "CLAIM_INVALID");
+  return executeCleanupClaim(claim);
+}
+
 /** Claims, deletes and physically verifies eligible temporary demo files. */
 export async function cleanupExpiredDemos(limit = 25): Promise<DemoCleanupSummary> {
   if (!DEMO_CLEANUP_EXECUTION_ENABLED) {
