@@ -215,7 +215,14 @@ def _r589_literal() -> str:
     return "$r589_rollback$" + text + "$r589_rollback$"
 
 
-PRELUDE = PRELUDE.replace("__R589_TARGET__", R589_TARGET_MD5).replace("__R589_ROLLBACK__", _r589_literal())
+def render_prelude(template: str) -> str:
+    """Insert the R5.8.9 baseline step. Callers that substitute pins in the
+    prelude must do so on the template, so the embedded rollback stays intact."""
+    return template.replace("__R589_TARGET__", R589_TARGET_MD5).replace("__R589_ROLLBACK__", _r589_literal())
+
+
+PRELUDE_TEMPLATE = PRELUDE
+PRELUDE = render_prelude(PRELUDE_TEMPLATE)
 EPILOGUE = r"""
 SELECT 'RESULT:' || coalesce(jsonb_object_agg(k, v), '{}'::jsonb)::text FROM probe_result;
 ROLLBACK;

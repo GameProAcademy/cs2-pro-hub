@@ -40,7 +40,7 @@ def test_spec(build: str, semantic: str) -> dict:
 
 
 def repinned_prelude(spec: dict) -> str:
-    text = probe.PRELUDE
+    text = probe.PRELUDE_TEMPLATE
     swaps = [
         ("_sem text := 'git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76'", f"_sem text := 'git:{spec['semantic_commit']}'"),
         ("'build_revision', _sem", f"'build_revision', 'git:{spec['build_commit']}'"),
@@ -55,7 +55,7 @@ def repinned_prelude(spec: dict) -> str:
         if old not in text:
             raise SystemExit(f"PRELUDE_FRAGMENT_MISSING:{old[:50]}")
         text = text.replace(old, new)
-    return text
+    return probe.render_prelude(text)
 
 
 def run(prelude: str, body: str) -> dict:
