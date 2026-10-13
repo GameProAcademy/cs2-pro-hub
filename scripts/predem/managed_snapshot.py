@@ -5,8 +5,8 @@ Pure: no network, database or execution surface. Each gate gets VERIFIED, FAIL
 or NOT_PROVEN with an objective reason. A snapshot that is malformed, older
 than MAX_AGE_SECONDS, from the future, without its digest, or from a database
 whose recorder is not the expected one proves nothing (every gate NOT_PROVEN).
-`canonical_uncontaminated` stays NOT_PROVEN until its rule is decided
-(docs/H3E_CANONICAL_CONTAMINATION_RULE.md); both candidate measures are reported.
+`canonical_uncontaminated` uses STRICT_PROVENANCE: any pre-attestation canonical row fails closed;
+missing evidence remains NOT_PROVEN (docs/H3E_CANONICAL_CONTAMINATION_RULE.md).
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ GATES = ("db_git_digest_parity", "identity_validation", "retention_guard", "atte
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
 MAX_AGE_SECONDS = 6 * 3600
-CANONICAL_RULE: str | None = None  # undecided: "STRICT_PROVENANCE" or "ADMISSION_ONLY" once approved
+CANONICAL_RULE = "STRICT_PROVENANCE"  # approved rule; admission remains a separate gate
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -91,8 +91,15 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[s
     measures = {"strict_provenance_violations": canonical.get("matches_created_before_first_verified_provenance"),
                 "admission_authorized_rows": (release.get("authorized_counts") or [None])[0],
                 "matches_by_status": canonical.get("matches_by_status")}
-    gates["canonical_uncontaminated"] = _status("NOT_PROVEN", "CANONICAL_RULE_NOT_DECIDED", **measures) \
-        if CANONICAL_RULE is None else _status("NOT_PROVEN", "CANONICAL_RULE_UNKNOWN")
+    violations = canonical.get("matches_created_before_first_verified_provenance")
+    if CANONICAL_RULE != "STRICT_PROVENANCE":
+        gates["canonical_uncontaminated"] = _status("NOT_PROVEN", "CANONICAL_RULE_UNKNOWN", **measures)
+    elif not isinstance(violations, int) or isinstance(violations, bool) or violations < 0:
+        gates["canonical_uncontaminated"] = _status("NOT_PROVEN", "CANONICAL_PROVENANCE_EVIDENCE_MISSING", **measures)
+    elif violations > 0:
+        gates["canonical_uncontaminated"] = _status("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE", **measures)
+    else:
+        gates["canonical_uncontaminated"] = _status("VERIFIED", "NO_CANONICAL_ROWS_PRECEDE_VERIFIED_PROVENANCE", **measures)
 
     return {"gates": gates, "snapshot_problem": None, "snapshot_digest": s.get("digest"),
             "snapshot_at": s.get("snapshot_at"), "database": dict(database),
