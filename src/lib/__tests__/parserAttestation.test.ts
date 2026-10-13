@@ -86,7 +86,7 @@ describe("parser runtime attestation SHA binding", () => {
     const expected = PARSER_ATTESTATION_EXPECTED;
     const hashes = {
       "services/cs2-demo-parser/parser.py": {
-        observed: "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+        observed: "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
         match: true,
       },
       "services/cs2-demo-parser/adapter.py": {
@@ -94,15 +94,15 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {
-        observed: "50a53b607d26f00b4de05c5e8998611959e27bd1",
+        observed: "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
-        observed: "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
+        observed: "46df350b5298531ffc01409172f690ba161328de",
         match: true,
       },
       "services/cs2-demo-parser/settings.py": {
-        observed: "35eecfb06223812137a4a2f17114aae57cb7fe54",
+        observed: "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
         match: true,
       },
     };
@@ -111,7 +111,7 @@ describe("parser runtime attestation SHA binding", () => {
       version: expected.parserVersion,
       contract_version: expected.contractVersion,
       semantic_revision: `git:${expected.commit}`,
-      build_revision: `git:${expected.commit}`,
+      build_revision: `git:${expected.buildCommit}`,
     };
 
     const payload = {
@@ -144,7 +144,7 @@ describe("parser runtime attestation SHA binding", () => {
       parser_version: expected.parserVersion,
       contract_version: expected.contractVersion,
       semantic_revision: `git:${expected.commit}`,
-      build_revision: `git:${expected.commit}`,
+      build_revision: `git:${expected.buildCommit}`,
       runtime_identity: {
         repository: expected.repository,
         branch: expected.branch,

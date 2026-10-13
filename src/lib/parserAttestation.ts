@@ -6,10 +6,13 @@ import {
 export const PARSER_ATTESTATION_EXPECTED = {
   repository: "GameProAcademy/cs2-pro-hub",
   attestorBranch: "main",
-  branch: "infra/cs2-parser-worker-v8",
-  commit: "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
-  deploymentId: "1b5778de-3eaf-46f1-9ea5-cba381d95313",
-  deploymentSourceCommit: "91aeee853200d0f461d0d36af1781d7fdfa40941",
+  branch: "main",
+  // Semantic revision: first main commit whose worker tree is the served one.
+  commit: "10815fb44e165963adfaf07f71c474ca628f4b7f",
+  // Build revision: the commit the served image was built from.
+  buildCommit: "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d",
+  deploymentId: "09b50029-2508-4267-bb1d-28c5e99b95db",
+  deploymentSourceCommit: "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
@@ -41,11 +44,11 @@ export const PARSER_ATTESTATION_SCHEMA_VERSION = 3 as const;
 export const PARSER_ATTESTATION_MAX_AGE_SECONDS = 300;
 
 const CRITICAL_HASHES: Record<string, string> = {
-  "services/cs2-demo-parser/parser.py": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+  "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
   "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
-  "services/cs2-demo-parser/worker.py": "50a53b607d26f00b4de05c5e8998611959e27bd1",
-  "services/cs2-demo-parser/raw_evidence.py": "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
-  "services/cs2-demo-parser/settings.py": "35eecfb06223812137a4a2f17114aae57cb7fe54",
+  "services/cs2-demo-parser/worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+  "services/cs2-demo-parser/raw_evidence.py": "46df350b5298531ffc01409172f690ba161328de",
+  "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 };
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -175,7 +178,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     payload["parser_version"] !== expected.parserVersion ||
     payload["contract_version"] !== expected.contractVersion ||
     payload["semantic_revision"] !== `git:${expected.commit}` ||
-    payload["build_revision"] !== `git:${expected.commit}`
+    payload["build_revision"] !== `git:${expected.buildCommit}`
   ) {
     blockers.push("PARSER_IDENTITY_MISMATCH");
   }
@@ -214,7 +217,7 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
     customVersion["version"] !== expected.parserVersion ||
     customVersion["contract_version"] !== expected.contractVersion ||
     customVersion["semantic_revision"] !== `git:${expected.commit}` ||
-    customVersion["build_revision"] !== `git:${expected.commit}`
+    customVersion["build_revision"] !== `git:${expected.buildCommit}`
   ) {
     blockers.push("LIVE_RUNTIME_PROOF_INVALID");
   }

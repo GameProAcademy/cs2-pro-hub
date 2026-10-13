@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from scripts.parser_runtime_attestation import (
+    BRANCH,
     COMMIT,
     DEPLOYMENT,
     DEPLOYMENT_SOURCE_COMMIT,
@@ -49,7 +50,7 @@ def test_workflow_source_requires_reviewed_git_blob():
 def test_railway_evidence_is_derived_from_api_response():
     response = {"data": {"deployment": {"id": DEPLOYMENT, "status": "SUCCESS",
         "projectId": PROJECT, "serviceId": SERVICE, "environmentId": ENVIRONMENT,
-        "meta": {"repo": REPOSITORY, "branch": "infra/cs2-parser-worker-v8", "commitHash": DEPLOYMENT_SOURCE_COMMIT}}}}
+        "meta": {"repo": REPOSITORY, "branch": BRANCH, "commitHash": DEPLOYMENT_SOURCE_COMMIT}}}}
     with patch("scripts.parser_runtime_attestation.fetch_json", return_value=response):
         proof = railway_deployment_evidence("x" * 32)
     assert proof["verification_source"] == "RAILWAY_API"
