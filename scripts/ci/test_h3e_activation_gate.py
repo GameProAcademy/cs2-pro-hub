@@ -590,3 +590,108 @@ class Decide(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Categories(unittest.TestCase):
+    def test_every_reason_the_gate_emits_is_classified(self):
+        import re as _re
+        source = Path(gate.__file__).read_text()
+        emitted = set(_re.findall(r'reason="([A-Z0-9_]+)"', source))
+        self.assertTrue(emitted)
+        self.assertEqual(sorted(emitted - set(gate.REASON_CATEGORY)), [])
+
+    def test_categories_separate_negative_results_from_evidence_problems(self):
+        world = World()
+        world.r583_doc.update(decision="BLOCKED", failures=["X"])
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_3_decision"]["category"], "REJECTED")
+        world = World()
+        world.digest_override[f"r5-8-3-preflight-{TARGET}-{world.runs['r5_8_3'][0]['id']}"] = "sha256:" + "0" * 64
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_3_artifact"]["category"], "EVIDENCE_INVALID")
+        world = World()
+        world.runs["r5_8_3"][0].update(status="in_progress", conclusion=None)
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_3"]["category"], "STILL_RUNNING")
+        world = World()
+        world.endpoint_down = {"attestation"}
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["transport"]["category"], "INFRASTRUCTURE_FAILURE")
+        world = World()
+        world.r583_doc["github"]["sha"] = "e" * 40
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_3_decision"]["category"], "EVIDENCE_STALE")
+        world = World()
+        world.runs["queue_semantics"] = []
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["queue_semantics"]["category"], "EVIDENCE_MISSING")
+        self.assertEqual(evidence["stages"]["persistence"]["category"], "NOT_EVALUATED")
+        green, _ = evaluate()
+        self.assertEqual(set(green["categories"]), {"APPROVED"})
+
+    def test_unknown_reason_is_never_approved(self):
+        for status in ("FAIL", "BLOCKED", "SKIPPED"):
+            self.assertNotEqual(gate.categorize({"status": status, "reason": "SOMETHING_NEW"}), "APPROVED")
+
+
+class MatrixWithBlockers(unittest.TestCase):
+    def test_a_matrix_failing_only_on_its_own_blockers_is_still_reported(self):
+        # The state of main c8c6d6ec: R5.8.4 own scope blocked, predem said
+        # R584_MATRIX_UNAVAILABLE and listed nothing.
+        world = World()
+        r583_id = world.runs["r5_8_3"][0]["id"]
+        own = {g for g in r584.PRE_DEM_GATES if g not in gate.ACTIVATION_COLLECTED}
+        missing = {"live_version_exact", "critical_hashes_exact", "hmac_configured"}
+        world.r584_doc = r584_document(r583_id, verified_pre=own - missing)
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_4_decision"]["reason"], "R584_OWN_SCOPE_NOT_VERIFIED")
+        predem = evidence["stages"]["predem_matrix"]
+        self.assertEqual(predem["reason"], "PREDEM_GATES_NOT_VERIFIED")
+        self.assertEqual(set(predem["blockers"]), missing)
+        self.assertEqual(predem["verified"], 25)
+        self.assertEqual(predem["gates"]["remote_ci"]["collector"], "H.3-E activation gate")
+        self.assertEqual(evidence["decision"], "FAIL")
+        self.assertEqual(evidence["predem_decision"], "BLOCKED")
+
+    def test_a_matrix_with_an_integrity_problem_is_not_consumed(self):
+        for mutate in (lambda d: d["source"].update(workflow_run_id="1"),
+                       lambda d: d.update(canonical_authorized=True),
+                       lambda d: d["gates"]["determinism"].update(status="VERIFIED")):
+            world = World()
+            mutate(world.r584_doc)
+            evidence, _ = evaluate(world)
+            self.assertEqual(evidence["stages"]["predem_matrix"]["reason"], "R584_MATRIX_UNAVAILABLE")
+            self.assertEqual(evidence["stages"]["predem_matrix"]["category"], "EVIDENCE_INVALID")
+
+
+class IdentityRecord(unittest.TestCase):
+    def test_each_identity_item_is_recorded_separately(self):
+        world = World()
+        old = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
+        world.version["parser"]["semantic_revision"] = f"git:{old}"
+        world.trees[old] = "bf25eb865d7f735b0f26dd533f5b70ee52bb68ef"
+        world.ancestors.add((old, TARGET))
+        evidence, _ = evaluate(world)
+        identity = evidence["stages"]["runtime"]["identity"]
+        host = identity["hosts"][gate.HOSTS[0]]
+        self.assertEqual(host["image_build_commit"], BUILD)
+        self.assertEqual(host["build_worker_tree"], TREE)
+        self.assertEqual(host["declared_semantic_revision"], f"git:{old}")
+        self.assertEqual(host["semantic_worker_tree"], "bf25eb865d7f735b0f26dd533f5b70ee52bb68ef")
+        self.assertTrue(host["declared_revision_matches"])
+        self.assertEqual(identity["railway_active_deployment"]["id"], "3ad4b1fe-9b9e-4fec-b79a-4215d27aab29")
+        self.assertEqual(identity["bridge_expected_worker_build_commit"], "NOT_OBSERVABLE_FROM_CI")
+        self.assertEqual(evidence["stages"]["runtime"]["reason"], "SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+
+    def test_replaced_deployment_with_a_new_build_is_refused(self):
+        # The state after #104: Railway serves a new build (c8c6d6ec) while the
+        # declared build revision still names 10815fb4.
+        world = World()
+        new = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+        world.version["build"].update(commit=new, declared_revision_matches=False)
+        world.railway.update(id="c0aa8a55-a2a8-43e4-924e-0966171cddcf", commitHash=new)
+        world.trees[new] = TREE
+        world.ancestors.add((new, TARGET))
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["runtime"]["reason"], "DECLARED_REVISION_MISMATCH")
+        self.assertEqual(evidence["stages"]["runtime"]["identity"]["hosts"][gate.HOSTS[0]]["image_build_commit"], new)

@@ -47,6 +47,7 @@ MAX_APPROVAL_AGE_SECONDS = 6 * 3600
 DEM_SHA256 = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d"
 DEM_SIZE = 473748061
 TICK_DOMAINS = ("playback_ticks", "tick_properties")
+HOSTS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 
 
 def _ts(value: Any) -> float | None:
@@ -58,7 +59,8 @@ def _ts(value: Any) -> float | None:
 
 def evaluate_approval(*, approval_run_id: str, sha: str, main_head: str | None, ref: str,
                       run: dict[str, Any] | None, newest_completed_id: Any,
-                      artifacts: list[dict[str, Any]], blob: bytes | None, now: float) -> dict[str, Any]:
+                      artifacts: list[dict[str, Any]], blob: bytes | None, now: float,
+                      live_versions: dict[str, Any] | None = None) -> dict[str, Any]:
     """Pure check of the cited pre-DEM approval. Returns {ok, reason, approval}."""
     def refuse(reason: str, **detail: Any) -> dict[str, Any]:
         return {"ok": False, "reason": reason, **detail}
@@ -103,9 +105,25 @@ def evaluate_approval(*, approval_run_id: str, sha: str, main_head: str | None, 
     if (authorizes.get("real_dem_laboratory_dispatch") is not True or authorizes.get("real_dem_production") is not False
             or authorizes.get("attempt_9") is not False or authorizes.get("canonical") is not False):
         return refuse("APPROVAL_AUTHORIZES_SOMETHING_ELSE")
+    # The runtime approved then must still be the runtime serving now: a
+    # redeploy between approval and dispatch voids the approval.
+    runtime = (evidence.get("stages") or {}).get("runtime") or {}
+    approved = {"build_commit": runtime.get("build_commit"), "semantic_revision": runtime.get("semantic_revision")}
+    if runtime.get("status") != "PASS" or not all(isinstance(v, str) and v for v in approved.values()):
+        return refuse("APPROVAL_RUNTIME_IDENTITY_MISSING")
+    live = live_versions if isinstance(live_versions, dict) else {}
+    for host in HOSTS:
+        body = live.get(host)
+        if not isinstance(body, dict):
+            return refuse("LIVE_RUNTIME_UNAVAILABLE", observed=host)
+        build = body.get("build") if isinstance(body.get("build"), dict) else {}
+        parser = body.get("parser") if isinstance(body.get("parser"), dict) else {}
+        if (build.get("commit") != approved["build_commit"] or build.get("declared_revision_matches") is not True
+                or parser.get("semantic_revision") != approved["semantic_revision"]):
+            return refuse("LIVE_RUNTIME_DIFFERS_FROM_APPROVED", observed=host)
     return {"ok": True, "reason": None,
             "approval": {"run_id": str(approval_run_id), "sha": sha, "finished_at": run.get("updated_at"),
-                         "artifact_digest": candidates[0].get("digest")}}
+                         "artifact_digest": candidates[0].get("digest"), "runtime": approved}}
 
 
 def _status(ok: bool, ref: str) -> dict[str, str]:
@@ -207,8 +225,17 @@ def precondition(env: dict[str, str], gh: Github, now: Callable[[], float]) -> i
         prefix = f"h3e-activation-gate-{sha}-{run_id}-"
         chosen = [a for a in artifacts if str(a.get("name", "")).startswith(prefix) and not a.get("expired")]
         blob = gh.request(chosen[0]["archive_download_url"]) if len(chosen) == 1 else None
+        live: dict[str, Any] = {}
+        for host in HOSTS:
+            try:
+                req = urllib.request.Request(host + "/version", headers={"User-Agent": "gamepro-a91-predem/1"})
+                with urllib.request.urlopen(req, timeout=20) as response:  # noqa: S310 - pinned worker hosts
+                    live[host] = json.load(response)
+            except Exception:  # noqa: BLE001 - unavailable is a refusal
+                live[host] = None
         result = evaluate_approval(approval_run_id=run_id, sha=sha, main_head=main_head, ref=env.get("GITHUB_REF", ""),
-                                   run=run, newest_completed_id=newest, artifacts=artifacts, blob=blob, now=now())
+                                   run=run, newest_completed_id=newest, artifacts=artifacts, blob=blob, now=now(),
+                                   live_versions=live)
     except Exception as exc:  # noqa: BLE001 - missing evidence is a refusal, never a pass
         result = {"ok": False, "reason": "APPROVAL_COLLECTION_ERROR", "error": type(exc).__name__}
     Path(env.get("A91_PREDEM_OUT", "a91-predem-approval.json")).write_text(json.dumps(result, sort_keys=True) + "\n")
