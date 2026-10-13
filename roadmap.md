@@ -1,5 +1,12 @@
 # CURRENT STATE RECONCILIATION — 2026-10-06
 
+## Bridge identity publication — 2026-10-13
+
+- [ ] Inspect PR #108 equivalence, published expectation and consistent active worker full build/deployment identity.
+- [ ] Validate absent, exact and divergent identity with synthetic tests; correct only identity contract inconsistencies if needed.
+- [ ] Configure only the expected commit if unambiguously verified, publish only on exact consistency, and verify the published response.
+- [ ] Deliver identity evidence and remaining independent pre-DEM blockers; no database writes or parser execution.
+
 ## App-side hardening / A9.2 preparation — 2026-10-08
 
 - [x] Harden per-execution Worker ownership, startup/URL/postMessage failures, cancellation, duplicate READY and stale async callbacks; 21 synthetic lifecycle tests, no real DEM.
