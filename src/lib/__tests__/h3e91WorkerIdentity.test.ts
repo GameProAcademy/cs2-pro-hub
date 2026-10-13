@@ -22,6 +22,9 @@ describe("bridge worker identity", () => {
       `git:${COMMIT}`,
       COMMIT.toUpperCase(),
       `${COMMIT}x`,
+      ` ${COMMIT}`,
+      `${COMMIT} `,
+      `\n${COMMIT}\n`,
     ]) {
       expect(
         bridgeWorkerIdentity({ H3E91_EXPECTED_WORKER_BUILD_COMMIT: value, NODE_ENV: "production" }),

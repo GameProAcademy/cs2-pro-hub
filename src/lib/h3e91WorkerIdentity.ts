@@ -19,7 +19,7 @@ const COMMIT = /^[0-9a-f]{40}$/;
 export function bridgeWorkerIdentity(
   env: Record<string, string | undefined>,
 ): BridgeWorkerIdentity {
-  const raw = (env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? "").trim();
+  const raw = env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? "";
   const configured = COMMIT.test(raw);
   return {
     // Anything that is not an exact commit is reported as absent, never echoed.
