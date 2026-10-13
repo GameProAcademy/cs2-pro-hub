@@ -1,20 +1,32 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { bridgeWorkerIdentity } from "../h3e91WorkerIdentity";
 
 const COMMIT = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d";
 
+function withEnv(commit: string | undefined, nodeEnv: string | undefined) {
+  vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", commit as string);
+  vi.stubEnv("NODE_ENV", nodeEnv as string);
+  return bridgeWorkerIdentity();
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("bridge worker identity", () => {
   it("publishes the exact expected commit", () => {
-    expect(
-      bridgeWorkerIdentity({ H3E91_EXPECTED_WORKER_BUILD_COMMIT: COMMIT, NODE_ENV: "production" }),
-    ).toEqual({ expectedWorkerBuildCommit: COMMIT, configured: true, enforced: true });
+    expect(withEnv(COMMIT, "production")).toEqual({
+      expectedWorkerBuildCommit: COMMIT,
+      configured: true,
+      enforced: true,
+    });
   });
 
-  it("never echoes a value that is not an exact commit", () => {
+  it("never echoes a value the bridge would reject as unconfigured", () => {
     for (const value of [
       undefined,
       "",
@@ -22,24 +34,36 @@ describe("bridge worker identity", () => {
       `git:${COMMIT}`,
       COMMIT.toUpperCase(),
       `${COMMIT}x`,
+      // The bridge does not trim: a padded value is unconfigured there, so here too.
+      ` ${COMMIT}`,
+      `${COMMIT}\n`,
     ]) {
-      expect(
-        bridgeWorkerIdentity({ H3E91_EXPECTED_WORKER_BUILD_COMMIT: value, NODE_ENV: "production" }),
-      ).toEqual({ expectedWorkerBuildCommit: null, configured: false, enforced: true });
+      expect(withEnv(value, "production")).toEqual({
+        expectedWorkerBuildCommit: null,
+        configured: false,
+        enforced: true,
+      });
     }
   });
 
   it("reports whether the bridge enforces it", () => {
-    expect(bridgeWorkerIdentity({ H3E91_EXPECTED_WORKER_BUILD_COMMIT: COMMIT }).enforced).toBe(
-      false,
-    );
+    for (const nodeEnv of [undefined, "", "development", "test", "Production"]) {
+      expect(withEnv(COMMIT, nodeEnv).enforced).toBe(false);
+    }
   });
 
-  it("uses the same variable and rule as the bridge", () => {
+  it("evaluates the bridge's own expressions, character for character", () => {
     const bridge = readFileSync(resolve("src/lib/pipeline/h3e91ExecutionBridge.server.ts"), "utf8");
-    expect(bridge).toContain('process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"]');
-    expect(bridge).toContain("/^[0-9a-f]{40}$/.test(expectedBuild)");
-    expect(bridge).toContain('process.env["NODE_ENV"] === "production"');
+    const helper = readFileSync(resolve("src/lib/h3e91WorkerIdentity.ts"), "utf8");
+    for (const expression of [
+      'process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? ""',
+      "/^[0-9a-f]{40}$/.test(expectedBuild)",
+      'process.env["NODE_ENV"] === "production"',
+    ]) {
+      expect(bridge).toContain(expression);
+      expect(helper).toContain(expression);
+    }
+    expect(helper).not.toMatch(/\.trim\(\)/);
   });
 
   it("is served by the existing runtime fingerprint route, with nothing secret", () => {
@@ -47,7 +71,7 @@ describe("bridge worker identity", () => {
       resolve("src/routes/api/public/parser-attestation-runtime.ts"),
       "utf8",
     );
-    expect(route).toContain("bridge: bridgeWorkerIdentity(process.env)");
+    expect(route).toContain("bridge: bridgeWorkerIdentity()");
     expect(route).not.toMatch(/SECRET|TOKEN|KEY/);
   });
 });
