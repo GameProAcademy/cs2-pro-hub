@@ -17,4 +17,5 @@ def test_no_identifying_column_is_returned():
     selected = CODE.split("FROM public.demo_jobs j", 1)[0]
     for column in ("j.id ", "j.user_id", "j.upload_id", "j.storage_path AS", "o.name AS", "email"):
         assert column not in selected
-    assert "storage_path" not in CODE.split("SELECT jsonb_build_object", 1)[1].split("'bucket'", 1)[0]
+    groups = CODE.split("groups AS (", 1)[1].split("FROM jobs", 1)[0]
+    assert not re.search(r"\b(storage_path|user_id|upload_id|id|name)\b", groups)
