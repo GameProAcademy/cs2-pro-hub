@@ -124,7 +124,7 @@ jobs:
               print("::error title=R5.8.9 disposable::" + json.dumps({"status": "NO_RESULT"}))
               raise SystemExit(0)
           d = json.loads(text[text.index("RESULT:") + 7:])
-          summary = {k: d[k] for k in ("probe", "status", "passed", "total", "target_md5", "database", "test_deployment_id")}
+          summary = {k: d[k] for k in ("probe", "status", "passed", "total", "target_md5", "database", "test_deployment_id", "values_source", "build_commit", "semantic_commit") if k in d}
           summary["not_passed"] = [s["scenario"] for s in d["scenarios"] if s["status"] != "PASS"]
           level = "notice" if d["status"] == "PASS" else "error"
           print(f"::{level} title=R5.8.9 disposable::" + json.dumps(summary, sort_keys=True))
