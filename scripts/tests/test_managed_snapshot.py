@@ -18,7 +18,12 @@ RECORDER = "fe3250af2b461f03f459adf36b43ec21"
 MANAGED_2026_10_13 = {
     "attempts": {"jobs_attempt_9_or_more": 0, "max_attempt_number": 8},
     "canonical": {"first_verified_provenance_at": "2026-10-05T03:58:32.676222+00:00", "matches_by_status": {"partial": 1},
-                  "matches_created_before_first_verified_provenance": 1, "matches_with_status": 1},
+                  "matches_created_before_first_verified_provenance": 1, "matches_with_status": 1,
+                  # Schema v3: the quarantine exists (migration applied) but holds no row yet.
+                  "quarantine": {"quarantined_matches": 0, "quarantined_with_status": 0, "unquarantined_with_status": 1,
+                                 "unquarantined_created_before_first_verified_provenance": 1,
+                                 "quarantined_completed": 0, "quarantined_derived_rows": 0,
+                                 "guards": {g: True for g in ms.QUARANTINE_GUARDS}}},
     "database": {"migration_head": "20261012100000", "name": "postgres", "recorder_md5": RECORDER, "server_version": "17.6"},
     "derived_rows": {"match_features": 0, "match_metrics": 0},
     "digest": "f8293b7c4c6ee3ae8bfd40928d1b0bbd027748936439d68421318bbcfb73418a",
@@ -29,7 +34,7 @@ MANAGED_2026_10_13 = {
     "retention": {"active_demos": 0, "deletion_attempts": 0, "deletion_eligible": 12, "deletion_failed": 0,
                   "deletion_metadata_mismatch": 1, "deletion_verified": 0, "expired_demos": 12, "terminal_demos": 12,
                   "total_demo_jobs": 12},
-    "schema_version": 2, "snapshot_at": "2026-10-13T03:25:01.079304Z",
+    "schema_version": 3, "snapshot_at": "2026-10-13T03:25:01.079304Z",
     # The newest of the 3 VERIFIED rows observed read-only (historical deployment 1b5778de).
     "provenance": {"verified_rows": 3, "latest": [{
         "created_at": "2026-10-06T09:27:45.784091Z", "deployment_id": "1b5778de-3eaf-46f1-9ea5-cba381d95313",
@@ -190,19 +195,93 @@ def canonical_case(**changes):
     return run(snapshot)["gates"]["canonical_uncontaminated"]
 
 
+def quarantine(**changes):
+    q = copy.deepcopy(MANAGED_2026_10_13["canonical"]["quarantine"])
+    q.update(changes)
+    return q
+
+
+NO_ROWS = dict(matches_by_status={}, matches_with_status=0, matches_created_before_first_verified_provenance=0)
+EMPTY_Q = dict(unquarantined_with_status=0, unquarantined_created_before_first_verified_provenance=0)
+
+
 def test_strict_provenance_passes_only_when_no_canonical_row_exists():
-    result = canonical_case(matches_by_status={}, matches_with_status=0,
-                            matches_created_before_first_verified_provenance=0)
+    result = canonical_case(**NO_ROWS, quarantine=quarantine(**EMPTY_Q))
     assert (result["status"], result["reason"]) == ("VERIFIED", "NO_CANONICAL_ROWS")
-    no_provenance = canonical_case(matches_by_status={}, matches_with_status=0, first_verified_provenance_at=None,
-                                   matches_created_before_first_verified_provenance=0)
+    no_provenance = canonical_case(**NO_ROWS, first_verified_provenance_at=None, quarantine=quarantine(**EMPTY_Q))
     assert no_provenance["status"] == "VERIFIED"
 
 
 def test_a_canonical_row_after_the_first_provenance_still_fails_for_lack_of_a_link():
     # The only VERIFIED provenance may belong to another runtime; nothing links the row to it.
-    result = canonical_case(matches_created_before_first_verified_provenance=0)
+    result = canonical_case(matches_created_before_first_verified_provenance=0,
+                            quarantine=quarantine(unquarantined_created_before_first_verified_provenance=0))
     assert (result["status"], result["reason"]) == ("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK")
+
+
+# The partial row of 2026-09-11 once registered in public.canonical_match_quarantine.
+QUARANTINED = dict(quarantined_matches=1, quarantined_with_status=1, **EMPTY_Q)
+
+
+def test_a_preserved_row_is_ineligible_only_when_quarantined_and_every_guard_is_enforced():
+    result = canonical_case(quarantine=quarantine(**QUARANTINED))
+    assert (result["status"], result["reason"]) == ("VERIFIED", "ONLY_QUARANTINED_CANONICAL_ROWS")
+    # The row is still counted: it is preserved, not hidden.
+    assert result["evidence"]["canonical_rows"] == 1 and result["evidence"]["quarantined_rows"] == 1
+    assert result["evidence"]["strict_provenance_violations"] == 1 and result["evidence"]["eligible_rows"] == 0
+
+
+def test_a_missing_disabled_or_unknown_guard_voids_the_quarantine():
+    guards = MANAGED_2026_10_13["canonical"]["quarantine"]["guards"]
+    for name in sorted(guards):
+        for broken in ({k: v for k, v in guards.items() if k != name}, {**guards, name: False}, {**guards, name: 1}):
+            result = canonical_case(quarantine=quarantine(**QUARANTINED, guards=broken))
+            assert (result["status"], result["reason"]) == ("FAIL", "CANONICAL_QUARANTINE_NOT_ENFORCED"), name
+    extra = canonical_case(quarantine=quarantine(**QUARANTINED, guards={**guards, "x:y": True}))
+    assert extra["reason"] == "CANONICAL_QUARANTINE_NOT_ENFORCED"
+    # Even with no canonical row, an unenforced quarantine is not evidence of anything.
+    empty = canonical_case(**NO_ROWS, quarantine=quarantine(**EMPTY_Q, guards={}))
+    assert (empty["status"], empty["reason"]) == ("FAIL", "CANONICAL_QUARANTINE_NOT_ENFORCED")
+
+
+def test_a_promoted_or_derived_quarantined_row_fails():
+    promoted = canonical_case(matches_by_status={"completed": 1},
+                              quarantine=quarantine(**QUARANTINED, quarantined_completed=1))
+    assert (promoted["status"], promoted["reason"]) == ("FAIL", "QUARANTINED_ROW_PROMOTED")
+    derived = canonical_case(quarantine=quarantine(**QUARANTINED, quarantined_derived_rows=2))
+    assert (derived["status"], derived["reason"]) == ("FAIL", "QUARANTINED_ROW_HAS_DERIVED_ROWS")
+
+
+def test_an_eligible_row_next_to_a_quarantined_one_still_fails():
+    result = canonical_case(matches_by_status={"partial": 2}, matches_with_status=2,
+                            matches_created_before_first_verified_provenance=2,
+                            quarantine=quarantine(quarantined_matches=1, quarantined_with_status=1,
+                                                  unquarantined_with_status=1,
+                                                  unquarantined_created_before_first_verified_provenance=1))
+    assert (result["status"], result["reason"]) == ("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE")
+
+
+def test_missing_or_inconsistent_quarantine_evidence_is_not_proven():
+    for value in (None, [], "x", {}):
+        assert canonical_case(quarantine=value)["reason"] == "CANONICAL_QUARANTINE_EVIDENCE_MISSING", value
+    for key in ("quarantined_matches", "quarantined_with_status", "unquarantined_with_status",
+                "unquarantined_created_before_first_verified_provenance", "quarantined_completed",
+                "quarantined_derived_rows"):
+        for value in (None, True, -1, "0", 0.0):
+            result = canonical_case(quarantine=quarantine(**{**QUARANTINED, key: value}))
+            assert (result["status"], result["reason"]) == ("NOT_PROVEN", "CANONICAL_QUARANTINE_EVIDENCE_MISSING"), (key, value)
+    assert canonical_case(quarantine=quarantine(**{**QUARANTINED, "guards": None}))["status"] == "NOT_PROVEN"
+    contradictions = [
+        dict(QUARANTINED, quarantined_with_status=0),                      # quarantined + eligible != rows
+        dict(QUARANTINED, unquarantined_with_status=1),                    # 1 + 1 != 1
+        dict(QUARANTINED, quarantined_matches=0),                          # more rows than registry entries
+        dict(QUARANTINED, quarantined_completed=2),                        # more promoted than quarantined
+        dict(unquarantined_with_status=1, unquarantined_created_before_first_verified_provenance=2,
+             quarantined_with_status=0),                                   # more eligible violations than rows
+    ]
+    for changes in contradictions:
+        result = canonical_case(quarantine=quarantine(**changes))
+        assert (result["status"], result["reason"]) == ("NOT_PROVEN", "CANONICAL_EVIDENCE_CONTRADICTORY"), changes
 
 
 def test_missing_or_invalid_canonical_evidence_is_not_proven():
@@ -245,8 +324,19 @@ def test_the_sql_is_read_only_and_least_privilege():
 
 
 def test_the_migration_is_exactly_the_reviewed_sql():
-    migration = ROOT / "supabase/migrations/20261013120000_h3e_predem_managed_snapshot.sql"
+    migration = ROOT / "supabase/migrations/20261014120100_h3e_predem_managed_snapshot_v3.sql"
     assert migration.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+
+
+def test_the_snapshot_checks_exactly_the_guards_the_quarantine_migration_installs():
+    sql = (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+    listed = set(re.findall(r"\('([a-z_]+)', '([a-z_]+)', '[a-z_]+'\)", sql))
+    assert {f"{t}:{g}" for t, g in listed} == ms.QUARANTINE_GUARDS
+    migration = (ROOT / "supabase/migrations/20261014120000_h3e_canonical_match_quarantine.sql").read_text()
+    for table in ms.GUARDED_TABLES:
+        assert f"'{table}'" in migration
+    assert "CREATE TRIGGER canonical_match_quarantine_immutable" in migration
+    assert "CREATE TRIGGER canonical_match_quarantine_no_truncate" in migration
 
 
 def active_row(**changes):
