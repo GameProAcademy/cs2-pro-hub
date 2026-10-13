@@ -10,8 +10,13 @@ const legacyMigration = readFileSync(
   resolve("supabase/migrations/20260929103000_reconcile_r58_live_attestation_pins.sql"),
   "utf8",
 );
-const migration = readFileSync(
+const r582Migration = readFileSync(
   resolve("supabase/migrations/20261005090000_r58_2_live_deployment_pin_reconciliation.sql"),
+  "utf8",
+);
+// The migration that pins the managed recorder to the current runtime (R5.8.9).
+const migration = readFileSync(
+  resolve("supabase/migrations/20261013130000_r5_8_9_repin_attestation_recorder.sql"),
   "utf8",
 );
 const repairMigration = readFileSync(
@@ -42,10 +47,13 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(migration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.buildCommit);
+    expect(migration).toContain(`git:${PARSER_ATTESTATION_EXPECTED.commit}`);
+    // Historical pins stay in their own migrations, never rewritten.
     expect(repairMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
     expect(legacyMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
-    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
-    expect(repairMigration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    expect(r582Migration).toContain("1b5778de-3eaf-46f1-9ea5-cba381d95313");
+    expect(repairMigration).toContain("3070d8bae6c3f02093bbb2595138c913646c2e31");
     expect(
       parity({
         appDeployment: PARSER_ATTESTATION_EXPECTED.deploymentId,
@@ -75,17 +83,20 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
   );
 
   it("reconciles the live pin without deleting or rewriting attestation rows", () => {
-    expect(migration).toContain("R5.8.2 live deployment-pin reconciliation.");
-    expect(migration).toContain("_old_deployment");
-    expect(migration).toContain("_new_deployment");
-    expect(migration).toContain("_old_source_commit");
-    expect(migration).toContain("_new_source_commit");
-    expect(migration).toContain("p.prosecdef");
-    expect(migration).toContain(`ARRAY['search_path=""']`);
-    expect(migration).not.toMatch(/DELETE\s+FROM\s+public\.parser_runtime_provenance/i);
-    expect(migration).not.toMatch(/TRUNCATE\s+public\.parser_runtime_provenance/i);
-    expect(migration).not.toMatch(/UPDATE\s+public\.parser_runtime_provenance/i);
-    expect(migration).not.toMatch(/GRANT\s+EXECUTE/i);
-    expect(migration).not.toMatch(/SECURITY\s+INVOKER/i);
+    expect(r582Migration).toContain("R5.8.2 live deployment-pin reconciliation.");
+    expect(r582Migration).toContain("_old_deployment");
+    expect(r582Migration).toContain("_new_deployment");
+    expect(r582Migration).toContain("_old_source_commit");
+    expect(r582Migration).toContain("_new_source_commit");
+    for (const sql of [r582Migration, migration]) {
+      expect(sql).toContain("p.prosecdef");
+      expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.parser_runtime_provenance/i);
+      expect(sql).not.toMatch(/TRUNCATE\s+public\.parser_runtime_provenance/i);
+      expect(sql).not.toMatch(/UPDATE\s+public\.parser_runtime_provenance/i);
+      expect(sql).not.toMatch(/GRANT\s+EXECUTE/i);
+      expect(sql).not.toMatch(/SECURITY\s+INVOKER/i);
+    }
+    expect(r582Migration).toContain(`ARRAY['search_path=""']`);
+    expect(migration).toContain("R5_8_9_RECORDER_UNEXPECTED_DEFINITION");
   });
 });
