@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.parser_runtime_attestation import (
-    BRANCH, COMMIT, DEPLOYMENT, DEPLOYMENT_SOURCE_COMMIT, ENVIRONMENT,
+    BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, DEPLOYMENT_SOURCE_COMMIT, ENVIRONMENT,
     EXPECTED_HASHES, PROJECT, REPOSITORY, SERVICE, WORKFLOW_PATH,
     mapping_authority_matches_artifact, runtime_identity,
 )
@@ -38,7 +38,7 @@ DOMAINS = (
 EXPECTED_IDENTITY = {
     "name": "demoparser2", "version": "0.42.0",
     "revision": f"git:{COMMIT}", "semantic_revision": f"git:{COMMIT}",
-    "build_revision": f"git:{COMMIT}", "contract_version": 1,
+    "build_revision": f"git:{BUILD_COMMIT}", "contract_version": 1,
 }
 
 def git_blob_sha(path_spec: str) -> str:
@@ -192,6 +192,7 @@ def main() -> int:
         "side_effects": False, "checked_at": datetime.now(timezone.utc).isoformat(),
         "github": {"repository": os.getenv("GITHUB_REPOSITORY"), "ref": os.getenv("GITHUB_REF"), "sha": os.getenv("GITHUB_SHA")},
         "pins": {"repository": REPOSITORY, "runtime_branch": BRANCH, "semantic_commit": COMMIT,
+                 "build_commit": BUILD_COMMIT,
                  "deployment": DEPLOYMENT, "deployment_source_commit": DEPLOYMENT_SOURCE_COMMIT},
     }
     failures: list[str] = []
@@ -206,7 +207,8 @@ def main() -> int:
     except subprocess.CalledProcessError:
         evidence["runtime_commit_ancestry"] = False
         failures.append("RUNTIME_COMMIT_NOT_ANCESTOR")
-    observed_hashes = critical_hash_evidence(COMMIT, EXPECTED_HASHES)
+    # Critical blobs of the commit the image was built from (the deployed source).
+    observed_hashes = critical_hash_evidence(DEPLOYMENT_SOURCE_COMMIT, EXPECTED_HASHES)
     failures.extend(f"CRITICAL_HASH_MISMATCH:{path}" for path, item in observed_hashes.items() if not item["match"])
     evidence["critical_hashes"] = observed_hashes
     registry = json.loads((ROOT / "scripts/approved_attestation_workflow.json").read_text())

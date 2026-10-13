@@ -111,7 +111,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("actions/upload-artifact@");
     expect(workflow).not.toContain("actions/attest-build-provenance@");
     expect(workflow).not.toContain("attestations: write");
-    expect(workflow).toContain("infra/cs2-parser-worker-v8");
+    expect(workflow).toContain(
+      "git merge-base --is-ancestor c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d refs/remotes/origin/main",
+    );
     expect(attestor).toContain('statuses.append("BLOCKED_EXTERNAL_PROOF")');
     expect(attestor).toContain("RAILWAY_API_TOKEN");
     expect(attestor).not.toContain("RAILWAY_DEPLOYMENT_EVIDENCE_JSON");
