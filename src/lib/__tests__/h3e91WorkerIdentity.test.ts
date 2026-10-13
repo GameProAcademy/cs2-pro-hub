@@ -46,9 +46,9 @@ describe("bridge worker identity", () => {
     }
   });
 
-  it("reports whether the bridge enforces it", () => {
-    for (const nodeEnv of [undefined, "", "development", "test", "Production"]) {
-      expect(withEnv(COMMIT, nodeEnv).enforced).toBe(false);
+  it("reports enforcement independently of NODE_ENV, because the bridge has no NODE_ENV branch", () => {
+    for (const nodeEnv of [undefined, "", "development", "test", "Production", "production"]) {
+      expect(withEnv(COMMIT, nodeEnv).enforced).toBe(true);
     }
   });
 
@@ -58,11 +58,13 @@ describe("bridge worker identity", () => {
     for (const expression of [
       'process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? ""',
       "/^[0-9a-f]{40}$/.test(expectedBuild)",
-      'process.env["NODE_ENV"] === "production"',
     ]) {
       expect(bridge).toContain(expression);
       expect(helper).toContain(expression);
     }
+    // A constant `enforced: true` is honest only while the bridge never branches on the environment.
+    expect(bridge).not.toMatch(/process\.env\[?["'.]?NODE_ENV/);
+    expect(helper).not.toMatch(/process\.env\[?["'.]?NODE_ENV/);
     expect(helper).not.toMatch(/\.trim\(\)/);
   });
 

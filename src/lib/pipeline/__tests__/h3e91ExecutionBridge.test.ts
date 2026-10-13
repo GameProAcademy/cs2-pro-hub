@@ -94,6 +94,42 @@ describe("H3E91 bridge staging", () => {
     }
   });
 
+  it.each([undefined, "", "development", "test", "Production"])(
+    "fails closed outside NODE_ENV=production too (NODE_ENV=%s)",
+    async (nodeEnv) => {
+      vi.stubEnv("NODE_ENV", nodeEnv as string);
+      vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
+      rpc.mockClear();
+      const post = (body: unknown) =>
+        handleH3E91ExecutionBridge(
+          new Request("http://localhost/api/public/h3e91-execution-event", {
+            method: "POST",
+            headers: { authorization: "Bearer synthetic-test-only" },
+            body: JSON.stringify(body),
+          }),
+        );
+      try {
+        vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", "");
+        const unconfigured = await post(sample);
+        expect(unconfigured.status).toBe(503);
+        expect(await unconfigured.json()).toEqual({
+          code: "H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED",
+        });
+
+        vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
+        const mismatched = await post({
+          ...sample,
+          workerBuildCommit: "1111111111111111111111111111111111111111",
+        });
+        expect(mismatched.status).toBe(503);
+        expect(await mismatched.json()).toEqual({ code: "H3E91_WORKER_BUILD_IDENTITY_MISMATCH" });
+        expect(rpc).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
   it("accepts a matching production worker build and records the event through the database RPC", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
@@ -129,6 +165,7 @@ describe("H3E91 bridge staging", () => {
   });
 
   it("authenticated requests fail closed when the database recording boundary is unavailable", async () => {
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockResolvedValueOnce({ data: null, error: { message: "synthetic outage" } });
     try {
@@ -151,6 +188,7 @@ describe("H3E91 bridge staging", () => {
     ["IDEMPOTENT_REPLAY", 200],
     ["REJECTED", 409],
   ] as const)("maps database %s without permitting a direct insert", async (status, expected) => {
+    vi.stubEnv("H3E91_EXPECTED_WORKER_BUILD_COMMIT", MOCK_WORKER_BUILD_COMMIT);
     vi.stubEnv("DEMO_PIPELINE_BRIDGE_SECRET", "synthetic-test-only");
     rpc.mockResolvedValueOnce({ data: { status, code: "INVALID_TRANSITION" }, error: null });
     try {
