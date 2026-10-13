@@ -23,13 +23,53 @@ on:
         required: true
         default: furia-vs-gamerlegion-m1-cache.dem
         type: string
+      predem_approval_run_id:
+        description: >-
+          Id of the H.3-E activation run whose PASS (READY_FOR_PREDEM_REVIEW) approves
+          this commit. It must be the newest completed activation run, for the current
+          head of main, at most 6 hours old. There is no default and no override.
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
-  isolated-gate:
+  # Runs before anything is downloaded or built. A missing, stale, superseded or
+  # non-PASS pre-DEM approval stops the workflow here.
+  predem-approval:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      approval_run_id: ${{ steps.check.outputs.approval_run_id }}
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the pre-DEM approval for this exact commit
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PREDEM_APPROVAL_RUN_ID: ${{ inputs.predem_approval_run_id }}
+          A91_PREDEM_OUT: a91-predem-approval.json
+        run: python3 scripts/ci/a91_predem_postdem.py precondition
+      - name: Preserve the approval record
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: a91-predem-approval-${{ github.run_id }}-${{ github.run_attempt }}
+          path: a91-predem-approval.json
+          if-no-files-found: error
+          retention-days: 30
+
+  isolated-gate:
+    needs: predem-approval
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.predem-approval.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
@@ -145,6 +185,30 @@ jobs:
             ${{ runner.temp }}/a91-artifacts/determinism_report.json
           retention-days: 3
           if-no-files-found: error
+      # The four post-DEM gates, from this run's sealed public reports only (and
+      # only when the upload guard marked them safe), bound to the approval the
+      # predem-approval job verified. Never consulted for the pre-DEM decision.
+      - name: Reconcile the post-DEM gates
+        if: always()
+        env:
+          APPROVAL_RUN_ID: ${{ needs.predem-approval.outputs.approval_run_id }}
+          REPORTS_SAFE: ${{ steps.upload-guard.outputs.safe }}
+          A91_POSTDEM_OUT: ${{ runner.temp }}/a91-postdem/a91-postdem-reconciliation.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/a91-postdem" "$RUNNER_TEMP/a91-postdem/no-reports"
+          python3 -c 'import json,os,sys; json.dump({"ok": True, "approval": {"run_id": os.environ["APPROVAL_RUN_ID"], "sha": os.environ["GITHUB_SHA"]}}, open(sys.argv[1], "w"))' "$RUNNER_TEMP/a91-postdem/approval.json"
+          if [ "$REPORTS_SAFE" = "true" ]; then reports="$RUNNER_TEMP/a91-artifacts"; else reports="$RUNNER_TEMP/a91-postdem/no-reports"; fi
+          A91_PREDEM_FILE="$RUNNER_TEMP/a91-postdem/approval.json" A91_REPORTS_DIR="$reports" \
+            python3 scripts/ci/a91_predem_postdem.py postdem
+      - name: Preserve the post-DEM reconciliation
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: a91-postdem-reconciliation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/a91-postdem/a91-postdem-reconciliation.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Final private-file cleanup
         if: always()
         run: |
@@ -154,3 +218,4 @@ jobs:
           for path in Path(os.environ['RUNNER_TEMP']).glob('a91-private-*'):
               shutil.rmtree(path)
           PY
+
