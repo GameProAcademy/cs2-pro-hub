@@ -55,10 +55,10 @@ GATE_SPECS: dict[str, tuple[str, str, str, str, str]] = {
         "the pinned Railway deployment exists, is SUCCESS and belongs to the pinned project/service/environment",
         "Railway GraphQL deployment query (read-only)", "a new deployment; a pin change"),
     "railway_commit_exact": (PRE_DEM, R583,
-        "that deployment was built from the pinned source commit",
+        "that deployment, while SUCCESS, was built from the pinned source commit",
         "deployment meta.commitHash", "a new deployment; a pin change"),
     "railway_branch_exact": (PRE_DEM, R583,
-        "that deployment was built from the pinned branch", "deployment meta.branch",
+        "that deployment, while SUCCESS, was built from the pinned branch", "deployment meta.branch",
         "a new deployment; a pin change"),
     "live_version_exact": (PRE_DEM, R583,
         "both worker hosts report the pinned identity, and the semantic revision names the build's worker tree",
@@ -260,11 +260,15 @@ def reconcile_r5_8_3_preflight(
             verified["canonical_authorization_false"] = ev("r5.8.3.mapping_authority.authorized")
     if railway.get("api_query_succeeded") is True:
         verified["railway_token_configured"] = ev("r5.8.3.railway.api_query_succeeded")
-    if railway.get("id") == DEPLOYMENT and railway.get("status") == "SUCCESS":
+    # Commit and branch describe the runtime only while the pinned deployment
+    # is the one serving (SUCCESS). The commit of a REMOVED deployment proves
+    # nothing about what runs now.
+    serving = railway.get("id") == DEPLOYMENT and railway.get("status") == "SUCCESS"
+    if serving:
         verified["railway_deployment_exact"] = ev("r5.8.3.railway")
-    if railway.get("id") == DEPLOYMENT and railway.get("commitHash") == DEPLOYMENT_SOURCE_COMMIT:
+    if serving and railway.get("commitHash") == DEPLOYMENT_SOURCE_COMMIT:
         verified["railway_commit_exact"] = ev("r5.8.3.railway")
-    if railway.get("id") == DEPLOYMENT and railway.get("branch") == BRANCH:
+    if serving and railway.get("branch") == BRANCH:
         verified["railway_branch_exact"] = ev("r5.8.3.railway")
     if len(runtime) == 2 and all(isinstance(item, Mapping) and item.get("match") is True for item in runtime.values()):
         verified["live_version_exact"] = ev("r5.8.3.runtime")
