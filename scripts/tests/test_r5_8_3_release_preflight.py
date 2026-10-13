@@ -115,3 +115,36 @@ def test_workflow_cannot_mask_the_preflight_exit_status():
     assert upload.get("if") == "always()" and upload["with"]["if-no-files-found"] == "error"
     for step in steps:
         assert "tee" not in (step.get("run") or "")
+
+
+def test_mapping_counts_are_computed_from_the_inventory():
+    from scripts.canonical_mapping_gate import FORBIDDEN_GENERIC_SOURCES
+    from scripts.r5_8_3_release_preflight import mapping_authority_evidence
+    import json
+
+    observed = mapping_authority_evidence()
+    rows = json.loads((ROOT / "docs/client-parser/canonical-mapping-inventory.json").read_text())["rows"]
+    assert observed["computed_from"] == "docs/client-parser/canonical-mapping-inventory.json"
+    assert observed["inventory_rows"] == len(rows) == 105
+    assert observed["generic"] == sum(r["sourceField"] in FORBIDDEN_GENERIC_SOURCES for r in rows) == 0
+    assert observed["authorized"] == sum(r["canonicalAuthorization"] is not False for r in rows) == 0
+    assert observed["artifact_matches"] is True
+    source = SCRIPT.read_text()
+    assert '"inventory_rows": 105' not in source and '"generic": 0' not in source
+
+
+def test_health_evidence_requires_exact_ok(monkeypatch):
+    import scripts.r5_8_3_release_preflight as preflight
+
+    answers = {"https://a/health": {"status": "ok"}, "https://b/health": {"status": "ok", "extra": 1}}
+
+    def fake(url, **_):
+        if url not in answers:
+            raise OSError("unreachable")
+        return answers[url]
+
+    monkeypatch.setattr(preflight, "get_json", fake)
+    observed = preflight.health_evidence(("https://a", "https://b", "https://c"))
+    assert observed["https://a/health"]["ok"] is True
+    assert observed["https://b/health"]["ok"] is False
+    assert observed["https://c/health"] == {"ok": False, "reason": "OSError"}

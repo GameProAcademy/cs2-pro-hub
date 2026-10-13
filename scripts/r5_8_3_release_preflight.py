@@ -123,9 +123,49 @@ def railway_binding() -> dict[str, Any]:
         "serviceId": SERVICE, "environmentId": ENVIRONMENT, "repo": REPOSITORY,
         "branch": BRANCH, "commitHash": DEPLOYMENT_SOURCE_COMMIT,
     }
-    if observed != expected:
-        raise RuntimeError("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
+    # The query itself succeeded: that proves the token, whatever the binding.
+    observed["api_query_succeeded"] = True
+    observed["binding_matches"] = observed_binding_matches = all(observed[k] == v for k, v in expected.items())
+    if not observed_binding_matches:
+        observed["mismatched_fields"] = sorted(k for k, v in expected.items() if observed[k] != v)
     return observed
+
+
+def mapping_authority_evidence() -> dict[str, Any]:
+    """Counts computed from the committed inventory, never literals.
+
+    `generic` uses the repository's own definition
+    (scripts/canonical_mapping_gate.FORBIDDEN_GENERIC_SOURCES).
+    """
+    from scripts.canonical_mapping_gate import FORBIDDEN_GENERIC_SOURCES
+
+    path = "docs/client-parser/canonical-mapping-inventory.json"
+    rows = json.loads((ROOT / path).read_text(encoding="utf-8")).get("rows")
+    rows = rows if isinstance(rows, list) else []
+    try:
+        matches = mapping_authority_matches_artifact()
+    except Exception:
+        matches = False
+    return {
+        "computed_from": path,
+        "artifact_matches": matches,
+        "inventory_rows": len(rows),
+        "authorized": sum(1 for r in rows if not isinstance(r, dict) or r.get("canonicalAuthorization") is not False),
+        "generic": sum(1 for r in rows if not isinstance(r, dict) or r.get("sourceField") in FORBIDDEN_GENERIC_SOURCES),
+        "canonical_admission": "BLOCKED",
+    }
+
+
+def health_evidence(base_urls: tuple[str, ...]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for base in base_urls:
+        url = base + "/health"
+        try:
+            body = get_json(url)
+            out[url] = {"ok": body == {"status": "ok"}, "observed": body if isinstance(body, dict) else None}
+        except Exception as exc:
+            out[url] = {"ok": False, "reason": type(exc).__name__}
+    return out
 
 def main() -> int:
     if sys.argv[1:] == ["--self-check"]:
@@ -171,6 +211,8 @@ def main() -> int:
         failures.append("OIDC_IMMUTABLE_SUBJECT_MISSING")
     try:
         evidence["railway"] = railway_binding()
+        if not evidence["railway"]["binding_matches"]:
+            failures.append("RAILWAY_DEPLOYMENT_BINDING_MISMATCH")
     except Exception as exc:
         evidence["railway"] = {"status": "BLOCKED", "reason": str(exc)}
         failures.append(str(exc))
@@ -191,14 +233,17 @@ def main() -> int:
             runtime[url] = {"available": False, "reason": str(exc)}
             failures.append(f"RUNTIME_ENDPOINT_UNAVAILABLE:{url}")
     evidence["runtime"] = runtime
+    evidence["health"] = health_evidence(tuple(url.removesuffix("/version") for url in DOMAINS))
+    for url, item in evidence["health"].items():
+        if not item["ok"]:
+            failures.append(f"RUNTIME_HEALTH_NOT_OK:{url}")
     try:
-        mapping_ok = mapping_authority_matches_artifact()
-    except Exception:
-        mapping_ok = False
-    evidence["mapping_authority"] = {"artifact_matches": mapping_ok, "inventory_rows": 105,
-                                     "authorized": 0, "generic": 0, "verified": 0,
-                                     "canonical_admission": "BLOCKED"}
-    if not mapping_ok:
+        evidence["mapping_authority"] = mapping_authority_evidence()
+    except Exception as exc:
+        evidence["mapping_authority"] = {"artifact_matches": False, "reason": type(exc).__name__}
+    mapping = evidence["mapping_authority"]
+    if not (mapping.get("artifact_matches") is True and mapping.get("inventory_rows") == 105
+            and mapping.get("authorized") == 0 and mapping.get("generic") == 0):
         failures.append("MAPPING_AUTHORITY_MISMATCH")
     evidence["decision"] = "GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT" if not failures else "BLOCKED"
     evidence["failures"] = failures
