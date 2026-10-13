@@ -73,10 +73,30 @@ def q(sql: str) -> str:
     return "$r589$" + sql + "$r589$"
 
 
+def have(commit: str) -> bool:
+    return subprocess.run(("git", "cat-file", "-e", f"{commit}^{{commit}}"), cwd=ROOT).returncode == 0
+
+
 def main() -> int:
+    try:
+        return validate()
+    except Exception as exc:  # noqa: BLE001 - a crash is reported, never silent
+        print("RESULT:" + json.dumps({"probe": "R5_8_9_DISPOSABLE", "status": "FAIL", "passed": 0, "total": 0,
+                                      "target_md5": None, "database": "LOCAL_DISPOSABLE_ONLY",
+                                      "test_deployment_id": TEST_DEPLOYMENT, "scenarios": [],
+                                      "error": f"{type(exc).__name__}: {str(exc)[:300]}"}))
+        return 1
+
+
+def validate() -> int:
     probe.refuse_non_local()
     build = sys.argv[1] if len(sys.argv) > 1 else "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
     semantic = sys.argv[2] if len(sys.argv) > 2 else "10815fb44e165963adfaf07f71c474ca628f4b7f"
+    values_source = "candidates"
+    if not (have(build) and have(semantic)):
+        # Shallow checkout (CI): validate the mechanics with HEAD's real blobs.
+        build = semantic = git("rev-parse", "HEAD")
+        values_source = "HEAD (candidate commits not in this checkout)"
     spec = test_spec(build, semantic)
     migration, rollback, target = r5_8_9.migration_sql(spec), r5_8_9.rollback_sql(spec), r5_8_9.target_md5(spec)
     new, old = repinned_prelude(spec), probe.PRELUDE
@@ -148,6 +168,7 @@ INSERT INTO probe_result SELECT 'rollback', pg_temp.run({q(rollback)});
     print("RESULT:" + json.dumps({"probe": "R5_8_9_DISPOSABLE", "status": "PASS" if passed == len(results) else "FAIL",
                                   "passed": passed, "total": len(results), "target_md5": target,
                                   "database": "LOCAL_DISPOSABLE_ONLY", "test_deployment_id": TEST_DEPLOYMENT,
+                                  "values_source": values_source, "build_commit": build, "semantic_commit": semantic,
                                   "scenarios": results}, sort_keys=True, indent=1))
     return 0 if passed == len(results) else 1
 
