@@ -133,9 +133,9 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
 
 describe("GATE 1E.1 — revision lock", () => {
   it("pins the current production semantic and build identity", () => {
-    const deployed = "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76";
-    expect(DEPLOYED_WORKER_REVISION).toBe(deployed);
-    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(deployed);
+    // R5.8.9: semantic revision names the served worker tree; build revision is the image commit.
+    expect(DEPLOYED_WORKER_REVISION).toBe("git:10815fb44e165963adfaf07f71c474ca628f4b7f");
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d");
   });
 
   it("accepts the exact expected build", () => {

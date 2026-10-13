@@ -16,19 +16,23 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
-BRANCH = "infra/cs2-parser-worker-v8"
-COMMIT = "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76"
-DEPLOYMENT = "1b5778de-3eaf-46f1-9ea5-cba381d95313"
-DEPLOYMENT_SOURCE_COMMIT = "91aeee853200d0f461d0d36af1781d7fdfa40941"
+BRANCH = "main"
+# Semantic revision: the first main commit whose worker tree (8120c12a) is the one served.
+COMMIT = "10815fb44e165963adfaf07f71c474ca628f4b7f"
+# Build revision: the commit the served image was built from (BUILD_INFO.json, /version build.commit).
+BUILD_COMMIT = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+# Railway deployment 09b50029 (redeploy of c0aa8a55's image, 2026-10-13T08:27Z, R5.8.9 re-pin).
+DEPLOYMENT = "09b50029-2508-4267-bb1d-28c5e99b95db"
+DEPLOYMENT_SOURCE_COMMIT = BUILD_COMMIT
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
 ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
 EXPECTED_HASHES = {
-    "services/cs2-demo-parser/parser.py": "9d21670e47ddf330881e95a9d78c19074ccc0aea",
+    "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
     "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
-    "services/cs2-demo-parser/worker.py": "50a53b607d26f00b4de05c5e8998611959e27bd1",
-    "services/cs2-demo-parser/raw_evidence.py": "750195c1218abd53cfc77b6e8d2fb4a88e31579e",
-    "services/cs2-demo-parser/settings.py": "35eecfb06223812137a4a2f17114aae57cb7fe54",
+    "services/cs2-demo-parser/worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+    "services/cs2-demo-parser/raw_evidence.py": "46df350b5298531ffc01409172f690ba161328de",
+    "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
 WORKFLOW_PATH = ".github/workflows/parser-runtime-attestation.yml"
@@ -278,7 +282,7 @@ def build_attestation() -> dict[str, Any]:
     railway_identity = runtime_identity(railway_version)
     expected_identity = {
         "name": "demoparser2", "version": "0.42.0", "revision": f"git:{COMMIT}",
-        "semantic_revision": f"git:{COMMIT}", "build_revision": f"git:{COMMIT}", "contract_version": 1,
+        "semantic_revision": f"git:{COMMIT}", "build_revision": f"git:{BUILD_COMMIT}", "contract_version": 1,
     }
     if custom_identity != expected_identity or railway_identity != expected_identity or custom_identity != railway_identity:
         statuses.append("RUNTIME_IDENTITY_MISMATCH")
@@ -301,7 +305,7 @@ def build_attestation() -> dict[str, Any]:
         "deployment_source_commit": DEPLOYMENT_SOURCE_COMMIT,
         "parser_name": "demoparser2",
         "parser_version": "0.42.0", "contract_version": 1,
-        "semantic_revision": f"git:{COMMIT}", "build_revision": f"git:{COMMIT}",
+        "semantic_revision": f"git:{COMMIT}", "build_revision": f"git:{BUILD_COMMIT}",
         "runtime_health": {"custom": custom_health, "railway": railway_health},
         "custom_domain_version": custom_identity, "railway_domain_version": railway_identity,
         "critical_file_hashes": observed_hashes, "deployment_evidence": deployment_evidence,
