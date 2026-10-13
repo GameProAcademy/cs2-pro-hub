@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -1178,6 +1178,7 @@ export type Database = {
           parser_version: string | null
           source: string
           upload_id: string | null
+          worker_build_commit: string | null
         }
         Insert: {
           attempt_number?: number | null
@@ -1201,6 +1202,7 @@ export type Database = {
           parser_version?: string | null
           source: string
           upload_id?: string | null
+          worker_build_commit?: string | null
         }
         Update: {
           attempt_number?: number | null
@@ -1224,6 +1226,7 @@ export type Database = {
           parser_version?: string | null
           source?: string
           upload_id?: string | null
+          worker_build_commit?: string | null
         }
         Relationships: []
       }
@@ -3940,6 +3943,7 @@ export type Database = {
         Returns: Json
       }
       get_demo_retention_metrics: { Args: never; Returns: Json }
+      h3e_predem_managed_snapshot: { Args: never; Returns: Json }
       h3e91_authoritative_execution_evidence: {
         Args: { _baseline_started_at: string }
         Returns: Json
@@ -3953,28 +3957,52 @@ export type Database = {
         Args: { _execution_id: string }
         Returns: Json
       }
-      h3e91_record_execution_event: {
-        Args: {
-          _attempt_number: number
-          _correlation_id: string
-          _demo_sha256: string
-          _event_id: string
-          _event_type: string
-          _event_version: number
-          _execution_id: string
-          _execution_surface: string
-          _file_size: number
-          _job_id: string
-          _metadata_digest: string
-          _outcome_code: string
-          _parser_name: string
-          _parser_revision: string
-          _parser_version: string
-          _source: string
-          _upload_id: string
-        }
-        Returns: Json
-      }
+      h3e91_record_execution_event:
+        | {
+            Args: {
+              _attempt_number: number
+              _correlation_id: string
+              _demo_sha256: string
+              _event_id: string
+              _event_type: string
+              _event_version: number
+              _execution_id: string
+              _execution_surface: string
+              _file_size: number
+              _job_id: string
+              _metadata_digest: string
+              _outcome_code: string
+              _parser_name: string
+              _parser_revision: string
+              _parser_version: string
+              _source: string
+              _upload_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _attempt_number: number
+              _correlation_id: string
+              _demo_sha256: string
+              _event_id: string
+              _event_type: string
+              _event_version: number
+              _execution_id: string
+              _execution_surface: string
+              _file_size: number
+              _job_id: string
+              _metadata_digest: string
+              _outcome_code: string
+              _parser_name: string
+              _parser_revision: string
+              _parser_version: string
+              _source: string
+              _upload_id: string
+              _worker_build_commit: string
+            }
+            Returns: Json
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
