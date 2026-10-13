@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { bridgeWorkerIdentity } from "@/lib/h3e91WorkerIdentity";
+
 const FINGERPRINT = {
   status: "VERIFIED_SOURCE_FINGERPRINT",
   release: "H.3-E.5-RUNTIME-PARITY-2026-10-06",
@@ -13,7 +15,13 @@ const FINGERPRINT = {
 export const Route = createFileRoute("/api/public/parser-attestation-runtime")({
   server: {
     handlers: {
-      GET: () => Response.json(FINGERPRINT, { status: 200 }),
+      // `bridge` is read at request time: the worker build the execution
+      // bridge accepts (a commit hash, not a secret).
+      GET: () =>
+        Response.json(
+          { ...FINGERPRINT, bridge: bridgeWorkerIdentity(process.env) },
+          { status: 200 },
+        ),
     },
   },
 });

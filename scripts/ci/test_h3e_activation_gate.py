@@ -97,6 +97,8 @@ class World:
                                   "declared_revision_matches": True}}
         self.version_by_host = {}
         self.health = {"status": "ok"}
+        self.fingerprint = {"status": "VERIFIED_SOURCE_FINGERPRINT",
+                            "bridge": {"expectedWorkerBuildCommit": BUILD, "configured": True, "enforced": True}}
         self.endpoint_down = set()
         self.transport = {"unauth": (401, "UNAUTHORIZED"), "auth": (400, "ATTESTATION_PAYLOAD_INVALID")}
         self.railway = {"id": "3ad4b1fe-9b9e-4fec-b79a-4215d27aab29", "status": "SUCCESS",
@@ -163,6 +165,10 @@ class FakeIo:
             authed = "Authorization" in (headers or {})
             status, error = w.transport["auth" if authed else "unauth"]
             return {"status": status, "body": {"error": error}, "error": error}
+        if url == gate.RUNTIME_FINGERPRINT_ENDPOINT:
+            if "fingerprint" in w.endpoint_down:
+                return None
+            return {"status": 200, "body": copy.deepcopy(w.fingerprint), "error": None}
         if url.endswith("/version"):
             return {"status": 200, "body": copy.deepcopy(w.version_by_host.get(host, w.version)), "error": None}
         if url.endswith("/health"):
@@ -695,3 +701,35 @@ class IdentityRecord(unittest.TestCase):
         evidence, _ = evaluate(world)
         self.assertEqual(evidence["stages"]["runtime"]["reason"], "DECLARED_REVISION_MISMATCH")
         self.assertEqual(evidence["stages"]["runtime"]["identity"]["hosts"][gate.HOSTS[0]]["image_build_commit"], new)
+
+
+class BridgeIdentity(unittest.TestCase):
+    def test_bridge_expectation_must_equal_the_served_build(self):
+        evidence, _ = evaluate()
+        self.assertEqual(evidence["stages"]["bridge_identity"]["status"], "PASS")
+        cases = (
+            (lambda w: w.fingerprint.pop("bridge"), "BLOCKED", "BRIDGE_IDENTITY_NOT_PUBLISHED", "EVIDENCE_MISSING"),
+            (lambda w: w.endpoint_down.add("fingerprint"), "BLOCKED", "BRIDGE_IDENTITY_UNREACHABLE",
+             "INFRASTRUCTURE_FAILURE"),
+            # served build and bridge expectation differ (as when a redeploy changes the image)
+            (lambda w: w.fingerprint["bridge"].update(expectedWorkerBuildCommit="c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"),
+             "FAIL", "BRIDGE_EXPECTED_BUILD_MISMATCH", "REJECTED"),
+            (lambda w: w.fingerprint["bridge"].update(expectedWorkerBuildCommit=None, configured=False),
+             "FAIL", "BRIDGE_EXPECTED_BUILD_UNCONFIGURED", "REJECTED"),
+            (lambda w: w.fingerprint["bridge"].update(enforced=False), "FAIL", "BRIDGE_IDENTITY_NOT_ENFORCED", "REJECTED"),
+            (lambda w: w.version_by_host.update({gate.HOSTS[1]: {"parser": dict(w.version["parser"]),
+                                                               "build": dict(w.version["build"], commit="a" * 40)}}),
+             "FAIL", "BRIDGE_EXPECTED_BUILD_MISMATCH", "REJECTED"),
+        )
+        for mutate, status, reason, category in cases:
+            world = World()
+            mutate(world)
+            evidence, _ = evaluate(world)
+            bridge = evidence["stages"]["bridge_identity"]
+            self.assertEqual((bridge["status"], bridge["reason"], bridge["category"]), (status, reason, category))
+            self.assertNotEqual(evidence["decision"], "PASS")
+            self.assertEqual(evidence["predem_decision"], "BLOCKED")
+        world = World()
+        world.endpoint_down = {gate.HOSTS[0]}
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["bridge_identity"]["reason"], "SERVED_BUILD_UNAVAILABLE")
