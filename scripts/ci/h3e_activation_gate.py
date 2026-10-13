@@ -741,7 +741,7 @@ def render(evidence: dict[str, Any]) -> str:
 
 
 SAFE_DETAIL_KEYS = ("category", "reason", "observed", "decision", "failures", "blockers", "missing", "verified",
-                    "probe", "probes",
+                    "probe", "probes", "problems",
                     "build_commit", "railway_commit", "main_head", "expected_name", "error")
 
 
