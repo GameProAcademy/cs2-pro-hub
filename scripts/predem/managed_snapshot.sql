@@ -13,7 +13,7 @@ SET search_path = ''
 AS $snapshot$
   WITH body AS (
     SELECT jsonb_build_object(
-      'schema_version', 2,
+      'schema_version', 3,
       'snapshot_at', pg_catalog.to_char(pg_catalog.clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
       'database', jsonb_build_object(
         'name', pg_catalog.current_database(),
@@ -45,7 +45,54 @@ AS $snapshot$
           'first_verified_provenance_at', (SELECT min(p.created_at) FROM public.parser_runtime_provenance p WHERE p.status = 'VERIFIED'),
           'matches_created_before_first_verified_provenance', count(*) FILTER (
             WHERE m.canonical_status IS NOT NULL AND m.created_at < COALESCE(
-              (SELECT min(p.created_at) FROM public.parser_runtime_provenance p WHERE p.status = 'VERIFIED'), 'infinity'::timestamptz)))
+              (SELECT min(p.created_at) FROM public.parser_runtime_provenance p WHERE p.status = 'VERIFIED'), 'infinity'::timestamptz)),
+          -- Schema v3: rows preserved and excluded from eligibility by public.canonical_match_quarantine.
+          'quarantine', jsonb_build_object(
+            'quarantined_matches', (SELECT count(*) FROM public.canonical_match_quarantine),
+            'quarantined_with_status', count(*) FILTER (
+              WHERE m.canonical_status IS NOT NULL AND EXISTS (
+                SELECT 1 FROM public.canonical_match_quarantine q WHERE q.match_id = m.id)),
+            'unquarantined_with_status', count(*) FILTER (
+              WHERE m.canonical_status IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM public.canonical_match_quarantine q WHERE q.match_id = m.id)),
+            'unquarantined_created_before_first_verified_provenance', count(*) FILTER (
+              WHERE m.canonical_status IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM public.canonical_match_quarantine q WHERE q.match_id = m.id)
+              AND m.created_at < COALESCE(
+                (SELECT min(p.created_at) FROM public.parser_runtime_provenance p WHERE p.status = 'VERIFIED'), 'infinity'::timestamptz)),
+            'quarantined_completed', count(*) FILTER (
+              WHERE m.canonical_status = 'completed' AND EXISTS (
+                SELECT 1 FROM public.canonical_match_quarantine q WHERE q.match_id = m.id)),
+            'quarantined_derived_rows',
+              (SELECT count(*) FROM public.match_metrics x JOIN public.canonical_match_quarantine q ON q.match_id = x.match_id)
+              + (SELECT count(*) FROM public.match_features x JOIN public.canonical_match_quarantine q ON q.match_id = x.match_id),
+            -- Each guard: the named trigger exists, is enabled and calls the reviewed function.
+            'guards', (SELECT jsonb_object_agg(g.tbl || ':' || g.trg, EXISTS (
+                SELECT 1 FROM pg_catalog.pg_trigger t
+                JOIN pg_catalog.pg_proc f ON f.oid = t.tgfoid
+                JOIN pg_catalog.pg_namespace fn ON fn.oid = f.pronamespace
+                WHERE t.tgrelid = pg_catalog.to_regclass('public.' || g.tbl) AND t.tgname = g.trg
+                  AND t.tgenabled IN ('O', 'A') AND fn.nspname = 'public' AND f.proname = g.fn))
+              FROM (VALUES
+                ('canonical_match_quarantine', 'canonical_match_quarantine_immutable', 'refuse_canonical_quarantine_change'),
+                ('canonical_match_quarantine', 'canonical_match_quarantine_no_truncate', 'refuse_canonical_quarantine_change'),
+                ('matches', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('match_sources', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('match_participants', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('match_rounds', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('round_players', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('round_events', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('match_metrics', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('match_features', 'canonical_quarantine_guard', 'guard_canonical_match_quarantine'),
+                ('matches', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('match_sources', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('match_participants', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('match_rounds', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('round_players', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('round_events', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('match_metrics', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate'),
+                ('match_features', 'canonical_quarantine_no_truncate', 'guard_canonical_quarantine_truncate')
+              ) AS g(tbl, trg, fn))))
         FROM public.matches m),
       'execution_identity', (SELECT jsonb_build_object(
           'ledger_rows', (SELECT count(*) FROM public.h3e91_execution_evidence_ledger),

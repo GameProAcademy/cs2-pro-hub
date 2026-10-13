@@ -17,7 +17,7 @@ from typing import Any, Mapping
 GATES = ("db_git_digest_parity", "identity_validation", "retention_guard", "attempt_9_absent",
          "metrics_uncontaminated", "features_uncontaminated", "canonical_uncontaminated",
          "provenance_verified", "hmac_configured", "oidc_operational")
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 VERIFICATION_METHOD = "GITHUB_ACTIONS_SIGNED_ATTESTATION_V3"
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
@@ -39,13 +39,53 @@ def _count(value: Any) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
 
 
+GUARDED_TABLES = ("matches", "match_sources", "match_participants", "match_rounds", "round_players",
+                  "round_events", "match_metrics", "match_features")
+# Every trigger the quarantine depends on (supabase/migrations/20261014120000_h3e_canonical_match_quarantine.sql).
+QUARANTINE_GUARDS = frozenset(
+    ["canonical_match_quarantine:canonical_match_quarantine_immutable",
+     "canonical_match_quarantine:canonical_match_quarantine_no_truncate"]
+    + [f"{t}:canonical_quarantine_guard" for t in GUARDED_TABLES]
+    + [f"{t}:canonical_quarantine_no_truncate" for t in GUARDED_TABLES])
+
+
+def _quarantine_problem(quarantine: Any, rows: int, violations: int) -> tuple[str, str] | None:
+    """Why the quarantine evidence cannot excuse any row, or None when it is complete and consistent."""
+    if not isinstance(quarantine, Mapping):
+        return "NOT_PROVEN", "CANONICAL_QUARANTINE_EVIDENCE_MISSING"
+    keys = ("quarantined_matches", "quarantined_with_status", "unquarantined_with_status",
+            "unquarantined_created_before_first_verified_provenance", "quarantined_completed",
+            "quarantined_derived_rows")
+    n = {k: _count(quarantine.get(k)) for k in keys}
+    guards = quarantine.get("guards")
+    if any(v is None for v in n.values()) or not isinstance(guards, Mapping):
+        return "NOT_PROVEN", "CANONICAL_QUARANTINE_EVIDENCE_MISSING"
+    if (n["quarantined_with_status"] + n["unquarantined_with_status"] != rows
+            or n["unquarantined_created_before_first_verified_provenance"] > violations
+            or n["unquarantined_created_before_first_verified_provenance"] > n["unquarantined_with_status"]
+            or n["quarantined_with_status"] > n["quarantined_matches"]
+            or n["quarantined_completed"] > n["quarantined_with_status"]):
+        return "NOT_PROVEN", "CANONICAL_EVIDENCE_CONTRADICTORY"
+    if set(guards) != QUARANTINE_GUARDS or any(v is not True for v in guards.values()):
+        return "FAIL", "CANONICAL_QUARANTINE_NOT_ENFORCED"
+    if n["quarantined_completed"]:
+        return "FAIL", "QUARANTINED_ROW_PROMOTED"
+    if n["quarantined_derived_rows"]:
+        return "FAIL", "QUARANTINED_ROW_HAS_DERIVED_ROWS"
+    return None
+
+
 def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[str, Any]:
-    """STRICT_PROVENANCE: VERIFIED only when the snapshot proves there is no canonical row at all.
+    """STRICT_PROVENANCE: VERIFIED only when no canonical row is eligible.
 
     No `matches` row links to a VERIFIED parser_runtime_provenance row, so a row created after
     the first VERIFIED provenance is still not provably derived from verified output (the active
-    runtime may have none). Rows before it are FAIL; rows after it are FAIL too, for lack of a
-    link. Missing, malformed or self-contradictory counts are NOT_PROVEN, never VERIFIED.
+    runtime may have none). An eligible row before it is FAIL; after it, FAIL for lack of a link.
+
+    A row is ineligible only when it is registered in public.canonical_match_quarantine AND the
+    snapshot proves every quarantine guard is installed and enabled, the row was not promoted to
+    `completed`, and no metric or feature row derives from it. The row itself stays preserved.
+    Missing, malformed or self-contradictory counts are NOT_PROVEN, never VERIFIED.
     """
     if CANONICAL_RULE != "STRICT_PROVENANCE":
         return _status("NOT_PROVEN", "CANONICAL_RULE_UNKNOWN", **measures)
@@ -60,10 +100,24 @@ def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[s
     with_status = sum(n for k, n in by_status.items() if k != "null")
     if violations > rows or with_status != rows or (first is None and violations != rows):
         return _status("NOT_PROVEN", "CANONICAL_EVIDENCE_CONTRADICTORY", **measures)
-    if violations > 0:
+    quarantine = canonical.get("quarantine")
+    problem = _quarantine_problem(quarantine, rows, violations)
+    if problem and problem[0] == "NOT_PROVEN":
+        return _status(*problem, **measures)
+    q = quarantine if isinstance(quarantine, Mapping) else {}
+    eligible_before = _count(q.get("unquarantined_created_before_first_verified_provenance"))
+    eligible = _count(q.get("unquarantined_with_status"))
+    quarantined = _count(q.get("quarantined_with_status"))
+    measures = {**measures, "quarantined_rows": quarantined, "eligible_rows": eligible}
+    if eligible_before:
         return _status("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE", **measures)
-    if rows > 0:
+    if eligible:
         return _status("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK", **measures)
+    if problem:
+        # A broken guard voids the exclusion even when no row is quarantined today.
+        return _status(*problem, **measures)
+    if quarantined:
+        return _status("VERIFIED", "ONLY_QUARANTINED_CANONICAL_ROWS", **measures)
     return _status("VERIFIED", "NO_CANONICAL_ROWS", **measures)
 
 

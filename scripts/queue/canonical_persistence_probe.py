@@ -337,7 +337,92 @@ def s_roles():
     return {"denied": denied}
 
 
-SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles]
+def refused(query: str, code: str) -> None:
+    try:
+        sql(query)
+    except RuntimeError as error:
+        assert code in str(error), (query[:80], str(error))
+        return
+    raise AssertionError(f"not refused: {query[:120]}")
+
+
+def quarantine(match_id: str) -> None:
+    sql("insert into public.canonical_match_quarantine(match_id, reason, decision_ref, quarantined_by, evidence) "
+        f"values ('{match_id}', 'PRE_PROVENANCE_CANONICAL_ROW', 'probe', 'canonical_persistence_probe', "
+        "'{\"probe\": true}'::jsonb)")
+
+
+@scenario("a_quarantined_match_is_preserved_and_every_canonical_or_derived_write_is_refused")
+def s_quarantine():
+    upload, fingerprint = fresh()
+    payload = bundle(fingerprint, rounds=2)
+    match_id = persist(payload, upload)["match_id"]
+    sql(f"update public.matches set canonical_status = 'partial' where id = '{match_id}'")
+    quarantine(match_id)
+    before = snapshot(match_id)
+    m = f"'{match_id}'"
+    for query in (
+        # The routine itself, re-run with the same and with a different result.
+        "select public.persist_canonical_observation_attached('" + json.dumps(payload).replace("'", "''")
+        + f"'::jsonb, null, '{upload}')",
+        "select public.persist_canonical_observation_attached('"
+        + json.dumps(bundle(fingerprint, rounds=3, fetched_at="2026-01-16T21:00:00.000Z")).replace("'", "''")
+        + f"'::jsonb, null, '{upload}')",
+        # Promotion, mutation and removal of the match row.
+        f"update public.matches set canonical_status = 'completed' where id = {m}",
+        f"update public.matches set round_count = 99 where id = {m}",
+        f"delete from public.matches where id = {m}",
+        # Canonical children.
+        f"delete from public.round_events where match_id = {m}",
+        f"update public.match_rounds set match_id = match_id where match_id = {m}",
+        f"delete from public.match_participants where match_id = {m}",
+        f"delete from public.match_sources where match_id = {m}",
+        f"delete from public.round_players where match_id = {m}",
+        # Derived layers that feed analysis, Player DNA, Pro Score and the AI Coach.
+        f"insert into public.match_metrics(match_id) values ({m})",
+        f"insert into public.match_features(match_id) values ({m})",
+        # TRUNCATE skips row triggers; the statement guard refuses it.
+        "truncate public.round_events",
+        "truncate public.matches cascade",
+    ):
+        refused(query, "CANONICAL_MATCH_QUARANTINED")
+    for query in (f"update public.canonical_match_quarantine set reason = reason where match_id = {m}",
+                  f"delete from public.canonical_match_quarantine where match_id = {m}",
+                  "truncate public.canonical_match_quarantine cascade"):
+        refused(query, "CANONICAL_QUARANTINE_IMMUTABLE")
+    after = snapshot(match_id)
+    assert after == before, {"before": before, "after": after}
+    status = sql(f"select canonical_status from public.matches where id = {m}")
+    assert status == "partial", status
+    assert sql(f"select public.is_canonical_match_quarantined({m})") == "t"
+    return {"tables": after}
+
+
+@scenario("a_match_that_is_not_quarantined_is_unaffected_by_the_guards")
+def s_quarantine_scope():
+    upload, fingerprint = fresh()
+    first = persist(bundle(fingerprint), upload)
+    second = persist(bundle(fingerprint, rounds=2, fetched_at="2026-01-16T21:00:00.000Z"), upload)
+    assert second["match_id"] == first["match_id"]
+    assert snapshot(first["match_id"])["match_rounds"]["rows"] == 2
+    assert sql(f"select public.is_canonical_match_quarantined('{first['match_id']}')") == "f"
+
+
+@scenario("client_roles_cannot_read_or_write_the_quarantine_registry")
+def s_quarantine_roles():
+    denied = []
+    for role in ("anon", "authenticated"):
+        for query in ("select count(*) from public.canonical_match_quarantine",
+                      "insert into public.canonical_match_quarantine(match_id, reason, decision_ref, quarantined_by, "
+                      "evidence) values (gen_random_uuid(), 'PRE_PROVENANCE_CANONICAL_ROW', 'x', 'x', '{}')",
+                      "select public.is_canonical_match_quarantined(gen_random_uuid())"):
+            refused(f"set role {role}; {query}", "permission denied")
+            denied.append(f"{role}:{query.split()[0]}")
+    return {"denied": denied}
+
+
+SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles,
+             s_quarantine_scope, s_quarantine_roles, s_quarantine]
 
 
 def main() -> int:

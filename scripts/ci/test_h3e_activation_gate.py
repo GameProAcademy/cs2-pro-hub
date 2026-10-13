@@ -99,7 +99,12 @@ def green_snapshot(pins):
         "attempts": {"jobs_attempt_9_or_more": 0, "max_attempt_number": 8},
         "derived_rows": {"match_metrics": 0, "match_features": 0},
         "canonical": {"first_verified_provenance_at": "2026-10-05T00:00:00Z", "matches_by_status": {},
-                      "matches_with_status": 0, "matches_created_before_first_verified_provenance": 0},
+                      "matches_with_status": 0, "matches_created_before_first_verified_provenance": 0,
+                      "quarantine": {"quarantined_matches": 0, "quarantined_with_status": 0,
+                                     "unquarantined_with_status": 0,
+                                     "unquarantined_created_before_first_verified_provenance": 0,
+                                     "quarantined_completed": 0, "quarantined_derived_rows": 0,
+                                     "guards": {g: True for g in ms.QUARANTINE_GUARDS}}},
         "execution_identity": {"conflicting_executions": 0, "ledger_rows": 0},
         "retention": {"deletion_failed": 0, "deletion_metadata_mismatch": 0, "expired_demos": 0},
         "provenance": {"verified_rows": 1, "latest": [{
