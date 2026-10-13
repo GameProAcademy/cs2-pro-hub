@@ -10,6 +10,7 @@ import io
 import json
 import unittest
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("h3e_activation_gate", Path(__file__).with_name("h3e_activation_gate.py"))
@@ -72,6 +73,50 @@ def run(run_id, path_key, *, conclusion="success", status="completed", sha=TARGE
             "run_number": number or run_id, "html_url": f"https://example.invalid/runs/{run_id}"}
 
 
+def snapshot_world_pins():
+    hashes = {f"services/cs2-demo-parser/{n}": n[0] * 40 for n in ("parser.py", "adapter.py", "worker.py")}
+    return {"recorder_md5": "d" * 32, "runtime": {
+        "deployment_id": "09b50029-2508-4267-bb1d-28c5e99b95db", "project_id": "p", "service_id": "s",
+        "environment_id": "e", "branch": "main", "semantic_commit": BUILD, "build_commit": BUILD,
+        "deployment_created_at": "2026-10-13T08:27:16.178Z", "workflow_source_sha": "f" * 40,
+        "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
+        "critical_hashes": hashes}}
+
+
+def green_snapshot(pins):
+    """A snapshot in which every database and fresh-attestation gate is VERIFIED."""
+    import sys
+    sys.path.insert(0, str(Path(gate.__file__).resolve().parents[1] / "predem"))
+    import managed_snapshot as ms
+    rt = pins["runtime"]
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return {
+        "schema_version": ms.SCHEMA_VERSION, "snapshot_at": now, "digest": "a" * 64,
+        "database": {"recorder_md5": pins["recorder_md5"], "migration_head": "20261013130000"},
+        "mapping_release": {"authoritative_releases": 1, "authorized_counts": [0], "generic_counts": [0],
+                            "inventory_digests": [ms.INVENTORY_DIGEST], "inventory_rows": 105,
+                            "matrix_digests": [ms.MATRIX_DIGEST], "row_counts": [105]},
+        "attempts": {"jobs_attempt_9_or_more": 0, "max_attempt_number": 8},
+        "derived_rows": {"match_metrics": 0, "match_features": 0},
+        "canonical": {"first_verified_provenance_at": "2026-10-05T00:00:00Z", "matches_by_status": {},
+                      "matches_with_status": 0, "matches_created_before_first_verified_provenance": 0},
+        "execution_identity": {"conflicting_executions": 0, "ledger_rows": 0},
+        "retention": {"deletion_failed": 0, "deletion_metadata_mismatch": 0, "expired_demos": 0},
+        "provenance": {"verified_rows": 1, "latest": [{
+            "created_at": "2026-10-13T09:00:00.000000Z", "deployment_id": rt["deployment_id"],
+            "railway_project_id": rt["project_id"], "railway_service_id": rt["service_id"],
+            "railway_environment_id": rt["environment_id"], "railway_branch": rt["branch"],
+            "git_commit": rt["semantic_commit"], "deployment_source_commit": rt["build_commit"],
+            "deployment_status": "SUCCESS", "semantic_revision": f"git:{rt['semantic_commit']}",
+            "build_revision": f"git:{rt['build_commit']}", "verification_method": ms.VERIFICATION_METHOD,
+            "attestation_version": 3, "signature_is_hmac_sha256_hex": True,
+            "attestor_provider": "github_actions_oidc", "workflow_event": "workflow_dispatch",
+            "workflow_ref": rt["workflow_ref"], "workflow_source_sha": rt["workflow_source_sha"],
+            "workflow_run_id": "1",
+            "critical_hashes": {p: {"observed": b, "match": True} for p, b in rt["critical_hashes"].items()}}]},
+    }
+
+
 class World:
     """A complete, green state of GitHub, the endpoints, Railway and git."""
 
@@ -103,6 +148,8 @@ class World:
         self.transport = {"unauth": (401, "UNAUTHORIZED"), "auth": (400, "ATTESTATION_PAYLOAD_INVALID")}
         self.railway = {"id": "3ad4b1fe-9b9e-4fec-b79a-4215d27aab29", "status": "SUCCESS",
                         "commitHash": BUILD, "branch": "main"}
+        self.pins = snapshot_world_pins()
+        self.snapshot_response = {"status": 200, "body": {"snapshot": green_snapshot(self.pins)}, "error": None}
         self.trees = {BUILD: TREE, TARGET: TREE}
         self.ancestors = {(BUILD, TARGET), (TARGET, TARGET)}
         self.main_head = TARGET
@@ -165,6 +212,11 @@ class FakeIo:
             authed = "Authorization" in (headers or {})
             status, error = w.transport["auth" if authed else "unauth"]
             return {"status": status, "body": {"error": error}, "error": error}
+        if url == gate.SNAPSHOT_ENDPOINT:
+            assert method == "GET" and data is None, "the snapshot read sends nothing"
+            if "snapshot" in w.endpoint_down:
+                return None
+            return copy.deepcopy(w.snapshot_response)
         if url == gate.RUNTIME_FINGERPRINT_ENDPOINT:
             if "fingerprint" in w.endpoint_down:
                 return None
@@ -174,6 +226,11 @@ class FakeIo:
         if url.endswith("/health"):
             return {"status": 200, "body": dict(w.health), "error": None}
         raise KeyError(url)
+
+    def snapshot_pins(self):
+        if self.w.pins is None:
+            raise ValueError("SNAPSHOT_PINS_DISAGREE")
+        return copy.deepcopy(self.w.pins)
 
     def railway_active(self, token):
         self.calls.append(("RAILWAY", token[:0]))
@@ -417,9 +474,14 @@ class Negative(unittest.TestCase):
                     if r584.GATE_SPECS[g][1] in (r584.FRESH_ATTESTATION, r584.MANAGED_DB_READ)}
         own = {g for g in r584.PRE_DEM_GATES if g not in gate.ACTIVATION_COLLECTED}
         world.r584_doc = r584_document(r583_id, verified_pre=own - external)
+        # The snapshot route is not published yet: the 10 gates it proves stay unproven,
+        # whatever R5.8.4 says about them.
+        world.snapshot_response = {"status": 404, "body": None, "error": None}
         evidence, _ = evaluate(world)
         self.assertDecision(evidence, "BLOCKED", "predem_matrix", "BLOCKED", "PREDEM_GATES_NOT_VERIFIED")
+        self.assertEqual(external, set(gate.SNAPSHOT_GATES))
         self.assertEqual(set(evidence["stages"]["predem_matrix"]["blockers"]), external)
+        self.assertEqual(evidence["stages"]["managed_snapshot"]["reason"], "SNAPSHOT_ENDPOINT_NOT_PUBLISHED")
         self.assertEqual(evidence["predem_decision"], "BLOCKED")
         self.assertFalse(evidence["authorizes"]["real_dem_laboratory_dispatch"])
 
@@ -653,8 +715,9 @@ class MatrixWithBlockers(unittest.TestCase):
         self.assertEqual(evidence["stages"]["r5_8_4_decision"]["reason"], "R584_OWN_SCOPE_NOT_VERIFIED")
         predem = evidence["stages"]["predem_matrix"]
         self.assertEqual(predem["reason"], "PREDEM_GATES_NOT_VERIFIED")
-        self.assertEqual(set(predem["blockers"]), missing)
-        self.assertEqual(predem["verified"], 25)
+        # hmac_configured comes from this run's snapshot (green here), not from R5.8.4.
+        self.assertEqual(set(predem["blockers"]), missing - {"hmac_configured"})
+        self.assertEqual(predem["verified"], 26)
         self.assertEqual(predem["gates"]["remote_ci"]["collector"], "H.3-E activation gate")
         self.assertEqual(evidence["decision"], "FAIL")
         self.assertEqual(evidence["predem_decision"], "BLOCKED")
@@ -759,3 +822,45 @@ class BridgeIdentity(unittest.TestCase):
         bridge = evidence["stages"]["bridge_identity"]
         self.assertEqual(bridge["problems"], ["BRIDGE_EXPECTED_BUILD_UNCONFIGURED"])
         self.assertIsNone(bridge["observed"]["expected_worker_build_commit"])
+
+
+class ManagedSnapshot(unittest.TestCase):
+    def test_every_snapshot_problem_keeps_the_ten_gates_unproven_or_failed(self):
+        cases = (
+            (lambda w: w.endpoint_down.add("snapshot"), "BLOCKED", "SNAPSHOT_ENDPOINT_UNREACHABLE"),
+            (lambda w: w.snapshot_response.update(status=404, body=None), "BLOCKED", "SNAPSHOT_ENDPOINT_NOT_PUBLISHED"),
+            (lambda w: w.snapshot_response.update(status=503, body={"error": "SNAPSHOT_UNAVAILABLE"}),
+             "BLOCKED", "SNAPSHOT_UNAVAILABLE"),
+            (lambda w: w.snapshot_response.update(status=401, body={"error": "UNAUTHORIZED"}),
+             "FAIL", "SNAPSHOT_UNAUTHORIZED"),
+            (lambda w: w.snapshot_response.update(body={"snapshot": "x"}), "FAIL", "SNAPSHOT_RESPONSE_INVALID"),
+            (lambda w: setattr(w, "pins", None), "FAIL", "SNAPSHOT_PINS_UNAVAILABLE"),
+            (lambda w: w.snapshot_response["body"]["snapshot"].update(snapshot_at="2026-01-01T00:00:00.000000Z"),
+             "BLOCKED", "SNAPSHOT_UNUSABLE"),
+            (lambda w: w.snapshot_response["body"]["snapshot"]["database"].update(recorder_md5="fe3250af2b461f03f459adf36b43ec21"),
+             "BLOCKED", "SNAPSHOT_UNUSABLE"),
+            (lambda w: w.snapshot_response["body"]["snapshot"]["retention"].update(deletion_metadata_mismatch=1),
+             "FAIL", "SNAPSHOT_GATES_FAILED"),
+            (lambda w: w.snapshot_response["body"]["snapshot"]["provenance"].update(latest=[]),
+             "BLOCKED", "SNAPSHOT_GATES_NOT_VERIFIED"),
+        )
+        for mutate, status, reason in cases:
+            world = World()
+            mutate(world)
+            evidence, _ = evaluate(world)
+            snap = evidence["stages"]["managed_snapshot"]
+            self.assertEqual((snap["status"], snap["reason"]), (status, reason), reason)
+            self.assertEqual(evidence["predem_decision"], "BLOCKED", reason)
+            self.assertNotEqual(evidence["decision"], "PASS", reason)
+
+    def test_the_snapshot_request_carries_only_the_transport_header(self):
+        _, fake = evaluate()
+        calls = [c for c in fake.calls if c[:2] == ("GET", gate.SNAPSHOT_ENDPOINT)]
+        self.assertEqual(len(calls), 1)
+
+    def test_missing_secret_blocks_without_calling(self):
+        env = dict(SECRETS)
+        env.pop("PARSER_ATTESTATION_TRANSPORT_SECRET")
+        evidence, fake = evaluate(env=env)
+        self.assertEqual(evidence["stages"]["managed_snapshot"]["reason"], "SNAPSHOT_SECRET_MISSING")
+        self.assertFalse([c for c in fake.calls if c[:2] == ("GET", gate.SNAPSHOT_ENDPOINT)])

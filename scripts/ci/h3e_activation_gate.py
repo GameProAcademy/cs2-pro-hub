@@ -56,6 +56,12 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 WORKER_DIR = "services/cs2-demo-parser"
 ATTESTATION_ENDPOINT = "https://gamepro.network/api/public/parser-attestation"
+SNAPSHOT_ENDPOINT = "https://gamepro.network/api/public/predem-managed-snapshot"
+# Gates proven by the managed-database snapshot (7 database gates and the 3
+# gates proven by a VERIFIED attestation of the active runtime).
+SNAPSHOT_GATES = ("db_git_digest_parity", "identity_validation", "retention_guard", "attempt_9_absent",
+                  "metrics_uncontaminated", "features_uncontaminated", "canonical_uncontaminated",
+                  "provenance_verified", "hmac_configured", "oidc_operational")
 RUNTIME_FINGERPRINT_ENDPOINT = "https://gamepro.network/api/public/parser-attestation-runtime"
 HOSTS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 RAILWAY_API = "https://backboard.railway.com/graphql/v2"
@@ -104,7 +110,11 @@ APPROVED, REJECTED = "APPROVED", "REJECTED"
 MISSING, INVALID, STALE = "EVIDENCE_MISSING", "EVIDENCE_INVALID", "EVIDENCE_STALE"
 RUNNING, INFRASTRUCTURE, NOT_EVALUATED = "STILL_RUNNING", "INFRASTRUCTURE_FAILURE", "NOT_EVALUATED"
 REASON_CATEGORY: dict[str, str] = {
-    **dict.fromkeys(("BRIDGE_IDENTITY_NOT_PUBLISHED",), MISSING),
+    **dict.fromkeys(("BRIDGE_IDENTITY_NOT_PUBLISHED", "SNAPSHOT_ENDPOINT_NOT_PUBLISHED",
+                     "SNAPSHOT_GATES_NOT_VERIFIED", "SNAPSHOT_SECRET_MISSING"), MISSING),
+    **dict.fromkeys(("SNAPSHOT_ENDPOINT_UNREACHABLE", "SNAPSHOT_UNAVAILABLE"), INFRASTRUCTURE),
+    **dict.fromkeys(("SNAPSHOT_UNUSABLE", "SNAPSHOT_RESPONSE_INVALID", "SNAPSHOT_PINS_UNAVAILABLE"), INVALID),
+    **dict.fromkeys(("SNAPSHOT_GATES_FAILED", "SNAPSHOT_UNAUTHORIZED"), REJECTED),
     **dict.fromkeys(("BRIDGE_EXPECTED_BUILD_UNCONFIGURED", "BRIDGE_EXPECTED_BUILD_MISMATCH",
                      "BRIDGE_IDENTITY_NOT_ENFORCED"), REJECTED),
     **dict.fromkeys(("BRIDGE_IDENTITY_UNREACHABLE", "SERVED_BUILD_UNAVAILABLE"), INFRASTRUCTURE),
@@ -310,19 +320,27 @@ def evaluate_predem(document: dict[str, Any] | None, stages: dict[str, dict[str,
     gates = document.get("gates") if isinstance(document.get("gates"), dict) else {}
     pre = ((document.get("phases") or {}).get("pre_dem") or {}).get("gates") or []
     matrix: dict[str, str] = {}
+    snapshot_gates = (stages.get("managed_snapshot") or {}).get("gates")
+    snapshot_gates = snapshot_gates if isinstance(snapshot_gates, dict) else {}
     for gate in pre:
-        if gate in ACTIVATION_COLLECTED:
+        if gate in SNAPSHOT_GATES:
+            # Only this run's snapshot counts; R5.8.4 has no path to the managed database.
+            matrix[gate] = (snapshot_gates.get(gate) or {}).get("status") or "NOT_PROVEN"
+        elif gate in ACTIVATION_COLLECTED:
             proven = all((stages.get(s) or {}).get("status") == PASS for s in ACTIVATION_COLLECTED[gate])
             matrix[gate] = "VERIFIED" if proven else "NOT_PROVEN"
         else:
             matrix[gate] = (gates.get(gate) or {}).get("status") or "NOT_PROVEN"
     blockers = sorted(g for g, status in matrix.items() if status != "VERIFIED")
-    gates_detail = {g: {"status": matrix[g], "collector": (gates.get(g) or {}).get("collector")
-                        if g not in ACTIVATION_COLLECTED else "H.3-E activation gate"} for g in matrix}
+    def collector(g: str) -> str | None:
+        if g in SNAPSHOT_GATES:
+            return "H.3-E activation gate (managed-database snapshot)"
+        return "H.3-E activation gate" if g in ACTIVATION_COLLECTED else (gates.get(g) or {}).get("collector")
+    gates_detail = {g: {"status": matrix[g], "collector": collector(g)} for g in matrix}
     if len(matrix) != 28:
         return stage(FAIL, reason="PREDEM_MATRIX_INCOMPLETE", observed=len(matrix))
     if blockers:
-        collectors = sorted({(gates.get(g) or {}).get("collector") or "H.3-E activation gate" for g in blockers})
+        collectors = sorted({collector(g) or "H.3-E activation gate" for g in blockers})
         return stage(BLOCKED, reason="PREDEM_GATES_NOT_VERIFIED", blockers=blockers, missing=collectors,
                      verified=len(matrix) - len(blockers), gates=gates_detail)
     return stage(PASS, decision=PREDEM_READY, verified=len(matrix), gates=gates_detail)
@@ -515,6 +533,9 @@ class Io:
         return {"status": status, "body": body,
                 "error": body.get("error") if isinstance(body, dict) else None}
 
+    def snapshot_pins(self) -> dict[str, Any]:
+        return snapshot_pins(self.root)
+
     def railway_active(self, token: str) -> dict[str, Any]:
         """Newest SUCCESS deployment of the service, or {"error": ...} explaining why not."""
         query = ("query($input:DeploymentListInput!){deployments(input:$input,first:20)"
@@ -633,6 +654,85 @@ def collect_transport(io: Io, env: dict[str, str]) -> dict[str, Any]:
                               unauthenticated=unauth, authenticated=auth)
 
 
+def snapshot_pins(root: Path) -> dict[str, Any]:
+    """Expected recorder and active runtime, from the committed R5.8.9 spec and pins only."""
+    import sys
+    for sub in ("", "scripts/repin", "scripts/predem"):
+        path = str(root / sub) if sub else str(root)
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    import r5_8_9  # noqa: PLC0415
+    from scripts.parser_runtime_attestation import (  # noqa: PLC0415
+        BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, ENVIRONMENT, EXPECTED_HASHES, PROJECT, SERVICE)
+    spec = json.loads((root / "docs/reference/r5_8_9/spec.json").read_text(encoding="utf-8"))
+    registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
+    if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
+            DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
+        raise ValueError("SNAPSHOT_PINS_DISAGREE")
+    return {
+        "recorder_md5": r5_8_9.target_md5(spec),
+        "runtime": {
+            "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
+            "environment_id": ENVIRONMENT, "branch": BRANCH, "semantic_commit": COMMIT,
+            "build_commit": BUILD_COMMIT, "deployment_created_at": spec["observed"]["railway_deployment"]["created_at"],
+            "workflow_source_sha": registry["source_sha"],
+            "workflow_ref": f"{REPOSITORY}/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
+            "critical_hashes": dict(EXPECTED_HASHES),
+        },
+    }
+
+
+def evaluate_snapshot(response: dict[str, Any] | None, *, pins: dict[str, Any] | None, now: float,
+                      evaluate: Callable[..., dict[str, Any]]) -> dict[str, Any]:
+    if pins is None:
+        return stage(FAIL, reason="SNAPSHOT_PINS_UNAVAILABLE")
+    if response is None or response.get("status") is None:
+        return stage(BLOCKED, reason="SNAPSHOT_ENDPOINT_UNREACHABLE")
+    status = response["status"]
+    if status == 404:
+        return stage(BLOCKED, reason="SNAPSHOT_ENDPOINT_NOT_PUBLISHED")
+    if status == 401:
+        return stage(FAIL, reason="SNAPSHOT_UNAUTHORIZED")
+    if status == 503:
+        return stage(BLOCKED, reason="SNAPSHOT_UNAVAILABLE", error=response.get("error"))
+    body = response.get("body")
+    if status != 200 or not isinstance(body, dict) or not isinstance(body.get("snapshot"), dict):
+        return stage(FAIL, reason="SNAPSHOT_RESPONSE_INVALID", observed=status)
+    result = evaluate(body["snapshot"], now=now, expected_recorder_md5=pins["recorder_md5"],
+                      active_runtime=pins["runtime"])
+    gates = {g: {"status": v.get("status"), "reason": v.get("reason")} for g, v in result["gates"].items()}
+    if result.get("snapshot_problem"):
+        return stage(BLOCKED, reason="SNAPSHOT_UNUSABLE", observed=result["snapshot_problem"], gates=gates)
+    if set(gates) != set(SNAPSHOT_GATES):
+        return stage(FAIL, reason="SNAPSHOT_RESPONSE_INVALID", observed=sorted(gates))
+    failed = sorted(g for g, v in gates.items() if v["status"] == "FAIL")
+    unproven = sorted(g for g, v in gates.items() if v["status"] != "VERIFIED")
+    details = {"gates": gates, "observed": {"snapshot_digest": result.get("snapshot_digest"),
+                                            "snapshot_at": result.get("snapshot_at"),
+                                            "recorder_md5": (result.get("database") or {}).get("recorder_md5")}}
+    if failed:
+        return stage(FAIL, reason="SNAPSHOT_GATES_FAILED", failures=failed, **details)
+    if unproven:
+        return stage(BLOCKED, reason="SNAPSHOT_GATES_NOT_VERIFIED", blockers=unproven, **details)
+    return stage(PASS, verified=len(gates), **details)
+
+
+def collect_managed_snapshot(io: Io, env: dict[str, str]) -> dict[str, Any]:
+    transport = env.get("PARSER_ATTESTATION_TRANSPORT_SECRET", "")
+    if not transport:
+        return stage(BLOCKED, reason="SNAPSHOT_SECRET_MISSING")
+    try:
+        pins = io.snapshot_pins()
+    except (OSError, KeyError, ValueError, ImportError):
+        pins = None
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "predem"))
+    import managed_snapshot  # noqa: PLC0415
+    response = io.http(SNAPSHOT_ENDPOINT, headers={"Authorization": f"Bearer {transport}"})
+    return evaluate_snapshot(response, pins=pins, now=datetime.now(timezone.utc).timestamp(),
+                             evaluate=managed_snapshot.evaluate)
+
+
 def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     versions: dict[str, Any] = {}
     healths: dict[str, Any] = {}
@@ -700,6 +800,8 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
     if stages["target"]["status"] == PASS:
         stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
         stages.update(guarded("bridge_identity", lambda: {"bridge_identity": collect_bridge(io)}))
+        stages.update(guarded("managed_snapshot", lambda: {
+            "managed_snapshot": collect_managed_snapshot(io, env)}))
     else:
         stages["runtime"] = stage(SKIPPED, reason="TARGET_NOT_PASS")
     r584_document = stages.pop("_r584_document", None)

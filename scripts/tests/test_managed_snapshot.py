@@ -29,13 +29,45 @@ MANAGED_2026_10_13 = {
     "retention": {"active_demos": 0, "deletion_attempts": 0, "deletion_eligible": 12, "deletion_failed": 0,
                   "deletion_metadata_mismatch": 1, "deletion_verified": 0, "expired_demos": 12, "terminal_demos": 12,
                   "total_demo_jobs": 12},
-    "schema_version": 1, "snapshot_at": "2026-10-13T03:25:01.079304Z",
+    "schema_version": 2, "snapshot_at": "2026-10-13T03:25:01.079304Z",
+    # The newest of the 3 VERIFIED rows observed read-only (historical deployment 1b5778de).
+    "provenance": {"verified_rows": 3, "latest": [{
+        "created_at": "2026-10-06T09:27:45.784091Z", "deployment_id": "1b5778de-3eaf-46f1-9ea5-cba381d95313",
+        "railway_project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
+        "railway_service_id": "706fa246-a263-484f-a986-c74516be862b",
+        "railway_environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
+        "railway_branch": "infra/cs2-parser-worker-v8", "git_commit": "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+        "deployment_source_commit": "91aeee853200d0f461d0d36af1781d7fdfa40941", "deployment_status": "SUCCESS",
+        "semantic_revision": "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+        "build_revision": "git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76",
+        "verification_method": "GITHUB_ACTIONS_SIGNED_ATTESTATION_V3", "attestation_version": 3,
+        "signature_is_hmac_sha256_hex": True, "attestor_provider": "github_actions_oidc",
+        "workflow_event": "workflow_dispatch",
+        "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
+        "workflow_source_sha": "3070d8bae6c3f02093bbb2595138c913646c2e31", "workflow_run_id": "1",
+        "critical_hashes": {f"services/cs2-demo-parser/{n}": {"observed": b, "match": True} for n, b in (
+            ("parser.py", "9d21670e47ddf330881e95a9d78c19074ccc0aea"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
+            ("worker.py", "50a53b607d26f00b4de05c5e8998611959e27bd1"), ("raw_evidence.py", "750195c1218abd53cfc77b6e8d2fb4a88e31579e"),
+            ("settings.py", "35eecfb06223812137a4a2f17114aae57cb7fe54"))}}]},
+}
+# The active runtime after the R5.8.9 re-pin (deployment 09b50029).
+ACTIVE = {
+    "deployment_id": "09b50029-2508-4267-bb1d-28c5e99b95db", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
+    "service_id": "706fa246-a263-484f-a986-c74516be862b", "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
+    "branch": "main", "semantic_commit": "10815fb44e165963adfaf07f71c474ca628f4b7f",
+    "build_commit": "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d", "deployment_created_at": "2026-10-13T08:27:16.178Z",
+    "workflow_source_sha": "80c6cb645b81ba427ad3d97ee8feb1964ba62d87",
+    "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
+    "critical_hashes": {f"services/cs2-demo-parser/{n}": b for n, b in (
+        ("parser.py", "981f6261c7e38334dfab5c93088e9d5ad1f56f6e"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
+        ("worker.py", "ecaac3968d68e1ed8fc03f8dfea42c223869f473"), ("raw_evidence.py", "46df350b5298531ffc01409172f690ba161328de"),
+        ("settings.py", "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"))},
 }
 NOW = datetime.fromisoformat("2026-10-13T03:30:00+00:00").timestamp()
 
 
-def run(snapshot, now=NOW, recorder=RECORDER):
-    return ms.evaluate(snapshot, now=now, expected_recorder_md5=recorder)
+def run(snapshot, now=NOW, recorder=RECORDER, runtime=ACTIVE):
+    return ms.evaluate(snapshot, now=now, expected_recorder_md5=recorder, active_runtime=runtime)
 
 
 def test_the_managed_observation_of_2026_10_13():
@@ -44,7 +76,10 @@ def test_the_managed_observation_of_2026_10_13():
     assert status == {"db_git_digest_parity": "VERIFIED", "attempt_9_absent": "VERIFIED",
                       "metrics_uncontaminated": "VERIFIED", "features_uncontaminated": "VERIFIED",
                       "identity_validation": "VERIFIED", "retention_guard": "FAIL",
-                      "canonical_uncontaminated": "FAIL"}
+                      "canonical_uncontaminated": "FAIL", "provenance_verified": "NOT_PROVEN",
+                      "hmac_configured": "NOT_PROVEN", "oidc_operational": "NOT_PROVEN"}
+    # Three VERIFIED rows exist, none for the active deployment: historical rows never count.
+    assert result["gates"]["provenance_verified"]["reason"] == "NO_VERIFIED_ATTESTATION_OF_ACTIVE_RUNTIME"
     assert result["verified"] == 5
     assert result["gates"]["retention_guard"]["evidence"]["deletion_metadata_mismatch"] == 1
     canonical = result["gates"]["canonical_uncontaminated"]
@@ -127,7 +162,7 @@ def test_missing_values_are_never_verified():
 
 def test_an_unusable_snapshot_proves_nothing():
     cases = [
-        (bad(("schema_version",), 2), NOW, RECORDER, "SNAPSHOT_SCHEMA_UNKNOWN"),
+        (bad(("schema_version",), 1), NOW, RECORDER, "SNAPSHOT_SCHEMA_UNKNOWN"),
         (bad(("digest",), "x"), NOW, RECORDER, "SNAPSHOT_DIGEST_MISSING"),
         (bad(("snapshot_at",), "yesterday"), NOW, RECORDER, "SNAPSHOT_TIME_INVALID"),
         (MANAGED_2026_10_13, NOW - 3600, RECORDER, "SNAPSHOT_TIME_INVALID"),
@@ -200,6 +235,85 @@ def test_the_sql_is_read_only_and_least_privilege():
     assert "STABLE" in sql and "SECURITY DEFINER" in sql and "SET search_path = ''" in sql
     assert "REVOKE ALL ON FUNCTION public.h3e_predem_managed_snapshot() FROM PUBLIC, anon, authenticated;" in sql
     assert "GRANT EXECUTE ON FUNCTION public.h3e_predem_managed_snapshot() TO service_role;" in sql
-    # aggregates only: no column that could carry personal data is selected
-    for column in ("user_id", "email", "storage_path", "payload", "secret", "external_match_id"):
-        assert column not in body
+    # aggregates and identities only: no column that could carry personal data,
+    # an attestation body, a nonce or a signature value is selected
+    selected = re.sub(r"--[^\n]*", "", body)
+    for column in ("user_id", "email", "storage_path", "payload", "secret", "external_match_id", "nonce"):
+        assert column not in selected
+    assert selected.count("attestation_signature") == 1
+    assert "p.attestation_signature ~ '^[0-9a-f]{64}$'" in selected
+
+
+def test_the_migration_is_exactly_the_reviewed_sql():
+    migration = ROOT / "supabase/migrations/20261013120000_h3e_predem_managed_snapshot.sql"
+    assert migration.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+
+
+def active_row(**changes):
+    row = {"created_at": "2026-10-13T09:00:00.000000Z", "deployment_id": ACTIVE["deployment_id"],
+           "railway_project_id": ACTIVE["project_id"], "railway_service_id": ACTIVE["service_id"],
+           "railway_environment_id": ACTIVE["environment_id"], "railway_branch": "main",
+           "git_commit": ACTIVE["semantic_commit"], "deployment_source_commit": ACTIVE["build_commit"],
+           "deployment_status": "SUCCESS", "semantic_revision": f"git:{ACTIVE['semantic_commit']}",
+           "build_revision": f"git:{ACTIVE['build_commit']}", "verification_method": ms.VERIFICATION_METHOD,
+           "attestation_version": 3, "signature_is_hmac_sha256_hex": True, "attestor_provider": "github_actions_oidc",
+           "workflow_event": "workflow_dispatch", "workflow_ref": ACTIVE["workflow_ref"],
+           "workflow_source_sha": ACTIVE["workflow_source_sha"], "workflow_run_id": "42",
+           "critical_hashes": {p: {"observed": b, "match": True} for p, b in ACTIVE["critical_hashes"].items()}}
+    row.update(changes)
+    return row
+
+
+def with_rows(*rows):
+    snapshot = copy.deepcopy(MANAGED_2026_10_13)
+    snapshot["provenance"] = {"verified_rows": 3 + len(rows), "latest": list(rows) + snapshot["provenance"]["latest"]}
+    return run(snapshot)["gates"]
+
+
+def test_a_verified_attestation_of_the_active_runtime_proves_the_three_gates():
+    gates = with_rows(active_row())
+    assert {g: gates[g]["status"] for g in ("provenance_verified", "hmac_configured", "oidc_operational")} == {
+        "provenance_verified": "VERIFIED", "hmac_configured": "VERIFIED", "oidc_operational": "VERIFIED"}
+
+
+def test_any_identity_difference_or_an_older_row_never_counts():
+    blob = "services/cs2-demo-parser/worker.py"
+    for changes in (dict(deployment_id="c0aa8a55-a2a8-43e4-924e-0966171cddcf"), dict(railway_branch="infra/cs2-parser-worker-v8"),
+                    dict(git_commit="c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"),
+                    dict(build_revision="git:10815fb44e165963adfaf07f71c474ca628f4b7f"),
+                    dict(deployment_source_commit="91aeee853200d0f461d0d36af1781d7fdfa40941"),
+                    dict(deployment_status="REMOVED"), dict(workflow_source_sha="3070d8bae6c3f02093bbb2595138c913646c2e31"),
+                    dict(verification_method="MANUAL"), dict(created_at="2026-10-13T08:00:00.000000Z"),
+                    dict(critical_hashes={**active_row()["critical_hashes"], blob: {"observed": "50a53b607d26f00b4de05c5e8998611959e27bd1", "match": True}}),
+                    dict(critical_hashes={**active_row()["critical_hashes"], blob: {"observed": ACTIVE["critical_hashes"][blob], "match": False}})):
+        gates = with_rows(active_row(**changes))
+        assert gates["provenance_verified"]["status"] == "NOT_PROVEN", changes
+
+
+def test_hmac_and_oidc_need_their_own_evidence_on_the_matching_row():
+    gates = with_rows(active_row(signature_is_hmac_sha256_hex=False, workflow_event="push"))
+    assert gates["provenance_verified"]["status"] == "VERIFIED"
+    assert gates["hmac_configured"]["status"] == "NOT_PROVEN"
+    assert gates["oidc_operational"]["status"] == "NOT_PROVEN"
+
+
+def test_missing_runtime_pins_or_provenance_section_prove_nothing():
+    assert run(MANAGED_2026_10_13, runtime=None)["gates"]["provenance_verified"]["reason"] == "ACTIVE_RUNTIME_PINS_NOT_SUPPLIED"
+    for value in (None, [], {"latest": "x", "verified_rows": 1}, {"latest": [], "verified_rows": True}):
+        gates = run(bad(("provenance",), value))["gates"]
+        assert {gates[g]["status"] for g in ("provenance_verified", "hmac_configured", "oidc_operational")} == {"NOT_PROVEN"}
+
+
+def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec():
+    sys.path.insert(0, str(ROOT / "scripts/ci"))
+    import h3e_activation_gate as gate
+    pins = gate.snapshot_pins(ROOT)
+    assert pins["recorder_md5"] == "d7c325bac1a98c6a7cac67a0f18ba08b"
+    runtime = pins["runtime"]
+    assert runtime["deployment_id"] == "09b50029-2508-4267-bb1d-28c5e99b95db"
+    assert (runtime["semantic_commit"], runtime["build_commit"]) == (
+        "10815fb44e165963adfaf07f71c474ca628f4b7f", "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d")
+    assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
+    assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
+    # The fixture of the active runtime is exactly what the gate will expect.
+    assert {k: runtime[k] for k in ACTIVE} == ACTIVE

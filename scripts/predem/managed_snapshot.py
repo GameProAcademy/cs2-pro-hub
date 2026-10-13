@@ -15,7 +15,10 @@ from datetime import datetime
 from typing import Any, Mapping
 
 GATES = ("db_git_digest_parity", "identity_validation", "retention_guard", "attempt_9_absent",
-         "metrics_uncontaminated", "features_uncontaminated", "canonical_uncontaminated")
+         "metrics_uncontaminated", "features_uncontaminated", "canonical_uncontaminated",
+         "provenance_verified", "hmac_configured", "oidc_operational")
+SCHEMA_VERSION = 2
+VERIFICATION_METHOD = "GITHUB_ACTIONS_SIGNED_ATTESTATION_V3"
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
 MAX_AGE_SECONDS = 6 * 3600
@@ -64,7 +67,61 @@ def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[s
     return _status("VERIFIED", "NO_CANONICAL_ROWS", **measures)
 
 
-def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[str, Any]:
+def _provenance(section: Any, runtime: Mapping[str, Any] | None) -> dict[str, dict[str, Any]]:
+    """Fresh attestation gates: a VERIFIED row the recorder accepted for exactly the active runtime.
+
+    The recorder only writes VERIFIED after checking the HMAC, the GitHub OIDC
+    token (verified by the application before the call), freshness, the
+    Railway binding and the critical hashes. A row of another deployment,
+    revision, blob or workflow never counts; neither does a row older than the
+    deployment. No matching row is NOT_PROVEN, never FAIL: it means "not yet".
+    """
+    names = ("provenance_verified", "hmac_configured", "oidc_operational")
+    if not isinstance(runtime, Mapping):
+        return {g: _status("NOT_PROVEN", "ACTIVE_RUNTIME_PINS_NOT_SUPPLIED") for g in names}
+    latest = section.get("latest") if isinstance(section, Mapping) else None
+    if not isinstance(latest, list) or _count(section.get("verified_rows")) is None:
+        return {g: _status("NOT_PROVEN", "PROVENANCE_EVIDENCE_MISSING") for g in names}
+    want = {
+        "deployment_id": runtime["deployment_id"], "railway_project_id": runtime["project_id"],
+        "railway_service_id": runtime["service_id"], "railway_environment_id": runtime["environment_id"],
+        "railway_branch": runtime["branch"], "git_commit": runtime["semantic_commit"],
+        "deployment_source_commit": runtime["build_commit"], "deployment_status": "SUCCESS",
+        "semantic_revision": f"git:{runtime['semantic_commit']}", "build_revision": f"git:{runtime['build_commit']}",
+        "verification_method": VERIFICATION_METHOD, "attestation_version": 3,
+        "workflow_source_sha": runtime["workflow_source_sha"],
+    }
+    not_before = runtime["deployment_created_at"]
+    matches = []
+    for item in latest:
+        if not isinstance(item, Mapping) or any(item.get(k) != v for k, v in want.items()):
+            continue
+        hashes = item.get("critical_hashes") if isinstance(item.get("critical_hashes"), Mapping) else {}
+        if any(not isinstance(hashes.get(path), Mapping) or hashes[path].get("observed") != blob
+               or hashes[path].get("match") is not True for path, blob in runtime["critical_hashes"].items()):
+            continue
+        if not isinstance(item.get("created_at"), str) or item["created_at"] < not_before:
+            continue
+        matches.append(item)
+    if not matches:
+        reason = "NO_VERIFIED_ATTESTATION_OF_ACTIVE_RUNTIME"
+        return {g: _status("NOT_PROVEN", reason, verified_rows=section.get("verified_rows")) for g in names}
+    row = matches[0]
+    evidence = {"created_at": row.get("created_at"), "workflow_run_id": row.get("workflow_run_id")}
+    hmac = row.get("signature_is_hmac_sha256_hex") is True
+    oidc = (row.get("attestor_provider") == "github_actions_oidc" and row.get("workflow_event") == "workflow_dispatch"
+            and row.get("workflow_ref") == runtime["workflow_ref"])
+    return {
+        "provenance_verified": _status("VERIFIED", "VERIFIED_ATTESTATION_OF_ACTIVE_RUNTIME", **evidence),
+        "hmac_configured": (_status("VERIFIED", "RECORDER_ACCEPTED_HMAC_SIGNED_ATTESTATION", **evidence) if hmac
+                            else _status("NOT_PROVEN", "SIGNATURE_NOT_HMAC_SHA256", **evidence)),
+        "oidc_operational": (_status("VERIFIED", "ATTESTATION_FROM_APPROVED_OIDC_WORKFLOW", **evidence) if oidc
+                             else _status("NOT_PROVEN", "OIDC_WORKFLOW_IDENTITY_MISMATCH", **evidence)),
+    }
+
+
+def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str,
+             active_runtime: Mapping[str, Any] | None = None) -> dict[str, Any]:
     gates: dict[str, dict[str, Any]] = {}
     s = snapshot if isinstance(snapshot, Mapping) else {}
     try:
@@ -73,7 +130,7 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[s
         taken = None
     database = s.get("database") if isinstance(s.get("database"), Mapping) else {}
     problem = None
-    if s.get("schema_version") != 1:
+    if s.get("schema_version") != SCHEMA_VERSION:
         problem = "SNAPSHOT_SCHEMA_UNKNOWN"
     elif not isinstance(s.get("digest"), str) or not HEX64.match(s["digest"]):
         problem = "SNAPSHOT_DIGEST_MISSING"
@@ -139,6 +196,8 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[s
                 "matches_by_status": canonical.get("matches_by_status")}
     measures["canonical_rows"] = canonical.get("matches_with_status")
     gates["canonical_uncontaminated"] = _canonical(canonical, measures)
+
+    gates.update(_provenance(s.get("provenance"), active_runtime))
 
     return {"gates": gates, "snapshot_problem": None, "snapshot_digest": s.get("digest"),
             "snapshot_at": s.get("snapshot_at"), "database": dict(database),
