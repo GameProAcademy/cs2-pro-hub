@@ -105,6 +105,15 @@ def inspect_evidence(payloads, identity):
             # fixture executed twice under two case ids is one execution, not two.
             ids = set()
             fixtures = set()
+            repeated = sorted({c.get('fixture_id') for c in cases if isinstance(c, dict)
+                               and sum(1 for o in cases if isinstance(o, dict)
+                                       and o.get('fixture_id') == c.get('fixture_id')) > 1}, key=str)
+            if repeated:
+                # Name the cause next to the generic NOT_PROVEN code: how many
+                # fixtures are shared and by how many cases (ids only, no data).
+                shared = sum(1 for c in cases if isinstance(c, dict) and c.get('fixture_id') in repeated)
+                issues.append(f'R11_{name.upper().replace("-", "_")}_MATRIX_REPEATED_FIXTURES:'
+                              f'{len(repeated)}_fixtures_shared_by_{shared}_cases')
             for case in cases:
                 if not isinstance(case, dict):
                     raise ValueError('Invalid case')
@@ -239,6 +248,11 @@ def main():
     path = Path(os.environ.get('F553_ATTESTATION_OUT', '/tmp/f553-r11-post-completion.json'))
     path.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({'final_decision': decision, 'issues': issues, 'artifact_digest': digest}))
+    # The decision as a check annotation, so a BLOCKED attestation says why
+    # without reading the log. Issue codes only; they never carry evidence data.
+    text = json.dumps({'final_decision': decision, 'issues': issues}, sort_keys=True)
+    print(('::notice' if not issues else '::error') + ' title=F553 post-completion decision::'
+          + text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
     return 0 if not issues else 1
 
 

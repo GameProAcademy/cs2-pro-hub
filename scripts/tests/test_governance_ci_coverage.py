@@ -23,3 +23,22 @@ def test_main_required_gates_runs_the_whole_governance_directory():
 
 def test_every_governance_test_file_is_inside_that_directory():
     assert sorted(p.name for p in (ROOT / "scripts/tests").glob("test_*.py"))
+
+
+def test_activation_gate_reports_failed_triggers_instead_of_skipping():
+    # A skipped gate proves nothing and says nothing. When F553 or the queue
+    # probes fail, the gate must still run and report FAIL with the reason.
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/h3-e-activation-gate.yml").read_text())
+    on = workflow.get(True) or workflow.get("on")
+    assert set(on["workflow_run"]["workflows"]) == {"F553 R11.2 post-completion attestation", "Queue Semantics Probe"}
+    condition = workflow["jobs"]["activation-gate"]["if"]
+    assert "github.event.workflow_run.conclusion == 'success'" in condition
+    assert "github.event.workflow_run.conclusion == 'failure'" in condition
+    assert "cancelled" not in condition and "skipped" not in condition
+
+
+def test_f553_attestation_publishes_its_decision():
+    source = (ROOT / "scripts/f553-r11-post-completion-attest.py").read_text()
+    assert "title=F553 post-completion decision::" in source

@@ -79,6 +79,16 @@ class FailClosedAttestation(unittest.TestCase):
         data['f553-r11-execution-evidence.json']['finished_at'] = time.time() + 100
         self.assertIn('R11_INVALID_TIMESTAMPS', assess(data))
 
+    def test_repeated_fixtures_are_named(self):
+        # The shape of the real failure matrix: modes 3 and 4 reuse one upload.
+        data = fixture()
+        cases = data['f553-r11-failure-matrix.json']['cases']
+        for case in cases[3::5] + cases[4::5]:
+            case['fixture_id'] = 'upload-1'
+        issues = assess(data)
+        self.assertIn('R11_FAILURE_MATRIX_NOT_PROVEN', issues)
+        self.assertIn('R11_FAILURE_MATRIX_REPEATED_FIXTURES:1_fixtures_shared_by_20_cases', issues)
+
     def test_duplicate_case_or_fixture(self):
         for field in ('case_id', 'fixture_id'):
             with self.subTest(field=field):
