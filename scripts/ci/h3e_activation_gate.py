@@ -95,6 +95,50 @@ def stage(status: str, **details: Any) -> dict[str, Any]:
     return {"status": status, **details}
 
 
+# What kind of outcome each stage reason is, so a report never confuses a
+# negative result with evidence that is missing, invalid, stale, still being
+# produced, or that could not be collected. Every reason emitted in this file
+# must be listed (scripts/ci/test_h3e_activation_gate.py enforces it).
+APPROVED, REJECTED = "APPROVED", "REJECTED"
+MISSING, INVALID, STALE = "EVIDENCE_MISSING", "EVIDENCE_INVALID", "EVIDENCE_STALE"
+RUNNING, INFRASTRUCTURE, NOT_EVALUATED = "STILL_RUNNING", "INFRASTRUCTURE_FAILURE", "NOT_EVALUATED"
+REASON_CATEGORY: dict[str, str] = {
+    **dict.fromkeys(("ARTIFACT_NOT_FOUND", "RUN_NOT_FOUND", "JOB_NOT_FOUND_EXACTLY_ONCE", "QUEUE_JOB_NOT_FOUND",
+                     "QUEUE_PROBE_MISSING", "NO_ARTIFACT", "PREDEM_GATES_NOT_VERIFIED"), MISSING),
+    **dict.fromkeys(("RUN_NOT_COMPLETED", "EVIDENCE_RUN_NOT_FINISHED", "R583_RUN_NOT_FINISHED"), RUNNING),
+    **dict.fromkeys(("COLLECTION_ERROR", "ENDPOINT_UNREACHABLE", "HEALTH_NOT_OK", "VERSION_UNAVAILABLE",
+                     "RAILWAY_ACTIVE_DEPLOYMENT_UNVERIFIED"), INFRASTRUCTURE),
+    **dict.fromkeys(("ARTIFACT_CONTENT_UNEXPECTED", "ARTIFACT_DIGEST_MISMATCH", "ARTIFACT_NAME_OR_EXPIRY_MISMATCH",
+                     "ARTIFACT_UNREADABLE", "ARTIFACT_FROM_ANOTHER_RUN", "QUEUE_PROBE_REPORTED_TWICE",
+                     "QUEUE_PROBE_REPORT_UNREADABLE", "R584_MATRIX_MALFORMED", "R583_SIDE_EFFECTS_NOT_FALSE",
+                     "R584_SIDE_EFFECTS_NOT_FALSE", "R584_CLAIMS_AUTHORIZATION", "R584_POST_DEM_CLAIMED_BEFORE_THE_RUN",
+                     "WORKFLOW_NAME_MISMATCH", "PREDEM_MATRIX_INCOMPLETE", "NO_VALID_ARTIFACT",
+                     "R584_MATRIX_UNAVAILABLE", "TARGET_SHA_INVALID"), INVALID),
+    **dict.fromkeys(("TARGET_IS_NOT_CURRENT_MAIN_HEAD", "R583_EVIDENCE_FOR_ANOTHER_COMMIT",
+                     "R584_EVIDENCE_FOR_ANOTHER_R583_RUN"), STALE),
+    **dict.fromkeys(("QUALITY_GATES_NOT_PASS", "QUEUE_SEMANTICS_NOT_PASS", "TARGET_NOT_PASS"), NOT_EVALUATED),
+    **dict.fromkeys((
+        "BUILD_COMMIT_NOT_ON_TARGET_HISTORY", "BUILD_IDENTITY_NOT_EMBEDDED", "BUILD_IDENTITY_SOURCE_UNKNOWN",
+        "BUILD_REVISION_NOT_EMBEDDED_COMMIT", "DECLARED_REVISION_MISMATCH", "ENDPOINT_NOT_APPROVED",
+        "HOSTS_REPORT_DIFFERENT_BUILDS", "HOSTS_REPORT_DIFFERENT_REVISIONS", "JOB_NOT_SUCCESS",
+        "QUEUE_PROBE_NOT_PASS", "R583_DECISION_NOT_GREEN", "R584_OWN_SCOPE_NOT_VERIFIED",
+        "RAILWAY_DEPLOYMENT_COMMIT_MISMATCH", "RUN_NOT_SUCCESS", "SECRET_MISSING",
+        "SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", "SEMANTIC_REVISION_INVALID",
+        "SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY", "SERVER_NOT_CONFIGURED", "TRANSPORT_UNEXPECTED_RESPONSE",
+        "WORKER_TREE_DIFFERS"), REJECTED),
+}
+
+
+def categorize(value: dict[str, Any]) -> str:
+    status, reason = value.get("status"), value.get("reason")
+    if status == PASS:
+        return APPROVED
+    if reason in REASON_CATEGORY:
+        return REASON_CATEGORY[reason]
+    # An unlisted reason is a defect of this file (the test catches it); never PASS.
+    return {FAIL: REJECTED, BLOCKED: MISSING, SKIPPED: NOT_EVALUATED}.get(status, INVALID)
+
+
 # --------------------------------------------------------------------------- pure evaluation
 
 
@@ -268,12 +312,15 @@ def evaluate_predem(document: dict[str, Any] | None, stages: dict[str, dict[str,
         else:
             matrix[gate] = (gates.get(gate) or {}).get("status") or "NOT_PROVEN"
     blockers = sorted(g for g, status in matrix.items() if status != "VERIFIED")
+    gates_detail = {g: {"status": matrix[g], "collector": (gates.get(g) or {}).get("collector")
+                        if g not in ACTIVATION_COLLECTED else "H.3-E activation gate"} for g in matrix}
     if len(matrix) != 28:
         return stage(FAIL, reason="PREDEM_MATRIX_INCOMPLETE", observed=len(matrix))
     if blockers:
         collectors = sorted({(gates.get(g) or {}).get("collector") or "H.3-E activation gate" for g in blockers})
-        return stage(BLOCKED, reason="PREDEM_GATES_NOT_VERIFIED", blockers=blockers, missing=collectors)
-    return stage(PASS, decision=PREDEM_READY, verified=len(matrix))
+        return stage(BLOCKED, reason="PREDEM_GATES_NOT_VERIFIED", blockers=blockers, missing=collectors,
+                     verified=len(matrix) - len(blockers), gates=gates_detail)
+    return stage(PASS, decision=PREDEM_READY, verified=len(matrix), gates=gates_detail)
 
 
 def evaluate_transport(*, secrets_present: dict[str, bool], endpoint_matches: bool,
@@ -495,7 +542,12 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
         out["r5_8_4_decision"] = (evaluate_r584(document, r583_run_id=run_id, sha=sha)
                                   if document is not None and integrity["status"] == PASS
                                   else stage(SKIPPED, reason="NO_VALID_ARTIFACT"))
-        if document is not None and integrity["status"] == PASS and out["r5_8_4_decision"]["status"] != FAIL:
+        # A matrix whose only defect is its own blockers is honest negative
+        # evidence: it is consumed so the report lists every known blocker. A
+        # matrix with an integrity problem (another run, malformed, claims) is not.
+        if (document is not None and integrity["status"] == PASS
+                and (out["r5_8_4_decision"]["status"] == PASS
+                     or out["r5_8_4_decision"].get("reason") == "R584_OWN_SCOPE_NOT_VERIFIED")):
             r584_document = document
     else:
         for key in ("r5_8_3_artifact", "r5_8_3_decision", "r5_8_4_artifact", "r5_8_4_decision"):
@@ -543,7 +595,38 @@ def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     result = evaluate_runtime(versions=versions, healths=healths, target_sha=sha, tree=io.tree,
                               is_ancestor=io.is_ancestor, railway=railway)
     result["observed_build"] = {h: (versions[h] or {}).get("build") for h in HOSTS}
+    result["identity"] = identity_record(versions, railway, io.tree, sha)
     return result
+
+
+def identity_record(versions: dict[str, Any], railway: dict[str, Any] | None,
+                    tree: Callable[[str], str | None], target_sha: str) -> dict[str, Any]:
+    """Each identity item on its own, as observed; no item stands for another.
+
+    The bridge's expected worker build is a Lovable variable this gate cannot
+    read, so it is reported as not observable rather than assumed.
+    """
+    hosts = {}
+    for host in HOSTS:
+        body = versions.get(host) if isinstance(versions.get(host), dict) else {}
+        parser, build = body.get("parser") or {}, body.get("build") or {}
+        semantic = str(parser.get("semantic_revision") or "")
+        build_commit = build.get("commit")
+        hosts[host] = {
+            "image_build_commit": build_commit,
+            "declared_build_revision": parser.get("build_revision"),
+            "declared_semantic_revision": parser.get("semantic_revision"),
+            "declared_revision_matches": build.get("declared_revision_matches"),
+            "build_worker_tree": tree(build_commit) if isinstance(build_commit, str) and SHA.match(build_commit) else None,
+            "semantic_worker_tree": tree(semantic[4:]) if SHA.match(semantic[4:]) else None,
+        }
+    rail = railway if isinstance(railway, dict) else {}
+    return {
+        "hosts": hosts,
+        "railway_active_deployment": {k: rail.get(k) for k in ("id", "status", "commitHash", "branch")},
+        "target_worker_tree": tree(target_sha),
+        "bridge_expected_worker_build_commit": "NOT_OBSERVABLE_FROM_CI",
+    }
 
 
 def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | None) -> dict[str, Any]:
@@ -571,6 +654,11 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
     r584_document = stages.pop("_r584_document", None)
     stages["predem_matrix"] = evaluate_predem(r584_document, stages)
     decision = decide(stages)
+    for value in stages.values():
+        value["category"] = categorize(value)
+    categories: dict[str, list[str]] = {}
+    for name, value in stages.items():
+        categories.setdefault(value["category"], []).append(name)
     return {
         "schema_version": 1,
         "operation": "H3E_ACTIVATION_GATE",
@@ -579,6 +667,7 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
         "trigger": {"event": env.get("GITHUB_EVENT_NAME"), "run_id": env.get("GITHUB_RUN_ID"),
                     "run_attempt": env.get("GITHUB_RUN_ATTEMPT"), "ref": env.get("GITHUB_REF")},
         "stages": stages,
+        "categories": categories,
         "decision": decision,
         # PASS here is the pre-DEM approval: it allows an operator to dispatch
         # the A9.1 laboratory run for this exact commit, citing this run. It is
@@ -600,7 +689,8 @@ def render(evidence: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-SAFE_DETAIL_KEYS = ("reason", "observed", "decision", "failures", "blockers", "missing", "probe", "probes",
+SAFE_DETAIL_KEYS = ("category", "reason", "observed", "decision", "failures", "blockers", "missing", "verified",
+                    "probe", "probes",
                     "build_commit", "railway_commit", "main_head", "expected_name", "error")
 
 

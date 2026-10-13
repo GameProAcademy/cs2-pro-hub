@@ -29,9 +29,19 @@ def zipped(name, document):
     return buffer.getvalue()
 
 
+BUILD = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+SEMANTIC = "git:10815fb44e165963adfaf07f71c474ca628f4b7f"
+
+
+def live(build=BUILD, semantic=SEMANTIC, matches=True):
+    return {h: {"build": {"commit": build, "declared_revision_matches": matches},
+                "parser": {"semantic_revision": semantic}} for h in a91.HOSTS}
+
+
 def evidence(**override):
     doc = {"target_sha": SHA, "decision": "PASS", "predem_decision": "READY_FOR_PREDEM_REVIEW",
-           "stages": {"predem_matrix": {"status": "PASS"}},
+           "stages": {"predem_matrix": {"status": "PASS"},
+                      "runtime": {"status": "PASS", "build_commit": BUILD, "semantic_revision": SEMANTIC}},
            "authorizes": {"attempt_9": False, "canonical": False, "real_dem_production": False,
                           "real_dem_laboratory_dispatch": True}}
     doc.update(override)
@@ -47,7 +57,7 @@ def approval_case(**override):
         newest_completed_id=555,
         artifacts=[{"name": f"h3e-activation-gate-{SHA}-555-1", "expired": False,
                     "digest": "sha256:" + hashlib.sha256(blob).hexdigest()}],
-        blob=blob, now=NOW)
+        blob=blob, now=NOW, live_versions=live())
     case.update(override)
     return case
 
@@ -56,6 +66,7 @@ def test_a_current_predem_approval_is_accepted():
     result = a91.evaluate_approval(**approval_case())
     assert result["ok"] is True
     assert result["approval"]["run_id"] == "555" and result["approval"]["sha"] == SHA
+    assert result["approval"]["runtime"] == {"build_commit": BUILD, "semantic_revision": SEMANTIC}
 
 
 def _with_evidence(**changes):
@@ -92,6 +103,16 @@ def _with_evidence(**changes):
     (_with_evidence(authorizes={"real_dem_laboratory_dispatch": True, "real_dem_production": True,
                                 "attempt_9": False, "canonical": False}), "APPROVAL_AUTHORIZES_SOMETHING_ELSE"),
     (_with_evidence(authorizes={}), "APPROVAL_AUTHORIZES_SOMETHING_ELSE"),
+    (_with_evidence(stages={"predem_matrix": {"status": "PASS"}}), "APPROVAL_RUNTIME_IDENTITY_MISSING"),
+    (approval_case(live_versions=None), "LIVE_RUNTIME_UNAVAILABLE"),
+    (approval_case(live_versions={a91.HOSTS[0]: live()[a91.HOSTS[0]]}), "LIVE_RUNTIME_UNAVAILABLE"),
+    # a redeploy after the approval (as c0aa8a55 after #104)
+    (approval_case(live_versions=live(build="e" * 40)), "LIVE_RUNTIME_DIFFERS_FROM_APPROVED"),
+    (approval_case(live_versions=live(semantic="git:5703b1d88f21ee57fdd1d83722edf30e0f0c6f76")),
+     "LIVE_RUNTIME_DIFFERS_FROM_APPROVED"),
+    (approval_case(live_versions=live(matches=False)), "LIVE_RUNTIME_DIFFERS_FROM_APPROVED"),
+    (approval_case(live_versions={a91.HOSTS[0]: live()[a91.HOSTS[0]], a91.HOSTS[1]: live(build="e" * 40)[a91.HOSTS[1]]}),
+     "LIVE_RUNTIME_DIFFERS_FROM_APPROVED"),
 ])
 def test_every_unproven_approval_is_refused(case, reason):
     result = a91.evaluate_approval(**case)

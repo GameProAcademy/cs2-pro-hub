@@ -148,3 +148,46 @@ def test_health_evidence_requires_exact_ok(monkeypatch):
     assert observed["https://a/health"]["ok"] is True
     assert observed["https://b/health"]["ok"] is False
     assert observed["https://c/health"] == {"ok": False, "reason": "OSError"}
+
+
+def test_critical_hashes_are_compared_file_by_file_against_git():
+    import pytest
+    from scripts.r5_8_3_release_preflight import critical_hash_evidence
+
+    if not _have(DEPLOYED):
+        assert not os.environ.get("GITHUB_ACTIONS"), "full history required on CI"
+        pytest.skip("history not fetched")
+    real = {"services/cs2-demo-parser/worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+            "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"}
+    assert all(item["match"] for item in critical_hash_evidence(DEPLOYED, real).values())
+    wrong = dict(real, **{"services/cs2-demo-parser/worker.py": "50a53b607d26f00b4de05c5e8998611959e27bd1"})
+    observed = critical_hash_evidence(DEPLOYED, wrong)
+    assert observed["services/cs2-demo-parser/worker.py"]["match"] is False
+    assert observed["services/cs2-demo-parser/adapter.py"]["match"] is True
+    missing = critical_hash_evidence(DEPLOYED, {"services/cs2-demo-parser/does_not_exist.py": "0" * 40})
+    assert missing["services/cs2-demo-parser/does_not_exist.py"] == {
+        "expected": "0" * 40, "observed": None, "match": False}
+
+
+def test_a_removed_or_replaced_deployment_breaks_the_binding_but_proves_the_token(monkeypatch):
+    import scripts.r5_8_3_release_preflight as preflight
+
+    def answer(status, deployment_id=None, commit=None):
+        def fake(url, **_):
+            return {"data": {"deployment": {
+                "id": deployment_id or preflight.DEPLOYMENT, "status": status, "projectId": preflight.PROJECT,
+                "serviceId": preflight.SERVICE, "environmentId": preflight.ENVIRONMENT,
+                "meta": {"repo": preflight.REPOSITORY, "branch": preflight.BRANCH,
+                         "commitHash": commit or preflight.DEPLOYMENT_SOURCE_COMMIT}}}}
+        return fake
+
+    monkeypatch.setenv("RAILWAY_API_TOKEN", "r" * 40)
+    monkeypatch.setattr(preflight, "get_json", answer("REMOVED"))
+    removed = preflight.railway_binding()
+    assert removed["api_query_succeeded"] is True and removed["binding_matches"] is False
+    assert removed["mismatched_fields"] == ["status"]
+    monkeypatch.setattr(preflight, "get_json", answer("SUCCESS", commit="c" * 40))
+    rebuilt = preflight.railway_binding()
+    assert rebuilt["binding_matches"] is False and rebuilt["mismatched_fields"] == ["commitHash"]
+    monkeypatch.setattr(preflight, "get_json", answer("SUCCESS"))
+    assert preflight.railway_binding()["binding_matches"] is True

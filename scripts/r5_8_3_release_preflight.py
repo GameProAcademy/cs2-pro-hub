@@ -48,6 +48,22 @@ def git_blob_sha(path_spec: str) -> str:
 WORKER_DIR = "services/cs2-demo-parser"
 
 
+def critical_hash_evidence(commit: str, expected: dict[str, str]) -> dict[str, dict[str, Any]]:
+    """Git blob of each critical file at `commit`, compared with its pin.
+
+    A file missing at that commit is a mismatch, never an exception that hides
+    the other comparisons.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for path, pin in expected.items():
+        try:
+            observed = git_blob_sha(f"{commit}:{path}")
+        except subprocess.CalledProcessError:
+            observed = None
+        out[path] = {"expected": pin, "observed": observed, "match": observed is not None and observed == pin}
+    return out
+
+
 def worker_tree(commit: str) -> str | None:
     out = subprocess.run(("git", "rev-parse", f"{commit}:{WORKER_DIR}"), cwd=ROOT,
                          capture_output=True, text=True, check=False)
@@ -190,12 +206,8 @@ def main() -> int:
     except subprocess.CalledProcessError:
         evidence["runtime_commit_ancestry"] = False
         failures.append("RUNTIME_COMMIT_NOT_ANCESTOR")
-    observed_hashes = {}
-    for path, expected in EXPECTED_HASHES.items():
-        observed = git_blob_sha(f"{COMMIT}:{path}")
-        observed_hashes[path] = {"expected": expected, "observed": observed, "match": observed == expected}
-        if observed != expected:
-            failures.append(f"CRITICAL_HASH_MISMATCH:{path}")
+    observed_hashes = critical_hash_evidence(COMMIT, EXPECTED_HASHES)
+    failures.extend(f"CRITICAL_HASH_MISMATCH:{path}" for path, item in observed_hashes.items() if not item["match"])
     evidence["critical_hashes"] = observed_hashes
     registry = json.loads((ROOT / "scripts/approved_attestation_workflow.json").read_text())
     workflow_blob = git_blob_sha(f"HEAD:{WORKFLOW_PATH}")
