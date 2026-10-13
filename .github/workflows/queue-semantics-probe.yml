@@ -104,6 +104,32 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/queue/attestation_recorder_reconciliation_probe.py | tee "$RUNNER_TEMP/attestation-recorder-report.json"
+      # R5.8.9 on PostgreSQL 17 (Supabase local): the committed migration and rollback,
+      # checked against the generator and the committed spec; every scenario rolled back.
+      - name: Validate the committed R5.8.9 re-pin on the disposable database (rolled back)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          status=0
+          python scripts/repin/validate_r5_8_9_disposable.py > "$RUNNER_TEMP/r5-8-9-report.txt" || status=$?
+          python3 - "$RUNNER_TEMP/r5-8-9-report.txt" <<'PY'
+          import json, sys
+          text = open(sys.argv[1]).read()
+          if "RESULT:" not in text:
+              print("::error title=R5.8.9 disposable::" + json.dumps({"status": "NO_RESULT"}))
+              raise SystemExit(0)
+          d = json.loads(text[text.index("RESULT:") + 7:])
+          summary = {k: d[k] for k in ("probe", "status", "passed", "total", "target_md5", "database", "deployment_id", "values_source", "build_commit", "semantic_commit") if k in d}
+          summary["not_passed"] = [s["scenario"] for s in d["scenarios"] if s["status"] != "PASS"]
+          level = "notice" if d["status"] == "PASS" else "error"
+          print(f"::{level} title=R5.8.9 disposable::" + json.dumps(summary, sort_keys=True))
+          PY
+          exit $status
       - name: Publish the probe verdicts as annotations
         if: always()
         run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json"

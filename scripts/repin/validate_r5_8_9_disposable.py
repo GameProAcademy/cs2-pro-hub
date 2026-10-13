@@ -88,17 +88,33 @@ def main() -> int:
         return 1
 
 
+COMMITTED_SPEC = ROOT / "docs/reference/r5_8_9/spec.json"
+COMMITTED_MIGRATION = ROOT / "supabase/migrations/20261013130000_r5_8_9_repin_attestation_recorder.sql"
+COMMITTED_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
+
+
 def validate() -> int:
     probe.refuse_non_local()
-    build = sys.argv[1] if len(sys.argv) > 1 else "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
-    semantic = sys.argv[2] if len(sys.argv) > 2 else "10815fb44e165963adfaf07f71c474ca628f4b7f"
-    values_source = "candidates"
-    if not (have(build) and have(semantic)):
-        # Shallow checkout (CI): validate the mechanics with HEAD's real blobs.
-        build = semantic = git("rev-parse", "HEAD")
-        values_source = "HEAD (candidate commits not in this checkout)"
-    spec = test_spec(build, semantic)
-    migration, rollback, target = r5_8_9.migration_sql(spec), r5_8_9.rollback_sql(spec), r5_8_9.target_md5(spec)
+    if COMMITTED_SPEC.exists() and len(sys.argv) == 1:
+        # The committed artifacts themselves: the spec observed after deployment
+        # 09b50029 existed, and the migration/rollback generated from it. The
+        # text must be exactly what the generator produces from that spec.
+        spec = json.loads(COMMITTED_SPEC.read_text(encoding="utf-8"))
+        migration, rollback = COMMITTED_MIGRATION.read_text(encoding="utf-8"), COMMITTED_ROLLBACK.read_text(encoding="utf-8")
+        if migration != r5_8_9.migration_sql(spec) or rollback != r5_8_9.rollback_sql(spec):
+            raise RuntimeError("COMMITTED_R5_8_9_ARTIFACTS_DIFFER_FROM_GENERATOR_OUTPUT")
+        target = r5_8_9.target_md5(spec)
+        build, semantic, values_source = spec["build_commit"], spec["semantic_commit"], "committed spec"
+    else:
+        build = sys.argv[1] if len(sys.argv) > 1 else "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+        semantic = sys.argv[2] if len(sys.argv) > 2 else "10815fb44e165963adfaf07f71c474ca628f4b7f"
+        values_source = "candidates"
+        if not (have(build) and have(semantic)):
+            # Shallow checkout (CI): validate the mechanics with HEAD's real blobs.
+            build = semantic = git("rev-parse", "HEAD")
+            values_source = "HEAD (candidate commits not in this checkout)"
+        spec = test_spec(build, semantic)
+        migration, rollback, target = r5_8_9.migration_sql(spec), r5_8_9.rollback_sql(spec), r5_8_9.target_md5(spec)
     new, old = repinned_prelude(spec), probe.PRELUDE
     worker_new, worker_old = spec["critical_hashes"]["worker.py"], r5_8_9.OLD["critical"]["worker.py"]
     results = []
@@ -167,7 +183,7 @@ INSERT INTO probe_result SELECT 'rollback', pg_temp.run({q(rollback)});
     passed = sum(r["status"] == "PASS" for r in results)
     print("RESULT:" + json.dumps({"probe": "R5_8_9_DISPOSABLE", "status": "PASS" if passed == len(results) else "FAIL",
                                   "passed": passed, "total": len(results), "target_md5": target,
-                                  "database": "LOCAL_DISPOSABLE_ONLY", "test_deployment_id": TEST_DEPLOYMENT,
+                                  "database": "LOCAL_DISPOSABLE_ONLY", "deployment_id": spec["deployment_id"],
                                   "values_source": values_source, "build_commit": build, "semantic_commit": semantic,
                                   "scenarios": results}, sort_keys=True, indent=1))
     return 0 if passed == len(results) else 1

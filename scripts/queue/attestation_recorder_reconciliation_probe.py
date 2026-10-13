@@ -44,10 +44,24 @@ MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
 REPOSITORY_BLOB = "dfc2e67fcb3644be91108079f9096947c16119b3"
 INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
+# R5.8.9 is part of the repository chain: a reset build ends at its target. The
+# R5.8.7/R5.8.8 scenarios below describe the state before it, so every script
+# first records the reset-build recorder and then applies the committed R5.8.9
+# rollback (managed-safe, row-free) inside the same rolled-back transaction.
+R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
+R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
 
 PRELUDE = r"""
 \set ON_ERROR_STOP 1
 BEGIN;
+CREATE TEMP TABLE probe_baseline ON COMMIT DROP AS
+  SELECT md5(p.prosrc) AS reset_md5 FROM pg_proc p
+  WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+DO $r589_baseline$ BEGIN
+  IF (SELECT reset_md5 FROM probe_baseline) = '__R589_TARGET__' THEN
+    EXECUTE __R589_ROLLBACK__;
+  END IF;
+END $r589_baseline$;
 SELECT set_config('app.settings.parser_attestation_hmac_secret', repeat('s', 48), true);
 CREATE TEMP TABLE probe_result(k text PRIMARY KEY, v jsonb) ON COMMIT DROP;
 CREATE FUNCTION pg_temp.recorder() RETURNS jsonb LANGUAGE sql AS $f$
@@ -195,6 +209,13 @@ CREATE FUNCTION pg_temp.controls() RETURNS jsonb LANGUAGE sql AS $f$
       AND contype = 'u' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'))
 $f$;
 """
+def _r589_literal() -> str:
+    text = R589_ROLLBACK.read_text(encoding="utf-8")
+    assert "$r589_rollback$" not in text
+    return "$r589_rollback$" + text + "$r589_rollback$"
+
+
+PRELUDE = PRELUDE.replace("__R589_TARGET__", R589_TARGET_MD5).replace("__R589_ROLLBACK__", _r589_literal())
 EPILOGUE = r"""
 SELECT 'RESULT:' || coalesce(jsonb_object_agg(k, v), '{}'::jsonb)::text FROM probe_result;
 ROLLBACK;
@@ -253,6 +274,11 @@ def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]
 
 def main() -> int:
     refuse_non_local()
+
+    # ----- R5.8.9: the reset build ends at the re-pinned recorder
+    scenario("r589_reset_build_has_repinned_recorder", """
+INSERT INTO probe_result SELECT 'reset_md5', to_jsonb((SELECT reset_md5 FROM probe_baseline));
+""", lambda o: [] if o.get("reset_md5") == R589_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
 
     # ----- R5.8.7 (D1): recorder definition
     scenario("d1_reset_build_has_managed_recorder_and_properties", """
