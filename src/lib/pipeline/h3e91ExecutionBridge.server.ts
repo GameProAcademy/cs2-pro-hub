@@ -108,21 +108,21 @@ export async function handleH3E91ExecutionBridge(request: Request): Promise<Resp
   if (event.source !== "RAILWAY" || event.executionSurface === "APP_REMOTE_PARSER") {
     return Response.json({ code: "H3E91_SURFACE_UNAUTHORIZED" }, { status: 401 });
   }
-  // Production must pin the exact immutable worker image commit. The event's
+  // Every runtime must pin the exact immutable worker image commit. The event's
   // build identity is read from BUILD_INFO.json embedded in the image, not an
   // environment variable supplied at runtime. Missing or mismatched identity
-  // fails closed before any database call.
-  if (process.env["NODE_ENV"] === "production") {
-    const expectedBuild = process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? "";
-    if (!/^[0-9a-f]{40}$/.test(expectedBuild)) {
-      return Response.json(
-        { code: "H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED" },
-        { status: 503 },
-      );
-    }
-    if (event.workerBuildCommit !== expectedBuild) {
-      return Response.json({ code: "H3E91_WORKER_BUILD_IDENTITY_MISMATCH" }, { status: 503 });
-    }
+  // fails closed before any database call. The check is unconditional: it does
+  // not depend on NODE_ENV, whose value a server bundle may not carry, so a
+  // runtime that is not recognised as "production" can never skip it.
+  const expectedBuild = process.env["H3E91_EXPECTED_WORKER_BUILD_COMMIT"] ?? "";
+  if (!/^[0-9a-f]{40}$/.test(expectedBuild)) {
+    return Response.json(
+      { code: "H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED" },
+      { status: 503 },
+    );
+  }
+  if (event.workerBuildCommit !== expectedBuild) {
+    return Response.json({ code: "H3E91_WORKER_BUILD_IDENTITY_MISMATCH" }, { status: 503 });
   }
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
