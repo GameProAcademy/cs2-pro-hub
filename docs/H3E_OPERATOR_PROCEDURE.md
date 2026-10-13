@@ -124,3 +124,23 @@ Outside the 28 gates:
 - `bridge_identity`: FAIL, with problems `BRIDGE_IDENTITY_NOT_ENFORCED` and `BRIDGE_EXPECTED_BUILD_MISMATCH`
   (expected `10815fb4`, served `c8c6d6ec`).
 - The 4 post-DEM gates: NOT_EVALUATED, since there is no pre-DEM approval.
+
+## 5. Execution log (2026-10-13, owner-authorized)
+
+| Step  | What was done                                                                                                                                                                                                                                      | Evidence                                                                                                                                                                                                                                                                            |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E1    | Freeze. The autodeploy toggle could not be switched (the Railway agent never executed the write; read-back stayed `enabled:true`). Instead, `watchPatterns` was set to the sentinel `/services/cs2-demo-parser/.railway-deploy-freeze-2026-10-13`. | `describe-service` shows the sentinel. The merges of #118 and #112 (they touch `.github/workflows`, `supabase/migrations`, `src/lib/pipeline` and `scripts/queue`) were SKIPPED with `snapshotId` null. Restore: the five previous patterns (§1.1 of `docs/H3E_RELEASE_STATUS.md`). |
+| E3    | `PARSER_BUILD_REVISION=git:c8c6d6ec…`, `PARSER_REVISION=git:10815fb4…` (set with `skipDeploys`), then a redeploy of `c0aa8a55`'s build                                                                                                             | New deployment `09b50029-2508-4267-bb1d-28c5e99b95db`, SUCCESS, commit `c8c6d6ec`. The build reused the image (no pip/build steps in the log).                                                                                                                                      |
+| E4    | Read back                                                                                                                                                                                                                                          | Both hosts identical: `build.commit c8c6d6ec`, `build_revision git:c8c6d6ec`, `semantic_revision git:10815fb4`, `declared_revision_matches true`; `/health` ok.                                                                                                                     |
+| E5–E6 | #118: repository re-pins, R5.8.9 recorder migration and R5.8.9b boundary migration, all generated from `docs/reference/r5_8_9/spec.json`                                                                                                           | PostgreSQL 17 disposable 7/7; recorder probe 21/21; all required gates green.                                                                                                                                                                                                       |
+| E7    | Managed DB, one step at a time, each followed by a read-back: R5.8.7 (no-op), R5.8.8 (no-op), R5.8.9, R5.8.9b, snapshot `20261013120000`. History rows were recorded with `sha256:<file>` keys.                                                    | Recorder `d7c325ba`; `assert_verified_parser_provenance` `b1576ce0`; `enforce_approved_attestation_workflow` `b9412b87`; grants and owner unchanged; head `20261013130100`.                                                                                                         |
+
+Still pinned to the old runtime (diagnostic functions, not among the 28 gates): `h3e91_live_database_evidence`
+(1b5778de/3070d8ba) and `r5_real_dem_execution_gate` (`railway_revision` 5703b1d8). Their re-pin is a follow-up.
+
+Pending outside the repository:
+
+1. Lovable publication (the operator's prompt), which carries the app-side pins, the bridge expectation and the snapshot route.
+2. Then the fresh attestation (E8).
+3. Retention: physical deletion through the Storage API needs the operator. First confirm that `A91_DEMO_URL` does not point at the remaining object, which has the reference DEM's SHA-256.
+4. Canonical: the owner decides what happens to the pre-provenance row.
