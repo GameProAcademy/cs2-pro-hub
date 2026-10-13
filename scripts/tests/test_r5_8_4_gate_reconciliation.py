@@ -223,3 +223,16 @@ def test_gate_doc_matches_the_code():
     expected = [[str(i), f"`{r['gate']}`", r["phase"], r["collector"], r["criterion"], r["evidence"],
                  r["invalidated_by"]] for i, r in enumerate(gate_matrix_rows(), 1)]
     assert table == expected
+
+
+def test_commit_and_branch_of_a_removed_deployment_are_not_evidence():
+    # Observed on main e239db3b: the pinned deployment 1b5778de is REMOVED, yet
+    # its commit and branch matched the pins and were counted as VERIFIED.
+    from scripts.parser_runtime_attestation import BRANCH, DEPLOYMENT, DEPLOYMENT_SOURCE_COMMIT
+
+    removed = _preflight(railway={"id": DEPLOYMENT, "status": "REMOVED", "commitHash": DEPLOYMENT_SOURCE_COMMIT,
+                                  "branch": BRANCH, "api_query_succeeded": True, "binding_matches": False})
+    result = _reconcile(removed)
+    for gate in ("railway_deployment_exact", "railway_commit_exact", "railway_branch_exact"):
+        assert result["gates"][gate]["status"] == "NOT_PROVEN", gate
+    assert result["gates"]["railway_token_configured"]["status"] == "VERIFIED"
