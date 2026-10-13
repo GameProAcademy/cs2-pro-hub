@@ -26,11 +26,25 @@ created 2026-09-11, `match_sources.source_version = demoparser2@0.42.0`; first V
 
 ADMISSION_ONLY duplicates `canonical_authorization_false` and would make this gate meaningless; STRICT_PROVENANCE
 matches the gate's wording. **Decision: adopt `STRICT_PROVENANCE`.** `ADMISSION_ONLY` is rejected because it duplicates
-`canonical_authorization_false` and makes this gate meaningless. The evaluator returns FAIL when a
-pre-provenance canonical row exists, VERIFIED only when the measured violation count is exactly zero, and
-NOT_PROVEN when the count is missing or invalid. This decision defines the evidence rule only; it does not
-authorize changing production data. The existing row therefore keeps this gate at FAIL until an independently
-authorized remediation and fresh snapshot establish otherwise. No production row is changed.
+`canonical_authorization_false` and makes this gate meaningless.
+
+Evaluation (`_canonical` in `scripts/predem/managed_snapshot.py`):
+
+| Snapshot evidence                                                                                         | Result                                              |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| count missing, negative, boolean, non-integer; breakdown missing or malformed                             | NOT_PROVEN `CANONICAL_PROVENANCE_EVIDENCE_MISSING`  |
+| violations > rows; breakdown total ≠ rows; no VERIFIED provenance yet violations ≠ rows                   | NOT_PROVEN `CANONICAL_EVIDENCE_CONTRADICTORY`       |
+| ≥ 1 canonical row created before the first VERIFIED provenance                                            | FAIL `UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE` |
+| ≥ 1 canonical row after it (no `matches` row links to a provenance row; the active runtime may have none) | FAIL `CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK`       |
+| zero canonical rows                                                                                       | VERIFIED `NO_CANONICAL_ROWS`                        |
+
+A row created after the first VERIFIED provenance is not evidence of verified output: that provenance may belong to
+another runtime (on 2026-10-13 the serving deployment had none). Until rows are linked to the provenance that
+produced them, only the absence of canonical rows proves the gate.
+
+This decision defines the evidence rule only; it does not authorize changing production data. The existing row
+keeps this gate at FAIL until an independently authorized remediation and a fresh snapshot establish otherwise.
+No production row is changed.
 
 ## 4. Snapshot collector
 
@@ -46,7 +60,7 @@ authorized remediation and fresh snapshot establish otherwise. No production row
 - Managed database, read-only (the function body run as a plain SELECT, 2026-10-13T03:25:01Z, digest
   `f8293b7c…`): db_git_digest_parity, attempt_9_absent, metrics/features_uncontaminated, identity_validation
   VERIFIED by rule; **retention_guard FAIL** (`deletion_metadata_mismatch = 1`; also 12 expired demos,
-  5.43 GB, eligible for deletion with 0 deletion attempts); canonical_uncontaminated NOT_PROVEN. This is an
+  5.43 GB, eligible for deletion with 0 deletion attempts); canonical_uncontaminated FAIL under STRICT_PROVENANCE. This is an
   operator observation, not CI evidence: the gates remain NOT_PROVEN in the activation gate until an
   authorized collector delivers the snapshot.
 
@@ -56,4 +70,5 @@ authorized remediation and fresh snapshot establish otherwise. No production row
 2. A read path for CI: an application route authenticated with the existing CI transport secret, calling
    the function through the service role and returning the document unchanged; or a dedicated database
    role allowed to execute only this function. Either needs a Lovable publication or a database role/secret.
-3. Decide the canonical rule; investigate the retention mismatch and the stalled cleanup.
+3. Canonical rule decided (STRICT_PROVENANCE); remediation of the existing row needs separate authorization.
+4. Investigate the retention mismatch and the stalled cleanup (read-only; no deletion).

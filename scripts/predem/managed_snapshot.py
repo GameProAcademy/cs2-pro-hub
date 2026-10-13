@@ -27,6 +27,43 @@ def _status(status: str, reason: str, **evidence: Any) -> dict[str, Any]:
     return {"status": status, "reason": reason, **({"evidence": evidence} if evidence else {})}
 
 
+def _section(snapshot: Mapping[str, Any], key: str) -> Mapping[str, Any]:
+    value = snapshot.get(key)
+    return value if isinstance(value, Mapping) else {}
+
+
+def _count(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[str, Any]:
+    """STRICT_PROVENANCE: VERIFIED only when the snapshot proves there is no canonical row at all.
+
+    No `matches` row links to a VERIFIED parser_runtime_provenance row, so a row created after
+    the first VERIFIED provenance is still not provably derived from verified output (the active
+    runtime may have none). Rows before it are FAIL; rows after it are FAIL too, for lack of a
+    link. Missing, malformed or self-contradictory counts are NOT_PROVEN, never VERIFIED.
+    """
+    if CANONICAL_RULE != "STRICT_PROVENANCE":
+        return _status("NOT_PROVEN", "CANONICAL_RULE_UNKNOWN", **measures)
+    violations = _count(canonical.get("matches_created_before_first_verified_provenance"))
+    rows = _count(canonical.get("matches_with_status"))
+    by_status = canonical.get("matches_by_status")
+    first = canonical.get("first_verified_provenance_at")
+    if violations is None or rows is None or not isinstance(by_status, Mapping) \
+            or any(_count(n) is None for n in by_status.values()) \
+            or (first is not None and not isinstance(first, str)):
+        return _status("NOT_PROVEN", "CANONICAL_PROVENANCE_EVIDENCE_MISSING", **measures)
+    with_status = sum(n for k, n in by_status.items() if k != "null")
+    if violations > rows or with_status != rows or (first is None and violations != rows):
+        return _status("NOT_PROVEN", "CANONICAL_EVIDENCE_CONTRADICTORY", **measures)
+    if violations > 0:
+        return _status("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE", **measures)
+    if rows > 0:
+        return _status("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK", **measures)
+    return _status("VERIFIED", "NO_CANONICAL_ROWS", **measures)
+
+
 def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[str, Any]:
     gates: dict[str, dict[str, Any]] = {}
     s = snapshot if isinstance(snapshot, Mapping) else {}
@@ -50,7 +87,7 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[s
         return {"gates": {g: _status("NOT_PROVEN", problem) for g in GATES}, "snapshot_problem": problem,
                 "verified": 0}
 
-    release = s.get("mapping_release") or {}
+    release = _section(s, "mapping_release")
     parity = (release.get("authoritative_releases") == 1 and release.get("inventory_digests") == [INVENTORY_DIGEST]
               and release.get("matrix_digests") == [MATRIX_DIGEST] and release.get("row_counts") == [105]
               and release.get("generic_counts") == [0] and release.get("authorized_counts") == [0]
@@ -58,48 +95,50 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str) -> dict[s
     gates["db_git_digest_parity"] = (_status("VERIFIED", "RELEASE_DIGESTS_EQUAL_GIT_PINS") if parity
                                      else _status("FAIL", "RELEASE_DIFFERS_FROM_GIT_PINS", release=release))
 
-    attempts = s.get("attempts") or {}
-    nine = attempts.get("jobs_attempt_9_or_more")
-    gates["attempt_9_absent"] = (_status("VERIFIED", "NO_JOB_AT_ATTEMPT_9_OR_MORE") if nine == 0
-                                 else _status("FAIL" if isinstance(nine, int) else "NOT_PROVEN",
-                                              "JOBS_AT_ATTEMPT_9_OR_MORE", count=nine))
-
-    derived = s.get("derived_rows") or {}
-    for gate, key in (("metrics_uncontaminated", "match_metrics"), ("features_uncontaminated", "match_features")):
-        n = derived.get(key)
-        # No row links back to a VERIFIED provenance, so any row is unprovable.
-        gates[gate] = (_status("VERIFIED", "NO_ROWS") if n == 0
-                       else _status("FAIL" if isinstance(n, int) else "NOT_PROVEN",
-                                    "ROWS_WITHOUT_PROVENANCE_LINK", rows=n))
-
-    identity = s.get("execution_identity") or {}
-    conflicts = identity.get("conflicting_executions")
-    gates["identity_validation"] = (_status("VERIFIED", "NO_CONFLICTING_EXECUTION_IDENTITY",
-                                            ledger_rows=identity.get("ledger_rows")) if conflicts == 0
-                                    else _status("FAIL" if isinstance(conflicts, int) else "NOT_PROVEN",
-                                                 "CONFLICTING_EXECUTION_IDENTITIES", count=conflicts))
-
-    retention = s.get("retention") or {}
-    failed, mismatch = retention.get("deletion_failed"), retention.get("deletion_metadata_mismatch")
-    gates["retention_guard"] = (_status("VERIFIED", "NO_DELETION_FAILURE_OR_MISMATCH",
-                                        expired_demos=retention.get("expired_demos")) if failed == 0 and mismatch == 0
-                                else _status("FAIL" if isinstance(failed, int) and isinstance(mismatch, int)
-                                             else "NOT_PROVEN", "RETENTION_FAILURES",
-                                             deletion_failed=failed, deletion_metadata_mismatch=mismatch))
-
-    canonical = s.get("canonical") or {}
-    measures = {"strict_provenance_violations": canonical.get("matches_created_before_first_verified_provenance"),
-                "admission_authorized_rows": (release.get("authorized_counts") or [None])[0],
-                "matches_by_status": canonical.get("matches_by_status")}
-    violations = canonical.get("matches_created_before_first_verified_provenance")
-    if CANONICAL_RULE != "STRICT_PROVENANCE":
-        gates["canonical_uncontaminated"] = _status("NOT_PROVEN", "CANONICAL_RULE_UNKNOWN", **measures)
-    elif not isinstance(violations, int) or isinstance(violations, bool) or violations < 0:
-        gates["canonical_uncontaminated"] = _status("NOT_PROVEN", "CANONICAL_PROVENANCE_EVIDENCE_MISSING", **measures)
-    elif violations > 0:
-        gates["canonical_uncontaminated"] = _status("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE", **measures)
+    attempts = _section(s, "attempts")
+    nine, top = _count(attempts.get("jobs_attempt_9_or_more")), _count(attempts.get("max_attempt_number"))
+    if nine is None or top is None or (nine == 0) != (top < 9):
+        gates["attempt_9_absent"] = _status("NOT_PROVEN", "ATTEMPT_EVIDENCE_MISSING_OR_CONTRADICTORY",
+                                            count=attempts.get("jobs_attempt_9_or_more"),
+                                            max_attempt_number=attempts.get("max_attempt_number"))
     else:
-        gates["canonical_uncontaminated"] = _status("VERIFIED", "NO_CANONICAL_ROWS_PRECEDE_VERIFIED_PROVENANCE", **measures)
+        gates["attempt_9_absent"] = (_status("VERIFIED", "NO_JOB_AT_ATTEMPT_9_OR_MORE", max_attempt_number=top)
+                                     if nine == 0 else _status("FAIL", "JOBS_AT_ATTEMPT_9_OR_MORE", count=nine))
+
+    derived = _section(s, "derived_rows")
+    for gate, key in (("metrics_uncontaminated", "match_metrics"), ("features_uncontaminated", "match_features")):
+        n = _count(derived.get(key))
+        # No row links back to a VERIFIED provenance, so any row is unprovable.
+        gates[gate] = (_status("NOT_PROVEN", "ROW_COUNT_MISSING", rows=derived.get(key)) if n is None
+                       else _status("VERIFIED", "NO_ROWS") if n == 0
+                       else _status("FAIL", "ROWS_WITHOUT_PROVENANCE_LINK", rows=n))
+
+    identity = _section(s, "execution_identity")
+    conflicts, ledger = _count(identity.get("conflicting_executions")), _count(identity.get("ledger_rows"))
+    gates["identity_validation"] = (
+        _status("NOT_PROVEN", "IDENTITY_EVIDENCE_MISSING_OR_CONTRADICTORY",
+                count=identity.get("conflicting_executions"), ledger_rows=identity.get("ledger_rows"))
+        if conflicts is None or ledger is None or conflicts > ledger
+        else _status("VERIFIED", "NO_CONFLICTING_EXECUTION_IDENTITY", ledger_rows=ledger) if conflicts == 0
+        else _status("FAIL", "CONFLICTING_EXECUTION_IDENTITIES", count=conflicts))
+
+    retention = _section(s, "retention")
+    failed, mismatch = _count(retention.get("deletion_failed")), _count(retention.get("deletion_metadata_mismatch"))
+    gates["retention_guard"] = (
+        _status("NOT_PROVEN", "RETENTION_EVIDENCE_MISSING", deletion_failed=retention.get("deletion_failed"),
+                deletion_metadata_mismatch=retention.get("deletion_metadata_mismatch"))
+        if failed is None or mismatch is None
+        else _status("VERIFIED", "NO_DELETION_FAILURE_OR_MISMATCH", expired_demos=retention.get("expired_demos"))
+        if failed == 0 and mismatch == 0
+        else _status("FAIL", "RETENTION_FAILURES", deletion_failed=failed, deletion_metadata_mismatch=mismatch,
+                     expired_demos=retention.get("expired_demos"), deletion_attempts=retention.get("deletion_attempts")))
+
+    canonical = _section(s, "canonical")
+    measures = {"strict_provenance_violations": canonical.get("matches_created_before_first_verified_provenance"),
+                "admission_authorized_rows": release.get("authorized_counts"),
+                "matches_by_status": canonical.get("matches_by_status")}
+    measures["canonical_rows"] = canonical.get("matches_with_status")
+    gates["canonical_uncontaminated"] = _canonical(canonical, measures)
 
     return {"gates": gates, "snapshot_problem": None, "snapshot_digest": s.get("digest"),
             "snapshot_at": s.get("snapshot_at"), "database": dict(database),

@@ -44,12 +44,14 @@ def test_the_managed_observation_of_2026_10_13():
     assert status == {"db_git_digest_parity": "VERIFIED", "attempt_9_absent": "VERIFIED",
                       "metrics_uncontaminated": "VERIFIED", "features_uncontaminated": "VERIFIED",
                       "identity_validation": "VERIFIED", "retention_guard": "FAIL",
-                      "canonical_uncontaminated": "NOT_PROVEN"}
+                      "canonical_uncontaminated": "FAIL"}
+    assert result["verified"] == 5
     assert result["gates"]["retention_guard"]["evidence"]["deletion_metadata_mismatch"] == 1
     canonical = result["gates"]["canonical_uncontaminated"]
-    assert canonical["reason"] == "CANONICAL_RULE_NOT_DECIDED"
+    assert canonical["reason"] == "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE"
     assert canonical["evidence"]["strict_provenance_violations"] == 1
-    assert canonical["evidence"]["admission_authorized_rows"] == 0
+    assert canonical["evidence"]["canonical_rows"] == 1
+    assert canonical["evidence"]["admission_authorized_rows"] == [0]
 
 
 def bad(path, value):
@@ -68,13 +70,51 @@ def test_every_gate_fails_on_its_own_contradiction():
         (("mapping_release", "authorized_counts"), [1], "db_git_digest_parity"),
         (("mapping_release", "inventory_rows"), 104, "db_git_digest_parity"),
         (("attempts", "jobs_attempt_9_or_more"), 1, "attempt_9_absent"),
+        (("retention", "deletion_metadata_mismatch"), 1, "retention_guard"),
         (("derived_rows", "match_metrics"), 3, "metrics_uncontaminated"),
         (("derived_rows", "match_features"), 1, "features_uncontaminated"),
         (("execution_identity", "conflicting_executions"), 1, "identity_validation"),
         (("retention", "deletion_failed"), 2, "retention_guard"),
     ]
     for path, value, gate in cases:
-        assert run(bad(path, value))["gates"][gate]["status"] == "FAIL", (path, value)
+        snapshot = bad(path, value)
+        if gate == "attempt_9_absent":
+            snapshot["attempts"]["max_attempt_number"] = 9
+        if gate == "identity_validation":
+            snapshot["execution_identity"]["ledger_rows"] = 2
+        assert run(snapshot)["gates"][gate]["status"] == "FAIL", (path, value)
+
+
+def test_booleans_negatives_and_wrong_shapes_are_never_verified():
+    # False == 0 in Python: a boolean must not pass a zero-count rule.
+    for path, gate in ((("attempts", "jobs_attempt_9_or_more"), "attempt_9_absent"),
+                       (("derived_rows", "match_metrics"), "metrics_uncontaminated"),
+                       (("derived_rows", "match_features"), "features_uncontaminated"),
+                       (("execution_identity", "conflicting_executions"), "identity_validation"),
+                       (("retention", "deletion_failed"), "retention_guard"),
+                       (("retention", "deletion_metadata_mismatch"), "retention_guard")):
+        for value in (False, 0.0, "0", -1, [0]):
+            assert run(bad(path, value))["gates"][gate]["status"] == "NOT_PROVEN", (path, value)
+    owners = {"attempts": ("attempt_9_absent",), "derived_rows": ("metrics_uncontaminated", "features_uncontaminated"),
+              "execution_identity": ("identity_validation",), "retention": ("retention_guard",),
+              "canonical": ("canonical_uncontaminated",), "mapping_release": ("db_git_digest_parity",)}
+    for section, gates in owners.items():
+        for value in ("0", [], None, 0):
+            result = run(bad((section,), value))  # must not raise
+            assert all(result["gates"][g]["status"] != "VERIFIED" for g in gates), (section, value)
+
+
+def test_contradictory_counts_are_not_proven():
+    cases = [
+        (("attempts", "max_attempt_number"), 9),          # no job >= 9 yet the maximum is 9
+        (("attempts", "max_attempt_number"), None),
+        (("execution_identity", "ledger_rows"), None),
+    ]
+    for path, value in cases:
+        gate = {"attempts": "attempt_9_absent", "execution_identity": "identity_validation"}[path[0]]
+        assert run(bad(path, value))["gates"][gate]["status"] == "NOT_PROVEN", (path, value)
+    conflicting = bad(("execution_identity", "conflicting_executions"), 2)
+    assert run(conflicting)["gates"]["identity_validation"]["status"] == "NOT_PROVEN"  # 2 conflicts in 0 rows
 
 
 def test_missing_values_are_never_verified():
@@ -109,18 +149,47 @@ def test_strict_provenance_rule_fails_on_the_existing_unverified_row():
     assert result["evidence"]["strict_provenance_violations"] == 1
 
 
-def test_strict_provenance_passes_only_with_zero_provenance_violations():
-    clean = bad(("canonical", "matches_created_before_first_verified_provenance"), 0)
-    result = run(clean)["gates"]["canonical_uncontaminated"]
-    assert result["status"] == "VERIFIED"
-    assert result["reason"] == "NO_CANONICAL_ROWS_PRECEDE_VERIFIED_PROVENANCE"
+def canonical_case(**changes):
+    snapshot = copy.deepcopy(MANAGED_2026_10_13)
+    snapshot["canonical"].update(changes)
+    return run(snapshot)["gates"]["canonical_uncontaminated"]
 
 
-def test_missing_or_invalid_canonical_provenance_count_is_not_proven():
-    for value in (None, "0", -1, True):
-        result = run(bad(("canonical", "matches_created_before_first_verified_provenance"), value))["gates"]["canonical_uncontaminated"]
-        assert result["status"] == "NOT_PROVEN"
-        assert result["reason"] == "CANONICAL_PROVENANCE_EVIDENCE_MISSING"
+def test_strict_provenance_passes_only_when_no_canonical_row_exists():
+    result = canonical_case(matches_by_status={}, matches_with_status=0,
+                            matches_created_before_first_verified_provenance=0)
+    assert (result["status"], result["reason"]) == ("VERIFIED", "NO_CANONICAL_ROWS")
+    no_provenance = canonical_case(matches_by_status={}, matches_with_status=0, first_verified_provenance_at=None,
+                                   matches_created_before_first_verified_provenance=0)
+    assert no_provenance["status"] == "VERIFIED"
+
+
+def test_a_canonical_row_after_the_first_provenance_still_fails_for_lack_of_a_link():
+    # The only VERIFIED provenance may belong to another runtime; nothing links the row to it.
+    result = canonical_case(matches_created_before_first_verified_provenance=0)
+    assert (result["status"], result["reason"]) == ("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK")
+
+
+def test_missing_or_invalid_canonical_evidence_is_not_proven():
+    for key in ("matches_created_before_first_verified_provenance", "matches_with_status"):
+        for value in (None, "0", -1, True, 0.0):
+            result = canonical_case(**{key: value})
+            assert (result["status"], result["reason"]) == ("NOT_PROVEN", "CANONICAL_PROVENANCE_EVIDENCE_MISSING"), (key, value)
+    for value in (None, [], {"partial": "1"}, {"partial": True}):
+        assert canonical_case(matches_by_status=value)["status"] == "NOT_PROVEN", value
+    assert canonical_case(first_verified_provenance_at=5)["status"] == "NOT_PROVEN"
+
+
+def test_contradictory_canonical_evidence_is_not_proven():
+    cases = [
+        dict(matches_created_before_first_verified_provenance=2),                     # more violations than rows
+        dict(matches_by_status={"partial": 2}),                                        # status breakdown != total
+        dict(matches_with_status=0, matches_created_before_first_verified_provenance=0),  # breakdown says 1
+        dict(first_verified_provenance_at=None, matches_created_before_first_verified_provenance=0),  # all rows precede none
+    ]
+    for changes in cases:
+        result = canonical_case(**changes)
+        assert (result["status"], result["reason"]) == ("NOT_PROVEN", "CANONICAL_EVIDENCE_CONTRADICTORY"), changes
 
 
 def test_the_sql_is_read_only_and_least_privilege():
