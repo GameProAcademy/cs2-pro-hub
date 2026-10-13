@@ -533,7 +533,18 @@ def main():
             lifecycle_observation = evidence['observations'].get('integrated_lifecycle')
             if not lifecycle_observation:
                 raise RuntimeError('R11_MATRIX_PREREQUISITE_MISSING:integrated_lifecycle')
-            matrices = run_all(db, api_url, key, evidence, lifecycle_observation)
+            def processed_job(index):
+                # A new, independent job per terminal-state case, through the
+                # same real lifecycle as the integrated scenario above.
+                produced = claimed_job_parser()
+                identity = produced['identity']
+                state = sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{identity['job_id']}';")
+                if state != 'processed':
+                    raise RuntimeError(f'R11_MATRIX_FIXTURE_NOT_PROCESSED:{index}:{state}')
+                return {'identity': identity, 'worker_id': produced['worker'].get('worker_id'),
+                        'scope': produced['scope']}
+
+            matrices = run_all(db, api_url, key, evidence, lifecycle_observation, processed_job)
             evidence['observations']['matrices'] = {
                 name: {'case_count': value['case_count'], 'executed': value['executed']}
                 for name, value in matrices.items()

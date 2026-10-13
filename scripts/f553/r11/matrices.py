@@ -46,6 +46,13 @@ def _http(api_url: str, key: str, path: str, method: str = "GET", body: bytes | 
 
 
 def _base(evidence: dict, name: str, cases: list[dict]) -> dict:
+    # Case ids and fixture ids are unique evidence identities (AGENTS.md): a
+    # fixture used by two cases is one execution counted twice. Refuse to emit
+    # such a matrix at all, so the producer fails on pull requests too.
+    for field in ("case_id", "fixture_id"):
+        values = [case.get(field) for case in cases]
+        if any(not v for v in values) or len(set(values)) != len(values):
+            raise RuntimeError(f"R11_MATRIX_DUPLICATE_{field.upper()}:{name}")
     return {
         "phase": PHASE,
         "evidence_version": VERSION,
@@ -135,10 +142,16 @@ def run_race_matrix(db: dict, evidence: dict) -> dict:
     return result
 
 
-def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict) -> dict:
+def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict, processed_job) -> dict:
+    """50 failure cases, each on its own fixture.
+
+    Modes 3 and 4 need a job in the terminal `processed` state. Each such case
+    gets its own job, produced by `processed_job(i)` through the real path
+    (reservation, Storage upload, enqueue, claim, parse, RAW, FINISHED, ACK);
+    reusing one job would count one fixture several times.
+    """
     provenance = _provenance(evidence)
     cases = []
-    identity = lifecycle["identity"]
     for i in range(50):
         mode = i % 5
         if mode == 0:
@@ -191,6 +204,8 @@ def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict) -> dict:
                                before, after, "PASS" if passed else "FAIL",
                                queue=queue, read_result=result))
         elif mode == 3:
+            produced = processed_job(i)
+            identity = produced["identity"]
             before = {"job_status": sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{identity['job_id']}';")}
             result = sql(db, "SELECT public.fail_demo_parse_message("
                              f"'{identity['job_id']}'::uuid,{int(identity['message_id'])},"
@@ -204,8 +219,11 @@ def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict) -> dict:
                                "terminal_replay_rejection", "fail_processed_job",
                                before, after, "PASS" if passed else "FAIL",
                                job_id=identity["job_id"], message_id=identity["message_id"],
-                               accepted=parsed.get("accepted")))
+                               accepted=parsed.get("accepted"), produced_by=produced["scope"],
+                               worker_id=produced["worker_id"]))
         else:
+            produced = processed_job(i)
+            identity = produced["identity"]
             before = {"job_status": sql(db, f"SELECT status FROM public.demo_jobs WHERE id='{identity['job_id']}';")}
             raw = sql(db, f"SELECT public.enqueue_demo_job('{identity['upload_id']}'::uuid,'{identity['user_id']}'::uuid);")
             after = {"enqueue_result": raw,
@@ -215,7 +233,8 @@ def run_failure_matrix(db: dict, evidence: dict, lifecycle: dict) -> dict:
             cases.append(_case(provenance, f"FAIL-{i+1:03d}", identity["upload_id"],
                                "terminal_enqueue_rejection", "enqueue_processed_job",
                                before, after, "PASS" if passed else "FAIL",
-                               job_id=identity["job_id"], enqueue=parsed))
+                               job_id=identity["job_id"], enqueue=parsed, produced_by=produced["scope"],
+                               worker_id=produced["worker_id"]))
         if cases[-1]["result"] != "PASS":
             raise RuntimeError(f"R11_FAILURE_CASE_FAILED:{i+1}")
     result = _base(evidence, "failure", cases)
@@ -295,9 +314,9 @@ def run_raw_corruption_matrix(db: dict, api_url: str, key: str, evidence: dict,
     return result
 
 
-def run_all(db: dict, api_url: str, key: str, evidence: dict, lifecycle: dict) -> dict:
+def run_all(db: dict, api_url: str, key: str, evidence: dict, lifecycle: dict, processed_job) -> dict:
     return {
         "race": run_race_matrix(db, evidence),
-        "failure": run_failure_matrix(db, evidence, lifecycle),
+        "failure": run_failure_matrix(db, evidence, lifecycle, processed_job),
         "raw-corruption": run_raw_corruption_matrix(db, api_url, key, evidence, lifecycle),
     }
