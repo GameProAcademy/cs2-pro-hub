@@ -967,6 +967,18 @@ export const ptBR = {
     "As tendências de performance dependem de séries reais que ainda não existem. Nenhum gráfico de exemplo é exibido.",
   "real.training.reason":
     "O plano de treino depende de um diagnóstico real que ainda não existe. Nenhum plano de exemplo é exibido.",
+  "real.dna.description":
+    "Sinais medidos nas suas partidas processadas. Não há comparação com outros jogadores nem pontuação.",
+  "real.dna.basis":
+    "Baseado em {matches} partida(s), {rounds} rounds amostrados, {partial} com leitura parcial. Cada valor é a média do sinal nas partidas em que ele foi observado.",
+  "real.dna.insufficient":
+    "Amostra insuficiente: {matches} de {minimum} partidas mínimas. Os valores abaixo são reais, mas ainda não representam um perfil estável.",
+  "real.dna.radarSub":
+    "Média dos sinais observados em cada dimensão (0–100; sinais em que menor é melhor entram como complemento). Só dimensões com sinal observado aparecem.",
+  "real.dna.notObserved": "Não observado",
+  "real.dna.inMatches": "em {n} partida(s)",
+  "real.dna.empty":
+    "Nenhuma partida processada com sinais persistidos ainda. O Player DNA aparece aqui depois do primeiro processamento concluído.",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;
