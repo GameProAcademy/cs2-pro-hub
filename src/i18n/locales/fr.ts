@@ -910,4 +910,58 @@ export const fr: Dictionary = {
     "Steam a temporairement limité nos requêtes. Réessayez dans quelques minutes.",
   "steam.reason.temporary": "Steam est indisponible pour le moment. Réessayez.",
   "steam.reason.error": "La liaison Steam n’a pas pu être finalisée.",
+
+  // Real-data surfaces (no demonstration values).
+  "real.state.EMPTY.title": "Aucune démo envoyée",
+  "real.state.EMPTY.description":
+    "Envoyez une démo CS2 (.dem) pour commencer. Vos chiffres apparaissent ici uniquement après le traitement et l’enregistrement de la démo.",
+  "real.state.PROCESSING.title": "Traitement de votre démo",
+  "real.state.PROCESSING.description":
+    "Votre démo est en file d’attente ou en cours de traitement. Cette page se met à jour toute seule ; aucune valeur n’est affichée avant le résultat.",
+  "real.state.IDENTITY_PENDING.title": "Confirmez votre joueur",
+  "real.state.IDENTITY_PENDING.description":
+    "La démo a été traitée, mais nous n’avons pas encore confirmé quel joueur de la partie est vous. Confirmez votre identité dans l’historique des démos pour débloquer vos chiffres.",
+  "real.state.BLOCKED.title": "Démo retenue par l’audit",
+  "real.state.BLOCKED.description":
+    "L’audit des données brutes a arrêté votre démo avant son enregistrement. Rien n’en a été utilisé dans vos chiffres. Voyez le motif dans l’historique des démos.",
+  "real.state.FAILED.title": "Le traitement a échoué",
+  "real.state.FAILED.description":
+    "Le traitement de vos démos a échoué et aucune donnée n’a été enregistrée. Voyez le détail dans l’historique des démos.",
+  "real.action.upload": "Envoyer une démo",
+  "real.action.history": "Voir l’historique des démos",
+  "real.error.title": "Impossible de charger vos données",
+  "real.error.description":
+    "La requête a échoué. Aucune valeur n’a été affichée à la place de vos données réelles.",
+  "real.metric.matches": "Matchs",
+  "real.metric.kd": "K/D",
+  "real.metric.adr": "ADR",
+  "real.metric.kast": "KAST",
+  "real.metric.winRate": "Taux de victoire",
+  "real.job.pending": "En file d’attente",
+  "real.job.processing": "En traitement",
+  "real.job.processed": "Traitée",
+  "real.job.failed": "Échec",
+  "real.job.cancelled": "Annulée",
+  "real.job.blocked": "Retenue par l’audit",
+  "real.identity.confirmed": "Joueur confirmé",
+  "real.identity.pending": "Confirmation en attente",
+  "real.identity.unattached": "Joueur non identifié",
+  "real.identity.conflict": "Identité en conflit",
+  "real.dashboard.description": "Uniquement les données réelles de vos démos traitées.",
+  "real.matches.description": "Matchs réels enregistrés à partir de vos démos.",
+  "real.proScore.title": "CS2 PRO Score",
+  "real.engine.notAvailable":
+    "Pas encore disponible : ce calcul n’a pas de source de données réelle dans cette version. Aucune valeur d’exemple n’est affichée.",
+  "real.uploads.title": "Dernières démos envoyées",
+  "real.uploads.subtitle": "État réel du traitement et de l’identité",
+  "real.dna.reason":
+    "Le Player DNA dépend d’un modèle qui n’a pas encore été construit sur des données réelles. Aucun DNA d’exemple n’est affiché.",
+  "real.coach.reason":
+    "L’AI Coach n’est pas encore connecté à une source de données réelle. Aucune conversation d’exemple n’est affichée.",
+  "real.analysis.reason":
+    "La radiographie dépend d’un diagnostic qui n’a pas encore été construit sur des données réelles. Aucun diagnostic d’exemple n’est affiché.",
+  "real.performance.reason":
+    "Les tendances de performance dépendent de séries réelles qui n’existent pas encore. Aucun graphique d’exemple n’est affiché.",
+  "real.training.reason":
+    "Le plan d’entraînement dépend d’un diagnostic réel qui n’existe pas encore. Aucun plan d’exemple n’est affiché.",
 };

@@ -6,7 +6,14 @@ import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { MatchesTable } from "@/components/panels/MatchesTable";
+import {
+  OverviewStatePanel,
+  RealAggregates,
+  RealMatchesTable,
+  WithOverview,
+} from "@/components/real/RealData";
 import { Button } from "@/components/ui/button";
+import { DEMO_DATA } from "@/config/app";
 import { useT } from "@/i18n";
 import { getMatches } from "@/services/playerService";
 
@@ -25,10 +32,43 @@ export const Route = createFileRoute("/_authenticated/matches")({
       },
     ],
   }),
-  component: MatchesPage,
+  component: DEMO_DATA ? DemoMatchesPage : RealMatchesPage,
 });
 
-function MatchesPage() {
+function RealMatchesPage() {
+  const t = useT();
+  return (
+    <AppShell>
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow={t("matches.eyebrow")}
+          title={t("matches.title")}
+          description={t("real.matches.description")}
+          actions={
+            <Button asChild>
+              <Link to="/upload">{t("matches.newDemo")}</Link>
+            </Button>
+          }
+        />
+        <WithOverview>
+          {(overview) => (
+            <div className="space-y-8">
+              <OverviewStatePanel overview={overview} />
+              <RealAggregates overview={overview} />
+              {overview.matches.length ? (
+                <ChartCard showDemoTag={false} title={t("matches.tableTitle")}>
+                  <RealMatchesTable rows={overview.matches} />
+                </ChartCard>
+              ) : null}
+            </div>
+          )}
+        </WithOverview>
+      </div>
+    </AppShell>
+  );
+}
+
+function DemoMatchesPage() {
   const t = useT();
   const rows = getMatches();
   const wins = rows.filter((r) => r.result === "V").length;

@@ -32,15 +32,15 @@ import { Route as AuthenticatedAdminMemoryLabRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as ApiPublicA91ReferenceFixtureRouteImport } from './routes/api/public/a91-reference-fixture'
+import { Route as ApiPublicH3eRawAuditReasonsRouteImport } from './routes/api/public/h3e-raw-audit-reasons'
+import { Route as ApiPublicH3eRetentionOperatorRouteImport } from './routes/api/public/h3e-retention-operator'
 import { Route as ApiPublicH3e91ExecutionEventRouteImport } from './routes/api/public/h3e91-execution-event'
 import { Route as ApiPublicH3e91ExecutionLifecycleRouteImport } from './routes/api/public/h3e91-execution-lifecycle'
 import { Route as ApiPublicParserAttestationRouteImport } from './routes/api/public/parser-attestation'
 import { Route as ApiPublicParserAttestationRuntimeRouteImport } from './routes/api/public/parser-attestation-runtime'
 import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/pipeline-cron'
 import { Route as ApiPublicPredemManagedSnapshotRouteImport } from './routes/api/public/predem-managed-snapshot'
-import { Route as ApiPublicH3eRetentionOperatorRouteImport } from './routes/api/public/h3e-retention-operator'
-import { Route as ApiPublicA91ReferenceFixtureRouteImport } from './routes/api/public/a91-reference-fixture'
-import { Route as ApiPublicH3eRawAuditReasonsRouteImport } from './routes/api/public/h3e-raw-audit-reasons'
 import { Route as ApiInternalH3e9PreflightRouteImport } from './routes/api/internal/h3e9/preflight'
 import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
 import { Route as ApiPublicIntegrationsFaceitCallbackRouteImport } from './routes/api/public/integrations/faceit/callback'
@@ -166,6 +166,24 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiPublicA91ReferenceFixtureRoute =
+  ApiPublicA91ReferenceFixtureRouteImport.update({
+    id: '/api/public/a91-reference-fixture',
+    path: '/api/public/a91-reference-fixture',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicH3eRawAuditReasonsRoute =
+  ApiPublicH3eRawAuditReasonsRouteImport.update({
+    id: '/api/public/h3e-raw-audit-reasons',
+    path: '/api/public/h3e-raw-audit-reasons',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicH3eRetentionOperatorRoute =
+  ApiPublicH3eRetentionOperatorRouteImport.update({
+    id: '/api/public/h3e-retention-operator',
+    path: '/api/public/h3e-retention-operator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicH3e91ExecutionEventRoute =
   ApiPublicH3e91ExecutionEventRouteImport.update({
     id: '/api/public/h3e91-execution-event',
@@ -199,24 +217,6 @@ const ApiPublicPredemManagedSnapshotRoute =
   ApiPublicPredemManagedSnapshotRouteImport.update({
     id: '/api/public/predem-managed-snapshot',
     path: '/api/public/predem-managed-snapshot',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicH3eRetentionOperatorRoute =
-  ApiPublicH3eRetentionOperatorRouteImport.update({
-    id: '/api/public/h3e-retention-operator',
-    path: '/api/public/h3e-retention-operator',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicA91ReferenceFixtureRoute =
-  ApiPublicA91ReferenceFixtureRouteImport.update({
-    id: '/api/public/a91-reference-fixture',
-    path: '/api/public/a91-reference-fixture',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicH3eRawAuditReasonsRoute =
-  ApiPublicH3eRawAuditReasonsRouteImport.update({
-    id: '/api/public/h3e-raw-audit-reasons',
-    path: '/api/public/h3e-raw-audit-reasons',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiInternalH3e9PreflightRoute =
@@ -266,15 +266,15 @@ export interface FileRoutesByFullPath {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
+  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
-  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
-  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
-  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -302,15 +302,15 @@ export interface FileRoutesByTo {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
+  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
-  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
-  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
-  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -341,15 +341,15 @@ export interface FileRoutesById {
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
+  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/h3e91-execution-event': typeof ApiPublicH3e91ExecutionEventRoute
   '/api/public/h3e91-execution-lifecycle': typeof ApiPublicH3e91ExecutionLifecycleRoute
   '/api/public/parser-attestation': typeof ApiPublicParserAttestationRoute
   '/api/public/parser-attestation-runtime': typeof ApiPublicParserAttestationRuntimeRoute
   '/api/public/pipeline-cron': typeof ApiPublicPipelineCronRoute
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
-  '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
-  '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
-  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -380,15 +380,15 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
+    | '/api/public/h3e-retention-operator'
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/api/public/predem-managed-snapshot'
-    | '/api/public/h3e-retention-operator'
-    | '/api/public/a91-reference-fixture'
-    | '/api/public/h3e-raw-audit-reasons'
     | '/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -416,15 +416,15 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
+    | '/api/public/h3e-retention-operator'
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/api/public/predem-managed-snapshot'
-    | '/api/public/h3e-retention-operator'
-    | '/api/public/a91-reference-fixture'
-    | '/api/public/h3e-raw-audit-reasons'
     | '/admin'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -454,15 +454,15 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
+    | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
+    | '/api/public/h3e-retention-operator'
     | '/api/public/h3e91-execution-event'
     | '/api/public/h3e91-execution-lifecycle'
     | '/api/public/parser-attestation'
     | '/api/public/parser-attestation-runtime'
     | '/api/public/pipeline-cron'
     | '/api/public/predem-managed-snapshot'
-    | '/api/public/h3e-retention-operator'
-    | '/api/public/a91-reference-fixture'
-    | '/api/public/h3e-raw-audit-reasons'
     | '/_authenticated/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -476,15 +476,15 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicA91ReferenceFixtureRoute: typeof ApiPublicA91ReferenceFixtureRoute
+  ApiPublicH3eRawAuditReasonsRoute: typeof ApiPublicH3eRawAuditReasonsRoute
+  ApiPublicH3eRetentionOperatorRoute: typeof ApiPublicH3eRetentionOperatorRoute
   ApiPublicH3e91ExecutionEventRoute: typeof ApiPublicH3e91ExecutionEventRoute
   ApiPublicH3e91ExecutionLifecycleRoute: typeof ApiPublicH3e91ExecutionLifecycleRoute
   ApiPublicParserAttestationRoute: typeof ApiPublicParserAttestationRoute
   ApiPublicParserAttestationRuntimeRoute: typeof ApiPublicParserAttestationRuntimeRoute
   ApiPublicPipelineCronRoute: typeof ApiPublicPipelineCronRoute
   ApiPublicPredemManagedSnapshotRoute: typeof ApiPublicPredemManagedSnapshotRoute
-  ApiPublicH3eRetentionOperatorRoute: typeof ApiPublicH3eRetentionOperatorRoute
-  ApiPublicA91ReferenceFixtureRoute: typeof ApiPublicA91ReferenceFixtureRoute
-  ApiPublicH3eRawAuditReasonsRoute: typeof ApiPublicH3eRawAuditReasonsRoute
   ApiInternalH3e9PreflightRoute: typeof ApiInternalH3e9PreflightRoute
   ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
   ApiPublicIntegrationsFaceitCallbackRoute: typeof ApiPublicIntegrationsFaceitCallbackRoute
@@ -654,6 +654,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/a91-reference-fixture': {
+      id: '/api/public/a91-reference-fixture'
+      path: '/api/public/a91-reference-fixture'
+      fullPath: '/api/public/a91-reference-fixture'
+      preLoaderRoute: typeof ApiPublicA91ReferenceFixtureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/h3e-raw-audit-reasons': {
+      id: '/api/public/h3e-raw-audit-reasons'
+      path: '/api/public/h3e-raw-audit-reasons'
+      fullPath: '/api/public/h3e-raw-audit-reasons'
+      preLoaderRoute: typeof ApiPublicH3eRawAuditReasonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/h3e-retention-operator': {
+      id: '/api/public/h3e-retention-operator'
+      path: '/api/public/h3e-retention-operator'
+      fullPath: '/api/public/h3e-retention-operator'
+      preLoaderRoute: typeof ApiPublicH3eRetentionOperatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/h3e91-execution-event': {
       id: '/api/public/h3e91-execution-event'
       path: '/api/public/h3e91-execution-event'
@@ -694,27 +715,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/predem-managed-snapshot'
       fullPath: '/api/public/predem-managed-snapshot'
       preLoaderRoute: typeof ApiPublicPredemManagedSnapshotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/h3e-retention-operator': {
-      id: '/api/public/h3e-retention-operator'
-      path: '/api/public/h3e-retention-operator'
-      fullPath: '/api/public/h3e-retention-operator'
-      preLoaderRoute: typeof ApiPublicH3eRetentionOperatorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/a91-reference-fixture': {
-      id: '/api/public/a91-reference-fixture'
-      path: '/api/public/a91-reference-fixture'
-      fullPath: '/api/public/a91-reference-fixture'
-      preLoaderRoute: typeof ApiPublicA91ReferenceFixtureRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/h3e-raw-audit-reasons': {
-      id: '/api/public/h3e-raw-audit-reasons'
-      path: '/api/public/h3e-raw-audit-reasons'
-      fullPath: '/api/public/h3e-raw-audit-reasons'
-      preLoaderRoute: typeof ApiPublicH3eRawAuditReasonsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/internal/h3e9/preflight': {
@@ -811,6 +811,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicA91ReferenceFixtureRoute: ApiPublicA91ReferenceFixtureRoute,
+  ApiPublicH3eRawAuditReasonsRoute: ApiPublicH3eRawAuditReasonsRoute,
+  ApiPublicH3eRetentionOperatorRoute: ApiPublicH3eRetentionOperatorRoute,
   ApiPublicH3e91ExecutionEventRoute: ApiPublicH3e91ExecutionEventRoute,
   ApiPublicH3e91ExecutionLifecycleRoute: ApiPublicH3e91ExecutionLifecycleRoute,
   ApiPublicParserAttestationRoute: ApiPublicParserAttestationRoute,
@@ -818,9 +821,6 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicParserAttestationRuntimeRoute,
   ApiPublicPipelineCronRoute: ApiPublicPipelineCronRoute,
   ApiPublicPredemManagedSnapshotRoute: ApiPublicPredemManagedSnapshotRoute,
-  ApiPublicH3eRetentionOperatorRoute: ApiPublicH3eRetentionOperatorRoute,
-  ApiPublicA91ReferenceFixtureRoute: ApiPublicA91ReferenceFixtureRoute,
-  ApiPublicH3eRawAuditReasonsRoute: ApiPublicH3eRawAuditReasonsRoute,
   ApiInternalH3e9PreflightRoute: ApiInternalH3e9PreflightRoute,
   ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
   ApiPublicIntegrationsFaceitCallbackRoute:

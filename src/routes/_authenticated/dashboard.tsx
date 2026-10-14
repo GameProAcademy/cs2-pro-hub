@@ -11,7 +11,16 @@ import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
 import { ProScoreCard } from "@/components/panels/ProScoreCard";
 import { StrengthList } from "@/components/panels/StrengthList";
+import {
+  NotAvailablePanel,
+  OverviewStatePanel,
+  RealAggregates,
+  RealMatchesTable,
+  RecentUploads,
+  WithOverview,
+} from "@/components/real/RealData";
 import { Button } from "@/components/ui/button";
+import { DEMO_DATA } from "@/config/app";
 import { useT } from "@/i18n";
 import {
   getBottlenecks,
@@ -40,10 +49,66 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       },
     ],
   }),
-  component: DashboardPage,
+  component: DEMO_DATA ? DemoDashboardPage : RealDashboardPage,
 });
 
-function DashboardPage() {
+/** Production: only the player's own persisted data, or an honest state. */
+function RealDashboardPage() {
+  const t = useT();
+  return (
+    <AppShell>
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow={t("dashboard.eyebrow")}
+          title={t("dashboard.title")}
+          description={t("real.dashboard.description")}
+        />
+        <WithOverview>
+          {(overview) => (
+            <div className="space-y-8">
+              <OverviewStatePanel overview={overview} />
+              <RealAggregates overview={overview} />
+              {overview.matches.length ? (
+                <ChartCard
+                  showDemoTag={false}
+                  title={t("dashboard.lastMatches")}
+                  actions={
+                    <Button asChild size="sm" variant="ghost">
+                      <Link to="/matches">{t("dashboard.viewAll")}</Link>
+                    </Button>
+                  }
+                >
+                  <RealMatchesTable rows={overview.matches.slice(0, 5)} />
+                </ChartCard>
+              ) : null}
+              <div className="grid gap-5 lg:grid-cols-2">
+                <NotAvailablePanel
+                  title={t("real.proScore.title")}
+                  reason={t("real.engine.notAvailable")}
+                />
+                <NotAvailablePanel
+                  title={t("dashboard.dna")}
+                  reason={t("real.engine.notAvailable")}
+                />
+              </div>
+              {overview.latestJobs.length ? (
+                <ChartCard
+                  showDemoTag={false}
+                  title={t("real.uploads.title")}
+                  subtitle={t("real.uploads.subtitle")}
+                >
+                  <RecentUploads jobs={overview.latestJobs.slice(0, 5)} />
+                </ChartCard>
+              ) : null}
+            </div>
+          )}
+        </WithOverview>
+      </div>
+    </AppShell>
+  );
+}
+
+function DemoDashboardPage() {
   const t = useT();
   const score = getProScore();
   const dna = getPlayerDna();

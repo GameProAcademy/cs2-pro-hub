@@ -914,6 +914,59 @@ export const ptBR = {
     "A Steam limitou temporariamente os pedidos. Tente em alguns minutos.",
   "steam.reason.temporary": "A Steam está indisponível no momento. Tente novamente.",
   "steam.reason.error": "Não foi possível concluir a vinculação com a Steam.",
+  // Real-data surfaces (no demonstration values).
+  "real.state.EMPTY.title": "Nenhuma demo enviada",
+  "real.state.EMPTY.description":
+    "Envie uma demo de CS2 (.dem) para começar. Seus números aparecem aqui somente depois que a demo for processada e persistida.",
+  "real.state.PROCESSING.title": "Processando sua demo",
+  "real.state.PROCESSING.description":
+    "Sua demo está na fila ou em processamento. Esta página atualiza sozinha; nenhum valor é exibido antes do resultado.",
+  "real.state.IDENTITY_PENDING.title": "Confirme seu jogador",
+  "real.state.IDENTITY_PENDING.description":
+    "A demo foi processada, mas ainda não confirmamos qual jogador da partida é você. Confirme sua identidade no histórico de demos para liberar seus números.",
+  "real.state.BLOCKED.title": "Demo retida pela auditoria",
+  "real.state.BLOCKED.description":
+    "A auditoria dos dados brutos bloqueou sua demo antes da persistência. Nada dela foi usado nos seus números. Veja o motivo no histórico de demos.",
+  "real.state.FAILED.title": "Processamento falhou",
+  "real.state.FAILED.description":
+    "O processamento das suas demos falhou e nenhum dado foi persistido. Veja o detalhe no histórico de demos.",
+  "real.action.upload": "Enviar demo",
+  "real.action.history": "Ver histórico de demos",
+  "real.error.title": "Não foi possível carregar seus dados",
+  "real.error.description":
+    "A consulta falhou. Nenhum valor foi exibido no lugar dos seus dados reais.",
+  "real.metric.matches": "Partidas",
+  "real.metric.kd": "K/D",
+  "real.metric.adr": "ADR",
+  "real.metric.kast": "KAST",
+  "real.metric.winRate": "Taxa de vitória",
+  "real.job.pending": "Na fila",
+  "real.job.processing": "Processando",
+  "real.job.processed": "Processada",
+  "real.job.failed": "Falhou",
+  "real.job.cancelled": "Cancelada",
+  "real.job.blocked": "Retida pela auditoria",
+  "real.identity.confirmed": "Jogador confirmado",
+  "real.identity.pending": "Confirmação pendente",
+  "real.identity.unattached": "Jogador não identificado",
+  "real.identity.conflict": "Identidade em conflito",
+  "real.dashboard.description": "Somente dados reais das suas demos processadas.",
+  "real.matches.description": "Partidas reais persistidas a partir das suas demos.",
+  "real.proScore.title": "CS2 PRO Score",
+  "real.engine.notAvailable":
+    "Ainda não disponível: este cálculo não tem fonte de dados real nesta versão. Nenhum valor de exemplo é exibido.",
+  "real.uploads.title": "Últimas demos enviadas",
+  "real.uploads.subtitle": "Estado real de processamento e de identidade",
+  "real.dna.reason":
+    "O Player DNA depende de um modelo que ainda não foi implementado sobre dados reais. Nenhum DNA de exemplo é exibido.",
+  "real.coach.reason":
+    "O AI Coach ainda não está conectado a uma fonte de dados real. Nenhuma conversa de exemplo é exibida.",
+  "real.analysis.reason":
+    "O Raio-X depende de um diagnóstico que ainda não foi implementado sobre dados reais. Nenhum diagnóstico de exemplo é exibido.",
+  "real.performance.reason":
+    "As tendências de performance dependem de séries reais que ainda não existem. Nenhum gráfico de exemplo é exibido.",
+  "real.training.reason":
+    "O plano de treino depende de um diagnóstico real que ainda não existe. Nenhum plano de exemplo é exibido.",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;
