@@ -1,0 +1,49 @@
+name: H.3-E RAW Audit Reasons
+
+# Manual, main-only, read-only. Reports why the RAW audit of one demo job is BLOCKED
+# (reason codes, failing gates, mapping-status counts) from its sealed manifest.
+# Never touches DEM bytes, never parses, never writes.
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: demo_jobs.id (UUID)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read the sealed RAW audit reasons
+        env:
+          PARSER_ATTESTATION_TRANSPORT_SECRET: ${{ secrets.PARSER_ATTESTATION_TRANSPORT_SECRET }}
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, urllib.error, urllib.request
+          job = os.environ["JOB_ID"].strip()
+          if not re.fullmatch(r"[0-9a-f-]{36}", job):
+              raise SystemExit("JOB_ID_INVALID")
+          request = urllib.request.Request(
+              "https://gamepro.network/api/public/h3e-raw-audit-reasons",
+              data=json.dumps({"jobId": job}).encode(), method="POST",
+              headers={"authorization": "Bearer " + os.environ["PARSER_ATTESTATION_TRANSPORT_SECRET"],
+                       "content-type": "application/json", "User-Agent": "gamepro-h3e-raw-audit-reasons/1"})
+          try:
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  status, body = response.status, json.loads(response.read().decode())
+          except urllib.error.HTTPError as error:
+              status, body = error.code, {"error": "HTTP_" + str(error.code)}
+          text = json.dumps({"status": status, **body}, sort_keys=True)
+          # Annotations are capped; chunk so long reason lists are complete.
+          for index in range(0, len(text), 3500):
+              print(f"::notice title=RAW audit reasons {index // 3500}::" + text[index:index + 3500])
+          raise SystemExit(0 if status == 200 else 1)
+          PY

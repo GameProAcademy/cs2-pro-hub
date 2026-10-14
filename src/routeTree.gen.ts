@@ -40,6 +40,7 @@ import { Route as ApiPublicPipelineCronRouteImport } from './routes/api/public/p
 import { Route as ApiPublicPredemManagedSnapshotRouteImport } from './routes/api/public/predem-managed-snapshot'
 import { Route as ApiPublicH3eRetentionOperatorRouteImport } from './routes/api/public/h3e-retention-operator'
 import { Route as ApiPublicA91ReferenceFixtureRouteImport } from './routes/api/public/a91-reference-fixture'
+import { Route as ApiPublicH3eRawAuditReasonsRouteImport } from './routes/api/public/h3e-raw-audit-reasons'
 import { Route as ApiInternalH3e9PreflightRouteImport } from './routes/api/internal/h3e9/preflight'
 import { Route as ApiPublicPipelineWorkerActionRouteImport } from './routes/api/public/pipeline-worker.$action'
 import { Route as ApiPublicIntegrationsFaceitCallbackRouteImport } from './routes/api/public/integrations/faceit/callback'
@@ -212,6 +213,12 @@ const ApiPublicA91ReferenceFixtureRoute =
     path: '/api/public/a91-reference-fixture',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicH3eRawAuditReasonsRoute =
+  ApiPublicH3eRawAuditReasonsRouteImport.update({
+    id: '/api/public/h3e-raw-audit-reasons',
+    path: '/api/public/h3e-raw-audit-reasons',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInternalH3e9PreflightRoute =
   ApiInternalH3e9PreflightRouteImport.update({
     id: '/api/internal/h3e9/preflight',
@@ -267,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -340,6 +349,7 @@ export interface FileRoutesById {
   '/api/public/predem-managed-snapshot': typeof ApiPublicPredemManagedSnapshotRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
+  '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/internal/h3e9/preflight': typeof ApiInternalH3e9PreflightRoute
   '/api/public/pipeline-worker/$action': typeof ApiPublicPipelineWorkerActionRoute
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/api/public/predem-managed-snapshot'
     | '/api/public/h3e-retention-operator'
     | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
     | '/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/api/public/predem-managed-snapshot'
     | '/api/public/h3e-retention-operator'
     | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
     | '/admin'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -450,6 +462,7 @@ export interface FileRouteTypes {
     | '/api/public/predem-managed-snapshot'
     | '/api/public/h3e-retention-operator'
     | '/api/public/a91-reference-fixture'
+    | '/api/public/h3e-raw-audit-reasons'
     | '/_authenticated/admin/'
     | '/api/internal/h3e9/preflight'
     | '/api/public/pipeline-worker/$action'
@@ -471,6 +484,7 @@ export interface RootRouteChildren {
   ApiPublicPredemManagedSnapshotRoute: typeof ApiPublicPredemManagedSnapshotRoute
   ApiPublicH3eRetentionOperatorRoute: typeof ApiPublicH3eRetentionOperatorRoute
   ApiPublicA91ReferenceFixtureRoute: typeof ApiPublicA91ReferenceFixtureRoute
+  ApiPublicH3eRawAuditReasonsRoute: typeof ApiPublicH3eRawAuditReasonsRoute
   ApiInternalH3e9PreflightRoute: typeof ApiInternalH3e9PreflightRoute
   ApiPublicPipelineWorkerActionRoute: typeof ApiPublicPipelineWorkerActionRoute
   ApiPublicIntegrationsFaceitCallbackRoute: typeof ApiPublicIntegrationsFaceitCallbackRoute
@@ -696,6 +710,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicA91ReferenceFixtureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/h3e-raw-audit-reasons': {
+      id: '/api/public/h3e-raw-audit-reasons'
+      path: '/api/public/h3e-raw-audit-reasons'
+      fullPath: '/api/public/h3e-raw-audit-reasons'
+      preLoaderRoute: typeof ApiPublicH3eRawAuditReasonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/h3e9/preflight': {
       id: '/api/internal/h3e9/preflight'
       path: '/api/internal/h3e9/preflight'
@@ -799,6 +820,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicPredemManagedSnapshotRoute: ApiPublicPredemManagedSnapshotRoute,
   ApiPublicH3eRetentionOperatorRoute: ApiPublicH3eRetentionOperatorRoute,
   ApiPublicA91ReferenceFixtureRoute: ApiPublicA91ReferenceFixtureRoute,
+  ApiPublicH3eRawAuditReasonsRoute: ApiPublicH3eRawAuditReasonsRoute,
   ApiInternalH3e9PreflightRoute: ApiInternalH3e9PreflightRoute,
   ApiPublicPipelineWorkerActionRoute: ApiPublicPipelineWorkerActionRoute,
   ApiPublicIntegrationsFaceitCallbackRoute:
