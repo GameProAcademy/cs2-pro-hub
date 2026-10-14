@@ -876,9 +876,11 @@ export async function verifyRawArtifact(args: {
       different: Array.isArray(reconciliation["different_in_artifact"])
         ? reconciliation["different_in_artifact"]
         : [],
-      producerDigestPresent: typeof reconciliation["producer_digest"] === "string" &&
+      producerDigestPresent:
+        typeof reconciliation["producer_digest"] === "string" &&
         HEX_64.test(reconciliation["producer_digest"]),
-      physicalDigestPresent: typeof reconciliation["physical_digest"] === "string" &&
+      physicalDigestPresent:
+        typeof reconciliation["physical_digest"] === "string" &&
         HEX_64.test(reconciliation["physical_digest"]),
     };
     throw new PipelineError(
