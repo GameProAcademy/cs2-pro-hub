@@ -52,6 +52,12 @@ RESULTS: list[dict] = []
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
 R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
+# R5.8.10 follows R5.8.9 in the chain: a reset build ends at its target, so the
+# baseline first undoes R5.8.10b and R5.8.10 (back to the R5.8.9 targets) and
+# then, unless a caller keeps the R5.8.9 state, R5.8.9b and R5.8.9.
+R5810_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback.sql"
+R5810B_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback_boundary.sql"
+R5810_TARGET_MD5 = "4ee7be9d9d133adbeeafe6e6a5763112"
 
 PRELUDE = r"""
 \set ON_ERROR_STOP 1
@@ -60,7 +66,13 @@ CREATE TEMP TABLE probe_baseline ON COMMIT DROP AS
   SELECT md5(p.prosrc) AS reset_md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
 DO $r589_baseline$ BEGIN
-  IF (SELECT reset_md5 FROM probe_baseline) = '__R589_TARGET__' THEN
+  IF (SELECT reset_md5 FROM probe_baseline) = '__R5810_TARGET__' THEN
+    EXECUTE __R5810B_ROLLBACK__;
+    EXECUTE __R5810_ROLLBACK__;
+  END IF;
+  IF __R589_UNDO__ AND (SELECT md5(p.prosrc) FROM pg_proc p
+      WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure)
+      = '__R589_TARGET__' THEN
     EXECUTE __R589B_ROLLBACK__;
     EXECUTE __R589_ROLLBACK__;
   END IF;
@@ -218,10 +230,15 @@ def _r589_literal(path: Path = R589_ROLLBACK) -> str:
     return "$r589_rollback$" + text + "$r589_rollback$"
 
 
-def render_prelude(template: str) -> str:
-    """Insert the R5.8.9 baseline step. Callers that substitute pins in the
-    prelude must do so on the template, so the embedded rollback stays intact."""
-    return (template.replace("__R589_TARGET__", R589_TARGET_MD5)
+def render_prelude(template: str, *, keep_r589: bool = False) -> str:
+    """Insert the baseline step (undo R5.8.10, then R5.8.9 unless keep_r589).
+    Callers that substitute pins in the prelude must do so on the template, so
+    the embedded rollbacks stay intact."""
+    return (template.replace("__R5810_TARGET__", R5810_TARGET_MD5)
+            .replace("__R5810B_ROLLBACK__", _r589_literal(R5810B_ROLLBACK))
+            .replace("__R5810_ROLLBACK__", _r589_literal(R5810_ROLLBACK))
+            .replace("__R589_UNDO__", "false" if keep_r589 else "true")
+            .replace("__R589_TARGET__", R589_TARGET_MD5)
             .replace("__R589B_ROLLBACK__", _r589_literal(R589B_ROLLBACK))
             .replace("__R589_ROLLBACK__", _r589_literal()))
 
@@ -287,10 +304,10 @@ def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]
 def main() -> int:
     refuse_non_local()
 
-    # ----- R5.8.9: the reset build ends at the re-pinned recorder
-    scenario("r589_reset_build_has_repinned_recorder", """
+    # ----- R5.8.10: the reset build ends at the re-pinned recorder (R5.8.9 is undone after it)
+    scenario("r5810_reset_build_has_repinned_recorder", """
 INSERT INTO probe_result SELECT 'reset_md5', to_jsonb((SELECT reset_md5 FROM probe_baseline));
-""", lambda o: [] if o.get("reset_md5") == R589_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
+""", lambda o: [] if o.get("reset_md5") == R5810_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
 
     # ----- R5.8.7 (D1): recorder definition
     scenario("d1_reset_build_has_managed_recorder_and_properties", """

@@ -56,12 +56,12 @@ def test_collector_has_no_execution_or_mutation_surface():
     assert APPROVED_BLOB in source
 
 
-def test_collector_uses_the_r589_railway_identity():
-    # R5.8.9: deployment 09b50029 serves the image built from c8c6d6ec (main).
-    assert DEPLOYMENT == "09b50029-2508-4267-bb1d-28c5e99b95db"
-    assert SOURCE_COMMIT == "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+def test_collector_uses_the_r5810_railway_identity():
+    # R5.8.10: deployment 25df86c3 serves the image built from 60099ed3 (main).
+    assert DEPLOYMENT == "25df86c3-22e1-4986-9b91-cdabe54535c5"
+    assert SOURCE_COMMIT == "60099ed3eaf959d888762bf55043255a63a6a766"
     assert BRANCH == "main"
-    assert PARSER_REVISION == "git:10815fb44e165963adfaf07f71c474ca628f4b7f"
+    assert PARSER_REVISION == "git:60099ed3eaf959d888762bf55043255a63a6a766"
 
 
 def test_collector_structure_rejects_automatic_and_execution_triggers():

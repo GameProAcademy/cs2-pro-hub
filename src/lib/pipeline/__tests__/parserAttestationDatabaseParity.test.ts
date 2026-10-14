@@ -14,8 +14,13 @@ const r582Migration = readFileSync(
   resolve("supabase/migrations/20261005090000_r58_2_live_deployment_pin_reconciliation.sql"),
   "utf8",
 );
-// The migration that pins the managed recorder to the current runtime (R5.8.9).
+// The migration that pins the managed recorder to the current runtime (R5.8.10).
 const migration = readFileSync(
+  resolve("supabase/migrations/20261014210000_r5_8_10_repin_attestation_recorder.sql"),
+  "utf8",
+);
+// The previous link of the chain stays committed with its own pins.
+const r589Migration = readFileSync(
   resolve("supabase/migrations/20261013130000_r5_8_9_repin_attestation_recorder.sql"),
   "utf8",
 );
@@ -53,6 +58,7 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(repairMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
     expect(legacyMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
     expect(r582Migration).toContain("1b5778de-3eaf-46f1-9ea5-cba381d95313");
+    expect(r589Migration).toContain("09b50029-2508-4267-bb1d-28c5e99b95db");
     expect(repairMigration).toContain("3070d8bae6c3f02093bbb2595138c913646c2e31");
     expect(
       parity({
@@ -97,6 +103,6 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
       expect(sql).not.toMatch(/SECURITY\s+INVOKER/i);
     }
     expect(r582Migration).toContain(`ARRAY['search_path=""']`);
-    expect(migration).toContain("R5_8_9_RECORDER_UNEXPECTED_DEFINITION");
+    expect(migration).toContain("R5_8_10_RECORDER_UNEXPECTED_DEFINITION");
   });
 });
