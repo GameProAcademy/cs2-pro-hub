@@ -863,11 +863,29 @@ export async function verifyRawArtifact(args: {
   const physicalForensic = forensicRows[0] as Record<string, unknown> | undefined;
   const producerProjection = physicalForensic?.["producer_reconciliation_projection"];
   const reconciliation = reconcileProducerAndPhysical(producerProjection, physicalSemantic);
-  if (reconciliation["status"] !== "PASS")
+  if (reconciliation["status"] !== "PASS") {
+    // Keep the fail-closed decision, but preserve bounded structural diagnostics so a
+    // reconciliation regression can be fixed from disposable CI without exposing RAW data.
+    const diagnostic = {
+      missing: Array.isArray(reconciliation["missing_from_artifact"])
+        ? reconciliation["missing_from_artifact"]
+        : [],
+      extra: Array.isArray(reconciliation["extra_in_artifact"])
+        ? reconciliation["extra_in_artifact"]
+        : [],
+      different: Array.isArray(reconciliation["different_in_artifact"])
+        ? reconciliation["different_in_artifact"]
+        : [],
+      producerDigestPresent: typeof reconciliation["producer_digest"] === "string" &&
+        HEX_64.test(reconciliation["producer_digest"]),
+      physicalDigestPresent: typeof reconciliation["physical_digest"] === "string" &&
+        HEX_64.test(reconciliation["physical_digest"]),
+    };
     throw new PipelineError(
       "PARSER_INVALID_RESPONSE",
-      "RAW producer/artifact reconciliation failed",
+      `RAW producer/artifact reconciliation failed: ${JSON.stringify(diagnostic)}`,
     );
+  }
   if (admissionV3) {
     // Every physical check above ran exactly as for v2 and passed. The physical gate
     // (RAW-V2-22) is satisfied by the same dimensions; the v3 decision itself is taken
