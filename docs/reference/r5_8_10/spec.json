@@ -1,0 +1,71 @@
+{
+  "deployment_id": "25df86c3-22e1-4986-9b91-cdabe54535c5",
+  "branch": "main",
+  "semantic_commit": "60099ed3eaf959d888762bf55043255a63a6a766",
+  "build_commit": "60099ed3eaf959d888762bf55043255a63a6a766",
+  "deployment_commit": "60099ed3eaf959d888762bf55043255a63a6a766",
+  "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
+  "critical_hashes": {
+    "parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+    "raw_evidence.py": "ec28b075f9726e5c4cdb97f5820f4402bca23eae",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "observed": {
+    "observed_at": "2026-10-14T10:59:40Z",
+    "railway_deployment": {
+      "id": "25df86c3-22e1-4986-9b91-cdabe54535c5",
+      "status": "SUCCESS",
+      "commitHash": "60099ed3eaf959d888762bf55043255a63a6a766",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-14T09:13:00.331Z"
+    },
+    "version_hosts": {
+      "https://parser.gamepro.network/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:60099ed3eaf959d888762bf55043255a63a6a766",
+          "semantic_revision": "git:60099ed3eaf959d888762bf55043255a63a6a766",
+          "build_revision": "git:60099ed3eaf959d888762bf55043255a63a6a766"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "60099ed3eaf959d888762bf55043255a63a6a766",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      },
+      "https://cs2-demo-parser-production.up.railway.app/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:60099ed3eaf959d888762bf55043255a63a6a766",
+          "semantic_revision": "git:60099ed3eaf959d888762bf55043255a63a6a766",
+          "build_revision": "git:60099ed3eaf959d888762bf55043255a63a6a766"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "60099ed3eaf959d888762bf55043255a63a6a766",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      }
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-14T10:58Z",
+      "record_parser_runtime_attestation": "d7c325bac1a98c6a7cac67a0f18ba08b",
+      "assert_verified_parser_provenance": "b1576ce0d085e7bc1961d37b34a432f2",
+      "enforce_approved_attestation_workflow": "b9412b87a12d51a4fa0e68bafd23735a"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "version_hosts": "GET /version on both hosts (read-only)",
+      "managed_start_state": "md5(prosrc) on the managed database (read-only SELECT)"
+    }
+  }
+}

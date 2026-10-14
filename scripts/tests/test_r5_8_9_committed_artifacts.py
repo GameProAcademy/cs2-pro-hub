@@ -33,13 +33,11 @@ def test_spec_pins_the_observed_deployment_not_a_synthetic_one():
     assert SPEC["observed"]["railway_deployment"]["status"] == "SUCCESS"
 
 
-def test_spec_agrees_with_the_repository_pins():
-    from scripts.parser_runtime_attestation import BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES
-    assert (BRANCH, COMMIT, BUILD_COMMIT, DEPLOYMENT) == (
-        SPEC["branch"], SPEC["semantic_commit"], SPEC["build_commit"], SPEC["deployment_id"])
-    assert {Path(p).name: h for p, h in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
-    registry = json.loads((ROOT / "scripts/approved_attestation_workflow.json").read_text())
-    assert registry["source_sha"] == SPEC["workflow_source_sha"]
+def test_the_repository_pins_moved_on_to_r5_8_10():
+    # R5.8.9 is a committed, historical link of the chain; the live pins are R5.8.10's
+    # (scripts/tests/test_r5_8_10_committed_artifacts.py).
+    from scripts.parser_runtime_attestation import DEPLOYMENT
+    assert DEPLOYMENT != SPEC["deployment_id"]
 
 
 def _full_history() -> bool:
@@ -50,7 +48,10 @@ def _full_history() -> bool:
 
 @pytest.mark.skipif(not _full_history(), reason="needs full history and origin/main")
 def test_spec_passes_the_generator_verification():
-    assert r5_8_9.verify(SPEC) == []
+    # Since R5.8.10 the workflow in this tree is the re-pinned one; the R5.8.9 blob is
+    # history (still a real blob), and that is the only check that no longer holds.
+    assert r5_8_9.verify(SPEC) == ["WORKFLOW_BLOB_NOT_THE_ONE_IN_THIS_TREE"]
+    assert subprocess.run(("git", "cat-file", "-e", SPEC["workflow_source_sha"]), cwd=ROOT).returncode == 0
 
 
 def test_committed_boundary_artifacts_are_the_generator_output():

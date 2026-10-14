@@ -17,12 +17,12 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "main"
-# Semantic revision: the first main commit whose worker tree (8120c12a) is the one served.
-COMMIT = "10815fb44e165963adfaf07f71c474ca628f4b7f"
+# Semantic revision: the main commit whose worker tree (05594c6f) is the one served (R5.8.10).
+COMMIT = "60099ed3eaf959d888762bf55043255a63a6a766"
 # Build revision: the commit the served image was built from (BUILD_INFO.json, /version build.commit).
-BUILD_COMMIT = "c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
-# Railway deployment 09b50029 (redeploy of c0aa8a55's image, 2026-10-13T08:27Z, R5.8.9 re-pin).
-DEPLOYMENT = "09b50029-2508-4267-bb1d-28c5e99b95db"
+BUILD_COMMIT = "60099ed3eaf959d888762bf55043255a63a6a766"
+# Railway deployment 25df86c3 (deploy of 60099ed3, 2026-10-14T09:13Z, R5.8.10 re-pin).
+DEPLOYMENT = "25df86c3-22e1-4986-9b91-cdabe54535c5"
 DEPLOYMENT_SOURCE_COMMIT = BUILD_COMMIT
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
@@ -31,7 +31,7 @@ EXPECTED_HASHES = {
     "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
     "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
     "services/cs2-demo-parser/worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
-    "services/cs2-demo-parser/raw_evidence.py": "46df350b5298531ffc01409172f690ba161328de",
+    "services/cs2-demo-parser/raw_evidence.py": "ec28b075f9726e5c4cdb97f5820f4402bca23eae",
     "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")
