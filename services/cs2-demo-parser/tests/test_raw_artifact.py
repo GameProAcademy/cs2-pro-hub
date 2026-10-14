@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 import raw_artifact
-from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _stable
+from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _producer_reconciliation_projection, _stable
 
 
 class FakeAsyncClient:
@@ -245,3 +245,13 @@ async def test_nan_is_normalized_for_multiple_raw_sections_and_hashes_are_repeat
         return reference["root_digest"], [hashlib.sha256(body).hexdigest() for body in physical]
 
     assert await run_once() == await run_once()
+
+
+def test_player_inventory_uses_player_steamid_when_steamid_is_null():
+    projection = _producer_reconciliation_projection({
+        "raw_player_info": [
+            {"steamid": None, "player_steamid": "76561198000000001"},
+            {"steamid": "76561198000000002", "player_steamid": "76561198000000003"},
+        ],
+    })
+    assert projection["player_inventory"] == ["76561198000000001", "76561198000000002"]
