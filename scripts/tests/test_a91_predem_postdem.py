@@ -233,3 +233,54 @@ def test_every_workflow_that_can_process_the_real_dem_requires_the_predem_approv
             assert "needs.predem-approval.result == 'success'" in job["if"], (path.name, name)
             assert "A91_DEMO_URL" not in json.dumps(check)
     assert seen == ["a91-real-dem-gate.yml", "a91-wasm-large-demo-remediation.yml"]
+
+
+def test_the_token_is_not_forwarded_to_the_artifact_storage_redirect():
+    """archive_download_url answers 302 to a pre-signed storage URL on another host;
+    re-sending Authorization there makes storage refuse the download."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    seen = {}
+
+    class Storage(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            seen["storage_auth"] = self.headers.get("Authorization")
+            body = b"zip-bytes"
+            self.send_response(200 if self.headers.get("Authorization") is None else 400)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    storage = HTTPServer(("127.0.0.1", 0), Storage)
+
+    class Api(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            seen["api_auth"] = self.headers.get("Authorization")
+            self.send_response(302)
+            # Same machine, different host name: a cross-host redirect.
+            self.send_header("Location", f"http://localhost:{storage.server_port}/blob?sig=synthetic")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    api = HTTPServer(("127.0.0.1", 0), Api)
+    for server in (api, storage):
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        gh = a91.Github("synthetic-token")
+        # Github.request builds exactly this request; the test server speaks plain HTTP.
+        req = a91.urllib.request.Request(f"http://127.0.0.1:{api.server_port}/zip",
+                                         headers={"Authorization": "Bearer synthetic-token"})
+        with gh.opener.open(req, timeout=10) as response:
+            body = response.read()
+    finally:
+        api.shutdown()
+        storage.shutdown()
+    assert seen == {"api_auth": "Bearer synthetic-token", "storage_auth": None}
+    assert body == b"zip-bytes"
