@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RealCapabilityPage } from "@/components/real/RealData";
+import { DEMO_DATA } from "@/config/app";
 
 import { DnaRadarChart } from "@/components/charts/DnaRadarChart";
 import { ChartCard } from "@/components/common/ChartCard";
@@ -26,8 +28,20 @@ export const Route = createFileRoute("/_authenticated/player-dna")({
       },
     ],
   }),
-  component: PlayerDnaPage,
+  component: DEMO_DATA ? PlayerDnaPage : RealPlayerDnaPage,
 });
+
+function RealPlayerDnaPage() {
+  const t = useT();
+  return (
+    <RealCapabilityPage
+      eyebrow={t("dna.eyebrow")}
+      title={t("dna.title")}
+      description={t("dna.description")}
+      reason={t("real.dna.reason")}
+    />
+  );
+}
 
 function PlayerDnaPage() {
   const t = useT();

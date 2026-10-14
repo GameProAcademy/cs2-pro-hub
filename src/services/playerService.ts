@@ -49,10 +49,18 @@ export const getMapPerformance = () => demoMapPerformance;
 export const getSideSplit = () => demoSideSplit;
 export const getTrainingPlans = () => demoTrainingPlans;
 export const getCoachHistory = () => demoCoachMessages;
-/** Future app boundary; no switch to real data is implemented by these snapshots. */
-export const getPlayerDnaState = () => appDataState("DEMO_ONLY", demoPlayerDna, demoDnaSchema);
+/**
+ * Player DNA and Coach have no real data source yet: outside demonstration mode
+ * they are NOT_AVAILABLE and carry no data at all.
+ */
+export const getPlayerDnaState = () =>
+  DEMO_DATA
+    ? appDataState("DEMO_ONLY", demoPlayerDna, demoDnaSchema)
+    : appDataState("NOT_AVAILABLE", null, demoDnaSchema);
 export const getCoachHistoryState = () =>
-  appDataState("DEMO_ONLY", demoCoachMessages, demoCoachSchema);
+  DEMO_DATA
+    ? appDataState("DEMO_ONLY", demoCoachMessages, demoCoachSchema)
+    : appDataState("NOT_AVAILABLE", null, demoCoachSchema);
 export const getProfile = () => demoProfile;
 export const getAnalysis = () => demoAnalysis;
 

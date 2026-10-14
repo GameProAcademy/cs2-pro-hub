@@ -913,4 +913,58 @@ export const es: Dictionary = {
     "Steam limitó temporalmente las solicitudes. Inténtalo en unos minutos.",
   "steam.reason.temporary": "Steam no está disponible en este momento. Inténtalo de nuevo.",
   "steam.reason.error": "No se pudo completar la vinculación con Steam.",
+
+  // Real-data surfaces (no demonstration values).
+  "real.state.EMPTY.title": "Aún no has subido ninguna demo",
+  "real.state.EMPTY.description":
+    "Sube una demo de CS2 (.dem) para empezar. Tus números aparecen aquí solo después de procesar y guardar la demo.",
+  "real.state.PROCESSING.title": "Procesando tu demo",
+  "real.state.PROCESSING.description":
+    "Tu demo está en cola o en proceso. Esta página se actualiza sola; no se muestra ningún valor antes del resultado.",
+  "real.state.IDENTITY_PENDING.title": "Confirma tu jugador",
+  "real.state.IDENTITY_PENDING.description":
+    "La demo se procesó, pero aún no confirmamos qué jugador de la partida eres tú. Confirma tu identidad en el historial de demos para desbloquear tus números.",
+  "real.state.BLOCKED.title": "Demo retenida por la auditoría",
+  "real.state.BLOCKED.description":
+    "La auditoría de datos brutos detuvo tu demo antes de guardarla. Nada de ella se usó en tus números. Mira el motivo en el historial de demos.",
+  "real.state.FAILED.title": "El procesamiento falló",
+  "real.state.FAILED.description":
+    "El procesamiento de tus demos falló y no se guardó ningún dato. Mira el detalle en el historial de demos.",
+  "real.action.upload": "Subir demo",
+  "real.action.history": "Ver historial de demos",
+  "real.error.title": "No se pudieron cargar tus datos",
+  "real.error.description":
+    "La consulta falló. No se mostró ningún valor en lugar de tus datos reales.",
+  "real.metric.matches": "Partidas",
+  "real.metric.kd": "K/D",
+  "real.metric.adr": "ADR",
+  "real.metric.kast": "KAST",
+  "real.metric.winRate": "Tasa de victorias",
+  "real.job.pending": "En cola",
+  "real.job.processing": "Procesando",
+  "real.job.processed": "Procesada",
+  "real.job.failed": "Falló",
+  "real.job.cancelled": "Cancelada",
+  "real.job.blocked": "Retenida por la auditoría",
+  "real.identity.confirmed": "Jugador confirmado",
+  "real.identity.pending": "Confirmación pendiente",
+  "real.identity.unattached": "Jugador no identificado",
+  "real.identity.conflict": "Identidad en conflicto",
+  "real.dashboard.description": "Solo datos reales de tus demos procesadas.",
+  "real.matches.description": "Partidas reales guardadas a partir de tus demos.",
+  "real.proScore.title": "CS2 PRO Score",
+  "real.engine.notAvailable":
+    "Aún no disponible: este cálculo no tiene una fuente de datos real en esta versión. No se muestra ningún valor de ejemplo.",
+  "real.uploads.title": "Últimas demos subidas",
+  "real.uploads.subtitle": "Estado real de procesamiento e identidad",
+  "real.dna.reason":
+    "El Player DNA depende de un modelo que aún no se construyó sobre datos reales. No se muestra ningún DNA de ejemplo.",
+  "real.coach.reason":
+    "El AI Coach aún no está conectado a una fuente de datos real. No se muestra ninguna conversación de ejemplo.",
+  "real.analysis.reason":
+    "La radiografía depende de un diagnóstico que aún no se construyó sobre datos reales. No se muestra ningún diagnóstico de ejemplo.",
+  "real.performance.reason":
+    "Las tendencias de rendimiento dependen de series reales que aún no existen. No se muestra ningún gráfico de ejemplo.",
+  "real.training.reason":
+    "El plan de entrenamiento depende de un diagnóstico real que aún no existe. No se muestra ningún plan de ejemplo.",
 };

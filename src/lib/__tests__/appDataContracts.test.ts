@@ -9,6 +9,7 @@ import {
   futureCoachContextSchema,
   futureMetricEvidenceSchema,
 } from "../appDataContracts";
+import { DEMO_DATA } from "../../config/app";
 import { getCoachHistoryState, getPlayerDnaState } from "../../services/playerService";
 
 describe("app contracts are non-authorizing", () => {
@@ -34,9 +35,10 @@ describe("app contracts are non-authorizing", () => {
     expect(appUploadSchema.safeParse(null).success).toBe(false);
     expect(appDemoIdentitySchema.safeParse({}).success).toBe(false);
   });
-  it("keeps DNA and Coach DEMO_ONLY", () => {
-    expect(getPlayerDnaState().status).toBe("DEMO_ONLY");
-    expect(getCoachHistoryState().status).toBe("DEMO_ONLY");
+  it("never serves demonstration DNA or Coach data in production", () => {
+    expect(DEMO_DATA).toBe(false);
+    expect(getPlayerDnaState()).toEqual({ status: "NOT_AVAILABLE", data: null });
+    expect(getCoachHistoryState()).toEqual({ status: "NOT_AVAILABLE", data: null });
   });
   it("rejects authority claims and missing future evidence", () => {
     expect(
