@@ -113,6 +113,31 @@ export function expectedParserContract(): ExpectedParserIdentity {
   };
 }
 
+/**
+ * The revision lock this server enforces, as a non-secret fact (revisions are
+ * commit identifiers). Published by `/api/public/parser-attestation-runtime` so
+ * the H.3-E activation gate can compare it with what the worker serves before a
+ * real demo is accepted or rejected by it. `*Source` says whether the value
+ * comes from an environment override or from the code default above: a stale
+ * override is the failure this makes visible.
+ */
+export function parserLockIdentity(): ExpectedParserIdentity & {
+  revisionSource: "env" | "code";
+  buildRevisionSource: "env" | "code" | "none";
+} {
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const contract = expectedParserContract();
+  return {
+    ...contract,
+    revisionSource: env?.["DEMO_PARSER_EXPECTED_REVISION"] ? "env" : "code",
+    buildRevisionSource: env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim()
+      ? "env"
+      : contract.buildRevision
+        ? "code"
+        : "none",
+  };
+}
+
 /** Validates the worker response against the raw contract before normalising. */
 export function assertRawParserOutput(value: unknown): RawParserOutput {
   if (!value || typeof value !== "object")
