@@ -966,4 +966,16 @@ export const ptPT: Dictionary = {
     "As tendências de performance dependem de séries reais que ainda não existem. Nenhum gráfico de exemplo é mostrado.",
   "real.training.reason":
     "O plano de treino depende de um diagnóstico real que ainda não existe. Nenhum plano de exemplo é mostrado.",
+  "real.dna.description":
+    "Sinais medidos nas suas partidas processadas. Não há comparação com outros jogadores nem pontuação.",
+  "real.dna.basis":
+    "Baseado em {matches} partida(s), {rounds} rondas amostradas, {partial} com leitura parcial. Cada valor é a média do sinal nas partidas em que foi observado.",
+  "real.dna.insufficient":
+    "Amostra insuficiente: {matches} de {minimum} partidas mínimas. Os valores abaixo são reais, mas ainda não representam um perfil estável.",
+  "real.dna.radarSub":
+    "Média dos sinais observados em cada dimensão (0–100; sinais em que menor é melhor entram como complemento). Só aparecem dimensões com sinal observado.",
+  "real.dna.notObserved": "Não observado",
+  "real.dna.inMatches": "em {n} partida(s)",
+  "real.dna.empty":
+    "Ainda não há partidas processadas com sinais guardados. O Player DNA aparece aqui depois do primeiro processamento concluído.",
 };

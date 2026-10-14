@@ -943,4 +943,16 @@ export const en: Dictionary = {
     "Performance trends depend on real series that do not exist yet. No sample chart is shown.",
   "real.training.reason":
     "The training plan depends on a real diagnosis that does not exist yet. No sample plan is shown.",
+  "real.dna.description":
+    "Signals measured in your processed matches. No comparison with other players and no score.",
+  "real.dna.basis":
+    "Based on {matches} match(es), {rounds} sampled rounds, {partial} partially read. Each value is the mean of the signal over the matches where it was observed.",
+  "real.dna.insufficient":
+    "Insufficient sample: {matches} of a minimum {minimum} matches. The values below are real but do not yet describe a stable profile.",
+  "real.dna.radarSub":
+    "Mean of the observed signals in each dimension (0–100; lower-is-better signals enter as their complement). Only dimensions with an observed signal are shown.",
+  "real.dna.notObserved": "Not observed",
+  "real.dna.inMatches": "in {n} match(es)",
+  "real.dna.empty":
+    "No processed match with persisted signals yet. Player DNA appears here after the first completed processing.",
 };
