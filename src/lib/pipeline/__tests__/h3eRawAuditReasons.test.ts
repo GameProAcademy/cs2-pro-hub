@@ -70,10 +70,20 @@ describe("RAW audit reasons", () => {
     expect((await post({ jobId: "x" })).status).toBe(400);
   });
 
-  it("returns reasons, failing gates and mapping counts from a sealed manifest only", async () => {
+  it("returns reasons, failing gates, mapping counts, and parser identity from a sealed manifest only", async () => {
     state.manifest = sealed({
       raw_status: "BLOCKED",
       raw_block_reasons: ["unmapped_but_available:player_props.X", "gate:G-03"],
+      manifest: {
+        parser_name: "demoparser2",
+        parser_version: "0.42.0",
+        parser_revision: "git:abc123",
+        contract_version: 1,
+        demo_sha256: "a".repeat(64),
+        file_size: 12345,
+      },
+      audit_surface_version: 2,
+      evidence_version: 1,
       gates: [
         { gate: "G-01", status: "PASS" },
         { gate: "G-03", status: "BLOCKED" },
@@ -89,8 +99,41 @@ describe("RAW audit reasons", () => {
       reasons: ["unmapped_but_available:player_props.X", "gate:G-03"],
       failingGates: ["G-03"],
       mappingStatusCounts: { MAPPED: 2, UNMAPPED_BUT_AVAILABLE: 1 },
+      parserIdentity: {
+        name: "demoparser2",
+        version: "0.42.0",
+        revision: "git:abc123",
+        contractVersion: 1,
+        demoSha256: "a".repeat(64),
+        fileSize: 12345,
+        auditSurfaceVersion: 2,
+        evidenceVersion: 1,
+      },
     });
+    expect(body.parserIdentity.auditEvidenceDigest).toBe(state.manifest["audit_evidence_digest"]);
     expect(JSON.stringify(body)).not.toContain("manifest.json");
+    expect(JSON.stringify(body)).not.toContain("Bearer");
+  });
+
+  it("returns null parser identity fields when the sealed historical manifest did not record them", async () => {
+    state.manifest = sealed({
+      raw_status: "BLOCKED",
+      raw_block_reasons: ["gate:G-03"],
+      manifest: {},
+      gates: [{ gate: "G-03", status: "BLOCKED" }],
+      field_mappings: [],
+    });
+    const body = await (await post({ jobId: JOB })).json();
+    expect(body.parserIdentity).toMatchObject({
+      name: null,
+      version: null,
+      revision: null,
+      contractVersion: null,
+      demoSha256: null,
+      fileSize: null,
+      auditSurfaceVersion: null,
+      evidenceVersion: null,
+    });
   });
 
   it("refuses a manifest whose evidence digest or identity does not match", async () => {
