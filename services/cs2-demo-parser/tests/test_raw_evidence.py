@@ -542,3 +542,41 @@ def test_public_fixture_fields_are_classified_raw_only_and_unknown_ones_still_bl
     again = {item["raw_field"]: item["status"] for item in mapping_inventory(raw)}
     assert again["rank_update.future_rank_field"] == "UNMAPPED_BUT_AVAILABLE"
     assert again["player_footstep.future_step_field"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def _app_stable(value):
+    """The APP's stableRawArtifactJson, applied to what JSON carried (src/lib/pipeline/rawArtifactContract.ts)."""
+    from raw_artifact import _stable_portable
+    return _stable_portable(json.loads(json.dumps(value)))
+
+
+def test_forensic_v2_contract_digest_is_reproducible_by_the_app_after_json_round_trip():
+    # Production jobs published contracts whose digest no consumer could reproduce: it was
+    # computed before _safe turned 0.0 into 0 (coverage_ratio, tick values) and with Python
+    # float text. The digest must hold over the published, JSON-carried contract.
+    import hashlib
+    from forensic_audit import build_tick_coverage
+    raw = material()
+    # What production carries: the tick audit without an authority (coverage_ratio 0.0), and
+    # a float whose Python and ECMAScript texts differ.
+    raw["full_tick_audit"] = build_tick_coverage(batches=[], playback_ticks=6400)
+    raw["full_tick_audit"]["probe_small_float"] = 1e-07
+    final = finalize_evidence(build_raw_evidence(raw, output()),
+                              parser={"name": "demoparser2", "version": "0.42.0", "revision": "git:a"},
+                              contract_version=1, demo_sha256="a" * 64, file_size=99)
+    published = json.loads(json.dumps(final))["forensic_contract_v2"]
+    unsigned = {key: value for key, value in published.items()
+                if key not in {"deterministic_digest", "unsigned_contract_digest", "final_contract_digest"}}
+    expected = hashlib.sha256(_app_stable(unsigned)).hexdigest()
+    assert published["deterministic_digest"] == expected
+    assert published["unsigned_contract_digest"] == expected
+
+
+def test_every_canonical_mapping_names_its_persisted_target():
+    # The APP refuses a CANONICAL (v1 MAPPED) row without both an app field and a persisted
+    # target (forensic_v2_canonical_mapping_missing). header.demo_version_name had none.
+    from raw_evidence import MAPPED_RAW_FIELDS
+    for raw_field, (app_field, canonical_field, status) in MAPPED_RAW_FIELDS.items():
+        if status == "MAPPED":
+            assert app_field and canonical_field, raw_field
+    assert MAPPED_RAW_FIELDS["header.demo_version_name"][1] == "matches.game_version"

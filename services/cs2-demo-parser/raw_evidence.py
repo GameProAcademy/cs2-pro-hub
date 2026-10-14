@@ -179,8 +179,10 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "player.name": ("players[].name", "CanonicalParticipant.nicknameSnapshot", "MAPPED"),
     # adapter.normalize_players: team_number 2/3 -> players[].team -> CanonicalParticipant.team.
     "player.team_number": ("players[].team", "CanonicalParticipant.team", "MAPPED"),
-    # adapter.normalize_header: demo_version_name -> header.game_version (app metadata, not Canonical).
-    "header.demo_version_name": ("header.game_version", None, "MAPPED"),
+    # adapter.normalize_header: demo_version_name -> header.game_version, persisted by the app
+    # as matches.game_version (src/lib/pipeline/persistence.server.ts). A MAPPED field must name
+    # its persisted target: the app's v2 validator refuses a CANONICAL row without one.
+    "header.demo_version_name": ("header.game_version", "matches.game_version", "MAPPED"),
     "round_start.tick": ("rounds[].start_tick", "CanonicalRound.startTick", "DERIVED"),
     "round_end.tick": ("rounds[].end_tick", "CanonicalRound.endTick", "DERIVED"),
     "round_end.winner": ("rounds[].winner_side", "CanonicalRound.winningSide", "MAPPED"),
@@ -805,6 +807,11 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
     evidence["audit_surface_version"] = AUDIT_SURFACE_VERSION
     forensic_v2 = evidence.get("forensic_contract_v2")
     if isinstance(forensic_v2, dict):
+        # The contract is published in its JSON-safe form (finalize_evidence runs _safe over the
+        # whole evidence: 0.0 -> 0, NaN -> null, numpy scalars -> Python). Its digests must be
+        # computed over exactly that form, or no consumer can ever reproduce them.
+        forensic_v2 = _safe(forensic_v2)
+        evidence["forensic_contract_v2"] = forensic_v2
         forensic_v2["parser"] = {"name": parser.get("name"), "version": parser.get("version")}
         for gate in forensic_v2.get("gates") or []:
             if gate.get("gate") == "RAW-V2-01-parser-identity":
@@ -812,7 +819,10 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
                 gate.update({"status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else ["parser_identity_mismatch"]})
         unsigned = {key: value for key, value in forensic_v2.items()
                     if key not in {"deterministic_digest", "unsigned_contract_digest", "final_contract_digest"}}
-        digest = deterministic_digest(unsigned)
+        # The APP recomputes this digest after a JSON round trip (ECMAScript number text,
+        # UTF-16 key order), so it is computed over the same portable canonical form.
+        from raw_artifact import _stable_portable
+        digest = hashlib.sha256(_stable_portable(unsigned)).hexdigest()
         forensic_v2["unsigned_contract_digest"] = digest
         forensic_v2["deterministic_digest"] = digest
     return evidence
