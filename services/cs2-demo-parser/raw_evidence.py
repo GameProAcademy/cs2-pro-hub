@@ -75,6 +75,42 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "begin_new_match": frozenset({"__event__", "tick"}),
     "round_announce_warmup": frozenset({"__event__", "tick"}),
     "hltv_fixed": frozenset({"__event__", "fov", "offset", "phi", "posx", "posy", "posz", "target", "theta", "tick"}),
+    # Observed in the pinned public fixture (LaihoE/demoparser test_demo.dem @4131a4fc, the
+    # CI end-to-end demo) and reviewed on 2026-10-14. None is read by adapter.py or the
+    # Canonical mapping (round_end.reason and round_mvp.reason included: winning side
+    # comes from round_end.winner): RAW only, never promoted by their presence.
+    "bomb_begindefuse": frozenset({"haskit"}),
+    "buytime_ended": frozenset({"__event__", "tick"}),
+    "cs_win_panel_round": frozenset({
+        "__event__", "final_event", "funfact_data1", "funfact_data2", "funfact_data3",
+        "funfact_player", "funfact_token", "show_timer_attack", "show_timer_defend", "tick",
+        "timer_time",
+    }),
+    "item_equip": frozenset({
+        "canzoom", "defindex", "hassilencer", "hastracers", "ispainted", "issilenced", "item", "weptype",
+    }),
+    # Deaths of non-player entities (e.g. chickens): not a CanonicalEvent kill.
+    "other_death": frozenset({
+        "__event__", "attacker_name", "attacker_steamid", "attackerblind", "headshot", "noscope",
+        "otherid", "othertype", "penetrated", "thrusmoke", "tick", "weapon", "weapon_fauxitemid",
+        "weapon_itemid", "weapon_originalowner_xuid",
+    }),
+    "player_blind": frozenset({"entityid"}),
+    "player_disconnect": frozenset({
+        "PlayerID", "__event__", "name", "networkid", "reason", "tick", "user_name", "user_steamid", "xuid",
+    }),
+    "player_footstep": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    "player_jump": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    "rank_update": frozenset({
+        "__event__", "num_wins", "rank_change", "rank_new", "rank_old", "rank_type_id", "tick",
+        "user_name", "user_steamid",
+    }),
+    "round_end": frozenset({"legacy", "message", "nomusic", "player_count", "reason"}),
+    "round_mvp": frozenset({"musickitid", "musickitmvps", "nomusic", "reason", "value"}),
+    "round_officially_ended": frozenset({"__event__", "tick"}),
+    "round_poststart": frozenset({"__event__", "tick"}),
+    "round_prestart": frozenset({"__event__", "tick"}),
+    "round_start": frozenset({"fraglimit", "objective", "timelimit"}),
     "bomb_defused": frozenset({"c4"}),
     "bomb_dropped": frozenset({"entindex"}),
     "bomb_exploded": frozenset({"c4"}),

@@ -426,3 +426,119 @@ def test_fields_observed_in_production_on_2026_10_14_are_classified_and_unknown_
     again = {item["raw_field"]: item["status"] for item in mapping_inventory(raw)}
     assert again["hltv_fixed.future_camera_field"] == "UNMAPPED_BUT_AVAILABLE"
     assert again["player.future_player_field"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+# Every UNMAPPED_BUT_AVAILABLE field the RAW audit reported for the pinned public fixture
+# (LaihoE/demoparser test_demo.dem @4131a4fc, sha256 84a1a419...; the CI end-to-end demo),
+# measured locally with demoparser2 0.42.0 on 2026-10-14.
+PUBLIC_FIXTURE_UNMAPPED = (
+    "bomb_begindefuse.haskit",
+    "buytime_ended.__event__",
+    "buytime_ended.tick",
+    "cs_win_panel_round.__event__",
+    "cs_win_panel_round.final_event",
+    "cs_win_panel_round.funfact_data1",
+    "cs_win_panel_round.funfact_data2",
+    "cs_win_panel_round.funfact_data3",
+    "cs_win_panel_round.funfact_player",
+    "cs_win_panel_round.funfact_token",
+    "cs_win_panel_round.show_timer_attack",
+    "cs_win_panel_round.show_timer_defend",
+    "cs_win_panel_round.tick",
+    "cs_win_panel_round.timer_time",
+    "item_equip.canzoom",
+    "item_equip.defindex",
+    "item_equip.hassilencer",
+    "item_equip.hastracers",
+    "item_equip.ispainted",
+    "item_equip.issilenced",
+    "item_equip.item",
+    "item_equip.weptype",
+    "other_death.__event__",
+    "other_death.attacker_name",
+    "other_death.attacker_steamid",
+    "other_death.attackerblind",
+    "other_death.headshot",
+    "other_death.noscope",
+    "other_death.otherid",
+    "other_death.othertype",
+    "other_death.penetrated",
+    "other_death.thrusmoke",
+    "other_death.tick",
+    "other_death.weapon",
+    "other_death.weapon_fauxitemid",
+    "other_death.weapon_itemid",
+    "other_death.weapon_originalowner_xuid",
+    "player_blind.entityid",
+    "player_disconnect.PlayerID",
+    "player_disconnect.__event__",
+    "player_disconnect.name",
+    "player_disconnect.networkid",
+    "player_disconnect.reason",
+    "player_disconnect.tick",
+    "player_disconnect.user_name",
+    "player_disconnect.user_steamid",
+    "player_disconnect.xuid",
+    "player_footstep.__event__",
+    "player_footstep.tick",
+    "player_footstep.user_name",
+    "player_footstep.user_steamid",
+    "player_jump.__event__",
+    "player_jump.tick",
+    "player_jump.user_name",
+    "player_jump.user_steamid",
+    "rank_update.__event__",
+    "rank_update.num_wins",
+    "rank_update.rank_change",
+    "rank_update.rank_new",
+    "rank_update.rank_old",
+    "rank_update.rank_type_id",
+    "rank_update.tick",
+    "rank_update.user_name",
+    "rank_update.user_steamid",
+    "round_end.legacy",
+    "round_end.message",
+    "round_end.nomusic",
+    "round_end.player_count",
+    "round_end.reason",
+    "round_mvp.musickitid",
+    "round_mvp.musickitmvps",
+    "round_mvp.nomusic",
+    "round_mvp.reason",
+    "round_mvp.value",
+    "round_officially_ended.__event__",
+    "round_officially_ended.tick",
+    "round_poststart.__event__",
+    "round_poststart.tick",
+    "round_prestart.__event__",
+    "round_prestart.tick",
+    "round_start.fraglimit",
+    "round_start.objective",
+    "round_start.timelimit",
+)
+
+
+def test_public_fixture_fields_are_classified_raw_only_and_unknown_ones_still_block():
+    from raw_evidence import mapping_inventory
+    raw = {"header": {}, "players": [{}], "event_tables": {}, "tick_rows": [], "grenade_rows": [], "round_rows": []}
+    for field in PUBLIC_FIXTURE_UNMAPPED:
+        family, native = field.split(".", 1)
+        if native == "__event__":
+            raw["event_tables"].setdefault(family, [{}])
+        else:
+            raw["event_tables"].setdefault(family, [{}])[0][native] = 1
+    classified = {item["raw_field"]: item for item in mapping_inventory(raw)}
+    for field in PUBLIC_FIXTURE_UNMAPPED:
+        item = classified[field]
+        # Reviewed as RAW only: none of them is read by the adapter or the Canonical mapping.
+        assert item["status"] == "RAW_ONLY_INTENTIONAL", (field, item["status"])
+        assert item["reason"], field
+        assert item.get("canonical_field") in (None, ""), field
+    # The winning side still comes from round_end.winner, not from the newly reviewed round_end.reason.
+    raw["event_tables"]["round_end"][0]["winner"] = 3
+    assert {i["raw_field"]: i for i in mapping_inventory(raw)}["round_end.winner"]["canonical_field"] == "CanonicalRound.winningSide"
+    raw["event_tables"]["rank_update"][0]["future_rank_field"] = 1
+    raw["event_tables"]["player_footstep"][0]["future_step_field"] = 1
+    again = {item["raw_field"]: item["status"] for item in mapping_inventory(raw)}
+    assert again["rank_update.future_rank_field"] == "UNMAPPED_BUT_AVAILABLE"
+    assert again["player_footstep.future_step_field"] == "UNMAPPED_BUT_AVAILABLE"
