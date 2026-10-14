@@ -7,6 +7,12 @@ than MAX_AGE_SECONDS, from the future, without its digest, or from a database
 whose recorder is not the expected one proves nothing (every gate NOT_PROVEN).
 `canonical_uncontaminated` uses STRICT_PROVENANCE: any pre-attestation canonical row fails closed;
 missing evidence remains NOT_PROVEN (docs/H3E_CANONICAL_CONTAMINATION_RULE.md).
+
+Gate semantics are versioned (GATE_SEMANTICS, docs/H3E_GATE_SEMANTICS_V2.md). Snapshot schema 4
+carries the v2 evidence: `attempt_9_absent` asks whether every job at attempt >= 9 is covered by
+an owner authorization bound to its identity; `metrics_uncontaminated`, `features_uncontaminated`
+and `canonical_uncontaminated` ask whether every row has verified lineage. The v1 measure is
+still reported in each gate's evidence (`v1`), so no historical verdict is hidden or rewritten.
 """
 from __future__ import annotations
 
@@ -17,7 +23,13 @@ from typing import Any, Mapping
 GATES = ("db_git_digest_parity", "identity_validation", "retention_guard", "attempt_9_absent",
          "metrics_uncontaminated", "features_uncontaminated", "canonical_uncontaminated",
          "provenance_verified", "hmac_configured", "oidc_operational")
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
+GATE_SEMANTICS = {
+    "attempt_9_absent": "AUTHORIZED_ATTEMPTS_V2",
+    "metrics_uncontaminated": "VERIFIED_LINEAGE_V2",
+    "features_uncontaminated": "VERIFIED_LINEAGE_V2",
+    "canonical_uncontaminated": "STRICT_PROVENANCE_VERIFIED_LINEAGE_V2",
+}
 VERIFICATION_METHOD = "GITHUB_ACTIONS_SIGNED_ATTESTATION_V3"
 INVENTORY_DIGEST = "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1"
 MATRIX_DIGEST = "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702"
@@ -75,6 +87,47 @@ def _quarantine_problem(quarantine: Any, rows: int, violations: int) -> tuple[st
     return None
 
 
+def _attempts(attempts: Mapping[str, Any]) -> dict[str, Any]:
+    """AUTHORIZED_ATTEMPTS_V2. v1 ("no job at attempt >= 9") is reported, never decisive."""
+    keys = ("jobs_attempt_9_or_more", "max_attempt_number", "jobs_attempt_9_or_more_authorized",
+            "forensic_replays_attempt_9_or_more", "authorization_rows", "authorization_rows_not_matching_job")
+    n = {k: _count(attempts.get(k)) for k in keys}
+    raw = {k: attempts.get(k) for k in keys}
+    if any(v is None for v in n.values()):
+        return _status("NOT_PROVEN", "ATTEMPT_EVIDENCE_MISSING_OR_CONTRADICTORY", **raw)
+    nine, top, authorized = n["jobs_attempt_9_or_more"], n["max_attempt_number"], n["jobs_attempt_9_or_more_authorized"]
+    rows, stale = n["authorization_rows"], n["authorization_rows_not_matching_job"]
+    if ((nine == 0) != (top < 9) or authorized > nine or n["forensic_replays_attempt_9_or_more"] > nine
+            or stale > rows or authorized + stale > rows):
+        return _status("NOT_PROVEN", "ATTEMPT_EVIDENCE_MISSING_OR_CONTRADICTORY", **raw)
+    evidence = {**raw, "semantics": GATE_SEMANTICS["attempt_9_absent"],
+                "v1": {"status": "VERIFIED" if nine == 0 else "FAIL",
+                       "reason": "NO_JOB_AT_ATTEMPT_9_OR_MORE" if nine == 0 else "JOBS_AT_ATTEMPT_9_OR_MORE"}}
+    if stale:
+        return _status("FAIL", "AUTHORIZATION_NO_LONGER_MATCHES_ITS_JOB", **evidence)
+    if nine > authorized:
+        return _status("FAIL", "UNAUTHORIZED_JOBS_AT_ATTEMPT_9_OR_MORE", unauthorized=nine - authorized, **evidence)
+    if nine == 0:
+        return _status("VERIFIED", "NO_JOB_AT_ATTEMPT_9_OR_MORE", **evidence)
+    return _status("VERIFIED", "EVERY_JOB_AT_ATTEMPT_9_OR_MORE_AUTHORIZED", **evidence)
+
+
+def _derived(derived: Mapping[str, Any], key: str) -> dict[str, Any]:
+    """VERIFIED_LINEAGE_V2: every derived row belongs to a match with verified lineage."""
+    rows, clean = _count(derived.get(key)), _count(derived.get(f"{key}_with_verified_lineage"))
+    raw = {"rows": derived.get(key), "rows_with_verified_lineage": derived.get(f"{key}_with_verified_lineage")}
+    if rows is None or clean is None or clean > rows:
+        return _status("NOT_PROVEN", "ROW_COUNT_MISSING", **raw)
+    evidence = {**raw, "semantics": GATE_SEMANTICS["metrics_uncontaminated"],
+                "v1": {"status": "VERIFIED" if rows == 0 else "FAIL",
+                       "reason": "NO_ROWS" if rows == 0 else "ROWS_WITHOUT_PROVENANCE_LINK"}}
+    if rows == 0:
+        return _status("VERIFIED", "NO_ROWS", **evidence)
+    if clean < rows:
+        return _status("FAIL", "ROWS_WITHOUT_VERIFIED_LINEAGE", rows_without_lineage=rows - clean, **evidence)
+    return _status("VERIFIED", "EVERY_ROW_HAS_VERIFIED_LINEAGE", **evidence)
+
+
 def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[str, Any]:
     """STRICT_PROVENANCE: VERIFIED only when no canonical row is eligible.
 
@@ -108,14 +161,24 @@ def _canonical(canonical: Mapping[str, Any], measures: dict[str, Any]) -> dict[s
     eligible_before = _count(q.get("unquarantined_created_before_first_verified_provenance"))
     eligible = _count(q.get("unquarantined_with_status"))
     quarantined = _count(q.get("quarantined_with_status"))
-    measures = {**measures, "quarantined_rows": quarantined, "eligible_rows": eligible}
+    lineage = _count(canonical.get("unquarantined_with_status_and_verified_lineage"))
+    measures = {**measures, "quarantined_rows": quarantined, "eligible_rows": eligible,
+                "eligible_rows_with_verified_lineage": lineage,
+                "semantics": GATE_SEMANTICS["canonical_uncontaminated"],
+                # v1 (schema 3) counted every eligible row as contaminated, lineage or not.
+                "v1": {"eligible_rows_counted_as_contaminated": eligible}}
+    if lineage is None or eligible is None or lineage > eligible or (eligible_before and lineage > eligible - eligible_before):
+        return _status("NOT_PROVEN", "CANONICAL_LINEAGE_EVIDENCE_MISSING", **measures)
     if eligible_before:
         return _status("FAIL", "UNVERIFIED_CANONICAL_ROWS_PRECEDE_PROVENANCE", **measures)
-    if eligible:
-        return _status("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK", **measures)
+    if eligible > lineage:
+        return _status("FAIL", "CANONICAL_ROWS_WITHOUT_VERIFIED_LINEAGE", rows_without_lineage=eligible - lineage,
+                       **measures)
     if problem:
         # A broken guard voids the exclusion even when no row is quarantined today.
         return _status(*problem, **measures)
+    if eligible:
+        return _status("VERIFIED", "ELIGIBLE_ROWS_HAVE_VERIFIED_LINEAGE", **measures)
     if quarantined:
         return _status("VERIFIED", "ONLY_QUARANTINED_CANONICAL_ROWS", **measures)
     return _status("VERIFIED", "NO_CANONICAL_ROWS", **measures)
@@ -206,23 +269,11 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str,
     gates["db_git_digest_parity"] = (_status("VERIFIED", "RELEASE_DIGESTS_EQUAL_GIT_PINS") if parity
                                      else _status("FAIL", "RELEASE_DIFFERS_FROM_GIT_PINS", release=release))
 
-    attempts = _section(s, "attempts")
-    nine, top = _count(attempts.get("jobs_attempt_9_or_more")), _count(attempts.get("max_attempt_number"))
-    if nine is None or top is None or (nine == 0) != (top < 9):
-        gates["attempt_9_absent"] = _status("NOT_PROVEN", "ATTEMPT_EVIDENCE_MISSING_OR_CONTRADICTORY",
-                                            count=attempts.get("jobs_attempt_9_or_more"),
-                                            max_attempt_number=attempts.get("max_attempt_number"))
-    else:
-        gates["attempt_9_absent"] = (_status("VERIFIED", "NO_JOB_AT_ATTEMPT_9_OR_MORE", max_attempt_number=top)
-                                     if nine == 0 else _status("FAIL", "JOBS_AT_ATTEMPT_9_OR_MORE", count=nine))
+    gates["attempt_9_absent"] = _attempts(_section(s, "attempts"))
 
     derived = _section(s, "derived_rows")
     for gate, key in (("metrics_uncontaminated", "match_metrics"), ("features_uncontaminated", "match_features")):
-        n = _count(derived.get(key))
-        # No row links back to a VERIFIED provenance, so any row is unprovable.
-        gates[gate] = (_status("NOT_PROVEN", "ROW_COUNT_MISSING", rows=derived.get(key)) if n is None
-                       else _status("VERIFIED", "NO_ROWS") if n == 0
-                       else _status("FAIL", "ROWS_WITHOUT_PROVENANCE_LINK", rows=n))
+        gates[gate] = _derived(derived, key)
 
     identity = _section(s, "execution_identity")
     conflicts, ledger = _count(identity.get("conflicting_executions")), _count(identity.get("ledger_rows"))
@@ -253,6 +304,7 @@ def evaluate(snapshot: Any, *, now: float, expected_recorder_md5: str,
 
     gates.update(_provenance(s.get("provenance"), active_runtime))
 
-    return {"gates": gates, "snapshot_problem": None, "snapshot_digest": s.get("digest"),
+    return {"gates": gates, "gate_semantics": dict(GATE_SEMANTICS), "snapshot_problem": None,
+            "snapshot_digest": s.get("digest"),
             "snapshot_at": s.get("snapshot_at"), "database": dict(database),
             "verified": sum(1 for g in gates.values() if g["status"] == "VERIFIED")}

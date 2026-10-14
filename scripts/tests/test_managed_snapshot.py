@@ -16,16 +16,22 @@ import managed_snapshot as ms  # noqa: E402
 
 RECORDER = "fe3250af2b461f03f459adf36b43ec21"
 MANAGED_2026_10_13 = {
-    "attempts": {"jobs_attempt_9_or_more": 0, "max_attempt_number": 8},
+    # Schema 4 (gate semantics v2): the schema-3 observation of 2026-10-13 plus the v2 fields,
+    # all zero then (no registry row, no derived row, no eligible row with lineage).
+    "attempts": {"jobs_attempt_9_or_more": 0, "max_attempt_number": 8, "jobs_attempt_9_or_more_authorized": 0,
+                 "forensic_replays_attempt_9_or_more": 0, "authorization_rows": 0,
+                 "authorization_rows_not_matching_job": 0},
     "canonical": {"first_verified_provenance_at": "2026-10-05T03:58:32.676222+00:00", "matches_by_status": {"partial": 1},
                   "matches_created_before_first_verified_provenance": 1, "matches_with_status": 1,
+                  "unquarantined_with_status_and_verified_lineage": 0,
                   # Schema v3: the quarantine exists (migration applied) but holds no row yet.
                   "quarantine": {"quarantined_matches": 0, "quarantined_with_status": 0, "unquarantined_with_status": 1,
                                  "unquarantined_created_before_first_verified_provenance": 1,
                                  "quarantined_completed": 0, "quarantined_derived_rows": 0,
                                  "guards": {g: True for g in ms.QUARANTINE_GUARDS}}},
     "database": {"migration_head": "20261012100000", "name": "postgres", "recorder_md5": RECORDER, "server_version": "17.6"},
-    "derived_rows": {"match_features": 0, "match_metrics": 0},
+    "derived_rows": {"match_features": 0, "match_metrics": 0, "match_features_with_verified_lineage": 0,
+                     "match_metrics_with_verified_lineage": 0},
     "digest": "f8293b7c4c6ee3ae8bfd40928d1b0bbd027748936439d68421318bbcfb73418a",
     "execution_identity": {"conflicting_executions": 0, "ledger_rows": 0},
     "mapping_release": {"authoritative_releases": 1, "authorized_counts": [0], "generic_counts": [0],
@@ -34,7 +40,7 @@ MANAGED_2026_10_13 = {
     "retention": {"active_demos": 0, "deletion_attempts": 0, "deletion_eligible": 12, "deletion_failed": 0,
                   "deletion_metadata_mismatch": 1, "deletion_verified": 0, "expired_demos": 12, "terminal_demos": 12,
                   "total_demo_jobs": 12},
-    "schema_version": 3, "snapshot_at": "2026-10-13T03:25:01.079304Z",
+    "schema_version": 4, "snapshot_at": "2026-10-13T03:25:01.079304Z",
     # The newest of the 3 VERIFIED rows observed read-only (historical deployment 1b5778de).
     "provenance": {"verified_rows": 3, "latest": [{
         "created_at": "2026-10-06T09:27:45.784091Z", "deployment_id": "1b5778de-3eaf-46f1-9ea5-cba381d95313",
@@ -212,11 +218,33 @@ def test_strict_provenance_passes_only_when_no_canonical_row_exists():
     assert no_provenance["status"] == "VERIFIED"
 
 
-def test_a_canonical_row_after_the_first_provenance_still_fails_for_lack_of_a_link():
+def test_a_canonical_row_after_the_first_provenance_still_fails_without_verified_lineage():
     # The only VERIFIED provenance may belong to another runtime; nothing links the row to it.
     result = canonical_case(matches_created_before_first_verified_provenance=0,
                             quarantine=quarantine(unquarantined_created_before_first_verified_provenance=0))
-    assert (result["status"], result["reason"]) == ("FAIL", "CANONICAL_ROWS_WITHOUT_PROVENANCE_LINK")
+    assert (result["status"], result["reason"]) == ("FAIL", "CANONICAL_ROWS_WITHOUT_VERIFIED_LINEAGE")
+    assert result["evidence"]["v1"] == {"eligible_rows_counted_as_contaminated": 1}
+
+
+def test_v2_an_eligible_row_with_verified_lineage_is_clean():
+    result = canonical_case(matches_created_before_first_verified_provenance=0,
+                            unquarantined_with_status_and_verified_lineage=1,
+                            quarantine=quarantine(unquarantined_created_before_first_verified_provenance=0))
+    assert (result["status"], result["reason"]) == ("VERIFIED", "ELIGIBLE_ROWS_HAVE_VERIFIED_LINEAGE")
+    assert result["evidence"]["semantics"] == "STRICT_PROVENANCE_VERIFIED_LINEAGE_V2"
+    # A broken guard still voids it, lineage or not.
+    broken = canonical_case(matches_created_before_first_verified_provenance=0,
+                            unquarantined_with_status_and_verified_lineage=1,
+                            quarantine=quarantine(unquarantined_created_before_first_verified_provenance=0,
+                                                  guards={g: False for g in ms.QUARANTINE_GUARDS}))
+    assert broken["status"] == "FAIL"
+
+
+def test_v2_lineage_cannot_excuse_a_row_that_precedes_provenance_or_exceed_the_rows():
+    # The 2026-09-11 row precedes every VERIFIED provenance: lineage is impossible, and a claim of it contradicts.
+    assert canonical_case(unquarantined_with_status_and_verified_lineage=1)["status"] == "NOT_PROVEN"
+    for value in (None, 2, -1, True, "1"):
+        assert canonical_case(unquarantined_with_status_and_verified_lineage=value)["status"] == "NOT_PROVEN", value
 
 
 # The partial row of 2026-09-11 once registered in public.canonical_match_quarantine.
@@ -324,7 +352,7 @@ def test_the_sql_is_read_only_and_least_privilege():
 
 
 def test_the_migration_is_exactly_the_reviewed_sql():
-    migration = ROOT / "supabase/migrations/20261014120100_h3e_predem_managed_snapshot_v3.sql"
+    migration = ROOT / "supabase/migrations/20261014220100_h3e_predem_managed_snapshot_v4.sql"
     assert migration.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
 
 
@@ -407,3 +435,84 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
     # The fixture of the active runtime is exactly what the gate will expect.
     assert {k: runtime[k] for k in ACTIVE} == ACTIVE
+
+
+# ----- gate semantics v2 (docs/H3E_GATE_SEMANTICS_V2.md)
+
+def attempts_case(**changes):
+    snapshot = copy.deepcopy(MANAGED_2026_10_13)
+    snapshot["attempts"].update(changes)
+    return run(snapshot)["gates"]["attempt_9_absent"]
+
+
+def test_v2_the_managed_attempts_of_2026_10_14_fail_until_the_owner_records_authorizations():
+    # Read-only 2026-10-14: jobs e3f93688 (attempt 9) and 4b5e3530 (attempt 10), no registry row.
+    result = attempts_case(jobs_attempt_9_or_more=2, max_attempt_number=10)
+    assert (result["status"], result["reason"]) == ("FAIL", "UNAUTHORIZED_JOBS_AT_ATTEMPT_9_OR_MORE")
+    assert result["evidence"]["unauthorized"] == 2
+    assert result["evidence"]["v1"] == {"status": "FAIL", "reason": "JOBS_AT_ATTEMPT_9_OR_MORE"}
+    assert result["evidence"]["semantics"] == "AUTHORIZED_ATTEMPTS_V2"
+
+
+def test_v2_attempts_are_verified_only_when_every_one_is_authorized_by_identity():
+    ok = attempts_case(jobs_attempt_9_or_more=2, max_attempt_number=10, jobs_attempt_9_or_more_authorized=2,
+                       authorization_rows=2)
+    assert (ok["status"], ok["reason"]) == ("VERIFIED", "EVERY_JOB_AT_ATTEMPT_9_OR_MORE_AUTHORIZED")
+    assert ok["evidence"]["v1"]["status"] == "FAIL"  # the v1 verdict stays visible
+    partial = attempts_case(jobs_attempt_9_or_more=2, max_attempt_number=10, jobs_attempt_9_or_more_authorized=1,
+                            authorization_rows=1)
+    assert (partial["status"], partial["reason"]) == ("FAIL", "UNAUTHORIZED_JOBS_AT_ATTEMPT_9_OR_MORE")
+    drifted = attempts_case(jobs_attempt_9_or_more=2, max_attempt_number=10, jobs_attempt_9_or_more_authorized=2,
+                            authorization_rows=3, authorization_rows_not_matching_job=1)
+    assert (drifted["status"], drifted["reason"]) == ("FAIL", "AUTHORIZATION_NO_LONGER_MATCHES_ITS_JOB")
+
+
+def test_v2_contradictory_or_missing_attempt_evidence_is_not_proven():
+    for changes in (dict(jobs_attempt_9_or_more_authorized=1),                       # more authorized than jobs
+                    dict(forensic_replays_attempt_9_or_more=1),
+                    dict(authorization_rows_not_matching_job=1),                     # stale rows > rows
+                    dict(jobs_attempt_9_or_more=1, max_attempt_number=9, jobs_attempt_9_or_more_authorized=1),
+                    dict(authorization_rows=None), dict(jobs_attempt_9_or_more_authorized=False)):
+        assert attempts_case(**changes)["status"] == "NOT_PROVEN", changes
+
+
+def derived_case(key, **values):
+    snapshot = copy.deepcopy(MANAGED_2026_10_13)
+    snapshot["derived_rows"].update(values)
+    return run(snapshot)["gates"][key]
+
+
+def test_v2_derived_rows_need_verified_lineage():
+    for gate, key in (("metrics_uncontaminated", "match_metrics"), ("features_uncontaminated", "match_features")):
+        clean = derived_case(gate, **{key: 10, f"{key}_with_verified_lineage": 10})
+        assert (clean["status"], clean["reason"]) == ("VERIFIED", "EVERY_ROW_HAS_VERIFIED_LINEAGE")
+        assert clean["evidence"]["v1"] == {"status": "FAIL", "reason": "ROWS_WITHOUT_PROVENANCE_LINK"}
+        dirty = derived_case(gate, **{key: 10, f"{key}_with_verified_lineage": 9})
+        assert (dirty["status"], dirty["reason"]) == ("FAIL", "ROWS_WITHOUT_VERIFIED_LINEAGE")
+        assert dirty["evidence"]["rows_without_lineage"] == 1
+        for bad_value in (11, None, -1, True):
+            assert derived_case(gate, **{key: 10, f"{key}_with_verified_lineage": bad_value})["status"] == "NOT_PROVEN"
+
+
+def test_v2_semantics_are_declared_in_every_evaluation():
+    result = run(MANAGED_2026_10_13)
+    assert result["gate_semantics"] == ms.GATE_SEMANTICS
+    assert set(ms.GATE_SEMANTICS) == {"attempt_9_absent", "metrics_uncontaminated", "features_uncontaminated",
+                                      "canonical_uncontaminated"}
+
+
+def test_v2_sql_measures_lineage_through_every_link_and_excludes_quarantine():
+    sql = (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+    lineage = sql[sql.index("WITH lineage AS ("):sql.index("body AS (")]
+    for link in ("j.upload_id = m.upload_id", "j.status = 'processed'", "j.demo_sha256 = m.content_fingerprint",
+                 "a.audit_status = 'approved'", "a.status = 'ready'", "f.event_type = 'EXECUTION_FINISHED'",
+                 "f.outcome_code = 'PARSE_SUCCEEDED'", "p.status = 'VERIFIED'",
+                 "p.build_revision = 'git:' || f.worker_build_commit", "p.semantic_revision = f.parser_revision",
+                 "p.created_at <= f.event_at", "public.canonical_match_quarantine"):
+        assert link in lineage, link
+    assert "'schema_version', 4" in sql
+    # Every schema-3 measure is still emitted.
+    v3 = (ROOT / "supabase/migrations/20261014120100_h3e_predem_managed_snapshot_v3.sql").read_text()
+    import re as _re
+    for key in set(_re.findall(r"'([a-z_0-9]+)', ", v3)):
+        assert f"'{key}', " in sql, key

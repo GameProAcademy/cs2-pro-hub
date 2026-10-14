@@ -428,7 +428,8 @@ def s_quarantine_snapshot():
     import managed_snapshot as ms  # noqa: PLC0415
     doc = js("select public.h3e_predem_managed_snapshot()")
     q = doc["canonical"]["quarantine"]
-    assert doc["schema_version"] == ms.SCHEMA_VERSION == 3, doc["schema_version"]
+    # The quarantine section exists since schema 3 and is kept unchanged by schema 4 (gate semantics v2).
+    assert doc["schema_version"] == ms.SCHEMA_VERSION and ms.SCHEMA_VERSION >= 3, doc["schema_version"]
     assert set(q["guards"]) == ms.QUARANTINE_GUARDS and all(v is True for v in q["guards"].values()), q["guards"]
     assert q["quarantined_matches"] >= 1 and q["quarantined_with_status"] >= 1, q
     assert q["quarantined_completed"] == 0 and q["quarantined_derived_rows"] == 0, q

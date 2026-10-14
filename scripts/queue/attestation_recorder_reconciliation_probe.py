@@ -230,14 +230,15 @@ def _r589_literal(path: Path = R589_ROLLBACK) -> str:
     return "$r589_rollback$" + text + "$r589_rollback$"
 
 
-def render_prelude(template: str, *, keep_r589: bool = False) -> str:
-    """Insert the baseline step (undo R5.8.10, then R5.8.9 unless keep_r589).
+def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
+    """Insert the baseline step (undo R5.8.10, then R5.8.9 unless keep_r589;
+    keep_current undoes nothing: the reset build's own chain head).
     Callers that substitute pins in the prelude must do so on the template, so
     the embedded rollbacks stay intact."""
-    return (template.replace("__R5810_TARGET__", R5810_TARGET_MD5)
+    return (template.replace("__R5810_TARGET__", "keep-current" if keep_current else R5810_TARGET_MD5)
             .replace("__R5810B_ROLLBACK__", _r589_literal(R5810B_ROLLBACK))
             .replace("__R5810_ROLLBACK__", _r589_literal(R5810_ROLLBACK))
-            .replace("__R589_UNDO__", "false" if keep_r589 else "true")
+            .replace("__R589_UNDO__", "false" if keep_r589 or keep_current else "true")
             .replace("__R589_TARGET__", R589_TARGET_MD5)
             .replace("__R589B_ROLLBACK__", _r589_literal(R589B_ROLLBACK))
             .replace("__R589_ROLLBACK__", _r589_literal()))
