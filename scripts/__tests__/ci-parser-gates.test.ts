@@ -28,7 +28,7 @@ const runsOnMainPullRequests = (block: string) =>
 describe("Quality Gates: parser tests cannot be silently skipped on main", () => {
   it("triggers on pull requests to main with no path filter", () => {
     const on = workflow.slice(workflow.indexOf("\non:\n"), workflow.indexOf("\njobs:\n"));
-    expect(on).toMatch(/pull_request:\s*\n\s+branches: \[main, /);
+    expect(on).toMatch(/pull_request:\s*\n\s+branches: \[main\]/);
     // A path filter makes the whole workflow, and every check in it, absent.
     expect(on).not.toMatch(/^\s+paths(-ignore)?:/m);
   });
@@ -118,6 +118,7 @@ describe("Quality Gates: parser tests cannot be silently skipped on main", () =>
     const green = {
       "web-quality": { result: "success" },
       "contract-gate": { result: "success" },
+      "parser-quality": { result: "success" },
       "f553-r11-2-execution": { result: "success" },
     };
     expect(evaluate(green).status).toBe(0);

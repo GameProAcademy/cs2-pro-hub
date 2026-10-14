@@ -6,9 +6,9 @@ name: Quality Gates
 
 on:
   push:
-    branches: [main, infra/cs2-parser-worker-v8]
+    branches: [main]
   pull_request:
-    branches: [main, infra/cs2-parser-worker-v8]
+    branches: [main]
   workflow_dispatch:
 
 # Keep only the newest CI run per PR/branch; superseded runs must not burn
@@ -59,10 +59,13 @@ jobs:
       - name: Verify browser parser is absent from production output
         run: bun run verify:browser-parser-sealed
 
+  # The worker is built and deployed from main (Railway source branch); its field-
+  # governance matrix, mapping gate and image isolation are main gates. The former
+  # worker branch infra/cs2-parser-worker-v8 is retired and no longer gates anything.
   parser-quality:
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/infra/cs2-parser-worker-v8') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'infra/cs2-parser-worker-v8')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
     name: CS2 parser tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -243,10 +246,9 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
+  # R11.2-R6 verification trigger: validate the latest committed disposable Storage diagnostic.
 
-# R11.2-R6 verification trigger: validate the latest committed disposable Storage diagnostic.
-
-# H3E.4 final-state proof trigger: validate post-Lovable-sync main without runtime behavior change.
+  # H3E.4 final-state proof trigger: validate post-Lovable-sync main without runtime behavior change.
 
   # One check that is never absent on main and fails when any gate above did
   # not SUCCEED. A skipped or cancelled gate is a failure here, so a job that
@@ -258,7 +260,7 @@ jobs:
       ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' && github.base_ref == 'main'))
     name: Main required gates
-    needs: [web-quality, contract-gate, f553-r11-2-execution]
+    needs: [web-quality, contract-gate, parser-quality, f553-r11-2-execution]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
