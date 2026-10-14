@@ -4,6 +4,11 @@
 -- Aggregates and digests only: no row, identifier of a user, payload, secret
 -- or storage path leaves the database. STABLE, SECURITY DEFINER,
 -- search_path='', EXECUTE for service_role only. It writes nothing.
+-- Schema 4 (gate semantics v2, docs/H3E_GATE_SEMANTICS_V2.md) keeps every schema-3 measure
+-- and adds: attempt authorizations (public.h3e_attempt_authorizations) and verified lineage
+-- (match -> its own upload's processed job -> approved RAW audit -> successful H3E91
+-- execution -> VERIFIED parser provenance of that build and semantic revision, attested
+-- before the execution finished; never through a quarantined match).
 CREATE OR REPLACE FUNCTION public.h3e_predem_managed_snapshot()
 RETURNS jsonb
 LANGUAGE sql
@@ -11,9 +16,22 @@ STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $snapshot$
-  WITH body AS (
+  WITH lineage AS (
+    SELECT DISTINCT m.id
+    FROM public.matches m
+    JOIN public.demo_jobs j ON j.upload_id = m.upload_id AND j.status = 'processed'
+                           AND j.demo_sha256 = m.content_fingerprint
+    JOIN public.raw_evidence_artifacts a ON a.job_id = j.id AND a.status = 'ready' AND a.audit_status = 'approved'
+                                        AND a.demo_sha256 = j.demo_sha256
+    JOIN public.h3e91_execution_evidence_ledger f ON f.job_id = j.id AND f.event_type = 'EXECUTION_FINISHED'
+                                                 AND f.outcome_code = 'PARSE_SUCCEEDED' AND f.demo_sha256 = j.demo_sha256
+    JOIN public.parser_runtime_provenance p ON p.status = 'VERIFIED' AND p.build_revision = 'git:' || f.worker_build_commit
+                                           AND p.semantic_revision = f.parser_revision AND p.created_at <= f.event_at
+    WHERE NOT EXISTS (SELECT 1 FROM public.canonical_match_quarantine q WHERE q.match_id = m.id)
+  ),
+  body AS (
     SELECT jsonb_build_object(
-      'schema_version', 3,
+      'schema_version', 4,
       'snapshot_at', pg_catalog.to_char(pg_catalog.clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
       'database', jsonb_build_object(
         'name', pg_catalog.current_database(),
@@ -33,11 +51,28 @@ AS $snapshot$
         FROM public.canonical_mapping_inventory_releases r),
       'attempts', (SELECT jsonb_build_object(
           'max_attempt_number', COALESCE(max(j.attempt_number), 0),
-          'jobs_attempt_9_or_more', count(*) FILTER (WHERE j.attempt_number >= 9))
+          'jobs_attempt_9_or_more', count(*) FILTER (WHERE j.attempt_number >= 9),
+          -- Schema 4: a registry row counts only while it still matches its job's identity.
+          'jobs_attempt_9_or_more_authorized', count(*) FILTER (WHERE j.attempt_number >= 9 AND EXISTS (
+              SELECT 1 FROM public.h3e_attempt_authorizations x
+              WHERE x.job_id = j.id AND x.upload_id = j.upload_id AND x.attempt_number = j.attempt_number
+                AND x.demo_sha256 = j.demo_sha256)),
+          'forensic_replays_attempt_9_or_more', count(*) FILTER (
+              WHERE j.attempt_number >= 9 AND j.replacement_reason = 'g6r-real-demo-replay'),
+          'authorization_rows', (SELECT count(*) FROM public.h3e_attempt_authorizations),
+          'authorization_rows_not_matching_job', (SELECT count(*) FROM public.h3e_attempt_authorizations x
+              WHERE NOT EXISTS (SELECT 1 FROM public.demo_jobs k
+                                WHERE k.id = x.job_id AND k.upload_id = x.upload_id
+                                  AND k.attempt_number = x.attempt_number AND k.demo_sha256 = x.demo_sha256)))
         FROM public.demo_jobs j),
       'derived_rows', jsonb_build_object(
         'match_metrics', (SELECT count(*) FROM public.match_metrics),
-        'match_features', (SELECT count(*) FROM public.match_features)),
+        'match_features', (SELECT count(*) FROM public.match_features),
+        -- Schema 4: rows whose match has verified lineage (lineage excludes quarantined matches).
+        'match_metrics_with_verified_lineage',
+          (SELECT count(*) FROM public.match_metrics x WHERE x.match_id IN (SELECT l.id FROM lineage l)),
+        'match_features_with_verified_lineage',
+          (SELECT count(*) FROM public.match_features x WHERE x.match_id IN (SELECT l.id FROM lineage l))),
       'canonical', (SELECT jsonb_build_object(
           'matches_by_status', COALESCE((SELECT jsonb_object_agg(COALESCE(s.canonical_status, 'null'), s.n)
                                         FROM (SELECT m.canonical_status, count(*) AS n FROM public.matches m GROUP BY 1) s), '{}'::jsonb),
@@ -46,6 +81,9 @@ AS $snapshot$
           'matches_created_before_first_verified_provenance', count(*) FILTER (
             WHERE m.canonical_status IS NOT NULL AND m.created_at < COALESCE(
               (SELECT min(p.created_at) FROM public.parser_runtime_provenance p WHERE p.status = 'VERIFIED'), 'infinity'::timestamptz)),
+          -- Schema 4: eligible (unquarantined) rows whose lineage is verified.
+          'unquarantined_with_status_and_verified_lineage', count(*) FILTER (
+            WHERE m.canonical_status IS NOT NULL AND m.id IN (SELECT l.id FROM lineage l)),
           -- Schema v3: rows preserved and excluded from eligibility by public.canonical_match_quarantine.
           'quarantine', jsonb_build_object(
             'quarantined_matches', (SELECT count(*) FROM public.canonical_match_quarantine),
