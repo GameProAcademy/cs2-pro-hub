@@ -154,11 +154,18 @@ INSERT INTO probe_result SELECT 'migration', pg_temp.drift($a$DO $d$ BEGIN EXECU
     scenario("missing_r5_8_8_state_fails_closed", new, f"""
 INSERT INTO probe_result SELECT 'migration', pg_temp.drift($a$ALTER TABLE public.parser_attestation_nonces DROP CONSTRAINT parser_attestation_nonces_attestation_digest_key$a$, {q(migration)});
 """, lambda o: refused(o, "migration", "R5_8_10_R5_8_8_STATE_MISSING"))
+    # The recorder rollback refuses the R5.8.9 state; the boundary rollback is idempotent there
+    # (already in its target state, like R5.8.9b's) and refuses any drifted definition.
     scenario("rollback_refuses_any_other_state", new, f"""
 INSERT INTO probe_result SELECT 'rollback', pg_temp.run({q(texts[ROLLBACK])});
-INSERT INTO probe_result SELECT 'boundary_rollback', pg_temp.run({q(texts[BOUNDARY_ROLLBACK])});
+INSERT INTO probe_result SELECT 'boundary_before', {boundary_md5s()};
+INSERT INTO probe_result SELECT 'boundary_rollback_noop', pg_temp.run({q(texts[BOUNDARY_ROLLBACK])});
+INSERT INTO probe_result SELECT 'boundary_after', {boundary_md5s()};
+INSERT INTO probe_result SELECT 'boundary_rollback_drifted', pg_temp.drift($a$DO $d$ BEGIN EXECUTE replace(pg_get_functiondef('{ASSERT_FN}'::regprocedure), 'BEGIN', 'BEGIN '); END $d$$a$, {q(texts[BOUNDARY_ROLLBACK])});
 """, lambda o: refused(o, "rollback", "R5_8_10_ROLLBACK_UNEXPECTED_DEFINITION")
-        + refused(o, "boundary_rollback", "R5_8_10B_UNEXPECTED_DEFINITION"))
+        + ok(o, "boundary_rollback_noop")
+        + ([] if o["boundary_before"] == o["boundary_after"] else ["boundary rewritten by a no-op rollback"])
+        + refused(o, "boundary_rollback_drifted", "R5_8_10B_UNEXPECTED_DEFINITION"))
 
     passed = sum(r["status"] == "PASS" for r in results)
     print("RESULT:" + json.dumps({"probe": "R5_8_10_DISPOSABLE", "status": "PASS" if passed == len(results) else "FAIL",
