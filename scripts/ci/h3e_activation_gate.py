@@ -118,6 +118,10 @@ REASON_CATEGORY: dict[str, str] = {
     **dict.fromkeys(("BRIDGE_EXPECTED_BUILD_UNCONFIGURED", "BRIDGE_EXPECTED_BUILD_MISMATCH",
                      "BRIDGE_IDENTITY_NOT_ENFORCED"), REJECTED),
     **dict.fromkeys(("BRIDGE_IDENTITY_UNREACHABLE", "SERVED_BUILD_UNAVAILABLE"), INFRASTRUCTURE),
+    **dict.fromkeys(("PARSER_LOCK_NOT_PUBLISHED",), MISSING),
+    **dict.fromkeys(("PARSER_LOCK_IDENTITY_MISMATCH", "PARSER_LOCK_REVISION_MISMATCH",
+                     "PARSER_LOCK_BUILD_UNCONFIGURED", "PARSER_LOCK_BUILD_MISMATCH",
+                     "PARSER_LOCK_NOT_REQUIRED"), REJECTED),
     **dict.fromkeys(("ARTIFACT_NOT_FOUND", "RUN_NOT_FOUND", "JOB_NOT_FOUND_EXACTLY_ONCE", "QUEUE_JOB_NOT_FOUND",
                      "QUEUE_PROBE_MISSING", "NO_ARTIFACT", "PREDEM_GATES_NOT_VERIFIED"), MISSING),
     **dict.fromkeys(("RUN_NOT_COMPLETED", "EVIDENCE_RUN_NOT_FINISHED", "R583_RUN_NOT_FINISHED"), RUNNING),
@@ -466,6 +470,54 @@ def evaluate_bridge(fingerprint: dict[str, Any] | None, versions: dict[str, Any]
     return stage(PASS, build_commit=expected, observed=observed)
 
 
+def evaluate_parser_lock(fingerprint: dict[str, Any] | None, versions: dict[str, Any]) -> dict[str, Any]:
+    """The revision lock the app applies to every worker response must accept what both hosts serve.
+
+    The app rejects a parsed demo with PARSER_IDENTITY_MISMATCH when its expected
+    revision or build revision (code default or a Lovable environment override)
+    differs from the worker's. Observed on 2026-10-14 (job 406df30a): RAW approved,
+    then "parser build revision mismatch" while every other stage was PASS.
+    """
+    if not isinstance(fingerprint, dict):
+        return stage(BLOCKED, reason="BRIDGE_IDENTITY_UNREACHABLE")
+    lock = fingerprint.get("parserLock")
+    if not isinstance(lock, dict):
+        return stage(BLOCKED, reason="PARSER_LOCK_NOT_PUBLISHED")
+    if any(not isinstance(versions.get(h), dict) for h in HOSTS):
+        return stage(BLOCKED, reason="SERVED_BUILD_UNAVAILABLE")
+    served = {h: (versions.get(h) or {}).get("parser") or {} for h in HOSTS}
+    problems = []
+    if any(p.get("name") != lock.get("name") or p.get("version") != lock.get("version") for p in served.values()) \
+            or any((versions.get(h) or {}).get("contract_version") != lock.get("contractVersion") for h in HOSTS):
+        problems.append("PARSER_LOCK_IDENTITY_MISMATCH")
+    if lock.get("revisionRequired") is not True or lock.get("buildRevisionRequired") is not True:
+        problems.append("PARSER_LOCK_NOT_REQUIRED")
+    if any(p.get("revision") != lock.get("revision") for p in served.values()):
+        problems.append("PARSER_LOCK_REVISION_MISMATCH")
+    build = lock.get("buildRevision")
+    if not isinstance(build, str) or not build:
+        problems.append("PARSER_LOCK_BUILD_UNCONFIGURED")
+    elif any(p.get("build_revision") != build for p in served.values()):
+        problems.append("PARSER_LOCK_BUILD_MISMATCH")
+    observed = {"expected": {k: lock.get(k) for k in ("name", "version", "revision", "buildRevision", "contractVersion",
+                                                       "revisionSource", "buildRevisionSource")},
+                "served": {h: {k: p.get(k) for k in ("name", "version", "revision", "build_revision")}
+                           for h, p in served.items()}}
+    if problems:
+        return stage(FAIL, reason=problems[0], problems=problems, observed=observed)
+    return stage(PASS, observed=observed)
+
+
+def collect_parser_lock(io: Io) -> dict[str, Any]:
+    response = io.http(RUNTIME_FINGERPRINT_ENDPOINT)
+    fingerprint = response["body"] if response and response.get("status") == 200 else None
+    versions = {}
+    for host in HOSTS:
+        version = io.http(f"{host}/version")
+        versions[host] = version["body"] if version and version["status"] == 200 else None
+    return evaluate_parser_lock(fingerprint, versions)
+
+
 def collect_bridge(io: Io) -> dict[str, Any]:
     response = io.http(RUNTIME_FINGERPRINT_ENDPOINT)
     fingerprint = response["body"] if response and response.get("status") == 200 else None
@@ -800,6 +852,7 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
     if stages["target"]["status"] == PASS:
         stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
         stages.update(guarded("bridge_identity", lambda: {"bridge_identity": collect_bridge(io)}))
+        stages.update(guarded("parser_lock", lambda: {"parser_lock": collect_parser_lock(io)}))
         stages.update(guarded("managed_snapshot", lambda: {
             "managed_snapshot": collect_managed_snapshot(io, env)}))
     else:

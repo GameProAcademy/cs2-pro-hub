@@ -145,14 +145,19 @@ class World:
             f"r5-8-4-gate-reconciliation-{r583_id}-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
         }
         self.digest_override = {}
-        self.version = {"parser": {"name": "demoparser2", "semantic_revision": f"git:{BUILD}",
+        self.version = {"parser": {"name": "demoparser2", "version": "0.42.0", "revision": f"git:{BUILD}",
+                                   "semantic_revision": f"git:{BUILD}",
                                    "build_revision": f"git:{BUILD}"}, "contract_version": 1,
                         "build": {"commit": BUILD, "embedded": True, "source": "railway",
                                   "declared_revision_matches": True}}
         self.version_by_host = {}
         self.health = {"status": "ok"}
         self.fingerprint = {"status": "VERIFIED_SOURCE_FINGERPRINT",
-                            "bridge": {"expectedWorkerBuildCommit": BUILD, "configured": True, "enforced": True}}
+                            "bridge": {"expectedWorkerBuildCommit": BUILD, "configured": True, "enforced": True},
+                            "parserLock": {"name": "demoparser2", "version": "0.42.0", "revision": f"git:{BUILD}",
+                                           "buildRevision": f"git:{BUILD}", "revisionRequired": True,
+                                           "buildRevisionRequired": True, "contractVersion": 1,
+                                           "revisionSource": "code", "buildRevisionSource": "code"}}
         self.endpoint_down = set()
         self.transport = {"unauth": (401, "UNAUTHORIZED"), "auth": (400, "ATTESTATION_PAYLOAD_INVALID")}
         self.railway = {"id": "3ad4b1fe-9b9e-4fec-b79a-4215d27aab29", "status": "SUCCESS",
@@ -773,6 +778,36 @@ class IdentityRecord(unittest.TestCase):
         evidence, _ = evaluate(world)
         self.assertEqual(evidence["stages"]["runtime"]["reason"], "DECLARED_REVISION_MISMATCH")
         self.assertEqual(evidence["stages"]["runtime"]["identity"]["hosts"][gate.HOSTS[0]]["image_build_commit"], new)
+
+
+class ParserLock(unittest.TestCase):
+    def test_the_app_revision_lock_must_accept_what_both_hosts_serve(self):
+        evidence, _ = evaluate()
+        self.assertEqual(evidence["stages"]["parser_lock"]["status"], "PASS")
+        stale = "git:c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d"
+        cases = (
+            (lambda w: w.fingerprint.pop("parserLock"), "BLOCKED", "PARSER_LOCK_NOT_PUBLISHED", "EVIDENCE_MISSING"),
+            # The 2026-10-14 failure: a stale environment override of the build revision.
+            (lambda w: w.fingerprint["parserLock"].update(buildRevision=stale, buildRevisionSource="env"),
+             "FAIL", "PARSER_LOCK_BUILD_MISMATCH", "REJECTED"),
+            (lambda w: w.fingerprint["parserLock"].update(revision=stale), "FAIL", "PARSER_LOCK_REVISION_MISMATCH",
+             "REJECTED"),
+            (lambda w: w.fingerprint["parserLock"].update(buildRevision=None), "FAIL",
+             "PARSER_LOCK_BUILD_UNCONFIGURED", "REJECTED"),
+            (lambda w: w.fingerprint["parserLock"].update(buildRevisionRequired=False), "FAIL",
+             "PARSER_LOCK_NOT_REQUIRED", "REJECTED"),
+            (lambda w: w.fingerprint["parserLock"].update(version="0.41.0"), "FAIL", "PARSER_LOCK_IDENTITY_MISMATCH",
+             "REJECTED"),
+            (lambda w: w.version_by_host.update({gate.HOSTS[1]: {**w.version, "parser": dict(
+                w.version["parser"], build_revision=stale)}}), "FAIL", "PARSER_LOCK_BUILD_MISMATCH", "REJECTED"),
+        )
+        for mutate, status, reason, category in cases:
+            world = World()
+            mutate(world)
+            evidence, _ = evaluate(world)
+            lock = evidence["stages"]["parser_lock"]
+            self.assertEqual((lock["status"], lock["reason"], lock["category"]), (status, reason, category), reason)
+            self.assertNotEqual(evidence["decision"], "PASS")
 
 
 class BridgeIdentity(unittest.TestCase):
