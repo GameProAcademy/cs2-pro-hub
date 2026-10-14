@@ -83,7 +83,10 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
         ? (evidence["manifest"] as Record<string, unknown>)
         : {};
     const parserIdentity = {
-      name: typeof evidenceManifest["parser_name"] === "string" ? evidenceManifest["parser_name"] : null,
+      name:
+        typeof evidenceManifest["parser_name"] === "string"
+          ? evidenceManifest["parser_name"]
+          : null,
       version:
         typeof evidenceManifest["parser_version"] === "string"
           ? evidenceManifest["parser_version"]
@@ -100,7 +103,8 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
         typeof evidenceManifest["demo_sha256"] === "string"
           ? evidenceManifest["demo_sha256"]
           : null,
-      fileSize: typeof evidenceManifest["file_size"] === "number" ? evidenceManifest["file_size"] : null,
+      fileSize:
+        typeof evidenceManifest["file_size"] === "number" ? evidenceManifest["file_size"] : null,
       auditSurfaceVersion:
         typeof evidence["audit_surface_version"] === "number"
           ? evidence["audit_surface_version"]
