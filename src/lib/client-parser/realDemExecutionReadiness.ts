@@ -142,7 +142,7 @@ export const CONTROLLED_CACHE_EXECUTION_ENVELOPE = {
   fileName: "furia-vs-gamerlegion-m1-cache.dem",
   sizeBytes: 473_748_061,
   sha256: "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d",
-  parserBuildIdentity: "demoparser2:0.42.0:git:c8c6d6ec0fdc8c6b9a8fb243d84797ee07a0354d",
+  parserBuildIdentity: "demoparser2:0.42.0:git:60099ed3eaf959d888762bf55043255a63a6a766",
   contractVersion: 1,
   executionSurface: "RAILWAY_CONTROLLED" as const,
   inputStrategy: "FILE_PATH" as const,
