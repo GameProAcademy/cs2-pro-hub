@@ -20,12 +20,11 @@ import sys
 REQUIRED = {
     "web-quality": "Web tests / lint / build",
     "contract-gate": "Contract-sensitive parser tests (complete parser suite)",
+    "parser-quality": "CS2 parser tests (field governance, mapping gate, image isolation)",
     "f553-r11-2-execution": "F553 R11.2 EXECUTION",
 }
 # Jobs of the same workflow that legitimately do not run for main.
-NOT_APPLICABLE = {
-    "parser-quality": "runs only for infra/cs2-parser-worker-v8",
-}
+NOT_APPLICABLE: dict[str, str] = {}
 
 
 def evaluate(needs: object) -> tuple[bool, list[dict[str, str]]]:
@@ -58,7 +57,7 @@ def render(ok: bool, rows: list[dict[str, str]]) -> str:
     ]
     lines += [f"| {row['name'] or '-'} | `{row['gate']}` | {row['result']} | {row['verdict']} |" for row in rows]
     lines += ["", "Not applicable to main (not evaluated):"]
-    lines += [f"- `{job}`: {reason}" for job, reason in sorted(NOT_APPLICABLE.items())]
+    lines += [f"- `{job}`: {reason}" for job, reason in sorted(NOT_APPLICABLE.items())] or ["- none"]
     return "\n".join(lines) + "\n"
 
 
