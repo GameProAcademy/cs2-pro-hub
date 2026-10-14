@@ -89,11 +89,31 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it("persists unknown RAW material before blocking Canonical admission", () => {
     const persist = jobsSource.indexOf("const rawAudit = artifactCompletion");
-    const block = jobsSource.indexOf("if (!rawAudit.approved)");
+    const block = jobsSource.indexOf("if (!rawAudit.approved && !v3Continues)");
     const normalize = jobsSource.indexOf("const match = normalizeParserOutput(raw)");
     expect(persist).toBeGreaterThan(-1);
     expect(block).toBeGreaterThan(persist);
     expect(normalize).toBeGreaterThan(block);
+  });
+
+  it("decides and records admission v3 before any Canonical write, and blocks a v3 BLOCKED", () => {
+    const bundleValidated = jobsSource.indexOf(
+      "validateCanonicalBundle(bundle.match, bundle.rounds, bundle.events);",
+    );
+    const decide = jobsSource.indexOf("admissionV3 = decideAdmissionV3(");
+    const record = jobsSource.indexOf(
+      "await recordAdmissionDecisionV3(jobId, v3Identity.artifactId, admissionV3);",
+    );
+    const blocked = jobsSource.indexOf('if (admissionV3.verdict === "BLOCKED")');
+    const approve = jobsSource.indexOf("rawApproval = rawArtifactApprovalV3(");
+    const canonicalWrite = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
+    for (const index of [bundleValidated, decide, record, blocked, approve, canonicalWrite])
+      expect(index).toBeGreaterThan(-1);
+    expect(decide).toBeGreaterThan(bundleValidated);
+    expect(record).toBeGreaterThan(decide);
+    expect(blocked).toBeGreaterThan(record);
+    expect(approve).toBeGreaterThan(blocked);
+    expect(canonicalWrite).toBeGreaterThan(approve);
   });
 
   it("bounds the complete payload while streaming rather than trusting content-length", () => {

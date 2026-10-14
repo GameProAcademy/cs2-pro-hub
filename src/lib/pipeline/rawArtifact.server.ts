@@ -16,6 +16,11 @@ import {
   type RawParserOutput,
 } from "@/lib/pipeline/types";
 import type { RawAdmissionApproval, RawAdmissionDecision } from "@/lib/pipeline/rawEvidence";
+import {
+  admissionDecisionV3Reasons,
+  classifyForensicV2ForAdmissionV3,
+  type AdmissionDecisionV3,
+} from "@/lib/pipeline/admissionV3";
 import type { Json } from "@/integrations/supabase/types";
 import { expectedParserContract } from "@/lib/pipeline/parser/adapter";
 import { assertParserIdentity } from "@/lib/pipeline/parser/parserEndpoint";
@@ -64,6 +69,8 @@ type PhysicalSemanticAccumulator = {
   tickValues: Set<number>;
   tickFields: Set<string>;
   forensicRows: Array<Record<string, unknown>>;
+  /** map_name of every physical header row (admission v3 header cross-check). */
+  headerMapNames: string[];
 };
 
 async function gunzipJsonLines(
@@ -110,6 +117,10 @@ async function gunzipJsonLines(
         if (typeof row["tick"] === "number" && Number.isSafeInteger(row["tick"]))
           semantic.tickValues.add(row["tick"]);
       } else if (section === "forensic") semantic.forensicRows.push(row);
+      else if (section === "header") {
+        const mapName = row["map_name"];
+        semantic.headerMapNames.push(typeof mapName === "string" ? mapName : "");
+      }
     }
     rows += 1;
   };
@@ -157,6 +168,7 @@ export async function auditPhysicalRawChunks(args: {
     tickValues: new Set(),
     tickFields: new Set(),
     forensicRows: [],
+    headerMapNames: [],
   };
   let totalRows = 0;
   let totalBytes = 0;
@@ -228,6 +240,8 @@ export async function auditPhysicalRawChunks(args: {
     ),
     semantic: physicalSemanticProjection(semantic),
     forensic_rows: semantic.forensicRows,
+    // Outside `semantic`, so the producer/physical reconciliation projection is unchanged.
+    header_map_names: semantic.headerMapNames,
   };
 }
 
@@ -780,15 +794,26 @@ export async function verifyRawArtifact(args: {
   }
   const forensicV2 = (auditEvidence as Record<string, unknown>)["forensic_contract_v2"];
   const v2Reasons = validateRawForensicContractV2(forensicV2, "producer");
-  if (v2Reasons.length > 0) {
+  // Admission contract v3 is evaluated only when v2 does not pass. The v2 reasons are kept
+  // verbatim; v3 never turns them into a v2 PASS and the v2 final contract is not produced.
+  const admissionV3 =
+    v2Reasons.length > 0 ? classifyForensicV2ForAdmissionV3(forensicV2, v2Reasons) : null;
+  if (admissionV3 && admissionV3.status !== "ELIGIBLE") {
     return {
       status: "BLOCKED",
       auditStatus: "BLOCKED",
       approved: false,
       auditVersion: 4,
-      reasons: v2Reasons,
+      reasons: [...v2Reasons, ...admissionV3.blockedReasons],
       evidenceDigest: artifact.root_digest,
       forensicInventory: {},
+      admissionV3: {
+        evidence: admissionV3,
+        artifactId: artifact.id,
+        physical: { artifactRootDigest: artifact.root_digest, reconciliationDigest: null },
+        reconciliationProof: null,
+        headerMapNames: [],
+      },
     };
   }
   const forensicContract = forensicV2 as Record<string, unknown>;
@@ -843,6 +868,51 @@ export async function verifyRawArtifact(args: {
       "PARSER_INVALID_RESPONSE",
       "RAW producer/artifact reconciliation failed",
     );
+  if (admissionV3) {
+    // Every physical check above ran exactly as for v2 and passed. The physical gate
+    // (RAW-V2-22) is satisfied by the same dimensions; the v3 decision itself is taken
+    // by the job once the canonical bundle exists (semantic re-verification).
+    const dimensions = successfulReconciliationDimensions({
+      reconciliation,
+      identityMatches,
+      parserMatches: true,
+      chainVerified: true,
+      totalsVerified: true,
+      rootVerified: true,
+      contractVerified: true,
+    });
+    if (RAW_FORENSIC_RECONCILIATION_DIMENSIONS.some((name) => dimensions[name] !== "PASS"))
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW reconciliation dimensions failed");
+    const reconciliationDigest = String(reconciliation["reconciliation_digest"] ?? "");
+    if (!HEX_64.test(reconciliationDigest))
+      throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW reconciliation digest missing");
+    const headerMapNames = Array.isArray(physical["header_map_names"])
+      ? (physical["header_map_names"] as unknown[]).map(String)
+      : [];
+    return {
+      status: "BLOCKED",
+      auditStatus: "BLOCKED",
+      approved: false,
+      auditVersion: 4,
+      reasons: v2Reasons,
+      evidenceDigest: artifact.root_digest,
+      forensicInventory: {
+        artifact_id: artifact.id,
+        manifest_storage_path: artifact.manifest_storage_path,
+        total_chunks: artifact.total_chunks,
+        total_rows: artifact.total_rows,
+        total_bytes: artifact.total_bytes,
+        reconciliation: reconciliation as Json,
+      },
+      admissionV3: {
+        evidence: admissionV3,
+        artifactId: artifact.id,
+        physical: { artifactRootDigest: artifact.root_digest, reconciliationDigest },
+        reconciliationProof: reconciliation as Record<string, Json>,
+        headerMapNames,
+      },
+    };
+  }
   let finalContract: Record<string, unknown>;
   try {
     const dimensions = successfulReconciliationDimensions({
@@ -925,4 +995,50 @@ export function rawArtifactApproval(
     };
   }
   return approval;
+}
+
+/**
+ * Admission through contract v3. The decision must be admissible (PASS or LIMITED, no
+ * blocked reason, digest bound) and bound to the same artifact, root digest and physical
+ * reconciliation the RAW audit verified. Anything else is RAW_AUDIT_BLOCKED.
+ */
+export function rawArtifactApprovalV3(
+  decision: RawAdmissionDecision,
+  admission: AdmissionDecisionV3,
+  uploadId: string,
+): RawAdmissionApproval {
+  const pending = decision.admissionV3;
+  const reasons = admissionDecisionV3Reasons(admission);
+  if (
+    !pending ||
+    pending.evidence.status !== "ELIGIBLE" ||
+    !pending.reconciliationProof ||
+    !pending.physical.reconciliationDigest ||
+    reasons.length > 0 ||
+    admission.artifact_id !== pending.artifactId ||
+    admission.upload_id !== uploadId ||
+    admission.physical.artifact_root_digest !== decision.evidenceDigest ||
+    admission.physical.reconciliation_digest !== pending.physical.reconciliationDigest ||
+    pending.reconciliationProof["reconciliation_digest"] !== pending.physical.reconciliationDigest
+  ) {
+    throw new PipelineError(
+      "RAW_AUDIT_BLOCKED",
+      reasons.join(",") || "RAW admission v3 proof is incomplete",
+    );
+  }
+  return {
+    approved: true,
+    auditStatus: "ADMITTED_V3",
+    auditVersion: decision.auditVersion,
+    evidenceDigest: decision.evidenceDigest,
+    artifactId: pending.artifactId,
+    reconciliationDigest: pending.physical.reconciliationDigest,
+    reconciliationProof: pending.reconciliationProof,
+    admissionV3: admission,
+    proofIdentity: {
+      artifactId: pending.artifactId,
+      uploadId,
+      artifactRootDigest: decision.evidenceDigest,
+    },
+  };
 }

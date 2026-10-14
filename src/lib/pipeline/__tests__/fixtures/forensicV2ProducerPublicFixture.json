@@ -1,0 +1,906 @@
+{
+ "audit_contract_version": 2,
+ "bomb_digest": "5cc4ce73b77cbb3e13a8317f6bf7fd79a7be5342c2649a4bc6e50ba74665e7e1",
+ "canonical_admission": "BLOCKED",
+ "capability_catalog": {
+  "capabilities": [
+   {
+    "app_field": null,
+    "availability": "DECLARED",
+    "canonical_allowed": false,
+    "canonical_field": null,
+    "capability_id": "aggregate_stats.3k_rounds_total",
+    "category": "aggregate_stats",
+    "classification": "RAW_ONLY",
+    "demo_presence": "UNKNOWN",
+    "derivation_rule": null,
+    "derived_allowed": false,
+    "determinism_status": "NOT_RUN",
+    "deterministic_digest": "76df0f6bae34134d790312be198464d2786206783fe57bac9e12bcbdf5818ff7",
+    "deterministic_identity": "0.42.0:aggregate_stats.3k_rounds_total",
+    "evidence_status": "DECLARED_SOURCE_ONLY",
+    "identity_status": "NOT_APPLICABLE",
+    "mapping_status": "REVIEWED_RAW_ONLY",
+    "name": "3k_rounds_total",
+    "normalization_status": "NOT_REQUIRED",
+    "parity_status": "NOT_RUN",
+    "parse_failed_reason": null,
+    "parser_api": "list_updated_fields+parse_ticks",
+    "parser_version": "0.42.0",
+    "provenance": "demoparser2==0.42.0:list_updated_fields+parse_ticks",
+    "raw_allowed": true,
+    "raw_only_reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "review_status": "REVIEWED",
+    "runtime_presence": "UNKNOWN",
+    "runtime_signature": null,
+    "source": "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings",
+    "source_kind": "DECLARED_CATALOG",
+    "source_reference": "project_catalog:aggregate_stats:3k_rounds_total",
+    "tick_round_status": "NOT_APPLICABLE",
+    "unavailable_reason": null
+   },
+   {
+    "app_field": null,
+    "availability": "DECLARED",
+    "canonical_allowed": false,
+    "canonical_field": null,
+    "capability_id": "aggregate_stats.4k_rounds_total",
+    "category": "aggregate_stats",
+    "classification": "RAW_ONLY",
+    "demo_presence": "UNKNOWN",
+    "derivation_rule": null,
+    "derived_allowed": false,
+    "determinism_status": "NOT_RUN",
+    "deterministic_digest": "02927954866d722c6896e0f661eaee886addff2f3140592cdeaac98c4111bbea",
+    "deterministic_identity": "0.42.0:aggregate_stats.4k_rounds_total",
+    "evidence_status": "DECLARED_SOURCE_ONLY",
+    "identity_status": "NOT_APPLICABLE",
+    "mapping_status": "REVIEWED_RAW_ONLY",
+    "name": "4k_rounds_total",
+    "normalization_status": "NOT_REQUIRED",
+    "parity_status": "NOT_RUN",
+    "parse_failed_reason": null,
+    "parser_api": "list_updated_fields+parse_ticks",
+    "parser_version": "0.42.0",
+    "provenance": "demoparser2==0.42.0:list_updated_fields+parse_ticks",
+    "raw_allowed": true,
+    "raw_only_reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "review_status": "REVIEWED",
+    "runtime_presence": "UNKNOWN",
+    "runtime_signature": null,
+    "source": "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings",
+    "source_kind": "DECLARED_CATALOG",
+    "source_reference": "project_catalog:aggregate_stats:4k_rounds_total",
+    "tick_round_status": "NOT_APPLICABLE",
+    "unavailable_reason": null
+   },
+   {
+    "app_field": null,
+    "availability": "DECLARED",
+    "canonical_allowed": false,
+    "canonical_field": null,
+    "capability_id": "aggregate_stats.ace_rounds_total",
+    "category": "aggregate_stats",
+    "classification": "RAW_ONLY",
+    "demo_presence": "UNKNOWN",
+    "derivation_rule": null,
+    "derived_allowed": false,
+    "determinism_status": "NOT_RUN",
+    "deterministic_digest": "e624106e22164b88e7644ba391499ac3cdb10a31702a51fae32438dde7061de7",
+    "deterministic_identity": "0.42.0:aggregate_stats.ace_rounds_total",
+    "evidence_status": "DECLARED_SOURCE_ONLY",
+    "identity_status": "NOT_APPLICABLE",
+    "mapping_status": "REVIEWED_RAW_ONLY",
+    "name": "ace_rounds_total",
+    "normalization_status": "NOT_REQUIRED",
+    "parity_status": "NOT_RUN",
+    "parse_failed_reason": null,
+    "parser_api": "list_updated_fields+parse_ticks",
+    "parser_version": "0.42.0",
+    "provenance": "demoparser2==0.42.0:list_updated_fields+parse_ticks",
+    "raw_allowed": true,
+    "raw_only_reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "reason": "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical.",
+    "review_status": "REVIEWED",
+    "runtime_presence": "UNKNOWN",
+    "runtime_signature": null,
+    "source": "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings",
+    "source_kind": "DECLARED_CATALOG",
+    "source_reference": "project_catalog:aggregate_stats:ace_rounds_total",
+    "tick_round_status": "NOT_APPLICABLE",
+    "unavailable_reason": null
+   }
+  ],
+  "catalog_digest": "43539db21f901a419f59b233fab26216c93206f3526adae021d14ebfe7dca746",
+  "catalog_source": "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings",
+  "catalog_version": 3,
+  "complete": true,
+  "discovery_error": null,
+  "installed_runtime_surface": {
+   "complete": false,
+   "errors": [],
+   "module_path": "/usr/local/lib/python3.13/dist-packages/demoparser2/__init__.py",
+   "parser_name": "demoparser2",
+   "parser_version": "0.42.0",
+   "reason": "installed runtime exposes methods but no exhaustive independent capability enumeration",
+   "runtime_surface_digest": "105120d13d8bc2cd5004278eca3ff71acd18a9d6a50b9e9c12353d74bb647567",
+   "status": "UNAVAILABLE",
+   "symbols": [
+    {
+     "callable": true,
+     "has_docstring": false,
+     "signature": "(self, /)",
+     "symbol": "list_game_events"
+    },
+    {
+     "callable": true,
+     "has_docstring": true,
+     "signature": "(self, /)",
+     "symbol": "list_updated_fields"
+    },
+    {
+     "callable": true,
+     "has_docstring": false,
+     "signature": "(self, /, event_name, *, player=None, other=None)",
+     "symbol": "parse_event"
+    }
+   ]
+  },
+  "mapping_surface": [
+   "aggregate_stats.3k_rounds_total",
+   "aggregate_stats.4k_rounds_total",
+   "aggregate_stats.ace_rounds_total"
+  ],
+  "parser_name": "demoparser2",
+  "parser_version": "0.42.0"
+ },
+ "capability_inventory_digest": "97fefe1d4f7819bda1c8ebc115f3749e150b1dfe840ec903a872ec99f233335e",
+ "capability_reconciliation": {
+  "capabilities_without_provenance": [],
+  "catalog_count": 1283,
+  "catalog_missing_from_runtime": [],
+  "digest": "8bab9b29a554841e107ca84d88375f3a8b93744914c123d139f035c830ca5409",
+  "duplicate_count": 0,
+  "duplicate_mapping_entries": [],
+  "duplicate_runtime_symbols": [],
+  "duplicates": [],
+  "mapping_count": 1283,
+  "mapping_missing_from_catalog": [],
+  "mapping_orphans": [],
+  "orphan_count": 0,
+  "runtime_count": 11,
+  "runtime_missing_from_catalog": [],
+  "runtime_orphans": [],
+  "runtime_surface_status": "UNAVAILABLE",
+  "set_difference_count": 0,
+  "status": "BLOCKED",
+  "unresolved": [],
+  "unresolved_count": 0
+ },
+ "catalog_digest": "43539db21f901a419f59b233fab26216c93206f3526adae021d14ebfe7dca746",
+ "damage_digest": "f670b54768ff666b4622ae8b9d5a36f24de77eaaec2ff243f5af92a0be2dff9b",
+ "death_digest": "40183abab62903351f13498a256334371e3fe060b92a191352c15b3bfd9e8ad3",
+ "demo_sha256": null,
+ "determinism_digest": null,
+ "deterministic_digest": "aa7e6714672c986e50fd9c93ae15c22b288dc19182c7187f19dbfcad7f697c45",
+ "economy_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+ "event_digest": "91a2825d4a1917cb90f754280b82d6db320178f86568b08a1c628ba42cfa6111",
+ "event_inventory": [
+  {
+   "api_available": true,
+   "attempted": true,
+   "available": true,
+   "capability_state": "PARSED_SUCCESSFULLY",
+   "classification": "RAW_ONLY",
+   "deterministic_digest": "852897a1f3d8c43b89506d2102760ec02dc013bf5a2b4db6b1f5c7437f6a0f82",
+   "discovered": true,
+   "error_message_safe": null,
+   "error_type": null,
+   "event_name": "begin_new_match",
+   "extra_fields": [],
+   "failure_kind": null,
+   "failure_reason": null,
+   "failure_stage": "parse_event",
+   "fields_available": [
+    "tick"
+   ],
+   "fields_missing": [],
+   "first_round": null,
+   "first_tick": 67,
+   "last_round": null,
+   "last_tick": 67,
+   "native_types": {
+    "tick": [
+     "integer"
+    ]
+   },
+   "non_null_fields": [
+    "tick"
+   ],
+   "null_only": false,
+   "null_only_fields": [],
+   "parse_attempted": true,
+   "parse_status": "PARSED_SUCCESSFULLY",
+   "parse_success": true,
+   "player_refs": [],
+   "preserved_fields": [
+    "tick"
+   ],
+   "returned_fields": [
+    "tick"
+   ],
+   "round_refs": [],
+   "row_count": 1
+  },
+  {
+   "api_available": true,
+   "attempted": false,
+   "available": false,
+   "capability_state": "NOT_PRESENT_IN_DEMO",
+   "classification": "NOT_PRESENT",
+   "deterministic_digest": "5438dc4663b0a69cc8251574b75b6119fe1a41605357d115c676b64468298118",
+   "discovered": false,
+   "error_message_safe": null,
+   "error_type": null,
+   "event_name": "bomb_abortdefuse",
+   "extra_fields": [],
+   "failure_kind": "NOT_PRESENT",
+   "failure_reason": null,
+   "failure_stage": "parse_event",
+   "fields_available": [],
+   "fields_missing": [],
+   "first_round": null,
+   "first_tick": null,
+   "last_round": null,
+   "last_tick": null,
+   "native_types": {},
+   "non_null_fields": [],
+   "null_only": false,
+   "null_only_fields": [],
+   "parse_attempted": false,
+   "parse_status": "NOT_PRESENT_IN_DEMO",
+   "parse_success": false,
+   "player_refs": [],
+   "preserved_fields": [],
+   "returned_fields": [],
+   "round_refs": [],
+   "row_count": null
+  },
+  {
+   "api_available": true,
+   "attempted": false,
+   "available": false,
+   "capability_state": "NOT_PRESENT_IN_DEMO",
+   "classification": "NOT_PRESENT",
+   "deterministic_digest": "69d786c2639fdd5f9525b821b870a4b80fb2ac500d0b1786ad2dd2af72db6e35",
+   "discovered": false,
+   "error_message_safe": null,
+   "error_type": null,
+   "event_name": "bomb_abortplant",
+   "extra_fields": [],
+   "failure_kind": "NOT_PRESENT",
+   "failure_reason": null,
+   "failure_stage": "parse_event",
+   "fields_available": [],
+   "fields_missing": [],
+   "first_round": null,
+   "first_tick": null,
+   "last_round": null,
+   "last_tick": null,
+   "native_types": {},
+   "non_null_fields": [],
+   "null_only": false,
+   "null_only_fields": [],
+   "parse_attempted": false,
+   "parse_status": "NOT_PRESENT_IN_DEMO",
+   "parse_success": false,
+   "player_refs": [],
+   "preserved_fields": [],
+   "returned_fields": [],
+   "round_refs": [],
+   "row_count": null
+  },
+  {
+   "api_available": true,
+   "attempted": true,
+   "available": true,
+   "capability_state": "PARSED_SUCCESSFULLY",
+   "classification": "RAW_ONLY",
+   "deterministic_digest": "e3450506d7fc000976e9cfabf38b1f04059f4416d32b3e1e22694d2533f3fa3c",
+   "discovered": true,
+   "error_message_safe": null,
+   "error_type": null,
+   "event_name": "bomb_begindefuse",
+   "extra_fields": [],
+   "failure_kind": null,
+   "failure_reason": null,
+   "failure_stage": "parse_event",
+   "fields_available": [
+    "haskit",
+    "tick",
+    "user_name",
+    "user_steamid"
+   ],
+   "fields_missing": [],
+   "first_round": null,
+   "first_tick": 14592,
+   "last_round": null,
+   "last_tick": 14592,
+   "native_types": {
+    "haskit": [
+     "boolean"
+    ],
+    "tick": [
+     "integer"
+    ],
+    "user_name": [
+     "string"
+    ],
+    "user_steamid": [
+     "string"
+    ]
+   },
+   "non_null_fields": [
+    "haskit",
+    "tick",
+    "user_name",
+    "user_steamid"
+   ],
+   "null_only": false,
+   "null_only_fields": [],
+   "parse_attempted": true,
+   "parse_status": "PARSED_SUCCESSFULLY",
+   "parse_success": true,
+   "player_refs": [
+    "76561198258044111"
+   ],
+   "preserved_fields": [
+    "haskit",
+    "tick",
+    "user_name",
+    "user_steamid"
+   ],
+   "returned_fields": [
+    "haskit",
+    "tick",
+    "user_name",
+    "user_steamid"
+   ],
+   "round_refs": [],
+   "row_count": 1
+  }
+ ],
+ "file_size": null,
+ "final_gate_status": "BLOCKED",
+ "full_tick_audit": {
+  "batch_count": 0,
+  "batches": [],
+  "complete": false,
+  "coverage": "BLOCKED",
+  "domain_proof_status": "BLOCKED",
+  "duplicate_tick_count": 0,
+  "duplicate_ticks": [],
+  "expected_tick_domain": {
+   "count": null,
+   "max_tick": null,
+   "min_tick": null
+  },
+  "failures": [
+   "expected_tick_domain_unavailable",
+   "verified_independent_tick_authority_required"
+  ],
+  "first_tick": null,
+  "full_tick_domain_proof": {
+   "complete": false,
+   "completed_interval_count": 0,
+   "coverage_ratio": 0,
+   "digest": "1fc099a43792479e03ac51b772df4d19c22312602f8fa0a206c679ade838a688",
+   "duplicate_tick_count": 0,
+   "expected_max_tick": null,
+   "expected_min_tick": null,
+   "expected_tick_count": null,
+   "gap_count": 0,
+   "interval_count": 0,
+   "invalid_tick_count": 0,
+   "missing_tick_count": 0,
+   "observed_tick_count": 0,
+   "out_of_order_tick_count": 0,
+   "overlap_count": 0,
+   "source": {
+    "authoritative": false,
+    "authority_digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
+    "authority_source": "demoparser2.parse_header.playback_ticks",
+    "authority_type": "UNAVAILABLE",
+    "coverage_digest": null,
+    "created_at": null,
+    "demo_sha256": null,
+    "digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
+    "expected_intervals": [],
+    "expected_max_tick": null,
+    "expected_min_tick": null,
+    "expected_tick_count": null,
+    "intervals": [],
+    "max_tick": null,
+    "min_tick": null,
+    "observed_playback_ticks": null,
+    "parser_revision": "demoparser2@0.42.0",
+    "reason": "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration",
+    "status": "UNAVAILABLE",
+    "tickrate": null
+   },
+   "status": "BLOCKED",
+   "unexpected_tick_count": 0
+  },
+  "gap_count": 0,
+  "gaps": [],
+  "invalid_tick_count": 0,
+  "invalid_ticks": [],
+  "last_tick": null,
+  "method": "demoparser2.parse_ticks PROPERTY_BATCH x explicit TICK_INTERVAL",
+  "missing_tick_count": 0,
+  "missing_ticks": [],
+  "observed_tick_domain": {
+   "count": 0,
+   "max_tick": null,
+   "min_tick": null
+  },
+  "out_of_order_tick_count": 0,
+  "overlaps": [],
+  "players_observed": [],
+  "properties_observed": [],
+  "tick_domain_source": {
+   "authoritative": false,
+   "authority_digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
+   "authority_source": "demoparser2.parse_header.playback_ticks",
+   "authority_type": "UNAVAILABLE",
+   "coverage_digest": null,
+   "created_at": null,
+   "demo_sha256": null,
+   "digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
+   "expected_intervals": [],
+   "expected_max_tick": null,
+   "expected_min_tick": null,
+   "expected_tick_count": null,
+   "intervals": [],
+   "max_tick": null,
+   "min_tick": null,
+   "observed_playback_ticks": null,
+   "parser_revision": "demoparser2@0.42.0",
+   "reason": "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration",
+   "status": "UNAVAILABLE",
+   "tickrate": null
+  },
+  "total_demo_ticks": null,
+  "total_rows_audited": 0,
+  "total_ticks_observed": 0,
+  "unexpected_tick_count": 0,
+  "unexpected_ticks": []
+ },
+ "gates": [
+  {
+   "gate": "RAW-V2-01-parser-identity",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-02-capability-catalog",
+   "reasons": [
+    "capability_reconciliation_failed"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-03-event-discovery",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-04-all-events-attempted",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-05-full-tick-domain",
+   "reasons": [
+    "expected_tick_domain_unavailable",
+    "verified_independent_tick_authority_required"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-06-tick-batches",
+   "reasons": [
+    "tick_batch_failed"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-07-tick-gaps",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-08-tick-overlaps",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-09-properties-classified",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-10-header",
+   "reasons": [
+    "header_semantics_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-11-player-info",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-12-rounds",
+   "reasons": [
+    "round_lifecycle_or_containment_invalid"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-13-bomb",
+   "reasons": [
+    "bomb_lifecycle_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-14-combat",
+   "reasons": [
+    "combat_relationships_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-15-grenades",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-16-teams-score",
+   "reasons": [
+    "team_score_provenance_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-17-usercmd",
+   "reasons": [
+    "usercmd_unavailable_or_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  {
+   "gate": "RAW-V2-18-weapons-inventory",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-19-aggregates",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-20-mapping-complete",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-21-no-parse-failures",
+   "reasons": [],
+   "status": "PASS"
+  },
+  {
+   "gate": "RAW-V2-22-physical-reaudit",
+   "reasons": [
+    "physical_chunk_reaudit_pending_app"
+   ],
+   "status": "BLOCKED"
+  }
+ ],
+ "grenade_digest": "40a9321c832418b78a3d98df93adac4f5448db5e0198cf3375755d962153b411",
+ "header_digest": "521274e6167c3bded4b1b19050763ea5eedae497683d88151396ad65dafb7d38",
+ "mapping_inventory": [
+  {
+   "app_field": "hot.*[].player_name",
+   "canonical_field": "match_sources.metadata.semantic_player_data",
+   "raw_field": "game_state.name",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": "hot.*[].player",
+   "canonical_field": "match_sources.metadata.semantic_player_data",
+   "raw_field": "game_state.steamid",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": "hot.*[].tick",
+   "canonical_field": "match_sources.metadata.semantic_player_data",
+   "raw_field": "game_state.tick",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": "header.game_version",
+   "canonical_field": "matches.game_version",
+   "raw_field": "header.demo_version_name",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": "header.map",
+   "canonical_field": "CanonicalMatch.map",
+   "raw_field": "header.map_name",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": "players[].name",
+   "canonical_field": "CanonicalParticipant.nicknameSnapshot",
+   "raw_field": "player.name",
+   "reason": null,
+   "status": "CANONICAL"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "begin_new_match.__event__",
+   "reason": "Preserved as reviewed parser-native event evidence.",
+   "status": "RAW_ONLY"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "begin_new_match.tick",
+   "reason": "Preserved as reviewed parser-native event evidence.",
+   "status": "RAW_ONLY"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "bomb_begindefuse.haskit",
+   "reason": "Preserved as reviewed parser-native event evidence.",
+   "status": "RAW_ONLY"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "bomb_begindefuse.tick",
+   "reason": "Retained for future behavioral/aim analysis.",
+   "status": "RAW_ONLY"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "bomb_begindefuse.user_name",
+   "reason": "Retained for future behavioral/aim analysis.",
+   "status": "RAW_ONLY"
+  },
+  {
+   "app_field": null,
+   "canonical_field": null,
+   "raw_field": "bomb_begindefuse.user_steamid",
+   "reason": "Retained for future behavioral/aim analysis.",
+   "status": "RAW_ONLY"
+  }
+ ],
+ "mapping_release_digest": null,
+ "parity_digest": null,
+ "parse_timestamp": null,
+ "parser": {
+  "name": "demoparser2",
+  "version": "0.42.0"
+ },
+ "physical_gate_status": "PENDING",
+ "physical_reaudit_required": true,
+ "player_digest": "8c15da497b900675cfeeb4816a62866b411d4e793d70c3120fd2bb43a2574960",
+ "producer_gate_status": "BLOCKED",
+ "property_inventory": [
+  {
+   "api_available": true,
+   "attempted": false,
+   "classification": "UNAVAILABLE",
+   "distinct_count": 0,
+   "error_message": null,
+   "error_type": null,
+   "failure_kind": null,
+   "failure_stage": "parse_ticks",
+   "first_non_null_value": null,
+   "first_tick": null,
+   "last_non_null_value": null,
+   "last_tick": null,
+   "max": null,
+   "min": null,
+   "non_null_count": 0,
+   "null_count": 0,
+   "null_only": false,
+   "parse_success": false,
+   "players_observed": [],
+   "property": "3k_rounds_total",
+   "provenance": "demoparser2.parse_ticks",
+   "reason": "Authoritative expected tick domain is unavailable.",
+   "returned_count": 0,
+   "row_count": 0,
+   "type_signature": []
+  },
+  {
+   "api_available": true,
+   "attempted": false,
+   "classification": "UNAVAILABLE",
+   "distinct_count": 0,
+   "error_message": null,
+   "error_type": null,
+   "failure_kind": null,
+   "failure_stage": "parse_ticks",
+   "first_non_null_value": null,
+   "first_tick": null,
+   "last_non_null_value": null,
+   "last_tick": null,
+   "max": null,
+   "min": null,
+   "non_null_count": 0,
+   "null_count": 0,
+   "null_only": false,
+   "parse_success": false,
+   "players_observed": [],
+   "property": "4k_rounds_total",
+   "provenance": "demoparser2.parse_ticks",
+   "reason": "Authoritative expected tick domain is unavailable.",
+   "returned_count": 0,
+   "row_count": 0,
+   "type_signature": []
+  },
+  {
+   "api_available": true,
+   "attempted": false,
+   "classification": "UNAVAILABLE",
+   "distinct_count": 0,
+   "error_message": null,
+   "error_type": null,
+   "failure_kind": null,
+   "failure_stage": "parse_ticks",
+   "first_non_null_value": null,
+   "first_tick": null,
+   "last_non_null_value": null,
+   "last_tick": null,
+   "max": null,
+   "min": null,
+   "non_null_count": 0,
+   "null_count": 0,
+   "null_only": false,
+   "parse_success": false,
+   "players_observed": [],
+   "property": "CCSGameRulesProxy.CCSGameRules.m_MatchDevice",
+   "provenance": "demoparser2.parse_ticks",
+   "reason": "Authoritative expected tick domain is unavailable.",
+   "returned_count": 0,
+   "row_count": 0,
+   "type_signature": []
+  },
+  {
+   "api_available": true,
+   "attempted": false,
+   "classification": "UNAVAILABLE",
+   "distinct_count": 0,
+   "error_message": null,
+   "error_type": null,
+   "failure_kind": null,
+   "failure_stage": "parse_ticks",
+   "first_non_null_value": null,
+   "first_tick": null,
+   "last_non_null_value": null,
+   "last_tick": null,
+   "max": null,
+   "min": null,
+   "non_null_count": 0,
+   "null_count": 0,
+   "null_only": false,
+   "parse_success": false,
+   "players_observed": [],
+   "property": "CCSGameRulesProxy.CCSGameRules.m_MinimapVerticalSectionHeights",
+   "provenance": "demoparser2.parse_ticks",
+   "reason": "Authoritative expected tick domain is unavailable.",
+   "returned_count": 0,
+   "row_count": 0,
+   "type_signature": []
+  }
+ ],
+ "raw_manifest_digest": null,
+ "report_completeness": "PARTIAL_BLOCKED",
+ "round_digest": "43cde38851ad8c879cb8ebc5420ae29a7dcfc84acee66731189e5d143304f6ec",
+ "semantic_gate_evidence": {
+  "aggregates": {
+   "reasons": [],
+   "status": "PASS"
+  },
+  "bomb": {
+   "reasons": [
+    "bomb_lifecycle_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  "combat": {
+   "reasons": [
+    "combat_relationships_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  "grenades": {
+   "reasons": [],
+   "status": "PASS"
+  },
+  "header": {
+   "reasons": [
+    "header_semantics_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  "players": {
+   "reasons": [],
+   "status": "PASS"
+  },
+  "rounds": {
+   "reasons": [
+    "round_lifecycle_or_containment_invalid"
+   ],
+   "status": "BLOCKED"
+  },
+  "teams_score": {
+   "reasons": [
+    "team_score_provenance_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  "usercmd": {
+   "reasons": [
+    "usercmd_unavailable_or_unproven"
+   ],
+   "status": "BLOCKED"
+  },
+  "weapons_economy": {
+   "reasons": [],
+   "status": "PASS"
+  }
+ },
+ "semantic_inventories": {
+  "movement_coverage": {
+   "coverage": "SAMPLE",
+   "derived": false,
+   "source": "tick_samples"
+  },
+  "score_inventory": [],
+  "teams_inventory": [
+   "steamid",
+   "team_number"
+  ],
+  "usercmd_capability": {
+   "coverage": "UNAVAILABLE",
+   "reason": "client usercmd stream is not universally enumerable in server demos",
+   "source": "demoparser2_parse_ticks"
+  },
+  "usercmd_inventory": [
+   "aim_punch_angle",
+   "aim_punch_angle_vel",
+   "shots_fired"
+  ]
+ },
+ "tick_authority_digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
+ "tick_digest": "d5fd79602c46e162616d09c1e3898aab80d9b086e4948499eff801c47385101b",
+ "unsigned_contract_digest": "aa7e6714672c986e50fd9c93ae15c22b288dc19182c7187f19dbfcad7f697c45",
+ "weapon_digest": "3a39112c968a0d09e7d5dbcfc17b4fd2f0e59e4f00820070d7bbd49ce97de232"
+}

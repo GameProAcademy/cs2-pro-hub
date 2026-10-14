@@ -588,6 +588,11 @@ export type Database = {
       }
       demo_jobs: {
         Row: {
+          admission_contract: string | null
+          admission_decision_id: string | null
+          admission_excluded_metrics: string[] | null
+          admission_limitations: string[] | null
+          admission_verdict: string | null
           analysis_version: string
           attachment_confidence: number | null
           attachment_confidence_label: string | null
@@ -664,6 +669,11 @@ export type Database = {
           worker_id: string | null
         }
         Insert: {
+          admission_contract?: string | null
+          admission_decision_id?: string | null
+          admission_excluded_metrics?: string[] | null
+          admission_limitations?: string[] | null
+          admission_verdict?: string | null
           analysis_version?: string
           attachment_confidence?: number | null
           attachment_confidence_label?: string | null
@@ -740,6 +750,11 @@ export type Database = {
           worker_id?: string | null
         }
         Update: {
+          admission_contract?: string | null
+          admission_decision_id?: string | null
+          admission_excluded_metrics?: string[] | null
+          admission_limitations?: string[] | null
+          admission_verdict?: string | null
           analysis_version?: string
           attachment_confidence?: number | null
           attachment_confidence_label?: string | null
@@ -4136,6 +4151,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_raw_admission_decision_v3: {
+        Args: {
+          _artifact_id: string
+          _decision: Json
+          _job_id: string
+        }
+        Returns: string
       }
       record_parser_runtime_attestation: {
         Args: {

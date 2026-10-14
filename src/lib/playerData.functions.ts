@@ -18,7 +18,7 @@ import {
 } from "@/lib/playerOverview";
 
 const JOB_COLUMNS =
-  "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status";
+  "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations";
 const METRIC_COLUMNS =
   "match_id, kills, deaths, assists, adr, kast, hs_percent, rating, rounds_played";
 const MATCH_COLUMNS =

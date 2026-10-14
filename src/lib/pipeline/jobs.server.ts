@@ -45,8 +45,14 @@ import {
   assertRawArtifactReference,
   hotToRawParserOutput,
   rawArtifactApproval,
+  rawArtifactApprovalV3,
   verifyRawArtifact,
 } from "@/lib/pipeline/rawArtifact.server";
+import {
+  decideAdmissionV3,
+  verifyCanonicalSemanticsV3,
+  type AdmissionDecisionV3,
+} from "@/lib/pipeline/admissionV3";
 import type { DurableDemoCompletionV1, RawParserOutput } from "@/lib/pipeline/types";
 import type { Json } from "@/integrations/supabase/types";
 import {
@@ -308,6 +314,21 @@ async function persistRawEvidence(args: {
   if (error)
     throw new PipelineError("CANONICAL_PERSISTENCE_ERROR", `raw evidence: ${error.message}`);
   return decision;
+}
+
+/** Records one admission v3 decision and its provenance on the job (one transaction). */
+async function recordAdmissionDecisionV3(
+  jobId: string,
+  artifactId: string,
+  decision: AdmissionDecisionV3,
+): Promise<void> {
+  const db = await admin();
+  const { error } = await db.rpc("record_raw_admission_decision_v3", {
+    _job_id: jobId,
+    _artifact_id: artifactId,
+    _decision: decision as unknown as Json,
+  });
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", `admission v3: ${error.message}`);
 }
 
 async function blockForRawAudit(
@@ -646,19 +667,59 @@ export async function processJob(
           raw,
         });
     await assertNotCancelled(jobId);
-    if (!rawAudit.approved) {
+    // Admission contract v3 exists only on the sealed-artifact path. It continues past the
+    // RAW audit only when its evidence classification is ELIGIBLE and the physical
+    // re-audit ran; its decision is taken once the canonical bundle exists.
+    const v3Pending = artifactCompletion ? rawAudit.admissionV3 : undefined;
+    const v3Continues =
+      !rawAudit.approved &&
+      v3Pending?.evidence.status === "ELIGIBLE" &&
+      v3Pending.physical.reconciliationDigest !== null;
+    const v3Identity = artifactCompletion
+      ? {
+          jobId,
+          uploadId: job.upload_id,
+          attemptNumber: job.attempt_number,
+          artifactId: artifactCompletion.raw.artifact_id,
+          demoSha256: (job.demo_sha256 ?? "").toLowerCase(),
+          parser: {
+            name: artifactCompletion.hot.parser.name,
+            version: artifactCompletion.hot.parser.version,
+            revision: artifactCompletion.hot.parser.revision ?? null,
+            build_revision: artifactCompletion.hot.parser.build_revision ?? null,
+          },
+        }
+      : null;
+    if (!rawAudit.approved && !v3Continues) {
+      if (v3Pending && v3Identity) {
+        // A v3 evaluation that blocked is recorded too: the audit trail explains it.
+        await recordAdmissionDecisionV3(
+          jobId,
+          v3Identity.artifactId,
+          decideAdmissionV3({
+            evidence: v3Pending.evidence,
+            semantic: [],
+            identity: v3Identity,
+            physical: v3Pending.physical,
+          }),
+        );
+      }
       await blockForRawAudit(jobId, job.upload_id, rawAudit, durableClaim);
       return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
     }
-    assertRawAdmissionApproved(rawAudit);
-    const rawApproval: RawAdmissionApproval = artifactCompletion
-      ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id, job.upload_id)
-      : {
-          approved: true,
-          auditStatus: "APPROVED",
-          auditVersion: rawAudit.auditVersion,
-          evidenceDigest: rawAudit.evidenceDigest,
-        };
+    let rawApproval: RawAdmissionApproval | null = null;
+    if (rawAudit.approved) {
+      assertRawAdmissionApproved(rawAudit);
+      rawApproval = artifactCompletion
+        ? rawArtifactApproval(rawAudit, artifactCompletion.raw.artifact_id, job.upload_id)
+        : {
+            approved: true,
+            auditStatus: "APPROVED",
+            auditVersion: rawAudit.auditVersion,
+            evidenceDigest: rawAudit.evidenceDigest,
+          };
+    }
+    let admissionV3: AdmissionDecisionV3 | null = null;
 
     await setStage(jobId, "normalizing");
     assertDeadline();
@@ -721,6 +782,32 @@ export async function processJob(
       internalPlayerId: participantKey ? (player?.id ?? null) : null,
     });
     validateCanonicalBundle(bundle.match, bundle.rounds, bundle.events);
+
+    if (!rawApproval) {
+      // Admission contract v3: re-verify on this bundle the semantics the v2 producer
+      // could not prove, decide, record the decision, and only then admit or block.
+      if (!v3Pending || !v3Identity) throw new PipelineError("RAW_AUDIT_BLOCKED");
+      const headerNames = [...new Set(v3Pending.headerMapNames)];
+      const rawHeaderMap =
+        v3Pending.headerMapNames.length === 1 && headerNames[0] ? headerNames[0] : null;
+      admissionV3 = decideAdmissionV3({
+        evidence: v3Pending.evidence,
+        semantic: verifyCanonicalSemanticsV3(bundle, rawHeaderMap),
+        identity: v3Identity,
+        physical: v3Pending.physical,
+      });
+      await recordAdmissionDecisionV3(jobId, v3Identity.artifactId, admissionV3);
+      if (admissionV3.verdict === "BLOCKED") {
+        await blockForRawAudit(
+          jobId,
+          job.upload_id,
+          { ...rawAudit, reasons: [...rawAudit.reasons, ...admissionV3.blocked_reasons] },
+          durableClaim,
+        );
+        return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
+      }
+      rawApproval = rawArtifactApprovalV3(rawAudit, admissionV3, job.upload_id);
+    }
 
     // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as
     // FACEIT instead of persisting blind. Discovery is source-neutral; only an
@@ -895,6 +982,7 @@ export async function processJob(
         features,
         jobId,
         jobResult: finalResult,
+        excludedByAdmission: admissionV3?.excluded_metrics ?? [],
       });
       projectedMatchId = persisted.matchId;
       finalized = true;

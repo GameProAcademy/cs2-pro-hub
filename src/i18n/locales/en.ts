@@ -916,6 +916,20 @@ export const en: Dictionary = {
   "real.metric.adr": "ADR",
   "real.metric.kast": "KAST",
   "real.metric.winRate": "Win rate",
+  "real.admission.column": "Data",
+  "real.admission.limited": "Limited",
+  "real.admission.certified": "Certified",
+  "real.admission.limitedNote":
+    "Matches admitted with declared limitations (admission contract v3). Only values those limitations do not affect are shown; everything else stays empty.",
+  "real.admission.L01-CAPABILITY-SURFACE-UNENUMERABLE":
+    "Parser capability catalog cannot be independently enumerated",
+  "real.admission.L02-TICK-DOMAIN-AUTHORITY-UNAVAILABLE":
+    "Complete tick domain cannot be independently proven: no movement or positioning metrics",
+  "real.admission.L03-USERCMD-UNAVAILABLE":
+    "No player input data in the demo: no aim-input analyses",
+  "real.admission.L04-MATCH-RESULT-UNRESOLVED":
+    "No team assignment or score in the demo: no match result",
+  "real.metric.limited": "Limited matches",
   "real.job.pending": "Queued",
   "real.job.processing": "Processing",
   "real.job.processed": "Processed",
