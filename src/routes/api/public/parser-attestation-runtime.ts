@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { bridgeWorkerIdentity } from "@/lib/h3e91WorkerIdentity";
+import { parserLockIdentity } from "@/lib/pipeline/parser/adapter";
 
 const FINGERPRINT = {
   status: "VERIFIED_SOURCE_FINGERPRINT",
@@ -17,7 +18,13 @@ export const Route = createFileRoute("/api/public/parser-attestation-runtime")({
     handlers: {
       // `bridge` is read at request time: the worker build the execution
       // bridge accepts (a commit hash, not a secret).
-      GET: () => Response.json({ ...FINGERPRINT, bridge: bridgeWorkerIdentity() }, { status: 200 }),
+      // `parserLock` is the revision lock the app applies to every worker
+      // response (revisions only, no secret), read at request time like `bridge`.
+      GET: () =>
+        Response.json(
+          { ...FINGERPRINT, bridge: bridgeWorkerIdentity(), parserLock: parserLockIdentity() },
+          { status: 200, headers: { "Cache-Control": "no-store" } },
+        ),
     },
   },
 });

@@ -16,6 +16,7 @@ import {
   type OverviewMetricRow,
   type PlayerOverview,
 } from "@/lib/playerOverview";
+import { buildPlayerDna, type DnaFeatureRow, type RealPlayerDna } from "@/lib/playerDna";
 
 const JOB_COLUMNS =
   "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations";
@@ -84,4 +85,33 @@ export const getPlayerOverview = createServerFn({ method: "GET" })
       matches: (matches ?? []) as OverviewMatchRow[],
       now: new Date(),
     });
+  });
+
+/**
+ * Real Player DNA: the caller's own `match_features` rows (RLS
+ * `match_features_select_own`, scoped to the caller's player profiles exactly
+ * like the overview), aggregated by `buildPlayerDna`. No reference population,
+ * no score: observed signals only.
+ */
+export const getRealPlayerDna = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<RealPlayerDna> => {
+    const supabase = context.supabase;
+    const { data: players, error: playersError } = await supabase
+      .from("player_profiles")
+      .select("id")
+      .eq("user_id", context.userId);
+    if (playersError)
+      throw new Error(`PLAYER_DNA_PLAYERS_FAILED:${playersError.code ?? "unknown"}`);
+    const playerIds = (players ?? []).map((player) => player.id);
+    const { data: rows, error } = playerIds.length
+      ? await supabase
+          .from("match_features")
+          .select("match_id, partial_parse, sample_rounds, features")
+          .in("player_id", playerIds)
+          .order("created_at", { ascending: false })
+          .limit(MAX_MATCHES)
+      : { data: [], error: null };
+    if (error) throw new Error(`PLAYER_DNA_FEATURES_FAILED:${error.code ?? "unknown"}`);
+    return buildPlayerDna((rows ?? []) as DnaFeatureRow[]);
   });

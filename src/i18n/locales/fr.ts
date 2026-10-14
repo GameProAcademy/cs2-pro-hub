@@ -978,4 +978,16 @@ export const fr: Dictionary = {
     "Les tendances de performance dépendent de séries réelles qui n’existent pas encore. Aucun graphique d’exemple n’est affiché.",
   "real.training.reason":
     "Le plan d’entraînement dépend d’un diagnostic réel qui n’existe pas encore. Aucun plan d’exemple n’est affiché.",
+  "real.dna.description":
+    "Signaux mesurés dans vos matchs traités. Aucune comparaison avec d’autres joueurs et aucun score.",
+  "real.dna.basis":
+    "Basé sur {matches} match(s), {rounds} rounds échantillonnés, {partial} lus partiellement. Chaque valeur est la moyenne du signal sur les matchs où il a été observé.",
+  "real.dna.insufficient":
+    "Échantillon insuffisant : {matches} sur {minimum} matchs minimum. Les valeurs sont réelles mais ne décrivent pas encore un profil stable.",
+  "real.dna.radarSub":
+    "Moyenne des signaux observés dans chaque dimension (0–100 ; les signaux où moins est mieux entrent en complément). Seules les dimensions avec un signal observé apparaissent.",
+  "real.dna.notObserved": "Non observé",
+  "real.dna.inMatches": "dans {n} match(s)",
+  "real.dna.empty":
+    "Aucun match traité avec des signaux enregistrés pour l’instant. Le Player DNA apparaît ici après le premier traitement terminé.",
 };
