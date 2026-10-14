@@ -387,3 +387,42 @@ def test_raw_only_without_reason_and_parse_failed_are_fail_closed():
         {"raw_field": "event.failed", "status": "PARSE_FAILED", "reason": "parser failure"},
     ]}
     assert raw_audit_status(parse_failed) == ("FAIL", ["parse_failed:event.failed"])
+
+
+# The exact UNMAPPED_BUT_AVAILABLE fields reported by the sealed RAW manifests of the
+# production jobs 4b5e3530 (reference DEM, attempt 10) and 98dda0f8 on 2026-10-14.
+PRODUCTION_2026_10_14_UNMAPPED = (
+    "header.demo_version_name", "player.team_number",
+    "begin_new_match.__event__", "begin_new_match.tick",
+    "round_announce_warmup.__event__", "round_announce_warmup.tick",
+    "hltv_fixed.__event__", "hltv_fixed.fov", "hltv_fixed.offset", "hltv_fixed.phi",
+    "hltv_fixed.posx", "hltv_fixed.posy", "hltv_fixed.posz", "hltv_fixed.target",
+    "hltv_fixed.theta", "hltv_fixed.tick",
+)
+
+
+def test_fields_observed_in_production_on_2026_10_14_are_classified_and_unknown_ones_still_block():
+    from raw_evidence import mapping_inventory
+    raw = {"header": {}, "players": [{}], "event_tables": {}, "tick_rows": [], "grenade_rows": [], "round_rows": []}
+    for field in PRODUCTION_2026_10_14_UNMAPPED:
+        family, native = field.split(".", 1)
+        if family == "header": raw["header"][native] = "x"
+        elif family == "player": raw["players"][0][native] = 2
+        elif native == "__event__": raw["event_tables"].setdefault(family, [{}])
+        else: raw["event_tables"].setdefault(family, [{}])[0][native] = 1
+    classified = {item["raw_field"]: item for item in mapping_inventory(raw)}
+    assert set(PRODUCTION_2026_10_14_UNMAPPED) <= set(classified)
+    for field in PRODUCTION_2026_10_14_UNMAPPED:
+        item = classified[field]
+        assert item["status"] != "UNMAPPED_BUT_AVAILABLE", field
+        assert item["status"] != "RAW_ONLY_INTENTIONAL" or item["reason"], field
+    # The two fields the adapter consumes are MAPPED to what it produces, not hidden as RAW only.
+    assert classified["player.team_number"]["app_field"] == "players[].team"
+    assert classified["player.team_number"]["canonical_field"] == "CanonicalParticipant.team"
+    assert classified["header.demo_version_name"]["app_field"] == "header.game_version"
+    # A field of the same events that was not reviewed still blocks.
+    raw["event_tables"]["hltv_fixed"][0]["future_camera_field"] = 1
+    raw["players"][0]["future_player_field"] = 1
+    again = {item["raw_field"]: item["status"] for item in mapping_inventory(raw)}
+    assert again["hltv_fixed.future_camera_field"] == "UNMAPPED_BUT_AVAILABLE"
+    assert again["player.future_player_field"] == "UNMAPPED_BUT_AVAILABLE"
