@@ -81,5 +81,15 @@ class RequireMainGates(unittest.TestCase):
             self.assertIn("| Gate | Job | Result | Verdict |", target.read_text())
 
 
+    def test_parser_governance_is_required_on_main(self):
+        # The worker deploys from main; its governance job may no longer be skipped there.
+        self.assertIn("parser-quality", gates.REQUIRED)
+        workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/quality-gates.yml").read_text()
+        self.assertNotRegex(workflow, r"(branches:|refs/heads/|base_ref == )[^\n]*infra/cs2-parser-worker-v8")
+        self.assertIn("needs: [web-quality, contract-gate, parser-quality, f553-r11-2-execution]", workflow)
+        needs = {**ALL_GREEN, "parser-quality": {"result": "skipped"}}
+        self.assertEqual(run(json.dumps(needs))[0], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
