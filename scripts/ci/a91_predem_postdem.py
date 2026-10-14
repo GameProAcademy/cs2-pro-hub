@@ -27,6 +27,7 @@ import io
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
@@ -193,16 +194,37 @@ def reconcile_postdem(approval: dict[str, Any] | None, report: Any, parity: Any,
 # ----------------------------------------------------------------------------- io
 
 
+class _NoCredentialForwarding(urllib.request.HTTPRedirectHandler):
+    """Never forward the GitHub token to another host.
+
+    `archive_download_url` answers 302 with a pre-signed blob-storage URL; urllib
+    re-sends every non-entity header on redirect, and the storage service rejects a
+    signed URL that also carries `Authorization`. The token must not leave GitHub.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401, PLR0913
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and urllib.parse.urlsplit(newurl).netloc != urllib.parse.urlsplit(req.full_url).netloc:
+            for name in [h for h in new.headers if h.lower() == "authorization"]:
+                del new.headers[name]
+            new.unredirected_hdrs.pop("Authorization", None)
+        return new
+
+
+_OPENER = urllib.request.build_opener(_NoCredentialForwarding)
+
+
 class Github:
-    def __init__(self, token: str):
+    def __init__(self, token: str, opener: Any = None):
         self.token = token
+        self.opener = opener or _OPENER
 
     def request(self, path: str) -> bytes:
         url = path if path.startswith("https://") else f"https://api.github.com/repos/{REPOSITORY}{path}"
         req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
                                                    "Authorization": f"Bearer {self.token}",
                                                    "User-Agent": "gamepro-a91-predem/1"})
-        with urllib.request.urlopen(req, timeout=60) as response:  # noqa: S310 - GitHub API only
+        with self.opener.open(req, timeout=60) as response:  # noqa: S310 - GitHub API only
             return response.read()
 
     def json(self, path: str) -> Any:
@@ -237,11 +259,15 @@ def precondition(env: dict[str, str], gh: Github, now: Callable[[], float]) -> i
                                    run=run, newest_completed_id=newest, artifacts=artifacts, blob=blob, now=now(),
                                    live_versions=live)
     except Exception as exc:  # noqa: BLE001 - missing evidence is a refusal, never a pass
-        result = {"ok": False, "reason": "APPROVAL_COLLECTION_ERROR", "error": type(exc).__name__}
+        # The exception class and, for HTTP errors, the status only: never a URL or a body.
+        status = getattr(exc, "code", None)
+        result = {"ok": False, "reason": "APPROVAL_COLLECTION_ERROR",
+                  "error": type(exc).__name__ + (f":{status}" if isinstance(status, int) else "")}
     Path(env.get("A91_PREDEM_OUT", "a91-predem-approval.json")).write_text(json.dumps(result, sort_keys=True) + "\n")
     level = "notice" if result["ok"] else "error"
     print(f"::{level} title=A91 pre-DEM approval::" + _escape(json.dumps(
-        {k: result.get(k) for k in ("ok", "reason", "approval", "main_head", "observed", "decision", "predem_decision")},
+        {k: result.get(k) for k in ("ok", "reason", "error", "approval", "main_head", "observed", "decision",
+                                     "predem_decision")},
         sort_keys=True)))
     if result["ok"] and env.get("GITHUB_OUTPUT"):
         with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
