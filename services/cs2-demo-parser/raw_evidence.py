@@ -70,6 +70,11 @@ REVIEWED_EVENT_FIELDS = {
 # field still falls through to UNMAPPED_BUT_AVAILABLE and blocks admission.
 REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "announce_phase_end": frozenset({"__event__", "tick"}),
+    # Match-lifecycle markers and the HLTV spectator camera, observed in production
+    # demos on 2026-10-14 (jobs 98dda0f8, 4b5e3530). Not player behaviour: RAW only.
+    "begin_new_match": frozenset({"__event__", "tick"}),
+    "round_announce_warmup": frozenset({"__event__", "tick"}),
+    "hltv_fixed": frozenset({"__event__", "fov", "offset", "phi", "posx", "posy", "posz", "target", "theta", "tick"}),
     "bomb_defused": frozenset({"c4"}),
     "bomb_dropped": frozenset({"entindex"}),
     "bomb_exploded": frozenset({"c4"}),
@@ -136,6 +141,10 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "header.map_name": ("header.map", "CanonicalMatch.map", "MAPPED"),
     "player.steamid": ("players[].steam_id", "CanonicalParticipant.steamId64", "MAPPED"),
     "player.name": ("players[].name", "CanonicalParticipant.nicknameSnapshot", "MAPPED"),
+    # adapter.normalize_players: team_number 2/3 -> players[].team -> CanonicalParticipant.team.
+    "player.team_number": ("players[].team", "CanonicalParticipant.team", "MAPPED"),
+    # adapter.normalize_header: demo_version_name -> header.game_version (app metadata, not Canonical).
+    "header.demo_version_name": ("header.game_version", None, "MAPPED"),
     "round_start.tick": ("rounds[].start_tick", "CanonicalRound.startTick", "DERIVED"),
     "round_end.tick": ("rounds[].end_tick", "CanonicalRound.endTick", "DERIVED"),
     "round_end.winner": ("rounds[].winner_side", "CanonicalRound.winningSide", "MAPPED"),
