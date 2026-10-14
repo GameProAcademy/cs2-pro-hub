@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { isAttestationTransportAuthorized } from "@/lib/parserAttestationCrypto.server";
+import { validateRawForensicContractV2 } from "@/lib/pipeline/rawArtifactContract";
 
 /**
  * Read-only: why the RAW audit of one job is BLOCKED, for the manual operator workflow.
@@ -116,6 +117,10 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
           ? manifest["audit_evidence_digest"]
           : null,
     };
+    const forensicV2 =
+      evidence["forensic_contract_v2"] && typeof evidence["forensic_contract_v2"] === "object"
+        ? (evidence["forensic_contract_v2"] as Record<string, unknown>)
+        : null;
     return Response.json(
       {
         jobId,
@@ -128,6 +133,18 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
           .filter((gate) => gate["status"] !== "PASS")
           .map((gate) => String(gate["gate"])),
         mappingStatusCounts,
+        // The app-side admission check (forensic contract v2, producer stage) and the
+        // worker's own v2 gate verdicts: gate names and reason codes only.
+        forensicV2: {
+          producerGateStatus:
+            typeof forensicV2?.["producer_gate_status"] === "string"
+              ? forensicV2["producer_gate_status"]
+              : null,
+          blockedGates: records(forensicV2?.["gates"])
+            .filter((gate) => gate["status"] !== "PASS")
+            .map((gate) => ({ gate: String(gate["gate"]), reasons: strings(gate["reasons"]) })),
+          appProducerReasons: validateRawForensicContractV2(forensicV2, "producer"),
+        },
       },
       { headers },
     );
