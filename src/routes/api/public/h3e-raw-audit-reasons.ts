@@ -8,8 +8,8 @@ import { isAttestationTransportAuthorized } from "@/lib/parserAttestationCrypto.
  *
  * Authenticated with the CI transport secret. It reads the job's sealed RAW manifest,
  * checks its audit-evidence digest and identity against the artifact row, and returns
- * reason codes, non-passing gate names and mapping-status counts. No demo content,
- * path, URL or secret is returned; nothing is written.
+ * reason codes, non-passing gate names, mapping-status counts, and non-sensitive parser
+ * identity metadata. No demo content, path, URL or secret is returned; nothing is written.
  */
 const body = z.object({ jobId: z.string().uuid() });
 
@@ -76,12 +76,49 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
       const status = typeof item["status"] === "string" ? item["status"] : "UNKNOWN";
       mappingStatusCounts[status] = (mappingStatusCounts[status] ?? 0) + 1;
     }
+    const evidenceManifest =
+      evidence["manifest"] &&
+      typeof evidence["manifest"] === "object" &&
+      !Array.isArray(evidence["manifest"])
+        ? (evidence["manifest"] as Record<string, unknown>)
+        : {};
+    const parserIdentity = {
+      name: typeof evidenceManifest["parser_name"] === "string" ? evidenceManifest["parser_name"] : null,
+      version:
+        typeof evidenceManifest["parser_version"] === "string"
+          ? evidenceManifest["parser_version"]
+          : null,
+      revision:
+        typeof evidenceManifest["parser_revision"] === "string"
+          ? evidenceManifest["parser_revision"]
+          : null,
+      contractVersion:
+        typeof evidenceManifest["contract_version"] === "number"
+          ? evidenceManifest["contract_version"]
+          : null,
+      demoSha256:
+        typeof evidenceManifest["demo_sha256"] === "string"
+          ? evidenceManifest["demo_sha256"]
+          : null,
+      fileSize: typeof evidenceManifest["file_size"] === "number" ? evidenceManifest["file_size"] : null,
+      auditSurfaceVersion:
+        typeof evidence["audit_surface_version"] === "number"
+          ? evidence["audit_surface_version"]
+          : null,
+      evidenceVersion:
+        typeof evidence["evidence_version"] === "number" ? evidence["evidence_version"] : null,
+      auditEvidenceDigest:
+        typeof manifest["audit_evidence_digest"] === "string"
+          ? manifest["audit_evidence_digest"]
+          : null,
+    };
     return Response.json(
       {
         jobId,
         attemptNumber: artifact.attempt_number,
         auditStatus: artifact.audit_status,
         rawStatus: evidence["raw_status"] ?? null,
+        parserIdentity,
         reasons: strings(evidence["raw_block_reasons"]),
         failingGates: records(evidence["gates"])
           .filter((gate) => gate["status"] !== "PASS")
