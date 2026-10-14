@@ -1,15 +1,17 @@
 /**
  * Global application configuration.
  *
- * DEMO_DATA = true means EVERY number, chart, diagnosis, training plan and
- * coach message rendered by the app comes from `src/data/*` and is a
- * DEMONSTRATION value. There is no parser, no database, no AI connection yet.
+ * DEMO_DATA = false: the app renders only the signed-in player's own persisted
+ * data (`getPlayerOverview`, RLS-scoped) or an honest state (EMPTY, PROCESSING,
+ * IDENTITY_PENDING, BLOCKED, FAILED, ERROR, NOT_AVAILABLE). Pages whose engine
+ * has no real data source (Pro Score, Player DNA, X-ray, trends, training plan,
+ * AI Coach) say so instead of showing a value.
  *
- * When the real pipeline (DEMO -> PARSER -> DATABASE -> METRICS -> SCORE ->
- * DIAGNOSIS -> AI COACH -> TRAINING) is implemented, flip this to false and
- * feed the same component props from the services layer.
+ * DEMO_DATA = true restores the demonstration pages fed by `src/data/*`, every
+ * value of which is fictitious and labelled as such. It must never be true in
+ * production.
  */
-export const DEMO_DATA = true;
+export const DEMO_DATA = false;
 
 export const APP_NAME = "CS2 PRO";
 export const APP_FULL_NAME = "CS2 PRO AI COACH";

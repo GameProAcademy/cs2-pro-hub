@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RealCapabilityPage } from "@/components/real/RealData";
+import { DEMO_DATA } from "@/config/app";
 
 import { getMapPerformanceDisplayContexts } from "@/lib/cs2/mapPerformance";
 import { MapPerformanceChart } from "@/components/charts/MapPerformanceChart";
@@ -28,8 +30,20 @@ export const Route = createFileRoute("/_authenticated/performance")({
       },
     ],
   }),
-  component: PerformancePage,
+  component: DEMO_DATA ? PerformancePage : RealPerformancePage,
 });
+
+function RealPerformancePage() {
+  const t = useT();
+  return (
+    <RealCapabilityPage
+      eyebrow={t("performance.eyebrow")}
+      title={t("performance.title")}
+      description={t("performance.description")}
+      reason={t("real.performance.reason")}
+    />
+  );
+}
 
 function PerformancePage() {
   const t = useT();

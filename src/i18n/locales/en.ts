@@ -890,4 +890,57 @@ export const en: Dictionary = {
     "Steam temporarily rate-limited our requests. Try again in a few minutes.",
   "steam.reason.temporary": "Steam is unavailable right now. Please try again.",
   "steam.reason.error": "The Steam link could not be completed.",
+
+  // Real-data surfaces (no demonstration values).
+  "real.state.EMPTY.title": "No demo uploaded yet",
+  "real.state.EMPTY.description":
+    "Upload a CS2 demo (.dem) to get started. Your numbers appear here only after the demo is processed and stored.",
+  "real.state.PROCESSING.title": "Processing your demo",
+  "real.state.PROCESSING.description":
+    "Your demo is queued or being processed. This page refreshes on its own; no value is shown before the result.",
+  "real.state.IDENTITY_PENDING.title": "Confirm your player",
+  "real.state.IDENTITY_PENDING.description":
+    "The demo was processed, but we have not yet confirmed which player in the match is you. Confirm your identity in the demo history to unlock your numbers.",
+  "real.state.BLOCKED.title": "Demo held by the audit",
+  "real.state.BLOCKED.description":
+    "The raw-data audit stopped your demo before it was stored. None of it was used in your numbers. See the reason in the demo history.",
+  "real.state.FAILED.title": "Processing failed",
+  "real.state.FAILED.description":
+    "Processing your demos failed and no data was stored. See the details in the demo history.",
+  "real.action.upload": "Upload a demo",
+  "real.action.history": "View demo history",
+  "real.error.title": "Your data could not be loaded",
+  "real.error.description": "The query failed. No value was shown in place of your real data.",
+  "real.metric.matches": "Matches",
+  "real.metric.kd": "K/D",
+  "real.metric.adr": "ADR",
+  "real.metric.kast": "KAST",
+  "real.metric.winRate": "Win rate",
+  "real.job.pending": "Queued",
+  "real.job.processing": "Processing",
+  "real.job.processed": "Processed",
+  "real.job.failed": "Failed",
+  "real.job.cancelled": "Cancelled",
+  "real.job.blocked": "Held by the audit",
+  "real.identity.confirmed": "Player confirmed",
+  "real.identity.pending": "Confirmation pending",
+  "real.identity.unattached": "Player not identified",
+  "real.identity.conflict": "Identity conflict",
+  "real.dashboard.description": "Only real data from your processed demos.",
+  "real.matches.description": "Real matches stored from your demos.",
+  "real.proScore.title": "CS2 PRO Score",
+  "real.engine.notAvailable":
+    "Not available yet: this calculation has no real data source in this version. No sample value is shown.",
+  "real.uploads.title": "Latest uploaded demos",
+  "real.uploads.subtitle": "Real processing and identity status",
+  "real.dna.reason":
+    "Player DNA depends on a model that has not been built on real data yet. No sample DNA is shown.",
+  "real.coach.reason":
+    "The AI Coach is not connected to a real data source yet. No sample conversation is shown.",
+  "real.analysis.reason":
+    "The X-ray depends on a diagnosis that has not been built on real data yet. No sample diagnosis is shown.",
+  "real.performance.reason":
+    "Performance trends depend on real series that do not exist yet. No sample chart is shown.",
+  "real.training.reason":
+    "The training plan depends on a real diagnosis that does not exist yet. No sample plan is shown.",
 };

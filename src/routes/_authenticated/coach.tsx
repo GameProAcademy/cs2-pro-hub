@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, ClipboardList, Stethoscope, Target } from "lucide-react";
+import { RealCapabilityPage } from "@/components/real/RealData";
+import { DEMO_DATA } from "@/config/app";
 
 import { CoachChat } from "@/components/coach/CoachChat";
 import { ChartCard } from "@/components/common/ChartCard";
@@ -26,8 +28,20 @@ export const Route = createFileRoute("/_authenticated/coach")({
       },
     ],
   }),
-  component: CoachPage,
+  component: DEMO_DATA ? CoachPage : RealCoachPage,
 });
+
+function RealCoachPage() {
+  const t = useT();
+  return (
+    <RealCapabilityPage
+      eyebrow={t("coach.eyebrow")}
+      title={t("coach.title")}
+      description={t("coach.description")}
+      reason={t("real.coach.reason")}
+    />
+  );
+}
 
 const contextItems: { icon: typeof Target; labelKey: TranslationKey }[] = [
   { icon: BarChart3, labelKey: "coach.context.performance" },
