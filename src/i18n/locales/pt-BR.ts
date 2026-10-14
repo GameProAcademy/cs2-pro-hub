@@ -98,9 +98,9 @@ export const ptBR = {
   "analyze.pipeline.extractor": "Extração de dados de relatórios",
   "analyze.pipeline.normalizer": "Normalização unificada",
   "analyze.pipeline.metrics": "Persistência e métricas",
-  "analyze.noProcessingTitle": "Sem processamento.",
+  "analyze.noProcessingTitle": "Processamento real.",
   "analyze.noProcessingBody":
-    "O arquivo selecionado permanece apenas no seu navegador: não há upload, storage nem parser nesta etapa.",
+    "A demo é enviada ao armazenamento privado e processada pelo parser no servidor. A promoção ao Canonical continua sujeita à auditoria RAW; o status de cada envio vem do servidor.",
 
   "coach.eyebrow": "Coach",
   "coach.title": "AI Coach",

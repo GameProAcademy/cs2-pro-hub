@@ -260,21 +260,24 @@ export const getAdminPipelineOverview = createServerFn({ method: "GET" })
     const counts = { pending: 0, processing: 0, processed: 0, failed: 0 };
     await Promise.all(
       statuses.map(async (status) => {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from("demo_jobs")
           .select("id", { count: "exact", head: true })
           .eq("status", status);
+        if (error) throw new Error(`PIPELINE_COUNT_FAILED:${error.code ?? "UNKNOWN"}`);
         counts[status] = count ?? 0;
       }),
     );
 
-    const { data } = await supabase
+    const { data, error: listError } = await supabase
       .from("demo_jobs")
       .select(
-        "id, upload_id, user_id, status, stage, error_code, retry_count, max_retries, duration_ms, parser_version, schema_version, extraction_confidence, partial_parse, rounds_detected, rounds_valid, identity_status, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, storage_deleted_at, queued_at, finished_at, uploads(file_name)",
+        "id, upload_id, user_id, status, stage, error_code, retry_count, max_retries, duration_ms, parser_version, schema_version, extraction_confidence, partial_parse, rounds_detected, rounds_valid, identity_status, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, storage_deleted_at, queued_at, finished_at, uploads!demo_jobs_upload_id_fkey(file_name)",
       )
       .order("queued_at", { ascending: false })
       .limit(50);
+    // An empty list must mean no job, never a failed query (the counters above would disagree).
+    if (listError) throw new Error(`PIPELINE_LIST_FAILED:${listError.code ?? "UNKNOWN"}`);
 
     const { resolveParserAdapter } = await import("@/lib/pipeline/parser/remoteParser.server");
     const adapter = resolveParserAdapter();
