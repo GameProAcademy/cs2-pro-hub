@@ -172,7 +172,11 @@ def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, A
         name: sorted({str(field) for row in events if row.get("event_name") == name for field in (row.get("raw_fields") or {})})
         for name in event_names
     }
-    player_ids = sorted({str(row.get("steamid", row.get("player_steamid"))) for row in players if row.get("steamid", row.get("player_steamid")) is not None})
+    player_ids = sorted({
+        str(row.get("steamid") if row.get("steamid") is not None else row.get("player_steamid"))
+        for row in players
+        if row.get("steamid") is not None or row.get("player_steamid") is not None
+    })
     round_ids = sorted({_safe_int(row.get("number")) for row in rounds if _safe_int(row.get("number")) is not None})
     tick_values = sorted({_safe_int(row.get("tick")) for row in ticks if _safe_int(row.get("tick")) is not None})
     mappings = sorted(
