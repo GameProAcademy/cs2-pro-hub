@@ -302,13 +302,15 @@ async function readJobState(
     })
   | null
 > {
-  const { data } = await db
+  const { data, error } = await db
     .from("demo_jobs")
     .select(
-      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, attachment_state, attachment_reason, attempt_number, retry_count, heartbeat_at, lease_expires_at, uploads(file_name)",
+      "id, upload_id, user_id, player_id, status, stage, error_code, error_message, match_id, rounds_valid, players_detected, parser_name, parser_version, parser_revision, demo_sha256, duration_ms, extraction_confidence, partial_parse, attachment_state, attachment_reason, attempt_number, retry_count, heartbeat_at, lease_expires_at, uploads!demo_jobs_upload_id_fkey(file_name)",
     )
     .eq("id", jobId)
     .maybeSingle();
+  // A failed query is not a missing job: surface its code instead of JOB_NOT_FOUND.
+  if (error) throw new Error(`JOB_LOOKUP_FAILED:${error.code ?? "UNKNOWN"}`);
   if (!data) return null;
   return {
     status: data.status as E2EJobState["status"],

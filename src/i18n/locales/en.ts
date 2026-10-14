@@ -93,9 +93,9 @@ export const en: Dictionary = {
   "analyze.pipeline.extractor": "Report data extraction",
   "analyze.pipeline.normalizer": "Unified normalization",
   "analyze.pipeline.metrics": "Persistence and metrics",
-  "analyze.noProcessingTitle": "No processing.",
+  "analyze.noProcessingTitle": "Real processing.",
   "analyze.noProcessingBody":
-    "The selected file stays in your browser only: there is no upload, storage or parser at this stage.",
+    "The demo is uploaded to private storage and parsed on the server. Promotion to Canonical remains subject to the RAW audit; each upload's status comes from the server.",
 
   "coach.eyebrow": "Coach",
   "coach.title": "AI Coach",

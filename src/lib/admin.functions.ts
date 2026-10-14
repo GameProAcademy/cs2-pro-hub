@@ -455,7 +455,7 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
         supabase
           .from("demo_jobs")
           .select(
-            "id, upload_id, status, stage, queued_at, rounds_valid, match_id, uploads(file_name)",
+            "id, upload_id, status, stage, queued_at, rounds_valid, match_id, uploads!demo_jobs_upload_id_fkey(file_name)",
           )
           .eq("user_id", data.userId)
           .order("queued_at", { ascending: false })

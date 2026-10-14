@@ -95,9 +95,9 @@ export const ptPT: Dictionary = {
   "analyze.pipeline.extractor": "Extração de dados de relatórios",
   "analyze.pipeline.normalizer": "Normalização unificada",
   "analyze.pipeline.metrics": "Persistência e métricas",
-  "analyze.noProcessingTitle": "Sem processamento.",
+  "analyze.noProcessingTitle": "Processamento real.",
   "analyze.noProcessingBody":
-    "O ficheiro selecionado permanece apenas no seu navegador: não existe upload, armazenamento nem parser nesta etapa.",
+    "A demo é enviada para o armazenamento privado e processada pelo parser no servidor. A promoção ao Canonical continua sujeita à auditoria RAW; o estado de cada envio vem do servidor.",
 
   "coach.eyebrow": "Coach",
   "coach.title": "AI Coach",
