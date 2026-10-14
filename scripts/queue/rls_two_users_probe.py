@@ -52,14 +52,34 @@ INSERT INTO public.match_metrics(id, match_id, player_id, kills, deaths) VALUES 
 
 
 def visible(viewer: str, label: str, a: dict, b: dict) -> str:
-    """Counts of A's and B's fixture rows visible to the current session."""
-    def where(table: str, p: dict) -> str:
-        key = {"player_profiles": f"user_id = '{p['user']}'", "uploads": f"id = '{p['upload']}'",
-               "demo_jobs": f"upload_id = '{p['upload']}'", "matches": f"id = '{p['match']}'",
-               "match_metrics": f"id = '{p['metric']}'"}[table]
-        return f"(SELECT count(*) FROM public.{table} WHERE {key})"
-    parts = ", ".join(f"'{t}', jsonb_build_object('a', {where(t, a)}, 'b', {where(t, b)})" for t in TABLES)
-    return f"SELECT jsonb_build_object({parts})::text AS {label} \\gset\n"
+    """Rows of A's and B's fixtures visible to the current session, per table.
+
+    Each count runs in its own DO block, so a refused read is recorded as
+    "denied" (no privilege at all) instead of aborting the script.
+    """
+    def key(table: str, p: dict) -> str:
+        return {"player_profiles": f"user_id = '{p['user']}'", "uploads": f"id = '{p['upload']}'",
+                "demo_jobs": f"upload_id = '{p['upload']}'", "matches": f"id = '{p['match']}'",
+                "match_metrics": f"id = '{p['metric']}'"}[table]
+    out = []
+    for table in TABLES:
+        for owner, p in (("a", a), ("b", b)):
+            name = f"probe.{label}_{table}_{owner}"
+            query = f"SELECT count(*) FROM public.{table} WHERE {key(table, p)}".replace("'", "''")
+            out.append(f"""DO $v$
+DECLARE _n bigint;
+BEGIN
+  EXECUTE '{query}' INTO _n;
+  PERFORM set_config('{name}', _n::text, true);
+EXCEPTION WHEN insufficient_privilege THEN
+  PERFORM set_config('{name}', 'denied', true);
+END $v$;
+""")
+    parts = ", ".join(
+        f"'{table}', jsonb_build_object('a', current_setting('probe.{label}_{table}_a'), "
+        f"'b', current_setting('probe.{label}_{table}_b'))" for table in TABLES)
+    out.append(f"SELECT jsonb_build_object({parts})::text AS {label} \\gset\n")
+    return "".join(out)
 
 
 def as_user(user: str | None) -> str:
@@ -110,11 +130,13 @@ def script(a: dict, b: dict) -> str:
 def check(r: dict) -> list[str]:
     problems = []
     for table in TABLES:
-        if r["seen_by_a"][table] != {"a": 1, "b": 0}:
+        # A signed-in player reads exactly its own row: a refused read would break the product.
+        if r["seen_by_a"][table] != {"a": "1", "b": "0"}:
             problems.append(f"A sees {table}: {r['seen_by_a'][table]}")
-        if r["seen_by_b"][table] != {"a": 0, "b": 1}:
+        if r["seen_by_b"][table] != {"a": "0", "b": "1"}:
             problems.append(f"B sees {table}: {r['seen_by_b'][table]}")
-        if r["seen_by_anon"][table] != {"a": 0, "b": 0}:
+        # anon reads nothing: no row, or no privilege at all.
+        if any(v not in ("0", "denied") for v in r["seen_by_anon"][table].values()):
             problems.append(f"anon sees {table}: {r['seen_by_anon'][table]}")
     for write in ("a_updates_b_profile", "a_deletes_b_metric", "a_updates_b_match", "a_updates_b_job"):
         if r[write] not in ("ok:0",) and not str(r[write]).startswith("denied:"):
