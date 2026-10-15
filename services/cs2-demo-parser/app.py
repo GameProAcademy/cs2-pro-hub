@@ -267,10 +267,10 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
         # Final directory cleanup runs after RAW persistence/dispatch completion.
         # This exact path was captured when mkdtemp created it, and rmtree is
         # deliberately best-effort so cleanup cannot mask the request verdict.
-        for temp_dir in cleanup_dirs:
-            shutil.rmtree(temp_dir, ignore_errors=True)
         for temporary_path in cleanup_paths:
             _cleanup(temporary_path)
+        for temp_dir in cleanup_dirs:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 def _envelope(status_code: int, error_code: str, message: str) -> JSONResponse:
     return JSONResponse(
