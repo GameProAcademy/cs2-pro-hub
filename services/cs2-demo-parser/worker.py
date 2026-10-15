@@ -128,25 +128,34 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                 try:
                     if claim["attempt_number"] < 1:
                         raise RuntimeError("invalid logical demo attempt")
-                    result = await _parse_durable_request(
-                        ParseRequest(
-                            contract_version=settings.contract_version,
-                            upload_id=claim["upload_id"],
+                    cleanup_dirs: list[str] = []
+                    try:
+                        result = await _parse_durable_request(
+                            ParseRequest(
+                                contract_version=settings.contract_version,
+                                upload_id=claim["upload_id"],
+                                job_id=identity["jobId"],
+                                attempt_number=claim["attempt_number"],
+                                demo_url=claim["demo_url"],
+                                demo_sha256=claim["demo_sha256"],
+                                file_size=claim["file_size"],
+                            ),
+                            settings,
+                            parse,
                             job_id=identity["jobId"],
+                            user_id=claim["user_id"],
                             attempt_number=claim["attempt_number"],
-                            demo_url=claim["demo_url"],
-                            demo_sha256=claim["demo_sha256"],
-                            file_size=claim["file_size"],
-                        ),
-                        settings,
-                        parse,
-                        job_id=identity["jobId"],
-                        user_id=claim["user_id"],
-                        attempt_number=claim["attempt_number"],
-                        bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
-                        client=client,
-                        on_started=record_start,
-                    )
+                            bridge=lambda action, payload: _bridge(client, settings, action, {**identity, **payload}),
+                            client=client,
+                            on_started=record_start,
+                            cleanup_dirs=cleanup_dirs,
+                        )
+                    finally:
+                        # The outer consumer owns the lifecycle as well: this catches
+                        # cancellation during download, before _download returns a path.
+                        import shutil
+                        for temp_dir in cleanup_dirs:
+                            shutil.rmtree(temp_dir, ignore_errors=True)
                     if stop.is_set():
                         logger.info("completion suppressed after lease or cancellation rejection")
                         await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED", "LEASE_REJECTED")
