@@ -125,17 +125,22 @@ def put_verified(api_url: str, key: str, bucket: str, path: str, content: bytes)
             'write_status': status, 'read_status': read_status}
 
 
+def create_disposable_user(api_url: str, key: str) -> str:
+    """Create an isolated auth identity without reserving or enqueueing a demo job."""
+    email = f'r11-{uuid4().hex}@example.invalid'
+    _, body = http(api_url, key, '/auth/v1/admin/users', 'POST',
+                   json.dumps({'email': email, 'email_confirm': True,
+                               'password': uuid4().hex + uuid4().hex}).encode(), 'application/json')
+    return ident(json.loads(body)['id'])
+
+
 def create_disposable_job(db: dict[str, str], api_url: str, key: str,
                           fixture_path: Path, fixture: dict) -> dict:
     """Persist the pinned bytes, a real reservation, and the database-generated job/PGMQ message."""
     if fixture_path.stat().st_size != fixture['bytes'] or hashlib.sha256(fixture_path.read_bytes()).hexdigest() != fixture['sha256']:
         raise RuntimeError('R11_FIXTURE_MISMATCH_BEFORE_UPLOAD')
     private_bucket(api_url, key, 'demos')
-    email = f'r11-{uuid4().hex}@example.invalid'
-    _, body = http(api_url, key, '/auth/v1/admin/users', 'POST',
-                   json.dumps({'email': email, 'email_confirm': True,
-                               'password': uuid4().hex + uuid4().hex}).encode(), 'application/json')
-    user_id = ident(json.loads(body)['id'])
+    user_id = create_disposable_user(api_url, key)
     upload_id = str(uuid4())  # Reservation RPC persists and returns this exact upload identity.
     reserved = json.loads(sql(db, "SELECT public.reserve_demo_upload("
                              f"'{user_id}'::uuid,'{upload_id}'::uuid,'{fixture['filename']}',"

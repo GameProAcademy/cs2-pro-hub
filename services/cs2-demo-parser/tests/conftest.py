@@ -89,9 +89,14 @@ def client_factory(monkeypatch):
 
 @pytest.fixture()
 def ok_download(tmp_path):
-    async def _download(_url, _size, _settings):
-        path = tmp_path / "demo.dem"
+    async def _download(_url, _size, _settings, *, cleanup_dirs=None):
+        # Own only this child directory; never register pytest's shared tmp_path.
+        temp_dir = tmp_path / "cs2-demo-fixture"
+        temp_dir.mkdir(exist_ok=True)
+        path = temp_dir / "demo.dem"
         path.write_bytes(DEMO_BYTES)
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
         return str(path), DEMO_SHA, len(DEMO_BYTES)
 
     return _download

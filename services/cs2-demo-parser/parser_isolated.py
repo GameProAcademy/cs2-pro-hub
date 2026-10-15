@@ -52,8 +52,8 @@ def _child_env() -> dict[str, str]:
     return {**os.environ, "PARSER_CHILD_PARENT_PID": str(os.getpid())}
 
 
-def _result_path() -> Path:
-    handle = tempfile.NamedTemporaryFile(prefix="parser-result-", suffix=".json", delete=False)
+def _result_path(directory: str | None = None) -> Path:
+    handle = tempfile.NamedTemporaryFile(prefix="parser-result-", suffix=".json", dir=directory, delete=False)
     handle.close()
     path = Path(handle.name)
     path.unlink()  # the child creates it atomically; absence means "no result"
@@ -110,7 +110,7 @@ def interpret(returncode: int | None, result_path: Path, *, timed_out: bool) -> 
 
 async def parse_isolated_async(demo_path: str, timeout_seconds: float) -> dict[str, Any]:
     """Parse in a child process; on timeout or cancellation the child is killed."""
-    result_path = _result_path()
+    result_path = _result_path(str(Path(demo_path).parent))
     process = await asyncio.create_subprocess_exec(
         *_command(demo_path, result_path),
         cwd=_HERE,
@@ -144,7 +144,7 @@ async def parse_isolated_async(demo_path: str, timeout_seconds: float) -> dict[s
 
 def parse_demo_file_isolated(demo_path: str, timeout_seconds: float | None = None) -> dict[str, Any]:
     """Synchronous form of the same boundary, for callers that are not async."""
-    result_path = _result_path()
+    result_path = _result_path(str(Path(demo_path).parent))
     process = subprocess.Popen(
         _command(demo_path, result_path),
         cwd=_HERE,

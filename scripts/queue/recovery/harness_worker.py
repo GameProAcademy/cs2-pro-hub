@@ -35,7 +35,7 @@ def next_ordinal(job_id: str) -> int:
     return count
 
 
-async def scripted(body, _settings, _parse, *, job_id, user_id, attempt_number, bridge, client, on_started=None):
+async def scripted(body, _settings, _parse, *, job_id, user_id, attempt_number, bridge, client, on_started=None, cleanup_dirs=None):
     plan = json.loads((state_dir / "plan.json").read_text())
     if on_started is not None:
         await on_started()

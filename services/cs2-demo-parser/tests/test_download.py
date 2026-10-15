@@ -126,7 +126,10 @@ import os  # noqa: E402
 
 
 def _leftovers(directory) -> list[str]:
-    return sorted(os.path.basename(path) for path in glob.glob(os.path.join(str(directory), "demo-*.dem")))
+    root = str(directory)
+    legacy = glob.glob(os.path.join(root, "demo-*.dem"))
+    isolated = glob.glob(os.path.join(root, "**", "demo.dem"), recursive=True)
+    return sorted(os.path.basename(path) for path in [*legacy, *isolated])
 
 
 class _HangingStream(_FakeStream):
@@ -181,3 +184,88 @@ def test_a_successful_download_hands_exactly_one_file_to_the_caller(monkeypatch,
     assert size == 4 and _leftovers(tmp_path) == [os.path.basename(path)]
     with open(path, "rb") as handle:
         assert handle.read() == b"abcd"
+
+@pytest.mark.parametrize("sidecar", ["parser-result-test.json", "parser-result-test.json.tmp"])
+def test_cleanup_removes_demo_and_owned_temp_directory_even_with_sidecars(tmp_path, sidecar):
+    parent = tmp_path / "cs2-demo-test_123"
+    parent.mkdir()
+    demo = parent / "demo.dem"
+    demo.write_bytes(b"synthetic demo")
+    (parent / sidecar).write_text("temporary parser output")
+
+    app_module._cleanup(str(demo))
+
+    assert not demo.exists()
+    assert not parent.exists()
+
+
+def test_cleanup_does_not_recursively_remove_unowned_directory(tmp_path):
+    parent = tmp_path / "not-worker-owned"
+    parent.mkdir()
+    demo = parent / "demo.dem"
+    demo.write_bytes(b"synthetic demo")
+    unrelated = parent / "keep.txt"
+    unrelated.write_text("keep")
+
+    app_module._cleanup(str(demo))
+
+    assert not demo.exists()
+    assert unrelated.read_text() == "keep"
+    assert parent.exists()
+
+def test_parse_lifecycle_removes_exact_temp_dir_when_file_cleanup_is_incomplete(monkeypatch, tmp_path):
+    import hashlib
+
+    payload = app_module.CS2_DEMO_MAGIC + b"\\x00" * 512
+    digest = hashlib.sha256(payload).hexdigest()
+    temp_dir = tmp_path / "cs2-demo-lifecycle123"
+    temp_dir.mkdir()
+    demo = temp_dir / "demo.dem"
+    demo.write_bytes(payload)
+    (temp_dir / "parser-result-test.json").write_text("temporary sidecar")
+    cleanup_dirs = []
+
+    async def fake_download(_url, _size, _settings, *, cleanup_dirs=None):
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
+        return str(demo), digest, len(payload)
+
+    monkeypatch.setattr(app_module, "_download", fake_download)
+    # Simulate file-level cleanup failing to remove the directory or sidecars.
+    monkeypatch.setattr(app_module, "_cleanup", lambda _path: None)
+    body = app_module.ParseRequest(**parse_body(file_size=len(payload), demo_sha256=digest))
+
+    asyncio.run(
+        app_module._parse_downloaded(
+            body,
+            make_settings(),
+            lambda _path: {"header": {}, "players": [], "rounds": [], "events": [], "warnings": []},
+            finalize_raw=False,
+            cleanup_dirs=cleanup_dirs,
+        )
+    )
+
+    assert cleanup_dirs == [str(temp_dir)]
+    assert not temp_dir.exists()
+
+def test_parse_request_cleans_registered_directory_if_download_handoff_is_cancelled(monkeypatch, tmp_path):
+    monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
+    temp_dir = tmp_path / "cs2-demo-cancel123"
+    demo = temp_dir / "demo.dem"
+
+    async def cancelled_download(_url, _size, _settings, *, cleanup_dirs=None):
+        temp_dir.mkdir()
+        demo.write_bytes(b"partial test fixture")
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
+        # Model cancellation after the directory exists but before the caller
+        # receives the downloaded path.
+        raise asyncio.CancelledError()
+
+    monkeypatch.setattr(app_module, "_download", cancelled_download)
+    body = app_module.ParseRequest(**parse_body())
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(app_module._parse_request(body, make_settings(), lambda _path: {}))
+
+    assert not temp_dir.exists()

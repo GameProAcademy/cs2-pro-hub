@@ -235,8 +235,8 @@ def test_no_result_file_is_left_behind(monkeypatch, tmp_path):
     seen: list[Path] = []
     original = parser_isolated._result_path
 
-    def tracking():
-        path = original()
+    def tracking(directory=None):
+        path = original(directory)
         seen.append(path)
         return path
 
