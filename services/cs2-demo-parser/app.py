@@ -83,9 +83,18 @@ class ParseRequest(BaseModel):
 
 
 async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn) -> dict[str, Any]:
-    payload = await _parse_downloaded(body, settings, parse, finalize_raw=True)
-    payload.pop("_performance", None)
-    return payload
+    # Own the temp-directory registry at the request boundary so cancellation
+    # during _download cannot lose the path before _parse_downloaded gets it.
+    cleanup_dirs: list[str] = []
+    try:
+        payload = await _parse_downloaded(
+            body, settings, parse, finalize_raw=True, cleanup_dirs=cleanup_dirs
+        )
+        payload.pop("_performance", None)
+        return payload
+    finally:
+        for temp_dir in cleanup_dirs:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
@@ -103,12 +112,10 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
     baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
-    path, sha256, size = await _download(body.demo_url, body.file_size, settings)
-    # _download returns the exact file it created; retain its parent explicitly
-    # for the request's final cleanup, independent of _cleanup's filename checks.
-    temp_dir = os.path.dirname(os.path.abspath(path))
-    if cleanup_dirs is not None and temp_dir not in cleanup_dirs:
-        cleanup_dirs.append(temp_dir)
+    path, sha256, size = await _download(
+        body.demo_url, body.file_size, settings, cleanup_dirs=cleanup_dirs
+    )
+    # _download registers the exact mkdtemp result before the first I/O await.
     if cleanup_paths is not None:
         cleanup_paths.append(path)
     download_ms = round((time.perf_counter() - download_started) * 1000)
@@ -294,7 +301,10 @@ def _check_contract(received: int, settings: Settings) -> None:
     )
 
 
-async def _download(url: str, expected_size: int, settings: Settings) -> tuple[str, str, int]:
+async def _download(
+    url: str, expected_size: int, settings: Settings, *,
+    cleanup_dirs: list[str] | None = None
+) -> tuple[str, str, int]:
     """Stream the demo to a temp file. Returns (path, sha256_hex, bytes)."""
     if not url.lower().startswith("https://"):
         # A non-HTTPS URL is the APP violating the request contract.
@@ -304,6 +314,8 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
     total = 0
     # Isolate each demo in a private directory so cleanup owns the entire execution.
     temp_dir = tempfile.mkdtemp(prefix="cs2-demo-")
+    if cleanup_dirs is not None:
+        cleanup_dirs.append(temp_dir)
     handle = None
     path = os.path.join(temp_dir, "demo.dem")
     downloaded = False
