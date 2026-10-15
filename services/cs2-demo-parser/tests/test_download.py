@@ -266,6 +266,6 @@ def test_parse_request_cleans_registered_directory_if_download_handoff_is_cancel
     body = app_module.ParseRequest(**parse_body())
 
     with pytest.raises(asyncio.CancelledError):
-        asyncio.run(app_module._parse_request(body, make_settings(), empty_parse))
+        asyncio.run(app_module._parse_request(body, make_settings(), lambda _path: {}))
 
     assert not temp_dir.exists()
