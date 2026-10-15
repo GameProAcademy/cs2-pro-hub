@@ -911,10 +911,7 @@ export async function processJob(
       if (currentJobError) {
         throw new PipelineError("PERSISTENCE_ERROR", currentJobError.message);
       }
-      if (
-        currentJob?.status !== "processing" ||
-        currentJob.match_id !== canonical.matchId
-      ) {
+      if (currentJob?.status !== "processing" || currentJob.match_id !== canonical.matchId) {
         throw new PipelineError("JOB_STALE", "CANONICAL_MATCH_LINK_MISMATCH");
       }
     }

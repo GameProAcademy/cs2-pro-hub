@@ -42,7 +42,9 @@ const claimMigration = readFileSync(
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
   it("links canonical match before identity RPC validates Steam participant", () => {
     const canonicalPersist = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
-    const canonicalLink = jobsSource.indexOf("const { data: canonicalLinkRows, error: canonicalLinkError }");
+    const canonicalLink = jobsSource.indexOf(
+      "const { data: canonicalLinkRows, error: canonicalLinkError }",
+    );
     const identityEvent = jobsSource.indexOf('db.rpc("record_demo_identity_event"');
     const terminal = jobsSource.indexOf('db.rpc("finish_demo_job_processed"');
     expect(canonicalPersist).toBeGreaterThan(-1);
