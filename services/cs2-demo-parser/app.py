@@ -90,7 +90,8 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
                             finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None,
-                            cleanup_paths: list[str] | None = None) -> dict[str, Any]:
+                            cleanup_paths: list[str] | None = None,
+                            cleanup_dirs: list[str] | None = None) -> dict[str, Any]:
     request_started = time.perf_counter()
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
@@ -102,7 +103,9 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
     baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
-    path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    path, sha256, size = await _download(
+        body.demo_url, body.file_size, settings, cleanup_dirs=cleanup_dirs
+    )
     if cleanup_paths is not None:
         cleanup_paths.append(path)
     download_ms = round((time.perf_counter() - download_started) * 1000)
@@ -152,7 +155,15 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
             raise WorkerError(500, E.PARSER_ERROR, "Parser failed unexpectedly.",
                               failure_class=failure_class) from None
     finally:
-        _cleanup(path)
+        # Keep the exact directory reference from _download; do not reconstruct
+        # ownership from a basename after the parser has run. The direct rmtree
+        # is a final safety net if file-level cleanup misses a sidecar.
+        try:
+            _cleanup(path)
+        finally:
+            if cleanup_dirs is not None:
+                for temp_dir in cleanup_dirs:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
 
     identity = {
         "name": PARSER_NAME,
@@ -198,9 +209,12 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
                                  job_id: str, user_id: str, attempt_number: int,
                                  bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
     cleanup_paths: list[str] = []
+    cleanup_dirs: list[str] = []
     try:
-        payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started,
-                                          cleanup_paths=cleanup_paths)
+        payload = await _parse_downloaded(
+            body, settings, parse, finalize_raw=False, on_started=on_started,
+            cleanup_paths=cleanup_paths, cleanup_dirs=cleanup_dirs
+        )
         performance = payload.pop("_performance", {})
         evidence = payload.pop("raw_evidence", None)
         if not isinstance(evidence, dict):
@@ -237,7 +251,11 @@ async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: 
         return {"hot": hot, "raw": raw}
 
     finally:
-        # Repeat idempotent cleanup at the durable boundary, after RAW persistence.
+        # Final directory cleanup runs after RAW persistence/dispatch completion.
+        # This exact path was captured when mkdtemp created it, and rmtree is
+        # deliberately best-effort so cleanup cannot mask the request verdict.
+        for temp_dir in cleanup_dirs:
+            shutil.rmtree(temp_dir, ignore_errors=True)
         for temporary_path in cleanup_paths:
             _cleanup(temporary_path)
 
@@ -273,7 +291,8 @@ def _check_contract(received: int, settings: Settings) -> None:
     )
 
 
-async def _download(url: str, expected_size: int, settings: Settings) -> tuple[str, str, int]:
+async def _download(url: str, expected_size: int, settings: Settings, *,
+                    cleanup_dirs: list[str] | None = None) -> tuple[str, str, int]:
     """Stream the demo to a temp file. Returns (path, sha256_hex, bytes)."""
     if not url.lower().startswith("https://"):
         # A non-HTTPS URL is the APP violating the request contract.
@@ -283,6 +302,8 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
     total = 0
     # Isolate each demo in a private directory so cleanup owns the entire execution.
     temp_dir = tempfile.mkdtemp(prefix="cs2-demo-")
+    if cleanup_dirs is not None:
+        cleanup_dirs.append(temp_dir)
     handle = None
     path = os.path.join(temp_dir, "demo.dem")
     downloaded = False
@@ -321,7 +342,7 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
         if handle is not None:
             handle.close()
         if not downloaded:
-            shutil.rmtree(temp_dir, ignore_errors=False)
+            shutil.rmtree(temp_dir, ignore_errors=True)
     return path, digest.hexdigest(), total
 
 
