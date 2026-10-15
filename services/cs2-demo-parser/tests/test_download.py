@@ -248,3 +248,24 @@ def test_parse_lifecycle_removes_exact_temp_dir_when_file_cleanup_is_incomplete(
     assert cleanup_dirs == [str(temp_dir)]
     assert not temp_dir.exists()
 
+def test_parse_request_cleans_registered_directory_if_download_handoff_is_cancelled(monkeypatch, tmp_path):
+    monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
+    temp_dir = tmp_path / "cs2-demo-cancel123"
+    demo = temp_dir / "demo.dem"
+
+    async def cancelled_download(_url, _size, _settings, *, cleanup_dirs=None):
+        temp_dir.mkdir()
+        demo.write_bytes(b"partial test fixture")
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
+        # Model cancellation after the directory exists but before the caller
+        # receives the downloaded path.
+        raise asyncio.CancelledError()
+
+    monkeypatch.setattr(app_module, "_download", cancelled_download)
+    body = app_module.ParseRequest(**parse_body())
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(app_module._parse_request(body, make_settings(), empty_parse))
+
+    assert not temp_dir.exists()
