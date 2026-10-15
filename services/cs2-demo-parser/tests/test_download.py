@@ -126,7 +126,10 @@ import os  # noqa: E402
 
 
 def _leftovers(directory) -> list[str]:
-    return sorted(os.path.basename(path) for path in glob.glob(os.path.join(str(directory), "demo-*.dem")))
+    root = str(directory)
+    legacy = glob.glob(os.path.join(root, "demo-*.dem"))
+    isolated = glob.glob(os.path.join(root, "**", "demo.dem"), recursive=True)
+    return sorted(os.path.basename(path) for path in [*legacy, *isolated])
 
 
 class _HangingStream(_FakeStream):
