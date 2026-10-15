@@ -329,7 +329,9 @@ def invariants(item: dict, seen: dict) -> None:
     for entry in WORKERS:
         if entry.get("killed"):
             continue
-        left = sorted(p.name for p in entry["tmp"].rglob("*") if p.is_file() and (p.name.startswith("demo-") or p.name.startswith("parser-result-")))
+        left = sorted(str(p.relative_to(entry["tmp"])) for p in entry["tmp"].rglob("*")
+                      if p.is_file() and (p.name == "demo.dem" or p.name.startswith("demo-")
+                                           or p.name.startswith("parser-result-")))
         assert not left or entry["process"].poll() is None and seen["job_status"] not in TERMINAL, f"temporary files left: {left[:3]}"
 
 
