@@ -154,6 +154,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
 def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0, heartbeat: float = 2.0) -> dict:
     ensure_probe_build_identity()
     index = len(list(WORK.glob("worker-*.log")))
+    # Worker-scoped temp root for complete post-stop cleanup assertions.
     tmp = WORK / f"tmp-{index}"
     tmp.mkdir()
     log_path = WORK / f"worker-{index}.log"
@@ -162,7 +163,7 @@ def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0
          "--log-level", "info"],
         cwd=ROOT / "services" / "cs2-demo-parser", stdout=log_path.open("w"), stderr=subprocess.STDOUT,
         start_new_session=True,
-        env={"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/tmp"), "ENVIRONMENT": "production",
+        env={"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/tmp"), "TMPDIR": str(tmp), "ENVIRONMENT": "production",
              "PARSER_TOKEN": "recovery-integration-token", "PARSER_REVISION": REVISION,
              "DEMO_PIPELINE_BRIDGE_URL": f"http://127.0.0.1:{BRIDGE_EDGE_PORT}/api/public/pipeline-worker",
              "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "DEMO_PIPELINE_WORKER_ID": name,
