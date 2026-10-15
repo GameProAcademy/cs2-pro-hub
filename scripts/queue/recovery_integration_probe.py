@@ -235,10 +235,19 @@ def canonical(sha: str) -> dict:
     if len(matches) != 1:
         return out
     match = matches[0]
-    volatile = ("id", "created_at", "updated_at", "round_id")
+    volatile = {"id", "created_at", "updated_at", "round_id"}
+    # These columns describe the user's identity link to a participant, not facts
+    # extracted from the demo. They can legitimately change when a later upload
+    # links a Steam ID to a profile; they are verified by the admission/identity
+    # assertions in the v3 scenario instead of being treated as parser drift.
+    identity_overlay = {
+        "match_participants": {"internal_player_id", "identity_status", "identity_confidence", "is_target_player"},
+        "round_players": {"internal_player_id"},
+    }
     for table in ("match_participants", "match_rounds", "round_players", "round_events"):
         rows = json.loads(sql(f"select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.{table} t where match_id='{match}'"))
-        cleaned = sorted(json.dumps({k: v for k, v in row.items() if k not in volatile}, sort_keys=True) for row in rows)
+        excluded = volatile | identity_overlay.get(table, set())
+        cleaned = sorted(json.dumps({k: v for k, v in row.items() if k not in excluded}, sort_keys=True) for row in rows)
         out[table] = len(rows)
         out[table + "_digest"] = hashlib.sha256("\n".join(cleaned).encode()).hexdigest()[:16]
     out["sources"] = int(sql(f"select count(*) from public.match_sources where match_id='{match}'"))
@@ -307,7 +316,13 @@ def invariants(item: dict, seen: dict) -> None:
         snapshot = {k: v for k, v in seen["canonical"].items() if k != "sources"}
         if not BASELINE:
             BASELINE.update(snapshot)
-        assert snapshot == BASELINE, "canonical content changed between jobs of the same demo"
+        if snapshot != BASELINE:
+            differences = {
+                key: {"baseline": BASELINE.get(key), "observed": value}
+                for key, value in snapshot.items()
+                if BASELINE.get(key) != value
+            }
+            raise AssertionError(f"canonical game facts changed between jobs of the same demo: {differences}")
     # No parser child outlives its worker and no demo or result file is left behind
     # by a worker that was allowed to stop.
     for entry in WORKERS:
