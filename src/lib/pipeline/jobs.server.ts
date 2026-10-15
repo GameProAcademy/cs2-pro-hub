@@ -878,44 +878,6 @@ export async function processJob(
       );
     }
 
-    // The identity RPC validates its participant against demo_jobs.match_id. Canonical
-    // persistence has committed above, but the terminal RPC that sets demo_jobs.match_id
-    // runs later (after metrics/projection). Publish the canonical match link while the
-    // durable job remains processing, before recording identity. This update is idempotent
-    // and is scoped to the current job state; finish_demo_job_processed still performs the
-    // authoritative terminal transition and revalidates the match source.
-    const { data: canonicalLinkRows, error: canonicalLinkError } = await db
-      .from("demo_jobs")
-      .update({
-        match_id: canonical.matchId,
-        stage: "persisting",
-        heartbeat_at: new Date().toISOString(),
-      })
-      .eq("id", jobId)
-      .eq("status", "processing")
-      .is("match_id", null)
-      .select("id");
-
-    if (canonicalLinkError) {
-      throw new PipelineError("PERSISTENCE_ERROR", canonicalLinkError.message);
-    }
-    if (!canonicalLinkRows || canonicalLinkRows.length === 0) {
-      // A redelivery may encounter the same canonical link left by an earlier
-      // attempt. Allow only that exact idempotent state; fail closed on a stale
-      // job or a link to any other canonical match.
-      const { data: currentJob, error: currentJobError } = await db
-        .from("demo_jobs")
-        .select("status, match_id")
-        .eq("id", jobId)
-        .maybeSingle();
-      if (currentJobError) {
-        throw new PipelineError("PERSISTENCE_ERROR", currentJobError.message);
-      }
-      if (currentJob?.status !== "processing" || currentJob.match_id !== canonical.matchId) {
-        throw new PipelineError("JOB_STALE", "CANONICAL_MATCH_LINK_MISMATCH");
-      }
-    }
-
     if (
       attachment.state === "attached" &&
       attachment.source === "steam" &&

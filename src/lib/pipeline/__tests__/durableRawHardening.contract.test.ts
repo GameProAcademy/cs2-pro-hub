@@ -40,20 +40,15 @@ const claimMigration = readFileSync(
 );
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
-  it("links canonical match before identity RPC validates Steam participant", () => {
+  it("records Steam identity only after canonical persistence and leaves job linking to terminal RPC", () => {
     const canonicalPersist = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
-    const canonicalLink = jobsSource.indexOf(
-      "const { data: canonicalLinkRows, error: canonicalLinkError }",
-    );
     const identityEvent = jobsSource.indexOf('db.rpc("record_demo_identity_event"');
     const terminal = jobsSource.indexOf('db.rpc("finish_demo_job_processed"');
     expect(canonicalPersist).toBeGreaterThan(-1);
-    expect(canonicalLink).toBeGreaterThan(canonicalPersist);
-    expect(identityEvent).toBeGreaterThan(canonicalLink);
+    expect(identityEvent).toBeGreaterThan(canonicalPersist);
     expect(terminal).toBeGreaterThan(identityEvent);
-    expect(jobsSource).toContain('.is("match_id", null)');
-    expect(jobsSource).toContain('.eq("status", "processing")');
-    expect(jobsSource).toContain("currentJob.match_id !== canonical.matchId");
+    expect(jobsSource).not.toContain("canonicalLinkRows");
+    expect(jobsSource).not.toContain("CANONICAL_MATCH_LINK_MISMATCH");
   });
 
   it("lets another worker reclaim only an expired processing lease", () => {
