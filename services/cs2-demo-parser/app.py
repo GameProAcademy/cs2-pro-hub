@@ -30,6 +30,7 @@ import re
 import resource
 import time
 import uuid
+import shutil
 from typing import Any, Awaitable, Callable
 
 import httpx
@@ -280,10 +281,13 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
 
     digest = hashlib.sha256()
     total = 0
-    handle = tempfile.NamedTemporaryFile(prefix="demo-", suffix=".dem", delete=False)
-    path = handle.name
+    # Isolate each demo in a private directory so cleanup owns the entire execution.
+    temp_dir = tempfile.mkdtemp(prefix="cs2-demo-")
+    handle = None
+    path = os.path.join(temp_dir, "demo.dem")
     downloaded = False
     try:
+        handle = open(path, "xb")
         timeout = httpx.Timeout(settings.download_timeout_seconds)
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             async with client.stream("GET", url) as response:
@@ -314,15 +318,16 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
         # Every exit that does not hand the file to the caller removes it,
         # including cancellation and any exception not listed above: a partial
         # demo must never be left on disk.
-        handle.close()
+        if handle is not None:
+            handle.close()
         if not downloaded:
-            _cleanup(path)
+            shutil.rmtree(temp_dir, ignore_errors=False)
     return path, digest.hexdigest(), total
 
 
 #: Only names this worker creates itself: the downloaded demo, the parser
 #: child's result file and that file's atomic-write temporary.
-_ORPHAN_NAME = re.compile(r"^(demo-[A-Za-z0-9_]{1,32}\.dem|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
+_ORPHAN_NAME = re.compile(r"^(cs2-demo-[A-Za-z0-9_]{1,32}|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
 
 
 def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None, now: float | None = None) -> dict[str, int]:
@@ -357,14 +362,20 @@ def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None,
             if not _ORPHAN_NAME.fullmatch(name):
                 continue
             try:
-                info = os.lstat(name, dir_fd=handle)
-                if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid()
-                        or current - info.st_mtime < min_age):
+                info = os.stat(name, dir_fd=handle, follow_symlinks=False)
+                if info.st_uid != os.geteuid() or current - info.st_mtime < min_age:
                     kept += 1
                     continue
-                os.unlink(name, dir_fd=handle)
-                removed += 1
-                bytes_removed += info.st_size
+                if stat.S_ISDIR(info.st_mode):
+                    shutil.rmtree(os.path.join(root, name))
+                    removed += 1
+                    bytes_removed += info.st_size
+                elif stat.S_ISREG(info.st_mode):
+                    os.unlink(name, dir_fd=handle)
+                    removed += 1
+                    bytes_removed += info.st_size
+                else:
+                    kept += 1
             except OSError:
                 kept += 1
     finally:
@@ -379,7 +390,7 @@ def _cleanup(path: str) -> None:
         try:
             os.unlink(path)
         except FileNotFoundError:
-            return
+            break
         except OSError as error:
             if attempt < 2:
                 time.sleep(0.02 * (attempt + 1))
@@ -387,10 +398,19 @@ def _cleanup(path: str) -> None:
             logger.error("temporary demo cleanup failed errno=%s", error.errno)
             raise RuntimeError("temporary demo cleanup failed") from None
         if not os.path.lexists(path):
-            return
+            break
     if os.path.lexists(path):
         logger.error("temporary demo cleanup postcondition failed")
         raise RuntimeError("temporary demo cleanup postcondition failed")
+    parent = os.path.dirname(path)
+    if os.path.basename(parent).startswith("cs2-demo-"):
+        try:
+            os.rmdir(parent)
+        except FileNotFoundError:
+            pass
+        except OSError as error:
+            logger.error("temporary demo directory cleanup failed errno=%s", error.errno)
+            raise RuntimeError("temporary demo directory cleanup failed") from None
 
 
 def _require_cs2_magic(path: str) -> None:
