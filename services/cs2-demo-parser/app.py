@@ -327,7 +327,7 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
 
 #: Only names this worker creates itself: the downloaded demo, the parser
 #: child's result file and that file's atomic-write temporary.
-_ORPHAN_NAME = re.compile(r"^(cs2-demo-[A-Za-z0-9_]{1,32}|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
+_ORPHAN_NAME = re.compile(r"^(demo-[A-Za-z0-9_]{1,32}\.dem|cs2-demo-[A-Za-z0-9_]{1,32}|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
 
 
 def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None, now: float | None = None) -> dict[str, int]:
