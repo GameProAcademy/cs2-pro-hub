@@ -893,7 +893,7 @@ export async function processJob(
           participant_key: attachment.participantKey,
           nickname: attachment.observedNickname,
           method: attachment.method,
-          source: attachment.source,
+          source: "system",
           confidence_label: attachment.confidence,
           confidence_score: confidenceScore(attachment.confidence),
           evidence: { identity_provider: "steam" },

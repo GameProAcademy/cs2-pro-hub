@@ -38,17 +38,34 @@ const claimMigration = readFileSync(
   "supabase/migrations/20260916103513_50aef18c-7978-412f-aefe-eca801eba0a6.sql",
   "utf8",
 );
+const identitySourceMigration = readFileSync(
+  "supabase/migrations/20261015040000_demo_identity_canonical_source_resolution.sql",
+  "utf8",
+);
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
-  it("records Steam identity only after canonical persistence and leaves job linking to terminal RPC", () => {
+  it("records system-authored Steam identity after canonical persistence", () => {
     const canonicalPersist = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
     const identityEvent = jobsSource.indexOf('db.rpc("record_demo_identity_event"');
     const terminal = jobsSource.indexOf('db.rpc("finish_demo_job_processed"');
+    const identityCall = jobsSource.slice(identityEvent, terminal);
     expect(canonicalPersist).toBeGreaterThan(-1);
     expect(identityEvent).toBeGreaterThan(canonicalPersist);
     expect(terminal).toBeGreaterThan(identityEvent);
+    expect(identityCall).toContain('source: "system"');
+    expect(identityCall).toContain('identity_provider: "steam"');
     expect(jobsSource).not.toContain("canonicalLinkRows");
     expect(jobsSource).not.toContain("CANONICAL_MATCH_LINK_MISMATCH");
+  });
+
+  it("validates an identity participant against the canonical source before terminal job linking", () => {
+    expect(identitySourceMigration).toContain("FROM public.match_sources ms");
+    expect(identitySourceMigration).toContain("ms.upload_id = _job.upload_id");
+    expect(identitySourceMigration).toContain("ms.source = 'demo'");
+    expect(identitySourceMigration).toContain("IF _job.match_id IS NOT NULL AND _job.match_id IS DISTINCT FROM _canonical_match_id");
+    expect(identitySourceMigration).toContain("WHERE match_id = _canonical_match_id");
+    expect(identitySourceMigration).toContain("_job.id, _job.upload_id, _canonical_match_id, _player_id");
+    expect(identitySourceMigration).toContain("_canonical_match_id, _canonical_match_id");
   });
 
   it("lets another worker reclaim only an expired processing lease", () => {
