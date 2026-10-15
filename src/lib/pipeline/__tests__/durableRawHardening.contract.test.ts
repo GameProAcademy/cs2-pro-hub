@@ -62,9 +62,13 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
     expect(identitySourceMigration).toContain("FROM public.match_sources ms");
     expect(identitySourceMigration).toContain("ms.upload_id = _job.upload_id");
     expect(identitySourceMigration).toContain("ms.source = 'demo'");
-    expect(identitySourceMigration).toContain("IF _job.match_id IS NOT NULL AND _job.match_id IS DISTINCT FROM _canonical_match_id");
+    expect(identitySourceMigration).toContain(
+      "IF _job.match_id IS NOT NULL AND _job.match_id IS DISTINCT FROM _canonical_match_id",
+    );
     expect(identitySourceMigration).toContain("WHERE match_id = _canonical_match_id");
-    expect(identitySourceMigration).toContain("_job.id, _job.upload_id, _canonical_match_id, _player_id");
+    expect(identitySourceMigration).toContain(
+      "_job.id, _job.upload_id, _canonical_match_id, _player_id",
+    );
     expect(identitySourceMigration).toContain("_canonical_match_id, _canonical_match_id");
   });
 
