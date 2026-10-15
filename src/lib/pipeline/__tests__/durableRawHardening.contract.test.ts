@@ -40,6 +40,19 @@ const claimMigration = readFileSync(
 );
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
+  it("links canonical match before identity RPC validates Steam participant", () => {
+    const canonicalPersist = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
+    const canonicalLink = jobsSource.indexOf("const { error: canonicalLinkError }");
+    const identityEvent = jobsSource.indexOf('db.rpc("record_demo_identity_event"');
+    const terminal = jobsSource.indexOf('db.rpc("finish_demo_job_processed"');
+    expect(canonicalPersist).toBeGreaterThan(-1);
+    expect(canonicalLink).toBeGreaterThan(canonicalPersist);
+    expect(identityEvent).toBeGreaterThan(canonicalLink);
+    expect(terminal).toBeGreaterThan(identityEvent);
+    expect(jobsSource).toContain('.is("match_id", null)');
+    expect(jobsSource).toContain('.eq("status", "processing")');
+  });
+
   it("lets another worker reclaim only an expired processing lease", () => {
     expect(queueMigration).toContain("_job.lease_expires_at > now() THEN");
     expect(queueMigration).toContain("_job.status NOT IN ('pending', 'processing')");

@@ -894,6 +894,25 @@ export async function processJob(
       throw new PipelineError("PERSISTENCE_ERROR", canonicalLinkError.message);
     }
 
+    // The identity RPC validates its participant against demo_jobs.match_id. Canonical
+    // persistence has committed above, but the terminal RPC that sets demo_jobs.match_id
+    // runs later (after metrics/projection). Link the committed canonical match while the
+    // job is still processing, before recording identity. The terminal RPC remains the
+    // authoritative success transition and independently revalidates the match source.
+    const { error: canonicalLinkError } = await db
+      .from("demo_jobs")
+      .update({
+        match_id: canonical.matchId,
+        stage: "persisting",
+        heartbeat_at: new Date().toISOString(),
+      })
+      .eq("id", jobId)
+      .eq("status", "processing")
+      .is("match_id", null);
+    if (canonicalLinkError) {
+      throw new PipelineError("PERSISTENCE_ERROR", canonicalLinkError.message);
+    }
+
     if (
       attachment.state === "attached" &&
       attachment.source === "steam" &&

@@ -114,24 +114,6 @@ export function projectionUpdate(args: {
  * replaced for the same pair, so reprocessing the same demo never duplicates a
  * row. Nothing here creates canonical facts.
  */
-/**
- * Persists every column the admission decision excludes as null. A feature is derived
- * from the metrics, so a projection whose metrics carry an exclusion refuses to write
- * features it cannot prove unaffected (fail closed).
- */
-function withoutExcluded<T extends Record<string, unknown>>(
-  row: T,
-  excluded: ReadonlySet<string>,
-  prefix: string,
-): T {
-  return Object.fromEntries(
-    Object.entries(row).map(([key, value]) => [
-      key,
-      excluded.has(`${prefix}${key}`) ? null : value,
-    ]),
-  ) as T;
-}
-
 export async function persistDemoProjection(args: {
   /** Canonical match id returned by the canonical persistence routine. */
   matchId: string;
@@ -144,11 +126,6 @@ export async function persistDemoProjection(args: {
   features: CanonicalFeatures;
   jobId: string;
   jobResult: Json;
-  /**
-   * Metrics and projection columns the admission contract v3 decision excludes
-   * (admissionV3.ts `excluded_metrics`). Each is persisted as null, never as a value.
-   */
-  excludedByAdmission?: readonly string[];
 }): Promise<PersistResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const {
@@ -194,22 +171,14 @@ export async function persistDemoProjection(args: {
     },
   };
 
-  const excluded = new Set(args.excludedByAdmission ?? []);
-  const playerScoped = withoutExcluded(
-    {
-      team_player: teamPlayer,
-      team_opponent: teamOpponent,
-      score_player: scores.player,
-      score_opponent: scores.opponent,
-      result: matchResult(scores),
-    },
-    excluded,
-    "matches.",
-  );
+  const playerScoped = {
+    team_player: teamPlayer,
+    team_opponent: teamOpponent,
+    score_player: scores.player,
+    score_opponent: scores.opponent,
+    result: matchResult(scores),
+  };
 
-  if ([...excluded].some((name) => !name.startsWith("matches."))) {
-    fail("ADMISSION_V3_METRIC_EXCLUSION_REQUIRES_FEATURE_REVIEW");
-  }
   const { error } = await supabaseAdmin.rpc("persist_demo_projection", {
     _match_id: matchId,
     _upload_id: uploadId,
@@ -217,40 +186,34 @@ export async function persistDemoProjection(args: {
     _steam_id: steamId,
     _match_wide: toJson(matchWide),
     _player_scoped: toJson(playerScoped),
-    _metrics: toJson(
-      withoutExcluded(
-        {
-          rounds_played: metrics.roundsPlayed,
-          kills: metrics.kills,
-          deaths: metrics.deaths,
-          assists: metrics.assists,
-          hs_percent: metrics.hsPercent,
-          adr: metrics.adr,
-          kast: metrics.kast,
-          damage_taken: metrics.damageTaken,
-          damage_efficiency: metrics.damageEfficiency,
-          first_kills: metrics.firstKills,
-          first_deaths: metrics.firstDeaths,
-          opening_attempts: metrics.openingAttempts,
-          opening_success: metrics.openingSuccess,
-          opening_success_rate: metrics.openingSuccessRate,
-          trade_kills: metrics.tradeKills,
-          trade_deaths: metrics.tradeDeaths,
-          clutch_attempts: metrics.clutchAttempts,
-          clutch_wins: metrics.clutchWins,
-          clutches: metrics.clutchWins,
-          multi_kills: metrics.multiKills,
-          utility_damage: metrics.utilityDamage,
-          grenade_damage: metrics.grenadeDamage,
-          flash_assists: metrics.flashAssists,
-          ct_rating: metrics.ctRating,
-          t_rating: metrics.tRating,
-          rating: metrics.sourceRating,
-        },
-        excluded,
-        "",
-      ),
-    ),
+    _metrics: toJson({
+      rounds_played: metrics.roundsPlayed,
+      kills: metrics.kills,
+      deaths: metrics.deaths,
+      assists: metrics.assists,
+      hs_percent: metrics.hsPercent,
+      adr: metrics.adr,
+      kast: metrics.kast,
+      damage_taken: metrics.damageTaken,
+      damage_efficiency: metrics.damageEfficiency,
+      first_kills: metrics.firstKills,
+      first_deaths: metrics.firstDeaths,
+      opening_attempts: metrics.openingAttempts,
+      opening_success: metrics.openingSuccess,
+      opening_success_rate: metrics.openingSuccessRate,
+      trade_kills: metrics.tradeKills,
+      trade_deaths: metrics.tradeDeaths,
+      clutch_attempts: metrics.clutchAttempts,
+      clutch_wins: metrics.clutchWins,
+      clutches: metrics.clutchWins,
+      multi_kills: metrics.multiKills,
+      utility_damage: metrics.utilityDamage,
+      grenade_damage: metrics.grenadeDamage,
+      flash_assists: metrics.flashAssists,
+      ct_rating: metrics.ctRating,
+      t_rating: metrics.tRating,
+      rating: metrics.sourceRating,
+    }),
     _features: toJson({
       participant_key: participantKey,
       sample_rounds: features.sampleRounds,

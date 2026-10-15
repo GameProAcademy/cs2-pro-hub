@@ -939,20 +939,6 @@ export const ptPT: Dictionary = {
   "real.metric.adr": "ADR",
   "real.metric.kast": "KAST",
   "real.metric.winRate": "Taxa de vitória",
-  "real.admission.column": "Dados",
-  "real.admission.limited": "Limitado",
-  "real.admission.certified": "Certificado",
-  "real.admission.limitedNote":
-    "Partidas admitidas com limitações declaradas (contrato de admissão v3). Só são mostrados valores que essas limitações não afetam; o resto fica vazio.",
-  "real.admission.L01-CAPABILITY-SURFACE-UNENUMERABLE":
-    "O catálogo de capacidades do parser não pode ser enumerado de forma independente",
-  "real.admission.L02-TICK-DOMAIN-AUTHORITY-UNAVAILABLE":
-    "O domínio completo de ticks não pode ser comprovado de forma independente: sem métricas de movimento ou posicionamento",
-  "real.admission.L03-USERCMD-UNAVAILABLE":
-    "A demo não contém dados de input do jogador: sem análises de input de mira",
-  "real.admission.L04-MATCH-RESULT-UNRESOLVED":
-    "A demo não contém equipas nem resultado: sem resultado da partida",
-  "real.metric.limited": "Partidas limitadas",
   "real.job.pending": "Na fila",
   "real.job.processing": "A processar",
   "real.job.processed": "Processada",

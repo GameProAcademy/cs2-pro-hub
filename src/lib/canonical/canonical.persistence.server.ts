@@ -18,7 +18,6 @@
 import { CANONICAL_SCHEMA_VERSION } from "./canonical.versions";
 import type { CanonicalMatchBundle, CanonicalSeries } from "./canonical.types";
 import type { RawAdmissionApproval } from "@/lib/pipeline/rawEvidence";
-import { admissionDecisionV3Reasons } from "@/lib/pipeline/admissionV3";
 import {
   rawArtifactSha256,
   stableRawArtifactJson,
@@ -91,12 +90,11 @@ export async function persistCanonicalObservation(args: {
   // Defense in depth: callers cannot write a demo Canonical observation merely
   // by skipping the pipeline gate. The persisted server audit must match.
   if (args.bundle.observation.source === "demo") {
-    const v3 = args.rawApproval?.auditStatus === "ADMITTED_V3";
     if (
       !args.uploadId ||
       !args.rawApproval?.approved ||
       !args.rawApproval.artifactId ||
-      (!v3 && !/^[0-9a-f]{64}$/.test(args.rawApproval.finalContractDigest ?? "")) ||
+      !/^[0-9a-f]{64}$/.test(args.rawApproval.finalContractDigest ?? "") ||
       !/^[0-9a-f]{64}$/.test(args.rawApproval.reconciliationDigest ?? "")
     ) {
       throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
@@ -108,39 +106,19 @@ export async function persistCanonicalObservation(args: {
           Object.entries(finalContract).filter(([key]) => key !== "final_contract_digest"),
         )
       : null;
-    // Admission contract v3: an admissible decision (PASS or LIMITED, digest-bound) for
-    // this artifact, root digest and physical reconciliation. The v2 final contract is
-    // never produced for it, so it is not required.
-    const decision = args.rawApproval.admissionV3;
-    const v3Bound =
-      v3 &&
-      decision != null &&
-      finalContract == null &&
+    const proofBound =
+      finalContract != null &&
       reconciliation != null &&
-      admissionDecisionV3Reasons(decision).length === 0 &&
-      decision.artifact_id === args.rawApproval.artifactId &&
-      decision.upload_id === args.uploadId &&
-      decision.physical.artifact_root_digest === args.rawApproval.evidenceDigest &&
-      decision.physical.reconciliation_digest === args.rawApproval.reconciliationDigest &&
+      validateRawForensicContractV2(finalContract, "final").length === 0 &&
+      finalContract["artifact_root_digest"] === args.rawApproval.evidenceDigest &&
+      finalContract["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
       reconciliation["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
       args.rawApproval.proofIdentity?.artifactId === args.rawApproval.artifactId &&
       args.rawApproval.proofIdentity.uploadId === args.uploadId &&
-      args.rawApproval.proofIdentity.artifactRootDigest === args.rawApproval.evidenceDigest;
-    const proofBound =
-      v3Bound ||
-      (!v3 &&
-        finalContract != null &&
-        reconciliation != null &&
-        validateRawForensicContractV2(finalContract, "final").length === 0 &&
-        finalContract["artifact_root_digest"] === args.rawApproval.evidenceDigest &&
-        finalContract["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
-        reconciliation["reconciliation_digest"] === args.rawApproval.reconciliationDigest &&
-        args.rawApproval.proofIdentity?.artifactId === args.rawApproval.artifactId &&
-        args.rawApproval.proofIdentity.uploadId === args.uploadId &&
-        args.rawApproval.proofIdentity.artifactRootDigest === args.rawApproval.evidenceDigest &&
-        finalProjection != null &&
-        rawArtifactSha256(stableRawArtifactJson(finalProjection)) ===
-          args.rawApproval.finalContractDigest);
+      args.rawApproval.proofIdentity.artifactRootDigest === args.rawApproval.evidenceDigest &&
+      finalProjection != null &&
+      rawArtifactSha256(stableRawArtifactJson(finalProjection)) ===
+        args.rawApproval.finalContractDigest;
     if (!proofBound) throw new CanonicalPersistenceError("RAW_ADMISSION_REQUIRED");
     if (args.rawApproval.artifactId) {
       const { data: artifact, error: artifactError } = await supabaseAdmin

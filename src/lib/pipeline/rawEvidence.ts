@@ -1,10 +1,8 @@
 import type { Json } from "@/integrations/supabase/types";
-import type { AdmissionDecisionV3, EvidenceClassificationV3 } from "@/lib/pipeline/admissionV3";
 
 export const RAW_EVIDENCE_VERSION = 1;
 export const RAW_EVIDENCE_AUDIT_VERSION = 2;
 export const RAW_FORENSIC_CONTRACT_VERSION = 2;
-
 export type RawEvidenceStatus = "PASS" | "FAIL" | "BLOCKED";
 export type RawAuditStatus = "PENDING" | "BLOCKED" | "APPROVED";
 export type RawCoverageStatus = "COMPLETE" | "LIMITED" | "SAMPLE";
@@ -181,20 +179,6 @@ export interface RawForensicContractV2 {
   deterministic_digest: string;
 }
 
-/**
- * Admission contract v3 state carried from the RAW audit to the job, when the v2
- * producer contract did not pass. `physical` is null when the v3 evidence classification
- * blocked before the physical re-audit ran.
- */
-export interface RawAdmissionV3Pending {
-  evidence: EvidenceClassificationV3;
-  artifactId: string;
-  physical: { artifactRootDigest: string; reconciliationDigest: string | null };
-  reconciliationProof: Record<string, Json> | null;
-  /** map_name of each physical header row of the RAW artifact. */
-  headerMapNames: string[];
-}
-
 export interface RawAdmissionDecision {
   status: RawEvidenceStatus;
   auditStatus: RawAuditStatus;
@@ -203,16 +187,11 @@ export interface RawAdmissionDecision {
   reasons: string[];
   evidenceDigest: string;
   forensicInventory: Record<string, Json>;
-  /** Set only when the v2 producer contract did not pass and v3 was evaluated. */
-  admissionV3?: RawAdmissionV3Pending;
 }
 
 export interface RawAdmissionApproval {
   approved: true;
-  /** APPROVED: v2 final forensic proof. ADMITTED_V3: admission contract v3 decision. */
-  auditStatus: "APPROVED" | "ADMITTED_V3";
-  /** The v3 decision (PASS or LIMITED) when auditStatus is ADMITTED_V3. */
-  admissionV3?: AdmissionDecisionV3;
+  auditStatus: "APPROVED";
   auditVersion: number;
   evidenceDigest: string;
   artifactId?: string;

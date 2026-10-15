@@ -125,38 +125,7 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
         value={a.decided ? Math.round((a.wins / a.decided) * 100) : "—"}
         unit={a.decided ? "%" : undefined}
       />
-      {a.limited > 0 ? (
-        <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-5">
-          <span className="font-mono">
-            {t("real.metric.limited")}: {a.limited}/{a.matches}.
-          </span>{" "}
-          {t("real.admission.limitedNote")}
-        </p>
-      ) : null}
     </div>
-  );
-}
-
-/** How the match was admitted, with each declared limitation spelled out. */
-export function AdmissionBadge({ row }: { row: OverviewMatch }) {
-  const t = useT();
-  if (!row.admission) return null;
-  const limited = row.admission === "LIMITED";
-  const detail = row.limitations
-    .map((id) => t(`real.admission.${id}` as TranslationKey))
-    .join(" · ");
-  return (
-    <span
-      className={
-        limited
-          ? "rounded-sm border border-amber-500/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400"
-          : "rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
-      }
-      title={limited ? detail : undefined}
-      aria-label={limited ? `${t("real.admission.limited")}: ${detail}` : undefined}
-    >
-      {t(limited ? "real.admission.limited" : "real.admission.certified")}
-    </span>
   );
 }
 
@@ -177,7 +146,6 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
     "matches.col.adr",
     "matches.col.kast",
     "matches.col.rating",
-    "real.admission.column",
   ];
   return (
     <div className="overflow-x-auto">
@@ -210,9 +178,6 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
               <TableCell className="font-mono">{fixed(row.adr, 1)}</TableCell>
               <TableCell className="font-mono">{fixed(row.kast, 1)}</TableCell>
               <TableCell className="font-mono">{fixed(row.rating, 2)}</TableCell>
-              <TableCell>
-                <AdmissionBadge row={row} />
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
