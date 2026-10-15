@@ -194,51 +194,51 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
 
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
-                                 job_id: str, user_id: str, attempt_number: int,
-                                 bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
     cleanup_paths: list[str] = []
-        try:
+    try:
+                                     job_id: str, user_id: str, attempt_number: int,
+                                     bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
+        cleanup_paths: list[str] = []
             payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started,
-                                              cleanup_paths=cleanup_paths)
-        performance = payload.pop("_performance", {})
-        evidence = payload.pop("raw_evidence", None)
-        if not isinstance(evidence, dict):
-            raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
-        identity = payload["parser"]
-        # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
-        # already validated metadata but never sends or canonicalizes the full RAW.
-        hot_started = time.perf_counter()
-        hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
-                                demo_sha256=body.demo_sha256, upload_id=body.upload_id,
-                                evidence=evidence)
-        writer = RawArtifactWriter(
-            context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
-                                    attempt_number=attempt_number, demo_sha256=body.demo_sha256,
-                                    parser=identity, contract_version=settings.contract_version),
-            bridge=bridge, client=client,
-        )
-        performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
-        raw = await writer.write(evidence, performance=performance)
-        encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
-        hot_metrics = hot_payload_measurements(hot)
-        if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
-            largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
-            logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
-            raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
-        logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
-                    job_id, attempt_number,
-                    len(encoded), hot_metrics["hot_payload_bytes"],
-                    {key: value["rows"] for key, value in hot_metrics["sections"].items()},
-                    {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
-                    hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
-                    performance.get("download_ms"), performance.get("parser_ms"),
-                    performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-        return {"hot": hot, "raw": raw}
+                                          cleanup_paths=cleanup_paths)
+                                                  cleanup_paths=cleanup_paths)
+            performance = payload.pop("_performance", {})
+            evidence = payload.pop("raw_evidence", None)
+            if not isinstance(evidence, dict):
+                raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
+            identity = payload["parser"]
+            # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
+            # already validated metadata but never sends or canonicalizes the full RAW.
+            hot_started = time.perf_counter()
+            hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
+                                    demo_sha256=body.demo_sha256, upload_id=body.upload_id,
+                                    evidence=evidence)
+            writer = RawArtifactWriter(
+                context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
+                                        attempt_number=attempt_number, demo_sha256=body.demo_sha256,
+                                        parser=identity, contract_version=settings.contract_version),
+                bridge=bridge, client=client,
+            )
+            performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
+            raw = await writer.write(evidence, performance=performance)
+            encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
+            hot_metrics = hot_payload_measurements(hot)
+            if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+                largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
+                logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
+                raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
+            logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
+                        job_id, attempt_number,
+                        len(encoded), hot_metrics["hot_payload_bytes"],
+                        {key: value["rows"] for key, value in hot_metrics["sections"].items()},
+                        {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
+                        hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
+                        performance.get("download_ms"), performance.get("parser_ms"),
+                        performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+            return {"hot": hot, "raw": raw}
 
     finally:
-        # The durable path spans parsing, admission and RAW persistence. Repeat the
-        # idempotent unlink at the outermost boundary so no successful terminal job
-        # can leave its downloaded demo behind if an inner cleanup path regresses.
+        # Repeat the idempotent cleanup at the durable boundary, after RAW persistence.
         for temporary_path in cleanup_paths:
             _cleanup(temporary_path)
 
