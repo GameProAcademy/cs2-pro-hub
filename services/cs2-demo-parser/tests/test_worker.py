@@ -162,7 +162,9 @@ def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path)
     demo = tmp_path / "demo.dem"
     demo.write_bytes(b"PBDEMS2\x00" + b"x" * 64)
 
-    async def download(_url, _size, _settings):
+    async def download(_url, _size, _settings, *, cleanup_dirs=None):
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(tmp_path))
         return str(demo), DEMO_SHA, 520
 
     async def bridge(_client, _settings, action, body):
@@ -192,6 +194,7 @@ def test_consumer_reports_worker_error_without_completion(monkeypatch, tmp_path)
         pass
     names = [name for name, _ in calls]
     assert "fail" in names
+    assert not tmp_path.exists()
     assert "complete" not in names
 
 
