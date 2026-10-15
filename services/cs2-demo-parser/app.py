@@ -103,9 +103,12 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
     baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
-    path, sha256, size = await _download(
-        body.demo_url, body.file_size, settings, cleanup_dirs=cleanup_dirs
-    )
+    if cleanup_dirs is None:
+        path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    else:
+        path, sha256, size = await _download(
+            body.demo_url, body.file_size, settings, cleanup_dirs=cleanup_dirs
+        )
     if cleanup_paths is not None:
         cleanup_paths.append(path)
     download_ms = round((time.perf_counter() - download_started) * 1000)
