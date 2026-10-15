@@ -4,11 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import os
-import tempfile
 from pathlib import Path
-
-import pytest
 
 import app as app_module
 import parser_isolated
@@ -29,11 +25,11 @@ def _worker_temp_files(root: Path) -> list[str]:
 
 
 def test_successful_parse_removes_demo_and_result_files(monkeypatch, tmp_path):
-    """Exercise the production cleanup wrappers without invoking demoparser2."""
+    """Exercise production download, child-result boundary and cleanup using a deterministic parser."""
     monkeypatch.setattr(app_module.tempfile, "tempdir", str(tmp_path))
     monkeypatch.setattr(parser_isolated.tempfile, "tempdir", str(tmp_path))
 
-    demo_bytes = b"PBDEMS2\\x00" + b"x" * 64
+    demo_bytes = b"PBDEMS2\x00" + b"x" * 64
     demo_sha = hashlib.sha256(demo_bytes).hexdigest()
 
     class Stream:
@@ -72,9 +68,6 @@ def test_successful_parse_removes_demo_and_result_files(monkeypatch, tmp_path):
             "warnings": [],
         }
 
-    # The application selects run_async when it is present, exactly as it does
-    # for the production parser boundary. Keep parsing deterministic in this
-    # regression test while exercising the real download and cleanup wrappers.
     successful_parse.run_async = successful_parse  # type: ignore[attr-defined]
 
     body = app_module.ParseRequest(
