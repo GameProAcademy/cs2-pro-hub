@@ -88,7 +88,8 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
 
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
-                            finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None) -> dict[str, Any]:
+                            finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None,
+                            cleanup_paths: list[str] | None = None) -> dict[str, Any]:
     request_started = time.perf_counter()
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
@@ -101,6 +102,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
     baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
     path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    if cleanup_paths is not None:
+        cleanup_paths.append(path)
     download_ms = round((time.perf_counter() - download_started) * 1000)
     try:
         if size != body.file_size:
@@ -193,42 +196,51 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
                                  job_id: str, user_id: str, attempt_number: int,
                                  bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
-    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started)
-    performance = payload.pop("_performance", {})
-    evidence = payload.pop("raw_evidence", None)
-    if not isinstance(evidence, dict):
-        raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
-    identity = payload["parser"]
-    # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
-    # already validated metadata but never sends or canonicalizes the full RAW.
-    hot_started = time.perf_counter()
-    hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
-                            demo_sha256=body.demo_sha256, upload_id=body.upload_id,
-                            evidence=evidence)
-    writer = RawArtifactWriter(
-        context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
-                                attempt_number=attempt_number, demo_sha256=body.demo_sha256,
-                                parser=identity, contract_version=settings.contract_version),
-        bridge=bridge, client=client,
-    )
-    performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
-    raw = await writer.write(evidence, performance=performance)
-    encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
-    hot_metrics = hot_payload_measurements(hot)
-    if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
-        largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
-        logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
-        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
-    logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
-                job_id, attempt_number,
-                len(encoded), hot_metrics["hot_payload_bytes"],
-                {key: value["rows"] for key, value in hot_metrics["sections"].items()},
-                {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
-                hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
-                performance.get("download_ms"), performance.get("parser_ms"),
-                performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-    return {"hot": hot, "raw": raw}
+    cleanup_paths: list[str] = []
+        try:
+            payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started,
+                                              cleanup_paths=cleanup_paths)
+        performance = payload.pop("_performance", {})
+        evidence = payload.pop("raw_evidence", None)
+        if not isinstance(evidence, dict):
+            raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
+        identity = payload["parser"]
+        # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
+        # already validated metadata but never sends or canonicalizes the full RAW.
+        hot_started = time.perf_counter()
+        hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
+                                demo_sha256=body.demo_sha256, upload_id=body.upload_id,
+                                evidence=evidence)
+        writer = RawArtifactWriter(
+            context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
+                                    attempt_number=attempt_number, demo_sha256=body.demo_sha256,
+                                    parser=identity, contract_version=settings.contract_version),
+            bridge=bridge, client=client,
+        )
+        performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
+        raw = await writer.write(evidence, performance=performance)
+        encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
+        hot_metrics = hot_payload_measurements(hot)
+        if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+            largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
+            logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
+            raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
+        logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
+                    job_id, attempt_number,
+                    len(encoded), hot_metrics["hot_payload_bytes"],
+                    {key: value["rows"] for key, value in hot_metrics["sections"].items()},
+                    {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
+                    hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
+                    performance.get("download_ms"), performance.get("parser_ms"),
+                    performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        return {"hot": hot, "raw": raw}
 
+    finally:
+        # The durable path spans parsing, admission and RAW persistence. Repeat the
+        # idempotent unlink at the outermost boundary so no successful terminal job
+        # can leave its downloaded demo behind if an inner cleanup path regresses.
+        for temporary_path in cleanup_paths:
+            _cleanup(temporary_path)
 
 def _envelope(status_code: int, error_code: str, message: str) -> JSONResponse:
     return JSONResponse(
@@ -364,10 +376,23 @@ def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None,
 
 
 def _cleanup(path: str) -> None:
-    try:
-        os.unlink(path)
-    except OSError:
-        logger.warning("temporary demo cleanup failed")
+    """Idempotently remove a worker-owned demo and fail closed if it remains."""
+    for attempt in range(3):
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            return
+        except OSError as error:
+            if attempt < 2:
+                time.sleep(0.02 * (attempt + 1))
+                continue
+            logger.error("temporary demo cleanup failed errno=%s", error.errno)
+            raise RuntimeError("temporary demo cleanup failed") from None
+        if not os.path.lexists(path):
+            return
+    if os.path.lexists(path):
+        logger.error("temporary demo cleanup postcondition failed")
+        raise RuntimeError("temporary demo cleanup postcondition failed")
 
 
 def _require_cs2_magic(path: str) -> None:
