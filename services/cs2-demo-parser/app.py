@@ -589,19 +589,28 @@ def create_app(
                     start_recording_failed = True
                     raise
                 started = True
+            cleanup_dirs: list[str] = []
             try:
-                payload = await _parse_downloaded(body, resolved, parse, finalize_raw=True,
-                                                  on_started=record_start)
-                payload.pop("_performance", None)
-                response = JSONResponse(content=payload)
-                if len(response.body) > resolved.max_payload_bytes:
-                    raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
-            except BaseException:
-                if start_recording_failed:
-                    raise WorkerError(503, E.PARSER_ERROR, "Execution start unavailable; reconciliation required.") from None
-                await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
-                                      "PARSE_FAILED" if started else "PREPARSE_FAILED")
-                raise
+                try:
+                    payload = await _parse_downloaded(
+                        body, resolved, parse, finalize_raw=True,
+                        on_started=record_start, cleanup_dirs=cleanup_dirs,
+                    )
+                    payload.pop("_performance", None)
+                    response = JSONResponse(content=payload)
+                    if len(response.body) > resolved.max_payload_bytes:
+                        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, "Parser response is too large.")
+                except BaseException:
+                    if start_recording_failed:
+                        raise WorkerError(503, E.PARSER_ERROR, "Execution start unavailable; reconciliation required.") from None
+                    await recorder.record("EXECUTION_FAILED" if started else "EXECUTION_ABORTED",
+                                          "PARSE_FAILED" if started else "PREPARSE_FAILED")
+                    raise
+            finally:
+                # The HTTP request boundary owns cleanup if cancellation happens
+                # during download before _parse_downloaded can reach its own finally.
+                for temp_dir in cleanup_dirs:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
             try:
                 await recorder.record("EXECUTION_FINISHED", "PARSE_SUCCEEDED")
             except Exception:
