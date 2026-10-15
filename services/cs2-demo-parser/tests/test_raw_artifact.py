@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 import raw_artifact
-from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _producer_reconciliation_projection, _stable
+from raw_artifact import ArtifactContext, RawArtifactWriter, _grenade_measurements, _json_safe, _player_records_for_raw, _producer_reconciliation_projection, _stable
 
 
 class FakeAsyncClient:
@@ -255,3 +255,24 @@ def test_player_inventory_uses_player_steamid_when_steamid_is_null():
         ],
     })
     assert projection["player_inventory"] == ["76561198000000001", "76561198000000002"]
+
+
+
+def test_player_steamids_are_serialized_as_lossless_strings_for_javascript():
+    exact_steamid = 76561198000000001
+    source = [
+        {"steamid": exact_steamid, "player_steamid": None, "name": "numeric"},
+        {"steamid": None, "player_steamid": "76561198000000002", "name": "string"},
+    ]
+
+    normalized = list(_player_records_for_raw(source))
+
+    assert normalized == [
+        {"steamid": "76561198000000001", "player_steamid": None, "name": "numeric"},
+        {"steamid": None, "player_steamid": "76561198000000002", "name": "string"},
+    ]
+    assert _stable(normalized[0]) == (
+        b'{"name":"numeric","player_steamid":null,"steamid":"76561198000000001"}'
+    )
+    # Normalization must not mutate parser-owned evidence.
+    assert source[0]["steamid"] == exact_steamid
