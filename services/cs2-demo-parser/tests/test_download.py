@@ -184,3 +184,32 @@ def test_a_successful_download_hands_exactly_one_file_to_the_caller(monkeypatch,
     assert size == 4 and _leftovers(tmp_path) == [os.path.basename(path)]
     with open(path, "rb") as handle:
         assert handle.read() == b"abcd"
+
+@pytest.mark.parametrize("sidecar", ["parser-result-test.json", "parser-result-test.json.tmp"])
+def test_cleanup_removes_demo_and_owned_temp_directory_even_with_sidecars(tmp_path, sidecar):
+    parent = tmp_path / "cs2-demo-test_123"
+    parent.mkdir()
+    demo = parent / "demo.dem"
+    demo.write_bytes(b"synthetic demo")
+    (parent / sidecar).write_text("temporary parser output")
+
+    app_module._cleanup(str(demo))
+
+    assert not demo.exists()
+    assert not parent.exists()
+
+
+def test_cleanup_does_not_recursively_remove_unowned_directory(tmp_path):
+    parent = tmp_path / "not-worker-owned"
+    parent.mkdir()
+    demo = parent / "demo.dem"
+    demo.write_bytes(b"synthetic demo")
+    unrelated = parent / "keep.txt"
+    unrelated.write_text("keep")
+
+    app_module._cleanup(str(demo))
+
+    assert not demo.exists()
+    assert unrelated.read_text() == "keep"
+    assert parent.exists()
+
