@@ -90,9 +90,13 @@ def test_hash_mismatch_is_422_hash_mismatch(client_factory, ok_download):
 
 
 def test_file_size_mismatch_is_422_file_size_mismatch(client_factory, tmp_path):
-    async def download(_url, _size, _settings):
-        path = tmp_path / "short.dem"
+    async def download(_url, _size, _settings, *, cleanup_dirs=None):
+        temp_dir = tmp_path / "cs2-demo-size-mismatch"
+        temp_dir.mkdir()
+        path = temp_dir / "short.dem"
         path.write_bytes(b"x" * 10)
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
         return str(path), DEMO_SHA, 10
 
     client = client_factory(download=download)
@@ -111,12 +115,16 @@ def test_non_hex_sha_is_contract_mismatch(client_factory, ok_download):
 def test_wrong_magic_is_invalid_demo_before_parser(client_factory, tmp_path):
     called = False
 
-    async def download(_url, _size, _settings):
+    async def download(_url, _size, _settings, *, cleanup_dirs=None):
         import hashlib
 
-        path = tmp_path / "not-cs2.dem"
+        temp_dir = tmp_path / "cs2-demo-wrong-magic"
+        temp_dir.mkdir()
+        path = temp_dir / "not-cs2.dem"
         content = b"NOTDEMO!" + b"x" * 512
         path.write_bytes(content)
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
         return str(path), hashlib.sha256(content).hexdigest(), len(content)
 
     def parse(_path):
