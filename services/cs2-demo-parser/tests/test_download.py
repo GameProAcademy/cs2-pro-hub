@@ -213,3 +213,38 @@ def test_cleanup_does_not_recursively_remove_unowned_directory(tmp_path):
     assert unrelated.read_text() == "keep"
     assert parent.exists()
 
+def test_parse_lifecycle_removes_exact_temp_dir_when_file_cleanup_is_incomplete(monkeypatch, tmp_path):
+    import hashlib
+
+    payload = app_module.CS2_DEMO_MAGIC + b"\\x00" * 512
+    digest = hashlib.sha256(payload).hexdigest()
+    temp_dir = tmp_path / "cs2-demo-lifecycle123"
+    temp_dir.mkdir()
+    demo = temp_dir / "demo.dem"
+    demo.write_bytes(payload)
+    (temp_dir / "parser-result-test.json").write_text("temporary sidecar")
+    cleanup_dirs = []
+
+    async def fake_download(_url, _size, _settings, *, cleanup_dirs=None):
+        if cleanup_dirs is not None:
+            cleanup_dirs.append(str(temp_dir))
+        return str(demo), digest, len(payload)
+
+    monkeypatch.setattr(app_module, "_download", fake_download)
+    # Simulate file-level cleanup failing to remove the directory or sidecars.
+    monkeypatch.setattr(app_module, "_cleanup", lambda _path: None)
+    body = app_module.ParseRequest(**parse_body(file_size=len(payload), demo_sha256=digest))
+
+    asyncio.run(
+        app_module._parse_downloaded(
+            body,
+            make_settings(),
+            lambda _path: {"header": {}, "players": [], "rounds": [], "events": [], "warnings": []},
+            finalize_raw=False,
+            cleanup_dirs=cleanup_dirs,
+        )
+    )
+
+    assert cleanup_dirs == [str(temp_dir)]
+    assert not temp_dir.exists()
+
