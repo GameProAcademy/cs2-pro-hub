@@ -133,11 +133,32 @@ def _records(value: Any) -> Iterable[Any]:
         yield value
 
 
+def _player_records_for_raw(rows: Any) -> Iterable[Any]:
+    """Keep Steam identifiers lossless across JavaScript JSON consumers.
+
+    SteamIDs are 64-bit identifiers, not quantities. JSON.parse converts numeric
+    tokens to IEEE-754 doubles and can silently change their decimal value above
+    2**53-1, which breaks independent producer/physical reconciliation. Emit
+    identifiers as strings in the RAW artifact while leaving source evidence
+    and every non-identifier field unchanged.
+    """
+    for row in _records(rows):
+        if not isinstance(row, dict):
+            yield row
+            continue
+        normalized = dict(row)
+        for key in ("steamid", "player_steamid"):
+            value = normalized.get(key)
+            if value is not None and not isinstance(value, str):
+                normalized[key] = str(value)
+        yield normalized
+
+
 def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
     manifest = evidence.get("manifest") or {}
     return {
         "header": [manifest.get("raw_header") or {}],
-        "players": evidence.get("raw_player_info") or [],
+        "players": _player_records_for_raw(evidence.get("raw_player_info") or []),
         "rounds": evidence.get("round_evidence") or [],
         "events": evidence.get("raw_events") or [],
         "ticks": evidence.get("tick_samples") or [],
