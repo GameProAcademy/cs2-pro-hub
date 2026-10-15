@@ -385,32 +385,50 @@ def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None,
 
 
 def _cleanup(path: str) -> None:
-    """Idempotently remove a worker-owned demo and fail closed if it remains."""
+    """Remove a worker-owned demo and its private directory; fail closed if anything remains.
+
+    The download directory is created by _download with a unique cs2-demo- prefix.
+    Remove the demo first, then remove that entire private directory as a fallback
+    so parser-result sidecars cannot prevent physical cleanup. Never recursively
+    remove an arbitrary caller-supplied directory.
+    """
+    absolute_path = os.path.abspath(path)
+    parent = os.path.dirname(absolute_path)
+    owns_parent = (
+        os.path.basename(absolute_path) == "demo.dem"
+        and re.fullmatch(r"cs2-demo-[A-Za-z0-9_]{1,32}", os.path.basename(parent)) is not None
+    )
+
+    last_error: OSError | None = None
     for attempt in range(3):
         try:
-            os.unlink(path)
+            os.unlink(absolute_path)
+            last_error = None
+            break
         except FileNotFoundError:
+            last_error = None
             break
         except OSError as error:
+            last_error = error
             if attempt < 2:
                 time.sleep(0.02 * (attempt + 1))
-                continue
-            logger.error("temporary demo cleanup failed errno=%s", error.errno)
-            raise RuntimeError("temporary demo cleanup failed") from None
-        if not os.path.lexists(path):
-            break
-    if os.path.lexists(path):
-        logger.error("temporary demo cleanup postcondition failed")
-        raise RuntimeError("temporary demo cleanup postcondition failed")
-    parent = os.path.dirname(path)
-    if os.path.basename(parent).startswith("cs2-demo-"):
+
+    # A private directory is disposable only when its exact worker-generated
+    # shape is verified. rmtree is the fallback for stale sidecars / transient
+    # directory state; the postcondition below still fails closed.
+    if owns_parent and os.path.lexists(parent):
         try:
-            os.rmdir(parent)
+            shutil.rmtree(parent)
         except FileNotFoundError:
             pass
         except OSError as error:
             logger.error("temporary demo directory cleanup failed errno=%s", error.errno)
             raise RuntimeError("temporary demo directory cleanup failed") from None
+
+    if os.path.lexists(absolute_path) or (owns_parent and os.path.lexists(parent)):
+        logger.error("temporary demo cleanup postcondition failed errno=%s",
+                     last_error.errno if last_error is not None else None)
+        raise RuntimeError("temporary demo cleanup postcondition failed") from None
 
 
 def _require_cs2_magic(path: str) -> None:
