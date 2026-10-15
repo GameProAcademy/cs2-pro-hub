@@ -194,10 +194,10 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 
 
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
+                                 job_id: str, user_id: str, attempt_number: int,
+                                 bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
     cleanup_paths: list[str] = []
     try:
-                                     job_id: str, user_id: str, attempt_number: int,
-                                     bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
         payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started,
                                           cleanup_paths=cleanup_paths)
         performance = payload.pop("_performance", {})
