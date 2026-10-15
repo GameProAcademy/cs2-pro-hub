@@ -110,7 +110,7 @@ sys.path.insert(0, str(ROOT / "services" / "cs2-demo-parser"))
 from queue_semantics_probe import expire_lease, js, refuse_non_local, sql  # noqa: E402
 from edge import ApiEdge, BridgeEdge, Faults, kill_group  # noqa: E402
 from f553.r11.fixture import acquire as acquire_fixture  # noqa: E402
-from f553.r11.lifecycle import create_disposable_job, database_env, private_bucket  # noqa: E402
+from f553.r11.lifecycle import create_disposable_job, create_disposable_user, database_env, private_bucket  # noqa: E402
 from worker import durable_execution_id  # noqa: E402
 
 # Run-scoped trace marker for synthetic probe observations.
@@ -768,7 +768,9 @@ def s_v3_persist(item):
     assert status == 200 and len(own_metrics) == 1 and own_metrics[0]["kills"] == metric["kills"], (status, own_metrics)
     status, own_decisions = rest(f"/rest/v1/raw_admission_decisions?job_id=eq.{item['job_id']}&select=id", owner)
     assert status in (401, 403, 404) or own_decisions == [], (status, own_decisions)
-    other_user = new_item()["user_id"]
+    # An authorization-only identity is enough for the RLS denial check. Do not call
+    # new_item() here: it enqueues a second real demo and can leave a temp file behind.
+    other_user = create_disposable_user(STACK["api"], STACK["key"])
     other = session_for(other_user)
     status, seen = rest(f"/rest/v1/demo_jobs?id=eq.{item['job_id']}&select=id", other)
     assert status == 200 and seen == [], (status, seen)
