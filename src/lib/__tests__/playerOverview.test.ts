@@ -207,3 +207,69 @@ describe("production pages never read demonstration data", () => {
     expect(real).not.toMatch(/@\/data\/|playerService|demoPlayer/);
   });
 });
+
+describe("admission provenance (admission contract v3)", () => {
+  const metric = (matchId: string): OverviewMetricRow => ({
+    match_id: matchId,
+    kills: 20,
+    deaths: 15,
+    assists: 4,
+    adr: "80",
+    kast: "70",
+    hs_percent: "50",
+    rating: "1.1",
+    rounds_played: 22,
+  });
+
+  it("marks a match LIMITED with its limitations and counts it in the aggregates", () => {
+    const overview = buildOverview({
+      jobs: [
+        job("processed", {
+          match_id: "m1",
+          admission_verdict: "LIMITED",
+          admission_limitations: ["L03-USERCMD-UNAVAILABLE", "L01-CAPABILITY-SURFACE-UNENUMERABLE"],
+        }),
+      ],
+      fileNames: new Map(),
+      metrics: [metric("m1")],
+      matches: [match("m1", { result: null, score_player: null, score_opponent: null })],
+      now: NOW,
+    });
+    expect(overview.matches[0]?.admission).toBe("LIMITED");
+    expect(overview.matches[0]?.limitations).toEqual([
+      "L01-CAPABILITY-SURFACE-UNENUMERABLE",
+      "L03-USERCMD-UNAVAILABLE",
+    ]);
+    expect(overview.aggregates?.limited).toBe(1);
+    // A limited match without a result never enters the win rate.
+    expect(overview.aggregates?.decided).toBe(0);
+  });
+
+  it("never hides a limitation behind another admission of the same match", () => {
+    const shaped = shapeMatches(
+      [metric("m1")],
+      [match("m1")],
+      [
+        job("processed", { match_id: "m1", admission_verdict: "PASS", admission_limitations: [] }),
+        job("processed", {
+          match_id: "m1",
+          admission_verdict: "LIMITED",
+          admission_limitations: ["L02-TICK-DOMAIN-AUTHORITY-UNAVAILABLE"],
+        }),
+      ],
+    );
+    expect(shaped[0]?.admission).toBe("LIMITED");
+  });
+
+  it("gives no admission label to a match without a v3 decision, nor from a job that did not finish", () => {
+    const shaped = shapeMatches(
+      [metric("m1"), metric("m2")],
+      [match("m1"), match("m2")],
+      [
+        job("processed", { match_id: "m1", admission_verdict: null }),
+        job("blocked_raw_audit", { match_id: "m2", admission_verdict: "LIMITED" }),
+      ],
+    );
+    expect(shaped.map((m) => m.admission)).toEqual([null, null]);
+  });
+});

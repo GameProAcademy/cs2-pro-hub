@@ -940,6 +940,20 @@ export const es: Dictionary = {
   "real.metric.adr": "ADR",
   "real.metric.kast": "KAST",
   "real.metric.winRate": "Tasa de victorias",
+  "real.admission.column": "Datos",
+  "real.admission.limited": "Limitado",
+  "real.admission.certified": "Certificado",
+  "real.admission.limitedNote":
+    "Partidas admitidas con limitaciones declaradas (contrato de admisión v3). Solo se muestran los valores que esas limitaciones no afectan; el resto queda vacío.",
+  "real.admission.L01-CAPABILITY-SURFACE-UNENUMERABLE":
+    "El catálogo de capacidades del parser no puede enumerarse de forma independiente",
+  "real.admission.L02-TICK-DOMAIN-AUTHORITY-UNAVAILABLE":
+    "El dominio completo de ticks no puede probarse de forma independiente: sin métricas de movimiento ni posicionamiento",
+  "real.admission.L03-USERCMD-UNAVAILABLE":
+    "La demo no incluye datos de input del jugador: sin análisis de input de puntería",
+  "real.admission.L04-MATCH-RESULT-UNRESOLVED":
+    "La demo no incluye equipos ni marcador: sin resultado de la partida",
+  "real.metric.limited": "Partidas limitadas",
   "real.job.pending": "En cola",
   "real.job.processing": "Procesando",
   "real.job.processed": "Procesada",

@@ -30,6 +30,7 @@ import re
 import resource
 import time
 import uuid
+import shutil
 from typing import Any, Awaitable, Callable
 
 import httpx
@@ -88,7 +89,8 @@ async def _parse_request(body: ParseRequest, settings: Settings, parse: ParseFn)
 
 
 async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: ParseFn, *,
-                            finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None) -> dict[str, Any]:
+                            finalize_raw: bool, on_started: Callable[[], Awaitable[None]] | None = None,
+                            cleanup_paths: list[str] | None = None) -> dict[str, Any]:
     request_started = time.perf_counter()
     _check_contract(body.contract_version, settings)
     if body.file_size <= 0:
@@ -101,6 +103,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
     baseline_memory = parse_memory_snapshot()
     download_started = time.perf_counter()
     path, sha256, size = await _download(body.demo_url, body.file_size, settings)
+    if cleanup_paths is not None:
+        cleanup_paths.append(path)
     download_ms = round((time.perf_counter() - download_started) * 1000)
     try:
         if size != body.file_size:
@@ -193,42 +197,49 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
 async def _parse_durable_request(body: ParseRequest, settings: Settings, parse: ParseFn, *,
                                  job_id: str, user_id: str, attempt_number: int,
                                  bridge, client: httpx.AsyncClient, on_started=None) -> dict[str, Any]:
-    payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started)
-    performance = payload.pop("_performance", {})
-    evidence = payload.pop("raw_evidence", None)
-    if not isinstance(evidence, dict):
-        raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
-    identity = payload["parser"]
-    # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
-    # already validated metadata but never sends or canonicalizes the full RAW.
-    hot_started = time.perf_counter()
-    hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
-                            demo_sha256=body.demo_sha256, upload_id=body.upload_id,
-                            evidence=evidence)
-    writer = RawArtifactWriter(
-        context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
-                                attempt_number=attempt_number, demo_sha256=body.demo_sha256,
-                                parser=identity, contract_version=settings.contract_version),
-        bridge=bridge, client=client,
-    )
-    performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
-    raw = await writer.write(evidence, performance=performance)
-    encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
-    hot_metrics = hot_payload_measurements(hot)
-    if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
-        largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
-        logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
-        raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
-    logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
-                job_id, attempt_number,
-                len(encoded), hot_metrics["hot_payload_bytes"],
-                {key: value["rows"] for key, value in hot_metrics["sections"].items()},
-                {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
-                hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
-                performance.get("download_ms"), performance.get("parser_ms"),
-                performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-    return {"hot": hot, "raw": raw}
+    cleanup_paths: list[str] = []
+    try:
+        payload = await _parse_downloaded(body, settings, parse, finalize_raw=False, on_started=on_started,
+                                          cleanup_paths=cleanup_paths)
+        performance = payload.pop("_performance", {})
+        evidence = payload.pop("raw_evidence", None)
+        if not isinstance(evidence, dict):
+            raise WorkerError(500, E.PARSER_ERROR, "RAW evidence was not produced.")
+        identity = payload["parser"]
+        # `_parse_request` finalizes legacy HTTP responses. The durable path uses the
+        # already validated metadata but never sends or canonicalizes the full RAW.
+        hot_started = time.perf_counter()
+        hot = build_hot_payload(payload, parser=identity, contract_version=settings.contract_version,
+                                demo_sha256=body.demo_sha256, upload_id=body.upload_id,
+                                evidence=evidence)
+        writer = RawArtifactWriter(
+            context=ArtifactContext(job_id=job_id, upload_id=body.upload_id, user_id=user_id,
+                                    attempt_number=attempt_number, demo_sha256=body.demo_sha256,
+                                    parser=identity, contract_version=settings.contract_version),
+            bridge=bridge, client=client,
+        )
+        performance["hot_build_ms"] = round((time.perf_counter() - hot_started) * 1000)
+        raw = await writer.write(evidence, performance=performance)
+        encoded = JSONResponse(content={"hot": hot, "raw": raw}).body
+        hot_metrics = hot_payload_measurements(hot)
+        if len(encoded) > min(settings.max_payload_bytes, DURABLE_HOT_HARD_MAX_BYTES):
+            largest = max(hot_metrics["sections"].items(), key=lambda item: item[1]["bytes"])[0]
+            logger.error("hot_payload_rejected bytes=%s largest_section=%s", len(encoded), largest)
+            raise WorkerError(413, E.PAYLOAD_TOO_LARGE, f"HOT payload is too large; largest section: {largest}.")
+        logger.info("hot_payload_ready job=%s attempt=%s bytes=%s hot_bytes=%s rows=%s section_bytes=%s limited=%s artifact=%s digest=%s download_ms=%s parser_ms=%s hot_ms=%s peak_rss_kib=%s",
+                    job_id, attempt_number,
+                    len(encoded), hot_metrics["hot_payload_bytes"],
+                    {key: value["rows"] for key, value in hot_metrics["sections"].items()},
+                    {key: value["bytes"] for key, value in hot_metrics["sections"].items()},
+                    hot["quality"]["limited_sections"], raw["artifact_id"], str(raw["root_digest"])[:12],
+                    performance.get("download_ms"), performance.get("parser_ms"),
+                    performance.get("hot_build_ms"), resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        return {"hot": hot, "raw": raw}
 
+    finally:
+        # Repeat idempotent cleanup at the durable boundary, after RAW persistence.
+        for temporary_path in cleanup_paths:
+            _cleanup(temporary_path)
 
 def _envelope(status_code: int, error_code: str, message: str) -> JSONResponse:
     return JSONResponse(
@@ -270,10 +281,13 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
 
     digest = hashlib.sha256()
     total = 0
-    handle = tempfile.NamedTemporaryFile(prefix="demo-", suffix=".dem", delete=False)
-    path = handle.name
+    # Isolate each demo in a private directory so cleanup owns the entire execution.
+    temp_dir = tempfile.mkdtemp(prefix="cs2-demo-")
+    handle = None
+    path = os.path.join(temp_dir, "demo.dem")
     downloaded = False
     try:
+        handle = open(path, "xb")
         timeout = httpx.Timeout(settings.download_timeout_seconds)
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             async with client.stream("GET", url) as response:
@@ -304,15 +318,16 @@ async def _download(url: str, expected_size: int, settings: Settings) -> tuple[s
         # Every exit that does not hand the file to the caller removes it,
         # including cancellation and any exception not listed above: a partial
         # demo must never be left on disk.
-        handle.close()
+        if handle is not None:
+            handle.close()
         if not downloaded:
-            _cleanup(path)
+            shutil.rmtree(temp_dir, ignore_errors=False)
     return path, digest.hexdigest(), total
 
 
 #: Only names this worker creates itself: the downloaded demo, the parser
 #: child's result file and that file's atomic-write temporary.
-_ORPHAN_NAME = re.compile(r"^(demo-[A-Za-z0-9_]{1,32}\.dem|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
+_ORPHAN_NAME = re.compile(r"^(demo-[A-Za-z0-9_]{1,32}\.dem|cs2-demo-[A-Za-z0-9_]{1,32}|parser-result-[A-Za-z0-9_]{1,32}\.json(\.[A-Za-z0-9_]{1,32}\.tmp)?)$")
 
 
 def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None, now: float | None = None) -> dict[str, int]:
@@ -347,14 +362,20 @@ def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None,
             if not _ORPHAN_NAME.fullmatch(name):
                 continue
             try:
-                info = os.lstat(name, dir_fd=handle)
-                if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid()
-                        or current - info.st_mtime < min_age):
+                info = os.stat(name, dir_fd=handle, follow_symlinks=False)
+                if info.st_uid != os.geteuid() or current - info.st_mtime < min_age:
                     kept += 1
                     continue
-                os.unlink(name, dir_fd=handle)
-                removed += 1
-                bytes_removed += info.st_size
+                if stat.S_ISDIR(info.st_mode):
+                    shutil.rmtree(os.path.join(root, name))
+                    removed += 1
+                    bytes_removed += info.st_size
+                elif stat.S_ISREG(info.st_mode):
+                    os.unlink(name, dir_fd=handle)
+                    removed += 1
+                    bytes_removed += info.st_size
+                else:
+                    kept += 1
             except OSError:
                 kept += 1
     finally:
@@ -364,10 +385,32 @@ def sweep_orphan_temp_files(settings: Settings, *, directory: str | None = None,
 
 
 def _cleanup(path: str) -> None:
-    try:
-        os.unlink(path)
-    except OSError:
-        logger.warning("temporary demo cleanup failed")
+    """Idempotently remove a worker-owned demo and fail closed if it remains."""
+    for attempt in range(3):
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            break
+        except OSError as error:
+            if attempt < 2:
+                time.sleep(0.02 * (attempt + 1))
+                continue
+            logger.error("temporary demo cleanup failed errno=%s", error.errno)
+            raise RuntimeError("temporary demo cleanup failed") from None
+        if not os.path.lexists(path):
+            break
+    if os.path.lexists(path):
+        logger.error("temporary demo cleanup postcondition failed")
+        raise RuntimeError("temporary demo cleanup postcondition failed")
+    parent = os.path.dirname(path)
+    if os.path.basename(parent).startswith("cs2-demo-"):
+        try:
+            os.rmdir(parent)
+        except FileNotFoundError:
+            pass
+        except OSError as error:
+            logger.error("temporary demo directory cleanup failed errno=%s", error.errno)
+            raise RuntimeError("temporary demo directory cleanup failed") from None
 
 
 def _require_cs2_magic(path: str) -> None:

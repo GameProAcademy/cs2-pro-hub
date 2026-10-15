@@ -38,8 +38,40 @@ const claimMigration = readFileSync(
   "supabase/migrations/20260916103513_50aef18c-7978-412f-aefe-eca801eba0a6.sql",
   "utf8",
 );
+const identitySourceMigration = readFileSync(
+  "supabase/migrations/20261015040000_demo_identity_canonical_source_resolution.sql",
+  "utf8",
+);
 
 describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
+  it("records system-authored Steam identity after canonical persistence", () => {
+    const canonicalPersist = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
+    const identityEvent = jobsSource.indexOf('db.rpc("record_demo_identity_event"');
+    const terminal = jobsSource.indexOf('db.rpc("finish_demo_job_processed"');
+    const identityCall = jobsSource.slice(identityEvent, terminal);
+    expect(canonicalPersist).toBeGreaterThan(-1);
+    expect(identityEvent).toBeGreaterThan(canonicalPersist);
+    expect(terminal).toBeGreaterThan(identityEvent);
+    expect(identityCall).toContain('source: "system"');
+    expect(identityCall).toContain('identity_provider: "steam"');
+    expect(jobsSource).not.toContain("canonicalLinkRows");
+    expect(jobsSource).not.toContain("CANONICAL_MATCH_LINK_MISMATCH");
+  });
+
+  it("validates an identity participant against the canonical source before terminal job linking", () => {
+    expect(identitySourceMigration).toContain("FROM public.match_sources ms");
+    expect(identitySourceMigration).toContain("ms.upload_id = _job.upload_id");
+    expect(identitySourceMigration).toContain("ms.source = 'demo'");
+    expect(identitySourceMigration).toContain(
+      "IF _job.match_id IS NOT NULL AND _job.match_id IS DISTINCT FROM _canonical_match_id",
+    );
+    expect(identitySourceMigration).toContain("WHERE match_id = _canonical_match_id");
+    expect(identitySourceMigration).toContain(
+      "_job.id, _job.upload_id, _canonical_match_id, _player_id",
+    );
+    expect(identitySourceMigration).toContain("_canonical_match_id, _canonical_match_id");
+  });
+
   it("lets another worker reclaim only an expired processing lease", () => {
     expect(queueMigration).toContain("_job.lease_expires_at > now() THEN");
     expect(queueMigration).toContain("_job.status NOT IN ('pending', 'processing')");
@@ -89,11 +121,31 @@ describe("FASE 2.7.2D.3-H durable lifecycle contracts", () => {
 
   it("persists unknown RAW material before blocking Canonical admission", () => {
     const persist = jobsSource.indexOf("const rawAudit = artifactCompletion");
-    const block = jobsSource.indexOf("if (!rawAudit.approved)");
+    const block = jobsSource.indexOf("if (!rawAudit.approved && !v3Continues)");
     const normalize = jobsSource.indexOf("const match = normalizeParserOutput(raw)");
     expect(persist).toBeGreaterThan(-1);
     expect(block).toBeGreaterThan(persist);
     expect(normalize).toBeGreaterThan(block);
+  });
+
+  it("decides and records admission v3 before any Canonical write, and blocks a v3 BLOCKED", () => {
+    const bundleValidated = jobsSource.indexOf(
+      "validateCanonicalBundle(bundle.match, bundle.rounds, bundle.events);",
+    );
+    const decide = jobsSource.indexOf("admissionV3 = decideAdmissionV3(");
+    const record = jobsSource.indexOf(
+      "await recordAdmissionDecisionV3(jobId, v3Identity.artifactId, admissionV3);",
+    );
+    const blocked = jobsSource.indexOf('if (admissionV3.verdict === "BLOCKED")');
+    const approve = jobsSource.indexOf("rawApproval = rawArtifactApprovalV3(");
+    const canonicalWrite = jobsSource.indexOf("canonical = await persistCanonicalObservation(");
+    for (const index of [bundleValidated, decide, record, blocked, approve, canonicalWrite])
+      expect(index).toBeGreaterThan(-1);
+    expect(decide).toBeGreaterThan(bundleValidated);
+    expect(record).toBeGreaterThan(decide);
+    expect(blocked).toBeGreaterThan(record);
+    expect(approve).toBeGreaterThan(blocked);
+    expect(canonicalWrite).toBeGreaterThan(approve);
   });
 
   it("bounds the complete payload while streaming rather than trusting content-length", () => {

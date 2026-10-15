@@ -133,11 +133,32 @@ def _records(value: Any) -> Iterable[Any]:
         yield value
 
 
+def _player_records_for_raw(rows: Any) -> Iterable[Any]:
+    """Keep Steam identifiers lossless across JavaScript JSON consumers.
+
+    SteamIDs are 64-bit identifiers, not quantities. JSON.parse converts numeric
+    tokens to IEEE-754 doubles and can silently change their decimal value above
+    2**53-1, which breaks independent producer/physical reconciliation. Emit
+    identifiers as strings in the RAW artifact while leaving source evidence
+    and every non-identifier field unchanged.
+    """
+    for row in _records(rows):
+        if not isinstance(row, dict):
+            yield row
+            continue
+        normalized = dict(row)
+        for key in ("steamid", "player_steamid"):
+            value = normalized.get(key)
+            if value is not None and not isinstance(value, str):
+                normalized[key] = str(value)
+        yield normalized
+
+
 def _section_payloads(evidence: dict[str, Any]) -> dict[str, Iterable[Any]]:
     manifest = evidence.get("manifest") or {}
     return {
         "header": [manifest.get("raw_header") or {}],
-        "players": evidence.get("raw_player_info") or [],
+        "players": _player_records_for_raw(evidence.get("raw_player_info") or []),
         "rounds": evidence.get("round_evidence") or [],
         "events": evidence.get("raw_events") or [],
         "ticks": evidence.get("tick_samples") or [],
@@ -172,7 +193,11 @@ def _producer_reconciliation_projection(evidence: dict[str, Any]) -> dict[str, A
         name: sorted({str(field) for row in events if row.get("event_name") == name for field in (row.get("raw_fields") or {})})
         for name in event_names
     }
-    player_ids = sorted({str(row.get("steamid", row.get("player_steamid"))) for row in players if row.get("steamid", row.get("player_steamid")) is not None})
+    player_ids = sorted({
+        str(row.get("steamid") if row.get("steamid") is not None else row.get("player_steamid"))
+        for row in players
+        if row.get("steamid") is not None or row.get("player_steamid") is not None
+    })
     round_ids = sorted({_safe_int(row.get("number")) for row in rounds if _safe_int(row.get("number")) is not None})
     tick_values = sorted({_safe_int(row.get("tick")) for row in ticks if _safe_int(row.get("tick")) is not None})
     mappings = sorted(

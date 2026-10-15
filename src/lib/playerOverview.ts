@@ -31,7 +31,18 @@ export interface OverviewJobRow {
   error_code: string | null;
   attachment_state: string | null;
   attachment_confirmation_status: string | null;
+  /** Canonical match the job produced (processed jobs only). */
+  match_id?: string | null;
+  /** Admission contract v3 verdict and limitations, when the job was admitted by v3. */
+  admission_verdict?: string | null;
+  admission_limitations?: string[] | null;
 }
+
+/**
+ * How a match was admitted. CERTIFIED: every gate verified (v3 PASS). LIMITED: admitted
+ * by admission contract v3 with declared limitations. null: no v3 decision for it.
+ */
+export type MatchAdmission = "CERTIFIED" | "LIMITED";
 
 export interface OverviewJob {
   jobId: string;
@@ -83,6 +94,8 @@ export interface OverviewMatch {
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
+  admission: MatchAdmission | null;
+  limitations: string[];
 }
 
 export interface OverviewAggregates {
@@ -95,6 +108,8 @@ export interface OverviewAggregates {
   rating: number | null;
   wins: number;
   decided: number;
+  /** Matches admitted with declared limitations (admission contract v3). */
+  limited: number;
 }
 
 export interface PlayerOverview {
@@ -162,6 +177,7 @@ export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
     rating: mean(matches.map((m) => m.rating)),
     wins: matches.filter((m) => m.result === "win").length,
     decided: decided.length,
+    limited: matches.filter((m) => m.admission === "LIMITED").length,
   };
 }
 
@@ -173,8 +189,10 @@ export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
 export function shapeMatches(
   metrics: OverviewMetricRow[],
   matches: OverviewMatchRow[],
+  jobs: OverviewJobRow[] = [],
 ): OverviewMatch[] {
   const byId = new Map(matches.map((m) => [m.id, m]));
+  const admission = admissionByMatch(jobs);
   return metrics
     .flatMap((row) => {
       const match = byId.get(row.match_id);
@@ -195,10 +213,37 @@ export function shapeMatches(
           kast: num(row.kast),
           hsPercent: num(row.hs_percent),
           rating: num(row.rating),
+          admission: admission.get(match.id)?.admission ?? null,
+          limitations: admission.get(match.id)?.limitations ?? [],
         },
       ];
     })
     .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
+}
+
+/**
+ * The admission of each match, from the player's own processed jobs that produced it.
+ * A match any of whose admitting jobs was LIMITED is LIMITED: limitations are never
+ * hidden by another observation of the same match.
+ */
+export function admissionByMatch(
+  jobs: OverviewJobRow[],
+): Map<string, { admission: MatchAdmission; limitations: string[] }> {
+  const out = new Map<string, { admission: MatchAdmission; limitations: string[] }>();
+  for (const job of jobs) {
+    if (job.status !== "processed" || !job.match_id) continue;
+    if (job.admission_verdict !== "LIMITED" && job.admission_verdict !== "PASS") continue;
+    const current = out.get(job.match_id);
+    const limitations = [
+      ...new Set([...(current?.limitations ?? []), ...(job.admission_limitations ?? [])]),
+    ].sort();
+    const admission: MatchAdmission =
+      current?.admission === "LIMITED" || job.admission_verdict === "LIMITED"
+        ? "LIMITED"
+        : "CERTIFIED";
+    out.set(job.match_id, { admission, limitations });
+  }
+  return out;
 }
 
 export function shapeJobs(rows: OverviewJobRow[], fileNames: Map<string, string>): OverviewJob[] {
@@ -259,7 +304,7 @@ export function buildOverview(args: {
   now: Date;
 }): PlayerOverview {
   const jobs = shapeJobs(args.jobs, args.fileNames);
-  const matches = shapeMatches(args.metrics, args.matches);
+  const matches = shapeMatches(args.metrics, args.matches, args.jobs);
   const counts = countJobs(jobs);
   return {
     state: deriveState(counts, matches.length),

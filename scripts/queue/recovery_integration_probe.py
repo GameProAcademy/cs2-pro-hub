@@ -154,6 +154,7 @@ def start_bridge(api_port: int, cert: Path) -> tuple[subprocess.Popen, int]:
 def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0, heartbeat: float = 2.0) -> dict:
     ensure_probe_build_identity()
     index = len(list(WORK.glob("worker-*.log")))
+    # Worker-scoped temp root for complete post-stop cleanup assertions.
     tmp = WORK / f"tmp-{index}"
     tmp.mkdir()
     log_path = WORK / f"worker-{index}.log"
@@ -162,7 +163,7 @@ def start_worker(name: str = "railway-parser-1", *, parse_timeout: float = 240.0
          "--log-level", "info"],
         cwd=ROOT / "services" / "cs2-demo-parser", stdout=log_path.open("w"), stderr=subprocess.STDOUT,
         start_new_session=True,
-        env={"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/tmp"), "ENVIRONMENT": "production",
+        env={"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/tmp"), "TMPDIR": str(tmp), "ENVIRONMENT": "production",
              "PARSER_TOKEN": "recovery-integration-token", "PARSER_REVISION": REVISION,
              "DEMO_PIPELINE_BRIDGE_URL": f"http://127.0.0.1:{BRIDGE_EDGE_PORT}/api/public/pipeline-worker",
              "DEMO_PIPELINE_BRIDGE_SECRET": SECRET, "DEMO_PIPELINE_WORKER_ID": name,
@@ -235,10 +236,19 @@ def canonical(sha: str) -> dict:
     if len(matches) != 1:
         return out
     match = matches[0]
-    volatile = ("id", "created_at", "updated_at", "round_id")
+    volatile = {"id", "created_at", "updated_at", "round_id"}
+    # These columns describe the user's identity link to a participant, not facts
+    # extracted from the demo. They can legitimately change when a later upload
+    # links a Steam ID to a profile; they are verified by the admission/identity
+    # assertions in the v3 scenario instead of being treated as parser drift.
+    identity_overlay = {
+        "match_participants": {"internal_player_id", "identity_status", "identity_confidence", "is_target_player"},
+        "round_players": {"internal_player_id"},
+    }
     for table in ("match_participants", "match_rounds", "round_players", "round_events"):
         rows = json.loads(sql(f"select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.{table} t where match_id='{match}'"))
-        cleaned = sorted(json.dumps({k: v for k, v in row.items() if k not in volatile}, sort_keys=True) for row in rows)
+        excluded = volatile | identity_overlay.get(table, set())
+        cleaned = sorted(json.dumps({k: v for k, v in row.items() if k not in excluded}, sort_keys=True) for row in rows)
         out[table] = len(rows)
         out[table + "_digest"] = hashlib.sha256("\n".join(cleaned).encode()).hexdigest()[:16]
     out["sources"] = int(sql(f"select count(*) from public.match_sources where match_id='{match}'"))
@@ -307,13 +317,21 @@ def invariants(item: dict, seen: dict) -> None:
         snapshot = {k: v for k, v in seen["canonical"].items() if k != "sources"}
         if not BASELINE:
             BASELINE.update(snapshot)
-        assert snapshot == BASELINE, "canonical content changed between jobs of the same demo"
+        if snapshot != BASELINE:
+            differences = {
+                key: {"baseline": BASELINE.get(key), "observed": value}
+                for key, value in snapshot.items()
+                if BASELINE.get(key) != value
+            }
+            raise AssertionError(f"canonical game facts changed between jobs of the same demo: {differences}")
     # No parser child outlives its worker and no demo or result file is left behind
     # by a worker that was allowed to stop.
     for entry in WORKERS:
         if entry.get("killed"):
             continue
-        left = sorted(p.name for p in entry["tmp"].rglob("*") if p.is_file() and (p.name.startswith("demo-") or p.name.startswith("parser-result-")))
+        left = sorted(str(p.relative_to(entry["tmp"])) for p in entry["tmp"].rglob("*")
+                      if p.is_file() and (p.name == "demo.dem" or p.name.startswith("demo-")
+                                           or p.name.startswith("parser-result-")))
         assert not left or entry["process"].poll() is None and seen["job_status"] not in TERMINAL, f"temporary files left: {left[:3]}"
 
 
@@ -607,9 +625,203 @@ def s_kill_download(item):
     return {"parser_executions": 1, "execution_identities": seen_identities}
 
 
+# ---- admission contract v3: real persistence, read back under RLS ---------
+# Two participants of the public fixture demo with kills (their own steamid64s, read from
+# the demo itself). Each scenario links ONE disposable user to ONE of them.
+V3_PLAYER = "76561197964020430"
+V3_RETRY_PLAYER = "76561198265366770"
+V3_LIMITATIONS = ["L01-CAPABILITY-SURFACE-UNENUMERABLE", "L02-TICK-DOMAIN-AUTHORITY-UNAVAILABLE",
+                  "L03-USERCMD-UNAVAILABLE", "L04-MATCH-RESULT-UNRESOLVED"]
+
+
+def anon_key() -> str:
+    data = json.loads(subprocess.run(["supabase", "status", "-o", "json"], capture_output=True, text=True,
+                                     check=True, cwd=ROOT).stdout)
+    key = data.get("ANON_KEY", "")
+    if not key:
+        raise RuntimeError("ANON_KEY_UNAVAILABLE")
+    return key
+
+
+def rest(path: str, token: str | None, method: str = "GET", body: dict | None = None,
+         key: str | None = None) -> tuple[int, object]:
+    import urllib.error
+    import urllib.request
+    apikey = key or anon_key()
+    headers = {"apikey": apikey, "Content-Type": "application/json",
+               "Authorization": "Bearer " + (token or apikey)}
+    request = urllib.request.Request(STACK["api"].rstrip("/") + path, method=method, headers=headers,
+                                     data=json.dumps(body).encode() if body is not None else None)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            text = response.read().decode()
+            return response.status, json.loads(text) if text else None
+    except urllib.error.HTTPError as error:
+        text = error.read().decode("utf-8", "replace")
+        try:
+            return error.code, json.loads(text)
+        except ValueError:
+            return error.code, text
+
+
+def session_for(user_id: str) -> str:
+    """A real Auth session for a disposable user (password set by the admin API)."""
+    password = uuid.uuid4().hex + uuid.uuid4().hex
+    status, user = rest(f"/auth/v1/admin/users/{user_id}", STACK["key"], "PUT", {"password": password},
+                        key=STACK["key"])
+    assert status == 200 and isinstance(user, dict), (status, user)
+    status, tokens = rest("/auth/v1/token?grant_type=password", None, "POST",
+                          {"email": user["email"], "password": password})
+    assert status == 200 and isinstance(tokens, dict) and tokens.get("access_token"), (status, tokens)
+    return str(tokens["access_token"])
+
+
+def link_steam(user_id: str, steam_id: str) -> None:
+    updated = sql(f"update public.player_profiles set steam_id='{steam_id}' where user_id='{user_id}' returning id")
+    assert updated, "the disposable user has no player profile"
+
+
+def v3_rows(item: dict) -> dict:
+    job_id = item["job_id"]
+    out = js("select to_jsonb(j) from (select status, match_id, admission_contract, admission_verdict, "
+             "admission_limitations, admission_excluded_metrics, admission_decision_id, attachment_state "
+             f"from public.demo_jobs where id='{job_id}') j")
+    out["decisions"] = json.loads(sql(
+        "select coalesce(jsonb_agg(jsonb_build_object('id', id, 'verdict', verdict, 'limitations', limitations, "
+        "'v2', v2_producer_reasons, 'digest', decision_digest, 'excluded', excluded_metrics, "
+        "'blocked', blocked_reasons) order by recorded_at), '[]'::jsonb) "
+        f"from public.raw_admission_decisions where job_id='{job_id}'"))
+    out["artifact_audit"] = sql(f"select audit_status from public.raw_evidence_artifacts where job_id='{job_id}'")
+    player = sql(f"select id from public.player_profiles where user_id='{item['user_id']}'")
+    out["player_id"] = player
+    out["metrics"] = json.loads(sql(
+        "select coalesce(jsonb_agg(to_jsonb(m)), '[]'::jsonb) from (select match_id, kills, deaths, adr, kast, "
+        f"rounds_played from public.match_metrics where player_id='{player}') m"))
+    out["features"] = int(sql(f"select count(*) from public.match_features where player_id='{player}'"))
+    if out.get("match_id"):
+        out["match"] = js("select to_jsonb(m) from (select id, map, result, score_player, score_opponent, "
+                          f"team_player, team_opponent from public.matches where id='{out['match_id']}') m")
+        out["kill_events_by_player"] = int(sql(
+            "select count(*) from public.round_events where match_id='" + out["match_id"] + "' "
+            f"and event_type='kill' and actor_steam_id='{V3_PLAYER}'"))
+    return out
+
+
+@scenario("admission_v3_limited_demo_persists_real_metrics_readable_only_by_its_owner")
+def s_v3_persist(item):
+    link_steam(item["user_id"], V3_PLAYER)
+    start_worker()
+    state = done(item)
+    assert state["status"] == "processed", state
+    rows = v3_rows(item)
+    RESULTS_NOTES["admission_v3_rows"] = rows
+    # The v3 decision is recorded, bound to the job, LIMITED with exactly the declared
+    # limitations, and the v2 producer verdict it was made against is preserved.
+    assert rows["admission_contract"] == "cs2.raw-admission.v3", rows
+    assert rows["admission_verdict"] == "LIMITED", rows
+    assert sorted(rows["admission_limitations"]) == V3_LIMITATIONS, rows
+    assert len(rows["decisions"]) == 1 and rows["decisions"][0]["id"] == rows["admission_decision_id"], rows
+    decision = rows["decisions"][0]
+    assert decision["verdict"] == "LIMITED" and not decision["blocked"], decision
+    assert "forensic_v2_producer_decision_invalid" in decision["v2"], decision
+    # The v1 RAW audit result of the artifact is untouched.
+    assert rows["artifact_audit"] == "approved", rows
+    # Real rows: one canonical match, the player's metrics and features, linked to it.
+    assert rows["attachment_state"] == "attached", rows
+    assert len(rows["metrics"]) == 1 and rows["metrics"][0]["match_id"] == rows["match_id"], rows
+    metric = rows["metrics"][0]
+    assert isinstance(metric["kills"], int) and metric["kills"] > 0, metric
+    # The persisted metric is derived from the persisted canonical events, not elsewhere.
+    assert metric["kills"] <= rows["kill_events_by_player"], (metric, rows["kill_events_by_player"])
+    assert metric["rounds_played"] and metric["rounds_played"] > 0, metric
+    assert rows["features"] == 1, rows
+    # L04 excludes the result: persisted as null, never invented.
+    assert rows["match"]["result"] is None and rows["match"]["score_player"] is None, rows["match"]
+    assert set(rows["admission_excluded_metrics"]) == {"matches.result", "matches.score_opponent",
+                                                        "matches.score_player", "matches.team_opponent",
+                                                        "matches.team_player"}, rows
+    # The decision registry is append-only.
+    for statement in (f"update public.raw_admission_decisions set verdict='PASS' where job_id='{item['job_id']}'",
+                      f"delete from public.raw_admission_decisions where job_id='{item['job_id']}'",
+                      f"update public.demo_jobs set admission_verdict='PASS' where id='{item['job_id']}'"):
+        try:
+            sql(statement)
+        except RuntimeError as error:
+            assert "IMMUTABLE" in str(error), error
+        else:
+            raise AssertionError("an admission decision was changed: " + statement)
+    # A second record for the finished job is refused, so no duplicate decision exists.
+    try:
+        sql(f"select public.record_raw_admission_decision_v3('{item['job_id']}', "
+            f"(select id from public.raw_evidence_artifacts where job_id='{item['job_id']}'), "
+            f"(select decision from public.raw_admission_decisions where job_id='{item['job_id']}'))")
+    except RuntimeError as error:
+        assert "NOT_PROCESSING" in str(error), error
+    else:
+        raise AssertionError("a finished job accepted another admission decision")
+    # RLS: the owner reads their own job, provenance and metrics; another signed-in user
+    # and an anonymous client read none of it; nobody but the service reads decisions.
+    owner = session_for(item["user_id"])
+    status, own_jobs = rest(f"/rest/v1/demo_jobs?id=eq.{item['job_id']}&select=id,admission_verdict,admission_limitations", owner)
+    assert status == 200 and len(own_jobs) == 1 and own_jobs[0]["admission_verdict"] == "LIMITED", (status, own_jobs)
+    status, own_metrics = rest(f"/rest/v1/match_metrics?player_id=eq.{rows['player_id']}&select=match_id,kills", owner)
+    assert status == 200 and len(own_metrics) == 1 and own_metrics[0]["kills"] == metric["kills"], (status, own_metrics)
+    status, own_decisions = rest(f"/rest/v1/raw_admission_decisions?job_id=eq.{item['job_id']}&select=id", owner)
+    assert status in (401, 403, 404) or own_decisions == [], (status, own_decisions)
+    other_user = new_item()["user_id"]
+    other = session_for(other_user)
+    status, seen = rest(f"/rest/v1/demo_jobs?id=eq.{item['job_id']}&select=id", other)
+    assert status == 200 and seen == [], (status, seen)
+    status, seen = rest(f"/rest/v1/match_metrics?player_id=eq.{rows['player_id']}&select=match_id", other)
+    assert status == 200 and seen == [], (status, seen)
+    status, seen = rest(f"/rest/v1/demo_jobs?id=eq.{item['job_id']}&select=id", None)
+    assert status in (401, 403) or seen == [], (status, seen)
+    RESULTS_NOTES["admission_v3_rls"] = {"owner_jobs": len(own_jobs), "owner_metrics": len(own_metrics),
+                                         "other_user_jobs": 0, "other_user_metrics": 0}
+    return {"parser_executions": 1, "complete_calls": 1, "fail_calls": 0}
+
+
+@scenario("admission_v3_projection_failure_writes_no_partial_metrics_and_the_retry_persists_once")
+def s_v3_rollback(item):
+    link_steam(item["user_id"], V3_RETRY_PLAYER)
+    player = sql(f"select id from public.player_profiles where user_id='{item['user_id']}'")
+    sql("create or replace function pg_temp_v3_fail_metrics() returns trigger language plpgsql as $f$ "
+        f"begin if new.player_id = '{player}' then raise exception 'V3_PROBE_INJECTED_PROJECTION_FAILURE'; end if; "
+        "return new; end $f$")
+    sql("create trigger v3_probe_fail_metrics before insert or update on public.match_metrics "
+        "for each row execute function pg_temp_v3_fail_metrics()")
+    try:
+        start_worker()
+        wait_for(lambda: int(sql(f"select count(*) from public.raw_admission_decisions where job_id='{item['job_id']}'")) == 1,
+                 420, "the v3 decision")
+        wait_for(lambda: FAULTS.count("complete", job=item["job_id"]) >= 1 and job(item["job_id"])["status"] != "pending", 120,
+                 "the failed completion")
+        time.sleep(3)
+        state = job(item["job_id"])
+        assert state["status"] != "processed", state
+        # Nothing partial: no metrics and no features row for the player, and the job is
+        # not presented as complete.
+        assert int(sql(f"select count(*) from public.match_metrics where player_id='{player}'")) == 0
+        assert int(sql(f"select count(*) from public.match_features where player_id='{player}'")) == 0
+    finally:
+        sql("drop trigger if exists v3_probe_fail_metrics on public.match_metrics")
+        sql("drop function if exists pg_temp_v3_fail_metrics()")
+    stop_workers()
+    if job(item["job_id"])["status"] == "processing":
+        expire_lease(item["job_id"])
+    start_worker()
+    state = done(item)
+    assert state["status"] == "processed", state
+    assert int(sql(f"select count(*) from public.match_metrics where player_id='{player}'")) == 1
+    assert int(sql(f"select count(*) from public.match_features where player_id='{player}'")) == 1
+    assert int(sql(f"select count(*) from public.raw_admission_decisions where job_id='{item['job_id']}'")) == 1
+    RESULTS_NOTES["admission_v3_rollback"] = facts(item)["terminals"]
+    return {}
+
+
 RESULTS_NOTES: dict = {}
 SCENARIOS = [s_happy, s_timeout, s_timeout_exhausted, s_sigkill, s_complete_lost, s_ack_lost, s_fail_lost, s_raw_before, s_raw_after,
-             s_stale, s_concurrency, s_heartbeat, s_undecidable, s_kill_download]
+             s_stale, s_concurrency, s_heartbeat, s_undecidable, s_kill_download, s_v3_persist, s_v3_rollback]
 
 
 def main() -> int:
