@@ -57,6 +57,7 @@ def test_candidate_migrations_only_rewrite_pinned_function_definitions():
         assert not re.search(r"\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT|REVOKE|DROP|ALTER)\b", code, re.I)
         assert "parser_runtime_provenance" not in code or "SELECT" in code
 
+
 def test_historical_probe_preserves_current_recorder_when_requested():
     sys.path.insert(0, str(ROOT / "scripts/queue"))
     import attestation_recorder_reconciliation_probe as recorder_probe  # noqa: PLC0415
