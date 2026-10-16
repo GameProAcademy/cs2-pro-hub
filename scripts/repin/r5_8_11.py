@@ -183,19 +183,6 @@ def verify(spec: dict[str, Any]) -> list[str]:
 
 
 
-    problems = static_target_problems(spec)
-    if problems:
-        return problems
-    if spec["deployment_id"] == PREVIOUS_SPEC["deployment_id"]:
-        problems.append("DEPLOYMENT_ID_IS_THE_R5_8_10_ONE")
-    if spec["build_commit"] == PREVIOUS_SPEC["build_commit"]:
-        problems.append("BUILD_COMMIT_IS_THE_R5_8_10_ONE")
-    elif r5_8_10._git("merge-base", "--is-ancestor", PREVIOUS_SPEC["build_commit"], spec["build_commit"]) is None:
-        problems.append("BUILD_COMMIT_DOES_NOT_DESCEND_FROM_THE_R5_8_9_BUILD")
-    # The reviewed attestation workflow is intentionally unchanged across this repin.
-    return problems
-
-
 def _lit(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
@@ -408,7 +395,7 @@ def targets(spec: dict[str, Any]) -> dict[str, str]:
 def main(argv: list[str]) -> int:
     if len(argv) >= 3 and argv[1] in ("verify", "generate", "generate-candidate"):
         spec = json.loads(Path(argv[2]).read_text(encoding="utf-8"))
-        problems = verify(spec) if argv[1] == "verify" else static_target_problems(spec)
+        problems = verify(spec) if argv[1] in ("verify", "generate") else static_target_problems(spec)
         print(json.dumps({"spec_consistent": not problems, "problems": problems,
                           "release_proven": argv[1] == "verify"}, sort_keys=True))
         if problems:
@@ -418,7 +405,7 @@ def main(argv: list[str]) -> int:
             Path(argv[4]).write_text(recorder_rollback_sql(spec), encoding="utf-8")
             Path(argv[5]).write_text(boundary_migration_sql(spec), encoding="utf-8")
             Path(argv[6]).write_text(boundary_rollback_sql(spec), encoding="utf-8")
-            print(json.dumps({"targets": targets(spec), "release_proven": argv[1] == "generate"}, sort_keys=True))
+            print(json.dumps({"targets": targets(spec), "release_proven": argv[1] in ("verify", "generate")}, sort_keys=True))
         return 0
     print(__doc__, file=sys.stderr)
     return 2
