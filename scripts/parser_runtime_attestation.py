@@ -17,12 +17,12 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "main"
-# Semantic revision: the current main commit whose parser tree matches the active Railway image.
-COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
+# Semantic revision: exact worker source tree embedded in the active Railway image.
+COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
 # Build revision: exact source commit embedded in the currently served Railway image (BUILD_INFO.json, /version build.commit).
-BUILD_COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
-# Railway deployment f90c8150 (successful deploy of the PR #138 merge commit).
-DEPLOYMENT = "f90c8150-b231-4cbb-ae99-a8096a05133e"
+BUILD_COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+# Active successful Railway deployment observed in production preflight (source commit eaaa2c8d...).
+DEPLOYMENT = "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
 DEPLOYMENT_SOURCE_COMMIT = BUILD_COMMIT
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
@@ -30,7 +30,7 @@ ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
 EXPECTED_HASHES = {
     "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
     "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
-    "services/cs2-demo-parser/worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+    "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
     "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
     "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 }
