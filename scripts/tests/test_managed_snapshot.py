@@ -426,11 +426,11 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     sys.path.insert(0, str(ROOT / "scripts/ci"))
     import h3e_activation_gate as gate
     pins = gate.snapshot_pins(ROOT)
-    assert pins["recorder_md5"] == "4ee7be9d9d133adbeeafe6e6a5763112"
+    assert pins["recorder_md5"] == "beeb4f8f94a6960ca9e7448344ae379b"
     runtime = pins["runtime"]
-    assert runtime["deployment_id"] == "25df86c3-22e1-4986-9b91-cdabe54535c5"
+    assert runtime["deployment_id"] == "f90c8150-b231-4cbb-ae99-a8096a05133e"
     assert (runtime["semantic_commit"], runtime["build_commit"]) == (
-        "60099ed3eaf959d888762bf55043255a63a6a766", "60099ed3eaf959d888762bf55043255a63a6a766")
+        "c2e045b0f71a7699c935b65ffe514fe526889de3", "c2e045b0f71a7699c935b65ffe514fe526889de3")
     assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
     # The fixture of the active runtime is exactly what the gate will expect.
