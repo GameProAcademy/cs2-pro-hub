@@ -623,6 +623,89 @@ class Io:
         return self.git("merge-base", "--is-ancestor", older, newer).returncode == 0
 
 
+def find_artifact(io: Io, name: str) -> tuple[dict[str, Any] | None, bytes | None]:
+    listed = io.github(f"/actions/artifacts?name={name}&per_page=10").get("artifacts") or []
+    exact = [a for a in listed if a.get("name") == name and not a.get("expired")]
+    if len(exact) != 1:
+        return None, None
+    return exact[0], io.download(exact[0]["archive_download_url"])
+
+
+def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    r584_document: dict[str, Any] | None = None
+    runs: dict[str, dict[str, Any] | None] = {}
+    for key, (path, name, event) in WORKFLOWS.items():
+        listed = io.github(f"/actions/workflows/{path}/runs?head_sha={sha}&per_page=50").get("workflow_runs") or []
+        runs[key] = latest_run(listed, sha=sha, event=event)
+        out[key] = evaluate_run(runs[key], name=name)
+    if out["quality_gates"]["status"] == PASS:
+        jobs = io.github(f"/actions/runs/{runs['quality_gates']['id']}/jobs?filter=latest&per_page=100").get("jobs") or []
+        out["main_required_gates"] = evaluate_job(jobs, job_name="Main required gates")
+    else:
+        out["main_required_gates"] = stage(SKIPPED, reason="QUALITY_GATES_NOT_PASS")
+    if evaluate_producer(runs["r5_8_3"], name=WORKFLOWS["r5_8_3"][1])["status"] == PASS:
+        run_id = runs["r5_8_3"]["id"]
+        meta, blob = find_artifact(io, f"r5-8-3-preflight-{sha}-{run_id}")
+        integrity, document = evaluate_artifact(meta, blob, run_id=run_id, expected_name=f"r5-8-3-preflight-{sha}-{run_id}")
+        out["r5_8_3_artifact"] = integrity
+        out["r5_8_3_decision"] = evaluate_r583(document, sha=sha) if document is not None else stage(SKIPPED, reason="NO_ARTIFACT")
+        name = f"r5-8-4-gate-reconciliation-{run_id}-{sha}"
+        meta, blob = find_artifact(io, name)
+        producer = (meta or {}).get("workflow_run") or {}
+        integrity, document = evaluate_artifact(meta, blob, run_id=producer.get("id"), expected_name=name)
+        if meta is not None and integrity["status"] == PASS:
+            try:
+                producer_run = io.github(f"/actions/runs/{producer.get('id')}")
+            except Exception:
+                producer_run = None
+            check = evaluate_producer(producer_run, name=WORKFLOWS["r5_8_4"][1])
+            integrity = integrity if check["status"] == PASS else check
+        out["r5_8_4_artifact"] = integrity
+        out["r5_8_4_decision"] = (evaluate_r584(document, r583_run_id=run_id, sha=sha)
+                                  if document is not None and integrity["status"] == PASS
+                                  else stage(SKIPPED, reason="NO_VALID_ARTIFACT"))
+        # A matrix whose only defect is its own blockers is honest negative
+        # evidence: it is consumed so the report lists every known blocker. A
+        # matrix with an integrity problem (another run, malformed, claims) is not.
+        if (document is not None and integrity["status"] == PASS
+                and (out["r5_8_4_decision"]["status"] == PASS
+                     or out["r5_8_4_decision"].get("reason") == "R584_OWN_SCOPE_NOT_VERIFIED")):
+            r584_document = document
+    else:
+        for key in ("r5_8_3_artifact", "r5_8_3_decision", "r5_8_4_artifact", "r5_8_4_decision"):
+            out[key] = stage(SKIPPED, reason="R583_RUN_NOT_FINISHED")
+    if out["queue_semantics"]["status"] == PASS:
+        jobs = io.github(f"/actions/runs/{runs['queue_semantics']['id']}/jobs?filter=latest&per_page=100").get("jobs") or []
+        by_job: dict[str, list[dict[str, Any]] | None] = {}
+        for name in QUEUE_JOBS:
+            matching = [j for j in jobs if j.get("name") == name]
+            by_job[name] = (io.github(f"/check-runs/{matching[0]['id']}/annotations?per_page=100")
+                            if len(matching) == 1 else None)
+        out["persistence"] = evaluate_persistence(by_job)
+    else:
+        out["persistence"] = stage(SKIPPED, reason="QUEUE_SEMANTICS_NOT_PASS")
+    out["_r584_document"] = r584_document  # consumed by run_gate, never reported
+    return out
+
+
+def collect_transport(io: Io, env: dict[str, str]) -> dict[str, Any]:
+    endpoint = env.get("PARSER_ATTESTATION_ENDPOINT", "")
+    transport = env.get("PARSER_ATTESTATION_TRANSPORT_SECRET", "")
+    present = {name: bool(env.get(name)) for name in (
+        "PARSER_ATTESTATION_ENDPOINT", "PARSER_ATTESTATION_TRANSPORT_SECRET",
+        "PARSER_ATTESTATION_HMAC_SECRET", "RAILWAY_API_TOKEN")}
+    if not all(present.values()) or endpoint != ATTESTATION_ENDPOINT:
+        return evaluate_transport(secrets_present=present, endpoint_matches=endpoint == ATTESTATION_ENDPOINT,
+                                  unauthenticated=None, authenticated=None)
+    unauth = io.http(endpoint, method="POST", data=b"{}", headers={"Content-Type": "application/json"})
+    auth = io.http(endpoint, method="POST", data=b"{}", headers={
+        "Content-Type": "application/json", "Authorization": f"Bearer {transport}",
+        "X-Parser-Attestation-Transport": transport})
+    return evaluate_transport(secrets_present=present, endpoint_matches=True,
+                              unauthenticated=unauth, authenticated=auth)
+
+
 def snapshot_pins(root: Path) -> dict[str, Any]:
     """Candidate runtime pins plus the R5.8.11 recorder target; mismatch stays fail-closed."""
     import sys
@@ -632,27 +715,27 @@ def snapshot_pins(root: Path) -> dict[str, Any]:
             sys.path.insert(0, path)
     import r5_8_11  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
-        BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, ENVIRONMENT, EXPECTED_HASHES, PROJECT, SERVICE)
+        BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES, PROJECT, SERVICE)
     spec = json.loads((root / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
         raise ValueError("SNAPSHOT_PINS_DISAGREE")
-    # Candidate target differs from the still-live R5.8.10 function body until
+    # This candidate hash differs from the live R5.8.10 database body until
     # migration R5.8.11 is explicitly applied. This mismatch intentionally
-    # blocks activation; this candidate spec is NOT a runtime attestation.
+    # blocks activation; candidate pins are not runtime attestation evidence.
     return {
         "recorder_md5": r5_8_11.target_md5(spec),
         "runtime": {
             "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
-            "environment_id": ENVIRONMENT, "branch": BRANCH, "semantic_commit": COMMIT,
-            "build_commit": BUILD_COMMIT, "deployment_created_at": spec["observed"]["railway_deployment"]["created_at"],
+            "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e", "branch": BRANCH,
+            "semantic_commit": COMMIT, "build_commit": BUILD_COMMIT,
+            "deployment_created_at": spec["observed"]["railway_deployment"]["created_at"],
             "workflow_source_sha": registry["source_sha"],
             "workflow_ref": f"{REPOSITORY}/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
             "critical_hashes": dict(EXPECTED_HASHES),
         },
     }
-
 
 def evaluate_snapshot(response: dict[str, Any] | None, *, pins: dict[str, Any] | None, now: float,
                       evaluate: Callable[..., dict[str, Any]]) -> dict[str, Any]:
