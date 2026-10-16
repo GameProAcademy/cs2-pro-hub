@@ -83,6 +83,9 @@ BEGIN
     EXECUTE __R5810_ROLLBACK__;
     SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
     WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF __R589_UNDO__ AND _md5 <> '__R589_TARGET__' THEN
+      RAISE EXCEPTION 'PROBE_BASELINE_R5_8_10_ROLLBACK_MISMATCH: %', _md5;
+    END IF;
   END IF;
   IF __R589_UNDO__ AND _md5 = '__R589_TARGET__' THEN
     EXECUTE __R589B_ROLLBACK__;
