@@ -585,26 +585,64 @@ class Io:
         return {"status": status, "body": body,
                 "error": body.get("error") if isinstance(body, dict) else None}
 
+    def snapshot_pins(self) -> dict[str, Any]:
+        return snapshot_pins(self.root)
 
+    def railway_active(self, token: str) -> dict[str, Any]:
+        """Newest SUCCESS deployment of the service, or {"error": ...} explaining why not."""
+        query = ("query($input:DeploymentListInput!){deployments(input:$input,first:20)"
+                 "{edges{node{id status createdAt meta}}}}")
+        payload = json.dumps({"query": query, "variables": {"input": dict(RAILWAY)}})
+        result = self.http(RAILWAY_API, method="POST", data=payload.encode(), headers={
+            "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+        if not result:
+            return {"error": "RAILWAY_API_UNREACHABLE"}
+        body = result.get("body") if isinstance(result.get("body"), dict) else {}
+        if result["status"] != 200 or body.get("errors"):
+            messages = [str((e or {}).get("message", ""))[:160] for e in (body.get("errors") or [])][:3]
+            return {"error": f"RAILWAY_API_HTTP_{result['status']}", "messages": messages}
+        edges = (((body.get("data") or {}).get("deployments") or {}).get("edges") or [])
+        nodes = [e.get("node") or {} for e in edges if isinstance(e, dict)]
+        live = sorted((n for n in nodes if n.get("status") == "SUCCESS"),
+                      key=lambda n: str(n.get("createdAt") or ""), reverse=True)
+        if not live:
+            return {"error": "RAILWAY_NO_SUCCESS_DEPLOYMENT", "observed": len(nodes)}
+        node = live[0]
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        return {"id": node.get("id"), "status": node.get("status"),
+                "commitHash": meta.get("commitHash") or meta.get("commit"), "branch": meta.get("branch")}
+
+    def git(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", *args], cwd=self.root, capture_output=True, text=True)
+
+    def tree(self, commit: str) -> str | None:
+        out = self.git("rev-parse", f"{commit}:{WORKER_DIR}")
+        return out.stdout.strip() if out.returncode == 0 else None
+
+    def is_ancestor(self, older: str, newer: str) -> bool:
+        return self.git("merge-base", "--is-ancestor", older, newer).returncode == 0
 
 
 def snapshot_pins(root: Path) -> dict[str, Any]:
-    """Expected recorder and active runtime, from the committed R5.8.10 spec and pins only."""
+    """Candidate runtime pins plus the R5.8.11 recorder target; mismatch stays fail-closed."""
     import sys
     for sub in ("", "scripts/repin", "scripts/predem"):
         path = str(root / sub) if sub else str(root)
         if path not in sys.path:
             sys.path.insert(0, path)
-    import r5_8_10  # noqa: PLC0415
+    import r5_8_11  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
         BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, ENVIRONMENT, EXPECTED_HASHES, PROJECT, SERVICE)
-    spec = json.loads((root / "docs/reference/r5_8_10/spec.json").read_text(encoding="utf-8"))
+    spec = json.loads((root / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
         raise ValueError("SNAPSHOT_PINS_DISAGREE")
+    # Candidate target differs from the still-live R5.8.10 function body until
+    # migration R5.8.11 is explicitly applied. This mismatch intentionally
+    # blocks activation; this candidate spec is NOT a runtime attestation.
     return {
-        "recorder_md5": r5_8_10.target_md5(spec),
+        "recorder_md5": r5_8_11.target_md5(spec),
         "runtime": {
             "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
             "environment_id": ENVIRONMENT, "branch": BRANCH, "semantic_commit": COMMIT,
@@ -614,6 +652,7 @@ def snapshot_pins(root: Path) -> dict[str, Any]:
             "critical_hashes": dict(EXPECTED_HASHES),
         },
     }
+
 
 def evaluate_snapshot(response: dict[str, Any] | None, *, pins: dict[str, Any] | None, now: float,
                       evaluate: Callable[..., dict[str, Any]]) -> dict[str, Any]:
