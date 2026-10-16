@@ -44,17 +44,16 @@ MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
 REPOSITORY_BLOB = "dfc2e67fcb3644be91108079f9096947c16119b3"
 INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
-# R5.8.9 is part of the repository chain: a reset build ends at its target. The
-# R5.8.7/R5.8.8 scenarios below describe the state before it, so every script
-# first records the reset-build recorder and then applies the committed R5.8.9b
-# and R5.8.9 rollbacks (managed-safe, row-free) inside the same rolled-back
-# transaction.
+# The repository reset ends at R5.8.11/R5.8.11b. Base R5.8.7/R5.8.8
+# reconciliation expects the R5.8.10 fingerprint, so its default prelude rewinds
+# R5.8.11 and R5.8.10. Candidate validators explicitly pass keep_current=True
+# when they need to assert the latest candidate state.
+R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
+R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
+R5811_TARGET_MD5 = "beeb4f8f94a6960ca9e7448344ae379b"
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
 R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
-# R5.8.10 follows R5.8.9 in the chain: a reset build ends at its target, so the
-# baseline first undoes R5.8.10b and R5.8.10 (back to the R5.8.9 targets) and
-# then, unless a caller keeps the R5.8.9 state, R5.8.9b and R5.8.9.
 R5810_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback.sql"
 R5810B_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback_boundary.sql"
 R5810_TARGET_MD5 = "4ee7be9d9d133adbeeafe6e6a5763112"
@@ -65,18 +64,36 @@ BEGIN;
 CREATE TEMP TABLE probe_baseline ON COMMIT DROP AS
   SELECT md5(p.prosrc) AS reset_md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
-DO $r589_baseline$ BEGIN
-  IF (SELECT reset_md5 FROM probe_baseline) = '__R5810_TARGET__' THEN
+DO $baseline$
+DECLARE _md5 text;
+BEGIN
+  SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+  WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  IF __R5811_UNDO__ AND _md5 = '__R5811_TARGET__' THEN
+    -- Boundary and recorder are separate functions. Roll them back in migration
+    -- order; only assert the recorder fingerprint after its own rollback.
+    EXECUTE __R5811B_ROLLBACK__;
+    EXECUTE __R5811_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF _md5 <> '__R5810_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH: %', _md5; END IF;
+  END IF;
+  IF _md5 = '__R5810_TARGET__' THEN
     EXECUTE __R5810B_ROLLBACK__;
     EXECUTE __R5810_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF __R589_UNDO__ AND _md5 <> '__R589_TARGET__' THEN
+      RAISE EXCEPTION 'PROBE_BASELINE_R5_8_10_ROLLBACK_MISMATCH: %', _md5;
+    END IF;
   END IF;
-  IF __R589_UNDO__ AND (SELECT md5(p.prosrc) FROM pg_proc p
-      WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure)
-      = '__R589_TARGET__' THEN
+  IF __R589_UNDO__ AND _md5 = '__R589_TARGET__' THEN
     EXECUTE __R589B_ROLLBACK__;
     EXECUTE __R589_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
   END IF;
-END $r589_baseline$;
+END $baseline$;
 SELECT set_config('app.settings.parser_attestation_hmac_secret', repeat('s', 48), true);
 CREATE TEMP TABLE probe_result(k text PRIMARY KEY, v jsonb) ON COMMIT DROP;
 CREATE FUNCTION pg_temp.recorder() RETURNS jsonb LANGUAGE sql AS $f$
@@ -224,18 +241,34 @@ CREATE FUNCTION pg_temp.controls() RETURNS jsonb LANGUAGE sql AS $f$
       AND contype = 'u' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'))
 $f$;
 """
-def _r589_literal(path: Path = R589_ROLLBACK) -> str:
+def _sql_literal(path: Path, tag: str) -> str:
     text = path.read_text(encoding="utf-8")
-    assert "$r589_rollback$" not in text
-    return "$r589_rollback$" + text + "$r589_rollback$"
+    assert tag not in text
+    return tag + text + tag
+
+
+def _r589_literal(path: Path = R589_ROLLBACK) -> str:
+    return _sql_literal(path, "$r589_rollback$")
+
+
+def _r5811_literal(path: Path) -> str:
+    return _sql_literal(path, "$r5811b_rollback$")
 
 
 def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
-    """Insert the baseline step (undo R5.8.10, then R5.8.9 unless keep_r589;
-    keep_current undoes nothing: the reset build's own chain head).
-    Callers that substitute pins in the prelude must do so on the template, so
-    the embedded rollbacks stay intact."""
-    return (template.replace("__R5810_TARGET__", "keep-current" if keep_current else R5810_TARGET_MD5)
+    """Render a transaction-local recorder baseline for the caller.
+
+    By default rewind R5.8.11/11b and R5.8.10/10b, leaving the R5.8.9 target
+    expected by the legacy R5.8.7/R5.8.8 reconciliation suite. keep_r589
+    preserves the R5.8.9 target, while keep_current preserves the exact latest
+    R5.8.11 reset state for current-candidate probes. All rollbacks remain within
+    the disposable transaction, which is rolled back by the epilogue.
+    """
+    return (template.replace("__R5811_UNDO__", "false" if keep_current else "true")
+            .replace("__R5811_TARGET__", R5811_TARGET_MD5)
+            .replace("__R5811B_ROLLBACK__", _r5811_literal(R5811B_ROLLBACK))
+            .replace("__R5811_ROLLBACK__", _r5811_literal(R5811_ROLLBACK))
+            .replace("__R5810_TARGET__", R5810_TARGET_MD5)
             .replace("__R5810B_ROLLBACK__", _r589_literal(R5810B_ROLLBACK))
             .replace("__R5810_ROLLBACK__", _r589_literal(R5810_ROLLBACK))
             .replace("__R589_UNDO__", "false" if keep_r589 or keep_current else "true")
@@ -245,6 +278,8 @@ def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool
 
 
 PRELUDE_TEMPLATE = PRELUDE
+# Base R5.8.7/R5.8.8 reconciliation expects the R5.8.10 recorder fingerprint.
+# The current Gate Semantics probe explicitly requests keep_current=True.
 PRELUDE = render_prelude(PRELUDE_TEMPLATE)
 EPILOGUE = r"""
 SELECT 'RESULT:' || coalesce(jsonb_object_agg(k, v), '{}'::jsonb)::text FROM probe_result;
@@ -305,10 +340,11 @@ def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]
 def main() -> int:
     refuse_non_local()
 
-    # ----- R5.8.10: the reset build ends at the re-pinned recorder (R5.8.9 is undone after it)
-    scenario("r5810_reset_build_has_repinned_recorder", """
+    # ----- R5.8.11 is the repository migration-chain head; its preceding R5.8.10
+    # target is still asserted by the committed R5.8.11 migration contract tests.
+    scenario("r5811_reset_build_has_repinned_recorder", """
 INSERT INTO probe_result SELECT 'reset_md5', to_jsonb((SELECT reset_md5 FROM probe_baseline));
-""", lambda o: [] if o.get("reset_md5") == R5810_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
+""", lambda o: [] if o.get("reset_md5") == R5811_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
 
     # ----- R5.8.7 (D1): recorder definition
     scenario("d1_reset_build_has_managed_recorder_and_properties", """

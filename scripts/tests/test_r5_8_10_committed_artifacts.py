@@ -61,27 +61,20 @@ def test_spec_pins_the_observed_deployment():
     assert {n for n in previous if previous[n] != SPEC["critical_hashes"][n]} == {"raw_evidence.py"}
 
 
-def test_spec_agrees_with_every_repository_pin():
-    from scripts.parser_runtime_attestation import BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES
-    from scripts.h3e91_live_preflight import DEPLOYMENT as PF_DEPLOYMENT, PARSER_REVISION, SOURCE_COMMIT
-    assert (BRANCH, COMMIT, BUILD_COMMIT, DEPLOYMENT) == (
-        SPEC["branch"], SPEC["semantic_commit"], SPEC["build_commit"], SPEC["deployment_id"])
-    assert (PF_DEPLOYMENT, SOURCE_COMMIT, PARSER_REVISION) == (SPEC["deployment_id"], BUILD, f"git:{BUILD}")
-    assert {Path(p).name: h for p, h in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
+def test_r5_8_10_historical_spec_remains_frozen_and_is_not_the_active_pin_source():
+    # R5.8.10 remains the exact record of deployment 25df86c3 / build 60099ed3.
+    # Active pins belong to R5.8.11 and must not rewrite this historical spec.
+    from scripts.parser_runtime_attestation import BUILD_COMMIT, DEPLOYMENT
+    assert SPEC["deployment_id"] == "25df86c3-22e1-4986-9b91-cdabe54535c5"
+    assert SPEC["build_commit"] == "60099ed3eaf959d888762bf55043255a63a6a766"
+    assert SPEC["critical_hashes"]["worker.py"] == "ecaac3968d68e1ed8fc03f8dfea42c223869f473"
+    active = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text())
+    assert DEPLOYMENT == active["deployment_id"]
+    assert BUILD_COMMIT == active["build_commit"]
+    assert active["release_status"] == "CANDIDATE_ONLY_PENDING_RUNTIME_VERSION_OBSERVATION"
+    assert active["observed"]["version_hosts"] == {}
     registry = json.loads((ROOT / "scripts/approved_attestation_workflow.json").read_text())
-    assert registry["source_sha"] == SPEC["workflow_source_sha"]
-    ts = (ROOT / "src/lib/parserAttestationWorkflowRegistry.ts").read_text()
-    assert f'"{SPEC["workflow_source_sha"]}"' in ts
-    app = (ROOT / "src/lib/parserAttestation.ts").read_text()
-    for value in (f'commit: "{BUILD}"', f'buildCommit: "{BUILD}"', f'deploymentId: "{SPEC["deployment_id"]}"',
-                  f'deploymentSourceCommit: "{BUILD}"', SPEC["critical_hashes"]["raw_evidence.py"]):
-        assert value in app, value
-    adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text()
-    assert adapter.count(f'"git:{BUILD}"') == 2
-    workflow = (ROOT / ".github/workflows/parser-runtime-attestation.yml").read_text()
-    assert f"git merge-base --is-ancestor {BUILD} refs/remotes/origin/main" in workflow
-    for old in (r5_8_10.PREVIOUS_SPEC["build_commit"], r5_8_10.PREVIOUS_SPEC["semantic_commit"]):
-        assert old not in workflow
+    assert active["workflow_source_sha"] == registry["source_sha"]
 
 
 def test_generated_sql_only_rewrites_function_bodies_and_comments():

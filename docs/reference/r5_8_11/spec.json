@@ -1,0 +1,39 @@
+{
+  "deployment_id": "f90c8150-b231-4cbb-ae99-a8096a05133e",
+  "branch": "main",
+  "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  "build_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  "deployment_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
+  "critical_hashes": {
+    "parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "observed": {
+    "observed_at": null,
+    "railway_deployment": {
+      "id": "f90c8150-b231-4cbb-ae99-a8096a05133e",
+      "status": "SUCCESS",
+      "commitHash": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-15T22:25:18.073Z"
+    },
+    "version_hosts": {},
+    "managed_start_state": {
+      "read_at": null,
+      "record_parser_runtime_attestation": "4ee7be9d9d133adbeeafe6e6a5763112",
+      "assert_verified_parser_provenance": "57e4196115eb9253fd307e4443fb603c",
+      "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "version_hosts": "PENDING: both public /version endpoints must be observed before release verification",
+      "managed_start_state": "Managed database MD5/prosrc via read-only SELECT"
+    }
+  },
+  "release_status": "CANDIDATE_ONLY_PENDING_RUNTIME_VERSION_OBSERVATION"
+}

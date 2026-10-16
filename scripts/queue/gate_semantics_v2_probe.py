@@ -29,7 +29,8 @@ import attestation_recorder_reconciliation_probe as probe  # noqa: E402
 import managed_snapshot as ms  # noqa: E402
 from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 
-SPEC = json.loads((ROOT / "docs/reference/r5_8_10/spec.json").read_text(encoding="utf-8"))
+# The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
+SPEC = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
 COMMIT = SPEC["build_commit"]
 WORKER = SPEC["critical_hashes"]["worker.py"]
 

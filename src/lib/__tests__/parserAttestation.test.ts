@@ -94,11 +94,11 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {
-        observed: "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+        observed: "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
-        observed: "ec28b075f9726e5c4cdb97f5820f4402bca23eae",
+        observed: "001281eecb02ebc318ff997f734c4081c161d1d9",
         match: true,
       },
       "services/cs2-demo-parser/settings.py": {

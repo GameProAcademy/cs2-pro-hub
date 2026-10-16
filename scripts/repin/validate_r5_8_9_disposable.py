@@ -64,7 +64,11 @@ def run(prelude: str, body: str) -> dict:
         input=prelude + body + probe.EPILOGUE, capture_output=True, text=True, timeout=120)
     lines = [line for line in result.stdout.splitlines() if line.startswith("RESULT:")]
     if result.returncode != 0 or len(lines) != 1:
-        raise RuntimeError((result.stderr.strip().splitlines() or ["psql failed"])[-1][:300])
+        stderr_lines = [line.strip() for line in result.stderr.splitlines() if line.strip()]
+        markers = ("ERROR:", "DETAIL:", "HINT:", "CONTEXT:", "STATEMENT:")
+        diagnostic = [line for line in stderr_lines if any(marker in line for marker in markers)]
+        message = " | ".join(diagnostic[-6:] or stderr_lines[-6:] or ["psql failed"])
+        raise RuntimeError(message[:1000])
     return json.loads(lines[0][len("RESULT:"):])
 
 

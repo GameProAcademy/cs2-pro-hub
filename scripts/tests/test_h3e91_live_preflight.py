@@ -56,12 +56,12 @@ def test_collector_has_no_execution_or_mutation_surface():
     assert APPROVED_BLOB in source
 
 
-def test_collector_uses_the_r5810_railway_identity():
-    # R5.8.10: deployment 25df86c3 serves the image built from 60099ed3 (main).
-    assert DEPLOYMENT == "25df86c3-22e1-4986-9b91-cdabe54535c5"
-    assert SOURCE_COMMIT == "60099ed3eaf959d888762bf55043255a63a6a766"
+def test_collector_uses_the_r5811_candidate_identity():
+    # R5.8.11 candidate pins the active Railway deployment; live /version evidence is still pending.
+    assert DEPLOYMENT == "f90c8150-b231-4cbb-ae99-a8096a05133e"
+    assert SOURCE_COMMIT == "c2e045b0f71a7699c935b65ffe514fe526889de3"
     assert BRANCH == "main"
-    assert PARSER_REVISION == "git:60099ed3eaf959d888762bf55043255a63a6a766"
+    assert PARSER_REVISION == "git:c2e045b0f71a7699c935b65ffe514fe526889de3"
 
 
 def test_collector_structure_rejects_automatic_and_execution_triggers():
