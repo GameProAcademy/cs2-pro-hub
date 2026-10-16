@@ -8,10 +8,9 @@
   "critical_hashes": {
     "parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
     "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
-    "worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473",
+    "worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
     "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
-    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
-    "worker": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9"
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
   },
   "observed": {
     "observed_at": null,
