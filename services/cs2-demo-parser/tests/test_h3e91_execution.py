@@ -208,3 +208,32 @@ def test_reconstructed_http_retry_and_terminal_replays_keep_database_identity():
             assert len(rows) == 3
             assert all(row["executionId"] == execution_id for row in rows.values())
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("status,payload,expected", [
+    (503, {"code": "H3E91_WORKER_BUILD_IDENTITY_MISMATCH"}, "H3E91_RECORDING_FAILED_503_H3E91_WORKER_BUILD_IDENTITY_MISMATCH"),
+    (409, {"status": "REJECTED", "code": "INVALID_TRANSITION"}, "H3E91_RECORDING_FAILED_409_INVALID_TRANSITION"),
+])
+def test_recording_failure_preserves_sanitized_bridge_code(status, payload, expected):
+    async def transport(_request):
+        return httpx.Response(status, json=payload)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            recorder = ExecutionRecorder(
+                client,
+                make_settings(
+                    bridge_url="https://synthetic.invalid/bridge",
+                    bridge_secret="synthetic-test-only",
+                ),
+                upload_id="11111111-1111-1111-1111-111111111111",
+                surface="RAILWAY_DURABLE_WORKER",
+                job_id="22222222-2222-2222-2222-222222222222",
+                attempt_number=1,
+                demo_sha256=DEMO_SHA,
+                file_size=520,
+            )
+            with pytest.raises(RuntimeError, match=expected):
+                await recorder.record("EXECUTION_INTENT")
+
+    asyncio.run(run())
