@@ -53,6 +53,6 @@ def test_candidate_migrations_only_rewrite_pinned_function_definitions():
         assert target in sql
         assert "pg_catalog.md5(p.prosrc)" in sql
         assert "EXECUTE _def" in sql
-        code = re.sub(r"--[^\\n]*", "", re.sub(r"'(?:[^']|'')*'", "''", sql))
-        assert not re.search(r"\\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT|REVOKE|DROP|ALTER)\\b", code, re.I)
+        code = re.sub(r"--[^\n]*", "", re.sub(r"'(?:[^']|'')*'", "''", sql))
+        assert not re.search(r"\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT|REVOKE|DROP|ALTER)\b", code, re.I)
         assert "parser_runtime_provenance" not in code or "SELECT" in code
