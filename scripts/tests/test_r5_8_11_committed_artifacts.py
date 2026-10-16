@@ -56,3 +56,13 @@ def test_candidate_migrations_only_rewrite_pinned_function_definitions():
         code = re.sub(r"--[^\n]*", "", re.sub(r"'(?:[^']|'')*'", "''", sql))
         assert not re.search(r"\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT|REVOKE|DROP|ALTER)\b", code, re.I)
         assert "parser_runtime_provenance" not in code or "SELECT" in code
+
+def test_historical_probe_preserves_current_recorder_when_requested():
+    sys.path.insert(0, str(ROOT / "scripts/queue"))
+    import attestation_recorder_reconciliation_probe as recorder_probe  # noqa: PLC0415
+
+    current = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE, keep_current=True)
+    historical = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE)
+    assert "IF false AND _md5 = '__R5811_TARGET__' THEN" in current
+    assert "IF true AND _md5 = '__R5811_TARGET__' THEN" in historical
+    assert "PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH" in historical

@@ -51,7 +51,6 @@ RESULTS: list[dict] = []
 R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
 R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
 R5811_TARGET_MD5 = "beeb4f8f94a6960ca9e7448344ae379b"
-R5811B_TARGET_MD5 = "a2e5ee1383561e7a9a10a47684b6256e"
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
 R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
@@ -70,14 +69,14 @@ DECLARE _md5 text;
 BEGIN
   SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
-  IF _md5 = '__R5811_TARGET__' THEN
+  IF __R5811_UNDO__ AND _md5 = '__R5811_TARGET__' THEN
+    -- Boundary and recorder are separate functions. Roll them back in migration
+    -- order; only assert the recorder fingerprint after its own rollback.
     EXECUTE __R5811B_ROLLBACK__;
-    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
-    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
-    IF _md5 <> '__R5810_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_11B_ROLLBACK_MISMATCH: %', _md5; END IF;
     EXECUTE __R5811_ROLLBACK__;
     SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
     WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF _md5 <> '__R5810_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH: %', _md5; END IF;
   END IF;
   IF _md5 = '__R5810_TARGET__' THEN
     EXECUTE __R5810B_ROLLBACK__;
@@ -254,11 +253,14 @@ def _r5811_literal(path: Path) -> str:
 
 
 def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
-    """Insert the baseline step (undo R5.8.10, then R5.8.9 unless keep_r589;
-    keep_current undoes nothing: the reset build's own chain head).
-    Callers that substitute pins in the prelude must do so on the template, so
-    the embedded rollbacks stay intact."""
-    return (template.replace("__R5811_TARGET__", R5811_TARGET_MD5)
+    """Normalize the disposable schema to an older baseline when requested.
+
+    By default, undo R5.8.11/11b, R5.8.10/10b, then R5.8.9/9b. keep_r589
+    stops after rolling back R5.8.10 and newer; keep_current preserves the
+    current R5.8.11 chain for probes that validate the active candidate.
+    Embedded rollback scripts stay intact while fixture pins are substituted."""
+    return (template.replace("__R5811_UNDO__", "false" if keep_current else "true")
+            .replace("__R5811_TARGET__", R5811_TARGET_MD5)
             .replace("__R5811B_ROLLBACK__", _r5811_literal(R5811B_ROLLBACK))
             .replace("__R5811_ROLLBACK__", _r5811_literal(R5811_ROLLBACK))
             .replace("__R5810_TARGET__", R5810_TARGET_MD5)
