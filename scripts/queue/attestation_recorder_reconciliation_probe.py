@@ -44,17 +44,17 @@ MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
 REPOSITORY_BLOB = "dfc2e67fcb3644be91108079f9096947c16119b3"
 INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
-# R5.8.9 is part of the repository chain: a reset build ends at its target. The
-# R5.8.7/R5.8.8 scenarios below describe the state before it, so every script
-# first records the reset-build recorder and then applies the committed R5.8.9b
-# and R5.8.9 rollbacks (managed-safe, row-free) inside the same rolled-back
-# transaction.
+# The repository reset now ends at R5.8.11/R5.8.11b. Historical R5.8.7/R5.8.8
+# scenarios require their true pre-R5.8.9 recorder. Undo the candidate chain in
+# strict reverse migration order, only when each exact committed target MD5 is
+# present, inside the same transaction that is rolled back at the end.
+R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
+R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
+R5811_TARGET_MD5 = "beeb4f8f94a6960ca9e7448344ae379b"
+R5811B_TARGET_MD5 = "a2e5ee1383561e7a9a10a47684b6256e"
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
 R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"
-# R5.8.10 follows R5.8.9 in the chain: a reset build ends at its target, so the
-# baseline first undoes R5.8.10b and R5.8.10 (back to the R5.8.9 targets) and
-# then, unless a caller keeps the R5.8.9 state, R5.8.9b and R5.8.9.
 R5810_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback.sql"
 R5810B_ROLLBACK = ROOT / "docs/reference/r5_8_10/rollback_boundary.sql"
 R5810_TARGET_MD5 = "4ee7be9d9d133adbeeafe6e6a5763112"
@@ -65,18 +65,33 @@ BEGIN;
 CREATE TEMP TABLE probe_baseline ON COMMIT DROP AS
   SELECT md5(p.prosrc) AS reset_md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
-DO $r589_baseline$ BEGIN
-  IF (SELECT reset_md5 FROM probe_baseline) = '__R5810_TARGET__' THEN
+DO $baseline$
+DECLARE _md5 text;
+BEGIN
+  SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+  WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  IF _md5 = '__R5811_TARGET__' THEN
+    EXECUTE __R5811B_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF _md5 <> '__R5810_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_11B_ROLLBACK_MISMATCH: %', _md5; END IF;
+    EXECUTE __R5811_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  END IF;
+  IF _md5 = '__R5810_TARGET__' THEN
     EXECUTE __R5810B_ROLLBACK__;
     EXECUTE __R5810_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
   END IF;
-  IF __R589_UNDO__ AND (SELECT md5(p.prosrc) FROM pg_proc p
-      WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure)
-      = '__R589_TARGET__' THEN
+  IF __R589_UNDO__ AND _md5 = '__R589_TARGET__' THEN
     EXECUTE __R589B_ROLLBACK__;
     EXECUTE __R589_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
   END IF;
-END $r589_baseline$;
+END $baseline$;
 SELECT set_config('app.settings.parser_attestation_hmac_secret', repeat('s', 48), true);
 CREATE TEMP TABLE probe_result(k text PRIMARY KEY, v jsonb) ON COMMIT DROP;
 CREATE FUNCTION pg_temp.recorder() RETURNS jsonb LANGUAGE sql AS $f$
@@ -224,10 +239,18 @@ CREATE FUNCTION pg_temp.controls() RETURNS jsonb LANGUAGE sql AS $f$
       AND contype = 'u' AND pg_get_constraintdef(oid) = 'UNIQUE (attestation_digest)'))
 $f$;
 """
-def _r589_literal(path: Path = R589_ROLLBACK) -> str:
+def _sql_literal(path: Path, tag: str) -> str:
     text = path.read_text(encoding="utf-8")
-    assert "$r589_rollback$" not in text
-    return "$r589_rollback$" + text + "$r589_rollback$"
+    assert tag not in text
+    return tag + text + tag
+
+
+def _r589_literal(path: Path = R589_ROLLBACK) -> str:
+    return _sql_literal(path, "$r589_rollback$")
+
+
+def _r5811_literal(path: Path) -> str:
+    return _sql_literal(path, "$r5811b_rollback$")
 
 
 def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
@@ -235,7 +258,10 @@ def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool
     keep_current undoes nothing: the reset build's own chain head).
     Callers that substitute pins in the prelude must do so on the template, so
     the embedded rollbacks stay intact."""
-    return (template.replace("__R5810_TARGET__", "keep-current" if keep_current else R5810_TARGET_MD5)
+    return (template.replace("__R5811_TARGET__", R5811_TARGET_MD5)
+            .replace("__R5811B_ROLLBACK__", _r5811_literal(R5811B_ROLLBACK))
+            .replace("__R5811_ROLLBACK__", _r5811_literal(R5811_ROLLBACK))
+            .replace("__R5810_TARGET__", R5810_TARGET_MD5)
             .replace("__R5810B_ROLLBACK__", _r589_literal(R5810B_ROLLBACK))
             .replace("__R5810_ROLLBACK__", _r589_literal(R5810_ROLLBACK))
             .replace("__R589_UNDO__", "false" if keep_r589 or keep_current else "true")
