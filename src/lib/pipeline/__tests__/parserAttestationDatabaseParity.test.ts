@@ -14,9 +14,22 @@ const r582Migration = readFileSync(
   resolve("supabase/migrations/20261005090000_r58_2_live_deployment_pin_reconciliation.sql"),
   "utf8",
 );
-// The migration that pins the managed recorder to the current runtime (R5.8.10).
-const migration = readFileSync(
+// The immutable previous repin remains historical.
+const r5810Migration = readFileSync(
   resolve("supabase/migrations/20261014210000_r5_8_10_repin_attestation_recorder.sql"),
+  "utf8",
+);
+const r5810BoundaryMigration = readFileSync(
+  resolve("supabase/migrations/20261014210100_r5_8_10b_repin_provenance_boundary.sql"),
+  "utf8",
+);
+// Current candidate repin targets the new Railway build, but production application is still gated.
+const migration = readFileSync(
+  resolve("supabase/migrations/20261016100000_r5_8_11_repin_attestation_recorder.sql"),
+  "utf8",
+);
+const boundaryMigration = readFileSync(
+  resolve("supabase/migrations/20261016100100_r5_8_11b_repin_provenance_boundary.sql"),
   "utf8",
 );
 // The previous link of the chain stays committed with its own pins.
@@ -51,6 +64,10 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(boundaryMigration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(r5810Migration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");
+    expect(r5810Migration).toContain("60099ed3eaf959d888762bf55043255a63a6a766");
+    expect(r5810BoundaryMigration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");
     expect(migration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.buildCommit);
     expect(migration).toContain(`git:${PARSER_ATTESTATION_EXPECTED.commit}`);
@@ -94,7 +111,7 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(r582Migration).toContain("_new_deployment");
     expect(r582Migration).toContain("_old_source_commit");
     expect(r582Migration).toContain("_new_source_commit");
-    for (const sql of [r582Migration, migration]) {
+    for (const sql of [r582Migration, r5810Migration, r5810BoundaryMigration, migration, boundaryMigration]) {
       expect(sql).toContain("p.prosecdef");
       expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.parser_runtime_provenance/i);
       expect(sql).not.toMatch(/TRUNCATE\s+public\.parser_runtime_provenance/i);
@@ -103,6 +120,6 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
       expect(sql).not.toMatch(/SECURITY\s+INVOKER/i);
     }
     expect(r582Migration).toContain(`ARRAY['search_path=""']`);
-    expect(migration).toContain("R5_8_10_RECORDER_UNEXPECTED_DEFINITION");
+    expect(migration).toContain("R5_8_11_RECORDER_UNEXPECTED_DEFINITION");
   });
 });
