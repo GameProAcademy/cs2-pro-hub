@@ -293,7 +293,7 @@ def ledger(event_type: str, ids: dict, outcome: str | None = None, event_id: str
         f"'{event_id or uuid.uuid4()}', '{ids['execution']}', '{event_type}', '{ids['upload']}', "
         f"'{ids['correlation']}', '{ids['job']}', 1, '{ids['sha']}', 520, "
         f"{q('demoparser2' if with_parser else None)}, {q('0.42.0' if with_parser else None)}, "
-        f"{q('git:' + 'a' * 40 if with_parser else None)}, 'RAILWAY_DURABLE_WORKER', 'RAILWAY', null, {q(outcome)}, 1)"
+        f"{q('git:' + 'a' * 40 if with_parser else None)}, 'RAILWAY_DURABLE_WORKER', 'RAILWAY', null, {q(outcome)}, 1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')"
     )
 
 

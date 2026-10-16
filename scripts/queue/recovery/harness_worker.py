@@ -23,7 +23,17 @@ os.environ["PARSER_SKIP_BOOTSTRAP"] = "1"  # no HTTP app: only the consumer loop
 
 import app  # noqa: E402
 import worker  # noqa: E402
+import h3e91_execution  # noqa: E402
 from errors import WorkerError  # noqa: E402
+
+# This harness exercises the real consumer loop without building a Docker image.
+# Supply a deterministic embedded image identity, as the Docker build does, so
+# execution recording reaches the loopback bridge instead of failing closed.
+h3e91_execution.image_build_identity = lambda: {
+    "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "embedded": True,
+    "source": "build-arg",
+}
 from settings import Settings  # noqa: E402
 
 
