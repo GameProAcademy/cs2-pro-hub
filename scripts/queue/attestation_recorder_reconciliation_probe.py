@@ -44,10 +44,11 @@ MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
 REPOSITORY_BLOB = "dfc2e67fcb3644be91108079f9096947c16119b3"
 INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
-# The repository reset now ends at R5.8.11/R5.8.11b. Historical R5.8.7/R5.8.8
-# scenarios require their true pre-R5.8.9 recorder. Undo the candidate chain in
-# strict reverse migration order, only when each exact committed target MD5 is
-# present, inside the same transaction that is rolled back at the end.
+# The repository reset now ends at R5.8.11/R5.8.11b. The base R5.8.7/R5.8.8
+# reconciliation scenarios expect that exact reset fingerprint and must not rewind
+# it. Dedicated R5.8.9/R5.8.10/R5.8.11 validators use this prelude with
+# keep_current=False to move backwards through committed rollback artifacts, all
+# within the transaction rolled back at the end.
 R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
 R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
 R5811_TARGET_MD5 = "beeb4f8f94a6960ca9e7448344ae379b"
@@ -253,12 +254,15 @@ def _r5811_literal(path: Path) -> str:
 
 
 def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
-    """Normalize the disposable schema to an older baseline when requested.
+    """Render the temporary schema baseline for the selected historical probe.
 
-    By default, undo R5.8.11/11b, R5.8.10/10b, then R5.8.9/9b. keep_r589
-    stops after rolling back R5.8.10 and newer; keep_current preserves the
-    current R5.8.11 chain for probes that validate the active candidate.
-    Embedded rollback scripts stay intact while fixture pins are substituted."""
+    By default, rewind R5.8.11/11b, R5.8.10/10b and (when requested) R5.8.9/9b.
+    keep_r589 preserves the R5.8.9 target; keep_current preserves the exact
+    latest migration target (R5.8.11) while still allowing R5.8.10 and R5.8.9
+    to be exercised as synthetic candidate layers by their dedicated validators.
+    The one exception is the base reconciliation probe itself: it asserts the
+    current reset fingerprint only when keep_current=True.
+    """
     return (template.replace("__R5811_UNDO__", "false" if keep_current else "true")
             .replace("__R5811_TARGET__", R5811_TARGET_MD5)
             .replace("__R5811B_ROLLBACK__", _r5811_literal(R5811B_ROLLBACK))
@@ -273,7 +277,10 @@ def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool
 
 
 PRELUDE_TEMPLATE = PRELUDE
-PRELUDE = render_prelude(PRELUDE_TEMPLATE)
+# Default import is the exact current reset schema: the legacy reconciliation
+# probe must see the R5.8.11 fingerprint. Historical candidate validators opt in
+# to reverse rollback explicitly.
+PRELUDE = render_prelude(PRELUDE_TEMPLATE, keep_current=True)
 EPILOGUE = r"""
 SELECT 'RESULT:' || coalesce(jsonb_object_agg(k, v), '{}'::jsonb)::text FROM probe_result;
 ROLLBACK;
