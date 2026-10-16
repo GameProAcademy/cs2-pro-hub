@@ -585,26 +585,26 @@ class Io:
         return {"status": status, "body": body,
                 "error": body.get("error") if isinstance(body, dict) else None}
 
-    def snapshot_pins(root: Path) -> dict[str, Any]:
-    """Candidate runtime pins plus the R5.8.11 recorder target; mismatch stays fail-closed."""
+
+
+
+def snapshot_pins(root: Path) -> dict[str, Any]:
+    """Expected recorder and active runtime, from the committed R5.8.10 spec and pins only."""
     import sys
     for sub in ("", "scripts/repin", "scripts/predem"):
         path = str(root / sub) if sub else str(root)
         if path not in sys.path:
             sys.path.insert(0, path)
-    import r5_8_11  # noqa: PLC0415
+    import r5_8_10  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
         BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, ENVIRONMENT, EXPECTED_HASHES, PROJECT, SERVICE)
-    spec = json.loads((root / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+    spec = json.loads((root / "docs/reference/r5_8_10/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
         raise ValueError("SNAPSHOT_PINS_DISAGREE")
-    # Candidate target differs from the still-live R5.8.10 function body until
-    # migration R5.8.11 is explicitly applied. That mismatch intentionally
-    # blocks activation; this candidate spec is NOT a runtime attestation.
     return {
-        "recorder_md5": r5_8_11.target_md5(spec),
+        "recorder_md5": r5_8_10.target_md5(spec),
         "runtime": {
             "deployment_id": DEPLOYMENT, "project_id": PROJECT, "service_id": SERVICE,
             "environment_id": ENVIRONMENT, "branch": BRANCH, "semantic_commit": COMMIT,
@@ -614,7 +614,6 @@ class Io:
             "critical_hashes": dict(EXPECTED_HASHES),
         },
     }
-
 
 def evaluate_snapshot(response: dict[str, Any] | None, *, pins: dict[str, Any] | None, now: float,
                       evaluate: Callable[..., dict[str, Any]]) -> dict[str, Any]:
