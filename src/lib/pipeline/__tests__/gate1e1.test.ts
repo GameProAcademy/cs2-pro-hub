@@ -135,7 +135,7 @@ describe("GATE 1E.1 — revision lock", () => {
   it("pins the current production semantic and build identity", () => {
     // R5.8.11 candidate: current expected image identity is c2e045b0; the live /version proof is still pending.
     expect(DEPLOYED_WORKER_REVISION).toBe("git:c2e045b0f71a7699c935b65ffe514fe526889de3");
-    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:60099ed3eaf959d888762bf55043255a63a6a766");
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:c2e045b0f71a7699c935b65ffe514fe526889de3");
   });
 
   it("accepts the exact expected build", () => {
