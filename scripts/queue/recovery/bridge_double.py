@@ -210,7 +210,8 @@ class BridgeDouble:
                   f"{lit(body['correlationId'])}, {lit(body['jobId'])}, {lit(body['attemptNumber'])}, {lit(body['demoSha256'])}, "
                   f"{lit(body['fileSize'])}, {lit(body['parserName'])}, {lit(body['parserVersion'])}, {lit(body['parserRevision'])}, "
                   f"{lit(body['executionSurface'])}, {lit(body['source'])}, {lit(body['metadataDigest'])}, "
-                  f"{lit(body['outcomeCode'])}, {int(body['eventVersion'])})")
+                  f"{lit(body['outcomeCode'])}, {int(body['eventVersion'])}, "
+                  f"{lit(body.get('workerBuildCommit'))})")
         status = data.get("status")
         return (201 if status == "INSERTED" else 200 if status == "IDEMPOTENT_REPLAY" else 409), data
 
