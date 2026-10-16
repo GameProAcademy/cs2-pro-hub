@@ -52,9 +52,29 @@ class ExecutionRecorder:
                 "outcomeCode": outcome_code}
         response = await self.client.post(self.url, headers={"authorization": f"Bearer {self.secret}"}, json=body)
         if response.status_code not in (200, 201):
-            raise RuntimeError(f"H3E91_RECORDING_FAILED_{response.status_code}")
-        result = response.json()
-        if not isinstance(result, dict) or result.get("status") not in ("INSERTED", "IDEMPOTENT_REPLAY"):
+            # The bridge deliberately returns stable, non-sensitive diagnostic codes
+            # (for example build-identity mismatch or a database rejection). Preserve
+            # only that code; never include response text, URLs, or credentials in logs.
+            try:
+                error_payload = response.json()
+            except ValueError:
+                error_payload = {}
+            error_code = error_payload.get("code") if isinstance(error_payload, dict) else None
+            if not isinstance(error_code, str) or not error_code.isupper() or not error_code.replace("_", "").isalnum():
+                error_code = "HTTP_ERROR"
+            raise RuntimeError(f"H3E91_RECORDING_FAILED_{response.status_code}_{error_code}")
+        try:
+            result = response.json()
+        except ValueError as error:
+            raise RuntimeError("H3E91_RECORDING_INVALID_JSON") from error
+        if not isinstance(result, dict):
+            raise RuntimeError("H3E91_RECORDING_INVALID_RESPONSE")
+        if result.get("status") == "REJECTED":
+            code = result.get("code")
+            if not isinstance(code, str) or not code.isupper() or not code.replace("_", "").isalnum():
+                code = "UNKNOWN_REJECTION"
+            raise RuntimeError(f"H3E91_RECORDING_REJECTED_{code}")
+        if result.get("status") not in ("INSERTED", "IDEMPOTENT_REPLAY"):
             raise RuntimeError("H3E91_RECORDING_INVALID_RESPONSE")
         return result
 

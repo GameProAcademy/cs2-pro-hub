@@ -110,8 +110,15 @@ async def durable_consumer_loop(settings: Settings, parse: Callable[[str], dict[
                             identity["jobId"], claim["attempt_number"], state, status,
                         )
                         continue
-                except Exception:
-                    logger.error("execution intent recording failed; parser suppressed")
+                except Exception as error:
+                    # ExecutionRecorder raises sanitized H3E91_* diagnostics. Do not log
+                    # arbitrary exception text because transport exceptions can contain URLs.
+                    detail = str(error)
+                    safe_code = detail if detail.startswith("H3E91_") else "TRANSPORT_OR_UNEXPECTED_ERROR"
+                    logger.error(
+                        "execution intent recording failed; parser suppressed job=%s attempt=%s error_type=%s diagnostic=%s",
+                        identity["jobId"], claim.get("attempt_number"), type(error).__name__, safe_code[:160],
+                    )
                     continue
                 started = False
                 start_attempted = False
