@@ -111,7 +111,13 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(r582Migration).toContain("_new_deployment");
     expect(r582Migration).toContain("_old_source_commit");
     expect(r582Migration).toContain("_new_source_commit");
-    for (const sql of [r582Migration, r5810Migration, r5810BoundaryMigration, migration, boundaryMigration]) {
+    for (const sql of [
+      r582Migration,
+      r5810Migration,
+      r5810BoundaryMigration,
+      migration,
+      boundaryMigration,
+    ]) {
       expect(sql).toContain("p.prosecdef");
       expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.parser_runtime_provenance/i);
       expect(sql).not.toMatch(/TRUNCATE\s+public\.parser_runtime_provenance/i);
