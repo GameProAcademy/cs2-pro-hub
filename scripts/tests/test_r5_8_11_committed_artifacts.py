@@ -63,6 +63,6 @@ def test_historical_probe_preserves_current_recorder_when_requested():
 
     current = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE, keep_current=True)
     historical = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE)
-    assert "IF false AND _md5 = '__R5811_TARGET__' THEN" in current
-    assert "IF true AND _md5 = '__R5811_TARGET__' THEN" in historical
+    assert "IF false AND _md5 = 'beeb4f8f94a6960ca9e7448344ae379b' THEN" in current
+    assert "IF true AND _md5 = 'beeb4f8f94a6960ca9e7448344ae379b' THEN" in historical
     assert "PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH" in historical
