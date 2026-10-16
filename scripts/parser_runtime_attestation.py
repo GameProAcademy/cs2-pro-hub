@@ -20,9 +20,9 @@ BRANCH = "main"
 # Semantic revision: the current main commit whose parser tree matches the active Railway image.
 COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
 # Build revision: exact source commit embedded in the currently served Railway image (BUILD_INFO.json, /version build.commit).
-BUILD_COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
-# Railway deployment f90c8150 (successful deploy of the PR #138 merge commit).
-DEPLOYMENT = "f90c8150-b231-4cbb-ae99-a8096a05133e"
+BUILD_COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+ # Railway deployment ce9b760d (latest successful deploy, source commit eaaa2c8d).
+DEPLOYMENT = "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
 DEPLOYMENT_SOURCE_COMMIT = BUILD_COMMIT
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
