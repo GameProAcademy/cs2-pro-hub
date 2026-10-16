@@ -33,7 +33,7 @@ describe("R5.8.7 attestation recorder reconciliation", () => {
     expect(migration).toContain(`_managed_worker_blob constant text := '${MANAGED_BLOB}'`);
     // R5.8.7 is historical: since R5.8.9 the app pins the worker blob of the served build.
     expect(appAttestation).toContain(
-      `"services/cs2-demo-parser/worker.py": "ecaac3968d68e1ed8fc03f8dfea42c223869f473"`,
+      `"services/cs2-demo-parser/worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9"`,
     );
     expect(reference).toContain(`'${MANAGED_BLOB}'`);
     expect(reference).not.toContain(REPOSITORY_BLOB);
