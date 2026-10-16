@@ -340,10 +340,11 @@ def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]
 def main() -> int:
     refuse_non_local()
 
-    # ----- R5.8.10: the reset build ends at the re-pinned recorder (R5.8.9 is undone after it)
-    scenario("r5810_reset_build_has_repinned_recorder", """
+    # ----- R5.8.11 is the repository migration-chain head; its preceding R5.8.10
+    # target is still asserted by the committed R5.8.11 migration contract tests.
+    scenario("r5811_reset_build_has_repinned_recorder", """
 INSERT INTO probe_result SELECT 'reset_md5', to_jsonb((SELECT reset_md5 FROM probe_baseline));
-""", lambda o: [] if o.get("reset_md5") == R5810_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
+""", lambda o: [] if o.get("reset_md5") == R5811_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
 
     # ----- R5.8.7 (D1): recorder definition
     scenario("d1_reset_build_has_managed_recorder_and_properties", """
