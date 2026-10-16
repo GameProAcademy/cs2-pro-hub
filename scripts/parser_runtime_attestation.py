@@ -17,8 +17,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "main"
-# Semantic revision: the main commit whose worker tree (05594c6f) is the one served (R5.8.10).
-COMMIT = "60099ed3eaf959d888762bf55043255a63a6a766"
+# Semantic revision: the current main commit whose parser tree matches the active Railway image.
+COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
 # Build revision: exact source commit embedded in the currently served Railway image (BUILD_INFO.json, /version build.commit).
 BUILD_COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
 # Railway deployment f90c8150 (successful deploy of the PR #138 merge commit).
