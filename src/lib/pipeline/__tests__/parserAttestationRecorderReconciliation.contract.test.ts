@@ -44,7 +44,6 @@ describe("R5.8.7 attestation recorder reconciliation", () => {
     expect(reference).toContain(`'${MANAGED_BLOB}'`);
     expect(migration).toContain(`'${REPOSITORY_BLOB}'`);
     expect(migration).toContain(`'${MANAGED_BLOB}'`);
-    expect(reference).toContain(`'${MANAGED_BLOB}'`);
     expect(reference).not.toContain(REPOSITORY_BLOB);
   });
 
@@ -134,4 +133,3 @@ describe("R5.8.8 deployment-scoped provenance uniqueness (D3 option a)", () => {
     expect(r588Rollback).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE)\b/i);
   });
 });
-
