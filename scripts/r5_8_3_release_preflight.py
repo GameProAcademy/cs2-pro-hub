@@ -115,10 +115,9 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
                 ).splitlines()
                 outside_allowlist = sorted(set(diff) - set(allowed_diagnostic_files))
                 reviewed_files_match = all(
-                    git_value("rev-parse", f"{commit}:{path}") ==
-                    git_value("rev-parse", f"{approved_commit}:{path}")
-                    for path, approved_commit in allowed_diagnostic_files.items()
-                    if approved_commit is not None
+                    git_blob_sha(f"{commit}:{path}") == approved_blob
+                    for path, approved_blob in allowed_diagnostic_files.items()
+                    if approved_blob is not None
                 )
                 observed_test_blob = git_value(
                     "rev-parse", f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
