@@ -17,21 +17,21 @@ BEGIN
         RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''railway_branch''<>''main''' USING ERRCODE = '55000';
       END IF;
       _def := pg_catalog.replace(_def, '_payload->>''railway_branch''<>''main''', '_payload->>''railway_branch''<>''main''');
-      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''git_commit''<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
-         <> 1 * pg_catalog.length('_payload->>''git_commit''<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
-        RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''git_commit''<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''' USING ERRCODE = '55000';
+      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''git_commit''<>''c2e045b0f71a7699c935b65ffe514fe526889de3''', '')))
+         <> 1 * pg_catalog.length('_payload->>''git_commit''<>''c2e045b0f71a7699c935b65ffe514fe526889de3''') THEN
+        RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''git_commit''<>''c2e045b0f71a7699c935b65ffe514fe526889de3''' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_payload->>''git_commit''<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''');
+      _def := pg_catalog.replace(_def, '_payload->>''git_commit''<>''c2e045b0f71a7699c935b65ffe514fe526889de3''', '_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''');
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''deployment_id''<>''ce9b760d-c92f-4da1-a3e6-dd105d49585c''', '')))
          <> 1 * pg_catalog.length('_payload->>''deployment_id''<>''ce9b760d-c92f-4da1-a3e6-dd105d49585c''') THEN
         RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''deployment_id''<>''ce9b760d-c92f-4da1-a3e6-dd105d49585c''' USING ERRCODE = '55000';
       END IF;
       _def := pg_catalog.replace(_def, '_payload->>''deployment_id''<>''ce9b760d-c92f-4da1-a3e6-dd105d49585c''', '_payload->>''deployment_id''<>''25df86c3-22e1-4986-9b91-cdabe54535c5''');
-      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
-         <> 1 * pg_catalog.length('_payload->>''semantic_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
-        RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''semantic_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''' USING ERRCODE = '55000';
+      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''', '')))
+         <> 1 * pg_catalog.length('_payload->>''semantic_revision''<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''') THEN
+        RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''semantic_revision''<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''');
+      _def := pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''', '_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''');
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''build_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
          <> 1 * pg_catalog.length('_payload->>''build_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
         RAISE EXCEPTION 'R5_8_11_ROLLBACK_FRAGMENT_COUNT_INVALID: %', '_payload->>''build_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''' USING ERRCODE = '55000';
