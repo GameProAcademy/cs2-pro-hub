@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts/predem"))
 import managed_snapshot as ms  # noqa: E402
 
-RECORDER = "72df9c518f5573db232a6759301e4360"
+RECORDER = "fe3250af2b461f03f459adf36b43ec21"
+ACTIVE_RECORDER = "72df9c518f5573db232a6759301e4360"
 MANAGED_2026_10_13 = {
     # Schema 4 (gate semantics v2): the schema-3 observation of 2026-10-13 plus the v2 fields,
     # all zero then (no registry row, no derived row, no eligible row with lineage).
@@ -432,11 +433,11 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     sys.path.insert(0, str(ROOT / "scripts/ci"))
     import h3e_activation_gate as gate
     pins = gate.snapshot_pins(ROOT)
-    assert pins["recorder_md5"] == "72df9c518f5573db232a6759301e4360"
+    assert pins["recorder_md5"] == ACTIVE_RECORDER
     runtime = pins["runtime"]
     assert runtime["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert (runtime["semantic_commit"], runtime["build_commit"]) == (
-        "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1", "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1")
+        "c2e045b0f71a7699c935b65ffe514fe526889de3", "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1")
     assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
     # The fixture of the active runtime is exactly what the gate will expect.
