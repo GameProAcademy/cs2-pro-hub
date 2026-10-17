@@ -117,10 +117,10 @@ def test_semantic_build_delta_exception_rejects_an_unreviewed_added_file(monkeyp
     def changed_diff(command, **kwargs):
         if command[:3] == ("git", "diff", "--name-only"):
             return (
-                "services/cs2-demo-parser/h3e91_execution.py\\n"
-                "services/cs2-demo-parser/tests/test_h3e91_execution.py\\n"
-                "services/cs2-demo-parser/worker.py\\n"
-                "services/cs2-demo-parser/parser.py\\n"
+                "services/cs2-demo-parser/h3e91_execution.py\n"
+                "services/cs2-demo-parser/tests/test_h3e91_execution.py\n"
+                "services/cs2-demo-parser/worker.py\n"
+                "services/cs2-demo-parser/parser.py\n"
             )
         return real_check_output(command, **kwargs)
     monkeypatch.setattr(preflight.subprocess, "check_output", changed_diff)
@@ -142,7 +142,7 @@ def test_semantic_build_delta_rejects_an_unapproved_worker_change(monkeypatch):
     real_check_output = subprocess.check_output
     def changed_diff(command, **kwargs):
         if command[:3] == ("git", "diff", "--name-only"):
-            return "services/cs2-demo-parser/worker.py\\nservices/cs2-demo-parser/parser.py\\n"
+            return "services/cs2-demo-parser/worker.py\nservices/cs2-demo-parser/parser.py\n"
         return real_check_output(command, **kwargs)
     monkeypatch.setattr(preflight.subprocess, "check_output", changed_diff)
     build = {
