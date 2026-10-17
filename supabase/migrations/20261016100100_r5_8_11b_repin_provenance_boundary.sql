@@ -23,7 +23,7 @@ BEGIN
     RAISE EXCEPTION 'R5_8_11B_GRANTS_INVALID (assert_verified_parser_provenance, before)' USING ERRCODE = '55000';
   END IF;
   SELECT pg_catalog.md5(p.prosrc) INTO STRICT _md5 FROM pg_catalog.pg_proc p WHERE p.oid = _fn;
-  IF _md5 = '5b3953911fc6fe3c5cbf31da75425942' THEN
+  IF _md5 = 'f5e27fc3961d7d4bee50d440862f39cc' THEN
     RAISE NOTICE 'R5_8_11B_ALREADY_IN_TARGET_STATE (assert_verified_parser_provenance)';
   ELSIF _md5 = '57e4196115eb9253fd307e4443fb603c' THEN
     _def := pg_catalog.pg_get_functiondef(_fn);
@@ -64,7 +64,7 @@ BEGIN
       _def := pg_catalog.replace(_def, '''attestor_source_identity''->>''workflow_source_sha''<>''523cee5b0fecc21c7ce2b5f538b42670eec3fed1''', '''attestor_source_identity''->>''workflow_source_sha''<>''523cee5b0fecc21c7ce2b5f538b42670eec3fed1''');
     EXECUTE _def;
     SELECT pg_catalog.md5(p.prosrc) INTO STRICT _md5 FROM pg_catalog.pg_proc p WHERE p.oid = _fn;
-    IF _md5 IS DISTINCT FROM '5b3953911fc6fe3c5cbf31da75425942' THEN
+    IF _md5 IS DISTINCT FROM 'f5e27fc3961d7d4bee50d440862f39cc' THEN
       RAISE EXCEPTION 'R5_8_11B_POSTCONDITION_INVALID (assert_verified_parser_provenance): %', _md5 USING ERRCODE = '55000';
     END IF;
     COMMENT ON FUNCTION public.assert_verified_parser_provenance(uuid) IS 'R5.8.11 re-pinned provenance assertion: Railway deployment ce9b760d-c92f-4da1-a3e6-dd105d49585c, branch main, semantic git:c2e045b0f71a7699c935b65ffe514fe526889de3, build git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1, approved workflow blob 523cee5b0fecc21c7ce2b5f538b42670eec3fed1.';

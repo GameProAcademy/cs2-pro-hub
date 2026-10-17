@@ -22,7 +22,7 @@ BEGIN
   SELECT pg_catalog.md5(p.prosrc) INTO STRICT _md5 FROM pg_catalog.pg_proc p WHERE p.oid = _fn;
   IF _md5 = '57e4196115eb9253fd307e4443fb603c' THEN
     RAISE NOTICE 'R5_8_11B_ALREADY_IN_TARGET_STATE (assert_verified_parser_provenance)';
-  ELSIF _md5 = '5b3953911fc6fe3c5cbf31da75425942' THEN
+  ELSIF _md5 = 'f5e27fc3961d7d4bee50d440862f39cc' THEN
     _def := pg_catalog.pg_get_functiondef(_fn);
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.railway_branch<>''main''', '')))
          <> pg_catalog.length('_p.railway_branch<>''main''') THEN

@@ -27,7 +27,7 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
     assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
     assert r5_8_11.targets(SPEC) == {
         "record_parser_runtime_attestation": "72df9c518f5573db232a6759301e4360",
-        "assert_verified_parser_provenance": "5b3953911fc6fe3c5cbf31da75425942",
+        "assert_verified_parser_provenance": "f5e27fc3961d7d4bee50d440862f39cc",
         "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1",
     }
 
@@ -45,8 +45,8 @@ def test_candidate_migrations_only_rewrite_pinned_function_definitions():
     for path, start, target in (
         (RECORDER, "4ee7be9d9d133adbeeafe6e6a5763112", "55f067f8ee33b3fb9f95f8ae91a8273c"),
         (ROLLBACK, "55f067f8ee33b3fb9f95f8ae91a8273c", "4ee7be9d9d133adbeeafe6e6a5763112"),
-        (BOUNDARY, "57e4196115eb9253fd307e4443fb603c", "5b3953911fc6fe3c5cbf31da75425942"),
-        (BOUNDARY_ROLLBACK, "5b3953911fc6fe3c5cbf31da75425942", "57e4196115eb9253fd307e4443fb603c"),
+        (BOUNDARY, "57e4196115eb9253fd307e4443fb603c", "f5e27fc3961d7d4bee50d440862f39cc"),
+        (BOUNDARY_ROLLBACK, "f5e27fc3961d7d4bee50d440862f39cc", "57e4196115eb9253fd307e4443fb603c"),
     ):
         sql = path.read_text(encoding="utf-8")
         assert start in sql

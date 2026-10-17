@@ -12,6 +12,10 @@
     "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
     "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
   },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "f5e27fc3961d7d4bee50d440862f39cc",
+    "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1"
+  },
   "observed": {
     "observed_at": null,
     "railway_deployment": {
