@@ -28,6 +28,31 @@ function workflowIdentity() {
 }
 
 describe("parser runtime attestation SHA binding", () => {
+  it("keeps semantic revision and build commit as distinct immutable identities", () => {
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("c2e045b0f71a7699c935b65ffe514fe526889de3");
+    expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe("eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1");
+    expect(PARSER_ATTESTATION_EXPECTED.commit).not.toBe(PARSER_ATTESTATION_EXPECTED.buildCommit);
+    expect(PARSER_ATTESTATION_EXPECTED.deploymentSourceCommit).toBe(PARSER_ATTESTATION_EXPECTED.buildCommit);
+  });
+
+  it("requires the build-commit worker blob hash and exact critical-file allowlist", () => {
+    const hashes = {
+      "services/cs2-demo-parser/parser.py": { observed: "981f6261c7e38334dfab5c93088e9d5ad1f56f6e", match: true },
+      "services/cs2-demo-parser/adapter.py": { observed: "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71", match: true },
+      "services/cs2-demo-parser/worker.py": { observed: "23a5f8624955181ad9033221cfae00138c7228dc", match: true },
+      "services/cs2-demo-parser/raw_evidence.py": { observed: "001281eecb02ebc318ff997f734c4081c161d1d9", match: true },
+      "services/cs2-demo-parser/settings.py": { observed: "dc76db86c9b0b8c0916d58501ae0c21af95dfe38", match: true },
+    };
+    expect(Object.keys(hashes).sort()).toEqual([
+      "services/cs2-demo-parser/adapter.py",
+      "services/cs2-demo-parser/parser.py",
+      "services/cs2-demo-parser/raw_evidence.py",
+      "services/cs2-demo-parser/settings.py",
+      "services/cs2-demo-parser/worker.py",
+    ]);
+    expect(hashes["services/cs2-demo-parser/worker.py"].observed).toBe("23a5f8624955181ad9033221cfae00138c7228dc");
+  });
+
   it("accepts distinct trigger and workflow-file commits when both are bound correctly", () => {
     const now = Math.floor(Date.now() / 1000);
     const claims = {
@@ -94,7 +119,7 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {
-        observed: "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+        observed: "23a5f8624955181ad9033221cfae00138c7228dc",
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
