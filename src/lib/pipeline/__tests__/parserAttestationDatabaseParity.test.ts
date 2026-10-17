@@ -23,6 +23,10 @@ const r5810BoundaryMigration = readFileSync(
   resolve("supabase/migrations/20261014210100_r5_8_10b_repin_provenance_boundary.sql"),
   "utf8",
 );
+const r5812WorkflowMigration = readFileSync(
+  resolve("supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"),
+  "utf8",
+);
 // Current candidate repin targets the new Railway build, but production application is still gated.
 const migration = readFileSync(
   resolve("supabase/migrations/20261016100000_r5_8_11_repin_attestation_recorder.sql"),
@@ -68,7 +72,11 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(r5810Migration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");
     expect(r5810Migration).toContain("60099ed3eaf959d888762bf55043255a63a6a766");
     expect(r5810BoundaryMigration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");
-    expect(migration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    // R5.8.11/11b preserve their original source pins; the additive R5.8.12 migration advances the current DB functions.
+    expect(migration).toContain("523cee5b0fecc21c7ce2b5f538b42670eec3fed1");
+    expect(boundaryMigration).toContain("523cee5b0fecc21c7ce2b5f538b42670eec3fed1");
+    expect(r5812WorkflowMigration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    expect(r5812WorkflowMigration).toContain("523cee5b0fecc21c7ce2b5f538b42670eec3fed1");
     expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.buildCommit);
     expect(migration).toContain(`git:${PARSER_ATTESTATION_EXPECTED.commit}`);
     // Historical pins stay in their own migrations, never rewritten.
