@@ -30,7 +30,7 @@ BEGIN
       _updated := pg_catalog.replace(_definition, _old, _new);
       EXECUTE _updated;
       _definition := pg_catalog.pg_get_functiondef(_target);
-      IF pg_catalog.position(_old IN _definition) > 0 OR pg_catalog.position(_new IN _definition) = 0 THEN
+      IF pg_catalog.strpos(_definition, _old) > 0 OR pg_catalog.strpos(_definition, _new) = 0 THEN
         RAISE EXCEPTION 'R5_8_12_POSTCONDITION_INVALID: %', _target USING ERRCODE = '55000';
       END IF;
       RAISE NOTICE 'R5_8_12_REPINNED: % (occurrences=%)', _target, _old_count;
