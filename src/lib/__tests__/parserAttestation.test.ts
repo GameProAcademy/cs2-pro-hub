@@ -30,9 +30,7 @@ function workflowIdentity() {
 
 describe("parser runtime attestation SHA binding", () => {
   it("keeps semantic revision and build commit as distinct immutable identities", () => {
-    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe(
-      "c2e045b0f71a7699c935b65ffe514fe526889de3",
-    );
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("c2e045b0f71a7699c935b65ffe514fe526889de3");
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
       "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
     );
@@ -40,9 +38,7 @@ describe("parser runtime attestation SHA binding", () => {
     expect(PARSER_ATTESTATION_EXPECTED.deploymentSourceCommit).toBe(
       PARSER_ATTESTATION_EXPECTED.buildCommit,
     );
-    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(
-      `git:${PARSER_ATTESTATION_EXPECTED.buildCommit}`,
-    );
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(`git:${PARSER_ATTESTATION_EXPECTED.buildCommit}`);
   });
 
   it("documents the exact critical-file allowlist and verified worker blob hash", () => {
