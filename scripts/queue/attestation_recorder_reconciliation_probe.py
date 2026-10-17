@@ -50,7 +50,7 @@ RESULTS: list[dict] = []
 # when they need to assert the latest candidate state.
 R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
 R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
-R5811_TARGET_MD5 = "beeb4f8f94a6960ca9e7448344ae379b"
+R5811_TARGET_MD5 = "72df9c518f5573db232a6759301e4360"
 R589_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback.sql"
 R589B_ROLLBACK = ROOT / "docs/reference/r5_8_9/rollback_boundary.sql"
 R589_TARGET_MD5 = "d7c325bac1a98c6a7cac67a0f18ba08b"

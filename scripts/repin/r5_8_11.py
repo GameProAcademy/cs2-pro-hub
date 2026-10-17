@@ -124,6 +124,12 @@ def static_target_problems(spec: dict[str, Any]) -> list[str]:
         problems.append("BRANCH_NOT_MAIN")
     if spec["build_commit"] != spec["deployment_commit"]:
         problems.append("BUILD_COMMIT_IS_NOT_THE_DEPLOYMENT_COMMIT")
+    database_targets = spec.get("database_target_md5")
+    if not isinstance(database_targets, dict) or set(database_targets) != set(BOUNDARY):
+        problems.append("DATABASE_TARGET_MD5_NOT_OBSERVED_FOR_EACH_BOUNDARY_FUNCTION")
+    elif any(not isinstance(v, str) or len(v) != 32 or any(c not in "0123456789abcdef" for c in v)
+             for v in database_targets.values()):
+        problems.append("DATABASE_TARGET_MD5_INVALID")
     hashes = spec["critical_hashes"] if isinstance(spec["critical_hashes"], dict) else {}
     if sorted(hashes) != sorted(CRITICAL) or not all(len(str(v)) == 40 for v in hashes.values()):
         problems.append("CRITICAL_HASHES_INVALID")
@@ -318,7 +324,20 @@ def boundary_target_body(name: str, spec: dict[str, Any]) -> str:
 
 
 def boundary_target_md5(name: str, spec: dict[str, Any]) -> str:
-    return _md5(boundary_target_body(name, spec))
+    """Return the MD5 observed in pg_proc.prosrc after PostgreSQL executes the candidate SQL.
+
+    This is deliberately distinct from hashing boundary_target_body(): CREATE OR REPLACE
+    FUNCTION stores a normalized PL/pgSQL source body, and the disposable PostgreSQL
+    execution is the authority for that postcondition. The committed spec records that
+    observed database hash so generation cannot silently substitute a Python-side hash.
+    """
+    observed = spec.get("database_target_md5")
+    if not isinstance(observed, dict) or set(observed) != set(BOUNDARY):
+        raise SystemExit("R5_8_11B_DATABASE_TARGET_MD5_MISSING")
+    target = observed.get(name)
+    if not isinstance(target, str) or len(target) != 32 or any(c not in "0123456789abcdef" for c in target):
+        raise SystemExit(f"R5_8_11B_DATABASE_TARGET_MD5_INVALID:{name}")
+    return target
 
 
 def _boundary_properties(name: str, label: str) -> str:
