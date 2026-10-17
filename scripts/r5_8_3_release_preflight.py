@@ -119,8 +119,8 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
                     for path, approved_blob in allowed_diagnostic_files.items()
                     if approved_blob is not None
                 )
-                observed_test_blob = git_value(
-                    "rev-parse", f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
+                observed_test_blob = git_blob_sha(
+                    f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
                 )
                 reviewed_files_match = reviewed_files_match and observed_test_blob == reviewed_test_blob
                 actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
