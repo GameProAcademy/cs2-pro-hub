@@ -224,6 +224,14 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   if (!hashes) {
     blockers.push("CRITICAL_HASH_PROOF_INVALID");
   } else {
+    const expectedPaths = Object.keys(CRITICAL_HASHES).sort();
+    const observedPaths = Object.keys(hashes).sort();
+    if (
+      observedPaths.length !== expectedPaths.length ||
+      observedPaths.some((path, index) => path !== expectedPaths[index])
+    ) {
+      blockers.push("CRITICAL_HASH_ALLOWLIST_MISMATCH");
+    }
     for (const [path, expectedHash] of Object.entries(CRITICAL_HASHES)) {
       const evidence = record(hashes[path]);
       if (evidence?.["observed"] !== expectedHash || evidence["match"] !== true) {
