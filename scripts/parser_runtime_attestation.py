@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "main"
 # Semantic revision: exact worker source tree embedded in the active Railway image.
-COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+COMMIT = "c2e045b0f71a7699c935b65ffe514fe526889de3"
 # Build revision: exact source commit embedded in the currently served Railway image (BUILD_INFO.json, /version build.commit).
 BUILD_COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
 # Active successful Railway deployment observed in production preflight (source commit eaaa2c8d...).
