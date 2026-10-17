@@ -2,6 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import {
+  PARSER_ATTESTATION_EXPECTED,
+  validateParserAttestationPayload,
+} from "@/lib/parserAttestation";
+
 
 const migration = readFileSync(
   resolve(
@@ -132,5 +137,114 @@ describe("R5.8.8 deployment-scoped provenance uniqueness (D3 option a)", () => {
     expect(r588Rollback).toContain("R5_8_8_ROLLBACK_WOULD_REQUIRE_DELETING_ATTESTATIONS");
     expect(r588Rollback).toContain("HAVING count(*) > 1");
     expect(r588Rollback).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE)\b/i);
+  });
+});
+
+describe("current attestation worker hash contract", () => {
+  it("accepts the verified current hash and rejects the stale hash using the production validator", () => {
+    const expected = PARSER_ATTESTATION_EXPECTED;
+    const runtimeVersion = {
+      name: expected.parser,
+      version: expected.parserVersion,
+      contract_version: expected.contractVersion,
+      semantic_revision: `git:${expected.commit}`,
+      build_revision: `git:${expected.buildCommit}`,
+    };
+    const hashes = {
+      "services/cs2-demo-parser/parser.py": { observed: "981f6261c7e38334dfab5c93088e9d5ad1f56f6e", match: true },
+      "services/cs2-demo-parser/adapter.py": { observed: "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71", match: true },
+      "services/cs2-demo-parser/worker.py": { observed: "23a5f8624955181ad9033221cfae00138c7228dc", match: true },
+      "services/cs2-demo-parser/raw_evidence.py": { observed: "001281eecb02ebc318ff997f734c4081c161d1d9", match: true },
+      "services/cs2-demo-parser/settings.py": { observed: "dc76db86c9b0b8c0916d58501ae0c21af95dfe38", match: true },
+    };
+    const payload = {
+      schema_version: 3,
+      repository: expected.repository,
+      railway_branch: expected.branch,
+      git_commit: expected.commit,
+      deployment_id: expected.deploymentId,
+      railway_project_id: expected.projectId,
+      railway_service_id: expected.serviceId,
+      railway_environment_id: expected.environmentId,
+      workflow_identity: {
+        repository: expected.repository,
+        ref_name: expected.attestorBranch,
+        workflow_ref: expected.workflowRef,
+        run_id: "123456789",
+        run_attempt: "1",
+        workflow_sha: "700e792cec0b97d9dd3b0e595ebe444aec599090",
+        trigger_commit_sha: "62023bbd603af1fb697f01055b392fc2ed80260e",
+        workflow_file_commit_sha: "700e792cec0b97d9dd3b0e595ebe444aec599090",
+        event_name: "workflow_dispatch",
+        workflow_path: expected.workflowPath,
+        workflow_source_sha: expected.workflowSourceSha,
+      },
+      attestor_source_identity: {
+        repository: expected.repository,
+        branch: expected.attestorBranch,
+        workflow_sha: "700e792cec0b97d9dd3b0e595ebe444aec599090",
+        trigger_commit_sha: "62023bbd603af1fb697f01055b392fc2ed80260e",
+        workflow_file_commit_sha: "700e792cec0b97d9dd3b0e595ebe444aec599090",
+        workflow_path: expected.workflowPath,
+        workflow_source_sha: expected.workflowSourceSha,
+      },
+      release_gate_evidence: { mapping_inventory: { status: "BLOCKED", evidence_ref: "payload.mapping_release" } },
+      attested_at: new Date().toISOString(),
+      nonce: "a".repeat(64),
+      parser_name: expected.parser,
+      parser_version: expected.parserVersion,
+      contract_version: expected.contractVersion,
+      semantic_revision: `git:${expected.commit}`,
+      build_revision: `git:${expected.buildCommit}`,
+      runtime_identity: {
+        repository: expected.repository,
+        branch: expected.branch,
+        commit: expected.commit,
+        branch_contains_commit: true,
+        tree: "1111111111111111111111111111111111111111",
+      },
+      deployment_evidence: {
+        verification_source: "RAILWAY_API",
+        independently_verified: true,
+        deployment_id: expected.deploymentId,
+        project_id: expected.projectId,
+        service_id: expected.serviceId,
+        environment_id: expected.environmentId,
+        source_branch: expected.branch,
+        source_commit: expected.deploymentSourceCommit,
+        deployment_status: "SUCCESS",
+        query_digest: "2".repeat(64),
+      },
+      custom_domain_version: runtimeVersion,
+      railway_domain_version: runtimeVersion,
+      critical_file_hashes: hashes,
+      mapping_release: {
+        release_id: expected.mappingReleaseId,
+        inventory_version: expected.inventoryVersion,
+        inventory_digest: expected.inventoryDigest,
+        matrix_digest: expected.matrixDigest,
+        row_count: 105,
+        generic_count: 0,
+        authorized_count: 0,
+        verified_count: 0,
+        status: "BLOCKED",
+      },
+    };
+    expect(validateParserAttestationPayload(payload)).not.toContain(
+      "CRITICAL_HASH_MISMATCH:services/cs2-demo-parser/worker.py",
+    );
+    const stalePayload = {
+      ...payload,
+      critical_file_hashes: {
+        ...hashes,
+        "services/cs2-demo-parser/worker.py": {
+          observed: "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+          match: true,
+        },
+      },
+    };
+    expect(validateParserAttestationPayload(stalePayload)).toContain(
+      "CRITICAL_HASH_MISMATCH:services/cs2-demo-parser/worker.py",
+    );
   });
 });
