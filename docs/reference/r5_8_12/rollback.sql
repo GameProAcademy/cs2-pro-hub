@@ -1,7 +1,7 @@
 -- R5.8.12 rollback. Use only with explicit release-owner authorization.
 -- This restores the exact R5.8.11/R5.8.11b function-body pins. It does not touch rows,
 -- grants, owners, triggers, indexes, or retention data. Unknown/mixed states fail closed.
-DO $r5812_rollback$
+DO $r5812rollback$
 DECLARE
   _old constant text := '523cee5b0fecc21c7ce2b5f538b42670eec3fed1';
   _new constant text := 'f5e8ffb19d03dca410591f8d2fd38dc47a3ca485';
@@ -82,4 +82,4 @@ BEGIN
     RAISE EXCEPTION 'R5_8_12_ROLLBACK_BOUNDARY_PROPERTIES_INVALID' USING ERRCODE = '55000';
   END IF;
 END;
-$r5812_rollback$;
+$r5812rollback$;
