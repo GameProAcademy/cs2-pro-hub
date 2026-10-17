@@ -662,3 +662,43 @@ The Quality Gates run on SHA `6916364e5744f590be2046396f4511bfecb05f7c` failed i
 The first metadata comparison used `r5_8_11.targets(spec)`, but that helper deliberately returns the spec's recorded boundary MD5 values because those hashes must be observed from PostgreSQL, not inferred from Python-generated SQL. Replaced that tautological check with a direct read of `pg_proc.prosrc` MD5s from the reconstructed disposable database. The direct check correctly failed closed: live PostgreSQL reported boundary-function MD5s `e62a11f966063440eaacb636c608c33a` for `assert_verified_parser_provenance` and `f74d8af991b7ec6f33d9aabbef00c4fc` for `enforce_approved_attestation_workflow`, while the candidate spec still carried the historical R5.8.11 values `f5e27fc3961d7d4bee50d440862f39cc` and `f95e6a50fd78a5aef78feb4d0dd7fdd1`. Updated the current R5.8.12 spec with the observed disposable-PostgreSQL values and preserved the historical pair under `r5_8_11_database_target_md5`. The recorder's new target remains `321d649a3defcf3daf61de8b5f6d6ad2`.
 
 The release-governance unit run on the superseded SHA `b77a063e1e7195bc71ebd5ca3a39511401a1383d` found a test-only `NameError`: the migration test referenced the R5.8.12 spec object without loading it in that test's local scope. Added the local spec load; this does not change the migration or runtime behavior. The current SHA must pass a fresh full run before this fix is accepted.
+
+
+## 2026-10-17 — Latest SHA-bound CI and independent release-gate reconciliation
+
+### Repository and CI evidence
+- Branch: `fix/parser-identity-build-hash-20261017`
+- PR: #151, still open and not merged.
+- Validated branch HEAD: `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf`
+- Base/main SHA at inspection: `7b88f68c1797f8a81cacb9b00c140a49a52df978`
+- Quality Gates run `39061687724`: completed `success` at the exact HEAD above; jobs Contract-sensitive parser tests, F553 R11.2 EXECUTION, CS2 parser tests, Web tests/lint/build, and Main required gates all completed `success`.
+- Queue Semantics Probe run `39061687715`: completed `success` at the same HEAD; both Queue semantics on a disposable database and Queue recovery end to end completed `success`.
+- Queue artifact digest: `sha256:a44b84abce02ec46ed3cf71c2fdb34cc91b32b44221a4e542c85f21ecd7af203`.
+- Disposable reports: queue semantics 12/12, recovery protocol 22/22, canonical persistence 17/17, attestation recorder reconciliation 21/21, gate semantics V2 10/10, two-user RLS 1/1. Queue E2E used only a public 60,601,900-byte fixture and explicitly does not claim exactly-once execution.
+- Release governance in Main required gates: 220 passed, 8 subtests passed.
+- F553 Job A's artifact for this PR merge ref reports the mandatory disposable scenarios passing, but `final_ci=NOT_PROVEN` and `final_decision=BLOCKED`; the successful job exit is not itself evidence that the independent final-CI gate is closed. Production writes, Railway authorization, real DEM, and Canonical remain false.
+- No evidence from superseded SHAs is used to claim current CI success.
+
+### Root causes resolved in code / disposable database
+- The previous Queue Semantics failure `PARSER_ATTESTATION_BINDING_INVALID` across lineage cases is no longer reproduced: the current gate semantics V2 probe reports 10/10 PASS, including positive and negative binding validation. The full Queue Semantics Probe and downstream RLS, recorder, and historical pin probes all completed successfully.
+- R5.8.12 disposable-chain checks and release-governance tests pass at the validated HEAD. R5.8.11 and R5.8.11b historical migration files remain unchanged. Current spec records the observed disposable PostgreSQL `pg_proc.prosrc` MD5s; historical boundary hashes are retained separately.
+- The current workflow blob pin is `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`; semantic revision `git:c2e045b0f71a7699c935b65ffe514fe526889de3`, build/source commit `git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`, and worker.py blob `23a5f8624955181ad9033221cfae00138c7228dc` remain distinct roles.
+
+### External read-only evidence — release remains blocked
+- Latest R5.8.3 artifact available on main: run `39041686075`, SHA `7b88f68c1797f8a81cacb9b00c140a49a52df978`, decision `BLOCKED`.
+- Railway project `CS2 Pro Parser Worker`, service `cs2-demo-parser`, environment `production`; active successful deployment `ce9b760d-c92f-4da1-a3e6-dd105d49585c`, source/build commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- Both worker `/health` endpoints returned `{"status":"ok"}` during the R5.8.3 preflight, but both `/version` endpoints declared `build_revision=git:c2e045b0f71a7699c935b65ffe514fe526889de3` while the embedded build commit was `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`. R5.8.3 therefore reported `RUNTIME_IDENTITY_MISMATCH` and `BUILD_REVISION_NOT_EMBEDDED_COMMIT` for both domains. All five pinned critical file hashes matched the preflight's pins.
+- R5.8.3 on main still observed workflow/registry hash `523cee5b0fecc21c7ce2b5f538b42670eec3fed1`; PR #151 advances the repository workflow and registry to the actual current workflow blob hash above. This source pin cannot be treated as fixed in production until the corrected source is merged and the read-only preflight reruns against the new main SHA.
+- R5.8.4 run `39041703830` remains `BLOCKED`; `live_version_exact` is not verified and the 32-gate matrix has further `NOT_PROVEN` gates.
+- H.3-E run `39043542007` remains `FAIL/BLOCKED`: managed snapshot was rejected as `SNAPSHOT_FROM_UNEXPECTED_DATABASE_STATE`; the app parser lock was not required and expected historical semantic/build pins `60099ed3eaf959d888762bf55043255a63a6a766`, mismatching both served runtime pins. Managed-snapshot dependent gates remain `NOT_PROVEN`.
+- Public endpoint access through this chat's web viewer was unavailable; endpoint values above are supported by the actual R5.8.3 GitHub Actions artifact, not inferred from that viewer.
+- Railway variable values are redacted by the Railway connector. No variable values were changed, no deployment was created, and no managed database or Lovable mutation was made.
+
+### Decision
+- Code CI at the validated SHA: `PASS`.
+- R5.8.3: `BLOCKED` on the latest available main evidence.
+- R5.8.4: `BLOCKED / NOT_PROVEN`.
+- H.3-E: `BLOCKED`.
+- Merge: `NOT PERFORMED`; the user's release rule prohibits merging while release prerequisites are blocked.
+- Production migration/configuration/deploy, runtime attestation, real DEM, Attempt 9, Canonical and Lovable publication: `NOT EXECUTED`.
+- Next actions: obtain explicit operational authorization for the app/runtime lock correction and managed-snapshot evidence path; make only the authorized configuration changes after their prerequisites are reviewed; then rerun R5.8.3 on the resulting main SHA, allow R5.8.4 and H.3-E to reconcile that fresh evidence, and only then reconsider merge/release under the repository's policy.
