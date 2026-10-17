@@ -61,7 +61,7 @@ def test_collector_uses_the_r5811_candidate_identity():
     assert DEPLOYMENT == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert SOURCE_COMMIT == "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
     assert BRANCH == "main"
-    assert PARSER_REVISION == "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+    assert PARSER_REVISION == "git:c2e045b0f71a7699c935b65ffe514fe526889de3"
 
 
 def test_collector_structure_rejects_automatic_and_execution_triggers():
