@@ -32,6 +32,7 @@ from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 # The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
 SPEC = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
 COMMIT = SPEC["build_commit"]
+SEMANTIC = SPEC["semantic_commit"]
 WORKER = SPEC["critical_hashes"]["worker.py"]
 
 FIXTURES = r"""
@@ -127,7 +128,7 @@ CREATE FUNCTION pg_temp.event(_type text, _exec uuid, _outcome text) RETURNS jso
   SELECT public.h3e91_record_execution_event(gen_random_uuid(), _exec, _type, f.up, _exec, f.job, 1, f.sha, 520,
     CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE 'demoparser2' END,
     CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE '0.42.0' END,
-    CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE 'git:{COMMIT}' END,
+    CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE 'git:{SEMANTIC}' END,
     'RAILWAY_DURABLE_WORKER', 'RAILWAY', NULL, _outcome, 1, '{COMMIT}')
   FROM probe_fx f WHERE f.k = 'm' $f$;
 CREATE TEMP TABLE probe_exec ON COMMIT DROP AS SELECT gen_random_uuid() AS id;
