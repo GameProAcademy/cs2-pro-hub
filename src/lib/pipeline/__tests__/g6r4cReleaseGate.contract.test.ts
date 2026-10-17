@@ -111,7 +111,9 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("actions/upload-artifact@");
     expect(workflow).not.toContain("actions/attest-build-provenance@");
     expect(workflow).not.toContain("attestations: write");
-    expect(workflow).toContain("from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT");
+    expect(workflow).toContain(
+      "from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT",
+    );
     expect(workflow).toContain(
       'for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):',
     );
