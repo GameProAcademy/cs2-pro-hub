@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT / "scripts/predem"))
 
 import attestation_recorder_reconciliation_probe as probe  # noqa: E402
 import managed_snapshot as ms  # noqa: E402
+import r5_8_11  # noqa: E402
 from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 
 # The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
@@ -252,6 +253,17 @@ def main() -> int:
     from canonical_persistence_probe import bundle  # noqa: PLC0415
     payload = json.dumps(bundle("placeholder")).replace("'", "''")
     results: list[dict] = []
+
+    # Candidate boundary MD5s must be regenerated for R5.8.12, not copied from
+    # the historical R5.8.11 target. Include both values in the report if stale.
+    generated_targets = r5_8_11.targets(SPEC)
+    declared_boundary_targets = SPEC.get("database_target_md5", {})
+    computed_boundary_targets = {name: generated_targets[name] for name in declared_boundary_targets}
+    results.append({
+        "scenario": "r5_8_12_boundary_target_metadata_matches_generator",
+        "status": "PASS" if declared_boundary_targets == computed_boundary_targets else "FAIL",
+        "detail": {"declared": declared_boundary_targets, "computed": computed_boundary_targets},
+    })
 
     try:
         _validate_r5812_migration()
