@@ -113,7 +113,7 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
                 outside_allowlist = sorted(set(diff) - set(allowed_diagnostic_files))
                 reviewed_files_match = all(
                     git_value("rev-parse", f"{commit}:{path}") ==
-                    git_value("rev-parse", f"{approved_commit}^{path}")
+                    git_value("rev-parse", f"{approved_commit}:{path}")
                     for path, approved_commit in allowed_diagnostic_files.items()
                 )
                 actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
