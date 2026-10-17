@@ -167,24 +167,9 @@ SELECT match, 'PRE_PROVENANCE_CANONICAL_ROW', 'probe', 'probe', '{}'::jsonb FROM
 def main() -> int:
     probe.refuse_non_local()
     prelude = repinned_prelude(SPEC, keep_current=True)
-    # repinned_prelude keeps the generic legacy attestation fixture. This probe
-    # explicitly keeps R5.8.11 current, so the synthetic signed payload must use
-    # the same candidate identity the real recorder now enforces. Restrict these
-    # substitutions to pg_temp.attest only; rollback SQL embedded elsewhere in
-    # the prelude must retain its historical pins byte-for-byte.
-    start = prelude.index("CREATE FUNCTION pg_temp.attest(")
-    end = prelude.index("CREATE FUNCTION pg_temp.drift(", start)
-    attest_sql = prelude[start:end]
-    # repinned_prelude() already aligns semantic/build/workflow and critical
-    # blobs to the candidate, but deliberately substitutes a TEST deployment
-    # ID for R5.8.9's disposable migration tests. Gate Semantics applies the
-    # current R5.8.11 recorder, which binds the real candidate deployment ID;
-    # replace only that test-only value inside the synthetic attestation helper.
-    test_deployment = "e9e9e9e9-0000-4000-8000-000000000589"
-    if attest_sql.count(test_deployment) != 2:
-        raise SystemExit("GATE_SEMANTICS_TEST_DEPLOYMENT_FIXTURE_COUNT_INVALID")
-    attest_sql = attest_sql.replace(test_deployment, SPEC["deployment_id"])
-    prelude = prelude[:start] + attest_sql + prelude[end:]
+    # repinned_prelude applies the candidate SPEC pins itself, including the
+    # real deployment ID. Do not post-process its rendered payload: doing so
+    # reintroduces historical fixture assumptions and causes false failures.
     sys.path.insert(0, str(ROOT / "scripts/queue"))
     from canonical_persistence_probe import bundle  # noqa: PLC0415
     payload = json.dumps(bundle("placeholder")).replace("'", "''")
