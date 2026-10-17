@@ -80,6 +80,81 @@ def test_semantic_revision_is_checked_against_git_not_against_the_worker_flag():
         "BUILD_REVISION_NOT_EMBEDDED_COMMIT", "BUILD_COMMIT_UNKNOWN_TO_GIT"]
 
 
+
+def test_live_semantic_build_pair_allows_only_the_two_reviewed_diagnostic_changes():
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+
+    build = {
+        "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+        "embedded": True, "source": "railway", "declared_revision_matches": True,
+    }
+    observed = {
+        "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+        "build_revision": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    }
+    assert semantic_identity_failures(observed, build) == []
+
+
+def test_semantic_build_delta_exception_does_not_allow_wrong_build_pin():
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+
+    build = {
+        "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+        "embedded": True, "source": "railway", "declared_revision_matches": True,
+    }
+    observed = {
+        "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+        "build_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+    }
+    assert semantic_identity_failures(observed, build) == ["BUILD_REVISION_NOT_EMBEDDED_COMMIT"]
+
+
+def test_semantic_build_delta_exception_rejects_an_unreviewed_added_file(monkeypatch):
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+    import scripts.r5_8_3_release_preflight as preflight
+
+    real_check_output = subprocess.check_output
+    def changed_diff(command, **kwargs):
+        if command[:3] == ("git", "diff", "--name-only"):
+            return (
+                "services/cs2-demo-parser/h3e91_execution.py\n"
+                "services/cs2-demo-parser/tests/test_h3e91_execution.py\n"
+                "services/cs2-demo-parser/worker.py\n"
+                "services/cs2-demo-parser/parser.py\n"
+            )
+        return real_check_output(command, **kwargs)
+    monkeypatch.setattr(preflight.subprocess, "check_output", changed_diff)
+    build = {
+        "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+        "embedded": True, "source": "railway", "declared_revision_matches": True,
+    }
+    observed = {
+        "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+        "build_revision": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    }
+    assert semantic_identity_failures(observed, build) == ["SEMANTIC_BUILD_DELTA_NOT_APPROVED"]
+
+
+def test_semantic_build_delta_rejects_an_unapproved_worker_change(monkeypatch):
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+    import scripts.r5_8_3_release_preflight as preflight
+
+    real_check_output = subprocess.check_output
+    def changed_diff(command, **kwargs):
+        if command[:3] == ("git", "diff", "--name-only"):
+            return "services/cs2-demo-parser/worker.py\nservices/cs2-demo-parser/parser.py\n"
+        return real_check_output(command, **kwargs)
+    monkeypatch.setattr(preflight.subprocess, "check_output", changed_diff)
+    build = {
+        "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+        "embedded": True, "source": "railway", "declared_revision_matches": True,
+    }
+    observed = {
+        "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+        "build_revision": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    }
+    assert semantic_identity_failures(observed, build) == ["SEMANTIC_BUILD_DELTA_NOT_APPROVED"]
+
 def test_blocked_preflight_exits_non_zero_and_still_writes_its_evidence(tmp_path):
     # No GitHub context and no Railway token: the preflight must say BLOCKED,
     # exit 1, and leave the evidence file for the artifact upload.
