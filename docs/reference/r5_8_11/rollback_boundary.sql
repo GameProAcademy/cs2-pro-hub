@@ -34,16 +34,16 @@ BEGIN
         RAISE EXCEPTION 'R5_8_11B_FRAGMENT_COUNT_INVALID (assert_verified_parser_provenance)' USING ERRCODE = '55000';
       END IF;
       _def := pg_catalog.replace(_def, '_p.deployment_id<>''ce9b760d-c92f-4da1-a3e6-dd105d49585c''', '_p.deployment_id<>''25df86c3-22e1-4986-9b91-cdabe54535c5''');
-      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.deployment_commit<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
-         <> pg_catalog.length('_p.deployment_commit<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
+      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.deployment_commit<>''c2e045b0f71a7699c935b65ffe514fe526889de3''', '')))
+         <> pg_catalog.length('_p.deployment_commit<>''c2e045b0f71a7699c935b65ffe514fe526889de3''') THEN
         RAISE EXCEPTION 'R5_8_11B_FRAGMENT_COUNT_INVALID (assert_verified_parser_provenance)' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_p.deployment_commit<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '_p.deployment_commit<>''60099ed3eaf959d888762bf55043255a63a6a766''');
-      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.semantic_revision<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
-         <> pg_catalog.length('_p.semantic_revision<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
+      _def := pg_catalog.replace(_def, '_p.deployment_commit<>''c2e045b0f71a7699c935b65ffe514fe526889de3''', '_p.deployment_commit<>''60099ed3eaf959d888762bf55043255a63a6a766''');
+      IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.semantic_revision<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''', '')))
+         <> pg_catalog.length('_p.semantic_revision<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''') THEN
         RAISE EXCEPTION 'R5_8_11B_FRAGMENT_COUNT_INVALID (assert_verified_parser_provenance)' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_p.semantic_revision<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '_p.semantic_revision<>''git:60099ed3eaf959d888762bf55043255a63a6a766''');
+      _def := pg_catalog.replace(_def, '_p.semantic_revision<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''', '_p.semantic_revision<>''git:60099ed3eaf959d888762bf55043255a63a6a766''');
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_p.build_revision<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''', '')))
          <> pg_catalog.length('_p.build_revision<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''') THEN
         RAISE EXCEPTION 'R5_8_11B_FRAGMENT_COUNT_INVALID (assert_verified_parser_provenance)' USING ERRCODE = '55000';
