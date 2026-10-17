@@ -44,10 +44,13 @@ MANAGED_BLOB = "50a53b607d26f00b4de05c5e8998611959e27bd1"
 REPOSITORY_BLOB = "dfc2e67fcb3644be91108079f9096947c16119b3"
 INDEX = "parser_runtime_provenance_deployment_identity_idx"
 RESULTS: list[dict] = []
-# The repository reset ends at R5.8.11/R5.8.11b. Base R5.8.7/R5.8.8
-# reconciliation expects the R5.8.10 fingerprint, so its default prelude rewinds
-# R5.8.11 and R5.8.10. Candidate validators explicitly pass keep_current=True
-# when they need to assert the latest candidate state.
+# The repository reset ends at R5.8.12. Legacy probes first rewind R5.8.12,
+# then R5.8.11/11b and R5.8.10/10b inside their disposable transaction.
+sys.path.insert(0, str(ROOT / "scripts/repin"))
+import r5_8_11  # noqa: E402
+R5812_SPEC = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
+R5812_TARGET_MD5 = r5_8_11.target_md5(R5812_SPEC)
+R5812_ROLLBACK = ROOT / "docs/reference/r5_8_12/rollback.sql"
 R5811_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback.sql"
 R5811B_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
 R5811_TARGET_MD5 = "72df9c518f5573db232a6759301e4360"
@@ -69,6 +72,12 @@ DECLARE _md5 text;
 BEGIN
   SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  IF __R5812_UNDO__ AND _md5 = '__R5812_TARGET__' THEN
+    EXECUTE __R5812_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF _md5 <> '__R5811_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_12_ROLLBACK_MISMATCH: %', _md5; END IF;
+  END IF;
   IF __R5811_UNDO__ AND _md5 = '__R5811_TARGET__' THEN
     -- Boundary and recorder are separate functions. Roll them back in migration
     -- order; only assert the recorder fingerprint after its own rollback.
@@ -258,16 +267,23 @@ def _r5811_literal(path: Path) -> str:
     return _sql_literal(path, "$r5811b_rollback$")
 
 
+def _r5812_literal(path: Path = R5812_ROLLBACK) -> str:
+    return _sql_literal(path, "$r5812_rollback$")
+
+
 def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool = False) -> str:
     """Render a transaction-local recorder baseline for the caller.
 
-    By default rewind R5.8.11/11b and R5.8.10/10b, leaving the R5.8.9 target
-    expected by the legacy R5.8.7/R5.8.8 reconciliation suite. keep_r589
-    preserves the R5.8.9 target, while keep_current preserves the exact latest
-    R5.8.11 reset state for current-candidate probes. All rollbacks remain within
-    the disposable transaction, which is rolled back by the epilogue.
+    By default rewind R5.8.12, R5.8.11/11b and R5.8.10/10b, leaving the
+    R5.8.9 target expected by legacy R5.8.7/R5.8.8 reconciliation. keep_r589
+    preserves the R5.8.9 target; keep_current preserves the R5.8.12 candidate.
+    Every rollback remains inside the disposable transaction and is undone by
+    the probe epilogue.
     """
-    return (template.replace("__R5811_UNDO__", "false" if keep_current else "true")
+    return (template.replace("__R5812_UNDO__", "false" if keep_current else "true")
+            .replace("__R5812_TARGET__", R5812_TARGET_MD5)
+            .replace("__R5812_ROLLBACK__", _r5812_literal())
+            .replace("__R5811_UNDO__", "false" if keep_current else "true")
             .replace("__R5811_TARGET__", R5811_TARGET_MD5)
             .replace("__R5811B_ROLLBACK__", _r5811_literal(R5811B_ROLLBACK))
             .replace("__R5811_ROLLBACK__", _r5811_literal(R5811_ROLLBACK))

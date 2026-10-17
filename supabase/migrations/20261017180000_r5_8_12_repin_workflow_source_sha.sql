@@ -18,22 +18,25 @@ DECLARE
   _updated text;
   _old_count integer;
   _new_count integer;
+  _expected_count constant integer := 2;
 BEGIN
   FOREACH _target IN ARRAY _targets LOOP
     _definition := pg_catalog.pg_get_functiondef(_target);
     _old_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _old, ''))) / pg_catalog.length(_old);
     _new_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _new, ''))) / pg_catalog.length(_new);
 
-    IF _old_count = 0 AND _new_count > 0 THEN
+    IF _old_count = 0 AND _new_count = _expected_count THEN
       RAISE NOTICE 'R5_8_12_ALREADY_AT_TARGET_STATE: %', _target;
-    ELSIF _old_count > 0 AND _new_count = 0 THEN
+    ELSIF _old_count = _expected_count AND _new_count = 0 THEN
       _updated := pg_catalog.replace(_definition, _old, _new);
       EXECUTE _updated;
       _definition := pg_catalog.pg_get_functiondef(_target);
-      IF pg_catalog.strpos(_definition, _old) > 0 OR pg_catalog.strpos(_definition, _new) = 0 THEN
-        RAISE EXCEPTION 'R5_8_12_POSTCONDITION_INVALID: %', _target USING ERRCODE = '55000';
+      _old_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _old, ''))) / pg_catalog.length(_old);
+      _new_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _new, ''))) / pg_catalog.length(_new);
+      IF _old_count <> 0 OR _new_count <> _expected_count THEN
+        RAISE EXCEPTION 'R5_8_12_POSTCONDITION_INVALID: % old=% new=%', _target, _old_count, _new_count USING ERRCODE = '55000';
       END IF;
-      RAISE NOTICE 'R5_8_12_REPINNED: % (occurrences=%)', _target, _old_count;
+      RAISE NOTICE 'R5_8_12_REPINNED: % (occurrences=%)', _target, _expected_count;
     ELSE
       RAISE EXCEPTION 'R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE: % old=% new=%', _target, _old_count, _new_count USING ERRCODE = '55000';
     END IF;

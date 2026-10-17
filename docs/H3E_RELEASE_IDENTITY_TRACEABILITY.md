@@ -643,3 +643,12 @@ The Queue Semantics failure was caused by a stale fixture binding: the shared di
 The release-governance failures also exposed a brittle test expecting the literal shell string `git cat-file -e`, although the workflow invokes the same Git operation using a subprocess argument tuple. The test now checks the actual command arguments. The R5.8.10 historical-artifact test no longer treats its old workflow blob as the current pin; the verifier reports that mismatch and continues evaluating independent identity failures instead of returning early. This does not rewrite R5.8.10/R5.8.11 migrations or their historical specs.
 
 Validation remains pending until focused tests, full Queue Semantics Probe (including RLS and reconciliation), Quality Gates and all release gates finish on the new exact HEAD. No managed database, Railway, Lovable, provenance, ledger, or production state was changed.
+
+
+## Follow-up 2026-10-17 — disposable legacy-probe baseline
+
+Quality Gates, contract-sensitive parser tests, parser tests, web lint/build, the queue-semantics-v2 probe (8/8), and the two-user RLS probe passed on `af28940a6e8774b46bca82d0ad72b164356cc80f`. The complete Queue Semantics job still failed in the historical R5.8.7/R5.8.8 recorder-reconciliation probe: its baseline builder recognized only R5.8.11 and earlier recorder fingerprints, while the newly applied R5.8.12 recorder had MD5 `321d649a3defcf3daf61de8b5f6d6ad2`. It consequently skipped the required rewind and produced downstream baseline failures.
+
+Added a fail-closed R5.8.12 rollback script for disposable/history-replay use. It requires exactly two current-pin occurrences per target function, reverses only those occurrences, restores the exact R5.8.11/R5.8.11b comments, checks the prior recorder/boundary function MD5s and security properties, and rejects mixed or unknown states. The legacy probe now rewinds R5.8.12 before older migrations inside its own transaction; the current gate-semantics probe continues to retain R5.8.12 and separately tests idempotent reapplication plus unknown/mixed-state rejection and transaction rollback. The migration itself now requires exactly two expected occurrences for each of the three functions rather than accepting any positive count.
+
+This fix has not been validated until a fresh CI run completes. The previous run's R5.8.7/R5.8.8 results are failures and are not counted as passing. No managed database changes were made.
