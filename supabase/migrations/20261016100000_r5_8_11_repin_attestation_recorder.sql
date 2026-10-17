@@ -8,7 +8,7 @@ DECLARE
   _fn constant regprocedure := 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
   _start constant text := '4ee7be9d9d133adbeeafe6e6a5763112';
   _target constant text := '55f067f8ee33b3fb9f95f8ae91a8273c';
-  _new_comment constant text := 'R5.8.11 re-pinned recorder: Railway deployment ce9b760d-c92f-4da1-a3e6-dd105d49585c, source and build commit eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1, semantic revision git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1, branch main, approved workflow blob 523cee5b0fecc21c7ce2b5f538b42670eec3fed1.';
+  _new_comment constant text := 'R5.8.11 re-pinned recorder: Railway deployment ce9b760d-c92f-4da1-a3e6-dd105d49585c, source and build commit eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1, semantic revision git:c2e045b0f71a7699c935b65ffe514fe526889de3, branch main, approved workflow blob 523cee5b0fecc21c7ce2b5f538b42670eec3fed1.';
   _md5 text;
   _def text;
   _step text;
@@ -35,7 +35,7 @@ BEGIN
          <> 1 * pg_catalog.length('_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''') THEN
         RAISE EXCEPTION 'R5_8_11_FRAGMENT_COUNT_INVALID: %', '_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''', '_payload->>''git_commit''<>''eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''');
+      _def := pg_catalog.replace(_def, '_payload->>''git_commit''<>''60099ed3eaf959d888762bf55043255a63a6a766''', '_payload->>''git_commit''<>''c2e045b0f71a7699c935b65ffe514fe526889de3''');
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''deployment_id''<>''25df86c3-22e1-4986-9b91-cdabe54535c5''', '')))
          <> 1 * pg_catalog.length('_payload->>''deployment_id''<>''25df86c3-22e1-4986-9b91-cdabe54535c5''') THEN
         RAISE EXCEPTION 'R5_8_11_FRAGMENT_COUNT_INVALID: %', '_payload->>''deployment_id''<>''25df86c3-22e1-4986-9b91-cdabe54535c5''' USING ERRCODE = '55000';
@@ -45,7 +45,7 @@ BEGIN
          <> 1 * pg_catalog.length('_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''') THEN
         RAISE EXCEPTION 'R5_8_11_FRAGMENT_COUNT_INVALID: %', '_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''' USING ERRCODE = '55000';
       END IF;
-      _def := pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''', '_payload->>''semantic_revision''<>''git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1''');
+      _def := pg_catalog.replace(_def, '_payload->>''semantic_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''', '_payload->>''semantic_revision''<>''git:c2e045b0f71a7699c935b65ffe514fe526889de3''');
       IF (pg_catalog.length(_def) - pg_catalog.length(pg_catalog.replace(_def, '_payload->>''build_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''', '')))
          <> 1 * pg_catalog.length('_payload->>''build_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''') THEN
         RAISE EXCEPTION 'R5_8_11_FRAGMENT_COUNT_INVALID: %', '_payload->>''build_revision''<>''git:60099ed3eaf959d888762bf55043255a63a6a766''' USING ERRCODE = '55000';
