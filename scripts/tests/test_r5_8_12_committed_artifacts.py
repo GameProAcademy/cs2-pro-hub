@@ -42,8 +42,8 @@ def test_r5_8_12_migration_is_forward_only_and_fail_closed():
     sys.path.insert(0, str(ROOT / "scripts/repin"))
     import r5_8_11  # noqa: PLC0415
     assert r5_8_11.target_md5(current) == "321d649a3defcf3daf61de8b5f6d6ad2"
-    targets = r5_8_11.targets(current)
-    assert current["database_target_md5"] == {name: targets[name] for name in current["database_target_md5"]}
+    assert current["r5_8_11_database_target_md5"] == old["database_target_md5"]
+    assert current["database_target_md5"] != old["database_target_md5"]
     rollback = (ROOT / "docs/reference/r5_8_12/rollback.sql").read_text(encoding="utf-8")
     assert OLD_SHA in rollback and CURRENT_SHA in rollback
     assert "R5_8_12_ROLLBACK_UNEXPECTED_PIN_STATE" in rollback

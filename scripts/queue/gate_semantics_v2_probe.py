@@ -256,9 +256,11 @@ def main() -> int:
 
     # Candidate boundary MD5s must be regenerated for R5.8.12, not copied from
     # the historical R5.8.11 target. Include both values in the report if stale.
-    generated_targets = r5_8_11.targets(SPEC)
     declared_boundary_targets = SPEC.get("database_target_md5", {})
-    computed_boundary_targets = {name: generated_targets[name] for name in declared_boundary_targets}
+    live_state = _r5812_state()
+    live_hashes = {item["signature"].split("(")[0].split(".")[-1]: item["md5"]
+                   for item in live_state.get("functions", [])}
+    computed_boundary_targets = {name: live_hashes.get(name) for name in declared_boundary_targets}
     results.append({
         "scenario": "r5_8_12_boundary_target_metadata_matches_generator",
         "status": "PASS" if declared_boundary_targets == computed_boundary_targets else "FAIL",
