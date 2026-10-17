@@ -43,8 +43,8 @@ def test_candidate_is_not_release_proven_without_both_live_version_observations(
 
 def test_candidate_migrations_only_rewrite_pinned_function_definitions():
     for path, start, target in (
-        (RECORDER, "4ee7be9d9d133adbeeafe6e6a5763112", "55f067f8ee33b3fb9f95f8ae91a8273c"),
-        (ROLLBACK, "55f067f8ee33b3fb9f95f8ae91a8273c", "4ee7be9d9d133adbeeafe6e6a5763112"),
+        (RECORDER, "4ee7be9d9d133adbeeafe6e6a5763112", "72df9c518f5573db232a6759301e4360"),
+        (ROLLBACK, "72df9c518f5573db232a6759301e4360", "4ee7be9d9d133adbeeafe6e6a5763112"),
         (BOUNDARY, "57e4196115eb9253fd307e4443fb603c", "f5e27fc3961d7d4bee50d440862f39cc"),
         (BOUNDARY_ROLLBACK, "f5e27fc3961d7d4bee50d440862f39cc", "57e4196115eb9253fd307e4443fb603c"),
     ):
@@ -64,6 +64,6 @@ def test_historical_probe_preserves_current_recorder_when_requested():
 
     current = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE, keep_current=True)
     historical = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE)
-    assert "IF false AND _md5 = '55f067f8ee33b3fb9f95f8ae91a8273c' THEN" in current
-    assert "IF true AND _md5 = '55f067f8ee33b3fb9f95f8ae91a8273c' THEN" in historical
+    assert "IF false AND _md5 = '72df9c518f5573db232a6759301e4360' THEN" in current
+    assert "IF true AND _md5 = '72df9c518f5573db232a6759301e4360' THEN" in historical
     assert "PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH" in historical
