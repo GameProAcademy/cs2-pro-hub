@@ -1,3 +1,5 @@
+from pathlib import Path
+import json
 from unittest.mock import patch
 
 import pytest
@@ -45,6 +47,19 @@ def test_workflow_source_requires_reviewed_git_blob():
     with patch("scripts.parser_runtime_attestation.git_object_bytes", return_value=b"unexpected"):
         with pytest.raises(ValueError, match="ATTESTATION_WORKFLOW_VERSION_NOT_APPROVED"):
             approved_workflow_identity("a" * 40)
+
+
+def test_attestation_workflow_uses_distinct_contract_commits_and_matches_reviewed_pin():
+    root = Path(__file__).resolve().parents[2]
+    workflow = (root / ".github/workflows/parser-runtime-attestation.yml").read_text(encoding="utf-8")
+    registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
+
+    assert "from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT" in workflow
+    assert 'for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):' in workflow
+    assert "git cat-file -e" in workflow
+    assert "git merge-base --is-ancestor" in workflow
+    assert "60099ed3eaf959d888762bf55043255a63a6a766" not in workflow
+    assert git_blob_sha1(workflow.encode("utf-8")) == registry["source_sha"]
 
 
 def test_railway_evidence_is_derived_from_api_response():
