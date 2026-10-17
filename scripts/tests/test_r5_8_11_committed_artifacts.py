@@ -26,8 +26,8 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
         SPEC["branch"], SPEC["deployment_id"], SPEC["deployment_commit"], f"git:{SPEC['semantic_commit']}")
     assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
     assert r5_8_11.targets(SPEC) == {
-        "record_parser_runtime_attestation": "beeb4f8f94a6960ca9e7448344ae379b",
-        "assert_verified_parser_provenance": "a2e5ee1383561e7a9a10a47684b6256e",
+        "record_parser_runtime_attestation": "55f067f8ee33b3fb9f95f8ae91a8273c",
+        "assert_verified_parser_provenance": "5b3953911fc6fe3c5cbf31da75425942",
         "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1",
     }
 
@@ -43,10 +43,10 @@ def test_candidate_is_not_release_proven_without_both_live_version_observations(
 
 def test_candidate_migrations_only_rewrite_pinned_function_definitions():
     for path, start, target in (
-        (RECORDER, "4ee7be9d9d133adbeeafe6e6a5763112", "beeb4f8f94a6960ca9e7448344ae379b"),
-        (ROLLBACK, "beeb4f8f94a6960ca9e7448344ae379b", "4ee7be9d9d133adbeeafe6e6a5763112"),
-        (BOUNDARY, "57e4196115eb9253fd307e4443fb603c", "a2e5ee1383561e7a9a10a47684b6256e"),
-        (BOUNDARY_ROLLBACK, "a2e5ee1383561e7a9a10a47684b6256e", "57e4196115eb9253fd307e4443fb603c"),
+        (RECORDER, "4ee7be9d9d133adbeeafe6e6a5763112", "55f067f8ee33b3fb9f95f8ae91a8273c"),
+        (ROLLBACK, "55f067f8ee33b3fb9f95f8ae91a8273c", "4ee7be9d9d133adbeeafe6e6a5763112"),
+        (BOUNDARY, "57e4196115eb9253fd307e4443fb603c", "5b3953911fc6fe3c5cbf31da75425942"),
+        (BOUNDARY_ROLLBACK, "5b3953911fc6fe3c5cbf31da75425942", "57e4196115eb9253fd307e4443fb603c"),
     ):
         sql = path.read_text(encoding="utf-8")
         assert start in sql
@@ -64,6 +64,6 @@ def test_historical_probe_preserves_current_recorder_when_requested():
 
     current = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE, keep_current=True)
     historical = recorder_probe.render_prelude(recorder_probe.PRELUDE_TEMPLATE)
-    assert "IF false AND _md5 = 'beeb4f8f94a6960ca9e7448344ae379b' THEN" in current
-    assert "IF true AND _md5 = 'beeb4f8f94a6960ca9e7448344ae379b' THEN" in historical
+    assert "IF false AND _md5 = '55f067f8ee33b3fb9f95f8ae91a8273c' THEN" in current
+    assert "IF true AND _md5 = '55f067f8ee33b3fb9f95f8ae91a8273c' THEN" in historical
     assert "PROBE_BASELINE_R5_8_11_ROLLBACK_MISMATCH" in historical
