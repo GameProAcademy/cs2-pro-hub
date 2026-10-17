@@ -230,9 +230,9 @@ describe("current attestation worker hash contract", () => {
         status: "BLOCKED",
       },
     };
-    expect(validateParserAttestationPayload(payload)).not.toContain(
-      "CRITICAL_HASH_MISMATCH:services/cs2-demo-parser/worker.py",
-    );
+    // Acceptance means the entire current contract validates, not merely that
+    // this one blocker is absent.
+    expect(validateParserAttestationPayload(payload)).toEqual([]);
     const stalePayload = {
       ...payload,
       critical_file_hashes: {
