@@ -175,20 +175,15 @@ def main() -> int:
     start = prelude.index("CREATE FUNCTION pg_temp.attest(")
     end = prelude.index("CREATE FUNCTION pg_temp.drift(", start)
     attest_sql = prelude[start:end]
-    candidate_pins = {
-        "infra/cs2-parser-worker-v8": SPEC["branch"],
-        "5703b1d88f21ee57fdd1d83722edf30e0f0c6f76": SPEC["semantic_commit"],
-        "1b5778de-3eaf-46f1-9ea5-cba381d95313": SPEC["deployment_id"],
-        "3070d8bae6c3f02093bbb2595138c913646c2e31": SPEC["workflow_source_sha"],
-        "91aeee853200d0f461d0d36af1781d7fdfa40941": SPEC["deployment_commit"],
-        "9d21670e47ddf330881e95a9d78c19074ccc0aea": SPEC["critical_hashes"]["parser.py"],
-        "750195c1218abd53cfc77b6e8d2fb4a88e31579e": SPEC["critical_hashes"]["raw_evidence.py"],
-        "35eecfb06223812137a4a2f17114aae57cb7fe54": SPEC["critical_hashes"]["settings.py"],
-    }
-    for old_pin, current_pin in candidate_pins.items():
-        if old_pin not in attest_sql:
-            raise SystemExit(f"GATE_SEMANTICS_FIXTURE_PIN_NOT_FOUND:{old_pin}")
-        attest_sql = attest_sql.replace(old_pin, current_pin)
+    # repinned_prelude() already aligns semantic/build/workflow and critical
+    # blobs to the candidate, but deliberately substitutes a TEST deployment
+    # ID for R5.8.9's disposable migration tests. Gate Semantics applies the
+    # current R5.8.11 recorder, which binds the real candidate deployment ID;
+    # replace only that test-only value inside the synthetic attestation helper.
+    test_deployment = "e9e9e9e9-0000-4000-8000-000000000589"
+    if attest_sql.count(test_deployment) != 2:
+        raise SystemExit("GATE_SEMANTICS_TEST_DEPLOYMENT_FIXTURE_COUNT_INVALID")
+    attest_sql = attest_sql.replace(test_deployment, SPEC["deployment_id"])
     prelude = prelude[:start] + attest_sql + prelude[end:]
     sys.path.insert(0, str(ROOT / "scripts/queue"))
     from canonical_persistence_probe import bundle  # noqa: PLC0415
