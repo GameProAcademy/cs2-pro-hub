@@ -592,3 +592,41 @@ The identity chain needs, in order, operations outside the repository:
 3. applying that migration to the managed database;
 4. a fresh attestation through the approved workflow.
    Each needs its own authorization.
+
+
+## Update 2026-10-17 — semantic/build identity and approved workflow pin
+
+This dated addendum records the current investigation without rewriting earlier release history.
+
+### Current identity contract
+
+- Semantic parser revision: `git:c2e045b0f71a7699c935b65ffe514fe526889de3`.
+- Build/source commit embedded in the reference worker image: `git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- Verified `services/cs2-demo-parser/worker.py` Git blob at that build: `23a5f8624955181ad9033221cfae00138c7228dc`.
+- Semantic identity and build identity are separate contract fields and must not be collapsed.
+
+### Fresh main-branch evidence observed
+
+- R5.8.3 run [39041686075](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075), main SHA `7b88f68c1797f8a81cacb9b00c140a49a52df978`, concluded `failure`. Its read-only evidence reported both public `/version` endpoints serving semantic revision `git:c2e045...` and build revision `git:c2e045...`, while the embedded build/source commit was `eaaa2c8...`. The resulting blockers were `RUNTIME_IDENTITY_MISMATCH` and `BUILD_REVISION_NOT_EMBEDDED_COMMIT`.
+- H.3-E activation gate [39043542007](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39043542007), same main SHA, concluded `failure`. It reported `DECLARED_REVISION_MISMATCH`, `PARSER_LOCK_NOT_REQUIRED`, `PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH`, and `SNAPSHOT_UNUSABLE`. The app-side expected revision and build revision both came from environment and were both pinned to the historical `60099ed3...` value.
+- These are external configuration/runtime blockers. A green code workflow alone cannot clear them. The main-branch R5.8.3/R5.8.4/H.3-E results remain failures until fresh evidence proves otherwise.
+
+### Repository-side corrections under PR #151
+
+- The attestation workflow's old hard-coded `60099ed3...` ancestry check was replaced with checks that load `COMMIT` and `BUILD_COMMIT` from `scripts/parser_runtime_attestation.py` and verify both are present on `main`.
+- The reviewed workflow blob is now `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`, matched by both `scripts/approved_attestation_workflow.json` and the TypeScript registry.
+- The additive migration `20261017180000_r5_8_12_repin_workflow_source_sha.sql` preserves R5.8.11/R5.8.11b migration files and updates the three current attestation/provenance function definitions from the previous workflow blob to the new blob. It is source code only and has **not** been applied to production. The disposable-database CI must prove it before it can be considered ready.
+- Regression tests were added/updated to prevent reintroducing the old workflow ancestry pin and to preserve the historical migration pins while checking the new forward migration.
+
+### Production remediation still requires authorized configuration changes
+
+The latest gate evidence indicates these values are required for a future approved repair:
+
+- Railway worker: `PARSER_REVISION=git:c2e045b0f71a7699c935b65ffe514fe526889de3`; `PARSER_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`, after confirming the deployed image's embedded `build.commit` remains the latter.
+- App runtime: `DEMO_PARSER_EXPECTED_REVISION=git:c2e045b0f71a7699c935b65ffe514fe526889de3`; `DEMO_PARSER_EXPECTED_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`; `DEMO_PARSER_REVISION_REQUIRED=true`; `DEMO_PARSER_BUILD_REVISION_REQUIRED=true`.
+
+These are a repair target derived from the gate's observed payload, not a claim that variables have been changed. The connected Railway tool withheld variable values, and no Lovable action or production change was performed. Before modifying production, preserve the current configuration, confirm authorization and rollback, then re-run the official read-only preflight and reconciler. Do not run a real DEM, attestation delivery, provenance write, Attempt 9 or Canonical while the relevant gates remain blocked.
+
+### Current decision
+
+R5.8.3: `BLOCKED`; R5.8.4: `NOT_PROVEN`; H.3-E: `BLOCKED`. PR #151 remains open and unmerged. Only CI results bound to its final HEAD may be treated as approval evidence. No production deployment, variable change, database migration, ledger/provenance write or Lovable publication is authorized by this addendum.
