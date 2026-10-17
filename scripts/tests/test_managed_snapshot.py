@@ -66,7 +66,7 @@ MANAGED_2026_10_13 = {
 ACTIVE = {
     "deployment_id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
     "service_id": "706fa246-a263-484f-a986-c74516be862b", "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
-    "branch": "main", "semantic_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    "branch": "main", "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
     "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1", "deployment_created_at": "2026-10-16T10:47:07.092Z",
     "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
     "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
