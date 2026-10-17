@@ -702,3 +702,12 @@ The release-governance unit run on the superseded SHA `b77a063e1e7195bc71ebd5ca3
 - Merge: `NOT PERFORMED`; the user's release rule prohibits merging while release prerequisites are blocked.
 - Production migration/configuration/deploy, runtime attestation, real DEM, Attempt 9, Canonical and Lovable publication: `NOT EXECUTED`.
 - Next actions: obtain explicit operational authorization for the app/runtime lock correction and managed-snapshot evidence path; make only the authorized configuration changes after their prerequisites are reviewed; then rerun R5.8.3 on the resulting main SHA, allow R5.8.4 and H.3-E to reconcile that fresh evidence, and only then reconsider merge/release under the repository's policy.
+
+
+## 2026-10-17 — Queue probe artifact completeness correction
+
+Inspection of the successful Queue Semantics artifact on SHA `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf` found that the workflow generated and used the Gate Semantics V2 report, two-user RLS report, and R5.8.10 re-pin report, but did not include those three files in the downloadable `queue-semantics-report` artifact. The annotations contained summary verdicts, but that was insufficient for the requested full audit trail.
+
+Updated `.github/workflows/queue-semantics-probe.yml` to upload `gate-semantics-v2-report.json`, `rls-two-users-report.json`, and `r5-8-10-report.txt` alongside the existing reports. Added `scripts/tests/test_queue_semantics_artifact_manifest.py` to assert every generated report is included in the artifact manifest. This changes evidence preservation only; it does not change acceptance criteria, fixture semantics, runtime behavior, or gate strictness.
+
+The documentation-only HEAD `557c6fd1a11d2ad9d7e24c17ef97b483028b9d71` had fresh Quality Gates and Queue Semantics runs in progress when this auditability gap was identified. Those runs are superseded by this correction and are not treated as final-SHA evidence. The last complete green code run remains SHA `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf`; a new full run is required on the correction commit.
