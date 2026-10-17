@@ -26,7 +26,7 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
         SPEC["branch"], SPEC["deployment_id"], SPEC["deployment_commit"], f"git:{SPEC['semantic_commit']}")
     assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
     assert r5_8_11.targets(SPEC) == {
-        "record_parser_runtime_attestation": "55f067f8ee33b3fb9f95f8ae91a8273c",
+        "record_parser_runtime_attestation": "72df9c518f5573db232a6759301e4360",
         "assert_verified_parser_provenance": "5b3953911fc6fe3c5cbf31da75425942",
         "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1",
     }

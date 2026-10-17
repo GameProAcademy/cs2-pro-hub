@@ -9,10 +9,10 @@ export const PARSER_ATTESTATION_EXPECTED = {
   branch: "main",
   // Semantic revision: first main commit whose worker tree is the served one.
   commit: "c2e045b0f71a7699c935b65ffe514fe526889de3",
-  // Build revision: the commit the served image was built from.
-  buildCommit: "c2e045b0f71a7699c935b65ffe514fe526889de3",
-  deploymentId: "f90c8150-b231-4cbb-ae99-a8096a05133e",
-  deploymentSourceCommit: "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  // Build revision: exact source commit embedded in the active Railway image.
+  buildCommit: "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  deploymentId: "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+  deploymentSourceCommit: "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",

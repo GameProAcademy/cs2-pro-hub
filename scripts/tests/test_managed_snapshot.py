@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts/predem"))
 import managed_snapshot as ms  # noqa: E402
 
-RECORDER = "fe3250af2b461f03f459adf36b43ec21"
+RECORDER = "72df9c518f5573db232a6759301e4360"
 MANAGED_2026_10_13 = {
     # Schema 4 (gate semantics v2): the schema-3 observation of 2026-10-13 plus the v2 fields,
     # all zero then (no registry row, no derived row, no eligible row with lineage).
@@ -76,7 +76,7 @@ ACTIVE = {
         ("settings.py", "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"))},
 }
 NOW = datetime.fromisoformat("2026-10-13T03:30:00+00:00").timestamp()
-ACTIVE_NOW = datetime.fromisoformat("2026-10-16T00:00:00+00:00").timestamp()
+ACTIVE_NOW = datetime.fromisoformat("2026-10-16T12:00:00+00:00").timestamp()
 
 
 def run(snapshot, now=NOW, recorder=RECORDER, runtime=ACTIVE):
@@ -370,7 +370,7 @@ def test_the_snapshot_checks_exactly_the_guards_the_quarantine_migration_install
 
 
 def active_row(**changes):
-    row = {"created_at": "2026-10-15T23:00:00.000000Z", "deployment_id": ACTIVE["deployment_id"],
+    row = {"created_at": "2026-10-16T11:00:00.000000Z", "deployment_id": ACTIVE["deployment_id"],
            "railway_project_id": ACTIVE["project_id"], "railway_service_id": ACTIVE["service_id"],
            "railway_environment_id": ACTIVE["environment_id"], "railway_branch": "main",
            "git_commit": ACTIVE["semantic_commit"], "deployment_source_commit": ACTIVE["build_commit"],
@@ -385,11 +385,11 @@ def active_row(**changes):
 
 
 def with_rows(*rows):
-    # This fixture represents a fresh snapshot after deployment f90c8150 and a
+    # This fixture represents a fresh snapshot after deployment ce9b760d and a
     # verified attestation of that deployment. Its clock is later than both
     # deployment creation and attestation creation.
     snapshot = copy.deepcopy(MANAGED_2026_10_13)
-    snapshot["snapshot_at"] = "2026-10-15T23:30:00Z"
+    snapshot["snapshot_at"] = "2026-10-16T11:30:00Z"
     snapshot["provenance"] = {"verified_rows": 3 + len(rows), "latest": list(rows) + snapshot["provenance"]["latest"]}
     return run(snapshot, now=ACTIVE_NOW)["gates"]
 
@@ -432,7 +432,7 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     sys.path.insert(0, str(ROOT / "scripts/ci"))
     import h3e_activation_gate as gate
     pins = gate.snapshot_pins(ROOT)
-    assert pins["recorder_md5"] == "55f067f8ee33b3fb9f95f8ae91a8273c"
+    assert pins["recorder_md5"] == "72df9c518f5573db232a6759301e4360"
     runtime = pins["runtime"]
     assert runtime["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert (runtime["semantic_commit"], runtime["build_commit"]) == (

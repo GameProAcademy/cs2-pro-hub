@@ -1,4 +1,4 @@
--- Rollback of R5.8.11 (generated). Restores the R5.8.10 target md5 4ee7be9d9d133adbeeafe6e6a5763112 from 55f067f8ee33b3fb9f95f8ae91a8273c
+-- Rollback of R5.8.11 (generated). Restores the R5.8.10 target md5 4ee7be9d9d133adbeeafe6e6a5763112 from 72df9c518f5573db232a6759301e4360
 -- and the R5.8.10 comment; fails closed from any other state. Reads or writes no row: it never
 -- needs or deletes any attestation, so it is allowed on the managed database.
 DO $rollback$
@@ -8,7 +8,7 @@ DECLARE
   _def text;
 BEGIN
   SELECT pg_catalog.md5(p.prosrc) INTO STRICT _md5 FROM pg_catalog.pg_proc p WHERE p.oid = _fn;
-  IF _md5 <> '55f067f8ee33b3fb9f95f8ae91a8273c' THEN
+  IF _md5 <> '72df9c518f5573db232a6759301e4360' THEN
     RAISE EXCEPTION 'R5_8_11_ROLLBACK_UNEXPECTED_DEFINITION: %', _md5 USING ERRCODE = '55000';
   END IF;
   _def := pg_catalog.pg_get_functiondef(_fn);
