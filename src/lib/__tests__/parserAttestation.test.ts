@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEPLOYED_WORKER_BUILD_REVISION } from "@/lib/pipeline/parser/adapter";
 import {
   PARSER_ATTESTATION_EXPECTED,
   PARSER_ATTESTATION_OIDC,
@@ -38,6 +39,9 @@ describe("parser runtime attestation SHA binding", () => {
     expect(PARSER_ATTESTATION_EXPECTED.commit).not.toBe(PARSER_ATTESTATION_EXPECTED.buildCommit);
     expect(PARSER_ATTESTATION_EXPECTED.deploymentSourceCommit).toBe(
       PARSER_ATTESTATION_EXPECTED.buildCommit,
+    );
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(
+      `git:${PARSER_ATTESTATION_EXPECTED.buildCommit}`,
     );
   });
 
