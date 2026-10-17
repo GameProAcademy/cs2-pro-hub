@@ -64,15 +64,15 @@ MANAGED_2026_10_13 = {
 # The active runtime after the R5.8.10 re-pin (deployment 25df86c3).
 # Active R5.8.11 candidate pins. This is not a runtime attestation until /version is confirmed.
 ACTIVE = {
-    "deployment_id": "f90c8150-b231-4cbb-ae99-a8096a05133e", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
+    "deployment_id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
     "service_id": "706fa246-a263-484f-a986-c74516be862b", "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
-    "branch": "main", "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
-    "build_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3", "deployment_created_at": "2026-10-15T22:25:18.073Z",
+    "branch": "main", "semantic_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1", "deployment_created_at": "2026-10-15T22:25:18.073Z",
     "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
     "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
     "critical_hashes": {f"services/cs2-demo-parser/{n}": b for n, b in (
         ("parser.py", "981f6261c7e38334dfab5c93088e9d5ad1f56f6e"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
-        ("worker.py", "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9"), ("raw_evidence.py", "001281eecb02ebc318ff997f734c4081c161d1d9"),
+        ("worker.py", "23a5f8624955181ad9033221cfae00138c7228dc"), ("raw_evidence.py", "001281eecb02ebc318ff997f734c4081c161d1d9"),
         ("settings.py", "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"))},
 }
 NOW = datetime.fromisoformat("2026-10-13T03:30:00+00:00").timestamp()
@@ -432,11 +432,11 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     sys.path.insert(0, str(ROOT / "scripts/ci"))
     import h3e_activation_gate as gate
     pins = gate.snapshot_pins(ROOT)
-    assert pins["recorder_md5"] == "beeb4f8f94a6960ca9e7448344ae379b"
+    assert pins["recorder_md5"] == "55f067f8ee33b3fb9f95f8ae91a8273c"
     runtime = pins["runtime"]
-    assert runtime["deployment_id"] == "f90c8150-b231-4cbb-ae99-a8096a05133e"
+    assert runtime["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert (runtime["semantic_commit"], runtime["build_commit"]) == (
-        "c2e045b0f71a7699c935b65ffe514fe526889de3", "c2e045b0f71a7699c935b65ffe514fe526889de3")
+        "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1", "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1")
     assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
     # The fixture of the active runtime is exactly what the gate will expect.
