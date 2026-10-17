@@ -19,6 +19,8 @@ on:
       - "src/lib/pipeline/**"
       - "src/lib/canonical/**"
       - "src/routes/api/public/**"
+      - "scripts/r5_8_3_release_preflight.py"
+      - "scripts/tests/test_r5_8_3_release_preflight.py"
       - ".github/workflows/queue-semantics-probe.yml"
   workflow_dispatch:
 
