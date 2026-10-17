@@ -30,7 +30,7 @@ import managed_snapshot as ms  # noqa: E402
 from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 
 # The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
-SPEC = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+SPEC = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
 COMMIT = SPEC["build_commit"]
 SEMANTIC = SPEC["semantic_commit"]
 WORKER = SPEC["critical_hashes"]["worker.py"]
@@ -245,6 +245,15 @@ def main() -> int:
                 problems.append(f"after break counted {after - base}, expected {expected}")
             return problems
         scenario(f"lineage_{name}", lineage_body(breaks).replace("__BUNDLE__", f"'{payload}'"), check)
+
+    def check_invalid_workflow_binding(o):
+        value = o.get("attest") or {}
+        return [] if (value.get("ok") is False and value.get("message") == "PARSER_ATTESTATION_BINDING_INVALID"
+                      and value.get("sqlstate") == "55000") else [f"stale workflow binding was not rejected: {value}"]
+
+    scenario("attestation_rejects_stale_workflow_binding",
+             FIXTURES + "INSERT INTO probe_result SELECT 'attest', pg_temp.attest('gsv2-invalid-workflow', "
+             f"'{WORKER}', 'workflow');", check_invalid_workflow_binding)
 
     passed = sum(r["status"] == "PASS" for r in results)
     print(json.dumps({"probe": "GATE_SEMANTICS_V2", "status": "PASS" if passed == len(results) else "FAIL",

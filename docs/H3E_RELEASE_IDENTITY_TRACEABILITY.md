@@ -630,3 +630,16 @@ These are a repair target derived from the gate's observed payload, not a claim 
 ### Current decision
 
 R5.8.3: `BLOCKED`; R5.8.4: `NOT_PROVEN`; H.3-E: `BLOCKED`. PR #151 remains open and unmerged. Only CI results bound to its final HEAD may be treated as approval evidence. No production deployment, variable change, database migration, ledger/provenance write or Lovable publication is authorized by this addendum.
+
+
+## Update 2026-10-17 — R5.8.12 current workflow pin and disposable probe correction
+
+The R5.8.11 candidate spec and migrations remain immutable records of their original reviewed workflow blob `523cee5b0fecc21c7ce2b5f538b42670eec3fed1`. They are not the active source of the current workflow pin after the workflow content changed.
+
+Added `docs/reference/r5_8_12/spec.json` as the current candidate pin set. It carries forward the same independently observed deployment/runtime fields and critical-file hashes from R5.8.11, while advancing only `workflow_source_sha` to the reviewed current blob `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`. H.3-E snapshot pin derivation and the synthetic gate-semantics probe now consume that current spec; R5.8.11 remains unchanged.
+
+The Queue Semantics failure was caused by a stale fixture binding: the shared disposable attestation fixture rendered the historical R5.8.11 workflow blob even after the schema prelude applied R5.8.12, so the current recorder correctly rejected all six otherwise legitimate lineage fixtures with `PARSER_ATTESTATION_BINDING_INVALID` (SQLSTATE `55000`). The fixture now derives its workflow binding from the R5.8.12 spec. A separate negative case deliberately tampers with both workflow identity fields and requires the recorder to reject the payload, preserving fail-closed behavior.
+
+The release-governance failures also exposed a brittle test expecting the literal shell string `git cat-file -e`, although the workflow invokes the same Git operation using a subprocess argument tuple. The test now checks the actual command arguments. The R5.8.10 historical-artifact test no longer treats its old workflow blob as the current pin; the verifier reports that mismatch and continues evaluating independent identity failures instead of returning early. This does not rewrite R5.8.10/R5.8.11 migrations or their historical specs.
+
+Validation remains pending until focused tests, full Queue Semantics Probe (including RLS and reconciliation), Quality Gates and all release gates finish on the new exact HEAD. No managed database, Railway, Lovable, provenance, ledger, or production state was changed.

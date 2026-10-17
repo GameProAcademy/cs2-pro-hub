@@ -5,6 +5,7 @@ read-only on the managed database at 2026-10-13T03:25:01Z (an operator
 observation, not CI evidence). It contains counts and digests only.
 """
 import copy
+import json
 import re
 import sys
 from datetime import datetime
@@ -15,7 +16,11 @@ sys.path.insert(0, str(ROOT / "scripts/predem"))
 import managed_snapshot as ms  # noqa: E402
 
 RECORDER = "fe3250af2b461f03f459adf36b43ec21"
-ACTIVE_RECORDER = "72df9c518f5573db232a6759301e4360"
+sys.path.insert(0, str(ROOT / "scripts/repin"))
+import r5_8_11  # noqa: E402
+
+ACTIVE_SPEC = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
+ACTIVE_RECORDER = r5_8_11.target_md5(ACTIVE_SPEC)
 MANAGED_2026_10_13 = {
     # Schema 4 (gate semantics v2): the schema-3 observation of 2026-10-13 plus the v2 fields,
     # all zero then (no registry row, no derived row, no eligible row with lineage).
@@ -69,7 +74,7 @@ ACTIVE = {
     "service_id": "706fa246-a263-484f-a986-c74516be862b", "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
     "branch": "main", "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
     "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1", "deployment_created_at": "2026-10-16T10:47:07.092Z",
-    "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
+    "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
     "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
     "critical_hashes": {f"services/cs2-demo-parser/{n}": b for n, b in (
         ("parser.py", "981f6261c7e38334dfab5c93088e9d5ad1f56f6e"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
@@ -440,6 +445,9 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
         "c2e045b0f71a7699c935b65ffe514fe526889de3", "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1")
     assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
+    historical = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+    assert historical["workflow_source_sha"] == "523cee5b0fecc21c7ce2b5f538b42670eec3fed1"
+    assert ACTIVE_SPEC["workflow_source_sha"] == runtime["workflow_source_sha"]
     # The fixture of the active runtime is exactly what the gate will expect.
     assert {k: runtime[k] for k in ACTIVE} == ACTIVE
 

@@ -176,6 +176,9 @@ BEGIN
     'nonce', _nonce);
   IF _tamper = 'deployment' THEN
     _payload := jsonb_set(_payload, '{deployment_id}', to_jsonb('3ad4b1fe-9b9e-4fec-b79a-4215d27aab29'::text));
+  ELSIF _tamper = 'workflow' THEN
+    _payload := jsonb_set(_payload, '{workflow_identity,workflow_source_sha}', to_jsonb(repeat('0', 40)));
+    _payload := jsonb_set(_payload, '{attestor_source_identity,workflow_source_sha}', to_jsonb(repeat('0', 40)));
   END IF;
   _canonical := _payload::text;
   _digest := encode(extensions.digest(convert_to(_canonical, 'UTF8'), 'sha256'), 'hex');

@@ -56,8 +56,9 @@ def test_attestation_workflow_uses_distinct_contract_commits_and_matches_reviewe
 
     assert "from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT" in workflow
     assert 'for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):' in workflow
-    assert "git cat-file -e" in workflow
-    assert "git merge-base --is-ancestor" in workflow
+    # The workflow invokes Git through subprocess, so assert actual commands/arguments.
+    assert 'subprocess.check_call(("git", "cat-file", "-e", f"{sha}^{{commit}}"))' in workflow
+    assert 'subprocess.check_call(("git", "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main"))' in workflow
     assert "60099ed3eaf959d888762bf55043255a63a6a766" not in workflow
     assert git_blob_sha1(workflow.encode("utf-8")) == registry["source_sha"]
 

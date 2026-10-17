@@ -707,7 +707,7 @@ def collect_transport(io: Io, env: dict[str, str]) -> dict[str, Any]:
 
 
 def snapshot_pins(root: Path) -> dict[str, Any]:
-    """Candidate runtime pins plus the R5.8.11 recorder target; mismatch stays fail-closed."""
+    """Candidate runtime pins plus the R5.8.12 workflow-repin target; mismatch stays fail-closed."""
     import sys
     for sub in ("", "scripts/repin", "scripts/predem"):
         path = str(root / sub) if sub else str(root)
@@ -716,14 +716,14 @@ def snapshot_pins(root: Path) -> dict[str, Any]:
     import r5_8_11  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
         BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES, PROJECT, SERVICE)
-    spec = json.loads((root / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+    spec = json.loads((root / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
         raise ValueError("SNAPSHOT_PINS_DISAGREE")
-    # This candidate hash differs from the live R5.8.10 database body until
-    # migration R5.8.11 is explicitly applied. This mismatch intentionally
-    # blocks activation; candidate pins are not runtime attestation evidence.
+    # The R5.8.12 target differs from the current managed recorder until the
+    # additive workflow-repin migration is applied. Candidate pins are not
+    # runtime attestation evidence; a live mismatch remains fail-closed.
     return {
         "recorder_md5": r5_8_11.target_md5(spec),
         "runtime": {
