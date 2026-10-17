@@ -1,7 +1,7 @@
 {
   "deployment_id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
   "branch": "main",
-  "semantic_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
   "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
   "deployment_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
   "workflow_source_sha": "523cee5b0fecc21c7ce2b5f538b42670eec3fed1",
