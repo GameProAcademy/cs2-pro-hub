@@ -111,9 +111,11 @@ describe("G.6-R.4-C attestation and release-gate contract", () => {
     expect(workflow).toContain("actions/upload-artifact@");
     expect(workflow).not.toContain("actions/attest-build-provenance@");
     expect(workflow).not.toContain("attestations: write");
+    expect(workflow).toContain("from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT");
     expect(workflow).toContain(
-      "git merge-base --is-ancestor 60099ed3eaf959d888762bf55043255a63a6a766 refs/remotes/origin/main",
+      'for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):',
     );
+    expect(workflow).not.toContain("60099ed3eaf959d888762bf55043255a63a6a766");
     expect(attestor).toContain('statuses.append("BLOCKED_EXTERNAL_PROOF")');
     expect(attestor).toContain("RAILWAY_API_TOKEN");
     expect(attestor).not.toContain("RAILWAY_DEPLOYMENT_EVIDENCE_JSON");
