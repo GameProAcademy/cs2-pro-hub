@@ -204,7 +204,7 @@ def _validate_r5812_migration() -> None:
     migration = "supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"
     before = _r5812_state()
     for _ in range(2):
-\\i {migration}
+        result = _psql(f"\\i {migration}\n")
         if result.returncode != 0:
             raise RuntimeError(f"R5_8_12_IDEMPOTENT_RERUN_FAILED: {(result.stderr + result.stdout)[-900:]}")
     after = _r5812_state()
