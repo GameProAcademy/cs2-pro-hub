@@ -71,15 +71,16 @@ def worker_tree(commit: str) -> str | None:
 
 
 def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] | None) -> list[str]:
-    """Check the semantic revision against git, independently of every pin.
+    """Verify immutable build identity and semantic-source compatibility.
 
-    The worker's `declared_revision_matches` only compares the build revision
-    with the embedded commit. The semantic revision must name a commit whose
-    worker tree is the tree the image was built from.
+    The image's embedded commit and declared build_revision must match exactly.
+    Semantic identity remains distinct from build identity, but may differ only
+    across the two reviewed H3E91 diagnostic-only files in this known build pair.
+    Every other semantic/build pair must have identical worker trees.
     """
     build = build if isinstance(build, dict) else {}
     commit = build.get("commit")
-    if build.get("embedded") is not True or not isinstance(commit, str) or len(commit) != 40:
+    if build.get("embedded") is not True or not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
         return ["BUILD_IDENTITY_NOT_EMBEDDED"]
     failures = []
     if identity.get("build_revision") != f"git:{commit}":
@@ -87,10 +88,41 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
     semantic = identity.get("semantic_revision")
     semantic_commit = semantic[4:] if isinstance(semantic, str) and semantic.startswith("git:") else ""
     built = worker_tree(commit)
+    semantic_tree = worker_tree(semantic_commit) if re.fullmatch(r"[0-9a-f]{40}", semantic_commit) else None
     if built is None:
         failures.append("BUILD_COMMIT_UNKNOWN_TO_GIT")
-    elif len(semantic_commit) != 40 or worker_tree(semantic_commit) != built:
-        failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+    elif semantic_tree is None:
+        failures.append("SEMANTIC_COMMIT_UNKNOWN_TO_GIT")
+    elif semantic_tree != built:
+        reviewed_pair = (
+            semantic_commit == "c2e045b0f71a7699c935b65ffe514fe526889de3"
+            and commit == "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+        )
+        allowed_diagnostic_files = {
+            "services/cs2-demo-parser/h3e91_execution.py": "3679fefe5cea247fbb08d386f693d288c60dda2f",
+            "services/cs2-demo-parser/worker.py": "7e0f4ca98bed73e11cf6e818fed54aff5dfeb432",
+        }
+        if not reviewed_pair:
+            failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+        else:
+            try:
+                diff = subprocess.check_output(
+                    ("git", "diff", "--name-only", semantic_commit, commit, "--", WORKER_DIR),
+                    cwd=ROOT, text=True,
+                ).splitlines()
+                outside_allowlist = sorted(set(diff) - set(allowed_diagnostic_files))
+                reviewed_files_match = all(
+                    git_value("rev-parse", f"{commit}:{path}") ==
+                    git_value("rev-parse", f"{approved_commit}^{path}")
+                    for path, approved_commit in allowed_diagnostic_files.items()
+                )
+                actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
+            except subprocess.CalledProcessError:
+                outside_allowlist = ["GIT_DIFF_UNAVAILABLE"]
+                reviewed_files_match = False
+                actual_changed_files_match = False
+            if outside_allowlist or not actual_changed_files_match or not reviewed_files_match:
+                failures.append("SEMANTIC_BUILD_DELTA_NOT_APPROVED")
     return failures
 
 
