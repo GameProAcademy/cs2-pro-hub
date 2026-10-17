@@ -100,8 +100,10 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
         )
         allowed_diagnostic_files = {
             "services/cs2-demo-parser/h3e91_execution.py": "3679fefe5cea247fbb08d386f693d288c60dda2f",
+            "services/cs2-demo-parser/tests/test_h3e91_execution.py": None,
             "services/cs2-demo-parser/worker.py": "7e0f4ca98bed73e11cf6e818fed54aff5dfeb432",
         }
+        reviewed_test_blob = "3a04d36ac9e2471009bb9c243f32d9319c811b0e"
         if not reviewed_pair:
             failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
         else:
@@ -115,7 +117,12 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
                     git_value("rev-parse", f"{commit}:{path}") ==
                     git_value("rev-parse", f"{approved_commit}:{path}")
                     for path, approved_commit in allowed_diagnostic_files.items()
+                    if approved_commit is not None
                 )
+                observed_test_blob = git_value(
+                    "rev-parse", f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
+                )
+                reviewed_files_match = reviewed_files_match and observed_test_blob == reviewed_test_blob
                 actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
             except subprocess.CalledProcessError:
                 outside_allowlist = ["GIT_DIFF_UNAVAILABLE"]
