@@ -41,4 +41,11 @@ BEGIN
 END;
 $r5812$;
 
+COMMENT ON FUNCTION public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb)
+  IS 'R5.8.12 approved attestation workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485; semantic git:c2e045b0f71a7699c935b65ffe514fe526889de3; build git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1.';
+COMMENT ON FUNCTION public.assert_verified_parser_provenance(uuid)
+  IS 'R5.8.12 approved attestation workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485; semantic git:c2e045b0f71a7699c935b65ffe514fe526889de3; build git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1.';
+COMMENT ON FUNCTION public.enforce_approved_attestation_workflow()
+  IS 'R5.8.12 approved attestation workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485; semantic git:c2e045b0f71a7699c935b65ffe514fe526889de3; build git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1.';
+
 COMMIT;
