@@ -21,6 +21,8 @@ def test_r5_8_12_advances_only_the_current_workflow_pin():
 
 
 def test_r5_8_12_migration_is_forward_only_and_fail_closed():
+    old = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+    current = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
     sql = (ROOT / "supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql").read_text(encoding="utf-8")
     for signature in (
         "public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)",
