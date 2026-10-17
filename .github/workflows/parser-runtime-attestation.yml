@@ -38,7 +38,7 @@ jobs:
           import subprocess
 
           for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):
-              subprocess.check_call(("git", "cat-file", "-e", f"{sha}^{{commit}"))
+              subprocess.check_call(("git", "cat-file", "-e", f"{sha}^{{commit}}"))
               subprocess.check_call(("git", "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main"))
               print(f"{label}_commit_on_main=PASS")
           PY
