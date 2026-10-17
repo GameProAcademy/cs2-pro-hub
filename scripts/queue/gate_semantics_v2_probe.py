@@ -261,10 +261,18 @@ def main() -> int:
     live_hashes = {item["signature"].split("(")[0].split(".")[-1]: item["md5"]
                    for item in live_state.get("functions", [])}
     computed_boundary_targets = {name: live_hashes.get(name) for name in declared_boundary_targets}
+    computed_recorder_target = r5_8_11.target_md5(SPEC)
+    live_recorder_target = live_hashes.get("record_parser_runtime_attestation")
     results.append({
-        "scenario": "r5_8_12_boundary_target_metadata_matches_generator",
-        "status": "PASS" if declared_boundary_targets == computed_boundary_targets else "FAIL",
-        "detail": {"declared": declared_boundary_targets, "computed": computed_boundary_targets},
+        "scenario": "r5_8_12_boundary_target_metadata_matches_database",
+        "status": "PASS" if (declared_boundary_targets == computed_boundary_targets
+                             and live_recorder_target == computed_recorder_target) else "FAIL",
+        "detail": {
+            "declared_boundary": declared_boundary_targets,
+            "computed_boundary_from_pg_proc": computed_boundary_targets,
+            "live_recorder_md5": live_recorder_target,
+            "generated_recorder_target_md5": computed_recorder_target,
+        },
     })
 
     try:
