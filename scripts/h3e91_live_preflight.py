@@ -27,7 +27,7 @@ ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
 DEPLOYMENT = "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
 BRANCH = "main"
 SOURCE_COMMIT = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
-PARSER_REVISION = "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+PARSER_REVISION = "git:c2e045b0f71a7699c935b65ffe514fe526889de3"
 RUNTIME_DOMAINS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 
 
