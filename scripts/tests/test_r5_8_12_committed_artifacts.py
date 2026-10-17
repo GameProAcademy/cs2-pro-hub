@@ -36,11 +36,14 @@ def test_r5_8_12_migration_is_forward_only_and_fail_closed():
     assert "R5_8_12_FUNCTION_PROPERTIES_CHANGED" in sql
     assert "'return_type', pg_catalog.pg_get_function_result(p.oid)" in sql
     assert "'acl', p.proacl::text" in sql
-    assert sql.strip().startswith("BEGIN;") and sql.strip().endswith("COMMIT;")
+    statements = [line.strip() for line in sql.splitlines() if line.strip() and not line.lstrip().startswith("--")]
+    assert statements[0] == "BEGIN;" and statements[-1] == "COMMIT;"
     import sys
     sys.path.insert(0, str(ROOT / "scripts/repin"))
     import r5_8_11  # noqa: PLC0415
     assert r5_8_11.target_md5(current) == "321d649a3defcf3daf61de8b5f6d6ad2"
+    targets = r5_8_11.targets(current)
+    assert current["database_target_md5"] == {name: targets[name] for name in current["database_target_md5"]}
     rollback = (ROOT / "docs/reference/r5_8_12/rollback.sql").read_text(encoding="utf-8")
     assert OLD_SHA in rollback and CURRENT_SHA in rollback
     assert "R5_8_12_ROLLBACK_UNEXPECTED_PIN_STATE" in rollback
