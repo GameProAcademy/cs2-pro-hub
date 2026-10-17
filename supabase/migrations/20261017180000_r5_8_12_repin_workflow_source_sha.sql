@@ -19,8 +19,22 @@ DECLARE
   _old_count integer;
   _new_count integer;
   _expected_count constant integer := 2;
+  _before_properties jsonb;
+  _after_properties jsonb;
 BEGIN
   FOREACH _target IN ARRAY _targets LOOP
+    SELECT pg_catalog.jsonb_build_object(
+      'owner', pg_catalog.pg_get_userbyid(p.proowner), 'security_definer', p.prosecdef,
+      'volatility', p.provolatile, 'strict', p.proisstrict, 'config', p.proconfig::text,
+      'acl', p.proacl::text, 'kind', p.prokind, 'language', l.lanname,
+      'return_type', pg_catalog.pg_get_function_result(p.oid), 'arg_types', p.proargtypes::text,
+      'all_arg_types', p.proallargtypes::text, 'arg_modes', p.proargmodes::text,
+      'arg_names', p.proargnames::text, 'variadic', p.provariadic,
+      'parallel', p.proparallel, 'leakproof', p.proleakproof, 'cost', p.procost,
+      'rows', p.prorows, 'support', p.prosupport)
+      INTO STRICT _before_properties
+      FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_language l ON l.oid = p.prolang
+      WHERE p.oid = _target;
     _definition := pg_catalog.pg_get_functiondef(_target);
     _old_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _old, ''))) / pg_catalog.length(_old);
     _new_count := (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _new, ''))) / pg_catalog.length(_new);
@@ -39,6 +53,22 @@ BEGIN
       RAISE NOTICE 'R5_8_12_REPINNED: % (occurrences=%)', _target, _expected_count;
     ELSE
       RAISE EXCEPTION 'R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE: % old=% new=%', _target, _old_count, _new_count USING ERRCODE = '55000';
+    END IF;
+    SELECT pg_catalog.jsonb_build_object(
+      'owner', pg_catalog.pg_get_userbyid(p.proowner), 'security_definer', p.prosecdef,
+      'volatility', p.provolatile, 'strict', p.proisstrict, 'config', p.proconfig::text,
+      'acl', p.proacl::text, 'kind', p.prokind, 'language', l.lanname,
+      'return_type', pg_catalog.pg_get_function_result(p.oid), 'arg_types', p.proargtypes::text,
+      'all_arg_types', p.proallargtypes::text, 'arg_modes', p.proargmodes::text,
+      'arg_names', p.proargnames::text, 'variadic', p.provariadic,
+      'parallel', p.proparallel, 'leakproof', p.proleakproof, 'cost', p.procost,
+      'rows', p.prorows, 'support', p.prosupport)
+      INTO STRICT _after_properties
+      FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_language l ON l.oid = p.prolang
+      WHERE p.oid = _target;
+    IF _before_properties IS DISTINCT FROM _after_properties THEN
+      RAISE EXCEPTION 'R5_8_12_FUNCTION_PROPERTIES_CHANGED: % before=% after=%', _target,
+        _before_properties, _after_properties USING ERRCODE = '55000';
     END IF;
   END LOOP;
 END;

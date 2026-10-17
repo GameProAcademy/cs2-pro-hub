@@ -33,6 +33,9 @@ def test_r5_8_12_migration_is_forward_only_and_fail_closed():
     assert "R5_8_12_POSTCONDITION_INVALID" in sql
     assert "_expected_count constant integer := 2" in sql
     assert "R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE" in sql
+    assert "R5_8_12_FUNCTION_PROPERTIES_CHANGED" in sql
+    assert "'return_type', pg_catalog.pg_get_function_result(p.oid)" in sql
+    assert "'acl', p.proacl::text" in sql
     assert sql.strip().startswith("BEGIN;") and sql.strip().endswith("COMMIT;")
     import sys
     sys.path.insert(0, str(ROOT / "scripts/repin"))
