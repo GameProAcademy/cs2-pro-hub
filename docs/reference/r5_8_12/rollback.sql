@@ -53,7 +53,10 @@ BEGIN
         AND pg_catalog.pg_get_userbyid(p.proowner) = 'postgres')
      OR NOT pg_catalog.has_function_privilege('service_role', 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure, 'EXECUTE')
      OR pg_catalog.has_function_privilege('anon', 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure, 'EXECUTE')
-     OR pg_catalog.has_function_privilege('authenticated', 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure, 'EXECUTE') THEN
+     OR pg_catalog.has_function_privilege('authenticated', 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure, 'EXECUTE')
+     OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p, pg_catalog.aclexplode(p.proacl) a
+                WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure
+                  AND a.grantee = 0 AND a.privilege_type = 'EXECUTE') THEN
     RAISE EXCEPTION 'R5_8_12_ROLLBACK_RECORDER_PROPERTIES_INVALID' USING ERRCODE = '55000';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid = 'public.assert_verified_parser_provenance(uuid)'::regprocedure
@@ -61,7 +64,10 @@ BEGIN
         AND pg_catalog.pg_get_userbyid(p.proowner) = 'postgres')
      OR NOT pg_catalog.has_function_privilege('service_role', 'public.assert_verified_parser_provenance(uuid)'::regprocedure, 'EXECUTE')
      OR pg_catalog.has_function_privilege('anon', 'public.assert_verified_parser_provenance(uuid)'::regprocedure, 'EXECUTE')
-     OR pg_catalog.has_function_privilege('authenticated', 'public.assert_verified_parser_provenance(uuid)'::regprocedure, 'EXECUTE') THEN
+     OR pg_catalog.has_function_privilege('authenticated', 'public.assert_verified_parser_provenance(uuid)'::regprocedure, 'EXECUTE')
+     OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p, pg_catalog.aclexplode(p.proacl) a
+                WHERE p.oid = 'public.assert_verified_parser_provenance(uuid)'::regprocedure
+                  AND a.grantee = 0 AND a.privilege_type = 'EXECUTE') THEN
     RAISE EXCEPTION 'R5_8_12_ROLLBACK_ASSERT_PROPERTIES_INVALID' USING ERRCODE = '55000';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid = 'public.enforce_approved_attestation_workflow()'::regprocedure
@@ -69,7 +75,10 @@ BEGIN
         AND pg_catalog.pg_get_userbyid(p.proowner) = 'postgres')
      OR pg_catalog.has_function_privilege('service_role', 'public.enforce_approved_attestation_workflow()'::regprocedure, 'EXECUTE')
      OR pg_catalog.has_function_privilege('anon', 'public.enforce_approved_attestation_workflow()'::regprocedure, 'EXECUTE')
-     OR pg_catalog.has_function_privilege('authenticated', 'public.enforce_approved_attestation_workflow()'::regprocedure, 'EXECUTE') THEN
+     OR pg_catalog.has_function_privilege('authenticated', 'public.enforce_approved_attestation_workflow()'::regprocedure, 'EXECUTE')
+     OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p, pg_catalog.aclexplode(p.proacl) a
+                WHERE p.oid = 'public.enforce_approved_attestation_workflow()'::regprocedure
+                  AND a.grantee = 0 AND a.privilege_type = 'EXECUTE') THEN
     RAISE EXCEPTION 'R5_8_12_ROLLBACK_BOUNDARY_PROPERTIES_INVALID' USING ERRCODE = '55000';
   END IF;
 END;

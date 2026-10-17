@@ -34,7 +34,9 @@ def test_r5_8_12_migration_is_forward_only_and_fail_closed():
     assert "_expected_count constant integer := 2" in sql
     assert "R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE" in sql
     assert sql.strip().startswith("BEGIN;") and sql.strip().endswith("COMMIT;")
-    from scripts.repin import r5_8_11
+    import sys
+    sys.path.insert(0, str(ROOT / "scripts/repin"))
+    import r5_8_11  # noqa: PLC0415
     assert r5_8_11.target_md5(current) == "321d649a3defcf3daf61de8b5f6d6ad2"
     rollback = (ROOT / "docs/reference/r5_8_12/rollback.sql").read_text(encoding="utf-8")
     assert OLD_SHA in rollback and CURRENT_SHA in rollback

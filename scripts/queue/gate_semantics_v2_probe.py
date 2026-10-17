@@ -204,7 +204,7 @@ def _validate_r5812_migration() -> None:
     migration = "supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"
     before = _r5812_state()
     for _ in range(2):
-        result = _psql(f"\\i {migration}\\n")
+\\i {migration}
         if result.returncode != 0:
             raise RuntimeError(f"R5_8_12_IDEMPOTENT_RERUN_FAILED: {(result.stderr + result.stdout)[-900:]}")
     after = _r5812_state()
@@ -216,14 +216,14 @@ def _validate_r5812_migration() -> None:
         if mode == "unknown":
             tamper = "_definition := pg_catalog.replace(_definition, _new, repeat('1', 40));"
         else:
-            tamper = "_position := pg_catalog.strpos(_definition, _new); _definition := pg_catalog.overlay(_definition placing _old from _position for pg_catalog.length(_new));"
+            tamper = "_position := pg_catalog.strpos(_definition, _new); _definition := overlay(_definition placing _old from _position for pg_catalog.length(_new));"
         sql = f"""BEGIN;
 DO $tamper$
 DECLARE
   _fn constant regprocedure := 'public.assert_verified_parser_provenance(uuid)'::regprocedure;
   _definition text := pg_catalog.pg_get_functiondef(_fn);
-  _new constant text := '{'f5e8ffb19d03dca410591f8d2fd38dc47a3ca485'}';
-  _old constant text := '{'523cee5b0fecc21c7ce2b5f538b42670eec3fed1'}';
+  _new constant text := 'f5e8ffb19d03dca410591f8d2fd38dc47a3ca485';
+  _old constant text := '523cee5b0fecc21c7ce2b5f538b42670eec3fed1';
   _position integer;
 BEGIN
   IF (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _new, ''))) / pg_catalog.length(_new) <> 2 THEN
