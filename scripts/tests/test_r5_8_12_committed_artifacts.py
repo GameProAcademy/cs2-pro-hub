@@ -42,9 +42,12 @@ def test_r5_8_12_migration_is_forward_only_and_fail_closed():
     sys.path.insert(0, str(ROOT / "scripts/repin"))
     import r5_8_11  # noqa: PLC0415
     assert r5_8_11.target_md5(current) == "321d649a3defcf3daf61de8b5f6d6ad2"
-    # The two boundary bodies were already at the approved current workflow pin;
-    # R5.8.12 therefore preserves their observed MD5s while repinning the recorder.
-    assert current["database_target_md5"] == old["database_target_md5"]
+    assert current["r5_8_11_database_target_md5"] == old["database_target_md5"]
+    assert current["database_target_md5"] == {
+        "assert_verified_parser_provenance": "e62a11f966063440eaacb636c608c33a",
+        "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+    }
+    assert current["database_target_md5"] != old["database_target_md5"]
     rollback = (ROOT / "docs/reference/r5_8_12/rollback.sql").read_text(encoding="utf-8")
     assert OLD_SHA in rollback and CURRENT_SHA in rollback
     assert "R5_8_12_ROLLBACK_UNEXPECTED_PIN_STATE" in rollback
