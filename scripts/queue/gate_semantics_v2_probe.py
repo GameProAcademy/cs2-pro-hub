@@ -16,6 +16,8 @@ Synthetic fixtures only; never evidence about the managed database.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -27,10 +29,11 @@ sys.path.insert(0, str(ROOT / "scripts/predem"))
 
 import attestation_recorder_reconciliation_probe as probe  # noqa: E402
 import managed_snapshot as ms  # noqa: E402
+import r5_8_11  # noqa: E402
 from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 
 # The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
-SPEC = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+SPEC = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text(encoding="utf-8"))
 COMMIT = SPEC["build_commit"]
 SEMANTIC = SPEC["semantic_commit"]
 WORKER = SPEC["critical_hashes"]["worker.py"]
@@ -165,6 +168,81 @@ SELECT match, 'PRE_PROVENANCE_CANONICAL_ROW', 'probe', 'probe', '{}'::jsonb FROM
 }
 
 
+def _psql(sql: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["psql", "-X", "-h", probe.HOST, "-p", probe.PORT, "-U", probe.USER, "-d", probe.DB,
+         "-At", "-v", "ON_ERROR_STOP=1", "-f", "-"],
+        input=sql, capture_output=True, text=True, timeout=120, cwd=ROOT, env=os.environ.copy())
+
+
+R5812_STATE_SQL = r"""
+SELECT jsonb_build_object('functions', (SELECT jsonb_agg(jsonb_build_object(
+  'signature', p.oid::regprocedure::text, 'md5', md5(p.prosrc),
+  'owner', pg_catalog.pg_get_userbyid(p.proowner), 'secdef', p.prosecdef,
+  'volatility', p.provolatile, 'config', p.proconfig,
+  'service_role', pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE'),
+  'anon', pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE'),
+  'authenticated', pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'),
+  'comment', pg_catalog.obj_description(p.oid, 'pg_proc')) ORDER BY p.oid)
+  FROM pg_catalog.pg_proc p WHERE p.oid IN (
+    'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure,
+    'public.assert_verified_parser_provenance(uuid)'::regprocedure,
+    'public.enforce_approved_attestation_workflow()'::regprocedure)))::text;
+"""
+
+
+def _r5812_state() -> dict:
+    result = _psql(R5812_STATE_SQL)
+    if result.returncode != 0:
+        raise RuntimeError(f"R5_8_12_STATE_READ_FAILED: {result.stderr[-500:]}")
+    lines = [line for line in result.stdout.splitlines() if line.startswith("{")]
+    if len(lines) != 1:
+        raise RuntimeError(f"R5_8_12_STATE_REPORT_INVALID: {result.stdout[-500:]}")
+    return json.loads(lines[0])
+
+
+def _validate_r5812_migration() -> None:
+    migration = "supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"
+    before = _r5812_state()
+    for _ in range(2):
+        result = _psql(f"\\i {migration}\n")
+        if result.returncode != 0:
+            raise RuntimeError(f"R5_8_12_IDEMPOTENT_RERUN_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    after = _r5812_state()
+    if after != before:
+        raise RuntimeError("R5_8_12_IDEMPOTENT_RERUN_CHANGED_FUNCTION_STATE")
+
+    for mode, expected in (("unknown", "R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE"),
+                           ("mixed", "R5_8_12_UNEXPECTED_WORKFLOW_PIN_STATE")):
+        if mode == "unknown":
+            tamper = "_definition := pg_catalog.replace(_definition, _new, repeat('1', 40));"
+        else:
+            tamper = "_position := pg_catalog.strpos(_definition, _new); _definition := overlay(_definition placing _old from _position for pg_catalog.length(_new));"
+        sql = f"""BEGIN;
+DO $tamper$
+DECLARE
+  _fn constant regprocedure := 'public.assert_verified_parser_provenance(uuid)'::regprocedure;
+  _definition text := pg_catalog.pg_get_functiondef(_fn);
+  _new constant text := 'f5e8ffb19d03dca410591f8d2fd38dc47a3ca485';
+  _old constant text := '523cee5b0fecc21c7ce2b5f538b42670eec3fed1';
+  _position integer;
+BEGIN
+  IF (pg_catalog.length(_definition) - pg_catalog.length(pg_catalog.replace(_definition, _new, ''))) / pg_catalog.length(_new) <> 2 THEN
+    RAISE EXCEPTION 'TEST_PRECONDITION_R5_8_12_TARGET_COUNT_INVALID';
+  END IF;
+  {tamper}
+  EXECUTE _definition;
+END $tamper$;
+\\i {migration}
+"""
+        result = _psql(sql)
+        combined = result.stdout + result.stderr
+        if result.returncode == 0 or expected not in combined:
+            raise RuntimeError(f"R5_8_12_{mode.upper()}_STATE_NOT_REJECTED: {(combined)[-900:]}")
+        if _r5812_state() != before:
+            raise RuntimeError(f"R5_8_12_{mode.upper()}_STATE_NOT_ROLLED_BACK")
+
+
 def main() -> int:
     probe.refuse_non_local()
     prelude = repinned_prelude(SPEC, keep_current=True)
@@ -175,6 +253,33 @@ def main() -> int:
     from canonical_persistence_probe import bundle  # noqa: PLC0415
     payload = json.dumps(bundle("placeholder")).replace("'", "''")
     results: list[dict] = []
+
+    # Candidate boundary MD5s must be regenerated for R5.8.12, not copied from
+    # the historical R5.8.11 target. Include both values in the report if stale.
+    declared_boundary_targets = SPEC.get("database_target_md5", {})
+    live_state = _r5812_state()
+    live_hashes = {item["signature"].split("(")[0].split(".")[-1]: item["md5"]
+                   for item in live_state.get("functions", [])}
+    computed_boundary_targets = {name: live_hashes.get(name) for name in declared_boundary_targets}
+    computed_recorder_target = r5_8_11.target_md5(SPEC)
+    live_recorder_target = live_hashes.get("record_parser_runtime_attestation")
+    results.append({
+        "scenario": "r5_8_12_boundary_target_metadata_matches_database",
+        "status": "PASS" if (declared_boundary_targets == computed_boundary_targets
+                             and live_recorder_target == computed_recorder_target) else "FAIL",
+        "detail": {
+            "declared_boundary": declared_boundary_targets,
+            "computed_boundary_from_pg_proc": computed_boundary_targets,
+            "live_recorder_md5": live_recorder_target,
+            "generated_recorder_target_md5": computed_recorder_target,
+        },
+    })
+
+    try:
+        _validate_r5812_migration()
+        results.append({"scenario": "r5_8_12_idempotence_and_fail_closed_states", "status": "PASS", "detail": "rerun stable; unknown and mixed pins rejected and transaction rolled back"})
+    except Exception as exc:  # noqa: BLE001 - preserve the failure in the machine-readable report
+        results.append({"scenario": "r5_8_12_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
 
     def scenario(name: str, body: str, check) -> None:
         try:
@@ -245,6 +350,15 @@ def main() -> int:
                 problems.append(f"after break counted {after - base}, expected {expected}")
             return problems
         scenario(f"lineage_{name}", lineage_body(breaks).replace("__BUNDLE__", f"'{payload}'"), check)
+
+    def check_invalid_workflow_binding(o):
+        value = o.get("attest") or {}
+        return [] if (value.get("ok") is False and value.get("message") == "PARSER_ATTESTATION_BINDING_INVALID"
+                      and value.get("sqlstate") == "55000") else [f"stale workflow binding was not rejected: {value}"]
+
+    scenario("attestation_rejects_stale_workflow_binding",
+             FIXTURES + "INSERT INTO probe_result SELECT 'attest', pg_temp.attest('gsv2-invalid-workflow', "
+             f"'{WORKER}', 'workflow');", check_invalid_workflow_binding)
 
     passed = sum(r["status"] == "PASS" for r in results)
     print(json.dumps({"probe": "GATE_SEMANTICS_V2", "status": "PASS" if passed == len(results) else "FAIL",

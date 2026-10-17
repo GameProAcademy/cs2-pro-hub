@@ -1,0 +1,49 @@
+{
+  "deployment_id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+  "branch": "main",
+  "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  "deployment_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "e62a11f966063440eaacb636c608c33a",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "observed": {
+    "observed_at": null,
+    "railway_deployment": {
+      "id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+      "status": "SUCCESS",
+      "commitHash": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-16T10:47:07.092Z"
+    },
+    "version_hosts": {},
+    "managed_start_state": {
+      "read_at": null,
+      "record_parser_runtime_attestation": "4ee7be9d9d133adbeeafe6e6a5763112",
+      "assert_verified_parser_provenance": "57e4196115eb9253fd307e4443fb603c",
+      "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "version_hosts": "PENDING: both public /version endpoints must be observed before release verification",
+      "managed_start_state": "Managed database MD5/prosrc via read-only SELECT"
+    }
+  },
+  "release_status": "CANDIDATE_ONLY_PENDING_RUNTIME_VERSION_OBSERVATION",
+  "supersedes": "docs/reference/r5_8_11/spec.json",
+  "pin_role": "R5.8.12 current workflow-source candidate; runtime remains unverified",
+  "r5_8_11_database_target_md5": {
+    "assert_verified_parser_provenance": "f5e27fc3961d7d4bee50d440862f39cc",
+    "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1"
+  }
+}

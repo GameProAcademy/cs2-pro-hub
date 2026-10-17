@@ -28,14 +28,22 @@ describe("R5.8.7 attestation recorder reconciliation", () => {
     expect(migration).toContain("R5_8_7_RECORDER_POSTCONDITION_INVALID");
   });
 
-  it("substitutes only the worker blob, towards the managed value the app already requires", () => {
+  it("preserves historical R5.8.7 SQL pins and verifies the current app pin separately", () => {
     expect(migration).toContain(`_repository_worker_blob constant text := '${REPOSITORY_BLOB}'`);
     expect(migration).toContain(`_managed_worker_blob constant text := '${MANAGED_BLOB}'`);
-    // R5.8.7 is historical: since R5.8.9 the app pins the worker blob of the served build.
+    // These SQL definitions are historical evidence and intentionally retain
+    // their contemporaneous hashes. Only the current application expectation moves
+    // with the independently verified served build.
+    const currentWorkerHash = "23a5f8624955181ad9033221cfae00138c7228dc";
     expect(appAttestation).toContain(
+      `"services/cs2-demo-parser/worker.py": "${currentWorkerHash}"`,
+    );
+    expect(appAttestation).not.toContain(
       `"services/cs2-demo-parser/worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9"`,
     );
     expect(reference).toContain(`'${MANAGED_BLOB}'`);
+    expect(migration).toContain(`'${REPOSITORY_BLOB}'`);
+    expect(migration).toContain(`'${MANAGED_BLOB}'`);
     expect(reference).not.toContain(REPOSITORY_BLOB);
   });
 

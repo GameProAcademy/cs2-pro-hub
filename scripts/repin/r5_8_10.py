@@ -119,7 +119,7 @@ def comment(spec: dict[str, Any]) -> str:
 
 def verify(spec: dict[str, Any]) -> list[str]:
     problems = r5_8_9.verify(spec)
-    if problems:
+    if any(problem.startswith("MISSING:") for problem in problems):
         return problems
     if spec["deployment_id"] == PREVIOUS_SPEC["deployment_id"]:
         problems.append("DEPLOYMENT_ID_IS_THE_R5_8_9_ONE")
