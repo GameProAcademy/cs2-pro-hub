@@ -87,49 +87,52 @@ def semantic_identity_failures(identity: dict[str, Any], build: dict[str, Any] |
     if identity.get("build_revision") != f"git:{commit}":
         failures.append("BUILD_REVISION_NOT_EMBEDDED_COMMIT")
     semantic = identity.get("semantic_revision")
-    semantic_commit = semantic[4:] if isinstance(semantic, str) and semantic.startswith("git:") else ""
+    semantic_commit = semantic[4:] if isinstance(semantic, str) and re.fullmatch(r"git:[0-9a-f]{40}", semantic) else ""
     built = worker_tree(commit)
-    semantic_tree = worker_tree(semantic_commit) if re.fullmatch(r"[0-9a-f]{40}", semantic_commit) else None
     if built is None:
         failures.append("BUILD_COMMIT_UNKNOWN_TO_GIT")
-    elif semantic_tree is None:
-        failures.append("SEMANTIC_COMMIT_UNKNOWN_TO_GIT")
-    elif semantic_tree != built:
-        reviewed_pair = (
-            semantic_commit == "c2e045b0f71a7699c935b65ffe514fe526889de3"
-            and commit == "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
-        )
-        allowed_diagnostic_files = {
-            "services/cs2-demo-parser/h3e91_execution.py": "3679fefe5cea247fbb08d386f693d288c60dda2f",
-            "services/cs2-demo-parser/tests/test_h3e91_execution.py": None,
-            "services/cs2-demo-parser/worker.py": "7e0f4ca98bed73e11cf6e818fed54aff5dfeb432",
-        }
-        reviewed_test_blob = "3a04d36ac9e2471009bb9c243f32d9319c811b0e"
-        if not reviewed_pair:
-            failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
-        else:
-            try:
-                diff = subprocess.check_output(
-                    ("git", "diff", "--name-only", semantic_commit, commit, "--", WORKER_DIR),
-                    cwd=ROOT, text=True,
-                ).splitlines()
-                outside_allowlist = sorted(set(diff) - set(allowed_diagnostic_files))
-                reviewed_files_match = all(
-                    git_blob_sha(f"{commit}:{path}") == approved_blob
-                    for path, approved_blob in allowed_diagnostic_files.items()
-                    if approved_blob is not None
-                )
-                observed_test_blob = git_blob_sha(
-                    f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
-                )
-                reviewed_files_match = reviewed_files_match and observed_test_blob == reviewed_test_blob
-                actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
-            except subprocess.CalledProcessError:
-                outside_allowlist = ["GIT_DIFF_UNAVAILABLE"]
-                reviewed_files_match = False
-                actual_changed_files_match = False
-            if outside_allowlist or not actual_changed_files_match or not reviewed_files_match:
-                failures.append("SEMANTIC_BUILD_DELTA_NOT_APPROVED")
+    elif not semantic_commit:
+        failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+    else:
+        semantic_tree = worker_tree(semantic_commit)
+        if semantic_tree is None:
+            failures.append("SEMANTIC_COMMIT_UNKNOWN_TO_GIT")
+        elif semantic_tree != built:
+            reviewed_pair = (
+                semantic_commit == "c2e045b0f71a7699c935b65ffe514fe526889de3"
+                and commit == "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+            )
+            allowed_diagnostic_files = {
+                "services/cs2-demo-parser/h3e91_execution.py": "fedd4c572961679adcdb0a4048bdbb995545c9a9",
+                "services/cs2-demo-parser/tests/test_h3e91_execution.py": None,
+                "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+            }
+            reviewed_test_blob = "3a04d36ac9e2471009bb9c243f32d9319c811b0e"
+            if not reviewed_pair:
+                failures.append("SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD")
+            else:
+                try:
+                    diff = subprocess.check_output(
+                        ("git", "diff", "--name-only", semantic_commit, commit, "--", WORKER_DIR),
+                        cwd=ROOT, text=True,
+                    ).splitlines()
+                    outside_allowlist = sorted(set(diff) - set(allowed_diagnostic_files))
+                    reviewed_files_match = all(
+                        git_blob_sha(f"{commit}:{path}") == approved_blob
+                        for path, approved_blob in allowed_diagnostic_files.items()
+                        if approved_blob is not None
+                    )
+                    observed_test_blob = git_blob_sha(
+                        f"{commit}:services/cs2-demo-parser/tests/test_h3e91_execution.py"
+                    )
+                    reviewed_files_match = reviewed_files_match and observed_test_blob == reviewed_test_blob
+                    actual_changed_files_match = set(diff) == set(allowed_diagnostic_files)
+                except subprocess.CalledProcessError:
+                    outside_allowlist = ["GIT_DIFF_UNAVAILABLE"]
+                    reviewed_files_match = False
+                    actual_changed_files_match = False
+                if outside_allowlist or not actual_changed_files_match or not reviewed_files_match:
+                    failures.append("SEMANTIC_BUILD_DELTA_NOT_APPROVED")
     return failures
 
 
