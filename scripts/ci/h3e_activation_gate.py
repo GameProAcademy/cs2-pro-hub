@@ -399,7 +399,8 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     # PARSER_REVISION) with the embedded commit, so once a build revision is set
     # it says nothing about the semantic revision. That one is checked here,
     # against git, independently of what the worker reports about it: it must
-    # name a commit of the target's history whose worker tree is the deployed one.
+    # be an ancestor of the build and either share its worker tree or match the
+    # exact diagnostic-only semantic/build delta already approved by R5.8.3.
     parsers = [((versions[h].get("parser") or {})) for h in HOSTS]
     semantics = {str(p.get("semantic_revision")) for p in parsers}
     declared_builds = {str(p.get("build_revision")) for p in parsers}
@@ -435,6 +436,10 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
         # R5.8.3 already defines one narrowly reviewed semantic/build pair whose
         # only worker-tree changes are sanitized H3E91 diagnostics and their tests.
         # Reuse that exact blob-and-diff allowlist here; never generalize tree drift.
+        import sys
+        root = str(Path(__file__).resolve().parents[2])
+        if root not in sys.path:
+            sys.path.insert(0, root)
         from scripts.r5_8_3_release_preflight import semantic_identity_failures
         compatibility_failures = semantic_identity_failures(
             {"semantic_revision": semantic, "build_revision": declared_build}, build
