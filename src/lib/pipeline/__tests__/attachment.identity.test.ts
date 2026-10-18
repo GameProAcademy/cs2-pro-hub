@@ -181,6 +181,28 @@ describe("attachment resolution", () => {
     });
   });
 
+  it("reports a conflict when the linked Steam ID appears on two demo participants", () => {
+    const duplicated: DemoParticipant[] = [
+      ...players,
+      { participantKey: "5", steamId: "1", nickname: "impostor", team: "B" },
+    ];
+    for (const declaration of [null, { kind: "participant" as const, participantKey: "1" }]) {
+      const out = resolvePlayerAttachment({
+        participants: duplicated,
+        hasProfile: true,
+        profileSteamId: "1",
+        declaration,
+      });
+      expect(out).toMatchObject({
+        state: "conflict",
+        reason: "identity_conflict",
+        participantKey: null,
+        steamId: null,
+        method: null,
+      });
+    }
+  });
+
   it("reports a conflict when the declaration contradicts the confirmed steam id", () => {
     const out = resolvePlayerAttachment({
       participants: players,

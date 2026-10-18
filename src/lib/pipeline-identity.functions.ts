@@ -14,6 +14,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   confidenceScore,
   resolvePlayerAttachment,
+  normalizeNickname,
   type AttachmentOutcome,
   type DemoParticipant,
   type PlayerDeclaration,
@@ -203,8 +204,7 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
             .filter(
               (participant) =>
                 participant.nickname &&
-                participant.nickname.trim().toLocaleLowerCase() ===
-                  data.nickname!.trim().toLocaleLowerCase(),
+                normalizeNickname(participant.nickname) === normalizeNickname(data.nickname!),
             )
             .map((participant) => ({
               participantKey: participant.participantKey,
