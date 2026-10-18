@@ -35,3 +35,28 @@ Living engineering record (one row per defect, updated after every phase). State
 
 ### Restore point before managed migrations (2026-10-18 04:2xZ, read-only)
 `pg_get_functiondef`, comment, owner, `SECURITY DEFINER`, `search_path`, ACL captured for: recorder `4ee7be9d…` (R5.8.10 target), `assert_verified_parser_provenance` `57e41961…`, `enforce_approved_attestation_workflow` `f95e6a50…`, `h3e91_record_execution_event` 18-arg `7c5189db…` (service_role EXECUTE) and legacy 17-arg `7032fe9f…` (postgres only). Each is reproducible byte-for-byte from committed generators/rollbacks (R5.8.10 targets; legacy writer from the pre-`20261012100000` chain), so the rollbacks in `docs/reference/r5_8_1{1,2,3}/` restore every intermediate state. HMAC: `app.settings.parser_attestation_hmac_secret` is not a persistent setting by design — `record_parser_runtime_attestation_with_secret` sets it transaction-locally from the app server secret; proof = a fresh VERIFIED attestation.
+
+## Phase B/F — PR #151 merged (2026-10-18)
+
+- PR #151 head `b6d4e486c65804f78c78ce8314fcdcce8b8a3172`: all 7 checks green on the exact SHA (Quality Gates incl. F553 R11.2 and Main required gates; Queue Semantics run [39097391585](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39097391585): queue 12/12, recovery protocol 22/22, canonical idempotency 17/17, Gate Semantics V2 11/11, recorder reconciliation 21/21, RLS two users 1/1; queue recovery E2E green).
+- Previous head `1b2fc26e` failed `r5_8_12_idempotence_and_fail_closed_states` (run 39097037763): the R5.8.12 migration rewrites function comments, so it is idempotent only in its own state; the probe now rewinds R5.8.13 with its rollback, validates R5.8.12 there and re-applies R5.8.13 requiring the exact head state (commit `b6d4e486`).
+- Merged as `22718d3d60e9a0d262e68971ce90751518f03dab`; no `services/` file in the diff (Railway build skipped by watch pattern; Lovable syncs code only).
+
+## Phase D — managed database migrations applied (2026-10-18)
+
+Each migration ran inside one DO block that aborts unless `md5(text)` equals the committed file, executes it (transaction-control lines removed only where the file has its own `BEGIN;`/`COMMIT;`, exactly one each), then records `schema_migrations` with the full file text — all atomically.
+
+| Version | Result after apply | Stored text md5 = file |
+|---|---|---|
+| `20261016100000` R5.8.11 | recorder `72df9c51…` | `73835949…` ✔ |
+| `20261016100100` R5.8.11b | assert `f5e27fc3…`, enforce `f95e6a50…` | `2591eee6…` ✔ |
+| `20261016140000` overload cleanup | only the 18-arg `h3e91_record_execution_event` (`7c5189db…`, service_role EXECUTE) | `d42e7c7e…` ✔ |
+| `20261017180000` R5.8.12 | recorder `321d649a…`, assert `e62a11f9…`, enforce `f74d8af9…` | `10f08c3a…` ✔ |
+| `20261018050000` R5.8.13 | recorder `d4df5708…`, assert `f070c124…` (owner, SECURITY DEFINER, search_path, ACL unchanged) | `2e49ba96…` ✔ |
+
+Observation: `20261016120000` (applied before this session) has a `schema_migrations` row without stored statements.
+
+## Phase E — post-merge gates on `22718d3d`
+
+- **R5.8.3** run [39098741937](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098741937): `GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT`, failures `[]` — **PASS** (D1 runtime identity coherent and verified by the preflight itself).
+- **R5.8.4** run [39098759506](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098759506): all **32** gates evaluated (artifact selection fixed — D6 **PASS**); 14 VERIFIED; `own_scope_blockers: []`; decision `BLOCKED` with pending external collectors: fresh attestation of the active runtime, managed snapshot, H.3-E activation gate, A9.1 real-DEM lab run. Not a PASS.
