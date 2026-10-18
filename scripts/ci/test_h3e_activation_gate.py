@@ -454,6 +454,13 @@ class Negative(unittest.TestCase):
         world.trees.update({semantic: semantic_tree, build: build_tree, TARGET: build_tree})
         world.ancestors.update({(semantic, build), (semantic, TARGET), (build, TARGET)})
         fake = FakeIo(world)
+        observed = {}
+
+        def approve_only_reviewed_delta(identity, build_info):
+            observed["identity"] = identity
+            observed["build"] = build_info
+            return []
+
         result = gate.evaluate_runtime(
             versions={host: world.version for host in gate.HOSTS},
             healths={host: world.health for host in gate.HOSTS},
@@ -461,10 +468,47 @@ class Negative(unittest.TestCase):
             tree=fake.tree,
             is_ancestor=fake.is_ancestor,
             railway=world.railway,
+            semantic_build_validator=approve_only_reviewed_delta,
         )
         self.assertEqual(result["status"], "PASS", result)
         self.assertEqual(result["semantic_build_delta"], "reviewed_diagnostic_only_delta")
         self.assertIn("exact changed-file allowlist", result["note"])
+        self.assertEqual(observed["identity"], {
+            "semantic_revision": f"git:{semantic}", "build_revision": f"git:{build}"
+        })
+        self.assertEqual(observed["build"]["commit"], build)
+
+    def test_reviewed_semantic_build_pair_rejects_a_failed_delta_validator(self):
+        semantic = "c2e045b0f71a7699c935b65ffe514fe526889de3"
+        build = "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+        world = World()
+        world.version["parser"].update(
+            revision=f"git:{semantic}",
+            semantic_revision=f"git:{semantic}",
+            build_revision=f"git:{build}",
+        )
+        world.version["build"].update(
+            commit=build, embedded=True, source="railway", declared_revision_matches=True
+        )
+        world.railway["commitHash"] = build
+        world.trees.update({
+            semantic: "03bf52061ff18f835e9ce37244123868020f3ab5",
+            build: "bee2315558df73730bc708c0364355792bcae2eb",
+            TARGET: "bee2315558df73730bc708c0364355792bcae2eb",
+        })
+        world.ancestors.update({(semantic, build), (semantic, TARGET), (build, TARGET)})
+        fake = FakeIo(world)
+        result = gate.evaluate_runtime(
+            versions={host: world.version for host in gate.HOSTS},
+            healths={host: world.health for host in gate.HOSTS},
+            target_sha=TARGET,
+            tree=fake.tree,
+            is_ancestor=fake.is_ancestor,
+            railway=world.railway,
+            semantic_build_validator=lambda _identity, _build: ["SEMANTIC_BUILD_DELTA_NOT_APPROVED"],
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["reason"], "SEMANTIC_BUILD_DELTA_NOT_APPROVED")
 
     def test_railway_unverified_blocks(self):
         world = World()

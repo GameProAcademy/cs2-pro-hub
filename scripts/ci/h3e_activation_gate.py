@@ -375,7 +375,9 @@ def evaluate_transport(*, secrets_present: dict[str, bool], endpoint_matches: bo
 
 def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], target_sha: str,
                      tree: Callable[[str], str | None], is_ancestor: Callable[[str, str], bool],
-                     railway: dict[str, Any] | None) -> dict[str, Any]:
+                     railway: dict[str, Any] | None,
+                     semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+                     ) -> dict[str, Any]:
     for host in HOSTS:
         health = healths.get(host)
         if not isinstance(health, dict) or health.get("status") != "ok":
@@ -428,20 +430,17 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     if not is_ancestor(semantic_commit, target_sha):
         return stage(FAIL, reason="SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY", build_commit=commit,
                      observed=semantic)
-    if not is_ancestor(semantic_commit, commit):
-        return stage(FAIL, reason="SEMANTIC_COMMIT_NOT_ANCESTOR_OF_BUILD", build_commit=commit,
-                     observed=semantic)
+    if semantic_commit != commit and not is_ancestor(semantic_commit, commit):
+        return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
+                     observed=semantic, detail="semantic commit is not an ancestor of the build")
     semantic_build_delta = "identical_worker_tree"
     if tree(semantic_commit) != built:
-        # R5.8.3 already defines one narrowly reviewed semantic/build pair whose
-        # only worker-tree changes are sanitized H3E91 diagnostics and their tests.
-        # Reuse that exact blob-and-diff allowlist here; never generalize tree drift.
-        import sys
-        root = str(Path(__file__).resolve().parents[2])
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from scripts.r5_8_3_release_preflight import semantic_identity_failures
-        compatibility_failures = semantic_identity_failures(
+        # The live collector injects R5.8.3's reviewed blob/diff validator. Unit
+        # callers without that validator remain strict and fail closed on drift.
+        if semantic_build_validator is None:
+            return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
+                         observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built)
+        compatibility_failures = semantic_build_validator(
             {"semantic_revision": semantic, "build_revision": declared_build}, build
         )
         if compatibility_failures:
@@ -809,6 +808,16 @@ def collect_managed_snapshot(io: Io, env: dict[str, str]) -> dict[str, Any]:
                              evaluate=managed_snapshot.evaluate)
 
 
+def validate_semantic_build_delta(identity: dict[str, Any], build: dict[str, Any]) -> list[str]:
+    """Reuse R5.8.3's exact reviewed-delta validator in the live H.3-E gate."""
+    import sys
+    root = str(Path(__file__).resolve().parents[2])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+    return semantic_identity_failures(identity, build)
+
+
 def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     versions: dict[str, Any] = {}
     healths: dict[str, Any] = {}
@@ -819,7 +828,8 @@ def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     token = env.get("RAILWAY_API_TOKEN", "")
     railway = io.railway_active(token) if token else None
     result = evaluate_runtime(versions=versions, healths=healths, target_sha=sha, tree=io.tree,
-                              is_ancestor=io.is_ancestor, railway=railway)
+                              is_ancestor=io.is_ancestor, railway=railway,
+                              semantic_build_validator=validate_semantic_build_delta)
     result["observed_build"] = {h: (versions[h] or {}).get("build") for h in HOSTS}
     result["identity"] = identity_record(versions, railway, io.tree, sha)
     return result
