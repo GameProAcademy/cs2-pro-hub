@@ -287,6 +287,30 @@ END $tamper$;
             raise RuntimeError(f"R5_8_13_{mode.upper()}_STATE_NOT_ROLLED_BACK")
 
 
+def _validate_r5812_migration_under_r5813_head() -> None:
+    """R5.8.12 is no longer the chain head: its migration rewrites the function comments,
+    so it is idempotent only in its own state. Rewind R5.8.13 with its committed rollback,
+    validate R5.8.12 there, re-apply R5.8.13 and require the head state back exactly
+    (bodies, properties, grants and comments)."""
+    head = _r5812_state()
+    result = _psql("\\i docs/reference/r5_8_13/rollback.sql\n")
+    if result.returncode != 0:
+        raise RuntimeError(f"R5_8_13_ROLLBACK_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    rewound = {item["signature"].split("(")[0].split(".")[-1]: item["md5"] for item in _r5812_state()["functions"]}
+    expected = {"record_parser_runtime_attestation": SPEC["r5_8_12_recorder_target_md5"],
+                **SPEC["r5_8_12_database_target_md5"]}
+    if rewound != expected:
+        raise RuntimeError(f"R5_8_13_ROLLBACK_NOT_AT_R5_8_12_TARGETS: {rewound} != {expected}")
+    try:
+        _validate_r5812_migration()
+    finally:
+        result = _psql("\\i supabase/migrations/20261018050000_r5_8_13_repin_runtime_deployment.sql\n")
+        if result.returncode != 0:
+            raise RuntimeError(f"R5_8_13_REAPPLY_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    if _r5812_state() != head:
+        raise RuntimeError("R5_8_13_REAPPLY_DID_NOT_RESTORE_HEAD_STATE")
+
+
 def main() -> int:
     probe.refuse_non_local()
     prelude = repinned_prelude(SPEC, keep_current=True)
@@ -326,7 +350,7 @@ def main() -> int:
         results.append({"scenario": "r5_8_13_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
 
     try:
-        _validate_r5812_migration()
+        _validate_r5812_migration_under_r5813_head()
         results.append({"scenario": "r5_8_12_idempotence_and_fail_closed_states", "status": "PASS", "detail": "rerun stable; unknown and mixed pins rejected and transaction rolled back"})
     except Exception as exc:  # noqa: BLE001 - preserve the failure in the machine-readable report
         results.append({"scenario": "r5_8_12_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
