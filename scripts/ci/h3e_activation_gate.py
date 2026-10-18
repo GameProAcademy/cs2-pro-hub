@@ -818,7 +818,9 @@ def validate_semantic_build_delta(identity: dict[str, Any], build: dict[str, Any
     return semantic_identity_failures(identity, build)
 
 
-def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
+def collect_runtime(io: Io, env: dict[str, str], sha: str,
+                    semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+                    ) -> dict[str, Any]:
     versions: dict[str, Any] = {}
     healths: dict[str, Any] = {}
     for host in HOSTS:
@@ -829,7 +831,7 @@ def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     railway = io.railway_active(token) if token else None
     result = evaluate_runtime(versions=versions, healths=healths, target_sha=sha, tree=io.tree,
                               is_ancestor=io.is_ancestor, railway=railway,
-                              semantic_build_validator=validate_semantic_build_delta)
+                              semantic_build_validator=semantic_build_validator)
     result["observed_build"] = {h: (versions[h] or {}).get("build") for h in HOSTS}
     result["identity"] = identity_record(versions, railway, io.tree, sha)
     return result
@@ -865,7 +867,9 @@ def identity_record(versions: dict[str, Any], railway: dict[str, Any] | None,
     }
 
 
-def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | None) -> dict[str, Any]:
+def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | None,
+             semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+             ) -> dict[str, Any]:
     stages: dict[str, dict[str, Any]] = {}
     if not SHA.match(target_sha or ""):
         stages["target"] = stage(FAIL, reason="TARGET_SHA_INVALID")
@@ -884,7 +888,8 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
         stages.update(guarded("prerequisites", lambda: collect_prerequisites(io, target_sha)))
     stages.update(guarded("transport", lambda: {"transport": collect_transport(io, env)}))
     if stages["target"]["status"] == PASS:
-        stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
+        stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(
+            io, env, target_sha, semantic_build_validator=semantic_build_validator)}))
         stages.update(guarded("bridge_identity", lambda: {"bridge_identity": collect_bridge(io)}))
         stages.update(guarded("parser_lock", lambda: {"parser_lock": collect_parser_lock(io)}))
         stages.update(guarded("managed_snapshot", lambda: {
@@ -971,7 +976,8 @@ def main() -> int:
     if env.get("GITHUB_REPOSITORY") != REPOSITORY:
         evidence = run_gate(io, env, target_sha="", main_head=main_head)
     else:
-        evidence = run_gate(io, env, target_sha=target, main_head=main_head)
+        evidence = run_gate(io, env, target_sha=target, main_head=main_head,
+                            semantic_build_validator=validate_semantic_build_delta)
     out = Path(env.get("H3E_EVIDENCE_OUT", "h3e-activation-gate.json"))
     out.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     text = render(evidence)
