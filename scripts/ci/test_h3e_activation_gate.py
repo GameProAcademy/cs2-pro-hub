@@ -141,7 +141,7 @@ class World:
         self.queue_jobs = [{"id": 31, "name": gate.QUEUE_JOBS[0]}, {"id": 32, "name": gate.QUEUE_JOBS[1]}]
         self.queue_annotations = {31: queue_annotations(gate.QUEUE_JOBS[0]), 32: queue_annotations(gate.QUEUE_JOBS[1])}
         self.artifacts = {
-            f"r5-8-3-preflight-{TARGET}-{r583_id}": (r583_id, "r5-8-3-preflight.json", "r583_doc"),
+            f"r5-8-3-preflight-{TARGET}-{r583_id}-attempt-1": (r583_id, "r5-8-3-preflight.json", "r583_doc"),
             f"r5-8-4-gate-reconciliation-{r583_id}-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
         }
         self.digest_override = {}
@@ -548,6 +548,36 @@ class Negative(unittest.TestCase):
         evidence, _ = evaluate(world)
         self.assertDecision(evidence, "BLOCKED", "r5_8_3_artifact", "BLOCKED", "ARTIFACT_NOT_FOUND")
 
+    def test_r583_artifact_name_matches_the_workflow_upload_name(self):
+        workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/r5-8-3-read-only-preflight.yml").read_text()
+        self.assertIn("name: r5-8-3-preflight-${{ github.sha }}-${{ github.run_id }}-attempt-${{ github.run_attempt }}",
+                      workflow)
+        self.assertEqual(gate.r583_artifact_name("abc", 7, 3), "r5-8-3-preflight-abc-7-attempt-3")
+
+    def test_unsuffixed_r583_artifact_name_blocks(self):
+        # The pre-#151 name must never be accepted as evidence (run 39100058543 regression).
+        world = World()
+        r583_id = world.runs["r5_8_3"][0]["id"]
+        world.artifacts[f"r5-8-3-preflight-{TARGET}-{r583_id}"] = world.artifacts.pop(
+            f"r5-8-3-preflight-{TARGET}-{r583_id}-attempt-1")
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "BLOCKED", "r5_8_3_artifact", "BLOCKED", "ARTIFACT_NOT_FOUND")
+
+    def test_r583_artifact_of_an_earlier_attempt_blocks(self):
+        world = World()
+        world.runs["r5_8_3"][0]["run_attempt"] = 2
+        evidence, _ = evaluate(world)
+        self.assertDecision(evidence, "BLOCKED", "r5_8_3_artifact", "BLOCKED", "ARTIFACT_NOT_FOUND")
+
+    def test_r583_artifact_of_the_selected_attempt_passes(self):
+        world = World()
+        r583_id = world.runs["r5_8_3"][0]["id"]
+        world.runs["r5_8_3"][0]["run_attempt"] = 2
+        world.artifacts[f"r5-8-3-preflight-{TARGET}-{r583_id}-attempt-2"] = world.artifacts.pop(
+            f"r5-8-3-preflight-{TARGET}-{r583_id}-attempt-1")
+        evidence, _ = evaluate(world)
+        self.assertEqual(evidence["stages"]["r5_8_3_artifact"]["status"], "PASS")
+
     def test_green_check_with_blocked_decision_fails(self):
         # This is the real state of R5.8.3 on 7e6eb463: the job is green, its decision is BLOCKED.
         world = World()
@@ -765,7 +795,7 @@ class Categories(unittest.TestCase):
         evidence, _ = evaluate(world)
         self.assertEqual(evidence["stages"]["r5_8_3_decision"]["category"], "REJECTED")
         world = World()
-        world.digest_override[f"r5-8-3-preflight-{TARGET}-{world.runs['r5_8_3'][0]['id']}"] = "sha256:" + "0" * 64
+        world.digest_override[f"r5-8-3-preflight-{TARGET}-{world.runs['r5_8_3'][0]['id']}-attempt-1"] = "sha256:" + "0" * 64
         evidence, _ = evaluate(world)
         self.assertEqual(evidence["stages"]["r5_8_3_artifact"]["category"], "EVIDENCE_INVALID")
         world = World()
