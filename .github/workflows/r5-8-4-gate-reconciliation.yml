@@ -79,6 +79,7 @@ jobs:
           with urllib.request.urlopen(jobs_req, timeout=30) as r:
               jobs = json.load(r).get("jobs")
           open(os.path.join(os.environ["RUNNER_TEMP"], "r583-artifact", "jobs.json"), "w").write(json.dumps(jobs, sort_keys=True))
+          open(os.path.join(os.environ["RUNNER_TEMP"], "r583-artifact", "source.json"), "w").write(json.dumps({k: source.get(k) for k in ("run_id", "run_attempt", "head_sha")}, sort_keys=True))
           print(json.dumps({
               "source_run_id": run_id,
               "source_sha": expected_sha,
@@ -89,24 +90,21 @@ jobs:
           PY
           python - <<'PY'
           import json, os, urllib.request
+          from scripts.r5_8_4_gate_reconciliation import select_r5_8_3_artifact
           repo = os.environ["REPOSITORY"]
           run_id = os.environ["SOURCE_RUN_ID"]
           expected_sha = os.environ["SOURCE_SHA"]
+          source = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "r583-artifact", "source.json")))
           req = urllib.request.Request(
               f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100",
               headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
           )
           with urllib.request.urlopen(req, timeout=30) as r:
               data = json.load(r)
-          candidates = [
-              a for a in data.get("artifacts", [])
-              if a.get("name","").startswith("r5-8-3-preflight-")
-              and not a.get("expired", False)
-              and (a.get("workflow_run") or {}).get("head_sha") == expected_sha
-          ]
-          if len(candidates) != 1:
-              raise SystemExit(f"EXPECTED_ONE_R583_ARTIFACT_GOT_{len(candidates)}")
-          artifact = candidates[0]
+          artifact = select_r5_8_3_artifact(
+              data.get("artifacts"), workflow_run_id=run_id,
+              workflow_run_sha=expected_sha, workflow_run_attempt=source.get("run_attempt"),
+          )
           open(os.path.join(os.environ["RUNNER_TEMP"], "r583-artifact", "metadata.json"), "w").write(json.dumps(artifact, sort_keys=True))
           print(json.dumps({
               "artifact_id": artifact["id"],

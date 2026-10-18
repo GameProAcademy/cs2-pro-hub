@@ -11,7 +11,7 @@ export const PARSER_ATTESTATION_EXPECTED = {
   commit: "c2e045b0f71a7699c935b65ffe514fe526889de3",
   // Build revision: exact source commit embedded in the active Railway image.
   buildCommit: "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
-  deploymentId: "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+  deploymentId: "ece1c582-5cba-403d-b25c-a60faaf1aed5",
   deploymentSourceCommit: "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
@@ -46,7 +46,7 @@ export const PARSER_ATTESTATION_MAX_AGE_SECONDS = 300;
 const CRITICAL_HASHES: Record<string, string> = {
   "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
   "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
-  "services/cs2-demo-parser/worker.py": "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+  "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
   "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
   "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 };
@@ -224,6 +224,14 @@ export function validateParserAttestationPayload(payload: Record<string, unknown
   if (!hashes) {
     blockers.push("CRITICAL_HASH_PROOF_INVALID");
   } else {
+    const expectedPaths = Object.keys(CRITICAL_HASHES).sort();
+    const observedPaths = Object.keys(hashes).sort();
+    if (
+      observedPaths.length !== expectedPaths.length ||
+      observedPaths.some((path, index) => path !== expectedPaths[index])
+    ) {
+      blockers.push("CRITICAL_HASH_ALLOWLIST_MISMATCH");
+    }
     for (const [path, expectedHash] of Object.entries(CRITICAL_HASHES)) {
       const evidence = record(hashes[path]);
       if (evidence?.["observed"] !== expectedHash || evidence["match"] !== true) {

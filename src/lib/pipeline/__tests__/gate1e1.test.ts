@@ -132,10 +132,10 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
 });
 
 describe("GATE 1E.1 — revision lock", () => {
-  it("pins the current production semantic and build identity", () => {
-    // R5.8.11 candidate: current expected image identity is c2e045b0; the live /version proof is still pending.
+  it("pins semantic and build identities independently", () => {
     expect(DEPLOYED_WORKER_REVISION).toBe("git:c2e045b0f71a7699c935b65ffe514fe526889de3");
-    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:c2e045b0f71a7699c935b65ffe514fe526889de3");
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1");
+    expect(DEPLOYED_WORKER_REVISION).not.toBe(DEPLOYED_WORKER_BUILD_REVISION);
   });
 
   it("accepts the exact expected build", () => {

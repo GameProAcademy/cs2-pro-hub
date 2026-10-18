@@ -27,13 +27,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify the served runtime commits are on main
-        # R5.8.10: semantic revision and build commit 60099ed3 (Railway
-        # deployment 25df86c3) must be a commit of main.
+      - name: Verify the expected semantic and build commits are on main
+        # Read the reviewed identities from the shared attestation contract.
+        # Semantic revision and image build/source commit are distinct values.
         run: |
+          set -euo pipefail
           git fetch --no-tags origin main:refs/remotes/origin/main
-          git cat-file -e 60099ed3eaf959d888762bf55043255a63a6a766^{commit}
-          git merge-base --is-ancestor 60099ed3eaf959d888762bf55043255a63a6a766 refs/remotes/origin/main
+          python - <<'PY'
+          from scripts.parser_runtime_attestation import BUILD_COMMIT, COMMIT
+          import subprocess
+
+          for label, sha in (("semantic", COMMIT), ("build/source", BUILD_COMMIT)):
+              subprocess.check_call(("git", "cat-file", "-e", f"{sha}^{{commit}}"))
+              subprocess.check_call(("git", "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main"))
+              print(f"{label}_commit_on_main=PASS")
+          PY
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5

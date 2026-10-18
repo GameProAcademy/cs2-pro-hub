@@ -191,7 +191,10 @@ jobs:
             ${{ runner.temp }}/queue-recovery-report.json
             ${{ runner.temp }}/canonical-persistence-report.json
             ${{ runner.temp }}/attestation-recorder-report.json
+            ${{ runner.temp }}/gate-semantics-v2-report.json
+            ${{ runner.temp }}/rls-two-users-report.json
             ${{ runner.temp }}/r5-8-9-report.txt
+            ${{ runner.temp }}/r5-8-10-report.txt
           if-no-files-found: warn
           retention-days: 14
       - name: Tear down disposable services

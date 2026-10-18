@@ -69,12 +69,17 @@ def test_r5_8_10_historical_spec_remains_frozen_and_is_not_the_active_pin_source
     assert SPEC["build_commit"] == "60099ed3eaf959d888762bf55043255a63a6a766"
     assert SPEC["critical_hashes"]["worker.py"] == "ecaac3968d68e1ed8fc03f8dfea42c223869f473"
     active = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text())
-    assert DEPLOYMENT == active["deployment_id"]
-    assert BUILD_COMMIT == active["build_commit"]
+    head = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text())
+    assert DEPLOYMENT == head["deployment_id"] != active["deployment_id"]
+    assert BUILD_COMMIT == active["build_commit"] == head["build_commit"]
     assert active["release_status"] == "CANDIDATE_ONLY_PENDING_RUNTIME_VERSION_OBSERVATION"
     assert active["observed"]["version_hosts"] == {}
     registry = json.loads((ROOT / "scripts/approved_attestation_workflow.json").read_text())
-    assert active["workflow_source_sha"] == registry["source_sha"]
+    current = json.loads((ROOT / "docs/reference/r5_8_12/spec.json").read_text())
+    # R5.8.11's candidate snapshot and SQL remain immutable historical inputs.
+    assert active["workflow_source_sha"] == "523cee5b0fecc21c7ce2b5f538b42670eec3fed1"
+    assert current["workflow_source_sha"] == registry["source_sha"] == "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485"
+    assert current["workflow_source_sha"] != active["workflow_source_sha"]
 
 
 def test_generated_sql_only_rewrites_function_bodies_and_comments():
@@ -93,8 +98,10 @@ def _full_history() -> bool:
 
 
 @pytest.mark.skipif(not _full_history(), reason="needs full history and origin/main")
-def test_spec_passes_the_generator_verification():
-    assert r5_8_10.verify(SPEC) == []
+def test_historical_spec_is_not_misrepresented_as_the_current_workflow_pin():
+    # The old observation stays immutable, but its workflow blob is no longer the
+    # approved current source. It must not pass the current-tree release verifier.
+    assert "WORKFLOW_BLOB_NOT_THE_ONE_IN_THIS_TREE" in r5_8_10.verify(SPEC)
 
 
 @pytest.mark.skipif(not _full_history(), reason="needs full history and origin/main")

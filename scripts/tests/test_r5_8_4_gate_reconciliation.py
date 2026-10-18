@@ -236,3 +236,56 @@ def test_commit_and_branch_of_a_removed_deployment_are_not_evidence():
     for gate in ("railway_deployment_exact", "railway_commit_exact", "railway_branch_exact"):
         assert result["gates"][gate]["status"] == "NOT_PROVEN", gate
     assert result["gates"]["railway_token_configured"]["status"] == "VERIFIED"
+
+
+
+def test_r583_artifact_selection_is_bound_to_exact_run_sha_and_attempt():
+    import pytest
+    from scripts.r5_8_4_gate_reconciliation import select_r5_8_3_artifact
+
+    run_id = 12345
+    sha = "a" * 40
+    def artifact(attempt, *, run=run_id, head=sha, expired=False):
+        return {
+            "id": attempt,
+            "name": f"r5-8-3-preflight-{head}-{run}-attempt-{attempt}",
+            "expired": expired,
+            "workflow_run": {"id": run, "head_sha": head},
+        }
+    old_attempt = artifact(1)
+    current_attempt = artifact(2)
+    selected = select_r5_8_3_artifact(
+        [old_attempt, current_attempt], workflow_run_id=run_id,
+        workflow_run_sha=sha, workflow_run_attempt=2,
+    )
+    assert selected == current_attempt
+
+    for artifacts in (
+        [old_attempt],
+        [current_attempt, dict(current_attempt)],
+        [artifact(2, head="b" * 40)],
+        [artifact(2, run=999)],
+        [artifact(2, expired=True)],
+        None,
+    ):
+        with pytest.raises(ValueError):
+            select_r5_8_3_artifact(
+                artifacts, workflow_run_id=run_id,
+                workflow_run_sha=sha, workflow_run_attempt=2,
+            )
+
+
+def test_r583_artifact_name_contains_the_attempt_and_r584_selects_exactly_one():
+    from pathlib import Path
+    import yaml
+
+    root = Path(__file__).resolve().parents[2]
+    source_workflow = yaml.safe_load((root / ".github/workflows/r5-8-3-read-only-preflight.yml").read_text())
+    source_steps = source_workflow["jobs"]["preflight"]["steps"]
+    upload = next(step for step in source_steps if step.get("name") == "Preserve machine-readable evidence")
+    assert "-attempt-${{ github.run_attempt }}" in upload["with"]["name"]
+
+    reconcile_workflow = (root / ".github/workflows/r5-8-4-gate-reconciliation.yml").read_text()
+    assert "select_r5_8_3_artifact" in reconcile_workflow
+    assert "workflow_run_attempt=source.get(\"run_attempt\")" in reconcile_workflow
+    assert "startswith(\"r5-8-3-preflight-\")" not in reconcile_workflow

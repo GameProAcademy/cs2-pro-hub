@@ -592,3 +592,184 @@ The identity chain needs, in order, operations outside the repository:
 3. applying that migration to the managed database;
 4. a fresh attestation through the approved workflow.
    Each needs its own authorization.
+
+
+## Update 2026-10-17 — semantic/build identity and approved workflow pin
+
+This dated addendum records the current investigation without rewriting earlier release history.
+
+### Current identity contract
+
+- Semantic parser revision: `git:c2e045b0f71a7699c935b65ffe514fe526889de3`.
+- Build/source commit embedded in the reference worker image: `git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- Verified `services/cs2-demo-parser/worker.py` Git blob at that build: `23a5f8624955181ad9033221cfae00138c7228dc`.
+- Semantic identity and build identity are separate contract fields and must not be collapsed.
+
+### Fresh main-branch evidence observed
+
+- R5.8.3 run [39041686075](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075), main SHA `7b88f68c1797f8a81cacb9b00c140a49a52df978`, concluded `failure`. Its read-only evidence reported both public `/version` endpoints serving semantic revision `git:c2e045...` and build revision `git:c2e045...`, while the embedded build/source commit was `eaaa2c8...`. The resulting blockers were `RUNTIME_IDENTITY_MISMATCH` and `BUILD_REVISION_NOT_EMBEDDED_COMMIT`.
+- H.3-E activation gate [39043542007](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39043542007), same main SHA, concluded `failure`. It reported `DECLARED_REVISION_MISMATCH`, `PARSER_LOCK_NOT_REQUIRED`, `PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH`, and `SNAPSHOT_UNUSABLE`. The app-side expected revision and build revision both came from environment and were both pinned to the historical `60099ed3...` value.
+- These are external configuration/runtime blockers. A green code workflow alone cannot clear them. The main-branch R5.8.3/R5.8.4/H.3-E results remain failures until fresh evidence proves otherwise.
+
+### Repository-side corrections under PR #151
+
+- The attestation workflow's old hard-coded `60099ed3...` ancestry check was replaced with checks that load `COMMIT` and `BUILD_COMMIT` from `scripts/parser_runtime_attestation.py` and verify both are present on `main`.
+- The reviewed workflow blob is now `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`, matched by both `scripts/approved_attestation_workflow.json` and the TypeScript registry.
+- The additive migration `20261017180000_r5_8_12_repin_workflow_source_sha.sql` preserves R5.8.11/R5.8.11b migration files and updates the three current attestation/provenance function definitions from the previous workflow blob to the new blob. It is source code only and has **not** been applied to production. The disposable-database CI must prove it before it can be considered ready.
+- Regression tests were added/updated to prevent reintroducing the old workflow ancestry pin and to preserve the historical migration pins while checking the new forward migration.
+
+### Production remediation still requires authorized configuration changes
+
+The latest gate evidence indicates these values are required for a future approved repair:
+
+- Railway worker: `PARSER_REVISION=git:c2e045b0f71a7699c935b65ffe514fe526889de3`; `PARSER_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`, after confirming the deployed image's embedded `build.commit` remains the latter.
+- App runtime: `DEMO_PARSER_EXPECTED_REVISION=git:c2e045b0f71a7699c935b65ffe514fe526889de3`; `DEMO_PARSER_EXPECTED_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`; `DEMO_PARSER_REVISION_REQUIRED=true`; `DEMO_PARSER_BUILD_REVISION_REQUIRED=true`.
+
+These are a repair target derived from the gate's observed payload, not a claim that variables have been changed. The connected Railway tool withheld variable values, and no Lovable action or production change was performed. Before modifying production, preserve the current configuration, confirm authorization and rollback, then re-run the official read-only preflight and reconciler. Do not run a real DEM, attestation delivery, provenance write, Attempt 9 or Canonical while the relevant gates remain blocked.
+
+### Current decision
+
+R5.8.3: `BLOCKED`; R5.8.4: `NOT_PROVEN`; H.3-E: `BLOCKED`. PR #151 remains open and unmerged. Only CI results bound to its final HEAD may be treated as approval evidence. No production deployment, variable change, database migration, ledger/provenance write or Lovable publication is authorized by this addendum.
+
+
+## Update 2026-10-17 — R5.8.12 current workflow pin and disposable probe correction
+
+The R5.8.11 candidate spec and migrations remain immutable records of their original reviewed workflow blob `523cee5b0fecc21c7ce2b5f538b42670eec3fed1`. They are not the active source of the current workflow pin after the workflow content changed.
+
+Added `docs/reference/r5_8_12/spec.json` as the current candidate pin set. It carries forward the same independently observed deployment/runtime fields and critical-file hashes from R5.8.11, while advancing `workflow_source_sha` to the reviewed current blob `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485` and regenerating the two boundary-function MD5 targets for the updated database function bodies. It preserves the independently observed deployment/runtime fields and critical-file hashes; R5.8.11 remains unchanged.
+
+The Queue Semantics failure was caused by a stale fixture binding: the shared disposable attestation fixture rendered the historical R5.8.11 workflow blob even after the schema prelude applied R5.8.12, so the current recorder correctly rejected all six otherwise legitimate lineage fixtures with `PARSER_ATTESTATION_BINDING_INVALID` (SQLSTATE `55000`). The fixture now derives its workflow binding from the R5.8.12 spec. A separate negative case deliberately tampers with both workflow identity fields and requires the recorder to reject the payload, preserving fail-closed behavior.
+
+The release-governance failures also exposed a brittle test expecting the literal shell string `git cat-file -e`, although the workflow invokes the same Git operation using a subprocess argument tuple. The test now checks the actual command arguments. The R5.8.10 historical-artifact test no longer treats its old workflow blob as the current pin; the verifier reports that mismatch and continues evaluating independent identity failures instead of returning early. This does not rewrite R5.8.10/R5.8.11 migrations or their historical specs.
+
+Validation remains pending until focused tests, full Queue Semantics Probe (including RLS and reconciliation), Quality Gates and all release gates finish on the new exact HEAD. No managed database, Railway, Lovable, provenance, ledger, or production state was changed.
+
+
+## Follow-up 2026-10-17 — disposable legacy-probe baseline
+
+Quality Gates, contract-sensitive parser tests, parser tests, web lint/build, the queue-semantics-v2 probe (8/8), and the two-user RLS probe passed on `af28940a6e8774b46bca82d0ad72b164356cc80f`. The complete Queue Semantics job still failed in the historical R5.8.7/R5.8.8 recorder-reconciliation probe: its baseline builder recognized only R5.8.11 and earlier recorder fingerprints, while the newly applied R5.8.12 recorder had MD5 `321d649a3defcf3daf61de8b5f6d6ad2`. It consequently skipped the required rewind and produced downstream baseline failures.
+
+Added a fail-closed R5.8.12 rollback script for disposable/history-replay use. It requires exactly two current-pin occurrences per target function, reverses only those occurrences, restores the exact R5.8.11/R5.8.11b comments, checks the prior recorder/boundary function MD5s and security properties, and rejects mixed or unknown states. The legacy probe now rewinds R5.8.12 before older migrations inside its own transaction; the current gate-semantics probe continues to retain R5.8.12 and separately tests idempotent reapplication plus unknown/mixed-state rejection and transaction rollback. The migration itself now requires exactly two expected occurrences for each of the three functions rather than accepting any positive count.
+
+This fix has not been validated until a fresh CI run completes. The previous run's R5.8.7/R5.8.8 results are failures and are not counted as passing. No managed database changes were made.
+
+The R5.8.12 migration also snapshots and compares each target function's owner, ACL/grants, SECURITY DEFINER flag, volatility, strictness, search-path config, language, return/argument signature, variadic/parallel/leakproof settings, cost/rows and support function before and after the replacement. Any property drift raises `R5_8_12_FUNCTION_PROPERTIES_CHANGED` and rolls the entire migration back.
+
+The latest disposable run produced PASS reports for queue semantics (12/12), queue recovery (22/22), and canonical persistence (17/17). The only failure in the recorder-reconciliation report was an obsolete assertion that the repository reset head should still be the R5.8.11 recorder MD5; the observed current head is the expected R5.8.12 recorder MD5 `321d649a3defcf3daf61de8b5f6d6ad2`. The R5.8.12 rollback ran and the historical scenarios otherwise passed. Updated that baseline assertion to identify R5.8.12 as the reset head; historical R5.8.11 target checks remain in the rollback transition and committed artifact tests.
+
+The Quality Gates run on SHA `6916364e5744f590be2046396f4511bfecb05f7c` failed its R5.8.12 source-level test because the test assumed the migration's first non-whitespace bytes were `BEGIN;`; the migration correctly starts with explanatory SQL comments. The assertion now checks the first and last non-comment SQL statements. The same test now compares the R5.8.12 candidate's boundary-function MD5 metadata against the generator's computed target values; the candidate currently carries the prior R5.8.11 values, so the next focused run will reveal the exact regenerated hashes for correction. The F553 R11.2 engine step in that run was cancelled when a newer commit superseded it; the subsequent missing-evidence errors are a fail-closed consequence of cancellation, not a completed R11.2 execution result. A fresh uninterrupted F553 run is still required.
+
+The first metadata comparison used `r5_8_11.targets(spec)`, but that helper deliberately returns the spec's recorded boundary MD5 values because those hashes must be observed from PostgreSQL, not inferred from Python-generated SQL. Replaced that tautological check with a direct read of `pg_proc.prosrc` MD5s from the reconstructed disposable database. The direct check correctly failed closed: live PostgreSQL reported boundary-function MD5s `e62a11f966063440eaacb636c608c33a` for `assert_verified_parser_provenance` and `f74d8af991b7ec6f33d9aabbef00c4fc` for `enforce_approved_attestation_workflow`, while the candidate spec still carried the historical R5.8.11 values `f5e27fc3961d7d4bee50d440862f39cc` and `f95e6a50fd78a5aef78feb4d0dd7fdd1`. Updated the current R5.8.12 spec with the observed disposable-PostgreSQL values and preserved the historical pair under `r5_8_11_database_target_md5`. The recorder's new target remains `321d649a3defcf3daf61de8b5f6d6ad2`.
+
+The release-governance unit run on the superseded SHA `b77a063e1e7195bc71ebd5ca3a39511401a1383d` found a test-only `NameError`: the migration test referenced the R5.8.12 spec object without loading it in that test's local scope. Added the local spec load; this does not change the migration or runtime behavior. The current SHA must pass a fresh full run before this fix is accepted.
+
+
+## 2026-10-17 — Latest SHA-bound CI and independent release-gate reconciliation
+
+### Repository and CI evidence
+- Branch: `fix/parser-identity-build-hash-20261017`
+- PR: #151, still open and not merged.
+- Validated branch HEAD: `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf`
+- Base/main SHA at inspection: `7b88f68c1797f8a81cacb9b00c140a49a52df978`
+- Quality Gates run `39061687724`: completed `success` at the exact HEAD above; jobs Contract-sensitive parser tests, F553 R11.2 EXECUTION, CS2 parser tests, Web tests/lint/build, and Main required gates all completed `success`.
+- Queue Semantics Probe run `39061687715`: completed `success` at the same HEAD; both Queue semantics on a disposable database and Queue recovery end to end completed `success`.
+- Queue artifact digest: `sha256:a44b84abce02ec46ed3cf71c2fdb34cc91b32b44221a4e542c85f21ecd7af203`.
+- Disposable reports: queue semantics 12/12, recovery protocol 22/22, canonical persistence 17/17, attestation recorder reconciliation 21/21, gate semantics V2 10/10, two-user RLS 1/1. Queue E2E used only a public 60,601,900-byte fixture and explicitly does not claim exactly-once execution.
+- Release governance in Main required gates: 220 passed, 8 subtests passed.
+- F553 Job A's artifact for this PR merge ref reports the mandatory disposable scenarios passing, but `final_ci=NOT_PROVEN` and `final_decision=BLOCKED`; the successful job exit is not itself evidence that the independent final-CI gate is closed. Production writes, Railway authorization, real DEM, and Canonical remain false.
+- No evidence from superseded SHAs is used to claim current CI success.
+
+### Root causes resolved in code / disposable database
+- The previous Queue Semantics failure `PARSER_ATTESTATION_BINDING_INVALID` across lineage cases is no longer reproduced: the current gate semantics V2 probe reports 10/10 PASS, including positive and negative binding validation. The full Queue Semantics Probe and downstream RLS, recorder, and historical pin probes all completed successfully.
+- R5.8.12 disposable-chain checks and release-governance tests pass at the validated HEAD. R5.8.11 and R5.8.11b historical migration files remain unchanged. Current spec records the observed disposable PostgreSQL `pg_proc.prosrc` MD5s; historical boundary hashes are retained separately.
+- The current workflow blob pin is `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`; semantic revision `git:c2e045b0f71a7699c935b65ffe514fe526889de3`, build/source commit `git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`, and worker.py blob `23a5f8624955181ad9033221cfae00138c7228dc` remain distinct roles.
+
+### External read-only evidence — release remains blocked
+- Latest R5.8.3 artifact available on main: run `39041686075`, SHA `7b88f68c1797f8a81cacb9b00c140a49a52df978`, decision `BLOCKED`.
+- Railway project `CS2 Pro Parser Worker`, service `cs2-demo-parser`, environment `production`; active successful deployment `ce9b760d-c92f-4da1-a3e6-dd105d49585c`, source/build commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- Both worker `/health` endpoints returned `{"status":"ok"}` during the R5.8.3 preflight, but both `/version` endpoints declared `build_revision=git:c2e045b0f71a7699c935b65ffe514fe526889de3` while the embedded build commit was `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`. R5.8.3 therefore reported `RUNTIME_IDENTITY_MISMATCH` and `BUILD_REVISION_NOT_EMBEDDED_COMMIT` for both domains. All five pinned critical file hashes matched the preflight's pins.
+- R5.8.3 on main still observed workflow/registry hash `523cee5b0fecc21c7ce2b5f538b42670eec3fed1`; PR #151 advances the repository workflow and registry to the actual current workflow blob hash above. This source pin cannot be treated as fixed in production until the corrected source is merged and the read-only preflight reruns against the new main SHA.
+- R5.8.4 run `39041703830` remains `BLOCKED`; `live_version_exact` is not verified and the 32-gate matrix has further `NOT_PROVEN` gates.
+- H.3-E run `39043542007` remains `FAIL/BLOCKED`: managed snapshot was rejected as `SNAPSHOT_FROM_UNEXPECTED_DATABASE_STATE`; the app parser lock was not required and expected historical semantic/build pins `60099ed3eaf959d888762bf55043255a63a6a766`, mismatching both served runtime pins. Managed-snapshot dependent gates remain `NOT_PROVEN`.
+- Public endpoint access through this chat's web viewer was unavailable; endpoint values above are supported by the actual R5.8.3 GitHub Actions artifact, not inferred from that viewer.
+- Railway variable values are redacted by the Railway connector. No variable values were changed, no deployment was created, and no managed database or Lovable mutation was made.
+
+### Decision
+- Code CI at the validated SHA: `PASS`.
+- R5.8.3: `BLOCKED` on the latest available main evidence.
+- R5.8.4: `BLOCKED / NOT_PROVEN`.
+- H.3-E: `BLOCKED`.
+- Merge: `NOT PERFORMED`; the user's release rule prohibits merging while release prerequisites are blocked.
+- Production migration/configuration/deploy, runtime attestation, real DEM, Attempt 9, Canonical and Lovable publication: `NOT EXECUTED`.
+- Next actions: obtain explicit operational authorization for the app/runtime lock correction and managed-snapshot evidence path; make only the authorized configuration changes after their prerequisites are reviewed; then rerun R5.8.3 on the resulting main SHA, allow R5.8.4 and H.3-E to reconcile that fresh evidence, and only then reconsider merge/release under the repository's policy.
+
+
+## 2026-10-17 — Queue probe artifact completeness correction
+
+Inspection of the successful Queue Semantics artifact on SHA `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf` found that the workflow generated and used the Gate Semantics V2 report, two-user RLS report, and R5.8.10 re-pin report, but did not include those three files in the downloadable `queue-semantics-report` artifact. The annotations contained summary verdicts, but that was insufficient for the requested full audit trail.
+
+Updated `.github/workflows/queue-semantics-probe.yml` to upload `gate-semantics-v2-report.json`, `rls-two-users-report.json`, and `r5-8-10-report.txt` alongside the existing reports. Added `scripts/tests/test_queue_semantics_artifact_manifest.py` to assert every generated report is included in the artifact manifest. This changes evidence preservation only; it does not change acceptance criteria, fixture semantics, runtime behavior, or gate strictness.
+
+The documentation-only HEAD `557c6fd1a11d2ad9d7e24c17ef97b483028b9d71` had fresh Quality Gates and Queue Semantics runs in progress when this auditability gap was identified. Those runs are superseded by this correction and are not treated as final-SHA evidence. The last complete green code run remains SHA `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf`; a new full run is required on the correction commit.
+
+
+## 2026-10-18 — latest exact-SHA CI and R5.8.4 artifact-selection defect
+
+### Branch and CI evidence
+- Branch: `fix/parser-identity-build-hash-20261017`.
+- HEAD at inspection: `9b5fb94642a36b1e85b241ce6c2cd6f0ae59a150`; base `main` remains `7b88f68c1797f8a81cacb9b00c140a49a52df978`. GitHub compare reports 44 commits ahead, 0 behind.
+- Quality Gates run [39081113334](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39081113334): success, five jobs succeeded.
+- Queue Semantics Probe run [39081113359](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39081113359): success, both jobs succeeded.
+- Downloaded Queue Semantics report digest: `sha256:a44b84abce02ec46ed3cf71c2fdb34cc91b32b44221a4e542c85f21ecd7af203`. The artifact records queue semantics 12/12, recovery 22/22, synthetic canonical persistence 17/17, recorder reconciliation 21/21, Gate Semantics V2 10/10, RLS two-user 1/1; the separate queue E2E report records 16/16 PASS. These are disposable/synthetic or public-fixture results, not proof of production identity.
+- The F553 artifact preserves a deliberate distinction: disposable cases pass, but `final_ci=NOT_PROVEN` in Job A's report until independent final-CI evidence is bound. The successful aggregate Quality Gates workflow does not by itself authorize real DEM, Canonical or production writes.
+
+### Newly identified R5.8.4 workflow defect
+- The latest R5.8.4 run [39080566714](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39080566714), source R5.8.3 run [39041686075](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075), failed before the 32-gate reconciler because two artifacts existed for the same R5.8.3 run/SHA after a rerun. The log reports `EXPECTED_ONE_R583_ARTIFACT_GOT_2`; the reconciler and 32-gate matrix were skipped. This is an evidence-selection ambiguity and must not be reported as a verdict on all 32 gates.
+- This change gives each R5.8.3 artifact an explicit `run_attempt` suffix and makes R5.8.4 select exactly one artifact by run ID, SHA and attempt. Historical duplicate artifacts are retained; no artifact is deleted and no acceptance criterion is relaxed.
+- Regression coverage verifies that a later attempt is selected over an older attempt, and that duplicate, missing, expired, wrong-run or wrong-SHA artifacts fail closed.
+
+### Current external gate decision
+- R5.8.3: `BLOCKED`; latest available preflight evidence observed both live /version endpoints declaring semantic and build revisions as `git:c2e045b0f71a7699c935b65ffe514fe526889de3`, which does not match the embedded build commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- R5.8.4: `NOT_PROVEN` for its 32-gate matrix because artifact selection failed before reconciliation. It is not a pass.
+- H.3-E: `BLOCKED`; its latest available evidence reports `PARSER_LOCK_NOT_REQUIRED`, semantic/build lock mismatches against the historical `60099ed3eaf959d888762bf55043255a63a6a766`, and `SNAPSHOT_FROM_UNEXPECTED_DATABASE_STATE`.
+- Railway connector reports deployment `ce9b760d-c92f-4da1-a3e6-dd105d49585c` as SUCCESS for source commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`. Variable values are redacted; no production variable, secret, deployment, database or ledger mutation was made.
+- Direct public endpoint requests from the web viewer were unavailable; runtime values above come from the actual GitHub Actions evidence artifact. No merge, production migration, deploy, real DEM, Attempt 9, Canonical or Lovable publication is authorized by these CI results.
+
+
+## 2026-10-18 — exact-SHA CI pass and fresh read-only external gate recheck
+
+### Candidate branch and code CI
+- PR #151 remains open/unmerged. Branch `fix/parser-identity-build-hash-20261017` HEAD: `afae99b1c0954ee3ad9ec9f29380aa37b1807337`; base `main`: `7b88f68c1797f8a81cacb9b00c140a49a52df978`. Compare: 45 commits ahead, 0 behind.
+- Quality Gates [39091211520](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39091211520): SUCCESS on the exact candidate SHA; all five jobs succeeded, including Web tests/lint/build, CS2 parser tests, contract-sensitive parser tests, F553 R11.2 and Main required gates.
+- Queue Semantics Probe [39091211600](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39091211600): SUCCESS on the same exact SHA; both jobs succeeded. Disposable PostgreSQL schema rebuilt from repository migrations. Queue semantics 12/12, recovery 22/22, canonical persistence idempotency 17/17, Gate Semantics V2 10/10, RLS two-user isolation 1/1, recorder reconciliation 21/21, R5.8.9 disposable pin 7/7, R5.8.10 disposable pin 10/10. Queue E2E report was preserved as a separate artifact.
+- Queue artifact [12122887764](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39091211600/artifacts/12122887764), digest `sha256:8829225807e04646502c4356c11e1d852dbae528d5b15a22ad3aba44b4fb85aa`; queue E2E artifact [12123490998](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39091211600/artifacts/12123490998), digest `sha256:ba18e5503ef63760dbbebf1d4ef60932c7acd48b006c72e2fa6c70300c755e81`.
+- R5.8.12 disposable migration scenarios explicitly passed: live recorder target metadata matched the reconstructed database; repeated application was stable; unknown and mixed workflow pins were rejected; the transaction rolled back; historical R5.8.11/R5.8.11b files were not rewritten. This is disposable-DB evidence only, not authorization to apply the migration to managed production.
+- Candidate workflow blob in the PR is `f5e8ffb19d03dca410591f8d2fd38dc47a3ca485`; candidate registry/spec/tests agree in the branch. The currently deployed main still contains the older workflow/registry pin `523cee5b0fecc21c7ce2b5f538b42670eec3fed1`, which is why the current-main R5.8.3 report continues to describe the old pin. Do not confuse these branch and main states.
+
+### Fresh current-main read-only evidence
+- R5.8.3 run [39041686075](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075), attempt 3, checked main SHA `7b88f68c1797f8a81cacb9b00c140a49a52df978` at `2026-10-18T03:22:35Z`. Artifact [12123234451](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075/artifacts/12123234451), digest `sha256:e09f0b51efefeba0e3e96ba3fbec7564db7d91054dd403a911c07d6e21b3c4b8`.
+- R5.8.3 decision: `BLOCKED`. Both public `/health` endpoints returned `{"status":"ok"}`, but both `/version` endpoints failed identity validation. The embedded image/source commit is `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`; both served `revision` and `build_revision` were `git:c2e045b0f71a7699c935b65ffe514fe526889de3`. The build declaration therefore does not match the embedded commit. The critical hashes all matched, including `worker.py` blob `23a5f8624955181ad9033221cfae00138c7228dc`. Railway API evidence identifies deployment `ce9b760d-c92f-4da1-a3e6-dd105d49585c` as SUCCESS, branch main, source commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`. Railway variable values remain redacted, so the exact bad variable value is not independently observable through the connector.
+- R5.8.4 run [39093401587](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39093401587) failed before the 32-gate matrix. The current-main reconciler reports `EXPECTED_ONE_R583_ARTIFACT_GOT_3` after the three attempts of source run 39041686075. Its source-selection implementation on main has not yet received the candidate branch's attempt-aware fix. This run is a workflow/evidence-selection failure, not a result that all 32 gates passed or that each failed independently.
+- H.3-E run [39043542007](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39043542007), attempt 3, failed at `2026-10-18T03:24:02Z`; artifact [12123401998](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39043542007/artifacts/12123401998), digest `sha256:8641074af89cd5fbdd07e31fc3435b53ec2665f25a40338d10b33fdb00a9238e`. Decision is `FAIL/BLOCKED`: R5.8.3 and R5.8.4 not successful, old R5.8.3 artifact name not found by the main gate, runtime `DECLARED_REVISION_MISMATCH`, parser lock `PARSER_LOCK_NOT_REQUIRED`, and managed snapshot `SNAPSHOT_FROM_UNEXPECTED_DATABASE_STATE`. Predem gates remain blocked, including HMAC configuration, identity validation, live version, OIDC operational status, provenance, retention and uncontaminated data.
+- The runtime values in the R5.8.3 artifact prove a mismatch between declared build revision and embedded source commit; they do not prove which Railway variable currently holds the bad value because the variable API redacts values. The app lock evidence still reports the historical `60099ed3eaf959d888762bf55043255a63a6a766` expected for both semantic/build and says the lock is not required. Treat this as observed app-lock output, not as proof that the same string remains in Railway's current variable store.
+- Direct endpoint access through the web viewer remains unavailable. Runtime observations above come from the authenticated read-only GitHub Actions preflight artifact. No production variable, secret, deployment, managed database, ledger, provenance or retention data was changed. No real demo, Attempt 9, Canonical or Lovable action was performed.
+
+### Decision after this recheck
+- Candidate code CI: `PASS` on `afae99b1c0954ee3ad9ec9f29380aa37b1807337`.
+- R5.8.3: `BLOCKED` on current main runtime identity.
+- R5.8.4: `FAIL / NOT_PROVEN` because current-main artifact selection failed before evaluating all 32 gates; its own `live_version_exact` requirement is also not verified by H.3-E evidence.
+- H.3-E: `FAIL / BLOCKED`.
+- Merge and production: `NOT AUTHORIZED / NOT EXECUTED`. These results do not satisfy the user's no-merge-before-external-gates rule.
+- The next external action required to make progress is an explicitly authorized, reviewed operational correction of the parser's build declaration and the application's enforced semantic/build lock, followed by fresh R5.8.3 evidence, attempt-aware R5.8.4 reconciliation from the corrected workflow, and H.3-E managed-snapshot/provenance proof. This document records the need; it does not authorize those changes.
+
+
+## 2026-10-18 04:13–04:20Z — runtime build declaration corrected; R5.8.13 deployment re-pin
+
+Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, managed database, forward-only migrations).
+
+- **Before (read-only, 04:13Z):** deployment `ce9b760d` SUCCESS; both `/version` hosts served `revision`/`semantic_revision`/`build_revision` = `git:c2e045b0…`, `build.commit` = `eaaa2c8d…`, `declared_revision_matches=false`. Source of `build_revision`: `settings.py` reads `PARSER_BUILD_REVISION` only; `app.py:511-516` compares it with the image's `BUILD_INFO.json`. So the stored `PARSER_BUILD_REVISION` value was the semantic revision.
+- **Change:** `PARSER_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1` set with `skipDeploys`, then a redeploy of deployment `ce9b760d` (same source commit `eaaa2c8d`). `PARSER_REVISION` unchanged (semantic `git:c2e045b0…`). Rollback: set the previous value and redeploy `ce9b760d`.
+- **After (04:17Z):** deployment `ece1c582-5cba-403d-b25c-a60faaf1aed5` SUCCESS (reason `redeploy`, commit `eaaa2c8d`); both hosts: `revision`=`semantic_revision`=`git:c2e045b0…`, `build_revision`=`git:eaaa2c8d…`, `build.commit`=`eaaa2c8d…`, `embedded=true`, `declared_revision_matches=true`; `/health` `ok`. The two identities stay distinct; nothing was equalised.
+- **Consequence:** only the deployment ID changed. R5.8.13 (`20261018050000`, spec/rollback under `docs/reference/r5_8_13/`) re-pins that single value in the recorder (target `d4df5708…`) and the provenance assertion (target `f070c124…`), forward-only from the R5.8.12 targets; R5.8.11/11b stay unchanged.
+- **Managed database (read-only, 04:13Z):** last applied migration `20261016120000`; recorder `4ee7be9d…`, assert `57e41961…`, enforce `f95e6a50…` (the R5.8.10 targets); two `h3e91_record_execution_event` overloads. Pending in order: `20261016100000`, `20261016100100`, `20261016140000`, `20261017180000`, `20261018050000`.
+- **App lock:** the published runtime route reports `revisionRequired=false`, `buildRevisionRequired=false` and env overrides `git:60099ed3…`. Root cause of `PARSER_LOCK_NOT_REQUIRED`: production detected by `NODE_ENV`, absent from the published bundle — fixed in PR #152. The stale overrides are Lovable secrets (owner action).

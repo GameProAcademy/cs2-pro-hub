@@ -19,6 +19,7 @@ reported as NOT_PROVEN with its reason instead of being invented.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Mapping
 
 PRE_DEM, POST_DEM = "PRE_DEM", "POST_DEM"
@@ -28,6 +29,46 @@ R583 = "R5.8.3 preflight artifact"
 ACTIVATION = "H.3-E activation gate"
 FRESH_ATTESTATION = "fresh attestation of the active runtime (external; needs authorization)"
 MANAGED_DB_READ = "authorized read-only snapshot of the managed database (no CI path exists)"
+
+
+def select_r5_8_3_artifact(
+    artifacts: Any, *, workflow_run_id: Any, workflow_run_sha: str, workflow_run_attempt: Any
+) -> dict[str, Any]:
+    """Select exactly the evidence artifact for one immutable workflow-run attempt.
+
+    A rerun keeps the same GitHub run ID and SHA but creates another artifact.
+    The attempt suffix prevents old artifacts from making the selection ambiguous;
+    all identity fields are still checked and ambiguity fails closed.
+    """
+    run_id = str(workflow_run_id).strip()
+    sha = workflow_run_sha
+    try:
+        attempt = int(workflow_run_attempt)
+    except (TypeError, ValueError):
+        attempt = 0
+    if not run_id or not re.fullmatch(r"[0-9a-f]{40}", sha or "") or attempt < 1:
+        raise ValueError("R583_ARTIFACT_SELECTION_BINDING_INVALID")
+    if not isinstance(artifacts, list):
+        raise ValueError("R583_ARTIFACT_LIST_INVALID")
+    expected_name = f"r5-8-3-preflight-{sha}-{run_id}-attempt-{attempt}"
+    candidates = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict) or artifact.get("expired", False):
+            continue
+        workflow_run = artifact.get("workflow_run")
+        if not isinstance(workflow_run, dict):
+            continue
+        if (
+            artifact.get("name") == expected_name
+            and str(workflow_run.get("id", "")) == run_id
+            and workflow_run.get("head_sha") == sha
+        ):
+            candidates.append(artifact)
+    if len(candidates) != 1:
+        raise ValueError(
+            f"EXPECTED_ONE_R583_ARTIFACT_GOT_{len(candidates)}_FOR_ATTEMPT_{attempt}"
+        )
+    return candidates[0]
 A91_LAB = "A9.1 real-DEM laboratory run bound to a pre-DEM approval"
 
 # gate: (phase, collector, criterion, evidence, invalidated by)

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEPLOYED_WORKER_BUILD_REVISION } from "@/lib/pipeline/parser/adapter";
 import {
   PARSER_ATTESTATION_EXPECTED,
   PARSER_ATTESTATION_OIDC,
@@ -28,6 +29,38 @@ function workflowIdentity() {
 }
 
 describe("parser runtime attestation SHA binding", () => {
+  it("keeps semantic revision and build commit as distinct immutable identities", () => {
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("c2e045b0f71a7699c935b65ffe514fe526889de3");
+    expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
+      "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+    );
+    expect(PARSER_ATTESTATION_EXPECTED.commit).not.toBe(PARSER_ATTESTATION_EXPECTED.buildCommit);
+    expect(PARSER_ATTESTATION_EXPECTED.deploymentSourceCommit).toBe(
+      PARSER_ATTESTATION_EXPECTED.buildCommit,
+    );
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe(`git:${PARSER_ATTESTATION_EXPECTED.buildCommit}`);
+  });
+
+  it("documents the exact critical-file allowlist and verified worker blob hash", () => {
+    const hashes = {
+      "services/cs2-demo-parser/parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+      "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+      "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+      "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+      "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
+    };
+    expect(Object.keys(hashes).sort()).toEqual([
+      "services/cs2-demo-parser/adapter.py",
+      "services/cs2-demo-parser/parser.py",
+      "services/cs2-demo-parser/raw_evidence.py",
+      "services/cs2-demo-parser/settings.py",
+      "services/cs2-demo-parser/worker.py",
+    ]);
+    expect(hashes["services/cs2-demo-parser/worker.py"]).toBe(
+      "23a5f8624955181ad9033221cfae00138c7228dc",
+    );
+  });
+
   it("accepts distinct trigger and workflow-file commits when both are bound correctly", () => {
     const now = Math.floor(Date.now() / 1000);
     const claims = {
@@ -94,7 +127,7 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {
-        observed: "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+        observed: "23a5f8624955181ad9033221cfae00138c7228dc",
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
@@ -181,5 +214,33 @@ describe("parser runtime attestation SHA binding", () => {
     };
 
     expect(validateParserAttestationPayload(payload)).toEqual([]);
+
+    const wrongWorkerHash = {
+      ...payload,
+      critical_file_hashes: {
+        ...hashes,
+        "services/cs2-demo-parser/worker.py": {
+          observed: "ab5fba0c8c2d9e17db9c04df7c2050416d2216f9",
+          match: true,
+        },
+      },
+    };
+    expect(validateParserAttestationPayload(wrongWorkerHash)).toContain(
+      "CRITICAL_HASH_MISMATCH:services/cs2-demo-parser/worker.py",
+    );
+
+    const extraHash = {
+      ...payload,
+      critical_file_hashes: {
+        ...hashes,
+        "services/cs2-demo-parser/unapproved.py": {
+          observed: "3333333333333333333333333333333333333333",
+          match: true,
+        },
+      },
+    };
+    expect(validateParserAttestationPayload(extraHash)).toContain(
+      "CRITICAL_HASH_ALLOWLIST_MISMATCH",
+    );
   });
 });
