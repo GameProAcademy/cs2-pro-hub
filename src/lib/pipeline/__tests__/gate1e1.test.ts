@@ -227,11 +227,26 @@ describe("GATE 1E.1 — revision lock", () => {
     vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "");
     vi.stubEnv("NODE_ENV", "production");
     expect(isParserRevisionRequired()).toBe(true);
+    // Fail closed: production ignores an explicit "false".
     vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "false");
-    expect(isParserRevisionRequired()).toBe(false);
+    expect(isParserRevisionRequired()).toBe(true);
     vi.stubEnv("NODE_ENV", "test");
+    expect(isParserRevisionRequired()).toBe(false);
     vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "true");
     expect(isParserRevisionRequired()).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
+  it("locks the revision and the build when the runtime carries no NODE_ENV (published bundle)", () => {
+    vi.stubEnv("NODE_ENV", "");
+    vi.stubEnv("DEMO_PARSER_REVISION_REQUIRED", "false");
+    vi.stubEnv("DEMO_PARSER_BUILD_REVISION_REQUIRED", "false");
+    vi.stubEnv("DEMO_PARSER_EXPECTED_BUILD_REVISION", "");
+    expect(isParserRevisionRequired()).toBe(true);
+    const contract = expectedParserContract();
+    expect(contract.revisionRequired).toBe(true);
+    expect(contract.buildRevisionRequired).toBe(true);
+    expect(contract.buildRevision).toBe(DEPLOYED_WORKER_BUILD_REVISION);
     vi.unstubAllEnvs();
   });
 
