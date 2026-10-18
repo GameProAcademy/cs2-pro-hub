@@ -79,3 +79,25 @@ Observation: `20261016120000` (applied before this session) has a `schema_migrat
 - **Regression tests:** unsuffixed name → BLOCKED; earlier attempt → BLOCKED; selected attempt → PASS; name mirrors the workflow YAML. Against the old code: 11 failures + 1 error; new code 60/60.
 - **Production impact:** none (CI evaluator only). **Rollback:** revert the merge commit.
 - **Status:** `NOT_PROVEN` until #153 is merged and a new H.3-E run shows `r5_8_3_artifact` PASS.
+
+## Phase F — PR #152 merged and app published (2026-10-18)
+
+- PR #152 head `43c1a8c3`: 7/7 checks green on the exact SHA (Main required gates, F553 R11.2, CS2 parser, contract-sensitive parser, web, queue semantics, queue recovery E2E); 0 files under `services/` (no Railway build). Merged as `f767c397e5105fafcaab346be8714169324cc2b8` (merge commit).
+- Lovable synced `latest_commit_sha = f767c397…`; published via `deploy_project` (deployment `c8c51428-e137-4b79-b6ee-81659ca338b5`). No prompt sent to Lovable.
+- **Expected effect, fail-closed:** the published bundle now always requires the parser revision/build lock in production. While the app secrets `DEMO_PARSER_EXPECTED_REVISION` / `DEMO_PARSER_EXPECTED_BUILD_REVISION` still hold `git:60099ed3…` (D5), the app expects a parser identity the worker does not report, so demo processing stays blocked until the owner sets `git:c2e045b0…` / `git:eaaa2c8d…`. No demo is authorized before the gates anyway.
+- D3 status: `NOT_PROVEN` until the runtime route `/api/public/parser-attestation-runtime` shows `revisionRequired=true`, `buildRevisionRequired=true` (read by the H.3-E gate `parser_lock` stage).
+
+### D11 — duplicate Steam ID in one demo attached silently (PR #154, `536d1e15`)
+- **Symptom (code review against the identity contract):** `resolvePlayerAttachment` used `find()`; a demo with the user's SteamID64 on two participants attached the first one.
+- **Fix:** returns `state=conflict`, `reason=identity_conflict` (already allowed by `demo_jobs_attachment_reason_check`; no migration), no participant/Steam/method, whatever the declaration. The ambiguous-nickname candidate list uses the resolver's `normalizeNickname()`.
+- **Regression:** new test (with and without declaration); 25/25; `tsc` clean. **Rollback:** revert. **Status:** `NOT_PROVEN` until merged.
+
+### Identity contract — mapping to code (read 2026-10-18)
+| Contract state | Code (`src/lib/pipeline/attachment.ts`) | Personal metrics |
+|---|---|---|
+| EXACT | `attached` · `steam_id_confirmed` · `high` (Steam ID proven on profile, present once in demo) | yes, after user confirmation flow (`pending_confirmation`) |
+| PROBABLE / POSSIBLE | not emitted automatically — a nickname alone never attaches; a unique exact normalized nickname **explicitly declared by the user** attaches as `manual_user_selection` · `medium` | yes (manual, audited via `demo_identity_decisions` with `expected_latest_event_key`) |
+| NO_MATCH | `unattached` (`no_steam_id_on_profile`, `steam_id_not_in_demo`, `self_declared_nickname_not_found`, `user_not_selected`) | no |
+| AMBIGUOUS | `unattached` · `ambiguous_nickname` (candidates returned for explicit selection) | no |
+| CONFLICT | `conflict` · `identity_conflict` (declaration contradicts Steam; Steam ID duplicated — D11) | no |
+No fuzzy distance, no inference from kills/score/behaviour. Live proof of each state in production: `NOT_PROVEN` (Phase G).
