@@ -120,3 +120,10 @@ It was triggered by the completion of the **cancelled** Quality Gates run of `22
 - **managed_snapshot:** only `attempt_9_absent` (D9).
 - **r5_8_3_artifact:** BLOCKED — D10, fixed in PR #153 (not merged yet).
 - **quality_gates / f553_post_completion / main_required_gates:** evaluated while Quality Gates 39100378766 was still running (trigger artefact noted above).
+
+## Phase E — D10 closed; H.3-E down to D5 + D9
+
+- H.3-E run 39101741510 (`f767c397`, after its Quality Gates 39100378766 = success): quality_gates, f553_post_completion, main_required_gates, r5_8_3, r5_8_4, queue_semantics, r5_8_4_artifact/decision, persistence, transport, runtime, bridge_identity = **PASS**; predem **27/28 VERIFIED** — sole blocker `attempt_9_absent` (D9); `remote_ci` now VERIFIED.
+- PR #153 (D10) head `83cdfec5`: 5/5 checks green on the exact SHA; only `scripts/ci/` changed; merged as `6a3faf1b60601737110e2d97bf56fbccbc113f69`.
+- H.3-E run [39103073331](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39103073331) on `6a3faf1b`: `r5_8_3_artifact=PASS`, `r5_8_3_decision=PASS` → **D10 PASS** (proven in production CI). Quality Gates of `6a3faf1b` was still running at that evaluation.
+- Remaining FAIL/BLOCKED: `parser_lock` (D5 — owner secrets), `managed_snapshot` + `predem_matrix` (D9 — owner decision).
