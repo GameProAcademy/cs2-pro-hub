@@ -183,9 +183,14 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
   } = input;
   if (!hasProfile) return unattached("no_player_profile");
 
-  const steamParticipant = profileSteamId
-    ? (participants.find((participant) => participant.steamId === profileSteamId) ?? null)
-    : null;
+  const steamMatches = profileSteamId
+    ? participants.filter((participant) => participant.steamId === profileSteamId)
+    : [];
+  // One Steam ID on two demo participants is contradictory evidence about the
+  // demo itself: picking "the first" would attach metrics arbitrarily. It is a
+  // CONFLICT, never resolved automatically and never overridden by a declaration.
+  if (steamMatches.length > 1) return { ...unattached("identity_conflict"), state: "conflict" };
+  const steamParticipant = steamMatches[0] ?? null;
 
   if (profileSteamId && steamParticipant) {
     if (automaticMatchRejected) {
