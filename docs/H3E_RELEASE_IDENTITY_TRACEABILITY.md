@@ -711,3 +711,26 @@ Inspection of the successful Queue Semantics artifact on SHA `a31ac314d9ef35a210
 Updated `.github/workflows/queue-semantics-probe.yml` to upload `gate-semantics-v2-report.json`, `rls-two-users-report.json`, and `r5-8-10-report.txt` alongside the existing reports. Added `scripts/tests/test_queue_semantics_artifact_manifest.py` to assert every generated report is included in the artifact manifest. This changes evidence preservation only; it does not change acceptance criteria, fixture semantics, runtime behavior, or gate strictness.
 
 The documentation-only HEAD `557c6fd1a11d2ad9d7e24c17ef97b483028b9d71` had fresh Quality Gates and Queue Semantics runs in progress when this auditability gap was identified. Those runs are superseded by this correction and are not treated as final-SHA evidence. The last complete green code run remains SHA `a31ac314d9ef35a210dcdd7c6fcda1d2887c55bf`; a new full run is required on the correction commit.
+
+
+## 2026-10-18 — latest exact-SHA CI and R5.8.4 artifact-selection defect
+
+### Branch and CI evidence
+- Branch: `fix/parser-identity-build-hash-20261017`.
+- HEAD at inspection: `9b5fb94642a36b1e85b241ce6c2cd6f0ae59a150`; base `main` remains `7b88f68c1797f8a81cacb9b00c140a49a52df978`. GitHub compare reports 44 commits ahead, 0 behind.
+- Quality Gates run [39081113334](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39081113334): success, five jobs succeeded.
+- Queue Semantics Probe run [39081113359](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39081113359): success, both jobs succeeded.
+- Downloaded Queue Semantics report digest: `sha256:a44b84abce02ec46ed3cf71c2fdb34cc91b32b44221a4e542c85f21ecd7af203`. The artifact records queue semantics 12/12, recovery 22/22, synthetic canonical persistence 17/17, recorder reconciliation 21/21, Gate Semantics V2 10/10, RLS two-user 1/1; the separate queue E2E report records 16/16 PASS. These are disposable/synthetic or public-fixture results, not proof of production identity.
+- The F553 artifact preserves a deliberate distinction: disposable cases pass, but `final_ci=NOT_PROVEN` in Job A's report until independent final-CI evidence is bound. The successful aggregate Quality Gates workflow does not by itself authorize real DEM, Canonical or production writes.
+
+### Newly identified R5.8.4 workflow defect
+- The latest R5.8.4 run [39080566714](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39080566714), source R5.8.3 run [39041686075](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39041686075), failed before the 32-gate reconciler because two artifacts existed for the same R5.8.3 run/SHA after a rerun. The log reports `EXPECTED_ONE_R583_ARTIFACT_GOT_2`; the reconciler and 32-gate matrix were skipped. This is an evidence-selection ambiguity and must not be reported as a verdict on all 32 gates.
+- This change gives each R5.8.3 artifact an explicit `run_attempt` suffix and makes R5.8.4 select exactly one artifact by run ID, SHA and attempt. Historical duplicate artifacts are retained; no artifact is deleted and no acceptance criterion is relaxed.
+- Regression coverage verifies that a later attempt is selected over an older attempt, and that duplicate, missing, expired, wrong-run or wrong-SHA artifacts fail closed.
+
+### Current external gate decision
+- R5.8.3: `BLOCKED`; latest available preflight evidence observed both live /version endpoints declaring semantic and build revisions as `git:c2e045b0f71a7699c935b65ffe514fe526889de3`, which does not match the embedded build commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`.
+- R5.8.4: `NOT_PROVEN` for its 32-gate matrix because artifact selection failed before reconciliation. It is not a pass.
+- H.3-E: `BLOCKED`; its latest available evidence reports `PARSER_LOCK_NOT_REQUIRED`, semantic/build lock mismatches against the historical `60099ed3eaf959d888762bf55043255a63a6a766`, and `SNAPSHOT_FROM_UNEXPECTED_DATABASE_STATE`.
+- Railway connector reports deployment `ce9b760d-c92f-4da1-a3e6-dd105d49585c` as SUCCESS for source commit `eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1`. Variable values are redacted; no production variable, secret, deployment, database or ledger mutation was made.
+- Direct public endpoint requests from the web viewer were unavailable; runtime values above come from the actual GitHub Actions evidence artifact. No merge, production migration, deploy, real DEM, Attempt 9, Canonical or Lovable publication is authorized by these CI results.
