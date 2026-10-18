@@ -133,3 +133,15 @@ It was triggered by the completion of the **cancelled** Quality Gates run of `22
 - PR #154 head `536d1e15`: 7/7 checks green on the exact SHA; files only `src/lib/pipeline/attachment.ts`, `src/lib/pipeline-identity.functions.ts`, test. Merged as `39b8317e14448e9817685713f5a9972307c96670`.
 - main `39b8317e`: Quality Gates 39103547284 success, Queue Semantics 39103547355 success, R5.8.3 39103547302 success, R5.8.4 39103564096 success. (F553 39103566515 and H.3-E 39103580294 were fired by the cancelled Quality Gates of `6a3faf1b`, same trigger artefact as before.)
 - Lovable synced `39b8317e`; published (deployment `b42dae33-ef12-41c2-bd2c-ad4ebd4627aa`). D11 code-level PASS (unit test in CI); production behaviour `NOT_PROVEN` until a real demo exercises it (Phase G).
+
+## Phase E — H.3-E on `39b8317e` (run [39105116041](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39105116041)) — FAIL, only owner-dependent stages left
+
+PASS (15/18): target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue_semantics, main_required_gates, r5_8_3_artifact, r5_8_3_decision, r5_8_4_artifact, r5_8_4_decision, persistence, transport, runtime, bridge_identity.
+
+| Stage | Result | Cause | Owner |
+|---|---|---|---|
+| parser_lock | FAIL `PARSER_LOCK_REVISION_MISMATCH`/`BUILD_MISMATCH` | app env expects `git:60099ed3…`; both hosts serve `c2e045b0…`/`eaaa2c8d…` (D5) | set Lovable secrets |
+| managed_snapshot | FAIL `attempt_9_absent` | D9 | decision on `2dc1ddd1` attempt 11 |
+| predem_matrix | BLOCKED, 27/28 VERIFIED, blocker `attempt_9_absent` | D9 | same |
+
+Phase G (real E2E, Canonical) remains **not started** by design: blocked by these gates.
