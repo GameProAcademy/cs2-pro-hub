@@ -1,0 +1,102 @@
+{
+  "deployment_id": "ece1c582-5cba-403d-b25c-a60faaf1aed5",
+  "branch": "main",
+  "semantic_commit": "c2e045b0f71a7699c935b65ffe514fe526889de3",
+  "build_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  "deployment_commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "981f6261c7e38334dfab5c93088e9d5ad1f56f6e",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "f070c124846814420c72c34471c84624",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "d4df57084c1b0b90aef266b5b52452c5",
+  "observed": {
+    "observed_at": "2026-10-18T04:17:30Z",
+    "railway_deployment": {
+      "id": "ece1c582-5cba-403d-b25c-a60faaf1aed5",
+      "status": "SUCCESS",
+      "commitHash": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+      "branch": "main",
+      "reason": "redeploy",
+      "redeploy_of": "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+      "created_at": "2026-10-18T04:15:37.421Z"
+    },
+    "railway_variables_changed": {
+      "PARSER_BUILD_REVISION": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+      "previous_declared_build_revision_observed_on_version": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+      "PARSER_REVISION": "unchanged (git:c2e045b0f71a7699c935b65ffe514fe526889de3 observed on /version)"
+    },
+    "version_hosts": {
+      "https://parser.gamepro.network/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+          "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+          "build_revision": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      },
+      "https://cs2-demo-parser-production.up.railway.app/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+          "semantic_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+          "build_revision": "git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      }
+    },
+    "health": {
+      "https://parser.gamepro.network/health": {
+        "status": "ok"
+      }
+    },
+    "before": {
+      "deployment_id": "ce9b760d-c92f-4da1-a3e6-dd105d49585c",
+      "declared_build_revision": "git:c2e045b0f71a7699c935b65ffe514fe526889de3",
+      "declared_revision_matches": false,
+      "observed_at": "2026-10-18T04:13Z"
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-18T04:13:31Z",
+      "record_parser_runtime_attestation": "4ee7be9d9d133adbeeafe6e6a5763112",
+      "assert_verified_parser_provenance": "57e4196115eb9253fd307e4443fb603c",
+      "enforce_approved_attestation_workflow": "f95e6a50fd78a5aef78feb4d0dd7fdd1",
+      "note": "managed DB is at the R5.8.10 targets; R5.8.11, R5.8.11b, 20261016140000, R5.8.12 and R5.8.13 must be applied in order"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "version_hosts": "GET /version on both hosts after deployment ece1c582 reached SUCCESS",
+      "managed_start_state": "md5(prosrc) on the Lovable-managed database (read-only SELECT)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_12/spec.json",
+  "pin_role": "R5.8.13: re-pin the Railway deployment identity after the PARSER_BUILD_REVISION correction; image, build, semantic revision, critical hashes and workflow blob unchanged",
+  "r5_8_12_database_target_md5": {
+    "assert_verified_parser_provenance": "e62a11f966063440eaacb636c608c33a",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_12_recorder_target_md5": "321d649a3defcf3daf61de8b5f6d6ad2"
+}

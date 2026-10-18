@@ -27,7 +27,12 @@ const r5812WorkflowMigration = readFileSync(
   resolve("supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"),
   "utf8",
 );
-// Current candidate repin targets the new Railway build, but production application is still gated.
+// R5.8.13 re-pins the deployment identity after the PARSER_BUILD_REVISION correction.
+const r5813DeploymentMigration = readFileSync(
+  resolve("supabase/migrations/20261018050000_r5_8_13_repin_runtime_deployment.sql"),
+  "utf8",
+);
+// R5.8.11/11b keep the deployment they were generated for (ce9b760d); R5.8.13 advances it.
 const migration = readFileSync(
   resolve("supabase/migrations/20261016100000_r5_8_11_repin_attestation_recorder.sql"),
   "utf8",
@@ -67,8 +72,15 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
-    expect(boundaryMigration).toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
+    expect(r5813DeploymentMigration).toContain(
+      `_new constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
+    );
+    expect(r5813DeploymentMigration).toContain(
+      "_old constant text := 'ce9b760d-c92f-4da1-a3e6-dd105d49585c'",
+    );
+    expect(migration).toContain("ce9b760d-c92f-4da1-a3e6-dd105d49585c");
+    expect(boundaryMigration).toContain("ce9b760d-c92f-4da1-a3e6-dd105d49585c");
+    expect(migration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5810Migration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");
     expect(r5810Migration).toContain("60099ed3eaf959d888762bf55043255a63a6a766");
     expect(r5810BoundaryMigration).toContain("25df86c3-22e1-4986-9b91-cdabe54535c5");

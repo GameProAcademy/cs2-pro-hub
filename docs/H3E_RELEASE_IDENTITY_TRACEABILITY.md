@@ -761,3 +761,15 @@ The documentation-only HEAD `557c6fd1a11d2ad9d7e24c17ef97b483028b9d71` had fresh
 - H.3-E: `FAIL / BLOCKED`.
 - Merge and production: `NOT AUTHORIZED / NOT EXECUTED`. These results do not satisfy the user's no-merge-before-external-gates rule.
 - The next external action required to make progress is an explicitly authorized, reviewed operational correction of the parser's build declaration and the application's enforced semantic/build lock, followed by fresh R5.8.3 evidence, attempt-aware R5.8.4 reconciliation from the corrected workflow, and H.3-E managed-snapshot/provenance proof. This document records the need; it does not authorize those changes.
+
+
+## 2026-10-18 04:13–04:20Z — runtime build declaration corrected; R5.8.13 deployment re-pin
+
+Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, managed database, forward-only migrations).
+
+- **Before (read-only, 04:13Z):** deployment `ce9b760d` SUCCESS; both `/version` hosts served `revision`/`semantic_revision`/`build_revision` = `git:c2e045b0…`, `build.commit` = `eaaa2c8d…`, `declared_revision_matches=false`. Source of `build_revision`: `settings.py` reads `PARSER_BUILD_REVISION` only; `app.py:511-516` compares it with the image's `BUILD_INFO.json`. So the stored `PARSER_BUILD_REVISION` value was the semantic revision.
+- **Change:** `PARSER_BUILD_REVISION=git:eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1` set with `skipDeploys`, then a redeploy of deployment `ce9b760d` (same source commit `eaaa2c8d`). `PARSER_REVISION` unchanged (semantic `git:c2e045b0…`). Rollback: set the previous value and redeploy `ce9b760d`.
+- **After (04:17Z):** deployment `ece1c582-5cba-403d-b25c-a60faaf1aed5` SUCCESS (reason `redeploy`, commit `eaaa2c8d`); both hosts: `revision`=`semantic_revision`=`git:c2e045b0…`, `build_revision`=`git:eaaa2c8d…`, `build.commit`=`eaaa2c8d…`, `embedded=true`, `declared_revision_matches=true`; `/health` `ok`. The two identities stay distinct; nothing was equalised.
+- **Consequence:** only the deployment ID changed. R5.8.13 (`20261018050000`, spec/rollback under `docs/reference/r5_8_13/`) re-pins that single value in the recorder (target `d4df5708…`) and the provenance assertion (target `f070c124…`), forward-only from the R5.8.12 targets; R5.8.11/11b stay unchanged.
+- **Managed database (read-only, 04:13Z):** last applied migration `20261016120000`; recorder `4ee7be9d…`, assert `57e41961…`, enforce `f95e6a50…` (the R5.8.10 targets); two `h3e91_record_execution_event` overloads. Pending in order: `20261016100000`, `20261016100100`, `20261016140000`, `20261017180000`, `20261018050000`.
+- **App lock:** the published runtime route reports `revisionRequired=false`, `buildRevisionRequired=false` and env overrides `git:60099ed3…`. Root cause of `PARSER_LOCK_NOT_REQUIRED`: production detected by `NODE_ENV`, absent from the published bundle — fixed in PR #152. The stale overrides are Lovable secrets (owner action).
