@@ -75,39 +75,46 @@ export function expectedParserIdentity(): {
 /**
  * FASE 2.7.2 — GATE 1E.1 — IS THE REVISION LOCK MANDATORY?
  *
- * Production locks the exact worker build by default: without a pinned revision
- * a redeploy could silently change the parser under a player's analysis. A
- * development/test environment may run unpinned, and `DEMO_PARSER_REVISION_REQUIRED`
- * makes the decision explicit either way.
+ * Production locks the exact worker build: without a pinned revision a
+ * redeploy could silently change the parser under a player's analysis.
+ *
+ * Production is NOT detected through `NODE_ENV === "production"`: the published
+ * server bundle does not carry NODE_ENV (h3e91ExecutionBridge.server.ts relies on
+ * the same fact), and that test left the lock optional in production
+ * (`revisionRequired=false`, H.3-E `PARSER_LOCK_NOT_REQUIRED`). Only a runtime
+ * that explicitly declares itself `test` or `development` is non-production, and
+ * only there may `DEMO_PARSER_REVISION_REQUIRED` / `DEMO_PARSER_BUILD_REVISION_REQUIRED`
+ * turn the lock off. Anywhere else an explicit "false" is ignored (fail closed).
  */
-export function isParserRevisionRequired(): boolean {
+export function isNonProductionRuntime(): boolean {
   const env = typeof process === "undefined" ? undefined : process.env;
-  const explicit = (env?.["DEMO_PARSER_REVISION_REQUIRED"] ?? "").trim().toLowerCase();
-  if (explicit === "true" || explicit === "1") return true;
-  if (explicit === "false" || explicit === "0") return false;
-  return (env?.["NODE_ENV"] ?? "") === "production";
+  const nodeEnv = (env?.["NODE_ENV"] ?? "").trim().toLowerCase();
+  return nodeEnv === "test" || nodeEnv === "development";
+}
+
+function lockRequirement(variable: string): boolean {
+  if (!isNonProductionRuntime()) return true;
+  const env = typeof process === "undefined" ? undefined : process.env;
+  const explicit = (env?.[variable] ?? "").trim().toLowerCase();
+  return explicit === "true" || explicit === "1";
+}
+
+export function isParserRevisionRequired(): boolean {
+  return lockRequirement("DEMO_PARSER_REVISION_REQUIRED");
 }
 
 /** The full expectation used by the revision lock (identity + contract). */
 export function expectedParserContract(): ExpectedParserIdentity {
   const identity = expectedParserIdentity();
   const env = typeof process === "undefined" ? undefined : process.env;
-  const production = (env?.["NODE_ENV"] ?? "") === "production";
+  const production = !isNonProductionRuntime();
   const buildRevision =
     env?.["DEMO_PARSER_EXPECTED_BUILD_REVISION"]?.trim() ||
     (production ? DEPLOYED_WORKER_BUILD_REVISION : null);
-  const explicitBuildRequirement = (env?.["DEMO_PARSER_BUILD_REVISION_REQUIRED"] ?? "")
-    .trim()
-    .toLowerCase();
   return {
     ...identity,
     buildRevision,
-    buildRevisionRequired:
-      explicitBuildRequirement === "true" || explicitBuildRequirement === "1"
-        ? true
-        : explicitBuildRequirement === "false" || explicitBuildRequirement === "0"
-          ? false
-          : production,
+    buildRevisionRequired: lockRequirement("DEMO_PARSER_BUILD_REVISION_REQUIRED"),
     revisionRequired: isParserRevisionRequired(),
     contractVersion: PARSER_CONTRACT_VERSION,
   };
