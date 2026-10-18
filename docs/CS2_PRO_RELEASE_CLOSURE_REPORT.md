@@ -101,3 +101,14 @@ Observation: `20261016120000` (applied before this session) has a `schema_migrat
 | AMBIGUOUS | `unattached` · `ambiguous_nickname` (candidates returned for explicit selection) | no |
 | CONFLICT | `conflict` · `identity_conflict` (declaration contradicts Steam; Steam ID duplicated — D11) | no |
 No fuzzy distance, no inference from kills/score/behaviour. Live proof of each state in production: `NOT_PROVEN` (Phase G).
+
+## Phase D/E — fresh attestation of the active runtime (2026-10-18 05:30Z) — **PASS**
+
+- Workflow `parser-runtime-attestation.yml` dispatched on main `f767c397` → run [39100740388](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39100740388) **success** (all steps green, including "Sign and deliver verified evidence to the server-side recorder").
+- New row `parser_runtime_provenance.id = 50aa3e42-a5fd-406e-a69a-88b15a32604d`: `status=VERIFIED`, `GITHUB_ACTIONS_SIGNED_ATTESTATION_V3`, deployment `ece1c582…`, deployment_commit/semantic `c2e045b0…`, build `git:eaaa2c8d…`, `app_source_commit=f767c397…` (proves the published app is the new main), attestor `github_actions_oidc`, workflow source `f5e8ffb1…`, 64-hex HMAC signature accepted by the recorder.
+- `assert_verified_parser_provenance('50aa3e42…')` (STABLE, md5 `f070c124…` = R5.8.13 target) → `VERIFIED`, digest `aa75f0d0…`.
+- **Proves by runtime behaviour:** `PARSER_ATTESTATION_HMAC_SECRET` configured and matching the GitHub signer; OIDC operational; R5.8.13 recorder/assert pins coherent with the app pins and the Railway runtime. No secret value was read or logged.
+- No prior provenance row was changed (append-only).
+
+### Note — F553 post-completion run 39100510898 (BLOCKED) is a trigger artefact
+It was triggered by the completion of the **cancelled** Quality Gates run of `22718d3d` (cancel-in-progress after the #152 merge); `workflow_run` runs carry the default-branch head (`f767c397`), whose own Quality Gates was still running → `R11_EXECUTION_JOB_NOT_SUCCESSFUL`. The evaluation of `f767c397` happens when its Quality Gates run 39100378766 completes; the gates select the newest run.
