@@ -427,12 +427,28 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     if not is_ancestor(semantic_commit, target_sha):
         return stage(FAIL, reason="SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY", build_commit=commit,
                      observed=semantic)
+    if not is_ancestor(semantic_commit, commit):
+        return stage(FAIL, reason="SEMANTIC_COMMIT_NOT_ANCESTOR_OF_BUILD", build_commit=commit,
+                     observed=semantic)
+    semantic_build_delta = "identical_worker_tree"
     if tree(semantic_commit) != built:
-        return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
-                     observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built)
+        # R5.8.3 already defines one narrowly reviewed semantic/build pair whose
+        # only worker-tree changes are sanitized H3E91 diagnostics and their tests.
+        # Reuse that exact blob-and-diff allowlist here; never generalize tree drift.
+        from scripts.r5_8_3_release_preflight import semantic_identity_failures
+        compatibility_failures = semantic_identity_failures(
+            {"semantic_revision": semantic, "build_revision": declared_build}, build
+        )
+        if compatibility_failures:
+            return stage(FAIL, reason=compatibility_failures[0], build_commit=commit,
+                         observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built,
+                         compatibility_failures=compatibility_failures)
+        semantic_build_delta = "reviewed_diagnostic_only_delta"
     return stage(PASS, build_commit=commit, worker_tree=built, railway_deployment=railway.get("id"),
-                 semantic_revision=semantic,
-                 note="identical worker tree; a rebuild would only relabel the image")
+                 semantic_revision=semantic, semantic_build_delta=semantic_build_delta,
+                 note=("approved diagnostic-only delta; exact changed-file allowlist and critical hashes verified"
+                       if semantic_build_delta == "reviewed_diagnostic_only_delta"
+                       else "identical worker tree; a rebuild would only relabel the image"))
 
 
 def evaluate_bridge(fingerprint: dict[str, Any] | None, versions: dict[str, Any]) -> dict[str, Any]:
