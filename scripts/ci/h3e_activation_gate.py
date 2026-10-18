@@ -643,6 +643,11 @@ class Io:
         return self.git("merge-base", "--is-ancestor", older, newer).returncode == 0
 
 
+def r583_artifact_name(sha: str, run_id: Any, run_attempt: Any) -> str:
+    """Mirror of .github/workflows/r5-8-3-read-only-preflight.yml upload name."""
+    return f"r5-8-3-preflight-{sha}-{run_id}-attempt-{int(run_attempt or 1)}"
+
+
 def find_artifact(io: Io, name: str) -> tuple[dict[str, Any] | None, bytes | None]:
     listed = io.github(f"/actions/artifacts?name={name}&per_page=10").get("artifacts") or []
     exact = [a for a in listed if a.get("name") == name and not a.get("expired")]
@@ -666,8 +671,11 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
         out["main_required_gates"] = stage(SKIPPED, reason="QUALITY_GATES_NOT_PASS")
     if evaluate_producer(runs["r5_8_3"], name=WORKFLOWS["r5_8_3"][1])["status"] == PASS:
         run_id = runs["r5_8_3"]["id"]
-        meta, blob = find_artifact(io, f"r5-8-3-preflight-{sha}-{run_id}")
-        integrity, document = evaluate_artifact(meta, blob, run_id=run_id, expected_name=f"r5-8-3-preflight-{sha}-{run_id}")
+        # The R5.8.3 workflow names its artifact per attempt, so a rerun can never
+        # be satisfied by the evidence of an earlier attempt of the same run.
+        r583_name = r583_artifact_name(sha, run_id, runs["r5_8_3"].get("run_attempt"))
+        meta, blob = find_artifact(io, r583_name)
+        integrity, document = evaluate_artifact(meta, blob, run_id=run_id, expected_name=r583_name)
         out["r5_8_3_artifact"] = integrity
         out["r5_8_3_decision"] = evaluate_r583(document, sha=sha) if document is not None else stage(SKIPPED, reason="NO_ARTIFACT")
         name = f"r5-8-4-gate-reconciliation-{run_id}-{sha}"
