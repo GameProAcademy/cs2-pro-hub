@@ -60,3 +60,22 @@ Observation: `20261016120000` (applied before this session) has a `schema_migrat
 
 - **R5.8.3** run [39098741937](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098741937): `GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT`, failures `[]` — **PASS** (D1 runtime identity coherent and verified by the preflight itself).
 - **R5.8.4** run [39098759506](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098759506): all **32** gates evaluated (artifact selection fixed — D6 **PASS**); 14 VERIFIED; `own_scope_blockers: []`; decision `BLOCKED` with pending external collectors: fresh attestation of the active runtime, managed snapshot, H.3-E activation gate, A9.1 real-DEM lab run. Not a PASS.
+
+## Phase E — H.3-E Activation Gate on `22718d3d` (run [39100058543](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39100058543)) = **FAIL**
+
+| Stage | Result | Meaning |
+|---|---|---|
+| runtime, bridge_identity, persistence, transport, r5_8_3, r5_8_4, queue_semantics, r5_8_4_artifact, r5_8_4_decision | PASS | D1 confirmed by an independent evaluator |
+| quality_gates | BLOCKED | main Quality Gates still running at evaluation time |
+| r5_8_3_artifact | BLOCKED `ARTIFACT_NOT_FOUND` | **D10** (gate defect, below) |
+| parser_lock | FAIL `PARSER_LOCK_NOT_REQUIRED` + revision/build mismatch (`60099ed3`) | D3 (PR #152) + D5 (owner secrets) + published app stale |
+| managed_snapshot | FAIL only `attempt_9_absent` (recorder `d4df5708` = R5.8.13 target) | D9 |
+| predem_matrix | BLOCKED (`attempt_9_absent`, `hmac_configured`, `oidc_operational`, `provenance_verified`, `remote_ci`) | needs fresh attestation after app publish |
+
+### D10 — H.3-E gate looked up the R5.8.3 artifact by its pre-#151 name
+- **Symptom:** `r5_8_3_artifact` BLOCKED `ARTIFACT_NOT_FOUND` although run 39098741937 uploaded its artifact.
+- **Root cause:** #151 renamed the upload to `r5-8-3-preflight-<sha>-<run>-attempt-<n>`; `scripts/ci/h3e_activation_gate.py` still searched `r5-8-3-preflight-<sha>-<run>`.
+- **Fix:** PR #153 (`83cdfec5`): `r583_artifact_name(sha, run_id, run_attempt)` from the selected run's attempt (same convention as `scripts/r5_8_4_gate_reconciliation.py`).
+- **Regression tests:** unsuffixed name → BLOCKED; earlier attempt → BLOCKED; selected attempt → PASS; name mirrors the workflow YAML. Against the old code: 11 failures + 1 error; new code 60/60.
+- **Production impact:** none (CI evaluator only). **Rollback:** revert the merge commit.
+- **Status:** `NOT_PROVEN` until #153 is merged and a new H.3-E run shows `r5_8_3_artifact` PASS.
