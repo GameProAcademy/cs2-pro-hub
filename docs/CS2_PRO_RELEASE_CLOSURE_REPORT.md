@@ -112,3 +112,11 @@ No fuzzy distance, no inference from kills/score/behaviour. Live proof of each s
 
 ### Note — F553 post-completion run 39100510898 (BLOCKED) is a trigger artefact
 It was triggered by the completion of the **cancelled** Quality Gates run of `22718d3d` (cancel-in-progress after the #152 merge); `workflow_run` runs carry the default-branch head (`f767c397`), whose own Quality Gates was still running → `R11_EXECUTION_JOB_NOT_SUCCESSFUL`. The evaluation of `f767c397` happens when its Quality Gates run 39100378766 completes; the gates select the newest run.
+
+## Phase E — H.3-E on `f767c397` after publish + attestation (run [39101653080](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39101653080)) = FAIL, narrowed
+
+- **parser_lock:** problems now only `PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH` — `PARSER_LOCK_NOT_REQUIRED` is gone, i.e. the published bundle enforces the lock without `NODE_ENV` (**D3 PASS** by runtime behaviour). Expected comes from env (`revisionSource=env`) = `git:60099ed3…`; both worker hosts serve `c2e045b0…` / `eaaa2c8d…` → remaining cause is **D5** (owner secrets).
+- **predem_matrix:** 26 verified; blockers reduced from 5 to `attempt_9_absent` (D9) and `remote_ci` — `hmac_configured`, `oidc_operational`, `provenance_verified` now verified.
+- **managed_snapshot:** only `attempt_9_absent` (D9).
+- **r5_8_3_artifact:** BLOCKED — D10, fixed in PR #153 (not merged yet).
+- **quality_gates / f553_post_completion / main_required_gates:** evaluated while Quality Gates 39100378766 was still running (trigger artefact noted above).
