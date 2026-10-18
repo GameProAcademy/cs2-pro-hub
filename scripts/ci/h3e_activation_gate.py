@@ -375,7 +375,9 @@ def evaluate_transport(*, secrets_present: dict[str, bool], endpoint_matches: bo
 
 def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], target_sha: str,
                      tree: Callable[[str], str | None], is_ancestor: Callable[[str, str], bool],
-                     railway: dict[str, Any] | None) -> dict[str, Any]:
+                     railway: dict[str, Any] | None,
+                     semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+                     ) -> dict[str, Any]:
     for host in HOSTS:
         health = healths.get(host)
         if not isinstance(health, dict) or health.get("status") != "ok":
@@ -399,7 +401,8 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     # PARSER_REVISION) with the embedded commit, so once a build revision is set
     # it says nothing about the semantic revision. That one is checked here,
     # against git, independently of what the worker reports about it: it must
-    # name a commit of the target's history whose worker tree is the deployed one.
+    # be an ancestor of the build and either share its worker tree or match the
+    # exact diagnostic-only semantic/build delta already approved by R5.8.3.
     parsers = [((versions[h].get("parser") or {})) for h in HOSTS]
     semantics = {str(p.get("semantic_revision")) for p in parsers}
     declared_builds = {str(p.get("build_revision")) for p in parsers}
@@ -427,12 +430,29 @@ def evaluate_runtime(*, versions: dict[str, Any], healths: dict[str, Any], targe
     if not is_ancestor(semantic_commit, target_sha):
         return stage(FAIL, reason="SEMANTIC_REVISION_NOT_ON_TARGET_HISTORY", build_commit=commit,
                      observed=semantic)
-    if tree(semantic_commit) != built:
+    if semantic_commit != commit and not is_ancestor(semantic_commit, commit):
         return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
-                     observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built)
+                     observed=semantic, detail="semantic commit is not an ancestor of the build")
+    semantic_build_delta = "identical_worker_tree"
+    if tree(semantic_commit) != built:
+        # The live collector injects R5.8.3's reviewed blob/diff validator. Unit
+        # callers without that validator remain strict and fail closed on drift.
+        if semantic_build_validator is None:
+            return stage(FAIL, reason="SEMANTIC_REVISION_DOES_NOT_DESCRIBE_BUILD", build_commit=commit,
+                         observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built)
+        compatibility_failures = semantic_build_validator(
+            {"semantic_revision": semantic, "build_revision": declared_build}, build
+        )
+        if compatibility_failures:
+            return stage(FAIL, reason=compatibility_failures[0], build_commit=commit,
+                         observed=semantic, semantic_tree=tree(semantic_commit), build_tree=built,
+                         compatibility_failures=compatibility_failures)
+        semantic_build_delta = "reviewed_diagnostic_only_delta"
     return stage(PASS, build_commit=commit, worker_tree=built, railway_deployment=railway.get("id"),
-                 semantic_revision=semantic,
-                 note="identical worker tree; a rebuild would only relabel the image")
+                 semantic_revision=semantic, semantic_build_delta=semantic_build_delta,
+                 note=("approved diagnostic-only delta; exact changed-file allowlist and critical hashes verified"
+                       if semantic_build_delta == "reviewed_diagnostic_only_delta"
+                       else "identical worker tree; a rebuild would only relabel the image"))
 
 
 def evaluate_bridge(fingerprint: dict[str, Any] | None, versions: dict[str, Any]) -> dict[str, Any]:
@@ -707,7 +727,7 @@ def collect_transport(io: Io, env: dict[str, str]) -> dict[str, Any]:
 
 
 def snapshot_pins(root: Path) -> dict[str, Any]:
-    """Candidate runtime pins plus the R5.8.11 recorder target; mismatch stays fail-closed."""
+    """Runtime pins plus the R5.8.13 deployment re-pin target; mismatch stays fail-closed."""
     import sys
     for sub in ("", "scripts/repin", "scripts/predem"):
         path = str(root / sub) if sub else str(root)
@@ -716,14 +736,14 @@ def snapshot_pins(root: Path) -> dict[str, Any]:
     import r5_8_11  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
         BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES, PROJECT, SERVICE)
-    spec = json.loads((root / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))
+    spec = json.loads((root / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
         raise ValueError("SNAPSHOT_PINS_DISAGREE")
-    # This candidate hash differs from the live R5.8.10 database body until
-    # migration R5.8.11 is explicitly applied. This mismatch intentionally
-    # blocks activation; candidate pins are not runtime attestation evidence.
+    # The R5.8.13 target differs from the managed recorder until R5.8.11, R5.8.11b,
+    # R5.8.12 and R5.8.13 are applied in order. Pins are not runtime attestation
+    # evidence; a live mismatch remains fail-closed.
     return {
         "recorder_md5": r5_8_11.target_md5(spec),
         "runtime": {
@@ -788,7 +808,19 @@ def collect_managed_snapshot(io: Io, env: dict[str, str]) -> dict[str, Any]:
                              evaluate=managed_snapshot.evaluate)
 
 
-def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
+def validate_semantic_build_delta(identity: dict[str, Any], build: dict[str, Any]) -> list[str]:
+    """Reuse R5.8.3's exact reviewed-delta validator in the live H.3-E gate."""
+    import sys
+    root = str(Path(__file__).resolve().parents[2])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from scripts.r5_8_3_release_preflight import semantic_identity_failures
+    return semantic_identity_failures(identity, build)
+
+
+def collect_runtime(io: Io, env: dict[str, str], sha: str,
+                    semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+                    ) -> dict[str, Any]:
     versions: dict[str, Any] = {}
     healths: dict[str, Any] = {}
     for host in HOSTS:
@@ -798,7 +830,8 @@ def collect_runtime(io: Io, env: dict[str, str], sha: str) -> dict[str, Any]:
     token = env.get("RAILWAY_API_TOKEN", "")
     railway = io.railway_active(token) if token else None
     result = evaluate_runtime(versions=versions, healths=healths, target_sha=sha, tree=io.tree,
-                              is_ancestor=io.is_ancestor, railway=railway)
+                              is_ancestor=io.is_ancestor, railway=railway,
+                              semantic_build_validator=semantic_build_validator)
     result["observed_build"] = {h: (versions[h] or {}).get("build") for h in HOSTS}
     result["identity"] = identity_record(versions, railway, io.tree, sha)
     return result
@@ -834,7 +867,9 @@ def identity_record(versions: dict[str, Any], railway: dict[str, Any] | None,
     }
 
 
-def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | None) -> dict[str, Any]:
+def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | None,
+             semantic_build_validator: Callable[[dict[str, Any], dict[str, Any]], list[str]] | None = None
+             ) -> dict[str, Any]:
     stages: dict[str, dict[str, Any]] = {}
     if not SHA.match(target_sha or ""):
         stages["target"] = stage(FAIL, reason="TARGET_SHA_INVALID")
@@ -853,7 +888,8 @@ def run_gate(io: Io, env: dict[str, str], *, target_sha: str, main_head: str | N
         stages.update(guarded("prerequisites", lambda: collect_prerequisites(io, target_sha)))
     stages.update(guarded("transport", lambda: {"transport": collect_transport(io, env)}))
     if stages["target"]["status"] == PASS:
-        stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(io, env, target_sha)}))
+        stages.update(guarded("runtime", lambda: {"runtime": collect_runtime(
+            io, env, target_sha, semantic_build_validator=semantic_build_validator)}))
         stages.update(guarded("bridge_identity", lambda: {"bridge_identity": collect_bridge(io)}))
         stages.update(guarded("parser_lock", lambda: {"parser_lock": collect_parser_lock(io)}))
         stages.update(guarded("managed_snapshot", lambda: {
@@ -940,7 +976,8 @@ def main() -> int:
     if env.get("GITHUB_REPOSITORY") != REPOSITORY:
         evidence = run_gate(io, env, target_sha="", main_head=main_head)
     else:
-        evidence = run_gate(io, env, target_sha=target, main_head=main_head)
+        evidence = run_gate(io, env, target_sha=target, main_head=main_head,
+                            semantic_build_validator=validate_semantic_build_delta)
     out = Path(env.get("H3E_EVIDENCE_OUT", "h3e-activation-gate.json"))
     out.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     text = render(evidence)
