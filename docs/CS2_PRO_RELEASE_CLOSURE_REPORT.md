@@ -127,3 +127,9 @@ It was triggered by the completion of the **cancelled** Quality Gates run of `22
 - PR #153 (D10) head `83cdfec5`: 5/5 checks green on the exact SHA; only `scripts/ci/` changed; merged as `6a3faf1b60601737110e2d97bf56fbccbc113f69`.
 - H.3-E run [39103073331](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39103073331) on `6a3faf1b`: `r5_8_3_artifact=PASS`, `r5_8_3_decision=PASS` → **D10 PASS** (proven in production CI). Quality Gates of `6a3faf1b` was still running at that evaluation.
 - Remaining FAIL/BLOCKED: `parser_lock` (D5 — owner secrets), `managed_snapshot` + `predem_matrix` (D9 — owner decision).
+
+## Phase F — PR #154 (D11) merged and published
+
+- PR #154 head `536d1e15`: 7/7 checks green on the exact SHA; files only `src/lib/pipeline/attachment.ts`, `src/lib/pipeline-identity.functions.ts`, test. Merged as `39b8317e14448e9817685713f5a9972307c96670`.
+- main `39b8317e`: Quality Gates 39103547284 success, Queue Semantics 39103547355 success, R5.8.3 39103547302 success, R5.8.4 39103564096 success. (F553 39103566515 and H.3-E 39103580294 were fired by the cancelled Quality Gates of `6a3faf1b`, same trigger artefact as before.)
+- Lovable synced `39b8317e`; published (deployment `b42dae33-ef12-41c2-bd2c-ad4ebd4627aa`). D11 code-level PASS (unit test in CI); production behaviour `NOT_PROVEN` until a real demo exercises it (Phase G).
