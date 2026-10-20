@@ -326,6 +326,8 @@ export const es: Dictionary = {
   "admin.msg.roleUpdated": "Rol actualizado.",
   "admin.msg.userCreated": "Usuario creado.",
   "admin.error.generic": "No se pudo completar la operación.",
+  "admin.error.weakPassword": "Contraseña rechazada: es conocida como débil o filtrada. Usa una más segura.",
+  "admin.error.emailExists": "Este correo ya está registrado.",
   "admin.error.forbidden": "No tienes permiso para esta acción.",
   "admin.empty.users": "Ningún usuario coincide con estos filtros.",
   "admin.empty.audit": "Ninguna acción administrativa registrada.",

@@ -842,7 +842,17 @@ export const createPlayerUser = createServerFn({ method: "POST" })
         locale: data.locale ?? "en",
       },
     });
-    if (error || !created?.user) throw new Error(FAILED);
+    if (error || !created?.user) {
+      const { classifyCreateUserError } = await import("@/lib/adminErrors");
+      const safeCode = error ? classifyCreateUserError(error) : FAILED;
+      // Safe log: error code/status only — never the password or e-mail.
+      console.error("admin.createPlayerUser failed", {
+        code: (error as { code?: string } | null)?.code ?? null,
+        status: (error as { status?: number } | null)?.status ?? null,
+        safeCode,
+      });
+      throw new Error(safeCode);
+    }
 
     const newUserId = created.user.id;
 
