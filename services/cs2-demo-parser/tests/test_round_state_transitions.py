@@ -209,3 +209,36 @@ def test_one_start_per_round_even_with_several_candidates():
     out, error = _parse_round_state_transitions(FakeDemo(rows), PLAYERS)
     assert error is None
     assert [s["tick"] for s in out["round_starts"]] == [5]
+
+
+def test_production_pattern_recording_opens_inside_round_one_freeze():
+    """Job 7131abd3 (m1-cache, 2026-10-20, diagnostics run 39413151824): the recording's
+    first tick is already in round 1's freeze time (not warmup, total_rounds_played 0);
+    round 1 is played (freeze end 1688, plant 3767, kills up to 4752) and ends at 4752
+    (0 -> 1). Round 1 has no freeze rising edge, so the released version had no start
+    for it and the adapter dropped its end as an orphan, shifting every round."""
+    rows = []
+    rows += _rows(2, freeze=True)                                              # recording opens in freeze
+    rows += _rows(1688)                                                        # round 1 freeze end
+    rows += _rows(4752, played=1, status=2, reason=9, t_score=1)               # round 1 end
+    rows += _rows(5072, played=1, freeze=True, t_score=1)                      # round 2 freeze entry
+    rows += _rows(6352, played=1, t_score=1)
+    rows += _rows(12853, played=2, status=2, reason=1, t_score=2)              # round 2 end
+    rows += _rows(13173, played=2, freeze=True, t_score=2)                     # round 3 freeze entry
+    rows += _rows(22513, played=2, t_score=2)                                  # (long freeze: pause)
+    rows += _rows(29512, played=3, status=3, reason=7, t_score=2, ct_score=1,  # round 3 end = match end
+                  freeze=True, phase=5)
+    out, error = _parse_round_state_transitions(FakeDemo(rows), PLAYERS)
+    assert error is None
+    assert out["round_starts"] == [
+        {"tick": 2, "derived_from": "game_state.first_observed_live_tick"},
+        {"tick": 5072, "derived_from": "game_state.is_freeze_period"},
+        {"tick": 13173, "derived_from": "game_state.is_freeze_period"},
+    ]
+    assert [(e["tick"], e.get("winner")) for e in out["round_ends"]] == [(4752, 2), (12853, 2), (29512, 3)]
+
+    # Through the adapter's pairing: three closed rounds, nothing orphaned or shifted.
+    from adapter import build_round_intervals
+    assert build_round_intervals(out["round_starts"], out["round_ends"]) == [
+        (1, 2, 4752), (2, 5072, 12853), (3, 13173, 29512),
+    ]
