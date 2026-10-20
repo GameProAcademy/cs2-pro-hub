@@ -367,6 +367,41 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_match_quarantine: {
+        Row: {
+          decision_ref: string
+          evidence: Json
+          match_id: string
+          quarantined_at: string
+          quarantined_by: string
+          reason: string
+        }
+        Insert: {
+          decision_ref: string
+          evidence: Json
+          match_id: string
+          quarantined_at?: string
+          quarantined_by: string
+          reason: string
+        }
+        Update: {
+          decision_ref?: string
+          evidence?: Json
+          match_id?: string
+          quarantined_at?: string
+          quarantined_by?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canonical_match_quarantine_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_conversations: {
         Row: {
           created_at: string
@@ -832,6 +867,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "demo_jobs_admission_decision_id_fkey"
+            columns: ["admission_decision_id"]
+            isOneToOne: false
+            referencedRelation: "raw_admission_decisions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "demo_jobs_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
@@ -1166,6 +1208,47 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h3e_attempt_authorizations: {
+        Row: {
+          attempt_number: number
+          authorized_by: string
+          decision_ref: string
+          demo_sha256: string
+          evidence: Json
+          job_id: string
+          recorded_at: string
+          upload_id: string
+        }
+        Insert: {
+          attempt_number: number
+          authorized_by: string
+          decision_ref: string
+          demo_sha256: string
+          evidence: Json
+          job_id: string
+          recorded_at?: string
+          upload_id: string
+        }
+        Update: {
+          attempt_number?: number
+          authorized_by?: string
+          decision_ref?: string
+          demo_sha256?: string
+          evidence?: Json
+          job_id?: string
+          recorded_at?: string
+          upload_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h3e_attempt_authorizations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "demo_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -2871,6 +2954,84 @@ export type Database = {
         }
         Relationships: []
       }
+      raw_admission_decisions: {
+        Row: {
+          artifact_id: string
+          artifact_root_digest: string
+          attempt_number: number
+          blocked_reasons: string[]
+          contract: string
+          decision: Json
+          decision_digest: string
+          demo_sha256: string
+          excluded_metrics: string[]
+          id: string
+          job_id: string
+          limitations: string[]
+          recorded_at: string
+          ruleset_version: number
+          upload_id: string
+          v2_contract_digest: string | null
+          v2_producer_reasons: string[]
+          verdict: string
+        }
+        Insert: {
+          artifact_id: string
+          artifact_root_digest: string
+          attempt_number: number
+          blocked_reasons?: string[]
+          contract: string
+          decision: Json
+          decision_digest: string
+          demo_sha256: string
+          excluded_metrics?: string[]
+          id?: string
+          job_id: string
+          limitations?: string[]
+          recorded_at?: string
+          ruleset_version: number
+          upload_id: string
+          v2_contract_digest?: string | null
+          v2_producer_reasons: string[]
+          verdict: string
+        }
+        Update: {
+          artifact_id?: string
+          artifact_root_digest?: string
+          attempt_number?: number
+          blocked_reasons?: string[]
+          contract?: string
+          decision?: Json
+          decision_digest?: string
+          demo_sha256?: string
+          excluded_metrics?: string[]
+          id?: string
+          job_id?: string
+          limitations?: string[]
+          recorded_at?: string
+          ruleset_version?: number
+          upload_id?: string
+          v2_contract_digest?: string | null
+          v2_producer_reasons?: string[]
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_admission_decisions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "raw_evidence_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_admission_decisions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "demo_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       raw_demo_evidence_reports: {
         Row: {
           approved_at: string | null
@@ -3115,8 +3276,8 @@ export type Database = {
           first_row: number | null
           id: string
           last_row: number | null
-          previous_chunk_sha256: string | null
           physical_summary: Json | null
+          previous_chunk_sha256: string | null
           row_count: number
           section: string
           sha256: string
@@ -3136,8 +3297,8 @@ export type Database = {
           first_row?: number | null
           id?: string
           last_row?: number | null
-          previous_chunk_sha256?: string | null
           physical_summary?: Json | null
+          previous_chunk_sha256?: string | null
           row_count?: number
           section: string
           sha256: string
@@ -3157,8 +3318,8 @@ export type Database = {
           first_row?: number | null
           id?: string
           last_row?: number | null
-          previous_chunk_sha256?: string | null
           physical_summary?: Json | null
+          previous_chunk_sha256?: string | null
           row_count?: number
           section?: string
           sha256?: string
@@ -3975,52 +4136,29 @@ export type Database = {
         Args: { _execution_id: string }
         Returns: Json
       }
-      h3e91_record_execution_event:
-        | {
-            Args: {
-              _attempt_number: number
-              _correlation_id: string
-              _demo_sha256: string
-              _event_id: string
-              _event_type: string
-              _event_version: number
-              _execution_id: string
-              _execution_surface: string
-              _file_size: number
-              _job_id: string
-              _metadata_digest: string
-              _outcome_code: string
-              _parser_name: string
-              _parser_revision: string
-              _parser_version: string
-              _source: string
-              _upload_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _attempt_number: number
-              _correlation_id: string
-              _demo_sha256: string
-              _event_id: string
-              _event_type: string
-              _event_version: number
-              _execution_id: string
-              _execution_surface: string
-              _file_size: number
-              _job_id: string
-              _metadata_digest: string
-              _outcome_code: string
-              _parser_name: string
-              _parser_revision: string
-              _parser_version: string
-              _source: string
-              _upload_id: string
-              _worker_build_commit: string
-            }
-            Returns: Json
-          }
+      h3e91_record_execution_event: {
+        Args: {
+          _attempt_number: number
+          _correlation_id: string
+          _demo_sha256: string
+          _event_id: string
+          _event_type: string
+          _event_version: number
+          _execution_id: string
+          _execution_surface: string
+          _file_size: number
+          _job_id: string
+          _metadata_digest: string
+          _outcome_code: string
+          _parser_name: string
+          _parser_revision: string
+          _parser_version: string
+          _source: string
+          _upload_id: string
+          _worker_build_commit: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4040,6 +4178,10 @@ export type Database = {
         Returns: Json
       }
       is_admin_master: { Args: { _user_id: string }; Returns: boolean }
+      is_canonical_match_quarantined: {
+        Args: { _match_id: string }
+        Returns: boolean
+      }
       is_primary_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       iso_alpha2_codes: { Args: never; Returns: string[] }
@@ -4155,14 +4297,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      record_raw_admission_decision_v3: {
-        Args: {
-          _artifact_id: string
-          _decision: Json
-          _job_id: string
-        }
-        Returns: string
-      }
       record_parser_runtime_attestation: {
         Args: {
           _attestation_digest: string
@@ -4225,6 +4359,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_raw_admission_decision_v3: {
+        Args: { _artifact_id: string; _decision: Json; _job_id: string }
+        Returns: string
       }
       recover_stale_demo_jobs: {
         Args: { _stale_minutes?: number }

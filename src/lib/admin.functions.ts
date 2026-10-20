@@ -825,42 +825,22 @@ export const createPlayerUser = createServerFn({ method: "POST" })
   )
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
-    await resolveAdmin(context as Ctx);
-    if (!data.email.includes("@") || data.password.length < 8) throw new Error(FAILED);
-
-    // The service-role key never leaves the server runtime.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        display_name: data.display_name ?? null,
-        nickname: data.nickname ?? null,
-        country: data.country ?? null,
-        locale: data.locale ?? "en",
+    const ctx = context as Ctx;
+    // Authorisation runs first, inside createPlayerAccount, before any Auth call.
+    const { createPlayerAccount } = await import("@/lib/adminCreateUser.server");
+    return createPlayerAccount(data, {
+      authorize: () => resolveAdmin(ctx),
+      // The service-role key never leaves the server runtime.
+      createUser: async (attributes) => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        return supabaseAdmin.auth.admin.createUser(attributes);
       },
+      deleteUser: async (userId) => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        return supabaseAdmin.auth.admin.deleteUser(userId);
+      },
+      audit: (targetUserId, metadata) => writeAuditLog(ctx, "USER_CREATED", targetUserId, metadata),
     });
-    if (error || !created?.user) throw new Error(FAILED);
-
-    const newUserId = created.user.id;
-
-    // Auditing is mandatory. The Auth Admin API is not transactional, so when
-    // the audit entry cannot be written the freshly created account is removed
-    // again: no unaudited account may survive this operation.
-    try {
-      // Only player accounts can be created: this product has a single administrator.
-      await writeAuditLog(context as Ctx, "USER_CREATED", newUserId, {
-        email: data.email,
-        role: "player",
-      });
-    } catch (auditError) {
-      await supabaseAdmin.auth.admin.deleteUser(newUserId);
-      throw auditError;
-    }
-
-    return { ok: true, userId: newUserId };
   });
 
 export const listAuditLogs = createServerFn({ method: "GET" })
