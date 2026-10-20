@@ -16,7 +16,7 @@ import { validateRawForensicContractV2 } from "@/lib/pipeline/rawArtifactContrac
  */
 const body = z.object({ jobId: z.string().uuid() });
 
-/** Small RAW sections only (rounds, events); every object is size- and digest-checked. */
+/** Small RAW sections only (rounds, events, sampled ticks); every object is size- and digest-checked. */
 async function readRoundDiagnostics(
   db: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
   artifactId: string,
@@ -29,12 +29,13 @@ async function readRoundDiagnostics(
     .from("raw_evidence_chunks")
     .select("section, chunk_index, storage_path, sha256, byte_size, status")
     .eq("artifact_id", artifactId)
-    .in("section", ["rounds", "events"])
+    .in("section", ["rounds", "events", "ticks"])
     .order("chunk_index");
   if (error || !Array.isArray(chunks)) return null;
-  const rows: Record<"rounds" | "events", Array<Record<string, unknown>>> = {
+  const rows: Record<"rounds" | "events" | "ticks", Array<Record<string, unknown>>> = {
     rounds: [],
     events: [],
+    ticks: [],
   };
   const totalBytes = chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0);
   if (chunks.length > 32 || totalBytes > 16 * 1024 * 1024)
@@ -48,9 +49,11 @@ async function readRoundDiagnostics(
     const bytes = new Uint8Array(await data.arrayBuffer());
     if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256)
       return { error: "ROUND_SECTIONS_DIGEST_MISMATCH" };
-    rows[chunk.section as "rounds" | "events"].push(...(await decodeGzipJsonLines(bytes)));
+    rows[chunk.section as "rounds" | "events" | "ticks"].push(
+      ...(await decodeGzipJsonLines(bytes)),
+    );
   }
-  return summarizeRoundDiagnostics(rows.rounds, rows.events);
+  return summarizeRoundDiagnostics(rows.rounds, rows.events, rows.ticks);
 }
 
 export async function handleH3ERawAuditReasons(request: Request): Promise<Response> {

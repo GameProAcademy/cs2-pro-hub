@@ -11,6 +11,24 @@ export const ROUND_LIFECYCLE_EVENTS = [
   "round_end",
   "round_officially_ended",
   "cs_win_panel_match",
+  "cs_pre_restart",
+  "round_prestart",
+  "round_poststart",
+  "round_announce_last_round_half",
+  "announce_phase_end",
+  "cs_intermission",
+  "round_time_warning",
+] as const;
+
+const KILL_EVENT = "player_death";
+const BOMB_EVENTS = ["bomb_planted", "bomb_defused", "bomb_exploded"] as const;
+const STATE_FIELDS = [
+  "total_rounds_played",
+  "is_freeze_period",
+  "is_warmup_period",
+  "game_phase",
+  "is_match_started",
+  "round_win_status",
 ] as const;
 
 const LIST_CAP = 200;
@@ -18,15 +36,140 @@ const LIST_CAP = 200;
 const tickOf = (value: unknown): number | null =>
   typeof value === "number" && Number.isSafeInteger(value) ? value : null;
 
+const scalar = (value: unknown): number | boolean | null =>
+  typeof value === "boolean"
+    ? value
+    : typeof value === "number" && Number.isFinite(value)
+      ? value
+      : null;
+
+/**
+ * Kills and bomb events placed against the round intervals: counts and ticks only.
+ * A victim identity is used to count repeated deaths inside one interval and is
+ * never returned.
+ */
+function summarizeCombat(
+  rounds: ReadonlyArray<{
+    number: number | null;
+    start_tick: number | null;
+    end_tick: number | null;
+  }>,
+  eventRows: ReadonlyArray<Record<string, unknown>>,
+) {
+  const closed = rounds.filter(
+    (r): r is { number: number; start_tick: number; end_tick: number | null } =>
+      r.number !== null && r.start_tick !== null,
+  );
+  const locate = (tick: number) => {
+    for (let i = 0; i < closed.length; i += 1) {
+      const r = closed[i]!;
+      const nextStart = closed[i + 1]?.start_tick ?? null;
+      const upper = r.end_tick ?? (nextStart !== null ? nextStart - 1 : null);
+      if (tick >= r.start_tick && (upper === null || tick <= upper)) return r.number;
+    }
+    return null;
+  };
+  const perRound = new Map<
+    number,
+    { kills: number; repeated_victims: number; seen: Set<string>; played: Set<string> }
+  >();
+  const killsOutside: number[] = [];
+  const bomb: Array<{ event: string; tick: number; round: number | null }> = [];
+  for (const row of eventRows) {
+    const name = row["event_name"];
+    const tick = tickOf(row["tick"]);
+    if (tick === null || typeof name !== "string") continue;
+    if (name === KILL_EVENT) {
+      const round = locate(tick);
+      if (round === null) {
+        if (killsOutside.length < LIST_CAP) killsOutside.push(tick);
+        continue;
+      }
+      const entry = perRound.get(round) ?? {
+        kills: 0,
+        repeated_victims: 0,
+        seen: new Set<string>(),
+        played: new Set<string>(),
+      };
+      entry.kills += 1;
+      const raw = row["raw_fields"];
+      const fields =
+        raw && typeof raw === "object" && !Array.isArray(raw)
+          ? (raw as Record<string, unknown>)
+          : {};
+      // Game-rules context recorded with the event (total rounds played at that tick).
+      const played = scalar(row["total_rounds_played"] ?? fields["total_rounds_played"]);
+      entry.played.add(played === null ? "unknown" : String(played));
+      const victim = fields["user_steamid"] ?? fields["userid"];
+      if (typeof victim === "string" || typeof victim === "number") {
+        const key = String(victim);
+        if (entry.seen.has(key)) entry.repeated_victims += 1;
+        entry.seen.add(key);
+      }
+      perRound.set(round, entry);
+    } else if ((BOMB_EVENTS as readonly string[]).includes(name) && bomb.length < LIST_CAP) {
+      bomb.push({ event: name, tick, round: locate(tick) });
+    }
+  }
+  bomb.sort((a, b) => a.tick - b.tick);
+  killsOutside.sort((a, b) => a - b);
+  return {
+    kills_per_round: [...perRound.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([round, entry]) => ({
+        round,
+        kills: entry.kills,
+        repeated_victims: entry.repeated_victims,
+        total_rounds_played_at_kills: [...entry.played].sort(),
+      })),
+    kills_outside_rounds: { count: killsOutside.length, ticks: killsOutside },
+    bomb_events: bomb,
+  };
+}
+
+/** Round-state changes in the sampled tick rows: tick + game-rules values only. */
+function summarizeStateTimeline(tickRows: ReadonlyArray<Record<string, unknown>>) {
+  const byTick = new Map<number, Record<string, number | boolean | null>>();
+  for (const row of tickRows) {
+    const tick = tickOf(row["tick"]);
+    if (tick === null || byTick.has(tick)) continue;
+    const state: Record<string, number | boolean | null> = {};
+    for (const field of STATE_FIELDS) state[field] = scalar(row[field]);
+    byTick.set(tick, state);
+  }
+  const ticks = [...byTick.keys()].sort((a, b) => a - b);
+  const changes: Array<Record<string, number | boolean | null>> = [];
+  let previous: string | null = null;
+  for (const tick of ticks) {
+    const state = byTick.get(tick)!;
+    const key = JSON.stringify(state);
+    if (key !== previous && changes.length < LIST_CAP) changes.push({ tick, ...state });
+    previous = key;
+  }
+  return {
+    sampled_ticks: ticks.length,
+    first_tick: ticks[0] ?? null,
+    last_tick: ticks.at(-1) ?? null,
+    changes,
+  };
+}
+
 export function summarizeRoundDiagnostics(
   roundRows: ReadonlyArray<Record<string, unknown>>,
   eventRows: ReadonlyArray<Record<string, unknown>>,
+  tickRows: ReadonlyArray<Record<string, unknown>> = [],
 ) {
   const rounds = roundRows.slice(0, LIST_CAP).map((row) => ({
     number: tickOf(row["number"]),
     start_tick: tickOf(row["start_tick"]),
     end_tick: tickOf(row["end_tick"]),
     has_winner: row["winner_side"] != null || row["winner"] != null,
+    ...(typeof row["start_derived_from"] === "string"
+      ? { start_derived_from: String(row["start_derived_from"]).slice(0, 64) }
+      : {}),
+    ...(typeof row["end_derived_from"] === "string"
+      ? { end_derived_from: String(row["end_derived_from"]).slice(0, 64) }
+      : {}),
   }));
   const lifecycle: Record<string, { count: number; ticks: number[] }> = {};
   const roundEndFields = new Set<string>();
@@ -57,6 +200,8 @@ export function summarizeRoundDiagnostics(
     lifecycle,
     round_end_raw_fields: [...roundEndFields].sort(),
     round_end_winner_values: [...roundEndWinnerValues].sort(),
+    combat: summarizeCombat(rounds, eventRows),
+    state_timeline: summarizeStateTimeline(tickRows),
   };
 }
 
