@@ -85,7 +85,11 @@ def test_rollback_restores_the_r5_8_12_bodies_and_fails_closed():
 
 
 def test_every_repository_pin_names_the_new_deployment():
+    # Historical: R5.8.13 moved the pins from OLD to NEW; R5.8.14 has since moved them on to
+    # its own deployment. Neither R5.8.13 deployment may remain an active pin.
+    r5814 = json.loads((ROOT / "docs/reference/r5_8_14/spec.json").read_text(encoding="utf-8"))
+    assert r5814["observed"]["before"]["deployment_id"] == NEW
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW in text and OLD not in text, path
+        assert r5814["deployment_id"] in text and NEW not in text and OLD not in text, path

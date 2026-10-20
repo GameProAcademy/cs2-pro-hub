@@ -27,9 +27,14 @@ const r5812WorkflowMigration = readFileSync(
   resolve("supabase/migrations/20261017180000_r5_8_12_repin_workflow_source_sha.sql"),
   "utf8",
 );
-// R5.8.13 re-pins the deployment identity after the PARSER_BUILD_REVISION correction.
+// R5.8.13 re-pinned the deployment identity after the PARSER_BUILD_REVISION correction.
 const r5813DeploymentMigration = readFileSync(
   resolve("supabase/migrations/20261018050000_r5_8_13_repin_runtime_deployment.sql"),
+  "utf8",
+);
+// R5.8.14 re-pins semantic/build commit, deployment and the parser.py blob after the D13 release.
+const r5814ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261020080000_r5_8_14_repin_runtime_release.sql"),
   "utf8",
 );
 // R5.8.11/11b keep the deployment they were generated for (ce9b760d); R5.8.13 advances it.
@@ -72,8 +77,19 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
+    expect(r5814ReleaseMigration).toContain(
+      `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
+    );
+    expect(r5814ReleaseMigration).toContain(
+      `_new_commit constant text := '${PARSER_ATTESTATION_EXPECTED.commit}'`,
+    );
+    expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5814ReleaseMigration).toContain(
+      "_old_deployment constant text := 'ece1c582-5cba-403d-b25c-a60faaf1aed5'",
+    );
+    // The R5.8.13 link stays committed with its own pins.
     expect(r5813DeploymentMigration).toContain(
-      `_new constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
+      "_new constant text := 'ece1c582-5cba-403d-b25c-a60faaf1aed5'",
     );
     expect(r5813DeploymentMigration).toContain(
       "_old constant text := 'ce9b760d-c92f-4da1-a3e6-dd105d49585c'",
@@ -89,8 +105,13 @@ describe("H.3-E.8.1 database attestation identity parity", () => {
     expect(boundaryMigration).toContain("523cee5b0fecc21c7ce2b5f538b42670eec3fed1");
     expect(r5812WorkflowMigration).toContain(APPROVED_ATTESTATION_WORKFLOW_SHA);
     expect(r5812WorkflowMigration).toContain("523cee5b0fecc21c7ce2b5f538b42670eec3fed1");
-    expect(migration).toContain(PARSER_ATTESTATION_EXPECTED.buildCommit);
-    expect(migration).toContain(`git:${PARSER_ATTESTATION_EXPECTED.commit}`);
+    // R5.8.11 keeps the build/semantic commits it was generated for (eaaa2c8d / c2e045b0);
+    // R5.8.14 advances them, and the R5.8.14 migration names both old and new values.
+    expect(migration).toContain("eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1");
+    expect(migration).toContain("git:c2e045b0f71a7699c935b65ffe514fe526889de3");
+    expect(migration).not.toContain(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5814ReleaseMigration).toContain("eaaa2c8d548c1b0eda3dca1ffc3d36c1e5af6aa1");
+    expect(r5814ReleaseMigration).toContain("c2e045b0f71a7699c935b65ffe514fe526889de3");
     // Historical pins stay in their own migrations, never rewritten.
     expect(repairMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
     expect(legacyMigration).toContain("207d0b66-dc8f-4ebc-96cd-6a2ef999f62a");
