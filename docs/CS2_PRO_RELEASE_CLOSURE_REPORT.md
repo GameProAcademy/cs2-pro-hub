@@ -269,7 +269,13 @@ H.3-E after the owner set `H3E91_EXPECTED_WORKER_BUILD_COMMIT=7f70141b…`: run 
 
 ### D14 — m1-cache round segmentation (run [39407958976](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39407958976))
 - Observed: 24 `round_freeze_end` (first at 1688 = `round_announce_match_start`), RAW round 1 = 5072–12853 (contains freeze_end 6352), rounds 1–22 closed, round 23 start 246747 without end, round 24 start = end = 253251 (match-end freeze took the last end — the D13b case).
-- Open question (not yet proven): whether 1688–~5072 is a round whose end was not observed or a round that was restarted; the two need different fixes. Kills/bomb placement per interval and the sampled game-rules timeline are needed → PR #164 (read-only diagnostics). D13b (PR #162) is held until this is proven, because its segmentation would also place 1688–5072 inside round 1.
+- PR #164 (read-only diagnostics) merged `537f3fec`, app published (deployment `65924a0e`); run [39413151824](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39413151824) on job `7131abd3`:
+  - sampled game rules: tick 2 freeze, not warmup, `total_rounds_played` 0 → tick 1719 live → tick 4765 `total_rounds_played` 1, `round_win_status` 2; `cs_pre_restart` at 5053; freeze again at 5178.
+  - RAW events before the first RAW round: bomb plant 3767, 6 kills 4123–4752.
+  - **Root cause (proven):** the recording opens inside round 1's freeze time. Round 1 (1688→4752) has no freeze rising edge, so the released parser (`7f70141b`) produced no start for it; `adapter.build_round_intervals` then dropped its end (4752 < first start 5072) as an orphan lifecycle row, and every later round lost one position. The match-end freeze (game_phase 5) took the last end (round 24 start = end = 253251) → `round_boundary_unknown` on round 23 and `bomb_terminal_without_prior_plant` (defuse 253251 vs plant 251287).
+  - D13b (PR #162) already adds the `first_observed_live_tick` start candidate and drops the phase-5 trailing candidate; a regression test with this exact pattern, asserted through `build_round_intervals`, was added (`333be559`).
+  - Events between a round end and the next freeze entry (plant 79323, 192403; kills 57942, 85696) are post-round actions; the adapter leaves them outside every round by design.
+- Still open: one victim with two `player_death` inside RAW round 10 (real round 11, which contains a ~5 min freeze 86055→105924). PR #166 adds per-death tick/weapon/attacker facts (no identities) to find the cause.
 
 ### RLS with the real second player account (`lojacriativa@live.com`, `2e895267`)
 Role `authenticated` with that account's JWT subject, each probe in a rolled-back transaction:
