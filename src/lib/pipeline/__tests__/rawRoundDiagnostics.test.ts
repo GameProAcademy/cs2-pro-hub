@@ -71,8 +71,37 @@ describe("RAW round-boundary diagnostics", () => {
       ],
     );
     expect(out.combat.kills_per_round).toEqual([
-      { round: 1, kills: 2, repeated_victims: 1, total_rounds_played_at_kills: ["0", "1"] },
-      { round: 2, kills: 1, repeated_victims: 0, total_rounds_played_at_kills: ["1"] },
+      {
+        round: 1,
+        kills: 2,
+        repeated_victims: 1,
+        total_rounds_played_at_kills: ["0", "1"],
+        repeated_victim_deaths: [
+          [
+            {
+              tick: 120,
+              weapon: null,
+              attacker_present: false,
+              attacker_is_victim: false,
+              field_names: ["user_steamid"],
+            },
+            {
+              tick: 150,
+              weapon: null,
+              attacker_present: false,
+              attacker_is_victim: false,
+              field_names: ["user_steamid"],
+            },
+          ],
+        ],
+      },
+      {
+        round: 2,
+        kills: 1,
+        repeated_victims: 0,
+        total_rounds_played_at_kills: ["1"],
+        repeated_victim_deaths: [],
+      },
     ]);
     expect(out.combat.kills_outside_rounds).toEqual({ count: 1, ticks: [50] });
     expect(out.combat.bomb_events).toEqual([

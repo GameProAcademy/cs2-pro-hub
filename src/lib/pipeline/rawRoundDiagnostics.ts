@@ -71,7 +71,13 @@ function summarizeCombat(
   };
   const perRound = new Map<
     number,
-    { kills: number; repeated_victims: number; seen: Set<string>; played: Set<string> }
+    {
+      kills: number;
+      repeated_victims: number;
+      seen: Set<string>;
+      played: Set<string>;
+      deaths: Map<string, Array<Record<string, unknown>>>;
+    }
   >();
   const killsOutside: number[] = [];
   const bomb: Array<{ event: string; tick: number; round: number | null }> = [];
@@ -90,6 +96,7 @@ function summarizeCombat(
         repeated_victims: 0,
         seen: new Set<string>(),
         played: new Set<string>(),
+        deaths: new Map<string, Array<Record<string, unknown>>>(),
       };
       entry.kills += 1;
       const raw = row["raw_fields"];
@@ -105,6 +112,19 @@ function summarizeCombat(
         const key = String(victim);
         if (entry.seen.has(key)) entry.repeated_victims += 1;
         entry.seen.add(key);
+        // Non-identifying facts about each death, kept only to describe repeats.
+        const attacker = fields["attacker_steamid"] ?? fields["attacker"];
+        const weapon = fields["weapon"];
+        const list = entry.deaths.get(key) ?? [];
+        list.push({
+          tick,
+          weapon: typeof weapon === "string" ? weapon.slice(0, 32) : null,
+          attacker_present:
+            attacker != null && attacker !== "" && attacker !== 0 && attacker !== "0",
+          attacker_is_victim: attacker != null && String(attacker) === key,
+          field_names: Object.keys(fields).sort().slice(0, 40),
+        });
+        entry.deaths.set(key, list);
       }
       perRound.set(round, entry);
     } else if ((BOMB_EVENTS as readonly string[]).includes(name) && bomb.length < LIST_CAP) {
@@ -121,6 +141,9 @@ function summarizeCombat(
         kills: entry.kills,
         repeated_victims: entry.repeated_victims,
         total_rounds_played_at_kills: [...entry.played].sort(),
+        repeated_victim_deaths: [...entry.deaths.values()]
+          .filter((deaths) => deaths.length > 1)
+          .slice(0, 10),
       })),
     kills_outside_rounds: { count: killsOutside.length, ticks: killsOutside },
     bomb_events: bomb,
