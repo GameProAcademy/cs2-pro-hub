@@ -294,3 +294,28 @@ Role `authenticated` with that account's JWT subject, each probe in a rolled-bac
 - CI failed on Lint (7 prettier errors) → formatting commit `0af99374`.
 - Tests added (`69e793ac`): `adminCreateUser.server.ts` (same flow, injectable) + `createPlayerUser.behavior.test.ts`: authorised create + audit; unauthorised caller blocked before any Auth call; duplicate e-mail; policy-rejected password; unknown error generic; malformed input; audit-failure rollback; no password/e-mail in error or log. Server-only (build output `.output/server/_ssr` only). Full suite 1622/1623 locally (the 1 failure is the local-only disposable-PG harness needing an OS user `lovable`; CI runs it).
 - CI on `69e793ac`: parser, contract, web/lint/build green; F553 pending at time of writing.
+
+## 2026-10-20 11:0x–18:0xZ — D15 applied, Lovable sync merged, D16 (RAW-V2-14), D13b release interrupted by Railway
+
+| Item | Evidence | Status |
+|---|---|---|
+| D15 merged | PR #165 head `8ab4ef46` 7/7 green (queue semantics applied the migration on the disposable Supabase DB); merge `93ffae36` | PASS |
+| D15 applied (owner approval in chat) | guarded DO block: file md5 `180564ca…`, not previously recorded, 0 active jobs; recorded `20261020100000`. Post-state: authenticated = SELECT only, anon = none on the 5 tables; service_role unchanged; owner RLS reads unchanged (8 artifacts, 850 chunks) | PASS |
+| Lovable sync (PR #163) | merge `a7a6430a`; Lovable synced; aviso de branch de sincronização resolvido pelo merge (não pelo "Dispensar") | PASS |
+| Diagnostics (PR #164, #166) | merges `537f3fec`, `5069b3aa`; published (deployments `65924a0e`, `2e329365`) | PASS |
+| main `537f3fec` | all checks green after re-running F553 EXECUTION (first run failed at "Start local disposable services", before any test); **H.3-E activation gate PASS** | PASS |
+| Worker untouched | Railway deployments for `93ffae36`, `a7a6430a`, `537f3fec`, `5069b3aa` = SKIPPED; live `3acb47c5` | PASS |
+
+### D16 — RAW-V2-14 false positive: respawn after a self-inflicted death (PR #167)
+- Run [39417524960](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39417524960), job `7131abd3`, RAW round 10 (real round 11, pause/freeze 86055→105924): same victim, death 1 tick 96649 `weapon=world`, attacker = victim (self-inflicted, during the freeze); death 2 tick 111562 `inferno` by another player in live play.
+- Owner decision (chat, 2026-10-20): refine, not drop. A later death is accepted only when every earlier death of that victim in the round was self-inflicted; two deaths by others, a self-inflicted death after one by another, or an unordered repeat (no tick) still BLOCK. `ADMISSION_V3_RULESET_VERSION` 1 → 2.
+- PR #167 7/7 green; merge `bc814486`; published (deployment `c18a9c0d`).
+
+### D13b release (R5.8.15) — in progress, BLOCKED by a Railway platform incident
+| Step | Evidence | Status |
+|---|---|---|
+| Freeze | `watchPatterns` → `/services/cs2-demo-parser/.release-freeze-r5-8-15`; 0 active jobs | PASS |
+| Merge #162 | head `333be559` 7/7 green; merge `a5d8c425839e1e0e7e6f5506ae141bc85359726b` → Railway `06e1c529` SKIPPED | PASS |
+| Critical blobs | only `parser.py` `8f75eb61` → `024c1dd4` | — |
+| Deploy exact commit | refused: "Deploys have been paused temporarily" — Railway incident [JUA1PC5H](https://status.railway.com/incident/JUA1PC5H) "New builds are temporarily paused" (17:03Z, Identified 17:18Z) | **BLOCKED (external)** |
+| Safety while paused | `PARSER_REVISION`/`PARSER_BUILD_REVISION` restored to `git:7f70141b…` (skipDeploys); `/version`: `7f70141b`, `declared_revision_matches: true`; freeze kept | PASS |
