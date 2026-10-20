@@ -12,7 +12,11 @@ export function classifyCreateUserError(error: {
   const message = (error.message ?? "").toLowerCase();
   if (code === "weak_password" || message.includes("weak") || message.includes("easy to guess"))
     return ADMIN_WEAK_PASSWORD;
-  if (code === "email_exists" || code === "user_already_exists" || message.includes("already been registered"))
+  if (
+    code === "email_exists" ||
+    code === "user_already_exists" ||
+    message.includes("already been registered")
+  )
     return ADMIN_EMAIL_EXISTS;
   return ADMIN_OPERATION_FAILED;
 }

@@ -12,7 +12,9 @@ describe("admin create-user error mapping", () => {
     ).toBe("ADMIN_WEAK_PASSWORD");
   });
   it("maps duplicate e-mail to a controlled code", () => {
-    expect(classifyCreateUserError({ code: "email_exists", message: "x" })).toBe("ADMIN_EMAIL_EXISTS");
+    expect(classifyCreateUserError({ code: "email_exists", message: "x" })).toBe(
+      "ADMIN_EMAIL_EXISTS",
+    );
   });
   it("keeps unknown failures generic", () => {
     expect(classifyCreateUserError({ message: "boom" })).toBe("ADMIN_OPERATION_FAILED");

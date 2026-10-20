@@ -329,7 +329,8 @@ export const ptBR = {
   "admin.msg.roleUpdated": "Role atualizada.",
   "admin.msg.userCreated": "Usuário criado.",
   "admin.error.generic": "Não foi possível concluir a operação.",
-  "admin.error.weakPassword": "Senha recusada: é conhecida como fraca ou vazada. Use uma senha mais forte.",
+  "admin.error.weakPassword":
+    "Senha recusada: é conhecida como fraca ou vazada. Use uma senha mais forte.",
   "admin.error.emailExists": "Este e-mail já está cadastrado.",
   "admin.error.forbidden": "Você não tem permissão para esta ação.",
   "admin.empty.users": "Nenhum usuário encontrado com estes filtros.",
