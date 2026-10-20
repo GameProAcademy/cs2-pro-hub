@@ -319,3 +319,17 @@ Role `authenticated` with that account's JWT subject, each probe in a rolled-bac
 | Critical blobs | only `parser.py` `8f75eb61` → `024c1dd4` | — |
 | Deploy exact commit | refused: "Deploys have been paused temporarily" — Railway incident [JUA1PC5H](https://status.railway.com/incident/JUA1PC5H) "New builds are temporarily paused" (17:03Z, Identified 17:18Z) | **BLOCKED (external)** |
 | Safety while paused | `PARSER_REVISION`/`PARSER_BUILD_REVISION` restored to `git:7f70141b…` (skipDeploys); `/version`: `7f70141b`, `declared_revision_matches: true`; freeze kept | PASS |
+
+## 2026-10-20 20:5x–22:0xZ — R5.8.15 (D13b) released
+
+| Step | Evidence | Status |
+|---|---|---|
+| Builds resumed | Railway JUA1PC5H moved to MONITORING; builds enabled for Hobby workspaces | — |
+| Controlled deploy | 0 active jobs; `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:a5d8c425…` (skipDeploys); ONE deployment of the exact commit → `01998834-4c35-43c2-b3e4-976f76a21fd5` SUCCESS 20:54:12Z | PASS |
+| Runtime identity | both `/version`: revision/semantic/build `git:a5d8c425…`, `build.commit a5d8c425…`, `declared_revision_matches: true` | PASS |
+| Repin | PR #168 head `285fcbdd`: 7/7 green — queue recovery E2E failed once (`heartbeats_renew_the_lease_during_a_real_parse` timed out, run 39497269314 attempt 1) and passed on re-run of the same commit → recorded as a flaky timeout; merged `3b04fa74` | PASS |
+| Managed DB | `20261020210000` applied (guarded; file md5 `55783162…`; 0 active jobs): start state read back = R5.8.14 targets; recorder `19a352c2`→`d9328086`, assert `df0dc1b3`→`39418665`, workflow guard `f74d8af9` unchanged; owner/SECURITY DEFINER/search_path/ACL unchanged; R5.8.15 comments; recorded | PASS |
+| App | published from `3b04fa74` (deployment `f55e57ad`) | PASS |
+| Attestation | run 39503700891 → provenance `af14868c` VERIFIED (deployment `01998834`, `a5d8c425`, tree `3ce7fe72`, 5/5 critical blobs, both hosts); `assert_verified_parser_provenance` VERIFIED | PASS |
+| Freeze removed | `watchPatterns` → `/services/cs2-demo-parser/**`; main worker tree identical to `a5d8c425` | PASS |
+| H.3-E on `3b04fa74` (run 39505251697) | runtime, managed_snapshot, transport, persistence, queue_semantics, R5.8.3, R5.8.4 PASS; **`parser_lock` and `bridge_identity` FAIL** — app secrets still expect `7f70141b` | **BLOCKED (owner secrets)** |
