@@ -30,12 +30,12 @@ function workflowIdentity() {
 
 describe("parser runtime attestation SHA binding", () => {
   it("keeps semantic revision and build commit as distinct immutable identities", () => {
-    // Two separately pinned identities. In R5.8.14 (D13 parser release, controlled deploy of
+    // Two separately pinned identities. In R5.8.15 (D13b parser release, controlled deploy of
     // the exact merge commit) they coincide: the released commit is the one that changed the
     // worker tree. R5.8.13 had distinct values (diagnostics-only build on top of the semantic).
-    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("7f70141b7c3ae231fbbca4c37058c4cdbdd7aacd");
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("a5d8c425839e1e0e7e6f5506ae141bc85359726b");
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
-      "7f70141b7c3ae231fbbca4c37058c4cdbdd7aacd",
+      "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
     );
     expect(Object.keys(PARSER_ATTESTATION_EXPECTED)).toEqual(
       expect.arrayContaining(["commit", "buildCommit", "deploymentSourceCommit"]),
@@ -48,7 +48,7 @@ describe("parser runtime attestation SHA binding", () => {
 
   it("documents the exact critical-file allowlist and verified worker blob hash", () => {
     const hashes = {
-      "services/cs2-demo-parser/parser.py": "8f75eb61f82f6746881b361234a6f5e3a59a4225",
+      "services/cs2-demo-parser/parser.py": "024c1dd48abfdd5f7d34881860b8dbd2a87a3b8a",
       "services/cs2-demo-parser/adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
       "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
       "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
@@ -124,7 +124,7 @@ describe("parser runtime attestation SHA binding", () => {
     const expected = PARSER_ATTESTATION_EXPECTED;
     const hashes = {
       "services/cs2-demo-parser/parser.py": {
-        observed: "8f75eb61f82f6746881b361234a6f5e3a59a4225",
+        observed: "024c1dd48abfdd5f7d34881860b8dbd2a87a3b8a",
         match: true,
       },
       "services/cs2-demo-parser/adapter.py": {

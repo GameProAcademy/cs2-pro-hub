@@ -782,3 +782,12 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
 - Critical blobs at `7f70141b`: only `parser.py` changed (`981f6261…` → `8f75eb61…`).
 - R5.8.14 (`supabase/migrations/20261020080000_r5_8_14_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_14/`): recorder `d4df5708…` → `19a352c2…`, assertion `f070c124…` → `df0dc1b3…`, workflow guard unchanged. Targets computed read-only from production `prosrc` and independently by the repository generator; forward + rollback round trip verified to the exact R5.8.13 md5s.
 - Until R5.8.14 is applied, the app published and the app expected-revision secrets updated, attestations of the new runtime are refused and demo processing stays fail-closed.
+
+## 2026-10-20 — R5.8.15: D13b parser release (controlled)
+
+- PR #162 (observed round starts segmented by observed round ends; recording that opens inside round 1's freeze; match-end freeze is not a round) merged as `a5d8c425839e1e0e7e6f5506ae141bc85359726b` under the watch pattern `/services/cs2-demo-parser/.release-freeze-r5-8-15`: the merge push produced SKIPPED deployment `06e1c529`.
+- The first exact-commit deploy (17:2xZ) was refused during Railway incident JUA1PC5H ("New builds are temporarily paused"); the revision variables were restored to `git:7f70141b…` while paused so a restart could not declare a revision the running code did not have.
+- After builds resumed for Hobby workspaces: `PARSER_REVISION`/`PARSER_BUILD_REVISION` set to `git:a5d8c425…` (skipped deploys), then ONE deployment of that exact commit: `01998834-4c35-43c2-b3e4-976f76a21fd5` (SUCCESS 20:54:12Z).
+- Both `/version` hosts: revision, semantic and build `git:a5d8c425…`, `build.commit a5d8c425…`, `declared_revision_matches: true`.
+- Critical blobs at `a5d8c425`: only `parser.py` changed (`8f75eb61…` → `024c1dd4…`).
+- R5.8.15 (`supabase/migrations/20261020210000_r5_8_15_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_15/`): recorder `19a352c2…` → `d9328086…`, assertion `df0dc1b3…` → `39418665…`, workflow guard unchanged. Start state read back from production (exact R5.8.14 targets, pin counts deployment 1/1, commit 4/3, parser blob 1/0); targets computed read-only from production `prosrc` and independently by the repository generator; forward + rollback round trip to the exact R5.8.14 md5s.

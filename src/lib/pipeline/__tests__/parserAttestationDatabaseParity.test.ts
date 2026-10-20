@@ -32,7 +32,12 @@ const r5813DeploymentMigration = readFileSync(
   resolve("supabase/migrations/20261018050000_r5_8_13_repin_runtime_deployment.sql"),
   "utf8",
 );
-// R5.8.14 re-pins semantic/build commit, deployment and the parser.py blob after the D13 release.
+// R5.8.14 re-pinned semantic/build commit, deployment and the parser.py blob after the D13 release.
+// R5.8.15 re-pins them again after the D13b release (PR #162).
+const r5815ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261020210000_r5_8_15_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5814ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261020080000_r5_8_14_repin_runtime_release.sql"),
   "utf8",
@@ -77,16 +82,24 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(r5814ReleaseMigration).toContain(
+    expect(r5815ReleaseMigration).toContain(
       `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
     );
-    expect(r5814ReleaseMigration).toContain(
+    expect(r5815ReleaseMigration).toContain(
       `_new_commit constant text := '${PARSER_ATTESTATION_EXPECTED.commit}'`,
     );
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5815ReleaseMigration).toContain(
+      "_old_deployment constant text := '3acb47c5-d9a4-43f2-acff-9ead7cb12b30'",
+    );
+    // The R5.8.14 link stays committed with its own pins.
+    expect(r5814ReleaseMigration).toContain(
+      "_new_deployment constant text := '3acb47c5-d9a4-43f2-acff-9ead7cb12b30'",
+    );
     expect(r5814ReleaseMigration).toContain(
       "_old_deployment constant text := 'ece1c582-5cba-403d-b25c-a60faaf1aed5'",
     );
+    expect(r5814ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     // The R5.8.13 link stays committed with its own pins.
     expect(r5813DeploymentMigration).toContain(
       "_new constant text := 'ece1c582-5cba-403d-b25c-a60faaf1aed5'",
