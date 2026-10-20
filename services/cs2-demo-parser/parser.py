@@ -298,6 +298,130 @@ def _finite_number(value: Any) -> int | float | None:
     return value if math.isfinite(float(value)) else None
 
 
+ROUND_STATE_PROPERTIES: tuple[str, ...] = (
+    "is_freeze_period", "is_warmup_period", "total_rounds_played",
+    "round_win_status", "round_win_reason", "team_rounds_total", "team_num",
+)
+# Game-rules values are identical for every player row of a tick. Reading them for
+# a few players per side (in ONE pass over the demo) bounds rows and memory.
+ROUND_STATE_PLAYERS_PER_SIDE = 2
+_SIDE_TEAM_NUMBERS = (2, 3)
+
+
+def _native(value: Any) -> Any:
+    """numpy/pandas scalars -> Python scalars (np.int64 is not an int)."""
+    item = getattr(value, "item", None)
+    return item() if callable(item) and not isinstance(value, (list, dict, str)) else value
+
+
+def _state_int(value: Any) -> int | None:
+    value = _native(value)
+    if isinstance(value, bool):
+        return None
+    number = _finite_number(value)
+    return int(number) if number is not None and float(number).is_integer() else None
+
+
+def _state_bool(value: Any) -> bool | None:
+    value = _native(value)
+    if isinstance(value, bool):
+        return value
+    number = _finite_number(value)
+    return None if number is None else bool(number)
+
+
+def _round_state_players(players: list[dict[str, Any]]) -> list[int]:
+    """A few observed players per side (parse_player_info team_number 2/3)."""
+    chosen: list[int] = []
+    for team in _SIDE_TEAM_NUMBERS:
+        ids = []
+        for row in players:
+            steam_id = _state_int(row.get("steamid"))
+            if steam_id is not None and steam_id > 0 and _state_int(row.get("team_number")) == team:
+                ids.append(steam_id)
+        chosen += sorted(set(ids))[:ROUND_STATE_PLAYERS_PER_SIDE]
+    return chosen
+
+
+def _parse_round_state_transitions(
+    demo: Any, players: list[dict[str, Any]],
+) -> tuple[dict[str, list[dict[str, Any]]] | None, BaseException | None]:
+    """Observe round boundaries from parser-native game-rules state, tick by tick.
+
+    Used only when the demo does not advertise ``round_start``/``round_end``. Both
+    boundaries are OBSERVED state transitions, never inferred or interpolated:
+
+    * a round starts at the tick where play enters freeze time outside warmup
+      (``is_freeze_period`` rising edge) - the tick ``round_start`` fires on;
+    * a round ends at the tick where ``total_rounds_played`` increases by
+      exactly one outside warmup - the tick ``round_end`` fires on.
+
+    The winner is recorded only when two independent observations agree:
+    ``round_win_status`` (2 = T, 3 = CT, the ``round_end.winner`` code) and the
+    single team whose ``team_rounds_total`` increased by exactly one at that
+    tick. Otherwise it stays unknown. One pass over the demo.
+    """
+    method = getattr(demo, "parse_ticks", None)
+    if not callable(method):
+        return None, AttributeError("parse_ticks is unavailable")
+    chosen = _round_state_players(players)
+    if not chosen:
+        return None, ValueError("no observed player per side for the game-state round audit")
+    starts: list[dict[str, Any]] = []
+    ends: list[dict[str, Any]] = []
+    previous: dict[str, Any] | None = None
+    try:
+        frame = method(list(ROUND_STATE_PROPERTIES), players=chosen)
+        if frame is None or len(frame) == 0:
+            return {"round_starts": [], "round_ends": []}, None
+        frame = frame.sort_values("tick", kind="stable")
+        heads = frame.groupby("tick", sort=True).first()
+        sides = frame[frame["team_num"].isin(_SIDE_TEAM_NUMBERS)]
+        scores = (
+            sides.groupby(["tick", "team_num"])["team_rounds_total"].max().unstack()
+            if len(sides) else None
+        )
+        for tick, head in heads.iterrows():
+            tick = int(tick)
+            warmup = _state_bool(head.get("is_warmup_period")) is True
+            live_freeze = _state_bool(head.get("is_freeze_period")) is True and not warmup
+            played = _state_int(head.get("total_rounds_played"))
+            team_scores: dict[int, int] = {}
+            if scores is not None and tick in scores.index:
+                for team in _SIDE_TEAM_NUMBERS:
+                    if team in scores.columns:
+                        value = _state_int(scores.at[tick, team])
+                        if value is not None:
+                            team_scores[team] = value
+            state = {"live_freeze": live_freeze, "played": played, "scores": team_scores}
+            if previous is not None:
+                if live_freeze and not previous["live_freeze"]:
+                    starts.append({"tick": tick, "derived_from": "game_state.is_freeze_period"})
+                if (not warmup and played is not None and previous["played"] is not None
+                        and played == previous["played"] + 1):
+                    end: dict[str, Any] = {"tick": tick,
+                                           "derived_from": "game_state.total_rounds_played"}
+                    reason = _state_int(head.get("round_win_reason"))
+                    if reason is not None:
+                        end["reason"] = reason
+                    status = _state_int(head.get("round_win_status"))
+                    before = previous["scores"]
+                    changed = [team for team in _SIDE_TEAM_NUMBERS
+                               if team_scores.get(team) != before.get(team)]
+                    increased = [team for team in _SIDE_TEAM_NUMBERS
+                                 if team in team_scores and team in before
+                                 and team_scores[team] - before[team] == 1]
+                    if status in _SIDE_TEAM_NUMBERS and changed == [status] and increased == [status]:
+                        end["winner"] = status
+                    ends.append(end)
+            previous = state
+        del frame, heads, sides, scores
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
+        return None, exc
+    return {"round_starts": starts, "round_ends": ends}, None
+
+
 def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
     """Recover round boundaries only from parser-native game-state evidence.
 
@@ -310,6 +434,14 @@ def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
     invented.
     """
     if raw.get("round_starts") or raw.get("round_ends"):
+        return
+    observed = raw.get("round_state_transitions")
+    if isinstance(observed, dict) and observed.get("round_starts") and observed.get("round_ends"):
+        raw["round_starts"] = list(observed["round_starts"])
+        raw["round_ends"] = list(observed["round_ends"])
+        raw["warnings"].append(
+            "round_boundaries_observed_from_game_state: round_start/round_end events unavailable"
+        )
         return
     candidates: dict[float, list[tuple[int, float]]] = {}
     for row in raw.get("tick_rows") or []:
@@ -590,6 +722,16 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     )
     raw["grenade_rows"] = grenade_rows
     raw["grenade_error"] = grenade_error
+    raw["round_state_transitions"] = None
+    raw["round_state_error"] = None
+    if not raw["round_starts"] and not raw["round_ends"]:
+        # The demo does not advertise round lifecycle events: observe the
+        # boundaries from game-rules state (one bounded pass over the demo).
+        transitions, round_state_error = _parse_round_state_transitions(demo, raw["players"])
+        raw["round_state_transitions"] = transitions
+        raw["round_state_error"] = round_state_error
+        if round_state_error is not None:
+            warnings.append("round_state_transitions_unavailable")
     derive_round_streams_from_tick_evidence(raw)
     return raw
 
