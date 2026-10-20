@@ -164,3 +164,44 @@ All 18 stages PASS: target, quality_gates, f553_post_completion, r5_8_3, r5_8_4,
 ### What this does and does not prove
 - Proven: pre-DEM readiness of the release `39b8317e` — runtime identity, fresh VERIFIED attestation, parser lock, managed DB pins, queue/persistence probes, authorization registry.
 - **Not proven (Phase G, awaiting owner approval):** real upload → parse → identity → persistence → dashboard; RLS with 2 users on real data; retry/idempotency on real data; negative ambiguous-identity case; D7, D8, D11 in production; Canonical. R5.8.4 stays `BLOCKED` on its post-DEM collector (A9.1 real-DEM lab run) until then.
+
+## Phase G — real E2E (owner-authorized, 2026-10-20)
+
+Main `39b8317e`; worker deployment `ece1c582` (semantic `c2e045b0`, build `eaaa2c8d`); H.3-E run 39370837112 PASS. Canonical **not** requested and not executed as an explicit step (see note on job finalization below).
+
+### Preconditions for `406df30a` (read-only, 04:5xZ)
+- `406df30a` (user `348b6f66`, attempt 2, `failed/PARSER_IDENTITY_MISMATCH`, DEM `1d98f8b6…` 382,007,151 B, storage object present, `retry_count 1/2`), supersedes `e21e10fb` (attempt 1, `PARSER_UNAVAILABLE`); `demo_parse` queue empty; protected jobs md5 `98dda0f8:1852e536…`, `4b5e3530:f30585e6…`, `e3f93688:9dfab97b…`; 3 ledger events on `406df30a`.
+- `retry_demo_job` (both the user and admin paths, `_allow_permanent=false`) refuses `PARSER_IDENTITY_MISMATCH` as permanent and would overwrite the attempt-2 row. Not forced. The supported path is a re-upload of the same file → new attempt.
+
+### Attempt 11 — job `2dc1ddd1` (m1-cache, `0caa7c97…`, 473,748,061 B), retried by the owner 04:58:27Z
+| Step | Evidence | Status |
+|---|---|---|
+| Intent / start | ledger `EXECUTION_INTENT` 04:58:31Z, `EXECUTION_STARTED` 04:58:43Z (build `eaaa2c8d`, revision `c2e045b0`) | PASS (D8 worker side) |
+| Real parse | `EXECUTION_FINISHED/PARSE_SUCCEEDED` 05:16:06Z | PASS |
+| RAW | artifact `d216adf8` ready/approved, 167 chunks, 4,586,562 rows (grenades 4,550,843; ticks 4,096; events 31,484; rounds 24; players 10), root `0b2a1b1c…` | PASS |
+| App completion | app log: `complete_start bytes=3846798` 05:16:06Z → `Error: Worker exceeded CPU time limit.` 05:17:05Z → 502 05:17:07Z; worker `durable job interrupted type=HTTPStatusError` 05:17:14Z | **FAIL → D12** |
+| Terminal | lease expiry → `demo_job_dispatch_closures#8` `abandoned_execution at FINISHED` → `failed/JOB_STALE` 05:31:57Z; nothing persisted | terminal |
+- Authorization row of 10/20 still matches the job (identity unchanged).
+
+### Attempt 3 — job `9572a234` (m2-mirage, the authorized DEM)
+| Step | Evidence | Status |
+|---|---|---|
+| File | upload `23e4cda8`, SHA-256 `1d98f8b6d937ddbd5b2cc486b4830b63dfa85fd6b17b0767b96aa011c0ac7a7f`, 382,007,151 B (storage object 382,007,151 B) | PASS |
+| Link | `supersedes_job_id = 406df30a…`; only change on `406df30a`: `superseded_by_job_id = 9572a234…` (status/error/attempt/ledger preserved); attempts 1–2 intact; protected jobs unchanged | PASS |
+| Parse | ledger INTENT 05:31:58Z, STARTED 05:32:08Z, `FINISHED/PARSE_SUCCEEDED` 05:42:32Z | PASS |
+| RAW | artifact `fff733be` ready/approved, 100 chunks, 2,582,139 rows, root `0e436f77…` | PASS |
+| App completion | completed (no CPU abort at this size); admission v3 decision `d410e643` (digest `60af8c7c…`) recorded 05:43:14Z | PASS (mechanics) |
+| Admission | **BLOCKED**: sole blocking reason `v3:RAW-V2-12-rounds:round_boundary_unknown` (facts: 23 rounds, 4,299 events, 0 outside rounds). Limitations L01–L04 (teams/score: `map_score_unknown`, `round_winner_unknown`, `team_assignment_not_two_teams`). Header `de_mirage` PASS, bomb 14 plants PASS, combat 158 kills / 638 damage PASS | **BLOCKED → D13** |
+| Terminal | `blocked_raw_audit / RAW_AUDIT_BLOCKED`, `finished_at` 05:43:14Z, `match_id` null, attachment `unattached` | terminal |
+- Identity, persistence, dashboard, RLS, idempotency, cleanup on real data: **NOT_PROVEN** (blocked before admission).
+
+### D12 — completion exceeds the app runtime CPU limit (PR #157)
+- Root cause: `auditPhysicalRawChunks` re-decoded every RAW row inside the single `complete` request; production code on the same volume: 15.1 s CPU.
+- Fix: decode per chunk at verification (`raw_evidence_chunks.physical_summary`, migration `20261020060000`), completion still downloads and re-hashes every object and merges the summary bound to that sha256; forensic/header always re-decoded; summary-less READY artifacts are backfilled one chunk per request on retry. Measured: completion 66 ms CPU, ≤ 148 ms per verification request. Status: `NOT_PROVEN` until merged, migrated, published and a real job completes.
+
+### D13 — admission v3 blocks the authorized DEM on round boundaries (PR #158 diagnostics)
+- Which round lacks a boundary is only in the private RAW rounds/events sections. PR #158 adds bounded, read-only round-boundary diagnostics to the authenticated operator route (numbers/ticks only). Root cause: `NOT_PROVEN` until read.
+
+### Observations
+- The worker heartbeat loop keeps writing `stage=parsing` during app completion, so `stage` is not reliable during finalization.
+- App logs show an external scanner probing 40+ secret paths at 02:33Z (all 404/cancelled).
