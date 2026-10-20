@@ -145,3 +145,22 @@ PASS (15/18): target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue
 | predem_matrix | BLOCKED, 27/28 VERIFIED, blocker `attempt_9_absent` | D9 | same |
 
 Phase G (real E2E, Canonical) remains **not started** by design: blocked by these gates.
+
+## 2026-10-20 — D5 and D9 closed by the owner; **H.3-E Activation Gate PASS**
+
+### D5 — app parser-lock secrets (owner action)
+- Owner reported (chat, 2026-10-20T01:39-03:00) that `DEMO_PARSER_EXPECTED_REVISION` / `DEMO_PARSER_EXPECTED_BUILD_REVISION` were updated in Lovable production. Values not re-sent; not read by me.
+- Proof by runtime behaviour: H.3-E run [39370718660](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39370718660) (dispatch, 04:39Z) → `parser_lock=PASS` (previously FAIL `PARSER_LOCK_REVISION_MISMATCH`/`BUILD_MISMATCH` with expected `60099ed3…`). **D5 PASS.**
+
+### D9 — authorization of `2dc1ddd1` attempt 11 (owner decision, recorded)
+- Owner decision (chat, 2026-10-20T01:39-03:00): attempt 11 was the owner's / authorized as a test; record it auditably without changing `JOB_STALE` or inventing parser events.
+- Operator script `docs/ops/h3e_attempt_authorizations_2026-10-20.sql` (md5 `180e6356…`, PR #156) executed once at 2026-10-20 04:40:21Z. It asserts job identity (upload `989288d2`, attempt 11, DEM `0caa7c97…`, supersedes `4b5e3530`, created_at, `failed`/`JOB_STALE`, `raw_audit_blocked`) and writes only one registry row.
+- Before → after: `demo_jobs` row md5 `99baf491…` → `99baf491…` (unchanged); H3E91 ledger events 0 → 0; registry rows 2 → 3; unauthorized jobs at attempt ≥ 9: 1 → 0. **D9 PASS.**
+
+### H.3-E Activation Gate on `39b8317e` — run [39370837112](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39370837112) = **PASS**
+All 18 stages PASS: target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue_semantics, main_required_gates, r5_8_3_artifact, r5_8_3_decision, r5_8_4_artifact, r5_8_4_decision, persistence, transport, runtime, bridge_identity, parser_lock, managed_snapshot, predem_matrix. Evidence artifact `h3e-activation-gate-39b8317e…-39370837112-1`, digest `sha256:628f1463df2d440f7a8b1e235e3fe02245440ceb4424ca28af245663e31c198b`.
+(Run 39370718660, 04:39Z, FAILed only `managed_snapshot`/`predem` because its snapshot, 04:39:41Z, preceded the authorization, 04:40:21Z.)
+
+### What this does and does not prove
+- Proven: pre-DEM readiness of the release `39b8317e` — runtime identity, fresh VERIFIED attestation, parser lock, managed DB pins, queue/persistence probes, authorization registry.
+- **Not proven (Phase G, awaiting owner approval):** real upload → parse → identity → persistence → dashboard; RLS with 2 users on real data; retry/idempotency on real data; negative ambiguous-identity case; D7, D8, D11 in production; Canonical. R5.8.4 stays `BLOCKED` on its post-DEM collector (A9.1 real-DEM lab run) until then.
