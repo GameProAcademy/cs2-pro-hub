@@ -362,6 +362,41 @@ describe("admission v3 — semantic re-verification on the canonical bundle", ()
     expect(byGate(c)["RAW-V2-14-combat"]?.reasons).toContain("kill_victim_unknown");
   });
 
+  it("accepts a death after a self-inflicted death in the same round (respawn), ruleset 2", () => {
+    // Production job 7131abd3 (m1-cache, real round 11): a player killed themself
+    // ('world') during a pause/freeze, was respawned, and was killed in live play.
+    const b = bundle();
+    const selfKill = { ...b.events[1]!, tick: 102, actorParticipantKey: "b1" };
+    b.events = [...b.events, selfKill];
+    const check = byGate(b)["RAW-V2-14-combat"]!;
+    expect(check.reasons).not.toContain("victim_died_twice_in_round");
+    expect(check.status).toBe("PASS");
+  });
+
+  it("still blocks two deaths caused by others, or any death after one caused by another", () => {
+    const twoOthers = bundle();
+    twoOthers.events = [
+      ...twoOthers.events,
+      { ...twoOthers.events[1]!, tick: 120, actorParticipantKey: "a2" },
+    ];
+    expect(byGate(twoOthers)["RAW-V2-14-combat"]?.reasons).toContain("victim_died_twice_in_round");
+    // killed by a1 at 110, then a self-inflicted death at 150: impossible without respawn
+    const selfAfter = bundle();
+    selfAfter.events = [
+      ...selfAfter.events,
+      { ...selfAfter.events[1]!, tick: 150, actorParticipantKey: "b1" },
+    ];
+    expect(byGate(selfAfter)["RAW-V2-14-combat"]?.reasons).toContain("victim_died_twice_in_round");
+    // order cannot be proven without ticks
+    const noTick = bundle();
+    noTick.events = [
+      ...noTick.events.filter((e) => e.type !== "kill"),
+      { ...noTick.events[1]!, tick: 102, actorParticipantKey: "b1" },
+      { ...noTick.events[1]!, tick: null },
+    ];
+    expect(byGate(noTick)["RAW-V2-14-combat"]?.reasons).toContain("victim_died_twice_in_round");
+  });
+
   it("blocks a score that differs from the round winners and partial team data", () => {
     const wrong = bundle({ match: { ...bundle().match, scoreTeamA: 3 } });
     expect(byGate(wrong)["RAW-V2-16-teams-score"]?.reasons).toContain(
