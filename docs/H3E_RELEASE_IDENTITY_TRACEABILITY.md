@@ -773,3 +773,12 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
 - **Consequence:** only the deployment ID changed. R5.8.13 (`20261018050000`, spec/rollback under `docs/reference/r5_8_13/`) re-pins that single value in the recorder (target `d4df5708…`) and the provenance assertion (target `f070c124…`), forward-only from the R5.8.12 targets; R5.8.11/11b stay unchanged.
 - **Managed database (read-only, 04:13Z):** last applied migration `20261016120000`; recorder `4ee7be9d…`, assert `57e41961…`, enforce `f95e6a50…` (the R5.8.10 targets); two `h3e91_record_execution_event` overloads. Pending in order: `20261016100000`, `20261016100100`, `20261016140000`, `20261017180000`, `20261018050000`.
 - **App lock:** the published runtime route reports `revisionRequired=false`, `buildRevisionRequired=false` and env overrides `git:60099ed3…`. Root cause of `PARSER_LOCK_NOT_REQUIRED`: production detected by `NODE_ENV`, absent from the published bundle — fixed in PR #152. The stale overrides are Lovable secrets (owner action).
+
+## 2026-10-20 — R5.8.14: D13 parser release (controlled)
+
+- PR #159 (observed round boundaries when a demo advertises no `round_start`/`round_end`) merged as `7f70141b7c3ae231fbbca4c37058c4cdbdd7aacd`, with the Railway watch pattern frozen to `/services/cs2-demo-parser/.release-freeze-r5-8-14`: the merge push produced SKIPPED deployment `7409cff7`.
+- `PARSER_REVISION` and `PARSER_BUILD_REVISION` set to `git:7f70141b…` with skipped deploys, then ONE deployment of that exact commit: `3acb47c5-d9a4-43f2-acff-9ead7cb12b30` (SUCCESS 07:18:36Z).
+- Both `/version` hosts: revision, semantic and build `git:7f70141b…`, `build.commit 7f70141b…`, `declared_revision_matches: true`; `/health` ok.
+- Critical blobs at `7f70141b`: only `parser.py` changed (`981f6261…` → `8f75eb61…`).
+- R5.8.14 (`supabase/migrations/20261020080000_r5_8_14_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_14/`): recorder `d4df5708…` → `19a352c2…`, assertion `f070c124…` → `df0dc1b3…`, workflow guard unchanged. Targets computed read-only from production `prosrc` and independently by the repository generator; forward + rollback round trip verified to the exact R5.8.13 md5s.
+- Until R5.8.14 is applied, the app published and the app expected-revision secrets updated, attestations of the new runtime are refused and demo processing stays fail-closed.

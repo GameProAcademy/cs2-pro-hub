@@ -20,16 +20,21 @@ BOUNDARY_ROLLBACK = ROOT / "docs/reference/r5_8_11/rollback_boundary.sql"
 def test_candidate_spec_matches_active_application_pins_and_target_hashes():
     from scripts.parser_runtime_attestation import BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES
     from scripts.h3e91_live_preflight import BRANCH as PF_BRANCH, DEPLOYMENT as PF_DEPLOYMENT, PARSER_REVISION, SOURCE_COMMIT
-    # R5.8.13 advanced only the deployment ID (redeploy of the same image); every other
-    # R5.8.11 pin is still the active one, and the R5.8.11 spec itself stays frozen.
-    active = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
+    # R5.8.13 advanced only the deployment ID (redeploy of the same image); R5.8.14 (D13
+    # parser release) advanced semantic/build commit, deployment and the parser.py blob.
+    # The R5.8.11 spec itself stays frozen; the active pins are the R5.8.14 spec.
+    r5813 = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
+    active = json.loads((ROOT / "docs/reference/r5_8_14/spec.json").read_text(encoding="utf-8"))
     assert SPEC["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
-    assert active["observed"]["railway_deployment"]["redeploy_of"] == SPEC["deployment_id"]
+    assert r5813["observed"]["railway_deployment"]["redeploy_of"] == SPEC["deployment_id"]
+    assert (r5813["semantic_commit"], r5813["build_commit"]) == (SPEC["semantic_commit"], SPEC["build_commit"])
     assert (BRANCH, COMMIT, BUILD_COMMIT, DEPLOYMENT) == (
-        SPEC["branch"], SPEC["semantic_commit"], SPEC["build_commit"], active["deployment_id"])
+        active["branch"], active["semantic_commit"], active["build_commit"], active["deployment_id"])
     assert (PF_BRANCH, PF_DEPLOYMENT, SOURCE_COMMIT, PARSER_REVISION) == (
-        SPEC["branch"], active["deployment_id"], SPEC["deployment_commit"], f"git:{SPEC['semantic_commit']}")
-    assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == SPEC["critical_hashes"]
+        active["branch"], active["deployment_id"], active["deployment_commit"], f"git:{active['semantic_commit']}")
+    assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == active["critical_hashes"]
+    changed = {k for k in SPEC["critical_hashes"] if SPEC["critical_hashes"][k] != active["critical_hashes"][k]}
+    assert changed == {"parser.py"}
     assert r5_8_11.targets(SPEC) == {
         "record_parser_runtime_attestation": "72df9c518f5573db232a6759301e4360",
         "assert_verified_parser_provenance": "f5e27fc3961d7d4bee50d440862f39cc",
