@@ -326,6 +326,8 @@ export const ptPT: Dictionary = {
   "admin.msg.roleUpdated": "Role atualizada.",
   "admin.msg.userCreated": "Utilizador criado.",
   "admin.error.generic": "Não foi possível concluir a operação.",
+  "admin.error.weakPassword": "Palavra-passe recusada: é conhecida como fraca ou divulgada. Use uma mais forte.",
+  "admin.error.emailExists": "Este e-mail já está registado.",
   "admin.error.forbidden": "Não tem permissão para esta ação.",
   "admin.empty.users": "Nenhum utilizador corresponde a estes filtros.",
   "admin.empty.audit": "Nenhuma ação administrativa registada.",

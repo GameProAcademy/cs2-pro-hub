@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { CountrySelect } from "@/components/profile/CountrySelect";
 import { useT } from "@/i18n";
 import { createPlayerUser } from "@/lib/admin.functions";
+import { createUserErrorKey } from "@/lib/adminErrors";
 
 export function CreateUserDialog({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -31,9 +32,9 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
       setForm({ ...form, email: "", password: "", display_name: "", nickname: "" });
       void queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
-    onError: () => {
+    onError: (err: unknown) => {
       setMessage(null);
-      setError(t("admin.error.generic"));
+      setError(t(createUserErrorKey(err instanceof Error ? err.message : undefined)));
     },
   });
 
