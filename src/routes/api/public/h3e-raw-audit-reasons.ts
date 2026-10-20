@@ -9,10 +9,49 @@ import { validateRawForensicContractV2 } from "@/lib/pipeline/rawArtifactContrac
  *
  * Authenticated with the CI transport secret. It reads the job's sealed RAW manifest,
  * checks its audit-evidence digest and identity against the artifact row, and returns
- * reason codes, non-passing gate names, mapping-status counts, and non-sensitive parser
- * identity metadata. No demo content, path, URL or secret is returned; nothing is written.
+ * reason codes, non-passing gate names, mapping-status counts, non-sensitive parser
+ * identity metadata and round-boundary diagnostics (round numbers, boundary and
+ * lifecycle-event ticks, side codes, field names). No player, demo content, path, URL or
+ * secret is returned; nothing is written.
  */
 const body = z.object({ jobId: z.string().uuid() });
+
+/** Small RAW sections only (rounds, events); every object is size- and digest-checked. */
+async function readRoundDiagnostics(
+  db: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
+  artifactId: string,
+): Promise<Record<string, unknown> | null> {
+  if (!artifactId) return null;
+  const { rawArtifactBytesSha256 } = await import("@/lib/pipeline/rawArtifactContract");
+  const { decodeGzipJsonLines, summarizeRoundDiagnostics } =
+    await import("@/lib/pipeline/rawRoundDiagnostics");
+  const { data: chunks, error } = await db
+    .from("raw_evidence_chunks")
+    .select("section, chunk_index, storage_path, sha256, byte_size, status")
+    .eq("artifact_id", artifactId)
+    .in("section", ["rounds", "events"])
+    .order("chunk_index");
+  if (error || !Array.isArray(chunks)) return null;
+  const rows: Record<"rounds" | "events", Array<Record<string, unknown>>> = {
+    rounds: [],
+    events: [],
+  };
+  const totalBytes = chunks.reduce((sum, chunk) => sum + Number(chunk.byte_size), 0);
+  if (chunks.length > 32 || totalBytes > 16 * 1024 * 1024)
+    return { error: "ROUND_SECTIONS_TOO_LARGE", chunks: chunks.length };
+  for (const chunk of chunks) {
+    if (chunk.status !== "verified") return { error: "ROUND_SECTIONS_NOT_VERIFIED" };
+    const { data, error: downloadError } = await db.storage
+      .from("cs2-raw-evidence")
+      .download(chunk.storage_path);
+    if (downloadError || !data) return { error: "ROUND_SECTIONS_UNAVAILABLE" };
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256)
+      return { error: "ROUND_SECTIONS_DIGEST_MISMATCH" };
+    rows[chunk.section as "rounds" | "events"].push(...(await decodeGzipJsonLines(bytes)));
+  }
+  return summarizeRoundDiagnostics(rows.rounds, rows.events);
+}
 
 export async function handleH3ERawAuditReasons(request: Request): Promise<Response> {
   const headers = { "Cache-Control": "no-store" };
@@ -34,7 +73,7 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
     const { data: artifact, error } = await supabaseAdmin
       .from("raw_evidence_artifacts")
       .select(
-        "job_id, upload_id, attempt_number, demo_sha256, root_digest, manifest_storage_path, status, audit_status",
+        "id, job_id, upload_id, attempt_number, demo_sha256, root_digest, manifest_storage_path, status, audit_status",
       )
       .eq("job_id", jobId)
       .order("attempt_number", { ascending: false })
@@ -121,10 +160,16 @@ export async function handleH3ERawAuditReasons(request: Request): Promise<Respon
       evidence["forensic_contract_v2"] && typeof evidence["forensic_contract_v2"] === "object"
         ? (evidence["forensic_contract_v2"] as Record<string, unknown>)
         : null;
+    // Diagnostics never change the verdict-reporting contract above: a failure is reported.
+    const roundDiagnostics = await readRoundDiagnostics(
+      supabaseAdmin,
+      String(artifact.id ?? ""),
+    ).catch(() => ({ error: "ROUND_DIAGNOSTICS_UNAVAILABLE" }));
     return Response.json(
       {
         jobId,
         attemptNumber: artifact.attempt_number,
+        roundDiagnostics,
         auditStatus: artifact.audit_status,
         rawStatus: evidence["raw_status"] ?? null,
         parserIdentity,
