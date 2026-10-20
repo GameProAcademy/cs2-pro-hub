@@ -243,3 +243,48 @@ Main `39b8317e`; worker deployment `ece1c582` (semantic `c2e045b0`, build `eaaa2
 | H.3-E 39393875678 | 17/18 PASS incl. `parser_lock` (owner updated the expected-revision secrets); **`bridge_identity` FAIL `BRIDGE_EXPECTED_BUILD_MISMATCH`** (app secret `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `eaaa2c8d…`, worker serves `7f70141b…`) | **BLOCKED (owner secret)** |
 
 No demo is started while `bridge_identity` fails (the bridge would refuse the worker's H3E91 events; D8 symptom).
+
+## 2026-10-20 09:3x–10:3xZ — real E2E on R5.8.14, D12 proven in production
+
+H.3-E after the owner set `H3E91_EXPECTED_WORKER_BUILD_COMMIT=7f70141b…`: run [39403111043](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39403111043) **PASS 18/18** (`bridge_identity` PASS).
+
+### Attempt 4 — job `17aab15c` (m2-mirage, upload `368ef869`)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT 09:52:10Z → STARTED 09:52:19Z (`git:7f70141b`, demoparser2 0.42.0) → FINISHED `PARSE_SUCCEEDED` 10:03:57Z | PASS |
+| RAW | 100 chunks verified; 98 with `physical_summary` (forensic/header re-decoded by design); artifact `ready`/`approved` | PASS |
+| Completion | app completion 10:04:17Z (no CPU abort) | PASS |
+| Admission v3 | BLOCKED `v3:RAW-V2-12-rounds:round_boundary_unknown` (23 rounds, 4,079 events, 0 outside); diagnostics run 39405321693: 22/23 rounds with start+end+winner | **BLOCKED (D13b)** |
+| Persistence / `match_id` / identity / dashboard | not reached (admission blocks before persistence) | NOT_PROVEN |
+
+### Attempt 12 — job `7131abd3` (m1-cache, 473,748,061 B, SHA `0caa7c97…`, authorization PR #161)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT 10:04:18Z → STARTED 10:04:30Z (`git:7f70141b`) → FINISHED `PARSE_SUCCEEDED` 10:24:57Z; dispatch closures 0 | PASS |
+| RAW | artifact `89c75bfc`: 167 chunks, **4,586,562 rows**, 0 unverified; 165/167 with `physical_summary` (the 2 without are `forensic`,`header`, re-decoded by design); `ready`/`approved` | PASS |
+| **D12 in production** | completion finished and admission decision `c6dc6d90` recorded 10:25:27.9Z, job terminal 10:25:28Z (~31 s after FINISHED). Attempt 11 (same DEM, 4,586,562 rows) had died in this request with "Worker exceeded CPU time limit" → `JOB_STALE` | **PASS** |
+| Duplication | 1 artifact, 1 admission decision, 0 dispatch closures for the job | PASS |
+| Admission v3 | BLOCKED: `RAW-V2-12 round_boundary_unknown`, `RAW-V2-13 bomb_terminal_without_prior_plant`, `RAW-V2-14 victim_died_twice_in_round`; L01–L04 LIMITED | **BLOCKED (D14)** |
+| Persistence / identity / dashboard | not reached | NOT_PROVEN |
+
+### D14 — m1-cache round segmentation (run [39407958976](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39407958976))
+- Observed: 24 `round_freeze_end` (first at 1688 = `round_announce_match_start`), RAW round 1 = 5072–12853 (contains freeze_end 6352), rounds 1–22 closed, round 23 start 246747 without end, round 24 start = end = 253251 (match-end freeze took the last end — the D13b case).
+- Open question (not yet proven): whether 1688–~5072 is a round whose end was not observed or a round that was restarted; the two need different fixes. Kills/bomb placement per interval and the sampled game-rules timeline are needed → PR #164 (read-only diagnostics). D13b (PR #162) is held until this is proven, because its segmentation would also place 1688–5072 inside round 1.
+
+### RLS with the real second player account (`lojacriativa@live.com`, `2e895267`)
+Role `authenticated` with that account's JWT subject, each probe in a rolled-back transaction:
+- reads: own profile 1, own player profile 1; owner's demo jobs/uploads/RAW artifacts/RAW chunks/matches/participants/metrics/rounds/events/identity decisions/ledger/analyses/audit logs: **0**; attempts 4 and 12 by id: 0.
+- writes: `UPDATE demo_jobs` → permission denied (no grant); `UPDATE profiles` of other users → 0 rows.
+- owner (reverse): 20 jobs, 21 uploads, 8 artifacts, 850 chunks visible; second account's profile/player profile: 0.
+- `is_admin_master`/`is_staff`: false for both accounts.
+- API (PostgREST with the account's session) and frontend: NOT_PROVEN — requires signing in as that account, which only the owner can do; no match data exists for either account yet.
+
+### D15 — default table grants wider than the policies (PR #165)
+`demo_identity_decisions`, `player_nickname_history`, `raw_demo_evidence_reports` (anon + authenticated) and `raw_evidence_artifacts`, `raw_evidence_chunks` (authenticated) hold INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER although their only policy is SELECT and all writes are service role / SECURITY DEFINER. RLS blocks row writes; TRUNCATE is not governed by RLS (not reachable through PostgREST). Fix: forward-only fail-closed migration `20261020100000` keeping exactly SELECT for authenticated, nothing for anon. Status: code PASS locally; CI/production pending.
+
+### Lovable sync branch (`lovable-sync-1792490583`, PR #163)
+- Lovable edit history: latest AI edit `6929961a` ("Expôs erro de senha fraca") = sync branch base content; branch = `ece1a040` (main) + 5 Lovable commits; no divergence, no conflict with main.
+- Content: create-user error mapping (`adminErrors.ts`, safe codes `ADMIN_WEAK_PASSWORD`/`ADMIN_EMAIL_EXISTS`/`ADMIN_OPERATION_FAILED`, code/status-only log), 5 locales, `previewAuthStorage.ts` (editor preview session broker), regenerated `types.ts` (reordered; no column/function lost — e.g. `previous_chunk_sha256`, `physical_summary` present), `@lovable.dev/vite-tanstack-config` 2.25.3→2.26.5. No `services/`, migration, RLS or pipeline file.
+- CI failed on Lint (7 prettier errors) → formatting commit `0af99374`.
+- Tests added (`69e793ac`): `adminCreateUser.server.ts` (same flow, injectable) + `createPlayerUser.behavior.test.ts`: authorised create + audit; unauthorised caller blocked before any Auth call; duplicate e-mail; policy-rejected password; unknown error generic; malformed input; audit-failure rollback; no password/e-mail in error or log. Server-only (build output `.output/server/_ssr` only). Full suite 1622/1623 locally (the 1 failure is the local-only disposable-PG harness needing an OS user `lovable`; CI runs it).
+- CI on `69e793ac`: parser, contract, web/lint/build green; F553 pending at time of writing.
