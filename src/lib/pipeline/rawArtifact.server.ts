@@ -56,6 +56,40 @@ type PhysicalChunk = {
   byte_size: number;
   sha256: string;
   storage_path: string;
+  /** Per-chunk decode recorded by the APP when it verified this exact object. */
+  physical_summary?: unknown;
+};
+
+/**
+ * Sections whose rows are consumed verbatim by the completion audit (the forensic
+ * contract row and the header map names). They are always decoded again at
+ * completion; every other section is decoded once, at chunk verification.
+ */
+export const RAW_PHYSICAL_REDECODE_SECTIONS: ReadonlySet<string> = new Set(["forensic", "header"]);
+
+export const RAW_PHYSICAL_SUMMARY_VERSION = 1;
+
+/**
+ * What the APP itself derived from the physical bytes of ONE chunk when it
+ * verified that object. Bound to the chunk's sha256: at completion the object is
+ * downloaded and re-hashed again, and only a summary recorded for exactly those
+ * bytes is accepted. It never comes from the worker.
+ */
+export type RawPhysicalChunkSummary = {
+  version: typeof RAW_PHYSICAL_SUMMARY_VERSION;
+  chunk_sha256: string;
+  section: string;
+  rows: number;
+  decompressed_bytes: number;
+  fields: string[];
+  event_counts: Record<string, number>;
+  event_fields: Record<string, string[]>;
+  player_ids: string[];
+  player_fields: string[];
+  round_ids: number[];
+  round_fields: string[];
+  tick_values: number[];
+  tick_fields: string[];
 };
 
 type PhysicalSemanticAccumulator = {
@@ -139,7 +173,144 @@ async function gunzipJsonLines(
   return { rows, fields: [...fields].sort(), decompressedBytes };
 }
 
-/** Re-reads every private object; database metadata alone is never physical proof. */
+function emptySemanticAccumulator(): PhysicalSemanticAccumulator {
+  return {
+    eventNames: new Set(),
+    eventCounts: new Map(),
+    eventFields: new Map(),
+    playerIds: new Set(),
+    playerFields: new Set(),
+    roundIds: new Set(),
+    roundFields: new Set(),
+    tickValues: new Set(),
+    tickFields: new Set(),
+    forensicRows: [],
+    headerMapNames: [],
+  };
+}
+
+/**
+ * Decodes ONE physical chunk (gzip JSONL) the APP has just downloaded and hashed.
+ * Called at chunk verification, one request per chunk, so the per-row work of a
+ * large artifact is never concentrated in the single completion request.
+ */
+export async function decodeRawPhysicalChunkSummary(args: {
+  bytes: Uint8Array<ArrayBuffer>;
+  section: string;
+  sha256: string;
+  rowCount: number;
+}): Promise<RawPhysicalChunkSummary> {
+  if (RAW_PHYSICAL_REDECODE_SECTIONS.has(args.section))
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW section is decoded at completion");
+  if (rawArtifactBytesSha256(args.bytes) !== args.sha256)
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk digest mismatch");
+  const semantic = emptySemanticAccumulator();
+  let decoded: { rows: number; fields: string[]; decompressedBytes: number };
+  try {
+    decoded = await gunzipJsonLines(new Blob([args.bytes]), args.section, semantic);
+  } catch {
+    throw new PipelineError(
+      "PARSER_INVALID_RESPONSE",
+      "RAW physical chunk is not valid gzip JSONL",
+    );
+  }
+  if (decoded.rows !== args.rowCount)
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk row count mismatch");
+  return {
+    version: RAW_PHYSICAL_SUMMARY_VERSION,
+    chunk_sha256: args.sha256,
+    section: args.section,
+    rows: decoded.rows,
+    decompressed_bytes: decoded.decompressedBytes,
+    fields: decoded.fields,
+    event_counts: Object.fromEntries(
+      [...semantic.eventCounts].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    ),
+    event_fields: Object.fromEntries(
+      [...semantic.eventFields]
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([name, fields]) => [name, [...fields].sort()]),
+    ),
+    player_ids: [...semantic.playerIds].sort(),
+    player_fields: [...semantic.playerFields].sort(),
+    round_ids: [...semantic.roundIds].sort((a, b) => a - b),
+    round_fields: [...semantic.roundFields].sort(),
+    tick_values: [...semantic.tickValues].sort((a, b) => a - b),
+    tick_fields: [...semantic.tickFields].sort(),
+  };
+}
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+const isSafeIntegerArray = (value: unknown): value is number[] =>
+  Array.isArray(value) && value.every((item) => Number.isSafeInteger(item));
+
+/** Accepts a recorded summary only for exactly this chunk; anything else fails closed. */
+function acceptRawPhysicalChunkSummary(
+  value: unknown,
+  chunk: PhysicalChunk,
+): RawPhysicalChunkSummary {
+  const invalid = () =>
+    new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk summary invalid");
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw invalid();
+  const summary = value as Record<string, unknown>;
+  const eventCounts = summary["event_counts"];
+  const eventFields = summary["event_fields"];
+  if (
+    summary["version"] !== RAW_PHYSICAL_SUMMARY_VERSION ||
+    summary["chunk_sha256"] !== chunk.sha256 ||
+    summary["section"] !== chunk.section ||
+    summary["rows"] !== chunk.row_count ||
+    !Number.isSafeInteger(summary["decompressed_bytes"]) ||
+    (summary["decompressed_bytes"] as number) < 0 ||
+    !isStringArray(summary["fields"]) ||
+    !eventCounts ||
+    typeof eventCounts !== "object" ||
+    Array.isArray(eventCounts) ||
+    !Object.values(eventCounts).every((n) => Number.isSafeInteger(n) && (n as number) > 0) ||
+    !eventFields ||
+    typeof eventFields !== "object" ||
+    Array.isArray(eventFields) ||
+    !Object.values(eventFields).every(isStringArray) ||
+    Object.keys(eventFields).sort().join("\u0000") !==
+      Object.keys(eventCounts).sort().join("\u0000") ||
+    !isStringArray(summary["player_ids"]) ||
+    !isStringArray(summary["player_fields"]) ||
+    !isSafeIntegerArray(summary["round_ids"]) ||
+    !isStringArray(summary["round_fields"]) ||
+    !isSafeIntegerArray(summary["tick_values"]) ||
+    !isStringArray(summary["tick_fields"])
+  )
+    throw invalid();
+  return summary as unknown as RawPhysicalChunkSummary;
+}
+
+function mergeRawPhysicalChunkSummary(
+  semantic: PhysicalSemanticAccumulator,
+  summary: RawPhysicalChunkSummary,
+): void {
+  for (const [name, count] of Object.entries(summary.event_counts)) {
+    semantic.eventNames.add(name);
+    semantic.eventCounts.set(name, (semantic.eventCounts.get(name) ?? 0) + count);
+    const fieldSet = semantic.eventFields.get(name) ?? new Set<string>();
+    (summary.event_fields[name] ?? []).forEach((field) => fieldSet.add(field));
+    semantic.eventFields.set(name, fieldSet);
+  }
+  summary.player_ids.forEach((id) => semantic.playerIds.add(id));
+  summary.player_fields.forEach((field) => semantic.playerFields.add(field));
+  summary.round_ids.forEach((id) => semantic.roundIds.add(id));
+  summary.round_fields.forEach((field) => semantic.roundFields.add(field));
+  summary.tick_values.forEach((tick) => semantic.tickValues.add(tick));
+  summary.tick_fields.forEach((field) => semantic.tickFields.add(field));
+}
+
+/**
+ * Re-reads and re-hashes every private object at completion; database metadata
+ * alone is never physical proof. The per-row decode of a non-forensic section is
+ * taken from the summary the APP recorded when it verified those exact bytes
+ * (same sha256, re-checked here); forensic/header chunks and chunks verified
+ * without a summary are decoded again in full.
+ */
 export async function auditPhysicalRawChunks(args: {
   bucket: string;
   prefix: string;
@@ -157,19 +328,7 @@ export async function auditPhysicalRawChunks(args: {
       chunkShas: string[];
     }
   > = {};
-  const semantic: PhysicalSemanticAccumulator = {
-    eventNames: new Set(),
-    eventCounts: new Map(),
-    eventFields: new Map(),
-    playerIds: new Set(),
-    playerFields: new Set(),
-    roundIds: new Set(),
-    roundFields: new Set(),
-    tickValues: new Set(),
-    tickFields: new Set(),
-    forensicRows: [],
-    headerMapNames: [],
-  };
+  const semantic = emptySemanticAccumulator();
   let totalRows = 0;
   let totalBytes = 0;
   for (const chunk of args.chunks) {
@@ -191,13 +350,28 @@ export async function auditPhysicalRawChunks(args: {
     if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256)
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk digest mismatch");
     let decoded: { rows: number; fields: string[]; decompressedBytes: number };
-    try {
-      decoded = await gunzipJsonLines(new Blob([bytes]), chunk.section, semantic);
-    } catch {
-      throw new PipelineError(
-        "PARSER_INVALID_RESPONSE",
-        "RAW physical chunk is not valid gzip JSONL",
-      );
+    const recorded = chunk.physical_summary;
+    if (
+      recorded !== undefined &&
+      recorded !== null &&
+      !RAW_PHYSICAL_REDECODE_SECTIONS.has(chunk.section)
+    ) {
+      const summary = acceptRawPhysicalChunkSummary(recorded, chunk);
+      mergeRawPhysicalChunkSummary(semantic, summary);
+      decoded = {
+        rows: summary.rows,
+        fields: summary.fields,
+        decompressedBytes: summary.decompressed_bytes,
+      };
+    } else {
+      try {
+        decoded = await gunzipJsonLines(new Blob([bytes]), chunk.section, semantic);
+      } catch {
+        throw new PipelineError(
+          "PARSER_INVALID_RESPONSE",
+          "RAW physical chunk is not valid gzip JSONL",
+        );
+      }
     }
     if (decoded.rows !== chunk.row_count)
       throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW physical chunk row count mismatch");
@@ -701,7 +875,7 @@ export async function verifyRawArtifact(args: {
   const { data: chunks, error: chunksError } = await supabaseAdmin
     .from("raw_evidence_chunks")
     .select(
-      "section, chunk_index, row_count, byte_size, sha256, previous_chunk_sha256, status, storage_path",
+      "section, chunk_index, row_count, byte_size, sha256, previous_chunk_sha256, status, storage_path, physical_summary",
     )
     .eq("artifact_id", artifact.id)
     .order("section")

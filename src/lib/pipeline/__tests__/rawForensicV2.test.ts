@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   auditPhysicalRawChunks,
+  decodeRawPhysicalChunkSummary,
   reconcileProducerAndPhysical,
 } from "@/lib/pipeline/rawArtifact.server";
 import {
@@ -220,5 +221,184 @@ describe("RAW forensic contract v2", () => {
         }),
       ).rejects.toMatchObject({ detail: "RAW chunk path escaped artifact prefix" });
     }
+  });
+
+  describe("per-chunk physical decode recorded at verification (2dc1ddd1 CPU limit)", () => {
+    const prefix = "u/up/attempt-1";
+    const sections: Record<string, string[]> = {
+      header: [JSON.stringify({ map_name: "de_cache", tickrate: 64 })],
+      players: [
+        JSON.stringify({ steamid: "76561198000000001", name: "a" }),
+        JSON.stringify({ steamid: "76561198000000002", name: "b" }),
+      ],
+      rounds: [JSON.stringify({ number: 1, winner: "CT" }), JSON.stringify({ number: 2 })],
+      events: [
+        JSON.stringify({ event_name: "player_death", tick: 10, raw_fields: { weapon: "ak47" } }),
+        JSON.stringify({ event_name: "player_death", tick: 20, raw_fields: { headshot: true } }),
+        JSON.stringify({ event_name: "round_end", tick: 30 }),
+      ],
+      ticks: [JSON.stringify({ tick: 1, health: 100 }), JSON.stringify({ tick: 2, health: 90 })],
+      grenades: Array.from({ length: 50 }, (_, i) =>
+        JSON.stringify({ entity_id: i, grenade_type: "smoke", tick: 100 + i, X: i, Y: 1, Z: 2 }),
+      ),
+      forensic: [JSON.stringify({ field_mappings: [], forensic_contract_v2: {} })],
+    };
+    function artifact() {
+      const store = new Map<string, Uint8Array<ArrayBuffer>>();
+      const chunks = Object.entries(sections).flatMap(([section, lines]) => {
+        // Two chunks for the large section, one elsewhere.
+        const parts = section === "grenades" ? [lines.slice(0, 25), lines.slice(25)] : [lines];
+        return parts.map((part, index) => {
+          const bytes = new Uint8Array(gzipSync(Buffer.from(part.join("\n") + "\n")));
+          const storage_path = `${prefix}/${section}/chunk-${index}.jsonl.gz`;
+          store.set(storage_path, bytes);
+          return {
+            section,
+            chunk_index: index,
+            row_count: part.length,
+            byte_size: bytes.byteLength,
+            sha256: rawArtifactBytesSha256(bytes),
+            storage_path,
+          };
+        });
+      });
+      return { store, chunks };
+    }
+    async function withSummaries(
+      chunks: ReturnType<typeof artifact>["chunks"],
+      store: Map<string, Uint8Array<ArrayBuffer>>,
+    ) {
+      return Promise.all(
+        chunks.map(async (chunk) =>
+          ["forensic", "header"].includes(chunk.section)
+            ? chunk
+            : {
+                ...chunk,
+                physical_summary: await decodeRawPhysicalChunkSummary({
+                  bytes: store.get(chunk.storage_path)!,
+                  section: chunk.section,
+                  sha256: chunk.sha256,
+                  rowCount: chunk.row_count,
+                }),
+              },
+        ),
+      );
+    }
+
+    it("produces exactly the same audit as a full re-decode at completion", async () => {
+      const { store, chunks } = artifact();
+      const download = async (path: string) => new Blob([store.get(path)!]);
+      const full = await auditPhysicalRawChunks({ bucket: "b", prefix, chunks, download });
+      const summarized = await auditPhysicalRawChunks({
+        bucket: "b",
+        prefix,
+        chunks: await withSummaries(chunks, store),
+        download,
+      });
+      expect(summarized).toEqual(full);
+      expect(full["total_rows"]).toBe(61);
+    });
+
+    it("still re-hashes every object at completion and never decodes a summarized chunk again", async () => {
+      const { store, chunks } = artifact();
+      const summarized = await withSummaries(chunks, store);
+      const target = summarized.find((chunk) => chunk.section === "grenades")!;
+      // Same bytes, same digest: completion accepts the recorded decode without gunzip.
+      const downloads: string[] = [];
+      await auditPhysicalRawChunks({
+        bucket: "b",
+        prefix,
+        chunks: summarized,
+        download: async (path) => {
+          downloads.push(path);
+          return new Blob([store.get(path)!]);
+        },
+      });
+      expect(downloads.sort()).toEqual(chunks.map((chunk) => chunk.storage_path).sort());
+      // Mutated object: the digest check still fails closed before the summary is used.
+      const mutated = new Uint8Array(store.get(target.storage_path)!);
+      mutated[mutated.length - 1] = (mutated[mutated.length - 1] ?? 0) ^ 0xff;
+      await expect(
+        auditPhysicalRawChunks({
+          bucket: "b",
+          prefix,
+          chunks: summarized,
+          download: async (path) =>
+            new Blob([path === target.storage_path ? mutated : store.get(path)!]),
+        }),
+      ).rejects.toMatchObject({ detail: "RAW physical chunk digest mismatch" });
+    });
+
+    it("refuses a summary recorded for other bytes, rows or section", async () => {
+      const { store, chunks } = artifact();
+      const summarized = await withSummaries(chunks, store);
+      const download = async (path: string) => new Blob([store.get(path)!]);
+      const index = summarized.findIndex((chunk) => chunk.section === "grenades");
+      const original = summarized[index] as (typeof summarized)[number] & {
+        physical_summary: Record<string, unknown>;
+      };
+      for (const tamper of [
+        { chunk_sha256: "0".repeat(64) },
+        { rows: original.row_count + 1 },
+        { section: "ticks" },
+        { version: 2 },
+        { event_counts: { player_death: 1 }, event_fields: {} },
+        { tick_values: ["1"] },
+      ]) {
+        const chunksTampered = summarized.map((chunk, i) =>
+          i === index
+            ? { ...chunk, physical_summary: { ...original.physical_summary, ...tamper } }
+            : chunk,
+        );
+        await expect(
+          auditPhysicalRawChunks({ bucket: "b", prefix, chunks: chunksTampered, download }),
+        ).rejects.toMatchObject({ detail: "RAW physical chunk summary invalid" });
+      }
+    });
+
+    it("always decodes forensic and header chunks again, ignoring any summary", async () => {
+      const { store, chunks } = artifact();
+      const download = async (path: string) => new Blob([store.get(path)!]);
+      const full = await auditPhysicalRawChunks({ bucket: "b", prefix, chunks, download });
+      const forged = chunks.map((chunk) =>
+        ["forensic", "header"].includes(chunk.section)
+          ? { ...chunk, physical_summary: { version: 1, forged: true } }
+          : chunk,
+      );
+      expect(
+        await auditPhysicalRawChunks({ bucket: "b", prefix, chunks: forged, download }),
+      ).toEqual(full);
+    });
+
+    it("verification-time decode fails closed on digest, row count and re-decoded sections", async () => {
+      const { store, chunks } = artifact();
+      const grenades = chunks.find((chunk) => chunk.section === "grenades")!;
+      const bytes = store.get(grenades.storage_path)!;
+      await expect(
+        decodeRawPhysicalChunkSummary({
+          bytes,
+          section: "grenades",
+          sha256: "0".repeat(64),
+          rowCount: grenades.row_count,
+        }),
+      ).rejects.toMatchObject({ detail: "RAW physical chunk digest mismatch" });
+      await expect(
+        decodeRawPhysicalChunkSummary({
+          bytes,
+          section: "grenades",
+          sha256: grenades.sha256,
+          rowCount: grenades.row_count + 1,
+        }),
+      ).rejects.toMatchObject({ detail: "RAW physical chunk row count mismatch" });
+      const forensic = chunks.find((chunk) => chunk.section === "forensic")!;
+      await expect(
+        decodeRawPhysicalChunkSummary({
+          bytes: store.get(forensic.storage_path)!,
+          section: "forensic",
+          sha256: forensic.sha256,
+          rowCount: 1,
+        }),
+      ).rejects.toMatchObject({ detail: "RAW section is decoded at completion" });
+    });
   });
 });

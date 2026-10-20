@@ -3116,6 +3116,7 @@ export type Database = {
           id: string
           last_row: number | null
           previous_chunk_sha256: string | null
+          physical_summary: Json | null
           row_count: number
           section: string
           sha256: string
@@ -3136,6 +3137,7 @@ export type Database = {
           id?: string
           last_row?: number | null
           previous_chunk_sha256?: string | null
+          physical_summary?: Json | null
           row_count?: number
           section: string
           sha256: string
@@ -3156,6 +3158,7 @@ export type Database = {
           id?: string
           last_row?: number | null
           previous_chunk_sha256?: string | null
+          physical_summary?: Json | null
           row_count?: number
           section?: string
           sha256?: string
