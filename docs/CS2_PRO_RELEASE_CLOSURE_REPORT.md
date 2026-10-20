@@ -225,3 +225,21 @@ Main `39b8317e`; worker deployment `ece1c582` (semantic `c2e045b0`, build `eaaa2
 - Admission v3 RAW-V2-12 requires closed intervals → `round_boundary_unknown` for every round; RAW-V2-16 → L04 (no winners/score).
 - Consequence: with the current parser and contract, **no demo of this kind can be admitted**. Not a pairing bug; a missing observed source for round ends.
 - Status: `BLOCKED` — needs an owner decision between a parser capability (observed round ends from game-state transitions; worker release cycle) and a contract change (new limitation). No gate was relaxed.
+
+## 2026-10-20 07:1x–08:3xZ — D13 parser release (R5.8.14), controlled
+
+| Step | Evidence | Status |
+|---|---|---|
+| Parser fix | PR #159 head `fc0ea994`, 7/7 green; observed round boundaries (freeze-time entry; `total_rounds_played` +1; winner only when `round_win_status` and score delta agree). Real fixture: derived == real events (10/10 starts/ends/winners/reasons); blind parse == normal parse (rounds 10/10, events 2,707/2,707) | PASS (code) |
+| Deploy freeze | Railway `watchPatterns` → `/services/cs2-demo-parser/.release-freeze-r5-8-14` before merge; merge `7f70141b` produced SKIPPED `7409cff7` | PASS |
+| Controlled deploy | `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:7f70141b…` (skipDeploys); one deployment of the exact commit → `3acb47c5-d9a4-43f2-acff-9ead7cb12b30` SUCCESS 07:18:36Z | PASS |
+| Runtime identity | both `/version`: revision/semantic/build `git:7f70141b…`, `build.commit 7f70141b`, `declared_revision_matches: true`; `/health` ok; critical blob change only `parser.py` `981f6261`→`8f75eb61` | PASS |
+| Re-pin | PR #160 head `8da80485` 7/7 green (GSv2 11/11 incl. R5.8.14 idempotence/tamper and R5.8.13/12 under rewound head; recorder reconciliation 21/21); merged `ece1a040` | PASS |
+| Managed DB | `20261020080000` applied (guarded; file md5 `f7048299…`; 0 active jobs): recorder `19a352c2…`, assert `df0dc1b3…`, workflow guard `f74d8af9…` unchanged; owner/definer/search_path/ACL unchanged; recorded | PASS |
+| App | published from `ece1a040` (deployment `11ae2250`) | PASS |
+| Attestation | run 39390466614 → provenance `aafc259e…` VERIFIED (deployment `3acb47c5`, `7f70141b`, parser.py `8f75eb61`); `assert_verified_parser_provenance` VERIFIED | PASS |
+| Freeze removed | `watchPatterns` restored to `/services/cs2-demo-parser/**` | PASS |
+| R5.8.3 / R5.8.4 on `ece1a040` | `GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT`, failures [] / success | PASS |
+| H.3-E 39393875678 | 17/18 PASS incl. `parser_lock` (owner updated the expected-revision secrets); **`bridge_identity` FAIL `BRIDGE_EXPECTED_BUILD_MISMATCH`** (app secret `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `eaaa2c8d…`, worker serves `7f70141b…`) | **BLOCKED (owner secret)** |
+
+No demo is started while `bridge_identity` fails (the bridge would refuse the worker's H3E91 events; D8 symptom).
