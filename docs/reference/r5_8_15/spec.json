@@ -1,0 +1,113 @@
+{
+  "deployment_id": "01998834-4c35-43c2-b3e4-976f76a21fd5",
+  "branch": "main",
+  "semantic_commit": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+  "build_commit": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+  "deployment_commit": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "024c1dd48abfdd5f7d34881860b8dbd2a87a3b8a",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "39418665644987bcdd25c7456634d410",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "d9328086d1541927c4bf3b508c8c307b",
+  "observed": {
+    "observed_at": "2026-10-20T20:56:00Z",
+    "railway_deployment": {
+      "id": "01998834-4c35-43c2-b3e4-976f76a21fd5",
+      "status": "SUCCESS",
+      "commitHash": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-20T20:51:41.978Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-15 before merging PR #162; the merge push produced SKIPPED deployment 06e1c529; the first exact-commit deploy was refused during Railway incident JUA1PC5H (builds paused 17:03Z); after builds resumed for Hobby workspaces ONE deployment of the exact commit was triggered"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+      "PARSER_BUILD_REVISION": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": {
+      "https://parser.gamepro.network/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "semantic_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "build_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      },
+      "https://cs2-demo-parser-production.up.railway.app/version": {
+        "parser": {
+          "name": "demoparser2",
+          "version": "0.42.0",
+          "revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "semantic_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "build_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b"
+        },
+        "contract_version": 1,
+        "build": {
+          "commit": "a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+          "embedded": true,
+          "source": "railway",
+          "declared_revision_matches": true
+        }
+      }
+    },
+    "health": {
+      "https://parser.gamepro.network/health": {
+        "status": "ok"
+      }
+    },
+    "before": {
+      "deployment_id": "3acb47c5-d9a4-43f2-acff-9ead7cb12b30",
+      "semantic_revision": "git:7f70141b7c3ae231fbbca4c37058c4cdbdd7aacd",
+      "build_revision": "git:7f70141b7c3ae231fbbca4c37058c4cdbdd7aacd"
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-20T20:57Z",
+      "record_parser_runtime_attestation": "19a352c2be59dca326d5905c9dacb251",
+      "assert_verified_parser_provenance": "df0dc1b394d38a1f58f2a27afe0ea0cf",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "version_hosts": "GET /version on both hosts after deployment 01998834 reached SUCCESS",
+      "managed_start_state": "md5(prosrc) on the Lovable-managed database (read-only SELECT)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_14/spec.json",
+  "pin_role": "R5.8.15: re-pin semantic/build commit, Railway deployment and the parser.py critical blob after the D13b parser release (PR #162); workflow blob and other critical hashes unchanged",
+  "r5_8_14_database_target_md5": {
+    "assert_verified_parser_provenance": "df0dc1b394d38a1f58f2a27afe0ea0cf",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_14_recorder_target_md5": "19a352c2be59dca326d5905c9dacb251"
+}

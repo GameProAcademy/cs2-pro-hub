@@ -22,9 +22,10 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
     from scripts.h3e91_live_preflight import BRANCH as PF_BRANCH, DEPLOYMENT as PF_DEPLOYMENT, PARSER_REVISION, SOURCE_COMMIT
     # R5.8.13 advanced only the deployment ID (redeploy of the same image); R5.8.14 (D13
     # parser release) advanced semantic/build commit, deployment and the parser.py blob.
-    # The R5.8.11 spec itself stays frozen; the active pins are the R5.8.14 spec.
+    # R5.8.15 (D13b) advanced them again the same way. The R5.8.11 spec itself stays frozen;
+    # the active pins are the R5.8.15 spec.
     r5813 = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
-    active = json.loads((ROOT / "docs/reference/r5_8_14/spec.json").read_text(encoding="utf-8"))
+    active = json.loads((ROOT / "docs/reference/r5_8_15/spec.json").read_text(encoding="utf-8"))
     assert SPEC["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert r5813["observed"]["railway_deployment"]["redeploy_of"] == SPEC["deployment_id"]
     assert (r5813["semantic_commit"], r5813["build_commit"]) == (SPEC["semantic_commit"], SPEC["build_commit"])

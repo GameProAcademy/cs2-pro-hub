@@ -132,14 +132,17 @@ def test_rollback_contexts_restore_the_r5_8_13_recorder_body_exactly():
 
 
 def test_every_active_repository_pin_names_the_released_runtime():
+    """R5.8.14 is historical since R5.8.15 (D13b): no active pin may still name it."""
+    r5815 = json.loads((ROOT / "docs/reference/r5_8_15/spec.json").read_text(encoding="utf-8"))
+    assert r5815["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW_DEPLOYMENT in text and OLD_DEPLOYMENT not in text, path
-        assert NEW_COMMIT in text and OLD_BUILD not in text, path
+        assert r5815["deployment_id"] in text, path
+        assert NEW_DEPLOYMENT not in text and OLD_DEPLOYMENT not in text, path
+        assert NEW_COMMIT not in text and OLD_BUILD not in text, path
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
-    assert f'DEPLOYED_WORKER_REVISION = "git:{NEW_COMMIT}"' in adapter
-    assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{NEW_COMMIT}"' in adapter
+    assert f'DEPLOYED_WORKER_REVISION = "git:{r5815["semantic_commit"]}"' in adapter
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW_PARSER in text and OLD_PARSER not in text, path
+        assert NEW_PARSER not in text and OLD_PARSER not in text, path

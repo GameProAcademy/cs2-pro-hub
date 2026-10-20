@@ -744,7 +744,7 @@ def snapshot_pins(root: Path) -> dict[str, Any]:
     import r5_8_11  # noqa: PLC0415
     from scripts.parser_runtime_attestation import (  # noqa: PLC0415
         BRANCH, BUILD_COMMIT, COMMIT, DEPLOYMENT, EXPECTED_HASHES, PROJECT, SERVICE)
-    spec = json.loads((root / "docs/reference/r5_8_14/spec.json").read_text(encoding="utf-8"))
+    spec = json.loads((root / "docs/reference/r5_8_15/spec.json").read_text(encoding="utf-8"))
     registry = json.loads((root / "scripts/approved_attestation_workflow.json").read_text(encoding="utf-8"))
     if (spec["deployment_id"], spec["build_commit"], spec["semantic_commit"], spec["branch"]) != (
             DEPLOYMENT, BUILD_COMMIT, COMMIT, BRANCH) or spec["workflow_source_sha"] != registry["source_sha"]:
