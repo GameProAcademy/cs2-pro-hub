@@ -300,8 +300,10 @@ def _finite_number(value: Any) -> int | float | None:
 
 ROUND_STATE_PROPERTIES: tuple[str, ...] = (
     "is_freeze_period", "is_warmup_period", "total_rounds_played",
-    "round_win_status", "round_win_reason", "team_rounds_total", "team_num",
+    "round_win_status", "round_win_reason", "team_rounds_total", "team_num", "game_phase",
 )
+# CCSGameRules::m_gamePhase value once the match has ended (demoparser2 game_phase).
+GAME_PHASE_MATCH_ENDED = 5
 # Game-rules values are identical for every player row of a tick. Reading them for
 # a few players per side (in ONE pass over the demo) bounds rows and memory.
 ROUND_STATE_PLAYERS_PER_SIDE = 2
@@ -351,10 +353,17 @@ def _parse_round_state_transitions(
     Used only when the demo does not advertise ``round_start``/``round_end``. Both
     boundaries are OBSERVED state transitions, never inferred or interpolated:
 
-    * a round starts at the tick where play enters freeze time outside warmup
-      (``is_freeze_period`` rising edge) - the tick ``round_start`` fires on;
     * a round ends at the tick where ``total_rounds_played`` increases by
-      exactly one outside warmup - the tick ``round_end`` fires on.
+      exactly one outside warmup - the tick ``round_end`` fires on;
+    * a round starts at the first observed start candidate inside its own
+      segment, i.e. at or after the previous round's end tick and before its
+      own end tick. Candidates are: play entering freeze time outside warmup
+      (``is_freeze_period`` rising edge - the tick ``round_start`` fires on),
+      play leaving warmup (the match going live straight into round 1), and
+      the first observed tick when the recording already begins in live play;
+    * after the last end, a candidate is kept (a round still in progress when
+      the recording stops) unless the game state says the match has ended
+      (``game_phase`` = 5): the freeze time entered at match end is not a round.
 
     The winner is recorded only when two independent observations agree:
     ``round_win_status`` (2 = T, 3 = CT, the ``round_end.winner`` code) and the
@@ -367,7 +376,7 @@ def _parse_round_state_transitions(
     chosen = _round_state_players(players)
     if not chosen:
         return None, ValueError("no observed player per side for the game-state round audit")
-    starts: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
     ends: list[dict[str, Any]] = []
     previous: dict[str, Any] | None = None
     try:
@@ -393,10 +402,19 @@ def _parse_round_state_transitions(
                         value = _state_int(scores.at[tick, team])
                         if value is not None:
                             team_scores[team] = value
-            state = {"live_freeze": live_freeze, "played": played, "scores": team_scores}
-            if previous is not None:
+            phase = _state_int(head.get("game_phase"))
+            state = {"live_freeze": live_freeze, "warmup": warmup, "played": played, "scores": team_scores}
+            if previous is None:
+                if not warmup:
+                    candidates.append({"tick": tick, "phase": phase,
+                                       "derived_from": "game_state.first_observed_live_tick"})
+            else:
                 if live_freeze and not previous["live_freeze"]:
-                    starts.append({"tick": tick, "derived_from": "game_state.is_freeze_period"})
+                    candidates.append({"tick": tick, "phase": phase,
+                                       "derived_from": "game_state.is_freeze_period"})
+                elif previous["warmup"] and not warmup:
+                    candidates.append({"tick": tick, "phase": phase,
+                                       "derived_from": "game_state.is_warmup_period"})
                 if (not warmup and played is not None and previous["played"] is not None
                         and played == previous["played"] + 1):
                     end: dict[str, Any] = {"tick": tick,
@@ -419,7 +437,25 @@ def _parse_round_state_transitions(
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
         _reraise_non_demo_failure(exc)
         return None, exc
-    return {"round_starts": starts, "round_ends": ends}, None
+    return {"round_starts": _segment_round_starts(candidates, ends), "round_ends": ends}, None
+
+
+def _segment_round_starts(
+    candidates: list[dict[str, Any]], ends: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """One start per round: the first candidate in [previous end, own end)."""
+    end_ticks = [end["tick"] for end in ends]
+    starts: list[dict[str, Any]] = []
+    for index, end_tick in enumerate(end_ticks):
+        low = end_ticks[index - 1] if index else None
+        inside = [c for c in candidates if (low is None or c["tick"] >= low) and c["tick"] < end_tick]
+        if inside:
+            starts.append({"tick": inside[0]["tick"], "derived_from": inside[0]["derived_from"]})
+    last = end_ticks[-1] if end_ticks else None
+    trailing = [c for c in candidates if last is None or c["tick"] >= last]
+    if trailing and trailing[0]["phase"] != GAME_PHASE_MATCH_ENDED:
+        starts.append({"tick": trailing[0]["tick"], "derived_from": trailing[0]["derived_from"]})
+    return starts
 
 
 def derive_round_streams_from_tick_evidence(raw: dict[str, Any]) -> None:
