@@ -31,7 +31,13 @@
 import { rawArtifactSha256, stableRawArtifactJson } from "@/lib/pipeline/rawArtifactContract";
 
 export const ADMISSION_V3_CONTRACT = "cs2.raw-admission.v3" as const;
-export const ADMISSION_V3_RULESET_VERSION = 1 as const;
+/**
+ * 1: initial ruleset.
+ * 2: RAW-V2-14 accepts a later death of a victim whose every earlier death in the round
+ *    was self-inflicted (respawn after a freeze-time/pause self-kill, production job
+ *    7131abd3); two deaths caused by another participant still block.
+ */
+export const ADMISSION_V3_RULESET_VERSION = 2 as const;
 
 export type AdmissionVerdictV3 = "PASS" | "LIMITED" | "BLOCKED";
 export type EvidenceStateV3 = "PASS" | "UNAVAILABLE" | "UNPROVEN" | "FAILED";
@@ -646,20 +652,35 @@ export function verifyCanonicalSemanticsV3(
   }
 
   // RAW-V2-14 combat: every kill has a known victim and a known (or world) attacker,
-  // nobody dies twice in a round, damage is a non-negative number between participants.
+  // nobody dies twice in a round (except after self-inflicted deaths, see below), damage
+  // is a non-negative number between participants.
   {
     const reasons: string[] = [];
     const kills = bundle.events.filter((event) => event.type === "kill");
     const damage = bundle.events.filter((event) => event.type === "damage");
-    const deathsPerRound = new Set<string>();
-    for (const kill of kills) {
+    // Per round and victim: deaths so far, and whether any of them was caused by
+    // someone else. A player can be alive again after a self-inflicted death (the game
+    // respawns a player who kills themself or reconnects during freeze time / a pause),
+    // so a later death is accepted only when every earlier death in the round was
+    // self-inflicted (actor == victim). Two deaths caused by another participant, or a
+    // self-inflicted death after a death by someone else, still block.
+    const deathsPerRound = new Map<string, { otherCaused: boolean }>();
+    const ordered = [...kills].sort((a, b) => (a.tick ?? -1) - (b.tick ?? -1));
+    for (const kill of ordered) {
       if (!kill.victimParticipantKey || !participants.has(kill.victimParticipantKey))
         reasons.push("kill_victim_unknown");
       if (kill.actorParticipantKey && !participants.has(kill.actorParticipantKey))
         reasons.push("kill_attacker_unknown");
       const key = `${kill.roundNumber}:${kill.victimParticipantKey}`;
-      if (deathsPerRound.has(key)) reasons.push("victim_died_twice_in_round");
-      deathsPerRound.add(key);
+      const selfInflicted =
+        kill.victimParticipantKey != null && kill.actorParticipantKey === kill.victimParticipantKey;
+      const previous = deathsPerRound.get(key);
+      if (previous) {
+        if (previous.otherCaused || kill.tick == null) reasons.push("victim_died_twice_in_round");
+        previous.otherCaused = previous.otherCaused || !selfInflicted;
+      } else {
+        deathsPerRound.set(key, { otherCaused: !selfInflicted });
+      }
     }
     for (const hit of damage) {
       if (hit.damage == null || !Number.isFinite(hit.damage) || hit.damage < 0)
