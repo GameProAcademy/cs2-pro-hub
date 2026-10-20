@@ -531,6 +531,67 @@ async function currentRawJob(input: DurableJobClaim & { jobId: string }) {
   return { db, job };
 }
 
+type ChunkForPhysicalSummary = {
+  section: string;
+  chunk_index: number;
+  storage_path: string;
+  sha256: string;
+  byte_size: number;
+  row_count: number;
+  physical_summary?: unknown;
+};
+
+/**
+ * Reads ONE stored chunk, checks its size and digest and, for a section the
+ * completion audit does not re-decode, records the APP's own decode of those
+ * bytes. Bounded per request: one chunk.
+ */
+async function recordRawChunkPhysicalSummary(
+  db: Awaited<ReturnType<typeof context>>["db"],
+  artifactId: string,
+  chunk: ChunkForPhysicalSummary,
+  verifiedAt: string | null,
+) {
+  const bytes = await downloadRawEvidenceChunk(chunk.storage_path, chunk.byte_size);
+  if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk verification failed");
+  }
+  const physicalSummary = RAW_PHYSICAL_REDECODE_SECTIONS.has(chunk.section)
+    ? null
+    : await decodeRawPhysicalChunkSummary({
+        bytes,
+        section: chunk.section,
+        sha256: chunk.sha256,
+        rowCount: chunk.row_count,
+      });
+  const update = verifiedAt
+    ? {
+        status: "verified",
+        uploaded_at: verifiedAt,
+        verified_at: verifiedAt,
+        physical_summary: physicalSummary as unknown as Json,
+      }
+    : { physical_summary: physicalSummary as unknown as Json };
+  let query = db
+    .from("raw_evidence_chunks")
+    .update(update)
+    .eq("artifact_id", artifactId)
+    .eq("section", chunk.section)
+    .eq("chunk_index", chunk.chunk_index)
+    .eq("sha256", chunk.sha256);
+  // A backfill never touches the lifecycle and never overwrites a recorded summary.
+  if (!verifiedAt) query = query.eq("status", "verified").is("physical_summary", null);
+  const { error } = await query;
+  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+}
+
+function needsPhysicalSummary(chunk: { section: string; physical_summary?: unknown }) {
+  return (
+    !RAW_PHYSICAL_REDECODE_SECTIONS.has(chunk.section) &&
+    (chunk.physical_summary === null || chunk.physical_summary === undefined)
+  );
+}
+
 export async function initializeRawArtifact(input: DurableJobClaim & { jobId: string }) {
   const { db, job } = await currentRawJob(input);
   const prefix = rawPrefix(job.user_id, job.upload_id, job.attempt_number);
@@ -583,6 +644,24 @@ export async function initializeRawArtifact(input: DurableJobClaim & { jobId: st
         `[raw-artifact] event=raw_artifact_recovery artifact=${String(existing.id).slice(0, 8)}`,
       );
       return { ...recovered, recovered: true };
+    }
+    if (existing.status === "ready") {
+      const { data: readyChunks, error: readyChunksError } = await db
+        .from("raw_evidence_chunks")
+        .select("section, physical_summary")
+        .eq("artifact_id", existing.id);
+      if (readyChunksError) throw new PipelineError("PERSISTENCE_ERROR", readyChunksError.message);
+      const missing = (readyChunks ?? []).filter(needsPhysicalSummary).length;
+      if (missing > 0) {
+        // Verified before per-chunk summaries existed. The artifact stays READY and
+        // immutable in the database; the worker is asked to walk its chunks again
+        // so each one is summarized in its own bounded request (prepare -> reuse),
+        // and finalize re-checks the immutable root and manifest.
+        console.info(
+          `[raw-artifact] event=raw_physical_summary_backfill artifact=${String(existing.id).slice(0, 8)} chunks=${missing}`,
+        );
+        return { ...existing, status: "verifying", physical_summary_backfill: true };
+      }
     }
     return existing;
   }
@@ -655,14 +734,14 @@ export async function prepareRawChunk(
   if (
     !artifact ||
     artifact.storage_prefix !== prefix ||
-    !["creating", "uploading", "verifying"].includes(artifact.status)
+    !["creating", "uploading", "verifying", "ready"].includes(artifact.status)
   ) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "invalid RAW artifact state");
   }
   const { data: existingChunk, error: existingChunkError } = await db
     .from("raw_evidence_chunks")
     .select(
-      "storage_path, first_row, last_row, row_count, byte_size, sha256, previous_chunk_sha256, status",
+      "storage_path, first_row, last_row, row_count, byte_size, sha256, previous_chunk_sha256, status, physical_summary",
     )
     .eq("artifact_id", input.artifactId)
     .eq("section", input.section)
@@ -680,7 +759,20 @@ export async function prepareRawChunk(
     sha256: input.sha256,
     previous_chunk_sha256: input.previousChunkSha256,
   });
-  if (recovery === "reuse") return { path, alreadyVerified: true };
+  if (recovery === "reuse") {
+    if (existingChunk && needsPhysicalSummary({ section: input.section, ...existingChunk })) {
+      await recordRawChunkPhysicalSummary(
+        db,
+        input.artifactId,
+        { ...existingChunk, section: input.section, chunk_index: input.chunkIndex },
+        null,
+      );
+    }
+    return { path, alreadyVerified: true };
+  }
+  // A READY artifact is immutable: only an identical, verified chunk may be re-presented.
+  if (artifact.status === "ready")
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "READY RAW artifact is immutable");
   const { error } = await db.from("raw_evidence_chunks").upsert(
     {
       artifact_id: input.artifactId,
@@ -751,31 +843,12 @@ export async function verifyRawChunk(
   // The APP reads the object it is about to mark verified, hashes it and, for every
   // section the completion audit does not re-decode, decodes it here: one chunk per
   // request, so a large artifact never concentrates its per-row work in `complete`.
-  const bytes = await downloadRawEvidenceChunk(chunk.storage_path, chunk.byte_size);
-  if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256) {
-    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk verification failed");
-  }
-  const physicalSummary = RAW_PHYSICAL_REDECODE_SECTIONS.has(input.section)
-    ? null
-    : await decodeRawPhysicalChunkSummary({
-        bytes,
-        section: input.section,
-        sha256: chunk.sha256,
-        rowCount: chunk.row_count,
-      });
-  const now = new Date().toISOString();
-  const { error } = await db
-    .from("raw_evidence_chunks")
-    .update({
-      status: "verified",
-      uploaded_at: now,
-      verified_at: now,
-      physical_summary: physicalSummary as unknown as Json,
-    })
-    .eq("artifact_id", input.artifactId)
-    .eq("section", input.section)
-    .eq("chunk_index", input.chunkIndex);
-  if (error) throw new PipelineError("PERSISTENCE_ERROR", error.message);
+  await recordRawChunkPhysicalSummary(
+    db,
+    input.artifactId,
+    { ...chunk, section: input.section, chunk_index: input.chunkIndex },
+    new Date().toISOString(),
+  );
   return { verified: true };
 }
 
