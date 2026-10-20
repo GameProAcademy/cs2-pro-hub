@@ -9,15 +9,21 @@ import { RAW_CHUNK_HARD_MAX_BYTES, type DurableDemoCompletionV1 } from "@/lib/pi
 import {
   RAW_ARTIFACT_SECTION_ORDER,
   deriveRawArtifactAuditStatus,
+  rawArtifactBytesSha256,
   rawArtifactSha256,
   stableRawArtifactJson,
 } from "@/lib/pipeline/rawArtifactContract";
+import {
+  RAW_PHYSICAL_REDECODE_SECTIONS,
+  decodeRawPhysicalChunkSummary,
+} from "@/lib/pipeline/rawArtifact.server";
+import type { Json } from "@/integrations/supabase/types";
 import { createDemoSignedUrl, demoExists } from "@/lib/pipeline/storage.server";
 import {
   createRawEvidenceSignedUploadUrl,
-  rawEvidenceObjectSha256,
   uploadRawEvidenceManifest,
 } from "@/lib/pipeline/storage.server";
+import { downloadRawEvidenceChunk } from "@/lib/pipeline/rawEvidenceObject.server";
 
 const VISIBILITY_SECONDS = 15 * 60;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -693,6 +699,7 @@ export async function prepareRawChunk(
       failed_at: null,
       uploaded_at: null,
       verified_at: null,
+      physical_summary: null,
     },
     { onConflict: "artifact_id,section,chunk_index" },
   );
@@ -733,18 +740,38 @@ export async function verifyRawChunk(
   }
   const { data: chunk } = await db
     .from("raw_evidence_chunks")
-    .select("storage_path, sha256")
+    .select("storage_path, sha256, byte_size, row_count")
     .eq("artifact_id", input.artifactId)
     .eq("section", input.section)
     .eq("chunk_index", input.chunkIndex)
     .maybeSingle();
-  if (!chunk || (await rawEvidenceObjectSha256(chunk.storage_path)) !== chunk.sha256) {
+  if (!chunk) {
     throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk verification failed");
   }
+  // The APP reads the object it is about to mark verified, hashes it and, for every
+  // section the completion audit does not re-decode, decodes it here: one chunk per
+  // request, so a large artifact never concentrates its per-row work in `complete`.
+  const bytes = await downloadRawEvidenceChunk(chunk.storage_path, chunk.byte_size);
+  if (bytes.byteLength !== chunk.byte_size || rawArtifactBytesSha256(bytes) !== chunk.sha256) {
+    throw new PipelineError("PARSER_INVALID_RESPONSE", "RAW chunk verification failed");
+  }
+  const physicalSummary = RAW_PHYSICAL_REDECODE_SECTIONS.has(input.section)
+    ? null
+    : await decodeRawPhysicalChunkSummary({
+        bytes,
+        section: input.section,
+        sha256: chunk.sha256,
+        rowCount: chunk.row_count,
+      });
   const now = new Date().toISOString();
   const { error } = await db
     .from("raw_evidence_chunks")
-    .update({ status: "verified", uploaded_at: now, verified_at: now })
+    .update({
+      status: "verified",
+      uploaded_at: now,
+      verified_at: now,
+      physical_summary: physicalSummary as unknown as Json,
+    })
     .eq("artifact_id", input.artifactId)
     .eq("section", input.section)
     .eq("chunk_index", input.chunkIndex);
