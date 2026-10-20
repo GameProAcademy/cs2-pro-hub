@@ -205,3 +205,23 @@ Main `39b8317e`; worker deployment `ece1c582` (semantic `c2e045b0`, build `eaaa2
 ### Observations
 - The worker heartbeat loop keeps writing `stage=parsing` during app completion, so `stage` is not reliable during finalization.
 - App logs show an external scanner probing 40+ secret paths at 02:33Z (all 404/cancelled).
+
+## 2026-10-20 06:0x–06:3xZ — D12 shipped, D13 root cause proven
+
+### D12 shipped (production code; production behaviour NOT_PROVEN)
+- PR #157 head `8c833ea5`: 7/7 checks green on the exact SHA (incl. queue semantics on a disposable DB and the real worker/bridge/storage E2E); merged as `e945a564f006cd9d1419df9851c7c10a894d03d8`; no `services/` file.
+- Migration `20261020060000` applied before publish in one guarded DO block (file md5 `46e8028e…` asserted, not previously recorded, 0 active jobs); read back: column `jsonb`, CHECK present, stored statement md5 `46e8028e…`. Rollback: `ALTER TABLE public.raw_evidence_chunks DROP COLUMN physical_summary` (nullable; old code ignores it).
+- PR #158 (round diagnostics) head `0ab84e2b`: 7/7 green; merged as `35e588389db527d0eab03a27344b1ce96b7847d1`.
+- Lovable synced `35e58838`; published (deployment `2a9d511d-7bd9-45da-be06-214c4fc5842f`).
+- D12 in production stays `NOT_PROVEN` until a real job of the large demo completes within the CPU limit.
+
+### D13 — root cause (RAW audit reasons runs 39380210774 and 39380306461)
+| Job / DEM | RAW round rows | `round_start` | `round_end` | `round_officially_ended` | `round_freeze_end` | `cs_win_panel_match` | rounds without end tick | winners |
+|---|---|---|---|---|---|---|---|---|
+| `9572a234` m2-mirage | 23 | 0 | 0 | 0 | 23 (= round start ticks) | 1 @193184 | 23/23 | none |
+| `2dc1ddd1` m1-cache | 24 | 0 | 0 | 0 | 24 | 1 @253444 | 24/24 | none |
+
+- These demos do not advertise `round_start`/`round_end`. The parser (`derive_round_streams_from_tick_evidence`, parser.py) derives start ticks from `round_start_time` and, by design, leaves end ticks and winners unknown ("no winner, score, or team is invented").
+- Admission v3 RAW-V2-12 requires closed intervals → `round_boundary_unknown` for every round; RAW-V2-16 → L04 (no winners/score).
+- Consequence: with the current parser and contract, **no demo of this kind can be admitted**. Not a pairing bug; a missing observed source for round ends.
+- Status: `BLOCKED` — needs an owner decision between a parser capability (observed round ends from game-state transitions; worker release cycle) and a contract change (new limitation). No gate was relaxed.
