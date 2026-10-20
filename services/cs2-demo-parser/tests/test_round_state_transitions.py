@@ -19,8 +19,8 @@ import parser as P
 from parser import _parse_round_state_transitions, derive_round_streams_from_tick_evidence
 
 
-def _rows(tick, *, freeze=False, warmup=False, played=0, status=0, reason=0, t_score=0, ct_score=0):
-    base = {"tick": tick, "is_freeze_period": freeze, "is_warmup_period": warmup,
+def _rows(tick, *, freeze=False, warmup=False, played=0, status=0, reason=0, t_score=0, ct_score=0, phase=2):
+    base = {"tick": tick, "is_freeze_period": freeze, "is_warmup_period": warmup, "game_phase": phase,
             "total_rounds_played": played, "round_win_status": status, "round_win_reason": reason}
     return [
         {**base, "team_num": 2, "team_rounds_total": t_score, "steamid": 1},
@@ -160,3 +160,52 @@ def test_real_demo_parse_without_round_events_equals_the_event_based_parse(monke
     lifecycle = {"round_start", "round_end", "round_officially_ended"}
     assert [(e["type"], e["round"], e.get("tick")) for e in a["events"] if e["type"] not in lifecycle] == \
         [(e["type"], e["round"], e.get("tick")) for e in b["events"] if e["type"] not in lifecycle]
+
+
+def test_production_pattern_round_one_without_freeze_and_freeze_at_match_end():
+    """Job 17aab15c (m2-mirage, 2026-10-20): warmup ends straight into live play (no freeze
+    before round 1), and the match-ending tick enters freeze time with game_phase 5. The
+    first version paired round 1's end away and gave the last end to that phantom start."""
+    rows = []
+    rows += _rows(1, warmup=True)
+    rows += _rows(100)                                                         # live, no freeze: round 1
+    rows += _rows(200, played=1, status=2, reason=9, t_score=1)                # round 1 end
+    rows += _rows(250, played=1, freeze=True, t_score=1)                       # round 2 freeze entry
+    rows += _rows(300, played=1, t_score=1)
+    rows += _rows(400, played=2, status=3, reason=8, t_score=1, ct_score=1,    # round 2 end = match end
+                  freeze=True, phase=5)
+    out, error = _parse_round_state_transitions(FakeDemo(rows), PLAYERS)
+    assert error is None
+    assert out["round_starts"] == [
+        {"tick": 100, "derived_from": "game_state.is_warmup_period"},
+        {"tick": 250, "derived_from": "game_state.is_freeze_period"},
+    ]
+    assert [(e["tick"], e.get("winner")) for e in out["round_ends"]] == [(200, 2), (400, 3)]
+
+
+def test_recording_that_starts_live_and_stops_mid_round():
+    rows = []
+    rows += _rows(10)                                                          # first tick already live
+    rows += _rows(20, played=1, status=2, reason=9, t_score=1)
+    rows += _rows(30, played=1, freeze=True, t_score=1)                        # round 2 starts...
+    rows += _rows(40, played=1, t_score=1)                                     # ...recording stops
+    out, error = _parse_round_state_transitions(FakeDemo(rows), PLAYERS)
+    assert error is None
+    assert out["round_starts"] == [
+        {"tick": 10, "derived_from": "game_state.first_observed_live_tick"},
+        # A round still in progress at the end of the recording keeps its start and has no end.
+        {"tick": 30, "derived_from": "game_state.is_freeze_period"},
+    ]
+    assert [e["tick"] for e in out["round_ends"]] == [20]
+
+
+def test_one_start_per_round_even_with_several_candidates():
+    rows = []
+    rows += _rows(1, warmup=True)
+    rows += _rows(5)                                                           # warmup -> live
+    rows += _rows(8, freeze=True)                                              # freeze entry, same round
+    rows += _rows(12)
+    rows += _rows(20, played=1, status=3, reason=8, ct_score=1)
+    out, error = _parse_round_state_transitions(FakeDemo(rows), PLAYERS)
+    assert error is None
+    assert [s["tick"] for s in out["round_starts"]] == [5]
