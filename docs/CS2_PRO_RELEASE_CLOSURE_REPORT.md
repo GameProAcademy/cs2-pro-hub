@@ -427,3 +427,32 @@ The job state was not forced, and the demo was neither deleted nor re-uploaded.
 - No data, quarantine, provenance, or Canonical rows were changed.
 - Every migration is md5-guarded both ways and has an inverse rollback (`docs/reference/d18`, `docs/reference/d20`).
 - Pending (NOT_PROVEN until observed): the owner re-selects the player on the Mirage job (`921b55cf`, currently `failed`). Expected: a new dispatch (`dispatch_attempt` 4), an identical re-observation (`unchanged_reobservation`), personal metrics, and the dashboard. Second-account isolation is to be re-checked afterwards.
+
+## 2026-10-21 11:0x–17:xxZ — failed-demo recovery shipped, Mirage personal metrics proven, D21/D22 found
+
+### Failed analysed demo had no recovery action (PR #176, merged `b33f989a`, published `f669dcaa`)
+- Root cause: `src/components/pipeline/DemoIngestPanel.tsx` rendered `DemoPlayerIdentity` only when `job.status === "processed"`. Separately, the plain retry needs `retryCount < maxRetries`. The Mirage job was `failed`, with retry_count 3 > max 2, so the card had no action.
+- Fix: `identityActionFor()` (`src/lib/pipeline/identityRecovery.ts`), shared by the card and `declareDemoPlayer`; "Selecionar jogador e tentar novamente"; an expired demo file gets explicit re-upload guidance. CI 7/7 green on `8cf158bb`.
+- The owner confirmed the button appears and the selection started processing (2026-10-21 13:58 local).
+
+### Mirage end to end after the selection (production, read-only)
+| Check | Evidence | Status |
+|---|---|---|
+| D18 new dispatch | declaration 16:47:47Z; pgmq msg 55 `attempt` 4, `read_ct` 1; new execution `8a4ab823` (ledger INTENT→STARTED→FINISHED `PARSE_SUCCEEDED`, build `a5d8c425`); no replay | PASS |
+| Dispatch 4 completion | failed; msg 55 archived and msg 56 (`attempt` 5) sent at 16:51:30Z; cause not recorded anywhere (→ D21) | FAIL (cause unknown) |
+| Dispatch 5 | execution `2382b8d2` `PARSE_SUCCEEDED` 16:53:30Z; job `processed`/`done` 16:54:04Z, `duration_ms` 33,616; retry_count 5 / max 6 | PASS |
+| D20 reuse | 1 match for the content; 4,264 events, all `created_at` 01:52:30Z (not rewritten); `observation_count` 2; `rounds_digest` set | PASS |
+| Identity | `identity_status resolved`, `self_declared_player`, `manual_selected`; 1 decision (no duplicate); 1 participant linked | PASS |
+| Personal metrics | 1 `match_metrics` and 1 `match_features` row; kills 13 = 13 kill events, deaths 13 = 13, assists 8 = 8, HS 7/13 = 53.8 %, ADR 91.4, rounds_played 22 | PASS |
+| Isolation (D19 live) | as `authenticated`, rolled back: owner sees match 1, participants 10, events 4,264, metrics 1, features 1, decisions 1, nick history 1; second account (`2e895267`) sees 0 of each | PASS |
+| Opening duels / trades / KAST | NULL: every event has a tick but `time_seconds` NULL and the stored tickrate is NULL (→ D22) | FAIL (D22) |
+| Dashboard rendering | requires the owner's session | NOT_PROVEN |
+
+### D21 — a retried dispatch failure is lost (PR #178)
+`fail_demo_parse_message` stores the error only on `demo_jobs`; the next success clears it. New `demo_job_dispatch_failures` (owner-scoped RLS, no client writes), written before the job row changes. md5 `b6ae590f → 0eb6687c`. Probe: 5 scenarios.
+
+### D22 — no event has a time, so opening duels, trades and flash assists are NULL (PR #177, draft, release-gated)
+- RAW physical summary of the Mirage artifact: `player_death` fields carry no `game_time`/`total_rounds_played` (the event stream fell back to plain rows); the header has no playback tickrate; the `ticks` section (4,096 rows) carries `tick` + `game_time`.
+- Also a latent bug: the native time index was keyed by `total_rounds_played` (completed rounds), which never equals the contract round.
+- Fix in the parser: event game time from the demo's own proven tick→game_time relation (exactly linear over every sampled tick, else unknown); `header.tickrate` stays NULL. Parser suite 440 passed.
+- Needs a worker release (R5.8.16 repin) and the owner updating the three app secrets.
