@@ -1,16 +1,17 @@
 /**
  * FASE 2.7.2A — "WHO ARE YOU IN THIS DEMO?"
  *
- * Shown for an analysed match that is not linked to the user yet. The user
- * either picks one of the players the parser detected, or types the nickname
- * used in that match. Nothing is ever auto-picked from a similar nickname.
+ * Shown for an analysed match that is not linked to the user yet. The user picks
+ * one of the players the parser detected (free-text nicknames are not accepted).
+ * When exactly one player carries a nickname the user already confirmed in an
+ * earlier demo, the dialog first asks "is this you?"; nothing is attached until
+ * the user says yes, and "no" shows every player.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -65,7 +66,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   const t = useT();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
-  const [nickname, setNickname] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const [result, setResult] = useState<DeclareResult | null>(null);
   const [open, setOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -76,8 +77,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   });
 
   const declare = useMutation({
-    mutationFn: (input: { participantKey?: string; nickname?: string }) =>
-      declareDemoPlayer({ data: { jobId, ...input } }),
+    mutationFn: (participantKey: string) => declareDemoPlayer({ data: { jobId, participantKey } }),
     onSuccess: (declared) => {
       setResult(declared);
       queryClient.invalidateQueries({ queryKey: ["pipeline", "jobs"] });
@@ -95,10 +95,8 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
     },
   });
 
-  const participants: DemoParticipantView[] =
-    result?.candidates && result.candidates.length > 0
-      ? result.candidates
-      : (identity.data?.participants ?? []);
+  const participants: DemoParticipantView[] = identity.data?.participants ?? [];
+  const suggestion = identity.data?.suggestion ?? null;
 
   const uiState = deriveIdentityUiState(identity.data, {
     loading: identity.isLoading,
@@ -107,6 +105,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   });
   const automatic = uiState === "automatic_review";
   const needsManual = uiState === "manual_selection" || uiState === "conflict";
+  const askSuggestion = needsManual && suggestion !== null && !showAll && !result;
 
   useEffect(() => {
     if (identity.data && (automatic || needsManual)) setOpen(true);
@@ -161,7 +160,36 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {participants.length > 0 ? (
+              {askSuggestion && suggestion ? (
+                <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
+                  <p className="font-semibold text-foreground">
+                    {t("pipeline.identify.suggestion").replace(
+                      "{nickname}",
+                      suggestion.nickname ?? suggestion.participantKey,
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("pipeline.identify.suggestionWhy")}
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      className="min-h-11"
+                      disabled={declare.isPending}
+                      onClick={() => declare.mutate(suggestion.participantKey)}
+                    >
+                      {t("pipeline.identify.selectCta")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      disabled={declare.isPending}
+                      onClick={() => setShowAll(true)}
+                    >
+                      {t("pipeline.identify.showAll")}
+                    </Button>
+                  </div>
+                </div>
+              ) : participants.length > 0 ? (
                 <fieldset className="space-y-2">
                   <legend className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                     {t("pipeline.identify.selectLabel")}
@@ -199,7 +227,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                     size="sm"
                     className="mt-2 min-h-11 w-full sm:w-auto"
                     disabled={isParticipantConfirmationDisabled(selected, declare.isPending)}
-                    onClick={() => selected && declare.mutate({ participantKey: selected })}
+                    onClick={() => selected && declare.mutate(selected)}
                   >
                     {t("pipeline.identify.selectCta")}
                   </Button>
@@ -209,34 +237,6 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                   {t("pipeline.identify.empty")}
                 </p>
               )}
-
-              <div className="space-y-1.5">
-                <label
-                  className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
-                  htmlFor={`nickname-${jobId}`}
-                >
-                  {t("pipeline.identify.nicknameLabel")}
-                </label>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    id={`nickname-${jobId}`}
-                    value={nickname}
-                    maxLength={64}
-                    onChange={(event) => setNickname(event.target.value)}
-                    placeholder={t("pipeline.identify.nicknamePlaceholder")}
-                    className="h-11 w-full sm:max-w-64"
-                  />
-                  <Button
-                    size="default"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    disabled={nickname.trim().length === 0 || declare.isPending}
-                    onClick={() => declare.mutate({ nickname: nickname.trim() })}
-                  >
-                    {t("pipeline.identify.nicknameCta")}
-                  </Button>
-                </div>
-              </div>
 
               {declare.isPending ? (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status">
@@ -275,9 +275,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                     ? t("pipeline.identify.reprocessing")
                     : result.state === "conflict"
                       ? t("pipeline.identify.conflict")
-                      : result.reason === "ambiguous_nickname"
-                        ? t("pipeline.identify.ambiguous")
-                        : t("pipeline.identify.notFound")}
+                      : t("pipeline.identify.notFound")}
                 </p>
               ) : null}
             </div>

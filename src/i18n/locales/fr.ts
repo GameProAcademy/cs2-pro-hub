@@ -599,18 +599,16 @@ export const fr: Dictionary = {
   "pipeline.unattached":
     "Nous avons analysé le match, mais nous n'avons pas encore identifié quel joueur est vous. Liez votre compte Steam ou sélectionnez votre joueur dans cette demo pour débloquer vos métriques.",
   "pipeline.identify.title": "Qui êtes-vous dans cette demo ?",
-  "pipeline.identify.help":
-    "Sélectionnez votre joueur parmi ceux détectés dans la demo, ou indiquez le pseudo utilisé dans ce match.",
+  "pipeline.identify.help": "Sélectionnez votre joueur parmi ceux détectés dans la demo.",
   "pipeline.identify.selectLabel": "Joueurs détectés",
   "pipeline.identify.selectCta": "Oui, c'est moi",
-  "pipeline.identify.nicknameLabel": "Mon pseudo dans cette demo",
-  "pipeline.identify.nicknamePlaceholder": "Votre pseudo",
-  "pipeline.identify.nicknameCta": "Utiliser ce pseudo",
+  "pipeline.identify.suggestion": "Le joueur {nickname}, c'est vous ?",
+  "pipeline.identify.suggestionWhy":
+    "Nous avons reconnu ce pseudo dans votre historique de matchs.",
+  "pipeline.identify.showAll": "Non, afficher tous les joueurs",
   "pipeline.identify.later": "Je le ferai plus tard",
   "pipeline.identify.notFound":
     "Nous n'avons pas trouvé ce pseudo dans cette demo. Vérifiez l'orthographe ou sélectionnez votre joueur dans la liste.",
-  "pipeline.identify.ambiguous":
-    "Nous avons trouvé plusieurs joueurs avec ce pseudo dans cette demo. Sélectionnez le vôtre dans la liste.",
   "pipeline.identify.conflict":
     "Ce choix contredit le compte Steam lié à votre profil. Rien n'a été lié — vérifiez avant de continuer.",
   "pipeline.identify.reprocessing": "Joueur identifié. Génération de vos métriques pour ce match…",

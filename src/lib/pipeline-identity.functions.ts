@@ -15,8 +15,8 @@ import {
   classifyIdentityRpcError,
   confidenceScore,
   resolvePlayerAttachment,
-  normalizeNickname,
   storedAttachmentMethod,
+  suggestParticipantFromHistory,
   type AttachmentOutcome,
   type DemoParticipant,
   type PlayerDeclaration,
@@ -44,21 +44,23 @@ export interface DemoIdentityView {
   confirmationStatus: string;
   latestDecisionEventKey: string | null;
   participants: DemoParticipantView[];
+  /**
+   * The one demo player whose nickname the user already confirmed in an earlier demo
+   * ("is this you?"). Only a prompt: nothing is attached until the user confirms.
+   */
+  suggestion: DemoParticipantView | null;
 }
 
 const jobSchema = z.object({ jobId: z.string().uuid() });
 
+// Identity is declared by picking a demo player the parser detected; free-text
+// nicknames are no longer accepted (a typed nickname is not evidence).
 const declareSchema = z
   .object({
     jobId: z.string().uuid(),
-    participantKey: z.string().min(1).max(64).optional(),
-    nickname: z.string().min(1).max(64).optional(),
+    participantKey: z.string().min(1).max(64),
   })
-  // Exactly one declaration shape at a time.
-  .refine(
-    (value) => Boolean(value.participantKey) !== Boolean(value.nickname),
-    "DECLARATION_SHAPE",
-  );
+  .strict();
 
 const decisionSchema = z.object({
   jobId: z.string().uuid(),
@@ -81,6 +83,10 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     if (!job) return null;
 
     const participants = job.match_id ? await readParticipants(supabase, job.match_id) : [];
+    const suggestion = suggestParticipantFromHistory(
+      participants,
+      await readOwnNicknameHistory(supabase, context.userId),
+    );
     const { data: latestDecision } = await supabase
       .from("demo_identity_decisions")
       .select("status, event_key")
@@ -109,6 +115,13 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
         nickname: participant.nickname,
         team: participant.team,
       })),
+      suggestion: suggestion
+        ? {
+            participantKey: suggestion.participantKey,
+            nickname: suggestion.nickname,
+            team: suggestion.team,
+          }
+        : null,
     };
   });
 
@@ -159,9 +172,10 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
 
-    const declaration: PlayerDeclaration = data.participantKey
-      ? { kind: "participant", participantKey: data.participantKey }
-      : { kind: "nickname", nickname: data.nickname ?? "" };
+    const declaration: PlayerDeclaration = {
+      kind: "participant",
+      participantKey: data.participantKey,
+    };
 
     const outcome = resolvePlayerAttachment({
       participants,
@@ -178,9 +192,9 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         _job_id: job.id,
         _user_id: userId,
         _attachment: {
-          event_key: `manual:${outcome.participantKey ?? data.nickname ?? "unresolved"}`,
-          declared_participant_key: data.participantKey ?? null,
-          declared_nickname: data.nickname ?? null,
+          event_key: `manual:${outcome.participantKey ?? "unresolved"}`,
+          declared_participant_key: data.participantKey,
+          declared_nickname: null,
           state: outcome.state,
           // Stored vocabulary of demo_jobs.attachment_method (D11).
           method: storedAttachmentMethod(outcome.method, declaration.kind),
@@ -208,25 +222,12 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     // false: the job is not the caller's or is being processed right now.
     if (!requeued) throw new Error("JOB_NOT_EDITABLE");
 
-    const ambiguous = outcome.reason === "ambiguous_nickname" && data.nickname;
     return {
       state: outcome.state,
       method: outcome.method,
       confidence: outcome.confidence,
       reason: outcome.reason,
-      candidates: ambiguous
-        ? participants
-            .filter(
-              (participant) =>
-                participant.nickname &&
-                normalizeNickname(participant.nickname) === normalizeNickname(data.nickname!),
-            )
-            .map((participant) => ({
-              participantKey: participant.participantKey,
-              nickname: participant.nickname,
-              team: participant.team,
-            }))
-        : [],
+      candidates: [],
       reprocessing: attach,
     };
   });
@@ -282,6 +283,48 @@ interface ParticipantReader {
       ) => PromiseLike<{ data: Array<Record<string, string | null>> | null }>;
     };
   };
+}
+
+interface NicknameHistoryReader {
+  from: (table: "player_profiles" | "player_nickname_history") => {
+    select: (columns: string) => {
+      eq: (
+        column: string,
+        value: string,
+      ) => PromiseLike<{ data: Array<Record<string, string | null>> | null }> & {
+        order: (
+          column: string,
+          options: { ascending: boolean },
+        ) => {
+          limit: (
+            count: number,
+          ) => PromiseLike<{ data: Array<Record<string, string | null>> | null }>;
+        };
+      };
+    };
+  };
+}
+
+/**
+ * The caller's OWN confirmed nicknames. Filtered by the caller's player explicitly:
+ * the RLS policy also lets staff read every player's history, which must never
+ * become a suggestion for a staff member's own demo.
+ */
+async function readOwnNicknameHistory(supabase: unknown, userId: string): Promise<string[]> {
+  const reader = supabase as NicknameHistoryReader;
+  const { data: profiles } = await reader
+    .from("player_profiles")
+    .select("id")
+    .eq("user_id", userId);
+  const playerId = profiles?.[0]?.["id"];
+  if (!playerId) return [];
+  const { data } = await reader
+    .from("player_nickname_history")
+    .select("nickname")
+    .eq("player_id", playerId)
+    .order("last_seen_at", { ascending: false })
+    .limit(50);
+  return (data ?? []).flatMap((row) => (row["nickname"] ? [row["nickname"]] : []));
 }
 
 /** Demo players of a canonical match, read under the owner's RLS. */

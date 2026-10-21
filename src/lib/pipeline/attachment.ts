@@ -121,6 +121,27 @@ export function matchDeclaredNicknameToDemoPlayers(
   return { status: "none", matches: [] };
 }
 
+/**
+ * Identity recognition from the user's OWN confirmed nickname history.
+ *
+ * Returns the single demo player whose (normalised) nickname the user has already
+ * confirmed in an earlier demo, so the UI can ask "is this you?". It never attaches
+ * anything by itself: the user must still confirm, and the server re-validates the
+ * participant against the match. Zero or several candidates return null (the full
+ * list is shown instead) - a similar nickname is never a silent pick.
+ */
+export function suggestParticipantFromHistory(
+  participants: readonly DemoParticipant[],
+  historyNicknames: readonly string[],
+): DemoParticipant | null {
+  const known = new Set(historyNicknames.map(normalizeNickname).filter(Boolean));
+  if (known.size === 0) return null;
+  const candidates = participants.filter(
+    (participant) => participant.nickname && known.has(normalizeNickname(participant.nickname)),
+  );
+  return candidates.length === 1 ? candidates[0]! : null;
+}
+
 function unattached(reason: AttachmentReason): AttachmentOutcome {
   return {
     state: "unattached",

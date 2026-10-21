@@ -599,18 +599,15 @@ export const ptPT: Dictionary = {
   "pipeline.unattached":
     "Analisámos a partida, mas ainda não identificámos qual o jogador que é você. Ligue a sua Steam ou selecione o seu jogador nesta demo para desbloquear as suas métricas.",
   "pipeline.identify.title": "Quem é você nesta demo?",
-  "pipeline.identify.help":
-    "Selecione o seu jogador entre os detetados na demo, ou indique o nickname que usou nesta partida.",
+  "pipeline.identify.help": "Selecione o seu jogador entre os detetados na demo.",
   "pipeline.identify.selectLabel": "Jogadores detetados",
   "pipeline.identify.selectCta": "Sim, sou eu",
-  "pipeline.identify.nicknameLabel": "O meu nick nesta demo",
-  "pipeline.identify.nicknamePlaceholder": "O seu nickname",
-  "pipeline.identify.nicknameCta": "Usar este nickname",
+  "pipeline.identify.suggestion": "O jogador {nickname} é você?",
+  "pipeline.identify.suggestionWhy": "Reconhecemos este nickname do seu histórico de partidas.",
+  "pipeline.identify.showAll": "Não, mostrar todos os jogadores",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
     "Não encontrámos este nickname nesta demo. Verifique a grafia ou selecione o seu jogador na lista.",
-  "pipeline.identify.ambiguous":
-    "Encontrámos mais do que um jogador com este nickname nesta demo. Selecione o seu na lista.",
   "pipeline.identify.conflict":
     "Esta escolha contradiz a conta Steam ligada ao seu perfil. Nada foi ligado — reveja antes de continuar.",
   "pipeline.identify.reprocessing": "Jogador identificado. A gerar as suas métricas desta partida…",
