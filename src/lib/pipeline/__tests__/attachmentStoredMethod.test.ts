@@ -125,6 +125,7 @@ describe("identity RPC error classification (D11)", () => {
       "MATCH_NOT_ANALYSED",
       "PLAYER_PROFILE_NOT_FOUND",
       "JOB_NOT_FOUND",
+      "IDENTITY_RERUN_LIMIT_REACHED",
     ]) {
       expect(classifyIdentityRpcError({ code: "P0001", message: token }).code).toBe(token);
     }
