@@ -363,3 +363,54 @@ H.3-E after the owner updated the three app secrets: run [39528305852](https://g
 
 ### Observed limitation (not a gate failure)
 - Both admitted demos carry L04: participants have no canonical team (`team_assignment_not_two_teams`), so round winners (T/CT observed) cannot be mapped to a team and match result/score stay excluded. `win_reason` is `unknown`; quality flags `missing_positions`, `missing_economy`. Candidate improvement: derive the two teams from per-round sides in the parser (worker release); not required for personal metrics.
+
+## 2026-10-21 05:xx–07:3xZ — D11 fixed, manual identity proven, D18/D19/D20 found
+
+### D11 — manual identity selection could not be saved (PR #171)
+- Root cause (reproduced in a rolled-back production transaction): `declareDemoPlayer` stored the resolver's method `manual_user_selection` in `demo_jobs.attachment_method`. The check constraint `demo_jobs_attachment_method_check` refused it (SQLSTATE 23514), and the server function collapsed that into `JOB_REQUEUE_FAILED`.
+- Fix: `storedAttachmentMethod()` maps to the stored vocabulary (`self_declared_player` / `self_declared_nickname`), fail-closed for anything else; `processJob` uses it too. RPC errors are now classified with safe diagnostics only: code, sqlstate, constraint name; never the row.
+- Tests: `attachmentStoredMethod.test.ts` (11) and `identity_declaration_probe.py` on the disposable DB. Merge `6b137b79`, published (`906e4d27`).
+
+### Phase A — production check of the owner's selection (job `921b55cf`, match `95186f3f`)
+| Check | Evidence | Status |
+|---|---|---|
+| Decision persisted | 1 row `manually_resolved`, method `self_declared_player`, source `user`, author = owner, participant belongs to the match, `match_id` = job's match, 06:48:30Z | PASS |
+| Re-run after the decision | D18: the requeue reused attempt 5. The worker replay of a finished execution returned `reconciliation_required` and sat ~15 min until the lease expired (07:03:34Z). Abandoned-execution closure at 07:03:43Z; dispatch 1 parse OK 07:05:44Z, completion failed; dispatch 2 parse OK 07:08:19Z, completion failed | FAIL (D18, D20) |
+| Final job state | `failed`, `CANONICAL_PERSISTENCE_ERROR`: "CANONICAL_PERSISTENCE_FAILED: canceling statement due to statement timeout", retry_count 3; 0 personal metrics | FAIL (D20) |
+| Canonical match | intact: 23 rounds, 10 participants, 4,264 events, `observation_count` 1, 1 admission decision (the failed writes rolled back) | PASS |
+| Dashboard / second-account isolation with metrics | blocked until the metrics exist | NOT_PROVEN |
+
+The job state was not forced, and the demo was neither deleted nor re-uploaded.
+
+### D20 — re-persisting identical content exceeds the API statement timeout (PR #173)
+- Root cause: `persist_canonical_observation` re-persisted the SAME content (same SHA-256, same parser revision `git:a5d8c425…`) by:
+  - deleting and re-inserting every round event and round-player row, one INSERT per row;
+  - merging a ~3.4 MB `match_sources.metadata` value.
+- That exceeds the 8 s `statement_timeout` of the API roles (`authenticator`/`authenticated`). The same path blocks the identity re-run and every second uploader of a demo.
+- Fix (migration `20261021120000`, md5-guarded fragment replacement `d313725d → 3420e6cc`, properties asserted unchanged):
+  - new `match_sources.rounds_digest`;
+  - an identical re-observation keeps rows and carries only the identity links into `round_players`;
+  - pre-D20 rows count as identical only with the same parser revision, version and row counts;
+  - unchanged metadata keeps its stored datum;
+  - changed observations are still fully replaced, now with set-based INSERTs.
+- Inverse rollback: `docs/reference/d20/rollback.sql`.
+- Tests: 5 disposable-DB scenarios, including a production-sized payload under `statement_timeout = 8s`, plus the existing 17. **Not applied to production; needs owner approval.**
+
+### D19 — multi-user identity on one shared demo (PR #172)
+- Proven on the disposable DB with 3 users and the same SHA (`multi_user_identity_probe.py`). On `main`: FAIL 4/9.
+  - Only the last uploader could read the shared Canonical match: `owns_canonical_match` follows `matches.player_id` or a linked participant.
+  - Only the last uploader could declare: `record_demo_identity_event` resolved the match through `match_sources.upload_id`, which is overwritten by every later upload.
+- Fix (migration `20261021090000`, fragment replacement of the two functions; not applied):
+  - a user whose own job resolved to the match can read the shared match facts;
+  - identity resolves the match from the job, then from its own content (never a quarantined match), then from the source row.
+  - Personal rows (decisions, metrics, features) stay player-scoped.
+- After a probe-fixture fix (the "other match" reused the same roster): PASS 9/9 on `252cfe5d`. **Not applied to production; needs owner approval.**
+
+### Phase D — identity UX (PR #174)
+- The free-text nickname is removed: the server accepts a participant key only, through a strict schema.
+- Nick-history recognition: when exactly one detected player has a nickname the user already confirmed, the dialog asks "O jogador X é você?" with "Sim, sou eu" / "Não, mostrar todos os jogadores". The history is read for the caller's own player only.
+- No migration.
+
+### Open
+- D18: the identity requeue should open a new attempt instead of replaying the finished execution (separate fix).
+- Phase F: deriving personal metrics from persisted canonical rows instead of a full re-parse (`computeMetrics` runs on the in-memory parse today). Not started. D20 removes the blocking cost; the full re-parse remains.
