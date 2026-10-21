@@ -78,6 +78,7 @@ import {
 import {
   confidenceScore,
   resolvePlayerAttachment,
+  storedAttachmentMethod,
   type AttachmentReason,
   type AttachmentState,
   type PlayerDeclaration,
@@ -921,7 +922,8 @@ export async function processJob(
       resolved_steam_id: steamId,
       identity_status: attachment.state === "attached" ? "resolved" : "unresolved",
       attachment_state: attachment.state,
-      attachment_method: attachment.method,
+      // Stored vocabulary of demo_jobs.attachment_method (D11).
+      attachment_method: storedAttachmentMethod(attachment.method, declaration?.kind ?? null),
       attachment_confidence: confidenceScore(attachment.confidence),
       attachment_confidence_label: attachment.confidence,
       attachment_source: attachment.source,

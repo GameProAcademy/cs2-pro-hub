@@ -243,3 +243,73 @@ function resolveDeclaration(
   if (found.status === "ambiguous") return unattached("ambiguous_nickname");
   return unattached("self_declared_nickname_not_found");
 }
+
+/**
+ * Values accepted by `demo_jobs.attachment_method` (check constraint
+ * `demo_jobs_attachment_method_check`). The resolver's {@link IdentityMethod} is the
+ * domain vocabulary; this is the STORED vocabulary, kept by every row already in
+ * production (`self_declared_player`). Production defect D11 (2026-10-21): the
+ * resolver's `manual_user_selection` was written unchanged, the constraint refused
+ * it, and every manual selection failed with a generic error.
+ */
+export const STORED_ATTACHMENT_METHODS = [
+  "steam_id_profile",
+  "steam_id_confirmed",
+  "self_declared_player",
+  "self_declared_nickname",
+] as const;
+export type StoredAttachmentMethod = (typeof STORED_ATTACHMENT_METHODS)[number];
+
+/**
+ * Maps the resolver's method to the stored one. A manual selection is stored by
+ * what the user declared: a participant (`self_declared_player`) or a nickname
+ * that resolved to exactly one participant (`self_declared_nickname`). A method the
+ * database cannot store fails closed instead of being written as something else.
+ */
+export function storedAttachmentMethod(
+  method: IdentityMethod | null,
+  declarationKind: PlayerDeclaration["kind"] | null,
+): StoredAttachmentMethod | null {
+  if (method === null) return null;
+  if (method === "steam_id_confirmed") return "steam_id_confirmed";
+  if (method === "manual_user_selection" && declarationKind === "participant")
+    return "self_declared_player";
+  if (method === "manual_user_selection" && declarationKind === "nickname")
+    return "self_declared_nickname";
+  throw new Error("IDENTITY_METHOD_NOT_STORABLE");
+}
+
+/** Error tokens raised by the identity RPCs that are safe to show and to log. */
+const IDENTITY_RPC_CODES = [
+  "IDENTITY_DECISION_STALE",
+  "IDENTITY_DECISION_CONFLICT",
+  "PARTICIPANT_NOT_IN_MATCH",
+  "CANONICAL_MATCH_MISMATCH",
+  "MATCH_NOT_ANALYSED",
+  "PLAYER_PROFILE_NOT_FOUND",
+  "JOB_NOT_FOUND",
+] as const;
+export type IdentityRpcErrorCode =
+  (typeof IDENTITY_RPC_CODES)[number] | "IDENTITY_DECISION_INVALID" | "JOB_REQUEUE_FAILED";
+
+/**
+ * Safe classification of an identity RPC failure. Only a known token, or the name of a
+ * violated constraint, leaves this function: never the database message itself, which
+ * can carry the full row (Steam IDs, nicknames, storage paths).
+ */
+export function classifyIdentityRpcError(error: {
+  code?: string | null;
+  message?: string | null;
+}): {
+  code: IdentityRpcErrorCode;
+  constraint: string | null;
+} {
+  const message = error.message ?? "";
+  const known = IDENTITY_RPC_CODES.find((token) => message.includes(token));
+  if (known) return { code: known, constraint: null };
+  if (error.code === "23514" || error.code === "23502" || error.code === "23503") {
+    const constraint = /constraint "([a-z0-9_]{1,63})"/.exec(message)?.[1] ?? null;
+    return { code: "IDENTITY_DECISION_INVALID", constraint };
+  }
+  return { code: "JOB_REQUEUE_FAILED", constraint: null };
+}
