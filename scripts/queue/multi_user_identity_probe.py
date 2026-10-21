@@ -132,8 +132,11 @@ def main() -> int:
     payload = bundle(sha)
     ids = [persist(payload, person) for person in (a, b, c)]
     match_id = ids[0]
-    other_payload = bundle(other_sha)
+    # The other match must have its OWN roster: bundle() always emits the same ten Steam IDs,
+    # so remap them, or "a participant of another match" would really be one of this match.
+    other_payload = json.loads(json.dumps(bundle(other_sha)).replace("7656119800000", "7656119800099"))
     other_roster_key = other_payload["participants"][0]["participantKey"]
+    assert other_roster_key not in ROSTER, other_roster_key
     other_match = persist(other_payload, outsider)
     for person in (a, b, c):
         finish_unattached(person, match_id)
