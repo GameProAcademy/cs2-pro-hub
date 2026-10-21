@@ -1,0 +1,4 @@
+R5.8.16 controlled release marker (D22 event timing, PR #177 merged as d5af6345).
+The service watch pattern is frozen to this path during the release: the merge of the
+change adding this file is the ONE controlled Railway deployment of the worker.
+Not a critical file (parser.py, adapter.py, worker.py, raw_evidence.py, settings.py).
