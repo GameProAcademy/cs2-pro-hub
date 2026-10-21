@@ -70,6 +70,7 @@ function errorKey(code: string | null): TranslationKey {
     "pipeline.error.IDENTITY_RESOLUTION_ERROR",
     "pipeline.error.CANONICAL_RESOLUTION_CONFLICT",
     "pipeline.error.CANONICAL_PERSISTENCE_ERROR",
+    "pipeline.error.CANONICAL_MATCH_QUARANTINED",
     "pipeline.error.METRICS_ERROR",
     "pipeline.error.FEATURES_ERROR",
     "pipeline.error.JOB_TIMEOUT",

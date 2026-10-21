@@ -37,6 +37,9 @@ export const PIPELINE_ERROR_CODES = [
   "IDENTITY_RESOLUTION_ERROR",
   "CANONICAL_RESOLUTION_CONFLICT",
   "CANONICAL_PERSISTENCE_ERROR",
+  // The demo's content (SHA-256) belongs to a Canonical match preserved in the
+  // H.3-E quarantine registry: it is immutable and can never be persisted again.
+  "CANONICAL_MATCH_QUARANTINED",
   "METRICS_ERROR",
   "FEATURES_ERROR",
   "JOB_TIMEOUT",
@@ -88,6 +91,8 @@ const PERMANENT: ReadonlySet<PipelineErrorCode> = new Set([
   // GATE 1E.1 — a mismatched parser build stays mismatched on every retry.
   "PARSER_IDENTITY_MISMATCH",
   "RAW_AUDIT_BLOCKED",
+  // A quarantined Canonical match has no release path; every retry is refused again.
+  "CANONICAL_MATCH_QUARANTINED",
 ]);
 
 export class PipelineError extends Error {

@@ -704,6 +704,8 @@ export const en: Dictionary = {
   "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
     "This match matched more than one existing record and needs review.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "The match could not be saved safely.",
+  "pipeline.error.CANONICAL_MATCH_QUARANTINED":
+    "This demo's content is preserved in quarantine for audit and cannot be analysed again.",
   "pipeline.error.METRICS_ERROR": "Metrics calculation failed.",
   "pipeline.error.FEATURES_ERROR": "Signal calculation failed.",
   "pipeline.error.JOB_TIMEOUT": "Processing took longer than allowed.",
