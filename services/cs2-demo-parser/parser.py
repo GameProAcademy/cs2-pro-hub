@@ -603,6 +603,54 @@ def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True)
     return out
 
 
+#: Two clock samples agree when their slopes differ by at most this fraction and their
+#: offsets by at most this many seconds (CS2 game_time is tick * 1/64 exactly).
+_GAME_CLOCK_RATE_TOLERANCE = 1e-6
+_GAME_CLOCK_OFFSET_TOLERANCE_SECONDS = 1e-3
+
+
+def infer_game_clock(tick_rows: Any) -> tuple[float, float] | None:
+    """Prove the demo's tick -> game_time relation from its own sampled game state.
+
+    D22 (production, 2026-10-21): CS2 headers carry no playback tickrate and the event
+    streams fell back to rows without ``game_time``, so no event had a time; opening
+    duels, trades and flash assists were then NULL for every demo. The sampled tick rows
+    (``parse_ticks``) do carry ``game_time``. The relation is accepted only when it is
+    exactly linear over EVERY distinct sampled tick: one rate (ticks per second) and one
+    offset, within tight tolerances. Anything else (a single sample, a pause, a
+    non-monotonic clock, conflicting values at one tick) returns None: never assumed.
+
+    Returns (ticks_per_second, offset_seconds) with game_time = tick / rate + offset.
+    """
+    by_tick: dict[int, float] = {}
+    for row in tick_rows or []:
+        if not isinstance(row, dict):
+            continue
+        tick = row.get("tick")
+        game_time = _finite_number(row.get("game_time"))
+        if isinstance(tick, bool) or not isinstance(tick, int) or game_time is None or tick < 0:
+            continue
+        previous = by_tick.get(tick)
+        if previous is not None and previous != game_time:
+            return None
+        by_tick[tick] = game_time
+    samples = sorted(by_tick.items())
+    if len(samples) < 2:
+        return None
+    rates: list[float] = []
+    for (tick_a, time_a), (tick_b, time_b) in zip(samples, samples[1:]):
+        if time_b <= time_a:
+            return None
+        rates.append((tick_b - tick_a) / (time_b - time_a))
+    rate = (samples[-1][0] - samples[0][0]) / (samples[-1][1] - samples[0][1])
+    if rate <= 0 or any(abs(value - rate) > _GAME_CLOCK_RATE_TOLERANCE * rate for value in rates):
+        return None
+    offsets = [time - tick / rate for tick, time in samples]
+    if max(offsets) - min(offsets) > _GAME_CLOCK_OFFSET_TOLERANCE_SECONDS:
+        return None
+    return rate, sum(offsets) / len(offsets)
+
+
 def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
     """Final semantic guard between adapter output and the HTTP contract.
 
@@ -634,31 +682,47 @@ def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[s
             player.pop("team", None)
 
     # Build a real event timing index from the raw parser rows. Prefer native
-    # game_time; otherwise derive from the verified header tickrate.
-    timing_index: dict[tuple[str, int, int], float] = {}
+    # game_time; otherwise derive from the verified header tickrate; otherwise from the
+    # demo's own proven game clock (D22). The index is keyed by (stream, tick): a raw
+    # row's round context (total_rounds_played counts COMPLETED rounds) never matches the
+    # contract round, so keying by round silently dropped every native time.
+    timing_index: dict[tuple[str, int], float | None] = {}
     for name in _EVENT_TABLES + ("round_start", "round_end"):
         for row in raw.get(name) or []:
             tick = row.get("tick")
-            round_number = row.get("round") or row.get("total_rounds_played")
-            if not isinstance(tick, int) or not isinstance(round_number, int) or round_number <= 0:
+            if not isinstance(tick, int) or isinstance(tick, bool):
                 continue
-            game_time = row.get("time_seconds") or row.get("game_time")
+            game_time = row.get("time_seconds")
+            if game_time is None:
+                game_time = row.get("game_time")
             if isinstance(game_time, (int, float)) and not isinstance(game_time, bool) and game_time >= 0:
-                timing_index[(name, round_number, tick)] = float(game_time)
+                key = (name, tick)
+                if key in timing_index and timing_index[key] != float(game_time):
+                    timing_index[key] = None  # conflicting native times: unknown, never a pick
+                elif key not in timing_index:
+                    timing_index[key] = float(game_time)
+
+    header_rate = contract_header.get("tickrate")
+    game_clock = None
+    if not (isinstance(header_rate, (int, float)) and header_rate > 0):
+        game_clock = infer_game_clock(raw.get("tick_rows"))
+        if game_clock is not None:
+            output.setdefault("warnings", []).append(
+                "event_times_from_game_clock: header tickrate unavailable; times from the sampled tick/game_time relation"
+            )
 
     for event in output.get("events") or []:
-        event_type = event.get("type")
-        round_number = event.get("round")
         tick = event.get("tick")
-        if not isinstance(round_number, int) or not isinstance(tick, int):
+        if not isinstance(event.get("round"), int) or not isinstance(tick, int):
             continue
-        source_name = event_type
-        native_name = "round_start" if source_name == "round_start" else "round_end" if source_name == "round_end" else source_name
-        native_time = timing_index.get((native_name, round_number, tick))
+        native_time = timing_index.get((str(event.get("type")), tick))
         if native_time is not None:
             event["time_seconds"] = native_time
-        elif isinstance(contract_header.get("tickrate"), (int, float)) and contract_header["tickrate"] > 0:
-            event["time_seconds"] = round(tick / float(contract_header["tickrate"]), 6)
+        elif isinstance(header_rate, (int, float)) and header_rate > 0:
+            event["time_seconds"] = round(tick / float(header_rate), 6)
+        elif game_clock is not None:
+            rate, offset = game_clock
+            event["time_seconds"] = round(tick / rate + offset, 6)
 
     # A round_end winner token CT/TERRORIST is side evidence, not team identity.
     for round_row in output.get("rounds") or []:
