@@ -600,6 +600,17 @@ export const en: Dictionary = {
   "pipeline.identify.suggestion": "Is the player {nickname} you?",
   "pipeline.identify.suggestionWhy": "We recognised this nickname from your match history.",
   "pipeline.identify.showAll": "No, show all players",
+  "pipeline.identify.selectAndRetry": "Select player and try again",
+  "pipeline.identify.retryStarted":
+    "Player selected. A new attempt has started — follow its status below.",
+  "pipeline.identify.notRecoverable":
+    "This demo cannot be reprocessed from here. Your history and the match remain saved.",
+  "pipeline.identify.rerunLimit":
+    "This demo reached its retry limit. Your history and the match remain saved.",
+  "pipeline.identify.reuploadTitle": "This demo's file has expired",
+  "pipeline.identify.reuploadBody":
+    "The match and history remain saved, but the file is no longer available for a new attempt. Upload the same .dem file again: it will be recognised as the same match, without duplicating it.",
+  "pipeline.identify.reuploadCta": "Upload the file again",
   "pipeline.identify.later": "I will do it later",
   "pipeline.identify.notFound":
     "We did not find this nickname in this demo. Check the spelling or pick your player from the list.",

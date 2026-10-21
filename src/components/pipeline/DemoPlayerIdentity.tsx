@@ -30,6 +30,15 @@ import {
   type DemoParticipantView,
 } from "@/lib/pipeline-identity.functions";
 
+/** Real, safe reason for a failed identity action (tokens only, never DB text). */
+export function identityErrorKey(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("JOB_NOT_RECOVERABLE")) return "pipeline.identify.notRecoverable" as const;
+  if (message.includes("IDENTITY_RERUN_LIMIT_REACHED"))
+    return "pipeline.identify.rerunLimit" as const;
+  return "pipeline.identify.saveError" as const;
+}
+
 export type IdentityUiState =
   | "loading"
   | "automatic_review"
@@ -62,7 +71,17 @@ export function deriveIdentityUiState(
   return "manual_selection";
 }
 
-export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
+export function DemoPlayerIdentity({
+  jobId,
+  recover = false,
+}: {
+  jobId: string;
+  /**
+   * The job FAILED after analysis: the dialog always offers the player list (even when a
+   * player was selected before) and confirming starts a new attempt.
+   */
+  recover?: boolean;
+}) {
   const t = useT();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
@@ -101,26 +120,37 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
   const uiState = deriveIdentityUiState(identity.data, {
     loading: identity.isLoading,
     error: identity.isError,
-    manualMode,
+    manualMode: manualMode || recover,
   });
   const automatic = uiState === "automatic_review";
   const needsManual = uiState === "manual_selection" || uiState === "conflict";
   const askSuggestion = needsManual && suggestion !== null && !showAll && !result;
 
   useEffect(() => {
-    if (identity.data && (automatic || needsManual)) setOpen(true);
-  }, [identity.data, automatic, needsManual]);
+    // A failed job opens the dialog only on the user's click.
+    if (!recover && identity.data && (automatic || needsManual)) setOpen(true);
+  }, [identity.data, automatic, needsManual, recover]);
+  const started = result?.state === "attached";
 
-  if (identity.isLoading) return null;
+  // Nothing clickable until the job's identity (and its detected players) is loaded.
+  if (!identity.data && !identity.isError) return null;
 
   return (
     <>
-      <Button size="sm" variant="outline" className="mt-3" onClick={() => setOpen(true)}>
-        {automatic
-          ? t("pipeline.identify.review")
-          : uiState === "confirmed" || uiState === "manual_selected"
-            ? t("pipeline.identify.attached")
-            : t("pipeline.identify.title")}
+      <Button
+        size="sm"
+        variant={recover ? "default" : "outline"}
+        className="mt-3 min-h-11"
+        onClick={() => setOpen(true)}
+        disabled={recover && (identity.isError || started)}
+      >
+        {recover
+          ? t("pipeline.identify.selectAndRetry")
+          : automatic
+            ? t("pipeline.identify.review")
+            : uiState === "confirmed" || uiState === "manual_selected"
+              ? t("pipeline.identify.attached")
+              : t("pipeline.identify.title")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto">
@@ -174,7 +204,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       className="min-h-11"
-                      disabled={declare.isPending}
+                      disabled={declare.isPending || started}
                       onClick={() => declare.mutate(suggestion.participantKey)}
                     >
                       {t("pipeline.identify.selectCta")}
@@ -226,7 +256,9 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                   <Button
                     size="sm"
                     className="mt-2 min-h-11 w-full sm:w-auto"
-                    disabled={isParticipantConfirmationDisabled(selected, declare.isPending)}
+                    disabled={
+                      started || isParticipantConfirmationDisabled(selected, declare.isPending)
+                    }
                     onClick={() => selected && declare.mutate(selected)}
                   >
                     {t("pipeline.identify.selectCta")}
@@ -253,7 +285,7 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                   role="alert"
                   className="rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2.5 text-xs text-destructive"
                 >
-                  {t("pipeline.identify.saveError")}
+                  {t(identityErrorKey(declare.error ?? decision.error))}
                 </p>
               ) : null}
 
@@ -272,7 +304,11 @@ export function DemoPlayerIdentity({ jobId }: { jobId: string }) {
                     <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                   ) : null}
                   {result.state === "attached"
-                    ? t("pipeline.identify.reprocessing")
+                    ? t(
+                        recover
+                          ? "pipeline.identify.retryStarted"
+                          : "pipeline.identify.reprocessing",
+                      )
                     : result.state === "conflict"
                       ? t("pipeline.identify.conflict")
                       : t("pipeline.identify.notFound")}

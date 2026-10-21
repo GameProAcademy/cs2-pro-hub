@@ -32,6 +32,8 @@ export interface DemoJobView {
   retryCount: number;
   maxRetries: number;
   matchId: string | null;
+  /** False once the stored demo file was deleted (retention): a re-run cannot read it. */
+  demoAvailable: boolean;
   extractionConfidence: number | null;
   partialParse: boolean;
   roundsValid: number | null;
@@ -207,6 +209,7 @@ function toView(
     retry_count: number;
     max_retries: number;
     match_id: string | null;
+    storage_deleted_at?: string | null;
     extraction_confidence: number | null;
     partial_parse: boolean;
     rounds_valid: number | null;
@@ -243,6 +246,7 @@ function toView(
     retryCount: row.retry_count,
     maxRetries: row.max_retries,
     matchId: row.match_id,
+    demoAvailable: !row.storage_deleted_at,
     extractionConfidence: row.extraction_confidence,
     partialParse: row.partial_parse,
     roundsValid: row.rounds_valid,
@@ -280,7 +284,7 @@ function toView(
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, storage_deleted_at, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

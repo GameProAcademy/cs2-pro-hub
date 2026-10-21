@@ -605,6 +605,17 @@ export const ptPT: Dictionary = {
   "pipeline.identify.suggestion": "O jogador {nickname} é você?",
   "pipeline.identify.suggestionWhy": "Reconhecemos este nickname do seu histórico de partidas.",
   "pipeline.identify.showAll": "Não, mostrar todos os jogadores",
+  "pipeline.identify.selectAndRetry": "Selecionar jogador e tentar novamente",
+  "pipeline.identify.retryStarted":
+    "Jogador selecionado. Nova tentativa iniciada — acompanhe o estado abaixo.",
+  "pipeline.identify.notRecoverable":
+    "Esta demo não pode ser reprocessada a partir daqui. O seu histórico e a partida continuam guardados.",
+  "pipeline.identify.rerunLimit":
+    "Esta demo atingiu o limite de novas tentativas. O seu histórico e a partida continuam guardados.",
+  "pipeline.identify.reuploadTitle": "O ficheiro desta demo expirou",
+  "pipeline.identify.reuploadBody":
+    "A partida e o histórico continuam guardados, mas o ficheiro já não está disponível para uma nova tentativa. Envie novamente o mesmo ficheiro .dem: será reconhecido como a mesma partida, sem a duplicar.",
+  "pipeline.identify.reuploadCta": "Enviar o ficheiro novamente",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
     "Não encontrámos este nickname nesta demo. Verifique a grafia ou selecione o seu jogador na lista.",
