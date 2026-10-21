@@ -414,3 +414,16 @@ The job state was not forced, and the demo was neither deleted nor re-uploaded.
 ### Open
 - D18: the identity requeue should open a new attempt instead of replaying the finished execution (separate fix).
 - Phase F: deriving personal metrics from persisted canonical rows instead of a full re-parse (`computeMetrics` runs on the in-memory parse today). Not started. D20 removes the blocking cost; the full re-parse remains.
+
+## 2026-10-21 08:0x–08:2xZ — D18, D19, D20 and Phase D released (owner-approved)
+
+| Change | PR / merge | CI on the merged head | Production apply | Read-back |
+|---|---|---|---|---|
+| D19 multi-user identity | #172 → `f30a674a` | 7/7 green on `252cfe5d`; MULTI_USER_IDENTITY 9/9 | guarded DO block; `schema_migrations` 20261021090000 | `owns_canonical_match` `0ac21d3d`, `record_demo_identity_event` `4ccf85be` |
+| D20 identical re-observation | #173 → `ec71c7a0` | 7/7 green on `afb32564`; CANONICAL_PERSISTENCE_IDEMPOTENCY 22/22 | ADD COLUMN `rounds_digest` + guarded DO block; 20261021120000 | `persist_canonical_observation` `3420e6cc`; column present |
+| Phase D identity UX | #174 → `840fff0a` | 7/7 green on `65125232` | app only | Lovable synced `dbdcb17e`, published (deployment `b2cfb763`) |
+| D18 identity re-run dispatch | #175 → `dbdcb17e` | 7/7 green on `ab7185ed` (main merged in); D18 5/5, D19 9/9, D20 22/22 together | guarded DO block; 20261021130000 | `requeue_demo_job_after_attachment` `48cb62f6` |
+
+- No data, quarantine, provenance, or Canonical rows were changed.
+- Every migration is md5-guarded both ways and has an inverse rollback (`docs/reference/d18`, `docs/reference/d20`).
+- Pending (NOT_PROVEN until observed): the owner re-selects the player on the Mirage job (`921b55cf`, currently `failed`). Expected: a new dispatch (`dispatch_attempt` 4), an identical re-observation (`unchanged_reobservation`), personal metrics, and the dashboard. Second-account isolation is to be re-checked afterwards.
