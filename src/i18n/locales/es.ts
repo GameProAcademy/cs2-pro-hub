@@ -717,6 +717,8 @@ export const es: Dictionary = {
   "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
     "Esta partida coincidió con más de un registro existente y necesita revisión.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "No se pudo guardar la partida de forma segura.",
+  "pipeline.error.CANONICAL_MATCH_QUARANTINED":
+    "El contenido de esta demo se conserva en cuarentena para auditoría y no puede analizarse de nuevo.",
   "pipeline.error.METRICS_ERROR": "Falló el cálculo de las métricas.",
   "pipeline.error.FEATURES_ERROR": "Falló el cálculo de los indicadores.",
   "pipeline.error.JOB_TIMEOUT": "El procesamiento superó el tiempo permitido.",

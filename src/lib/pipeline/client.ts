@@ -21,6 +21,7 @@ export type ClientUploadError =
   | "DEMO_TOO_SMALL"
   | "INVALID_DEMO_FORMAT"
   | "STORAGE_ERROR"
+  | "CANONICAL_MATCH_QUARANTINED"
   | "PROCESSING_ERROR";
 
 export class DemoUploadError extends Error {
@@ -122,9 +123,16 @@ export async function submitDemoWithDependencies(
   }
 
   options.onProgress?.({ state: "registering", bytesSent: 0, bytesTotal: file.size, percent: 0 });
-  const slot = await dependencies.create({
-    data: { fileName: file.name, fileSize: file.size, demoSha256 },
-  });
+  const slot = await dependencies
+    .create({ data: { fileName: file.name, fileSize: file.size, demoSha256 } })
+    .catch((error: unknown) => {
+      // The only server refusal with its own player-facing message; everything else
+      // keeps propagating unchanged.
+      if (error instanceof Error && error.message.includes("CANONICAL_MATCH_QUARANTINED")) {
+        throw new DemoUploadError("CANONICAL_MATCH_QUARANTINED");
+      }
+      throw error;
+    });
 
   if (slot.duplicate && slot.duplicateStatus === "processed") {
     // A successfully processed demo is immutable from the user's perspective:

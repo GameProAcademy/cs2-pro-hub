@@ -714,6 +714,8 @@ export const fr: Dictionary = {
     "Ce match correspond à plusieurs enregistrements existants et doit être vérifié.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR":
     "Le match n'a pas pu être enregistré de manière sûre.",
+  "pipeline.error.CANONICAL_MATCH_QUARANTINED":
+    "Le contenu de cette démo est conservé en quarantaine pour audit et ne peut pas être analysé à nouveau.",
   "pipeline.error.METRICS_ERROR": "Le calcul des métriques a échoué.",
   "pipeline.error.FEATURES_ERROR": "Le calcul des indicateurs a échoué.",
   "pipeline.error.JOB_TIMEOUT": "Le traitement a dépassé le temps autorisé.",

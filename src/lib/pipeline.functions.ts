@@ -88,6 +88,11 @@ export const createDemoUpload = createServerFn({ method: "POST" })
     const { userId } = context;
     const uploadId = crypto.randomUUID();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Canonical matches are content-addressed (one match per demo SHA-256). When that
+    // match is preserved in the H.3-E quarantine it is immutable, so persisting this
+    // content again can never succeed: refuse before any upload or parse is spent.
+    const { assertDemoContentNotQuarantined } = await import("@/lib/pipeline/quarantine.server");
+    await assertDemoContentNotQuarantined(supabaseAdmin, data.demoSha256);
     const { data: reserved, error } = await supabaseAdmin.rpc("reserve_demo_upload", {
       _user_id: userId,
       _upload_id: uploadId,

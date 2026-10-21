@@ -871,9 +871,11 @@ export async function processJob(
     } catch (error) {
       const detail = error instanceof Error ? error.message : undefined;
       throw new PipelineError(
-        detail?.toLowerCase().includes("conflict")
-          ? "CANONICAL_RESOLUTION_CONFLICT"
-          : "CANONICAL_PERSISTENCE_ERROR",
+        detail?.includes("CANONICAL_MATCH_QUARANTINED")
+          ? "CANONICAL_MATCH_QUARANTINED"
+          : detail?.toLowerCase().includes("conflict")
+            ? "CANONICAL_RESOLUTION_CONFLICT"
+            : "CANONICAL_PERSISTENCE_ERROR",
         detail,
       );
     }

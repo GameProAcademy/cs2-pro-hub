@@ -717,6 +717,8 @@ export const ptPT: Dictionary = {
   "pipeline.error.CANONICAL_RESOLUTION_CONFLICT":
     "Esta partida coincidiu com mais de um registo existente e precisa de revisão.",
   "pipeline.error.CANONICAL_PERSISTENCE_ERROR": "Não foi possível gravar a partida com segurança.",
+  "pipeline.error.CANONICAL_MATCH_QUARANTINED":
+    "O conteúdo desta demo está preservado em quarentena para auditoria e não pode ser analisado novamente.",
   "pipeline.error.METRICS_ERROR": "Falha no cálculo das métricas.",
   "pipeline.error.FEATURES_ERROR": "Falha no cálculo dos indicadores.",
   "pipeline.error.JOB_TIMEOUT": "O processamento excedeu o tempo permitido.",
