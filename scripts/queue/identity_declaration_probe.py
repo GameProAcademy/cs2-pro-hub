@@ -46,6 +46,7 @@ SELECT id AS player_{pre} FROM public.player_profiles WHERE user_id = '{u}' \\gs
 INSERT INTO public.uploads(id, user_id, type, file_name, storage_path, file_size, demo_sha256)
 VALUES ('{up}', '{u}', 'demo', 'probe-{pre}.dem', '{u}/{up}.dem', 520, '{sha}');
 SELECT (public.enqueue_demo_job('{up}', '{u}') ->> 'job_id') AS job_{pre} \\gset
+SELECT set_config('probe.job_{pre}', :'job_{pre}', false);
 INSERT INTO public.matches(id, upload_id, player_id, map) VALUES ('{m}', '{up}', :'player_{pre}', 'de_probe');
 INSERT INTO public.match_sources(match_id, upload_id, source, source_contract_version, fetched_at, status)
 VALUES ('{m}', '{up}', 'demo', 'probe', now(), 'complete');
@@ -70,7 +71,9 @@ def call(label: str, job: str, user: str, body: str) -> str:
     return f"""DO $c$
 DECLARE _r boolean; _msg text;
 BEGIN
-  _r := public.requeue_demo_job_after_attachment({job}::uuid, '{user}'::uuid, {body});
+  -- psql does not interpolate :variables inside a dollar-quoted body: read the job id
+  -- from the session setting written right after enqueue_demo_job.
+  _r := public.requeue_demo_job_after_attachment(current_setting('{job}')::uuid, '{user}'::uuid, {body});
   PERFORM set_config('probe.{label}', 'ok:' || coalesce(_r::text, 'null'), true);
 EXCEPTION WHEN OTHERS THEN
   _msg := SQLERRM;
@@ -86,7 +89,7 @@ def count(label: str, sql: str) -> str:
 
 
 def script(a: dict, b: dict) -> str:
-    job_a = ":'job_a'"
+    job_a = "probe.job_a"
     decisions_a = "SELECT count(*) FROM public.demo_identity_decisions WHERE job_id = :'job_a'"
     out = ["\\set ON_ERROR_STOP 1\nBEGIN;\n", fixtures(a), fixtures(b)]
     # 1. Legacy domain value: refused, and atomic (no decision, job untouched).
@@ -158,6 +161,17 @@ def check(r: dict, a: dict) -> list[str]:
 
 
 def main() -> int:
+    try:
+        return _main()
+    except BaseException as exc:  # noqa: BLE001 - the report must always be written
+        print(json.dumps({"probe": "IDENTITY_DECLARATION_D11", "status": "FAIL", "database": "LOCAL_DISPOSABLE_ONLY",
+                          "scenarios": [{"scenario": "d11_manual_identity_declaration", "status": "FAIL",
+                                         "detail": f"probe crashed: {type(exc).__name__}: {str(exc)[:400]}"}]},
+                         indent=1))
+        return 1
+
+
+def _main() -> int:
     refuse_non_local()
     a, b = ids("a"), ids("b")
     result = subprocess.run(["psql", "-X", "-h", HOST, "-p", PORT, "-U", USER, "-d", DB, "-At", "-f", "-"],
@@ -166,7 +180,7 @@ def main() -> int:
     if result.returncode != 0 or len(lines) != 1:
         report = {"probe": "IDENTITY_DECLARATION_D11", "status": "FAIL", "database": "LOCAL_DISPOSABLE_ONLY",
                   "scenarios": [{"scenario": "d11_manual_identity_declaration", "status": "FAIL",
-                                 "detail": (result.stderr.strip().splitlines() or ["psql failed"])[-1][:400]}]}
+                                 "detail": " | ".join(result.stderr.strip().splitlines()[-6:])[:900] or "psql failed"}]}
         print(json.dumps(report, indent=1))
         return 1
     observed = json.loads(lines[0][len("RESULT:"):])

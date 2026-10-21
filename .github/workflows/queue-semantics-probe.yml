@@ -115,7 +115,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          python scripts/queue/rls_two_users_probe.py | tee "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json"
+          python scripts/queue/rls_two_users_probe.py | tee "$RUNNER_TEMP/rls-two-users-report.json"
       - name: Run the D11 manual identity declaration probe (synthetic, rolled back)
         env:
           QUEUE_PROBE_PGHOST: 127.0.0.1
@@ -190,7 +190,7 @@ jobs:
           exit $status
       - name: Publish the probe verdicts as annotations
         if: always()
-        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json"
+        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json"
       - name: Upload the probe reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
