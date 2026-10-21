@@ -126,6 +126,16 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/queue/identity_declaration_probe.py | tee "$RUNNER_TEMP/identity-declaration-report.json"
+      - name: Run the three-user shared-demo identity probe (synthetic, disposable DB)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python scripts/queue/multi_user_identity_probe.py | tee "$RUNNER_TEMP/multi-user-identity-report.json"
       - name: Run the identity re-run dispatch probe (D18, synthetic)
         env:
           QUEUE_PROBE_PGHOST: 127.0.0.1
@@ -200,7 +210,7 @@ jobs:
           exit $status
       - name: Publish the probe verdicts as annotations
         if: always()
-        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json" "$RUNNER_TEMP/identity-rerun-dispatch-report.json"
+        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json" "$RUNNER_TEMP/multi-user-identity-report.json" "$RUNNER_TEMP/identity-rerun-dispatch-report.json"
       - name: Upload the probe reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -214,6 +224,7 @@ jobs:
             ${{ runner.temp }}/gate-semantics-v2-report.json
             ${{ runner.temp }}/rls-two-users-report.json
             ${{ runner.temp }}/identity-declaration-report.json
+            ${{ runner.temp }}/multi-user-identity-report.json
             ${{ runner.temp }}/identity-rerun-dispatch-report.json
             ${{ runner.temp }}/r5-8-9-report.txt
             ${{ runner.temp }}/r5-8-10-report.txt

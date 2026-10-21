@@ -444,8 +444,146 @@ def s_quarantine_snapshot():
     return {"quarantine": {k: v for k, v in q.items() if k != "guards"}, "guards": len(q["guards"])}
 
 
+def sql_stdin(query: str, timeout: str | None = None) -> tuple[str, float]:
+    """Large payloads exceed the per-argument limit of psql -c: send them on stdin.
+
+    Returns (last output line, elapsed ms of the statement measured by the server)."""
+    import os
+    import subprocess
+    import time
+    from queue_semantics_probe import DB, HOST, PORT, USER
+    prefix = f"set statement_timeout = '{timeout}';\n" if timeout else ""
+    started = time.monotonic()
+    result = subprocess.run(["psql", "-h", HOST, "-p", PORT, "-U", USER, "-d", DB, "-Atq", "-v", "ON_ERROR_STOP=1", "-f", "-"],
+                            input=prefix + query + ";\n", capture_output=True, text=True, check=False, env={**os.environ})
+    elapsed = round((time.monotonic() - started) * 1000, 1)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip().splitlines()[0] if result.stderr.strip() else "psql failed")
+    return result.stdout.strip().splitlines()[-1], elapsed
+
+
+def with_revision(payload: dict, revision: str = "git:probe-d20") -> dict:
+    payload["observation"]["metadata"] = {**payload["observation"]["metadata"], "parser_revision": revision}
+    payload["observation"]["sourceVersion"] = "demoparser2@probe"
+    return payload
+
+
+def event_ids(match_id: str) -> list:
+    return json.loads(sql(f"select coalesce(jsonb_agg(id order by id), '[]') from public.round_events where match_id='{match_id}'"))
+
+
+@scenario("d20_an_identical_reobservation_keeps_rounds_and_events_and_counts_the_observation")
+def s_d20_identical():
+    upload, fingerprint = fresh()
+    second_upload, _ = fresh()
+    payload = with_revision(bundle(fingerprint, rounds=3))
+    first = persist(payload, upload)
+    before, ids = snapshot(first["match_id"]), event_ids(first["match_id"])
+    assert first.get("unchanged_reobservation") is False, first
+    digest = sql(f"select rounds_digest from public.match_sources where match_id='{first['match_id']}'")
+    assert len(digest) == 32, digest
+    again = persist(payload, second_upload)
+    assert again["match_id"] == first["match_id"] and again["unchanged_reobservation"] is True, again
+    assert again["events_written"] == 0 and again["rounds_written"] == 0, again
+    assert event_ids(first["match_id"]) == ids  # the same rows, never deleted and re-inserted
+    after = snapshot(first["match_id"])
+    for table in ("matches", "match_participants", "match_rounds", "round_players", "round_events"):
+        assert after[table] == before[table], (table, before[table], after[table])
+    row = js("select jsonb_build_object('n', observation_count, 'u', upload_id) from public.match_sources "
+             f"where match_id='{first['match_id']}'")
+    assert row == {"n": 2, "u": second_upload}, row
+    return {"unchanged_reobservation": True, "event_rows_kept": len(ids)}
+
+
+@scenario("d20_an_identical_reobservation_carries_the_identity_link_into_round_players")
+def s_d20_identity_link():
+    person = new_job()
+    sql(f"insert into public.player_profiles(user_id, nickname) values ('{person['user']}', 'probe-d20') on conflict (user_id) do nothing")
+    player = sql(f"select id from public.player_profiles where user_id='{person['user']}'")
+    fingerprint = "probe-" + uuid.uuid4().hex
+    payload = with_revision(bundle(fingerprint, rounds=2))
+    first = persist(payload, person["upload"])
+    attached = copy.deepcopy(payload)
+    attached["participants"][0]["internalPlayerId"] = player
+    again = persist(attached, person["upload"])
+    assert again["unchanged_reobservation"] is True, again
+    linked = json.loads(sql("select jsonb_agg(distinct internal_player_id) from public.round_players "
+                            f"where match_id='{first['match_id']}' and participant_key='{payload['participants'][0]['participantKey']}'"))
+    assert linked == [player], linked
+    others = int(sql(f"select count(*) from public.round_players where match_id='{first['match_id']}' "
+                     "and internal_player_id is not null"))
+    assert others == 2, others  # 2 rounds x the one attached participant
+    return {"linked_rows": others}
+
+
+@scenario("d20_an_observation_stored_before_d20_is_identical_only_with_the_same_parser_revision")
+def s_d20_pre_digest():
+    upload, fingerprint = fresh()
+    payload = with_revision(bundle(fingerprint, rounds=2), "git:rev-a")
+    first = persist(payload, upload)
+    match = first["match_id"]
+    sql(f"update public.match_sources set rounds_digest = null where match_id='{match}'")
+    same = persist(payload, upload)
+    assert same["unchanged_reobservation"] is True, same
+    sql(f"update public.match_sources set rounds_digest = null where match_id='{match}'")
+    newer = persist(with_revision(bundle(fingerprint, rounds=2), "git:rev-b"), upload)
+    assert newer["unchanged_reobservation"] is False and newer["events_written"] == 4, newer
+    sql(f"update public.match_sources set rounds_digest = null where match_id='{match}'")
+    unknown = bundle(fingerprint, rounds=2)  # no parser revision: never assumed identical
+    unknown_result = persist(unknown, upload)
+    assert unknown_result["unchanged_reobservation"] is False, unknown_result
+    return {"same_revision": "kept", "other_revision": "rewritten", "unknown_revision": "rewritten"}
+
+
+@scenario("d20_a_changed_observation_is_still_fully_replaced")
+def s_d20_changed():
+    upload, fingerprint = fresh()
+    first = persist(with_revision(bundle(fingerprint, rounds=3)), upload)
+    changed = with_revision(bundle(fingerprint, rounds=3))
+    changed["events"][0]["weapon"] = "m4a1"
+    again = persist(changed, upload)
+    assert again["unchanged_reobservation"] is False and again["events_written"] == 6, again
+    weapons = json.loads(sql(f"select jsonb_agg(weapon order by round_number, event_type) from public.round_events "
+                             f"where match_id='{first['match_id']}' and event_type='kill'"))
+    assert weapons == ["m4a1", "ak47", "ak47"], weapons
+    return {"replaced": True}
+
+
+def large_bundle(fingerprint: str, rounds: int = 24, per_round: int = 180) -> dict:
+    payload = with_revision(bundle(fingerprint, rounds=rounds))
+    template = payload["events"][0]
+    payload["events"] = [{**template, "roundNumber": n, "tick": n * 10000 + i, "gameTimeSeconds": float(i),
+                          "data": {"x": i, "y": n, "pad": "p" * 120}}
+                         for n in range(1, rounds + 1) for i in range(per_round)]
+    # A multi-megabyte observation metadata value, like hot_semantic_data in production.
+    payload["observation"]["metadata"]["hot_semantic_data"] = [{"t": i, "pad": "h" * 200} for i in range(12000)]
+    return payload
+
+
+@scenario("d20_a_production_sized_reobservation_completes_within_the_api_statement_timeout")
+def s_d20_timeout():
+    upload, fingerprint = fresh()
+    second_upload, _ = fresh()
+    payload = large_bundle(fingerprint)
+    text = json.dumps(payload).replace("'", "''")
+    call = "select public.persist_canonical_observation_attached('{t}'::jsonb, null, '{u}')"
+    first_raw, first_ms = sql_stdin(call.format(t=text, u=upload), timeout="8s")
+    first = json.loads(first_raw)
+    assert first["events_written"] == len(payload["events"]), first
+    again_raw, again_ms = sql_stdin(call.format(t=text, u=second_upload), timeout="8s")
+    again = json.loads(again_raw)
+    assert again["unchanged_reobservation"] is True and again["match_id"] == first["match_id"], again
+    changed = copy.deepcopy(payload)
+    changed["events"][0]["weapon"] = "awp"
+    changed_raw, changed_ms = sql_stdin(call.format(t=json.dumps(changed).replace("'", "''"), u=upload), timeout="8s")
+    assert json.loads(changed_raw)["unchanged_reobservation"] is False
+    return {"events": len(payload["events"]), "payload_bytes": len(text), "statement_timeout": "8s",
+            "first_write_ms": first_ms, "identical_reobservation_ms": again_ms, "changed_rewrite_ms": changed_ms}
+
+
 SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles,
-             s_quarantine_scope, s_quarantine_roles, s_quarantine, s_quarantine_snapshot]
+             s_quarantine_scope, s_quarantine_roles, s_quarantine, s_quarantine_snapshot,
+             s_d20_identical, s_d20_identity_link, s_d20_pre_digest, s_d20_changed, s_d20_timeout]
 
 
 def main() -> int:
