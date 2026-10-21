@@ -601,18 +601,15 @@ export const ptBR = {
   "pipeline.unattached":
     "Analisamos a partida, mas ainda não identificamos qual jogador é você. Conecte sua Steam ou selecione seu jogador nesta demo para liberar suas métricas.",
   "pipeline.identify.title": "Quem é você nesta demo?",
-  "pipeline.identify.help":
-    "Selecione seu jogador entre os detectados na demo, ou informe o nickname que você usou nesta partida.",
+  "pipeline.identify.help": "Selecione o seu jogador entre os detectados na demo.",
   "pipeline.identify.selectLabel": "Jogadores detectados",
   "pipeline.identify.selectCta": "Sim, sou eu",
-  "pipeline.identify.nicknameLabel": "Meu nick nesta demo",
-  "pipeline.identify.nicknamePlaceholder": "Seu nickname",
-  "pipeline.identify.nicknameCta": "Usar este nickname",
+  "pipeline.identify.suggestion": "O jogador {nickname} é você?",
+  "pipeline.identify.suggestionWhy": "Reconhecemos este nickname do seu histórico de partidas.",
+  "pipeline.identify.showAll": "Não, mostrar todos os jogadores",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
     "Não encontramos este nickname nesta demo. Confira a grafia ou selecione seu jogador na lista.",
-  "pipeline.identify.ambiguous":
-    "Encontramos mais de um jogador com esse nickname nesta demo. Selecione o seu na lista.",
   "pipeline.identify.conflict":
     "Esta escolha contradiz a conta Steam vinculada ao seu perfil. Nada foi vinculado — revise antes de continuar.",
   "pipeline.identify.reprocessing": "Jogador identificado. Gerando suas métricas desta partida…",

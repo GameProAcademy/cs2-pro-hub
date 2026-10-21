@@ -19,6 +19,7 @@ const base: DemoIdentityView = {
   confirmationStatus: "not_required",
   latestDecisionEventKey: null,
   participants: [],
+  suggestion: null,
 };
 
 describe("identity UX state machine", () => {

@@ -594,18 +594,15 @@ export const en: Dictionary = {
   "pipeline.unattached":
     "We analysed the match, but we have not identified which player is you yet. Link your Steam account or pick your player in this demo to unlock your metrics.",
   "pipeline.identify.title": "Who are you in this demo?",
-  "pipeline.identify.help":
-    "Pick your player from the ones detected in the demo, or type the nickname you used in this match.",
+  "pipeline.identify.help": "Pick your player from the ones detected in the demo.",
   "pipeline.identify.selectLabel": "Detected players",
   "pipeline.identify.selectCta": "Yes, that is me",
-  "pipeline.identify.nicknameLabel": "My nickname in this demo",
-  "pipeline.identify.nicknamePlaceholder": "Your nickname",
-  "pipeline.identify.nicknameCta": "Use this nickname",
+  "pipeline.identify.suggestion": "Is the player {nickname} you?",
+  "pipeline.identify.suggestionWhy": "We recognised this nickname from your match history.",
+  "pipeline.identify.showAll": "No, show all players",
   "pipeline.identify.later": "I will do it later",
   "pipeline.identify.notFound":
     "We did not find this nickname in this demo. Check the spelling or pick your player from the list.",
-  "pipeline.identify.ambiguous":
-    "We found more than one player with this nickname in this demo. Pick yours from the list.",
   "pipeline.identify.conflict":
     "This choice contradicts the Steam account linked to your profile. Nothing was linked — review it before continuing.",
   "pipeline.identify.reprocessing": "Player identified. Generating your metrics for this match…",
