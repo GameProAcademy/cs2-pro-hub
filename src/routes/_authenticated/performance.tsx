@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RealCapabilityPage } from "@/components/real/RealData";
+import { NotAvailablePanel, OverviewStatePanel, WithOverview } from "@/components/real/RealData";
 import { DEMO_DATA } from "@/config/app";
 
 import { getMapPerformanceDisplayContexts } from "@/lib/cs2/mapPerformance";
@@ -12,6 +12,12 @@ import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { useT, type TranslationKey } from "@/i18n";
+import {
+  performanceSeries,
+  performanceTotals,
+  type PerformanceSeriesKey,
+} from "@/lib/performanceSeries";
+import type { OverviewMatch } from "@/lib/playerOverview";
 import { getMapPerformance, getMetrics, getSideSplit, getTrends } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/performance")({
@@ -36,12 +42,98 @@ export const Route = createFileRoute("/_authenticated/performance")({
 function RealPerformancePage() {
   const t = useT();
   return (
-    <RealCapabilityPage
-      eyebrow={t("performance.eyebrow")}
-      title={t("performance.title")}
-      description={t("performance.description")}
-      reason={t("real.performance.reason")}
-    />
+    <AppShell>
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow={t("performance.eyebrow")}
+          title={t("performance.title")}
+          description={t("performance.description")}
+        />
+        <WithOverview>
+          {(overview) =>
+            overview.matches.length === 0 ? (
+              <OverviewStatePanel overview={overview} />
+            ) : (
+              <RealPerformance matches={overview.matches} />
+            )
+          }
+        </WithOverview>
+      </div>
+    </AppShell>
+  );
+}
+
+function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
+  const t = useT();
+  const data = performanceSeries(matches);
+  const totals = performanceTotals(matches);
+  const chart = (
+    key: PerformanceSeriesKey,
+    title: string,
+    label: string,
+    reason: string,
+    variant: "area" | "line" = "area",
+  ) =>
+    totals.observed[key] > 0 ? (
+      <ChartCard title={title} showDemoTag={false}>
+        <TrendChart data={data} series={[{ key, label }]} variant={variant} />
+      </ChartCard>
+    ) : (
+      <NotAvailablePanel title={title} reason={`${t("real.performance.unavailable")}. ${reason}`} />
+    );
+  const dash = (value: number | null) => (value === null ? "—" : value);
+
+  return (
+    <>
+      <p className="text-xs text-muted-foreground">
+        {t("real.performance.basis").replace("{matches}", String(totals.matches))}
+      </p>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          showDemoTag={false}
+          label={t("real.performance.openingKills")}
+          value={dash(totals.openingKills)}
+          hint={totals.openingKills === null ? t("real.performance.timingReason") : undefined}
+        />
+        <MetricCard
+          showDemoTag={false}
+          label={t("real.performance.openingDeaths")}
+          value={dash(totals.openingDeaths)}
+          hint={totals.openingDeaths === null ? t("real.performance.timingReason") : undefined}
+        />
+        <MetricCard
+          showDemoTag={false}
+          label={t("real.performance.tradeKills")}
+          value={dash(totals.tradeKills)}
+          hint={totals.tradeKills === null ? t("real.performance.timingReason") : undefined}
+        />
+        <MetricCard
+          showDemoTag={false}
+          label={t("real.performance.flashAssists")}
+          value={dash(totals.flashAssists)}
+          hint={totals.flashAssists === null ? t("real.performance.timingReason") : undefined}
+        />
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        {chart("kd", t("performance.kdTrend"), "K/D", "", "line")}
+        {chart("adr", t("performance.adrTrend"), "ADR", "")}
+        {chart("hsPercent", t("performance.hsTrend"), "HS%", "")}
+        {chart("rating", t("real.performance.ratingTrend"), t("performance.rating"), "", "line")}
+        {chart("kast", t("performance.kastTrend"), "KAST", t("real.performance.kastReason"))}
+        {chart(
+          "openingDiff",
+          t("real.performance.openingDiff"),
+          t("performance.opening"),
+          t("real.performance.timingReason"),
+        )}
+        {chart(
+          "tradeKills",
+          t("real.performance.trades"),
+          t("real.performance.tradeKills"),
+          t("real.performance.timingReason"),
+        )}
+      </div>
+    </>
   );
 }
 

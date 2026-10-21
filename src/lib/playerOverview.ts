@@ -65,6 +65,10 @@ export interface OverviewMetricRow {
   hs_percent: number | string | null;
   rating: number | string | null;
   rounds_played: number | null;
+  first_kills?: number | null;
+  first_deaths?: number | null;
+  trade_kills?: number | null;
+  flash_assists?: number | null;
 }
 
 export interface OverviewMatchRow {
@@ -94,6 +98,11 @@ export interface OverviewMatch {
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
+  /** NULL when the demo did not prove event timing (opening duels / trades need it). */
+  firstKills: number | null;
+  firstDeaths: number | null;
+  tradeKills: number | null;
+  flashAssists: number | null;
   admission: MatchAdmission | null;
   limitations: string[];
 }
@@ -213,6 +222,10 @@ export function shapeMatches(
           kast: num(row.kast),
           hsPercent: num(row.hs_percent),
           rating: num(row.rating),
+          firstKills: row.first_kills ?? null,
+          firstDeaths: row.first_deaths ?? null,
+          tradeKills: row.trade_kills ?? null,
+          flashAssists: row.flash_assists ?? null,
           admission: admission.get(match.id)?.admission ?? null,
           limitations: admission.get(match.id)?.limitations ?? [],
         },

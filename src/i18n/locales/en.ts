@@ -968,6 +968,20 @@ export const en: Dictionary = {
     "The X-ray depends on a diagnosis that has not been built on real data yet. No sample diagnosis is shown.",
   "real.performance.reason":
     "Performance trends depend on real series that do not exist yet. No sample chart is shown.",
+  "real.performance.ratingTrend": "Rating over time",
+  "real.performance.openingDiff": "Opening duels (won − lost) per match",
+  "real.performance.trades": "Trades and flash assists per match",
+  "real.performance.tradeKills": "Trade kills",
+  "real.performance.flashAssists": "Flash assists",
+  "real.performance.openingKills": "Opening duels won",
+  "real.performance.openingDeaths": "Opening duels lost",
+  "real.performance.unavailable": "Not measured in any match",
+  "real.performance.timingReason":
+    "Requires the time of each demo event, which is not available for your matches yet. We never show zero in place of an unknown value.",
+  "real.performance.kastReason":
+    "KAST requires event times and full round coverage. We never show zero in place of an unknown value.",
+  "real.performance.basis":
+    "Based on {matches} processed match(es). Each point is one match; a missing point means the metric was not measured in that match.",
   "real.training.reason":
     "The training plan depends on a real diagnosis that does not exist yet. No sample plan is shown.",
   "real.dna.description":

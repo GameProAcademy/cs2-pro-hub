@@ -992,6 +992,20 @@ export const ptBR = {
     "O Raio-X depende de um diagnóstico que ainda não foi implementado sobre dados reais. Nenhum diagnóstico de exemplo é exibido.",
   "real.performance.reason":
     "As tendências de performance dependem de séries reais que ainda não existem. Nenhum gráfico de exemplo é exibido.",
+  "real.performance.ratingTrend": "Rating ao longo do tempo",
+  "real.performance.openingDiff": "Duelos de abertura (vitórias − derrotas) por partida",
+  "real.performance.trades": "Trades e flash assists por partida",
+  "real.performance.tradeKills": "Trade kills",
+  "real.performance.flashAssists": "Flash assists",
+  "real.performance.openingKills": "Aberturas vencidas",
+  "real.performance.openingDeaths": "Aberturas perdidas",
+  "real.performance.unavailable": "Não medido em nenhuma partida",
+  "real.performance.timingReason":
+    "Exige o horário de cada evento da demo, que ainda não está disponível para as suas partidas. Não exibimos zero no lugar de um valor desconhecido.",
+  "real.performance.kastReason":
+    "O KAST exige o horário dos eventos e a cobertura completa dos rounds. Não exibimos zero no lugar de um valor desconhecido.",
+  "real.performance.basis":
+    "Baseado em {matches} partida(s) processada(s). Cada ponto é uma partida; um ponto ausente significa que a métrica não foi medida naquela partida.",
   "real.training.reason":
     "O plano de treino depende de um diagnóstico real que ainda não existe. Nenhum plano de exemplo é exibido.",
   "real.dna.description":
