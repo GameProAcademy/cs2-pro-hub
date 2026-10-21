@@ -333,3 +333,33 @@ Role `authenticated` with that account's JWT subject, each probe in a rolled-bac
 | Attestation | run 39503700891 → provenance `af14868c` VERIFIED (deployment `01998834`, `a5d8c425`, tree `3ce7fe72`, 5/5 critical blobs, both hosts); `assert_verified_parser_provenance` VERIFIED | PASS |
 | Freeze removed | `watchPatterns` → `/services/cs2-demo-parser/**`; main worker tree identical to `a5d8c425` | PASS |
 | H.3-E on `3b04fa74` (run 39505251697) | runtime, managed_snapshot, transport, persistence, queue_semantics, R5.8.3, R5.8.4 PASS; **`parser_lock` and `bridge_identity` FAIL** — app secrets still expect `7f70141b` | **BLOCKED (owner secrets)** |
+
+## 2026-10-21 01:3x–03:1xZ — real E2E on R5.8.15
+
+H.3-E after the owner updated the three app secrets: run [39528305852](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39528305852) **PASS 18/18** on `3b04fa74`.
+
+### Mirage attempt 5 — job `921b55cf` (SHA `1d98f8b6…`, 382,007,151 B)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT → STARTED (`git:a5d8c425`) → FINISHED `PARSE_SUCCEEDED`; delivery_count 1, retry_count 0 | PASS |
+| RAW | 100 chunks; artifact ready/approved | PASS |
+| Admission v3 | decision `e398d700`, ruleset 2, **LIMITED, no blocked reasons**; RAW-V2-10/12/13/14 PASS (23 rounds, 4,264 events, 0 outside, 14 plants, 155 kills); RAW-V2-16 LIMITED L04 (`team_assignment_not_two_teams`, `round_winner_unknown`, `map_score_unknown`) | PASS |
+| Persistence | `processed`/`done` 01:52:36Z; match `95186f3f` (de_mirage, `canonical_status` completed, 23 rounds all closed, 10 participants with SteamID64, 4,264 events); excluded metrics per L04: result, scores, team names | PASS |
+| Identity | `identity_status unresolved`, `attachment_reason no_steam_id_on_profile`; participants unlinked; 0 personal metrics (contract: no SteamID → unresolved → personal metrics blocked) | PASS (contract) |
+| Manual selection / dashboard | owner chose to select in the panel; pending | NOT_PROVEN |
+
+### Cache attempt 13 — job `b7579762` (reference DEM `0caa7c97`, authorization recorded 01:46:53Z, PR #169)
+| Stage | Evidence | Status |
+|---|---|---|
+| Parse | three executions, each `PARSE_SUCCEEDED` on `a5d8c425`; 167 chunks; artifact ready/approved | PASS |
+| Admission v3 | ruleset 2, **LIMITED, no blocked reasons**: 24 rounds, 4,328 events, 0 outside; bomb PASS (20 plants); combat PASS (137 kills) — D13b and D16 proven on this DEM | PASS |
+| Persistence | `failed` `CANONICAL_PERSISTENCE_ERROR`: "CANONICAL_PERSISTENCE_FAILED: CANONICAL_MATCH_QUARANTINED" | BLOCKED (by design) |
+
+### D17 — quarantined content was retried and could be re-uploaded (PR #170)
+- Root cause: `matches.content_fingerprint` (demo SHA-256) is unique and `persist_canonical_observation` maps identical content to its existing match. For `0caa7c97` that is `a7b27f16`, quarantined 2026-10-13 (`PRE_PROVENANCE_CANONICAL_ROW`, immutable, no release path by design). That content can never be persisted again; the quarantine is untouched.
+- Defect: the refusal was the transient `CANONICAL_PERSISTENCE_ERROR`, so the job was re-dispatched 3 times (3 full 4.59M-row parses).
+- Fix: new permanent code `CANONICAL_MATCH_QUARANTINED`; persistence boundary maps to it; `createDemoUpload` refuses quarantined content before reserving a slot (read-only service-role lookup, fail-closed); player-facing message in 5 locales. Tests: `quarantinedContent.test.ts` (7).
+- PR #170 7/7 green; merge `c2f748c1`; published (deployment `61553a6e`).
+
+### Observed limitation (not a gate failure)
+- Both admitted demos carry L04: participants have no canonical team (`team_assignment_not_two_teams`), so round winners (T/CT observed) cannot be mapped to a team and match result/score stay excluded. `win_reason` is `unknown`; quality flags `missing_positions`, `missing_economy`. Candidate improvement: derive the two teams from per-round sides in the parser (worker release); not required for personal metrics.
