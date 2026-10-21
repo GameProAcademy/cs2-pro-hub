@@ -12,9 +12,11 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  classifyIdentityRpcError,
   confidenceScore,
   resolvePlayerAttachment,
   normalizeNickname,
+  storedAttachmentMethod,
   type AttachmentOutcome,
   type DemoParticipant,
   type PlayerDeclaration,
@@ -180,7 +182,8 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
           declared_participant_key: data.participantKey ?? null,
           declared_nickname: data.nickname ?? null,
           state: outcome.state,
-          method: outcome.method,
+          // Stored vocabulary of demo_jobs.attachment_method (D11).
+          method: storedAttachmentMethod(outcome.method, declaration.kind),
           source: outcome.source,
           confidence_score: confidenceScore(outcome.confidence),
           confidence: outcome.confidence,
@@ -191,7 +194,19 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         },
       },
     );
-    if (requeueError || !requeued) throw new Error("JOB_REQUEUE_FAILED");
+    if (requeueError) {
+      // Safe diagnostics only: the database message can contain the whole row.
+      const failure = classifyIdentityRpcError(requeueError);
+      console.error("pipeline.declareDemoPlayer failed", {
+        jobId: job.id,
+        code: failure.code,
+        sqlstate: requeueError.code ?? null,
+        constraint: failure.constraint,
+      });
+      throw new Error(failure.code);
+    }
+    // false: the job is not the caller's or is being processed right now.
+    if (!requeued) throw new Error("JOB_NOT_EDITABLE");
 
     const ambiguous = outcome.reason === "ambiguous_nickname" && data.nickname;
     return {
