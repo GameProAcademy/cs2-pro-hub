@@ -607,6 +607,17 @@ export const ptBR = {
   "pipeline.identify.suggestion": "O jogador {nickname} é você?",
   "pipeline.identify.suggestionWhy": "Reconhecemos este nickname do seu histórico de partidas.",
   "pipeline.identify.showAll": "Não, mostrar todos os jogadores",
+  "pipeline.identify.selectAndRetry": "Selecionar jogador e tentar novamente",
+  "pipeline.identify.retryStarted":
+    "Jogador selecionado. Nova tentativa iniciada — acompanhe o status abaixo.",
+  "pipeline.identify.notRecoverable":
+    "Esta demo não pode ser reprocessada a partir daqui. Seu histórico e a partida continuam salvos.",
+  "pipeline.identify.rerunLimit":
+    "Esta demo atingiu o limite de novas tentativas. Seu histórico e a partida continuam salvos.",
+  "pipeline.identify.reuploadTitle": "O arquivo desta demo expirou",
+  "pipeline.identify.reuploadBody":
+    "A partida e o histórico continuam salvos, mas o arquivo não está mais disponível para uma nova tentativa. Envie o mesmo arquivo .dem novamente: ele será reconhecido como a mesma partida, sem duplicá-la.",
+  "pipeline.identify.reuploadCta": "Enviar o arquivo novamente",
   "pipeline.identify.later": "Deixar para depois",
   "pipeline.identify.notFound":
     "Não encontramos este nickname nesta demo. Confira a grafia ou selecione seu jogador na lista.",

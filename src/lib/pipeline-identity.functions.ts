@@ -21,6 +21,7 @@ import {
   type DemoParticipant,
   type PlayerDeclaration,
 } from "@/lib/pipeline/attachment";
+import { identityActionFor } from "@/lib/pipeline/identityRecovery";
 
 export interface DemoParticipantView {
   participantKey: string;
@@ -152,11 +153,29 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     // Ownership check runs as the USER (RLS), never as the admin client.
     const { data: job } = await supabase
       .from("demo_jobs")
-      .select("id, match_id, status, player_id")
+      .select(
+        "id, match_id, status, player_id, error_code, retry_count, storage_deleted_at, superseded_by_job_id",
+      )
       .eq("id", data.jobId)
       .maybeSingle();
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (!job.match_id) throw new Error("MATCH_NOT_ANALYSED");
+    // A FAILED job may be re-run from the identity panel only when the same rule that
+    // shows "select player and try again" allows it (never a permanent refusal, never an
+    // expired demo file, never past the dispatch bound).
+    if (
+      job.status === "failed" &&
+      identityActionFor({
+        status: job.status,
+        errorCode: job.error_code,
+        matchId: job.match_id,
+        retryCount: job.retry_count,
+        demoAvailable: !job.storage_deleted_at,
+        supersededByJobId: job.superseded_by_job_id,
+      }) !== "select_and_retry"
+    ) {
+      throw new Error("JOB_NOT_RECOVERABLE");
+    }
 
     const participants = await readParticipants(supabase, job.match_id);
     const { data: latestDecision } = await supabase

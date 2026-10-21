@@ -7,6 +7,7 @@ import { HistorySkeleton } from "@/components/common/AppLoaders";
 import { EmptyState } from "@/components/common/States";
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
+import { identityActionFor } from "@/lib/pipeline/identityRecovery";
 import { getDemoUploadFeedback } from "@/components/pipeline/demoUploadFeedback";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
@@ -359,18 +360,36 @@ export function DemoIngestPanel() {
                       {t("pipeline.history.superseded")}
                     </p>
                   ) : null}
-                  {job.status === "processed" ? (
+                  {identityActionFor(job) === "identity" ? (
                     <>
                       {job.attachmentState !== "attached" ? (
                         <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
                       ) : null}
                       <DemoPlayerIdentity jobId={job.jobId} />
                     </>
+                  ) : identityActionFor(job) === "select_and_retry" ? (
+                    <DemoPlayerIdentity jobId={job.jobId} recover />
+                  ) : identityActionFor(job) === "reupload_required" ? (
+                    <div className="mt-2 rounded-lg border border-warning/35 bg-warning/8 px-3 py-2.5">
+                      <p className="text-sm font-semibold text-warning">
+                        {t("pipeline.identify.reuploadTitle")}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t("pipeline.identify.reuploadBody")}
+                      </p>
+                      <Button size="sm" variant="outline" className="mt-2.5" onClick={focusUpload}>
+                        <Upload className="mr-1.5 size-3.5" aria-hidden />
+                        {t("pipeline.identify.reuploadCta")}
+                      </Button>
+                    </div>
                   ) : null}
                   <DemoProcessingStatus job={job} />
                 </div>
 
                 {job.status === "failed" &&
+                // One recovery action per card: an analysed job is retried through
+                // "select player and try again", which also starts the new attempt.
+                identityActionFor(job) !== "select_and_retry" &&
                 !isPermanentCode(job.errorCode) &&
                 job.retryCount < job.maxRetries ? (
                   <div className="mt-4 border-t border-border/70 pt-4">

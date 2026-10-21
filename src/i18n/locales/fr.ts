@@ -606,6 +606,17 @@ export const fr: Dictionary = {
   "pipeline.identify.suggestionWhy":
     "Nous avons reconnu ce pseudo dans votre historique de matchs.",
   "pipeline.identify.showAll": "Non, afficher tous les joueurs",
+  "pipeline.identify.selectAndRetry": "Sélectionner le joueur et réessayer",
+  "pipeline.identify.retryStarted":
+    "Joueur sélectionné. Une nouvelle tentative a démarré — suivez son état ci-dessous.",
+  "pipeline.identify.notRecoverable":
+    "Cette demo ne peut pas être retraitée d'ici. Votre historique et le match restent enregistrés.",
+  "pipeline.identify.rerunLimit":
+    "Cette demo a atteint sa limite de nouvelles tentatives. Votre historique et le match restent enregistrés.",
+  "pipeline.identify.reuploadTitle": "Le fichier de cette demo a expiré",
+  "pipeline.identify.reuploadBody":
+    "Le match et l'historique restent enregistrés, mais le fichier n'est plus disponible pour une nouvelle tentative. Renvoyez le même fichier .dem : il sera reconnu comme le même match, sans le dupliquer.",
+  "pipeline.identify.reuploadCta": "Renvoyer le fichier",
   "pipeline.identify.later": "Je le ferai plus tard",
   "pipeline.identify.notFound":
     "Nous n'avons pas trouvé ce pseudo dans cette demo. Vérifiez l'orthographe ou sélectionnez votre joueur dans la liste.",
