@@ -309,6 +309,8 @@ const IDENTITY_RPC_CODES = [
   "MATCH_NOT_ANALYSED",
   "PLAYER_PROFILE_NOT_FOUND",
   "JOB_NOT_FOUND",
+  // D18: the job reached the dispatch bound; another identity re-run is refused.
+  "IDENTITY_RERUN_LIMIT_REACHED",
 ] as const;
 export type IdentityRpcErrorCode =
   (typeof IDENTITY_RPC_CODES)[number] | "IDENTITY_DECISION_INVALID" | "JOB_REQUEUE_FAILED";
