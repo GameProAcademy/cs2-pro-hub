@@ -91,8 +91,11 @@ def test_every_repository_pin_names_the_new_deployment():
     assert r5814["observed"]["before"]["deployment_id"] == NEW
     r5815 = json.loads((ROOT / "docs/reference/r5_8_15/spec.json").read_text(encoding="utf-8"))
     assert r5815["observed"]["before"]["deployment_id"] == r5814["deployment_id"]
+    r5816 = json.loads((ROOT / "docs/reference/r5_8_16/spec.json").read_text(encoding="utf-8"))
+    assert r5816["observed"]["before"]["deployment_id"] == r5815["deployment_id"]
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert r5815["deployment_id"] in text, path
-        assert r5814["deployment_id"] not in text and NEW not in text and OLD not in text, path
+        assert r5816["deployment_id"] in text, path
+        assert r5815["deployment_id"] not in text and r5814["deployment_id"] not in text, path
+        assert NEW not in text and OLD not in text, path

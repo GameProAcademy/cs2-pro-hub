@@ -791,3 +791,12 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
 - Both `/version` hosts: revision, semantic and build `git:a5d8c425…`, `build.commit a5d8c425…`, `declared_revision_matches: true`.
 - Critical blobs at `a5d8c425`: only `parser.py` changed (`8f75eb61…` → `024c1dd4…`).
 - R5.8.15 (`supabase/migrations/20261020210000_r5_8_15_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_15/`): recorder `19a352c2…` → `d9328086…`, assertion `df0dc1b3…` → `39418665…`, workflow guard unchanged. Start state read back from production (exact R5.8.14 targets, pin counts deployment 1/1, commit 4/3, parser blob 1/0); targets computed read-only from production `prosrc` and independently by the repository generator; forward + rollback round trip to the exact R5.8.14 md5s.
+
+## 2026-10-21/22 — R5.8.16: D22 parser release (controlled)
+
+- PR #177 (event times from the demo's own proven game clock) merged as `d5af6345bd8dfffc61b65a1838accedb71112b22` under the watch pattern `/services/cs2-demo-parser/.release-freeze-r5-8-16`: the merge push produced SKIPPED deployment `7d4caa98`.
+- The Railway agent (the exact-commit deploy path) failed with "permission denied for schema mastra_memory". The deploy-marker PR #179 (adds only that watched file) merged as `4716f89429fd85f828e1e786d6520895d7bece53` (2026-10-21 18:12Z). Railway created no deployment event for it, and GitHub has no deployment record for it. The revision variables were restored to `git:a5d8c425…` while no deployment existed. No job ran in that window.
+- 2026-10-22: `PARSER_REVISION`/`PARSER_BUILD_REVISION` set to `git:4716f894…` (skipped deploys), then ONE deployment of that exact commit through the Railway agent: `1886c473-5251-4110-8ba3-60821e0b256b` (SUCCESS 23:33:24Z).
+- Critical blobs at `4716f894`: only `parser.py` changed (`024c1dd4…` → `aec5f33b…`).
+- `/version` was not readable from the authoring session or the Railway agent. The runtime identity is proven only by the fail-closed H.3-E.9.1 live preflight and the parser runtime attestation run on `main` after this repin.
+- R5.8.16 (`supabase/migrations/20261022234000_r5_8_16_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_16/`): recorder `d9328086…` → `35198be8…`, assertion `39418665…` → `0f1d4e41…`, workflow guard unchanged. Start state read back from production (exact R5.8.15 targets; pin counts deployment 1/1, commit 4/3, parser blob 1/0). Targets computed read-only from production `prosrc` and independently by the repository generator (identical).
