@@ -175,7 +175,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: r5-8-4-gate-reconciliation-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.head_sha }}
+          # Named per R5.8.3 attempt (like the R5.8.3 artifact): a re-run of the R5.8.3 run
+          # produces its own matrix and can never be confused with an earlier attempt's.
+          name: r5-8-4-gate-reconciliation-${{ github.event.workflow_run.id }}-attempt-${{ github.event.workflow_run.run_attempt }}-${{ github.event.workflow_run.head_sha }}
           path: r5-8-4-gate-reconciliation.json
           if-no-files-found: error
           retention-days: 14
