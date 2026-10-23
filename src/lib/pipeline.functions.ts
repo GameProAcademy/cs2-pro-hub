@@ -14,6 +14,13 @@ import { z } from "zod";
 
 import { DEMO_BUCKET, MAX_DEMO_SIZE_BYTES, MIN_DEMO_SIZE_BYTES } from "@/config/pipeline";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { parserUpgradeRequired } from "@/lib/pipeline/parserUpgrade";
+
+/** The parser revision this server pins (env override or the deployed default). */
+async function pinnedParserRevision(): Promise<string | null> {
+  const { expectedParserIdentity } = await import("@/lib/pipeline/parser/adapter");
+  return expectedParserIdentity().revision;
+}
 
 export interface DemoJobView {
   jobId: string;
@@ -34,6 +41,11 @@ export interface DemoJobView {
   matchId: string | null;
   /** False once the stored demo file was deleted (retention): a re-run cannot read it. */
   demoAvailable: boolean;
+  /**
+   * D24: false when the job was analysed by a parser other than the one this server pins;
+   * such a job is reprocessed as a new attempt, never re-run in place.
+   */
+  parserCurrent: boolean;
   extractionConfidence: number | null;
   partialParse: boolean;
   roundsValid: number | null;
@@ -59,7 +71,13 @@ export interface DemoJobView {
 }
 
 export type ReplacementReason =
-  "stale" | "failed" | "cancelled" | "legacy_unvalidated" | "raw_audit_blocked" | null;
+  | "stale"
+  | "failed"
+  | "cancelled"
+  | "legacy_unvalidated"
+  | "raw_audit_blocked"
+  | "parser_upgrade"
+  | null;
 
 const createSchema = z.object({
   fileName: z
@@ -106,7 +124,37 @@ export const createDemoUpload = createServerFn({ method: "POST" })
       throw new Error("UPLOAD_REGISTRATION_FAILED");
     }
 
-    const result = reserved as Record<string, unknown>;
+    let result = reserved as Record<string, unknown>;
+    // D24: the same demo analysed by an OLDER parser release is not a duplicate - a new
+    // upload of it starts a new attempt with the current parser (the old one is kept).
+    if (result["duplicate_status"] === "processed" && typeof result["job_id"] === "string") {
+      const { data: prior } = await supabaseAdmin
+        .from("demo_jobs")
+        .select("parser_revision, user_id")
+        .eq("id", result["job_id"])
+        .maybeSingle();
+      const expectedRevision = await pinnedParserRevision();
+      if (
+        prior?.user_id === userId &&
+        parserUpgradeRequired(prior.parser_revision, expectedRevision)
+      ) {
+        const { data: upgraded, error: upgradeError } = await supabaseAdmin.rpc(
+          "reserve_demo_parser_upgrade_attempt" as never,
+          {
+            _user_id: userId,
+            _demo_sha256: data.demoSha256,
+            _upload_id: uploadId,
+            _file_name: data.fileName,
+            _file_size: data.fileSize,
+            _expected_parser_revision: expectedRevision,
+          } as never,
+        );
+        if (upgradeError || !upgraded || typeof upgraded !== "object" || Array.isArray(upgraded)) {
+          throw new Error("UPLOAD_REGISTRATION_FAILED");
+        }
+        result = upgraded as Record<string, unknown>;
+      }
+    }
     const reservedUploadId = typeof result["upload_id"] === "string" ? result["upload_id"] : null;
     const storagePath = typeof result["storage_path"] === "string" ? result["storage_path"] : null;
     if (!reservedUploadId || !storagePath || !storagePath.startsWith(`${userId}/`)) {
@@ -138,7 +186,8 @@ export const createDemoUpload = createServerFn({ method: "POST" })
         result["replacement_reason"] === "failed" ||
         result["replacement_reason"] === "cancelled" ||
         result["replacement_reason"] === "legacy_unvalidated" ||
-        result["replacement_reason"] === "raw_audit_blocked"
+        result["replacement_reason"] === "raw_audit_blocked" ||
+        result["replacement_reason"] === "parser_upgrade"
           ? result["replacement_reason"]
           : null,
     };
@@ -227,6 +276,7 @@ function toView(
     supersedes_job_id: string | null;
     superseded_by_job_id: string | null;
     replacement_reason: string | null;
+    parser_revision?: string | null;
   },
   fileName = "",
   match?: {
@@ -235,6 +285,7 @@ function toView(
     score_player: number | null;
     score_opponent: number | null;
   } | null,
+  expectedParserRevision: string | null = null,
 ): DemoJobView {
   return {
     jobId: row.id,
@@ -247,6 +298,7 @@ function toView(
     maxRetries: row.max_retries,
     matchId: row.match_id,
     demoAvailable: !row.storage_deleted_at,
+    parserCurrent: !parserUpgradeRequired(row.parser_revision, expectedParserRevision),
     extractionConfidence: row.extraction_confidence,
     partialParse: row.partial_parse,
     roundsValid: row.rounds_valid,
@@ -277,14 +329,15 @@ function toView(
       row.replacement_reason === "failed" ||
       row.replacement_reason === "cancelled" ||
       row.replacement_reason === "legacy_unvalidated" ||
-      row.replacement_reason === "raw_audit_blocked"
+      row.replacement_reason === "raw_audit_blocked" ||
+      row.replacement_reason === "parser_upgrade"
         ? row.replacement_reason
         : null,
   };
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, storage_deleted_at, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, storage_deleted_at, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason, parser_revision";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -313,7 +366,7 @@ export const getDemoJobStatus = createServerFn({ method: "POST" })
           .maybeSingle()
       : { data: null, error: null };
     if (matchError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED");
-    return toView(row, upload?.file_name ?? "", match);
+    return toView(row, upload?.file_name ?? "", match, await pinnedParserRevision());
   });
 
 /** Player's own processing history. RLS scopes it to the signed-in user. */
@@ -346,11 +399,13 @@ export const listMyDemoJobs = createServerFn({ method: "GET" })
       : { data: [], error: null };
     if (matchesError) throw new Error("DEMO_HISTORY_MATCH_QUERY_FAILED");
     const matchById = new Map((matches ?? []).map((match) => [match.id, match]));
+    const expectedRevision = await pinnedParserRevision();
     return rows.map((row) =>
       toView(
         row,
         fileNameByUploadId.get(row.upload_id) ?? "",
         row.match_id ? matchById.get(row.match_id) : null,
+        expectedRevision,
       ),
     );
   });
@@ -362,11 +417,18 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job } = await context.supabase
       .from("demo_jobs")
-      .select("id, status, retry_count, max_retries, storage_deleted_at, error_code")
+      .select(
+        "id, status, retry_count, max_retries, storage_deleted_at, error_code, parser_revision",
+      )
       .eq("id", data.jobId)
       .maybeSingle();
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (job.status !== "failed") throw new Error("JOB_NOT_RETRYABLE");
+    // D24: a same-attempt retry of a job analysed by an older parser can never pass the RAW
+    // manifest check; it is reprocessed as a new attempt instead.
+    if (parserUpgradeRequired(job.parser_revision, await pinnedParserRevision())) {
+      throw new Error("PARSER_UPGRADE_REPROCESS_REQUIRED");
+    }
     if (job.storage_deleted_at) throw new Error("DEMO_EXPIRED");
     if (job.retry_count >= job.max_retries) throw new Error("RETRY_LIMIT_REACHED");
     // FASE 2.7.2 — a permanent failure (e.g. CORRUPTED_DEMO) stays permanent:
@@ -396,6 +458,118 @@ export const retryMyDemoJob = createServerFn({ method: "POST" })
     }
 
     return { jobId: job.id, queued: true as const };
+  });
+
+/**
+ * D24: reprocesses one of the player's demos that an OLDER parser release analysed.
+ *
+ * Never re-runs the job in place (its immutable RAW evidence pins the old parser): it
+ * reserves attempt N+1, copies the stored file to that attempt's own path and enqueues it
+ * through the normal lifecycle. The previous job, match, evidence and history are kept.
+ */
+export const reprocessDemoWithCurrentParser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ jobId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    // Ownership check runs as the USER (RLS), never as the admin client.
+    const { data: job } = await context.supabase
+      .from("demo_jobs")
+      .select(
+        "id, user_id, upload_id, status, error_code, match_id, retry_count, storage_path, storage_deleted_at, superseded_by_job_id, demo_sha256, file_size, parser_revision",
+      )
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (!job || job.user_id !== userId) throw new Error("JOB_NOT_FOUND");
+
+    const expectedRevision = await pinnedParserRevision();
+    const { identityActionFor } = await import("@/lib/pipeline/identityRecovery");
+    const action = identityActionFor({
+      status: job.status,
+      errorCode: job.error_code,
+      matchId: job.match_id,
+      retryCount: job.retry_count,
+      demoAvailable: !job.storage_deleted_at,
+      supersededByJobId: job.superseded_by_job_id,
+      parserCurrent: !parserUpgradeRequired(job.parser_revision, expectedRevision),
+    });
+    if (action !== "reprocess_current_parser") throw new Error("JOB_NOT_REPROCESSABLE");
+    if (!job.demo_sha256 || !job.storage_path || !job.file_size) {
+      throw new Error("JOB_NOT_REPROCESSABLE");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { assertDemoContentNotQuarantined } = await import("@/lib/pipeline/quarantine.server");
+    await assertDemoContentNotQuarantined(supabaseAdmin, job.demo_sha256);
+
+    const { data: upload } = await context.supabase
+      .from("uploads")
+      .select("id, file_name")
+      .eq("id", job.upload_id)
+      .maybeSingle();
+    const newUploadId = crypto.randomUUID();
+    const { data: reserved, error: reserveError } = await supabaseAdmin.rpc(
+      "reserve_demo_parser_upgrade_attempt" as never,
+      {
+        _user_id: userId,
+        _demo_sha256: job.demo_sha256,
+        _upload_id: newUploadId,
+        _file_name: upload?.file_name ?? null,
+        _file_size: job.file_size,
+        _expected_parser_revision: expectedRevision,
+      } as never,
+    );
+    if (reserveError || !reserved || typeof reserved !== "object" || Array.isArray(reserved)) {
+      console.error("pipeline.reprocessDemoWithCurrentParser reserve failed", {
+        jobId: job.id,
+        sqlstate: reserveError?.code ?? null,
+      });
+      throw new Error("REPROCESS_RESERVATION_FAILED");
+    }
+    const result = reserved as Record<string, unknown>;
+    const status = result["reservation_status"];
+    if (status === "IN_PROGRESS" && typeof result["job_id"] === "string") {
+      return {
+        jobId: result["job_id"],
+        queued: false as const,
+        attemptNumber: Number(result["attempt_number"]),
+      };
+    }
+    const uploadId = typeof result["upload_id"] === "string" ? result["upload_id"] : null;
+    const storagePath = typeof result["storage_path"] === "string" ? result["storage_path"] : null;
+    if (
+      (status !== "CREATED" && status !== "RESUMED") ||
+      !uploadId ||
+      !storagePath ||
+      (status === "CREATED" && result["supersedes_job_id"] !== job.id)
+    ) {
+      throw new Error("REPROCESS_RESERVATION_FAILED");
+    }
+
+    const { copyDemoForNewAttempt } = await import("@/lib/pipeline/storage.server");
+    await copyDemoForNewAttempt({
+      userId,
+      sourcePath: job.storage_path,
+      sourceUploadId: job.upload_id,
+      destinationPath: storagePath,
+      destinationUploadId: uploadId,
+      expectedSize: job.file_size,
+    });
+
+    const { data: enqueued, error: enqueueError } = await supabaseAdmin.rpc("enqueue_demo_job", {
+      _upload_id: uploadId,
+      _user_id: userId,
+    });
+    if (enqueueError || !enqueued || typeof enqueued !== "object" || Array.isArray(enqueued)) {
+      throw new Error("JOB_ENQUEUE_FAILED");
+    }
+    const queued = enqueued as Record<string, unknown>;
+    if (typeof queued["job_id"] !== "string") throw new Error("JOB_ENQUEUE_FAILED");
+    return {
+      jobId: queued["job_id"],
+      queued: queued["queued"] === true,
+      attemptNumber: Number(queued["attempt_number"]),
+    };
   });
 
 /** Persistently cancels a job owned by the signed-in player. */

@@ -613,6 +613,14 @@ export const fr: Dictionary = {
     "Cette demo ne peut pas être retraitée d'ici. Votre historique et le match restent enregistrés.",
   "pipeline.identify.rerunLimit":
     "Cette demo a atteint sa limite de nouvelles tentatives. Votre historique et le match restent enregistrés.",
+  "pipeline.identify.reprocessTitle":
+    "Cette demo a été analysée par une version antérieure du parser",
+  "pipeline.identify.reprocessBody":
+    "Pour extraire les données avec la version actuelle (y compris opening duels et trades), une nouvelle tentative est créée à partir du même fichier. L'analyse précédente reste dans l'historique.",
+  "pipeline.identify.reprocessCta": "Retraiter avec le parser actuel",
+  "pipeline.identify.reprocessPending": "Retraitement…",
+  "pipeline.identify.reprocessError":
+    "Le retraitement n'a pas pu démarrer. Réessayez dans un instant.",
   "pipeline.identify.reuploadTitle": "Le fichier de cette demo a expiré",
   "pipeline.identify.reuploadBody":
     "Le match et l'historique restent enregistrés, mais le fichier n'est plus disponible pour une nouvelle tentative. Renvoyez le même fichier .dem : il sera reconnu comme le même match, sans le dupliquer.",

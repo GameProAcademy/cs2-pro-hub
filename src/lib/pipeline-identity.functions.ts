@@ -154,12 +154,22 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     const { data: job } = await supabase
       .from("demo_jobs")
       .select(
-        "id, match_id, status, player_id, error_code, retry_count, storage_deleted_at, superseded_by_job_id",
+        "id, match_id, status, player_id, error_code, retry_count, storage_deleted_at, superseded_by_job_id, parser_revision",
       )
       .eq("id", data.jobId)
       .maybeSingle();
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (!job.match_id) throw new Error("MATCH_NOT_ANALYSED");
+    // D24: a job analysed by an older parser can never be re-run in place (its immutable
+    // RAW evidence pins that parser); requeueing it would turn it into a permanent failure.
+    // Refuse BEFORE any state change; the panel offers "reprocess with the current parser".
+    {
+      const { expectedParserIdentity } = await import("@/lib/pipeline/parser/adapter");
+      const { parserUpgradeRequired } = await import("@/lib/pipeline/parserUpgrade");
+      if (parserUpgradeRequired(job.parser_revision, expectedParserIdentity().revision)) {
+        throw new Error("PARSER_UPGRADE_REPROCESS_REQUIRED");
+      }
+    }
     // A FAILED job may be re-run from the identity panel only when the same rule that
     // shows "select player and try again" allows it (never a permanent refusal, never an
     // expired demo file, never past the dispatch bound).

@@ -156,6 +156,16 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/queue/dispatch_failure_history_probe.py | tee "$RUNNER_TEMP/dispatch-failure-history-report.json"
+      - name: Run the parser upgrade attempt probe (D24, synthetic)
+        env:
+          QUEUE_PROBE_PGHOST: 127.0.0.1
+          QUEUE_PROBE_PGPORT: "54322"
+          QUEUE_PROBE_PGUSER: postgres
+          QUEUE_PROBE_PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          python scripts/queue/parser_upgrade_attempt_probe.py | tee "$RUNNER_TEMP/parser-upgrade-attempt-report.json"
       - name: Run the attestation recorder reconciliation probe (R5.8.7, synthetic, rolled back)
         env:
           QUEUE_PROBE_PGHOST: 127.0.0.1
@@ -220,7 +230,7 @@ jobs:
           exit $status
       - name: Publish the probe verdicts as annotations
         if: always()
-        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json" "$RUNNER_TEMP/multi-user-identity-report.json" "$RUNNER_TEMP/identity-rerun-dispatch-report.json" "$RUNNER_TEMP/dispatch-failure-history-report.json"
+        run: python scripts/queue/publish_probe_annotations.py "$RUNNER_TEMP/queue-semantics-report.json" "$RUNNER_TEMP/queue-recovery-report.json" "$RUNNER_TEMP/canonical-persistence-report.json" "$RUNNER_TEMP/attestation-recorder-report.json" "$RUNNER_TEMP/gate-semantics-v2-report.json" "$RUNNER_TEMP/rls-two-users-report.json" "$RUNNER_TEMP/identity-declaration-report.json" "$RUNNER_TEMP/multi-user-identity-report.json" "$RUNNER_TEMP/identity-rerun-dispatch-report.json" "$RUNNER_TEMP/dispatch-failure-history-report.json" "$RUNNER_TEMP/parser-upgrade-attempt-report.json"
       - name: Upload the probe reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -237,6 +247,7 @@ jobs:
             ${{ runner.temp }}/multi-user-identity-report.json
             ${{ runner.temp }}/identity-rerun-dispatch-report.json
             ${{ runner.temp }}/dispatch-failure-history-report.json
+            ${{ runner.temp }}/parser-upgrade-attempt-report.json
             ${{ runner.temp }}/r5-8-9-report.txt
             ${{ runner.temp }}/r5-8-10-report.txt
           if-no-files-found: warn

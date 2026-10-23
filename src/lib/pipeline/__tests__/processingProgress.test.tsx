@@ -28,6 +28,7 @@ function job(overrides: Partial<DemoJobView> = {}): DemoJobView {
     maxRetries: 2,
     matchId: null,
     demoAvailable: true,
+    parserCurrent: true,
     extractionConfidence: null,
     partialParse: false,
     roundsValid: null,

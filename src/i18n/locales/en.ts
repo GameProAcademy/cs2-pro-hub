@@ -607,6 +607,13 @@ export const en: Dictionary = {
     "This demo cannot be reprocessed from here. Your history and the match remain saved.",
   "pipeline.identify.rerunLimit":
     "This demo reached its retry limit. Your history and the match remain saved.",
+  "pipeline.identify.reprocessTitle": "This demo was analysed by an earlier parser version",
+  "pipeline.identify.reprocessBody":
+    "To extract the data with the current version (including opening duels and trades), a new attempt is created from the same file. The previous analysis stays in the history.",
+  "pipeline.identify.reprocessCta": "Reprocess with the current parser",
+  "pipeline.identify.reprocessPending": "Reprocessing…",
+  "pipeline.identify.reprocessError":
+    "The reprocessing could not be started. Please try again shortly.",
   "pipeline.identify.reuploadTitle": "This demo's file has expired",
   "pipeline.identify.reuploadBody":
     "The match and history remain saved, but the file is no longer available for a new attempt. Upload the same .dem file again: it will be recognised as the same match, without duplicating it.",

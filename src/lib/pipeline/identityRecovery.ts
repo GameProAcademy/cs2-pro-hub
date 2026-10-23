@@ -6,6 +6,10 @@
  * then FAILED - here CANONICAL_PERSISTENCE_ERROR on the identity re-run, with its retry
  * budget spent - offered no way to select the player and try again, although the demo
  * file, the match and its players were all still there.
+ *
+ * D24 (2026-10-23, same job): a job analysed by an OLDER parser release can never be
+ * re-run in place (its immutable RAW evidence pins the old parser). It is reprocessed as
+ * a new attempt instead (`reprocess_current_parser`), or re-uploaded when its file expired.
  */
 import {
   isPermanentError,
@@ -21,7 +25,9 @@ export type IdentityAction =
   | "identity"
   /** Failed after analysis, demo file present: pick the player and start a new attempt. */
   | "select_and_retry"
-  /** Failed after analysis, demo file expired: only a new upload of the same file helps. */
+  /** Analysed by an older parser, demo file present: start a new attempt with the current one. */
+  | "reprocess_current_parser"
+  /** Failed after analysis (or older parser), demo file expired: only a new upload helps. */
   | "reupload_required"
   | null;
 
@@ -32,7 +38,15 @@ export interface IdentityActionInput {
   retryCount: number;
   demoAvailable: boolean;
   supersededByJobId?: string | null;
+  /** False when the job's evidence comes from a parser other than the pinned one (D24). */
+  parserCurrent?: boolean;
 }
+
+/**
+ * Errors that are permanent for THIS attempt only because its RAW evidence pins an older
+ * parser; a new attempt with the current parser is the remedy (D24).
+ */
+const PARSER_UPGRADE_RECOVERABLE = new Set<string>(["PARSER_INVALID_RESPONSE"]);
 
 function permanent(code: string | null): boolean {
   if (!code) return false;
@@ -43,12 +57,21 @@ function permanent(code: string | null): boolean {
 }
 
 export function identityActionFor(job: IdentityActionInput): IdentityAction {
+  // A newer job already replaced this one; act there.
+  if (job.supersededByJobId) return null;
+  if (job.parserCurrent === false && (job.status === "processed" || job.status === "failed")) {
+    if (job.status === "failed") {
+      if (!job.matchId) return null;
+      if (permanent(job.errorCode) && !PARSER_UPGRADE_RECOVERABLE.has(job.errorCode ?? "")) {
+        return null;
+      }
+    }
+    return job.demoAvailable ? "reprocess_current_parser" : "reupload_required";
+  }
   if (job.status === "processed") return "identity";
   if (job.status !== "failed") return null;
   // No Canonical match: the parser never produced detected players to choose from.
   if (!job.matchId) return null;
-  // A newer job already replaced this one; act there.
-  if (job.supersededByJobId) return null;
   // A permanent refusal (e.g. quarantined content) fails again whatever player is chosen.
   if (permanent(job.errorCode)) return null;
   if (!job.demoAvailable) return "reupload_required";
