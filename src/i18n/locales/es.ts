@@ -992,6 +992,20 @@ export const es: Dictionary = {
     "La radiografía depende de un diagnóstico que aún no se construyó sobre datos reales. No se muestra ningún diagnóstico de ejemplo.",
   "real.performance.reason":
     "Las tendencias de rendimiento dependen de series reales que aún no existen. No se muestra ningún gráfico de ejemplo.",
+  "real.performance.ratingTrend": "Rating a lo largo del tiempo",
+  "real.performance.openingDiff": "Duelos de apertura (ganados − perdidos) por partida",
+  "real.performance.trades": "Trades y flash assists por partida",
+  "real.performance.tradeKills": "Trade kills",
+  "real.performance.flashAssists": "Flash assists",
+  "real.performance.openingKills": "Aperturas ganadas",
+  "real.performance.openingDeaths": "Aperturas perdidas",
+  "real.performance.unavailable": "No medido en ninguna partida",
+  "real.performance.timingReason":
+    "Requiere la hora de cada evento de la demo, que aún no está disponible para tus partidas. Nunca mostramos cero en lugar de un valor desconocido.",
+  "real.performance.kastReason":
+    "El KAST requiere la hora de los eventos y la cobertura completa de los rounds. Nunca mostramos cero en lugar de un valor desconocido.",
+  "real.performance.basis":
+    "Basado en {matches} partida(s) procesada(s). Cada punto es una partida; un punto ausente significa que la métrica no se midió en esa partida.",
   "real.training.reason":
     "El plan de entrenamiento depende de un diagnóstico real que aún no existe. No se muestra ningún plan de ejemplo.",
   "real.dna.description":

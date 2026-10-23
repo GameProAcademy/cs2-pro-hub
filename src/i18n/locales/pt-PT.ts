@@ -991,6 +991,20 @@ export const ptPT: Dictionary = {
     "O Raio-X depende de um diagnóstico que ainda não foi implementado sobre dados reais. Nenhum diagnóstico de exemplo é mostrado.",
   "real.performance.reason":
     "As tendências de performance dependem de séries reais que ainda não existem. Nenhum gráfico de exemplo é mostrado.",
+  "real.performance.ratingTrend": "Rating ao longo do tempo",
+  "real.performance.openingDiff": "Duelos de abertura (vitórias − derrotas) por partida",
+  "real.performance.trades": "Trades e flash assists por partida",
+  "real.performance.tradeKills": "Trade kills",
+  "real.performance.flashAssists": "Flash assists",
+  "real.performance.openingKills": "Aberturas ganhas",
+  "real.performance.openingDeaths": "Aberturas perdidas",
+  "real.performance.unavailable": "Não medido em nenhuma partida",
+  "real.performance.timingReason":
+    "Exige a hora de cada evento da demo, que ainda não está disponível para as suas partidas. Não mostramos zero em vez de um valor desconhecido.",
+  "real.performance.kastReason":
+    "O KAST exige a hora dos eventos e a cobertura completa dos rounds. Não mostramos zero em vez de um valor desconhecido.",
+  "real.performance.basis":
+    "Baseado em {matches} partida(s) processada(s). Cada ponto é uma partida; um ponto em falta significa que a métrica não foi medida nessa partida.",
   "real.training.reason":
     "O plano de treino depende de um diagnóstico real que ainda não existe. Nenhum plano de exemplo é mostrado.",
   "real.dna.description":

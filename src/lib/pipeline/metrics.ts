@@ -370,11 +370,18 @@ function clutchStats(
   if (kills.length === 0) return { attempts: null, wins: null };
 
   const team = teamOf(match, eventPlayerKey);
+  // D23: teammates and enemies are told apart by team identity. Without it (admission
+  // limitation L04, team_assignment_not_two_teams) no round can be evaluated, and the
+  // honest answer is "unknown", not "0 attempts, 0 wins".
+  if (team == null) return { attempts: null, wins: null };
   let attempts = 0;
   let wins = 0;
+  let evaluatedRounds = 0;
+  let participatedRounds = 0;
 
   for (const round of match.rounds) {
     if (!participatedInRound(match, eventPlayerKey, round.roundNumber)) continue;
+    participatedRounds += 1;
     const roundKills = kills.filter((k) => k.round === round.roundNumber);
     const participants = match.players.flatMap((player) => {
       const eventPlayerKey = player.steamId ?? player.participantKey;
@@ -389,6 +396,7 @@ function clutchStats(
       .filter(({ player }) => player.team != null && team != null && player.team !== team)
       .map(({ eventPlayerKey }) => eventPlayerKey);
     if (!teammates.includes(eventPlayerKey) || enemies.length === 0) continue;
+    evaluatedRounds += 1;
 
     const dead = new Set<string>();
     let clutch = false;
@@ -412,6 +420,9 @@ function clutchStats(
     if (survived && wonRound) wins += 1;
   }
 
+  // The player took part in rounds but none had a determinable roster on both sides:
+  // unknown, never a measured zero. (A player proven absent from every round has a real 0.)
+  if (participatedRounds > 0 && evaluatedRounds === 0) return { attempts: null, wins: null };
   return { attempts, wins };
 }
 
