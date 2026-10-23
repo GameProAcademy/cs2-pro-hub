@@ -360,7 +360,7 @@ def test_the_sql_is_read_only_and_least_privilege():
 
 
 def test_the_migration_is_exactly_the_reviewed_sql():
-    migration = ROOT / "supabase/migrations/20261014220100_h3e_predem_managed_snapshot_v4.sql"
+    migration = ROOT / "supabase/migrations/20261023100000_h3e_predem_managed_snapshot_v5_lineage_by_content.sql"
     assert migration.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
 
 
@@ -518,6 +518,9 @@ def test_v2_semantics_are_declared_in_every_evaluation():
 def test_v2_sql_measures_lineage_through_every_link_and_excludes_quarantine():
     sql = (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
     lineage = sql[sql.index("WITH lineage AS ("):sql.index("body AS (")]
+    # D26: own upload OR a later attempt persisted into the match; only the most recent processed job.
+    assert "(j.upload_id = m.upload_id OR j.match_id = m.id)" in lineage
+    assert "AND n.finished_at > j.finished_at" in lineage
     for link in ("j.upload_id = m.upload_id", "j.status = 'processed'", "j.demo_sha256 = m.content_fingerprint",
                  "a.audit_status = 'approved'", "a.status = 'ready'", "f.event_type = 'EXECUTION_FINISHED'",
                  "f.outcome_code = 'PARSE_SUCCEEDED'", "p.status = 'VERIFIED'",

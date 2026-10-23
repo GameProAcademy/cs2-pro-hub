@@ -6,9 +6,10 @@
 -- search_path='', EXECUTE for service_role only. It writes nothing.
 -- Schema 4 (gate semantics v2, docs/H3E_GATE_SEMANTICS_V2.md) keeps every schema-3 measure
 -- and adds: attempt authorizations (public.h3e_attempt_authorizations) and verified lineage
--- (match -> its own upload's processed job -> approved RAW audit -> successful H3E91
--- execution -> VERIFIED parser provenance of that build and semantic revision, attested
--- before the execution finished; never through a quarantined match).
+-- (match -> its most recent processed job, from its own upload or a later attempt that persisted
+-- into it [D26, 2026-10-23] -> approved RAW audit -> successful H3E91 execution -> VERIFIED parser
+-- provenance of that build and semantic revision, attested before the execution finished; never
+-- through a quarantined match).
 CREATE OR REPLACE FUNCTION public.h3e_predem_managed_snapshot()
 RETURNS jsonb
 LANGUAGE sql
@@ -19,8 +20,16 @@ AS $snapshot$
   WITH lineage AS (
     SELECT DISTINCT m.id
     FROM public.matches m
-    JOIN public.demo_jobs j ON j.upload_id = m.upload_id AND j.status = 'processed'
+    -- D26 (2026-10-23): the processed job may be the match's own upload OR any later attempt that
+    -- persisted into this match (j.match_id = m.id; content-addressed: same sha256), but only
+    -- the MOST RECENT such processed job counts - the rows reflect its observation.
+    JOIN public.demo_jobs j ON (j.upload_id = m.upload_id OR j.match_id = m.id) AND j.status = 'processed'
                            AND j.demo_sha256 = m.content_fingerprint
+                           AND NOT EXISTS (
+                             SELECT 1 FROM public.demo_jobs n
+                             WHERE n.status = 'processed' AND n.demo_sha256 = m.content_fingerprint
+                               AND (n.upload_id = m.upload_id OR n.match_id = m.id)
+                               AND n.finished_at > j.finished_at)
     JOIN public.raw_evidence_artifacts a ON a.job_id = j.id AND a.status = 'ready' AND a.audit_status = 'approved'
                                         AND a.demo_sha256 = j.demo_sha256
     JOIN public.h3e91_execution_evidence_ledger f ON f.job_id = j.id AND f.event_type = 'EXECUTION_FINISHED'

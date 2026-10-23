@@ -23,7 +23,8 @@ Each production step below needs its own authorization.
 
 1. `m` is not in `canonical_match_quarantine`.
 2. A job `j` exists where:
-   - `j.upload_id = m.upload_id` (the match's own upload, never a later re-ingestion);
+   - `j.upload_id = m.upload_id` (the match's own upload) **or**, since D26 (2026-10-23, migration `20261023100000`), `j.match_id = m.id` (a later attempt of the same content that persisted into this match);
+   - `j` is the **most recent** processed job of the match by `finished_at` (an older verified job never vouches for rows a newer, unverified observation produced);
    - `j.status = 'processed'`;
    - `j.demo_sha256 = m.content_fingerprint`.
 3. A RAW artifact for `j` has `status = 'ready'`, `audit_status = 'approved'` and the same sha256.
@@ -82,3 +83,19 @@ Rollback:
 
 - `docs/reference/h3e_gate_semantics_v2/rollback_20261014220100.sql` restores snapshot v3 byte for byte.
 - `rollback_20261014220000.sql` refuses while any authorization is recorded.
+
+## D26 amendment (2026-10-23) — lineage through a later attempt
+
+Production evidence: the only Canonical match `95186f3f` lost its lineage when its original job `921b55cf` turned from `processed` to `failed` (D24 incident: an in-place re-run after a parser release). `persist_canonical_observation` keeps `matches.upload_id` at the first upload, so a successful new attempt of the same content (D24's parser-upgrade attempt) could never restore it.
+
+The amended rule:
+- accepts the processed job of a later attempt that persisted into the match (`j.match_id = m.id`, same sha256);
+- counts only the match's most recent processed job.
+
+Every other link is unchanged: approved RAW, `PARSE_SUCCEEDED` ledger event, VERIFIED provenance attested before the event, and quarantine exclusion.
+
+Probe scenarios on the disposable database:
+- `lineage_lineage_via_a_later_attempt_of_the_same_content` (counted);
+- `lineage_newer_unverified_processed_job_removes_lineage` (not counted).
+
+Rollback: `docs/reference/d26/rollback_restore_v4.sql` (the exact v4 text).
