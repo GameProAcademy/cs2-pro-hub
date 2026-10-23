@@ -648,6 +648,15 @@ def r583_artifact_name(sha: str, run_id: Any, run_attempt: Any) -> str:
     return f"r5-8-3-preflight-{sha}-{run_id}-attempt-{int(run_attempt or 1)}"
 
 
+def r584_artifact_name(sha: str, r583_run_id: Any, r583_run_attempt: Any) -> str:
+    """Mirror of .github/workflows/r5-8-4-gate-reconciliation.yml upload name.
+
+    Per R5.8.3 attempt: re-running the R5.8.3 run (for example after a credential was
+    rotated) produces a new matrix under a new name, never a duplicate of the earlier
+    attempt's name, which find_artifact would rightly refuse as ambiguous."""
+    return f"r5-8-4-gate-reconciliation-{r583_run_id}-attempt-{int(r583_run_attempt or 1)}-{sha}"
+
+
 def find_artifact(io: Io, name: str) -> tuple[dict[str, Any] | None, bytes | None]:
     listed = io.github(f"/actions/artifacts?name={name}&per_page=10").get("artifacts") or []
     exact = [a for a in listed if a.get("name") == name and not a.get("expired")]
@@ -678,7 +687,7 @@ def collect_prerequisites(io: Io, sha: str) -> dict[str, dict[str, Any]]:
         integrity, document = evaluate_artifact(meta, blob, run_id=run_id, expected_name=r583_name)
         out["r5_8_3_artifact"] = integrity
         out["r5_8_3_decision"] = evaluate_r583(document, sha=sha) if document is not None else stage(SKIPPED, reason="NO_ARTIFACT")
-        name = f"r5-8-4-gate-reconciliation-{run_id}-{sha}"
+        name = r584_artifact_name(sha, run_id, runs["r5_8_3"].get("run_attempt"))
         meta, blob = find_artifact(io, name)
         producer = (meta or {}).get("workflow_run") or {}
         integrity, document = evaluate_artifact(meta, blob, run_id=producer.get("id"), expected_name=name)

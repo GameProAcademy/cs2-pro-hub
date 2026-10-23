@@ -142,7 +142,7 @@ class World:
         self.queue_annotations = {31: queue_annotations(gate.QUEUE_JOBS[0]), 32: queue_annotations(gate.QUEUE_JOBS[1])}
         self.artifacts = {
             f"r5-8-3-preflight-{TARGET}-{r583_id}-attempt-1": (r583_id, "r5-8-3-preflight.json", "r583_doc"),
-            f"r5-8-4-gate-reconciliation-{r583_id}-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
+            f"r5-8-4-gate-reconciliation-{r583_id}-attempt-1-{TARGET}": (r584_id, "r5-8-4-gate-reconciliation.json", "r584_doc"),
         }
         self.digest_override = {}
         self.version = {"parser": {"name": "demoparser2", "version": "0.42.0", "revision": f"git:{BUILD}",
@@ -1015,3 +1015,14 @@ class ManagedSnapshot(unittest.TestCase):
         evidence, fake = evaluate(env=env)
         self.assertEqual(evidence["stages"]["managed_snapshot"]["reason"], "SNAPSHOT_SECRET_MISSING")
         self.assertFalse([c for c in fake.calls if c[:2] == ("GET", gate.SNAPSHOT_ENDPOINT)])
+
+
+def test_r584_artifact_name_is_per_r583_attempt_and_matches_the_workflow():
+    """A re-run of the R5.8.3 run must yield a distinct R5.8.4 artifact name (production,
+    2026-10-23: re-running push run 39876181736 after the Railway token rotation produced a
+    second artifact under the old attempt-less name, and the gate refused the ambiguity)."""
+    assert gate.r584_artifact_name("abc", 7, 1) != gate.r584_artifact_name("abc", 7, 2)
+    assert gate.r584_artifact_name("abc", 7, None) == "r5-8-4-gate-reconciliation-7-attempt-1-abc"
+    workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/r5-8-4-gate-reconciliation.yml").read_text()
+    assert ("name: r5-8-4-gate-reconciliation-${{ github.event.workflow_run.id }}-attempt-"
+            "${{ github.event.workflow_run.run_attempt }}-${{ github.event.workflow_run.head_sha }}") in workflow
