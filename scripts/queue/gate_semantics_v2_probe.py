@@ -6,8 +6,8 @@ Proves, with the real snapshot function (schema 4) and the real evaluator:
 * the attempt-authorization registry is identity-bound, append-only and invisible
   to client roles, and `attempt_9_absent` v2 follows it (and fails when a recorded
   authorization stops matching its job);
-* verified lineage counts a match only through the whole chain (its own upload's
-  processed job, approved RAW audit, successful H3E91 execution, VERIFIED parser
+* verified lineage counts a match only through the whole chain (its most recent
+  processed job - its own upload's or, since D26, a later attempt persisted into it - approved RAW audit, successful H3E91 execution, VERIFIED parser
   provenance of that build and semantic revision recorded by the real recorder),
   and every broken link, or a quarantine, removes it.
 
@@ -171,6 +171,22 @@ ALTER TABLE public.h3e91_execution_evidence_ledger ENABLE TRIGGER USER;""", 0),
 UPDATE public.h3e91_execution_evidence_ledger SET outcome_code = 'PARSER_ERROR'
  WHERE job_id = (SELECT job FROM probe_fx WHERE k = 'm') AND event_type = 'EXECUTION_FINISHED';
 ALTER TABLE public.h3e91_execution_evidence_ledger ENABLE TRIGGER USER;""", 0),
+    # D26: the match's own upload belongs to an earlier, now FAILED attempt; the processed job
+    # of a later attempt that persisted into the match carries the lineage.
+    "lineage_via_a_later_attempt_of_the_same_content": ("""SELECT pg_temp.set_job('m', format('match_id = %L', (SELECT match FROM probe_fx WHERE k = 'm')));
+CREATE TEMP TABLE probe_old_upload ON COMMIT DROP AS SELECT gen_random_uuid() AS id;
+INSERT INTO public.uploads(id, user_id, type, file_name, storage_path, file_size, demo_sha256, status)
+SELECT o.id, f.u, 'demo', 'probe-old.dem', f.u::text || '/' || o.id::text || '.dem', 520, f.sha, 'failed'
+  FROM probe_fx f, probe_old_upload o WHERE f.k = 'm';
+ALTER TABLE public.matches DISABLE TRIGGER USER;
+UPDATE public.matches SET upload_id = (SELECT id FROM probe_old_upload) WHERE id = (SELECT match FROM probe_fx WHERE k = 'm');
+ALTER TABLE public.matches ENABLE TRIGGER USER;""", 1),
+    # D26: only the MOST RECENT processed job of the match counts: a newer processed job without
+    # its own verified chain removes the lineage the older one had.
+    "newer_unverified_processed_job_removes_lineage": ("""SELECT pg_temp.set_job('m', format($s$match_id = %L, finished_at = now() - interval '1 hour'$s$, (SELECT match FROM probe_fx WHERE k = 'm')));
+SELECT pg_temp.make_job('newer', 2);
+SELECT pg_temp.set_job('newer', format($s$status = 'processed', demo_sha256 = %L, match_id = %L, finished_at = now()$s$,
+  (SELECT sha FROM probe_fx WHERE k = 'm'), (SELECT match FROM probe_fx WHERE k = 'm')));""", 0),
     "match_quarantined": ("""INSERT INTO public.canonical_match_quarantine(match_id, reason, decision_ref, quarantined_by, evidence)
 SELECT match, 'PRE_PROVENANCE_CANONICAL_ROW', 'probe', 'probe', '{}'::jsonb FROM probe_fx WHERE k = 'm';""", 0),
 }

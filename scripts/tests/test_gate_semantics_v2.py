@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = ROOT / "supabase/migrations/20261014220000_h3e_attempt_authorization_registry.sql"
 SNAPSHOT_V4 = ROOT / "supabase/migrations/20261014220100_h3e_predem_managed_snapshot_v4.sql"
+SNAPSHOT_V5 = ROOT / "supabase/migrations/20261023100000_h3e_predem_managed_snapshot_v5_lineage_by_content.sql"
 SNAPSHOT_V3 = ROOT / "supabase/migrations/20261014120100_h3e_predem_managed_snapshot_v3.sql"
 REF = ROOT / "docs/reference/h3e_gate_semantics_v2"
 OPERATOR = ROOT / "docs/ops/h3e_attempt_authorizations_2026-10-14.sql"
@@ -42,7 +43,15 @@ def test_the_registry_is_service_only_append_only_and_identity_bound():
 
 
 def test_snapshot_v4_is_the_reviewed_sql_and_rollbacks_restore_v3():
-    assert SNAPSHOT_V4.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+    # D26: v5 is the reviewed SQL; v4 stays committed and differs ONLY in the lineage job join.
+    assert SNAPSHOT_V5.read_text() == (ROOT / "scripts/predem/managed_snapshot.sql").read_text()
+    assert (ROOT / "docs/reference/d26/rollback_restore_v4.sql").read_text() == SNAPSHOT_V4.read_text()
+    v4, v5 = SNAPSHOT_V4.read_text(), SNAPSHOT_V5.read_text()
+    v4_body = v4[v4.index("AS $snapshot$"):]
+    v5_body = v5[v5.index("AS $snapshot$"):]
+    join_v4 = v4_body[v4_body.index("    JOIN public.demo_jobs j"):v4_body.index("    JOIN public.raw_evidence_artifacts a")]
+    join_v5 = v5_body[v5_body.index("    -- D26"):v5_body.index("    JOIN public.raw_evidence_artifacts a")]
+    assert v4_body.replace(join_v4, "@JOIN@") == v5_body.replace(join_v5, "@JOIN@")
     assert (REF / "rollback_20261014220100.sql").read_text().endswith(SNAPSHOT_V3.read_text())
     rollback = (REF / "rollback_20261014220000.sql").read_text()
     assert rollback.index("H3E_ATTEMPT_AUTHORIZATION_ROLLBACK_REFUSED_ROWS_PRESENT") < rollback.index("DROP TABLE")
