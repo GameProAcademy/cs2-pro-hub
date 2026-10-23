@@ -1,0 +1,74 @@
+{
+  "deployment_id": "1886c473-5251-4110-8ba3-60821e0b256b",
+  "branch": "main",
+  "semantic_commit": "4716f89429fd85f828e1e786d6520895d7bece53",
+  "build_commit": "4716f89429fd85f828e1e786d6520895d7bece53",
+  "deployment_commit": "4716f89429fd85f828e1e786d6520895d7bece53",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "aec5f33b51373bfc69e3b51ea055fefa6352b26a",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "0f1d4e412cd22705c64c033dc0b80df8",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "35198be8e0e9faeac618b4435ebb8d4f",
+  "observed": {
+    "observed_at": "2026-10-22T23:35:00Z",
+    "railway_deployment": {
+      "id": "1886c473-5251-4110-8ba3-60821e0b256b",
+      "status": "SUCCESS",
+      "commitHash": "4716f89429fd85f828e1e786d6520895d7bece53",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-22T23:29:39.982Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-16 before merging PR #177 (merge d5af6345: SKIPPED deployment 7d4caa98); deploy-marker PR #179 merged as 4716f894 at 2026-10-21T18:12Z produced no Railway deployment event (Railway/GitHub event lost; the Railway agent failed with 'permission denied for schema mastra_memory' until 2026-10-22); revision variables were restored to a5d8c425 while no deployment existed; on 2026-10-22 PARSER_REVISION/PARSER_BUILD_REVISION were set to git:4716f894... (skipped deploys) and ONE deployment of that exact commit was triggered through the Railway agent"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:4716f89429fd85f828e1e786d6520895d7bece53",
+      "PARSER_BUILD_REVISION": "git:4716f89429fd85f828e1e786d6520895d7bece53",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "NOT_OBSERVED_BY_THE_REPIN_AUTHOR: neither the authoring session nor the Railway agent could fetch /version; the identity is proven by the fail-closed H.3-E.9.1 live preflight and the parser runtime attestation workflow run on main after this repin (each fetches both /version hosts and refuses any other identity)",
+    "before": {
+      "deployment_id": "01998834-4c35-43c2-b3e4-976f76a21fd5",
+      "semantic_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b",
+      "build_revision": "git:a5d8c425839e1e0e7e6f5506ae141bc85359726b"
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-22T23:40Z",
+      "record_parser_runtime_attestation": "d9328086d1541927c4bf3b508c8c307b",
+      "assert_verified_parser_provenance": "39418665644987bcdd25c7456634d410",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    },
+    "sources": {
+      "railway_deployment": "Railway API list-deployments (read-only)",
+      "managed_start_state": "md5(prosrc) on the Lovable-managed database (read-only SELECT)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_15/spec.json",
+  "pin_role": "R5.8.16: re-pin semantic/build commit, Railway deployment and the parser.py critical blob after the D22 parser release (PR #177, deploy marker PR #179); workflow blob and other critical hashes unchanged",
+  "r5_8_15_database_target_md5": {
+    "assert_verified_parser_provenance": "39418665644987bcdd25c7456634d410",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_15_recorder_target_md5": "d9328086d1541927c4bf3b508c8c307b"
+}
