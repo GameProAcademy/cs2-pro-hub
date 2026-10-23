@@ -137,3 +137,23 @@ describe("wiring: nothing requeues an older-parser job in place", () => {
     expect(migration).not.toMatch(/raw_evidence_artifacts\s+SET/i);
   });
 });
+
+describe("D24b: an abandoned newer reservation is not a conflict", () => {
+  const d24b = readFileSync(
+    resolve("supabase/migrations/20261023110000_d24b_abandoned_reservation_not_a_conflict.sql"),
+    "utf8",
+  );
+  it("skips only jobless failed/cancelled reservations and stays md5-guarded", () => {
+    expect(d24b).toContain("_latest_upload.status NOT IN ('failed', 'cancelled')");
+    expect(d24b).toContain(
+      "EXISTS (SELECT 1 FROM public.demo_jobs WHERE upload_id = _latest_upload.id)",
+    );
+    expect(d24b).toContain("PARSER_UPGRADE_ATTEMPT_CONFLICT");
+    expect(d24b).toContain("D24B_UNEXPECTED_FUNCTION_STATE");
+    expect(d24b).toContain("D24B_POSTCONDITION_INVALID");
+    expect(d24b).toMatch(
+      /REVOKE ALL ON FUNCTION public\.reserve_demo_parser_upgrade_attempt\([^)]*\)\s+FROM PUBLIC, anon, authenticated;/,
+    );
+    expect(d24b).not.toMatch(/UPDATE public\.|DELETE FROM/);
+  });
+});
