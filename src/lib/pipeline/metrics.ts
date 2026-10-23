@@ -554,7 +554,16 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   let untradedDeaths: number | null = null;
   let earlyDeaths: number | null = null;
 
+  // D27 (production, Dust2 job 83a539c1): with the player's team unknown, every trade
+  // check failed closed and the loop still published 0 trade kills / 0 traded deaths,
+  // while the events held 1 trade kill and 2 traded deaths. Without team identity a
+  // trade is unobservable, so the answer is NULL - never 0.
   if (availability.timing) {
+    earlyDeaths = playerDeaths.filter(
+      (d) => d.time != null && d.time <= EARLY_DEATH_SECONDS,
+    ).length;
+  }
+  if (availability.timing && ownTeam != null) {
     let tradeKillCount = 0;
     for (const kill of playerKills) {
       if (!kill.attacker || !kill.victim || kill.time == null) continue;
@@ -580,9 +589,6 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     for (const death of playerDeaths) if (wasTraded(kills, death, match)) tradedDeathCount += 1;
     tradeDeaths = tradedDeathCount;
     untradedDeaths = playerDeaths.length - tradedDeathCount;
-    earlyDeaths = playerDeaths.filter(
-      (d) => d.time != null && d.time <= EARLY_DEATH_SECONDS,
-    ).length;
   }
 
   // Multi-kills
@@ -603,6 +609,9 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // trade), so an observation without them reports NULL rather than a number
   // built on absent evidence.
   let kastRounds = 0;
+  // D27: a round decided ONLY by the trade component (no K, A or S, and a death) is
+  // unknowable without team identity; one such round makes the whole-match rate NULL.
+  let kastTradeUnknown = false;
   for (const roundNumber of roundNumbers) {
     const roundKills = kills.filter((k) => k.round === roundNumber);
     const got = roundKills.some((k) => k.attacker === eventPlayerKey);
@@ -616,6 +625,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     // survival unless there is positive evidence for it.
     const survived = playerSurvivedRound(match, eventPlayerKey, roundNumber) === true;
     const traded = death ? wasTraded(kills, death, match) : false;
+    if (!got && !assisted && !survived && death && ownTeam == null) kastTradeUnknown = true;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
   // KAST is a whole-match rate: it needs kill evidence, timing AND complete
@@ -625,6 +635,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     availability.killEvents &&
     availability.timing &&
     availability.completeCoverage &&
+    !kastTradeUnknown &&
     roundsPlayed > 0;
 
   const headshots = playerKills.filter((k) => k.headshot === true).length;
