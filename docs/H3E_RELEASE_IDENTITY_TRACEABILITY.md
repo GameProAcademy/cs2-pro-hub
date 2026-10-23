@@ -800,3 +800,12 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
 - Critical blobs at `4716f894`: only `parser.py` changed (`024c1dd4…` → `aec5f33b…`).
 - `/version` was not readable from the authoring session or the Railway agent. The runtime identity is proven only by the fail-closed H.3-E.9.1 live preflight and the parser runtime attestation run on `main` after this repin.
 - R5.8.16 (`supabase/migrations/20261022234000_r5_8_16_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_16/`): recorder `d9328086…` → `35198be8…`, assertion `39418665…` → `0f1d4e41…`, workflow guard unchanged. Start state read back from production (exact R5.8.15 targets; pin counts deployment 1/1, commit 4/3, parser blob 1/0). Targets computed read-only from production `prosrc` and independently by the repository generator (identical).
+
+## 2026-10-23 — R5.8.17: D25 parser release (controlled)
+
+- Defect: the Dust2 job `30ee2fe7` was BLOCKED by admission v3 with the single reason `RAW-V2-13-bomb: round_bomb_defused_flag_unknown`. That match has no defuse, so `bomb_defused` is absent from demoparser2's `list_game_events()`, and the stream was stored as unreadable (`None`).
+- Fix: PR #184 (parser.py only) treats a bomb event absent from a successfully enumerated inventory as zero occurrences. It stays unknown when the inventory failed, the event's parse failed, or a `round_end` row names that outcome.
+- Railway watch pattern frozen to `/services/cs2-demo-parser/.release-freeze-r5-8-17` before merging. PR #184 merged as `2aa2a497421367a1ba205633eb23f5e69f95cd74`; this merge also contains PR #183 (D24, app only).
+- `PARSER_REVISION`/`PARSER_BUILD_REVISION` set to `git:2aa2a497…` (skipped deploys), then ONE deployment of that exact commit through the Railway agent: `02e64c36-75de-4d88-aa15-e3c661879d64` (SUCCESS 07:45:24Z).
+- Critical blobs at `2aa2a497`: only `parser.py` changed (`aec5f33b…` → `d55e7929…`).
+- R5.8.17 (`supabase/migrations/20261023090000_r5_8_17_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_17/`): recorder `35198be8…` → `4b097303…`, assertion `0f1d4e41…` → `eb5c01dd…`, workflow guard unchanged. Start state read back from production (exact R5.8.16 targets). Targets computed read-only from production `prosrc` and independently by the repository generator (identical).
