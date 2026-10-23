@@ -737,6 +737,51 @@ def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[s
     return output
 
 
+# D25 - bomb streams absent from the demo's own event inventory.
+# demoparser2's list_game_events() enumerates the game events that occur in THIS demo, and
+# extract_raw_material records an event outside it as None ("could not be read"). The round
+# flags then read as unknown, so a match without a single defuse (or explosion, or plant)
+# had every round's flag unknown and the RAW audit blocked a valid demo (production,
+# 2026-10-23, Dust2 job 30ee2fe7: RAW-V2-13 round_bomb_defused_flag_unknown).
+# Absence from a SUCCESSFULLY enumerated inventory is the parser's own negative evidence:
+# the adapter stream is read as empty. It stays unknown when the inventory could not be
+# enumerated, when the event was inventoried (its parse failed), or when a round_end row
+# names that outcome. The forensic event_tables keep the untouched None.
+_BOMB_OUTCOME_MARKERS: dict[str, tuple[str, ...]] = {
+    "bomb_planted": (),
+    "bomb_defused": ("defus",),
+    "bomb_exploded": ("explod", "bombed"),
+}
+
+
+def _round_end_names_outcome(round_ends: Any, markers: tuple[str, ...]) -> bool:
+    if not markers:
+        return False
+    for row in round_ends or []:
+        if not isinstance(row, dict):
+            continue
+        for field in ("reason", "message", "reason_name"):
+            value = row.get(field)
+            if isinstance(value, str) and any(marker in value.lower() for marker in markers):
+                return True
+    return False
+
+
+def resolve_bomb_streams_absent_from_inventory(raw: dict[str, Any]) -> None:
+    inventory = raw.get("event_inventory")
+    if raw.get("event_inventory_error") is not None or not isinstance(inventory, (list, tuple, set)) or not inventory:
+        return
+    errors = raw.get("event_errors") or {}
+    for name, markers in _BOMB_OUTCOME_MARKERS.items():
+        if raw.get(name) is not None or name in inventory or name in errors:
+            continue
+        if _round_end_names_outcome(raw.get("round_ends"), markers):
+            raw.setdefault("warnings", []).append(f"{name}_absent_from_inventory_contradicted_by_round_end")
+            continue
+        raw[name] = []
+        raw.setdefault("warnings", []).append(f"{name}_absent_from_event_inventory: no occurrence in this demo")
+
+
 def extract_raw_material(demo: Any) -> dict[str, Any]:
     """Collect demoparser2 material while preserving unavailable streams."""
     warnings: list[str] = []
@@ -783,6 +828,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     for name in _EVENT_TABLES:
         raw[name] = raw["event_tables"].get(name)
+    resolve_bomb_streams_absent_from_inventory(raw)
 
     try:
         raw["players"] = _records(demo.parse_player_info())
