@@ -17,6 +17,7 @@ import {
   getDemoJobStatus,
   getPipelineStatus,
   listMyDemoJobs,
+  reprocessDemoWithCurrentParser,
   retryMyDemoJob,
   type DemoJobView,
 } from "@/lib/pipeline.functions";
@@ -184,6 +185,20 @@ export function DemoIngestPanel() {
         duplicate: true,
         duplicateStatus: "failed",
         newAttempt: false,
+      });
+      await queryClient.refetchQueries({ queryKey: ["pipeline", "jobs"], type: "active" });
+    },
+  });
+
+  // D24: a demo analysed by an older parser starts a NEW attempt (never an in-place re-run).
+  const reprocess = useMutation({
+    mutationFn: (jobId: string) => reprocessDemoWithCurrentParser({ data: { jobId } }),
+    onSuccess: async (result) => {
+      setSubmissionResult({
+        jobId: result.jobId,
+        duplicate: true,
+        duplicateStatus: null,
+        newAttempt: true,
       });
       await queryClient.refetchQueries({ queryKey: ["pipeline", "jobs"], type: "active" });
     },
@@ -369,6 +384,38 @@ export function DemoIngestPanel() {
                     </>
                   ) : identityActionFor(job) === "select_and_retry" ? (
                     <DemoPlayerIdentity jobId={job.jobId} recover />
+                  ) : identityActionFor(job) === "reprocess_current_parser" ? (
+                    <div className="mt-2 rounded-lg border border-warning/35 bg-warning/8 px-3 py-2.5">
+                      <p className="text-sm font-semibold text-warning">
+                        {t("pipeline.identify.reprocessTitle")}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {t("pipeline.identify.reprocessBody")}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2.5"
+                        onClick={() => reprocess.mutate(job.jobId)}
+                        disabled={reprocess.isPending}
+                      >
+                        <RefreshCw
+                          className={cn(
+                            "mr-1.5 size-3.5",
+                            reprocess.isPending && "animate-spin motion-reduce:animate-none",
+                          )}
+                          aria-hidden
+                        />
+                        {reprocess.isPending
+                          ? t("pipeline.identify.reprocessPending")
+                          : t("pipeline.identify.reprocessCta")}
+                      </Button>
+                      {reprocess.isError && reprocess.variables === job.jobId ? (
+                        <p role="alert" className="mt-2 text-xs text-destructive">
+                          {t("pipeline.identify.reprocessError")}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : identityActionFor(job) === "reupload_required" ? (
                     <div className="mt-2 rounded-lg border border-warning/35 bg-warning/8 px-3 py-2.5">
                       <p className="text-sm font-semibold text-warning">
@@ -390,6 +437,8 @@ export function DemoIngestPanel() {
                 // One recovery action per card: an analysed job is retried through
                 // "select player and try again", which also starts the new attempt.
                 identityActionFor(job) !== "select_and_retry" &&
+                // D24: an older-parser job is reprocessed as a new attempt, never retried in place.
+                job.parserCurrent !== false &&
                 !isPermanentCode(job.errorCode) &&
                 job.retryCount < job.maxRetries ? (
                   <div className="mt-4 border-t border-border/70 pt-4">

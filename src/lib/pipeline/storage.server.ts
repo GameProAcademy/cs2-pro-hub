@@ -145,6 +145,47 @@ export async function copyDemoVerified(args: {
   };
 }
 
+/**
+ * D24: copies an owned DEM to the path of the owner's NEW attempt (same user) without
+ * downloading it here. Sizes are verified on both sides; the bytes' SHA-256 is verified by
+ * the parser worker against the job's demo_sha256 before any parse (app.py refuses a
+ * mismatch), so a wrong copy can never be analysed. The source object is never modified.
+ */
+export async function copyDemoForNewAttempt(args: {
+  userId: string;
+  sourcePath: string;
+  sourceUploadId: string;
+  destinationPath: string;
+  destinationUploadId: string;
+  expectedSize: number;
+}): Promise<"COPIED" | "ALREADY_COPIED"> {
+  assertDemoStoragePath(args.sourcePath, args.userId, args.sourceUploadId);
+  assertDemoStoragePath(args.destinationPath, args.userId, args.destinationUploadId);
+  if (args.sourcePath === args.destinationPath) {
+    throw new PipelineError("PERSISTENCE_ERROR", "COPY_PATH_COLLISION");
+  }
+  const source = await demoExists(args.sourcePath);
+  if (!source) throw new PipelineError("DEMO_NOT_FOUND", "SOURCE_MISSING");
+  if (source.size !== args.expectedSize) {
+    throw new PipelineError("DEMO_NOT_FOUND", "SOURCE_SIZE_MISMATCH");
+  }
+  const existing = await demoExists(args.destinationPath);
+  let outcome: "COPIED" | "ALREADY_COPIED" = "ALREADY_COPIED";
+  if (!existing) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.storage
+      .from(DEMO_BUCKET)
+      .copy(args.sourcePath, args.destinationPath);
+    if (error) throw new PipelineError("PERSISTENCE_ERROR", "DEMO_COPY_FAILED");
+    outcome = "COPIED";
+  }
+  const destination = await demoExists(args.destinationPath);
+  if (!destination || destination.size !== args.expectedSize) {
+    throw new PipelineError("PERSISTENCE_ERROR", "COPY_SIZE_NOT_VERIFIED");
+  }
+  return outcome;
+}
+
 /** Removes only an owned temporary DEM and proves physical absence afterwards. */
 export async function deleteDemoVerified(
   storagePath: string,

@@ -612,6 +612,13 @@ export const ptPT: Dictionary = {
     "Esta demo não pode ser reprocessada a partir daqui. O seu histórico e a partida continuam guardados.",
   "pipeline.identify.rerunLimit":
     "Esta demo atingiu o limite de novas tentativas. O seu histórico e a partida continuam guardados.",
+  "pipeline.identify.reprocessTitle": "Esta demo foi analisada por uma versão anterior do parser",
+  "pipeline.identify.reprocessBody":
+    "Para extrair os dados com a versão atual (incluindo opening duels e trades), é criada uma nova tentativa a partir do mesmo ficheiro. A análise anterior mantém-se no histórico.",
+  "pipeline.identify.reprocessCta": "Reprocessar com o parser atual",
+  "pipeline.identify.reprocessPending": "A reprocessar…",
+  "pipeline.identify.reprocessError":
+    "Não foi possível iniciar o reprocessamento. Tente novamente dentro de instantes.",
   "pipeline.identify.reuploadTitle": "O ficheiro desta demo expirou",
   "pipeline.identify.reuploadBody":
     "A partida e o histórico continuam guardados, mas o ficheiro já não está disponível para uma nova tentativa. Envie novamente o mesmo ficheiro .dem: será reconhecido como a mesma partida, sem a duplicar.",
