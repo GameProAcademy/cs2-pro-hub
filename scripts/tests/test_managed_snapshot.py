@@ -19,7 +19,7 @@ RECORDER = "fe3250af2b461f03f459adf36b43ec21"
 sys.path.insert(0, str(ROOT / "scripts/repin"))
 import r5_8_11  # noqa: E402
 
-ACTIVE_SPEC = json.loads((ROOT / "docs/reference/r5_8_16/spec.json").read_text(encoding="utf-8"))
+ACTIVE_SPEC = json.loads((ROOT / "docs/reference/r5_8_17/spec.json").read_text(encoding="utf-8"))
 ACTIVE_RECORDER = r5_8_11.target_md5(ACTIVE_SPEC)
 MANAGED_2026_10_13 = {
     # Schema 4 (gate semantics v2): the schema-3 observation of 2026-10-13 plus the v2 fields,
@@ -68,21 +68,21 @@ MANAGED_2026_10_13 = {
             ("settings.py", "35eecfb06223812137a4a2f17114aae57cb7fe54"))}}]},
 }
 # The active runtime after the R5.8.10 re-pin (deployment 25df86c3).
-# Active R5.8.16 pins: deployment 1886c473 (controlled release of 4716f894, D22 parser).
+# Active R5.8.17 pins: deployment 02e64c36 (controlled release of 2aa2a497, D25 parser).
 ACTIVE = {
-    "deployment_id": "1886c473-5251-4110-8ba3-60821e0b256b", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
+    "deployment_id": "02e64c36-75de-4d88-aa15-e3c661879d64", "project_id": "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
     "service_id": "706fa246-a263-484f-a986-c74516be862b", "environment_id": "2385d707-795d-4e32-a00b-0afaba0a9b7e",
-    "branch": "main", "semantic_commit": "4716f89429fd85f828e1e786d6520895d7bece53",
-    "build_commit": "4716f89429fd85f828e1e786d6520895d7bece53", "deployment_created_at": "2026-10-22T23:29:39.982Z",
+    "branch": "main", "semantic_commit": "2aa2a497421367a1ba205633eb23f5e69f95cd74",
+    "build_commit": "2aa2a497421367a1ba205633eb23f5e69f95cd74", "deployment_created_at": "2026-10-23T07:42:12.813Z",
     "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
     "workflow_ref": "GameProAcademy/cs2-pro-hub/.github/workflows/parser-runtime-attestation.yml@refs/heads/main",
     "critical_hashes": {f"services/cs2-demo-parser/{n}": b for n, b in (
-        ("parser.py", "aec5f33b51373bfc69e3b51ea055fefa6352b26a"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
+        ("parser.py", "d55e7929a54a811d66b1f1f214abd8bea3fb2e40"), ("adapter.py", "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71"),
         ("worker.py", "23a5f8624955181ad9033221cfae00138c7228dc"), ("raw_evidence.py", "001281eecb02ebc318ff997f734c4081c161d1d9"),
         ("settings.py", "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"))},
 }
 NOW = datetime.fromisoformat("2026-10-13T03:30:00+00:00").timestamp()
-ACTIVE_NOW = datetime.fromisoformat("2026-10-23T01:00:00+00:00").timestamp()
+ACTIVE_NOW = datetime.fromisoformat("2026-10-23T09:00:00+00:00").timestamp()
 
 
 def run(snapshot, now=NOW, recorder=RECORDER, runtime=ACTIVE):
@@ -376,7 +376,7 @@ def test_the_snapshot_checks_exactly_the_guards_the_quarantine_migration_install
 
 
 def active_row(**changes):
-    row = {"created_at": "2026-10-23T00:00:00.000000Z", "deployment_id": ACTIVE["deployment_id"],
+    row = {"created_at": "2026-10-23T08:00:00.000000Z", "deployment_id": ACTIVE["deployment_id"],
            "railway_project_id": ACTIVE["project_id"], "railway_service_id": ACTIVE["service_id"],
            "railway_environment_id": ACTIVE["environment_id"], "railway_branch": "main",
            "git_commit": ACTIVE["semantic_commit"], "deployment_source_commit": ACTIVE["build_commit"],
@@ -391,11 +391,11 @@ def active_row(**changes):
 
 
 def with_rows(*rows):
-    # This fixture represents a fresh snapshot after deployment 1886c473 and a
+    # This fixture represents a fresh snapshot after deployment 02e64c36 and a
     # verified attestation of that deployment. Its clock is later than both
     # deployment creation and attestation creation.
     snapshot = copy.deepcopy(MANAGED_2026_10_13)
-    snapshot["snapshot_at"] = "2026-10-23T00:30:00Z"
+    snapshot["snapshot_at"] = "2026-10-23T08:30:00Z"
     snapshot["provenance"] = {"verified_rows": 3 + len(rows), "latest": list(rows) + snapshot["provenance"]["latest"]}
     return run(snapshot, now=ACTIVE_NOW)["gates"]
 
@@ -440,8 +440,8 @@ def test_the_activation_gate_derives_its_snapshot_pins_from_the_committed_spec()
     pins = gate.snapshot_pins(ROOT)
     assert pins["recorder_md5"] == ACTIVE_RECORDER
     runtime = pins["runtime"]
-    assert runtime["deployment_id"] == "1886c473-5251-4110-8ba3-60821e0b256b"
-    assert (runtime["semantic_commit"], runtime["build_commit"]) == ("4716f89429fd85f828e1e786d6520895d7bece53", "4716f89429fd85f828e1e786d6520895d7bece53")
+    assert runtime["deployment_id"] == "02e64c36-75de-4d88-aa15-e3c661879d64"
+    assert (runtime["semantic_commit"], runtime["build_commit"]) == ("2aa2a497421367a1ba205633eb23f5e69f95cd74", "2aa2a497421367a1ba205633eb23f5e69f95cd74")
     assert runtime["critical_hashes"] == ACTIVE["critical_hashes"]
     assert runtime["workflow_source_sha"] == ACTIVE["workflow_source_sha"]
     historical = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text(encoding="utf-8"))

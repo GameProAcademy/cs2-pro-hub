@@ -34,7 +34,11 @@ const r5813DeploymentMigration = readFileSync(
 );
 // R5.8.14 re-pinned semantic/build commit, deployment and the parser.py blob after the D13 release.
 // R5.8.15 re-pinned them again after the D13b release (PR #162); R5.8.16 after the D22
-// release (PR #177, deploy marker PR #179).
+// release (PR #177, deploy marker PR #179); R5.8.17 after the D25 release (PR #184).
+const r5817ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261023090000_r5_8_17_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5816ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261022234000_r5_8_16_repin_runtime_release.sql"),
   "utf8",
@@ -87,13 +91,21 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(r5816ReleaseMigration).toContain(
+    expect(r5817ReleaseMigration).toContain(
       `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
     );
-    expect(r5816ReleaseMigration).toContain(
+    expect(r5817ReleaseMigration).toContain(
       `_new_commit constant text := '${PARSER_ATTESTATION_EXPECTED.commit}'`,
     );
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5817ReleaseMigration).toContain(
+      "_old_deployment constant text := '1886c473-5251-4110-8ba3-60821e0b256b'",
+    );
+    // The R5.8.16 link stays committed with its own pins.
+    expect(r5816ReleaseMigration).toContain(
+      "_new_deployment constant text := '1886c473-5251-4110-8ba3-60821e0b256b'",
+    );
+    expect(r5816ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5816ReleaseMigration).toContain(
       "_old_deployment constant text := '01998834-4c35-43c2-b3e4-976f76a21fd5'",
     );
