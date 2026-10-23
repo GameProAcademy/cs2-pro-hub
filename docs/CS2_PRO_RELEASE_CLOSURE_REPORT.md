@@ -29,3 +29,430 @@ Living engineering record (one row per defect, updated after every phase). State
 | D5 | App env overrides `DEMO_PARSER_EXPECTED_REVISION` / `_BUILD_REVISION` = `git:60099ed3…` (stale) | Lovable secrets set for an older worker | Owner sets `git:c2e045b0…` / `git:eaaa2c8d…` in Lovable → Cloud → Secrets | Published `parserLock.*Source = env` | `BLOCKED` (owner action) |
 | D6 | R5.8.4 `EXPECTED_ONE_R583_ARTIFACT_GOT_3` | Same-name artifacts from three attempts | Attempt-aware selection in PR #151 | PR #151 tests; needs a full run | `NOT_PROVEN` |
 | D7 | `record_demo_identity_event` HTTP 400 after Canonical (job stuck in `processing`) | To re-verify: PRs #139/#140 closed unmerged; migration `20261015040000` applied | — | — | `NOT_PROVEN` |
+| D7 → | Re-verified: fixed inside PR #138 (`17ee6ca9`, `ee6f2843`, `d6e39d3d`) + migration `20261015040000` (applied in production) | — | — | PR #138 head `c80f86fd`: Queue recovery E2E `PASS` 16/16, including `admission_v3_limited_demo_persists_real_metrics_readable_only_by_its_owner` and `admission_v3_projection_failure_writes_no_partial_metrics_and_the_retry_persists_once` | Disposable `PASS`; production `NOT_PROVEN` |
+| D8 | Jobs `7f7cf6f1`, `ecfa53c2`, `2dc1ddd1` (16/10) ended `JOB_STALE` with **zero** ledger events (parser never ran) | Worker log (deployment `ce9b760d`, #144 diagnostics): delivery 1 `H3E91_RECORDING_FAILED_503_H3E91_EXPECTED_WORKER_BUILD_COMMIT_UNCONFIGURED` (app secret not set then; now `configured=true`, `eaaa2c8d`); deliveries 2–3 `H3E91_RECORDING_UNAVAILABLE` = writer RPC error before `20261016120000` reconciled the 18-argument writer | `20261016120000` (applied); `20261016140000` removes the remaining legacy overload | Proof required: a fresh real `EXECUTION_INTENT` row | `NOT_PROVEN` |
+| D9 | Job `2dc1ddd1` reached attempt 11 (sha `0caa7c97`, user `348b6f66`) with **no** row in `h3e_attempt_authorizations` → gate semantics v2 `AUTHORIZED_ATTEMPTS_V2` cannot pass | Started on 2026-10-16 outside this session; no owner decision recorded | Owner confirmation required before any registry row (never fabricated) | Read-only query 2026-10-18 | `BLOCKED` (owner decision) |
+
+### Restore point before managed migrations (2026-10-18 04:2xZ, read-only)
+`pg_get_functiondef`, comment, owner, `SECURITY DEFINER`, `search_path`, ACL captured for: recorder `4ee7be9d…` (R5.8.10 target), `assert_verified_parser_provenance` `57e41961…`, `enforce_approved_attestation_workflow` `f95e6a50…`, `h3e91_record_execution_event` 18-arg `7c5189db…` (service_role EXECUTE) and legacy 17-arg `7032fe9f…` (postgres only). Each is reproducible byte-for-byte from committed generators/rollbacks (R5.8.10 targets; legacy writer from the pre-`20261012100000` chain), so the rollbacks in `docs/reference/r5_8_1{1,2,3}/` restore every intermediate state. HMAC: `app.settings.parser_attestation_hmac_secret` is not a persistent setting by design — `record_parser_runtime_attestation_with_secret` sets it transaction-locally from the app server secret; proof = a fresh VERIFIED attestation.
+
+## Phase B/F — PR #151 merged (2026-10-18)
+
+- PR #151 head `b6d4e486c65804f78c78ce8314fcdcce8b8a3172`: all 7 checks green on the exact SHA (Quality Gates incl. F553 R11.2 and Main required gates; Queue Semantics run [39097391585](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39097391585): queue 12/12, recovery protocol 22/22, canonical idempotency 17/17, Gate Semantics V2 11/11, recorder reconciliation 21/21, RLS two users 1/1; queue recovery E2E green).
+- Previous head `1b2fc26e` failed `r5_8_12_idempotence_and_fail_closed_states` (run 39097037763): the R5.8.12 migration rewrites function comments, so it is idempotent only in its own state; the probe now rewinds R5.8.13 with its rollback, validates R5.8.12 there and re-applies R5.8.13 requiring the exact head state (commit `b6d4e486`).
+- Merged as `22718d3d60e9a0d262e68971ce90751518f03dab`; no `services/` file in the diff (Railway build skipped by watch pattern; Lovable syncs code only).
+
+## Phase D — managed database migrations applied (2026-10-18)
+
+Each migration ran inside one DO block that aborts unless `md5(text)` equals the committed file, executes it (transaction-control lines removed only where the file has its own `BEGIN;`/`COMMIT;`, exactly one each), then records `schema_migrations` with the full file text — all atomically.
+
+| Version | Result after apply | Stored text md5 = file |
+|---|---|---|
+| `20261016100000` R5.8.11 | recorder `72df9c51…` | `73835949…` ✔ |
+| `20261016100100` R5.8.11b | assert `f5e27fc3…`, enforce `f95e6a50…` | `2591eee6…` ✔ |
+| `20261016140000` overload cleanup | only the 18-arg `h3e91_record_execution_event` (`7c5189db…`, service_role EXECUTE) | `d42e7c7e…` ✔ |
+| `20261017180000` R5.8.12 | recorder `321d649a…`, assert `e62a11f9…`, enforce `f74d8af9…` | `10f08c3a…` ✔ |
+| `20261018050000` R5.8.13 | recorder `d4df5708…`, assert `f070c124…` (owner, SECURITY DEFINER, search_path, ACL unchanged) | `2e49ba96…` ✔ |
+
+Observation: `20261016120000` (applied before this session) has a `schema_migrations` row without stored statements.
+
+## Phase E — post-merge gates on `22718d3d`
+
+- **R5.8.3** run [39098741937](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098741937): `GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT`, failures `[]` — **PASS** (D1 runtime identity coherent and verified by the preflight itself).
+- **R5.8.4** run [39098759506](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39098759506): all **32** gates evaluated (artifact selection fixed — D6 **PASS**); 14 VERIFIED; `own_scope_blockers: []`; decision `BLOCKED` with pending external collectors: fresh attestation of the active runtime, managed snapshot, H.3-E activation gate, A9.1 real-DEM lab run. Not a PASS.
+
+## Phase E — H.3-E Activation Gate on `22718d3d` (run [39100058543](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39100058543)) = **FAIL**
+
+| Stage | Result | Meaning |
+|---|---|---|
+| runtime, bridge_identity, persistence, transport, r5_8_3, r5_8_4, queue_semantics, r5_8_4_artifact, r5_8_4_decision | PASS | D1 confirmed by an independent evaluator |
+| quality_gates | BLOCKED | main Quality Gates still running at evaluation time |
+| r5_8_3_artifact | BLOCKED `ARTIFACT_NOT_FOUND` | **D10** (gate defect, below) |
+| parser_lock | FAIL `PARSER_LOCK_NOT_REQUIRED` + revision/build mismatch (`60099ed3`) | D3 (PR #152) + D5 (owner secrets) + published app stale |
+| managed_snapshot | FAIL only `attempt_9_absent` (recorder `d4df5708` = R5.8.13 target) | D9 |
+| predem_matrix | BLOCKED (`attempt_9_absent`, `hmac_configured`, `oidc_operational`, `provenance_verified`, `remote_ci`) | needs fresh attestation after app publish |
+
+### D10 — H.3-E gate looked up the R5.8.3 artifact by its pre-#151 name
+- **Symptom:** `r5_8_3_artifact` BLOCKED `ARTIFACT_NOT_FOUND` although run 39098741937 uploaded its artifact.
+- **Root cause:** #151 renamed the upload to `r5-8-3-preflight-<sha>-<run>-attempt-<n>`; `scripts/ci/h3e_activation_gate.py` still searched `r5-8-3-preflight-<sha>-<run>`.
+- **Fix:** PR #153 (`83cdfec5`): `r583_artifact_name(sha, run_id, run_attempt)` from the selected run's attempt (same convention as `scripts/r5_8_4_gate_reconciliation.py`).
+- **Regression tests:** unsuffixed name → BLOCKED; earlier attempt → BLOCKED; selected attempt → PASS; name mirrors the workflow YAML. Against the old code: 11 failures + 1 error; new code 60/60.
+- **Production impact:** none (CI evaluator only). **Rollback:** revert the merge commit.
+- **Status:** `NOT_PROVEN` until #153 is merged and a new H.3-E run shows `r5_8_3_artifact` PASS.
+
+## Phase F — PR #152 merged and app published (2026-10-18)
+
+- PR #152 head `43c1a8c3`: 7/7 checks green on the exact SHA (Main required gates, F553 R11.2, CS2 parser, contract-sensitive parser, web, queue semantics, queue recovery E2E); 0 files under `services/` (no Railway build). Merged as `f767c397e5105fafcaab346be8714169324cc2b8` (merge commit).
+- Lovable synced `latest_commit_sha = f767c397…`; published via `deploy_project` (deployment `c8c51428-e137-4b79-b6ee-81659ca338b5`). No prompt sent to Lovable.
+- **Expected effect, fail-closed:** the published bundle now always requires the parser revision/build lock in production. While the app secrets `DEMO_PARSER_EXPECTED_REVISION` / `DEMO_PARSER_EXPECTED_BUILD_REVISION` still hold `git:60099ed3…` (D5), the app expects a parser identity the worker does not report, so demo processing stays blocked until the owner sets `git:c2e045b0…` / `git:eaaa2c8d…`. No demo is authorized before the gates anyway.
+- D3 status: `NOT_PROVEN` until the runtime route `/api/public/parser-attestation-runtime` shows `revisionRequired=true`, `buildRevisionRequired=true` (read by the H.3-E gate `parser_lock` stage).
+
+### D11 — duplicate Steam ID in one demo attached silently (PR #154, `536d1e15`)
+- **Symptom (code review against the identity contract):** `resolvePlayerAttachment` used `find()`; a demo with the user's SteamID64 on two participants attached the first one.
+- **Fix:** returns `state=conflict`, `reason=identity_conflict` (already allowed by `demo_jobs_attachment_reason_check`; no migration), no participant/Steam/method, whatever the declaration. The ambiguous-nickname candidate list uses the resolver's `normalizeNickname()`.
+- **Regression:** new test (with and without declaration); 25/25; `tsc` clean. **Rollback:** revert. **Status:** `NOT_PROVEN` until merged.
+
+### Identity contract — mapping to code (read 2026-10-18)
+| Contract state | Code (`src/lib/pipeline/attachment.ts`) | Personal metrics |
+|---|---|---|
+| EXACT | `attached` · `steam_id_confirmed` · `high` (Steam ID proven on profile, present once in demo) | yes, after user confirmation flow (`pending_confirmation`) |
+| PROBABLE / POSSIBLE | not emitted automatically — a nickname alone never attaches; a unique exact normalized nickname **explicitly declared by the user** attaches as `manual_user_selection` · `medium` | yes (manual, audited via `demo_identity_decisions` with `expected_latest_event_key`) |
+| NO_MATCH | `unattached` (`no_steam_id_on_profile`, `steam_id_not_in_demo`, `self_declared_nickname_not_found`, `user_not_selected`) | no |
+| AMBIGUOUS | `unattached` · `ambiguous_nickname` (candidates returned for explicit selection) | no |
+| CONFLICT | `conflict` · `identity_conflict` (declaration contradicts Steam; Steam ID duplicated — D11) | no |
+No fuzzy distance, no inference from kills/score/behaviour. Live proof of each state in production: `NOT_PROVEN` (Phase G).
+
+## Phase D/E — fresh attestation of the active runtime (2026-10-18 05:30Z) — **PASS**
+
+- Workflow `parser-runtime-attestation.yml` dispatched on main `f767c397` → run [39100740388](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39100740388) **success** (all steps green, including "Sign and deliver verified evidence to the server-side recorder").
+- New row `parser_runtime_provenance.id = 50aa3e42-a5fd-406e-a69a-88b15a32604d`: `status=VERIFIED`, `GITHUB_ACTIONS_SIGNED_ATTESTATION_V3`, deployment `ece1c582…`, deployment_commit/semantic `c2e045b0…`, build `git:eaaa2c8d…`, `app_source_commit=f767c397…` (proves the published app is the new main), attestor `github_actions_oidc`, workflow source `f5e8ffb1…`, 64-hex HMAC signature accepted by the recorder.
+- `assert_verified_parser_provenance('50aa3e42…')` (STABLE, md5 `f070c124…` = R5.8.13 target) → `VERIFIED`, digest `aa75f0d0…`.
+- **Proves by runtime behaviour:** `PARSER_ATTESTATION_HMAC_SECRET` configured and matching the GitHub signer; OIDC operational; R5.8.13 recorder/assert pins coherent with the app pins and the Railway runtime. No secret value was read or logged.
+- No prior provenance row was changed (append-only).
+
+### Note — F553 post-completion run 39100510898 (BLOCKED) is a trigger artefact
+It was triggered by the completion of the **cancelled** Quality Gates run of `22718d3d` (cancel-in-progress after the #152 merge); `workflow_run` runs carry the default-branch head (`f767c397`), whose own Quality Gates was still running → `R11_EXECUTION_JOB_NOT_SUCCESSFUL`. The evaluation of `f767c397` happens when its Quality Gates run 39100378766 completes; the gates select the newest run.
+
+## Phase E — H.3-E on `f767c397` after publish + attestation (run [39101653080](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39101653080)) = FAIL, narrowed
+
+- **parser_lock:** problems now only `PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH` — `PARSER_LOCK_NOT_REQUIRED` is gone, i.e. the published bundle enforces the lock without `NODE_ENV` (**D3 PASS** by runtime behaviour). Expected comes from env (`revisionSource=env`) = `git:60099ed3…`; both worker hosts serve `c2e045b0…` / `eaaa2c8d…` → remaining cause is **D5** (owner secrets).
+- **predem_matrix:** 26 verified; blockers reduced from 5 to `attempt_9_absent` (D9) and `remote_ci` — `hmac_configured`, `oidc_operational`, `provenance_verified` now verified.
+- **managed_snapshot:** only `attempt_9_absent` (D9).
+- **r5_8_3_artifact:** BLOCKED — D10, fixed in PR #153 (not merged yet).
+- **quality_gates / f553_post_completion / main_required_gates:** evaluated while Quality Gates 39100378766 was still running (trigger artefact noted above).
+
+## Phase E — D10 closed; H.3-E down to D5 + D9
+
+- H.3-E run 39101741510 (`f767c397`, after its Quality Gates 39100378766 = success): quality_gates, f553_post_completion, main_required_gates, r5_8_3, r5_8_4, queue_semantics, r5_8_4_artifact/decision, persistence, transport, runtime, bridge_identity = **PASS**; predem **27/28 VERIFIED** — sole blocker `attempt_9_absent` (D9); `remote_ci` now VERIFIED.
+- PR #153 (D10) head `83cdfec5`: 5/5 checks green on the exact SHA; only `scripts/ci/` changed; merged as `6a3faf1b60601737110e2d97bf56fbccbc113f69`.
+- H.3-E run [39103073331](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39103073331) on `6a3faf1b`: `r5_8_3_artifact=PASS`, `r5_8_3_decision=PASS` → **D10 PASS** (proven in production CI). Quality Gates of `6a3faf1b` was still running at that evaluation.
+- Remaining FAIL/BLOCKED: `parser_lock` (D5 — owner secrets), `managed_snapshot` + `predem_matrix` (D9 — owner decision).
+
+## Phase F — PR #154 (D11) merged and published
+
+- PR #154 head `536d1e15`: 7/7 checks green on the exact SHA; files only `src/lib/pipeline/attachment.ts`, `src/lib/pipeline-identity.functions.ts`, test. Merged as `39b8317e14448e9817685713f5a9972307c96670`.
+- main `39b8317e`: Quality Gates 39103547284 success, Queue Semantics 39103547355 success, R5.8.3 39103547302 success, R5.8.4 39103564096 success. (F553 39103566515 and H.3-E 39103580294 were fired by the cancelled Quality Gates of `6a3faf1b`, same trigger artefact as before.)
+- Lovable synced `39b8317e`; published (deployment `b42dae33-ef12-41c2-bd2c-ad4ebd4627aa`). D11 code-level PASS (unit test in CI); production behaviour `NOT_PROVEN` until a real demo exercises it (Phase G).
+
+## Phase E — H.3-E on `39b8317e` (run [39105116041](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39105116041)) — FAIL, only owner-dependent stages left
+
+PASS (15/18): target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue_semantics, main_required_gates, r5_8_3_artifact, r5_8_3_decision, r5_8_4_artifact, r5_8_4_decision, persistence, transport, runtime, bridge_identity.
+
+| Stage | Result | Cause | Owner |
+|---|---|---|---|
+| parser_lock | FAIL `PARSER_LOCK_REVISION_MISMATCH`/`BUILD_MISMATCH` | app env expects `git:60099ed3…`; both hosts serve `c2e045b0…`/`eaaa2c8d…` (D5) | set Lovable secrets |
+| managed_snapshot | FAIL `attempt_9_absent` | D9 | decision on `2dc1ddd1` attempt 11 |
+| predem_matrix | BLOCKED, 27/28 VERIFIED, blocker `attempt_9_absent` | D9 | same |
+
+Phase G (real E2E, Canonical) remains **not started** by design: blocked by these gates.
+
+## 2026-10-20 — D5 and D9 closed by the owner; **H.3-E Activation Gate PASS**
+
+### D5 — app parser-lock secrets (owner action)
+- Owner reported (chat, 2026-10-20T01:39-03:00) that `DEMO_PARSER_EXPECTED_REVISION` / `DEMO_PARSER_EXPECTED_BUILD_REVISION` were updated in Lovable production. Values not re-sent; not read by me.
+- Proof by runtime behaviour: H.3-E run [39370718660](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39370718660) (dispatch, 04:39Z) → `parser_lock=PASS` (previously FAIL `PARSER_LOCK_REVISION_MISMATCH`/`BUILD_MISMATCH` with expected `60099ed3…`). **D5 PASS.**
+
+### D9 — authorization of `2dc1ddd1` attempt 11 (owner decision, recorded)
+- Owner decision (chat, 2026-10-20T01:39-03:00): attempt 11 was the owner's / authorized as a test; record it auditably without changing `JOB_STALE` or inventing parser events.
+- Operator script `docs/ops/h3e_attempt_authorizations_2026-10-20.sql` (md5 `180e6356…`, PR #156) executed once at 2026-10-20 04:40:21Z. It asserts job identity (upload `989288d2`, attempt 11, DEM `0caa7c97…`, supersedes `4b5e3530`, created_at, `failed`/`JOB_STALE`, `raw_audit_blocked`) and writes only one registry row.
+- Before → after: `demo_jobs` row md5 `99baf491…` → `99baf491…` (unchanged); H3E91 ledger events 0 → 0; registry rows 2 → 3; unauthorized jobs at attempt ≥ 9: 1 → 0. **D9 PASS.**
+
+### H.3-E Activation Gate on `39b8317e` — run [39370837112](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39370837112) = **PASS**
+All 18 stages PASS: target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue_semantics, main_required_gates, r5_8_3_artifact, r5_8_3_decision, r5_8_4_artifact, r5_8_4_decision, persistence, transport, runtime, bridge_identity, parser_lock, managed_snapshot, predem_matrix. Evidence artifact `h3e-activation-gate-39b8317e…-39370837112-1`, digest `sha256:628f1463df2d440f7a8b1e235e3fe02245440ceb4424ca28af245663e31c198b`.
+(Run 39370718660, 04:39Z, FAILed only `managed_snapshot`/`predem` because its snapshot, 04:39:41Z, preceded the authorization, 04:40:21Z.)
+
+### What this does and does not prove
+- Proven: pre-DEM readiness of the release `39b8317e` — runtime identity, fresh VERIFIED attestation, parser lock, managed DB pins, queue/persistence probes, authorization registry.
+- **Not proven (Phase G, awaiting owner approval):** real upload → parse → identity → persistence → dashboard; RLS with 2 users on real data; retry/idempotency on real data; negative ambiguous-identity case; D7, D8, D11 in production; Canonical. R5.8.4 stays `BLOCKED` on its post-DEM collector (A9.1 real-DEM lab run) until then.
+
+## Phase G — real E2E (owner-authorized, 2026-10-20)
+
+Main `39b8317e`; worker deployment `ece1c582` (semantic `c2e045b0`, build `eaaa2c8d`); H.3-E run 39370837112 PASS. Canonical **not** requested and not executed as an explicit step (see note on job finalization below).
+
+### Preconditions for `406df30a` (read-only, 04:5xZ)
+- `406df30a` (user `348b6f66`, attempt 2, `failed/PARSER_IDENTITY_MISMATCH`, DEM `1d98f8b6…` 382,007,151 B, storage object present, `retry_count 1/2`), supersedes `e21e10fb` (attempt 1, `PARSER_UNAVAILABLE`); `demo_parse` queue empty; protected jobs md5 `98dda0f8:1852e536…`, `4b5e3530:f30585e6…`, `e3f93688:9dfab97b…`; 3 ledger events on `406df30a`.
+- `retry_demo_job` (both the user and admin paths, `_allow_permanent=false`) refuses `PARSER_IDENTITY_MISMATCH` as permanent and would overwrite the attempt-2 row. Not forced. The supported path is a re-upload of the same file → new attempt.
+
+### Attempt 11 — job `2dc1ddd1` (m1-cache, `0caa7c97…`, 473,748,061 B), retried by the owner 04:58:27Z
+| Step | Evidence | Status |
+|---|---|---|
+| Intent / start | ledger `EXECUTION_INTENT` 04:58:31Z, `EXECUTION_STARTED` 04:58:43Z (build `eaaa2c8d`, revision `c2e045b0`) | PASS (D8 worker side) |
+| Real parse | `EXECUTION_FINISHED/PARSE_SUCCEEDED` 05:16:06Z | PASS |
+| RAW | artifact `d216adf8` ready/approved, 167 chunks, 4,586,562 rows (grenades 4,550,843; ticks 4,096; events 31,484; rounds 24; players 10), root `0b2a1b1c…` | PASS |
+| App completion | app log: `complete_start bytes=3846798` 05:16:06Z → `Error: Worker exceeded CPU time limit.` 05:17:05Z → 502 05:17:07Z; worker `durable job interrupted type=HTTPStatusError` 05:17:14Z | **FAIL → D12** |
+| Terminal | lease expiry → `demo_job_dispatch_closures#8` `abandoned_execution at FINISHED` → `failed/JOB_STALE` 05:31:57Z; nothing persisted | terminal |
+- Authorization row of 10/20 still matches the job (identity unchanged).
+
+### Attempt 3 — job `9572a234` (m2-mirage, the authorized DEM)
+| Step | Evidence | Status |
+|---|---|---|
+| File | upload `23e4cda8`, SHA-256 `1d98f8b6d937ddbd5b2cc486b4830b63dfa85fd6b17b0767b96aa011c0ac7a7f`, 382,007,151 B (storage object 382,007,151 B) | PASS |
+| Link | `supersedes_job_id = 406df30a…`; only change on `406df30a`: `superseded_by_job_id = 9572a234…` (status/error/attempt/ledger preserved); attempts 1–2 intact; protected jobs unchanged | PASS |
+| Parse | ledger INTENT 05:31:58Z, STARTED 05:32:08Z, `FINISHED/PARSE_SUCCEEDED` 05:42:32Z | PASS |
+| RAW | artifact `fff733be` ready/approved, 100 chunks, 2,582,139 rows, root `0e436f77…` | PASS |
+| App completion | completed (no CPU abort at this size); admission v3 decision `d410e643` (digest `60af8c7c…`) recorded 05:43:14Z | PASS (mechanics) |
+| Admission | **BLOCKED**: sole blocking reason `v3:RAW-V2-12-rounds:round_boundary_unknown` (facts: 23 rounds, 4,299 events, 0 outside rounds). Limitations L01–L04 (teams/score: `map_score_unknown`, `round_winner_unknown`, `team_assignment_not_two_teams`). Header `de_mirage` PASS, bomb 14 plants PASS, combat 158 kills / 638 damage PASS | **BLOCKED → D13** |
+| Terminal | `blocked_raw_audit / RAW_AUDIT_BLOCKED`, `finished_at` 05:43:14Z, `match_id` null, attachment `unattached` | terminal |
+- Identity, persistence, dashboard, RLS, idempotency, cleanup on real data: **NOT_PROVEN** (blocked before admission).
+
+### D12 — completion exceeds the app runtime CPU limit (PR #157)
+- Root cause: `auditPhysicalRawChunks` re-decoded every RAW row inside the single `complete` request; production code on the same volume: 15.1 s CPU.
+- Fix: decode per chunk at verification (`raw_evidence_chunks.physical_summary`, migration `20261020060000`), completion still downloads and re-hashes every object and merges the summary bound to that sha256; forensic/header always re-decoded; summary-less READY artifacts are backfilled one chunk per request on retry. Measured: completion 66 ms CPU, ≤ 148 ms per verification request. Status: `NOT_PROVEN` until merged, migrated, published and a real job completes.
+
+### D13 — admission v3 blocks the authorized DEM on round boundaries (PR #158 diagnostics)
+- Which round lacks a boundary is only in the private RAW rounds/events sections. PR #158 adds bounded, read-only round-boundary diagnostics to the authenticated operator route (numbers/ticks only). Root cause: `NOT_PROVEN` until read.
+
+### Observations
+- The worker heartbeat loop keeps writing `stage=parsing` during app completion, so `stage` is not reliable during finalization.
+- App logs show an external scanner probing 40+ secret paths at 02:33Z (all 404/cancelled).
+
+## 2026-10-20 06:0x–06:3xZ — D12 shipped, D13 root cause proven
+
+### D12 shipped (production code; production behaviour NOT_PROVEN)
+- PR #157 head `8c833ea5`: 7/7 checks green on the exact SHA (incl. queue semantics on a disposable DB and the real worker/bridge/storage E2E); merged as `e945a564f006cd9d1419df9851c7c10a894d03d8`; no `services/` file.
+- Migration `20261020060000` applied before publish in one guarded DO block (file md5 `46e8028e…` asserted, not previously recorded, 0 active jobs); read back: column `jsonb`, CHECK present, stored statement md5 `46e8028e…`. Rollback: `ALTER TABLE public.raw_evidence_chunks DROP COLUMN physical_summary` (nullable; old code ignores it).
+- PR #158 (round diagnostics) head `0ab84e2b`: 7/7 green; merged as `35e588389db527d0eab03a27344b1ce96b7847d1`.
+- Lovable synced `35e58838`; published (deployment `2a9d511d-7bd9-45da-be06-214c4fc5842f`).
+- D12 in production stays `NOT_PROVEN` until a real job of the large demo completes within the CPU limit.
+
+### D13 — root cause (RAW audit reasons runs 39380210774 and 39380306461)
+| Job / DEM | RAW round rows | `round_start` | `round_end` | `round_officially_ended` | `round_freeze_end` | `cs_win_panel_match` | rounds without end tick | winners |
+|---|---|---|---|---|---|---|---|---|
+| `9572a234` m2-mirage | 23 | 0 | 0 | 0 | 23 (= round start ticks) | 1 @193184 | 23/23 | none |
+| `2dc1ddd1` m1-cache | 24 | 0 | 0 | 0 | 24 | 1 @253444 | 24/24 | none |
+
+- These demos do not advertise `round_start`/`round_end`. The parser (`derive_round_streams_from_tick_evidence`, parser.py) derives start ticks from `round_start_time` and, by design, leaves end ticks and winners unknown ("no winner, score, or team is invented").
+- Admission v3 RAW-V2-12 requires closed intervals → `round_boundary_unknown` for every round; RAW-V2-16 → L04 (no winners/score).
+- Consequence: with the current parser and contract, **no demo of this kind can be admitted**. Not a pairing bug; a missing observed source for round ends.
+- Status: `BLOCKED` — needs an owner decision between a parser capability (observed round ends from game-state transitions; worker release cycle) and a contract change (new limitation). No gate was relaxed.
+
+## 2026-10-20 07:1x–08:3xZ — D13 parser release (R5.8.14), controlled
+
+| Step | Evidence | Status |
+|---|---|---|
+| Parser fix | PR #159 head `fc0ea994`, 7/7 green; observed round boundaries (freeze-time entry; `total_rounds_played` +1; winner only when `round_win_status` and score delta agree). Real fixture: derived == real events (10/10 starts/ends/winners/reasons); blind parse == normal parse (rounds 10/10, events 2,707/2,707) | PASS (code) |
+| Deploy freeze | Railway `watchPatterns` → `/services/cs2-demo-parser/.release-freeze-r5-8-14` before merge; merge `7f70141b` produced SKIPPED `7409cff7` | PASS |
+| Controlled deploy | `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:7f70141b…` (skipDeploys); one deployment of the exact commit → `3acb47c5-d9a4-43f2-acff-9ead7cb12b30` SUCCESS 07:18:36Z | PASS |
+| Runtime identity | both `/version`: revision/semantic/build `git:7f70141b…`, `build.commit 7f70141b`, `declared_revision_matches: true`; `/health` ok; critical blob change only `parser.py` `981f6261`→`8f75eb61` | PASS |
+| Re-pin | PR #160 head `8da80485` 7/7 green (GSv2 11/11 incl. R5.8.14 idempotence/tamper and R5.8.13/12 under rewound head; recorder reconciliation 21/21); merged `ece1a040` | PASS |
+| Managed DB | `20261020080000` applied (guarded; file md5 `f7048299…`; 0 active jobs): recorder `19a352c2…`, assert `df0dc1b3…`, workflow guard `f74d8af9…` unchanged; owner/definer/search_path/ACL unchanged; recorded | PASS |
+| App | published from `ece1a040` (deployment `11ae2250`) | PASS |
+| Attestation | run 39390466614 → provenance `aafc259e…` VERIFIED (deployment `3acb47c5`, `7f70141b`, parser.py `8f75eb61`); `assert_verified_parser_provenance` VERIFIED | PASS |
+| Freeze removed | `watchPatterns` restored to `/services/cs2-demo-parser/**` | PASS |
+| R5.8.3 / R5.8.4 on `ece1a040` | `GREEN_FOR_FRESH_ATTESTATION_PREFLIGHT`, failures [] / success | PASS |
+| H.3-E 39393875678 | 17/18 PASS incl. `parser_lock` (owner updated the expected-revision secrets); **`bridge_identity` FAIL `BRIDGE_EXPECTED_BUILD_MISMATCH`** (app secret `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `eaaa2c8d…`, worker serves `7f70141b…`) | **BLOCKED (owner secret)** |
+
+No demo is started while `bridge_identity` fails (the bridge would refuse the worker's H3E91 events; D8 symptom).
+
+## 2026-10-20 09:3x–10:3xZ — real E2E on R5.8.14, D12 proven in production
+
+H.3-E after the owner set `H3E91_EXPECTED_WORKER_BUILD_COMMIT=7f70141b…`: run [39403111043](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39403111043) **PASS 18/18** (`bridge_identity` PASS).
+
+### Attempt 4 — job `17aab15c` (m2-mirage, upload `368ef869`)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT 09:52:10Z → STARTED 09:52:19Z (`git:7f70141b`, demoparser2 0.42.0) → FINISHED `PARSE_SUCCEEDED` 10:03:57Z | PASS |
+| RAW | 100 chunks verified; 98 with `physical_summary` (forensic/header re-decoded by design); artifact `ready`/`approved` | PASS |
+| Completion | app completion 10:04:17Z (no CPU abort) | PASS |
+| Admission v3 | BLOCKED `v3:RAW-V2-12-rounds:round_boundary_unknown` (23 rounds, 4,079 events, 0 outside); diagnostics run 39405321693: 22/23 rounds with start+end+winner | **BLOCKED (D13b)** |
+| Persistence / `match_id` / identity / dashboard | not reached (admission blocks before persistence) | NOT_PROVEN |
+
+### Attempt 12 — job `7131abd3` (m1-cache, 473,748,061 B, SHA `0caa7c97…`, authorization PR #161)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT 10:04:18Z → STARTED 10:04:30Z (`git:7f70141b`) → FINISHED `PARSE_SUCCEEDED` 10:24:57Z; dispatch closures 0 | PASS |
+| RAW | artifact `89c75bfc`: 167 chunks, **4,586,562 rows**, 0 unverified; 165/167 with `physical_summary` (the 2 without are `forensic`,`header`, re-decoded by design); `ready`/`approved` | PASS |
+| **D12 in production** | completion finished and admission decision `c6dc6d90` recorded 10:25:27.9Z, job terminal 10:25:28Z (~31 s after FINISHED). Attempt 11 (same DEM, 4,586,562 rows) had died in this request with "Worker exceeded CPU time limit" → `JOB_STALE` | **PASS** |
+| Duplication | 1 artifact, 1 admission decision, 0 dispatch closures for the job | PASS |
+| Admission v3 | BLOCKED: `RAW-V2-12 round_boundary_unknown`, `RAW-V2-13 bomb_terminal_without_prior_plant`, `RAW-V2-14 victim_died_twice_in_round`; L01–L04 LIMITED | **BLOCKED (D14)** |
+| Persistence / identity / dashboard | not reached | NOT_PROVEN |
+
+### D14 — m1-cache round segmentation (run [39407958976](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39407958976))
+- Observed: 24 `round_freeze_end` (first at 1688 = `round_announce_match_start`), RAW round 1 = 5072–12853 (contains freeze_end 6352), rounds 1–22 closed, round 23 start 246747 without end, round 24 start = end = 253251 (match-end freeze took the last end — the D13b case).
+- PR #164 (read-only diagnostics) merged `537f3fec`, app published (deployment `65924a0e`); run [39413151824](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39413151824) on job `7131abd3`:
+  - sampled game rules: tick 2 freeze, not warmup, `total_rounds_played` 0 → tick 1719 live → tick 4765 `total_rounds_played` 1, `round_win_status` 2; `cs_pre_restart` at 5053; freeze again at 5178.
+  - RAW events before the first RAW round: bomb plant 3767, 6 kills 4123–4752.
+  - **Root cause (proven):** the recording opens inside round 1's freeze time. Round 1 (1688→4752) has no freeze rising edge, so the released parser (`7f70141b`) produced no start for it; `adapter.build_round_intervals` then dropped its end (4752 < first start 5072) as an orphan lifecycle row, and every later round lost one position. The match-end freeze (game_phase 5) took the last end (round 24 start = end = 253251) → `round_boundary_unknown` on round 23 and `bomb_terminal_without_prior_plant` (defuse 253251 vs plant 251287).
+  - D13b (PR #162) already adds the `first_observed_live_tick` start candidate and drops the phase-5 trailing candidate; a regression test with this exact pattern, asserted through `build_round_intervals`, was added (`333be559`).
+  - Events between a round end and the next freeze entry (plant 79323, 192403; kills 57942, 85696) are post-round actions; the adapter leaves them outside every round by design.
+- Still open: one victim with two `player_death` inside RAW round 10 (real round 11, which contains a ~5 min freeze 86055→105924). PR #166 adds per-death tick/weapon/attacker facts (no identities) to find the cause.
+
+### RLS with the real second player account (`lojacriativa@live.com`, `2e895267`)
+Role `authenticated` with that account's JWT subject, each probe in a rolled-back transaction:
+- reads: own profile 1, own player profile 1; owner's demo jobs/uploads/RAW artifacts/RAW chunks/matches/participants/metrics/rounds/events/identity decisions/ledger/analyses/audit logs: **0**; attempts 4 and 12 by id: 0.
+- writes: `UPDATE demo_jobs` → permission denied (no grant); `UPDATE profiles` of other users → 0 rows.
+- owner (reverse): 20 jobs, 21 uploads, 8 artifacts, 850 chunks visible; second account's profile/player profile: 0.
+- `is_admin_master`/`is_staff`: false for both accounts.
+- API (PostgREST with the account's session) and frontend: NOT_PROVEN — requires signing in as that account, which only the owner can do; no match data exists for either account yet.
+
+### D15 — default table grants wider than the policies (PR #165)
+`demo_identity_decisions`, `player_nickname_history`, `raw_demo_evidence_reports` (anon + authenticated) and `raw_evidence_artifacts`, `raw_evidence_chunks` (authenticated) hold INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER although their only policy is SELECT and all writes are service role / SECURITY DEFINER. RLS blocks row writes; TRUNCATE is not governed by RLS (not reachable through PostgREST). Fix: forward-only fail-closed migration `20261020100000` keeping exactly SELECT for authenticated, nothing for anon. Status: code PASS locally; CI/production pending.
+
+### Lovable sync branch (`lovable-sync-1792490583`, PR #163)
+- Lovable edit history: latest AI edit `6929961a` ("Expôs erro de senha fraca") = sync branch base content; branch = `ece1a040` (main) + 5 Lovable commits; no divergence, no conflict with main.
+- Content: create-user error mapping (`adminErrors.ts`, safe codes `ADMIN_WEAK_PASSWORD`/`ADMIN_EMAIL_EXISTS`/`ADMIN_OPERATION_FAILED`, code/status-only log), 5 locales, `previewAuthStorage.ts` (editor preview session broker), regenerated `types.ts` (reordered; no column/function lost — e.g. `previous_chunk_sha256`, `physical_summary` present), `@lovable.dev/vite-tanstack-config` 2.25.3→2.26.5. No `services/`, migration, RLS or pipeline file.
+- CI failed on Lint (7 prettier errors) → formatting commit `0af99374`.
+- Tests added (`69e793ac`): `adminCreateUser.server.ts` (same flow, injectable) + `createPlayerUser.behavior.test.ts`: authorised create + audit; unauthorised caller blocked before any Auth call; duplicate e-mail; policy-rejected password; unknown error generic; malformed input; audit-failure rollback; no password/e-mail in error or log. Server-only (build output `.output/server/_ssr` only). Full suite 1622/1623 locally (the 1 failure is the local-only disposable-PG harness needing an OS user `lovable`; CI runs it).
+- CI on `69e793ac`: parser, contract, web/lint/build green; F553 pending at time of writing.
+
+## 2026-10-20 11:0x–18:0xZ — D15 applied, Lovable sync merged, D16 (RAW-V2-14), D13b release interrupted by Railway
+
+| Item | Evidence | Status |
+|---|---|---|
+| D15 merged | PR #165 head `8ab4ef46` 7/7 green (queue semantics applied the migration on the disposable Supabase DB); merge `93ffae36` | PASS |
+| D15 applied (owner approval in chat) | guarded DO block: file md5 `180564ca…`, not previously recorded, 0 active jobs; recorded `20261020100000`. Post-state: authenticated = SELECT only, anon = none on the 5 tables; service_role unchanged; owner RLS reads unchanged (8 artifacts, 850 chunks) | PASS |
+| Lovable sync (PR #163) | merge `a7a6430a`; Lovable synced; aviso de branch de sincronização resolvido pelo merge (não pelo "Dispensar") | PASS |
+| Diagnostics (PR #164, #166) | merges `537f3fec`, `5069b3aa`; published (deployments `65924a0e`, `2e329365`) | PASS |
+| main `537f3fec` | all checks green after re-running F553 EXECUTION (first run failed at "Start local disposable services", before any test); **H.3-E activation gate PASS** | PASS |
+| Worker untouched | Railway deployments for `93ffae36`, `a7a6430a`, `537f3fec`, `5069b3aa` = SKIPPED; live `3acb47c5` | PASS |
+
+### D16 — RAW-V2-14 false positive: respawn after a self-inflicted death (PR #167)
+- Run [39417524960](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39417524960), job `7131abd3`, RAW round 10 (real round 11, pause/freeze 86055→105924): same victim, death 1 tick 96649 `weapon=world`, attacker = victim (self-inflicted, during the freeze); death 2 tick 111562 `inferno` by another player in live play.
+- Owner decision (chat, 2026-10-20): refine, not drop. A later death is accepted only when every earlier death of that victim in the round was self-inflicted; two deaths by others, a self-inflicted death after one by another, or an unordered repeat (no tick) still BLOCK. `ADMISSION_V3_RULESET_VERSION` 1 → 2.
+- PR #167 7/7 green; merge `bc814486`; published (deployment `c18a9c0d`).
+
+### D13b release (R5.8.15) — in progress, BLOCKED by a Railway platform incident
+| Step | Evidence | Status |
+|---|---|---|
+| Freeze | `watchPatterns` → `/services/cs2-demo-parser/.release-freeze-r5-8-15`; 0 active jobs | PASS |
+| Merge #162 | head `333be559` 7/7 green; merge `a5d8c425839e1e0e7e6f5506ae141bc85359726b` → Railway `06e1c529` SKIPPED | PASS |
+| Critical blobs | only `parser.py` `8f75eb61` → `024c1dd4` | — |
+| Deploy exact commit | refused: "Deploys have been paused temporarily" — Railway incident [JUA1PC5H](https://status.railway.com/incident/JUA1PC5H) "New builds are temporarily paused" (17:03Z, Identified 17:18Z) | **BLOCKED (external)** |
+| Safety while paused | `PARSER_REVISION`/`PARSER_BUILD_REVISION` restored to `git:7f70141b…` (skipDeploys); `/version`: `7f70141b`, `declared_revision_matches: true`; freeze kept | PASS |
+
+## 2026-10-20 20:5x–22:0xZ — R5.8.15 (D13b) released
+
+| Step | Evidence | Status |
+|---|---|---|
+| Builds resumed | Railway JUA1PC5H moved to MONITORING; builds enabled for Hobby workspaces | — |
+| Controlled deploy | 0 active jobs; `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:a5d8c425…` (skipDeploys); ONE deployment of the exact commit → `01998834-4c35-43c2-b3e4-976f76a21fd5` SUCCESS 20:54:12Z | PASS |
+| Runtime identity | both `/version`: revision/semantic/build `git:a5d8c425…`, `build.commit a5d8c425…`, `declared_revision_matches: true` | PASS |
+| Repin | PR #168 head `285fcbdd`: 7/7 green — queue recovery E2E failed once (`heartbeats_renew_the_lease_during_a_real_parse` timed out, run 39497269314 attempt 1) and passed on re-run of the same commit → recorded as a flaky timeout; merged `3b04fa74` | PASS |
+| Managed DB | `20261020210000` applied (guarded; file md5 `55783162…`; 0 active jobs): start state read back = R5.8.14 targets; recorder `19a352c2`→`d9328086`, assert `df0dc1b3`→`39418665`, workflow guard `f74d8af9` unchanged; owner/SECURITY DEFINER/search_path/ACL unchanged; R5.8.15 comments; recorded | PASS |
+| App | published from `3b04fa74` (deployment `f55e57ad`) | PASS |
+| Attestation | run 39503700891 → provenance `af14868c` VERIFIED (deployment `01998834`, `a5d8c425`, tree `3ce7fe72`, 5/5 critical blobs, both hosts); `assert_verified_parser_provenance` VERIFIED | PASS |
+| Freeze removed | `watchPatterns` → `/services/cs2-demo-parser/**`; main worker tree identical to `a5d8c425` | PASS |
+| H.3-E on `3b04fa74` (run 39505251697) | runtime, managed_snapshot, transport, persistence, queue_semantics, R5.8.3, R5.8.4 PASS; **`parser_lock` and `bridge_identity` FAIL** — app secrets still expect `7f70141b` | **BLOCKED (owner secrets)** |
+
+## 2026-10-21 01:3x–03:1xZ — real E2E on R5.8.15
+
+H.3-E after the owner updated the three app secrets: run [39528305852](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/39528305852) **PASS 18/18** on `3b04fa74`.
+
+### Mirage attempt 5 — job `921b55cf` (SHA `1d98f8b6…`, 382,007,151 B)
+| Stage | Evidence | Status |
+|---|---|---|
+| Worker ledger | INTENT → STARTED (`git:a5d8c425`) → FINISHED `PARSE_SUCCEEDED`; delivery_count 1, retry_count 0 | PASS |
+| RAW | 100 chunks; artifact ready/approved | PASS |
+| Admission v3 | decision `e398d700`, ruleset 2, **LIMITED, no blocked reasons**; RAW-V2-10/12/13/14 PASS (23 rounds, 4,264 events, 0 outside, 14 plants, 155 kills); RAW-V2-16 LIMITED L04 (`team_assignment_not_two_teams`, `round_winner_unknown`, `map_score_unknown`) | PASS |
+| Persistence | `processed`/`done` 01:52:36Z; match `95186f3f` (de_mirage, `canonical_status` completed, 23 rounds all closed, 10 participants with SteamID64, 4,264 events); excluded metrics per L04: result, scores, team names | PASS |
+| Identity | `identity_status unresolved`, `attachment_reason no_steam_id_on_profile`; participants unlinked; 0 personal metrics (contract: no SteamID → unresolved → personal metrics blocked) | PASS (contract) |
+| Manual selection / dashboard | owner chose to select in the panel; pending | NOT_PROVEN |
+
+### Cache attempt 13 — job `b7579762` (reference DEM `0caa7c97`, authorization recorded 01:46:53Z, PR #169)
+| Stage | Evidence | Status |
+|---|---|---|
+| Parse | three executions, each `PARSE_SUCCEEDED` on `a5d8c425`; 167 chunks; artifact ready/approved | PASS |
+| Admission v3 | ruleset 2, **LIMITED, no blocked reasons**: 24 rounds, 4,328 events, 0 outside; bomb PASS (20 plants); combat PASS (137 kills) — D13b and D16 proven on this DEM | PASS |
+| Persistence | `failed` `CANONICAL_PERSISTENCE_ERROR`: "CANONICAL_PERSISTENCE_FAILED: CANONICAL_MATCH_QUARANTINED" | BLOCKED (by design) |
+
+### D17 — quarantined content was retried and could be re-uploaded (PR #170)
+- Root cause: `matches.content_fingerprint` (demo SHA-256) is unique and `persist_canonical_observation` maps identical content to its existing match. For `0caa7c97` that is `a7b27f16`, quarantined 2026-10-13 (`PRE_PROVENANCE_CANONICAL_ROW`, immutable, no release path by design). That content can never be persisted again; the quarantine is untouched.
+- Defect: the refusal was the transient `CANONICAL_PERSISTENCE_ERROR`, so the job was re-dispatched 3 times (3 full 4.59M-row parses).
+- Fix: new permanent code `CANONICAL_MATCH_QUARANTINED`; persistence boundary maps to it; `createDemoUpload` refuses quarantined content before reserving a slot (read-only service-role lookup, fail-closed); player-facing message in 5 locales. Tests: `quarantinedContent.test.ts` (7).
+- PR #170 7/7 green; merge `c2f748c1`; published (deployment `61553a6e`).
+
+### Observed limitation (not a gate failure)
+- Both admitted demos carry L04: participants have no canonical team (`team_assignment_not_two_teams`), so round winners (T/CT observed) cannot be mapped to a team and match result/score stay excluded. `win_reason` is `unknown`; quality flags `missing_positions`, `missing_economy`. Candidate improvement: derive the two teams from per-round sides in the parser (worker release); not required for personal metrics.
+
+## 2026-10-21 05:xx–07:3xZ — D11 fixed, manual identity proven, D18/D19/D20 found
+
+### D11 — manual identity selection could not be saved (PR #171)
+- Root cause (reproduced in a rolled-back production transaction): `declareDemoPlayer` stored the resolver's method `manual_user_selection` in `demo_jobs.attachment_method`. The check constraint `demo_jobs_attachment_method_check` refused it (SQLSTATE 23514), and the server function collapsed that into `JOB_REQUEUE_FAILED`.
+- Fix: `storedAttachmentMethod()` maps to the stored vocabulary (`self_declared_player` / `self_declared_nickname`), fail-closed for anything else; `processJob` uses it too. RPC errors are now classified with safe diagnostics only: code, sqlstate, constraint name; never the row.
+- Tests: `attachmentStoredMethod.test.ts` (11) and `identity_declaration_probe.py` on the disposable DB. Merge `6b137b79`, published (`906e4d27`).
+
+### Phase A — production check of the owner's selection (job `921b55cf`, match `95186f3f`)
+| Check | Evidence | Status |
+|---|---|---|
+| Decision persisted | 1 row `manually_resolved`, method `self_declared_player`, source `user`, author = owner, participant belongs to the match, `match_id` = job's match, 06:48:30Z | PASS |
+| Re-run after the decision | D18: the requeue reused attempt 5. The worker replay of a finished execution returned `reconciliation_required` and sat ~15 min until the lease expired (07:03:34Z). Abandoned-execution closure at 07:03:43Z; dispatch 1 parse OK 07:05:44Z, completion failed; dispatch 2 parse OK 07:08:19Z, completion failed | FAIL (D18, D20) |
+| Final job state | `failed`, `CANONICAL_PERSISTENCE_ERROR`: "CANONICAL_PERSISTENCE_FAILED: canceling statement due to statement timeout", retry_count 3; 0 personal metrics | FAIL (D20) |
+| Canonical match | intact: 23 rounds, 10 participants, 4,264 events, `observation_count` 1, 1 admission decision (the failed writes rolled back) | PASS |
+| Dashboard / second-account isolation with metrics | blocked until the metrics exist | NOT_PROVEN |
+
+The job state was not forced, and the demo was neither deleted nor re-uploaded.
+
+### D20 — re-persisting identical content exceeds the API statement timeout (PR #173)
+- Root cause: `persist_canonical_observation` re-persisted the SAME content (same SHA-256, same parser revision `git:a5d8c425…`) by:
+  - deleting and re-inserting every round event and round-player row, one INSERT per row;
+  - merging a ~3.4 MB `match_sources.metadata` value.
+- That exceeds the 8 s `statement_timeout` of the API roles (`authenticator`/`authenticated`). The same path blocks the identity re-run and every second uploader of a demo.
+- Fix (migration `20261021120000`, md5-guarded fragment replacement `d313725d → 3420e6cc`, properties asserted unchanged):
+  - new `match_sources.rounds_digest`;
+  - an identical re-observation keeps rows and carries only the identity links into `round_players`;
+  - pre-D20 rows count as identical only with the same parser revision, version and row counts;
+  - unchanged metadata keeps its stored datum;
+  - changed observations are still fully replaced, now with set-based INSERTs.
+- Inverse rollback: `docs/reference/d20/rollback.sql`.
+- Tests: 5 disposable-DB scenarios, including a production-sized payload under `statement_timeout = 8s`, plus the existing 17. **Not applied to production; needs owner approval.**
+
+### D19 — multi-user identity on one shared demo (PR #172)
+- Proven on the disposable DB with 3 users and the same SHA (`multi_user_identity_probe.py`). On `main`: FAIL 4/9.
+  - Only the last uploader could read the shared Canonical match: `owns_canonical_match` follows `matches.player_id` or a linked participant.
+  - Only the last uploader could declare: `record_demo_identity_event` resolved the match through `match_sources.upload_id`, which is overwritten by every later upload.
+- Fix (migration `20261021090000`, fragment replacement of the two functions; not applied):
+  - a user whose own job resolved to the match can read the shared match facts;
+  - identity resolves the match from the job, then from its own content (never a quarantined match), then from the source row.
+  - Personal rows (decisions, metrics, features) stay player-scoped.
+- After a probe-fixture fix (the "other match" reused the same roster): PASS 9/9 on `252cfe5d`. **Not applied to production; needs owner approval.**
+
+### Phase D — identity UX (PR #174)
+- The free-text nickname is removed: the server accepts a participant key only, through a strict schema.
+- Nick-history recognition: when exactly one detected player has a nickname the user already confirmed, the dialog asks "O jogador X é você?" with "Sim, sou eu" / "Não, mostrar todos os jogadores". The history is read for the caller's own player only.
+- No migration.
+
+### Open
+- D18: the identity requeue should open a new attempt instead of replaying the finished execution (separate fix).
+- Phase F: deriving personal metrics from persisted canonical rows instead of a full re-parse (`computeMetrics` runs on the in-memory parse today). Not started. D20 removes the blocking cost; the full re-parse remains.
+
+## 2026-10-21 08:0x–08:2xZ — D18, D19, D20 and Phase D released (owner-approved)
+
+| Change | PR / merge | CI on the merged head | Production apply | Read-back |
+|---|---|---|---|---|
+| D19 multi-user identity | #172 → `f30a674a` | 7/7 green on `252cfe5d`; MULTI_USER_IDENTITY 9/9 | guarded DO block; `schema_migrations` 20261021090000 | `owns_canonical_match` `0ac21d3d`, `record_demo_identity_event` `4ccf85be` |
+| D20 identical re-observation | #173 → `ec71c7a0` | 7/7 green on `afb32564`; CANONICAL_PERSISTENCE_IDEMPOTENCY 22/22 | ADD COLUMN `rounds_digest` + guarded DO block; 20261021120000 | `persist_canonical_observation` `3420e6cc`; column present |
+| Phase D identity UX | #174 → `840fff0a` | 7/7 green on `65125232` | app only | Lovable synced `dbdcb17e`, published (deployment `b2cfb763`) |
+| D18 identity re-run dispatch | #175 → `dbdcb17e` | 7/7 green on `ab7185ed` (main merged in); D18 5/5, D19 9/9, D20 22/22 together | guarded DO block; 20261021130000 | `requeue_demo_job_after_attachment` `48cb62f6` |
+
+- No data, quarantine, provenance, or Canonical rows were changed.
+- Every migration is md5-guarded both ways and has an inverse rollback (`docs/reference/d18`, `docs/reference/d20`).
+- Pending (NOT_PROVEN until observed): the owner re-selects the player on the Mirage job (`921b55cf`, currently `failed`). Expected: a new dispatch (`dispatch_attempt` 4), an identical re-observation (`unchanged_reobservation`), personal metrics, and the dashboard. Second-account isolation is to be re-checked afterwards.
+
+## 2026-10-21 11:0x–17:xxZ — failed-demo recovery shipped, Mirage personal metrics proven, D21/D22 found
+
+### Failed analysed demo had no recovery action (PR #176, merged `b33f989a`, published `f669dcaa`)
+- Root cause: `src/components/pipeline/DemoIngestPanel.tsx` rendered `DemoPlayerIdentity` only when `job.status === "processed"`. Separately, the plain retry needs `retryCount < maxRetries`. The Mirage job was `failed`, with retry_count 3 > max 2, so the card had no action.
+- Fix: `identityActionFor()` (`src/lib/pipeline/identityRecovery.ts`), shared by the card and `declareDemoPlayer`; "Selecionar jogador e tentar novamente"; an expired demo file gets explicit re-upload guidance. CI 7/7 green on `8cf158bb`.
+- The owner confirmed the button appears and the selection started processing (2026-10-21 13:58 local).
+
+### Mirage end to end after the selection (production, read-only)
+| Check | Evidence | Status |
+|---|---|---|
+| D18 new dispatch | declaration 16:47:47Z; pgmq msg 55 `attempt` 4, `read_ct` 1; new execution `8a4ab823` (ledger INTENT→STARTED→FINISHED `PARSE_SUCCEEDED`, build `a5d8c425`); no replay | PASS |
+| Dispatch 4 completion | failed; msg 55 archived and msg 56 (`attempt` 5) sent at 16:51:30Z; cause not recorded anywhere (→ D21) | FAIL (cause unknown) |
+| Dispatch 5 | execution `2382b8d2` `PARSE_SUCCEEDED` 16:53:30Z; job `processed`/`done` 16:54:04Z, `duration_ms` 33,616; retry_count 5 / max 6 | PASS |
+| D20 reuse | 1 match for the content; 4,264 events, all `created_at` 01:52:30Z (not rewritten); `observation_count` 2; `rounds_digest` set | PASS |
+| Identity | `identity_status resolved`, `self_declared_player`, `manual_selected`; 1 decision (no duplicate); 1 participant linked | PASS |
+| Personal metrics | 1 `match_metrics` and 1 `match_features` row; kills 13 = 13 kill events, deaths 13 = 13, assists 8 = 8, HS 7/13 = 53.8 %, ADR 91.4, rounds_played 22 | PASS |
+| Isolation (D19 live) | as `authenticated`, rolled back: owner sees match 1, participants 10, events 4,264, metrics 1, features 1, decisions 1, nick history 1; second account (`2e895267`) sees 0 of each | PASS |
+| Opening duels / trades / KAST | NULL: every event has a tick but `time_seconds` NULL and the stored tickrate is NULL (→ D22) | FAIL (D22) |
+| Dashboard rendering | requires the owner's session | NOT_PROVEN |
+
+### D21 — a retried dispatch failure is lost (PR #178)
+`fail_demo_parse_message` stores the error only on `demo_jobs`; the next success clears it. New `demo_job_dispatch_failures` (owner-scoped RLS, no client writes), written before the job row changes. md5 `b6ae590f → 0eb6687c`. Probe: 5 scenarios.
+
+### D22 — no event has a time, so opening duels, trades and flash assists are NULL (PR #177, draft, release-gated)
+- RAW physical summary of the Mirage artifact: `player_death` fields carry no `game_time`/`total_rounds_played` (the event stream fell back to plain rows); the header has no playback tickrate; the `ticks` section (4,096 rows) carries `tick` + `game_time`.
+- Also a latent bug: the native time index was keyed by `total_rounds_played` (completed rounds), which never equals the contract round.
+- Fix in the parser: event game time from the demo's own proven tick→game_time relation (exactly linear over every sampled tick, else unknown); `header.tickrate` stays NULL. Parser suite 440 passed.
+- Needs a worker release (R5.8.16 repin) and the owner updating the three app secrets.
