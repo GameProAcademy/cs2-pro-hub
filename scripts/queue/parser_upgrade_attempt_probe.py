@@ -120,6 +120,33 @@ def main() -> int:
         assert isinstance(result, dict) and result["reservation_status"] == "CREATED", result
         assert result["replacement_reason"] == "parser_upgrade", result
 
+    # D24b (production, Mirage): a newer reservation that never got a job and was reconciled as
+    # abandoned (failed) must not block the parser-upgrade attempt.
+    abandoned = finished("failed", OLD)
+    ghost = str(uuid.uuid4())
+    sql("insert into public.uploads(id,user_id,type,file_name,storage_path,file_size,demo_sha256,status,attempt_number,"
+        "supersedes_job_id,replacement_reason,error_code) "
+        f"values ('{ghost}','{abandoned['user']}','demo','probe.dem','{abandoned['user']}/{ghost}.dem',520,"
+        f"'{abandoned['sha']}','failed',2,'{abandoned['job']}','failed','UPLOAD_RESERVATION_ABANDONED')")
+
+    @scenario("an_abandoned_newer_reservation_does_not_block_and_is_numbered_past")
+    def _abandoned():
+        result = reserve(abandoned)
+        assert isinstance(result, dict) and result["reservation_status"] == "CREATED", result
+        assert result["attempt_number"] == 3 and result["supersedes_job_id"] == abandoned["job"], result
+        ghost_row = js(f"select jsonb_build_object('status', status, 'attempt', attempt_number) from public.uploads where id='{ghost}'")
+        assert ghost_row == {"status": "failed", "attempt": 2}, ghost_row
+
+    live = finished("failed", OLD)
+    other = str(uuid.uuid4())
+    sql("insert into public.uploads(id,user_id,type,file_name,storage_path,file_size,demo_sha256,status,attempt_number) "
+        f"values ('{other}','{live['user']}','demo','probe.dem','{live['user']}/{other}.dem',520,'{live['sha']}','processed',2)")
+
+    @scenario("a_newer_upload_in_any_other_state_still_conflicts")
+    def _conflict():
+        result = reserve(live)
+        assert isinstance(result, str) and "PARSER_UPGRADE_ATTEMPT_CONFLICT" in result, result
+
     never_parsed = finished("failed", None)
 
     @scenario("a_job_without_parser_or_raw_evidence_is_not_applicable")
