@@ -18,15 +18,16 @@
   },
   "recorder_target_md5": "d933b9e73bd850fff668a4d27a7a494e",
   "observed": {
-    "observed_at": "2026-10-27T04:20:00Z",
+    "observed_at": "2026-10-27T04:25:00Z",
     "railway_deployment": {
       "id": "13873137-13fe-4d09-9038-0fc680f1e91c",
-      "status": "BUILDING",
+      "status": "SUCCESS",
       "commitHash": "bc421879aced9fe0eaf5e4b900ff2ce6da0752e8",
       "branch": "main",
       "reason": "deploy",
       "created_at": "2026-10-27T04:16:10.002Z",
-      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #192 (merge bc421879); PARSER_REVISION/PARSER_BUILD_REVISION set to git:bc421879... with skipped deploys; ONE deployment of that exact commit triggered through the Railway agent (deployment 13873137)"
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #192 (merge bc421879); PARSER_REVISION/PARSER_BUILD_REVISION set to git:bc421879... with skipped deploys; ONE deployment of that exact commit triggered through the Railway agent (deployment 13873137)",
+      "finished_at": "2026-10-27T04:19:25.971Z"
     },
     "railway_variables_changed": {
       "PARSER_REVISION": "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8",
