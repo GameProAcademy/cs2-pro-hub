@@ -1,0 +1,71 @@
+{
+  "deployment_id": "7179fcce-cb04-4c35-9d4b-eb025166b4fd",
+  "branch": "main",
+  "semantic_commit": "47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+  "build_commit": "47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+  "deployment_commit": "47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "20ff3dfb98505a8fcd25c38f2aff12eab076684e",
+    "adapter.py": "34ce0f196a0ff86f5452c0e8b1f078f88f9b0c71",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "bb393072eb936fb983697240c874e17b",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "7f78aec6241efb8cf188156ddeeffbcd",
+  "observed": {
+    "observed_at": "2026-10-27T09:50:00Z",
+    "railway_deployment": {
+      "id": "7179fcce-cb04-4c35-9d4b-eb025166b4fd",
+      "status": "SUCCESS",
+      "commitHash": "47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-27T09:44:06.870Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #196 (merge 47ed6454); PARSER_REVISION/PARSER_BUILD_REVISION set to git:47ed6454... with skipped deploys; ONE deployment of that exact commit triggered through the Railway agent (deployment 7179fcce); queue idle (0 pending/processing jobs) before the deploy",
+      "finished_at": "2026-10-27T09:44:42.870Z"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+      "PARSER_BUILD_REVISION": "git:47ed645407c97bb5cb9554bc5777dc21ff7b11ef",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: the gate fetches both /version hosts and refuses any other identity",
+    "before": {
+      "deployment_id": "13873137-13fe-4d09-9038-0fc680f1e91c",
+      "semantic_revision": "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8",
+      "build_revision": "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8"
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-27T09:48Z",
+      "record_parser_runtime_attestation": "d933b9e73bd850fff668a4d27a7a494e",
+      "assert_verified_parser_provenance": "090e73dc4f937b514fcbc54cdd462457",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_18/spec.json",
+  "pin_role": "R5.8.19: re-pin semantic/build commit, Railway deployment and the parser.py critical blob after the D30 parser release (PR #196, controlled deployment of its merge commit); workflow blob and other critical hashes unchanged",
+  "r5_8_18_database_target_md5": {
+    "assert_verified_parser_provenance": "090e73dc4f937b514fcbc54cdd462457",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_18_recorder_target_md5": "d933b9e73bd850fff668a4d27a7a494e"
+}

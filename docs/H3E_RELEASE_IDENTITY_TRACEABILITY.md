@@ -827,3 +827,19 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - workflow guard unchanged.
   - The start state was read back from production and matches the exact R5.8.17 targets. The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.
 - Correction (2026-10-27, D31): the defect line above lists "every round's `player_side` NULL" as a symptom. That column (`match_rounds.player_side`) is a legacy pre-canonical column that has not been written by design since 2026-09-08, so it was never evidence of D29. The D29 symptom was missing per-round sides in `round_players.side`. See `docs/MATCH_ROUNDS_LEGACY_PLAYER_COLUMNS.md`.
+
+## 2026-10-27 — R5.8.19: D30 parser release (controlled)
+
+- Defect (D30): on Dust2 (`747c7a6b`, sha `1c271096…`) a knife round was persisted as round 1 (17 rounds instead of 16; the halftime side switch landed before round 14).
+  - The game-state boundary reader counted every +1 of `total_rounds_played` as a round end.
+  - It ignored the counter going back to 0 (tick 3145) and `begin_new_match` (tick 3499).
+- Fix (PR #196, `parser.py` only): rounds that ended before a game round-counter reset are voided, provided the match continues after the reset.
+  - The rule uses no round number, kill count or weapon.
+  - RAW event tables are unchanged, and the voided rounds are recorded in a warning carried by the RAW manifest.
+- Release: merge `47ed6454` under the standing watch-pattern freeze; `PARSER_REVISION`/`PARSER_BUILD_REVISION` set with skipped deploys; ONE controlled deployment `7179fcce` (SUCCESS 09:44:42Z); queue idle before the deploy.
+- Pins: parser.py blob `ff3ee9f6…` → `20ff3dfb…`; the other critical blobs and the workflow blob are unchanged.
+- R5.8.19 migration (`supabase/migrations/20261027100000_r5_8_19_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_19/`):
+  - recorder `d933b9e7…` → `7f78aec6…`;
+  - assertion `090e73dc…` → `bb393072…`;
+  - workflow guard unchanged.
+  - The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.

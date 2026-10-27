@@ -115,14 +115,15 @@ def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.17 is historical since R5.8.18 (D29): no active pin may still name it."""
     r5818 = json.loads((ROOT / "docs/reference/r5_8_18/spec.json").read_text(encoding="utf-8"))
     assert r5818["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
+    r5819 = json.loads((ROOT / "docs/reference/r5_8_19/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert r5818["deployment_id"] in text, path
+        assert r5819["deployment_id"] in text, path
         assert NEW_DEPLOYMENT not in text and OLD_DEPLOYMENT not in text, path
         assert NEW_COMMIT not in text and OLD_COMMIT not in text, path
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
-    assert f'DEPLOYED_WORKER_REVISION = "git:{r5818["semantic_commit"]}"' in adapter
+    assert f'DEPLOYED_WORKER_REVISION = "git:{r5819["semantic_commit"]}"' in adapter
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
         assert NEW_PARSER not in text and OLD_PARSER not in text, path

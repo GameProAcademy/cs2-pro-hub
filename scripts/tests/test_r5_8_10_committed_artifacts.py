@@ -69,7 +69,7 @@ def test_r5_8_10_historical_spec_remains_frozen_and_is_not_the_active_pin_source
     assert SPEC["build_commit"] == "60099ed3eaf959d888762bf55043255a63a6a766"
     assert SPEC["critical_hashes"]["worker.py"] == "ecaac3968d68e1ed8fc03f8dfea42c223869f473"
     active = json.loads((ROOT / "docs/reference/r5_8_11/spec.json").read_text())
-    head = json.loads((ROOT / "docs/reference/r5_8_18/spec.json").read_text())
+    head = json.loads((ROOT / "docs/reference/r5_8_19/spec.json").read_text())
     assert DEPLOYMENT == head["deployment_id"] != active["deployment_id"]
     assert BUILD_COMMIT == head["build_commit"] != active["build_commit"]
     assert active["release_status"] == "CANDIDATE_ONLY_PENDING_RUNTIME_VERSION_OBSERVATION"
