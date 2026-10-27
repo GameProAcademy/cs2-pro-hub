@@ -51,7 +51,9 @@ describe("legacy player-scoped match_rounds columns", () => {
         readFileSync(join(dir, name), "utf8").includes("INSERT INTO public.match_rounds"),
       );
     expect(writers.length).toBeGreaterThan(0);
-    const latest = readFileSync(join(dir, writers[writers.length - 1]), "utf8");
+    const latestName = writers.at(-1);
+    if (!latestName) throw new Error("no migration writes public.match_rounds");
+    const latest = readFileSync(join(dir, latestName), "utf8");
     const start = latest.lastIndexOf("INSERT INTO public.match_rounds");
     const columns = latest.slice(start, latest.indexOf(")", start));
     for (const column of LEGACY) expect(columns).not.toContain(column);
