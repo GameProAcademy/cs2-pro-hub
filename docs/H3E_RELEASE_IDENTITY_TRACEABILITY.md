@@ -809,3 +809,20 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
 - `PARSER_REVISION`/`PARSER_BUILD_REVISION` set to `git:2aa2a497…` (skipped deploys), then ONE deployment of that exact commit through the Railway agent: `02e64c36-75de-4d88-aa15-e3c661879d64` (SUCCESS 07:45:24Z).
 - Critical blobs at `2aa2a497`: only `parser.py` changed (`aec5f33b…` → `d55e7929…`).
 - R5.8.17 (`supabase/migrations/20261023090000_r5_8_17_repin_runtime_release.sql`, spec and rollback in `docs/reference/r5_8_17/`): recorder `35198be8…` → `4b097303…`, assertion `0f1d4e41…` → `eb5c01dd…`, workflow guard unchanged. Start state read back from production (exact R5.8.16 targets). Targets computed read-only from production `prosrc` and independently by the repository generator (identical).
+
+## 2026-10-27 — R5.8.18: D29 parser release (controlled)
+
+- Defect: in both real matches (Dust2 `747c7a6b`, Mirage `95186f3f`) every participant's team and every round's `player_side` were NULL.
+  - The general tick sample (4096 rows, thinned across every event tick) kept only 1–2 players at each round start tick.
+  - Trades, KAST and clutches were therefore unknown.
+- Fix (PR #192, `parser.py` + app metrics): one bounded `parse_ticks(['team_num'])` read at the round start ticks only. The app compares teams per round.
+- Release steps:
+  - The watch pattern stayed frozen (`/services/cs2-demo-parser/.release-freeze-r5-8-17`). PR #192 merged as `bc421879aced9fe0eaf5e4b900ff2ce6da0752e8`.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` were set to `git:bc421879…` with skipped deploys.
+  - ONE deployment of that exact commit was made through the Railway agent: `13873137-13fe-4d09-9038-0fc680f1e91c`.
+- Critical blobs at `bc421879`: only `parser.py` changed (`d55e7929…` → `ff3ee9f6…`).
+- R5.8.18 migration (`supabase/migrations/20261027090000_r5_8_18_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_18/`):
+  - recorder `4b097303…` → `d933b9e7…`;
+  - assertion `eb5c01dd…` → `090e73dc…`;
+  - workflow guard unchanged.
+  - The start state was read back from production and matches the exact R5.8.17 targets. The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.

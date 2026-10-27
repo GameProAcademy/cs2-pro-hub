@@ -133,9 +133,9 @@ describe("GATE 1E.1 — official worker protocol codes", () => {
 
 describe("GATE 1E.1 — revision lock", () => {
   it("pins semantic and build identities independently", () => {
-    // Separate pins; in R5.8.17 the released commit is both the semantic and the build revision.
-    expect(DEPLOYED_WORKER_REVISION).toBe("git:2aa2a497421367a1ba205633eb23f5e69f95cd74");
-    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:2aa2a497421367a1ba205633eb23f5e69f95cd74");
+    // Separate pins; in R5.8.18 the released commit is both the semantic and the build revision.
+    expect(DEPLOYED_WORKER_REVISION).toBe("git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8");
+    expect(DEPLOYED_WORKER_BUILD_REVISION).toBe("git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8");
   });
 
   it("accepts the exact expected build", () => {

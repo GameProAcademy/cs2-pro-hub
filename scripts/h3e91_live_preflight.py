@@ -24,10 +24,10 @@ ENDPOINT = "https://gamepro.network/api/public/parser-attestation"
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
 ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
-DEPLOYMENT = "02e64c36-75de-4d88-aa15-e3c661879d64"
+DEPLOYMENT = "13873137-13fe-4d09-9038-0fc680f1e91c"
 BRANCH = "main"
-SOURCE_COMMIT = "2aa2a497421367a1ba205633eb23f5e69f95cd74"
-PARSER_REVISION = "git:2aa2a497421367a1ba205633eb23f5e69f95cd74"
+SOURCE_COMMIT = "bc421879aced9fe0eaf5e4b900ff2ce6da0752e8"
+PARSER_REVISION = "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8"
 RUNTIME_DOMAINS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 
 
