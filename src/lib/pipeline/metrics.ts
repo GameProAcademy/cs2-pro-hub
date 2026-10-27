@@ -124,6 +124,29 @@ export function sideInRound(
   return round?.sides[eventPlayerKey] ?? null;
 }
 
+/**
+ * D29 — are two players on the same team IN THIS ROUND?
+ *
+ * Evidence, in order: both players' observed side in the round (teammates share the side
+ * of the round; sides swap at halftime, so another round's side is never used); else both
+ * players' match-level team. When neither pair of facts is known the answer is null and
+ * every metric that needs it is NULL, never a guessed 0.
+ */
+export function sameTeamInRound(
+  match: CanonicalMatch,
+  a: string,
+  b: string,
+  roundNumber: number,
+): boolean | null {
+  const sideA = sideInRound(match, a, roundNumber);
+  const sideB = sideInRound(match, b, roundNumber);
+  if (sideA != null && sideB != null) return sideA === sideB;
+  const teamA = teamOf(match, a);
+  const teamB = teamOf(match, b);
+  if (teamA != null && teamB != null) return teamA === teamB;
+  return null;
+}
+
 /** True when the resolved player is provably present in the round. */
 export function participatedInRound(
   match: CanonicalMatch,
@@ -323,30 +346,33 @@ export function openingDuels(kills: KillRecord[]): {
  * the avenger belongs to the victim's team and is not the victim itself, and the
  * original death is not a team kill or a suicide.
  */
-function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch): boolean {
+function wasTraded(kills: KillRecord[], death: KillRecord, match: CanonicalMatch): boolean | null {
   if (!death.attacker || !death.victim) return false;
   if (death.attacker === death.victim) return false; // suicide
   if (death.time == null) return false; // no timing => no trade evidence
   const deathTime = death.time;
-  const victimTeam = teamOf(match, death.victim);
-  const killerTeam = teamOf(match, death.attacker);
-  if (victimTeam != null && killerTeam != null && victimTeam === killerTeam) return false;
+  const killerIsTeammate = sameTeamInRound(match, death.victim, death.attacker, death.round);
+  if (killerIsTeammate == null) return null;
+  if (killerIsTeammate) return false; // team kill
 
-  return kills.some((k) => {
-    if (!k.attacker || !k.victim || k.time == null) return false;
-    if (k.round !== death.round) return false;
-    if (k.victim !== death.attacker) return false;
-    if (k.attacker === k.victim) return false;
-    if (k.attacker === death.victim) return false;
-    if (k.time <= deathTime) return false;
-    if (k.time - deathTime > TRADE_WINDOW_SECONDS) return false;
-    const avengerTeam = teamOf(match, k.attacker);
-    // The avenger must be a teammate of the original victim, and must not kill
-    // one of its own (team kills never count as trades).
-    if (victimTeam == null || avengerTeam == null) return false;
-    if (avengerTeam !== victimTeam) return false;
-    return teamOf(match, k.victim) !== avengerTeam;
-  });
+  let unknown = false;
+  for (const k of kills) {
+    if (!k.attacker || !k.victim || k.time == null) continue;
+    if (k.round !== death.round) continue;
+    if (k.victim !== death.attacker) continue;
+    if (k.attacker === k.victim) continue;
+    if (k.attacker === death.victim) continue;
+    if (k.time <= deathTime) continue;
+    if (k.time - deathTime > TRADE_WINDOW_SECONDS) continue;
+    // The avenger must be a teammate of the original victim (team kills never count).
+    const avengerIsTeammate = sameTeamInRound(match, death.victim, k.attacker, death.round);
+    if (avengerIsTeammate == null) {
+      unknown = true;
+      continue;
+    }
+    if (avengerIsTeammate) return true;
+  }
+  return unknown ? null : false;
 }
 
 /**
@@ -369,11 +395,10 @@ function clutchStats(
 ): { attempts: number | null; wins: number | null } {
   if (kills.length === 0) return { attempts: null, wins: null };
 
+  // D23/D29: teammates and enemies are told apart by team identity IN THE ROUND (observed
+  // sides, else match-level team). One participated round with an unknown pairing makes
+  // the result unknown: a partial count would read as a measured number.
   const team = teamOf(match, eventPlayerKey);
-  // D23: teammates and enemies are told apart by team identity. Without it (admission
-  // limitation L04, team_assignment_not_two_teams) no round can be evaluated, and the
-  // honest answer is "unknown", not "0 attempts, 0 wins".
-  if (team == null) return { attempts: null, wins: null };
   let attempts = 0;
   let wins = 0;
   let evaluatedRounds = 0;
@@ -386,15 +411,23 @@ function clutchStats(
     const participants = match.players.flatMap((player) => {
       const eventPlayerKey = player.steamId ?? player.participantKey;
       return eventPlayerKey && participatedInRound(match, eventPlayerKey, round.roundNumber)
-        ? [{ player, eventPlayerKey }]
+        ? [eventPlayerKey]
         : [];
     });
-    const teammates = participants
-      .filter(({ player }) => player.team === team)
-      .map(({ eventPlayerKey }) => eventPlayerKey);
-    const enemies = participants
-      .filter(({ player }) => player.team != null && team != null && player.team !== team)
-      .map(({ eventPlayerKey }) => eventPlayerKey);
+    const teammates: string[] = [];
+    const enemies: string[] = [];
+    let unknownPairing = false;
+    for (const other of participants) {
+      if (other === eventPlayerKey) {
+        teammates.push(other);
+        continue;
+      }
+      const same = sameTeamInRound(match, eventPlayerKey, other, round.roundNumber);
+      if (same == null) unknownPairing = true;
+      else if (same) teammates.push(other);
+      else enemies.push(other);
+    }
+    if (unknownPairing) return { attempts: null, wins: null };
     if (!teammates.includes(eventPlayerKey) || enemies.length === 0) continue;
     evaluatedRounds += 1;
 
@@ -548,47 +581,64 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // who, within the window and in the same round, had just killed one of the
   // player's teammates. Team kills, suicides and events without Steam IDs are
   // never counted.
-  const ownTeam = teamOf(match, eventPlayerKey);
   let tradeKills: number | null = null;
   let tradeDeaths: number | null = null;
   let untradedDeaths: number | null = null;
   let earlyDeaths: number | null = null;
 
-  // D27 (production, Dust2 job 83a539c1): with the player's team unknown, every trade
-  // check failed closed and the loop still published 0 trade kills / 0 traded deaths,
-  // while the events held 1 trade kill and 2 traded deaths. Without team identity a
-  // trade is unobservable, so the answer is NULL - never 0.
+  // D27 (production, Dust2 job 83a539c1): with team identity unknown the counters used
+  // to publish 0. D29: team identity is now per round (observed sides, else match-level
+  // team); any trade that depends on an unknown pairing makes the counter NULL - never 0.
   if (availability.timing) {
     earlyDeaths = playerDeaths.filter(
       (d) => d.time != null && d.time <= EARLY_DEATH_SECONDS,
     ).length;
-  }
-  if (availability.timing && ownTeam != null) {
+
     let tradeKillCount = 0;
+    let tradeKillsUnknown = false;
     for (const kill of playerKills) {
       if (!kill.attacker || !kill.victim || kill.time == null) continue;
       if (kill.attacker === kill.victim) continue;
       const killTime = kill.time;
-      const victimTeam = teamOf(match, kill.victim);
-      if (ownTeam == null || victimTeam == null || victimTeam === ownTeam) continue;
-      const traded = kills.some((k) => {
-        if (!k.attacker || !k.victim || k.time == null) return false;
-        if (k.round !== kill.round) return false;
-        if (k.attacker !== kill.victim) return false;
-        if (k.attacker === k.victim) return false;
-        if (k.time >= killTime) return false;
-        if (killTime - k.time > TRADE_WINDOW_SECONDS) return false;
+      const victimIsTeammate = sameTeamInRound(match, eventPlayerKey, kill.victim, kill.round);
+      if (victimIsTeammate == null) {
+        tradeKillsUnknown = true;
+        continue;
+      }
+      if (victimIsTeammate) continue; // team kill
+      let traded = false;
+      for (const k of kills) {
+        if (!k.attacker || !k.victim || k.time == null) continue;
+        if (k.round !== kill.round) continue;
+        if (k.attacker !== kill.victim) continue;
+        if (k.attacker === k.victim) continue;
+        if (k.victim === eventPlayerKey) continue;
+        if (k.time >= killTime) continue;
+        if (killTime - k.time > TRADE_WINDOW_SECONDS) continue;
         // The player killed first must really belong to the player's team.
-        return teamOf(match, k.victim) === ownTeam;
-      });
+        const firstVictimIsTeammate = sameTeamInRound(match, eventPlayerKey, k.victim, kill.round);
+        if (firstVictimIsTeammate == null) {
+          tradeKillsUnknown = true;
+          continue;
+        }
+        if (firstVictimIsTeammate) {
+          traded = true;
+          break;
+        }
+      }
       if (traded) tradeKillCount += 1;
     }
-    tradeKills = tradeKillCount;
+    tradeKills = tradeKillsUnknown ? null : tradeKillCount;
 
     let tradedDeathCount = 0;
-    for (const death of playerDeaths) if (wasTraded(kills, death, match)) tradedDeathCount += 1;
-    tradeDeaths = tradedDeathCount;
-    untradedDeaths = playerDeaths.length - tradedDeathCount;
+    let tradeDeathsUnknown = false;
+    for (const death of playerDeaths) {
+      const traded = wasTraded(kills, death, match);
+      if (traded == null) tradeDeathsUnknown = true;
+      else if (traded) tradedDeathCount += 1;
+    }
+    tradeDeaths = tradeDeathsUnknown ? null : tradedDeathCount;
+    untradedDeaths = tradeDeathsUnknown ? null : playerDeaths.length - tradedDeathCount;
   }
 
   // Multi-kills
@@ -625,7 +675,7 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     // survival unless there is positive evidence for it.
     const survived = playerSurvivedRound(match, eventPlayerKey, roundNumber) === true;
     const traded = death ? wasTraded(kills, death, match) : false;
-    if (!got && !assisted && !survived && death && ownTeam == null) kastTradeUnknown = true;
+    if (!got && !assisted && !survived && death && traded == null) kastTradeUnknown = true;
     if (got || assisted || survived || traded) kastRounds += 1;
   }
   // KAST is a whole-match rate: it needs kill evidence, timing AND complete

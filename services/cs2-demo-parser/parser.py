@@ -185,6 +185,49 @@ def _parse_ticks(
         return [], exc
 
 
+def _parse_round_sides(
+    demo: Any, start_ticks: list[int]
+) -> tuple[dict[int, dict[str, str]], BaseException | None]:
+    """D29: each player's side at each round's start tick, read directly from the entity.
+
+    The general tick sample is capped (TICK_SAMPLE_LIMIT) and thinned across ALL event
+    ticks, so a round's start tick usually kept one or two players: per-round sides were
+    missing and trades, KAST and clutches could not be evaluated (production Dust2/Mirage).
+    This is ONE bounded read of the single `team_num` property at the round start ticks
+    only. A player observed with two different sides at the same tick is dropped (no
+    guess); spectators/unassigned (team_num not 2/3) are not sides.
+    """
+    method = getattr(demo, "parse_ticks", None)
+    if not callable(method):
+        return {}, AttributeError("parse_ticks is unavailable")
+    ticks = sorted({tick for tick in start_ticks if isinstance(tick, int) and not isinstance(tick, bool)})
+    if not ticks:
+        return {}, ValueError("no round start ticks")
+    try:
+        rows = _records(method(["team_num"], ticks=ticks))
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
+        return {}, exc
+    wanted = set(ticks)
+    sides: dict[int, dict[str, str]] = {}
+    conflicts: set[tuple[int, str]] = set()
+    for row in rows:
+        tick = row.get("tick")
+        if not isinstance(tick, int) or isinstance(tick, bool) or tick not in wanted:
+            continue
+        steam_id = _steam_id(row)
+        side = _side_from_tick(row)
+        if steam_id is None or side is None:
+            continue
+        previous = sides.setdefault(tick, {}).get(steam_id)
+        if previous is not None and previous != side:
+            conflicts.add((tick, steam_id))
+        sides[tick][steam_id] = side
+    for tick, steam_id in conflicts:
+        sides[tick].pop(steam_id, None)
+    return {tick: by_player for tick, by_player in sides.items() if by_player}, None
+
+
 def _discover_updated_fields(demo: Any) -> tuple[list[str], BaseException | None]:
     """Use the versioned parser discovery API without pretending it is static metadata."""
     method = getattr(demo, "list_updated_fields", None)
@@ -569,6 +612,18 @@ def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]
             balance = _finite_number(row.get("balance"))
             if balance is not None:
                 money_end[steam_id] = balance
+        # D29: the dedicated round-start read is the primary source; the thinned general
+        # sample may add a player it missed, but a disagreement between the two drops
+        # that player for the round (no guess).
+        observed = (raw.get("round_sides") or {}).get(start_tick) if isinstance(start_tick, int) else None
+        if isinstance(observed, dict):
+            for steam_id, side in observed.items():
+                sampled = sides.get(steam_id)
+                if sampled is not None and sampled != side:
+                    sides.pop(steam_id, None)
+                    raw.setdefault("round_side_conflicts", []).append((start_tick, steam_id))
+                    continue
+                sides[steam_id] = side
         if sides:
             round_row["sides"] = dict(sorted(sides.items()))
         if money_start:
@@ -966,11 +1021,20 @@ def parse_demo_file(path: str) -> dict[str, Any]:
         raise RuntimeError("demoparser2 is not available in this build") from exc
 
     try:
-        raw = extract_raw_material(DemoParser(path))
+        demo = DemoParser(path)
+        raw = extract_raw_material(demo)
     except BaseException as exc:  # noqa: BLE001 - classified below
         raise classify_parser_exception(exc) from exc
 
     output = _postprocess_contract(raw, build_raw_parser_output(raw))
+    try:
+        raw["round_sides"], raw["round_sides_error"] = _parse_round_sides(
+            demo, [r.get("start_tick") for r in output.get("rounds") or []]
+        )
+    except BaseException as exc:  # noqa: BLE001 - classified below
+        raise classify_parser_exception(exc) from exc
+    if raw["round_sides_error"] is not None:
+        output.setdefault("warnings", []).append("round_sides_unavailable")
     enrich_rounds_from_tick_evidence(raw, output)
     if any(
         round_row.get("money_start")

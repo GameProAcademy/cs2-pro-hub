@@ -16,6 +16,9 @@ function withoutTeams(): RawParserOutput {
   const raw = structuredClone(syntheticParserOutput) as RawParserOutput;
   for (const player of raw.players as unknown as Array<Record<string, unknown>>)
     delete player["team"];
+  // D29: per-round sides are team evidence too; "no team identity" means neither.
+  for (const round of raw.rounds as unknown as Array<Record<string, unknown>>)
+    delete round["sides"];
   return raw;
 }
 
