@@ -46,8 +46,29 @@ Status legend: PASS = proven by the cited evidence; FAIL = disproven; NOT PROVEN
 | Dust2 real extraction: parse, RAW, persistence, no duplicate | PASS | job `83a539c1`: parser `git:2aa2a497…`; RAW ready/approved (83 chunks, 2 128 990 rows); 1 match for the sha; 3 446/3 446 events timed |
 | Mirage real extraction: parse, RAW, persistence, no duplicate | PASS | job `221f7e42`: parser `git:2aa2a497…`; RAW ready/approved (100 chunks, 2 582 139 rows); same match `95186f3f`; 4 264/4 264 events timed |
 | Opening duels | PASS (Dust2, Mirage) | recomputed from persisted kills = stored metrics. Dust2: first kills 2 / first deaths 0. Mirage (attempt 8, re-run after the player selection 2026-10-27 03:32Z): first kills 2 / first deaths 1 (3 attempts); kills 13, deaths 13, assists 8, HS 7/13 = 53.8% also equal |
-| Trades | NOT PROVEN | participants' team is NULL in every match (`player_side` NULL in every round); a real extraction needs per-round team evidence from the parser (new parser release) |
+| Trades | NOT PROVEN on R5.8.17; superseded by D29/R5.8.18 below | participants' team is NULL in every match (`player_side` NULL in every round); a real extraction needs per-round team evidence from the parser (new parser release) |
 | Activation gate | PASS | target `b2208ba3`, run 40443484096: every stage PASS (quality_gates, f553_post_completion, runtime, parser_lock, bridge_identity, transport, persistence, managed_snapshot, predem_matrix, R5.8.3, R5.8.4). On `5fa78807` F553 had refused a re-run (attempt 2) of a Quality Gates run whose first attempt failed its self-test step (cause not observable from the session) |
 | Canonical | NOT STARTED | requires separate explicit approval |
 
 Production incident: the Lovable Cloud database was unreachable from 2026-10-24 11:39Z to 2026-10-27 ~01:45Z (worker `queue poll failed type=HTTPStatusError` every ~5 s; `query_database` refused). Cause not observable from this session; no job or row was changed during the outage.
+
+## 2026-10-27 — D29 / R5.8.18: per-round team identity, trades, KAST and clutch (evidence)
+
+Root cause (D29): the general tick sample is capped (`TICK_SAMPLE_LIMIT` = 4096 rows) and thinned across every event tick, so a round's start tick kept 1–2 players and per-round sides were unknown. Fix: a dedicated `team_num` read at each round's start tick (`_parse_round_sides`, conflicts and spectators dropped, `round_sides_unavailable` warning on error); `metrics.ts` pairs players per round (`sameTeamInRound`) and keeps trades/KAST/clutch NULL on any unknown pairing.
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| D29 parser + metrics (PR #192, merge `bc421879`) | PASS | `tests/test_round_sides.py` (5), `teamIdentityPerRound.test.ts` (3); D23/D27 tests updated to remove both `sides` and `team` |
+| R5.8.18 runtime repin (PR #193, main `096841c9`) | PASS | Railway deployment `13873137` (SUCCESS 04:19:25Z, commit `bc421879`, parser.py blob `ff3ee9f6`); recorder `d933b9e7`; VERIFIED attestation run 40452174861 (04:53:15Z); owner-set secrets `DEMO_PARSER_EXPECTED_REVISION`/`_BUILD_REVISION` = `git:bc421879…`, `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `bc421879…` |
+| Activation gate | PASS | run 40453858841 (workflow_run) and run 40461802445 (dispatch, 06:33Z, after the attempt-9 authorization and both regressions), target `096841c9`, job conclusion success (gate fails closed on any non-PASS stage) |
+| Mirage attempt 9 authorization | PASS | owner decision in chat; `h3e_attempt_authorizations` row for job `8eaf0105` / upload `6947cb4e` / sha `1d98f8b6…` recorded 05:59:20Z; snapshot: 6/6 attempts ≥ 9 authorized, 0 rows not matching their job |
+| Dust2 attempt 6 (job `650b87de`): parse, RAW, persistence, no duplicate | PASS | parser `git:bc421879…`; RAW ready/approved; 1 match for the sha (`747c7a6b`, same match); 3 446/3 446 events timed; admission LIMITED (score/result excluded, as before) |
+| Mirage attempt 9 (job `8eaf0105`): parse, RAW, persistence, no duplicate | PASS | parser `git:bc421879…`; RAW ready/approved; 1 match for the sha (`95186f3f`, same match); 4 264/4 264 events timed; admission LIMITED |
+| Per-round sides | PASS | `round_players.side`: Dust2 17/17 rounds with exactly 5 CT + 5 T (170/170 rows); Mirage 23/23 (230/230); 0 kill events with an unknown side on either demo |
+| Trades | PASS (Dust2, Mirage) | independent SQL recompute from persisted kills + per-round sides (5 s window) = stored metrics. Dust2: trade kills 1, traded deaths 2. Mirage: trade kills 0, traded deaths 2 |
+| KAST | PASS (Dust2, Mirage) | recompute = stored. Dust2 94.1 (16/17 rounds). Mirage 69.6 (16/23) |
+| Clutch | PASS (Dust2, Mirage) | recompute = stored. Dust2 1 attempt / 0 wins (round 14, CT, died, T won). Mirage 2 / 1 (round 1 lost; round 14 survived, CT won) |
+| Lineage | PASS | managed snapshot 06:33Z: 2/2 eligible matches, 2/2 metrics, 2/2 features with verified lineage; 0 conflicting executions |
+| User isolation | PASS | as `authenticated` with a random `sub`: 0 matches, metrics, events, round rows, jobs, RAW artifacts for both demos; as the owner: 2 matches, 2 metrics rows, 7 710 events, 400 round rows, 2 jobs |
+| `match_rounds.player_side` | NOT PROVEN | still NULL on both demos after the player selection; metrics read sides from `round_players.side` (complete). Whether this column is expected to be filled is not established |
+| Canonical | NOT STARTED | requires separate explicit approval |
