@@ -52,8 +52,8 @@ export interface DemoParserAdapter {
  * promoted, but an absent env can NEVER silently unpin production back to
  * "any 0.42.x" worker.
  */
-export const DEPLOYED_WORKER_REVISION = "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8";
-export const DEPLOYED_WORKER_BUILD_REVISION = "git:bc421879aced9fe0eaf5e4b900ff2ce6da0752e8";
+export const DEPLOYED_WORKER_REVISION = "git:47ed645407c97bb5cb9554bc5777dc21ff7b11ef";
+export const DEPLOYED_WORKER_BUILD_REVISION = "git:47ed645407c97bb5cb9554bc5777dc21ff7b11ef";
 
 /**
  * Expected parser identity. Environment overrides remain supported for future
