@@ -421,6 +421,8 @@ def _parse_round_state_transitions(
         return None, ValueError("no observed player per side for the game-state round audit")
     candidates: list[dict[str, Any]] = []
     ends: list[dict[str, Any]] = []
+    end_counters: dict[int, int] = {}
+    counter_resets: list[dict[str, Any]] = []
     previous: dict[str, Any] | None = None
     try:
         frame = method(list(ROUND_STATE_PROPERTIES), players=chosen)
@@ -475,12 +477,119 @@ def _parse_round_state_transitions(
                     if status in _SIDE_TEAM_NUMBERS and changed == [status] and increased == [status]:
                         end["winner"] = status
                     ends.append(end)
+                    end_counters[tick] = played
+                # D30: the game's own round counter going DOWN is a reset (match restart
+                # after a knife round, mp_restartgame, backup restore). Observed, never inferred.
+                if (played is not None and previous["played"] is not None
+                        and played < previous["played"]):
+                    counter_resets.append({"tick": tick, "rounds_after": played,
+                                           "derived_from": "game_state.total_rounds_played"})
             previous = state
         del frame, heads, sides, scores
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
         _reraise_non_demo_failure(exc)
         return None, exc
-    return {"round_starts": _segment_round_starts(candidates, ends), "round_ends": ends}, None
+    out: dict[str, Any] = {"round_starts": _segment_round_starts(candidates, ends), "round_ends": ends}
+    if counter_resets:
+        out["counter_resets"] = counter_resets
+        out["end_counters"] = end_counters
+    return out, None
+
+
+def void_rounds_reset_by_game(
+    starts: list[dict[str, Any]],
+    ends: list[dict[str, Any]],
+    resets: list[dict[str, Any]],
+    end_counters: dict[int, int] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    """D30: drop rounds that the game itself discarded by resetting its round counter.
+
+    A knife round (or any pre-live round) ends, then the server restarts the match:
+    ``total_rounds_played`` goes back to 0 and ``begin_new_match`` fires. That round is
+    not part of the match the score counts. The rule uses only the game's own reset
+    evidence, never a round number, a kill count or a weapon:
+
+    * an end at tick ``t`` is voided by a reset at tick ``r > t`` when the match goes on
+      after the reset (at least one end after ``r``) and either the reset returns the
+      counter to 0 (new match) or the end's own counter value exceeds the value the
+      reset returns to (a restore that replays those rounds);
+    * a start is voided when the first end at/after it is voided (it opened that round);
+    * a reset after the last end (e.g. the server starting a new match once this one is
+      over) voids nothing.
+
+    Returns (kept starts, kept ends, voided rounds). RAW event tables are untouched.
+    """
+    counters = end_counters or {}
+    end_ticks = sorted(int(end["tick"]) for end in ends if isinstance(end.get("tick"), int))
+    voided_ticks: dict[int, dict[str, Any]] = {}
+    for reset in resets:
+        reset_tick = reset.get("tick")
+        after = reset.get("rounds_after")
+        if not isinstance(reset_tick, int) or not isinstance(after, int):
+            continue
+        if not any(tick > reset_tick for tick in end_ticks):
+            continue
+        for tick in end_ticks:
+            if tick >= reset_tick or tick in voided_ticks:
+                continue
+            counter = counters.get(tick)
+            if after == 0 or (counter is not None and counter > after):
+                voided_ticks[tick] = reset
+    if not voided_ticks:
+        return starts, ends, []
+
+    def next_end(tick: int) -> int | None:
+        return next((end_tick for end_tick in end_ticks if end_tick >= tick), None)
+
+    kept_starts: list[dict[str, Any]] = []
+    start_of: dict[int, int] = {}
+    for start in starts:
+        tick = start.get("tick")
+        owner = next_end(tick) if isinstance(tick, int) else None
+        if owner is not None and owner in voided_ticks:
+            start_of.setdefault(owner, tick)
+            continue
+        kept_starts.append(start)
+    voided = [
+        {"start_tick": start_of.get(tick), "end_tick": tick, "reset_tick": reset["tick"],
+         "rounds_after_reset": reset["rounds_after"], "derived_from": reset.get("derived_from")}
+        for tick, reset in sorted(voided_ticks.items())
+    ]
+    kept_ends = [end for end in ends if end.get("tick") not in voided_ticks]
+    return kept_starts, kept_ends, voided
+
+
+def apply_match_reset_voiding(raw: dict[str, Any]) -> None:
+    """Apply D30 to the final round streams of either boundary source.
+
+    Resets come from the observed game-state counter (when the boundaries were observed
+    from game state) and from ``begin_new_match`` (the game event for a new match). The
+    voided rounds are recorded as evidence and a warning; their RAW events stay in RAW.
+    """
+    resets: list[dict[str, Any]] = []
+    counters: dict[int, int] = {}
+    observed = raw.get("round_state_transitions")
+    if isinstance(observed, dict):
+        resets += list(observed.get("counter_resets") or [])
+        counters.update(observed.get("end_counters") or {})
+    for row in raw.get("match_restart_rows") or []:
+        tick = row.get("tick") if isinstance(row, dict) else None
+        if isinstance(tick, int) and not isinstance(tick, bool):
+            resets.append({"tick": tick, "rounds_after": 0, "derived_from": "begin_new_match"})
+    if not resets:
+        return
+    starts, ends, voided = void_rounds_reset_by_game(
+        list(raw.get("round_starts") or []), list(raw.get("round_ends") or []), resets, counters,
+    )
+    if not voided:
+        return
+    raw["round_starts"] = starts
+    raw["round_ends"] = ends
+    raw["voided_rounds"] = voided
+    raw.setdefault("warnings", []).append(
+        f"rounds_voided_by_match_reset: {len(voided)} round(s) ended before the game reset its "
+        f"round counter (end ticks {[item['end_tick'] for item in voided]}); not part of the match"
+    )
 
 
 def _segment_round_starts(
@@ -864,6 +973,9 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
             raw["event_tables"][name] = None
             continue
         rows, parse_error = _parse_event_with_context(demo, name)
+        if name == "begin_new_match" and rows is not None:
+            # D30: kept unfiltered (a restart can fire while the game is in warmup).
+            raw["match_restart_rows"] = [row for row in rows if isinstance(row, dict)]
         if rows is None:
             raw["event_tables"][name] = None
             raw["event_errors"][name] = parse_error or RuntimeError(f"{name} could not be parsed")
@@ -934,6 +1046,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         if round_state_error is not None:
             warnings.append("round_state_transitions_unavailable")
     derive_round_streams_from_tick_evidence(raw)
+    apply_match_reset_voiding(raw)
     return raw
 
 
