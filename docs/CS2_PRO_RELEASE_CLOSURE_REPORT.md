@@ -46,8 +46,8 @@ Status legend: PASS = proven by the cited evidence; FAIL = disproven; NOT PROVEN
 | Dust2 real extraction: parse, RAW, persistence, no duplicate | PASS | job `83a539c1`: parser `git:2aa2a497…`; RAW ready/approved (83 chunks, 2 128 990 rows); 1 match for the sha; 3 446/3 446 events timed |
 | Mirage real extraction: parse, RAW, persistence, no duplicate | PASS | job `221f7e42`: parser `git:2aa2a497…`; RAW ready/approved (100 chunks, 2 582 139 rows); same match `95186f3f`; 4 264/4 264 events timed |
 | Opening duels | PASS (Dust2, Mirage) | recomputed from persisted kills = stored metrics. Dust2: first kills 2 / first deaths 0. Mirage (attempt 8, re-run after the player selection 2026-10-27 03:32Z): first kills 2 / first deaths 1 (3 attempts); kills 13, deaths 13, assists 8, HS 7/13 = 53.8% also equal |
-| Trades | NOT PROVEN on R5.8.17; superseded by D29/R5.8.18 below | participants' team is NULL in every match (`player_side` NULL in every round); a real extraction needs per-round team evidence from the parser (new parser release) |
-| Activation gate | PASS | target `b2208ba3`, run 40443484096: every stage PASS (quality_gates, f553_post_completion, runtime, parser_lock, bridge_identity, transport, persistence, managed_snapshot, predem_matrix, R5.8.3, R5.8.4). On `5fa78807` F553 had refused a re-run (attempt 2) of a Quality Gates run whose first attempt failed its self-test step (cause not observable from the session) |
+| Trades | NOT PROVEN on R5.8.17; superseded by D29/R5.8.18 below | participants' team is NULL in every match and per-round sides were missing for most players (`round_players.side`); a real extraction needs per-round team evidence from the parser (new parser release). Correction 2026-10-27: the earlier wording also cited `match_rounds.player_side`, which is a legacy column not written by design (D31) and is not evidence |
+| Activation gate | PASS | target `b2208ba3`, run 40443484096 [observed: per-stage decision in the gate's check-run annotation, re-read 2026-10-27]: every stage PASS (quality_gates, f553_post_completion, runtime, parser_lock, bridge_identity, transport, persistence, managed_snapshot, predem_matrix, R5.8.3, R5.8.4). On `5fa78807` F553 had refused a re-run (attempt 2) of a Quality Gates run whose first attempt failed its self-test step (cause not observable from the session) |
 | Canonical | NOT STARTED | requires separate explicit approval |
 
 Production incident: the Lovable Cloud database was unreachable from 2026-10-24 11:39Z to 2026-10-27 ~01:45Z (worker `queue poll failed type=HTTPStatusError` every ~5 s; `query_database` refused). Cause not observable from this session; no job or row was changed during the outage.
@@ -60,15 +60,32 @@ Root cause (D29): the general tick sample is capped (`TICK_SAMPLE_LIMIT` = 4096 
 | --- | --- | --- |
 | D29 parser + metrics (PR #192, merge `bc421879`) | PASS | `tests/test_round_sides.py` (5), `teamIdentityPerRound.test.ts` (3); D23/D27 tests updated to remove both `sides` and `team` |
 | R5.8.18 runtime repin (PR #193, main `096841c9`) | PASS | Railway deployment `13873137` (SUCCESS 04:19:25Z, commit `bc421879`, parser.py blob `ff3ee9f6`); recorder `d933b9e7`; VERIFIED attestation run 40452174861 (04:53:15Z); owner-set secrets `DEMO_PARSER_EXPECTED_REVISION`/`_BUILD_REVISION` = `git:bc421879…`, `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `bc421879…` |
-| Activation gate | PASS | run 40453858841 (workflow_run) and run 40461802445 (dispatch, 06:33Z, after the attempt-9 authorization and both regressions), target `096841c9`, job conclusion success (gate fails closed on any non-PASS stage) |
+| Activation gate | PASS | [observed: per-stage decision in each run's check-run annotation `decision=… <stage>=<status>`; the evidence artifact itself could not be downloaded from the session] run 40453858841 (workflow_run) and run 40461802445 (dispatch, 06:33Z, after the attempt-9 authorization and both regressions), target `096841c9`: decision=PASS, every stage PASS. After PR #194, target `58936820`: run 40467596606 decision=PASS, every stage PASS. The earlier run 40467234829 on the same commit was BLOCKED (quality_gates, f553_post_completion, predem_matrix BLOCKED; main_required_gates SKIPPED) because Queue Semantics Probe triggered it while Quality Gates was still running; nothing was re-run |
 | Mirage attempt 9 authorization | PASS | owner decision in chat; `h3e_attempt_authorizations` row for job `8eaf0105` / upload `6947cb4e` / sha `1d98f8b6…` recorded 05:59:20Z; snapshot: 6/6 attempts ≥ 9 authorized, 0 rows not matching their job |
 | Dust2 attempt 6 (job `650b87de`): parse, RAW, persistence, no duplicate | PASS | parser `git:bc421879…`; RAW ready/approved; 1 match for the sha (`747c7a6b`, same match); 3 446/3 446 events timed; admission LIMITED (score/result excluded, as before) |
 | Mirage attempt 9 (job `8eaf0105`): parse, RAW, persistence, no duplicate | PASS | parser `git:bc421879…`; RAW ready/approved; 1 match for the sha (`95186f3f`, same match); 4 264/4 264 events timed; admission LIMITED |
-| Per-round sides | PASS | `round_players.side`: Dust2 17/17 rounds with exactly 5 CT + 5 T (170/170 rows); Mirage 23/23 (230/230); 0 kill events with an unknown side on either demo |
-| Trades | PASS (Dust2, Mirage) | independent SQL recompute from persisted kills + per-round sides (5 s window) = stored metrics. Dust2: trade kills 1, traded deaths 2. Mirage: trade kills 0, traded deaths 2 |
-| KAST | PASS (Dust2, Mirage) | recompute = stored. Dust2 94.1 (16/17 rounds). Mirage 69.6 (16/23) |
-| Clutch | PASS (Dust2, Mirage) | recompute = stored. Dust2 1 attempt / 0 wins (round 14, CT, died, T won). Mirage 2 / 1 (round 1 lost; round 14 survived, CT won) |
-| Lineage | PASS | managed snapshot 06:33Z: 2/2 eligible matches, 2/2 metrics, 2/2 features with verified lineage; 0 conflicting executions |
-| User isolation | PASS | as `authenticated` with a random `sub`: 0 matches, metrics, events, round rows, jobs, RAW artifacts for both demos; as the owner: 2 matches, 2 metrics rows, 7 710 events, 400 round rows, 2 jobs |
-| `match_rounds.player_side` | NOT PROVEN | still NULL on both demos after the player selection; metrics read sides from `round_players.side` (complete). Whether this column is expected to be filled is not established |
+| Per-round sides | PASS | [reproduced] `round_players.side`: Dust2 17/17 rounds with exactly 5 CT + 5 T (170/170 rows); Mirage 23/23 (230/230); 0 kill events with an unknown side on either demo |
+| Trades | PASS (Dust2, Mirage): consistent with the persisted round set; Dust2 see D30 | [reproduced] independent SQL recompute from persisted kills + per-round sides (5 s window) = stored metrics. Dust2: trade kills 1, traded deaths 2. Mirage: trade kills 0, traded deaths 2 |
+| KAST | PASS (Dust2, Mirage): consistent with the persisted round set; Dust2 see D30 | [reproduced] recompute = stored. Dust2 94.1 (16/17 rounds). Mirage 69.6 (16/23) |
+| Clutch | PASS (Dust2, Mirage): consistent with the persisted round set; Dust2 see D30 | [reproduced] recompute = stored. Dust2 1 attempt / 0 wins (round 14, CT, died, T won). Mirage 2 / 1 (round 1 lost; round 14 survived, CT won) |
+| Lineage | PASS | [reproduced] managed snapshot 06:33Z: 2/2 eligible matches, 2/2 metrics, 2/2 features with verified lineage; 0 conflicting executions |
+| User isolation | PASS | [reproduced] as `authenticated` with a random `sub`: 0 matches, metrics, events, round rows, jobs, RAW artifacts for both demos; as the owner: 2 matches, 2 metrics rows, 7 710 events, 400 round rows, 2 jobs |
+| `match_rounds.player_side` (legacy, D31) | PASS (not a defect) | [reproduced] legacy pre-canonical single-player column, intentionally not written since 2026-09-08 (`6f75024a`); the canonical writer omits it; no reader. The per-player per-round side is `round_players.side` (170/170, 230/230). See `docs/MATCH_ROUNDS_LEGACY_PLAYER_COLUMNS.md`; guarded by `legacyRoundPlayerColumns.test.ts` |
 | Canonical | NOT STARTED | requires separate explicit approval |
+
+### Evidence basis (added 2026-10-27)
+
+- **[reproduced]**: the check was re-executed from this session against production (read-only SQL) or the repository, and the result is quoted.
+- **[observed]**: read from an annotation or artifact produced by the workflow itself, not re-executed.
+- **[inferred]**: concluded from an aggregate result (for example a job conclusion) without per-item output.
+
+No row of the R5.8.18 section remains [inferred]: the activation gate rows were upgraded from the job conclusion to the per-stage annotations. Earlier sections were not re-labelled, except the R5.8.17 activation gate row.
+
+### D30: Dust2 round 1 is not a regulation round (open)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Dust2 round set | FAIL (open) | [reproduced] round 1 (ticks 1–2795): 7 kills, all knives (`knife_karambit` ×3, `knife_butterfly`, `knife_css`, `knife_m9_bayonet`, `knife_tactical`), within 99 ticks (2696–2795); 5 `weapon_fire`, no utility. All 10 players switch side between rounds 1–2 and 13–14, against 12–13 on Mirage (regulation MR12). The persisted match has 17 rounds where the regulation rounds are 16 |
+| Impact on the target player (Dust2) | FAIL (open) | [reproduced] round 1 adds 1 kill (knife, tick 2795) and 1 assist and counts as a KAST round; `rounds_played` = 17. Kills 14, assists 5, KAST 94.1 (16/17) include it. Trade kill (round 6), traded deaths (rounds 4, 15), clutch (round 14) and opening duels are not in round 1 |
+| Mirage round set | PASS | [reproduced] round 1 is a pistol round (`usp_silencer` ×5, `glock` ×4); halftime switch before round 13 |
+| Root cause | NOT PROVEN | not investigated yet; hypothesis: round segmentation admits a knife or pre-live round as round 1 |

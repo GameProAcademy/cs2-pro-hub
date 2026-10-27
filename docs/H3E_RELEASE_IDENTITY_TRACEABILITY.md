@@ -826,3 +826,4 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - assertion `eb5c01dd…` → `090e73dc…`;
   - workflow guard unchanged.
   - The start state was read back from production and matches the exact R5.8.17 targets. The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.
+- Correction (2026-10-27, D31): the defect line above lists "every round's `player_side` NULL" as a symptom. That column (`match_rounds.player_side`) is a legacy pre-canonical column that has not been written by design since 2026-09-08, so it was never evidence of D29. The D29 symptom was missing per-round sides in `round_players.side`. See `docs/MATCH_ROUNDS_LEGACY_PLAYER_COLUMNS.md`.
