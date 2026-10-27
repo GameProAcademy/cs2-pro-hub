@@ -135,7 +135,7 @@ def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.14 is historical since R5.8.15 (D13b), and R5.8.15 since R5.8.16 (D22)."""
     r5815 = json.loads((ROOT / "docs/reference/r5_8_15/spec.json").read_text(encoding="utf-8"))
     assert r5815["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
-    r5816 = json.loads((ROOT / "docs/reference/r5_8_17/spec.json").read_text(encoding="utf-8"))
+    r5816 = json.loads((ROOT / "docs/reference/r5_8_18/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
