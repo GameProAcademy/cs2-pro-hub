@@ -21,6 +21,7 @@ import {
 import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
 import { loadCanonicalCandidates } from "@/lib/canonical/candidates.server";
 import { persistCanonicalObservation } from "@/lib/canonical/canonical.persistence.server";
+import { applyServerPolicyV3 } from "@/lib/canonical/canonicalContractV3";
 import {
   canConvergeCrossSource,
   resolveAgainstAll,
@@ -774,14 +775,18 @@ export async function processJob(
     // own, so a demo that converges with FACEIT cannot create a second row.
     await setStage(jobId, "persisting");
     assertDeadline();
-    const bundle = demoToCanonicalBundle({
-      parsed: match,
-      // A demo's identity IS its file hash; it has no external match id.
-      fingerprint: job.demo_sha256 ?? null,
-      // Both optional: an unattached observation is still a complete match.
-      targetParticipantKey: participantKey,
-      internalPlayerId: participantKey ? (player?.id ?? null) : null,
-    });
+    // canonical-demo-v3: fields the contract fixes on the server path are persisted only as their
+    // declared representation; anything else is withheld and recorded on the observation.
+    const { bundle } = applyServerPolicyV3(
+      demoToCanonicalBundle({
+        parsed: match,
+        // A demo's identity IS its file hash; it has no external match id.
+        fingerprint: job.demo_sha256 ?? null,
+        // Both optional: an unattached observation is still a complete match.
+        targetParticipantKey: participantKey,
+        internalPlayerId: participantKey ? (player?.id ?? null) : null,
+      }),
+    );
     validateCanonicalBundle(bundle.match, bundle.rounds, bundle.events);
 
     if (!rawApproval) {

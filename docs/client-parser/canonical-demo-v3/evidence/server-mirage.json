@@ -1,0 +1,1752 @@
+{
+ "label": "mirage",
+ "contract": "canonical-demo-v3",
+ "path": "server",
+ "fields": {
+  "CanonicalMatchSource.source": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "2a97516c354b6884",
+    "checks": {
+     "equals:demo": {
+      "ok": true,
+      "detail": "demo"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.sourceContractVersion": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "d1c24bdcdf9427fa",
+    "checks": {
+     "equals:demo-v1": {
+      "ok": true,
+      "detail": "demo-v1"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.externalMatchId": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.externalParentId": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.sourceVersion": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "8ce2836df153164d",
+    "checks": {
+     "equals:demoparser2@0.42.0": {
+      "ok": true,
+      "detail": "demoparser2@0.42.0"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.fetchedAt": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "171fa16a2059911a",
+    "checks": {
+     "iso8601": {
+      "ok": true,
+      "detail": "iso8601"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.sourceUpdatedAt": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.status": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "eebbf6457e46a7f6",
+    "checks": {
+     "in:complete,incomplete": {
+      "ok": true,
+      "detail": "complete,incomplete"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.quality.status": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "eebbf6457e46a7f6",
+    "checks": {
+     "in:complete,partial,unknown": {
+      "ok": true,
+      "detail": "complete,partial,unknown"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.quality.reasons": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "4f53cda18c2baa0c",
+    "checks": {
+     "array": {
+      "ok": true,
+      "detail": "array"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.quality.confidence": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "6b86b273ff34fce1",
+    "checks": {
+     "unit_interval_or_null": {
+      "ok": true,
+      "detail": "unit_interval_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.fingerprint": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0e9e1192221bb85e",
+    "checks": {
+     "sha256": {
+      "ok": true,
+      "detail": "sha256"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatchSource.metadata": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "40bf036423379e73",
+    "checks": {
+     "object": {
+      "ok": true,
+      "detail": "object"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.game": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "27321e07197e4d90",
+    "checks": {
+     "equals:cs2": {
+      "ok": true,
+      "detail": "cs2"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.map": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "358845960bf560f3",
+    "checks": {
+     "map_code": {
+      "ok": true,
+      "detail": "map_code"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.mapNumber": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.playedAt": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.startedAt": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.finishedAt": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.durationSeconds": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.status": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "4ddb3e96801a1ee2",
+    "checks": {
+     "in:completed,partial": {
+      "ok": true,
+      "detail": "completed,partial"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.finished": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b5bea41b6c623f7c",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.terminal": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b5bea41b6c623f7c",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.teamA": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.teamB": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.scoreTeamA": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.scoreTeamB": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.winnerTeam": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.roundCount": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "535fa30d7e25dd8a",
+    "checks": {
+     "equals_rounds_length": {
+      "ok": true,
+      "detail": "equals_rounds_length"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.quality.status": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "eebbf6457e46a7f6",
+    "checks": {
+     "in:complete,partial,unknown": {
+      "ok": true,
+      "detail": "complete,partial,unknown"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.quality.reasons": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "4f53cda18c2baa0c",
+    "checks": {
+     "array": {
+      "ok": true,
+      "detail": "array"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.quality.confidence": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "6b86b273ff34fce1",
+    "checks": {
+     "unit_interval_or_null": {
+      "ok": true,
+      "detail": "unit_interval_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.roundsExpected": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "535fa30d7e25dd8a",
+    "checks": {
+     "equals_rounds_length": {
+      "ok": true,
+      "detail": "equals_rounds_length"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.roundsObserved": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "535fa30d7e25dd8a",
+    "checks": {
+     "equals_rounds_length": {
+      "ok": true,
+      "detail": "equals_rounds_length"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.participantsExpected": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 1,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "73c8ffe9553f8c24",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.participantsObserved": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "4a44dc15364204a8",
+    "checks": {
+     "equals_participants_length": {
+      "ok": true,
+      "detail": "equals_participants_length"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.participantsResolved": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "6b86b273ff34fce1",
+    "checks": {
+     "equals_resolved_count": {
+      "ok": true,
+      "detail": "equals_resolved_count"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.eventsObserved": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "7ddb44478c5fe21a",
+    "checks": {
+     "equals_events_length": {
+      "ok": true,
+      "detail": "equals_events_length"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.hasRoundData": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b5bea41b6c623f7c",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.hasEventData": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b5bea41b6c623f7c",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.coverage.hasPlayerRoundState": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b5bea41b6c623f7c",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalMatch.schemaVersion": {
+   "state": "available",
+   "run1": {
+    "rows": 1,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "d4735e3a265e16ee",
+    "checks": {
+     "equals:2": {
+      "ok": true,
+      "detail": "2"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.participantKey": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b597ad4b6498addc",
+    "checks": {
+     "steam_id64": {
+      "ok": true,
+      "detail": "steam_id64"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.internalPlayerId": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "3b2dd6f82642bd7d",
+    "checks": {
+     "uuid_only_on_target": {
+      "ok": true,
+      "detail": "internal id set iff target"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.source": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "67555a640abcf6d7",
+    "checks": {
+     "equals:demo": {
+      "ok": true,
+      "detail": "demo"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.externalPlayerId": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b597ad4b6498addc",
+    "checks": {
+     "steam_id64": {
+      "ok": true,
+      "detail": "steam_id64"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.steamId64": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b597ad4b6498addc",
+    "checks": {
+     "steam_id64": {
+      "ok": true,
+      "detail": "steam_id64"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.nicknameSnapshot": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "05fb34d66ec2c052",
+    "checks": {
+     "string": {
+      "ok": true,
+      "detail": "string"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.team": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 10,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "b1a87a6546911db3",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.isTargetPlayer": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0f3277782487beb5",
+    "checks": {
+     "one_target_when_attached": {
+      "ok": true,
+      "detail": "<= 1 target"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.identityStatus": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "3b5731714d3d5d70",
+    "checks": {
+     "identity_status_coherent": {
+      "ok": true,
+      "detail": "correlated iff internal id"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.identityConfidence": {
+   "state": "available",
+   "run1": {
+    "rows": 10,
+    "non_null": 1,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "e75f8a31467dcd41",
+    "checks": {
+     "identity_confidence_coherent": {
+      "ok": true,
+      "detail": "1 iff correlated, else null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalParticipant.metadata": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 10,
+    "non_null": 10,
+    "zero": 0,
+    "empty_object": 10,
+    "digest": "26f724a2161481dd",
+    "representation": {
+     "ok": true,
+     "detail": "every value == {}"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.roundNumber": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "3578bae6f7026a10",
+    "checks": {
+     "round_numbers_contiguous": {
+      "ok": true,
+      "detail": "round_numbers_contiguous"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.startTick": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "12b8eef546b0f557",
+    "checks": {
+     "tick_domain_rounds": {
+      "ok": true,
+      "detail": "start < end <= next start"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.endTick": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "ea80ffbff0bf64df",
+    "checks": {
+     "tick_domain_rounds": {
+      "ok": true,
+      "detail": "start < end <= next start"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.startTimeSeconds": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 23,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0902eb9f1e65dfb1",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.endTimeSeconds": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 23,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0902eb9f1e65dfb1",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.durationSeconds": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 23,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0902eb9f1e65dfb1",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.winningTeam": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 23,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "0902eb9f1e65dfb1",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.winningSide": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fa4356cc00e28247",
+    "checks": {
+     "in:CT,T": {
+      "ok": true,
+      "detail": "CT,T"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.winReason": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "c64b005ec5c44538",
+    "representation": {
+     "ok": true,
+     "detail": "every value == unknown"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.bombPlanted": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "8b0c104112157cf7",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.bombDefused": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "a6f2cd9ae3056917",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     },
+     "defuse_implies_plant": {
+      "ok": true,
+      "detail": "defuse_implies_plant"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.bombExploded": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "6b9e0f34472ecfd0",
+    "checks": {
+     "boolean": {
+      "ok": true,
+      "detail": "boolean"
+     },
+     "explode_implies_plant": {
+      "ok": true,
+      "detail": "explode_implies_plant"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.quality.status": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fdca15bd0cb1dbbf",
+    "checks": {
+     "in:complete,partial,unknown": {
+      "ok": true,
+      "detail": "complete,partial,unknown"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.quality.reasons": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "c7aa65201b85a328",
+    "checks": {
+     "array": {
+      "ok": true,
+      "detail": "array"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.quality.confidence": {
+   "state": "available",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "007274a9d3ca6769",
+    "checks": {
+     "unit_interval_or_null": {
+      "ok": true,
+      "detail": "unit_interval_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRound.metadata": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 23,
+    "non_null": 23,
+    "zero": 0,
+    "empty_object": 23,
+    "digest": "96766d40cfc1e8e7",
+    "representation": {
+     "ok": true,
+     "detail": "every value == {}"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.roundNumber": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "92ed07e6141de976",
+    "checks": {
+     "round_fk": {
+      "ok": true,
+      "detail": "round_fk"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.participantKey": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "5b177eff10915c06",
+    "checks": {
+     "participant_fk": {
+      "ok": true,
+      "detail": "participant_fk"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.side": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "11483c49f147e3c9",
+    "checks": {
+     "in:CT,T": {
+      "ok": true,
+      "detail": "CT,T"
+     },
+     "ten_per_round": {
+      "ok": true,
+      "detail": "rounds without 10 values: {}"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.survived": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.moneyStart": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "c7003ecbec0a5771",
+    "checks": {
+     "non_negative_int": {
+      "ok": true,
+      "detail": "non_negative_int"
+     },
+     "ten_per_round": {
+      "ok": true,
+      "detail": "rounds without 10 values: {}"
+     },
+     "pistol_800": {
+      "ok": true,
+      "detail": "pistol rounds [1, 13]; not all 800: []"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.moneyEnd": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "51b9beb765ede157",
+    "checks": {
+     "non_negative_int": {
+      "ok": true,
+      "detail": "non_negative_int"
+     },
+     "ten_per_round": {
+      "ok": true,
+      "detail": "rounds without 10 values: {}"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.equipmentValue": {
+   "state": "available",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "f4179764e8182ba9",
+    "checks": {
+     "non_negative_int": {
+      "ok": true,
+      "detail": "non_negative_int"
+     },
+     "ten_per_round": {
+      "ok": true,
+      "detail": "rounds without 10 values: {}"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.buyContext": {
+   "state": "unsupported",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.kills": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.deaths": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.assists": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.damage": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.flashAssists": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.openingKill": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.openingDeath": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.traded": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.tradeKill": {
+   "state": "not_authorized",
+   "run1": {
+    "rows": 230,
+    "non_null": 0,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "fda252b82dde9dae",
+    "representation": {
+     "ok": true,
+     "detail": "every value == \u2205"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalRoundPlayer.metadata": {
+   "state": "legitimately_empty",
+   "run1": {
+    "rows": 230,
+    "non_null": 230,
+    "zero": 0,
+    "empty_object": 230,
+    "digest": "c8e219a428077b1a",
+    "representation": {
+     "ok": true,
+     "detail": "every value == {}"
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.roundNumber": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "e575d3ef08eac5a2",
+    "checks": {
+     "round_fk": {
+      "ok": true,
+      "detail": "round_fk"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.type": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "34ceeefa6abb5d0b",
+    "checks": {
+     "event_type_allowlist": {
+      "ok": true,
+      "detail": "event_type_allowlist"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.tick": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "21bd905803532eb0",
+    "checks": {
+     "tick_domain_events": {
+      "ok": true,
+      "detail": "events outside their round: 0"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.gameTimeSeconds": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "50ac2a78ce201abc",
+    "checks": {
+     "time_monotonic_in_round": {
+      "ok": true,
+      "detail": "time decreases with tick: 0"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.actorParticipantKey": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 810,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "023e7429f8d16c58",
+    "checks": {
+     "participant_fk_or_null": {
+      "ok": true,
+      "detail": "participant_fk_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.victimParticipantKey": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 784,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "52e81024fe89697e",
+    "checks": {
+     "participant_fk_or_null": {
+      "ok": true,
+      "detail": "participant_fk_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.assisterParticipantKey": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 46,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "a089d0f4427e1f5b",
+    "checks": {
+     "participant_fk_or_null": {
+      "ok": true,
+      "detail": "participant_fk_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.sourceActorExternalId": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 810,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "023e7429f8d16c58",
+    "checks": {
+     "steam_id64_or_null": {
+      "ok": true,
+      "detail": "steam_id64_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.sourceVictimExternalId": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 784,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "52e81024fe89697e",
+    "checks": {
+     "steam_id64_or_null": {
+      "ok": true,
+      "detail": "steam_id64_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.sourceAssisterExternalId": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 46,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "a089d0f4427e1f5b",
+    "checks": {
+     "steam_id64_or_null": {
+      "ok": true,
+      "detail": "steam_id64_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.weapon": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 784,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "907b271dd7f336d1",
+    "checks": {
+     "string_or_null": {
+      "ok": true,
+      "detail": "string_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.headshot": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 155,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "c56cdbfaee21892b",
+    "checks": {
+     "boolean_or_null": {
+      "ok": true,
+      "detail": "boolean_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.distance": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 155,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "01465e3d05794e36",
+    "checks": {
+     "non_negative_or_null": {
+      "ok": true,
+      "detail": "non_negative_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.damage": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 629,
+    "zero": 3,
+    "empty_object": 0,
+    "digest": "309361f3477b7b3e",
+    "checks": {
+     "non_negative_or_null": {
+      "ok": true,
+      "detail": "non_negative_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.quality.status": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "18f6afc74ac234ac",
+    "checks": {
+     "in:complete,partial,unknown": {
+      "ok": true,
+      "detail": "complete,partial,unknown"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.quality.reasons": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "8a7b3902e496720e",
+    "checks": {
+     "array": {
+      "ok": true,
+      "detail": "array"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.quality.confidence": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 0,
+    "digest": "7e614e2b94aa34e8",
+    "checks": {
+     "unit_interval_or_null": {
+      "ok": true,
+      "detail": "unit_interval_or_null"
+     }
+    }
+   },
+   "deterministic": true
+  },
+  "CanonicalEvent.data": {
+   "state": "available",
+   "run1": {
+    "rows": 4264,
+    "non_null": 4264,
+    "zero": 0,
+    "empty_object": 3480,
+    "digest": "614316fbfa8d7712",
+    "checks": {
+     "object": {
+      "ok": true,
+      "detail": "object"
+     }
+    }
+   },
+   "deterministic": true
+  }
+ }
+}
