@@ -132,3 +132,16 @@ server pipeline that users use today". **That statement is wrong.** The 105 fiel
 `persist_canonical_observation` writes in production; the gate is consulted by no write path, and row eligibility is
 governed by provenance, not by this gate. The row is kept unchanged as history. The gate status (BLOCKED) and
 Canonical = NOT PROVEN are unchanged. Full audit and contract proposal: `docs/CANONICAL_105_FIELD_GATE_PROPOSAL.md`.
+
+## 2026-10-28 — D33, D34, R5.8.20, reprocessing and canonical-demo-v3
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| D33 economy per round (PR #202) | VALIDATED | root cause: economy read from the thinned tick sample. Fix: dedicated round-boundary read. Local real DEMs: Dust2 160/160 and Mirage 230/230 per field (were 5/3/5 and 0/4/0); other contract fields byte-identical. Production after reprocessing: Dust2 160/160, Mirage 230/230, Cache 240/240 for `money_start`, `money_end`, `equipment_value` |
+| D34 `identity_status` (migration `20261028100000`) | VALIDATED | ON CONFLICT keeps the strongest status; function `a72ac136` → `d751c474`, properties unchanged; probe 27/27; production after reprocessing: 3/3 targets `correlated`, confidence 1, internal id set |
+| R5.8.20 runtime | CONFIRMED | Railway `b0895901` (commit `c38f209d`; five earlier builds failed inside the Railway builder and never served); repin migration `20261028110000` (recorder `056e4863`, assertion `145a05ae`); attestation VERIFIED run 40652518033 (both `/version` hosts `git:c38f209d`); activation gate PASS run 40655857455 |
+| Reprocessing (owner, player FalleN selected) | VALIDATED | Dust2 job `fd329067` (attempt 8), Mirage `e2c70c57` (attempt 10, authorization recorded), Cache `0b4bdbf7` (attempt 15, authorization recorded); same match ids, no duplicate (Cache content: quarantined `a7b27f16` untouched plus eligible `48e517e4`); rounds 16/23/24 unchanged |
+| Metrics before/after | VALIDATED (unchanged) | every stored metric identical to the pre-reprocessing snapshot (kills, deaths, assists, ADR, HS, KAST, ratings, trades, clutches, opening duels, multi-kills, utility, damage taken) for the three matches — economy does not feed these metrics |
+| Isolation | VALIDATED | random `authenticated` sub: 0 matches, metrics, events, round rows, participants, jobs; owner: 3 matches, 3 metrics, 240 economy rows on Cache |
+| canonical-demo-v3 (PR #204) | VALIDATED | gate PASS for server and browser paths on the committed evidence (`docs/CANONICAL_DEMO_V3.md` §8); v2 unchanged; every v3 observation tagged; nothing withheld |
+| Player DNA / AI Coach on these matches | NOT PROVEN | `player_dna_snapshots` and `coach_messages` hold 0 rows; the features layer has 3 rows. No UI was exercised by this session |
