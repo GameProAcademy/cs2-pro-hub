@@ -228,6 +228,83 @@ def _parse_round_sides(
     return {tick: by_player for tick, by_player in sides.items() if by_player}, None
 
 
+ECONOMY_START_PROPS = ("team_num", "balance", "start_balance", "current_equip_value", "round_start_equip_value")
+ECONOMY_END_PROPS = ("team_num", "balance")
+
+
+def _parse_round_economy(
+    demo: Any, start_ticks: list[Any], end_ticks: list[Any]
+) -> tuple[dict[str, dict[int, dict[str, dict[str, int | float]]]], BaseException | None]:
+    """D33: each player's economy at each round boundary, read directly from the entity.
+
+    Production evidence (2026-10-28, 630 player-rounds of Dust2/Mirage/Cache): money_start
+    and equipment_value were stored for 9 and money_end for 13, because they were read from
+    the capped, thinned general tick sample (the defect D29 fixed for sides). The Dust2 DEM
+    holds all 10 players' balances at every round start tick.
+
+    Two bounded reads: the start props at the round start ticks and the balance at the round
+    end ticks. Semantics are the ones the contract already declares:
+      * money_start     = start_balance (the game's own round-start account), else balance;
+      * equipment_value = round_start_equip_value (equipment held when the round started,
+                          before buying), else current_equip_value;
+      * money_end       = balance at the round end tick.
+    Only players on a side (team_num 2/3) are kept; a value that is missing or not finite is
+    absent (never 0); zero is kept as zero. Two different values for one player at one tick
+    drop that player's field at that tick (no guess).
+    """
+    method = getattr(demo, "parse_ticks", None)
+    if not callable(method):
+        return {}, AttributeError("parse_ticks is unavailable")
+
+    def _ticks(values: list[Any]) -> list[int]:
+        return sorted({t for t in values if isinstance(t, int) and not isinstance(t, bool) and t >= 0})
+
+    starts, ends = _ticks(start_ticks), _ticks(end_ticks)
+    if not starts and not ends:
+        return {}, ValueError("no round boundary ticks")
+
+    def _read(props: tuple[str, ...], ticks: list[int], fields: dict[str, tuple[str, ...]]):
+        out: dict[int, dict[str, dict[str, int | float]]] = {}
+        if not ticks:
+            return out
+        wanted = set(ticks)
+        conflicts: set[tuple[int, str, str]] = set()
+        for row in _records(method(list(props), ticks=ticks)):
+            tick = row.get("tick")
+            if not isinstance(tick, int) or isinstance(tick, bool) or tick not in wanted:
+                continue
+            steam_id = _steam_id(row)
+            if steam_id is None or _side_from_tick(row) is None:
+                continue
+            by_field = out.setdefault(tick, {})
+            for field, sources in fields.items():
+                value = None
+                for source in sources:
+                    value = _finite_number(row.get(source))
+                    if value is not None:
+                        break
+                if value is None:
+                    continue
+                previous = by_field.setdefault(field, {}).get(steam_id)
+                if previous is not None and previous != value:
+                    conflicts.add((tick, field, steam_id))
+                by_field[field][steam_id] = value
+        for tick, field, steam_id in conflicts:
+            out[tick][field].pop(steam_id, None)
+        return out
+
+    try:
+        start = _read(ECONOMY_START_PROPS, starts, {
+            "money_start": ("start_balance", "balance"),
+            "equipment_value": ("round_start_equip_value", "current_equip_value"),
+        })
+        end = _read(ECONOMY_END_PROPS, ends, {"money_end": ("balance",)})
+    except BaseException as exc:  # noqa: BLE001 - recorded as evidence
+        _reraise_non_demo_failure(exc)
+        return {}, exc
+    return {"start": start, "end": end, "start_ticks": starts, "end_ticks": ends}, None
+
+
 def _discover_updated_fields(demo: Any) -> tuple[list[str], BaseException | None]:
     """Use the versioned parser discovery API without pretending it is static metadata."""
     method = getattr(demo, "list_updated_fields", None)
@@ -721,6 +798,17 @@ def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]
             balance = _finite_number(row.get("balance"))
             if balance is not None:
                 money_end[steam_id] = balance
+        # D33: the dedicated round-boundary economy read, when it covered this round's tick,
+        # is the only source for that tick (the sample rows at the same tick are a subset of
+        # the same entity state). Without it the sampled values above stay as before.
+        economy = raw.get("round_economy") or {}
+        if isinstance(start_tick, int) and start_tick in (economy.get("start_ticks") or ()):
+            read = (economy.get("start") or {}).get(start_tick) or {}
+            money_start = dict(read.get("money_start") or {})
+            equipment_value = dict(read.get("equipment_value") or {})
+        if isinstance(end_tick, int) and end_tick in (economy.get("end_ticks") or ()):
+            read = (economy.get("end") or {}).get(end_tick) or {}
+            money_end = dict(read.get("money_end") or {})
         # D29: the dedicated round-start read is the primary source; the thinned general
         # sample may add a player it missed, but a disagreement between the two drops
         # that player for the round (no guess).
@@ -1148,6 +1236,16 @@ def parse_demo_file(path: str) -> dict[str, Any]:
         raise classify_parser_exception(exc) from exc
     if raw["round_sides_error"] is not None:
         output.setdefault("warnings", []).append("round_sides_unavailable")
+    try:
+        raw["round_economy"], raw["round_economy_error"] = _parse_round_economy(
+            demo,
+            [r.get("start_tick") for r in output.get("rounds") or []],
+            [r.get("end_tick") for r in output.get("rounds") or []],
+        )
+    except BaseException as exc:  # noqa: BLE001 - classified below
+        raise classify_parser_exception(exc) from exc
+    if raw["round_economy_error"] is not None:
+        output.setdefault("warnings", []).append("round_economy_unavailable")
     enrich_rounds_from_tick_evidence(raw, output)
     if any(
         round_row.get("money_start")
