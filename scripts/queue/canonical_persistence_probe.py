@@ -652,10 +652,82 @@ def s_d32_other_quarantine():
     assert matches_with_content(fingerprint) == (1, 0), matches_with_content(fingerprint)
 
 
+def identity_rows(match_id: str, key: str) -> dict:
+    return json.loads(sql("select to_jsonb(t) from (select identity_status::text as status, internal_player_id::text as player, "
+                          "identity_confidence as confidence, is_target_player as target from public.match_participants "
+                          f"where match_id='{match_id}' and participant_key='{key}') t"))
+
+
+def identity_bundle(fingerprint: str, status: str, player: str | None, confidence) -> dict:
+    payload = with_revision(bundle(fingerprint, rounds=2))
+    for participant in payload["participants"]:
+        participant["identityStatus"] = "unlinked"
+    target = payload["participants"][0]
+    target["identityStatus"], target["internalPlayerId"], target["identityConfidence"] = status, player, confidence
+    return payload
+
+
+def identity_person() -> tuple[dict, str]:
+    person = new_job()
+    sql(f"insert into public.player_profiles(user_id, nickname) values ('{person['user']}', 'probe-d34') on conflict (user_id) do nothing")
+    return person, sql(f"select id from public.player_profiles where user_id='{person['user']}'")
+
+
+@scenario("d34_identity_status_follows_a_later_attachment_and_never_degrades")
+def s_d34_attach_later():
+    person, player = identity_person()
+    fingerprint = "probe-" + uuid.uuid4().hex
+    first = persist(identity_bundle(fingerprint, "unlinked", None, None), person["upload"])
+    key = bundle(fingerprint)["participants"][0]["participantKey"]
+    assert identity_rows(first["match_id"], key) == {"status": "unlinked", "player": None, "confidence": None, "target": True}
+    # The attachment arrives later (production order): the stored status follows the link.
+    persist(identity_bundle(fingerprint, "correlated", player, 1), person["upload"])
+    attached = {"status": "correlated", "player": player, "confidence": 1, "target": True}
+    assert identity_rows(first["match_id"], key) == attached, identity_rows(first["match_id"], key)
+    # Re-running the same write is idempotent.
+    persist(identity_bundle(fingerprint, "correlated", player, 1), person["upload"])
+    assert identity_rows(first["match_id"], key) == attached
+    # A late, weaker observation (out of order, unattached) never lowers or erases it.
+    persist(identity_bundle(fingerprint, "unlinked", None, None), person["upload"])
+    assert identity_rows(first["match_id"], key) == attached, identity_rows(first["match_id"], key)
+    # Every other participant of the match stays unlinked (no spill-over).
+    others = sql(f"select count(*) from public.match_participants where match_id='{first['match_id']}' "
+                 f"and participant_key<>'{key}' and identity_status<>'unlinked'")
+    assert others == "0", others
+    return {"sequence": "unlinked -> correlated -> correlated -> unlinked", "stored": "correlated"}
+
+
+@scenario("d34_inserted_attached_stays_attached_and_a_stronger_status_wins")
+def s_d34_precedence():
+    person, player = identity_person()
+    fingerprint = "probe-" + uuid.uuid4().hex
+    first = persist(identity_bundle(fingerprint, "correlated", player, 1), person["upload"])
+    key = bundle(fingerprint)["participants"][0]["participantKey"]
+    assert identity_rows(first["match_id"], key)["status"] == "correlated"
+    persist(identity_bundle(fingerprint, "verified", player, 1), person["upload"])
+    assert identity_rows(first["match_id"], key)["status"] == "verified"
+    persist(identity_bundle(fingerprint, "correlated", player, 1), person["upload"])
+    assert identity_rows(first["match_id"], key)["status"] == "verified"
+    return {"sequence": "correlated -> verified -> correlated", "stored": "verified"}
+
+
+@scenario("d34_conflict_is_sticky")
+def s_d34_conflict():
+    person, player = identity_person()
+    fingerprint = "probe-" + uuid.uuid4().hex
+    first = persist(identity_bundle(fingerprint, "correlated", player, 1), person["upload"])
+    key = bundle(fingerprint)["participants"][0]["participantKey"]
+    persist(identity_bundle(fingerprint, "conflict", player, 1), person["upload"])
+    assert identity_rows(first["match_id"], key)["status"] == "conflict"
+    persist(identity_bundle(fingerprint, "verified", player, 1), person["upload"])
+    assert identity_rows(first["match_id"], key)["status"] == "conflict"
+    return {"sequence": "correlated -> conflict -> verified", "stored": "conflict"}
+
+
 SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles,
              s_quarantine_scope, s_quarantine_roles, s_quarantine, s_quarantine_snapshot,
              s_d20_identical, s_d20_identity_link, s_d20_pre_digest, s_d20_changed, s_d20_timeout,
-             s_d32_released, s_d32_other_quarantine]
+             s_d32_released, s_d32_other_quarantine, s_d34_attach_later, s_d34_precedence, s_d34_conflict]
 
 
 def main() -> int:
