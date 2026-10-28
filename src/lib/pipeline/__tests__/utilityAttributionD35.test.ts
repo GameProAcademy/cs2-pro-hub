@@ -33,6 +33,12 @@ const flash = (round: number, attacker?: string): RawParserEvent => ({
   ...(attacker ? { attacker } : {}),
 });
 
+const signals = (
+  features: ReturnType<typeof extractFeatures>,
+  dimension: string,
+): Record<string, unknown> =>
+  (features.dimensions as Record<string, Record<string, unknown>>)[dimension] ?? {};
+
 function build(events: RawParserEvent[]) {
   return normalizeParserOutput({
     parser: { name: PARSER_NAME, version: PARSER_VERSION },
@@ -63,11 +69,11 @@ describe("D35: utility usage needs the thrower", () => {
     expect(metrics.grenadesUsed).toBeNull();
     expect(metrics.enemiesFlashed).toBeNull();
     expect(metrics.flashAssists).toBeNull();
-    const utility = extractFeatures(match, metrics).dimensions.utility;
+    const utility = signals(extractFeatures(match, metrics), "utility");
     expect(utility["grenades_per_round"]).toBeNull();
     expect(utility["enemies_flashed_per_round"]).toBeNull();
     expect(utility["flash_assists_per_round"]).toBeNull();
-    expect(extractFeatures(match, metrics).dimensions.teamplay["flash_assist_share"]).toBeNull();
+    expect(signals(extractFeatures(match, metrics), "teamplay")["flash_assist_share"]).toBeNull();
   });
 
   it("attributed utility where the player threw nothing => an observed 0", () => {
@@ -75,7 +81,7 @@ describe("D35: utility usage needs the thrower", () => {
     const metrics = computeMetrics(match, ME);
     expect(metrics.availability.utilityAttribution).toBe(true);
     expect(metrics.grenadesUsed).toBe(0);
-    expect(extractFeatures(match, metrics).dimensions.utility["grenades_per_round"]).toBe(0);
+    expect(signals(extractFeatures(match, metrics), "utility")["grenades_per_round"]).toBe(0);
   });
 
   it("attributed utility thrown by the player is counted", () => {
