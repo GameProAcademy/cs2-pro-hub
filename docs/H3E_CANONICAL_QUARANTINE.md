@@ -107,3 +107,29 @@ than their own `start_tick` (round 1: start 1688, end 1). The legacy (pre-proven
 start with the previous round's end, which leaves a trailing synthetic round. This is an integrity defect of that
 ingestion, consistent with `canonical_status = 'partial'`, and a further reason the row must stay ineligible. The
 quarantine preserves it as evidence; nothing is realigned or deleted.
+
+## 8. D32 — the quarantined content gets a new, verified Canonical match (2026-10-28)
+
+Owner decision (2026-10-28, full authorization to make Canonical work for users): the
+pre-provenance row stays quarantined, preserved and ineligible exactly as above. What changes is
+that it no longer **reserves its content**.
+
+| Before D32 | After D32 (`20261028090000_d32_quarantined_content_reobservable.sql`) |
+| --- | --- |
+| `persist_canonical_observation` resolved any observation of content `0caa7c97…` to `a7b27f16`, and the guards refused the write (job `b7579762`, attempt 13: `CANONICAL_MATCH_QUARANTINED`) | content resolution (match source by fingerprint, match by `content_fingerprint`) skips quarantined matches through `public.is_canonical_match_quarantined` |
+| `matches_content_fingerprint_uniq` and `match_sources_source_fingerprint_uniq` reserved the content for the quarantined row | both indexes exclude exactly the quarantined match `a7b27f16` and its own source `b63082cb`, named by id; the migration refuses unless those ids are the quarantined match and its source |
+| `createDemoUpload` / reprocess refused the content before upload (D17) | only content still reserved by **another** quarantined match is refused (`CONTENT_RELEASED_QUARANTINED_MATCHES` in `quarantine.server.ts`, pinned to the migration by a test) |
+
+What does not change: the quarantined row, its 25 rounds, 4 397 events, its source and the
+registry are not written; every guard still refuses any write to them; the quarantine has no
+release path; `canonical_uncontaminated` still requires every eligible row to have verified
+lineage. A verified observation of the same content creates a new eligible match whose lineage is
+proven like any other (processed job, approved RAW, `PARSE_SUCCEEDED`, VERIFIED provenance).
+Uniqueness among all other rows is unchanged, and the content of any future quarantine stays
+reserved (fail closed) until a reviewed migration names it.
+
+Evidence: `scripts/queue/canonical_persistence_probe.py` scenarios
+`d32_verified_observation_of_released_quarantined_content_gets_its_own_match` and
+`d32_content_of_any_other_quarantined_match_stays_reserved_and_untouched` (disposable database);
+`scripts/tests/test_d32_quarantined_content_reobservable.py`;
+`src/lib/pipeline/__tests__/quarantinedContent.test.ts`. Rollback: `docs/reference/d32/rollback.sql`.

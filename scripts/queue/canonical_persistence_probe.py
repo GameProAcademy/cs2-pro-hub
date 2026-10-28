@@ -581,9 +581,81 @@ def s_d20_timeout():
             "first_write_ms": first_ms, "identical_reobservation_ms": again_ms, "changed_rewrite_ms": changed_ms}
 
 
+# D32 (2026-10-28): the production pre-provenance match a7b27f16 (and its source b63082cb) are
+# quarantined; their content no longer reserves the uniqueness indexes, and content resolution skips
+# quarantined matches. The disposable database has no such rows: the probe creates the named rows
+# itself (synthetic content), quarantines them and proves the behaviour on them.
+D32_MATCH = "a7b27f16-4c85-428b-a855-0f683bda48a2"
+D32_SOURCE = "b63082cb-4220-4d0d-9b45-d6db6c119256"
+
+
+def d32_released_fingerprint() -> str:
+    existing = sql(f"select coalesce(content_fingerprint, '') from public.matches where id = '{D32_MATCH}'")
+    if existing:
+        return existing
+    fingerprint = "probe-d32-" + uuid.uuid4().hex
+    sql("insert into public.matches(id, content_fingerprint, canonical_status, data_source, canonical_source, "
+        f"canonical_schema_version) values ('{D32_MATCH}', '{fingerprint}', 'partial', 'demo', 'demo', 2)")
+    sql("insert into public.match_sources(id, match_id, source, source_contract_version, fetched_at, fingerprint) "
+        f"values ('{D32_SOURCE}', '{D32_MATCH}', 'demo', 'legacy', now(), '{fingerprint}')")
+    quarantine(D32_MATCH)
+    return fingerprint
+
+
+def matches_with_content(fingerprint: str) -> tuple[int, int]:
+    total = int(sql(f"select count(*) from public.matches where content_fingerprint = '{fingerprint}'"))
+    eligible = int(sql(f"select count(*) from public.matches where content_fingerprint = '{fingerprint}' "
+                       "and not public.is_canonical_match_quarantined(id)"))
+    return total, eligible
+
+
+@scenario("d32_verified_observation_of_released_quarantined_content_gets_its_own_match")
+def s_d32_released():
+    fingerprint = d32_released_fingerprint()
+    before = snapshot(D32_MATCH)
+    first = persist(bundle(fingerprint, rounds=2), new_job()["upload"])
+    assert first["match_id"] != D32_MATCH and first["created"] is True, first
+    # A second uploader of the same content converges on the new match (no duplicate).
+    second = persist(bundle(fingerprint, rounds=2), new_job()["upload"])
+    assert second["match_id"] == first["match_id"] and second["created"] is False, second
+    assert snapshot(D32_MATCH) == before, {"before": before, "after": snapshot(D32_MATCH)}
+    assert sql(f"select public.is_canonical_match_quarantined('{D32_MATCH}')") == "t"
+    assert sql(f"select canonical_status from public.matches where id = '{D32_MATCH}'") == "partial"
+    assert matches_with_content(fingerprint) == (2, 1), matches_with_content(fingerprint)
+    sources = int(sql(f"select count(*) from public.match_sources where source = 'demo' and fingerprint = '{fingerprint}' "
+                      f"and match_id = '{first['match_id']}'"))
+    assert sources == 1, sources
+    # Uniqueness among eligible rows is unchanged: a second eligible match of the content is refused.
+    refused(f"insert into public.matches(content_fingerprint) values ('{fingerprint}')", "matches_content_fingerprint_uniq")
+    refused("insert into public.match_sources(match_id, source, source_contract_version, fetched_at, fingerprint) "
+            f"values ('{first['match_id']}', 'demo', 'probe', now(), '{fingerprint}')", "match_sources_source_fingerprint_uniq")
+    return {"new_match_rounds": len(bundle(fingerprint, rounds=2)["rounds"]), "quarantined_unchanged": True}
+
+
+@scenario("d32_content_of_any_other_quarantined_match_stays_reserved_and_untouched")
+def s_d32_other_quarantine():
+    upload, fingerprint = fresh()
+    match_id = persist(bundle(fingerprint, rounds=1), upload)["match_id"]
+    quarantine(match_id)
+    before = snapshot(match_id)
+    # Another upload of the same content: resolution skips the quarantined match, and the
+    # content is still reserved by the uniqueness index, so the write fails closed.
+    other = new_job()["upload"]
+    refused("select public.persist_canonical_observation_attached('"
+            + json.dumps(bundle(fingerprint, rounds=1)).replace("'", "''") + f"'::jsonb, null, '{other}')",
+            "matches_content_fingerprint_uniq")
+    # The same upload still resolves to its own (quarantined) match and is refused by the guard.
+    refused("select public.persist_canonical_observation_attached('"
+            + json.dumps(bundle(fingerprint, rounds=1)).replace("'", "''") + f"'::jsonb, null, '{upload}')",
+            "CANONICAL_MATCH_QUARANTINED")
+    assert snapshot(match_id) == before
+    assert matches_with_content(fingerprint) == (1, 0), matches_with_content(fingerprint)
+
+
 SCENARIOS = [s_repeat, s_null_not_zero, s_confidence_monotonic, s_counter, s_reexecution, s_concurrent, s_atomic_first, s_atomic_rewrite, s_replace, s_rounds_in_place, s_lower_priority, s_second_upload, s_roles,
              s_quarantine_scope, s_quarantine_roles, s_quarantine, s_quarantine_snapshot,
-             s_d20_identical, s_d20_identity_link, s_d20_pre_digest, s_d20_changed, s_d20_timeout]
+             s_d20_identical, s_d20_identity_link, s_d20_pre_digest, s_d20_changed, s_d20_timeout,
+             s_d32_released, s_d32_other_quarantine]
 
 
 def main() -> int:
