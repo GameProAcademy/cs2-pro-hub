@@ -3,14 +3,17 @@ import { Bot, Maximize2, X } from "lucide-react";
 import { useState } from "react";
 
 import { CoachChat } from "@/components/coach/CoachChat";
+import { RealCoachChat } from "@/components/coach/RealCoachChat";
 import { Button } from "@/components/ui/button";
-import { FEATURES } from "@/config/app";
+import { DEMO_DATA, FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
 
 /**
  * Desktop-only floating access to the AI Coach. Opens a side drawer so the
  * page context is never lost; the full page stays available at /coach.
  * Hidden on mobile — the Coach is reachable there via the bottom navigation.
+ * In real mode (DEMO_DATA false) it is the real AI Coach; the demonstration
+ * chat with fixed strings is only used by the demo build.
  */
 export function CoachFab() {
   const t = useT();
@@ -57,14 +60,14 @@ export function CoachFab() {
               </Button>
             </header>
 
-            {!FEATURES.aiCoachApi ? (
+            {DEMO_DATA && !FEATURES.aiCoachApi ? (
               <p className="border-b border-warning/20 bg-warning/8 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
                 <span className="font-medium text-warning">{t("coach.notConnectedTitle")}</span>{" "}
                 {t("coach.notConnectedBody")}
               </p>
             ) : null}
 
-            <CoachChat className="flex-1" />
+            {DEMO_DATA ? <CoachChat className="flex-1" /> : <RealCoachChat className="flex-1" />}
           </aside>
         </div>
       ) : null}

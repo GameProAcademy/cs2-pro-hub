@@ -1026,4 +1026,31 @@ export const fr: Dictionary = {
   "real.dna.inMatches": "dans {n} match(s)",
   "real.dna.empty":
     "Aucun match traité avec des signaux enregistrés pour l’instant. Le Player DNA apparaît ici après le premier traitement terminé.",
+  "real.dna.snapshot": "Snapshot {version} enregistré le {date} · {n} match(s)",
+  "real.dna.snapshotPending":
+    "Snapshot pas encore enregistré : les valeurs ci-dessous ont été calculées à l’instant à partir de vos matchs traités.",
+  "real.aicoach.disclaimer":
+    "Réponses générées par IA à partir de vos métriques officielles. Données, interprétation et recommandation sont séparées ; vérifiez les chiffres sur le Dashboard.",
+  "real.aicoach.emptyTitle": "Commencez une conversation",
+  "real.aicoach.emptyDescription":
+    "Posez une question sur vos matchs traités, par exemple : « Quel est mon principal axe d’amélioration ? »",
+  "real.aicoach.noData":
+    "Le coach a besoin d’au moins un match traité. Envoyez une démo et confirmez votre joueur pour commencer.",
+  "real.aicoach.noPlayer": "Configurez votre profil joueur avant d’utiliser le coach.",
+  "real.aicoach.insufficient":
+    "Échantillon réduit : avec moins de 3 matchs, le coach évite les conclusions fortes sur les tendances.",
+  "real.aicoach.remaining": "{n} message(s) restant(s) cette heure-ci",
+  "real.aicoach.newConversation": "Nouvelle conversation",
+  "real.aicoach.aiLabel": "Réponse de l’IA",
+  "real.aicoach.retry": "Réessayer",
+  "real.aicoach.error.rateLimited":
+    "Vous avez atteint la limite de messages de cette heure. Réessayez plus tard.",
+  "real.aicoach.error.busy":
+    "Le service d’IA est occupé. Patientez quelques secondes et réessayez.",
+  "real.aicoach.error.unavailable":
+    "L’AI Coach est temporairement indisponible. Votre message n’a pas été enregistré ; réessayez plus tard.",
+  "real.aicoach.error.tooLong":
+    "Le message dépasse 1000 caractères. Raccourcissez-le et renvoyez-le.",
+  "real.aicoach.error.conversation":
+    "Cette conversation n’est plus disponible. Commencez-en une nouvelle.",
 };

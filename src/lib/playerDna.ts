@@ -18,6 +18,8 @@ import { FEATURE_CATALOG } from "@/lib/pipeline/features.catalog";
 import type { DnaDimension } from "@/types";
 
 export const DNA_MIN_MATCHES = 3;
+/** Version of this aggregation; stored on every persisted snapshot. */
+export const DNA_VERSION = "dna-mean-v1";
 
 export interface DnaFeatureRow {
   match_id: string;
@@ -48,6 +50,8 @@ export interface RealPlayerDna {
   partialMatches: number;
   minimumMatches: number;
   dimensions: DnaDimensionSummary[];
+  /** The persisted snapshot this profile corresponds to (set by the server read; null when none). */
+  snapshot?: { createdAt: string | null; dnaVersion: string | null; matchCount: number } | null;
 }
 
 const DIMENSIONS = Object.keys(FEATURE_CATALOG) as DnaDimension[];

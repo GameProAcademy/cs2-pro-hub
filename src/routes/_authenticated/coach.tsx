@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, ClipboardList, Stethoscope, Target } from "lucide-react";
-import { RealCapabilityPage } from "@/components/real/RealData";
 import { DEMO_DATA } from "@/config/app";
 
 import { CoachChat } from "@/components/coach/CoachChat";
+import { RealCoachChat } from "@/components/coach/RealCoachChat";
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
@@ -34,12 +34,18 @@ export const Route = createFileRoute("/_authenticated/coach")({
 function RealCoachPage() {
   const t = useT();
   return (
-    <RealCapabilityPage
-      eyebrow={t("coach.eyebrow")}
-      title={t("coach.title")}
-      description={t("coach.description")}
-      reason={t("real.coach.reason")}
-    />
+    <AppShell>
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow={t("coach.eyebrow")}
+          title={t("coach.title")}
+          description={t("coach.description")}
+        />
+        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col rounded-lg border border-border">
+          <RealCoachChat className="flex-1" />
+        </section>
+      </div>
+    </AppShell>
   );
 }
 

@@ -1027,4 +1027,30 @@ export const es: Dictionary = {
   "real.dna.inMatches": "en {n} partida(s)",
   "real.dna.empty":
     "Aún no hay partidas procesadas con señales guardadas. El Player DNA aparece aquí tras el primer procesamiento completado.",
+  "real.dna.snapshot": "Snapshot {version} guardado el {date} · {n} partida(s)",
+  "real.dna.snapshotPending":
+    "Snapshot aún no guardado: los valores de abajo se calcularon ahora a partir de tus partidas procesadas.",
+  "real.aicoach.disclaimer":
+    "Respuestas generadas por IA a partir de tus métricas oficiales. Datos, interpretación y recomendación aparecen separados; verifica los números en el Dashboard.",
+  "real.aicoach.emptyTitle": "Empieza una conversación",
+  "real.aicoach.emptyDescription":
+    'Pregunta sobre tus partidas procesadas, por ejemplo: "¿Cuál es mi principal punto de mejora?"',
+  "real.aicoach.noData":
+    "El coach necesita al menos una partida procesada. Sube una demo y confirma tu jugador para empezar.",
+  "real.aicoach.noPlayer": "Configura tu perfil de jugador antes de usar el coach.",
+  "real.aicoach.insufficient":
+    "Muestra pequeña: con menos de 3 partidas el coach evita conclusiones fuertes sobre tendencias.",
+  "real.aicoach.remaining": "{n} mensaje(s) restante(s) esta hora",
+  "real.aicoach.newConversation": "Nueva conversación",
+  "real.aicoach.aiLabel": "Respuesta de la IA",
+  "real.aicoach.retry": "Intentar de nuevo",
+  "real.aicoach.error.rateLimited":
+    "Alcanzaste el límite de mensajes de esta hora. Inténtalo más tarde.",
+  "real.aicoach.error.busy":
+    "El servicio de IA está ocupado ahora. Espera unos segundos e inténtalo de nuevo.",
+  "real.aicoach.error.unavailable":
+    "El AI Coach no está disponible temporalmente. Tu mensaje no se guardó; inténtalo más tarde.",
+  "real.aicoach.error.tooLong":
+    "El mensaje supera los 1000 caracteres. Acórtalo y envíalo de nuevo.",
+  "real.aicoach.error.conversation": "Esta conversación ya no está disponible. Empieza una nueva.",
 };

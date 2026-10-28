@@ -1003,4 +1003,30 @@ export const en: Dictionary = {
   "real.dna.inMatches": "in {n} match(es)",
   "real.dna.empty":
     "No processed match with persisted signals yet. Player DNA appears here after the first completed processing.",
+  "real.dna.snapshot": "Snapshot {version} saved on {date} · {n} match(es)",
+  "real.dna.snapshotPending":
+    "Snapshot not saved yet: the values below were computed just now from your processed matches.",
+  "real.aicoach.disclaimer":
+    "AI-generated answers based on your official metrics. Data, interpretation and recommendation are kept separate; check the numbers on the Dashboard.",
+  "real.aicoach.emptyTitle": "Start a conversation",
+  "real.aicoach.emptyDescription":
+    'Ask about your processed matches, for example: "What is my main area to improve?"',
+  "real.aicoach.noData":
+    "The coach needs at least one processed match. Upload a demo and confirm your player to start.",
+  "real.aicoach.noPlayer": "Set up your player profile before using the coach.",
+  "real.aicoach.insufficient":
+    "Small sample: with fewer than 3 matches the coach avoids strong conclusions about tendencies.",
+  "real.aicoach.remaining": "{n} message(s) left this hour",
+  "real.aicoach.newConversation": "New conversation",
+  "real.aicoach.aiLabel": "AI answer",
+  "real.aicoach.retry": "Try again",
+  "real.aicoach.error.rateLimited":
+    "You reached this hour's message limit. Please try again later.",
+  "real.aicoach.error.busy": "The AI service is busy right now. Wait a few seconds and try again.",
+  "real.aicoach.error.unavailable":
+    "The AI Coach is temporarily unavailable. Your message was not saved; please try again later.",
+  "real.aicoach.error.tooLong":
+    "The message is longer than 1000 characters. Shorten it and send again.",
+  "real.aicoach.error.conversation":
+    "This conversation is no longer available. Start a new conversation.",
 };
