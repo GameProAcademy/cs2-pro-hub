@@ -11,6 +11,7 @@ import {
 import { isPermanentError, PipelineError } from "@/lib/pipeline/errors";
 import {
   assertDemoContentNotQuarantined,
+  CONTENT_RELEASED_QUARANTINED_MATCHES,
   isDemoContentQuarantined,
 } from "@/lib/pipeline/quarantine.server";
 
@@ -19,23 +20,31 @@ import {
  * quarantined pre-provenance match a7b27f16 (content-addressed Canonical), so persistence
  * is refused with CANONICAL_MATCH_QUARANTINED. The job was retried three times (three full
  * 4.59M-row parses) because the failure was classified as transient.
+ *
+ * D32: a verified observation of that content now gets its own Canonical match (the
+ * quarantined row is untouched), so only content still reserved by another quarantined
+ * match is refused before upload.
  */
 
-type Row = Record<string, unknown> | null;
-function fakeDb(tables: { matches?: Row; quarantine?: Row; failOn?: "matches" | "quarantine" }) {
+type Rows = Record<string, unknown>[];
+function fakeDb(tables: { matches?: Rows; quarantine?: Rows; failOn?: "matches" | "quarantine" }) {
   const calls: string[] = [];
+  const result = (key: "matches" | "quarantine", filter?: string[]) => {
+    if (tables.failOn === key) return { data: null, error: { message: "boom" } };
+    const rows = tables[key] ?? [];
+    return {
+      data: filter ? rows.filter((row) => filter.includes(String(row["match_id"]))) : rows,
+      error: null,
+    };
+  };
   const db = {
     from(table: string) {
       calls.push(table);
       const key = table === "matches" ? "matches" : "quarantine";
       return {
         select: () => ({
-          eq: () => ({
-            maybeSingle: async () =>
-              tables.failOn === key
-                ? { data: null, error: { message: "boom" } }
-                : { data: tables[key] ?? null, error: null },
-          }),
+          eq: async () => result(key),
+          in: async (_column: string, values: string[]) => result(key, values),
         }),
       };
     },
@@ -44,6 +53,8 @@ function fakeDb(tables: { matches?: Row; quarantine?: Row; failOn?: "matches" | 
 }
 
 const SHA = "0caa7c9744deec106095895d2dacd19cbfdae689f99e29b0dd4d446b4ec8ae3d";
+const OTHER = "1111111111111111111111111111111111111111111111111111111111111111";
+const RELEASED = "a7b27f16-4c85-428b-a855-0f683bda48a2";
 
 describe("quarantined demo content", () => {
   it("is a permanent pipeline failure (never retried)", () => {
@@ -61,24 +72,45 @@ describe("quarantined demo content", () => {
     );
   });
 
-  it("detects content whose Canonical match is quarantined", async () => {
-    expect(await isDemoContentQuarantined(fakeDb({}).db, SHA)).toBe(false);
-    expect(await isDemoContentQuarantined(fakeDb({ matches: { id: "m1" } }).db, SHA)).toBe(false);
-    const quarantined = fakeDb({ matches: { id: "m1" }, quarantine: { match_id: "m1" } });
-    expect(await isDemoContentQuarantined(quarantined.db, SHA)).toBe(true);
+  it("detects content still reserved by a quarantined Canonical match", async () => {
+    expect(await isDemoContentQuarantined(fakeDb({}).db, OTHER)).toBe(false);
+    expect(await isDemoContentQuarantined(fakeDb({ matches: [{ id: "m1" }] }).db, OTHER)).toBe(
+      false,
+    );
+    const quarantined = fakeDb({ matches: [{ id: "m1" }], quarantine: [{ match_id: "m1" }] });
+    expect(await isDemoContentQuarantined(quarantined.db, OTHER)).toBe(true);
     expect(quarantined.calls).toEqual(["matches", "canonical_match_quarantine"]);
-    await expect(assertDemoContentNotQuarantined(quarantined.db, SHA)).rejects.toThrow(
+    await expect(assertDemoContentNotQuarantined(quarantined.db, OTHER)).rejects.toThrow(
       "CANONICAL_MATCH_QUARANTINED",
     );
   });
 
-  it("fails closed when the lookup cannot be made", async () => {
-    await expect(isDemoContentQuarantined(fakeDb({ failOn: "matches" }).db, SHA)).rejects.toThrow(
-      "UPLOAD_REGISTRATION_FAILED",
+  it("D32: content of the released pre-provenance match is accepted, with or without its new match", async () => {
+    const released = fakeDb({ matches: [{ id: RELEASED }], quarantine: [{ match_id: RELEASED }] });
+    expect(await isDemoContentQuarantined(released.db, SHA)).toBe(false);
+    // The registry is not even consulted when no other match holds the content.
+    expect(released.calls).toEqual(["matches"]);
+    const withNewMatch = fakeDb({
+      matches: [{ id: RELEASED }, { id: "new-verified-match" }],
+      quarantine: [{ match_id: RELEASED }],
+    });
+    expect(await isDemoContentQuarantined(withNewMatch.db, SHA)).toBe(false);
+    expect([...CONTENT_RELEASED_QUARANTINED_MATCHES]).toEqual([RELEASED]);
+  });
+
+  it("D32: the released id is exactly the one the migration excludes from content uniqueness", () => {
+    const migration = readFileSync(
+      resolve("supabase/migrations/20261028090000_d32_quarantined_content_reobservable.sql"),
+      "utf8",
     );
-    await expect(
-      isDemoContentQuarantined(fakeDb({ matches: { id: "m1" }, failOn: "quarantine" }).db, SHA),
-    ).rejects.toThrow("UPLOAD_REGISTRATION_FAILED");
+    for (const id of CONTENT_RELEASED_QUARANTINED_MATCHES) {
+      expect(migration).toContain(`AND id <> '${id}'::uuid`);
+    }
+    expect(migration).toContain("NOT public.is_canonical_match_quarantined(id)");
+    expect(migration).toContain("NOT public.is_canonical_match_quarantined(match_id)");
+    expect(migration).not.toMatch(
+      /canonical_match_quarantine\s+(SET|WHERE)|DELETE FROM|UPDATE public\.matches/,
+    );
   });
 
   it("is checked by createDemoUpload before the upload slot is reserved", () => {
