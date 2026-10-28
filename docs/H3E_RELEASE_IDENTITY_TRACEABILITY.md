@@ -843,3 +843,23 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - assertion `090e73dc…` → `bb393072…`;
   - workflow guard unchanged.
   - The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.
+
+## 2026-10-28 — R5.8.20: D33 parser release (controlled)
+
+- Defect (D33): per-round economy was read from the capped, thinned general tick sample.
+  - Production (3 validated matches, 630 player-rounds): `money_start` 9, `equipment_value` 9, `money_end` 13.
+  - The Dust2 DEM holds all 10 players' balances at every round start tick (local `parse_ticks`).
+- Fix (PR #202, `parser.py` only): one bounded read at the round start ticks and one at the round end ticks (same pattern as D29 for sides).
+  - `money_start` = `start_balance`; `equipment_value` = `round_start_equip_value`; `money_end` = `balance` at the round end tick.
+  - Only players on a side; a missing value is absent, never 0; conflicting values are dropped.
+  - Real DEMs (local): Dust2 160/160 and Mirage 230/230 per field; every other contract field byte-identical to the R5.8.19 output.
+- The same PR carries D34 (migration `20261028100000`, `identity_status` on conflict); it is a database change, not part of the worker identity.
+- Release: merge `c38f209d` under the standing watch-pattern freeze; `PARSER_REVISION`/`PARSER_BUILD_REVISION` set with skipped deploys; queue idle before the deploy.
+  - Five deployments of that exact commit failed inside the Railway builder before any Dockerfile step (`7f5a2432`, `c1f21183`, `1ef02aa1`, `9930bb22`, `94da0fef`: snapshot stall or `buildkitd.sock` closed). None was ever served; deployment `7179fcce` (R5.8.19) kept serving.
+  - The sixth, `b0895901`, built and became SUCCESS at 07:13:26Z, with `/health` 200. It is the only deployment of `c38f209d` that ever ran.
+- Pins: parser.py blob `20ff3dfb…` → `4bf17c9f…`; the other critical blobs and the workflow blob are unchanged.
+- R5.8.20 migration (`supabase/migrations/20261028110000_r5_8_20_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_20/`):
+  - recorder `7f78aec6…` → `056e4863…`;
+  - assertion `bb393072…` → `145a05ae…`;
+  - workflow guard unchanged.
+  - The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.
