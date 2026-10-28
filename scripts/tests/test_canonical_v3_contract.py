@@ -69,7 +69,7 @@ def test_app_policy_matches_the_contract_exactly():
     ts = {fid: (None if rep.strip() == "null" else {} if rep.strip() == "{}" else rep.strip().strip('"')) for fid, rep in entries}
     assert ts == fixed
     assert f'CANONICAL_CONTRACT_V3 = "{CONTRACT_VERSION}"' in TS_POLICY
-    assert f'CANONICAL_CONTRACT_V3_DIGEST = "{build_contract()["digest"]}"' in TS_POLICY
+    assert re.search(r'CANONICAL_CONTRACT_V3_DIGEST =\s*"' + build_contract()["digest"] + '"', TS_POLICY)
 
 
 def _evidence(label, contract, *, mutate=None):

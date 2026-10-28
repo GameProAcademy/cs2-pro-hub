@@ -19,7 +19,8 @@ import type { CanonicalMatchBundle } from "@/lib/canonical/canonical.types";
 
 export const CANONICAL_CONTRACT_V3 = "canonical-demo-v3" as const;
 /** sha256 of docs/client-parser/canonical-demo-v3/contract.json (pinned by test_canonical_v3_contract.py). */
-export const CANONICAL_CONTRACT_V3_DIGEST = "f4c053022c75ca528c5c9bfb95f197e2ff031082224652ad1cd8ca128757b858";
+export const CANONICAL_CONTRACT_V3_DIGEST =
+  "f4c053022c75ca528c5c9bfb95f197e2ff031082224652ad1cd8ca128757b858";
 
 type Entity = "observation" | "match" | "participants" | "rounds" | "roundPlayers";
 type Representation = null | "unknown" | Record<string, never>;
