@@ -39,6 +39,7 @@ const availability = (over: Partial<MetricsAvailability>): MetricsAvailability =
   killEvents: true,
   damageEvents: true,
   utilityEvents: true,
+  utilityAttribution: true,
   roundEndEvidence: true,
   economy: true,
   timing: true,
