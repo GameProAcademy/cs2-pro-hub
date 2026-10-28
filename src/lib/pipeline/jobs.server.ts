@@ -22,6 +22,7 @@ import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
 import { loadCanonicalCandidates } from "@/lib/canonical/candidates.server";
 import { persistCanonicalObservation } from "@/lib/canonical/canonical.persistence.server";
 import { applyServerPolicyV3 } from "@/lib/canonical/canonicalContractV3";
+import { refreshPlayerDnaSnapshot } from "@/lib/playerDnaSnapshot.server";
 import {
   canConvergeCrossSource,
   resolveAgainstAll,
@@ -995,6 +996,17 @@ export async function processJob(
       });
       projectedMatchId = persisted.matchId;
       finalized = true;
+      // Player DNA snapshot of the player's matches including this one. Best effort and
+      // idempotent: a failure here never fails a job whose match is already persisted
+      // (the next DNA read regenerates the same snapshot).
+      try {
+        await refreshPlayerDnaSnapshot(db, player.id);
+      } catch (error) {
+        console.warn("[pipeline] player DNA snapshot deferred", {
+          jobId,
+          code: error instanceof Error ? error.message.split(":")[0] : "unknown",
+        });
+      }
     }
 
     if (!finalized) {

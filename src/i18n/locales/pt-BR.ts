@@ -1027,6 +1027,32 @@ export const ptBR = {
   "real.dna.inMatches": "em {n} partida(s)",
   "real.dna.empty":
     "Nenhuma partida processada com sinais persistidos ainda. O Player DNA aparece aqui depois do primeiro processamento concluído.",
+  "real.dna.snapshot": "Snapshot {version} salvo em {date} · {n} partida(s)",
+  "real.dna.snapshotPending":
+    "Snapshot ainda não salvo: os valores abaixo foram calculados agora a partir das suas partidas processadas.",
+  "real.aicoach.disclaimer":
+    "Respostas geradas por IA a partir das suas métricas oficiais. Dados, interpretação e recomendação aparecem separados; confira os números no Dashboard.",
+  "real.aicoach.emptyTitle": "Comece uma conversa",
+  "real.aicoach.emptyDescription":
+    'Pergunte sobre suas partidas processadas, por exemplo: "Qual é meu principal ponto de melhoria?"',
+  "real.aicoach.noData":
+    "O coach precisa de pelo menos uma partida processada. Envie uma demo e confirme seu jogador para começar.",
+  "real.aicoach.noPlayer": "Configure seu perfil de jogador antes de usar o coach.",
+  "real.aicoach.insufficient":
+    "Amostra pequena: com menos de 3 partidas o coach evita conclusões fortes sobre tendências.",
+  "real.aicoach.remaining": "{n} mensagem(ns) restante(s) nesta hora",
+  "real.aicoach.newConversation": "Nova conversa",
+  "real.aicoach.aiLabel": "Resposta da IA",
+  "real.aicoach.retry": "Tentar novamente",
+  "real.aicoach.error.rateLimited":
+    "Você atingiu o limite de mensagens desta hora. Tente novamente mais tarde.",
+  "real.aicoach.error.busy":
+    "O serviço de IA está ocupado agora. Aguarde alguns segundos e tente novamente.",
+  "real.aicoach.error.unavailable":
+    "O AI Coach está temporariamente indisponível. Sua mensagem não foi salva; tente novamente mais tarde.",
+  "real.aicoach.error.tooLong": "A mensagem passa de 1000 caracteres. Encurte e envie de novo.",
+  "real.aicoach.error.conversation":
+    "Esta conversa não está mais disponível. Comece uma nova conversa.",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;

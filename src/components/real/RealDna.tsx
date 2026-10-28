@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
 import { OverviewStatePanel, WithOverview } from "@/components/real/RealData";
-import { useT } from "@/i18n";
+import { useI18n, useT } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
 import { getRealPlayerDna } from "@/lib/playerData.functions";
 import type { RealPlayerDna } from "@/lib/playerDna";
@@ -24,7 +24,7 @@ function format(value: number | null, unit: string): string {
 }
 
 function DnaBody({ dna }: { dna: RealPlayerDna }) {
-  const t = useT();
+  const { t, intlTag } = useI18n();
   const observed = dna.dimensions.filter((d) => d.value !== null);
   return (
     <div className="space-y-8">
@@ -33,6 +33,20 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
           .replace("{matches}", String(dna.matches))
           .replace("{rounds}", dna.rounds === null ? "—" : String(dna.rounds))
           .replace("{partial}", String(dna.partialMatches))}
+      </p>
+      <p className="font-mono text-[11px] text-muted-foreground" data-testid="dna-snapshot">
+        {dna.snapshot?.createdAt
+          ? t("real.dna.snapshot")
+              .replace("{version}", dna.snapshot.dnaVersion ?? "—")
+              .replace(
+                "{date}",
+                new Date(dna.snapshot.createdAt).toLocaleString(intlTag, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }),
+              )
+              .replace("{n}", String(dna.snapshot.matchCount))
+          : t("real.dna.snapshotPending")}
       </p>
       {dna.state === "INSUFFICIENT_SAMPLE" ? (
         <p className="rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">

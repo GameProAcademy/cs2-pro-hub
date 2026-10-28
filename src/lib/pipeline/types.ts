@@ -362,6 +362,12 @@ export interface MetricsAvailability {
   killEvents: boolean;
   damageEvents: boolean;
   utilityEvents: boolean;
+  /**
+   * D35: at least one utility event names its thrower. Per-player utility usage
+   * (grenades thrown, enemies flashed, flash assists) is only measurable with it;
+   * utility events without a thrower make those counters NULL, never 0.
+   */
+  utilityAttribution: boolean;
   roundEndEvidence: boolean;
   economy: boolean;
   /** Every kill event has a trustworthy instant (time_seconds or tick+tickrate). */

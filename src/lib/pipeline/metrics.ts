@@ -476,6 +476,7 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     // Shared, single definition of utility evidence (see evidence.ts): the same
     // classification the normalizer uses for the `missing_utility` flag.
     utilityEvents: hasUtilityEvidence(match.events),
+    utilityAttribution: match.events.some((e) => isUtilityEvent(e) && e.actorSteamId != null),
     roundEndEvidence: match.rounds.some((r) => hasRoundEndEvidence(r)),
 
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
@@ -753,10 +754,15 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     // A flash assist is a TEMPORAL claim: it needs both utility events and a
     // trustworthy instant for every kill. Without reliable timing the count is
     // unknown, not zero.
-    flashAssists: availability.utilityEvents && availability.timing ? flashAssists : null,
+    flashAssists:
+      availability.utilityEvents && availability.utilityAttribution && availability.timing
+        ? flashAssists
+        : null,
 
-    enemiesFlashed: availability.utilityEvents ? enemiesFlashed : null,
-    grenadesUsed: availability.utilityEvents ? grenadesUsed : null,
+    enemiesFlashed:
+      availability.utilityEvents && availability.utilityAttribution ? enemiesFlashed : null,
+    grenadesUsed:
+      availability.utilityEvents && availability.utilityAttribution ? grenadesUsed : null,
     ctRating: sideRating("CT"),
     tRating: sideRating("T"),
     sourceRating:

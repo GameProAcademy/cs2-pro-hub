@@ -1026,4 +1026,30 @@ export const ptPT: Dictionary = {
   "real.dna.inMatches": "em {n} partida(s)",
   "real.dna.empty":
     "Ainda não há partidas processadas com sinais guardados. O Player DNA aparece aqui depois do primeiro processamento concluído.",
+  "real.dna.snapshot": "Snapshot {version} guardado em {date} · {n} partida(s)",
+  "real.dna.snapshotPending":
+    "Snapshot ainda não guardado: os valores abaixo foram calculados agora a partir das suas partidas processadas.",
+  "real.aicoach.disclaimer":
+    "Respostas geradas por IA a partir das suas métricas oficiais. Dados, interpretação e recomendação aparecem separados; confirme os números no Dashboard.",
+  "real.aicoach.emptyTitle": "Comece uma conversa",
+  "real.aicoach.emptyDescription":
+    'Pergunte sobre as suas partidas processadas, por exemplo: "Qual é o meu principal ponto a melhorar?"',
+  "real.aicoach.noData":
+    "O coach precisa de pelo menos uma partida processada. Envie uma demo e confirme o seu jogador para começar.",
+  "real.aicoach.noPlayer": "Configure o seu perfil de jogador antes de usar o coach.",
+  "real.aicoach.insufficient":
+    "Amostra pequena: com menos de 3 partidas o coach evita conclusões fortes sobre tendências.",
+  "real.aicoach.remaining": "{n} mensagem(ns) restante(s) nesta hora",
+  "real.aicoach.newConversation": "Nova conversa",
+  "real.aicoach.aiLabel": "Resposta da IA",
+  "real.aicoach.retry": "Tentar novamente",
+  "real.aicoach.error.rateLimited":
+    "Atingiu o limite de mensagens desta hora. Tente novamente mais tarde.",
+  "real.aicoach.error.busy":
+    "O serviço de IA está ocupado neste momento. Aguarde alguns segundos e tente novamente.",
+  "real.aicoach.error.unavailable":
+    "O AI Coach está temporariamente indisponível. A sua mensagem não foi guardada; tente novamente mais tarde.",
+  "real.aicoach.error.tooLong": "A mensagem ultrapassa 1000 caracteres. Encurte-a e envie de novo.",
+  "real.aicoach.error.conversation":
+    "Esta conversa já não está disponível. Comece uma nova conversa.",
 };

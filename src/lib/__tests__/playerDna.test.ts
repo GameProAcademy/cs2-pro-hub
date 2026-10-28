@@ -70,7 +70,8 @@ describe("real Player DNA: observed signals only", () => {
     const source = readFileSync(resolve("src/lib/playerData.functions.ts"), "utf8");
     const fn = source.slice(source.indexOf("export const getRealPlayerDna"));
     expect(fn).toContain(".middleware([requireSupabaseAuth])");
-    expect(fn).toContain('.eq("user_id", context.userId)');
+    expect(fn).toContain("loadPlayerDna(context.supabase, context.userId)");
+    expect(fn).toContain('.eq("user_id", userId)');
     expect(fn).toContain('.from("match_features")');
     expect(fn).toContain('.in("player_id", playerIds)');
     const page = readFileSync(resolve("src/components/real/RealDna.tsx"), "utf8");

@@ -60,6 +60,8 @@ export function extractFeatures(
    */
   const hasEconomy = metrics.availability.economy;
   const hasUtility = metrics.availability.utilityEvents;
+  /** D35: per-player utility usage needs the thrower on utility events. */
+  const hasUtilityUsage = hasUtility && metrics.availability.utilityAttribution;
   /**
    * FASE 2.7.1 — EVIDENCE GATES (NULL ≠ ZERO).
    *
@@ -146,13 +148,13 @@ export function extractFeatures(
       utility_damage_per_round: hasUtility
         ? perRound(metrics.utilityDamage, perRoundDenominator, 12)
         : null,
-      flash_assists_per_round: hasUtility
+      flash_assists_per_round: hasUtilityUsage
         ? perRound(metrics.flashAssists, perRoundDenominator, 0.4)
         : null,
-      enemies_flashed_per_round: hasUtility
+      enemies_flashed_per_round: hasUtilityUsage
         ? perRound(metrics.enemiesFlashed, perRoundDenominator, 1.2)
         : null,
-      grenades_per_round: hasUtility
+      grenades_per_round: hasUtilityUsage
         ? perRound(metrics.grenadesUsed, perRoundDenominator, 2.5)
         : null,
     },
@@ -169,7 +171,7 @@ export function extractFeatures(
     teamplay: {
       assists_per_round: gate(hasKills, perRound(metrics.assists, perRoundDenominator, 0.35)),
       flash_assist_share: gate(
-        hasKills && hasUtility,
+        hasKills && hasUtilityUsage,
         ratio(metrics.flashAssists, metrics.assists),
       ),
       trade_participation: gate(hasKills && hasTiming, ratio(metrics.tradeKills, matchRounds)),
