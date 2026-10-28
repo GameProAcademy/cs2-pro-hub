@@ -98,3 +98,28 @@ No row of the R5.8.18 section remains [inferred]: the activation gate rows were 
 | User isolation | PASS | [reproduced] random `authenticated` sub: 0 matches, metrics, events, round rows, jobs, RAW artifacts for Dust2; owner: 1 match, 1 metrics row, 3 414 events, 160 round rows, 1 job |
 | Mirage | PASS (unaffected) | [reproduced] local output identical under the new parser; production metrics unchanged (23 rounds, KAST 69.6, trades 0/2, clutch 2/1); not reprocessed (would be attempt 10 and need a new authorization) |
 | Canonical | NOT STARTED | requires separate explicit approval |
+
+## 2026-10-28 — Canonical stage (owner-authorized 2026-10-27 23:41 -03:00)
+
+Definition used (from the repository, not invented): the open Canonical items were (1) the owner decision on the
+pre-provenance Canonical row (`docs/H3E_OPERATOR_PROCEDURE.md` §5 item 4) — its quarantine made the reference DEM
+`0caa7c97` impossible to persist (job `b7579762`, attempt 13: `CANONICAL_MATCH_QUARANTINED`); (2) the post-DEM
+laboratory gates (A9.1, state machine in `docs/H3E_PREDEM_POSTDEM_GATES.md`); (3) the 105-field Canonical mapping
+gate (`scripts/canonical_mapping_gate.py`).
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| D32 root cause | PASS (identified) | [reproduced] `persist_canonical_observation` resolved content `0caa7c97` to the quarantined match `a7b27f16`, and `matches_content_fingerprint_uniq` / `match_sources_source_fingerprint_uniq` reserved the content for that row; the quarantine guards refused every write |
+| D32 fix (PR #199, merge `31daaf0b`) | PASS | migration `20261028090000`: resolution skips quarantined matches; the two uniqueness indexes exclude exactly `a7b27f16` / `b63082cb` (named, guarded); function md5 `3420e6cc` → `a72ac136`; app pre-check narrowed (`quarantine.server.ts`). [observed] CI on `0a816c97`: all required checks green; Canonical persistence probe 24/24 including the two D32 scenarios (disposable database) |
+| D32 applied in production | PASS | [reproduced] read back: function md5 `a72ac136`, attached wrapper unchanged (`de9bfc8c`, `statement_timeout=60s`), both index definitions with the exclusion, migration head `20261028090000`; app published at `31daaf0b` |
+| Quarantined row preserved | PASS | [reproduced] `a7b27f16` still quarantined, `partial`, 24 rounds, 4 397 events; snapshot: `quarantined_completed` 0, `quarantined_derived_rows` 0, all 18 guards enforced |
+| Cache attempt 14 (job `c156bdf7`) | PASS | [reproduced] owner re-upload; authorization row recorded (attempts ≥ 9: 7/7 authorized, 0 mismatched); parser `git:47ed6454`; RAW ready/approved (4 586 562 rows); admission LIMITED; new match `48e517e4`, `completed`, de_cache, 24 rounds, 24/24 rounds with 5 CT + 5 T, side switch before round 13, 0 knife kills, 4 328/4 328 events timed |
+| No duplicate | PASS | [reproduced] 2 matches carry the content: the quarantined `a7b27f16` and the eligible `48e517e4`; exactly 1 eligible |
+| Cache metrics (player `76561197960690195`, selected by the owner) | PASS | [reproduced] independent SQL recount from persisted events and per-round sides = stored: kills 12, deaths 14, assists 2, HS 50.0 %, rounds 24, KAST 70.8 (17/24), trade kills 2, traded deaths 2, clutch 1 / 0 (round 5, CT, died, T won), first kills 0 / first deaths 3, multi-kill rounds 4, ADR 66.1; 0 kills with an unknown side |
+| Lineage | PASS | [reproduced] managed snapshot: 3/3 eligible matches, 3/3 metrics, 3/3 features with verified lineage; 0 conflicting executions |
+| User isolation | PASS | [reproduced] random `authenticated` sub: 0 rows of match `48e517e4` (and of `a7b27f16`), its metrics, events, round rows, job and RAW; the quarantine registry is not readable (permission denied); owner: 1 match, 1 metrics row, 4 328 events, 240 round rows, 1 job |
+| Activation gate | PASS | [observed: per-stage annotation] run 40629449316, target `31daaf0b`: decision=PASS, every stage PASS (the earlier run 40628657234 started while Quality Gates was running: BLOCKED) |
+| Post-DEM laboratory (A9.1) | PASS (`POSTDEM_VERIFIED`) | [observed: sealed annotations] run 40622794332 on `b464966a`, bound to pre-DEM approval 40618814712; DEM `0caa7c97`; parity 14/14 comparable domains PASS, 414/414 fields, 0 divergences (`players`, `player_identity`: NOT_COMPARABLE, not available on WASM); determinism PASS (2 Python + 2 WASM runs, identical digests); grenades raw rows equal (4 550 843); decision grants no Canonical/production authorization by design |
+| Canonical mapping gate (105 fields) | BLOCKED (by its own contract) | [reproduced] `assert_canonical_mapping_gate`: 0/105 authorized; 68 `DECLARED_BUT_NOT_VERIFIED`, 15 `SOURCE_UNAVAILABLE`, 10 `IDENTITY_BLOCKED`, 5 `NOT_SUPPORTED`, 4 `TICK_DOMAIN_BLOCKED`, 3 `CANONICAL_NOT_AUTHORIZED`; parity/determinism per field `NOT_RUN`; the managed release row is constrained to `authorized_count = 0`. The gate passes only with all 105 authorized, which the 37 structurally blocked fields cannot reach; this governs the browser (client-parser) path, not the server pipeline that users use today. Lifting it needs a versioned contract decision, not a data change |
+| Canonical persistence for users (server pipeline) | PASS | three real demos (Dust2, Mirage, Cache) persisted with verified provenance, correct round segmentation, metrics equal to independent recount, lineage and isolation proven |
+| D7 (`record_demo_identity_event` HTTP 400) | PASS (not reproduced) | [reproduced] three identity declarations in this stage (Dust2 attempt 7, Mirage attempt 9, Cache attempt 14) all completed with metrics |
