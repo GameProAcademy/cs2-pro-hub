@@ -23,7 +23,12 @@ export const COACH_VERSION = "ai-coach-v1";
 export const COACH_MAX_MESSAGE_CHARS = 1000;
 export const COACH_MAX_HISTORY = 12;
 export const COACH_MAX_PLAYER_MESSAGES_PER_HOUR = 20;
-export const COACH_MAX_REPLY_TOKENS = 900;
+/**
+ * Output budget per reply. Reasoning models spend part of it on hidden thinking, so
+ * it is well above the ~250-word answer the prompt asks for (900 truncated replies
+ * in production on 2026-10-28; a truncated reply is rejected, see the provider).
+ */
+export const COACH_MAX_REPLY_TOKENS = 4096;
 
 const LANGUAGE: Record<Locale, string> = {
   "pt-BR": "Brazilian Portuguese",

@@ -20,7 +20,8 @@ export type CoachProviderError =
   | "COACH_PROVIDER_RATE_LIMITED"
   | "COACH_PROVIDER_NO_CREDITS"
   | "COACH_PROVIDER_FAILED"
-  | "COACH_PROVIDER_EMPTY";
+  | "COACH_PROVIDER_EMPTY"
+  | "COACH_PROVIDER_TRUNCATED";
 
 export class CoachProviderFailure extends Error {
   constructor(
@@ -80,10 +81,14 @@ export async function completeCoach(
     }
     if (!response.ok) throw new CoachProviderFailure("COACH_PROVIDER_FAILED", response.status);
     const body = (await response.json().catch(() => null)) as {
-      choices?: Array<{ message?: { content?: unknown } }>;
+      choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
       model?: unknown;
     } | null;
-    const content = body?.choices?.[0]?.message?.content;
+    const choice = body?.choices?.[0];
+    const content = choice?.message?.content;
+    // A reply cut by the token limit is never shown or stored as if it were complete.
+    if (choice?.finish_reason === "length")
+      throw new CoachProviderFailure("COACH_PROVIDER_TRUNCATED");
     if (typeof content !== "string" || !content.trim())
       throw new CoachProviderFailure("COACH_PROVIDER_EMPTY");
     return { content: content.trim(), model: typeof body?.model === "string" ? body.model : model };

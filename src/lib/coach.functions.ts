@@ -44,6 +44,7 @@ export type CoachErrorCode =
   | "COACH_PROVIDER_NO_CREDITS"
   | "COACH_PROVIDER_FAILED"
   | "COACH_PROVIDER_EMPTY"
+  | "COACH_PROVIDER_TRUNCATED"
   | "COACH_INTERNAL";
 
 export interface CoachMessageView {
