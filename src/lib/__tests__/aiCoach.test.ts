@@ -217,6 +217,15 @@ describe("AI Coach provider (Lovable AI Gateway)", () => {
     expect(pinned).toHaveBeenCalledTimes(1);
   });
 
+  it("a reply cut by the token limit is rejected, never stored as complete", async () => {
+    const fetchImpl = vi.fn(async () =>
+      json(200, { choices: [{ message: { content: "**Dados:**\n*" }, finish_reason: "length" }] }),
+    );
+    await expect(
+      completeCoach(msgs, { maxTokens: 10, env: { LOVABLE_API_KEY: "k" }, fetchImpl }),
+    ).rejects.toMatchObject({ code: "COACH_PROVIDER_TRUNCATED" });
+  });
+
   it("an empty completion is an error, never a fabricated reply", async () => {
     const fetchImpl = vi.fn(async () => json(200, { choices: [{ message: { content: "  " } }] }));
     await expect(
