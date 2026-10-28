@@ -207,22 +207,28 @@ Determinism, persistence round trip and checks per field and per demo are in the
 
 ## 8. Evidence and gate result
 
-Evidence demos (owner-provided DEMs, parsed locally with the released parser `c38f209d`, never committed):
+Evidence demos (owner-provided DEMs parsed locally with the released parser `c38f209d`; persisted rows written by
+production under R5.8.20 after the authorized reprocessing on 2026-10-28; DEMs never committed):
 
-| Demo | sha256 | Runs | Determinism | Semantic checks | Representation | Persistence round trip |
-| --- | --- | --- | --- | --- | --- | --- |
-| Dust2 | `1c271096…` | 2 | 105/105 fields equal | all pass | 34/34 hold | pending the authorized reprocessing under R5.8.20 |
-| Mirage | `1d98f8b6…` | 2 | 105/105 fields equal | all pass | 34/34 hold | pending the authorized reprocessing under R5.8.20 |
-| Cache | `0caa7c97…` | — | NOT PROVEN (the 474 MB DEM exceeds the 400 MB transfer limit to this workspace) | — | — | production read-back only |
+| Demo | sha256 | Production job | Runs | Determinism | Semantic checks | Representation (34 fixed fields) | Persistence round trip |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Dust2 | `1c271096…` | `fd329067` (attempt 8), match `747c7a6b` | 2 | 105/105 fields equal | all pass | 34/34 hold | 100 EQUAL, 5 excluded by design, 0 DIFFERENT |
+| Mirage | `1d98f8b6…` | `e2c70c57` (attempt 10), match `95186f3f` | 2 | 105/105 fields equal | all pass | 34/34 hold | 100 EQUAL, 5 excluded by design, 0 DIFFERENT |
+| Cache | `0caa7c97…` | `0b4bdbf7` (attempt 15), match `48e517e4` | — | NOT PROVEN (the 474 MB DEM exceeds the 400 MB transfer limit to this workspace) | production read-back only | — | — |
 
-Round-trip machinery validated on 2026-10-28 against the R5.8.19 production rows of Dust2 (`747c7a6b`):
-99/100 compared fields EQUAL, 5 excluded by design, 1 DIFFERENT — `CanonicalParticipant.identityStatus`,
-which is exactly defect D34 (stored `unlinked`, bundle `correlated`). The harness therefore detects a real
-persistence defect independently of the investigation that found it.
+The five exclusions are the harness's fixed collection time, the worker-supplied lineage metadata, the
+first-write `sourceVersion`, the placeholder internal id (compared as a presence pattern) and `playedAt`
+(COALESCE). Round-trip machinery was validated first against the R5.8.19 rows of Dust2: 99 EQUAL and exactly
+one DIFFERENT, `CanonicalParticipant.identityStatus` — defect D34. After D34 and the reprocessing it is EQUAL.
 
-Gate (`python3 -m scripts.canonical_v3.gate`, this commit):
+Gate (`python3 -m scripts.canonical_v3.gate`):
 
-- **browser path: PASS** — 105/105 `not_authorized`, policy markers present.
-- **server path: BLOCKED** — 71 `available` fields lack the persistence round trip on R5.8.20 data; every other
-  requirement holds. This is updated, never hand-edited, after the reprocessing.
-- **overall: BLOCKED** → Canonical = NOT PROVEN until the server path passes.
+- **server path: PASS** — every field terminal; every `available` field deterministic in 2 demos, all checks
+  passing, non-null and persisted identically; every fixed field holds its representation.
+- **browser path: PASS** — 105/105 `not_authorized` (no browser Canonical writer; policy markers present).
+- **overall: PASS** under `canonical-demo-v3` (contract digest `f4c05302…`).
+
+Scope of this PASS: two real demos with full evidence; the Cache demo is covered by production read-back
+(economy 240/240, identity `correlated`, v3 tag present, nothing withheld) but not by local determinism or the
+field round trip. It says every field is classified and each classification is proven for the evidence set;
+it does not say every field has a value (34 do not, by contract), and it does not authorize the browser path.

@@ -128,3 +128,12 @@ def test_browser_gate_requires_the_policy_markers(tmp_path):
     contract = build_contract()
     assert gate.evaluate_browser(contract)["status"] == "PASS"
     assert gate.evaluate_browser(contract, root=tmp_path)["status"] == "BLOCKED"
+
+
+def test_committed_evidence_passes_the_v3_gate():
+    """The committed evidence (Dust2, Mirage under R5.8.20) satisfies every requirement; any change to the
+    contract or the evidence that breaks a requirement fails here instead of silently."""
+    result = gate.evaluate()
+    assert result["server"]["status"] == "PASS", result["server"]["blockers"]
+    assert result["browser"]["status"] == "PASS"
+    assert result["server"]["evidenceDemos"] == ["dust2", "mirage"]

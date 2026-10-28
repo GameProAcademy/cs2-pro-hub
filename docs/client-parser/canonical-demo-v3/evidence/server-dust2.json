@@ -18,7 +18,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "2a97516c354b6884",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "2a97516c354b6884"
+    }
+   }
   },
   "CanonicalMatchSource.sourceContractVersion": {
    "state": "available",
@@ -35,7 +46,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d1c24bdcdf9427fa",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "d1c24bdcdf9427fa"
+    }
+   }
   },
   "CanonicalMatchSource.externalMatchId": {
    "state": "legitimately_empty",
@@ -50,7 +72,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatchSource.externalParentId": {
    "state": "legitimately_empty",
@@ -65,7 +98,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatchSource.sourceVersion": {
    "state": "available",
@@ -82,7 +126,11 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EXCLUDED",
+    "reason": "persisted COALESCE keeps the first non-null value"
+   }
   },
   "CanonicalMatchSource.fetchedAt": {
    "state": "available",
@@ -99,7 +147,11 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EXCLUDED",
+    "reason": "harness fixes the collection time"
+   }
   },
   "CanonicalMatchSource.sourceUpdatedAt": {
    "state": "legitimately_empty",
@@ -114,7 +166,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatchSource.status": {
    "state": "available",
@@ -131,7 +194,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "eebbf6457e46a7f6",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
+    }
+   }
   },
   "CanonicalMatchSource.quality.status": {
    "state": "available",
@@ -148,7 +222,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "eebbf6457e46a7f6",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
+    }
+   }
   },
   "CanonicalMatchSource.quality.reasons": {
    "state": "available",
@@ -165,7 +250,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "4f53cda18c2baa0c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "4f53cda18c2baa0c"
+    }
+   }
   },
   "CanonicalMatchSource.quality.confidence": {
    "state": "available",
@@ -182,7 +278,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "6b86b273ff34fce1",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
+    }
+   }
   },
   "CanonicalMatchSource.fingerprint": {
    "state": "available",
@@ -199,7 +306,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "54a92a8d05a21983",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "54a92a8d05a21983"
+    }
+   }
   },
   "CanonicalMatchSource.metadata": {
    "state": "available",
@@ -216,7 +334,11 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EXCLUDED",
+    "reason": "parser_revision comes from the worker response, absent from the local harness input"
+   }
   },
   "CanonicalMatch.game": {
    "state": "available",
@@ -233,7 +355,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "27321e07197e4d90",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "27321e07197e4d90"
+    }
+   }
   },
   "CanonicalMatch.map": {
    "state": "available",
@@ -250,7 +383,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "f99f33e2882aa01d",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "f99f33e2882aa01d"
+    }
+   }
   },
   "CanonicalMatch.mapNumber": {
    "state": "legitimately_empty",
@@ -265,7 +409,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.playedAt": {
    "state": "legitimately_empty",
@@ -280,7 +435,11 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EXCLUDED",
+    "reason": "persisted as matches.played_at only when non-null (COALESCE)"
+   }
   },
   "CanonicalMatch.startedAt": {
    "state": "legitimately_empty",
@@ -295,7 +454,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.finishedAt": {
    "state": "legitimately_empty",
@@ -310,7 +480,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.durationSeconds": {
    "state": "unsupported",
@@ -325,7 +506,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.status": {
    "state": "available",
@@ -342,7 +534,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "4ddb3e96801a1ee2",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "4ddb3e96801a1ee2"
+    }
+   }
   },
   "CanonicalMatch.finished": {
    "state": "available",
@@ -359,7 +562,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b5bea41b6c623f7c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
+    }
+   }
   },
   "CanonicalMatch.terminal": {
    "state": "available",
@@ -376,7 +590,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b5bea41b6c623f7c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
+    }
+   }
   },
   "CanonicalMatch.teamA": {
    "state": "unsupported",
@@ -391,7 +616,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.teamB": {
    "state": "unsupported",
@@ -406,7 +642,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.scoreTeamA": {
    "state": "unsupported",
@@ -421,7 +668,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.scoreTeamB": {
    "state": "unsupported",
@@ -436,7 +694,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.winnerTeam": {
    "state": "unsupported",
@@ -451,7 +720,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.roundCount": {
    "state": "available",
@@ -468,7 +748,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b17ef6d19c7a5b1e",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
+    }
+   }
   },
   "CanonicalMatch.quality.status": {
    "state": "available",
@@ -485,7 +776,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "eebbf6457e46a7f6",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
+    }
+   }
   },
   "CanonicalMatch.quality.reasons": {
    "state": "available",
@@ -502,7 +804,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "4f53cda18c2baa0c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "4f53cda18c2baa0c"
+    }
+   }
   },
   "CanonicalMatch.quality.confidence": {
    "state": "available",
@@ -519,7 +832,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "6b86b273ff34fce1",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
+    }
+   }
   },
   "CanonicalMatch.coverage.roundsExpected": {
    "state": "available",
@@ -536,7 +860,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b17ef6d19c7a5b1e",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
+    }
+   }
   },
   "CanonicalMatch.coverage.roundsObserved": {
    "state": "available",
@@ -553,7 +888,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b17ef6d19c7a5b1e",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
+    }
+   }
   },
   "CanonicalMatch.coverage.participantsExpected": {
    "state": "legitimately_empty",
@@ -568,7 +914,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73c8ffe9553f8c24",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
+    }
+   }
   },
   "CanonicalMatch.coverage.participantsObserved": {
    "state": "available",
@@ -585,7 +942,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "4a44dc15364204a8",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "4a44dc15364204a8"
+    }
+   }
   },
   "CanonicalMatch.coverage.participantsResolved": {
    "state": "available",
@@ -602,7 +970,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "6b86b273ff34fce1",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
+    }
+   }
   },
   "CanonicalMatch.coverage.eventsObserved": {
    "state": "available",
@@ -619,7 +998,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "801f8522550bb910",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "801f8522550bb910"
+    }
+   }
   },
   "CanonicalMatch.coverage.hasRoundData": {
    "state": "available",
@@ -636,7 +1026,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b5bea41b6c623f7c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
+    }
+   }
   },
   "CanonicalMatch.coverage.hasEventData": {
    "state": "available",
@@ -653,7 +1054,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b5bea41b6c623f7c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
+    }
+   }
   },
   "CanonicalMatch.coverage.hasPlayerRoundState": {
    "state": "available",
@@ -670,7 +1082,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b5bea41b6c623f7c",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
+    }
+   }
   },
   "CanonicalMatch.schemaVersion": {
    "state": "available",
@@ -687,7 +1110,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d4735e3a265e16ee",
+     "rows": 1
+    },
+    "bundle": {
+     "rows": 1,
+     "digest": "d4735e3a265e16ee"
+    }
+   }
   },
   "CanonicalParticipant.participantKey": {
    "state": "available",
@@ -704,7 +1138,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b597ad4b6498addc",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
+    }
+   }
   },
   "CanonicalParticipant.internalPlayerId": {
    "state": "available",
@@ -721,7 +1166,11 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EXCLUDED",
+    "reason": "harness uses a placeholder id; compared as presence pattern"
+   }
   },
   "CanonicalParticipant.source": {
    "state": "available",
@@ -738,7 +1187,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "67555a640abcf6d7",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "67555a640abcf6d7"
+    }
+   }
   },
   "CanonicalParticipant.externalPlayerId": {
    "state": "available",
@@ -755,7 +1215,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b597ad4b6498addc",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
+    }
+   }
   },
   "CanonicalParticipant.steamId64": {
    "state": "available",
@@ -772,7 +1243,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b597ad4b6498addc",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
+    }
+   }
   },
   "CanonicalParticipant.nicknameSnapshot": {
    "state": "available",
@@ -789,7 +1271,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "05fb34d66ec2c052",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "05fb34d66ec2c052"
+    }
+   }
   },
   "CanonicalParticipant.team": {
    "state": "unsupported",
@@ -804,7 +1297,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b1a87a6546911db3",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "b1a87a6546911db3"
+    }
+   }
   },
   "CanonicalParticipant.isTargetPlayer": {
    "state": "available",
@@ -821,7 +1325,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "0f3277782487beb5",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "0f3277782487beb5"
+    }
+   }
   },
   "CanonicalParticipant.identityStatus": {
    "state": "available",
@@ -838,7 +1353,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "3b5731714d3d5d70",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "3b5731714d3d5d70"
+    }
+   }
   },
   "CanonicalParticipant.identityConfidence": {
    "state": "available",
@@ -855,7 +1381,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "e75f8a31467dcd41",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "e75f8a31467dcd41"
+    }
+   }
   },
   "CanonicalParticipant.metadata": {
    "state": "legitimately_empty",
@@ -870,7 +1407,18 @@
      "detail": "every value == {}"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "26f724a2161481dd",
+     "rows": 10
+    },
+    "bundle": {
+     "rows": 10,
+     "digest": "26f724a2161481dd"
+    }
+   }
   },
   "CanonicalRound.roundNumber": {
    "state": "available",
@@ -887,7 +1435,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "279638a3bd298a1b",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "279638a3bd298a1b"
+    }
+   }
   },
   "CanonicalRound.startTick": {
    "state": "available",
@@ -904,7 +1463,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "e232e1dc1d6617cb",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "e232e1dc1d6617cb"
+    }
+   }
   },
   "CanonicalRound.endTick": {
    "state": "available",
@@ -921,7 +1491,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d4d08a91705098c8",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "d4d08a91705098c8"
+    }
+   }
   },
   "CanonicalRound.startTimeSeconds": {
    "state": "unsupported",
@@ -936,7 +1517,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c17e778f685ac9be",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
+    }
+   }
   },
   "CanonicalRound.endTimeSeconds": {
    "state": "unsupported",
@@ -951,7 +1543,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c17e778f685ac9be",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
+    }
+   }
   },
   "CanonicalRound.durationSeconds": {
    "state": "unsupported",
@@ -966,7 +1569,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c17e778f685ac9be",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
+    }
+   }
   },
   "CanonicalRound.winningTeam": {
    "state": "unsupported",
@@ -981,7 +1595,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c17e778f685ac9be",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
+    }
+   }
   },
   "CanonicalRound.winningSide": {
    "state": "available",
@@ -998,7 +1623,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "53a40eb7e90c9518",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "53a40eb7e90c9518"
+    }
+   }
   },
   "CanonicalRound.winReason": {
    "state": "unsupported",
@@ -1013,7 +1649,18 @@
      "detail": "every value == unknown"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "115cfb1a5c145b5d",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "115cfb1a5c145b5d"
+    }
+   }
   },
   "CanonicalRound.bombPlanted": {
    "state": "available",
@@ -1030,7 +1677,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d5ad210617a01943",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "d5ad210617a01943"
+    }
+   }
   },
   "CanonicalRound.bombDefused": {
    "state": "available",
@@ -1051,7 +1709,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "af68cf095dd74512",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "af68cf095dd74512"
+    }
+   }
   },
   "CanonicalRound.bombExploded": {
    "state": "available",
@@ -1072,7 +1741,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "319065140a8861cf",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "319065140a8861cf"
+    }
+   }
   },
   "CanonicalRound.quality.status": {
    "state": "available",
@@ -1089,7 +1769,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "9a3ccf981fd3edf9",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "9a3ccf981fd3edf9"
+    }
+   }
   },
   "CanonicalRound.quality.reasons": {
    "state": "available",
@@ -1106,7 +1797,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "83450fafdb740bcf",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "83450fafdb740bcf"
+    }
+   }
   },
   "CanonicalRound.quality.confidence": {
    "state": "available",
@@ -1123,7 +1825,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "6778101f5d6451d7",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "6778101f5d6451d7"
+    }
+   }
   },
   "CanonicalRound.metadata": {
    "state": "legitimately_empty",
@@ -1138,7 +1851,18 @@
      "detail": "every value == {}"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "28ade67bc1b4baaa",
+     "rows": 16
+    },
+    "bundle": {
+     "rows": 16,
+     "digest": "28ade67bc1b4baaa"
+    }
+   }
   },
   "CanonicalRoundPlayer.roundNumber": {
    "state": "available",
@@ -1155,7 +1879,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "ce421a5f228b5fdf",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "ce421a5f228b5fdf"
+    }
+   }
   },
   "CanonicalRoundPlayer.participantKey": {
    "state": "available",
@@ -1172,7 +1907,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d71aeb68485b3d7a",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "d71aeb68485b3d7a"
+    }
+   }
   },
   "CanonicalRoundPlayer.side": {
    "state": "available",
@@ -1193,7 +1939,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c11e8da600c8cce8",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "c11e8da600c8cce8"
+    }
+   }
   },
   "CanonicalRoundPlayer.survived": {
    "state": "not_authorized",
@@ -1208,7 +1965,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.moneyStart": {
    "state": "available",
@@ -1233,7 +2001,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "a005a88932b43576",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "a005a88932b43576"
+    }
+   }
   },
   "CanonicalRoundPlayer.moneyEnd": {
    "state": "available",
@@ -1254,7 +2033,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c3c697a71aa8a92b",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "c3c697a71aa8a92b"
+    }
+   }
   },
   "CanonicalRoundPlayer.equipmentValue": {
    "state": "available",
@@ -1275,7 +2065,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "e39fddd5d23992c1",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "e39fddd5d23992c1"
+    }
+   }
   },
   "CanonicalRoundPlayer.buyContext": {
    "state": "unsupported",
@@ -1290,7 +2091,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.kills": {
    "state": "not_authorized",
@@ -1305,7 +2117,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.deaths": {
    "state": "not_authorized",
@@ -1320,7 +2143,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.assists": {
    "state": "not_authorized",
@@ -1335,7 +2169,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.damage": {
    "state": "not_authorized",
@@ -1350,7 +2195,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.flashAssists": {
    "state": "not_authorized",
@@ -1365,7 +2221,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.openingKill": {
    "state": "not_authorized",
@@ -1380,7 +2247,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.openingDeath": {
    "state": "not_authorized",
@@ -1395,7 +2273,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.traded": {
    "state": "not_authorized",
@@ -1410,7 +2299,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.tradeKill": {
    "state": "not_authorized",
@@ -1425,7 +2325,18 @@
      "detail": "every value == \u2205"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "73789b34dbf19b92",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
+    }
+   }
   },
   "CanonicalRoundPlayer.metadata": {
    "state": "legitimately_empty",
@@ -1440,7 +2351,18 @@
      "detail": "every value == {}"
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "bb974d48f70e6aed",
+     "rows": 160
+    },
+    "bundle": {
+     "rows": 160,
+     "digest": "bb974d48f70e6aed"
+    }
+   }
   },
   "CanonicalEvent.roundNumber": {
    "state": "available",
@@ -1457,7 +2379,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "1d0cd104aed0f8c0",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "1d0cd104aed0f8c0"
+    }
+   }
   },
   "CanonicalEvent.type": {
    "state": "available",
@@ -1474,7 +2407,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "71408db1b0a391ec",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "71408db1b0a391ec"
+    }
+   }
   },
   "CanonicalEvent.tick": {
    "state": "available",
@@ -1491,7 +2435,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "aef99b53533c858f",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "aef99b53533c858f"
+    }
+   }
   },
   "CanonicalEvent.gameTimeSeconds": {
    "state": "available",
@@ -1508,7 +2463,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b409e6fbc25bf265",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "b409e6fbc25bf265"
+    }
+   }
   },
   "CanonicalEvent.actorParticipantKey": {
    "state": "available",
@@ -1525,7 +2491,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "a7efcdbdc19ce3a8",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "a7efcdbdc19ce3a8"
+    }
+   }
   },
   "CanonicalEvent.victimParticipantKey": {
    "state": "available",
@@ -1542,7 +2519,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c43eaee2bc9a7c1f",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "c43eaee2bc9a7c1f"
+    }
+   }
   },
   "CanonicalEvent.assisterParticipantKey": {
    "state": "available",
@@ -1559,7 +2547,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b214a4ee890b507f",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "b214a4ee890b507f"
+    }
+   }
   },
   "CanonicalEvent.sourceActorExternalId": {
    "state": "available",
@@ -1576,7 +2575,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "a7efcdbdc19ce3a8",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "a7efcdbdc19ce3a8"
+    }
+   }
   },
   "CanonicalEvent.sourceVictimExternalId": {
    "state": "available",
@@ -1593,7 +2603,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c43eaee2bc9a7c1f",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "c43eaee2bc9a7c1f"
+    }
+   }
   },
   "CanonicalEvent.sourceAssisterExternalId": {
    "state": "available",
@@ -1610,7 +2631,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "b214a4ee890b507f",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "b214a4ee890b507f"
+    }
+   }
   },
   "CanonicalEvent.weapon": {
    "state": "available",
@@ -1627,7 +2659,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "911e4eb8c5261a98",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "911e4eb8c5261a98"
+    }
+   }
   },
   "CanonicalEvent.headshot": {
    "state": "available",
@@ -1644,7 +2687,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "d396e9584144618a",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "d396e9584144618a"
+    }
+   }
   },
   "CanonicalEvent.distance": {
    "state": "available",
@@ -1661,7 +2715,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "67cfbf1ae4f793ec",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "67cfbf1ae4f793ec"
+    }
+   }
   },
   "CanonicalEvent.damage": {
    "state": "available",
@@ -1678,7 +2743,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "83f4759805754397",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "83f4759805754397"
+    }
+   }
   },
   "CanonicalEvent.quality.status": {
    "state": "available",
@@ -1695,7 +2771,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "4650ff830a4fcd1c",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "4650ff830a4fcd1c"
+    }
+   }
   },
   "CanonicalEvent.quality.reasons": {
    "state": "available",
@@ -1712,7 +2799,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "897fdaf331378ce9",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "897fdaf331378ce9"
+    }
+   }
   },
   "CanonicalEvent.quality.confidence": {
    "state": "available",
@@ -1729,7 +2827,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "c6fa1a49358f47b7",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "c6fa1a49358f47b7"
+    }
+   }
   },
   "CanonicalEvent.data": {
    "state": "available",
@@ -1746,7 +2855,18 @@
      }
     }
    },
-   "deterministic": true
+   "deterministic": true,
+   "round_trip": {
+    "status": "EQUAL",
+    "persisted": {
+     "digest": "45f796ad08fea92a",
+     "rows": 3414
+    },
+    "bundle": {
+     "rows": 3414,
+     "digest": "45f796ad08fea92a"
+    }
+   }
   }
  }
 }
