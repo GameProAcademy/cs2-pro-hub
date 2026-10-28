@@ -123,3 +123,12 @@ gate (`scripts/canonical_mapping_gate.py`).
 | Canonical mapping gate (105 fields) | BLOCKED (by its own contract) | [reproduced] `assert_canonical_mapping_gate`: 0/105 authorized; 68 `DECLARED_BUT_NOT_VERIFIED`, 15 `SOURCE_UNAVAILABLE`, 10 `IDENTITY_BLOCKED`, 5 `NOT_SUPPORTED`, 4 `TICK_DOMAIN_BLOCKED`, 3 `CANONICAL_NOT_AUTHORIZED`; parity/determinism per field `NOT_RUN`; the managed release row is constrained to `authorized_count = 0`. The gate passes only with all 105 authorized, which the 37 structurally blocked fields cannot reach; this governs the browser (client-parser) path, not the server pipeline that users use today. Lifting it needs a versioned contract decision, not a data change |
 | Canonical persistence for users (server pipeline) | PASS | three real demos (Dust2, Mirage, Cache) persisted with verified provenance, correct round segmentation, metrics equal to independent recount, lineage and isolation proven |
 | D7 (`record_demo_identity_event` HTTP 400) | PASS (not reproduced) | [reproduced] three identity declarations in this stage (Dust2 attempt 7, Mirage attempt 9, Cache attempt 14) all completed with metrics |
+
+### Correction (2026-10-28, 105-field gate investigation)
+
+The row "Canonical mapping gate (105 fields)" above says the gate "governs the browser (client-parser) path, not the
+server pipeline that users use today". **That statement is wrong.** The 105 fields are the leaves of
+`demoToCanonicalBundle`, which the server pipeline calls (`src/lib/pipeline/jobs.server.ts`) and
+`persist_canonical_observation` writes in production; the gate is consulted by no write path, and row eligibility is
+governed by provenance, not by this gate. The row is kept unchanged as history. The gate status (BLOCKED) and
+Canonical = NOT PROVEN are unchanged. Full audit and contract proposal: `docs/CANONICAL_105_FIELD_GATE_PROPOSAL.md`.
