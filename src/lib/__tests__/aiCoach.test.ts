@@ -192,6 +192,33 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(String((fetchImpl.mock.calls[0] as unknown as [string])[0])).toContain("openrouter.ai");
   });
 
+  it("calls fetch unbound: a Workers-style fetch that rejects a foreign `this` still answers", async () => {
+    // Cloudflare Workers throw "Illegal invocation" when fetch runs with `this` set to another
+    // object (production failure 2026-10-29: `options.fetchImpl(...)`).
+    const strictFetch = function (this: unknown) {
+      if (this !== undefined && this !== globalThis)
+        throw new TypeError("Illegal invocation: function called with incorrect `this` reference.");
+      return Promise.resolve(ok("fine"));
+    } as unknown as typeof fetch;
+    const result = await call(strictFetch, { OPENROUTER_API_KEY: "or-key" });
+    expect(result.content).toBe("fine");
+    expect(result.provider).toBe("openrouter");
+
+    // Default path (no fetchImpl): the global fetch is wrapped, never passed as a method.
+    const original = globalThis.fetch;
+    globalThis.fetch = strictFetch;
+    try {
+      const viaGlobal = await completeCoach(msgs, {
+        maxTokens: 10,
+        env: { OPENROUTER_API_KEY: "or-key" },
+        now: () => 0,
+      });
+      expect(viaGlobal.content).toBe("fine");
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
   it("refuses Gemini and unknown providers anywhere in the chain", () => {
     expect(() => resolveCoachChain({ AI_PRIMARY_MODEL: "google/gemini-3.7-flash" })).toThrow(
       CoachProviderFailure,

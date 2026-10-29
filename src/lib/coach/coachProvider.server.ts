@@ -232,7 +232,8 @@ async function attempt(
   const timer = setTimeout(() => controller.abort(), options.timeoutMs);
   let response: Response;
   try {
-    response = await options.fetchImpl(ENDPOINT[cfg.provider], {
+    const send = options.fetchImpl; // called unbound, never as a method of `options`
+    response = await send(ENDPOINT[cfg.provider], {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody(cfg, messages, options.maxTokens)),
@@ -322,7 +323,11 @@ export async function completeCoach(
   },
 ): Promise<CoachCompletion> {
   const env = options.env ?? (process.env as Env);
-  const fetchImpl = options.fetchImpl ?? fetch;
+  // Never pass the global `fetch` around as a bare reference: called as a method of another
+  // object (`options.fetchImpl(...)`) it gets the wrong `this`, and the Cloudflare Workers
+  // runtime rejects that with "TypeError: Illegal invocation" before any request is sent
+  // (production 2026-10-29). The wrapper always calls it unbound, as `fetch(...)`.
+  const fetchImpl: typeof fetch = options.fetchImpl ?? ((input, init) => fetch(input, init));
   const now = options.now ?? Date.now;
   const timeoutMs =
     Number(env["AI_TIMEOUT_MS"]) > 0 ? Number(env["AI_TIMEOUT_MS"]) : DEFAULT_TIMEOUT_MS;
