@@ -262,6 +262,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
       model: "openai/gpt-oss-20b",
       max_tokens: 10,
       reasoning: { effort: "low", exclude: true },
+      temperature: 0.2,
     });
     expect(String(init.body)).not.toContain("or-key");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
