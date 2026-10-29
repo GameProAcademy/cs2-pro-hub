@@ -1,0 +1,76 @@
+{
+  "deployment_id": "1c0f26d5-4064-4e6d-a552-2ce05ae517fe",
+  "branch": "main",
+  "semantic_commit": "e8f287500d53586f230a71eff17689969634ecd2",
+  "build_commit": "e8f287500d53586f230a71eff17689969634ecd2",
+  "deployment_commit": "e8f287500d53586f230a71eff17689969634ecd2",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "0dcb5962a0c977ab7a82326ebf8a0ef70bafde02",
+    "adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "20d82451652846c95c4934c72c5d753d",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "ed206712403e8ab989b350eb89abba15",
+  "observed": {
+    "observed_at": "2026-10-29T06:55:00Z",
+    "railway_deployment": {
+      "id": "1c0f26d5-4064-4e6d-a552-2ce05ae517fe",
+      "status": "SUCCESS",
+      "commitHash": "e8f287500d53586f230a71eff17689969634ecd2",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-10-29T06:51:58.547Z",
+      "finished_at": "2026-10-29T06:52:33.154Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #209 (merge e8f28750); PARSER_REVISION/PARSER_BUILD_REVISION set to git:e8f28750... with skipped deploys; exactly one deployment of that commit triggered through the Railway agent; queue idle (0 pending/processing jobs) before the deploy",
+      "failed_builds_never_served": [],
+      "build_info": "BUILD_INFO.json commit e8f287500d53586f230a71eff17689969634ecd2 (build step [6/7]); sources copied fresh at [5/7]",
+      "health": "GET /health 200 at 06:52:29Z (deploy log)"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:e8f287500d53586f230a71eff17689969634ecd2",
+      "PARSER_BUILD_REVISION": "git:e8f287500d53586f230a71eff17689969634ecd2",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: the gate fetches both /version hosts and refuses any other identity",
+    "before": {
+      "deployment_id": "b0895901-1330-4676-9f57-95ddb99060c2",
+      "semantic_revision": "git:c38f209d8d6e801930398c12cc8ac231e08efaf6",
+      "build_revision": "git:c38f209d8d6e801930398c12cc8ac231e08efaf6"
+    },
+    "managed_start_state": {
+      "read_at": "2026-10-29T06:54:00Z",
+      "record_parser_runtime_attestation": "056e486322c9fd513eb2c0f56100084d",
+      "assert_verified_parser_provenance": "145a05ae2a81c12bcc3b1f3795c230c9",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1,
+          "adapter_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0,
+          "adapter_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_20/spec.json",
+  "pin_role": "R5.8.21: re-pin semantic/build commit, Railway deployment and the parser.py and adapter.py critical blobs after the D35/D36 parser release (PR #209, controlled deployment of its merge commit); workflow blob and other critical hashes unchanged",
+  "r5_8_20_database_target_md5": {
+    "assert_verified_parser_provenance": "145a05ae2a81c12bcc3b1f3795c230c9",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_20_recorder_target_md5": "056e486322c9fd513eb2c0f56100084d"
+}

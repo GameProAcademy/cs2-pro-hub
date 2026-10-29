@@ -863,3 +863,26 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - assertion `bb393072…` → `145a05ae…`;
   - workflow guard unchanged.
   - The targets were computed read-only from production `prosrc` and, independently, by the repository generator; the results are identical.
+
+## 2026-10-29 — R5.8.21: D35/D36 parser release (controlled)
+
+- Defects:
+  - D35: grenade detonations reached the app without the thrower; `adapter._event_fields` had no branch for them, although demoparser2 returns `user_steamid` (real DEMs: Dust2 315/315 and Mirage 370/370 rows). Kills dropped the game's `assistedflash` flag.
+  - D36: early deaths compared game-clock event times (~618 s in round 1) with a constant 20 s, so the count was 0 after the first minute.
+- Fix (PR #209, `parser.py` and `adapter.py`):
+  - grenade detonations and `inferno_startburn` carry `attacker` = thrower;
+  - kills carry `assisted_flash`;
+  - rounds carry `freeze_end_tick` and `freeze_end_time_seconds` (own `round_freeze_end`, same clock as events).
+  - The app computes flash assists from the flag, enemies flashed only from blind events, and early deaths from the live instant; an unknown reference is NULL.
+- Release: merge `e8f28750` under the standing watch-pattern freeze; `PARSER_REVISION`/`PARSER_BUILD_REVISION` set with skipped deploys; queue idle before the deploy.
+  - Exactly one deployment of that commit, `1c0f26d5`, triggered through the Railway agent: SUCCESS at 06:52:33Z, BUILD_INFO commit `e8f28750`, `/health` 200.
+- Pins:
+  - parser.py blob `4bf17c9f…` → `0dcb5962…`;
+  - adapter.py blob `34ce0f19…` → `b9581168…`;
+  - worker/raw_evidence/settings blobs and the workflow blob are unchanged.
+- R5.8.21 migration (`supabase/migrations/20261029100000_r5_8_21_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_21/`):
+  - recorder `056e4863…` → `ed206712…`;
+  - assertion `145a05ae…` → `20d82451…`;
+  - workflow guard unchanged.
+  - The recorder target from the repository generator equals the read-only production computation. The assertion target is the read-only production md5 of its prosrc after the same substitutions.
+- Owner action after merge: set `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in the app secrets to the commit `e8f287500d53586f230a71eff17689969634ecd2`.
