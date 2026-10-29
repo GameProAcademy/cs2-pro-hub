@@ -1029,4 +1029,6 @@ export const en: Dictionary = {
     "The message is longer than 1000 characters. Shorten it and send again.",
   "real.aicoach.error.conversation":
     "This conversation is no longer available. Start a new conversation.",
+  "real.dna.flagYes": "Yes",
+  "real.dna.flagNo": "No",
 };

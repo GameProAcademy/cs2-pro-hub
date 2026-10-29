@@ -13,7 +13,7 @@ import {
 import {
   completeCoach,
   CoachProviderFailure,
-  COACH_GATEWAY_URL,
+  resolveCoachChain,
 } from "../coach/coachProvider.server";
 import { buildPlayerDna } from "../playerDna";
 import type { OverviewMatch, PlayerOverview } from "../playerOverview";
@@ -148,91 +148,164 @@ describe("AI Coach factual context", () => {
   });
 });
 
-describe("AI Coach provider (Lovable AI Gateway)", () => {
-  const msgs = [{ role: "user", content: "hi" }];
+describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", () => {
+  const msgs = [{ role: "user" as const, content: "hi" }];
   const json = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  const ok = (content: string, extra: Record<string, unknown> = {}) =>
+    json(200, { choices: [{ message: { content }, finish_reason: "stop" }], ...extra });
+  const keys = { OPENROUTER_API_KEY: "or-key", OPENAI_API_KEY: "oa-key" };
+  const call = (fetchImpl: typeof fetch, env: Record<string, string | undefined> = keys) =>
+    completeCoach(msgs, { maxTokens: 10, env, fetchImpl, now: () => 0 });
 
-  it("is NOT_CONFIGURED without a key and never calls the network", async () => {
-    const fetchImpl = vi.fn();
-    await expect(completeCoach(msgs, { maxTokens: 10, env: {}, fetchImpl })).rejects.toMatchObject({
-      code: "COACH_PROVIDER_NOT_CONFIGURED",
-    });
-    expect(fetchImpl).not.toHaveBeenCalled();
+  it("default chain is openrouter/openai/gpt-oss-20b then openai/gpt-5.6-luna", () => {
+    expect(resolveCoachChain({})).toEqual([
+      { provider: "openrouter", model: "openai/gpt-oss-20b" },
+      { provider: "openai", model: "gpt-5.6-luna" },
+    ]);
+    expect(resolveCoachChain({ AI_FALLBACK_PROVIDER: "none" })).toHaveLength(1);
   });
 
-  it("sends the key only as a bearer header to the gateway and returns the real content", async () => {
-    const fetchImpl = vi.fn(async () =>
-      json(200, { model: "google/x", choices: [{ message: { content: " ok " } }] }),
+  it("refuses Gemini and unknown providers anywhere in the chain", () => {
+    expect(() => resolveCoachChain({ AI_PRIMARY_MODEL: "google/gemini-3.7-flash" })).toThrow(
+      CoachProviderFailure,
     );
-    const out = await completeCoach(msgs, {
-      maxTokens: 10,
-      env: { LOVABLE_API_KEY: "k" },
-      fetchImpl,
+    expect(() => resolveCoachChain({ AI_FALLBACK_MODEL: "gemini-2.5-flash" })).toThrow();
+    expect(() => resolveCoachChain({ AI_PRIMARY_PROVIDER: "google" })).toThrow();
+    expect(() => resolveCoachChain({ AI_FALLBACK_PROVIDER: "lovable" })).toThrow();
+  });
+
+  it("primary answers: OpenRouter endpoint, bearer key, low reasoning, usage and cost recorded", async () => {
+    const fetchImpl = vi.fn(async () =>
+      ok(" answer ", {
+        model: "openai/gpt-oss-20b",
+        usage: {
+          prompt_tokens: 1200,
+          completion_tokens: 300,
+          cost: 0.00011,
+          completion_tokens_details: { reasoning_tokens: 120 },
+        },
+      }),
+    );
+    const out = await call(fetchImpl as unknown as typeof fetch);
+    expect(out).toMatchObject({
+      content: "answer",
+      provider: "openrouter",
+      model: "openai/gpt-oss-20b",
+      fallbackReason: null,
+      usage: { promptTokens: 1200, completionTokens: 300, reasoningTokens: 120, costUsd: 0.00011 },
     });
-    expect(out).toEqual({ content: "ok", model: "google/x" });
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe(COACH_GATEWAY_URL);
-    expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer k");
-    expect(String(init.body)).not.toContain('"k"');
+    expect(url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer or-key");
+    const body = JSON.parse(String(init.body));
+    expect(body).toMatchObject({
+      model: "openai/gpt-oss-20b",
+      max_tokens: 10,
+      reasoning: { effort: "low", exclude: true },
+    });
+    expect(String(init.body)).not.toContain("or-key");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     [429, "COACH_PROVIDER_RATE_LIMITED"],
+    [500, "COACH_PROVIDER_UNAVAILABLE"],
+    [503, "COACH_PROVIDER_UNAVAILABLE"],
     [402, "COACH_PROVIDER_NO_CREDITS"],
-    [401, "COACH_PROVIDER_NOT_CONFIGURED"],
-    [500, "COACH_PROVIDER_FAILED"],
-  ])("maps HTTP %s to %s", async (status, code) => {
-    const fetchImpl = vi.fn(async () => json(status, {}));
-    await expect(
-      completeCoach(msgs, { maxTokens: 10, env: { LOVABLE_API_KEY: "k" }, fetchImpl }),
-    ).rejects.toBeInstanceOf(CoachProviderFailure);
-    await expect(
-      completeCoach(msgs, { maxTokens: 10, env: { LOVABLE_API_KEY: "k" }, fetchImpl }),
-    ).rejects.toMatchObject({
-      code,
-    });
+    [401, "COACH_PROVIDER_AUTH_FAILED"],
+    [403, "COACH_PROVIDER_AUTH_FAILED"],
+  ])(
+    "primary HTTP %s is recorded as %s and the official OpenAI API answers once",
+    async (status, code) => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(json(status, { error: { message: "x" } }))
+        .mockResolvedValueOnce(ok("from openai", { model: "gpt-5.6-luna" }));
+      const out = await call(fetchImpl as unknown as typeof fetch);
+      expect(out).toMatchObject({
+        provider: "openai",
+        content: "from openai",
+        fallbackReason: code,
+      });
+      const [url, init] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+      expect(url).toBe("https://api.openai.com/v1/chat/completions");
+      expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer oa-key");
+      expect(JSON.parse(String(init.body))).toMatchObject({
+        model: "gpt-5.6-luna",
+        max_completion_tokens: 10,
+        reasoning_effort: "low",
+      });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it("timeout / transport failure, invalid JSON, 200-with-error, empty and truncated replies are failures, then fallback", async () => {
+    const bad: Array<() => Promise<Response>> = [
+      async () => {
+        throw new Error("network");
+      },
+      async () => new Response("not json", { status: 200 }),
+      async () => json(200, { error: { code: 502, message: "upstream" } }),
+      async () => ok("   "),
+      async () =>
+        json(200, {
+          choices: [{ message: { content: "**Dados:**\n*" }, finish_reason: "length" }],
+        }),
+    ];
+    const expected = [
+      "COACH_PROVIDER_UNAVAILABLE",
+      "COACH_PROVIDER_INVALID_RESPONSE",
+      "COACH_PROVIDER_INVALID_RESPONSE",
+      "COACH_PROVIDER_EMPTY",
+      "COACH_PROVIDER_TRUNCATED",
+    ];
+    for (const [i, first] of bad.entries()) {
+      const fetchImpl = vi
+        .fn()
+        .mockImplementationOnce(first)
+        .mockResolvedValueOnce(ok("fallback ok"));
+      const out = await call(fetchImpl as unknown as typeof fetch);
+      expect(out.fallbackReason).toBe(expected[i]);
+      expect(out.provider).toBe("openai");
+    }
   });
 
-  it("falls back to the next default model on an unknown model, but not when pinned", async () => {
+  it("missing primary key is recorded and the fallback answers; no network call to the primary", async () => {
+    const fetchImpl = vi.fn(async () => ok("from openai"));
+    const out = await call(fetchImpl as unknown as typeof fetch, { OPENAI_API_KEY: "oa-key" });
+    expect(out.fallbackReason).toBe("COACH_PROVIDER_NOT_CONFIGURED");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("both providers failing returns one stable code with both attempts, never a fabricated reply", async () => {
     const fetchImpl = vi
       .fn()
-      .mockResolvedValueOnce(json(400, { error: "model" }))
-      .mockResolvedValueOnce(json(200, { choices: [{ message: { content: "yes" } }] }));
-    const out = await completeCoach(msgs, {
-      maxTokens: 10,
-      env: { LOVABLE_API_KEY: "k" },
-      fetchImpl,
-    });
-    expect(out.content).toBe("yes");
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-    const pinned = vi.fn(async () => json(400, {}));
-    await expect(
-      completeCoach(msgs, {
-        maxTokens: 10,
-        env: { LOVABLE_API_KEY: "k", COACH_AI_MODEL: "m" },
-        fetchImpl: pinned,
-      }),
-    ).rejects.toMatchObject({ code: "COACH_PROVIDER_FAILED" });
-    expect(pinned).toHaveBeenCalledTimes(1);
+      .mockResolvedValueOnce(json(503, {}))
+      .mockResolvedValueOnce(
+        json(200, { choices: [{ message: { content: "x" }, finish_reason: "length" }] }),
+      );
+    const failure = await call(fetchImpl as unknown as typeof fetch).catch((e) => e);
+    expect(failure).toBeInstanceOf(CoachProviderFailure);
+    expect(failure.code).toBe("COACH_PROVIDER_TRUNCATED");
+    expect(
+      failure.attempts.map((a: { provider: string; code: string }) => `${a.provider}:${a.code}`),
+    ).toEqual(["openrouter:COACH_PROVIDER_UNAVAILABLE", "openai:COACH_PROVIDER_TRUNCATED"]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // one attempt each: no retry loop
   });
 
-  it("a reply cut by the token limit is rejected, never stored as complete", async () => {
-    const fetchImpl = vi.fn(async () =>
-      json(200, { choices: [{ message: { content: "**Dados:**\n*" }, finish_reason: "length" }] }),
-    );
-    await expect(
-      completeCoach(msgs, { maxTokens: 10, env: { LOVABLE_API_KEY: "k" }, fetchImpl }),
-    ).rejects.toMatchObject({ code: "COACH_PROVIDER_TRUNCATED" });
+  it("logs carry metadata only (no content, prompt or key)", async () => {
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {});
+    await call(vi.fn(async () => ok("SECRET-REPLY-TEXT")) as unknown as typeof fetch);
+    const logged = JSON.stringify(spy.mock.calls);
+    expect(logged).not.toMatch(/SECRET-REPLY-TEXT|or-key|oa-key|hi/);
+    expect(logged).toContain("openrouter");
+    spy.mockRestore();
   });
 
-  it("an empty completion is an error, never a fabricated reply", async () => {
-    const fetchImpl = vi.fn(async () => json(200, { choices: [{ message: { content: "  " } }] }));
-    await expect(
-      completeCoach(msgs, { maxTokens: 10, env: { LOVABLE_API_KEY: "k" }, fetchImpl }),
-    ).rejects.toMatchObject({
-      code: "COACH_PROVIDER_EMPTY",
-    });
+  it("no Gemini or Lovable gateway route remains in the active provider module", () => {
+    const src = readFileSync(resolve(__dirname, "../coach/coachProvider.server.ts"), "utf8");
+    expect(src).not.toMatch(/ai\.gateway\.lovable|LOVABLE_API_KEY|google\/gemini/);
   });
 });
 

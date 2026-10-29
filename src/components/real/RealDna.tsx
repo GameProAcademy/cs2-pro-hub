@@ -14,17 +14,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { OverviewStatePanel, WithOverview } from "@/components/real/RealData";
 import { useI18n, useT } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
+import { formatSignalValue } from "@/lib/dnaFormat";
+import { signalLabel } from "@/lib/dnaSignalLabels";
 import { getRealPlayerDna } from "@/lib/playerData.functions";
 import type { RealPlayerDna } from "@/lib/playerDna";
 
-function format(value: number | null, unit: string): string {
-  if (value === null) return "—";
-  if (unit === "ratio" || unit === "rate") return `${(value * 100).toFixed(1)}%`;
-  return value.toFixed(2);
-}
-
 function DnaBody({ dna }: { dna: RealPlayerDna }) {
-  const { t, intlTag } = useI18n();
+  const { t, intlTag, locale } = useI18n();
   const observed = dna.dimensions.filter((d) => d.value !== null);
   return (
     <div className="space-y-8">
@@ -84,9 +80,16 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
             <ul className="divide-y divide-border">
               {d.signals.map((s) => (
                 <li key={s.name} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="font-mono text-xs text-muted-foreground">{s.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {signalLabel(s.name, locale)}
+                  </span>
                   <span className="font-mono">
-                    {s.mean === null ? t("real.dna.notObserved") : format(s.mean, s.unit)}
+                    {s.mean === null
+                      ? t("real.dna.notObserved")
+                      : formatSignalValue(s.mean, s.unit, {
+                          yes: t("real.dna.flagYes"),
+                          no: t("real.dna.flagNo"),
+                        })}
                     <span className="ml-2 text-[11px] text-muted-foreground">
                       {t("real.dna.inMatches").replace("{n}", String(s.matches))}
                     </span>

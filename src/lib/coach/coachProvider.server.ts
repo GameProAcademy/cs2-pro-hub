@@ -1,24 +1,35 @@
 /**
- * AI Coach provider: the Lovable AI Gateway (OpenAI-compatible chat completions).
+ * AI Coach providers (server only): OpenRouter primary, official OpenAI API fallback.
  *
- * The key is LOVABLE_API_KEY, provisioned and managed by Lovable Cloud for this
- * project; it is read only here, on the server, and never logged or returned.
- * The model can be pinned with COACH_AI_MODEL; otherwise the first available
- * model of COACH_DEFAULT_MODELS answers (a 400/404 "unknown model" moves to the
- * next one; any other error stops).
+ * Configuration (backend secrets/env, never in code or the client bundle):
+ *   OPENROUTER_API_KEY           primary key (OpenRouter)
+ *   OPENAI_API_KEY               fallback key (api.openai.com)
+ *   AI_PRIMARY_PROVIDER          default "openrouter"
+ *   AI_PRIMARY_MODEL             default "openai/gpt-oss-20b"
+ *   AI_FALLBACK_PROVIDER         default "openai"; "none" disables the fallback
+ *   AI_FALLBACK_MODEL            default "gpt-5.6-luna"
+ *   AI_TIMEOUT_MS                default 45000 per attempt
+ *
+ * Only "openrouter" and "openai" are accepted providers, and any model id naming
+ * Gemini is refused: Gemini is not used, not even as a silent fallback.
+ *
+ * Policy: one attempt per provider (no retry loops, so no duplicated cost). When the
+ * primary fails for any reason, the cause is logged and the fallback is tried once with
+ * the same request and the same validation. Both failing returns a stable error code.
+ * A reply cut by the token limit, empty, or not valid JSON is a failure, never a reply.
+ * Logs carry provider, model, status, code, latency and token/cost metadata only —
+ * never message content, prompts or keys.
  */
-export const COACH_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-export const COACH_DEFAULT_MODELS = [
-  "google/gemini-3.7-flash",
-  "google/gemini-2.5-flash",
-  "openai/gpt-5.5",
-];
-const TIMEOUT_MS = 45_000;
+export type CoachProviderName = "openrouter" | "openai";
 
 export type CoachProviderError =
   | "COACH_PROVIDER_NOT_CONFIGURED"
+  | "COACH_PROVIDER_AUTH_FAILED"
   | "COACH_PROVIDER_RATE_LIMITED"
   | "COACH_PROVIDER_NO_CREDITS"
+  | "COACH_PROVIDER_UNAVAILABLE"
+  | "COACH_PROVIDER_BAD_REQUEST"
+  | "COACH_PROVIDER_INVALID_RESPONSE"
   | "COACH_PROVIDER_FAILED"
   | "COACH_PROVIDER_EMPTY"
   | "COACH_PROVIDER_TRUNCATED";
@@ -27,71 +38,292 @@ export class CoachProviderFailure extends Error {
   constructor(
     readonly code: CoachProviderError,
     readonly status: number | null = null,
+    readonly attempts: CoachAttempt[] = [],
   ) {
     super(code);
   }
 }
 
-export interface CoachCompletion {
-  content: string;
+export interface CoachProviderConfig {
+  provider: CoachProviderName;
   model: string;
 }
 
+export interface CoachUsage {
+  promptTokens: number | null;
+  completionTokens: number | null;
+  reasoningTokens: number | null;
+  /** Provider-reported cost in USD (OpenRouter `usage.cost`); null when not reported. */
+  costUsd: number | null;
+}
+
+export interface CoachAttempt {
+  provider: CoachProviderName;
+  model: string;
+  ok: boolean;
+  code: CoachProviderError | null;
+  status: number | null;
+  latencyMs: number;
+}
+
+export interface CoachCompletion {
+  content: string;
+  provider: CoachProviderName;
+  /** Model id the provider reports it used (falls back to the configured id). */
+  model: string;
+  usage: CoachUsage;
+  /** Why the fallback answered; null when the primary did. */
+  fallbackReason: CoachProviderError | null;
+  attempts: CoachAttempt[];
+}
+
+const ENDPOINT: Record<CoachProviderName, string> = {
+  openrouter: "https://openrouter.ai/api/v1/chat/completions",
+  openai: "https://api.openai.com/v1/chat/completions",
+};
+const KEY_ENV: Record<CoachProviderName, string> = {
+  openrouter: "OPENROUTER_API_KEY",
+  openai: "OPENAI_API_KEY",
+};
+export const COACH_DEFAULT_PRIMARY: CoachProviderConfig = {
+  provider: "openrouter",
+  model: "openai/gpt-oss-20b",
+};
+export const COACH_DEFAULT_FALLBACK: CoachProviderConfig = {
+  provider: "openai",
+  model: "gpt-5.6-luna",
+};
+const DEFAULT_TIMEOUT_MS = 45_000;
+
+type Env = Record<string, string | undefined>;
+
+function providerName(value: string | undefined, fallback: CoachProviderName): CoachProviderName {
+  const v = value?.trim().toLowerCase();
+  if (!v) return fallback;
+  if (v === "openrouter" || v === "openai") return v;
+  throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED");
+}
+
+function modelId(value: string | undefined, fallback: string): string {
+  const v = value?.trim() || fallback;
+  if (/gemini/i.test(v)) throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED");
+  return v;
+}
+
+/** The active chain from env; throws NOT_CONFIGURED for an unsupported provider or a Gemini model. */
+export function resolveCoachChain(env: Env): CoachProviderConfig[] {
+  const primary: CoachProviderConfig = {
+    provider: providerName(env["AI_PRIMARY_PROVIDER"], COACH_DEFAULT_PRIMARY.provider),
+    model: modelId(env["AI_PRIMARY_MODEL"], COACH_DEFAULT_PRIMARY.model),
+  };
+  if (env["AI_FALLBACK_PROVIDER"]?.trim().toLowerCase() === "none") return [primary];
+  const fallback: CoachProviderConfig = {
+    provider: providerName(env["AI_FALLBACK_PROVIDER"], COACH_DEFAULT_FALLBACK.provider),
+    model: modelId(env["AI_FALLBACK_MODEL"], COACH_DEFAULT_FALLBACK.model),
+  };
+  return [primary, fallback];
+}
+
+function requestBody(cfg: CoachProviderConfig, messages: CoachMessage[], maxTokens: number) {
+  if (cfg.provider === "openrouter") {
+    return {
+      model: cfg.model,
+      messages,
+      max_tokens: maxTokens,
+      // Low reasoning effort, reasoning text not returned (it shares the token budget).
+      reasoning: { effort: "low", exclude: true },
+    };
+  }
+  return {
+    model: cfg.model,
+    messages,
+    max_completion_tokens: maxTokens,
+    reasoning_effort: "low",
+  };
+}
+
+function statusCode(status: number): CoachProviderError {
+  if (status === 401 || status === 403) return "COACH_PROVIDER_AUTH_FAILED";
+  if (status === 402) return "COACH_PROVIDER_NO_CREDITS";
+  if (status === 429) return "COACH_PROVIDER_RATE_LIMITED";
+  if (status === 408 || status >= 500) return "COACH_PROVIDER_UNAVAILABLE";
+  if (status === 400 || status === 404 || status === 422) return "COACH_PROVIDER_BAD_REQUEST";
+  return "COACH_PROVIDER_FAILED";
+}
+
+function finite(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export interface CoachMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+interface AttemptResult {
+  content: string;
+  model: string;
+  usage: CoachUsage;
+}
+
+async function attempt(
+  cfg: CoachProviderConfig,
+  messages: CoachMessage[],
+  options: { maxTokens: number; env: Env; fetchImpl: typeof fetch; timeoutMs: number },
+): Promise<AttemptResult> {
+  const key = options.env[KEY_ENV[cfg.provider]];
+  if (!key) throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED");
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/json",
+  };
+  if (cfg.provider === "openrouter") {
+    headers["HTTP-Referer"] = "https://gamepro.network";
+    headers["X-Title"] = "CS2 PRO AI Coach";
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+  let response: Response;
+  try {
+    response = await options.fetchImpl(ENDPOINT[cfg.provider], {
+      method: "POST",
+      headers,
+      body: JSON.stringify(requestBody(cfg, messages, options.maxTokens)),
+      signal: controller.signal,
+    });
+  } catch {
+    throw new CoachProviderFailure("COACH_PROVIDER_UNAVAILABLE"); // timeout or transport
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!response.ok) throw new CoachProviderFailure(statusCode(response.status), response.status);
+  let body: {
+    choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
+    model?: unknown;
+    error?: unknown;
+    usage?: {
+      prompt_tokens?: unknown;
+      completion_tokens?: unknown;
+      cost?: unknown;
+      completion_tokens_details?: { reasoning_tokens?: unknown };
+    };
+  };
+  try {
+    body = (await response.json()) as typeof body;
+  } catch {
+    throw new CoachProviderFailure("COACH_PROVIDER_INVALID_RESPONSE", response.status);
+  }
+  // OpenRouter can return HTTP 200 with an error object (e.g. mid-generation failure).
+  if (!body || typeof body !== "object" || body.error) {
+    throw new CoachProviderFailure("COACH_PROVIDER_INVALID_RESPONSE", response.status);
+  }
+  const choice = Array.isArray(body.choices) ? body.choices[0] : undefined;
+  if (!choice) throw new CoachProviderFailure("COACH_PROVIDER_INVALID_RESPONSE", response.status);
+  // A reply cut by the token limit is never shown or stored as if it were complete.
+  if (choice.finish_reason === "length") {
+    throw new CoachProviderFailure("COACH_PROVIDER_TRUNCATED", response.status);
+  }
+  if (choice.finish_reason === "error" || choice.finish_reason === "content_filter") {
+    throw new CoachProviderFailure("COACH_PROVIDER_FAILED", response.status);
+  }
+  const content = choice.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    throw new CoachProviderFailure("COACH_PROVIDER_EMPTY", response.status);
+  }
+  return {
+    content: content.trim(),
+    model: typeof body.model === "string" && body.model ? body.model : cfg.model,
+    usage: {
+      promptTokens: finite(body.usage?.prompt_tokens),
+      completionTokens: finite(body.usage?.completion_tokens),
+      reasoningTokens: finite(body.usage?.completion_tokens_details?.reasoning_tokens),
+      costUsd: cfg.provider === "openrouter" ? finite(body.usage?.cost) : null,
+    },
+  };
+}
+
+function logAttempt(a: CoachAttempt, usage: CoachUsage | null) {
+  // Operational metadata only: no content, prompt, user id or key.
+  console.info("[ai-coach] provider attempt", {
+    provider: a.provider,
+    model: a.model,
+    ok: a.ok,
+    code: a.code,
+    status: a.status,
+    latencyMs: a.latencyMs,
+    promptTokens: usage?.promptTokens ?? null,
+    completionTokens: usage?.completionTokens ?? null,
+    reasoningTokens: usage?.reasoningTokens ?? null,
+    costUsd: usage?.costUsd ?? null,
+  });
+}
+
 export async function completeCoach(
-  messages: Array<{ role: string; content: string }>,
+  messages: CoachMessage[],
   options: {
     maxTokens: number;
-    env?: Record<string, string | undefined>;
+    env?: Env;
     fetchImpl?: typeof fetch;
+    now?: () => number;
   },
 ): Promise<CoachCompletion> {
-  const env = options.env ?? process.env;
-  const key = env["LOVABLE_API_KEY"];
-  if (!key) throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED");
-  const pinned = env["COACH_AI_MODEL"]?.trim();
-  const models = pinned ? [pinned] : COACH_DEFAULT_MODELS;
-  const doFetch = options.fetchImpl ?? fetch;
+  const env = options.env ?? (process.env as Env);
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const now = options.now ?? Date.now;
+  const timeoutMs =
+    Number(env["AI_TIMEOUT_MS"]) > 0 ? Number(env["AI_TIMEOUT_MS"]) : DEFAULT_TIMEOUT_MS;
+  const chain = resolveCoachChain(env);
+  const attempts: CoachAttempt[] = [];
+  let lastFailure: CoachProviderFailure | null = null;
 
-  for (const model of models) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    let response: Response;
+  for (const cfg of chain) {
+    const started = now();
     try {
-      response = await doFetch(COACH_GATEWAY_URL, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages, max_tokens: options.maxTokens, temperature: 0.3 }),
-        signal: controller.signal,
+      const result = await attempt(cfg, messages, {
+        maxTokens: options.maxTokens,
+        env,
+        fetchImpl,
+        timeoutMs,
       });
-    } catch {
-      throw new CoachProviderFailure("COACH_PROVIDER_FAILED");
-    } finally {
-      clearTimeout(timer);
+      const record: CoachAttempt = {
+        provider: cfg.provider,
+        model: cfg.model,
+        ok: true,
+        code: null,
+        status: 200,
+        latencyMs: now() - started,
+      };
+      attempts.push(record);
+      logAttempt(record, result.usage);
+      return {
+        content: result.content,
+        provider: cfg.provider,
+        model: result.model,
+        usage: result.usage,
+        fallbackReason: attempts.length > 1 ? attempts[0]!.code : null,
+        attempts,
+      };
+    } catch (error) {
+      const failure =
+        error instanceof CoachProviderFailure
+          ? error
+          : new CoachProviderFailure("COACH_PROVIDER_FAILED");
+      const record: CoachAttempt = {
+        provider: cfg.provider,
+        model: cfg.model,
+        ok: false,
+        code: failure.code,
+        status: failure.status,
+        latencyMs: now() - started,
+      };
+      attempts.push(record);
+      logAttempt(record, null);
+      lastFailure = failure;
     }
-    if (response.status === 429) throw new CoachProviderFailure("COACH_PROVIDER_RATE_LIMITED", 429);
-    if (response.status === 402) throw new CoachProviderFailure("COACH_PROVIDER_NO_CREDITS", 402);
-    if (response.status === 401 || response.status === 403)
-      throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED", response.status);
-    if (
-      (response.status === 400 || response.status === 404) &&
-      !pinned &&
-      model !== models.at(-1)
-    ) {
-      continue; // model not available to this workspace: try the next default
-    }
-    if (!response.ok) throw new CoachProviderFailure("COACH_PROVIDER_FAILED", response.status);
-    const body = (await response.json().catch(() => null)) as {
-      choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
-      model?: unknown;
-    } | null;
-    const choice = body?.choices?.[0];
-    const content = choice?.message?.content;
-    // A reply cut by the token limit is never shown or stored as if it were complete.
-    if (choice?.finish_reason === "length")
-      throw new CoachProviderFailure("COACH_PROVIDER_TRUNCATED");
-    if (typeof content !== "string" || !content.trim())
-      throw new CoachProviderFailure("COACH_PROVIDER_EMPTY");
-    return { content: content.trim(), model: typeof body?.model === "string" ? body.model : model };
   }
-  throw new CoachProviderFailure("COACH_PROVIDER_FAILED");
+  throw new CoachProviderFailure(
+    lastFailure?.code ?? "COACH_PROVIDER_FAILED",
+    lastFailure?.status ?? null,
+    attempts,
+  );
 }
