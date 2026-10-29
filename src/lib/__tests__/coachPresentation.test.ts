@@ -175,6 +175,10 @@ describe("Coach reply rendering", () => {
       "pt-BR",
     );
     expect(facts.sample.matches).toBe(3);
+    expect(facts.matches.every((x) => x.enemiesFlashed === null)).toBe(true);
+    expect(coachSystemPrompt("en")).toContain(
+      "your FIRST sentence must say that this metric is not measured",
+    );
     expect(facts.sample.matchesPerMap).toEqual({ de_cache: 1, de_dust2: 1, de_mirage: 1 });
     expect(facts.sample.note).toMatch(/no trend, tendency/);
     expect(coachSystemPrompt("pt-BR")).toContain("check sample.matchesPerMap");
