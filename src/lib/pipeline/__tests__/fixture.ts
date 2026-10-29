@@ -44,6 +44,9 @@ const rounds = Array.from({ length: ROUND_COUNT }, (_, index) => ({
   winner_side: index % 2 === 0 ? "CT" : "T",
   start_tick: index * 6400,
   end_tick: index * 6400 + 5000,
+  // D36: event times in this fixture are seconds from the live round start.
+  freeze_end_tick: index * 6400,
+  freeze_end_time_seconds: 0,
   duration_seconds: 78,
   bomb_planted: index % 3 === 0,
   bomb_defused: false,

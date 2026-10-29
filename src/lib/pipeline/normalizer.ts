@@ -127,6 +127,7 @@ function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
     distance: num(raw.distance),
     damage: num(raw.damage),
     data,
+    assistedFlash: typeof raw.assisted_flash === "boolean" ? raw.assisted_flash : null,
   };
 }
 
@@ -224,6 +225,8 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
       winnerSide: toSide(r.winner_side),
       startTick: num(r.start_tick),
       endTick: num(r.end_tick),
+      freezeEndTick: num(r.freeze_end_tick),
+      freezeEndTimeSeconds: num(r.freeze_end_time_seconds),
       durationSeconds: num(r.duration_seconds),
       bombPlanted: bool(r.bomb_planted),
       bombDefused: bool(r.bomb_defused),

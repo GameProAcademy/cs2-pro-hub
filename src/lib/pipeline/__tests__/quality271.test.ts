@@ -40,6 +40,8 @@ const availability = (over: Partial<MetricsAvailability>): MetricsAvailability =
   damageEvents: true,
   utilityEvents: true,
   utilityAttribution: true,
+  blindEvents: true,
+  flashAssistFlag: false,
   roundEndEvidence: true,
   economy: true,
   timing: true,
