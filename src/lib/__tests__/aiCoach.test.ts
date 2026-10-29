@@ -14,6 +14,7 @@ import {
   completeCoach,
   CoachProviderFailure,
   resolveCoachChain,
+  transportDetail,
 } from "../coach/coachProvider.server";
 import { buildPlayerDna } from "../playerDna";
 import type { OverviewMatch, PlayerOverview } from "../playerOverview";
@@ -293,7 +294,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     ).catch((e) => e);
     expect(transport.attempts[0]).toMatchObject({
       code: "COACH_PROVIDER_UNAVAILABLE",
-      transport: "TypeError",
+      transport: "TypeError: fetch failed [url]",
     });
     expect(JSON.stringify(transport.attempts)).not.toContain("secret.example");
     for (const [i, first] of bad.entries()) {
@@ -349,6 +350,17 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(failure.code).toBe("COACH_PROVIDER_NOT_CONFIGURED");
     expect(failure.attempts[0]).toMatchObject({ transport: "INVALID_KEY_FORMAT", status: null });
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("transport detail keeps the class, runtime code and a redacted short message only", () => {
+    const err = new TypeError(
+      "fetch failed for Bearer sk-or-v1-abcdefghijklmnopqrstuvwxyz https://x.example/?k=1",
+    );
+    (err as unknown as { cause: unknown }).cause = { code: "ENOTFOUND" };
+    const detail = transportDetail(err, false);
+    expect(detail.startsWith("TypeError: ENOTFOUND: fetch failed")).toBe(true);
+    expect(detail).not.toMatch(/sk-or|abcdefghijklmnop|k=1/);
+    expect(transportDetail(new Error("x"), true)).toBe("TIMEOUT");
   });
 
   it("logs carry metadata only (no content, prompt or key)", async () => {

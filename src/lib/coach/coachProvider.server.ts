@@ -164,6 +164,28 @@ function finite(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Diagnosable, secret-free description of a request that never got an HTTP response:
+ * error class, the runtime's error code (e.g. ENOTFOUND, ECONNREFUSED,
+ * UND_ERR_CONNECT_TIMEOUT) when present, whether our own timeout aborted it, and the
+ * first 80 characters of the message with every long token-like run, URL query and
+ * "Bearer …" removed. Keys never reach this text (they are only in a header value).
+ */
+export function transportDetail(error: unknown, timedOut: boolean): string {
+  if (timedOut) return "TIMEOUT";
+  if (!(error instanceof Error)) return typeof error;
+  const own = (error as unknown as { code?: unknown }).code;
+  const cause = (error as unknown as { cause?: { code?: unknown } }).cause;
+  const code = typeof own === "string" ? own : typeof cause?.code === "string" ? cause.code : null;
+  const message = error.message
+    .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/https?:\/\/\S+/gi, "[url]")
+    .replace(/\?\S*/g, "")
+    .replace(/[A-Za-z0-9_-]{20,}/g, "[redacted]")
+    .slice(0, 80);
+  return [error.name, code, message].filter(Boolean).join(": ");
+}
+
 export interface CoachMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -217,9 +239,13 @@ async function attempt(
       signal: controller.signal,
     });
   } catch (error) {
-    // Timeout or transport: keep only the error class name (never the message or URL).
-    const name = error instanceof Error ? error.name : typeof error;
-    throw new CoachProviderFailure("COACH_PROVIDER_UNAVAILABLE", null, [], name);
+    // Timeout or transport. Headers were validated above, so this is the network layer.
+    throw new CoachProviderFailure(
+      "COACH_PROVIDER_UNAVAILABLE",
+      null,
+      [],
+      transportDetail(error, controller.signal.aborted),
+    );
   } finally {
     clearTimeout(timer);
   }
