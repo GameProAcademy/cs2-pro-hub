@@ -29,6 +29,8 @@ function Inline({ text }: { text: string }) {
       {inlineParts(text).map((part, i) =>
         part.kind === "bold" ? (
           <strong key={i}>{part.text}</strong>
+        ) : part.kind === "italic" ? (
+          <em key={i}>{part.text}</em>
         ) : part.kind === "code" ? (
           <code key={i} className="rounded bg-muted px-1 text-[0.85em]">
             {part.text}

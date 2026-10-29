@@ -6,7 +6,7 @@ import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 
 import { CoachText } from "@/components/coach/RealCoachChat";
-import { COACH_LOCALES, buildCoachFacts } from "../coach/coachContext";
+import { COACH_LOCALES, buildCoachFacts, coachSystemPrompt } from "../coach/coachContext";
 import { coachBlocks, inlineParts, plainMath } from "../coach/coachText";
 import { formatSignalValue } from "../dnaFormat";
 import { DNA_SIGNAL_LABELS, signalLabel } from "../dnaSignalLabels";
@@ -82,6 +82,45 @@ describe("Player DNA signal labels", () => {
 });
 
 describe("Coach reply rendering", () => {
+  it("production reply shapes: blockquote and *italic* render without literal markers", () => {
+    // Shapes from the first OpenRouter reply in production (2026-10-29).
+    const blocks = coachBlocks(
+      "> **Observação**: os valores são copiados.\n\nEx.: em *de_dust2* você tem 13 kills.",
+    );
+    expect(blocks[0]).toEqual({
+      kind: "paragraph",
+      text: "**Observação**: os valores são copiados.",
+    });
+    expect(inlineParts("em *de_dust2* você")).toEqual([
+      { kind: "text", text: "em " },
+      { kind: "italic", text: "de_dust2" },
+      { kind: "text", text: " você" },
+    ]);
+    // Arithmetic asterisks and bold stay as they were.
+    expect(inlineParts("2 * 3 * 4")).toEqual([{ kind: "text", text: "2 * 3 * 4" }]);
+    expect(inlineParts("**forte** e *leve*").map((p) => p.kind)).toEqual([
+      "bold",
+      "text",
+      "italic",
+    ]);
+    const html = renderToStaticMarkup(
+      createElement(CoachText, { content: "> nota\n\nem *de_mirage* <b>x</b>" }),
+    );
+    expect(html).toContain("<em>de_mirage</em>");
+    expect(html).not.toContain("&gt; nota");
+    expect(html).not.toContain("<b>");
+  });
+
+  it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {
+    const prompt = coachSystemPrompt("pt-BR");
+    expect(prompt).toContain("K/D = kills / deaths");
+    expect(prompt).toContain("ADR = total damage dealt / rounds played");
+    expect(prompt).toMatch(
+      /KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded/,
+    );
+    expect(prompt).toContain("not added together");
+  });
+
   it("rewrites LaTeX into plain text", () => {
     expect(plainMath("\\[ \\text{K/D} = \\frac{\\text{kills}}{\\text{deaths}} \\]")).toBe(
       " K/D = kills / deaths ",
