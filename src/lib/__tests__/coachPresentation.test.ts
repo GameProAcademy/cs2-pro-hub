@@ -125,6 +125,35 @@ describe("Coach reply rendering", () => {
     expect(coachBlocks("```ts\nx\n~~~").map((b) => ("text" in b ? b.text : b.kind))).toEqual(["x"]);
   });
 
+  it("benchmark findings 2026-10-29: section names, flash assists, DNA scope and format", () => {
+    // Q1/Q6 used English headings in pt-BR and es; Q2 called flash assists "enemies flashed";
+    // Q4 attributed an all-match DNA signal to one map and inferred a tendency from one match;
+    // Q7 compared the player with a "global average"; Q8 wrote DNA dimensions as "%".
+    expect(coachSystemPrompt("pt-BR")).toContain("'Dados'");
+    expect(coachSystemPrompt("pt-BR")).toContain("'Recomendação'");
+    expect(coachSystemPrompt("es")).toContain("'Datos'");
+    expect(coachSystemPrompt("fr")).toContain("'Données'");
+    expect(coachSystemPrompt("en")).toContain("'Interpretation'");
+    const p = coachSystemPrompt("en");
+    expect(p).toContain("never attribute a DNA value to one map or match");
+    expect(p).toContain("never compare the player with them");
+    expect(p).toContain("One match per map is a single observation, never a tendency");
+    expect(p).toMatch(/Never present them as percentiles or as percentages/);
+
+    const empty = buildCoachFacts(
+      { matches: [], aggregates: null } as unknown as PlayerOverview,
+      buildPlayerDna([]),
+      "pt-BR",
+    );
+    const flashed = empty.notAvailable.find((n) => n.startsWith("enemies flashed"));
+    expect(flashed).toContain("NOT MEASURED");
+    expect(flashed).toContain("flashAssists is a different metric");
+    for (const d of empty.playerDna.dimensions) {
+      expect(d).not.toHaveProperty("value0to100");
+      expect(d.shown === "not observed" || / \/ 100$/.test(d.shown)).toBe(true);
+    }
+  });
+
   it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {
     const prompt = coachSystemPrompt("pt-BR");
     expect(prompt).toContain("K/D = kills / deaths");

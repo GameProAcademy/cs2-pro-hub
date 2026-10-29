@@ -141,6 +141,8 @@ function requestBody(cfg: CoachProviderConfig, messages: CoachMessage[], maxToke
       max_tokens: maxTokens,
       // Low reasoning effort, reasoning text not returned (it shares the token budget).
       reasoning: { effort: "low", exclude: true },
+      // Factual coaching over fixed data: low sampling temperature keeps wording on the facts.
+      temperature: 0.2,
     };
   }
   return {
