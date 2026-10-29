@@ -37,12 +37,19 @@ describe("Player DNA signal labels", () => {
 
   it("values keep zero, unknown and index semantics", () => {
     const yn = { yes: "Sim", no: "Não" };
-    expect(formatSignalValue(null, "ratio", yn)).toBe("—");
-    expect(formatSignalValue(0, "ratio", yn)).toBe("0.0%");
-    expect(formatSignalValue(0.577, "ratio", yn)).toBe("57.7%");
-    expect(formatSignalValue(0.845, "rate", yn)).toBe("85 / 100");
-    expect(formatSignalValue(20, "seconds", yn)).toBe("20 s");
-    expect(formatSignalValue(1, "flag", yn)).toBe("Sim");
+    expect(formatSignalValue("hs_rate", null, "ratio", yn)).toBe("—");
+    expect(formatSignalValue("hs_rate", 0, "ratio", yn)).toBe("0.0%");
+    expect(formatSignalValue("hs_rate", 0.577, "ratio", yn)).toBe("57.7%");
+    // Reference-scaled signals are an index, never a percentage.
+    expect(formatSignalValue("damage_per_round", 0.845, "rate", yn)).toBe("85 / 100");
+    expect(formatSignalValue("damage_efficiency", 0.49, "ratio", yn)).toBe("49 / 100");
+    expect(formatSignalValue("rating", 0.498, "ratio", yn)).toBe("50 / 100");
+    expect(formatSignalValue("utility_damage_per_round", 0.235, "rate", yn)).toBe("24 / 100");
+    // Shares of rounds stay percentages; kills per round is the plain number.
+    expect(formatSignalValue("opening_participation", 0.127, "rate", yn)).toBe("12.7%");
+    expect(formatSignalValue("kills_per_round", 0.626, "rate", yn)).toBe("0.63");
+    expect(formatSignalValue("early_window_seconds", 20, "seconds", yn)).toBe("20 s");
+    expect(formatSignalValue("economy_data_available", 1, "flag", yn)).toBe("Sim");
   });
 
   it("the DNA page renders labels, not signal ids", () => {

@@ -6,7 +6,8 @@
  *   OPENAI_API_KEY               fallback key (api.openai.com)
  *   AI_PRIMARY_PROVIDER          default "openrouter"
  *   AI_PRIMARY_MODEL             default "openai/gpt-oss-20b"
- *   AI_FALLBACK_PROVIDER         default "openai"; "none" disables the fallback
+ *   AI_FALLBACK_PROVIDER         "openai" enables the fallback; unset or "none" = no fallback
+ *                                (owner decision 2026-10-29: no OpenAI balance, OpenRouter only)
  *   AI_FALLBACK_MODEL            default "gpt-5.6-luna"
  *   AI_TIMEOUT_MS                default 45000 per attempt
  *
@@ -39,6 +40,8 @@ export class CoachProviderFailure extends Error {
     readonly code: CoachProviderError,
     readonly status: number | null = null,
     readonly attempts: CoachAttempt[] = [],
+    /** Transport-level cause (error class name only, e.g. "AbortError", "TypeError"). */
+    readonly transport: string | null = null,
   ) {
     super(code);
   }
@@ -64,6 +67,8 @@ export interface CoachAttempt {
   code: CoachProviderError | null;
   status: number | null;
   latencyMs: number;
+  /** Error class name when the request never got an HTTP response (timeout / network). */
+  transport: string | null;
 }
 
 export interface CoachCompletion {
@@ -116,9 +121,13 @@ export function resolveCoachChain(env: Env): CoachProviderConfig[] {
     provider: providerName(env["AI_PRIMARY_PROVIDER"], COACH_DEFAULT_PRIMARY.provider),
     model: modelId(env["AI_PRIMARY_MODEL"], COACH_DEFAULT_PRIMARY.model),
   };
-  if (env["AI_FALLBACK_PROVIDER"]?.trim().toLowerCase() === "none") return [primary];
+  // The fallback is opt-in: an account without balance must not be called on every failure.
+  // A Gemini model id is refused even while the fallback is off: no dormant route to it.
+  modelId(env["AI_FALLBACK_MODEL"], COACH_DEFAULT_FALLBACK.model);
+  const fallbackName = env["AI_FALLBACK_PROVIDER"]?.trim().toLowerCase();
+  if (!fallbackName || fallbackName === "none") return [primary];
   const fallback: CoachProviderConfig = {
-    provider: providerName(env["AI_FALLBACK_PROVIDER"], COACH_DEFAULT_FALLBACK.provider),
+    provider: providerName(fallbackName, COACH_DEFAULT_FALLBACK.provider),
     model: modelId(env["AI_FALLBACK_MODEL"], COACH_DEFAULT_FALLBACK.model),
   };
   return [primary, fallback];
@@ -191,8 +200,10 @@ async function attempt(
       body: JSON.stringify(requestBody(cfg, messages, options.maxTokens)),
       signal: controller.signal,
     });
-  } catch {
-    throw new CoachProviderFailure("COACH_PROVIDER_UNAVAILABLE"); // timeout or transport
+  } catch (error) {
+    // Timeout or transport: keep only the error class name (never the message or URL).
+    const name = error instanceof Error ? error.name : typeof error;
+    throw new CoachProviderFailure("COACH_PROVIDER_UNAVAILABLE", null, [], name);
   } finally {
     clearTimeout(timer);
   }
@@ -251,6 +262,7 @@ function logAttempt(a: CoachAttempt, usage: CoachUsage | null) {
     code: a.code,
     status: a.status,
     latencyMs: a.latencyMs,
+    transport: a.transport,
     promptTokens: usage?.promptTokens ?? null,
     completionTokens: usage?.completionTokens ?? null,
     reasoningTokens: usage?.reasoningTokens ?? null,
@@ -274,7 +286,10 @@ export async function completeCoach(
     Number(env["AI_TIMEOUT_MS"]) > 0 ? Number(env["AI_TIMEOUT_MS"]) : DEFAULT_TIMEOUT_MS;
   const chain = resolveCoachChain(env);
   const attempts: CoachAttempt[] = [];
-  let lastFailure: CoachProviderFailure | null = null;
+  // The reported code is the PRIMARY's: a fallback that cannot help (no balance, not
+  // configured) must never be presented as the primary's failure. Every attempt stays in
+  // `attempts` for diagnosis.
+  let primaryFailure: CoachProviderFailure | null = null;
 
   for (const cfg of chain) {
     const started = now();
@@ -292,6 +307,7 @@ export async function completeCoach(
         code: null,
         status: 200,
         latencyMs: now() - started,
+        transport: null,
       };
       attempts.push(record);
       logAttempt(record, result.usage);
@@ -315,15 +331,16 @@ export async function completeCoach(
         code: failure.code,
         status: failure.status,
         latencyMs: now() - started,
+        transport: failure.transport,
       };
       attempts.push(record);
       logAttempt(record, null);
-      lastFailure = failure;
+      primaryFailure ??= failure;
     }
   }
   throw new CoachProviderFailure(
-    lastFailure?.code ?? "COACH_PROVIDER_FAILED",
-    lastFailure?.status ?? null,
+    primaryFailure?.code ?? "COACH_PROVIDER_FAILED",
+    primaryFailure?.status ?? null,
     attempts,
   );
 }
