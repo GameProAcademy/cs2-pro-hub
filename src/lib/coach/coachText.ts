@@ -113,6 +113,8 @@ export function coachBlocks(content: string): CoachBlock[] {
       continue;
     }
     if (SEPARATOR.test(line) || /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) continue;
+    // Code-fence markers (``` or ```lang) are dropped; the fenced lines render as text.
+    if (/^\s*(`{3,}|~{3,})[\w-]*\s*$/.test(line)) continue;
     // Blockquote marker: the quoted text is shown as a plain paragraph, never a literal ">".
     const quote = /^\s*>\s?(.*)$/.exec(line);
     if (quote) {
