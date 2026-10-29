@@ -146,11 +146,13 @@ export type InlinePart = { kind: "text" | "bold" | "italic" | "code"; text: stri
  */
 export function inlineParts(text: string): InlinePart[] {
   const parts: InlinePart[] = [];
-  const re = /\*\*([^*]+)\*\*|`([^`]+)`|\*(?![\s*])([^*\n]*?[^\s*])\*/g;
+  // Bold may wrap an italic span ("**Prática em *Cache***", production 2026-10-29); the inner
+  // asterisks are dropped and the whole span renders bold.
+  const re = /\*\*((?:[^*\n]|\*(?!\*))+?\*?)\*\*(?!\*)|`([^`]+)`|\*(?![\s*])([^*\n]*?[^\s*])\*/g;
   let last = 0;
   for (let m = re.exec(text); m; m = re.exec(text)) {
     if (m.index > last) parts.push({ kind: "text", text: text.slice(last, m.index) });
-    if (m[1] !== undefined) parts.push({ kind: "bold", text: m[1] });
+    if (m[1] !== undefined) parts.push({ kind: "bold", text: m[1].replace(/\*/g, "") });
     else if (m[2] !== undefined) parts.push({ kind: "code", text: m[2] });
     else parts.push({ kind: "italic", text: m[3]! });
     last = m.index + m[0].length;

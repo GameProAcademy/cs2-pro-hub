@@ -154,6 +154,32 @@ describe("Coach reply rendering", () => {
     }
   });
 
+  it("bold wrapping an italic span renders bold without literal asterisks", () => {
+    // Production 2026-10-29, conversation b6e2be19.
+    expect(inlineParts("1. **Prática focada em *Cache***")).toEqual([
+      { kind: "text", text: "1. " },
+      { kind: "bold", text: "Prática focada em Cache" },
+    ]);
+    expect(inlineParts("**a** e **b**").map((p) => p.kind)).toEqual(["bold", "text", "bold"]);
+    expect(inlineParts("2 * 3 * 4")).toEqual([{ kind: "text", text: "2 * 3 * 4" }]);
+  });
+
+  it("facts carry matches per map so a one-match map is never read as a tendency", () => {
+    const m = (map: string) => ({ map, playedAt: "2026-10-01", admission: null, limitations: [] });
+    const facts = buildCoachFacts(
+      {
+        matches: [m("de_cache"), m("de_dust2"), m("de_mirage")],
+        aggregates: null,
+      } as unknown as PlayerOverview,
+      buildPlayerDna([]),
+      "pt-BR",
+    );
+    expect(facts.sample.matches).toBe(3);
+    expect(facts.sample.matchesPerMap).toEqual({ de_cache: 1, de_dust2: 1, de_mirage: 1 });
+    expect(facts.sample.note).toMatch(/no trend, tendency/);
+    expect(coachSystemPrompt("pt-BR")).toContain("check sample.matchesPerMap");
+  });
+
   it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {
     const prompt = coachSystemPrompt("pt-BR");
     expect(prompt).toContain("K/D = kills / deaths");
