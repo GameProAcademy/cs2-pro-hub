@@ -154,16 +154,41 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   const ok = (content: string, extra: Record<string, unknown> = {}) =>
     json(200, { choices: [{ message: { content }, finish_reason: "stop" }], ...extra });
-  const keys = { OPENROUTER_API_KEY: "or-key", OPENAI_API_KEY: "oa-key" };
+  // Fallback scenarios opt in explicitly; the production default is OpenRouter only.
+  const keys = {
+    OPENROUTER_API_KEY: "or-key",
+    OPENAI_API_KEY: "oa-key",
+    AI_FALLBACK_PROVIDER: "openai",
+  };
   const call = (fetchImpl: typeof fetch, env: Record<string, string | undefined> = keys) =>
     completeCoach(msgs, { maxTokens: 10, env, fetchImpl, now: () => 0 });
 
-  it("default chain is openrouter/openai/gpt-oss-20b then openai/gpt-5.6-luna", () => {
+  it("default chain is OpenRouter openai/gpt-oss-20b only; OpenAI gpt-5.6-luna only when opted in", () => {
     expect(resolveCoachChain({})).toEqual([
+      { provider: "openrouter", model: "openai/gpt-oss-20b" },
+    ]);
+    expect(resolveCoachChain({ AI_FALLBACK_PROVIDER: "none" })).toHaveLength(1);
+    expect(resolveCoachChain({ AI_FALLBACK_PROVIDER: "openai" })).toEqual([
       { provider: "openrouter", model: "openai/gpt-oss-20b" },
       { provider: "openai", model: "gpt-5.6-luna" },
     ]);
-    expect(resolveCoachChain({ AI_FALLBACK_PROVIDER: "none" })).toHaveLength(1);
+  });
+
+  it("without the opt-in, a primary failure is reported as itself and OpenAI is never called", async () => {
+    const fetchImpl = vi.fn(async () => json(401, { error: { message: "bad key" } }));
+    const failure = await call(fetchImpl as unknown as typeof fetch, {
+      OPENROUTER_API_KEY: "or-key",
+      OPENAI_API_KEY: "oa-key",
+    }).catch((e) => e);
+    expect(failure.code).toBe("COACH_PROVIDER_AUTH_FAILED");
+    expect(failure.status).toBe(401);
+    expect(failure.attempts[0]).toMatchObject({
+      provider: "openrouter",
+      status: 401,
+      transport: null,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(String((fetchImpl.mock.calls[0] as unknown as [string])[0])).toContain("openrouter.ai");
   });
 
   it("refuses Gemini and unknown providers anywhere in the chain", () => {
@@ -260,6 +285,17 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
       "COACH_PROVIDER_EMPTY",
       "COACH_PROVIDER_TRUNCATED",
     ];
+    const transport = await call(
+      vi.fn(async () => {
+        throw new TypeError("fetch failed https://secret.example/?key=abc");
+      }) as unknown as typeof fetch,
+      { OPENROUTER_API_KEY: "or-key" },
+    ).catch((e) => e);
+    expect(transport.attempts[0]).toMatchObject({
+      code: "COACH_PROVIDER_UNAVAILABLE",
+      transport: "TypeError",
+    });
+    expect(JSON.stringify(transport.attempts)).not.toContain("secret.example");
     for (const [i, first] of bad.entries()) {
       const fetchImpl = vi
         .fn()
@@ -273,12 +309,15 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
 
   it("missing primary key is recorded and the fallback answers; no network call to the primary", async () => {
     const fetchImpl = vi.fn(async () => ok("from openai"));
-    const out = await call(fetchImpl as unknown as typeof fetch, { OPENAI_API_KEY: "oa-key" });
+    const out = await call(fetchImpl as unknown as typeof fetch, {
+      OPENAI_API_KEY: "oa-key",
+      AI_FALLBACK_PROVIDER: "openai",
+    });
     expect(out.fallbackReason).toBe("COACH_PROVIDER_NOT_CONFIGURED");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("both providers failing returns one stable code with both attempts, never a fabricated reply", async () => {
+  it("both failing reports the PRIMARY's code (a fallback without balance never masks it), with both attempts", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(json(503, {}))
@@ -287,7 +326,8 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
       );
     const failure = await call(fetchImpl as unknown as typeof fetch).catch((e) => e);
     expect(failure).toBeInstanceOf(CoachProviderFailure);
-    expect(failure.code).toBe("COACH_PROVIDER_TRUNCATED");
+    expect(failure.code).toBe("COACH_PROVIDER_UNAVAILABLE");
+    expect(failure.status).toBe(503);
     expect(
       failure.attempts.map((a: { provider: string; code: string }) => `${a.provider}:${a.code}`),
     ).toEqual(["openrouter:COACH_PROVIDER_UNAVAILABLE", "openai:COACH_PROVIDER_TRUNCATED"]);

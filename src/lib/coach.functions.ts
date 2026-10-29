@@ -67,7 +67,12 @@ export type CoachSendResult =
        * Provider attempts behind a provider failure (provider name, stable code, HTTP status).
        * Operational metadata for diagnosis: no content, prompt, key or user data. Not rendered.
        */
-      attempts?: Array<{ provider: string; code: string | null; status: number | null }>;
+      attempts?: Array<{
+        provider: string;
+        code: string | null;
+        status: number | null;
+        transport: string | null;
+      }>;
     };
 
 type Db = SupabaseClient<Database>;
@@ -243,6 +248,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
               provider: a.provider,
               code: a.code,
               status: a.status,
+              transport: a.transport,
             })),
           };
         }
