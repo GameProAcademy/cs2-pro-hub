@@ -1053,6 +1053,8 @@ export const ptBR = {
   "real.aicoach.error.tooLong": "A mensagem passa de 1000 caracteres. Encurte e envie de novo.",
   "real.aicoach.error.conversation":
     "Esta conversa não está mais disponível. Comece uma nova conversa.",
+  "real.dna.flagYes": "Sim",
+  "real.dna.flagNo": "Não",
 } as const;
 
 export type Dictionary = Record<keyof typeof ptBR, string>;

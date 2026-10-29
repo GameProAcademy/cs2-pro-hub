@@ -1053,4 +1053,6 @@ export const es: Dictionary = {
   "real.aicoach.error.tooLong":
     "El mensaje supera los 1000 caracteres. Acórtalo y envíalo de nuevo.",
   "real.aicoach.error.conversation": "Esta conversación ya no está disponible. Empieza una nueva.",
+  "real.dna.flagYes": "Sí",
+  "real.dna.flagNo": "No",
 };

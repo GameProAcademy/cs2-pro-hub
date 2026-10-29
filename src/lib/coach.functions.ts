@@ -28,6 +28,7 @@ import {
   validateCoachInput,
   type CoachFacts,
 } from "@/lib/coach/coachContext";
+import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 
 export type CoachErrorCode =
@@ -39,12 +40,7 @@ export type CoachErrorCode =
   | "COACH_NO_DATA"
   | "COACH_CONVERSATION_NOT_FOUND"
   | "COACH_RATE_LIMITED"
-  | "COACH_PROVIDER_NOT_CONFIGURED"
-  | "COACH_PROVIDER_RATE_LIMITED"
-  | "COACH_PROVIDER_NO_CREDITS"
-  | "COACH_PROVIDER_FAILED"
-  | "COACH_PROVIDER_EMPTY"
-  | "COACH_PROVIDER_TRUNCATED"
+  | CoachProviderError
   | "COACH_INTERNAL";
 
 export interface CoachMessageView {
@@ -205,7 +201,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         loadPlayerOverview(db, context.userId),
         loadPlayerDna(db, context.userId),
       ]);
-      const facts = buildCoachFacts(overview, dna);
+      const facts = buildCoachFacts(overview, dna, input.locale);
       if (facts.dataState === "NO_MATCHES") return { ok: false, error: "COACH_NO_DATA" };
       const history = conversationId
         ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY)).map((m) => ({
@@ -227,7 +223,11 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         );
       } catch (error) {
         if (error instanceof CoachProviderFailure) {
-          console.error("[ai-coach] provider failure", { code: error.code, status: error.status });
+          console.error("[ai-coach] provider failure", {
+            code: error.code,
+            status: error.status,
+            attempts: error.attempts.map((a) => `${a.provider}:${a.code ?? "ok"}`),
+          });
           return { ok: false, error: error.code };
         }
         throw error;
@@ -261,11 +261,9 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           conversation_id: conversationId,
           role: "coach",
           content: completion.content,
-          context_type:
-            `${COACH_VERSION}|model=${completion.model}|data=${facts.dataState}|matches=${facts.matches.length}`.slice(
-              0,
-              200,
-            ),
+          // Provenance of the reply (no content, no key): who answered, why a fallback
+          // answered, the data state it was grounded on, tokens and provider-reported cost.
+          context_type: coachProvenance(completion, facts).slice(0, 255),
         })
         .select("id, role, content, created_at")
         .single();
@@ -282,3 +280,32 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       return { ok: false, error: "COACH_INTERNAL" };
     }
   });
+
+function coachProvenance(
+  completion: {
+    provider: string;
+    model: string;
+    fallbackReason: string | null;
+    usage: {
+      promptTokens: number | null;
+      completionTokens: number | null;
+      reasoningTokens: number | null;
+      costUsd: number | null;
+    };
+  },
+  facts: { dataState: string; matches: unknown[] },
+): string {
+  const u = completion.usage;
+  return [
+    COACH_VERSION,
+    `provider=${completion.provider}`,
+    `model=${completion.model}`,
+    `fallback=${completion.fallbackReason ?? "none"}`,
+    `data=${facts.dataState}`,
+    `matches=${facts.matches.length}`,
+    `in=${u.promptTokens ?? "?"}`,
+    `out=${u.completionTokens ?? "?"}`,
+    `reasoning=${u.reasoningTokens ?? "?"}`,
+    `cost_usd=${u.costUsd ?? "?"}`,
+  ].join("|");
+}

@@ -1052,4 +1052,6 @@ export const ptPT: Dictionary = {
   "real.aicoach.error.tooLong": "A mensagem ultrapassa 1000 caracteres. Encurte-a e envie de novo.",
   "real.aicoach.error.conversation":
     "Esta conversa já não está disponível. Comece uma nova conversa.",
+  "real.dna.flagYes": "Sim",
+  "real.dna.flagNo": "Não",
 };

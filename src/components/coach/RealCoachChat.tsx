@@ -5,7 +5,7 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Plus, RotateCcw, Send, Sparkles, User } from "lucide-react";
-import { Fragment, useRef, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
@@ -20,42 +20,83 @@ import {
   type CoachState,
 } from "@/lib/coach.functions";
 import { COACH_MAX_MESSAGE_CHARS } from "@/lib/coach/coachContext";
+import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
 
-function inline(text: string): ReactNode[] {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .map((part, i) =>
-      part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-        <strong key={i}>{part.slice(2, -2)}</strong>
-      ) : (
-        <Fragment key={i}>{part}</Fragment>
-      ),
-    );
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {inlineParts(text).map((part, i) =>
+        part.kind === "bold" ? (
+          <strong key={i}>{part.text}</strong>
+        ) : part.kind === "code" ? (
+          <code key={i} className="rounded bg-muted px-1 text-[0.85em]">
+            {part.text}
+          </code>
+        ) : (
+          <Fragment key={i}>{part.text}</Fragment>
+        ),
+      )}
+    </>
+  );
 }
 
-/** Minimal, safe rendering of the model's light markdown (headings, bullets, bold). */
+/**
+ * Safe rendering of the model's light Markdown (headings, bullets, bold, code, pipe
+ * tables) after math markup is rewritten as plain text. Text nodes only: no HTML.
+ */
 export function CoachText({ content }: { content: string }) {
   return (
     <div className="space-y-1.5">
-      {content.split("\n").map((raw, i) => {
-        const line = raw.trimEnd();
-        if (!line.trim()) return <div key={i} className="h-1" />;
-        const heading = /^#{1,6}\s+(.*)$/.exec(line);
-        if (heading)
+      {coachBlocks(content).map((block, i) => {
+        if (block.kind === "space") return <div key={i} className="h-1" />;
+        if (block.kind === "heading")
           return (
             <p key={i} className="pt-1 font-semibold text-foreground">
-              {inline(heading[1]!)}
+              <Inline text={block.text} />
             </p>
           );
-        const bullet = /^\s*(?:[-*•]|\d+\.)\s+(.*)$/.exec(line);
-        if (bullet)
+        if (block.kind === "bullet")
           return (
             <p key={i} className="pl-4 -indent-3">
-              • {inline(bullet[1]!)}
+              • <Inline text={block.text} />
             </p>
           );
-        return <p key={i}>{inline(line)}</p>;
+        if (block.kind === "table")
+          return (
+            <div key={i} className="overflow-x-auto">
+              <table className="my-1 w-full border-collapse text-xs">
+                <thead>
+                  <tr>
+                    {block.header.map((cell, c) => (
+                      <th
+                        key={c}
+                        className="border-b border-border px-2 py-1 text-left font-semibold"
+                      >
+                        <Inline text={cell} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((cell, c) => (
+                        <td key={c} className="border-b border-border/50 px-2 py-1">
+                          <Inline text={cell} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        return (
+          <p key={i}>
+            <Inline text={block.text} />
+          </p>
+        );
       })}
     </div>
   );
