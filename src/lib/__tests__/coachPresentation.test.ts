@@ -111,6 +111,20 @@ describe("Coach reply rendering", () => {
     expect(html).not.toContain("<b>");
   });
 
+  it("code-fence markers are dropped and the fenced formula renders as text", () => {
+    // Shape from production conversation 736c2ce1 (2026-10-29).
+    const blocks = coachBlocks(
+      "Fórmula:\n\n```\nKAST = rounds com K, A, S ou T / rounds\n```\nfim",
+    );
+    expect(blocks.map((b) => ("text" in b ? b.text : b.kind))).toEqual([
+      "Fórmula:",
+      "space",
+      "KAST = rounds com K, A, S ou T / rounds",
+      "fim",
+    ]);
+    expect(coachBlocks("```ts\nx\n~~~").map((b) => ("text" in b ? b.text : b.kind))).toEqual(["x"]);
+  });
+
   it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {
     const prompt = coachSystemPrompt("pt-BR");
     expect(prompt).toContain("K/D = kills / deaths");
