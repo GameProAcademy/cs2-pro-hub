@@ -64,6 +64,17 @@ SUPPORTED_EVENTS: tuple[str, ...] = (
     "player_team",
 )
 
+#: Grenade game events whose `userid` is the thrower (D35). Blind/expiry events are not
+#: thrower evidence for usage counts and are deliberately excluded.
+_GRENADE_EVENTS: tuple[str, ...] = (
+    "hegrenade_detonate",
+    "flashbang_detonate",
+    "smokegrenade_detonate",
+    "molotov_detonate",
+    "decoy_detonate",
+    "inferno_startburn",
+)
+
 #: demoparser2 `team_number` is a real, observable value. 2 = T, 3 = CT.
 #: It describes the team slot at parse time, NOT a per-round side, so it is
 #: mapped to `team` only — `side` is left absent (see README).
@@ -311,6 +322,7 @@ def normalize_rounds(
     bombs: dict[str, Sequence[Record] | None],
     tickrate: float | None,
     warnings: list[str],
+    freeze_ends: Sequence[Record] | None = None,
 ) -> list[Record]:
     """-> RawParserRound[]: one entry per observed round, ordered by number.
 
@@ -340,6 +352,7 @@ def normalize_rounds(
                 hits.add(number)
         bomb_rounds[key] = hits
 
+    freeze_ticks = _sorted_ticks(freeze_ends or [])
     rounds: list[Record] = []
     for number, start, end in intervals:
         entry: Record = {"number": number}
@@ -347,6 +360,14 @@ def normalize_rounds(
             entry["start_tick"] = start
         if end is not None:
             entry["end_tick"] = end
+        # D36: the instant the round becomes live (end of freeze time). `round_start` fires
+        # when freeze time BEGINS, so it is not a reference for "seconds into the round".
+        # Only a round_freeze_end inside this round's own window counts; the last one wins
+        # (a restart inside freeze time re-fires it). Absent => key absent, never guessed.
+        if start is not None and end is not None:
+            inside = [tick for tick in freeze_ticks if start <= tick <= end]
+            if inside:
+                entry["freeze_end_tick"] = inside[-1]
         if start is not None and end is not None and end >= start and tickrate:
             entry["duration_seconds"] = round((end - start) / tickrate, 3)
 
@@ -392,6 +413,8 @@ def _event_fields(name: str, row: Record) -> Record:
         put("headshot", _bool(_pick(row, "headshot")))
         put("noscope", _bool(_pick(row, "noscope")))
         put("blind", _bool(_pick(row, "attackerblind")))
+        # D35: the game's own flash-assist flag (the flasher is the event's assister).
+        put("assisted_flash", _bool(_pick(row, "assistedflash")))
         penetration = _int(_pick(row, "penetrated"))
         if penetration is not None:
             out["penetration"] = penetration
@@ -410,6 +433,10 @@ def _event_fields(name: str, row: Record) -> Record:
         put("victim", _steam_id(_pick(row, "user_steamid")))
         put("flash_duration", _num(_pick(row, "blind_duration")))
     elif name in ("bomb_planted", "bomb_defused", "bomb_exploded"):
+        put("attacker", _steam_id(_pick(row, "user_steamid")))
+    elif name in _GRENADE_EVENTS:
+        # D35: these game events carry the thrower as their own `userid` (owner of the
+        # projectile). No other player is ever inferred: absent thrower => no actor.
         put("attacker", _steam_id(_pick(row, "user_steamid")))
     return out
 
@@ -497,6 +524,7 @@ def build_raw_parser_output(raw: Record) -> Record:
         },
         tickrate=header["tickrate"],
         warnings=warnings,
+        freeze_ends=list(raw.get("round_freeze_ends") or []),
     )
     intervals = build_round_intervals(round_starts, round_ends)
 

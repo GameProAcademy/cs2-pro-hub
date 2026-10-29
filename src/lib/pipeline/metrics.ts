@@ -282,7 +282,11 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
           headshot: e.headshot,
           flashAssister: null,
         };
-        kill.flashAssister = flashAssisterFor(kill);
+        // D35: the game's own flag wins (the flasher is the kill's assister). Only when the
+        // kill does not report it is the temporal blind-event attribution used.
+        if (e.assistedFlash === true) kill.flashAssister = e.assisterSteamId;
+        else if (e.assistedFlash === false) kill.flashAssister = null;
+        else kill.flashAssister = flashAssisterFor(kill);
         return kill;
       })
       // Unknown timing is NOT late timing: a kill without a trustworthy instant
@@ -477,6 +481,12 @@ export function metricsAvailability(match: CanonicalMatch): MetricsAvailability 
     // classification the normalizer uses for the `missing_utility` flag.
     utilityEvents: hasUtilityEvidence(match.events),
     utilityAttribution: match.events.some((e) => isUtilityEvent(e) && e.actorSteamId != null),
+    // D35: per-victim blindness (player_blind) — the only evidence of WHO was flashed.
+    blindEvents: match.events.some(
+      (e) => e.type === "flash" && e.actorSteamId != null && e.victimSteamId != null,
+    ),
+    // D35: every kill reports the game's flash-assist flag.
+    flashAssistFlag: kills.length > 0 && kills.every((e) => typeof e.assistedFlash === "boolean"),
     roundEndEvidence: match.rounds.some((r) => hasRoundEndEvidence(r)),
 
     economy: match.rounds.some((r) => Object.keys(r.equipmentValue).length > 0),
@@ -552,9 +562,19 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   const grenadesUsed = match.events.filter(
     (e) => isUtilityEvent(e) && e.actorSteamId === eventPlayerKey,
   ).length;
-  const enemiesFlashed = match.events
-    .filter((e) => e.type === "flash" && e.actorSteamId === eventPlayerKey)
-    .reduce((sum, e) => sum + Number(e.data["players_flashed"] ?? 1), 0);
+  // D35: "enemies flashed" counts per-victim blind events only. A flash detonation says who
+  // threw it, never whom it blinded, so it is NOT evidence here (it would turn every flash
+  // thrown into one enemy flashed). An enemy is a victim on the other team in that round;
+  // an unknown pairing makes the counter unknown, never a guess.
+  let enemiesFlashedUnknown = false;
+  let enemiesFlashed = 0;
+  for (const e of match.events) {
+    if (e.type !== "flash" || e.actorSteamId !== eventPlayerKey || !e.victimSteamId) continue;
+    if (e.victimSteamId === eventPlayerKey) continue; // self-flash
+    const same = sameTeamInRound(match, eventPlayerKey, e.victimSteamId, e.roundNumber);
+    if (same == null) enemiesFlashedUnknown = true;
+    else if (!same) enemiesFlashed += 1;
+  }
 
   /**
    * Opening duels — only over rounds whose kill ordering is determinable and
@@ -591,9 +611,24 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // to publish 0. D29: team identity is now per round (observed sides, else match-level
   // team); any trade that depends on an unknown pairing makes the counter NULL - never 0.
   if (availability.timing) {
-    earlyDeaths = playerDeaths.filter(
-      (d) => d.time != null && d.time <= EARLY_DEATH_SECONDS,
-    ).length;
+    // D36: "early" is measured from the moment the round became live (its own freeze end),
+    // on the same clock as the death. Event times are game-clock instants, so comparing
+    // them with a constant (the pre-D36 rule) never matched after the first minute and
+    // published 0. Any death without a live-round reference makes the count unknown.
+    const liveAt = new Map(
+      match.rounds.map((r) => [r.roundNumber, r.freezeEndTimeSeconds ?? null] as const),
+    );
+    let early = 0;
+    let unknown = false;
+    for (const death of playerDeaths) {
+      const live = liveAt.get(death.round) ?? null;
+      if (death.time == null || live == null || death.time < live) {
+        unknown = true;
+        break;
+      }
+      if (death.time - live <= EARLY_DEATH_SECONDS) early += 1;
+    }
+    earlyDeaths = unknown ? null : early;
 
     let tradeKillCount = 0;
     let tradeKillsUnknown = false;
@@ -754,13 +789,14 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     // A flash assist is a TEMPORAL claim: it needs both utility events and a
     // trustworthy instant for every kill. Without reliable timing the count is
     // unknown, not zero.
+    // D35: the game's per-kill flag, else the temporal attribution over blind events.
     flashAssists:
-      availability.utilityEvents && availability.utilityAttribution && availability.timing
+      availability.flashAssistFlag ||
+      (availability.utilityEvents && availability.blindEvents && availability.timing)
         ? flashAssists
         : null,
 
-    enemiesFlashed:
-      availability.utilityEvents && availability.utilityAttribution ? enemiesFlashed : null,
+    enemiesFlashed: availability.blindEvents && !enemiesFlashedUnknown ? enemiesFlashed : null,
     grenadesUsed:
       availability.utilityEvents && availability.utilityAttribution ? grenadesUsed : null,
     ctRating: sideRating("CT"),

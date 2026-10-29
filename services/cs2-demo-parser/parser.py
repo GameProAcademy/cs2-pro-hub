@@ -939,8 +939,10 @@ def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[s
     # row's round context (total_rounds_played counts COMPLETED rounds) never matches the
     # contract round, so keying by round silently dropped every native time.
     timing_index: dict[tuple[str, int], float | None] = {}
-    for name in _EVENT_TABLES + ("round_start", "round_end"):
-        for row in raw.get(name) or []:
+    streams = [(name, raw.get(name)) for name in _EVENT_TABLES + ("round_start", "round_end")]
+    streams.append(("round_freeze_end", raw.get("round_freeze_ends")))  # D36
+    for name, rows in streams:
+        for row in rows or []:
             tick = row.get("tick")
             if not isinstance(tick, int) or isinstance(tick, bool):
                 continue
@@ -975,6 +977,21 @@ def _postprocess_contract(raw: dict[str, Any], output: dict[str, Any]) -> dict[s
         elif game_clock is not None:
             rate, offset = game_clock
             event["time_seconds"] = round(tick / rate + offset, 6)
+
+    # D36: the live-round reference on the SAME clock as the event times (same precedence:
+    # native game_time, then header tickrate, then the proven game clock). Absent => absent.
+    for round_row in output.get("rounds") or []:
+        tick = round_row.get("freeze_end_tick")
+        if not isinstance(tick, int) or isinstance(tick, bool):
+            continue
+        native_time = timing_index.get(("round_freeze_end", tick))
+        if native_time is not None:
+            round_row["freeze_end_time_seconds"] = native_time
+        elif isinstance(header_rate, (int, float)) and header_rate > 0:
+            round_row["freeze_end_time_seconds"] = round(tick / float(header_rate), 6)
+        elif game_clock is not None:
+            rate, offset = game_clock
+            round_row["freeze_end_time_seconds"] = round(tick / rate + offset, 6)
 
     # A round_end winner token CT/TERRORIST is side evidence, not team identity.
     for round_row in output.get("rounds") or []:
@@ -1073,6 +1090,9 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["round_starts"] = raw["event_tables"].get("round_start") or []
     raw["round_ends"] = raw["event_tables"].get("round_end") or []
+    # D36: already captured as RAW (every advertised event is parsed); exposed to the
+    # adapter only to mark when each round becomes live.
+    raw["round_freeze_ends"] = raw["event_tables"].get("round_freeze_end") or []
 
     # The adapter expects plural round_starts/round_ends, while the event names
     # are singular. Keep explicit assignments to avoid accidental key drift.

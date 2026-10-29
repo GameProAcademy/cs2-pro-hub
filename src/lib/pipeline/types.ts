@@ -55,6 +55,10 @@ export interface RawParserRound {
   winner_side?: string | undefined;
   start_tick?: number | undefined;
   end_tick?: number | undefined;
+  /** D36: tick of the round's own round_freeze_end (the round becomes live). */
+  freeze_end_tick?: number | undefined;
+  /** D36: the same instant on the event clock (same precedence as event `time_seconds`). */
+  freeze_end_time_seconds?: number | undefined;
   duration_seconds?: number | undefined;
   bomb_planted?: boolean | undefined;
   bomb_defused?: boolean | undefined;
@@ -80,6 +84,8 @@ export interface RawParserEvent {
   penetration?: number | undefined;
   noscope?: boolean | undefined;
   blind?: boolean | undefined;
+  /** D35: the game's flash-assist flag on player_death (the assister flashed the victim). */
+  assisted_flash?: boolean | undefined;
   distance?: number | undefined;
   damage?: number | undefined;
   armor_damage?: number | undefined;
@@ -277,6 +283,13 @@ export interface CanonicalRound {
   winnerSide: Side | null;
   startTick: number | null;
   endTick: number | null;
+  /**
+   * D36: tick at which the round became live (end of freeze time). In-memory analytical
+   * reference only (not part of the canonical persisted round); absent => unknown.
+   */
+  freezeEndTick?: number | null;
+  /** D36: the same instant on the event clock (comparable with event `timeSeconds`). */
+  freezeEndTimeSeconds?: number | null;
   durationSeconds: number | null;
   /**
    * FASE 2.7 — NULL ≠ FALSE. `null` means the parser did not report the fact;
@@ -305,6 +318,11 @@ export interface CanonicalEvent {
   distance: number | null;
   damage: number | null;
   data: Record<string, unknown>;
+  /**
+   * D35: game-attributed flash assist on a kill (the assister flashed the victim).
+   * In-memory analytical field (not persisted); null/absent = not reported.
+   */
+  assistedFlash?: boolean | null;
 }
 
 /** Quality of the extraction. Never claim a partial parse is complete. */
@@ -368,6 +386,10 @@ export interface MetricsAvailability {
    * utility events without a thrower make those counters NULL, never 0.
    */
   utilityAttribution: boolean;
+  /** D35: per-victim blind events (who flashed whom). Needed for enemies flashed. */
+  blindEvents: boolean;
+  /** D35: every kill carries the game's flash-assist flag (assister flashed the victim). */
+  flashAssistFlag: boolean;
   roundEndEvidence: boolean;
   economy: boolean;
   /** Every kill event has a trustworthy instant (time_seconds or tick+tickrate). */
