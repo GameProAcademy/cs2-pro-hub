@@ -180,7 +180,8 @@ export function buildCoachFacts(
         // Internal signal ids never reach the model, so they never reach the player.
         signals: d.signals.map((s) => ({
           label: signalLabel(s.name, locale),
-          shown: s.mean === null ? "not observed" : formatSignalValue(s.mean, s.unit, yesNo),
+          shown:
+            s.mean === null ? "not observed" : formatSignalValue(s.name, s.mean, s.unit, yesNo),
           direction: s.direction,
           matches: s.matches,
         })),

@@ -86,7 +86,7 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
                   <span className="font-mono">
                     {s.mean === null
                       ? t("real.dna.notObserved")
-                      : formatSignalValue(s.mean, s.unit, {
+                      : formatSignalValue(s.name, s.mean, s.unit, {
                           yes: t("real.dna.flagYes"),
                           no: t("real.dna.flagNo"),
                         })}
