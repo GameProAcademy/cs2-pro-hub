@@ -334,6 +334,23 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(fetchImpl).toHaveBeenCalledTimes(2); // one attempt each: no retry loop
   });
 
+  it("a key pasted with surrounding whitespace/newline is trimmed before use", async () => {
+    const fetchImpl = vi.fn(async () => ok("answer"));
+    await call(fetchImpl as unknown as typeof fetch, { OPENROUTER_API_KEY: "  or-key\n" });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer or-key");
+  });
+
+  it("a key with an inner control character is a configuration error, never sent", async () => {
+    const fetchImpl = vi.fn(async () => ok("answer"));
+    const failure = await call(fetchImpl as unknown as typeof fetch, {
+      OPENROUTER_API_KEY: "or-\nkey",
+    }).catch((e) => e);
+    expect(failure.code).toBe("COACH_PROVIDER_NOT_CONFIGURED");
+    expect(failure.attempts[0]).toMatchObject({ transport: "INVALID_KEY_FORMAT", status: null });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("logs carry metadata only (no content, prompt or key)", async () => {
     const spy = vi.spyOn(console, "info").mockImplementation(() => {});
     await call(vi.fn(async () => ok("SECRET-REPLY-TEXT")) as unknown as typeof fetch);

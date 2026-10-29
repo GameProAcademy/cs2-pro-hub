@@ -180,8 +180,16 @@ async function attempt(
   messages: CoachMessage[],
   options: { maxTokens: number; env: Env; fetchImpl: typeof fetch; timeoutMs: number },
 ): Promise<AttemptResult> {
-  const key = options.env[KEY_ENV[cfg.provider]];
+  // Production 2026-10-29: the OpenRouter call failed before any HTTP response with a
+  // TypeError (fetch rejects a header value with a line break or other non-printable
+  // character, e.g. a key pasted with a trailing newline). Surrounding whitespace is
+  // trimmed; anything still outside printable ASCII is a configuration error, reported
+  // as such (never as a network failure) and never sent.
+  const key = options.env[KEY_ENV[cfg.provider]]?.trim();
   if (!key) throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED");
+  if (!/^[\x21-\x7e]+$/.test(key)) {
+    throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED", null, [], "INVALID_KEY_FORMAT");
+  }
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
@@ -189,6 +197,14 @@ async function attempt(
   if (cfg.provider === "openrouter") {
     headers["HTTP-Referer"] = "https://gamepro.network";
     headers["X-Title"] = "CS2 PRO AI Coach";
+  }
+  // Build the headers before the network call so a header rejected by the runtime is told
+  // apart from a network failure (both surface as a TypeError from fetch). The runtime's
+  // message can echo the header value, so only the classification is kept.
+  try {
+    new Headers(headers);
+  } catch {
+    throw new CoachProviderFailure("COACH_PROVIDER_NOT_CONFIGURED", null, [], "INVALID_HEADER");
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs);
