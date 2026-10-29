@@ -113,6 +113,12 @@ export function coachBlocks(content: string): CoachBlock[] {
       continue;
     }
     if (SEPARATOR.test(line) || /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) continue;
+    // Blockquote marker: the quoted text is shown as a plain paragraph, never a literal ">".
+    const quote = /^\s*>\s?(.*)$/.exec(line);
+    if (quote) {
+      if (quote[1]!.trim()) blocks.push({ kind: "paragraph", text: quote[1]!.trim() });
+      continue;
+    }
     const heading = /^#{1,6}\s+(.*)$/.exec(line);
     if (heading) {
       blocks.push({ kind: "heading", text: heading[1]!.trim() });
@@ -130,17 +136,21 @@ export function coachBlocks(content: string): CoachBlock[] {
   return blocks;
 }
 
-export type InlinePart = { kind: "text" | "bold" | "code"; text: string };
+export type InlinePart = { kind: "text" | "bold" | "italic" | "code"; text: string };
 
-/** **bold** and `code` spans; anything else (including stray * or <tags>) stays text. */
+/**
+ * **bold**, *italic* and `code` spans; anything else (including stray * or <tags>) stays text.
+ * Italic needs non-space text right inside both asterisks, so "2 * 3 * 4" stays text.
+ */
 export function inlineParts(text: string): InlinePart[] {
   const parts: InlinePart[] = [];
-  const re = /\*\*([^*]+)\*\*|`([^`]+)`/g;
+  const re = /\*\*([^*]+)\*\*|`([^`]+)`|\*(?![\s*])([^*\n]*?[^\s*])\*/g;
   let last = 0;
   for (let m = re.exec(text); m; m = re.exec(text)) {
     if (m.index > last) parts.push({ kind: "text", text: text.slice(last, m.index) });
     if (m[1] !== undefined) parts.push({ kind: "bold", text: m[1] });
-    else parts.push({ kind: "code", text: m[2]! });
+    else if (m[2] !== undefined) parts.push({ kind: "code", text: m[2] });
+    else parts.push({ kind: "italic", text: m[3]! });
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push({ kind: "text", text: text.slice(last) });

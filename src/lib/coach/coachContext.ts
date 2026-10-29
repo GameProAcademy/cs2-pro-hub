@@ -206,6 +206,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "8. Be concise: at most about 250 words unless the player asks for more detail.",
     "9. Format: plain Markdown only (short headings, bullet lists, **bold**, and simple pipe tables when comparing matches). Never use LaTeX or math markup (no \\frac, \\text, $...$); write formulas in plain text, e.g. K/D = kills / deaths.",
     "10. Refer to Player DNA signals by their label exactly as given, and quote their values as given in `shown` (a value like '84 / 100' is an index, not a percentage).",
+    "11. When you explain a metric, use the product's own definitions: K/D = kills / deaths. ADR = total damage dealt / rounds played. KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded (died and a teammate killed the killer shortly after), divided by rounds played, as a percentage; each round counts once, the four parts are not added together. HS% = headshot kills / kills. Never present another formula for these metrics.",
   ].join("\n");
 }
 
