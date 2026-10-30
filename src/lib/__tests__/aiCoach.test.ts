@@ -234,7 +234,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(() => resolveCoachChain({ AI_FALLBACK_PROVIDER: "lovable" })).toThrow();
   });
 
-  it("primary answers: OpenRouter endpoint, bearer key, low reasoning, usage and cost recorded", async () => {
+  it("primary answers: OpenRouter endpoint, bearer key, medium reasoning, usage and cost recorded", async () => {
     const fetchImpl = vi.fn(async () =>
       ok(" answer ", {
         model: "openai/gpt-oss-20b",
@@ -261,7 +261,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(body).toMatchObject({
       model: "openai/gpt-oss-20b",
       max_tokens: 10,
-      reasoning: { effort: "low", exclude: true },
+      reasoning: { effort: "medium", exclude: true },
       temperature: 0.2,
     });
     expect(String(init.body)).not.toContain("or-key");

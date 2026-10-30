@@ -139,8 +139,9 @@ function requestBody(cfg: CoachProviderConfig, messages: CoachMessage[], maxToke
       model: cfg.model,
       messages,
       max_tokens: maxTokens,
-      // Low reasoning effort, reasoning text not returned (it shares the token budget).
-      reasoning: { effort: "low", exclude: true },
+      // Medium reasoning effort (low ignored sample-size rules in the 2026-10-29 production battery);
+      // reasoning text not returned (it shares the token budget).
+      reasoning: { effort: "medium", exclude: true },
       // Factual coaching over fixed data: low sampling temperature keeps wording on the facts.
       temperature: 0.2,
     };
