@@ -157,6 +157,20 @@ export interface CoachFacts {
     weakest: Array<{ dimension: string; shown: string }>;
   };
   notAvailable: string[];
+  /**
+   * GamePro catalog items the server selected for THIS message (0-3): active, language
+   * confirmed in the player's locale, relevant to a topic the player named or to a weakest
+   * observed DNA dimension when the player asks how to improve. The ONLY links the Coach may
+   * give; anything else is removed from the reply before it is stored.
+   */
+  catalogSuggestions: Array<{
+    kind: "lesson" | "course";
+    title: string;
+    url: string;
+    track: string;
+    /** Why it was selected: the topic and its origin (message or DNA dimension). */
+    reason: string;
+  }>;
 }
 
 function round(value: number | null, digits = 2): number | null {
@@ -259,6 +273,7 @@ export function buildCoachFacts(
       weakest: extreme(Math.min),
     },
     notAvailable: NOT_AVAILABLE,
+    catalogSuggestions: [],
   };
 }
 
@@ -322,6 +337,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "10. Refer to Player DNA signals by their label exactly as given, and quote their values as given in `shown` (a value like '84 / 100' is an index, not a percentage).",
     "11. When you explain a metric, use the product's own definitions: K/D = kills / deaths. ADR = total damage dealt / rounds played. KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded (died and a teammate killed the killer shortly after), divided by rounds played, as a percentage; each round counts once, the four parts are not added together. HS% = headshot kills / kills. Never present another formula for these metrics.",
     "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; totals cover ALL matches together, so never list a totals value under one map or match; if a value you need is null there, say it cannot be computed. The K/D of one match is matches[].killDeathRatio; the overall K/D is dashboardAggregates.killDeathRatio; never quote one as the other. For the strongest or weakest Player DNA dimension, copy playerDna.strongest / playerDna.weakest.",
+    "13. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
   ].join("\n");
 }
 

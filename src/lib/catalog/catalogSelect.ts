@@ -129,6 +129,23 @@ export function needsFromPlayer(input: {
   return needs;
 }
 
+/** The player asks how to improve / for training or lessons (any of the 5 locales). */
+export const IMPROVEMENT_INTENT =
+  /(melhor|improv|mejor|am[ée]lior|trein|train|entren|entra[îi]n|evolu|aula|lesson|clase|le[çc]on|curso|course|cours\b|recomend|recommend|dica|tips?\b|consejo|conseil|como posso|how (can|do|should) i|c[óo]mo (puedo|empiezo|empezar)|comment (puis|faire|commencer|devenir)|come[çc]ar|start|empezar|commencer|quero (aprender|trabalhar|ser)|i want to|quiero|je veux|aprender|learn|apprendre)/;
+
+/**
+ * Coach needs, only when the player asks to learn or improve: the topics the player named
+ * first; without a named topic, the weakest observed DNA dimensions. Nothing else.
+ */
+export function coachNeeds(message: string, dimensions: DimensionReading[]): Need[] {
+  // A statistics question ("what was my KAST on Mirage?", "how many enemies did I flash?")
+  // names topics but asks for no learning content: no recommendation.
+  if (!IMPROVEMENT_INTENT.test(message.toLowerCase())) return [];
+  const fromMessage = needsFromMessage(message);
+  if (fromMessage.length) return fromMessage;
+  return needsFromPlayer({ dimensions, goals: [], maxDimensions: 2 });
+}
+
 export function needsFromMessage(message: string): Need[] {
   return topicsFromMessage(message).map((topic) => ({
     topic,
@@ -171,7 +188,15 @@ export function pickRecommendations(
   candidates: CatalogCandidate[],
   needs: Need[],
   locale: CatalogLocale,
-  options: { max?: number; tracks?: CatalogTrack[]; exclude?: Set<string> } = {},
+  options: {
+    max?: number;
+    tracks?: CatalogTrack[];
+    exclude?: Set<string>;
+    /** Items per content group (default 1). A plan may take several lessons of one course. */
+    perGroup?: number;
+    /** At most one item per need topic (varied recommendations). */
+    onePerNeed?: boolean;
+  } = {},
 ): Recommendation[] {
   if (!needs.length) return [];
   const scored: Array<{ c: CatalogCandidate; score: number; need: Need }> = [];
@@ -199,13 +224,24 @@ export function pickRecommendations(
       a.c.title.localeCompare(b.c.title),
   );
   const out: Recommendation[] = [];
-  const groups = new Set<string>();
-  const urls = new Set<string>();
+  const perGroup = new Map<string, number>();
+  const seen = new Set<string>();
+  // The same lesson is published in several courses (In-Game 3, 4 and 5): one title once.
+  const titleKey = (t: string) => t.replace(/^\d+\s*[–-]\s*/, "").toLowerCase();
+  const needTaken = new Set<string>();
   for (const { c, need } of scored) {
     if (out.length >= (options.max ?? 3)) break;
-    if (groups.has(c.group_key) || urls.has(c.url)) continue;
-    groups.add(c.group_key);
-    urls.add(c.url);
+    const used = perGroup.get(c.group_key) ?? 0;
+    if (used >= (options.perGroup ?? 1)) continue;
+    if (seen.has(c.url) || seen.has(titleKey(c.title))) continue;
+    // Several items for one group must serve different needs.
+    if (used > 0 && needTaken.has(`${c.group_key}|${need.topic}`)) continue;
+    if (options.onePerNeed && needTaken.has(`*|${need.topic}`)) continue;
+    needTaken.add(`*|${need.topic}`);
+    perGroup.set(c.group_key, used + 1);
+    needTaken.add(`${c.group_key}|${need.topic}`);
+    seen.add(c.url);
+    seen.add(titleKey(c.title));
     out.push({ id: c.id, kind: c.kind, title: c.title, url: c.url, track: c.track, need });
   }
   return out;

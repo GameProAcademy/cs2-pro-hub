@@ -29,6 +29,8 @@ import {
   type CoachFacts,
 } from "@/lib/coach/coachContext";
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
+import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
+import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 
 export type CoachErrorCode =
@@ -215,6 +217,35 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         loadPlayerDna(db, context.userId),
       ]);
       const facts = buildCoachFacts(overview, dna, input.locale);
+      // Catalog: a few items relevant to THIS message (never the catalog itself). A catalog
+      // read failure only means no suggestions; the Coach still answers.
+      stage = "catalog";
+      try {
+        const needs = coachNeeds(
+          input.message,
+          dna.dimensions.map((d) => ({
+            dimension: d.dimension,
+            index: d.value === null ? null : Math.round(d.value * 100),
+          })),
+        );
+        if (needs.length) {
+          const candidates = await fetchCatalogCandidates(db, input.locale, [
+            ...new Set(needs.map((n) => n.topic)),
+          ]);
+          facts.catalogSuggestions = pickRecommendations(candidates, needs, input.locale, {
+            max: 3,
+            onePerNeed: true,
+          }).map((r) => ({
+            kind: r.kind,
+            title: r.title,
+            url: r.url,
+            track: r.track,
+            reason: `${r.need.topic} (${r.need.source === "message" ? "asked by the player" : `weakest DNA: ${r.need.detail}`})`,
+          }));
+        }
+      } catch (error) {
+        logFailure("catalog", error);
+      }
       if (facts.dataState === "NO_MATCHES") return { ok: false, error: "COACH_NO_DATA" };
       const history = conversationId
         ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY)).map((m) => ({
@@ -257,6 +288,14 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
 
       // Persist only after the provider answered, so a failed attempt can be retried
       // without leaving an unanswered message (and is not counted against the limit).
+      // Only links the server selected may reach the player or the history.
+      const sanitized = sanitizeReplyLinks(
+        completion.content,
+        new Set(facts.catalogSuggestions.map((s) => s.url)),
+      );
+      const content = sanitized.text.trim();
+      // Never fall back to the unsanitized text: an empty result is an empty reply.
+      if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY" };
       stage = "persist";
       if (!conversationId) {
         const { data: created, error } = await db
@@ -282,10 +321,14 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         .insert({
           conversation_id: conversationId,
           role: "coach",
-          content: completion.content,
+          content,
           // Provenance of the reply (no content, no key): who answered, why a fallback
           // answered, the data state it was grounded on, tokens and provider-reported cost.
-          context_type: coachProvenance(completion, facts).slice(0, 255),
+          context_type:
+            `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}`.slice(
+              0,
+              255,
+            ),
         })
         .select("id, role, content, created_at")
         .single();

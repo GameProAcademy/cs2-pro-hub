@@ -108,3 +108,39 @@ node --experimental-strip-types scripts/catalog/build-import-sql.ts \
   supabase/seed/training-catalog/2026-11-03/training_catalog.json /tmp/catalog.sql > report.json
 # apply /tmp/catalog.sql on the managed database; running it twice changes nothing
 ```
+
+## How the catalog is used
+
+### Meu Treinamento (`/training`)
+
+`getTrainingPlan` (`src/lib/training.functions.ts`, authenticated, caller's RLS session)
+reads the player's Player DNA, matches (maps played) and declared goals
+(`player_profile_goals`), asks the catalog only for the plan's topics in the player's locale,
+and builds the plan with `buildTrainingPlan` (`src/lib/training/trainingPlan.ts`, pure):
+
+- **Priorities:** the three weakest _observed_ DNA dimensions below 60 / 100 (a null
+  dimension is never a weakness); a sample below the DNA minimum marks the plan provisional.
+- **Week per priority:** an in-game practice activity (`training.practice.<dimension>`, 5
+  locales) and up to two catalog lessons for that dimension. Map-position lessons appear only
+  for maps the player played, in a positioning-related week.
+- **Goal weeks:** goals add needs (e.g. `AIM_MECHANICS` → aim, settings, warm-up).
+- **Consolidation week:** demo review.
+- **Complementary tracks:** Strategic Knowledge / Extra Skills items only when a need points to
+  them (teamplay → communication, consistency → productive routine, clutch → mindset,
+  `PRO_CAREER` → branding / content creation), one per need, with the reason shown.
+- **No evidence, no item:** no matches → no plan; no weakness and no goal → no recommendation.
+
+### AI Coach
+
+For each message, `coachNeeds` (`catalogSelect.ts`) produces needs only when the player asks
+to learn or improve (any of the 5 locales): the topics named in the message, or, without a
+named topic, the two weakest observed DNA dimensions. A statistics question ("what was my
+KAST on Mirage?") gets no recommendation. The server reads a bounded slice of the catalog,
+picks at most three items (one per need), and sends them as `catalogSuggestions` (title, URL,
+track, reason) — never the catalog. Prompt rule 13: recommend only those items, copy title
+and URL exactly, at most two, say why. After the model answers, `sanitizeReplyLinks` removes
+any URL that is not one of the selected items before the reply is stored or shown; the
+provenance records `catalog=<n>|links_removed=<n>`.
+
+Adding or changing a lesson in the catalog changes what the plan and the Coach recommend on
+the next request, with no code, prompt or deployment change.

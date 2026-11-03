@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PlayCircle } from "lucide-react";
-import { RealCapabilityPage } from "@/components/real/RealData";
+import { RealTrainingPlan } from "@/components/training/RealTrainingPlan";
 import { DEMO_DATA } from "@/config/app";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -37,15 +37,7 @@ export const Route = createFileRoute("/_authenticated/training")({
 });
 
 function RealTrainingPage() {
-  const t = useT();
-  return (
-    <RealCapabilityPage
-      eyebrow={t("training.eyebrow")}
-      title={t("training.title")}
-      description={t("training.description")}
-      reason={t("real.training.reason")}
-    />
-  );
+  return <RealTrainingPlan />;
 }
 
 const horizonKeys: Record<number, TranslationKey> = {

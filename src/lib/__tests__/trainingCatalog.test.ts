@@ -385,6 +385,7 @@ describe("training catalog: recommendation gate and selection", () => {
       cand({ id: "l2", url: `${H}/counter-strike-2-pro-in-game-3-br/lessons/other/` }),
       cand({
         id: "s1",
+        title: "2 – Procrastinação",
         group_key: "productive_routine",
         track: "strategic_knowledge",
         topics: ["routine_productivity"],
@@ -395,10 +396,12 @@ describe("training catalog: recommendation gate and selection", () => {
       ...utilityNeed,
       ...needsFromPlayer({ dimensions: [{ dimension: "consistency", index: 40 }], goals: [] }),
     ];
-    expect(pickRecommendations(items, needs, "pt-BR", { max: 5 }).map((p) => p.id)).toEqual([
-      "l1",
-      "s1",
-    ]);
+    // Equal scores: order is a tiebreak, the selected set is what matters.
+    expect(
+      pickRecommendations(items, needs, "pt-BR", { max: 5 })
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["l1", "s1"]);
     expect(
       pickRecommendations(items, needs, "pt-BR", { tracks: ["strategic_knowledge"] }).map(
         (p) => p.id,
