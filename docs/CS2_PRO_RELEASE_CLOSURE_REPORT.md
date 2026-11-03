@@ -317,3 +317,108 @@ Results on `408aa94f` against the criteria:
 | New upload → parse → metrics → DNA → Coach by a non-owner account | NÃO COMPROVADO                     |
 
 Recommendation: no general release yet. The two NÃO COMPROVADO items are the release blockers: one end-to-end run with a new demo from a non-owner test account, and one inspection of the production function logs (Lovable Cloud → project → Logs) for the `[ai-coach]` lines. After both, a gradual release (invite-only cohort, Coach rate limit unchanged, daily review of `context_type` cost and failures, rollback by reverting the merge or setting `AI_PRIMARY_MODEL`) is supported by the evidence above.
+
+## 2026-11-03 — Coach defects closed, latency, second-account E2E, production logs (main `f143bb00`)
+
+Classification: CONFIRMADO, IMPLEMENTADO, VALIDADO, PENDENTE, BLOCKED, NÃO COMPROVADO. Earlier sections unchanged.
+
+### Releases (every PR: 5/5 required checks green on the PR head, merge commit, Lovable synced to the merge SHA, then published)
+
+| PR | Merge = synced SHA | Deployment | Change |
+| --- | --- | --- | --- |
+| #221 | `dda88087` | `aac5deb4` | `roundsPlayed` per match and precomputed `totals` in the facts; rule 12 (units); provenance `upstream=` and `ms=` |
+| #222 | `82980651` | `9ba044f9` | OpenRouter `provider: { sort: "throughput", allow_fallbacks: true }`; per-match `killDeathRatio`; `playerDna.strongest/weakest`; localized "not observed"; no comparisons with other players |
+| #223 | `f143bb00` | `3795e4bc` | refusals in the UI locale; totals never listed under one match |
+
+H.3-E Activation Gate on the new mains: `dda88087` runs 41578217475 and 41578224181 PASS; `82980651` run 41581469069 BLOCKED (Quality Gates not finished), run 41583161856 PASS.
+
+### Defect 1 — "1.3 de cada 3 rondas" (es reply `8daf93fe`, 2026-10-29)
+
+| Item | Evidence |
+| --- | --- |
+| Root cause | unit confusion caused by missing context: the facts held per-match counts and no rounds, so the model divided 4 opening kills by the 3 matches and called them rounds. Real denominator 24 + 16 + 23 = 63 rounds → 0.063 |
+| Fix | `matches[].roundsPlayed` (from `match_metrics.rounds_played`), `totals` (sums and per-round rates computed in code; a missing value makes the total null), rule 12 |
+| Tests | `coachPresentation.test.ts`: one regression per locale (pt-BR, pt-PT, en, es, fr) with the real rounds (`perRound.openingKills = 0.063`, `tradeKills = 0.048`), null-total case, 0-death K/D |
+| Production | es: "4 (0.063 por ronda) … 3 (0.048 por ronda)"; pt-BR: "0,063 (4 opening kills em 63 rounds)", per map 0 / 0.125 / 0.087; en: kills 0.603, deaths 0.54 per round; fr: 1 trade kill per match, 0.048 per round — VALIDADO |
+
+### Defect 2 — latency (30.4 s on 2026-10-29)
+
+| Item | Evidence |
+| --- | --- |
+| Measurement | provider wall time stored per reply (`ms=`) with the serving host (`upstream=`) |
+| Root cause | OpenRouter spread 10 requests over 8 hosts; provider time 2.3 s (DeepInfra) to 22.7 s (SiliconFlow) for similar token counts. Not the prompt size and not the reasoning budget |
+| Fix | `provider.sort = "throughput"`, `allow_fallbacks = true` (no host excluded). Prompt rules, reasoning effort `medium`, output budget and validations unchanged |
+
+| Build | Replies | Provider time (min / median / max) | Max time on screen | Cost per reply (max) |
+| --- | --- | --- | --- | --- |
+| `dda88087` (before) | 10 | 2.3 / 9.1 / 22.7 s | 25.3 s | US$ 0.00022 |
+| `82980651` (throughput) | 10 | 0.5 / 1.7 / 4.6 s | 6.9 s | US$ 0.00030 |
+| `f143bb00` | 2 | 0.9 / — / 1.9 s | 4.6 s | US$ 0.00028 |
+| `f143bb00`, second account | 2 | 1.0 / — / 1.6 s | not measured | US$ 0.00024 |
+
+Status: VALIDADO. Routing favours Amazon Bedrock (8 of 10 replies); cost per reply roughly doubles (≈ US$ 0.0001 → 0.0003), still below the US$ 0.001 criterion.
+
+### Battery on `82980651` + `f143bb00` (10 cases, 5 locales; every number checked against `match_metrics`, `match_features` and the DNA page)
+
+| Case | Locale | Result |
+| --- | --- | --- |
+| B1 totals and per-round | es | correct (4 / 4 / 3; 0.063 / 0.063 / 0.048) |
+| B2 opening kills per round | pt-BR | correct (0.063; per map 0, 0.125, 0.087) |
+| B3 kills / deaths per round | en | correct (0.603 / 0.54) |
+| B4 trade kills per match and round | fr | correct (1 / 0.048) |
+| B5 tendency on Cache | pt-PT | after #223: only Cache values (24 rounds, K/D 0.86, rating 0.63), "one match, no tendency" |
+| B6 enemies flashed | pt-BR | "not measured"; flash assists named as a different metric |
+| B7 better than average player | en | "no data on other players" |
+| B8 strongest / weakest DNA | es | Decision making 77 / 100, Clutch 16 / 100 (correct) |
+| B9 ADR / HS per map, overall K/D | pt-BR | correct (66.1/50, 102.4/69.2, 87.4/53.8; 1.12) |
+| B10 injection | pt-BR | after #223: refused in Portuguese, nothing disclosed |
+
+All 12 replies: `provider=openrouter`, `model=openai/gpt-oss-20b`, `fallback=none`, no literal markup on screen.
+
+### Second-account end-to-end (owner-run, 2026-11-03)
+
+| Step | Status | Evidence |
+| --- | --- | --- |
+| Account | CONFIRMADO | user `2e895267`, role `player`, profile `eef31b6d`; created 2026-10-20 through the normal sign-up (e-mail confirmed); sign-in 2026-11-03 05:21Z. Sign-up itself was not re-run on the current build |
+| Upload of a new demo | VALIDADO | upload `744407f4`, 05:25Z, 280 MB, sha256 `61a13a10…` not present for any other account |
+| Processing by the attested worker | VALIDADO | job `2d2e52a0`, `parser_revision git:e8f28750…` (Railway deployment `1c0f26d5`), started 05:37:13Z after the player was chosen, finished 05:39:20Z (parse 26 s), 1 delivery, 19 rounds, 10 players, 3790 events, not partial, admission LIMITED (match result / teams not provided by the contract) |
+| Player identification | VALIDADO (manual) | `attachment_method=self_declared_player`, `attachment_confirmation_status=manual_selected` by the account itself, `identity_status=resolved`, Steam id resolved. The in-demo name ("molodoy") differs from the account nickname ("loja"); the link came from the player's selection, not from an automatic nickname match |
+| Persistence and metrics | VALIDADO | match `3e9df3ed` de_nuke, canonical `completed`; one `match_metrics` row for `eef31b6d`: 18 / 10 / 4, ADR 117.6, KAST 84.2, HS 27.8, rating 1.13, 19 rounds, opening 3 / 0, trades 3; one `match_features` row |
+| Player DNA | VALIDADO | snapshot `1b29f5e2` (05:39:22Z), `INSUFFICIENT_SAMPLE`, 1 match, 19 rounds, source = only `3e9df3ed` |
+| AI Coach | VALIDADO | 2 replies via OpenRouter (Amazon Bedrock, 1.6 s and 1.0 s), `data=INSUFFICIENT_SAMPLE`, `matches=1`; ADR 117.6, KAST 84.2 %, K/D 1.8, opening kills 0.158 per round (3 / 19), trade kills 0.158 per round, survival 47.4 % (`survival_rate` 0.474) — all equal to the stored values |
+| Isolation | VALIDADO | as `2e895267` under RLS: profiles = only `eef31b6d`; own metrics 1, DNA 1, upload 1, job 1, messages 4; owner's metrics 0, DNA 0. As the owner `348b6f66`: the new account's upload, job, metrics, DNA and messages all 0 |
+
+### Production logs (Lovable Cloud → Settings → Logs → Server logs, downloaded by the owner)
+
+| Export | Entries | Result (`scripts/ops/check_ai_coach_logs.py`) |
+| --- | --- | --- |
+| `07166cfa-logs.json` (2026-11-02 21:50Z → 11-03 04:35Z) | 5000 | all checks PASS: 10 `provider attempt` lines, 0 failures, only the 11 metadata fields |
+| `5d33b862-logs (2).json` (`[ai-coach]` filter, 2026-10-29 07:08Z → 11-03 04:53Z) | 63 | all checks PASS: 58 attempts (51 ok, 7 failed — the pre-#215 `Illegal invocation` / OpenAI-without-balance attempts), 5 failure summaries, only metadata fields |
+| `67b43f19-logs (1).json` | 100 | no `[ai-coach]` line (proves nothing on its own) |
+
+In all entries: 0 OpenRouter / OpenAI keys, 0 `Bearer` / `Authorization`, 0 JWT, 0 `service_role`, 0 `PLAYER_FACTS` or prompt text, 0 e-mails, 0 fragments of player questions or replies. The two `error` entries in the large export (`[parser-attestation] payload schema rejected`, 04:27:37Z and 04:28:08Z) are the H.3-E gate's own transport probe (`scripts/ci/h3e_activation_gate.py` posts `{}` with valid credentials), at the times of the two `dda88087` gate runs — expected fail-closed rejections. The first checker run read the export's envelope fields as logged keys; fixed in `dc5c9c50`. Status: VALIDADO.
+
+### Costs and operating limits
+
+| Item | Value |
+| --- | --- |
+| Cost per Coach reply | US$ 0.00004 – 0.00030 (throughput routing ≈ 0.0002 – 0.0003) |
+| Per-player ceiling | 20 messages per hour (VALIDADO 2026-10-30) → at most ≈ US$ 0.006 per player-hour at current prices |
+| Provider | OpenRouter only; OpenAI fallback BLOCKED (no balance, owner decision) |
+| Worker | one Railway deployment (`1c0f26d5`); one 280 MB demo parsed in 26 s |
+
+### Residual risks and open items
+
+| Item | Status |
+| --- | --- |
+| Interpretation quality of `openai/gpt-oss-20b` | PENDENTE — numbers are now copied from computed facts; wording of interpretations can still be imprecise |
+| Single AI provider (no fallback) | PENDENTE — an OpenRouter outage stops the Coach (stable error shown, nothing stored) |
+| Capacity under concurrent users | NÃO COMPROVADO — one worker deployment; no load test with several simultaneous uploads |
+| OpenRouter key spend limit | NÃO COMPROVADO from this session (set and verified in the OpenRouter dashboard by the owner) |
+| Sign-up on the current build | NÃO COMPROVADO (account from 2026-10-20 reused) |
+| Automatic identification by in-demo nickname | not exercised; manual player selection VALIDADO |
+| Admission LIMITED | match result and team names are not provided by the parser contract (excluded metrics listed per job) |
+
+### Decision
+
+PILOTO POR CONVITE. Every functional item of the release checklist is VALIDADO in production with a second, non-owner account (upload → attested worker → metrics → DNA → Coach → isolation), the Coach defects are closed and the logs are clean. General release is not supported yet because capacity under concurrent users, the OpenRouter spend limit and sign-up on the current build have no evidence, and the Coach depends on a single provider. Exit criteria for general release: a load test of concurrent uploads and Coach messages on the production worker; the OpenRouter key limit confirmed; one fresh sign-up on the current build; daily review of `context_type` cost and failure codes during the pilot.
