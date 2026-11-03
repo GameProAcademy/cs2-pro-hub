@@ -33,9 +33,9 @@ describe("parser runtime attestation SHA binding", () => {
     // Two separately pinned identities. In R5.8.18 (D29 parser release, controlled deploy of
     // the exact merge commit) they coincide: the released commit is the one that changed the
     // worker tree. R5.8.13 had distinct values (diagnostics-only build on top of the semantic).
-    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("e8f287500d53586f230a71eff17689969634ecd2");
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("c764f858ffa9df0ffa2740bdba450c7a37be2f3e");
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
-      "e8f287500d53586f230a71eff17689969634ecd2",
+      "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
     );
     expect(Object.keys(PARSER_ATTESTATION_EXPECTED)).toEqual(
       expect.arrayContaining(["commit", "buildCommit", "deploymentSourceCommit"]),
@@ -51,7 +51,7 @@ describe("parser runtime attestation SHA binding", () => {
       "services/cs2-demo-parser/parser.py": "0dcb5962a0c977ab7a82326ebf8a0ef70bafde02",
       "services/cs2-demo-parser/adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
       "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
-      "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+      "services/cs2-demo-parser/raw_evidence.py": "f906889c795a7e6e8a41902e8e453f3f5b9d956e",
       "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
     };
     expect(Object.keys(hashes).sort()).toEqual([
@@ -136,7 +136,7 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
-        observed: "001281eecb02ebc318ff997f734c4081c161d1d9",
+        observed: "f906889c795a7e6e8a41902e8e453f3f5b9d956e",
         match: true,
       },
       "services/cs2-demo-parser/settings.py": {
