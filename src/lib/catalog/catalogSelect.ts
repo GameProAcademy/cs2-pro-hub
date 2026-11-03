@@ -83,7 +83,10 @@ const MESSAGE_RULES: Array<[string, RegExp]> = [
     /(chatgpt|midjourney|intelig[êe]ncia artificial|artificial intelligence|inteligencia artificial)/,
   ],
   ["marketing_ads", /(an[úu]ncios?|\bads\b|tr[áa]fego pago|marketing|publicidad|publicit)/],
-  ["branding", /(\bmarca pessoal|personal brand|branding|marca personal|marque personnelle)/],
+  [
+    "branding",
+    /(\bmarca pessoal|personal brand|branding|marca personal|marque personnelle|minha marca|\bmy (own )?brand|\bmi marca|\bma marque)/,
+  ],
 ];
 
 export function topicsFromMessage(message: string): string[] {
@@ -131,7 +134,7 @@ export function needsFromPlayer(input: {
 
 /** The player asks how to improve / for training or lessons (any of the 5 locales). */
 export const IMPROVEMENT_INTENT =
-  /(melhor|improv|mejor|am[ée]lior|trein|train|entren|entra[îi]n|evolu|aula|lesson|clase|le[çc]on|curso|course|cours\b|recomend|recommend|dica|tips?\b|consejo|conseil|como posso|how (can|do|should) i|c[óo]mo (puedo|empiezo|empezar)|comment (puis|faire|commencer|devenir)|come[çc]ar|start|empezar|commencer|quero (aprender|trabalhar|ser)|i want to|quiero|je veux|aprender|learn|apprendre)/;
+  /(melhor|improv|mejor|am[ée]lior|trein|train|entren|entra[îi]n|evolu|aula|lesson|clase|le[çc]on|curso|course|cours\b|recomend|recommend|dica|tips?\b|consejo|conseil|como posso|how (can|do|should) i|c[óo]mo (puedo|empiezo|empezar)|comment (puis|faire|commencer|devenir)|come[çc](ar|o)|por onde|start|empezar|empiezo|por d[óo]nde|commencer|par o[ùu]|crescer|\bgrow|crecer|progresser|construir|\bbuild|d[ée]velopp|quero (aprender|trabalhar|ser)|i want to|quiero|je veux|aprender|learn|apprendre)/;
 
 /**
  * Coach needs, only when the player asks to learn or improve: the topics the player named
