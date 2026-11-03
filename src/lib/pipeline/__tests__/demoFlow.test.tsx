@@ -160,6 +160,32 @@ describe("processing (6-10)", () => {
     expect(acceptJobSnapshot(done, other)).toBe(other);
   });
 
+  // Production 2026-11-03, job e4088318 (blocked_raw_audit at stage raw_audit): the modal
+  // showed every step as pending although upload and validation had finished.
+  it("a stopped job shows the steps it really finished and where it stopped", () => {
+    const blocked = phase({
+      upload: null,
+      job: job({ status: "blocked_raw_audit", stage: "raw_audit", errorCode: "RAW_AUDIT_BLOCKED" }),
+      identity: null,
+    });
+    expect(blocked.kind).toBe("blocked_raw_audit");
+    expect(stepStates(blocked)).toEqual({
+      upload: "done",
+      validate: "done",
+      read: "error",
+      metrics: "pending",
+      identify: "pending",
+      done: "pending",
+    });
+    const failed = phase({
+      upload: null,
+      job: job({ status: "failed", stage: "metrics", errorCode: "METRICS_ERROR" }),
+      identity: null,
+    });
+    expect(stepStates(failed)).toMatchObject({ read: "done", metrics: "error", done: "pending" });
+    expect(isLockedPhase(blocked)).toBe(false);
+  });
+
   it("10: an unknown status is never success", () => {
     const p = phase({ upload: null, job: job({ status: "weird_new_state" }), identity: null });
     expect(p.kind).toBe("unknown");
@@ -308,6 +334,7 @@ describe("identification (11-19)", () => {
       kind: "failed",
       code: "CANONICAL_PERSISTENCE_ERROR",
       action: "select_and_retry",
+      stage: "parsing",
     });
   });
 
@@ -572,7 +599,7 @@ const ALL_PHASES: DemoFlowPhase[] = [
   { kind: "select_player", recover: false },
   { kind: "completed" },
   { kind: "needs_card_action", action: "reprocess_current_parser" },
-  { kind: "failed", code: "PARSER_ERROR", action: null },
+  { kind: "failed", code: "PARSER_ERROR", action: null, stage: "parsing" },
   { kind: "blocked_raw_audit" },
   { kind: "cancel_requested" },
   { kind: "cancelled" },
