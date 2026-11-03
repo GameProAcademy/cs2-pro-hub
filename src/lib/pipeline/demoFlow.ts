@@ -71,7 +71,7 @@ export type DemoFlowPhase =
   | { kind: "select_player"; recover: boolean }
   | { kind: "completed" }
   | { kind: "needs_card_action"; action: Exclude<IdentityAction, null> }
-  | { kind: "failed"; code: string; action: IdentityAction }
+  | { kind: "failed"; code: string; action: IdentityAction; stage: ProcessingStage }
   | { kind: "blocked_raw_audit" }
   | { kind: "cancel_requested" }
   | { kind: "cancelled" }
@@ -152,7 +152,12 @@ export function deriveDemoFlowPhase(input: {
   });
 
   if (status === "failed") {
-    return { kind: "failed", code: job.errorCode ?? "PROCESSING_ERROR", action };
+    return {
+      kind: "failed",
+      code: job.errorCode ?? "PROCESSING_ERROR",
+      action,
+      stage: safeProcessingStage(job.stage, "processing"),
+    };
   }
 
   // processed
@@ -219,6 +224,13 @@ export function activeStep(phase: DemoFlowPhase): FlowStep | null {
   }
 }
 
+/** Step where the backend stopped a job (its last real stage). */
+function stepOfStage(stage: ProcessingStage): FlowStep {
+  if (stage === "queued" || stage === "validating") return "validate";
+  if (stage === "parsing" || stage === "raw_audit" || stage === "normalizing") return "read";
+  return "metrics";
+}
+
 /** Step states. `attaching` marks identify as done and keeps metrics active. */
 export function stepStates(phase: DemoFlowPhase): Record<FlowStep, StepState> {
   const result = Object.fromEntries(FLOW_STEPS.map((s) => [s, "pending"])) as Record<
@@ -233,6 +245,17 @@ export function stepStates(phase: DemoFlowPhase): Record<FlowStep, StepState> {
     for (const s of FLOW_STEPS) result[s] = "done";
     result.metrics = "active";
     result.done = "pending";
+    return result;
+  }
+  // A stopped job shows how far it really got and where it stopped (the RAW evidence
+  // audit belongs to reading the match).
+  if (phase.kind === "failed" || phase.kind === "blocked_raw_audit") {
+    const stopped = phase.kind === "failed" ? stepOfStage(phase.stage) : "read";
+    const index = FLOW_STEPS.indexOf(stopped);
+    FLOW_STEPS.forEach((s, i) => {
+      if (i < index) result[s] = "done";
+    });
+    result[stopped] = "error";
     return result;
   }
   const current = activeStep(phase);
