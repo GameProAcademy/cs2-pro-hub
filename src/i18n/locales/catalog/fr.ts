@@ -59,11 +59,16 @@ export const catalogFr: Record<keyof typeof catalogPtBR, string> = {
   "catalog.admin.import.applied": "Import appliqué.",
   "catalog.admin.import.failed":
     "Import refusé. Le fichier est illisible ou trop volumineux (5 Mo max).",
-  "training.real.noPlayer": "Aucun joueur n’est encore lié à votre compte. Envoyez une démo et confirmez quel joueur vous êtes pour générer le plan.",
-  "training.real.noData": "Aucune partie traitée pour l’instant. Le plan n’utilise que vos vraies données ; envoyez une démo pour commencer.",
-  "training.real.noPriority": "Aucune dimension de votre Player DNA n’est sous 60 / 100 et vous n’avez déclaré aucun objectif : aucune priorité à corriger. Gardez votre routine et définissez un objectif dans votre profil pour recevoir des recommandations.",
-  "training.real.provisional": "Petit échantillon ({matches} partie(s)) : les priorités sont provisoires et seront revues à chaque nouvelle démo.",
-  "training.real.catalogUnavailable": "Le catalogue de leçons est indisponible pour le moment ; le plan n’affiche que les activités pratiques.",
+  "training.real.noPlayer":
+    "Aucun joueur n’est encore lié à votre compte. Envoyez une démo et confirmez quel joueur vous êtes pour générer le plan.",
+  "training.real.noData":
+    "Aucune partie traitée pour l’instant. Le plan n’utilise que vos vraies données ; envoyez une démo pour commencer.",
+  "training.real.noPriority":
+    "Aucune dimension de votre Player DNA n’est sous 60 / 100 et vous n’avez déclaré aucun objectif : aucune priorité à corriger. Gardez votre routine et définissez un objectif dans votre profil pour recevoir des recommandations.",
+  "training.real.provisional":
+    "Petit échantillon ({matches} partie(s)) : les priorités sont provisoires et seront revues à chaque nouvelle démo.",
+  "training.real.catalogUnavailable":
+    "Le catalogue de leçons est indisponible pour le moment ; le plan n’affiche que les activités pratiques.",
   "training.real.goals": "Vos objectifs",
   "training.real.noGoals": "Aucun objectif déclaré dans votre profil.",
   "training.real.priorities": "Priorités (dimensions les plus basses de votre Player DNA)",
@@ -72,7 +77,8 @@ export const catalogFr: Record<keyof typeof catalogPtBR, string> = {
   "training.real.practice": "Pratique dans CS2",
   "training.real.lessons": "Leçons recommandées",
   "training.real.complementary": "Parcours complémentaires",
-  "training.real.complementaryHint": "Contenus d’autres parcours liés à vos priorités. Suggestion : une leçon par semaine.",
+  "training.real.complementaryHint":
+    "Contenus d’autres parcours liés à vos priorités. Suggestion : une leçon par semaine.",
   "training.real.frequency": "Suggestion : 3 à 4 séances par semaine, dans cet ordre.",
   "training.real.open": "Ouvrir la leçon",
   "training.real.openCourse": "Ouvrir le cours",
@@ -80,16 +86,27 @@ export const catalogFr: Record<keyof typeof catalogPtBR, string> = {
   "training.real.why.goal": "Liée à votre objectif : {goal}.",
   "training.real.why.map": "Positions sur {map}, une carte que vous avez jouée.",
   "training.real.noLesson": "Aucune leçon du catalogue pour cette priorité dans votre langue.",
-  "training.practice.aim": "15 min d’aim_botz viseur à hauteur de tête + 10 min de deathmatch uniquement en one-tap.",
-  "training.practice.dueling": "Entraînement aux peeks (wide et jiggle) sur une carte d’entraînement et revue de vos duels d’ouverture dans la démo.",
-  "training.practice.survivability": "À chaque partie, notez les morts non échangées et revoyez la position de chacune dans la démo.",
-  "training.practice.positioning": "Entraînez les positions standard des cartes que vous jouez, côté CT et T, sur un serveur local.",
-  "training.practice.utility": "Apprenez 3 smokes et 2 flashs d’exécution de votre carte principale et utilisez-les à chaque partie.",
-  "training.practice.decision_making": "Après chaque round perdu, écrivez en une ligne quelle décision aurait changé le résultat.",
-  "training.practice.teamplay": "Convenez avec l’équipe des trades et flashs pour le coéquipier ; vérifiez dans la démo si le trade a eu lieu.",
-  "training.practice.economy": "Avant chaque round, annoncez à voix haute full buy, force ou eco avec l’équipe.",
-  "training.practice.clutch": "Entraînez des situations de 1v1 et 1v2 sur un serveur de retake, en priorisant l’information avant de tirer.",
-  "training.practice.consistency": "Même échauffement de 20 min avant chaque session (visée, spray, deathmatch) et au plus 3 parties d’affilée.",
-  "training.practice.demo_review": "Regardez votre dernière démo et notez 3 rounds à corriger ; comparez avec la semaine 1.",
+  "training.practice.aim":
+    "15 min d’aim_botz viseur à hauteur de tête + 10 min de deathmatch uniquement en one-tap.",
+  "training.practice.dueling":
+    "Entraînement aux peeks (wide et jiggle) sur une carte d’entraînement et revue de vos duels d’ouverture dans la démo.",
+  "training.practice.survivability":
+    "À chaque partie, notez les morts non échangées et revoyez la position de chacune dans la démo.",
+  "training.practice.positioning":
+    "Entraînez les positions standard des cartes que vous jouez, côté CT et T, sur un serveur local.",
+  "training.practice.utility":
+    "Apprenez 3 smokes et 2 flashs d’exécution de votre carte principale et utilisez-les à chaque partie.",
+  "training.practice.decision_making":
+    "Après chaque round perdu, écrivez en une ligne quelle décision aurait changé le résultat.",
+  "training.practice.teamplay":
+    "Convenez avec l’équipe des trades et flashs pour le coéquipier ; vérifiez dans la démo si le trade a eu lieu.",
+  "training.practice.economy":
+    "Avant chaque round, annoncez à voix haute full buy, force ou eco avec l’équipe.",
+  "training.practice.clutch":
+    "Entraînez des situations de 1v1 et 1v2 sur un serveur de retake, en priorisant l’information avant de tirer.",
+  "training.practice.consistency":
+    "Même échauffement de 20 min avant chaque session (visée, spray, deathmatch) et au plus 3 parties d’affilée.",
+  "training.practice.demo_review":
+    "Regardez votre dernière démo et notez 3 rounds à corriger ; comparez avec la semaine 1.",
   "coach.catalog.label": "Leçon recommandée",
 };
