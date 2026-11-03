@@ -886,3 +886,17 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - workflow guard unchanged.
   - The recorder target from the repository generator equals the read-only production computation. The assertion target is the read-only production md5 of its prosrc after the same substitutions.
 - Owner action after merge: set `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in the app secrets to the commit `e8f287500d53586f230a71eff17689969634ecd2`.
+
+## 2026-11-03 — R5.8.22: player_disconnect.ever_fully_connected review (controlled)
+
+- Defect: production job `e4088318` (test account, `nemiga-vs-furia-m1-ancient.dem`) ended `blocked_raw_audit`. Its attempt-1 manifest (provided by the owner) lists 385 field mappings: 360 RAW_ONLY_INTENTIONAL, 22 MAPPED, 2 DERIVED and exactly one UNMAPPED_BUT_AVAILABLE, `player_disconnect.ever_fully_connected`, which alone failed `RAW-EVIDENCE-01` and `RAW→CANONICAL` (the other 6 gates PASS). A newer CS2 build adds this flag to the disconnect event.
+- Fix (PR #232, `raw_evidence.py` only): the field joins the reviewed RAW-only set of `player_disconnect` (neither `adapter.py` nor the Canonical mapping reads that event). Any further new field on the event still blocks (test).
+- Release: merge `c764f858` under the standing watch-pattern freeze (no automatic deploy); queue idle (0 pending/processing); `PARSER_REVISION`/`PARSER_BUILD_REVISION` set to `git:c764f858…` with skipped deploys.
+  - Exactly one deployment of that commit, `2edd7ed1`, triggered through the Railway agent: SUCCESS at 19:01:06Z, BUILD_INFO commit `c764f858`, healthcheck `/health` succeeded.
+- Pins: raw_evidence.py blob `001281ee…` → `f906889c…`; parser/adapter/worker/settings blobs and the workflow blob are unchanged.
+- R5.8.22 migration (`supabase/migrations/20261103190000_r5_8_22_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_22/`):
+  - recorder `ed206712…` → `2a7b5179…`;
+  - assertion `20d82451…` → `8253e121…`;
+  - workflow guard unchanged.
+  - Both targets from the repository generator equal the read-only production computation (md5 of prosrc after the same substitutions).
+- Owner action after merge: set `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in the app secrets to the commit `c764f858ffa9df0ffa2740bdba450c7a37be2f3e`.

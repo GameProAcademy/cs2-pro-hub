@@ -18,11 +18,11 @@ ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "GameProAcademy/cs2-pro-hub"
 BRANCH = "main"
 # Semantic revision: exact worker source tree embedded in the active Railway image.
-COMMIT = "e8f287500d53586f230a71eff17689969634ecd2"
+COMMIT = "c764f858ffa9df0ffa2740bdba450c7a37be2f3e"
 # Build revision: exact source commit embedded in the currently served Railway image (BUILD_INFO.json, /version build.commit).
-BUILD_COMMIT = "e8f287500d53586f230a71eff17689969634ecd2"
+BUILD_COMMIT = "c764f858ffa9df0ffa2740bdba450c7a37be2f3e"
 # Active successful Railway deployment observed in production preflight (source commit eaaa2c8d...).
-DEPLOYMENT = "1c0f26d5-4064-4e6d-a552-2ce05ae517fe"
+DEPLOYMENT = "2edd7ed1-2703-42ad-abe3-ebe13d235e81"
 DEPLOYMENT_SOURCE_COMMIT = BUILD_COMMIT
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
@@ -31,7 +31,7 @@ EXPECTED_HASHES = {
     "services/cs2-demo-parser/parser.py": "0dcb5962a0c977ab7a82326ebf8a0ef70bafde02",
     "services/cs2-demo-parser/adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
     "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
-    "services/cs2-demo-parser/raw_evidence.py": "001281eecb02ebc318ff997f734c4081c161d1d9",
+    "services/cs2-demo-parser/raw_evidence.py": "f906889c795a7e6e8a41902e8e453f3f5b9d956e",
     "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 }
 IDENTITY_FIELDS = ("name", "version", "revision", "semantic_revision", "build_revision")

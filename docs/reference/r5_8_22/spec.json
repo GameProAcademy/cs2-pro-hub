@@ -1,0 +1,74 @@
+{
+  "deployment_id": "2edd7ed1-2703-42ad-abe3-ebe13d235e81",
+  "branch": "main",
+  "semantic_commit": "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+  "build_commit": "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+  "deployment_commit": "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "0dcb5962a0c977ab7a82326ebf8a0ef70bafde02",
+    "adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "f906889c795a7e6e8a41902e8e453f3f5b9d956e",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "8253e121dbcd90aa86a70296eb05d961",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "2a7b517911981b45ca57947a8b1627be",
+  "observed": {
+    "observed_at": "2026-11-03T19:10:00Z",
+    "railway_deployment": {
+      "id": "2edd7ed1-2703-42ad-abe3-ebe13d235e81",
+      "status": "SUCCESS",
+      "commitHash": "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-03T18:59:13.972Z",
+      "finished_at": "2026-11-03T19:01:06.929Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #232 (merge c764f858); PARSER_REVISION/PARSER_BUILD_REVISION set to git:c764f858... with skipped deploys; exactly one deployment of that commit triggered through the Railway agent; queue idle (0 pending/processing jobs) before the deploy",
+      "failed_builds_never_served": [],
+      "build_info": "BUILD_INFO.json commit c764f858ffa9df0ffa2740bdba450c7a37be2f3e (build step [6/7]); sources copied fresh at [5/7]",
+      "health": "Healthcheck /health succeeded at 19:01:04Z; GET /health 200 at 19:01:03Z (deploy log)"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+      "PARSER_BUILD_REVISION": "git:c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: the gate fetches both /version hosts and refuses any other identity",
+    "before": {
+      "deployment_id": "1c0f26d5-4064-4e6d-a552-2ce05ae517fe",
+      "semantic_revision": "git:e8f287500d53586f230a71eff17689969634ecd2",
+      "build_revision": "git:e8f287500d53586f230a71eff17689969634ecd2"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-03T19:05:00Z",
+      "record_parser_runtime_attestation": "ed206712403e8ab989b350eb89abba15",
+      "assert_verified_parser_provenance": "20d82451652846c95c4934c72c5d753d",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "raw_evidence_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "raw_evidence_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_21/spec.json",
+  "pin_role": "R5.8.22: re-pin semantic/build commit, Railway deployment and the raw_evidence.py critical blob after the player_disconnect.ever_fully_connected review (PR #232, controlled deployment of its merge commit); parser.py, adapter.py, worker.py, settings.py and workflow blobs unchanged",
+  "r5_8_21_database_target_md5": {
+    "assert_verified_parser_provenance": "20d82451652846c95c4934c72c5d753d",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_21_recorder_target_md5": "ed206712403e8ab989b350eb89abba15"
+}
