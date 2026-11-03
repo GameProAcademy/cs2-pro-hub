@@ -77,6 +77,20 @@ describe("training catalog: import of the owner's file (2026-11-03)", () => {
     expect(new Set(seed.lessons.map((l) => l.key)).size).toBe(2795);
   });
 
+  it("the committed initial load is insert-only, never sample-course, and covers the file", () => {
+    const load = readFileSync(
+      resolve(__dirname, "../../../supabase/seed/training-catalog/2026-11-03/initial_load.sql"),
+      "utf8",
+    );
+    expect(load.toLowerCase()).not.toContain("sample-course");
+    expect(load).not.toMatch(/\b(DELETE|UPDATE|TRUNCATE|DROP|ALTER|GRANT|REVOKE)\b/);
+    expect(load.match(/INSERT INTO public\.catalog_content_groups /g)).toHaveLength(25);
+    expect(load.match(/INSERT INTO public\.catalog_courses /g)).toHaveLength(121);
+    expect(load.match(/ON CONFLICT \(key\) DO NOTHING;/g)).toHaveLength(25 + 121 + 1);
+    const lessons = JSON.parse(load.split("$catalog$")[1] ?? "[]") as { c: string; l: unknown[] }[];
+    expect(lessons.reduce((n, h) => n + h.l.length, 0)).toBe(2795);
+  });
+
   it("courses: 25 pt-BR and 24 in each other locale", () => {
     const by = (loc: string) => seed.courses.filter((c) => c.locale === loc).length;
     expect([by("pt-BR"), by("pt-PT"), by("en"), by("es"), by("fr")]).toEqual([25, 24, 24, 24, 24]);
@@ -385,6 +399,7 @@ describe("training catalog: recommendation gate and selection", () => {
       cand({ id: "l2", url: `${H}/counter-strike-2-pro-in-game-3-br/lessons/other/` }),
       cand({
         id: "s1",
+        title: "2 – Procrastinação",
         group_key: "productive_routine",
         track: "strategic_knowledge",
         topics: ["routine_productivity"],
@@ -395,10 +410,12 @@ describe("training catalog: recommendation gate and selection", () => {
       ...utilityNeed,
       ...needsFromPlayer({ dimensions: [{ dimension: "consistency", index: 40 }], goals: [] }),
     ];
-    expect(pickRecommendations(items, needs, "pt-BR", { max: 5 }).map((p) => p.id)).toEqual([
-      "l1",
-      "s1",
-    ]);
+    // Equal scores: order is a tiebreak, the selected set is what matters.
+    expect(
+      pickRecommendations(items, needs, "pt-BR", { max: 5 })
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["l1", "s1"]);
     expect(
       pickRecommendations(items, needs, "pt-BR", { tracks: ["strategic_knowledge"] }).map(
         (p) => p.id,

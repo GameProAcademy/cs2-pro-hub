@@ -58,4 +58,54 @@ export const catalogEs: Record<keyof typeof catalogPtBR, string> = {
   "catalog.admin.import.applied": "Importación aplicada.",
   "catalog.admin.import.failed":
     "Importación rechazada. El archivo no se pudo leer o es demasiado grande (máx. 5 MB).",
+  "training.real.noPlayer":
+    "Todavía no hay un jugador vinculado a tu cuenta. Sube una demo y confirma qué jugador eres para generar el plan.",
+  "training.real.noData":
+    "Aún no hay partidas procesadas. El plan solo usa tus datos reales; sube una demo para empezar.",
+  "training.real.noPriority":
+    "Ninguna dimensión de tu Player DNA está por debajo de 60 / 100 y no declaraste objetivos en el perfil: no hay prioridad que corregir. Mantén la rutina y define un objetivo en el perfil para recibir recomendaciones.",
+  "training.real.provisional":
+    "Muestra pequeña ({matches} partida(s)): las prioridades son provisionales y se revisarán con cada nueva demo.",
+  "training.real.catalogUnavailable":
+    "El catálogo de clases no está disponible ahora; el plan muestra solo las actividades prácticas.",
+  "training.real.goals": "Tus objetivos",
+  "training.real.noGoals": "Ningún objetivo declarado en el perfil.",
+  "training.real.priorities": "Prioridades (dimensiones más bajas de tu Player DNA)",
+  "training.real.week": "Semana",
+  "training.real.focusConsolidation": "Consolidación y revisión",
+  "training.real.practice": "Práctica en CS2",
+  "training.real.lessons": "Clases recomendadas",
+  "training.real.complementary": "Rutas complementarias",
+  "training.real.complementaryHint":
+    "Contenidos de otras rutas vinculados a tus prioridades. Sugerencia: una clase por semana.",
+  "training.real.frequency": "Sugerencia: 3 a 4 sesiones por semana, en este orden.",
+  "training.real.open": "Abrir clase",
+  "training.real.openCourse": "Abrir curso",
+  "training.real.why.dna": "Tu dimensión {dimension} está en {value}.",
+  "training.real.why.goal": "Vinculada a tu objetivo: {goal}.",
+  "training.real.why.map": "Posiciones del mapa {map}, que jugaste.",
+  "training.real.noLesson": "No hay clase del catálogo para esta prioridad en tu idioma.",
+  "training.practice.aim":
+    "15 min de aim_botz con la mira a la altura de la cabeza + 10 min de deathmatch solo con one-taps.",
+  "training.practice.dueling":
+    "Práctica de peeks (wide y jiggle) en mapa de entrenamiento y revisión de tus duelos de apertura en la demo.",
+  "training.practice.survivability":
+    "En cada partida, anota las muertes sin intercambio y revisa la posición de cada una en la demo.",
+  "training.practice.positioning":
+    "Entrena las posiciones estándar de los mapas que juegas, de CT y de TR, en servidor local.",
+  "training.practice.utility":
+    "Aprende 3 smokes y 2 flashes de ejecución de tu mapa principal y úsalas en cada partida.",
+  "training.practice.decision_making":
+    "Después de cada ronda perdida, escribe en una línea qué decisión cambiaría el resultado.",
+  "training.practice.teamplay":
+    "Acuerda con el equipo trades y flashes para el compañero; revisa en la demo si el trade ocurrió.",
+  "training.practice.economy":
+    "Antes de cada ronda, decide en voz alta compra completa, force o eco con el equipo.",
+  "training.practice.clutch":
+    "Entrena situaciones de 1v1 y 1v2 en servidor de retake, priorizando información antes de disparar.",
+  "training.practice.consistency":
+    "Mismo calentamiento de 20 min antes de cada sesión (aim, spray, deathmatch) y como máximo 3 partidas seguidas.",
+  "training.practice.demo_review":
+    "Mira tu última demo y marca 3 rondas para corregir; compara con la semana 1.",
+  "coach.catalog.label": "Clase recomendada",
 };
