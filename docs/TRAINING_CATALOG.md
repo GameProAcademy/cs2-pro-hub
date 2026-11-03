@@ -48,10 +48,17 @@ Lessons under course slugs that are not listed localized courses stay `pending`
 `counter-strike-2-pro-in-game-3`, `rotina-produtiva`, and the orphan `midjourney-3`). The
 `-br`/`-pt` versions of the same families are confirmed and cover those languages.
 
-The title is checked against the evidenced locale: a Portuguese title inside an EN/ES/FR
-course (`title_reads_as_pt`, 38 lessons in the 2026-11-03 file: untranslated lessons in the
-EN/ES/FR versions of In-Game 4 and 5 and the ES communication course) stays `pending`.
-Loan words ("call to action", "making of") never override URL evidence.
+The title is checked against the evidenced locale; a lesson whose title reads as another
+language stays `pending` (`title_reads_as_pt`, 62 lessons in the 2026-11-03 file):
+
+- Portuguese titles inside EN/FR courses: no English/French marker and Portuguese/Spanish
+  vocabulary ("3 – Uso Eficaz de Granadas", "1 – Treinamento de Mira e Headshots" in the EN
+  and FR versions of In-Game 4 and 5; "Alterando Banners" in WordPress FR);
+- Portuguese-only words inside ES courses ("Nível 1 – Parte 1" in In-Game 2 ES, "Canal de
+  Acesso Auditivo" in the ES communication course, "Criativos que Convertem" in Pinterest ES).
+  Valid Spanish such as "Uso Eficaz de Granadas" or "Comunicacion de Alto Nivel" is kept.
+
+Loan words ("call to action", "making of", "D’água") never override URL evidence.
 
 An administrator can confirm or correct a language on the admin screen
 (`language_evidence = 'admin'`); imports never overwrite that decision.

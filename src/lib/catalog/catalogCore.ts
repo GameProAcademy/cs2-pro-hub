@@ -128,8 +128,21 @@ export function detectTitleLanguage(title: string): LangFamily | null {
  *  - Any other contradiction needs two distinct markers and more than the locale's own, so one
  *    loan word ("call to action", "making of", "D’água") never overrides URL evidence.
  */
+/** Portuguese/Spanish vocabulary that an English or French title would not contain. */
+const IBERIAN_WORDS =
+  /\b(uso|eficaz|pr[áa]ticas?|controle|treinamento|treino|mapas|aquecimento|ferramentas|an[áa]lise|revis[ãa]o|fun[çc][õo]es|como|aprender|erros|melhorar|n[íi]vel|acesso|criativos|configura[çc][ãa]o|personaliza[çc][ãa]o|introdu[çc][ãa]o|principais|mudan[çc]as|sensibilidade|v[íi]deo e [áa]udio|[a-z]+ando|[a-z]+endo)\b/;
+/** Words that are Portuguese and not Spanish. */
+const PORTUGUESE_ONLY_WORDS =
+  /(\bnível\b|\b(acesso|criativos|convertem|treinamento|treino|aquecimento|ferramentas|revis[ãa]o|melhorar|erros|controle|sensibilidade)\b)/;
+
 export function titleContradictsLocale(title: string, locale: CatalogLocale): LangFamily | null {
+  const lower = title.toLowerCase();
   const scores = languageScores(title);
+  const ownScore = scores.find((s) => s.lang === FAMILY_OF[locale])?.score ?? 0;
+  // Untranslated Portuguese lessons inside EN/FR courses ("3 – Uso Eficaz de Granadas").
+  if ((locale === "en" || locale === "fr") && ownScore === 0 && IBERIAN_WORDS.test(lower))
+    return "pt";
+  if (locale === "es" && PORTUGUESE_ONLY_WORDS.test(lower)) return "pt";
   const top = scores[0];
   const second = scores[1];
   const ownLang = FAMILY_OF[locale];

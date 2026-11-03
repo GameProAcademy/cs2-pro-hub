@@ -84,13 +84,13 @@ describe("training catalog: import of the owner's file (2026-11-03)", () => {
 
   it("language is confirmed only by evidence; unlisted courses and contradicting titles stay pending", () => {
     const status = (s: string) => seed.lessons.filter((l) => l.languageStatus === s).length;
-    expect(status("confirmed")).toBe(2254);
-    expect(status("pending")).toBe(541);
+    expect(status("confirmed")).toBe(2230);
+    expect(status("pending")).toBe(565);
     const evidence = (e: string) => seed.lessons.filter((l) => l.languageEvidence === e).length;
-    expect(evidence("course_slug_suffix")).toBe(2183);
+    expect(evidence("course_slug_suffix")).toBe(2159);
     expect(evidence("localized_course")).toBe(71);
     expect(evidence("unlisted_course")).toBe(503);
-    expect(evidence("title_reads_as_pt")).toBe(38);
+    expect(evidence("title_reads_as_pt")).toBe(62);
     // The source defect: Portuguese titles inside EN/ES/FR versions of In-Game 4 and 5.
     const mira = seed.lessons.filter((l) => l.title === "1 – Treinamento de Mira e Headshots");
     // Present in In-Game 3, 4 and 5: confirmed only where the course is Portuguese.
@@ -225,6 +225,15 @@ describe("training catalog: validation", () => {
     expect(titleContradictsLocale("1 – Treinamento de Mira e Headshots", "en")).toBe("pt");
     expect(titleContradictsLocale("1 – Introdução", "es")).toBe("pt");
     expect(detectTitleLanguage("Mirage CT – A")).toBeNull();
+    // Untranslated Portuguese lessons with no grammatical marker (found by simulating a plan).
+    expect(titleContradictsLocale("3 – Uso Eficaz de Granadas", "en")).toBe("pt");
+    expect(titleContradictsLocale("3 – Uso Eficaz de Granadas", "fr")).toBe("pt");
+    expect(titleContradictsLocale("Nível 1 – Parte 1", "es")).toBe("pt");
+    // Valid Spanish stays confirmed.
+    expect(titleContradictsLocale("3 – Uso Eficaz de Granadas", "es")).toBeNull();
+    expect(titleContradictsLocale("4 – Comunicacion de Alto Nivel", "es")).toBeNull();
+    expect(titleContradictsLocale("5 – Instalando WordPress", "es")).toBeNull();
+    expect(titleContradictsLocale("3 – Effective Use of Grenades", "en")).toBeNull();
   });
 
   it("tags in-game lessons with multilingual topics", () => {
