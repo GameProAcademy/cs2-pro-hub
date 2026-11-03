@@ -39,6 +39,7 @@ const match = (id: string, extra: Partial<OverviewMatch> = {}): OverviewMatch =>
   firstDeaths: null,
   tradeKills: 2,
   flashAssists: 1,
+  roundsPlayed: 24,
   admission: "CERTIFIED",
   limitations: [],
   ...extra,
@@ -125,7 +126,7 @@ describe("AI Coach factual context", () => {
       ["fr", "French"],
       ["es", "Spanish"],
     ] as const)
-      expect(coachSystemPrompt(locale)).toContain(`Always answer in ${lang}.`);
+      expect(coachSystemPrompt(locale)).toContain(`Always answer in ${lang}, including refusals`);
     const p = coachSystemPrompt("en");
     expect(p).toMatch(/'Data'.*'Interpretation'.*'Recommendation'/s);
     expect(p).toMatch(/null value means NOT MEASURED, never zero/);
@@ -225,6 +226,30 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     }
   });
 
+  it("reports the upstream host and the attempt latency (latency is measured per reply)", async () => {
+    let t = 1000;
+    const fetchImpl = vi.fn(async () => {
+      t += 4321;
+      return ok("x", { provider: "DeepInfra" });
+    });
+    const r = await completeCoach(msgs, {
+      maxTokens: 10,
+      env: { OPENROUTER_API_KEY: "or-key" },
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      now: () => t,
+    });
+    expect(r.upstream).toBe("DeepInfra");
+    expect(r.latencyMs).toBe(4321);
+    // A provider string that is not a plain name never reaches storage.
+    const odd = await call(
+      (async () => ok("y", { provider: "<script>" })) as unknown as typeof fetch,
+      {
+        OPENROUTER_API_KEY: "or-key",
+      },
+    );
+    expect(odd.upstream).toBeNull();
+  });
+
   it("refuses Gemini and unknown providers anywhere in the chain", () => {
     expect(() => resolveCoachChain({ AI_PRIMARY_MODEL: "google/gemini-3.7-flash" })).toThrow(
       CoachProviderFailure,
@@ -263,6 +288,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
       max_tokens: 10,
       reasoning: { effort: "medium", exclude: true },
       temperature: 0.2,
+      provider: { sort: "throughput", allow_fallbacks: true },
     });
     expect(String(init.body)).not.toContain("or-key");
     expect(fetchImpl).toHaveBeenCalledTimes(1);

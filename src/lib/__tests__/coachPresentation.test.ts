@@ -150,7 +150,7 @@ describe("Coach reply rendering", () => {
     expect(flashed).toContain("flashAssists is a different metric");
     for (const d of empty.playerDna.dimensions) {
       expect(d).not.toHaveProperty("value0to100");
-      expect(d.shown === "not observed" || / \/ 100$/.test(d.shown)).toBe(true);
+      expect(d.shown === "Não observado" || / \/ 100$/.test(d.shown)).toBe(true);
     }
   });
 
@@ -182,6 +182,122 @@ describe("Coach reply rendering", () => {
     expect(facts.sample.matchesPerMap).toEqual({ de_cache: 1, de_dust2: 1, de_mirage: 1 });
     expect(facts.sample.note).toMatch(/no trend, tendency/);
     expect(coachSystemPrompt("pt-BR")).toContain("check sample.matchesPerMap");
+  });
+
+  describe("units: per-match counts vs per-round rates (production es reply 8daf93fe)", () => {
+    // The model wrote "4 opening kills ... 1.3 de cada 3 rondas": it divided by the 3 MATCHES
+    // and called them rounds, because the facts carried no rounds. Real data: 24+16+23 rounds.
+    const real = (
+      map: string,
+      roundsPlayed: number | null,
+      ok: number,
+      od: number,
+      tk: number,
+    ) => ({
+      map,
+      playedAt: "2026-10-29",
+      admission: null,
+      limitations: [],
+      kills: 12,
+      deaths: 10,
+      assists: 2,
+      firstKills: ok,
+      firstDeaths: od,
+      tradeKills: tk,
+      flashAssists: 1,
+      roundsPlayed,
+    });
+    const overviewOf = (ms: ReturnType<typeof real>[]) =>
+      ({ matches: ms, aggregates: null }) as unknown as PlayerOverview;
+    const three = [
+      real("de_cache", 24, 0, 3, 2),
+      real("de_dust2", 16, 2, 0, 1),
+      real("de_mirage", 23, 2, 1, 0),
+    ];
+
+    for (const locale of COACH_LOCALES) {
+      it(`${locale}: totals and per-round rates come precomputed from rounds, never from matches`, () => {
+        const facts = buildCoachFacts(overviewOf(three), buildPlayerDna([]), locale);
+        expect(facts.matches.map((m) => m.roundsPlayed)).toEqual([24, 16, 23]);
+        expect(facts.totals).toMatchObject({
+          matches: 3,
+          roundsPlayed: 63,
+          openingKills: 4,
+          openingDeaths: 4,
+          tradeKills: 3,
+        });
+        expect(facts.totals.perRound.openingKills).toBe(0.063); // 4 / 63, not 4 / 3
+        expect(facts.totals.perRound.tradeKills).toBe(0.048); // 3 / 63
+        const prompt = coachSystemPrompt(locale);
+        expect(prompt).toContain("is per MATCH");
+        expect(prompt).toContain("the number of matches is never a number of rounds");
+        expect(prompt).toContain("Copy sums and per-round rates from totals");
+      });
+    }
+
+    for (const locale of COACH_LOCALES) {
+      it(`${locale}: per-match K/D is precomputed and separate from the overall K/D (B5)`, () => {
+        const facts = buildCoachFacts(overviewOf(three), buildPlayerDna([]), locale);
+        // fixture: 12 kills / 10 deaths in every match -> 1.2 per match
+        expect(facts.matches.map((m) => m.killDeathRatio)).toEqual([1.2, 1.2, 1.2]);
+        const prompt = coachSystemPrompt(locale);
+        expect(prompt).toContain("The K/D of one match is matches[].killDeathRatio");
+        expect(prompt).toContain("never quote one as the other");
+        expect(prompt).toContain("never with 'most players', 'competitive players'"); // B2
+        expect(prompt).toContain("copy playerDna.strongest / playerDna.weakest"); // B8
+        // 2026-11-03 re-run: B5 listed overall per-round rates under Cache; B10 refused in English
+        // with the UI in pt-BR.
+        expect(prompt).toContain("never list a totals value under one map or match");
+        expect(prompt).toContain("including refusals and one-line replies");
+      });
+    }
+
+    it("a match with 0 deaths has no K/D instead of Infinity", () => {
+      const m = { ...real("de_dust2", 16, 2, 0, 1), deaths: 0 };
+      const facts = buildCoachFacts(overviewOf([m]), buildPlayerDna([]), "en");
+      expect(facts.matches[0]!.killDeathRatio).toBeNull();
+    });
+
+    it("a missing value makes the total null instead of a partial sum", () => {
+      const facts = buildCoachFacts(
+        overviewOf([real("de_cache", 24, 0, 3, 2), real("de_dust2", null, 2, 0, 1)]),
+        buildPlayerDna([]),
+        "es",
+      );
+      expect(facts.totals.roundsPlayed).toBeNull();
+      expect(facts.totals.openingKills).toBe(2);
+      expect(facts.totals.perRound.openingKills).toBeNull();
+      expect(buildCoachFacts(overviewOf([]), buildPlayerDna([]), "fr").totals.kills).toBeNull();
+    });
+  });
+
+  it("DNA strongest/weakest are computed in code, with ties, and 'not observed' is localized (B8)", () => {
+    const dims = (values: Array<number | null>) =>
+      ({
+        state: "READY",
+        matches: 3,
+        minimumMatches: 3,
+        dimensions: values.map((value, i) => ({
+          dimension: ["aim", "teamplay", "clutch", "economy", "decision_making"][i],
+          value,
+          signals: [],
+        })),
+      }) as unknown as Parameters<typeof buildCoachFacts>[1];
+    const overview = { matches: [], aggregates: null } as unknown as PlayerOverview;
+    // Production values: aim 63, teamplay 35, clutch 16, economy not observed, decision 77.
+    for (const locale of COACH_LOCALES) {
+      const f = buildCoachFacts(overview, dims([0.63, 0.35, 0.16, null, 0.77]), locale);
+      expect(f.playerDna.weakest.map((d) => d.shown)).toEqual(["16 / 100"]);
+      expect(f.playerDna.strongest.map((d) => d.shown)).toEqual(["77 / 100"]);
+      expect(f.playerDna.dimensions[3]!.shown).not.toBe("not observed");
+      expect(JSON.stringify(f)).not.toContain('"index"');
+    }
+    const tie = buildCoachFacts(overview, dims([0.5, 0.5, 0.9, null, 0.9]), "en");
+    expect(tie.playerDna.weakest).toHaveLength(2);
+    expect(tie.playerDna.strongest).toHaveLength(2);
+    expect(
+      buildCoachFacts(overview, dims([null, null, null, null, null]), "fr").playerDna.weakest,
+    ).toEqual([]);
   });
 
   it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {

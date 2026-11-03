@@ -34,7 +34,7 @@ output tokens at that date. Prices change; none is hard-coded. Change the model 
 
 Request parameters:
 
-- OpenRouter: `max_tokens`, `reasoning: { effort: "medium", exclude: true }`, `temperature: 0.2`, headers
+- OpenRouter: `max_tokens`, `reasoning: { effort: "medium", exclude: true }`, `temperature: 0.2`, `provider: { sort: "throughput", allow_fallbacks: true }`, headers
   `HTTP-Referer: https://gamepro.network`, `X-Title: CS2 PRO AI Coach`.
 - OpenAI: `max_completion_tokens`, `reasoning_effort: "low"`.
 - Output budget: `COACH_MAX_REPLY_TOKENS` (4096). Reasoning tokens share this budget.

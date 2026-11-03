@@ -26,6 +26,7 @@ function match(overrides: Partial<OverviewMatch>): OverviewMatch {
     firstDeaths: null,
     tradeKills: null,
     flashAssists: null,
+    roundsPlayed: null,
     admission: "LIMITED",
     limitations: [],
     ...overrides,
