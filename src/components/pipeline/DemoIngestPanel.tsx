@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, RefreshCw, Square, Upload } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { UploadBox } from "@/components/common/UploadBox";
 import { HistorySkeleton } from "@/components/common/AppLoaders";
 import { EmptyState } from "@/components/common/States";
+import { DemoFlowModal, type FlowDismissReason } from "@/components/pipeline/DemoFlowModal";
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { identityActionFor } from "@/lib/pipeline/identityRecovery";
@@ -22,6 +24,14 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { DemoUploadError, submitDemo, type SubmitDemoResult } from "@/lib/pipeline/client";
+import {
+  EMPTY_FLOW_MEMORY,
+  FLOW_STORAGE_KEY,
+  decideResume,
+  parseFlowMemory,
+  type FlowMemory,
+  type FlowUpload,
+} from "@/lib/pipeline/demoFlow";
 import {
   PIPELINE_ERROR_CODES,
   isPermanentError,
@@ -89,6 +99,24 @@ function errorKey(code: string | null): TranslationKey {
   return known.includes(candidate) ? candidate : "pipeline.error.PROCESSING_ERROR";
 }
 
+/** UI-only memory of the upload modal (per browser). The backend stays the source of truth. */
+function readFlowMemory(): FlowMemory {
+  try {
+    return parseFlowMemory(window.localStorage.getItem(FLOW_STORAGE_KEY), Date.now());
+  } catch {
+    return EMPTY_FLOW_MEMORY;
+  }
+}
+
+function writeFlowMemory(update: (memory: FlowMemory) => FlowMemory): void {
+  try {
+    const next = update(readFlowMemory());
+    window.localStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Storage unavailable (private mode, blocked): the modal still works for this page view.
+  }
+}
+
 /**
  * Real demo ingestion surface: upload -> queued job -> server-side processing.
  * The active submission is polled by its attempt-scoped job id. A replacement
@@ -101,6 +129,20 @@ export function DemoIngestPanel() {
   const [uploadPercent, setUploadPercent] = useState(0);
   const [submissionResult, setSubmissionResult] = useState<SubmitDemoResult | null>(null);
   const uploadRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+  // Upload modal: which job it follows, the browser upload it shows, and recovery state.
+  const [flowOpen, setFlowOpen] = useState(false);
+  const [flowJobId, setFlowJobId] = useState<string | null>(null);
+  const [flowUpload, setFlowUpload] = useState<FlowUpload | null>(null);
+  const [flowInterrupted, setFlowInterrupted] = useState<{
+    fileName: string;
+    fileSize: number;
+  } | null>(null);
+  const [flowResumed, setFlowResumed] = useState(false);
+  // Jobs the modal already handled on this page: their card must not pop its own dialog
+  // right after the player closed the modal (e.g. "decide later").
+  const [flowHandled, setFlowHandled] = useState<string[]>([]);
+  const resumeChecked = useRef(false);
 
   const focusUpload = () => {
     uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -160,8 +202,18 @@ export function DemoIngestPanel() {
   const upload = useMutation({
     mutationFn: (file: File) =>
       submitDemo(file, {
-        onProgress: ({ state, percent }) => {
+        onProgress: ({ state, percent, bytesSent }) => {
           if (state === "uploading" || state === "completed") setUploadPercent(percent);
+          // The modal shows only measured progress: no share before the first byte.
+          setFlowUpload((current) =>
+            current
+              ? {
+                  ...current,
+                  state,
+                  percent: state === "uploading" && bytesSent > 0 ? percent : null,
+                }
+              : current,
+          );
         },
       }),
     onMutate: () => {
@@ -169,10 +221,18 @@ export function DemoIngestPanel() {
       setUploadPercent(0);
       setSubmissionResult(null);
     },
-    onError: (error) =>
-      setLocalError(error instanceof DemoUploadError ? error.code : "PROCESSING_ERROR"),
+    onError: (error) => {
+      const code = error instanceof DemoUploadError ? error.code : "PROCESSING_ERROR";
+      setLocalError(code);
+      setFlowUpload((current) => (current ? { ...current, error: code } : current));
+      writeFlowMemory((memory) => ({ ...memory, upload: null }));
+    },
     onSuccess: async (result) => {
       setSubmissionResult(result);
+      // The modal now follows the real job (a duplicate points at the existing job).
+      setFlowJobId(result.jobId);
+      setFlowUpload(null);
+      writeFlowMemory((memory) => ({ ...memory, upload: null, trackedJobId: result.jobId }));
       await queryClient.refetchQueries({ queryKey: ["pipeline", "jobs"], type: "active" });
     },
   });
@@ -209,6 +269,73 @@ export function DemoIngestPanel() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline", "jobs"] }),
   });
 
+  const startUpload = (file: File) => {
+    setFlowJobId(null);
+    setFlowInterrupted(null);
+    setFlowResumed(false);
+    setFlowUpload({
+      state: "hashing",
+      percent: null,
+      fileName: file.name,
+      fileSize: file.size,
+      error: null,
+    });
+    setFlowOpen(true);
+    writeFlowMemory((memory) => ({
+      ...memory,
+      trackedJobId: null,
+      upload: { fileName: file.name, fileSize: file.size, startedAt: Date.now() },
+    }));
+    upload.mutate(file);
+  };
+
+  // After a reload: follow the job this browser was following (or an active one) again.
+  // Never starts anything; it only points the modal at an existing job.
+  useEffect(() => {
+    if (resumeChecked.current || !jobs.isSuccess || flowOpen || upload.isPending) return;
+    resumeChecked.current = true;
+    const decision = decideResume(readFlowMemory(), jobs.data ?? []);
+    if (decision.kind === "job") {
+      setSubmissionResult({ jobId: decision.jobId, duplicate: true, duplicateStatus: null });
+      setFlowJobId(decision.jobId);
+      setFlowResumed(true);
+      setFlowOpen(true);
+    } else if (decision.kind === "upload_interrupted") {
+      setFlowInterrupted({ fileName: decision.fileName, fileSize: decision.fileSize });
+      setFlowOpen(true);
+    }
+  }, [jobs.isSuccess, jobs.data, flowOpen, upload.isPending]);
+
+  const dismissFlow = useCallback((reason: FlowDismissReason, jobId: string | null) => {
+    setFlowOpen(false);
+    if (jobId) setFlowHandled((ids) => (ids.includes(jobId) ? ids : [...ids, jobId]));
+    setFlowUpload(null);
+    setFlowInterrupted(null);
+    setFlowResumed(false);
+    writeFlowMemory((memory) => {
+      const keepAside = reason === "background" || reason === "later";
+      return {
+        trackedJobId: null,
+        upload: null,
+        dismissed:
+          keepAside && jobId
+            ? [...memory.dismissed.filter((id) => id !== jobId), jobId]
+            : memory.dismissed,
+      };
+    });
+  }, []);
+
+  const chooseFileAgain = () => {
+    dismissFlow("closed", null);
+    focusUpload();
+    uploadRef.current?.querySelector<HTMLInputElement>('input[type="file"]')?.click();
+  };
+
+  const viewAnalysis = () => {
+    dismissFlow("completed", flowJobId);
+    void navigate({ to: "/matches" });
+  };
+
   const parserAvailable = pipeline.data?.parserAvailable ?? false;
   const uploadFeedback = upload.data ? getDemoUploadFeedback(upload.data) : null;
 
@@ -225,7 +352,7 @@ export function DemoIngestPanel() {
       ) : null}
 
       <div ref={uploadRef}>
-        <UploadBox kind="demo" onFileSelected={(file) => upload.mutate(file)} />
+        <UploadBox kind="demo" onFileSelected={(file) => startUpload(file)} />
       </div>
 
       {upload.isPending ? (
@@ -380,7 +507,10 @@ export function DemoIngestPanel() {
                       {job.attachmentState !== "attached" ? (
                         <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
                       ) : null}
-                      <DemoPlayerIdentity jobId={job.jobId} />
+                      <DemoPlayerIdentity
+                        jobId={job.jobId}
+                        autoOpen={!flowOpen && !flowHandled.includes(job.jobId)}
+                      />
                     </>
                   ) : identityActionFor(job) === "select_and_retry" ? (
                     <DemoPlayerIdentity jobId={job.jobId} recover />
@@ -485,6 +615,18 @@ export function DemoIngestPanel() {
           </ul>
         )}
       </div>
+
+      <DemoFlowModal
+        open={flowOpen}
+        jobId={flowJobId}
+        upload={flowUpload}
+        interrupted={flowInterrupted}
+        resumed={flowResumed}
+        errorKeyFor={errorKey}
+        onDismiss={dismissFlow}
+        onChooseFileAgain={chooseFileAgain}
+        onViewAnalysis={viewAnalysis}
+      />
     </div>
   );
 }
