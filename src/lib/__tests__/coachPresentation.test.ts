@@ -245,6 +245,10 @@ describe("Coach reply rendering", () => {
         expect(prompt).toContain("never quote one as the other");
         expect(prompt).toContain("never with 'most players', 'competitive players'"); // B2
         expect(prompt).toContain("copy playerDna.strongest / playerDna.weakest"); // B8
+        // 2026-11-03 re-run: B5 listed overall per-round rates under Cache; B10 refused in English
+        // with the UI in pt-BR.
+        expect(prompt).toContain("never list a totals value under one map or match");
+        expect(prompt).toContain("including refusals and one-line replies");
       });
     }
 
