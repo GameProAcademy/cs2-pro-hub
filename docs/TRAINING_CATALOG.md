@@ -106,8 +106,15 @@ Reproducible load from a file (operator, same rules as the admin import, insert-
 ```
 node --experimental-strip-types scripts/catalog/build-import-sql.ts \
   supabase/seed/training-catalog/2026-11-03/training_catalog.json /tmp/catalog.sql > report.json
-# apply /tmp/catalog.sql on the managed database; running it twice changes nothing
+# apply /tmp/catalog.sql on the managed database; running it again inserts nothing
+# (it only adds one more catalog_import_runs row)
 ```
+
+The generated file for the 2026-11-03 source is committed as
+`supabase/seed/training-catalog/2026-11-03/initial_load.sql` (sha256 `c1a1040d8c87dfc4…`,
+regenerating it gives the same bytes). Production was loaded from that exact file: the
+database fetched it from the merge commit's raw GitHub URL with `pg_net`, checked the sha256,
+and executed it — no hand-copied SQL.
 
 ## How the catalog is used
 
