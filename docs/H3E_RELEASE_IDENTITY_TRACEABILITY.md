@@ -899,4 +899,9 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - assertion `20d82451…` → `8253e121…`;
   - workflow guard unchanged.
   - Both targets from the repository generator equal the read-only production computation (md5 of prosrc after the same substitutions).
-- Owner action after merge: set `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION` and `H3E91_EXPECTED_WORKER_BUILD_COMMIT` in the app secrets to the commit `c764f858ffa9df0ffa2740bdba450c7a37be2f3e`.
+- Owner action after merge (app secrets; Lovable cannot edit a secret, so each is deleted and re-created, then the app is published):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:c764f858ffa9df0ffa2740bdba450c7a37be2f3e` (with the `git:` prefix);
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:c764f858ffa9df0ffa2740bdba450c7a37be2f3e` (with the `git:` prefix);
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `c764f858ffa9df0ffa2740bdba450c7a37be2f3e` (bare commit).
+  - Observed 2026-11-03: the two parser values first set without `git:` made the activation gate fail `parser_lock` (`PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH`) while `bridge_identity` passed; corrected by the owner and republished (deploy 3f9509de); activation gate rerun on 2c92455b: decision=PASS, all 18 checks PASS.
+- After publish: `parser-runtime-attestation` dispatched on `main` (run 41735277210, success) → provenance `eabef590…` VERIFIED for deployment `2edd7ed1`, raw_evidence.py `f906889c…`.
