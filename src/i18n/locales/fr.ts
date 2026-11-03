@@ -1,8 +1,10 @@
 import type { Dictionary } from "./pt-BR";
+import { catalogFr } from "./catalog/fr";
 import { profileFr } from "./profile/fr";
 
 export const fr: Dictionary = {
   ...profileFr,
+  ...catalogFr,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Analyse de performance et entraînement pour Counter-Strike 2",

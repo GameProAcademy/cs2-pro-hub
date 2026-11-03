@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  BookOpen,
   Cpu,
   FileLock2,
   FlaskConical,
@@ -22,6 +23,7 @@ const adminNav = [
   { to: "/admin/pipeline", labelKey: "pipeline.admin.title", icon: Cpu },
   { to: "/admin/demo-e2e", labelKey: "admin.nav.demoE2E", icon: FlaskConical },
   { to: "/admin/r5-forensic", labelKey: "admin.nav.r5Forensic", icon: FileLock2 },
+  { to: "/admin/catalog", labelKey: "admin.nav.catalog", icon: BookOpen },
   { to: "/admin/audit", labelKey: "admin.nav.audit", icon: ScrollText },
 ] as const;
 

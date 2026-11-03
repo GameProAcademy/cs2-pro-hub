@@ -8,3 +8,4 @@ bun.lock
 routeTree.gen.ts
 src/integrations/supabase/types.ts
 src/integrations/supabase/previewAuthStorage.ts
+supabase/seed/training-catalog/

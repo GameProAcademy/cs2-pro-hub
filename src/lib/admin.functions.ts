@@ -243,7 +243,7 @@ export interface AuditLogRow {
   created_at: string;
 }
 
-type Ctx = { supabase: SupabaseClient<Database>; userId: string };
+export type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
 /** Generic, non-revealing error codes surfaced to the client. */
 const FORBIDDEN = "ADMIN_FORBIDDEN";
@@ -251,7 +251,7 @@ const FAILED = "ADMIN_OPERATION_FAILED";
 /** The authorisation state could not be determined (backend/infra problem). */
 const UNAVAILABLE = "ADMIN_UNAVAILABLE";
 
-async function resolveAdmin(context: Ctx): Promise<AdminSession> {
+export async function resolveAdmin(context: Ctx): Promise<AdminSession> {
   const { supabase, userId } = context;
 
   const { data: profile, error } = await supabase
@@ -284,7 +284,7 @@ async function resolveAdmin(context: Ctx): Promise<AdminSession> {
  * written the caller MUST treat the whole operation as failed, so this throws
  * instead of silently swallowing the error.
  */
-async function writeAuditLog(
+export async function writeAuditLog(
   context: Ctx,
   action: string,
   targetUserId: string | null,
