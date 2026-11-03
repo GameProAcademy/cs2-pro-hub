@@ -126,7 +126,7 @@ describe("AI Coach factual context", () => {
       ["fr", "French"],
       ["es", "Spanish"],
     ] as const)
-      expect(coachSystemPrompt(locale)).toContain(`Always answer in ${lang}.`);
+      expect(coachSystemPrompt(locale)).toContain(`Always answer in ${lang}, including refusals`);
     const p = coachSystemPrompt("en");
     expect(p).toMatch(/'Data'.*'Interpretation'.*'Recommendation'/s);
     expect(p).toMatch(/null value means NOT MEASURED, never zero/);
