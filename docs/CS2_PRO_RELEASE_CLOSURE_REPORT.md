@@ -422,3 +422,53 @@ In all entries: 0 OpenRouter / OpenAI keys, 0 `Bearer` / `Authorization`, 0 JWT,
 ### Decision
 
 PILOTO POR CONVITE. Every functional item of the release checklist is VALIDADO in production with a second, non-owner account (upload → attested worker → metrics → DNA → Coach → isolation), the Coach defects are closed and the logs are clean. General release is not supported yet because capacity under concurrent users, the OpenRouter spend limit and sign-up on the current build have no evidence, and the Coach depends on a single provider. Exit criteria for general release: a load test of concurrent uploads and Coach messages on the production worker; the OpenRouter key limit confirmed; one fresh sign-up on the current build; daily review of `context_type` cost and failure codes during the pilot.
+
+## 2026-11-03 — Training catalog: Meu Treinamento and AI Coach recommend real GamePro lessons
+
+Source: `cs2pro_training_catalog.zip` (owner, 2026-11-03), committed as `supabase/seed/training-catalog/2026-11-03/training_catalog.json`. Design and maintenance: `docs/TRAINING_CATALOG.md`.
+
+### Releases (every PR: all required checks green on the PR head, merge commit, Lovable synced to the merge SHA, then published)
+
+| PR | Content | Merge | Deployment |
+| --- | --- | --- | --- |
+| #225 | Catalog tables, pure core (normalization, language evidence, groups, topics, recommendation gate), admin screen `/admin/catalog`, import, initial-load script, 27 tests | `edbbdfb0` | (no app change visible until #226) |
+| #226 | Meu Treinamento plan from the catalog, Coach `catalogSuggestions` + link sanitizer, grants fix migration, committed initial load, 23 integration tests | `fc7fce47` | `c9df3d54` |
+| #227 | Coach: "por onde começo?" / "minha marca" read as catalog requests (5 locales) | `c1697ad9` | `a3e60217` |
+
+### Database (production)
+
+| Item | Evidence |
+| --- | --- |
+| `20261103120000_training_catalog` | applied (4 tables, 7 policies, RLS on, 3 triggers, `catalog_url_ok`); recorded `direct-main-edbbdfb0-20261103120000`, file md5 `f5fa8424…` |
+| `20261103130000_training_catalog_grants` | applied; recorded `direct-main-fc7fce47-20261103130000`, md5 `d972eecc…`. Needed because new public tables received the platform default (ALL incl. TRUNCATE for `anon` and `authenticated`); read back after: anon SELECT/INSERT false, authenticated TRUNCATE false on all 4 tables |
+| Initial load | `initial_load.sql` (sha256 `c1a1040d8c87dfc4…`) fetched by the database with `pg_net` from the raw URL of `fc7fce47`, sha256 checked in SQL, then executed — no hand-copied SQL. Same rows as the per-row SQL on a disposable PostgreSQL 16 (diff of 2,795 lessons: identical); re-run inserts nothing |
+| Counts read back | 25 groups (5 Counter-Strike, 7 Strategic, 11 Extra, 2 unclassified), 121 courses, 2,795 lessons; confirmed 2,230 (pt-BR 505, pt-PT 447, en 430, fr 429, es 419); pending 565 (503 under unlisted base courses, 62 `title_reads_as_pt`); `sample-course` URLs: 0; import runs: 1 |
+| Player read (simulated session of the owner, a non-admin) | sees active rows only: 2,791 lessons, 116 courses, 24 groups, 0 import runs |
+| Writes | RLS: only `is_admin_master` (policy + tests). A write attempt as a player was not executed in production (blocked by the session's safety check, even inside a rolled-back transaction) |
+
+### Production validation (owner account, pt-BR, 2026-11-03)
+
+| Check | Result |
+| --- | --- |
+| `/training` | VALIDADO — priorities Clutch 16, Teamplay 35, Utility 45; weeks 1–3 with CS2 practice + In-Game lessons, week 4 goal "Ganhar consistência", complementary Strategic lessons; 9 links, all `hub.gamepro.academy/courses/*-br/…`, `target=_blank rel=noopener noreferrer`, 0 `sample-course` |
+| Coach: grenades | VALIDADO — `catalog=1`, "3 – Uso Eficaz de Granadas" with its exact URL, `links_removed=0` |
+| Coach: team communication | VALIDADO — `catalog=1`, Oratória e Comunicação [BR] lesson, `links_removed=0` |
+| Coach: "Qual é o meu KAST na Mirage?" | VALIDADO — `catalog=0`, no link; 69.6 % matches the dashboard row for de_mirage |
+| Coach: brand/career "Por onde começo?" | before #227: `catalog=0` (defect); after #227 (deploy `a3e60217`): VALIDADO — `catalog=1`, Extra Skills lesson "Como Fazer Uma Boa Estratégia de Branding" (Marca e Branding [BR]), `links_removed=0` |
+| `/admin/catalog` as a player | VALIDADO — redirected to `/dashboard` (server functions also call `resolveAdmin`, fail-closed) |
+| Links in Coach replies | every URL is an exact `catalog_lessons` row (confirmed, pt-BR, active), checked in SQL |
+| Cost | `cost_usd` 0.00032–0.00046 per reply with the catalog slice (≤3 items) — unchanged order of magnitude |
+
+### Findings and residual risks
+
+| Item | Status |
+| --- | --- |
+| Lesson URL slugs differ from titles for duplicated LMS posts (e.g. "4 – Overpass CT – Rotação" → `…/1-ferramentas-de-analise-e-revisao-de-demos-2-7-4/`) | Present in the owner's file as-is; the app shows title and URL exactly as given. NÃO COMPROVADO that each URL opens the lesson its title names: `hub.gamepro.academy` requires login (redirected to `/access/`). Owner check recommended on a sample |
+| Coach describes a lesson's content in its own words ("cobre técnicas de lançamento…") | PENDENTE — titles and URLs are exact; the one-line description is model wording, not catalog data (the catalog has no summaries yet) |
+| 565 lessons with pending language | not recommended anywhere until confirmed in `/admin/catalog` |
+| `a-era-do-video-game` and bonus content | unclassified / inactive until the owner decides |
+| Dashboard cards "CS2 PRO Score / Player DNA — ainda não disponível" while `/training` and the Coach use the DNA | pre-existing UI inconsistency, outside this change |
+
+### Decision
+
+Unchanged: PILOTO POR CONVITE. The catalog acceptance criterion is met (plan mixing CS2 practice with catalog lessons in the player's language — In-Game and Strategic for the owner's DNA and goals; Extra Skills appear when a goal or question calls for them, proven by tests and by the Coach brand/career case; Coach recommends real catalog lessons when pertinent and none for statistics questions). General-release exit criteria from the previous section still apply.
