@@ -184,6 +184,70 @@ describe("Coach reply rendering", () => {
     expect(coachSystemPrompt("pt-BR")).toContain("check sample.matchesPerMap");
   });
 
+  describe("units: per-match counts vs per-round rates (production es reply 8daf93fe)", () => {
+    // The model wrote "4 opening kills ... 1.3 de cada 3 rondas": it divided by the 3 MATCHES
+    // and called them rounds, because the facts carried no rounds. Real data: 24+16+23 rounds.
+    const real = (
+      map: string,
+      roundsPlayed: number | null,
+      ok: number,
+      od: number,
+      tk: number,
+    ) => ({
+      map,
+      playedAt: "2026-10-29",
+      admission: null,
+      limitations: [],
+      kills: 12,
+      deaths: 10,
+      assists: 2,
+      firstKills: ok,
+      firstDeaths: od,
+      tradeKills: tk,
+      flashAssists: 1,
+      roundsPlayed,
+    });
+    const overviewOf = (ms: ReturnType<typeof real>[]) =>
+      ({ matches: ms, aggregates: null }) as unknown as PlayerOverview;
+    const three = [
+      real("de_cache", 24, 0, 3, 2),
+      real("de_dust2", 16, 2, 0, 1),
+      real("de_mirage", 23, 2, 1, 0),
+    ];
+
+    for (const locale of COACH_LOCALES) {
+      it(`${locale}: totals and per-round rates come precomputed from rounds, never from matches`, () => {
+        const facts = buildCoachFacts(overviewOf(three), buildPlayerDna([]), locale);
+        expect(facts.matches.map((m) => m.roundsPlayed)).toEqual([24, 16, 23]);
+        expect(facts.totals).toMatchObject({
+          matches: 3,
+          roundsPlayed: 63,
+          openingKills: 4,
+          openingDeaths: 4,
+          tradeKills: 3,
+        });
+        expect(facts.totals.perRound.openingKills).toBe(0.063); // 4 / 63, not 4 / 3
+        expect(facts.totals.perRound.tradeKills).toBe(0.048); // 3 / 63
+        const prompt = coachSystemPrompt(locale);
+        expect(prompt).toContain("is per MATCH");
+        expect(prompt).toContain("the number of matches is never a number of rounds");
+        expect(prompt).toContain("Copy sums and per-round rates from totals");
+      });
+    }
+
+    it("a missing value makes the total null instead of a partial sum", () => {
+      const facts = buildCoachFacts(
+        overviewOf([real("de_cache", 24, 0, 3, 2), real("de_dust2", null, 2, 0, 1)]),
+        buildPlayerDna([]),
+        "es",
+      );
+      expect(facts.totals.roundsPlayed).toBeNull();
+      expect(facts.totals.openingKills).toBe(2);
+      expect(facts.totals.perRound.openingKills).toBeNull();
+      expect(buildCoachFacts(overviewOf([]), buildPlayerDna([]), "fr").totals.kills).toBeNull();
+    });
+  });
+
   it("the prompt carries the engine's metric definitions (KAST is per round, not a sum)", () => {
     const prompt = coachSystemPrompt("pt-BR");
     expect(prompt).toContain("K/D = kills / deaths");

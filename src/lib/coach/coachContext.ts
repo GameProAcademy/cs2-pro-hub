@@ -97,9 +97,31 @@ export interface CoachFacts {
     openingDeaths: number | null;
     tradeKills: number | null;
     flashAssists: number | null;
+    /** Rounds played in this match; every count above is per MATCH, not per round. */
+    roundsPlayed: number | null;
     /** Always null: the demos carry no per-victim blind events (see notAvailable). */
     enemiesFlashed: null;
   }>;
+  /**
+   * Sums over all matches, computed here so the model never adds or divides counts itself.
+   * A total is null when any match lacks the value (a partial sum is never presented as a total).
+   */
+  totals: {
+    matches: number;
+    roundsPlayed: number | null;
+    kills: number | null;
+    deaths: number | null;
+    assists: number | null;
+    openingKills: number | null;
+    openingDeaths: number | null;
+    tradeKills: number | null;
+    flashAssists: number | null;
+    /** Per-round rates over all rounds (count / roundsPlayed), 3 decimals; null without both. */
+    perRound: Record<
+      "kills" | "deaths" | "openingKills" | "openingDeaths" | "tradeKills",
+      number | null
+    >;
+  };
   dashboardAggregates: {
     matches: number;
     killDeathRatio: number | null;
@@ -167,6 +189,7 @@ export function buildCoachFacts(
     openingDeaths: m.firstDeaths,
     tradeKills: m.tradeKills,
     flashAssists: m.flashAssists,
+    roundsPlayed: m.roundsPlayed,
     enemiesFlashed: null,
   }));
   const agg = overview.aggregates;
@@ -184,6 +207,7 @@ export function buildCoachFacts(
       }, {}),
       note: "A map with fewer than 3 matches supports single observations only: no trend, tendency, habit or 'getting worse/better' on that map can be stated.",
     },
+    totals: coachTotals(matches),
     dashboardAggregates: agg
       ? {
           matches: agg.matches,
@@ -215,6 +239,48 @@ export function buildCoachFacts(
   };
 }
 
+type FactMatch = CoachFacts["matches"][number];
+
+function total(matches: FactMatch[], key: keyof FactMatch): number | null {
+  if (!matches.length) return null;
+  let sum = 0;
+  for (const m of matches) {
+    const v = m[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) return null;
+    sum += v;
+  }
+  return sum;
+}
+
+export function coachTotals(matches: FactMatch[]): CoachFacts["totals"] {
+  const roundsPlayed = total(matches, "roundsPlayed");
+  const sums = {
+    kills: total(matches, "kills"),
+    deaths: total(matches, "deaths"),
+    assists: total(matches, "assists"),
+    openingKills: total(matches, "openingKills"),
+    openingDeaths: total(matches, "openingDeaths"),
+    tradeKills: total(matches, "tradeKills"),
+    flashAssists: total(matches, "flashAssists"),
+  };
+  const rate = (n: number | null) =>
+    n === null || roundsPlayed === null || roundsPlayed <= 0
+      ? null
+      : Math.round((n / roundsPlayed) * 1000) / 1000;
+  return {
+    matches: matches.length,
+    roundsPlayed,
+    ...sums,
+    perRound: {
+      kills: rate(sums.kills),
+      deaths: rate(sums.deaths),
+      openingKills: rate(sums.openingKills),
+      openingDeaths: rate(sums.openingDeaths),
+      tradeKills: rate(sums.tradeKills),
+    },
+  };
+}
+
 export function coachSystemPrompt(locale: Locale): string {
   const [data, interpretation, recommendation] = SECTIONS[locale];
   return [
@@ -232,6 +298,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "9. Format: plain Markdown only (short headings, bullet lists, **bold**, and simple pipe tables when comparing matches). No code blocks. Never use LaTeX or math markup (no \\frac, \\text, $...$); write formulas in plain text, e.g. K/D = kills / deaths.",
     "10. Refer to Player DNA signals by their label exactly as given, and quote their values as given in `shown` (a value like '84 / 100' is an index, not a percentage).",
     "11. When you explain a metric, use the product's own definitions: K/D = kills / deaths. ADR = total damage dealt / rounds played. KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded (died and a teammate killed the killer shortly after), divided by rounds played, as a percentage; each round counts once, the four parts are not added together. HS% = headshot kills / kills. Never present another formula for these metrics.",
+    "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; if a value you need is null there, say it cannot be computed.",
   ].join("\n");
 }
 
