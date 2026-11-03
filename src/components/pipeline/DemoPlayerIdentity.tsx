@@ -74,8 +74,14 @@ export function deriveIdentityUiState(
 export function DemoPlayerIdentity({
   jobId,
   recover = false,
+  autoOpen = true,
 }: {
   jobId: string;
+  /**
+   * False while the upload modal is following this job: the modal shows the same choice
+   * (same server actions), so the card must not open a second dialog on top of it.
+   */
+  autoOpen?: boolean;
   /**
    * The job FAILED after analysis: the dialog always offers the player list (even when a
    * player was selected before) and confirming starts a new attempt.
@@ -128,8 +134,8 @@ export function DemoPlayerIdentity({
 
   useEffect(() => {
     // A failed job opens the dialog only on the user's click.
-    if (!recover && identity.data && (automatic || needsManual)) setOpen(true);
-  }, [identity.data, automatic, needsManual, recover]);
+    if (autoOpen && !recover && identity.data && (automatic || needsManual)) setOpen(true);
+  }, [identity.data, automatic, needsManual, recover, autoOpen]);
   const started = result?.state === "attached";
 
   // Nothing clickable until the job's identity (and its detected players) is loaded.
