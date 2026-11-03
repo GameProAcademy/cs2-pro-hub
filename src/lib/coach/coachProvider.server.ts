@@ -148,6 +148,10 @@ function requestBody(cfg: CoachProviderConfig, messages: CoachMessage[], maxToke
       reasoning: { effort: "medium", exclude: true },
       // Factual coaching over fixed data: low sampling temperature keeps wording on the facts.
       temperature: 0.2,
+      // Latency follows the serving host (production 2026-11-03: 8 hosts for 10 replies,
+      // 2.3 s to 22.7 s for similar token counts). Prefer the fastest hosts; the others stay
+      // available as fallbacks, so routing never removes availability.
+      provider: { sort: "throughput", allow_fallbacks: true },
     };
   }
   return {
