@@ -55,12 +55,34 @@ def entries(raw: object) -> list[str]:
     return [str(raw)]
 
 
+def message_of(entry: str) -> str:
+    """The logged message itself: `event_message` of an export row, else the raw entry.
+
+    Export rows wrap the message with envelope fields (id, timestamp, details.cf_ray, ...);
+    those are the platform's, not the app's, and must not be read as logged keys.
+    """
+    try:
+        obj = json.loads(entry)
+    except (json.JSONDecodeError, TypeError):
+        return entry
+    if isinstance(obj, dict) and isinstance(obj.get("event_message"), str):
+        return obj["event_message"]
+    return entry
+
+
 def logged_keys(entry: str) -> set[str]:
-    """Keys of the object literal printed after an [ai-coach] tag (Node console format)."""
-    m = re.search(r"\[ai-coach\][^{]*\{(.*)\}", entry)
+    """Keys of the object printed after an [ai-coach] tag (JSON or Node console format)."""
+    msg = message_of(entry)
+    m = re.search(r"\[ai-coach\][^{]*(\{.*\})", msg)
     if not m:
         return set()
-    return set(re.findall(r"[{,\s\\\"]([A-Za-z_][A-Za-z0-9_]*)\\?\"?\s*:", "{" + m.group(1)))
+    try:
+        obj = json.loads(m.group(1))
+        if isinstance(obj, dict):
+            return set(obj.keys())
+    except json.JSONDecodeError:
+        pass
+    return set(re.findall(r"[{,]\s*\"?([A-Za-z_][A-Za-z0-9_]*)\"?\s*:", m.group(1)))
 
 
 def main(path: str) -> int:
