@@ -285,6 +285,7 @@ export function DemoFlowModal({
         <DialogPrimitive.Content
           ref={contentRef}
           aria-describedby="demo-flow-description"
+          aria-modal="true"
           onEscapeKeyDown={(event) => {
             event.preventDefault();
             // Escape never interrupts a critical step; it only closes a settled state.

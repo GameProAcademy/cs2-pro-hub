@@ -495,6 +495,7 @@ describe("navigation lock (31-35)", () => {
   it("35: dialog semantics — title, description, live status", () => {
     expect(modal).toContain("<DialogPrimitive.Root open={open} modal>");
     expect(modal).toContain('aria-describedby="demo-flow-description"');
+    expect(modal).toContain('aria-modal="true"');
     expect(modal).toContain("<DialogPrimitive.Title");
     const html = render({ kind: "processing", stage: "parsing" });
     expect(html).toContain('id="demo-flow-description"');
