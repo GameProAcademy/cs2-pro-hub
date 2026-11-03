@@ -96,8 +96,13 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
         "weapon_itemid", "weapon_originalowner_xuid",
     }),
     "player_blind": frozenset({"entityid"}),
+    # ever_fully_connected: a newer CS2 build adds this flag to player_disconnect. Observed in
+    # production on 2026-11-03 (job e4088318, nemiga-vs-furia-m1-ancient, manifest of attempt 1:
+    # the only UNMAPPED_BUT_AVAILABLE field, which failed RAW-EVIDENCE-01 and RAW→CANONICAL).
+    # Reviewed: neither adapter.py nor the Canonical mapping reads player_disconnect at all.
     "player_disconnect": frozenset({
-        "PlayerID", "__event__", "name", "networkid", "reason", "tick", "user_name", "user_steamid", "xuid",
+        "PlayerID", "__event__", "ever_fully_connected", "name", "networkid", "reason", "tick",
+        "user_name", "user_steamid", "xuid",
     }),
     "player_footstep": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     "player_jump": frozenset({"__event__", "tick", "user_name", "user_steamid"}),

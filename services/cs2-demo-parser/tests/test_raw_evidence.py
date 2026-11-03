@@ -544,6 +544,29 @@ def test_public_fixture_fields_are_classified_raw_only_and_unknown_ones_still_bl
     assert again["player_footstep.future_step_field"] == "UNMAPPED_BUT_AVAILABLE"
 
 
+
+def test_player_disconnect_ever_fully_connected_is_raw_only_and_unknown_fields_still_block():
+    # Production 2026-11-03 (job e4088318): a newer CS2 build added ever_fully_connected to
+    # player_disconnect; as the only unclassified field it blocked the whole demo.
+    from raw_evidence import mapping_inventory
+    raw = {
+        "header": {}, "players": [{}], "tick_rows": [], "grenade_rows": [], "round_rows": [],
+        "event_tables": {"player_disconnect": [{
+            "PlayerID": 3, "ever_fully_connected": True, "name": "x", "networkid": "BOT",
+            "reason": 2, "tick": 10, "user_name": "x", "user_steamid": "0", "xuid": 0,
+        }]},
+    }
+    item = {i["raw_field"]: i for i in mapping_inventory(raw)}["player_disconnect.ever_fully_connected"]
+    assert item["status"] == "RAW_ONLY_INTENTIONAL"
+    assert item["reason"]
+    assert item.get("canonical_field") in (None, "")
+    # The review is exact: any other new field on the same event still blocks admission.
+    raw["event_tables"]["player_disconnect"][0]["future_disconnect_field"] = 1
+    again = {i["raw_field"]: i["status"] for i in mapping_inventory(raw)}
+    assert again["player_disconnect.future_disconnect_field"] == "UNMAPPED_BUT_AVAILABLE"
+    assert again["player_disconnect.ever_fully_connected"] == "RAW_ONLY_INTENTIONAL"
+
+
 def _app_stable(value):
     """The APP's stableRawArtifactJson, applied to what JSON carried (src/lib/pipeline/rawArtifactContract.ts)."""
     from raw_artifact import _stable_portable
