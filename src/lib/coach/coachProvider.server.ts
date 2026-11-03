@@ -77,6 +77,10 @@ export interface CoachCompletion {
   /** Model id the provider reports it used (falls back to the configured id). */
   model: string;
   usage: CoachUsage;
+  /** Upstream host that served the request (OpenRouter's `provider` field); null when not reported. */
+  upstream: string | null;
+  /** Wall time of the answering attempt, in milliseconds. */
+  latencyMs: number;
   /** Why the fallback answered; null when the primary did. */
   fallbackReason: CoachProviderError | null;
   attempts: CoachAttempt[];
@@ -197,6 +201,7 @@ export interface CoachMessage {
 interface AttemptResult {
   content: string;
   model: string;
+  upstream: string | null;
   usage: CoachUsage;
 }
 
@@ -257,6 +262,7 @@ async function attempt(
   let body: {
     choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
     model?: unknown;
+    provider?: unknown;
     error?: unknown;
     usage?: {
       prompt_tokens?: unknown;
@@ -290,6 +296,10 @@ async function attempt(
   return {
     content: content.trim(),
     model: typeof body.model === "string" && body.model ? body.model : cfg.model,
+    upstream:
+      typeof body.provider === "string" && /^[\w .-]{1,40}$/.test(body.provider)
+        ? body.provider
+        : null,
     usage: {
       promptTokens: finite(body.usage?.prompt_tokens),
       completionTokens: finite(body.usage?.completion_tokens),
@@ -366,6 +376,8 @@ export async function completeCoach(
         provider: cfg.provider,
         model: result.model,
         usage: result.usage,
+        upstream: result.upstream,
+        latencyMs: record.latencyMs,
         fallbackReason: attempts.length > 1 ? attempts[0]!.code : null,
         attempts,
       };

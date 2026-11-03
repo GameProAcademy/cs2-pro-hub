@@ -103,6 +103,8 @@ export interface OverviewMatch {
   firstDeaths: number | null;
   tradeKills: number | null;
   flashAssists: number | null;
+  /** Rounds the player played in this match (denominator of every per-round rate). */
+  roundsPlayed: number | null;
   admission: MatchAdmission | null;
   limitations: string[];
 }
@@ -226,6 +228,7 @@ export function shapeMatches(
           firstDeaths: row.first_deaths ?? null,
           tradeKills: row.trade_kills ?? null,
           flashAssists: row.flash_assists ?? null,
+          roundsPlayed: row.rounds_played ?? null,
           admission: admission.get(match.id)?.admission ?? null,
           limitations: admission.get(match.id)?.limitations ?? [],
         },

@@ -307,6 +307,8 @@ function coachProvenance(
   completion: {
     provider: string;
     model: string;
+    upstream: string | null;
+    latencyMs: number;
     fallbackReason: string | null;
     usage: {
       promptTokens: number | null;
@@ -323,6 +325,8 @@ function coachProvenance(
     `provider=${completion.provider}`,
     `model=${completion.model}`,
     `fallback=${completion.fallbackReason ?? "none"}`,
+    `upstream=${completion.upstream ?? "?"}`,
+    `ms=${completion.latencyMs}`,
     `data=${facts.dataState}`,
     `matches=${facts.matches.length}`,
     `in=${u.promptTokens ?? "?"}`,
