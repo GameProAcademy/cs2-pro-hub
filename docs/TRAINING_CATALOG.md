@@ -47,6 +47,10 @@ Lessons under course slugs that are not listed localized courses stay `pending`
 (`unlisted_course`): 503 in the 2026-11-03 file (base courses such as
 `counter-strike-2-pro-in-game-3`, `rotina-produtiva`, and the orphan `midjourney-3`). The
 `-br`/`-pt` versions of the same families are confirmed and cover those languages.
+A check of every URL on `hub.gamepro.academy` (owner logged in, 2026-11-03) found all 503
+of these return 404, so they were deactivated in production (`active = false`, run
+`link-check-2026-11-03:deactivate-404`); every other URL opened with a page title equal to
+the catalog title.
 
 The title is checked against the evidenced locale; a lesson whose title reads as another
 language stays `pending` (`title_reads_as_pt`, 62 lessons in the 2026-11-03 file):

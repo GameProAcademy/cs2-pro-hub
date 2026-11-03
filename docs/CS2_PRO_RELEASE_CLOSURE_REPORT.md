@@ -463,9 +463,10 @@ Source: `cs2pro_training_catalog.zip` (owner, 2026-11-03), committed as `supabas
 
 | Item | Status |
 | --- | --- |
-| Lesson URL slugs differ from titles for duplicated LMS posts (e.g. "4 – Overpass CT – Rotação" → `…/1-ferramentas-de-analise-e-revisao-de-demos-2-7-4/`) | Present in the owner's file as-is; the app shows title and URL exactly as given. NÃO COMPROVADO that each URL opens the lesson its title names: `hub.gamepro.academy` requires login (redirected to `/access/`). Owner check recommended on a sample |
+| Lesson URL slugs differ from titles for duplicated LMS posts (e.g. "4 – Overpass CT – Rotação" → `…/1-ferramentas-de-analise-e-revisao-de-demos-2-7-4/`) | VALIDADO 2026-11-03 — all 2,916 catalog URLs fetched in the owner's logged-in `hub.gamepro.academy` tab: 2,413 (121 courses + 2,292 lessons, i.e. every confirmed lesson and the 62 `title_reads_as_pt`) return 200 with a page `<title>` equal to the catalog title, 0 redirects; the slug/title mismatch is cosmetic |
+| 503 `unlisted_course` lessons (base course slugs without a language suffix, 24 slugs incl. `midjourney-3`) | every one returns 404 on the hub. Already never recommended (pending); deactivated in production with the owner's authorization (`active=false`, exactly 503 rows, asserted in SQL; recorded in `catalog_import_runs` as `link-check-2026-11-03:deactivate-404`). Now: 2,288 active lessons (2,226 confirmed, 62 pending) |
 | Coach describes a lesson's content in its own words ("cobre técnicas de lançamento…") | PENDENTE — titles and URLs are exact; the one-line description is model wording, not catalog data (the catalog has no summaries yet) |
-| 565 lessons with pending language | not recommended anywhere until confirmed in `/admin/catalog` |
+| 62 active lessons with pending language (`title_reads_as_pt`) | not recommended anywhere until confirmed in `/admin/catalog` |
 | `a-era-do-video-game` and bonus content | unclassified / inactive until the owner decides |
 | Dashboard cards "CS2 PRO Score / Player DNA — ainda não disponível" while `/training` and the Coach use the DNA | pre-existing UI inconsistency, outside this change |
 
