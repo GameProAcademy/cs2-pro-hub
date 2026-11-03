@@ -207,6 +207,26 @@ describe("AI Coach: contextual catalog recommendations", () => {
     expect(r.some((x) => x.track === "extra_skills")).toBe(true);
   });
 
+  // Production 2026-11-03 (reply catalog=0): "Por onde começo?" was not read as a request to
+  // learn, and "minha marca" was not read as branding.
+  it("building a personal brand / career, phrased as 'where do I start' → Extra Skills (5 locales)", () => {
+    const cases: Array<[CatalogLocale, string]> = [
+      ["pt-BR", "Quero construir minha marca como jogador e crescer na carreira. Por onde começo?"],
+      ["pt-PT", "Quero construir a minha marca como jogador. Por onde começo?"],
+      ["en", "I want to build my brand as a player. Where do I start?"],
+      ["es", "Quiero construir mi marca como jugador, ¿por dónde empiezo?"],
+      ["fr", "Je veux développer ma marque de joueur, par où commencer ?"],
+    ];
+    for (const [locale, message] of cases) {
+      const r = coach(locale, message);
+      expect(r.length, `${locale}: ${message}`).toBeGreaterThan(0);
+      expect(
+        r.some((x) => x.track === "extra_skills" && ["branding", "career"].includes(x.need.topic)),
+        locale,
+      ).toBe(true);
+    }
+  });
+
   it("how to improve, no topic named → weakest observed DNA dimensions", () => {
     const needs = coachNeeds("How can I improve?", OWNER);
     expect([...new Set(needs.map((n) => n.detail))]).toEqual(["clutch", "teamplay"]);
