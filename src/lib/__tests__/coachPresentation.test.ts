@@ -69,14 +69,22 @@ describe("Player DNA signal labels", () => {
       },
     }));
     const overview = { matches: [], aggregates: null } as unknown as PlayerOverview;
-    const facts = buildCoachFacts(overview, buildPlayerDna(rows), "pt-BR");
+    // Fase 3.1: signals are sent only when the message is about the profile (minimal context).
+    const plain = buildCoachFacts(overview, buildPlayerDna(rows), "pt-BR", { message: "oi" });
+    expect(plain.playerDna.dimensions.every((d) => d.signals.length === 0)).toBe(true);
+    const facts = buildCoachFacts(overview, buildPlayerDna(rows), "pt-BR", {
+      message: "Como está meu perfil de clutch e mira?",
+    });
     const json = JSON.stringify(facts.playerDna);
     for (const name of SIGNALS) expect(json).not.toContain(`"${name}"`);
     expect(json).toContain("Vitórias em clutch");
     expect(json).toContain("16.7%");
     expect(json).toContain("85 / 100");
     expect(
-      JSON.stringify(buildCoachFacts(overview, buildPlayerDna(rows), "en").playerDna),
+      JSON.stringify(
+        buildCoachFacts(overview, buildPlayerDna(rows), "en", { message: "my clutch profile" })
+          .playerDna,
+      ),
     ).toContain("Clutches won");
   });
 });

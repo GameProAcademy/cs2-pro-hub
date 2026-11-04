@@ -21,6 +21,9 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   buildCoachFacts,
   buildCoachMessages,
+  coachDnaReadings,
+  EMPTY_DECLARED,
+  type CoachDeclaredProfile,
   COACH_MAX_HISTORY,
   COACH_MAX_PLAYER_MESSAGES_PER_HOUR,
   COACH_MAX_REPLY_TOKENS,
@@ -31,7 +34,9 @@ import {
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
 import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
+import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
+import { loadSideRounds } from "@/lib/xray.functions";
 
 export type CoachErrorCode =
   | "COACH_MESSAGE_EMPTY"
@@ -136,6 +141,37 @@ async function playerMessagesLastHour(db: Db, playerId: string): Promise<number>
   return count ?? 0;
 }
 
+/**
+ * What the player declared in their profile (RLS: the caller's own player only). A
+ * preference, never a measurement; a failed read means "nothing declared", never an error.
+ */
+async function loadDeclaredProfile(db: Db, playerId: string): Promise<CoachDeclaredProfile> {
+  try {
+    const [player, goals, roles] = await Promise.all([
+      db
+        .from("player_profiles")
+        .select("current_level, experience")
+        .eq("id", playerId)
+        .maybeSingle(),
+      db.from("player_profile_goals").select("goal_code, is_primary").eq("player_id", playerId),
+      db.from("player_profile_roles").select("role_code").eq("player_id", playerId),
+    ]);
+    if (player.error || goals.error || roles.error) throw new Error("COACH_DECLARED_READ_FAILED");
+    const goalRows = (goals.data ?? []) as Array<{ goal_code: string; is_primary: boolean }>;
+    return {
+      ...EMPTY_DECLARED,
+      goals: goalRows.map((g) => g.goal_code).sort(),
+      primaryGoal: goalRows.find((g) => g.is_primary)?.goal_code ?? null,
+      level: (player.data?.current_level as string | null) ?? null,
+      experience: (player.data?.experience as string | null) ?? null,
+      roles: ((roles.data ?? []) as Array<{ role_code: string }>).map((r) => r.role_code).sort(),
+    };
+  } catch (error) {
+    logFailure("declared", error);
+    return EMPTY_DECLARED;
+  }
+}
+
 function logFailure(stage: string, error: unknown) {
   // Only the stable code is logged: no message text, facts, keys or stacks.
   const code = error instanceof Error ? error.message.split(":")[0] : "unknown";
@@ -212,22 +248,28 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       }
 
       stage = "context";
-      const [overview, { dna }] = await Promise.all([
+      const [overview, { dna }, declared] = await Promise.all([
         loadPlayerOverview(db, context.userId),
         loadPlayerDna(db, context.userId),
+        loadDeclaredProfile(db, playerId),
       ]);
-      const facts = buildCoachFacts(overview, dna, input.locale);
+      // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
+      const sides = await loadSideRounds(
+        db,
+        [playerId],
+        overview.matches.map((m) => m.matchId),
+      );
+      const facts = buildCoachFacts(overview, dna, input.locale, {
+        message: input.message,
+        xray: buildXRay({ overview, dna, sides }),
+        declared,
+      });
       // Catalog: a few items relevant to THIS message (never the catalog itself). A catalog
       // read failure only means no suggestions; the Coach still answers.
       stage = "catalog";
       try {
-        const needs = coachNeeds(
-          input.message,
-          dna.dimensions.map((d) => ({
-            dimension: d.dimension,
-            index: d.value === null ? null : Math.round(d.value * 100),
-          })),
-        );
+        // DNA dimensions pick lessons only when the profile is READY (Fase 3.1).
+        const needs = coachNeeds(input.message, coachDnaReadings(dna));
         if (needs.length) {
           const candidates = await fetchCatalogCandidates(db, input.locale, [
             ...new Set(needs.map((n) => n.topic)),

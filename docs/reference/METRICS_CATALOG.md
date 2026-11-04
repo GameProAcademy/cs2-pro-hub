@@ -175,6 +175,6 @@ Snapshots are produced by the pipeline after every processed match
 - Inferences and recommendations only when present; `inferenceBlockedBy` explains absence.
 - No result, score, win rate, CS2 PRO Score, enemies flashed, positions or economy class.
 - Flash assists: cite as "reported by the game flag", not as an independently verified 0.
-- **Open item for Fase 3:** the current Coach facts (`coachContext.ts`, `buildCoachFacts`)
-  still send dimension indexes ("N / 100") and strongest/weakest dimensions from the raw DNA
-  even below the minimum sample. They must follow these rules before Fase 3 ships.
+- **Fase 3.1 (done):** the Coach context (`coach-context-v1`, `docs/reference/COACH_CONTEXT.md`)
+  consumes `xray-v1` and sends no DNA index, "N / 100" or strongest/weakest below the minimum
+  sample.
