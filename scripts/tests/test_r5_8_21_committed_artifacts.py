@@ -122,18 +122,19 @@ def test_rollback_restores_the_r5_8_20_bodies_and_fails_closed():
 
 def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.21 is historical since R5.8.22 (player_disconnect field review): no active pin may still name it."""
-    successor = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))  # active head
+    successor = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
+    head = json.loads((ROOT / "docs/reference/r5_8_23/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert successor["deployment_id"] in text, path
+        assert head["deployment_id"] in text, path
         assert NEW_DEPLOYMENT not in text and OLD_DEPLOYMENT not in text, path
         assert NEW_COMMIT not in text and OLD_COMMIT not in text, path
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
-    assert f'DEPLOYED_WORKER_REVISION = "git:{successor["semantic_commit"]}"' in adapter
-    assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{successor["build_commit"]}"' in adapter
-    # parser.py and adapter.py did not change in R5.8.22: their R5.8.21 blobs stay active.
+    assert f'DEPLOYED_WORKER_REVISION = "git:{head["semantic_commit"]}"' in adapter
+    assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{head["build_commit"]}"' in adapter
+    # parser.py and adapter.py did not change in R5.8.22 or R5.8.23: their R5.8.21 blobs stay active.
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
         assert NEW_PARSER in text and OLD_PARSER not in text, path

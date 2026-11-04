@@ -905,3 +905,32 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `c764f858ffa9df0ffa2740bdba450c7a37be2f3e` (bare commit).
   - Observed 2026-11-03: the two parser values first set without `git:` made the activation gate fail `parser_lock` (`PARSER_LOCK_REVISION_MISMATCH`, `PARSER_LOCK_BUILD_MISMATCH`) while `bridge_identity` passed; corrected by the owner and republished (deploy 3f9509de); activation gate rerun on 2c92455b: decision=PASS, all 18 checks PASS.
 - After publish: `parser-runtime-attestation` dispatched on `main` (run 41735277210, success) → provenance `eabef590…` VERIFIED for deployment `2edd7ed1`, raw_evidence.py `f906889c…`.
+
+## 2026-11-04 — R5.8.23: parser field-governance review (controlled)
+
+- Defect: the RAW field inventory labelled fields `RAW_ONLY_INTENTIONAL` that the worker actually consumes. This is proven on the attempt-1 manifest of job `e4088318` and by perturbation tests:
+  - `player_death.assistedflash` (D35 flash assists);
+  - `bomb_*` and grenade-detonation `user_steamid`;
+  - `player_blind` actor and victim;
+  - the tick of every adapter-emitted event;
+  - the tick-sample properties copied into `semantic_player_data`.
+- Fix: PR #239 changes `raw_evidence.py` and adds `docs/PARSER_FIELD_GOVERNANCE.md`.
+  - Those fields are now MAPPED/DERIVED; only labels change, and no metric changes.
+  - A reviewed `IGNORED_APPROVED` table was added and duplicate listings were removed.
+  - UNMAPPED fields still block.
+  - A versioned catalog and a CI audit were added (`scripts/parser_field_catalog.py`).
+- Release:
+  - Merge `94c6460b` was made under the standing watch-pattern freeze; the queue was idle (0 pending/processing).
+  - `PARSER_REVISION` and `PARSER_BUILD_REVISION` were set to `git:94c6460b…` with skipped deploys.
+  - Exactly one deployment of that commit, `7324404e`, was triggered through the Railway agent. Status SUCCESS at 05:00:21Z; BUILD_INFO commit `94c6460b`; sources copied fresh (not cached); healthcheck `/health` succeeded.
+  - `parser.gamepro.network/version`: revision = semantic = build = `git:94c6460b…`, `declared_revision_matches` true.
+- Pins: raw_evidence.py blob `f906889c…` → `b72c3174…`. The parser, adapter, worker and settings blobs and the workflow blob are unchanged.
+- R5.8.23 migration (`supabase/migrations/20261104100000_r5_8_23_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_23/`):
+  - recorder `2a7b5179…` → `ea3ba14c…`;
+  - assertion `8253e121…` → `fb659f89…`;
+  - workflow guard unchanged;
+  - both targets from the repository generator equal the read-only production computation.
+- Owner action after the migration is applied (app secrets: delete, re-create, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:94c6460b6c577e66e573a3a1d53f11a8edd5feae`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:94c6460b6c577e66e573a3a1d53f11a8edd5feae`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `94c6460b6c577e66e573a3a1d53f11a8edd5feae` (bare commit).

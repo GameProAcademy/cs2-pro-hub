@@ -25,7 +25,7 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
     # R5.8.15 (D13b) and R5.8.16 (D22) advanced them again the same way. The R5.8.11 spec
     # itself stays frozen; the active pins are the R5.8.22 spec (D35/D36 changed adapter.py; R5.8.22 raw_evidence.py).
     r5813 = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
-    active = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))
+    active = json.loads((ROOT / "docs/reference/r5_8_23/spec.json").read_text(encoding="utf-8"))
     assert SPEC["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert r5813["observed"]["railway_deployment"]["redeploy_of"] == SPEC["deployment_id"]
     assert (r5813["semantic_commit"], r5813["build_commit"]) == (SPEC["semantic_commit"], SPEC["build_commit"])
