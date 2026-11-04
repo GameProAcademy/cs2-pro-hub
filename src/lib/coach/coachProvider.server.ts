@@ -14,9 +14,13 @@
  * Only "openrouter" and "openai" are accepted providers, and any model id naming
  * Gemini is refused: Gemini is not used, not even as a silent fallback.
  *
- * Policy: one attempt per provider (no retry loops, so no duplicated cost). When the
- * primary fails for any reason, the cause is logged and the fallback is tried once with
- * the same request and the same validation. Both failing returns a stable error code.
+ * Policy (Fase 3.3): at most ONE retry per provider, and only for failures that cannot have
+ * produced a billed completion: HTTP 429 (honouring a short Retry-After), 502 and 503, and a
+ * connection that was never established (DNS retry, refused, reset before a response,
+ * connect timeout). Exponential backoff with jitter. Never retried: our own timeout (the
+ * provider may have generated), 4xx other than 429, 500/504, invalid / empty / truncated
+ * replies. When the primary still fails, the cause is logged and the fallback (opt-in, off in
+ * production) is tried with the same rules. Both failing returns a stable error code.
  * A reply cut by the token limit, empty, or not valid JSON is a failure, never a reply.
  * Logs carry provider, model, status, code, latency and token/cost metadata only —
  * never message content, prompts or keys.
@@ -27,6 +31,9 @@ export type CoachProviderError =
   | "COACH_PROVIDER_NOT_CONFIGURED"
   | "COACH_PROVIDER_AUTH_FAILED"
   | "COACH_PROVIDER_RATE_LIMITED"
+  | "COACH_PROVIDER_TIMEOUT"
+  | "COACH_PROVIDER_FORBIDDEN"
+  | "COACH_PROVIDER_MODEL_UNAVAILABLE"
   | "COACH_PROVIDER_NO_CREDITS"
   | "COACH_PROVIDER_UNAVAILABLE"
   | "COACH_PROVIDER_BAD_REQUEST"
@@ -42,6 +49,8 @@ export class CoachProviderFailure extends Error {
     readonly attempts: CoachAttempt[] = [],
     /** Transport-level cause (error class name only, e.g. "AbortError", "TypeError"). */
     readonly transport: string | null = null,
+    /** Milliseconds the provider asked us to wait (Retry-After), when it said so. */
+    readonly retryAfterMs: number | null = null,
   ) {
     super(code);
   }
@@ -69,6 +78,8 @@ export interface CoachAttempt {
   latencyMs: number;
   /** Error class name when the request never got an HTTP response (timeout / network). */
   transport: string | null;
+  /** 0 for the first try, 1 for the (single) retry of a transient failure. */
+  retry: number;
 }
 
 export interface CoachCompletion {
@@ -103,6 +114,8 @@ export const COACH_DEFAULT_FALLBACK: CoachProviderConfig = {
   model: "gpt-5.6-luna",
 };
 const DEFAULT_TIMEOUT_MS = 45_000;
+/** Retries per provider for a transient failure (see isTransient). */
+export const MAX_RETRIES = 1;
 
 type Env = Record<string, string | undefined>;
 
@@ -162,13 +175,54 @@ function requestBody(cfg: CoachProviderConfig, messages: CoachMessage[], maxToke
   };
 }
 
-function statusCode(status: number): CoachProviderError {
-  if (status === 401 || status === 403) return "COACH_PROVIDER_AUTH_FAILED";
+/**
+ * HTTP status (plus the error text when it names the model) → stable code. A 404, or a 400
+ * whose message says the model has no endpoint / is not valid, is MODEL_UNAVAILABLE: the
+ * authorised model is never swapped for another one.
+ */
+export function statusCode(status: number, errorText = ""): CoachProviderError {
+  const modelGone =
+    /no endpoints found|not a valid model|model[^.]{0,40}(not found|not available|unavailable|does not exist)/i.test(
+      errorText,
+    );
+  if (status === 401) return "COACH_PROVIDER_AUTH_FAILED";
+  if (status === 403) return "COACH_PROVIDER_FORBIDDEN";
   if (status === 402) return "COACH_PROVIDER_NO_CREDITS";
   if (status === 429) return "COACH_PROVIDER_RATE_LIMITED";
+  if (status === 404 || ((status === 400 || status === 422) && modelGone))
+    return "COACH_PROVIDER_MODEL_UNAVAILABLE";
   if (status === 408 || status >= 500) return "COACH_PROVIDER_UNAVAILABLE";
-  if (status === 400 || status === 404 || status === 422) return "COACH_PROVIDER_BAD_REQUEST";
+  if (status === 400 || status === 422) return "COACH_PROVIDER_BAD_REQUEST";
   return "COACH_PROVIDER_FAILED";
+}
+
+/** Runtime codes of a connection that was never established (nothing was sent or billed). */
+const CONNECT_CODES =
+  /\b(EAI_AGAIN|ECONNREFUSED|ECONNRESET|UND_ERR_CONNECT_TIMEOUT|UND_ERR_SOCKET|ENETUNREACH|EHOSTUNREACH)\b/;
+
+/** Pure: may this failure be retried once without risking a duplicated, billed completion? */
+export function isTransient(failure: CoachProviderFailure): boolean {
+  if (failure.code === "COACH_PROVIDER_RATE_LIMITED") return true;
+  if (failure.status === 502 || failure.status === 503) return true;
+  return (
+    failure.code === "COACH_PROVIDER_UNAVAILABLE" &&
+    failure.status === null &&
+    failure.transport !== "TIMEOUT" &&
+    CONNECT_CODES.test(failure.transport ?? "")
+  );
+}
+
+/** Backoff before retry n (1-based): 400 ms · 2^(n-1) plus up to 250 ms of jitter. */
+export function backoffMs(n: number, random: () => number): number {
+  return 400 * 2 ** (n - 1) + Math.floor(random() * 250);
+}
+
+/** A Retry-After the user can wait for (≤ 4 s); anything longer is not retried. */
+export function retryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  return seconds <= 4 ? seconds * 1000 : Infinity;
 }
 
 function finite(value: unknown): number | null {
@@ -253,16 +307,32 @@ async function attempt(
     });
   } catch (error) {
     // Timeout or transport. Headers were validated above, so this is the network layer.
+    const timedOut = controller.signal.aborted;
     throw new CoachProviderFailure(
-      "COACH_PROVIDER_UNAVAILABLE",
+      timedOut ? "COACH_PROVIDER_TIMEOUT" : "COACH_PROVIDER_UNAVAILABLE",
       null,
       [],
-      transportDetail(error, controller.signal.aborted),
+      transportDetail(error, timedOut),
     );
   } finally {
     clearTimeout(timer);
   }
-  if (!response.ok) throw new CoachProviderFailure(statusCode(response.status), response.status);
+  if (!response.ok) {
+    // The error text only classifies (model gone vs bad request); it is never logged or stored.
+    let errorText = "";
+    try {
+      errorText = (await response.text()).slice(0, 2000);
+    } catch {
+      errorText = "";
+    }
+    throw new CoachProviderFailure(
+      statusCode(response.status, errorText),
+      response.status,
+      [],
+      null,
+      retryAfterMs(response.headers.get("retry-after")),
+    );
+  }
   let body: {
     choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
     model?: unknown;
@@ -313,9 +383,11 @@ async function attempt(
   };
 }
 
-function logAttempt(a: CoachAttempt, usage: CoachUsage | null) {
+function logAttempt(a: CoachAttempt, usage: CoachUsage | null, correlationId?: string) {
   // Operational metadata only: no content, prompt, user id or key.
   console.info("[ai-coach] provider attempt", {
+    correlationId: correlationId ?? null,
+    retry: a.retry,
     provider: a.provider,
     model: a.model,
     ok: a.ok,
@@ -337,8 +409,15 @@ export async function completeCoach(
     env?: Env;
     fetchImpl?: typeof fetch;
     now?: () => number;
+    /** Injected in tests; real backoff otherwise. */
+    sleep?: (ms: number) => Promise<void>;
+    random?: () => number;
+    /** Correlation id for the logs (the request id of the player's message). */
+    correlationId?: string;
   },
 ): Promise<CoachCompletion> {
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const random = options.random ?? Math.random;
   const env = options.env ?? (process.env as Env);
   // Never pass the global `fetch` around as a bare reference: called as a method of another
   // object (`options.fetchImpl(...)`) it gets the wrong `this`, and the Cloudflare Workers
@@ -356,52 +435,64 @@ export async function completeCoach(
   let primaryFailure: CoachProviderFailure | null = null;
 
   for (const cfg of chain) {
-    const started = now();
-    try {
-      const result = await attempt(cfg, messages, {
-        maxTokens: options.maxTokens,
-        env,
-        fetchImpl,
-        timeoutMs,
-      });
-      const record: CoachAttempt = {
-        provider: cfg.provider,
-        model: cfg.model,
-        ok: true,
-        code: null,
-        status: 200,
-        latencyMs: now() - started,
-        transport: null,
-      };
-      attempts.push(record);
-      logAttempt(record, result.usage);
-      return {
-        content: result.content,
-        provider: cfg.provider,
-        model: result.model,
-        usage: result.usage,
-        upstream: result.upstream,
-        latencyMs: record.latencyMs,
-        fallbackReason: attempts.length > 1 ? attempts[0]!.code : null,
-        attempts,
-      };
-    } catch (error) {
-      const failure =
-        error instanceof CoachProviderFailure
-          ? error
-          : new CoachProviderFailure("COACH_PROVIDER_FAILED");
-      const record: CoachAttempt = {
-        provider: cfg.provider,
-        model: cfg.model,
-        ok: false,
-        code: failure.code,
-        status: failure.status,
-        latencyMs: now() - started,
-        transport: failure.transport,
-      };
-      attempts.push(record);
-      logAttempt(record, null);
-      primaryFailure ??= failure;
+    for (let retry = 0; retry <= MAX_RETRIES; retry++) {
+      const started = now();
+      try {
+        const result = await attempt(cfg, messages, {
+          maxTokens: options.maxTokens,
+          env,
+          fetchImpl,
+          timeoutMs,
+        });
+        const record: CoachAttempt = {
+          provider: cfg.provider,
+          model: cfg.model,
+          ok: true,
+          code: null,
+          status: 200,
+          latencyMs: now() - started,
+          transport: null,
+          retry,
+        };
+        attempts.push(record);
+        logAttempt(record, result.usage, options.correlationId);
+        return {
+          content: result.content,
+          provider: cfg.provider,
+          model: result.model,
+          usage: result.usage,
+          upstream: result.upstream,
+          latencyMs: record.latencyMs,
+          fallbackReason: cfg === chain[0] ? null : (primaryFailure?.code ?? null),
+          attempts,
+        };
+      } catch (error) {
+        const failure =
+          error instanceof CoachProviderFailure
+            ? error
+            : new CoachProviderFailure("COACH_PROVIDER_FAILED");
+        const record: CoachAttempt = {
+          provider: cfg.provider,
+          model: cfg.model,
+          ok: false,
+          code: failure.code,
+          status: failure.status,
+          latencyMs: now() - started,
+          transport: failure.transport,
+          retry,
+        };
+        attempts.push(record);
+        logAttempt(record, null, options.correlationId);
+        if (cfg === chain[0]) primaryFailure ??= failure;
+        // One bounded retry, only for failures that cannot have produced a billed reply.
+        const wait =
+          failure.retryAfterMs !== null ? failure.retryAfterMs : backoffMs(retry + 1, random);
+        if (retry < MAX_RETRIES && isTransient(failure) && Number.isFinite(wait)) {
+          await sleep(wait);
+          continue;
+        }
+        break;
+      }
     }
   }
   throw new CoachProviderFailure(

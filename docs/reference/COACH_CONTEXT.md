@@ -72,3 +72,38 @@ deterministic rule of Fase 2.1 (`roundHalfUp`, catalog `digits.contract`).
   If the table is absent (migration not yet applied) the read returns `available: false` and
   the UI hides the personalisation entry points; the Coach keeps working.
 - Suggested questions only fill the input; the player still decides to send.
+
+## Provider resilience, idempotency and cost (Fase 3.3)
+
+Provider and model are fixed: OpenRouter `openai/gpt-oss-20b`. No Gemini; the OpenAI fallback
+stays off unless `AI_FALLBACK_PROVIDER=openai` is set explicitly. A failure never swaps the model.
+
+| Failure                                                             | Code                                          | Retried?           |
+| ------------------------------------------------------------------- | --------------------------------------------- | ------------------ |
+| Our timeout (`AI_TIMEOUT_MS`, 45 s)                                 | `COACH_PROVIDER_TIMEOUT`                      | No (may be billed) |
+| Connection never established (DNS, refused, reset, connect timeout) | `COACH_PROVIDER_UNAVAILABLE`                  | Once               |
+| 429 (Retry-After ≤ 4 s honoured)                                    | `COACH_PROVIDER_RATE_LIMITED`                 | Once               |
+| 502 / 503                                                           | `COACH_PROVIDER_UNAVAILABLE`                  | Once               |
+| 500 / 504 / 408                                                     | `COACH_PROVIDER_UNAVAILABLE`                  | No                 |
+| 401                                                                 | `COACH_PROVIDER_AUTH_FAILED`                  | No                 |
+| 403                                                                 | `COACH_PROVIDER_FORBIDDEN`                    | No                 |
+| 402                                                                 | `COACH_PROVIDER_NO_CREDITS`                   | No                 |
+| 404, or 400 "no endpoints / invalid model"                          | `COACH_PROVIDER_MODEL_UNAVAILABLE`            | No                 |
+| Other 400 / 422                                                     | `COACH_PROVIDER_BAD_REQUEST`                  | No                 |
+| Invalid JSON, 200 with error, empty, truncated                      | `…INVALID_RESPONSE` / `…EMPTY` / `…TRUNCATED` | No                 |
+
+- At most one retry per provider (`MAX_RETRIES = 1`), backoff 400 ms · 2^(n−1) + up to 250 ms
+  of jitter. Only failures that cannot have produced a billed completion are retried.
+- Idempotency: the chat sends a `requestId` (UUID) and reuses it when the same question is
+  retried in the same conversation. The question is stored with `id = requestId` and the reply
+  with `context_id = requestId`. An answered id returns the stored pair (`replayed: true`) with
+  no provider call and no rate-limit charge; a concurrent duplicate gets the stored pair or
+  `COACH_REQUEST_IN_PROGRESS`; an orphan question older than 90 s is answered once more.
+  Lookups run through the caller's client, so RLS hides anyone else's rows.
+- A failure after the provider answered is `COACH_PERSIST_FAILED` (not a generic error).
+- Context size guard: at most 48 000 characters per request; the oldest history turns are
+  dropped first, never the facts, the rules or the new question.
+- Logs: one line per attempt with a correlation id (the request id), provider, model, retry
+  index, status, latency, tokens and cost. Never content, prompt, user id or key.
+- Streaming is not used: replies are validated (links, truncation) before they are shown or
+  stored, which a stream would bypass. Typical latency is shown with a progress state.

@@ -88,7 +88,13 @@ describe("AI Coach input validation", () => {
       locale: "pt-PT",
       conversationId: "x' or 1=1",
     });
-    expect(ok).toEqual({ ok: true, message: "hi", locale: "pt-PT", conversationId: null });
+    expect(ok).toEqual({
+      ok: true,
+      message: "hi",
+      locale: "pt-PT",
+      conversationId: null,
+      requestId: null,
+    });
   });
 });
 
@@ -191,7 +197,14 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     AI_FALLBACK_PROVIDER: "openai",
   };
   const call = (fetchImpl: typeof fetch, env: Record<string, string | undefined> = keys) =>
-    completeCoach(msgs, { maxTokens: 10, env, fetchImpl, now: () => 0 });
+    completeCoach(msgs, {
+      maxTokens: 10,
+      env,
+      fetchImpl,
+      now: () => 0,
+      sleep: async () => {},
+      random: () => 0,
+    });
 
   it("default chain is OpenRouter openai/gpt-oss-20b only; OpenAI gpt-5.6-luna only when opted in", () => {
     expect(resolveCoachChain({})).toEqual([
@@ -316,27 +329,29 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  // Fase 3.3 (intentional): 429 and 503 are retried ONCE on the primary before the fallback;
+  // 403 is now its own code (FORBIDDEN) instead of being folded into AUTH_FAILED.
   it.each([
-    [429, "COACH_PROVIDER_RATE_LIMITED"],
-    [500, "COACH_PROVIDER_UNAVAILABLE"],
-    [503, "COACH_PROVIDER_UNAVAILABLE"],
-    [402, "COACH_PROVIDER_NO_CREDITS"],
-    [401, "COACH_PROVIDER_AUTH_FAILED"],
-    [403, "COACH_PROVIDER_AUTH_FAILED"],
+    [429, "COACH_PROVIDER_RATE_LIMITED", 2],
+    [500, "COACH_PROVIDER_UNAVAILABLE", 1],
+    [503, "COACH_PROVIDER_UNAVAILABLE", 2],
+    [402, "COACH_PROVIDER_NO_CREDITS", 1],
+    [401, "COACH_PROVIDER_AUTH_FAILED", 1],
+    [403, "COACH_PROVIDER_FORBIDDEN", 1],
   ])(
     "primary HTTP %s is recorded as %s and the official OpenAI API answers once",
-    async (status, code) => {
-      const fetchImpl = vi
-        .fn()
-        .mockResolvedValueOnce(json(status, { error: { message: "x" } }))
-        .mockResolvedValueOnce(ok("from openai", { model: "gpt-5.6-luna" }));
+    async (status, code, primaryCalls) => {
+      const fetchImpl = vi.fn();
+      for (let i = 0; i < primaryCalls; i++)
+        fetchImpl.mockResolvedValueOnce(json(status, { error: { message: "x" } }));
+      fetchImpl.mockResolvedValueOnce(ok("from openai", { model: "gpt-5.6-luna" }));
       const out = await call(fetchImpl as unknown as typeof fetch);
       expect(out).toMatchObject({
         provider: "openai",
         content: "from openai",
         fallbackReason: code,
       });
-      const [url, init] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+      const [url, init] = fetchImpl.mock.calls[primaryCalls] as unknown as [string, RequestInit];
       expect(url).toBe("https://api.openai.com/v1/chat/completions");
       expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer oa-key");
       expect(JSON.parse(String(init.body))).toMatchObject({
@@ -344,7 +359,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
         max_completion_tokens: 10,
         reasoning_effort: "low",
       });
-      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(fetchImpl).toHaveBeenCalledTimes(primaryCalls + 1);
     },
   );
 
@@ -404,6 +419,7 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(json(503, {}))
+      .mockResolvedValueOnce(json(503, {}))
       .mockResolvedValueOnce(
         json(200, { choices: [{ message: { content: "x" }, finish_reason: "length" }] }),
       );
@@ -413,8 +429,13 @@ describe("AI Coach providers: OpenRouter primary, OpenAI fallback, no Gemini", (
     expect(failure.status).toBe(503);
     expect(
       failure.attempts.map((a: { provider: string; code: string }) => `${a.provider}:${a.code}`),
-    ).toEqual(["openrouter:COACH_PROVIDER_UNAVAILABLE", "openai:COACH_PROVIDER_TRUNCATED"]);
-    expect(fetchImpl).toHaveBeenCalledTimes(2); // one attempt each: no retry loop
+    ).toEqual([
+      "openrouter:COACH_PROVIDER_UNAVAILABLE",
+      "openrouter:COACH_PROVIDER_UNAVAILABLE",
+      "openai:COACH_PROVIDER_TRUNCATED",
+    ]);
+    // 503 earns exactly one retry; a truncated reply is never retried: no retry loop.
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 
   it("a key pasted with surrounding whitespace/newline is trimmed before use", async () => {

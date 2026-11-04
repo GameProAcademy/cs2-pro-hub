@@ -194,6 +194,11 @@ export function RealCoachChat({ className }: { className?: string | undefined })
   const [selected, setSelected] = useState<string | null | undefined>(undefined);
   const [showPrefs, setShowPrefs] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
+  const requestRef = useRef<{
+    id: string;
+    message: string;
+    conversationId: string | null;
+  } | null>(null);
   const sending = useRef(false);
   const latestId = state.data?.conversationId ?? null;
   const picked = typeof selected === "string" && selected !== latestId ? selected : null;
@@ -249,8 +254,19 @@ export function RealCoachChat({ className }: { className?: string | undefined })
     setPending(message);
     setError(null);
     try {
-      const result = await sendCoachMessage({ data: { message, locale, conversationId } });
+      // Idempotency: the same question retried in the same conversation reuses its request
+      // id, so a reply that was generated but not received is returned instead of re-billed.
+      const prior = requestRef.current;
+      const requestId =
+        prior && prior.message === message && prior.conversationId === conversationId
+          ? prior.id
+          : globalThis.crypto.randomUUID();
+      requestRef.current = { id: requestId, message, conversationId };
+      const result = await sendCoachMessage({
+        data: { message, locale, conversationId, requestId },
+      });
       if (result.ok) {
+        requestRef.current = null;
         setDraft("");
         // The answered conversation is now the most recent one: it becomes "latest".
         queryClient.setQueryData<CoachState>(COACH_STATE_KEY, (prev) =>

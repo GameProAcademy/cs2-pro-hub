@@ -29,6 +29,8 @@ import {
   COACH_MAX_REPLY_TOKENS,
   COACH_VERSION,
   validateCoachInput,
+  contextChars,
+  fitHistory,
   type CoachFacts,
 } from "@/lib/coach/coachContext";
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
@@ -48,6 +50,8 @@ export type CoachErrorCode =
   | "COACH_NO_DATA"
   | "COACH_CONVERSATION_NOT_FOUND"
   | "COACH_RATE_LIMITED"
+  | "COACH_REQUEST_IN_PROGRESS"
+  | "COACH_PERSIST_FAILED"
   | CoachProviderError
   | "COACH_INTERNAL";
 
@@ -67,7 +71,14 @@ export interface CoachState {
 }
 
 export type CoachSendResult =
-  | { ok: true; conversationId: string; player: CoachMessageView; coach: CoachMessageView }
+  | {
+      ok: true;
+      conversationId: string;
+      player: CoachMessageView;
+      coach: CoachMessageView;
+      /** True when this request id had already been answered: nothing was generated again. */
+      replayed?: boolean;
+    }
   | {
       ok: false;
       error: CoachErrorCode;
@@ -99,6 +110,40 @@ function view(row: {
     content: row.content,
     createdAt: row.created_at,
   };
+}
+
+/** A request id younger than this without a reply is treated as still being answered. */
+const IN_PROGRESS_MS = 90_000;
+
+type MessageRow = { id: string; role: string; content: string; created_at: string };
+
+/**
+ * The stored question for a request id and, when it exists, the reply that answered it.
+ * Read through the caller's client, so RLS (owns_conversation) hides anyone else's rows.
+ */
+async function priorRequest(
+  db: Db,
+  requestId: string,
+): Promise<{ conversationId: string; player: MessageRow; reply: MessageRow | null } | null> {
+  const { data: player, error } = await db
+    .from("coach_messages")
+    .select("id, role, content, created_at, conversation_id")
+    .eq("id", requestId)
+    .eq("role", "player")
+    .maybeSingle();
+  if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
+  if (!player) return null;
+  const { data: reply, error: replyError } = await db
+    .from("coach_messages")
+    .select("id, role, content, created_at")
+    .eq("conversation_id", player.conversation_id)
+    .eq("context_id", requestId)
+    .eq("role", "coach")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (replyError) throw new Error(`COACH_MESSAGES_READ_FAILED:${replyError.code ?? "unknown"}`);
+  return { conversationId: player.conversation_id, player, reply: reply ?? null };
 }
 
 async function latestConversation(db: Db, playerId: string): Promise<string | null> {
@@ -249,12 +294,38 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       if (playerIds.length > 1) return { ok: false, error: "COACH_PLAYER_AMBIGUOUS" };
       const playerId = playerIds[0]!;
 
+      // Idempotency (Fase 3.3): a request id already answered returns the stored pair, with
+      // no new provider call and no new rows. RLS narrows the read to the caller's messages.
+      stage = "idempotency";
+      let repairOf: { conversationId: string } | null = null;
+      if (input.requestId) {
+        const prior = await priorRequest(db, input.requestId);
+        if (prior?.reply)
+          return {
+            ok: true,
+            conversationId: prior.conversationId,
+            player: view(prior.player),
+            coach: view(prior.reply),
+            replayed: true,
+          };
+        if (prior) {
+          // The question is stored but its reply is not: still running, or its reply write
+          // failed. Only an old orphan is answered again (never two generations at once).
+          if (Date.now() - Date.parse(prior.player.created_at) < IN_PROGRESS_MS)
+            return { ok: false, error: "COACH_REQUEST_IN_PROGRESS" };
+          repairOf = { conversationId: prior.conversationId };
+        }
+      }
+
       stage = "rate";
-      if ((await playerMessagesLastHour(db, playerId)) >= COACH_MAX_PLAYER_MESSAGES_PER_HOUR)
+      if (
+        !repairOf &&
+        (await playerMessagesLastHour(db, playerId)) >= COACH_MAX_PLAYER_MESSAGES_PER_HOUR
+      )
         return { ok: false, error: "COACH_RATE_LIMITED" };
 
       stage = "conversation";
-      let conversationId = input.conversationId;
+      let conversationId = repairOf?.conversationId ?? input.conversationId;
       if (conversationId) {
         const { data: owned, error } = await db
           .from("coach_conversations")
@@ -308,12 +379,21 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         logFailure("catalog", error);
       }
       if (facts.dataState === "NO_MATCHES") return { ok: false, error: "COACH_NO_DATA" };
-      const history = conversationId
-        ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY)).map((m) => ({
-            role: m.role === "coach" ? ("coach" as const) : ("player" as const),
-            content: m.content,
-          }))
+      const fullHistory = conversationId
+        ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY))
+            // A repaired request must not see its own unanswered question twice.
+            .filter((m) => m.id !== input.requestId)
+            .map((m) => ({
+              role: m.role === "coach" ? ("coach" as const) : ("player" as const),
+              content: m.content,
+            }))
         : [];
+      // Context size guard: the oldest turns go first; facts, rules and the question stay.
+      const fixedChars = contextChars(buildCoachMessages(facts, [], input.message, input.locale));
+      const { history, dropped } = fitHistory(fullHistory, fixedChars);
+      const correlationId = input.requestId ?? crypto.randomUUID();
+      if (dropped)
+        console.info("[ai-coach] history trimmed", { correlationId, dropped, fixedChars });
 
       stage = "provider";
       const { completeCoach, CoachProviderFailure } =
@@ -324,11 +404,13 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           buildCoachMessages(facts, history, input.message, input.locale),
           {
             maxTokens: COACH_MAX_REPLY_TOKENS,
+            correlationId,
           },
         );
       } catch (error) {
         if (error instanceof CoachProviderFailure) {
           console.error("[ai-coach] provider failure", {
+            correlationId,
             code: error.code,
             status: error.status,
             attempts: error.attempts.map((a) => `${a.provider}:${a.code ?? "ok"}`),
@@ -358,6 +440,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       // Never fall back to the unsanitized text: an empty result is an empty reply.
       if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY" };
       stage = "persist";
+      let createdConversation = false;
       if (!conversationId) {
         const { data: created, error } = await db
           .from("coach_conversations")
@@ -367,14 +450,43 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         if (error || !created)
           throw new Error(`COACH_CONVERSATION_CREATE_FAILED:${error?.code ?? "unknown"}`);
         conversationId = created.id;
+        createdConversation = true;
       }
-      const { data: playerRow, error: playerError } = await db
-        .from("coach_messages")
-        .insert({ conversation_id: conversationId, role: "player", content: input.message })
-        .select("id, role, content, created_at")
-        .single();
-      if (playerError || !playerRow)
-        throw new Error(`COACH_PLAYER_MESSAGE_FAILED:${playerError?.code ?? "unknown"}`);
+      let playerRow: { id: string; role: string; content: string; created_at: string };
+      if (repairOf && input.requestId) {
+        const prior = await priorRequest(db, input.requestId);
+        if (!prior) throw new Error("COACH_PLAYER_MESSAGE_FAILED:repair");
+        playerRow = prior.player;
+      } else {
+        const { data: inserted, error: playerError } = await db
+          .from("coach_messages")
+          .insert({
+            ...(input.requestId ? { id: input.requestId } : {}),
+            conversation_id: conversationId,
+            role: "player",
+            content: input.message,
+          })
+          .select("id, role, content, created_at")
+          .single();
+        if (playerError?.code === "23505" && input.requestId) {
+          // A concurrent send with the same request id won the race: never a second pair.
+          if (createdConversation)
+            await db.from("coach_conversations").delete().eq("id", conversationId);
+          const prior = await priorRequest(db, input.requestId);
+          if (prior?.reply)
+            return {
+              ok: true,
+              conversationId: prior.conversationId,
+              player: view(prior.player),
+              coach: view(prior.reply),
+              replayed: true,
+            };
+          return { ok: false, error: "COACH_REQUEST_IN_PROGRESS" };
+        }
+        if (playerError || !inserted)
+          throw new Error(`COACH_PLAYER_MESSAGE_FAILED:${playerError?.code ?? "unknown"}`);
+        playerRow = inserted;
+      }
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: coachRow, error: coachError } = await supabaseAdmin
@@ -383,6 +495,8 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           conversation_id: conversationId,
           role: "coach",
           content,
+          // Links the reply to the request it answers (idempotency); null for old clients.
+          context_id: input.requestId,
           // Provenance of the reply (no content, no key): who answered, why a fallback
           // answered, the data state it was grounded on, tokens and provider-reported cost.
           context_type:
@@ -403,7 +517,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       return { ok: true, conversationId, player: view(playerRow), coach: view(coachRow) };
     } catch (error) {
       logFailure(stage, error);
-      return { ok: false, error: "COACH_INTERNAL" };
+      return { ok: false, error: stage === "persist" ? "COACH_PERSIST_FAILED" : "COACH_INTERNAL" };
     }
   });
 
