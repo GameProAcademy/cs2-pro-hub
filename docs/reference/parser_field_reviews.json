@@ -1,0 +1,1067 @@
+{
+ "events": {
+  "announce_phase_end": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "begin_new_match": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "bomb_beep": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_beep). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "bomb_begindefuse": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_begindefuse). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "bomb_beginplant": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_beginplant). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "bomb_defused": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_defused). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "bomb_dropped": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "bomb_exploded": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_exploded). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "bomb_planted": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (bomb_planted). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "buytime_ended": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "chat_message": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_intermission": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_pre_restart": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_round_final_beep": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_round_start_beep": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_win_panel_match": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "cs_win_panel_round": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "decoy_detonate": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (decoy_detonate). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "decoy_started": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "entity_killed": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "fire_bullets": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "flashbang_detonate": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (flashbang_detonate). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "game_state": {
+   "consumers": [
+    "hot_payload._semantic_tick_rows"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Tick samples: properties copied by hot_payload._semantic_tick_rows are CANONICAL (match_sources.metadata.semantic_player_data); all other PLAYER_PROPERTIES are RAW_ONLY, proven not to reach the hot payload.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_hot_payload.py"
+   ]
+  },
+  "grenade": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Full-resolution grenade trajectory rows: RAW_ONLY evidence.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "grenade_thrown": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (grenade_thrown). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "header": {
+   "consumers": [
+    "adapter.normalize_header"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Demo header: map_name and demo_version_name are CANONICAL (CanonicalMatch.map, matches.game_version); the reviewed rest is provenance metadata (RAW_ONLY).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "hegrenade_detonate": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (hegrenade_detonate). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "hltv_chase": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "hltv_fixed": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "hltv_versioninfo": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "inferno_expire": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (inferno_expire). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "inferno_startburn": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "item_equip": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "item_pickup": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (item_pickup). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "item_purchase": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (item_purchase). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "item_remove": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (item_remove). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "molotov_detonate": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (molotov_detonate). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "other_death": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player": {
+   "consumers": [
+    "adapter.normalize_players"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Player info: steamid/name/team_number are CANONICAL (CanonicalParticipant); PLAYER_PROPERTIES are RAW_ONLY.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_activate": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_blind": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (player_blind). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_connect": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_connect_full": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_death": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_disconnect": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_footstep": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_hurt": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (player_hurt). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_jump": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_ping": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_ping_stop": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_sound": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_spawn": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_spawned": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (player_spawned). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_team": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (player_team). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "rank_update": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_announce_final": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_announce_last_round_half": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_announce_match_point": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_announce_match_start": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_announce_warmup": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_end": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (round_end). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "round_freeze_end": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_mvp": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: round MVP award and music-kit cosmetics; round_mvp is not an adapter event and is never read by the Canonical mapping (the winning side comes from round_end.winner).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_officially_ended": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_poststart": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_prestart": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "round_start": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (round_start). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "round_time_warning": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "RAW_ONLY: Match lifecycle / round markers (no player behaviour).",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "server_cvar": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "server_message": {
+   "consumers": [],
+   "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
+   "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "smokegrenade_detonate": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (smokegrenade_detonate). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "smokegrenade_expired": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (smokegrenade_expired). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "weapon_fire": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (weapon_fire). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "weapon_fire_on_empty": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (weapon_fire_on_empty). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "weapon_reload": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (weapon_reload). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "weapon_zoom": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (weapon_zoom). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "weapon_zoom_rifle": {
+   "consumers": [
+    "adapter.normalize_events",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Adapter-emitted CanonicalEvent type (weapon_zoom_rifle). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_adapter.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  }
+ },
+ "fields": {
+  "bomb_defused.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "bomb_exploded.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "bomb_planted.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "decoy_detonate.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "flashbang_detonate.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "hegrenade_detonate.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "molotov_detonate.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_blind.attacker_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields (CanonicalEvent actor/victim). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_blind.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields (CanonicalEvent actor/victim). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_death.assistedflash": {
+   "consumers": [
+    "adapter._event_fields",
+    "src/lib/pipeline/metrics.ts"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields (D35 flash assists -> CanonicalEvent.data.assisted_flash -> metrics flashAssist). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_death.attackerblind": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "FASE 2.7 (duplicate removed in R5.8.23)",
+   "reason": "Read by adapter._event_fields (CanonicalEvent.data.blind). Removed the duplicate RAW_ONLY listing.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "player_disconnect.ever_fully_connected": {
+   "consumers": [],
+   "introduced_in": "R5.8.22 (PR #232/#233)",
+   "reason": "New CS2 build flag observed in production on 2026-11-03 (job e4088318, attempt 1: the only UNMAPPED field; blocked RAW-EVIDENCE-01 and RAW->CANONICAL). Reviewed: player_disconnect is not an adapter event and the Canonical mapping never reads it. RAW_ONLY.",
+   "reviewed": "2026-11-03",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "smokegrenade_detonate.user_steamid": {
+   "consumers": [
+    "adapter._event_fields"
+   ],
+   "introduced_in": "R5.8.23 field governance",
+   "reason": "Read by adapter._event_fields as the event actor (objective / D35 thrower). Was labelled RAW_ONLY while consumed.",
+   "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  }
+ },
+ "note": "Review records for docs/reference/parser_field_catalog.json. Classes live in services/cs2-demo-parser/raw_evidence.py; this file records WHY. Never add a record to make a field pass: classify it in raw_evidence.py first, through the runbook.",
+ "rules": {
+  "<EVENT_CANDIDATES>.<REVIEWED_EVENT_FIELDS>": {
+   "consumers": [],
+   "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+   "reason": "Generic reviewed fields of the requested event candidates; RAW_ONLY unless an explicit CANONICAL entry exists.",
+   "reviewed": "2026-10-14",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  }
+ },
+ "schema": 1
+}
