@@ -36,6 +36,7 @@ import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
 import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
 import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
+import { loadCoachPreferences } from "@/lib/coachSession.functions";
 import { loadSideRounds } from "@/lib/xray.functions";
 
 export type CoachErrorCode =
@@ -147,7 +148,7 @@ async function playerMessagesLastHour(db: Db, playerId: string): Promise<number>
  */
 async function loadDeclaredProfile(db: Db, playerId: string): Promise<CoachDeclaredProfile> {
   try {
-    const [player, goals, roles] = await Promise.all([
+    const [player, goals, roles, preferences] = await Promise.all([
       db
         .from("player_profiles")
         .select("current_level, experience")
@@ -155,6 +156,13 @@ async function loadDeclaredProfile(db: Db, playerId: string): Promise<CoachDecla
         .maybeSingle(),
       db.from("player_profile_goals").select("goal_code, is_primary").eq("player_id", playerId),
       db.from("player_profile_roles").select("role_code").eq("player_id", playerId),
+      // Optional preferences: a failed read only means "none declared", never losing the rest.
+      loadCoachPreferences(db, playerId).catch(() => ({
+        available: false,
+        saved: false,
+        mainDifficulty: null,
+        maps: [] as string[],
+      })),
     ]);
     if (player.error || goals.error || roles.error) throw new Error("COACH_DECLARED_READ_FAILED");
     const goalRows = (goals.data ?? []) as Array<{ goal_code: string; is_primary: boolean }>;
@@ -165,11 +173,22 @@ async function loadDeclaredProfile(db: Db, playerId: string): Promise<CoachDecla
       level: (player.data?.current_level as string | null) ?? null,
       experience: (player.data?.experience as string | null) ?? null,
       roles: ((roles.data ?? []) as Array<{ role_code: string }>).map((r) => r.role_code).sort(),
+      mainDifficulty: preferences.mainDifficulty,
+      mapsOfInterest: preferences.maps,
     };
   } catch (error) {
     logFailure("declared", error);
     return EMPTY_DECLARED;
   }
+}
+
+/** A short, readable title from the first message: one line, cut at a word, at most 60 chars. */
+export function conversationTitle(message: string): string {
+  const line = message.replace(/\s+/g, " ").trim();
+  if (line.length <= 60) return line;
+  const cut = line.slice(0, 60);
+  const atWord = cut.lastIndexOf(" ");
+  return `${(atWord > 30 ? cut.slice(0, atWord) : cut).trimEnd()}…`;
 }
 
 function logFailure(stage: string, error: unknown) {
@@ -342,7 +361,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       if (!conversationId) {
         const { data: created, error } = await db
           .from("coach_conversations")
-          .insert({ player_id: playerId, title: input.message.slice(0, 80) })
+          .insert({ player_id: playerId, title: conversationTitle(input.message) })
           .select("id")
           .single();
         if (error || !created)

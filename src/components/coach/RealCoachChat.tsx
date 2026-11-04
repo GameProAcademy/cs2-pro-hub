@@ -1,6 +1,6 @@
 /**
  * Real AI Coach chat (authenticated). Replies come only from `sendCoachMessage`
- * (Lovable AI Gateway, grounded on the player's own official metrics); there is
+ * (OpenRouter, grounded on the player's own data through coach-context-v1); there is
  * no local or fixed reply. Text is rendered as React text nodes, never as HTML.
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
 import { COACH_STATE_KEY, coachErrorKey } from "@/components/coach/coachErrors";
 import {
+  ConversationMenu,
+  COACH_CONVERSATIONS_KEY,
+  COACH_PREFERENCES_KEY,
+  DeleteConversationButton,
+  PersonalizeButton,
+  PreferencesPanel,
+  SuggestedQuestions,
+} from "@/components/coach/CoachControls";
+import {
   getCoachState,
   sendCoachMessage,
   type CoachErrorCode,
@@ -20,6 +29,7 @@ import {
   type CoachState,
 } from "@/lib/coach.functions";
 import { COACH_MAX_MESSAGE_CHARS } from "@/lib/coach/coachContext";
+import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
 
@@ -156,15 +166,42 @@ function Bubble({
   );
 }
 
+const ONBOARDING_DISMISSED = "cs2pro.coach.onboardingDismissed";
+function readDismissed(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(ONBOARDING_DISMISSED) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeDismissed() {
+  try {
+    globalThis.localStorage?.setItem(ONBOARDING_DISMISSED, "1");
+  } catch {
+    /* per-viewer convenience only */
+  }
+}
+
 export function RealCoachChat({ className }: { className?: string | undefined }) {
   const { t, intlTag, locale } = useI18n();
   const queryClient = useQueryClient();
   const state = useQuery({ queryKey: COACH_STATE_KEY, queryFn: () => getCoachState() });
+  const prefs = useQuery({ queryKey: COACH_PREFERENCES_KEY, queryFn: () => getCoachPreferences() });
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<CoachErrorCode | null>(null);
-  const [fresh, setFresh] = useState(false);
+  /** undefined: the latest conversation; null: a new one; string: one picked from the list. */
+  const [selected, setSelected] = useState<string | null | undefined>(undefined);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [dismissed, setDismissed] = useState(readDismissed);
   const sending = useRef(false);
+  const latestId = state.data?.conversationId ?? null;
+  const picked = typeof selected === "string" && selected !== latestId ? selected : null;
+  const other = useQuery({
+    queryKey: ["coach", "conversation", picked],
+    queryFn: () => getCoachConversation({ data: { conversationId: picked } }),
+    enabled: picked !== null,
+  });
 
   if (state.isPending) return <LoadingState className={className} />;
   if (state.isError || !state.data)
@@ -194,8 +231,16 @@ export function RealCoachChat({ className }: { className?: string | undefined })
       />
     );
 
-  const messages = fresh ? [] : data.messages;
-  const conversationId = fresh ? null : data.conversationId;
+  const conversationId: string | null =
+    selected === undefined ? data.conversationId : selected === null ? null : selected;
+  const loadingOther = picked !== null && other.isPending;
+  const otherFailed = picked !== null && (other.isError || other.data?.found === false);
+  const messages: CoachMessageView[] =
+    conversationId === null
+      ? []
+      : conversationId === data.conversationId
+        ? data.messages
+        : (other.data?.messages ?? []);
 
   const send = async () => {
     const message = draft.trim();
@@ -207,17 +252,19 @@ export function RealCoachChat({ className }: { className?: string | undefined })
       const result = await sendCoachMessage({ data: { message, locale, conversationId } });
       if (result.ok) {
         setDraft("");
-        setFresh(false);
+        // The answered conversation is now the most recent one: it becomes "latest".
         queryClient.setQueryData<CoachState>(COACH_STATE_KEY, (prev) =>
           prev
             ? {
                 ...prev,
                 conversationId: result.conversationId,
-                messages: [...(conversationId ? prev.messages : []), result.player, result.coach],
+                messages: [...messages, result.player, result.coach],
                 remainingThisHour: Math.max(0, prev.remainingThisHour - 1),
               }
             : prev,
         );
+        setSelected(undefined);
+        void queryClient.invalidateQueries({ queryKey: COACH_CONVERSATIONS_KEY });
       } else {
         setError(result.error); // the draft is kept so the player can retry
       }
@@ -229,37 +276,101 @@ export function RealCoachChat({ className }: { className?: string | undefined })
     }
   };
 
+  // Optional onboarding: only when preferences can be stored and none were saved.
+  const prefsAvailable = prefs.data?.available === true;
+  const showOnboarding =
+    prefsAvailable &&
+    !dismissed &&
+    !showPrefs &&
+    prefs.data?.saved === false &&
+    messages.length === 0;
+
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-        <p className="text-[11px] leading-snug text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+        <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
           {t("real.aicoach.disclaimer")}
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={pending !== null || messages.length === 0}
-          onClick={() => {
-            setFresh(true);
-            setError(null);
-          }}
-        >
-          <Plus className="size-3.5" aria-hidden />
-          {t("real.aicoach.newConversation")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-1">
+          <ConversationMenu
+            activeId={conversationId}
+            disabled={pending !== null}
+            onSelect={(id) => {
+              setSelected(id);
+              setError(null);
+            }}
+          />
+          {prefsAvailable ? <PersonalizeButton onClick={() => setShowPrefs((v) => !v)} /> : null}
+          <DeleteConversationButton
+            conversationId={conversationId}
+            disabled={pending !== null}
+            onDeleted={() => {
+              setSelected(undefined);
+              setError(null);
+              void queryClient.invalidateQueries({ queryKey: COACH_STATE_KEY });
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={pending !== null || messages.length === 0}
+            onClick={() => {
+              setSelected(null);
+              setError(null);
+            }}
+          >
+            <Plus className="size-3.5" aria-hidden />
+            {t("real.aicoach.newConversation")}
+          </Button>
+        </div>
       </div>
+      {showPrefs && prefsAvailable ? (
+        <PreferencesPanel onClose={() => setShowPrefs(false)} />
+      ) : null}
       {data.dataState === "INSUFFICIENT_SAMPLE" ? (
         <p className="border-b border-warning/20 bg-warning/8 px-4 py-2 text-xs text-muted-foreground">
           {t("real.aicoach.insufficient")}
         </p>
       ) : null}
       <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6" aria-live="polite">
-        {messages.length === 0 && pending === null ? (
-          <EmptyState
-            title={t("real.aicoach.emptyTitle")}
-            description={t("real.aicoach.emptyDescription")}
-            icon={<Sparkles className="size-5" aria-hidden />}
-          />
+        {loadingOther ? <LoadingState /> : null}
+        {otherFailed ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t("coach2.loadError")}
+          </p>
+        ) : null}
+        {!loadingOther && !otherFailed && messages.length === 0 && pending === null ? (
+          <div className="space-y-6">
+            <EmptyState
+              title={t("real.aicoach.emptyTitle")}
+              description={t("real.aicoach.emptyDescription")}
+              icon={<Sparkles className="size-5" aria-hidden />}
+            />
+            {showOnboarding ? (
+              <div
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-muted-foreground"
+                data-coach-onboarding
+              >
+                <span className="min-w-0 flex-1">{t("coach2.onboarding.hint")}</span>
+                <span className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => setShowPrefs(true)}>
+                    {t("coach2.personalize")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      writeDismissed();
+                      setDismissed(true);
+                    }}
+                  >
+                    {t("coach2.onboarding.dismiss")}
+                  </Button>
+                </span>
+              </div>
+            ) : null}
+            <SuggestedQuestions onPick={(text) => setDraft(text)} />
+          </div>
         ) : null}
         {messages.map((m) => (
           <Bubble key={m.id} message={m} aiLabel={t("real.aicoach.aiLabel")} intlTag={intlTag} />
@@ -271,7 +382,9 @@ export function RealCoachChat({ className }: { className?: string | undefined })
                 {pending}
               </p>
             </div>
-            <p className="font-mono text-xs text-muted-foreground">{t("coach.thinking")}</p>
+            <p className="font-mono text-xs text-muted-foreground" role="status">
+              {t("coach.thinking")}
+            </p>
           </>
         ) : null}
         {error ? (

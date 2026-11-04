@@ -1,0 +1,53 @@
+import type { coach2PtBR } from "./pt-BR";
+
+export const coach2En: Record<keyof typeof coach2PtBR, string> = {
+  "coach2.conversations": "Conversations",
+  "coach2.conversationsEmpty": "No saved conversations yet.",
+  "coach2.untitled": "Untitled conversation",
+  "coach2.delete": "Delete conversation",
+  "coach2.deleteConfirm": "Confirm: delete",
+  "coach2.deleteCancel": "Cancel",
+  "coach2.deleteError": "The conversation could not be deleted. Try again.",
+  "coach2.loadError": "This conversation could not be loaded.",
+  "coach2.personalize": "Personalize",
+  "coach2.prefs.title": "Personalize your Coach (optional)",
+  "coach2.prefs.description":
+    "Tell the Coach where you want to focus. It is what you declare, not a measurement: change or delete it whenever you want.",
+  "coach2.prefs.difficulty": "Main difficulty",
+  "coach2.prefs.difficultyNone": "Not specified",
+  "coach2.prefs.diff.AIM": "Aim",
+  "coach2.prefs.diff.POSITIONING": "Positioning",
+  "coach2.prefs.diff.UTILITY": "Grenades and utility",
+  "coach2.prefs.diff.ECONOMY": "Economy",
+  "coach2.prefs.diff.DECISIONS": "Decision making",
+  "coach2.prefs.diff.TEAMPLAY": "Teamplay and communication",
+  "coach2.prefs.diff.CONSISTENCY": "Consistency",
+  "coach2.prefs.diff.MINDSET": "Mindset",
+  "coach2.prefs.maps": "Maps of interest",
+  "coach2.prefs.profileNote":
+    "Goal, level and role live in your profile, and the Coach uses them too.",
+  "coach2.prefs.openProfile": "Edit in profile",
+  "coach2.prefs.save": "Save",
+  "coach2.prefs.saved": "Preferences saved.",
+  "coach2.prefs.remove": "Delete preferences",
+  "coach2.prefs.removed": "Preferences deleted.",
+  "coach2.prefs.close": "Close",
+  "coach2.prefs.error": "Could not save. Try again.",
+  "coach2.onboarding.hint":
+    "Optional: tell the Coach your main difficulty and your maps for more focused answers.",
+  "coach2.onboarding.dismiss": "Not now",
+  "coach2.suggestions": "Suggested questions",
+  "coach2.suggestion.1": "What should my training focus be this week?",
+  "coach2.suggestion.2": "What do my numbers show in my latest matches?",
+  "coach2.suggestion.3": "How can I use my grenades better?",
+  "coach2.suggestion.4": "Am I dying too early in rounds?",
+  "coach2.error.timeout": "The Coach took too long to answer. Try again in a moment.",
+  "coach2.error.providerConfig":
+    "The Coach is unavailable right now because of a configuration problem. It has been logged.",
+  "coach2.error.noCredits": "The Coach is temporarily unavailable. Try again later.",
+  "coach2.error.modelUnavailable": "The Coach's model is unavailable right now. Try again later.",
+  "coach2.error.inProgress":
+    "This question is still being answered. Wait a few seconds and try again.",
+  "coach2.error.persist": "The answer was generated but could not be saved. Try again.",
+  "coach2.error.invalidResponse": "The Coach returned an invalid answer. Try again.",
+};

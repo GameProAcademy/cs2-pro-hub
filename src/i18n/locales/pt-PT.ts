@@ -4,6 +4,7 @@ import { demoFlowPtPT } from "./demoFlow/pt-PT";
 import { guidancePtPT } from "./guidance/pt-PT";
 import { uxPtPT } from "./ux/pt-PT";
 import { xrayPtPT } from "./xray/pt-PT";
+import { coach2PtPT } from "./coach2/pt-PT";
 import { profilePtPT } from "./profile/pt-PT";
 
 export const ptPT: Dictionary = {
@@ -13,6 +14,7 @@ export const ptPT: Dictionary = {
   ...guidancePtPT,
   ...uxPtPT,
   ...xrayPtPT,
+  ...coach2PtPT,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análise de desempenho e treino para Counter-Strike 2",
