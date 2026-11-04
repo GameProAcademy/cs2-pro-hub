@@ -1,6 +1,10 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
+import type { ReactNode } from "react";
+
 import { DemoTag } from "@/components/common/DemoDataNotice";
+import { useT } from "@/i18n";
+import { NOT_AVAILABLE_MARK, isNotAvailable } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function DeltaBadge({
@@ -45,8 +49,10 @@ export function MetricCard({
   size = "md",
   showDemoTag = true,
 }: {
-  label: string;
-  value: string | number;
+  /** Text or a <MetricTerm> (name + definition). */
+  label: ReactNode;
+  /** null / undefined / "—" = not available: never shown as zero. */
+  value: string | number | null | undefined;
   unit?: string | undefined;
   delta?: number | undefined;
   invertDelta?: boolean | undefined;
@@ -54,8 +60,14 @@ export function MetricCard({
   size?: "md" | "lg" | undefined;
   showDemoTag?: boolean | undefined;
 }) {
+  const t = useT();
+  const missing = isNotAvailable(value);
+  const shownHint = hint ?? (missing ? t("common.notAvailableHint") : undefined);
   return (
-    <div className="surface-panel rounded-lg border border-border p-4 transition-colors hover:border-primary/35">
+    <div
+      className="surface-panel rounded-lg border border-border p-4 transition-colors hover:border-primary/35"
+      data-metric-missing={missing ? "true" : undefined}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
           {label}
@@ -69,13 +81,22 @@ export function MetricCard({
             size === "lg" ? "text-4xl" : "text-3xl",
           )}
         >
-          {value}
+          {missing ? (
+            <>
+              <span aria-hidden>{NOT_AVAILABLE_MARK}</span>
+              <span className="sr-only">{t("common.notAvailable")}</span>
+            </>
+          ) : (
+            value
+          )}
         </span>
-        {unit ? <span className="pb-1 text-sm text-muted-foreground">{unit}</span> : null}
+        {unit && !missing ? (
+          <span className="pb-1 text-sm text-muted-foreground">{unit}</span>
+        ) : null}
       </div>
       <div className="mt-3 flex items-center gap-2">
         <DeltaBadge delta={delta} invert={invertDelta} />
-        {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+        {shownHint ? <span className="text-xs text-muted-foreground">{shownHint}</span> : null}
       </div>
     </div>
   );

@@ -107,7 +107,8 @@ describe("real performance page wiring", () => {
       page.indexOf("function PerformancePage"),
     );
     expect(real).toContain("<WithOverview>");
-    expect(real).toContain("performanceSeries(matches)");
+    // Fase 1: chart dates follow the reader's locale.
+    expect(real).toContain("performanceSeries(matches, intlTag)");
     expect(real).not.toContain("getTrends");
     expect(real).not.toContain("RealCapabilityPage");
     expect(real).toContain("NotAvailablePanel");

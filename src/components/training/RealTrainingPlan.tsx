@@ -104,6 +104,12 @@ function PlanView({
 
   return (
     <div className="space-y-6">
+      <p
+        className="rounded-md border border-info/30 bg-info/5 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+        data-training-access-note
+      >
+        {t("training.real.accessNote")}
+      </p>
       {plan.provisional ? (
         <p className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
           {fill(t("training.real.provisional"), { matches })}

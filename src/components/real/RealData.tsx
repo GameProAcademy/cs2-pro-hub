@@ -22,7 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useT, type TranslationKey } from "@/i18n";
+import { MetricTerm } from "@/components/common/MetricTerm";
+import { useI18n, useT, type TranslationKey } from "@/i18n";
+import { NOT_AVAILABLE_MARK, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { getPlayerOverview } from "@/lib/playerData.functions";
 import type {
   OverviewJob,
@@ -88,42 +90,66 @@ export function WithOverview({ children }: { children: (overview: PlayerOverview
 }
 
 /** A capability with no real data source yet. Says so instead of showing a value. */
-export function NotAvailablePanel({ title, reason }: { title: string; reason: string }) {
+export function NotAvailablePanel({
+  title,
+  reason,
+  action,
+}: {
+  title: string;
+  reason: string;
+  /** Optional next step (e.g. where the capability is explained). */
+  action?: ReactNode;
+}) {
   return (
     <ChartCard title={title} showDemoTag={false}>
       <EmptyState
         icon={<CircleDashed className="size-5" aria-hidden />}
         title={title}
         description={reason}
+        action={action}
       />
     </ChartCard>
   );
 }
 
-function fixed(value: number | null, digits: number): string {
-  return value === null ? "—" : value.toFixed(digits);
+/** A table cell value: localized number, or "not available" announced to screen readers. */
+function NumberCell({ value, digits }: { value: number | null; digits: number }) {
+  const t = useT();
+  const { intlTag } = useI18n();
+  if (value === null || !Number.isFinite(value)) {
+    return (
+      <>
+        <span aria-hidden>{NOT_AVAILABLE_MARK}</span>
+        <span className="sr-only">{t("common.notAvailable")}</span>
+      </>
+    );
+  }
+  return <>{formatNumber(value, intlTag, digits)}</>;
 }
 
 export function RealAggregates({ overview }: { overview: PlayerOverview }) {
   const t = useT();
+  const { intlTag } = useI18n();
   const a = overview.aggregates;
   if (!a) return null;
+  const num = (value: number | null, digits: number) =>
+    value === null ? null : formatNumber(value, intlTag, digits);
   return (
     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
       <MetricCard showDemoTag={false} label={t("real.metric.matches")} value={a.matches} />
-      <MetricCard showDemoTag={false} label={t("real.metric.kd")} value={fixed(a.kd, 2)} />
-      <MetricCard showDemoTag={false} label={t("real.metric.adr")} value={fixed(a.adr, 1)} />
+      <MetricCard showDemoTag={false} label={<MetricTerm id="kd" />} value={num(a.kd, 2)} />
+      <MetricCard showDemoTag={false} label={<MetricTerm id="adr" />} value={num(a.adr, 1)} />
       <MetricCard
         showDemoTag={false}
-        label={t("real.metric.kast")}
-        value={fixed(a.kast, 1)}
-        unit={a.kast === null ? undefined : "%"}
+        label={<MetricTerm id="kast" />}
+        value={num(a.kast, 1)}
+        unit="%"
       />
       <MetricCard
         showDemoTag={false}
-        label={t("real.metric.winRate")}
-        value={a.decided ? Math.round((a.wins / a.decided) * 100) : "—"}
-        unit={a.decided ? "%" : undefined}
+        label={<MetricTerm id="winRate" variant="label" />}
+        value={a.decided ? num((a.wins / a.decided) * 100, 0) : null}
+        unit="%"
       />
       {a.limited > 0 ? (
         <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-5">
@@ -149,7 +175,7 @@ export function AdmissionBadge({ row }: { row: OverviewMatch }) {
     <span
       className={
         limited
-          ? "rounded-sm border border-amber-500/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400"
+          ? "rounded-sm border border-warning/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-warning"
           : "rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
       }
       title={limited ? detail : undefined}
@@ -168,15 +194,16 @@ const RESULT_KEY = {
 
 export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
-  const columns: TranslationKey[] = [
+  const { intlTag } = useI18n();
+  const columns: Array<TranslationKey | ReactNode> = [
     "matches.col.date",
     "matches.col.map",
     "matches.col.result",
     "matches.col.kills",
     "matches.col.deaths",
-    "matches.col.adr",
-    "matches.col.kast",
-    "matches.col.rating",
+    <MetricTerm key="adr" id="adr" />,
+    <MetricTerm key="kast" id="kast" />,
+    <MetricTerm key="rating" id="rating" />,
     "real.admission.column",
   ];
   return (
@@ -184,12 +211,12 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            {columns.map((key) => (
+            {columns.map((column, index) => (
               <TableHead
-                key={key}
+                key={typeof column === "string" ? column : index}
                 className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
               >
-                {t(key)}
+                {typeof column === "string" ? t(column as TranslationKey) : column}
               </TableHead>
             ))}
           </TableRow>
@@ -197,7 +224,9 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.matchId} className="border-border">
-              <TableCell className="font-mono text-xs">{row.playedAt.slice(0, 10)}</TableCell>
+              <TableCell className="whitespace-nowrap font-mono text-xs">
+                <time dateTime={row.playedAt}>{formatDate(row.playedAt, intlTag)}</time>
+              </TableCell>
               <TableCell>{row.map ?? "—"}</TableCell>
               <TableCell>
                 {row.result ? t(RESULT_KEY[row.result]) : "—"}
@@ -205,11 +234,21 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                   ? ` ${row.scorePlayer}–${row.scoreOpponent}`
                   : ""}
               </TableCell>
-              <TableCell className="font-mono">{row.kills ?? "—"}</TableCell>
-              <TableCell className="font-mono">{row.deaths ?? "—"}</TableCell>
-              <TableCell className="font-mono">{fixed(row.adr, 1)}</TableCell>
-              <TableCell className="font-mono">{fixed(row.kast, 1)}</TableCell>
-              <TableCell className="font-mono">{fixed(row.rating, 2)}</TableCell>
+              <TableCell className="font-mono">
+                <NumberCell value={row.kills} digits={0} />
+              </TableCell>
+              <TableCell className="font-mono">
+                <NumberCell value={row.deaths} digits={0} />
+              </TableCell>
+              <TableCell className="font-mono">
+                <NumberCell value={row.adr} digits={1} />
+              </TableCell>
+              <TableCell className="font-mono">
+                <NumberCell value={row.kast} digits={1} />
+              </TableCell>
+              <TableCell className="font-mono">
+                <NumberCell value={row.rating} digits={2} />
+              </TableCell>
               <TableCell>
                 <AdmissionBadge row={row} />
               </TableCell>
@@ -241,6 +280,7 @@ const IDENTITY_KEY: Record<OverviewJob["identity"], TranslationKey | null> = {
 
 export function RecentUploads({ jobs }: { jobs: OverviewJob[] }) {
   const t = useT();
+  const { intlTag } = useI18n();
   if (!jobs.length) return null;
   return (
     <ul className="divide-y divide-border">
@@ -251,7 +291,7 @@ export function RecentUploads({ jobs }: { jobs: OverviewJob[] }) {
             <div className="min-w-0">
               <p className="truncate text-sm text-foreground">{job.fileName ?? job.uploadId}</p>
               <p className="font-mono text-[11px] text-muted-foreground">
-                {job.queuedAt.slice(0, 16).replace("T", " ")}
+                <time dateTime={job.queuedAt}>{formatDateTime(job.queuedAt, intlTag)}</time>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-wider">
