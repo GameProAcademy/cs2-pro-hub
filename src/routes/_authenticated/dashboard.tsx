@@ -21,6 +21,7 @@ import {
   WithOverview,
 } from "@/components/real/RealData";
 import { Button } from "@/components/ui/button";
+import { RealDnaSummary } from "@/components/real/RealDna";
 import { DEMO_DATA } from "@/config/app";
 import { useT } from "@/i18n";
 import {
@@ -95,10 +96,7 @@ function RealDashboardPage() {
                     </Button>
                   }
                 />
-                <NotAvailablePanel
-                  title={t("dashboard.dna")}
-                  reason={t("real.engine.notAvailable")}
-                />
+                <RealDnaSummary />
               </div>
               {overview.latestJobs.length ? (
                 <ChartCard

@@ -4,6 +4,7 @@
  * that does not exist, and an unobserved signal is shown as "not observed".
  */
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { CircleDashed } from "lucide-react";
 
 import { DnaRadarChart } from "@/components/charts/DnaRadarChart";
@@ -12,16 +13,23 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
 import { OverviewStatePanel, WithOverview } from "@/components/real/RealData";
-import { useI18n, useT } from "@/i18n";
+import { Button } from "@/components/ui/button";
+import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
 import { formatSignalValue } from "@/lib/dnaFormat";
 import { signalLabel } from "@/lib/dnaSignalLabels";
+import { fill, formatDateTime } from "@/lib/format";
 import { getRealPlayerDna } from "@/lib/playerData.functions";
+import { getDnaHistory } from "@/lib/xray.functions";
 import type { RealPlayerDna } from "@/lib/playerDna";
+
+export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
 
 function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
   const observed = dna.dimensions.filter((d) => d.value !== null);
+  // Below the minimum sample, dimension indexes are not a profile: no radar, no "N / 100".
+  const stable = dna.state === "READY";
   return (
     <div className="space-y-8">
       <p className="rounded-lg border border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
@@ -51,7 +59,12 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
             .replace("{minimum}", String(dna.minimumMatches))}
         </p>
       ) : null}
-      {observed.length >= 3 ? (
+      {!stable ? (
+        <p className="text-xs text-muted-foreground" data-dna-in-formation>
+          {fill(t("real.dna.radarInFormation"), { minimum: dna.minimumMatches })}
+        </p>
+      ) : null}
+      {stable && observed.length >= 3 ? (
         <ChartCard
           showDemoTag={false}
           title={t("dna.radarTitle")}
@@ -74,7 +87,14 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
             showDemoTag={false}
             title={t(dnaLabelKey(d.dimension))}
             subtitle={
-              d.value === null ? t("real.dna.notObserved") : `${Math.round(d.value * 100)} / 100`
+              d.value === null
+                ? t("real.dna.notObserved")
+                : stable
+                  ? `${Math.round(d.value * 100)} / 100`
+                  : fill(t("real.dna.inFormationIndex"), {
+                      matches: dna.matches,
+                      minimum: dna.minimumMatches,
+                    })
             }
           >
             <ul className="divide-y divide-border">
@@ -86,10 +106,13 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
                   <span className="font-mono">
                     {s.mean === null
                       ? t("real.dna.notObserved")
-                      : formatSignalValue(s.name, s.mean, s.unit, {
-                          yes: t("real.dna.flagYes"),
-                          no: t("real.dna.flagNo"),
-                        })}
+                      : formatSignalValue(
+                          s.name,
+                          s.mean,
+                          s.unit,
+                          { yes: t("real.dna.flagYes"), no: t("real.dna.flagNo") },
+                          intlTag,
+                        )}
                     <span className="ml-2 text-[11px] text-muted-foreground">
                       {t("real.dna.inMatches").replace("{n}", String(s.matches))}
                     </span>
@@ -100,13 +123,111 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
           </ChartCard>
         ))}
       </div>
+      <DnaHistory />
     </div>
+  );
+}
+
+/** Persisted snapshots, newest first: how the profile changed as matches were added. */
+function DnaHistory() {
+  const { t, intlTag } = useI18n();
+  const query = useQuery({
+    queryKey: ["player", "dna", "history"],
+    queryFn: () => getDnaHistory(),
+  });
+  return (
+    <ChartCard
+      showDemoTag={false}
+      title={t("real.dna.history.title")}
+      subtitle={t("real.dna.history.description")}
+    >
+      {query.isPending ? (
+        <LoadingState />
+      ) : query.isError || !query.data ? (
+        <ErrorState
+          title={t("real.error.title")}
+          description={t("real.error.description")}
+          onRetry={() => void query.refetch()}
+        />
+      ) : !query.data.length ? (
+        <p className="text-sm text-muted-foreground">{t("real.dna.history.empty")}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-dna-history>
+            <thead>
+              <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                <th className="py-2 pr-4 font-normal">{t("real.dna.history.date")}</th>
+                <th className="py-2 pr-4 font-normal">{t("real.dna.history.matches")}</th>
+                <th className="py-2 font-normal">{t("real.dna.history.state")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {query.data.map((h) => (
+                <tr key={h.createdAt}>
+                  <td className="py-2 pr-4 font-mono text-xs">
+                    <time dateTime={h.createdAt}>{formatDateTime(h.createdAt, intlTag)}</time>
+                  </td>
+                  <td className="py-2 pr-4 font-mono">{h.matchCount ?? "—"}</td>
+                  <td className="py-2 text-muted-foreground">
+                    {h.state === "READY" || h.state === "INSUFFICIENT_SAMPLE"
+                      ? t(`real.dna.history.${h.state}` as TranslationKey)
+                      : (h.state ?? "—")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </ChartCard>
+  );
+}
+
+/** Dashboard card: the real DNA state and a way to the full page (never "not available"). */
+export function RealDnaSummary() {
+  const t = useT();
+  const query = useQuery({ queryKey: PLAYER_DNA_QUERY_KEY, queryFn: () => getRealPlayerDna() });
+  const dna = query.data;
+  const text = !dna
+    ? null
+    : dna.state === "EMPTY"
+      ? t("real.dna.dashboard.empty")
+      : dna.state === "INSUFFICIENT_SAMPLE"
+        ? fill(t("real.dna.dashboard.inFormation"), {
+            matches: dna.matches,
+            minimum: dna.minimumMatches,
+          })
+        : fill(t("real.dna.dashboard.ready"), {
+            matches: dna.matches,
+            observed: dna.dimensions.filter((d) => d.value !== null).length,
+          });
+  return (
+    <ChartCard showDemoTag={false} title={t("dashboard.dna")}>
+      {query.isPending ? (
+        <LoadingState />
+      ) : query.isError || !dna ? (
+        <ErrorState
+          title={t("real.error.title")}
+          description={t("real.error.description")}
+          onRetry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="space-y-4" data-dna-summary={dna.state}>
+          <p className="text-sm text-muted-foreground">{text}</p>
+          {dna.state !== "EMPTY" ? (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/player-dna">{t("real.dna.open")}</Link>
+            </Button>
+          ) : null}
+        </div>
+      )}
+    </ChartCard>
   );
 }
 
 export function RealPlayerDnaPage() {
   const t = useT();
-  const query = useQuery({ queryKey: ["player", "dna"], queryFn: () => getRealPlayerDna() });
+  const query = useQuery({ queryKey: PLAYER_DNA_QUERY_KEY, queryFn: () => getRealPlayerDna() });
   return (
     <AppShell>
       <div className="space-y-8">

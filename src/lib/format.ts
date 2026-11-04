@@ -35,3 +35,8 @@ export function formatDateTime(iso: string | null | undefined, intlTag: string):
 export function isNotAvailable(value: unknown): boolean {
   return value === null || value === undefined || value === NOT_AVAILABLE_MARK;
 }
+
+/** Replaces `{name}` placeholders; unknown placeholders are left as they are. */
+export function fill(text: string, vars: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+}

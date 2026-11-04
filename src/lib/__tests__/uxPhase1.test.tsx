@@ -42,6 +42,13 @@ function match(over: Partial<OverviewMatch> = {}): OverviewMatch {
   return {
     matchId: "m1",
     playedAt: "2026-10-21T18:00:00.000Z",
+    dateSource: "played",
+    resultStatus: "KNOWN",
+    utilityDamage: null,
+    clutchAttempts: null,
+    clutchWins: null,
+    ctRating: null,
+    tRating: null,
     map: "de_mirage",
     result: "win",
     scorePlayer: 13,

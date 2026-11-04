@@ -51,18 +51,22 @@ text-[10px] uppercase tracking-wider text-<status>`.
 
 ## 4. State patterns
 
-| State                    | Source                     | UI                                                          |
-| ------------------------ | -------------------------- | ----------------------------------------------------------- |
-| Loading                  | React Query pending        | `LoadingState`                                              |
-| Error                    | query error                | `ErrorState` + retry                                        |
-| `EMPTY`                  | overview                   | Upload CTA                                                  |
-| `PROCESSING`             | overview (polls every 5 s) | Link to history                                             |
-| `IDENTITY_PENDING`       | overview                   | Explains Steam identity pending                             |
-| `BLOCKED` / `FAILED`     | overview                   | Honest reason, link to history                              |
-| `READY`                  | overview                   | Real data                                                   |
-| Missing metric           | value `null`               | `—` + sr-only "Não disponível" + hint                       |
-| Limited admission        | `admission = LIMITED`      | `AdmissionBadge` (warning) with limitations in `aria-label` |
-| Capability not available | no engine                  | `NotAvailablePanel`                                         |
+| State                           | Source                                                | UI                                                          |
+| ------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
+| Loading                         | React Query pending                                   | `LoadingState`                                              |
+| Error                           | query error                                           | `ErrorState` + retry                                        |
+| `EMPTY`                         | overview                                              | Upload CTA                                                  |
+| `PROCESSING`                    | overview (polls every 5 s)                            | Link to history                                             |
+| `IDENTITY_PENDING`              | overview                                              | Explains Steam identity pending                             |
+| `BLOCKED` / `FAILED`            | overview                                              | Honest reason, link to history                              |
+| `READY`                         | overview                                              | Real data                                                   |
+| Missing metric                  | value `null`                                          | `—` + sr-only "Não disponível" + hint                       |
+| Limited admission               | `admission = LIMITED`                                 | `AdmissionBadge` (warning) with limitations in `aria-label` |
+| Capability not available        | no engine                                             | `NotAvailablePanel`                                         |
+| Result not resolved by the demo | `resultStatus = UNRESOLVED_BY_DEMO` (L04)             | "—" + sr-only reason + table footnote; never a loss         |
+| Processing date                 | `dateSource = processed`                              | date + "*" + footnote                                       |
+| Sample below minimum            | DNA / X-ray `INSUFFICIENT_SAMPLE`                     | "Em formação"; no radar, no "N / 100", no inference         |
+| Observation status              | `MEASURED` / `NOT_MEASURED` / `EXCLUDED_BY_ADMISSION` | value + sample / "Não medido" / "Excluído pela admissão"    |
 
 ## 5. Canonical metrics and glossary
 
@@ -102,9 +106,10 @@ Deep links: `/performance#cs2-pro-score` (score context, linked from the Dashboa
 - **Training access / pass / subscription:** no plan, pass, checkout or entitlement exists
   in this codebase. Lessons open on hub.gamepro.academy, where access is controlled.
 - **Lesson progress:** out of scope by architecture (see §9), not a gap to fill.
-- **Without engine (`NotAvailablePanel`):** CS2 PRO Score, the Dashboard DNA summary,
-  X-ray (`/analysis`) and performance trends. The AI Coach (`/coach`) and the Player DNA
-  page run on real data.
+- **Without engine (`NotAvailablePanel`):** CS2 PRO Score and performance trends. The
+  AI Coach (`/coach`), Player DNA (`/player-dna`, "em formação" below 3 matches) and the
+  Raio-X (`/analysis`, contract `xray-v1`) run on real data; the Dashboard shows the real DNA
+  state.
 
 ## 9. Boundary: CS2 PRO ↔ training platform (immutable rule)
 
@@ -140,3 +145,10 @@ interpolation, null-vs-zero, locale numbers/dates/chart labels, accessible trigg
 Pro Score context and Dashboard link, training access note, token usage. Visual check of
 the real components rendered with the built CSS at 1440, 820 and 390 px: no horizontal
 overflow outside the table's own scroll container; glossary targets ≥ 24 px.
+
+## 10. Data and X-ray (Fase 2)
+
+Metrics, events and the diagnosis contract are documented in
+`docs/reference/METRICS_CATALOG.md`. The UI renders `xray-v1` in three separate layers:
+**Observado** (values with sample), **Inferência** (one documented rule, only with the
+minimum sample) and **Recomendação** (training priorities that link to `/training`).

@@ -3,6 +3,7 @@ import { catalogEn } from "./catalog/en";
 import { demoFlowEn } from "./demoFlow/en";
 import { guidanceEn } from "./guidance/en";
 import { uxEn } from "./ux/en";
+import { xrayEn } from "./xray/en";
 import { profileEn } from "./profile/en";
 
 export const en: Dictionary = {
@@ -11,6 +12,7 @@ export const en: Dictionary = {
   ...demoFlowEn,
   ...guidanceEn,
   ...uxEn,
+  ...xrayEn,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Performance analytics and training for Counter-Strike 2",
