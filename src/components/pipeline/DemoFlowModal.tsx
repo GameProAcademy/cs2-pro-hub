@@ -17,7 +17,13 @@ import { DemoFlowView } from "@/components/pipeline/DemoFlowView";
 import { deriveIdentityUiState, identityErrorKey } from "@/components/pipeline/DemoPlayerIdentity";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
-import { cancelMyDemoJob, getDemoJobStatus, type DemoJobView } from "@/lib/pipeline.functions";
+import {
+  cancelMyDemoJob,
+  getDemoJobStatus,
+  retryMyDemoJob,
+  type DemoJobView,
+} from "@/lib/pipeline.functions";
+import { STOPPED_GUIDANCE, classifyDemoJob } from "@/lib/pipeline/errorGuidance";
 import {
   decideAutomaticDemoPlayer,
   declareDemoPlayer,
@@ -228,6 +234,24 @@ export function DemoFlowModal({
     },
   });
 
+  // Same rule as the card's retry button: the server validates the retry budget again.
+  const retry = useMutation({
+    mutationFn: () => retryMyDemoJob({ data: { jobId: jobId as string } }),
+    onSuccess: async () => {
+      await refreshJob();
+    },
+  });
+
+  // One classifier for the modal and the card: a stopped job shows the same guidance.
+  const guidance =
+    job &&
+    (phase.kind === "blocked_raw_audit" ||
+      phase.kind === "unknown" ||
+      (phase.kind === "failed" && phase.action !== "select_and_retry"))
+      ? classifyDemoJob(job)
+      : null;
+  const stoppedGuidance = guidance && STOPPED_GUIDANCE.has(guidance.category) ? guidance : null;
+
   const locked = open && isLockedPhase(phase);
 
   // Navigation lock at router level (links, back button, programmatic navigation); the
@@ -357,6 +381,9 @@ export function DemoFlowModal({
               onChooseFileAgain={onChooseFileAgain}
               onViewAnalysis={onViewAnalysis}
               autoCloseSeconds={countdown}
+              guidance={stoppedGuidance}
+              onRetry={() => retry.mutate()}
+              retryBusy={retry.isPending}
             />
           </div>
         </DialogPrimitive.Content>

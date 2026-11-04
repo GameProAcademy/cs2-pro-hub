@@ -1,12 +1,14 @@
 import type { Dictionary } from "./pt-BR";
 import { catalogEn } from "./catalog/en";
 import { demoFlowEn } from "./demoFlow/en";
+import { guidanceEn } from "./guidance/en";
 import { profileEn } from "./profile/en";
 
 export const en: Dictionary = {
   ...profileEn,
   ...catalogEn,
   ...demoFlowEn,
+  ...guidanceEn,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Performance analytics and training for Counter-Strike 2",

@@ -28,8 +28,10 @@ import {
   type DemoFlowPhase,
   type FlowStep,
 } from "@/lib/pipeline/demoFlow";
+import { guidanceCopyKeys, type DemoGuidance } from "@/lib/pipeline/errorGuidance";
 import { cn } from "@/lib/utils";
 
+import { DemoGuidancePanel } from "./DemoGuidancePanel";
 import { formatBytes, phaseCopy } from "./demoFlowCopy";
 
 export interface FlowParticipant {
@@ -75,6 +77,13 @@ export interface DemoFlowViewProps {
   onChooseFileAgain: () => void;
   onViewAnalysis: () => void;
   autoCloseSeconds: number | null;
+  /**
+   * Guidance for a stopped job (failure, review, unknown state), from the SAME classifier as
+   * the history card. When present it replaces the generic error copy.
+   */
+  guidance?: DemoGuidance | null;
+  onRetry?: () => void;
+  retryBusy?: boolean;
 }
 
 const STEP_LABEL: Record<FlowStep, TranslationKey> = {
@@ -86,8 +95,15 @@ const STEP_LABEL: Record<FlowStep, TranslationKey> = {
   done: "demoFlow.step.done",
 };
 
-function PhaseIcon({ phase }: { phase: DemoFlowPhase }) {
+function PhaseIcon({ phase, guidance }: { phase: DemoFlowPhase; guidance?: DemoGuidance | null }) {
   const base = "size-5";
+  // A technical review or a recoverable failure is amber, never red.
+  if (
+    guidance &&
+    guidance.severity !== "error" &&
+    (phase.kind === "failed" || phase.kind === "unknown")
+  )
+    return <ShieldAlert className={cn(base, "text-warning")} aria-hidden />;
   switch (phase.kind) {
     case "completed":
       return <CheckCircle2 className={cn(base, "text-primary")} aria-hidden />;
@@ -244,7 +260,13 @@ function hasFooterActions(phase: DemoFlowPhase, cancelShown: boolean): boolean {
 export function DemoFlowView(props: DemoFlowViewProps) {
   const t = useT();
   const { phase } = props;
-  const copy = phaseCopy(phase);
+  const guidance = props.guidance ?? null;
+  const copy = guidance
+    ? (() => {
+        const keys = guidanceCopyKeys(guidance.category);
+        return { title: keys.title as TranslationKey, body: keys.body as TranslationKey };
+      })()
+    : phaseCopy(phase);
   const size = formatBytes(props.fileSize);
   const body = t(copy.body).replace("{file}", props.fileName ?? "");
   const isError =
@@ -257,7 +279,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
     <div className="flex min-h-0 flex-col gap-5" data-phase={phase.kind}>
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-          <PhaseIcon phase={phase} />
+          <PhaseIcon phase={phase} guidance={guidance} />
         </span>
         <div className="min-w-0">
           <h2
@@ -340,7 +362,18 @@ export function DemoFlowView(props: DemoFlowViewProps) {
         </div>
       ) : null}
 
-      {isError && props.errorKey ? (
+      {guidance ? (
+        <DemoGuidancePanel
+          guidance={guidance}
+          hideHeader
+          onRetry={props.onRetry}
+          retryBusy={props.retryBusy}
+          onChooseAnother={props.onChooseFileAgain}
+          className="mt-0"
+        />
+      ) : null}
+
+      {isError && props.errorKey && !guidance ? (
         <p
           role="alert"
           className="rounded-md border border-destructive/35 bg-destructive/8 px-3 py-2.5 text-sm text-destructive"

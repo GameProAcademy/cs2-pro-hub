@@ -5,12 +5,14 @@
  */
 import { catalogPtBR } from "./catalog/pt-BR";
 import { demoFlowPtBR } from "./demoFlow/pt-BR";
+import { guidancePtBR } from "./guidance/pt-BR";
 import { profilePtBR } from "./profile/pt-BR";
 
 export const ptBR = {
   ...profilePtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,
+  ...guidancePtBR,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análise de performance e treinamento para Counter-Strike 2",

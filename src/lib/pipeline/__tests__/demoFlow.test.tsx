@@ -278,11 +278,15 @@ describe("identification (11-19)", () => {
       "submitDemo",
       "createDemoUpload",
       "enqueueDemoJob",
-      "retryMyDemoJob",
       "reprocessDemoWithCurrentParser",
     ]) {
       expect(modal).not.toContain(forbidden);
     }
+    // PR3: the modal may re-run the SAME job (never a new job or upload), and only through
+    // the shared guidance, which offers retry exactly where the card's server rule allows it.
+    expect(modal).toContain("retryMyDemoJob({ data: { jobId: jobId as string } })");
+    const panel = readFileSync(resolve("src/components/pipeline/DemoGuidancePanel.tsx"), "utf8");
+    expect(panel).toContain("guidance.retryAllowed && Boolean(props.onRetry)");
     // only a key the server returned for this demo can be selected or sent
     expect(modal).toContain("participants.some((p) => p.participantKey === key)");
     expect(modal).toContain("participants.some((p) => p.participantKey === selected)");
