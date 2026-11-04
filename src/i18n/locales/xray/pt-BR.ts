@@ -26,6 +26,8 @@ export const xrayPtBR = {
     "Em formação: {matches} de {minimum} partidas para um perfil estável.",
   "real.dna.dashboard.ready": "Perfil com {matches} partidas e {observed} dimensões observadas.",
   "real.dna.dashboard.empty": "Ainda sem partidas com sinais de Player DNA.",
+  "real.dna.dashboard.noSnapshot":
+    "Ainda não há um perfil do Player DNA salvo. Abra o Player DNA para ver seus sinais.",
   "real.dna.open": "Ver Player DNA",
 
   "xray.sample":
@@ -75,7 +77,7 @@ export const xrayPtBR = {
   "xray.recommendation.open": "Abrir plano de treino",
   "xray.unsupported.title": "O que o CS2 PRO ainda não mede",
   "xray.unsupported.enemiesFlashed":
-    "Inimigos cegados (as demos não trazem quem foi cegado por flash).",
+    "Inimigos cegados: eventos de cegueira por flash não foram registrados nestas partidas.",
   "xray.unsupported.positions": "Posições e mapa de calor (coordenadas não são extraídas).",
   "xray.unsupported.economyClassification":
     "Classificação de compra (eco, force, full) — não há classificador revisado.",

@@ -41,6 +41,11 @@ export interface DnaDimensionSummary {
   dimension: DnaDimension;
   value: number | null;
   signals: DnaSignal[];
+  /**
+   * Set by `publishableDna`: the dimension had an observed signal. Lets a client tell
+   * "withheld while in formation" (value null, observed true) from "not observed".
+   */
+  observed?: boolean;
 }
 
 export interface RealPlayerDna {
@@ -115,5 +120,23 @@ export function buildPlayerDna(rows: DnaFeatureRow[]): RealPlayerDna {
     partialMatches: rows.filter((row) => row.partial_parse).length,
     minimumMatches: DNA_MIN_MATCHES,
     dimensions,
+  };
+}
+
+/**
+ * The DNA as it may leave the server for a client (Fase 2.1). Below the minimum sample a
+ * dimension value is a provisional mean, not a profile: it is withheld (null) and only the
+ * fact that it was observed is kept. Signals (observed means, with their sample) are real
+ * measurements and stay. READY profiles are unchanged.
+ */
+export function publishableDna(dna: RealPlayerDna): RealPlayerDna {
+  const stable = dna.state === "READY";
+  return {
+    ...dna,
+    dimensions: dna.dimensions.map((d) => ({
+      ...d,
+      value: stable ? d.value : null,
+      observed: d.value !== null,
+    })),
   };
 }

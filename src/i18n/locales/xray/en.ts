@@ -27,6 +27,8 @@ export const xrayEn: Record<keyof typeof xrayPtBR, string> = {
     "Still forming: {matches} of {minimum} matches for a stable profile.",
   "real.dna.dashboard.ready": "Profile from {matches} matches with {observed} observed dimensions.",
   "real.dna.dashboard.empty": "No matches with Player DNA signals yet.",
+  "real.dna.dashboard.noSnapshot":
+    "No saved Player DNA profile yet. Open Player DNA to see your signals.",
   "real.dna.open": "Open Player DNA",
 
   "xray.sample":
@@ -74,7 +76,8 @@ export const xrayEn: Record<keyof typeof xrayPtBR, string> = {
   "xray.recommendation.none": "No recommendation without an inference.",
   "xray.recommendation.open": "Open training plan",
   "xray.unsupported.title": "What CS2 PRO does not measure yet",
-  "xray.unsupported.enemiesFlashed": "Enemies flashed (demos do not record who was blinded).",
+  "xray.unsupported.enemiesFlashed":
+    "Enemies flashed: flash blindness events were not recorded in these matches.",
   "xray.unsupported.positions": "Positions and heatmaps (coordinates are not extracted).",
   "xray.unsupported.economyClassification":
     "Buy classification (eco, force, full) — no reviewed classifier.",

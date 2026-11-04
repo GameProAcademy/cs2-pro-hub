@@ -27,6 +27,8 @@ export const xrayFr: Record<keyof typeof xrayPtBR, string> = {
     "En formation : {matches} sur {minimum} matchs pour un profil stable.",
   "real.dna.dashboard.ready": "Profil sur {matches} matchs avec {observed} dimensions observées.",
   "real.dna.dashboard.empty": "Pas encore de match avec des signaux de Player DNA.",
+  "real.dna.dashboard.noSnapshot":
+    "Aucun profil Player DNA enregistré pour l’instant. Ouvrez le Player DNA pour voir vos signaux.",
   "real.dna.open": "Voir le Player DNA",
 
   "xray.sample":
@@ -75,7 +77,7 @@ export const xrayFr: Record<keyof typeof xrayPtBR, string> = {
   "xray.recommendation.open": "Ouvrir le plan d’entraînement",
   "xray.unsupported.title": "Ce que CS2 PRO ne mesure pas encore",
   "xray.unsupported.enemiesFlashed":
-    "Ennemis aveuglés (les démos n’enregistrent pas qui a été aveuglé).",
+    "Ennemis aveuglés : aucun événement d’aveuglement par flash n’a été enregistré dans ces matchs.",
   "xray.unsupported.positions": "Positions et cartes de chaleur (coordonnées non extraites).",
   "xray.unsupported.economyClassification":
     "Classification des achats (eco, force, full) : pas de classificateur validé.",

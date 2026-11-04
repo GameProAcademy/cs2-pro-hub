@@ -19,7 +19,12 @@ import {
   type OverviewMetricRow,
   type PlayerOverview,
 } from "@/lib/playerOverview";
-import { buildPlayerDna, type DnaFeatureRow, type RealPlayerDna } from "@/lib/playerDna";
+import {
+  buildPlayerDna,
+  publishableDna,
+  type DnaFeatureRow,
+  type RealPlayerDna,
+} from "@/lib/playerDna";
 
 const JOB_COLUMNS =
   "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations";
@@ -36,11 +41,19 @@ export const getPlayerOverview = createServerFn({ method: "GET" })
     loadPlayerOverview(context.supabase, context.userId),
   );
 
-/** The caller's own Player DNA, plus the persisted snapshot it corresponds to. */
+/**
+ * The caller's own Player DNA, plus the persisted snapshot it corresponds to.
+ *
+ * WRITES (by design, documented): it refreshes the caller's DNA snapshot (idempotent by
+ * input digest) so a profile that predates snapshotting gets one. Only `/player-dna` may
+ * call it; the Dashboard uses the read-only `getDnaSummary` (xray.functions.ts).
+ */
 export const getRealPlayerDna = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RealPlayerDna> => {
-    const { dna, playerIds } = await loadPlayerDna(context.supabase, context.userId);
+    const { dna: computed, playerIds } = await loadPlayerDna(context.supabase, context.userId);
+    // Provisional dimension values never leave the server (Fase 2.1, publishableDna).
+    const dna = publishableDna(computed);
     if (dna.state === "EMPTY" || playerIds.length !== 1) return { ...dna, snapshot: null };
     // Persist (idempotently) the snapshot of exactly what the caller sees. The player id
     // comes from the caller's own RLS-filtered player_profiles row, never from input.

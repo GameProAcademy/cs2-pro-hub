@@ -18,14 +18,14 @@ import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
 import { formatSignalValue } from "@/lib/dnaFormat";
 import { signalLabel } from "@/lib/dnaSignalLabels";
-import { fill, formatDateTime } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatDateTime } from "@/lib/format";
 import { getRealPlayerDna } from "@/lib/playerData.functions";
-import { getDnaHistory } from "@/lib/xray.functions";
+import { getDnaHistory, getDnaSummary } from "@/lib/xray.functions";
 import type { RealPlayerDna } from "@/lib/playerDna";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
 
-function DnaBody({ dna }: { dna: RealPlayerDna }) {
+export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
   const observed = dna.dimensions.filter((d) => d.value !== null);
   // Below the minimum sample, dimension indexes are not a profile: no radar, no "N / 100".
@@ -87,9 +87,9 @@ function DnaBody({ dna }: { dna: RealPlayerDna }) {
             showDemoTag={false}
             title={t(dnaLabelKey(d.dimension))}
             subtitle={
-              d.value === null
+              d.value === null && !d.observed
                 ? t("real.dna.notObserved")
-                : stable
+                : stable && d.value !== null
                   ? `${Math.round(d.value * 100)} / 100`
                   : fill(t("real.dna.inFormationIndex"), {
                       matches: dna.matches,
@@ -183,24 +183,33 @@ function DnaHistory() {
   );
 }
 
-/** Dashboard card: the real DNA state and a way to the full page (never "not available"). */
+/**
+ * Dashboard card: the real DNA state and a way to the full page (never "not available").
+ * READ ONLY: uses `getDnaSummary` (latest persisted snapshot) — never `getRealPlayerDna`,
+ * which refreshes snapshots. A missing snapshot is shown as such, never created here.
+ */
 export function RealDnaSummary() {
   const t = useT();
-  const query = useQuery({ queryKey: PLAYER_DNA_QUERY_KEY, queryFn: () => getRealPlayerDna() });
+  const query = useQuery({
+    queryKey: ["player", "dna", "summary"],
+    queryFn: () => getDnaSummary(),
+  });
   const dna = query.data;
   const text = !dna
     ? null
-    : dna.state === "EMPTY"
+    : dna.state === "NO_PLAYER"
       ? t("real.dna.dashboard.empty")
-      : dna.state === "INSUFFICIENT_SAMPLE"
-        ? fill(t("real.dna.dashboard.inFormation"), {
-            matches: dna.matches,
-            minimum: dna.minimumMatches,
-          })
-        : fill(t("real.dna.dashboard.ready"), {
-            matches: dna.matches,
-            observed: dna.dimensions.filter((d) => d.value !== null).length,
-          });
+      : dna.state === "NO_SNAPSHOT"
+        ? t("real.dna.dashboard.noSnapshot")
+        : dna.state === "INSUFFICIENT_SAMPLE"
+          ? fill(t("real.dna.dashboard.inFormation"), {
+              matches: dna.matches ?? NOT_AVAILABLE_MARK,
+              minimum: dna.minimumMatches,
+            })
+          : fill(t("real.dna.dashboard.ready"), {
+              matches: dna.matches ?? NOT_AVAILABLE_MARK,
+              observed: dna.observedDimensions ?? NOT_AVAILABLE_MARK,
+            });
   return (
     <ChartCard showDemoTag={false} title={t("dashboard.dna")}>
       {query.isPending ? (
@@ -212,16 +221,23 @@ export function RealDnaSummary() {
           onRetry={() => void query.refetch()}
         />
       ) : (
-        <div className="space-y-4" data-dna-summary={dna.state}>
-          <p className="text-sm text-muted-foreground">{text}</p>
-          {dna.state !== "EMPTY" ? (
-            <Button asChild size="sm" variant="outline">
-              <Link to="/player-dna">{t("real.dna.open")}</Link>
-            </Button>
-          ) : null}
-        </div>
+        <DnaSummaryBody text={text} state={dna.state} />
       )}
     </ChartCard>
+  );
+}
+
+export function DnaSummaryBody({ text, state }: { text: string | null; state: string }) {
+  const t = useT();
+  return (
+    <div className="space-y-4" data-dna-summary={state}>
+      <p className="text-sm text-muted-foreground">{text}</p>
+      {state !== "NO_PLAYER" ? (
+        <Button asChild size="sm" variant="outline">
+          <Link to="/player-dna">{t("real.dna.open")}</Link>
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

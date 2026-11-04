@@ -447,7 +447,14 @@ describe("Player DNA presentation", () => {
 describe("reads are the player's own, through RLS, and read-only", () => {
   it("X-ray and DNA history use the caller's session, own player ids and no writes", () => {
     const src = read("src/lib/xray.functions.ts");
-    expect((src.match(/\.middleware\(\[requireSupabaseAuth\]\)/g) ?? []).length).toBe(2);
+    // Fase 2.1 added getDnaSummary: three server functions, each authenticated.
+    expect((src.match(/\.middleware\(\[requireSupabaseAuth\]\)/g) ?? []).length).toBe(3);
+    for (const fn of ["getXRay", "getDnaHistory", "getDnaSummary"])
+      expect(src).toMatch(
+        new RegExp(
+          `export const ${fn} = createServerFn\\(\\{ method: "GET" \\}\\)\\s*\\.middleware\\(\\[requireSupabaseAuth\\]\\)`,
+        ),
+      );
     expect(src).not.toMatch(/supabaseAdmin|service_role|client\.server/);
     expect(src).not.toMatch(/\.(insert|update|upsert|delete)\(/);
     expect(src).toContain('.in("internal_player_id", playerIds)');

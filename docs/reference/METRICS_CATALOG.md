@@ -57,6 +57,31 @@ production: HS% 27.8 % (5 / 18) and 0 % (0 / 2) average to 13.9 %, while pooling
 would give 25 % (5 / 20). The catalog makes this explicit. It is not a defect, but Fase 3
 must use the same aggregation when it cites these numbers.
 
+### Precision and rounding (Fase 2.1)
+
+One rule, `roundHalfUp` (`src/lib/metrics/rounding.ts`): read the value at 15 significant
+digits (drops binary noise such as 0.6549999999999999), shift the decimal point textually
+and round half away from zero (0.655 → 0.66, −0.655 → −0.66, 1.005 → 1.01).
+
+- **Internal precision:** per-match values as persisted by the engine (`round1` / `round3`);
+  aggregates are computed in full precision. Nothing is rounded in between.
+- **Contract precision:** `xray-v1` observations round the final aggregate once, to
+  `digits.contract`.
+- **Display precision:** `formatNumber` rounds again to `digits.display`, with the same
+  rule, then applies the locale (`Intl`).
+
+| Metric                                                                   | Contract | Display |
+| ------------------------------------------------------------------------ | -------- | ------- |
+| kd                                                                       | 3        | 2       |
+| rating, ctRating, tRating                                                | 3        | 2       |
+| adr, kast, hsPercent                                                     | 1        | 1       |
+| winRate                                                                  | 1        | 0       |
+| utilityDamage                                                            | 1        | 0       |
+| counts (kills, deaths, opening, trades, flash assists, clutches, rounds) | 0        | 0       |
+
+Example from production: rating 1.13 and 0.18 → mean 0.655 (contract) → "0,66" (display);
+before Fase 2.1 the binary 0.6549999999999999 was shown as "0,65".
+
 ## 3. Event catalog (persisted `round_events.event_type`)
 
 - **Observed in production (2026-11-04):** `kill`, `damage`, `flash`, `he`, `smoke`,
@@ -64,13 +89,13 @@ must use the same aggregation when it cites these numbers.
 - **Parser canonical inputs:** `CANONICAL_EVENT_TYPES` in
   `services/cs2-demo-parser/raw_evidence.py`, governed by `docs/PARSER_FIELD_GOVERNANCE.md`.
 
-| Event                                     | Used by                                           | Reliability evidence                                                                                     |
-| ----------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `kill`                                    | kills, deaths, HS%, opening, trades, clutch, KAST | Production cross-check: kill and headshot counts from events equal `match_metrics` for both real matches |
-| `damage`                                  | ADR, utility damage, rating                       | Admission gate RAW-V2-14-combat                                                                          |
-| `flash` (blind)                           | flash assist fallback                             | Admission gate; who was blinded is not in the demos, so enemies flashed is unsupported                   |
-| `round_start` / `round_end`               | rounds, sides, round winner side                  | Every round of the real matches has `winner_side`                                                        |
-| bomb events, `weapon_fire`, `he`, `smoke` | features (utility, grenades)                      | Parser field governance                                                                                  |
+| Event                                     | Used by                                           | Reliability evidence                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kill`                                    | kills, deaths, HS%, opening, trades, clutch, KAST | Production cross-check: kill and headshot counts from events equal `match_metrics` for both real matches                                                                                                                                                                                                                                                                            |
+| `damage`                                  | ADR, utility damage, rating                       | Admission gate RAW-V2-14-combat                                                                                                                                                                                                                                                                                                                                                     |
+| `flash`                                   | flash assist fallback (needs a victim)            | In the 2 audited matches every persisted `flash` event has an actor and no victim (0 `player_blind` with victim). The parser supports `player_blind`; why it is absent here (demo, parser or canonical) is not verified. Enemies flashed is therefore unsupported for these matches. The game's `assistedflash` flag is read by the parser but not persisted in `round_events.data` |
+| `round_start` / `round_end`               | rounds, sides, round winner side                  | Every round of the real matches has `winner_side`                                                                                                                                                                                                                                                                                                                                   |
+| bomb events, `weapon_fire`, `he`, `smoke` | features (utility, grenades)                      | Parser field governance                                                                                                                                                                                                                                                                                                                                                             |
 
 ## 4. Diagnosis contract `xray-v1`
 
@@ -89,6 +114,12 @@ must use the same aggregation when it cites these numbers.
   - A measured 0 is `MEASURED 0`.
 - **`sides`:** CT/T rounds from `round_players.side` of the player's own participant (only
   matches where every round has a side), plus `ct_rating` / `t_rating`.
+- **`dimensions[].dna[]`:** `{ dimension, index, indexStatus, matches }`.
+  - `indexStatus`: `READY` (index published), `IN_FORMATION` (observed, but the DNA has
+    fewer than `DNA_MIN_MATCHES = 3` matches) or `NOT_OBSERVED`.
+  - `index` is a number **only** when `indexStatus = READY`; otherwise `null`. A provisional
+    index never appears in the payload (tested on the serialized JSON), and is never 0.
+  - The state and the sample (`state`, `sample.dnaMatches`) prevail over any dimension.
 - **`inferences[]`:**
   - only when Player DNA is `READY`;
   - rule `weakest_observed_dna_dimension` = training plan `needsFromPlayer`, with
@@ -121,3 +152,29 @@ must use the same aggregation when it cites these numbers.
    `match_features`; the per-round column is unused.
 4. **`matches.played_at`, `match_date` and `duration_seconds` are null.** CS2 demos carry
    no wall-clock date, so the UI shows the processing date and says so.
+
+## 6. Reads and side effects (Fase 2.1)
+
+| Server function     | Used by                         | Side effect                                                                                                                                                                                                                                    |
+| ------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getPlayerOverview` | Dashboard, Matches, Performance | none (RLS read)                                                                                                                                                                                                                                |
+| `getXRay`           | `/analysis`                     | none (RLS read)                                                                                                                                                                                                                                |
+| `getDnaHistory`     | `/player-dna`                   | none (RLS read)                                                                                                                                                                                                                                |
+| `getDnaSummary`     | Dashboard DNA card              | none: reads the latest persisted snapshot; a missing snapshot is `NO_SNAPSHOT`, a failed read is an error                                                                                                                                      |
+| `getRealPlayerDna`  | `/player-dna` only              | **writes by design**: refreshes the caller's DNA snapshot (service role, idempotent by `input_digest`) so a profile older than snapshotting gets one. It returns `publishableDna(...)`: dimension values are withheld below the minimum sample |
+
+Snapshots are produced by the pipeline after every processed match
+(`jobs.server.ts` → `refreshPlayerDnaSnapshot`). A test fails if any other caller of
+`getRealPlayerDna()` appears, or if `xray.functions.ts` gains a write.
+
+## 7. Rules for consumers (AI Coach, Fase 3)
+
+- Use only observations with `status = MEASURED`, citing `matches` and the declared
+  aggregation (HS%, ADR, KAST, rating are **means of matches**, not pooled).
+- Never use or derive a DNA dimension index unless `indexStatus = READY`.
+- Inferences and recommendations only when present; `inferenceBlockedBy` explains absence.
+- No result, score, win rate, CS2 PRO Score, enemies flashed, positions or economy class.
+- Flash assists: cite as "reported by the game flag", not as an independently verified 0.
+- **Open item for Fase 3:** the current Coach facts (`coachContext.ts`, `buildCoachFacts`)
+  still send dimension indexes ("N / 100") and strongest/weakest dimensions from the raw DNA
+  even below the minimum sample. They must follow these rules before Fase 3 ships.

@@ -51,22 +51,23 @@ text-[10px] uppercase tracking-wider text-<status>`.
 
 ## 4. State patterns
 
-| State                           | Source                                                | UI                                                          |
-| ------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
-| Loading                         | React Query pending                                   | `LoadingState`                                              |
-| Error                           | query error                                           | `ErrorState` + retry                                        |
-| `EMPTY`                         | overview                                              | Upload CTA                                                  |
-| `PROCESSING`                    | overview (polls every 5 s)                            | Link to history                                             |
-| `IDENTITY_PENDING`              | overview                                              | Explains Steam identity pending                             |
-| `BLOCKED` / `FAILED`            | overview                                              | Honest reason, link to history                              |
-| `READY`                         | overview                                              | Real data                                                   |
-| Missing metric                  | value `null`                                          | `—` + sr-only "Não disponível" + hint                       |
-| Limited admission               | `admission = LIMITED`                                 | `AdmissionBadge` (warning) with limitations in `aria-label` |
-| Capability not available        | no engine                                             | `NotAvailablePanel`                                         |
-| Result not resolved by the demo | `resultStatus = UNRESOLVED_BY_DEMO` (L04)             | "—" + sr-only reason + table footnote; never a loss         |
-| Processing date                 | `dateSource = processed`                              | date + "*" + footnote                                       |
-| Sample below minimum            | DNA / X-ray `INSUFFICIENT_SAMPLE`                     | "Em formação"; no radar, no "N / 100", no inference         |
-| Observation status              | `MEASURED` / `NOT_MEASURED` / `EXCLUDED_BY_ADMISSION` | value + sample / "Não medido" / "Excluído pela admissão"    |
+| State                           | Source                                                | UI                                                                                                                    |
+| ------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Loading                         | React Query pending                                   | `LoadingState`                                                                                                        |
+| Error                           | query error                                           | `ErrorState` + retry                                                                                                  |
+| `EMPTY`                         | overview                                              | Upload CTA                                                                                                            |
+| `PROCESSING`                    | overview (polls every 5 s)                            | Link to history                                                                                                       |
+| `IDENTITY_PENDING`              | overview                                              | Explains Steam identity pending                                                                                       |
+| `BLOCKED` / `FAILED`            | overview                                              | Honest reason, link to history                                                                                        |
+| `READY`                         | overview                                              | Real data                                                                                                             |
+| Missing metric                  | value `null`                                          | `—` + sr-only "Não disponível" + hint                                                                                 |
+| Limited admission               | `admission = LIMITED`                                 | `AdmissionBadge` (warning) with limitations in `aria-label`                                                           |
+| Capability not available        | no engine                                             | `NotAvailablePanel`                                                                                                   |
+| Result not resolved by the demo | `resultStatus = UNRESOLVED_BY_DEMO` (L04)             | "—" + sr-only reason + table footnote; never a loss                                                                   |
+| Processing date                 | `dateSource = processed`                              | date + "*" + footnote                                                                                                 |
+| Sample below minimum            | DNA / X-ray `INSUFFICIENT_SAMPLE`                     | "Em formação"; no radar, no "N / 100", no inference; the payload carries `index: null` (`indexStatus = IN_FORMATION`) |
+| No DNA snapshot yet             | Dashboard `getDnaSummary` → `NO_SNAPSHOT`             | message + link to Player DNA; nothing is created on read                                                              |
+| Observation status              | `MEASURED` / `NOT_MEASURED` / `EXCLUDED_BY_ADMISSION` | value + sample / "Não medido" / "Excluído pela admissão"                                                              |
 
 ## 5. Canonical metrics and glossary
 
@@ -152,3 +153,8 @@ Metrics, events and the diagnosis contract are documented in
 `docs/reference/METRICS_CATALOG.md`. The UI renders `xray-v1` in three separate layers:
 **Observado** (values with sample), **Inferência** (one documented rule, only with the
 minimum sample) and **Recomendação** (training priorities that link to `/training`).
+
+Numbers on screen go through `formatNumber`, which applies the single rounding rule
+(`roundHalfUp`) before the locale format; precision per metric is in the catalog
+(`digits.display`). Reads used by the Dashboard have no side effects (see
+`docs/reference/METRICS_CATALOG.md` §6).
