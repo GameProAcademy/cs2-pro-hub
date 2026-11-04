@@ -105,7 +105,22 @@ describe("AI Coach factual context", () => {
     });
     expect(facts.matches[1]!.adr).toBeNull();
     expect(facts.matches[0]!.openingDeaths).toBeNull();
-    expect(facts.dashboardAggregates).toMatchObject({ matches: 3, killDeathRatio: 2 });
+    // Fase 3.1: the overall values come from the xray-v1 observations (never recomputed),
+    // with their status, sample, numerator and denominator.
+    const kd = facts.observations.find((o) => o.metric === "kd");
+    expect(kd).toMatchObject({
+      status: "DERIVED",
+      value: 2,
+      numerator: 60,
+      denominator: 30,
+      matches: 3,
+      source: "match_metrics.kills",
+    });
+    expect(facts.observations.find((o) => o.metric === "adr")).toMatchObject({
+      status: "DERIVED",
+      matches: 2,
+      aggregation: "mean_of_matches",
+    });
     const json = JSON.stringify(facts);
     expect(json).not.toMatch(/nickname|fileName|steam|user_id|player_id|matchId/i);
   });
