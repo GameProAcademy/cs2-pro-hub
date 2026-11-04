@@ -38,11 +38,16 @@ deterministic rule of Fase 2.1 (`roundHalfUp`, catalog `digits.contract`).
   unless the DNA is READY _and_ has at least `minimumMatches`. A label that contradicts its
   own sample (READY with 2 of 3) is treated as not ready. No "N / 100" string, no index and no
   ranking reaches the model below the minimum.
-- **Flash assists:** sent as `OBSERVED` with a `note`. They are the game's own per-kill
-  `assistedflash` flag (`adapter.py` → `normalizer.ts` → `metrics.ts`), read when the demo
-  was processed. The per-kill flag is not stored, so the Coach says "the game recorded N"
-  and never concludes that the player does not flash for teammates. Enemies flashed is
-  `NOT MEASURED`.
+- **Flash assists:** sent as `DERIVED` with `provenance: GAME_FLAG_OR_TIMED_ATTRIBUTION` and a
+  `note`. `metrics.ts` credits a flash assist from the game's per-kill `assistedflash` flag when
+  every kill of the match carries it, otherwise from a timed attribution over blind events
+  (`flashAssisterFor`). Which method produced each match's count is not stored (no column in
+  `match_metrics`, no `assisted_flash` in `round_events.data`), so the value is a CS2 PRO count
+  that cannot be re-verified. The Coach says "CS2 PRO counted N" (never "the game recorded")
+  and never concludes that the player does not flash for teammates. A counted 0 stays 0.
+  Enemies flashed is `NOT MEASURED`.
+- **K/D source:** the catalog keeps one `table.column` per metric (it drives admission
+  classes); the Coach view of `kd` cites both inputs, `match_metrics.kills / match_metrics.deaths`.
 - **Result / score / win rate:** `UNAVAILABLE` while the admission excludes them; the prompt
   forbids inferring a result.
 - **Dates:** `period.dateBasis` / `matches[].dateBasis` = `processed` means the processing
@@ -107,3 +112,29 @@ stays off unless `AI_FALLBACK_PROVIDER=openai` is set explicitly. A failure neve
   index, status, latency, tokens and cost. Never content, prompt, user id or key.
 - Streaming is not used: replies are validated (links, truncation) before they are shown or
   stored, which a stream would bypass. Typical latency is shown with a progress state.
+
+## Reply guard (Fase 3 closeout)
+
+`src/lib/coach/coachReplyGuard.ts` runs on the server after the link sanitizer and before the
+reply is stored or shown. Deterministic, no second model call:
+
+- **Statistics:** in the Data section every number, and in the Interpretation section every
+  decimal, percentage or number above 10, must equal a value in PLAYER_FACTS at the precision
+  written (or ×100 for a ratio). A line or sentence that fails is removed. Recommendation keeps
+  its drill numbers (minutes, repetitions).
+- **Comparisons:** sentences comparing the player with other players, an outside average, a
+  percentile or a professional level are removed (5 languages). Comparisons with the player's
+  own values ("your average", CT vs T) stay.
+- **Sources:** a dotted identifier that is neither an observation source nor a PLAYER_FACTS
+  path is replaced by "—".
+- **Flash wording:** "the game recorded" becomes "CS2 PRO counted" (5 languages).
+- When anything is removed, the reply ends with a one-line notice, the server logs the
+  counts, and the provenance row carries `guard=stats.comparisons.sources.flashWording`.
+
+## Foreign request ids (Fase 3 closeout)
+
+When the caller's own (RLS) read finds no message for a `requestId`, the server checks with a
+head-only count whether the id exists at all. If it does, it belongs to another account and the
+request is refused with `COACH_REQUEST_ID_CONFLICT` before the rate limit and before the
+provider: a foreign id can no longer trigger a billed call. The count returns a boolean, never
+the row.

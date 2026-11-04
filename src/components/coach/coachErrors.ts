@@ -32,6 +32,8 @@ export function coachErrorKey(code: CoachErrorCode): TranslationKey {
       return "coach2.error.modelUnavailable";
     case "COACH_REQUEST_IN_PROGRESS":
       return "coach2.error.inProgress";
+    case "COACH_REQUEST_ID_CONFLICT":
+      return "coach2.error.invalidResponse";
     case "COACH_PERSIST_FAILED":
       return "coach2.error.persist";
     case "COACH_PROVIDER_INVALID_RESPONSE":

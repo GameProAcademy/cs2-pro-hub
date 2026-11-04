@@ -120,7 +120,8 @@ describe("AI Coach factual context", () => {
       numerator: 60,
       denominator: 30,
       matches: 3,
-      source: "match_metrics.kills",
+      // Fase 3 closeout (intentional): a ratio cites both persisted inputs.
+      source: "match_metrics.kills / match_metrics.deaths",
     });
     expect(facts.observations.find((o) => o.metric === "adr")).toMatchObject({
       status: "DERIVED",
@@ -487,8 +488,19 @@ describe("AI Coach server wiring", () => {
     expect(src.match(/middleware\(\[requireSupabaseAuth\]\)/g)).toHaveLength(2);
     expect(src).toMatch(/ownPlayerIds\(db, context\.userId, "COACH"\)/);
     expect(src).toMatch(/\.eq\("player_id", playerId\)\s*\.maybeSingle\(\)/);
-    expect(src.indexOf('COACH_CONVERSATION_NOT_FOUND" }')).toBeLessThan(
-      src.indexOf("supabaseAdmin"),
+    // The only service-role WRITE (the coach reply) comes after the ownership check.
+    // (Fase 3 closeout, intentional: requestIdTaken reads a COUNT with the service role
+    // earlier in the file; it returns a boolean, never a row — see coachCloseout.test.ts.)
+    const adminWrite = src.search(/supabaseAdmin\s*\.from\("coach_messages"\)\s*\.insert\(/);
+    expect(adminWrite).toBeGreaterThan(0);
+    expect(src.indexOf('COACH_CONVERSATION_NOT_FOUND" }')).toBeLessThan(adminWrite);
+    // Every other service-role use is a head-only count.
+    const adminUses = [
+      ...src.matchAll(/await supabaseAdmin\s*\.from\("coach_messages"\)\s*\.(\w+)\(/g),
+    ];
+    expect(adminUses.map((m) => m[1])).toEqual(["select", "insert"]);
+    expect(src).toMatch(
+      /supabaseAdmin\s*\.from\("coach_messages"\)\s*\.select\("id", \{ count: "exact", head: true \}\)/,
     );
     expect(src).not.toMatch(/console\.\w+\([^)]*(input\.message|completion\.content|facts)/);
   });
