@@ -64,5 +64,5 @@ export const uxFr: Record<keyof typeof uxPtBR, string> = {
     "En attendant, suivez sur cette page les statistiques mesurées dans vos matchs. Le rating du tableau des matchs ne vaut que pour chaque match et ne remplace pas le CS2 PRO Score.",
   "real.proScore.where": "En savoir plus dans Performance",
   "training.real.accessNote":
-    "Les leçons s’ouvrent sur la plateforme de cours GamePro (hub.gamepro.academy), dans un nouvel onglet. L’accès à chaque leçon dépend de votre compte sur cette plateforme, où votre progression est enregistrée : CS2 PRO ne suit pas la progression des leçons.",
+    "CS2 PRO se contente de recommander des leçons du catalogue GamePro, choisies à partir de vos matchs et de vos objectifs, et d’afficher le lien. La leçon s’ouvre sur hub.gamepro.academy, dans un nouvel onglet, avec votre propre identifiant sur cette plateforme. CS2 PRO ne reçoit aucune information de sa part : il ne sait pas si vous avez ouvert, regardé ou terminé une leçon, et rien de tout cela n’entre dans vos statistiques ni dans vos recommandations.",
 };

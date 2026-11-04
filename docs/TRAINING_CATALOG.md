@@ -5,6 +5,30 @@ Single source of truth for the GamePro courses and lessons that **Meu Treinament
 frontend, in the Coach prompt or in any other file. Changing, adding or deactivating a link
 is a data change (admin screen or import), never a code change or a republish.
 
+## Boundary with the training platform (immutable)
+
+hub.gamepro.academy (WordPress + Tutor LMS) is an **external, independent** system. CS2 PRO
+only links to it. There is no runtime integration in either direction:
+
+| Concern                                                        | CS2 PRO                                                                                                                                                                              |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Catalog data it keeps                                          | key/id, title, URL, track/topics, short summary, locale, active (`catalog_*` tables, filled from a JSON export by `scripts/catalog` or the admin import; never fetched from the hub) |
+| Calls to WordPress / Tutor LMS (REST, `wp-json`, webhooks, DB) | none                                                                                                                                                                                 |
+| Lesson progress, completion, enrolment, learning history       | none: not read, not stored, not inferred                                                                                                                                             |
+| Accounts / authentication                                      | none shared; the player signs in on the hub with their own WordPress account                                                                                                         |
+| What drives recommendations and Coach notes                    | CS2 PRO data only: observed Player DNA dimensions, declared goals, maps played, the Coach message                                                                                    |
+| Link                                                           | opens in a new tab with `rel="noopener noreferrer"` (no referrer, no opener)                                                                                                         |
+
+No catalog table references a user or player, and none has a progress/completion column.
+CS2 PRO must not know whether a lesson was opened, watched or finished. The recommendation
+note is CS2 PRO's own explanation, never a Tutor LMS grade or status.
+
+`src/lib/__tests__/trainingPlatformBoundary.test.ts` fails the build if a migration adds a
+progress/completion/enrolment or user-linked column to the catalog, if code calls the hub
+or any WordPress/Tutor API, if the hub URL appears outside the allow-listed catalog files,
+if the catalog read or the recommendation shape gains fields beyond the allowed set, or if
+the training copy implies that CS2 PRO sees what the player does on the hub.
+
 ## Data model (`supabase/migrations/20261103120000_training_catalog.sql`)
 
 | Table                    | Row                                                                                                                                                                                                                               | Stable identity                                  |
