@@ -98,4 +98,13 @@ export const guidancePtBR = {
   "report.notFound": "Não encontramos esta demo na sua conta.",
   "report.unavailable":
     "Não conseguimos registrar seu relatório agora. Tente novamente em instantes.",
+
+  "pending.titleOne": "1 demo aguardando sua identificação",
+  "pending.titleMany": "{count} demos aguardando sua identificação",
+  "pending.body":
+    "Suas partidas foram lidas. Selecione seu jogador para concluir as estatísticas; nada é perdido enquanto isso.",
+  "pending.cta": "Identificar agora",
+  "pending.navLabel": "{count} ações pendentes",
+  "pending.unnamed": "Demo sem nome",
+  "pending.more": "e mais {count}",
 } as const;

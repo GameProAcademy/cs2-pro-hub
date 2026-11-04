@@ -99,4 +99,13 @@ export const guidancePtPT: Record<keyof typeof guidancePtBR, string> = {
   "report.notFound": "Não encontrámos esta demo na sua conta.",
   "report.unavailable":
     "Não conseguimos registar o seu relatório agora. Tente novamente dentro de instantes.",
+
+  "pending.titleOne": "1 demo a aguardar a sua identificação",
+  "pending.titleMany": "{count} demos a aguardar a sua identificação",
+  "pending.body":
+    "As suas partidas foram lidas. Selecione o seu jogador para concluir as estatísticas; nada se perde entretanto.",
+  "pending.cta": "Identificar agora",
+  "pending.navLabel": "{count} ações pendentes",
+  "pending.unnamed": "Demo sem nome",
+  "pending.more": "e mais {count}",
 };

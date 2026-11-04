@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { reportDemoProblem } from "@/lib/pipeline.functions";
+import { emitDemoFlowEvent } from "@/lib/pipeline/flowEvents";
 import { reportErrorKey, reportViewFor, type ReportView } from "@/lib/support/reportView";
 import { MAX_REPORT_DETAILS } from "@/lib/support/problemReport";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,14 @@ export function ReportProblem({ jobId, className }: { jobId: string; className?:
           ...(typeof window !== "undefined" ? { page: window.location.pathname } : {}),
         },
       }),
-    onSuccess: (result) => setView(reportViewFor(result)),
+    onSuccess: (result) => {
+      emitDemoFlowEvent("report_created", { jobId, protocol: result.protocol });
+      emitDemoFlowEvent(result.email === "sent" ? "report_email_sent" : "report_email_failed", {
+        jobId,
+        protocol: result.protocol,
+      });
+      setView(reportViewFor(result));
+    },
     onError: (error) => setView({ kind: "error", key: reportErrorKey(error) }),
   });
 
