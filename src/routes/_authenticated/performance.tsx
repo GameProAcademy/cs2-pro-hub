@@ -9,9 +9,11 @@ import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
 import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
+import { GlossaryList, MetricTerm } from "@/components/common/MetricTerm";
+import { METRIC_IDS } from "@/lib/glossary";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
-import { useT, type TranslationKey } from "@/i18n";
+import { useI18n, useT, type TranslationKey } from "@/i18n";
 import {
   performanceSeries,
   performanceTotals,
@@ -49,6 +51,7 @@ function RealPerformancePage() {
           title={t("performance.title")}
           description={t("performance.description")}
         />
+        <ProScoreContext />
         <WithOverview>
           {(overview) =>
             overview.matches.length === 0 ? (
@@ -65,7 +68,8 @@ function RealPerformancePage() {
 
 function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
   const t = useT();
-  const data = performanceSeries(matches);
+  const { intlTag } = useI18n();
+  const data = performanceSeries(matches, intlTag);
   const totals = performanceTotals(matches);
   const chart = (
     key: PerformanceSeriesKey,
@@ -81,8 +85,6 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
     ) : (
       <NotAvailablePanel title={title} reason={`${t("real.performance.unavailable")}. ${reason}`} />
     );
-  const dash = (value: number | null) => (value === null ? "—" : value);
-
   return (
     <>
       <p className="text-xs text-muted-foreground">
@@ -91,26 +93,26 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           showDemoTag={false}
-          label={t("real.performance.openingKills")}
-          value={dash(totals.openingKills)}
+          label={<MetricTerm id="openingKills" variant="label" />}
+          value={totals.openingKills}
           hint={totals.openingKills === null ? t("real.performance.timingReason") : undefined}
         />
         <MetricCard
           showDemoTag={false}
-          label={t("real.performance.openingDeaths")}
-          value={dash(totals.openingDeaths)}
+          label={<MetricTerm id="openingDeaths" variant="label" />}
+          value={totals.openingDeaths}
           hint={totals.openingDeaths === null ? t("real.performance.timingReason") : undefined}
         />
         <MetricCard
           showDemoTag={false}
-          label={t("real.performance.tradeKills")}
-          value={dash(totals.tradeKills)}
+          label={<MetricTerm id="tradeKills" variant="label" />}
+          value={totals.tradeKills}
           hint={totals.tradeKills === null ? t("real.performance.timingReason") : undefined}
         />
         <MetricCard
           showDemoTag={false}
-          label={t("real.performance.flashAssists")}
-          value={dash(totals.flashAssists)}
+          label={<MetricTerm id="flashAssists" variant="label" />}
+          value={totals.flashAssists}
           hint={totals.flashAssists === null ? t("real.performance.timingReason") : undefined}
         />
       </div>
@@ -133,7 +135,41 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
           t("real.performance.timingReason"),
         )}
       </div>
+      <ChartCard
+        title={t("glossary.title")}
+        subtitle={t("glossary.description")}
+        showDemoTag={false}
+      >
+        <div id="glossary">
+          <GlossaryList ids={METRIC_IDS} />
+        </div>
+      </ChartCard>
     </>
+  );
+}
+
+/** CS2 PRO Score in context: what it is, that it is not calculated yet, and what to use. */
+function ProScoreContext() {
+  const t = useT();
+  return (
+    <section
+      id="cs2-pro-score"
+      aria-labelledby="cs2-pro-score-title"
+      className="rounded-lg border border-border bg-card p-4 sm:p-5"
+    >
+      <h2
+        id="cs2-pro-score-title"
+        className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-foreground"
+      >
+        <MetricTerm id="proScore" variant="label" />
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {t("real.proScoreContext.body")}
+      </p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {t("real.proScoreContext.instead")}
+      </p>
+    </section>
   );
 }
 

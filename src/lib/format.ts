@@ -1,0 +1,37 @@
+/**
+ * Locale-aware display formatting. Unknown is never zero: null/undefined/NaN render as the
+ * "not available" marker, and callers announce it to assistive technology.
+ */
+export const NOT_AVAILABLE_MARK = "—";
+
+export function formatNumber(
+  value: number | null | undefined,
+  intlTag: string,
+  digits = 0,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return NOT_AVAILABLE_MARK;
+  return new Intl.NumberFormat(intlTag, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+/** Calendar date of an ISO timestamp, in the reader's locale (UTC date as stored). */
+export function formatDate(iso: string | null | undefined, intlTag: string): string {
+  if (!iso) return NOT_AVAILABLE_MARK;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return NOT_AVAILABLE_MARK;
+  return new Intl.DateTimeFormat(intlTag, { dateStyle: "short", timeZone: "UTC" }).format(date);
+}
+
+/** Date and time of an ISO timestamp, in the reader's locale and time zone. */
+export function formatDateTime(iso: string | null | undefined, intlTag: string): string {
+  if (!iso) return NOT_AVAILABLE_MARK;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return NOT_AVAILABLE_MARK;
+  return new Intl.DateTimeFormat(intlTag, { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
+export function isNotAvailable(value: unknown): boolean {
+  return value === null || value === undefined || value === NOT_AVAILABLE_MARK;
+}

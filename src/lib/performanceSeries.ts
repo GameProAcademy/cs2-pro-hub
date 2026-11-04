@@ -64,13 +64,28 @@ export const PERFORMANCE_SERIES: readonly PerformanceSeriesKey[] = [
   "flashAssists",
 ];
 
+/** Day and month of a stored ISO date in the reader's locale (en-US: 10/21, pt-BR: 21/10). */
+function dayMonth(iso: string, intlTag: string | undefined): string {
+  if (!intlTag) return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  return new Intl.DateTimeFormat(intlTag, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 /** Oldest first, one point per match; a missing value is an absent key (a gap). */
-export function performanceSeries(matches: readonly OverviewMatch[]): TimeSeriesPoint[] {
+export function performanceSeries(
+  matches: readonly OverviewMatch[],
+  intlTag?: string,
+): TimeSeriesPoint[] {
   return [...matches]
     .sort((a, b) => a.playedAt.localeCompare(b.playedAt))
     .map((match) => {
       const point: TimeSeriesPoint = {
-        label: `${match.playedAt.slice(8, 10)}/${match.playedAt.slice(5, 7)}${match.map ? ` ${match.map.replace(/^de_/, "")}` : ""}`,
+        label: `${dayMonth(match.playedAt, intlTag)}${match.map ? ` ${match.map.replace(/^de_/, "")}` : ""}`,
       };
       for (const key of PERFORMANCE_SERIES) {
         const measured = value(match, key);

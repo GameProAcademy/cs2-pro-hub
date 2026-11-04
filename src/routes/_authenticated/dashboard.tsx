@@ -87,6 +87,13 @@ function RealDashboardPage() {
                 <NotAvailablePanel
                   title={t("real.proScore.title")}
                   reason={t("real.engine.notAvailable")}
+                  action={
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/performance" hash="cs2-pro-score">
+                        {t("real.proScore.where")}
+                      </Link>
+                    </Button>
+                  }
                 />
                 <NotAvailablePanel
                   title={t("dashboard.dna")}
