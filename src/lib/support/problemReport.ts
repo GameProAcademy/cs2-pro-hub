@@ -87,6 +87,11 @@ export interface ProblemReportPayload {
   page: string | null;
   appVersion: string | null;
   details: string | null;
+  /**
+   * Support-only technical diagnostics (e.g. the RAW artifact of a blocked audit, so the team
+   * can run `scripts/parser_field_catalog.py diagnose`). Never shown to the player.
+   */
+  diagnostics?: Array<[string, string]>;
 }
 
 function escapeHtml(value: string): string {
@@ -121,6 +126,7 @@ export function buildProblemReportEmail(p: ProblemReportPayload): {
     ["Idioma do usuário", p.locale],
     ["Página", p.page ?? "—"],
     ["Versão do app", p.appVersion ?? "—"],
+    ...(p.diagnostics ?? []),
   ];
   const note = p.details ?? "(sem detalhes adicionais)";
   const text =

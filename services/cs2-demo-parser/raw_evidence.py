@@ -74,7 +74,6 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     # demos on 2026-10-14 (jobs 98dda0f8, 4b5e3530). Not player behaviour: RAW only.
     "begin_new_match": frozenset({"__event__", "tick"}),
     "round_announce_warmup": frozenset({"__event__", "tick"}),
-    "hltv_fixed": frozenset({"__event__", "fov", "offset", "phi", "posx", "posy", "posz", "target", "theta", "tick"}),
     # Observed in the pinned public fixture (LaihoE/demoparser test_demo.dem @4131a4fc, the
     # CI end-to-end demo) and reviewed on 2026-10-14. None is read by adapter.py or the
     # Canonical mapping (round_end.reason and round_mvp.reason included: winning side
@@ -120,7 +119,6 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "bomb_dropped": frozenset({"entindex"}),
     "bomb_exploded": frozenset({"c4"}),
     "bomb_planted": frozenset({"c4"}),
-    "chat_message": frozenset({"__event__", "chat_message", "tick", "user_name", "user_steamid"}),
     "cs_intermission": frozenset({"__event__", "tick"}),
     "cs_pre_restart": frozenset({"__event__", "tick"}),
     "cs_round_final_beep": frozenset({"__event__", "tick"}),
@@ -139,33 +137,45 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     }),
     "flashbang_detonate": frozenset({"entityid"}),
     "hegrenade_detonate": frozenset({"entityid"}),
-    "hltv_chase": frozenset({"__event__", "distance", "inertia", "ineye", "phi", "target1", "target2", "theta", "tick"}),
-    "hltv_versioninfo": frozenset({"__event__", "tick", "version"}),
     "inferno_expire": frozenset({"entityid"}),
     "inferno_startburn": frozenset({"entityid"}),
     "item_pickup": frozenset({"defindex", "item", "silent"}),
     "player_activate": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     "player_connect": frozenset({"__event__"}),
     "player_connect_full": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    # assistedflash and attackerblind are NOT here: adapter.py reads them -> MAPPED below.
     "player_death": frozenset({
-        "assistedflash", "attackerblind", "attackerinair", "dominated", "noreplay",
+        "attackerinair", "dominated", "noreplay",
         "revenge", "weapon_fauxitemid", "weapon_itemid", "weapon_originalowner_xuid", "wipe",
     }),
-    "player_ping": frozenset({"__event__", "entityid", "tick", "urgent", "user_name", "user_steamid", "x", "y", "z"}),
-    "player_ping_stop": frozenset({"__event__", "entityid", "tick", "user_name", "user_steamid"}),
     "player_sound": frozenset({"__event__", "duration", "radius", "step", "tick", "user_name", "user_steamid"}),
     "player_spawn": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
-    "player_team": frozenset({"__event__", "disconnect", "isbot", "oldteam", "silent", "team", "tick", "user_name", "user_steamid"}),
+    # player_team.tick is DERIVED (adapter-emitted CanonicalEvent tick), mapped below.
+    "player_team": frozenset({"__event__", "disconnect", "isbot", "oldteam", "silent", "team", "user_name", "user_steamid"}),
     "round_announce_final": frozenset({"__event__", "tick"}),
     "round_announce_last_round_half": frozenset({"__event__", "tick"}),
     "round_announce_match_point": frozenset({"__event__", "tick"}),
     "round_announce_match_start": frozenset({"__event__", "tick"}),
     "round_freeze_end": frozenset({"__event__", "tick"}),
     "round_time_warning": frozenset({"__event__", "tick"}),
-    "server_cvar": frozenset({"__event__", "name", "tick", "value"}),
-    "server_message": frozenset({"__event__", "server_message", "tick"}),
     "smokegrenade_detonate": frozenset({"entityid"}),
     "smokegrenade_expired": frozenset({"entityid"}),
+}
+
+# IGNORED_APPROVED: reviewed, known to carry no analytic value for CS2 PRO, intentionally
+# unused. Like RAW_ONLY they never block admission and stay preserved in the RAW evidence
+# (the evidence contract keeps every returned field); unlike RAW_ONLY they are not retained
+# for any future analysis. Spectator camera, server housekeeping and player chat/pings.
+IGNORED_APPROVED_REASON = "Reviewed and intentionally unused (no analytic value); preserved as RAW evidence by contract."
+REVIEWED_IGNORED_EVENT_FIELDS: dict[str, frozenset[str]] = {
+    "chat_message": frozenset({"__event__", "chat_message", "tick", "user_name", "user_steamid"}),
+    "hltv_chase": frozenset({"__event__", "distance", "inertia", "ineye", "phi", "target1", "target2", "theta", "tick"}),
+    "hltv_fixed": frozenset({"__event__", "fov", "offset", "phi", "posx", "posy", "posz", "target", "theta", "tick"}),
+    "hltv_versioninfo": frozenset({"__event__", "tick", "version"}),
+    "player_ping": frozenset({"__event__", "entityid", "tick", "urgent", "user_name", "user_steamid", "x", "y", "z"}),
+    "player_ping_stop": frozenset({"__event__", "entityid", "tick", "user_name", "user_steamid"}),
+    "server_cvar": frozenset({"__event__", "name", "tick", "value"}),
+    "server_message": frozenset({"__event__", "server_message", "tick"}),
 }
 
 REVIEWED_GRENADE_FIELDS = frozenset({
@@ -177,6 +187,35 @@ REVIEWED_HEADER_FIELDS = frozenset({
     "demo_file_stamp", "demo_version_guid", "fullpackets_version", "game_directory",
     "patch_version", "server_name",
 })
+
+# Must equal adapter.SUPPORTED_EVENTS (asserted by tests/test_field_governance.py): the event
+# types whose rows become CanonicalEvent rows.
+CANONICAL_EVENT_TYPES: tuple[str, ...] = (
+    "player_death", "player_hurt", "player_blind", "bomb_planted", "bomb_defused", "bomb_exploded",
+    "round_start", "round_end", "weapon_fire", "weapon_fire_on_empty", "weapon_reload", "weapon_zoom",
+    "weapon_zoom_rifle", "grenade_thrown", "hegrenade_detonate", "flashbang_detonate",
+    "smokegrenade_detonate", "molotov_detonate", "inferno_expire", "smokegrenade_expired",
+    "decoy_detonate", "item_purchase", "item_pickup", "item_remove", "bomb_beginplant",
+    "bomb_begindefuse", "bomb_beep", "player_spawned", "player_team",
+)
+
+# Must equal what hot_payload._semantic_tick_rows reads (asserted by the same test).
+SEMANTIC_TICK_FIELDS: dict[str, tuple[str, ...]] = {
+    "context": ("player_steamid", "round", "game_time", "team_num", "team_number"),
+    "aim_observations": (
+        "pitch", "yaw", "shots_fired", "health", "armor_value", "is_scoped", "active_weapon",
+        "active_weapon_name", "aim_punch_angle", "aim_punch_angle_vel",
+    ),
+    "position_snapshots": (
+        "X", "Y", "Z", "velocity", "velocity_X", "velocity_Y", "velocity_Z", "last_place_name",
+        "move_state", "is_alive", "is_airborne", "is_strafing", "is_walking", "ducked", "ducking",
+    ),
+    "economy_snapshots": (
+        "balance", "start_balance", "total_cash_spent", "cash_spent_this_round",
+        "round_start_equip_value", "current_equip_value", "weapon_purchases_this_round",
+        "weapon_purchases_this_match",
+    ),
+}
 
 MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "header.map_name": ("header.map", "CanonicalMatch.map", "MAPPED"),
@@ -211,6 +250,40 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "player_hurt.dmg_health": ("events[].damage", "CanonicalEvent.damage", "MAPPED"),
     "player_hurt.dmg_armor": ("events[].armor_damage", "CanonicalEvent.data.armor_damage", "MAPPED"),
     "player_blind.blind_duration": ("events[].flash_duration", "CanonicalEvent.data.flash_duration", "MAPPED"),
+    # 2026-11-04 field governance review: fields adapter.py reads (adapter._event_fields) that the
+    # inventory still labelled RAW_ONLY_INTENTIONAL. They feed CanonicalEvent, hence MAPPED.
+    "player_death.assistedflash": ("events[].assisted_flash", "CanonicalEvent.data.assisted_flash", "MAPPED"),
+    "player_blind.attacker_steamid": ("events[].attacker", "CanonicalEvent.sourceActorExternalId", "MAPPED"),
+    "player_blind.user_steamid": ("events[].victim", "CanonicalEvent.sourceVictimExternalId", "MAPPED"),
+    **{
+        f"{event}.user_steamid": ("events[].attacker", "CanonicalEvent.sourceActorExternalId", "MAPPED")
+        for event in (
+            "bomb_planted", "bomb_defused", "bomb_exploded",
+            # D35: the thrower is the detonation event's own userid (inferno_startburn is not an
+            # adapter-emitted event, so it stays RAW_ONLY).
+            "hegrenade_detonate", "flashbang_detonate", "smokegrenade_detonate",
+            "molotov_detonate", "decoy_detonate",
+        )
+    },
+    # Every event type adapter.py emits (adapter.SUPPORTED_EVENTS) carries its tick and, when
+    # present, its parser round into CanonicalEvent: DERIVED, never RAW_ONLY.
+    **{
+        f"{event}.{field}": (f"events[].{target}", canonical, "DERIVED")
+        for event in CANONICAL_EVENT_TYPES
+        # round_start/round_end ticks are the round boundaries (CanonicalRound, mapped above).
+        if event not in ("round_start", "round_end")
+        for field, target, canonical in (
+            ("tick", "tick", "CanonicalEvent.tick"),
+            ("round", "round", "CanonicalEvent.roundNumber"),
+        )
+    },
+    # Tick-sample properties hot_payload.py copies into the bounded semantic payload, persisted
+    # as match_sources.metadata.semantic_player_data (same target as game_state.tick/steamid/name).
+    **{
+        f"game_state.{field}": (f"hot.{section}[].{field}", "match_sources.metadata.semantic_player_data", "MAPPED")
+        for section, fields in SEMANTIC_TICK_FIELDS.items()
+        for field in fields
+    },
 }
 
 
@@ -413,6 +486,11 @@ def mapping_inventory(raw: dict[str, Any]) -> list[dict[str, Any]]:
         if field in MAPPED_RAW_FIELDS:
             app_field, canonical_field, status = MAPPED_RAW_FIELDS[field]
             reason = None
+        elif any(
+            field.startswith(f"{event}.") and field.removeprefix(f"{event}.") in reviewed
+            for event, reviewed in REVIEWED_IGNORED_EVENT_FIELDS.items()
+        ):
+            app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", IGNORED_APPROVED_REASON
         elif field.startswith("player.") and field.removeprefix("player.") in PLAYER_PROPERTIES:
             app_field, canonical_field, status, reason = None, None, "RAW_ONLY_INTENTIONAL", RAW_ONLY_REASON
         elif any(

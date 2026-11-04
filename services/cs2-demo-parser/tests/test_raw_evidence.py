@@ -369,8 +369,15 @@ def test_cache_g2_legacy_unmapped_inventory_is_fully_and_explicitly_classified()
     assert counts == fixture["expected_current_counts"]
     assert not [item for item in classified.values() if item["status"] == "UNMAPPED_BUT_AVAILABLE"]
     assert all(item.get("reason") for item in classified.values() if item["status"] == "RAW_ONLY_INTENTIONAL")
+    # 2026-11-04 field governance: player_death.assistedflash (read by adapter.py, D35 flash
+    # assists) and player_team.tick (an adapter-emitted CanonicalEvent's tick) were consumed while
+    # labelled RAW_ONLY; they are now MAPPED / DERIVED. Every other field keeps its class.
     assert {field for field, item in classified.items() if item["status"] == "MAPPED"} == {
         "game_state.name", "game_state.steamid", "game_state.tick", "player_death.attackerblind",
+        "player_death.assistedflash",
+    }
+    assert {field for field, item in classified.items() if item["status"] == "DERIVED"} == {
+        "player_team.tick",
     }
 
 

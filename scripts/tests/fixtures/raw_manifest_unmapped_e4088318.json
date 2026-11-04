@@ -1,0 +1,213 @@
+{
+ "_provenance": "Reduced from the production RAW artifact manifest of job e4088318 attempt 1 (2026-11-03): only the structure the diagnose command reads. No player names, Steam ids or event values.",
+ "attempt_number": 1,
+ "audit_evidence": {
+  "field_mappings": [
+   {
+    "raw_field": "player_disconnect.PlayerID",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.__event__",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.ever_fully_connected",
+    "reason_present": false,
+    "status": "UNMAPPED_BUT_AVAILABLE"
+   },
+   {
+    "raw_field": "player_disconnect.name",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.networkid",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.reason",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.tick",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.user_name",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.user_steamid",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   },
+   {
+    "raw_field": "player_disconnect.xuid",
+    "reason_present": true,
+    "status": "RAW_ONLY_INTENTIONAL"
+   }
+  ],
+  "forensic_contract_v2": {
+   "event_inventory": [
+    {
+     "event_name": "player_disconnect",
+     "fields_available": [
+      "PlayerID",
+      "ever_fully_connected",
+      "name",
+      "networkid",
+      "reason",
+      "tick",
+      "user_name",
+      "user_steamid",
+      "xuid"
+     ],
+     "first_tick": 41140,
+     "last_tick": 41140,
+     "native_types": {
+      "PlayerID": [
+       "integer"
+      ],
+      "ever_fully_connected": [
+       "boolean"
+      ],
+      "name": [
+       "string"
+      ],
+      "networkid": [
+       "string"
+      ],
+      "reason": [
+       "integer"
+      ],
+      "tick": [
+       "integer"
+      ],
+      "user_name": [
+       "string"
+      ],
+      "user_steamid": [
+       "string"
+      ],
+      "xuid": [
+       "integer"
+      ]
+     },
+     "row_count": 1
+    }
+   ],
+   "gates": [
+    {
+     "gate": "RAW-V2-01-parser-identity",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-02-capability-catalog",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-03-event-discovery",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-04-all-events-attempted",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-05-full-tick-domain",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-06-tick-batches",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-07-tick-gaps",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-08-tick-overlaps",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-09-properties-classified",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-10-header",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-11-player-info",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-12-rounds",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-13-bomb",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-14-combat",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-15-grenades",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-16-teams-score",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-17-usercmd",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-18-weapons-inventory",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-19-aggregates",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-20-mapping-complete",
+     "status": "BLOCKED"
+    },
+    {
+     "gate": "RAW-V2-21-no-parse-failures",
+     "status": "PASS"
+    },
+    {
+     "gate": "RAW-V2-22-physical-reaudit",
+     "status": "BLOCKED"
+    }
+   ]
+  }
+ },
+ "audit_status": "blocked",
+ "job_id": "e4088318-1b80-466d-a8ef-78001c14c979",
+ "parser": {
+  "build_revision": "git:e8f287500d53586f230a71eff17689969634ecd2",
+  "name": "demoparser2",
+  "revision": "git:e8f287500d53586f230a71eff17689969634ecd2",
+  "semantic_revision": "git:e8f287500d53586f230a71eff17689969634ecd2",
+  "version": "0.42.0"
+ },
+ "raw_block_reasons": [
+  "gate:RAW-EVIDENCE-01",
+  "gate:RAW\u2192CANONICAL",
+  "unmapped_but_available:player_disconnect.ever_fully_connected"
+ ],
+ "raw_status": "ready"
+}

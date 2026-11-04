@@ -606,6 +606,43 @@ export const getPipelineStatus = createServerFn({ method: "GET" }).handler(async
   return { parserAvailable: adapter.isAvailable(), adapter: adapter.id };
 });
 
+/**
+ * Support-only pointer to the RAW artifact of an integrity review (blocked RAW audit or RAW→
+ * Canonical validation), so the team can run `scripts/parser_field_catalog.py diagnose` on the
+ * manifest and identify the unmapped field. Never sent to the player; failures are silent.
+ */
+async function rawAuditDiagnostics(
+  category: string,
+  jobId: string,
+  attempt: number,
+): Promise<Array<[string, string]>> {
+  if (category !== "raw_audit_review" && category !== "canonical_review") return [];
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("raw_evidence_artifacts" as never)
+      .select("manifest_storage_path, storage_bucket, raw_status, audit_status" as never)
+      .eq("job_id" as never, jobId as never)
+      .eq("attempt_number" as never, attempt as never)
+      .maybeSingle();
+    const artifact = data as {
+      manifest_storage_path?: string | null;
+      storage_bucket?: string | null;
+      raw_status?: string | null;
+      audit_status?: string | null;
+    } | null;
+    if (!artifact?.manifest_storage_path)
+      return [["Artefato RAW", "não encontrado para esta tentativa"]];
+    return [
+      ["Artefato RAW", `${artifact.storage_bucket ?? "?"}/${artifact.manifest_storage_path}`],
+      ["Status RAW / auditoria", `${artifact.raw_status ?? "?"} / ${artifact.audit_status ?? "?"}`],
+      ["Diagnóstico", "python3 scripts/parser_field_catalog.py diagnose <manifest.json>"],
+    ];
+  } catch {
+    return [];
+  }
+}
+
 export interface ProblemReportResult {
   protocol: string;
   /** "created" for a new report, "existing" when this occurrence was already reported. */
@@ -730,6 +767,7 @@ export const reportDemoProblem = createServerFn({ method: "POST" })
       page,
       appVersion,
       details,
+      diagnostics: await rawAuditDiagnostics(guidance.category, row.id, row.attempt_number),
     });
     const { sendTransactionalEmail } = await import("@/lib/email/email.dispatch.server");
     const outcome = await sendTransactionalEmail({

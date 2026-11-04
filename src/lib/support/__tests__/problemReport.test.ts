@@ -126,6 +126,22 @@ describe("support email", () => {
     expect(email.html).toContain("&lt;script&gt;");
   });
 
+  it("adds support-only RAW diagnostics when present", () => {
+    const email = buildProblemReportEmail({
+      ...payload,
+      category: "raw_audit_review",
+      diagnostics: [["Artefato RAW", "raw-evidence/u/j/1/manifest.json"]],
+    });
+    expect(email.text).toContain("Artefato RAW: raw-evidence/u/j/1/manifest.json");
+    const fn = read("src/lib/pipeline.functions.ts");
+    expect(fn).toContain(
+      'if (category !== "raw_audit_review" && category !== "canonical_review") return [];',
+    );
+    expect(fn).toContain(
+      "diagnostics: await rawAuditDiagnostics(guidance.category, row.id, row.attempt_number)",
+    );
+  });
+
   it("the protocol format is GP-XXXXXX", () => {
     expect(PROTOCOL_PATTERN.test("GP-7K2Q9M")).toBe(true);
     expect(PROTOCOL_PATTERN.test("GP-7k2q9m")).toBe(false);
