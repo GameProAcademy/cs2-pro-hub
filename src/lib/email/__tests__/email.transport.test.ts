@@ -5,13 +5,19 @@
  * is permanent, a 429 is transient and bounded by `Retry-After`, and a missing
  * configuration never activates a provider by accident.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { emailConfigStatus, resolveEmailConfig } from "../email.config.server";
+import {
+  HOSTINGER_MAIL_API_ME,
+  emailConfigStatus,
+  hostingerSendEndpoint,
+  resolveEmailConfig,
+} from "../email.config.server";
 import {
   MAX_RETRY_AFTER_SECONDS,
   hostingerMailApiTransport,
   parseRetryAfterSeconds,
+  resetHostingerMailboxCache,
   resolveEmailProvider,
   retryableStatus,
 } from "../email.transport.server";
@@ -95,66 +101,228 @@ describe("email configuration", () => {
   });
 });
 
-describe("hostinger transport", () => {
-  it("reports ACCEPTED on 202 and never claims delivery", async () => {
-    const fetchMock = vi.fn(async () => response(202, { id: "msg-1" }));
-    vi.stubGlobal("fetch", fetchMock);
+const ME = "https://api.mail.hostinger.com/api/v1/me";
+const SEND = "https://api.mail.hostinger.com/api/v1/mailboxes/ACsupport123/send";
+const ME_BODY = {
+  data: {
+    orderResourceId: "OR1",
+    mailboxes: [
+      { resourceId: "ACbug456", address: "bug@gamepro.academy" },
+      { resourceId: "ACsupport123", address: "hub@gamepro.academy" },
+    ],
+  },
+};
+
+/** Routes /me and /send separately; the send handler decides the send outcome. */
+function hostinger(
+  send: (init: RequestInit) => Response | Promise<Response>,
+  me = () => response(200, ME_BODY),
+) {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+    calls.push({ url, init });
+    if (url === ME) return me();
+    if (url === SEND) return send(init);
+    return response(404, { error: "x", code: "ERR_NOT_FOUND" });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return calls;
+}
+
+describe("hostinger transport (official contract: /api/v1/me + /api/v1/mailboxes/{id}/send)", () => {
+  beforeEach(() => resetHostingerMailboxCache());
+
+  it("reports ACCEPTED on 204 No Content and never claims delivery", async () => {
+    const calls = hostinger(() => response(204, null));
     const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
-    expect(outcome).toEqual({ status: "accepted", providerId: "hostinger", messageId: "msg-1" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(outcome).toEqual({ status: "accepted", providerId: "hostinger", messageId: null });
+    expect(calls.map((c) => c.url)).toEqual([ME, SEND]);
   });
 
-  it("sends the token in the Authorization header only", async () => {
-    const calls: Array<[string, RequestInit]> = [];
-    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-      calls.push([url, init]);
-      return response(202, {});
-    });
+  it("sends the official payload: to[], subject, html, text, displayName — no from", async () => {
+    const calls = hostinger(() => response(204, null));
     await hostingerMailApiTransport(config).sendTransactionalEmail(message);
-    const init = calls[0]?.[1] as RequestInit;
-    expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer secret-token");
-    expect(String(init.body)).not.toContain("secret-token");
+    const body = JSON.parse(String(calls[1]?.init.body));
+    expect(body).toEqual({
+      to: ["player@example.com"],
+      subject: "Steam",
+      html: "<p>ok</p>",
+      text: "ok",
+      displayName: "GamePro",
+    });
+    expect(body).not.toHaveProperty("from");
+    expect(calls[1]?.init.method).toBe("POST");
   });
 
-  it("treats a 4xx as a PERMANENT refusal", async () => {
-    vi.stubGlobal("fetch", async () => response(422, { error: "bad" }));
+  it("uses the mailbox of the configured sender, never another mailbox of the token", async () => {
+    const calls = hostinger(() => response(204, null));
+    await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(calls[1]?.url).toBe(SEND);
+    expect(calls.some((c) => c.url.includes("ACbug456"))).toBe(false);
+  });
+
+  it("refuses to send when the token is not scoped to the sender (no fallback)", async () => {
+    const calls = hostinger(
+      () => response(204, null),
+      () =>
+        response(200, {
+          data: {
+            orderResourceId: "OR1",
+            mailboxes: [{ resourceId: "ACbug456", address: "bug@gamepro.academy" }],
+          },
+        }),
+    );
     const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
     expect(outcome).toEqual({
       status: "failed",
-      reason: "EMAIL_PROVIDER_ERROR_422",
+      reason: "EMAIL_SENDER_NOT_AUTHORIZED",
+      retryable: false,
+    });
+    expect(calls.map((c) => c.url)).toEqual([ME]);
+  });
+
+  it("matches the sender address case-insensitively and caches the mailbox id", async () => {
+    const calls = hostinger(() => response(204, null));
+    const upper = { ...config, sender: { ...config.sender, address: "HUB@gamepro.academy" } };
+    await hostingerMailApiTransport(upper).sendTransactionalEmail(message);
+    await hostingerMailApiTransport(upper).sendTransactionalEmail(message);
+    expect(calls.filter((c) => c.url === ME)).toHaveLength(1);
+    expect(calls.filter((c) => c.url === SEND)).toHaveLength(2);
+  });
+
+  it("sends the token in the Authorization header only", async () => {
+    const calls = hostinger(() => response(204, null));
+    await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    for (const call of calls) {
+      expect((call.init.headers as Record<string, string>)["Authorization"]).toBe(
+        "Bearer secret-token",
+      );
+      expect(String(call.init.body ?? "")).not.toContain("secret-token");
+      expect(call.url).not.toContain("secret-token");
+    }
+  });
+
+  it("401 invalid token: permanent, with the provider code only", async () => {
+    hostinger(
+      () => response(204, null),
+      () => response(401, { error: "Missing or invalid credentials.", code: "ERR_UNAUTHORIZED" }),
+    );
+    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(outcome).toEqual({
+      status: "failed",
+      reason: "EMAIL_PROVIDER_ERROR_401_ERR_UNAUTHORIZED",
       retryable: false,
       retryAfterSeconds: null,
     });
   });
 
-  it("treats a 429 as transient and reads Retry-After", async () => {
-    vi.stubGlobal("fetch", async () => response(429, {}, { "Retry-After": "7" }));
+  it("403 mailbox not authorized: permanent, and the cached mailbox is forgotten", async () => {
+    const calls = hostinger(() => response(403, { error: "Forbidden.", code: "ERR_FORBIDDEN" }));
+    const first = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(first).toMatchObject({
+      reason: "EMAIL_PROVIDER_ERROR_403_ERR_FORBIDDEN",
+      retryable: false,
+    });
+    await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(calls.filter((c) => c.url === ME)).toHaveLength(2);
+  });
+
+  it("422 invalid payload/recipient: permanent, provider message never echoed", async () => {
+    hostinger(() =>
+      response(422, {
+        error: "player@example.com is invalid",
+        code: "ERR_VALIDATION_FAILED",
+        params: { to: ["player@example.com is invalid"] },
+      }),
+    );
+    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(outcome).toMatchObject({
+      reason: "EMAIL_PROVIDER_ERROR_422_ERR_VALIDATION_FAILED",
+      retryable: false,
+    });
+    expect(JSON.stringify(outcome)).not.toContain("player@example.com");
+  });
+
+  it("ignores a malformed provider code instead of echoing it", async () => {
+    hostinger(() => response(400, { code: "<script>secret-token</script>" }));
+    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(outcome).toMatchObject({ reason: "EMAIL_PROVIDER_ERROR_400", retryable: false });
+  });
+
+  it("429 is transient and reads Retry-After", async () => {
+    hostinger(() => response(429, {}, { "Retry-After": "7" }));
     const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
     expect(outcome).toMatchObject({ retryable: true, retryAfterSeconds: 7 });
   });
 
-  it("treats a 5xx as transient", async () => {
-    vi.stubGlobal("fetch", async () => response(503, {}));
-    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
-    expect(outcome).toMatchObject({ retryable: true, reason: "EMAIL_PROVIDER_ERROR_503" });
+  it("500/502 are transient", async () => {
+    for (const status of [500, 502]) {
+      resetHostingerMailboxCache();
+      hostinger(() => response(status, { error: "x", code: "ERR_INTERNAL_SERVER_ERROR" }));
+      const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+      expect(outcome).toMatchObject({ retryable: true });
+    }
   });
 
-  it("turns a thrown network error into a transient failure, never a success", async () => {
+  it("504 on send: outcome unknown, NOT retried automatically (no duplicate email)", async () => {
+    hostinger(() => response(504, { error: "x", code: "ERR_GATEWAY_TIMEOUT" }));
+    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(outcome).toEqual({
+      status: "failed",
+      reason: "EMAIL_PROVIDER_OUTCOME_UNKNOWN",
+      retryable: false,
+    });
+  });
+
+  it("timeout after the send left: outcome unknown, not retried", async () => {
+    vi.useFakeTimers();
+    try {
+      hostinger(
+        (init) =>
+          new Promise<Response>((_, reject) => {
+            const abort = () => reject(new DOMException("aborted", "AbortError"));
+            if (init.signal?.aborted) abort();
+            init.signal?.addEventListener("abort", abort);
+          }),
+      );
+      const pending = hostingerMailApiTransport(config).sendTransactionalEmail(message);
+      await vi.advanceTimersByTimeAsync(10_001);
+      expect(await pending).toEqual({
+        status: "failed",
+        reason: "EMAIL_PROVIDER_OUTCOME_UNKNOWN",
+        retryable: false,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("API unavailable (network error before sending): transient, never a success", async () => {
     vi.stubGlobal("fetch", async () => {
       throw new TypeError("network down");
     });
     const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
+    expect(outcome).toEqual({ status: "failed", reason: "EMAIL_TRANSPORT_ERROR", retryable: true });
+  });
+
+  it("an invalid /me body is a transient provider failure", async () => {
+    hostinger(
+      () => response(204, null),
+      () => new Response("not json", { status: 200 }),
+    );
+    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
     expect(outcome).toEqual({
       status: "failed",
-      reason: "EMAIL_TRANSPORT_ERROR",
+      reason: "EMAIL_PROVIDER_INVALID_RESPONSE",
       retryable: true,
     });
   });
 
-  it("never leaks the recipient body into the log-safe reason", async () => {
-    vi.stubGlobal("fetch", async () => response(400, { error: "player@example.com is invalid" }));
-    const outcome = await hostingerMailApiTransport(config).sendTransactionalEmail(message);
-    expect(JSON.stringify(outcome)).not.toContain("player@example.com");
+  it("the endpoint is the official one, not the legacy /v1/emails", () => {
+    expect(hostingerSendEndpoint("ACx")).toBe(
+      "https://api.mail.hostinger.com/api/v1/mailboxes/ACx/send",
+    );
+    expect(HOSTINGER_MAIL_API_ME).toBe("https://api.mail.hostinger.com/api/v1/me");
   });
 });
 
