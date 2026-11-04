@@ -10,6 +10,8 @@ import { DemoFlowModal, type FlowDismissReason } from "@/components/pipeline/Dem
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { identityActionFor } from "@/lib/pipeline/identityRecovery";
+import { STOPPED_GUIDANCE, classifyDemoJob } from "@/lib/pipeline/errorGuidance";
+import { DemoGuidancePanel } from "@/components/pipeline/DemoGuidancePanel";
 import { getDemoUploadFeedback } from "@/components/pipeline/demoUploadFeedback";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
@@ -456,8 +458,14 @@ export function DemoIngestPanel() {
                     className={cn(
                       "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
                       job.status === "processed" && "border-success/30 bg-success/8 text-success",
+                      // Red only for a definitive failure; a review or a recoverable
+                      // failure is amber (same severity as the guidance block).
                       job.status === "failed" &&
+                        classifyDemoJob(job).severity === "error" &&
                         "border-destructive/30 bg-destructive/8 text-destructive",
+                      job.status === "failed" &&
+                        classifyDemoJob(job).severity !== "error" &&
+                        "border-warning/30 bg-warning/8 text-warning",
                       job.status === "blocked_raw_audit" &&
                         "border-warning/30 bg-warning/8 text-warning",
                       (job.status === "pending" || job.status === "processing") &&
@@ -486,8 +494,13 @@ export function DemoIngestPanel() {
                         {t("pipeline.corrupted.cta")}
                       </Button>
                     </div>
-                  ) : job.status === "failed" ? (
-                    <p className="mt-1 text-xs text-destructive">{t(errorKey(job.errorCode))}</p>
+                  ) : (job.status === "failed" || job.status === "blocked_raw_audit") &&
+                    STOPPED_GUIDANCE.has(classifyDemoJob(job).category) ? (
+                    // One classifier for the card and the modal: same text, same actions.
+                    <DemoGuidancePanel
+                      guidance={classifyDemoJob(job)}
+                      onChooseAnother={focusUpload}
+                    />
                   ) : null}
                   {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>
@@ -570,7 +583,9 @@ export function DemoIngestPanel() {
                 // D24: an older-parser job is reprocessed as a new attempt, never retried in place.
                 job.parserCurrent !== false &&
                 !isPermanentCode(job.errorCode) &&
-                job.retryCount < job.maxRetries ? (
+                job.retryCount < job.maxRetries &&
+                // The guidance never offers retry for gates, reviews or service failures.
+                classifyDemoJob(job).retryAllowed ? (
                   <div className="mt-4 border-t border-border/70 pt-4">
                     <Button
                       className="min-h-11 w-full sm:w-auto"

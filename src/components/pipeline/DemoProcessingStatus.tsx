@@ -11,6 +11,7 @@ import {
   safeProcessingStage,
   type ProcessingStage,
 } from "@/lib/pipeline/processingProgress";
+import { classifyDemoJob } from "@/lib/pipeline/errorGuidance";
 import { cn } from "@/lib/utils";
 
 const STAGE_KEYS: Record<
@@ -74,6 +75,9 @@ const STAGE_KEYS: Record<
 export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
   const t = useT();
   const failed = job.status === "failed";
+  // Red only for a definitive failure (same severity as the guidance block); a recoverable
+  // failure or a technical review is amber.
+  const failedRed = failed && classifyDemoJob(job).severity === "error";
   const cancelling = job.status === "cancel_requested";
   const cancelled = job.status === "cancelled";
   const rawAuditBlocked = job.status === "blocked_raw_audit";
@@ -105,9 +109,9 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
         <span
           className={cn(
             "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border",
-            failed
+            failedRed
               ? "border-destructive/35 bg-destructive/10 text-destructive"
-              : rawAuditBlocked
+              : failed || rawAuditBlocked
                 ? "border-warning/35 bg-warning/10 text-warning"
                 : cancelled || cancelling
                   ? "border-warning/35 bg-warning/10 text-warning"
@@ -130,9 +134,9 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
           <p
             className={cn(
               "break-words font-display text-sm font-semibold uppercase tracking-[0.12em]",
-              failed
+              failedRed
                 ? "text-destructive"
-                : cancelled || cancelling || rawAuditBlocked
+                : failed || cancelled || cancelling || rawAuditBlocked
                   ? "text-warning"
                   : "text-foreground",
             )}
@@ -161,9 +165,9 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
           <div
             className={cn(
               "relative h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
-              failed
+              failedRed
                 ? "bg-destructive"
-                : cancelled || cancelling || rawAuditBlocked
+                : failed || cancelled || cancelling || rawAuditBlocked
                   ? "bg-warning"
                   : done
                     ? "bg-success"
