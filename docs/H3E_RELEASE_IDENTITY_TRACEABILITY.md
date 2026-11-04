@@ -934,3 +934,13 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_REVISION` = `git:94c6460b6c577e66e573a3a1d53f11a8edd5feae`;
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:94c6460b6c577e66e573a3a1d53f11a8edd5feae`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `94c6460b6c577e66e573a3a1d53f11a8edd5feae` (bare commit).
+- Applied 2026-11-04 05:3xZ: the R5.8.23 migration was fetched from merge `7682d966` and its md5 `fe9c0778…` was verified before execution. Read-back: recorder `ea3ba14c…`, assertion `fb659f89…`, workflow guard `f74d8af9…`. No function still names deployment `2edd7ed1`. Recorded in `schema_migrations` as `20261104100000` (`direct-lovable-cloud-apply`).
+- The owner re-created the three app secrets with the values above, with the `git:` prefix on the two parser values. The app was then published (deploy `eef1c841`).
+- `parser-runtime-attestation` was dispatched on `main` (run 41781280473, success). Provenance `89376743…` is VERIFIED:
+  - deployment `7324404e`, confirmed by the Railway API;
+  - semantic = build = deployment = `94c6460b`;
+  - both `/version` hosts report `git:94c6460b…` and both `/health` checks are ok;
+  - all five critical blobs match, raw_evidence.py `b72c3174…`.
+- H.3-E activation gate on `7682d966`:
+  - run 41782085112 was BLOCKED only because Quality Gates were still running and F553 had not yet run;
+  - run 41783376315: decision=PASS, all 18 checks PASS, including `parser_lock`, `bridge_identity`, `runtime` and `managed_snapshot`.
