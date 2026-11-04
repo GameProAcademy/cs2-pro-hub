@@ -12,6 +12,7 @@ import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { identityActionFor } from "@/lib/pipeline/identityRecovery";
 import { STOPPED_GUIDANCE, classifyDemoJob } from "@/lib/pipeline/errorGuidance";
 import { DemoGuidancePanel } from "@/components/pipeline/DemoGuidancePanel";
+import { ReportProblem } from "@/components/pipeline/ReportProblem";
 import { getDemoUploadFeedback } from "@/components/pipeline/demoUploadFeedback";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
@@ -500,7 +501,9 @@ export function DemoIngestPanel() {
                     <DemoGuidancePanel
                       guidance={classifyDemoJob(job)}
                       onChooseAnother={focusUpload}
-                    />
+                    >
+                      <ReportProblem jobId={job.jobId} />
+                    </DemoGuidancePanel>
                   ) : null}
                   {job.partialParse && job.status !== "failed" ? (
                     <p className="mt-1 text-xs text-warning">{t("pipeline.partial")}</p>

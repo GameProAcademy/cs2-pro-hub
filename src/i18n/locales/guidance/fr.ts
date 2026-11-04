@@ -82,4 +82,22 @@ export const guidanceFr: Record<keyof typeof guidancePtBR, string> = {
   "guidance.unknown.body":
     "Nous avons reçu un état que nous ne reconnaissons pas. Rien n’a été considéré comme terminé.",
   "guidance.unknown.todo": "Suivez cette démo dans l’historique ou signalez le problème.",
+
+  "report.detailsLabel": "Donnez-nous plus de détails (facultatif)",
+  "report.detailsPlaceholder": "Ce que vous faisiez, ce que vous attendiez…",
+  "report.privacy": "N’incluez ni mot de passe, ni jeton, ni données personnelles",
+  "report.send": "Envoyer le rapport",
+  "report.sending": "Envoi…",
+  "report.cancel": "Annuler",
+  "report.sent":
+    "Problème signalé avec succès. Notre équipe a reçu les informations nécessaires pour enquêter.",
+  "report.recorded":
+    "Nous n’avons pas pu envoyer votre rapport automatiquement. Votre problème a été enregistré dans le système et pourra être renvoyé.",
+  "report.sendAgain": "Renvoyer",
+  "report.protocol": "Protocole",
+  "report.rateLimited":
+    "Vous avez envoyé plusieurs rapports récemment. Patientez un peu avant d’en envoyer un autre.",
+  "report.notFound": "Nous n’avons pas trouvé cette démo dans votre compte.",
+  "report.unavailable":
+    "Nous n’avons pas pu enregistrer votre rapport pour le moment. Réessayez dans un instant.",
 };

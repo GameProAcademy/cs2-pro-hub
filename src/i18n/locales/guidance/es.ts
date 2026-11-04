@@ -80,4 +80,22 @@ export const guidanceEs: Record<keyof typeof guidancePtBR, string> = {
   "guidance.unknown.title": "Estado desconocido",
   "guidance.unknown.body": "Recibimos un estado que no reconocemos. Nada se consideró completado.",
   "guidance.unknown.todo": "Sigue esta demo en el historial o reporta el problema.",
+
+  "report.detailsLabel": "Cuéntanos más detalles (opcional)",
+  "report.detailsPlaceholder": "Qué estabas haciendo, qué esperabas ver…",
+  "report.privacy": "No incluyas contraseñas, tokens ni datos personales",
+  "report.send": "Enviar reporte",
+  "report.sending": "Enviando…",
+  "report.cancel": "Cancelar",
+  "report.sent":
+    "Problema reportado con éxito. Nuestro equipo recibió la información necesaria para investigar.",
+  "report.recorded":
+    "No pudimos enviar tu reporte automáticamente. Tu problema quedó registrado en el sistema y podrá enviarse de nuevo.",
+  "report.sendAgain": "Enviar de nuevo",
+  "report.protocol": "Protocolo",
+  "report.rateLimited":
+    "Enviaste varios reportes recientemente. Espera un poco antes de enviar otro.",
+  "report.notFound": "No encontramos esta demo en tu cuenta.",
+  "report.unavailable":
+    "No pudimos registrar tu reporte ahora. Inténtalo de nuevo en unos instantes.",
 };
