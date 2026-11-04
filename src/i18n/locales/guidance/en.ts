@@ -79,4 +79,21 @@ export const guidanceEn: Record<keyof typeof guidancePtBR, string> = {
   "guidance.unknown.body":
     "We received a state we do not recognise. Nothing was treated as complete.",
   "guidance.unknown.todo": "Follow this demo in the history or report the problem.",
+
+  "report.detailsLabel": "Tell us more (optional)",
+  "report.detailsPlaceholder": "What you were doing, what you expected to see…",
+  "report.privacy": "Do not include passwords, tokens or personal data",
+  "report.send": "Send report",
+  "report.sending": "Sending…",
+  "report.cancel": "Cancel",
+  "report.sent":
+    "Problem reported successfully. Our team received the information needed to investigate.",
+  "report.recorded":
+    "We could not send your report automatically. Your problem was recorded in our system and can be sent again.",
+  "report.sendAgain": "Send again",
+  "report.protocol": "Protocol",
+  "report.rateLimited":
+    "You sent several reports recently. Please wait a little before sending another one.",
+  "report.notFound": "We could not find this demo in your account.",
+  "report.unavailable": "We could not record your report right now. Please try again in a moment.",
 };

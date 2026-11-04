@@ -81,4 +81,22 @@ export const guidancePtPT: Record<keyof typeof guidancePtBR, string> = {
   "guidance.unknown.body":
     "Recebemos um estado que não reconhecemos. Nada foi considerado concluído.",
   "guidance.unknown.todo": "Acompanhe esta demo pelo histórico ou reporte o problema.",
+
+  "report.detailsLabel": "Conte-nos mais detalhes (opcional)",
+  "report.detailsPlaceholder": "O que estava a fazer, o que esperava ver…",
+  "report.privacy": "Não inclua palavras-passe, tokens ou dados pessoais",
+  "report.send": "Enviar relatório",
+  "report.sending": "A enviar…",
+  "report.cancel": "Cancelar",
+  "report.sent":
+    "Problema reportado com sucesso. A nossa equipa recebeu as informações necessárias para investigar.",
+  "report.recorded":
+    "Não conseguimos enviar o seu relatório automaticamente. O seu problema foi registado no sistema e poderá ser enviado novamente.",
+  "report.sendAgain": "Enviar novamente",
+  "report.protocol": "Protocolo",
+  "report.rateLimited":
+    "Enviou vários relatórios recentemente. Aguarde um pouco antes de enviar outro.",
+  "report.notFound": "Não encontrámos esta demo na sua conta.",
+  "report.unavailable":
+    "Não conseguimos registar o seu relatório agora. Tente novamente dentro de instantes.",
 };

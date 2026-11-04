@@ -32,6 +32,7 @@ import { guidanceCopyKeys, type DemoGuidance } from "@/lib/pipeline/errorGuidanc
 import { cn } from "@/lib/utils";
 
 import { DemoGuidancePanel } from "./DemoGuidancePanel";
+import { ReportProblem } from "./ReportProblem";
 import { formatBytes, phaseCopy } from "./demoFlowCopy";
 
 export interface FlowParticipant {
@@ -84,6 +85,8 @@ export interface DemoFlowViewProps {
   guidance?: DemoGuidance | null;
   onRetry?: () => void;
   retryBusy?: boolean;
+  /** Job to report from the guidance block ("Reportar problema"); none while uploading. */
+  reportJobId?: string | null;
 }
 
 const STEP_LABEL: Record<FlowStep, TranslationKey> = {
@@ -370,7 +373,9 @@ export function DemoFlowView(props: DemoFlowViewProps) {
           retryBusy={props.retryBusy}
           onChooseAnother={props.onChooseFileAgain}
           className="mt-0"
-        />
+        >
+          {props.reportJobId ? <ReportProblem jobId={props.reportJobId} /> : null}
+        </DemoGuidancePanel>
       ) : null}
 
       {isError && props.errorKey && !guidance ? (

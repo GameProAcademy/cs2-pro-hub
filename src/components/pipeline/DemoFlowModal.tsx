@@ -382,6 +382,7 @@ export function DemoFlowModal({
               onViewAnalysis={onViewAnalysis}
               autoCloseSeconds={countdown}
               guidance={stoppedGuidance}
+              reportJobId={stoppedGuidance ? jobId : null}
               onRetry={() => retry.mutate()}
               retryBusy={retry.isPending}
             />

@@ -605,3 +605,161 @@ export const getPipelineStatus = createServerFn({ method: "GET" }).handler(async
   const adapter = resolveParserAdapter();
   return { parserAvailable: adapter.isAvailable(), adapter: adapter.id };
 });
+
+export interface ProblemReportResult {
+  protocol: string;
+  /** "created" for a new report, "existing" when this occurrence was already reported. */
+  state: "created" | "existing";
+  /**
+   * "sent" only when the email provider ACCEPTED the message. Anything else is "not_sent":
+   * the report stays recorded and can be sent again; the UI never claims a send.
+   */
+  email: "sent" | "not_sent";
+}
+
+/**
+ * PR4 — "Reportar problema". Records the occurrence (unique protocol GP-XXXXXX), then asks the
+ * existing transactional email service to deliver it to the fixed support inbox.
+ *
+ * Auth + ownership: the job is read under the player's own session (RLS) and the database
+ * claim re-checks that the job belongs to this user. Idempotent per job + attempt + retry +
+ * occurrence; rate limited per player. The browser sends only the job id, its locale, the
+ * page path and an optional note; category/code/stage come from the job row.
+ */
+export const reportDemoProblem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        jobId: z.string().uuid(),
+        details: z.string().max(4000).optional(),
+        locale: z.enum(["pt-BR", "en", "es", "fr", "pt-PT"]).default("pt-BR"),
+        page: z.string().max(500).optional(),
+        appVersion: z.string().max(64).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<ProblemReportResult> => {
+    const { classifyDemoJob } = await import("@/lib/pipeline/errorGuidance");
+    const {
+      MAX_REPORTS_PER_HOUR,
+      SUPPORT_REPORT_RECIPIENT,
+      buildProblemReportEmail,
+      occurrenceKeyFor,
+      sanitizePage,
+      sanitizeReportDetails,
+    } = await import("@/lib/support/problemReport");
+
+    const { data: row, error: rowError } = await context.supabase
+      .from("demo_jobs")
+      .select(JOB_COLUMNS)
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (rowError) throw new Error("DEMO_JOB_QUERY_FAILED");
+    if (!row) throw new Error("JOB_NOT_FOUND");
+    const { data: upload } = await context.supabase
+      .from("uploads")
+      .select("id, file_name")
+      .eq("id", row.upload_id)
+      .maybeSingle();
+    const view = toView(row, upload?.file_name ?? "", null, await pinnedParserRevision());
+    const guidance = classifyDemoJob(view);
+    const details = sanitizeReportDetails(data.details);
+    const page = sanitizePage(data.page);
+    const appVersion = data.appVersion ? data.appVersion.replace(/[^A-Za-z0-9._+-]/g, "") : null;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: claimed, error: claimError } = await supabaseAdmin.rpc(
+      "claim_demo_problem_report" as never,
+      {
+        _user_id: context.userId,
+        _job_id: row.id,
+        _occurrence_key: occurrenceKeyFor(guidance),
+        _category: guidance.category,
+        _error_code: guidance.technicalReference.errorCode,
+        _stage: guidance.technicalReference.stage,
+        _details: details,
+        _locale: data.locale,
+        _page: page,
+        _app_version: appVersion,
+        _max_per_hour: MAX_REPORTS_PER_HOUR,
+      } as never,
+    );
+    if (claimError) {
+      console.error(`[support] event=report_claim_failed job=${row.id}`);
+      throw new Error("REPORT_UNAVAILABLE");
+    }
+    const claim = claimed as {
+      state: "created" | "existing" | "rate_limited" | "not_found";
+      protocol?: string;
+      report_id?: string;
+      email_status?: string;
+    };
+    if (claim.state === "not_found") throw new Error("JOB_NOT_FOUND");
+    if (claim.state === "rate_limited") {
+      console.info(`[support] event=report_rate_limited job=${row.id}`);
+      throw new Error("REPORT_RATE_LIMITED");
+    }
+    const protocol = claim.protocol as string;
+    const reportId = claim.report_id as string;
+    console.info(
+      `[support] event=report_${claim.state} protocol=${protocol} category=${guidance.category}` +
+        ` code=${guidance.technicalReference.errorCode ?? "-"}`,
+    );
+    // Already delivered for this occurrence: never send twice.
+    if (claim.state === "existing" && claim.email_status === "accepted") {
+      return { protocol, state: "existing", email: "sent" };
+    }
+
+    const email = buildProblemReportEmail({
+      protocol,
+      createdAt: new Date().toISOString(),
+      userId: context.userId,
+      jobId: row.id,
+      attemptNumber: row.attempt_number,
+      retryCount: row.retry_count,
+      fileName: upload?.file_name ?? null,
+      jobStatus: row.status,
+      stage: guidance.technicalReference.stage,
+      category: guidance.category,
+      severity: guidance.severity,
+      errorCode: guidance.technicalReference.errorCode,
+      recommendedAction: guidance.recommendedAction,
+      parserRevision: row.parser_revision,
+      locale: data.locale,
+      page,
+      appVersion,
+      details,
+    });
+    const { sendTransactionalEmail } = await import("@/lib/email/email.dispatch.server");
+    const outcome = await sendTransactionalEmail({
+      to: SUPPORT_REPORT_RECIPIENT,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      idempotencyKey: `support_report:${reportId}`,
+      kind: "support_report",
+      userId: context.userId,
+      locale: "pt-BR",
+    });
+    // "skipped/duplicate" means a previous call for this report already got it accepted.
+    const accepted =
+      outcome.status === "accepted" ||
+      (outcome.status === "skipped" && outcome.reason === "duplicate");
+    const emailStatus = accepted ? "accepted" : outcome.status === "skipped" ? "skipped" : "failed";
+    const emailReason =
+      outcome.status === "failed"
+        ? outcome.reason
+        : outcome.status === "skipped"
+          ? outcome.reason
+          : null;
+    await supabaseAdmin
+      .from("demo_problem_reports" as never)
+      .update({ email_status: emailStatus, email_reason: emailReason } as never)
+      .eq("id" as never, reportId as never);
+    console.info(
+      `[support] event=report_email_${accepted ? "sent" : "not_sent"} protocol=${protocol}` +
+        ` outcome=${outcome.status}${emailReason ? ` reason=${emailReason}` : ""}`,
+    );
+    return { protocol, state: claim.state, email: accepted ? "sent" : "not_sent" };
+  });
