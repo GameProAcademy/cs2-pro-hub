@@ -8,11 +8,11 @@ export const PARSER_ATTESTATION_EXPECTED = {
   attestorBranch: "main",
   branch: "main",
   // Semantic revision: first main commit whose worker tree is the served one.
-  commit: "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+  commit: "94c6460b6c577e66e573a3a1d53f11a8edd5feae",
   // Build revision: exact source commit embedded in the active Railway image.
-  buildCommit: "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
-  deploymentId: "2edd7ed1-2703-42ad-abe3-ebe13d235e81",
-  deploymentSourceCommit: "c764f858ffa9df0ffa2740bdba450c7a37be2f3e",
+  buildCommit: "94c6460b6c577e66e573a3a1d53f11a8edd5feae",
+  deploymentId: "7324404e-f15d-45a0-8ec7-518a0770ca81",
+  deploymentSourceCommit: "94c6460b6c577e66e573a3a1d53f11a8edd5feae",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
@@ -47,7 +47,7 @@ const CRITICAL_HASHES: Record<string, string> = {
   "services/cs2-demo-parser/parser.py": "0dcb5962a0c977ab7a82326ebf8a0ef70bafde02",
   "services/cs2-demo-parser/adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
   "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
-  "services/cs2-demo-parser/raw_evidence.py": "f906889c795a7e6e8a41902e8e453f3f5b9d956e",
+  "services/cs2-demo-parser/raw_evidence.py": "b72c3174216f833522d66d8bc6c43f1af2d6fb17",
   "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
 };
 

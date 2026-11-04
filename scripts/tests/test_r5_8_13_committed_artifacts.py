@@ -103,13 +103,15 @@ def test_every_repository_pin_names_the_new_deployment():
     assert r5820["observed"]["before"]["deployment_id"] == r5819["deployment_id"]
     r5821 = json.loads((ROOT / "docs/reference/r5_8_21/spec.json").read_text(encoding="utf-8"))
     assert r5821["observed"]["before"]["deployment_id"] == r5820["deployment_id"]
-    r5822 = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))  # active head
+    r5822 = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))
     assert r5822["observed"]["before"]["deployment_id"] == r5821["deployment_id"]
+    r5823 = json.loads((ROOT / "docs/reference/r5_8_23/spec.json").read_text(encoding="utf-8"))  # active head
+    assert r5823["observed"]["before"]["deployment_id"] == r5822["deployment_id"]
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert r5822["deployment_id"] in text and r5821["deployment_id"] not in text, path
-        assert r5820["deployment_id"] not in text, path
+        assert r5823["deployment_id"] in text and r5822["deployment_id"] not in text, path
+        assert r5821["deployment_id"] not in text and r5820["deployment_id"] not in text, path
         assert r5819["deployment_id"] not in text, path
         assert r5818["deployment_id"] not in text, path
         assert r5817["deployment_id"] not in text, path
