@@ -57,3 +57,18 @@ deterministic rule of Fase 2.1 (`roundHalfUp`, catalog `digits.contract`).
   - The player is the caller's own `player_profiles` row (`ownPlayerIds`).
   - The conversation is proved to be theirs before its history is read.
   - No nickname, file name, Steam id or other player's data enters the facts.
+
+## Conversations and declared preferences (Fase 3.2)
+
+- Conversations: `listCoachConversations`, `getCoachConversation`, `deleteCoachConversation`
+  (`src/lib/coachSession.functions.ts`). Every call is authenticated, resolves the player from
+  the session (never from the request) and filters by `player_id`; RLS (`owns_player`,
+  `owns_conversation`) backs it. A conversation's messages are read only after proving it
+  belongs to the caller. Deleting a conversation deletes its messages (cascade).
+- Titles: one line from the first question, cut at a word, at most 60 characters.
+- Optional preferences (`coach_preferences`, migration `20261104150000`): main difficulty and
+  maps of interest, from closed lists. They reach the model under `declared` as
+  `DECLARED_BY_PLAYER`, never as measurements. Goal, level and role stay in the profile.
+  If the table is absent (migration not yet applied) the read returns `available: false` and
+  the UI hides the personalisation entry points; the Coach keeps working.
+- Suggested questions only fill the input; the player still decides to send.
