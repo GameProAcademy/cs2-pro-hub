@@ -50,6 +50,11 @@ export interface CanonicalMetric {
   minMatches: number;
   /** When the per-match value is null. */
   nullWhen: string;
+  /**
+   * Decimal places of the aggregate in the contract (`xray-v1` observations) and on screen.
+   * Both are applied with `roundHalfUp`, once each, on the final aggregate only.
+   */
+  digits: { contract: number; display: number };
 }
 
 function classes(source: string): readonly string[] {
@@ -80,6 +85,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "kill events unavailable or excluded by admission",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "deaths",
@@ -91,6 +97,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "kill events unavailable or excluded by admission",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "kd",
@@ -102,6 +109,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum_ratio",
     minMatches: 1,
     nullWhen: "no match carries kills and deaths, or Σ deaths = 0",
+    digits: { contract: 3, display: 2 },
   }),
   entry({
     id: "adr",
@@ -113,6 +121,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "damage events unavailable, or 0 rounds played",
+    digits: { contract: 1, display: 1 },
   }),
   entry({
     id: "kast",
@@ -124,6 +133,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "survival or trade timing not provable for every round",
+    digits: { contract: 1, display: 1 },
   }),
   entry({
     id: "hsPercent",
@@ -135,6 +145,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "the player made no kill (no denominator)",
+    digits: { contract: 1, display: 1 },
   }),
   entry({
     id: "rating",
@@ -146,6 +157,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "kill or damage events missing, or round coverage incomplete",
+    digits: { contract: 3, display: 2 },
   }),
   entry({
     id: "ctRating",
@@ -157,6 +169,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "no CT round, or the rating evidence is missing",
+    digits: { contract: 3, display: 2 },
   }),
   entry({
     id: "tRating",
@@ -168,6 +181,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "mean_of_matches",
     minMatches: 1,
     nullWhen: "no T round, or the rating evidence is missing",
+    digits: { contract: 3, display: 2 },
   }),
   entry({
     id: "openingKills",
@@ -179,6 +193,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "kill order not determinable",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "openingDeaths",
@@ -190,6 +205,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "kill order not determinable",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "tradeKills",
@@ -201,6 +217,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "event timing not trustworthy",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "flashAssists",
@@ -212,6 +229,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "neither the flag nor blind events with trustworthy timing exist",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "utilityDamage",
@@ -223,6 +241,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "damage events unavailable",
+    digits: { contract: 1, display: 0 },
   }),
   entry({
     id: "clutchWins",
@@ -235,6 +254,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "kill events or state at event tick unavailable",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "roundsPlayed",
@@ -246,6 +266,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "sum",
     minMatches: 1,
     nullWhen: "round boundaries unavailable",
+    digits: { contract: 0, display: 0 },
   }),
   entry({
     id: "winRate",
@@ -257,6 +278,7 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     aggregation: "win_rate",
     minMatches: 1,
     nullWhen: "no match has a resolved result (e.g. admission limitation L04)",
+    digits: { contract: 1, display: 0 },
   }),
 ];
 

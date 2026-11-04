@@ -15,6 +15,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildXRay, type SideRounds, type XRayDiagnosis } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
+import { DNA_MIN_MATCHES } from "@/lib/playerDna";
 import type { DnaDimension } from "@/types";
 
 export const getXRay = createServerFn({ method: "GET" })
@@ -141,3 +142,79 @@ export const getDnaHistory = createServerFn({ method: "GET" })
       ),
     }));
   });
+
+export interface DnaSummary {
+  /**
+   * READY / INSUFFICIENT_SAMPLE: state of the latest persisted snapshot. NO_SNAPSHOT: the
+   * player has no snapshot yet (nothing is created here). NO_PLAYER: no own player profile.
+   */
+  state: "READY" | "INSUFFICIENT_SAMPLE" | "NO_SNAPSHOT" | "NO_PLAYER";
+  matches: number | null;
+  minimumMatches: number;
+  /** Dimensions with a value in the snapshot (null columns are "not observed", never 0). */
+  observedDimensions: number | null;
+  createdAt: string | null;
+}
+
+/**
+ * Dashboard DNA summary — READ ONLY (Fase 2.1). Reads the caller's latest persisted snapshot
+ * (written by the pipeline after each processed match). It never computes, refreshes or
+ * creates a snapshot: a missing snapshot is reported as NO_SNAPSHOT, a failed read throws.
+ */
+export const getDnaSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DnaSummary> =>
+    loadDnaSummary(context.supabase, context.userId),
+  );
+
+/** Read-only loader behind `getDnaSummary` (exported for tests with a recording client). */
+export async function loadDnaSummary(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<DnaSummary> {
+  const playerIds = await ownPlayerIds(supabase, userId, "DNA_SUMMARY");
+  if (playerIds.length !== 1)
+    return {
+      state: "NO_PLAYER",
+      matches: null,
+      minimumMatches: DNA_MIN_MATCHES,
+      observedDimensions: null,
+      createdAt: null,
+    };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as unknown as SupabaseClient<any>;
+  const { data, error } = await db
+    .from("player_dna_snapshots")
+    .select(`created_at, state, match_count, ${DNA_DIMENSION_COLUMNS.join(", ")}`)
+    .eq("player_id", playerIds[0]!)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  // A failed read is an error, never an empty summary and never a write fallback.
+  if (error) throw new Error(`DNA_SUMMARY_FAILED:${error.code ?? "unknown"}`);
+  return dnaSummaryFrom(((data ?? []) as unknown as Array<Record<string, unknown>>)[0]);
+}
+
+/** Pure: the Dashboard summary of one snapshot row (or none). */
+export function dnaSummaryFrom(row: Record<string, unknown> | undefined): DnaSummary {
+  const base = { minimumMatches: DNA_MIN_MATCHES };
+  const state = row?.["state"];
+  if (!row || (state !== "READY" && state !== "INSUFFICIENT_SAMPLE"))
+    return {
+      state: "NO_SNAPSHOT",
+      matches: null,
+      observedDimensions: null,
+      createdAt: null,
+      ...base,
+    };
+  const matches = row["match_count"];
+  return {
+    state,
+    matches: typeof matches === "number" ? matches : null,
+    observedDimensions: DNA_DIMENSION_COLUMNS.filter((d) => {
+      const v = row[d];
+      return v !== null && v !== undefined && Number.isFinite(Number(v));
+    }).length,
+    createdAt: typeof row["created_at"] === "string" ? row["created_at"] : null,
+    ...base,
+  };
+}

@@ -26,17 +26,6 @@ import { getXRay } from "@/lib/xray.functions";
 
 export const XRAY_QUERY_KEY = ["player", "xray"] as const;
 
-const DIGITS: Record<string, number> = {
-  kd: 2,
-  adr: 1,
-  kast: 1,
-  hsPercent: 1,
-  rating: 2,
-  ctRating: 2,
-  tRating: 2,
-  utilityDamage: 0,
-};
-
 function MetricName({ metric }: { metric: string }) {
   const t = useT();
   const glossary = canonicalMetric(metric).glossary;
@@ -59,7 +48,7 @@ function ObservationValue({ o }: { o: XRayObservation }) {
   return (
     <span data-observation-status="MEASURED">
       <span className="font-mono text-foreground">
-        {formatNumber(o.value, intlTag, DIGITS[o.metric] ?? 0)}
+        {formatNumber(o.value, intlTag, canonicalMetric(o.metric).digits.display)}
         {unit}
       </span>
       {o.numerator !== null && o.denominator !== null ? (
@@ -138,12 +127,18 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
                     <span className="text-xs text-muted-foreground">
                       {t("xray.dnaIndex")} · {t(dnaLabelKey(r.dimension))}
                     </span>
-                    {r.index === null ? (
-                      <span className="text-muted-foreground">{t("real.dna.notObserved")}</span>
-                    ) : x.state === "READY" ? (
-                      <span className="font-mono">{r.index} / 100</span>
+                    {r.indexStatus === "READY" && r.index !== null ? (
+                      <span className="font-mono" data-dna-index-status="READY">
+                        {r.index} / 100
+                      </span>
+                    ) : r.indexStatus === "IN_FORMATION" ? (
+                      <span className="text-muted-foreground" data-dna-index-status="IN_FORMATION">
+                        {t("real.dna.inFormation")}
+                      </span>
                     ) : (
-                      <span className="text-muted-foreground">{t("real.dna.inFormation")}</span>
+                      <span className="text-muted-foreground" data-dna-index-status="NOT_OBSERVED">
+                        {t("real.dna.notObserved")}
+                      </span>
                     )}
                   </li>
                 ))}

@@ -2,6 +2,8 @@
  * Locale-aware display formatting. Unknown is never zero: null/undefined/NaN render as the
  * "not available" marker, and callers announce it to assistive technology.
  */
+import { roundHalfUp } from "@/lib/metrics/rounding";
+
 export const NOT_AVAILABLE_MARK = "—";
 
 export function formatNumber(
@@ -10,10 +12,11 @@ export function formatNumber(
   digits = 0,
 ): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return NOT_AVAILABLE_MARK;
+  // Decimal half-up first (0.655 → 0.66), so Intl never rounds binary noise (0.65499…).
   return new Intl.NumberFormat(intlTag, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
-  }).format(value);
+  }).format(roundHalfUp(value, digits));
 }
 
 /** Calendar date of an ISO timestamp, in the reader's locale (UTC date as stored). */

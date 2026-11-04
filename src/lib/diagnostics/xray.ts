@@ -20,6 +20,7 @@
  */
 import { DIMENSION_TOPICS, needsFromPlayer } from "@/lib/catalog/catalogSelect";
 import { canonicalMetric, type UnsupportedCapability } from "@/lib/metrics/canonicalMetrics";
+import { roundHalfUp } from "@/lib/metrics/rounding";
 import { excludedMetricsFor } from "@/lib/pipeline/admissionV3";
 import type { RealPlayerDna } from "@/lib/playerDna";
 import type { OverviewMatch, PlayerOverview } from "@/lib/playerOverview";
@@ -44,10 +45,21 @@ export interface XRayObservation {
   denominator: number | null;
 }
 
+/**
+ * READY: the index is a published value. IN_FORMATION: the dimension was observed but the
+ * DNA has fewer than the minimum matches, so the index is withheld (null) — never a score.
+ * NOT_OBSERVED: no signal of the dimension was observed (null, never 0).
+ */
+export type DnaIndexStatus = "READY" | "IN_FORMATION" | "NOT_OBSERVED";
+
 export interface XRayDnaReading {
   dimension: DnaDimension;
-  /** 0–100 index (DNA mean); null when no signal of the dimension was observed. */
+  /**
+   * 0–100 index (DNA mean). ONLY set when `indexStatus` is READY (the DNA reached its minimum
+   * sample); null otherwise. Consumers (UI, AI Coach) must never derive a score elsewhere.
+   */
   index: number | null;
+  indexStatus: DnaIndexStatus;
   /** Matches of the best-sampled signal of the dimension. */
   matches: number;
 }
@@ -163,7 +175,7 @@ export function observe(matches: OverviewMatch[], metric: string): XRayObservati
         : unresolved === matches.length && matches.length > 0
           ? "EXCLUDED_BY_ADMISSION"
           : "NOT_MEASURED",
-      value: decided ? (wins / decided) * 100 : null,
+      value: decided ? roundHalfUp((wins / decided) * 100, spec.digits.contract) : null,
       matches: decided,
       numerator: decided ? wins : null,
       denominator: decided ? decided : null,
@@ -177,7 +189,7 @@ export function observe(matches: OverviewMatch[], metric: string): XRayObservati
     return {
       metric,
       status: ok ? "MEASURED" : statusWithout(matches, "kills"),
-      value: ok ? k / d : null,
+      value: ok ? roundHalfUp(k / d, spec.digits.contract) : null,
       matches: ok ? both.length : 0,
       numerator: ok ? k : null,
       denominator: ok ? d : null,
@@ -197,7 +209,11 @@ export function observe(matches: OverviewMatch[], metric: string): XRayObservati
   return {
     metric,
     status: "MEASURED",
-    value: spec.aggregation === "sum" ? total : total / present.length,
+    // Rounded once, on the aggregate, to the catalog's contract precision.
+    value: roundHalfUp(
+      spec.aggregation === "sum" ? total : total / present.length,
+      spec.digits.contract,
+    ),
     matches: present.length,
     numerator: null,
     denominator: null,
@@ -221,9 +237,17 @@ function statusWithout(matches: OverviewMatch[], column: string): ObservationSta
 
 function dnaReading(dna: RealPlayerDna, dimension: DnaDimension): XRayDnaReading {
   const d = dna.dimensions.find((x) => x.dimension === dimension);
+  const observed = d?.value != null;
+  const indexStatus: DnaIndexStatus = !observed
+    ? "NOT_OBSERVED"
+    : dna.state === "READY"
+      ? "READY"
+      : "IN_FORMATION";
   return {
     dimension,
-    index: d?.value == null ? null : Math.round(d.value * 100),
+    // A provisional index is withheld, not shown as a score and not turned into 0.
+    index: indexStatus === "READY" ? Math.round((d!.value as number) * 100) : null,
+    indexStatus,
     matches: d ? Math.max(0, ...d.signals.map((s) => s.matches)) : 0,
   };
 }
@@ -240,7 +264,8 @@ export function buildXRay(args: {
     const observations = spec.metrics.map((metric) => observe(matches, metric));
     const readings = spec.dna.map((d) => dnaReading(dna, d));
     const observed =
-      observations.some((o) => o.status === "MEASURED") || readings.some((r) => r.index !== null);
+      observations.some((o) => o.status === "MEASURED") ||
+      readings.some((r) => r.indexStatus !== "NOT_OBSERVED");
     return {
       id,
       status: observed ? "OBSERVED" : "NOT_OBSERVED",
