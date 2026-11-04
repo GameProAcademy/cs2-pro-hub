@@ -242,16 +242,20 @@ describe("3.1.1 provisional Player DNA never reaches the model", () => {
 });
 
 describe("3.1.2 flash assists and unproven metrics", () => {
-  it("flash assists keep the game-flag provenance; enemies flashed is NOT MEASURED", () => {
+  // Fase 3 closeout (intentional): the count comes from the game flag OR a timed attribution
+  // and the method is not stored, so it is DERIVED, never "the game recorded".
+  it("flash assists carry their real provenance; enemies flashed is NOT MEASURED", () => {
     const facts = buildCoachFacts(two, dna("INSUFFICIENT_SAMPLE", 2), "en");
     const fa = facts.observations.find((o) => o.metric === "flashAssists")!;
     expect(fa).toMatchObject({
-      status: "OBSERVED",
+      status: "DERIVED",
       value: 0,
       matches: 2,
       source: "match_metrics.flash_assists",
+      provenance: "GAME_FLAG_OR_TIMED_ATTRIBUTION",
     });
-    expect(fa.note).toContain("game's own flash-assist flag");
+    expect(fa.note).toContain("timed attribution");
+    expect(fa.note).toContain("never as 'the game recorded'");
     expect(fa.note).toContain("never as proof that the player does not flash for teammates");
     expect(facts.matches.every((x) => x.enemiesFlashed === null)).toBe(true);
     expect(facts.notAvailable.find((n) => n.startsWith("enemies flashed"))).toContain(

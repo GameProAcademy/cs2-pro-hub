@@ -148,7 +148,29 @@ export interface CoachObservation {
   source: string;
   /** Why the value has this status / where it really comes from, when that matters. */
   note: string | null;
+  /**
+   * How the value was produced, when the persisted column alone does not say it.
+   * flashAssists: GAME_FLAG_OR_TIMED_ATTRIBUTION (the per-match method is not stored).
+   */
+  provenance?: "GAME_FLAG_OR_TIMED_ATTRIBUTION";
 }
+
+/**
+ * Metrics whose persisted value is a CS2 PRO derivation even though it is a per-match count:
+ * a flash assist is credited from the game's flag OR from a timed attribution, and the method
+ * is not stored (src/lib/pipeline/metrics.ts, flashAssists). It is never presented as OBSERVED.
+ */
+const DERIVED_COUNTS: Record<string, CoachObservation["provenance"]> = {
+  flashAssists: "GAME_FLAG_OR_TIMED_ATTRIBUTION",
+};
+
+/**
+ * The catalog keeps ONE `table.column` per metric (it drives admission classes). A ratio has
+ * two persisted inputs; the Coach sees both so it never cites half of a source.
+ */
+const COACH_SOURCE: Record<string, string> = {
+  kd: "match_metrics.kills / match_metrics.deaths",
+};
 
 export interface CoachFacts {
   contract: typeof COACH_CONTEXT_CONTRACT;
@@ -192,7 +214,7 @@ export interface CoachFacts {
     openingKills: number | null;
     openingDeaths: number | null;
     tradeKills: number | null;
-    /** Game-reported flash assists (see observations[flashAssists].note). */
+    /** Flash assists counted by CS2 PRO (game flag or timed attribution; see observations[flashAssists]). */
     flashAssists: number | null;
     /** Rounds played in this match; every count above is per MATCH, not per round. */
     roundsPlayed: number | null;
@@ -322,7 +344,7 @@ function statusOf(o: XRayObservation): CoachValueStatus {
 
 const METRIC_NOTES: Record<string, string> = {
   flashAssists:
-    "Reported by the game's own flash-assist flag on each kill, read when the demo was processed; the per-kill flag is not stored, so the value is the game's report and cannot be re-verified. Quote it as 'the game recorded N flash assists', never as proof that the player does not flash for teammates.",
+    "Counted by CS2 PRO when the demo was processed, by one of two methods: the game's per-kill flash-assist flag when every kill of the match carried it, otherwise a timed attribution (a flash on the same victim, by a teammate, shortly before the kill). Which method was used for each match is not stored, so the count cannot be re-verified and is DERIVED, not a game report. Quote it as 'CS2 PRO counted N flash assists', never as 'the game recorded', and never as proof that the player does not flash for teammates.",
   winRate:
     "Excluded by the demo admission (match result not resolved); never estimate wins, losses or a score.",
   hsPercent: "Mean of per-match HS% (each match weighs the same), not headshots ÷ kills pooled.",
@@ -334,7 +356,9 @@ const METRIC_NOTES: Record<string, string> = {
 
 function toCoachObservation(o: XRayObservation): CoachObservation {
   const spec = canonicalMetric(o.metric);
-  const status = statusOf(o);
+  const raw = statusOf(o);
+  const provenance = DERIVED_COUNTS[o.metric];
+  const status = provenance && raw === "OBSERVED" ? "DERIVED" : raw;
   const valued = status === "OBSERVED" || status === "DERIVED";
   return {
     metric: o.metric,
@@ -345,8 +369,9 @@ function toCoachObservation(o: XRayObservation): CoachObservation {
     matches: o.matches,
     numerator: valued ? o.numerator : null,
     denominator: valued ? o.denominator : null,
-    source: spec.source,
+    source: COACH_SOURCE[o.metric] ?? spec.source,
     note: METRIC_NOTES[o.metric] ?? null,
+    ...(provenance ? { provenance } : {}),
   };
 }
 
@@ -598,7 +623,8 @@ export function coachSystemPrompt(locale: Locale): string {
     "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; totals and observations cover ALL matches together (sample.matches), while matches[] may hold only the matches relevant to this question (matchesIncluded), so never list a totals value under one map or match; if a value you need is null there, say it cannot be computed. The K/D of one match is matches[].killDeathRatio; the overall K/D is the kd observation (with its numerator / denominator); never quote one as the other. For the strongest or weakest Player DNA dimension, copy playerDna.strongest / playerDna.weakest (empty unless READY).",
     "13. Dates: when period.dateBasis (or a match's dateBasis) is 'processed', the date is when CS2 PRO processed the demo, never when the match was played; say so if you mention a date.",
     "14. Match result, score and win rate are UNAVAILABLE unless an observation with status OBSERVED or DERIVED says otherwise: never infer a win, a loss or a score from kills, rounds or anything else.",
-    "15. Flash assists come from the game's own per-kill flag (see the flashAssists observation note): say 'the game recorded N flash assists', and never conclude from a 0 that the player does not flash for teammates. Enemies flashed is NOT MEASURED.",
+    "15. Flash assists are counted by CS2 PRO (the game's per-kill flag when present, otherwise a timed attribution; the method of each match is not stored, see the flashAssists observation note and provenance): say 'CS2 PRO counted N flash assists', never 'the game recorded', and never conclude from a 0 that the player does not flash for teammates. Enemies flashed is NOT MEASURED.",
+    "19. Sources: when you name where a number comes from, copy an observations[].source or a PLAYER_FACTS path exactly (e.g. totals.perRound.openingKills, matches[0].adr); never write any other table, column or source name. Every number in your answer must be copied from PLAYER_FACTS; never estimate one. Lines with an unverifiable number or source, and any comparison with other players or an average, are removed before the player sees the answer.",
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",

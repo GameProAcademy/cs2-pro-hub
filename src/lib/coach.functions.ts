@@ -36,6 +36,7 @@ import {
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
 import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
+import { guardCoachReply, guardTag } from "@/lib/coach/coachReplyGuard";
 import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
@@ -51,6 +52,7 @@ export type CoachErrorCode =
   | "COACH_CONVERSATION_NOT_FOUND"
   | "COACH_RATE_LIMITED"
   | "COACH_REQUEST_IN_PROGRESS"
+  | "COACH_REQUEST_ID_CONFLICT"
   | "COACH_PERSIST_FAILED"
   | CoachProviderError
   | "COACH_INTERNAL";
@@ -144,6 +146,20 @@ async function priorRequest(
     .maybeSingle();
   if (replyError) throw new Error(`COACH_MESSAGES_READ_FAILED:${replyError.code ?? "unknown"}`);
   return { conversationId: player.conversation_id, player, reply: reply ?? null };
+}
+
+/**
+ * Whether ANY message already uses this id. Called only when the caller's own (RLS) read found
+ * nothing, so a hit means another account's message. Returns a boolean, never the row.
+ */
+async function requestIdTaken(requestId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { count, error } = await supabaseAdmin
+    .from("coach_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("id", requestId);
+  if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
+  return (count ?? 0) > 0;
 }
 
 async function latestConversation(db: Db, playerId: string): Promise<string | null> {
@@ -314,6 +330,11 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           if (Date.now() - Date.parse(prior.player.created_at) < IN_PROGRESS_MS)
             return { ok: false, error: "COACH_REQUEST_IN_PROGRESS" };
           repairOf = { conversationId: prior.conversationId };
+        } else if (await requestIdTaken(input.requestId)) {
+          // The id exists but RLS hides it: it belongs to someone else. Refuse BEFORE the
+          // rate limit and the provider, so a foreign id can never trigger a billed call.
+          console.warn("[ai-coach] foreign request id refused");
+          return { ok: false, error: "COACH_REQUEST_ID_CONFLICT" };
         }
       }
 
@@ -436,7 +457,12 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         completion.content,
         new Set(facts.catalogSuggestions.map((s) => s.url)),
       );
-      const content = sanitized.text.trim();
+      // Every number, comparison and source is checked against PLAYER_FACTS before the
+      // player sees it; unbacked lines are removed (coachReplyGuard).
+      const guarded = guardCoachReply(sanitized.text.trim(), facts, input.locale);
+      const content = guarded.text.trim();
+      if (Object.values(guarded.removed).some((n) => n > 0))
+        console.info("[ai-coach] reply guarded", { correlationId, ...guarded.removed });
       // Never fall back to the unsanitized text: an empty result is an empty reply.
       if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY" };
       stage = "persist";
@@ -500,7 +526,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           // Provenance of the reply (no content, no key): who answered, why a fallback
           // answered, the data state it was grounded on, tokens and provider-reported cost.
           context_type:
-            `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}`.slice(
+            `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}|${guardTag(guarded.removed)}`.slice(
               0,
               255,
             ),
