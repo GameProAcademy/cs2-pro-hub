@@ -18,6 +18,26 @@ export function coachErrorKey(code: CoachErrorCode): TranslationKey {
     case "COACH_NO_PLAYER":
     case "COACH_PLAYER_AMBIGUOUS":
       return "real.aicoach.noPlayer";
+    // Fase 3.3: a specific, honest message per provider failure class (no internals shown).
+    case "COACH_PROVIDER_TIMEOUT":
+      return "coach2.error.timeout";
+    case "COACH_PROVIDER_NOT_CONFIGURED":
+    case "COACH_PROVIDER_AUTH_FAILED":
+    case "COACH_PROVIDER_FORBIDDEN":
+    case "COACH_PROVIDER_BAD_REQUEST":
+      return "coach2.error.providerConfig";
+    case "COACH_PROVIDER_NO_CREDITS":
+      return "coach2.error.noCredits";
+    case "COACH_PROVIDER_MODEL_UNAVAILABLE":
+      return "coach2.error.modelUnavailable";
+    case "COACH_REQUEST_IN_PROGRESS":
+      return "coach2.error.inProgress";
+    case "COACH_PERSIST_FAILED":
+      return "coach2.error.persist";
+    case "COACH_PROVIDER_INVALID_RESPONSE":
+    case "COACH_PROVIDER_EMPTY":
+    case "COACH_PROVIDER_TRUNCATED":
+      return "coach2.error.invalidResponse";
     default:
       return "real.aicoach.error.unavailable";
   }

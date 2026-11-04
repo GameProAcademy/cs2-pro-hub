@@ -58,10 +58,15 @@ export const COACH_LOCALES = Object.keys(LANGUAGE) as Locale[];
 export type CoachInputError =
   "COACH_MESSAGE_EMPTY" | "COACH_MESSAGE_TOO_LONG" | "COACH_LOCALE_INVALID";
 
-export function validateCoachInput(
-  input: unknown,
-):
-  | { ok: true; message: string; locale: Locale; conversationId: string | null }
+export function validateCoachInput(input: unknown):
+  | {
+      ok: true;
+      message: string;
+      locale: Locale;
+      conversationId: string | null;
+      /** Client-generated id of this send, reused on retry (idempotency, Fase 3.3). */
+      requestId: string | null;
+    }
   | { ok: false; error: CoachInputError } {
   const value = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
   const message = typeof value["message"] === "string" ? value["message"].trim() : "";
@@ -76,7 +81,39 @@ export function validateCoachInput(
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value["conversationId"])
       ? value["conversationId"]
       : null;
-  return { ok: true, message, locale: locale as Locale, conversationId };
+  const requestId =
+    typeof value["requestId"] === "string" && UUID.test(value["requestId"])
+      ? value["requestId"]
+      : null;
+  return { ok: true, message, locale: locale as Locale, conversationId, requestId };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * Upper bound (characters) of everything sent to the model in one request. The facts are
+ * already minimal (named maps or the 10 latest matches); this guard keeps a long conversation
+ * from growing the prompt without limit. ~4 chars per token → roughly 12k input tokens.
+ */
+export const COACH_MAX_CONTEXT_CHARS = 48_000;
+
+/** Total characters of a message list (what the size guard measures). */
+export function contextChars(messages: Array<{ content: string }>): number {
+  return messages.reduce((n, m) => n + m.content.length, 0);
+}
+
+/**
+ * Drops the OLDEST history turns (never the facts, the rules or the new message) until the
+ * request fits the budget. Returns the trimmed history and how many turns were dropped.
+ */
+export function fitHistory<T extends { content: string }>(
+  history: T[],
+  fixedChars: number,
+  budget = COACH_MAX_CONTEXT_CHARS,
+): { history: T[]; dropped: number } {
+  let kept = history;
+  while (kept.length && fixedChars + contextChars(kept) > budget) kept = kept.slice(1);
+  return { history: kept, dropped: history.length - kept.length };
 }
 
 /** Version of the context contract the model receives (documented in docs/reference/COACH_CONTEXT.md). */
