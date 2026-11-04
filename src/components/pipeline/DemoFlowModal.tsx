@@ -24,6 +24,7 @@ import {
   type DemoJobView,
 } from "@/lib/pipeline.functions";
 import { STOPPED_GUIDANCE, classifyDemoJob } from "@/lib/pipeline/errorGuidance";
+import { emitDemoFlowEvent } from "@/lib/pipeline/flowEvents";
 import {
   decideAutomaticDemoPlayer,
   declareDemoPlayer,
@@ -205,6 +206,7 @@ export function DemoFlowModal({
       declareDemoPlayer({ data: { jobId: jobId as string, participantKey } }),
     onMutate: () => setIdentityError(null),
     onSuccess: async (result) => {
+      if (result.state === "attached") emitDemoFlowEvent("player_selected", { jobId });
       if (result.state !== "attached") {
         setIdentityError(
           result.state === "conflict" ? "pipeline.identify.conflict" : "pipeline.identify.notFound",
@@ -251,6 +253,29 @@ export function DemoFlowModal({
       ? classifyDemoJob(job)
       : null;
   const stoppedGuidance = guidance && STOPPED_GUIDANCE.has(guidance.category) ? guidance : null;
+
+  // Observability: one structured event per phase change (no personal data).
+  useEffect(() => {
+    if (!open) return;
+    const ref = stoppedGuidance?.technicalReference;
+    if (phase.kind === "select_player" || phase.kind === "confirm_automatic")
+      emitDemoFlowEvent("players_available", { jobId, phase: phase.kind });
+    else if (phase.kind === "completed") emitDemoFlowEvent("analysis_done", { jobId });
+    else if (stoppedGuidance)
+      emitDemoFlowEvent("error_classified", {
+        jobId,
+        phase: phase.kind,
+        category: stoppedGuidance.category,
+        errorCode: ref?.errorCode ?? null,
+        stage: ref?.stage ?? null,
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per phase, not per poll
+  }, [open, phase.kind, jobId]);
+
+  useEffect(() => {
+    if (open) emitDemoFlowEvent("modal_opened", { jobId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per opening
+  }, [open]);
 
   const locked = open && isLockedPhase(phase);
 

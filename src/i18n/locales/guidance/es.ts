@@ -98,4 +98,13 @@ export const guidanceEs: Record<keyof typeof guidancePtBR, string> = {
   "report.notFound": "No encontramos esta demo en tu cuenta.",
   "report.unavailable":
     "No pudimos registrar tu reporte ahora. Inténtalo de nuevo en unos instantes.",
+
+  "pending.titleOne": "1 demo esperando tu identificación",
+  "pending.titleMany": "{count} demos esperando tu identificación",
+  "pending.body":
+    "Tus partidas fueron leídas. Selecciona tu jugador para completar las estadísticas; no se pierde nada mientras tanto.",
+  "pending.cta": "Identificar ahora",
+  "pending.navLabel": "{count} acciones pendientes",
+  "pending.unnamed": "Demo sin nombre",
+  "pending.more": "y {count} más",
 };

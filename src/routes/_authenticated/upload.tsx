@@ -16,7 +16,18 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 
+interface UploadSearch {
+  /** PR5: open the upload modal on the identification step for this job. */
+  identify?: string;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/_authenticated/upload")({
+  validateSearch: (search: Record<string, unknown>): UploadSearch => {
+    const identify = search["identify"];
+    return typeof identify === "string" && UUID.test(identify) ? { identify } : {};
+  },
   head: () => ({
     meta: [
       { title: "Analisar meu jogo — CS2 PRO AI COACH" },
@@ -106,6 +117,7 @@ function PathCard({
 
 function AnalyzePage() {
   const t = useT();
+  const { identify } = Route.useSearch();
   const [kind, setKind] = useState<UploadKind>("demo");
   const intakeRef = useRef<HTMLDivElement>(null);
 
@@ -157,7 +169,11 @@ function AnalyzePage() {
               >
                 {/* Demos go through the real ingestion pipeline; the report path
                     is still an interface-only intake surface. */}
-                {kind === "demo" ? <DemoIngestPanel /> : <UploadBox kind="report" />}
+                {kind === "demo" ? (
+                  <DemoIngestPanel identifyJobId={identify} />
+                ) : (
+                  <UploadBox kind="report" />
+                )}
               </ChartCard>
             </div>
           </div>

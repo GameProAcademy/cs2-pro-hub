@@ -10,7 +10,12 @@ import { DemoFlowModal, type FlowDismissReason } from "@/components/pipeline/Dem
 import { DemoProcessingStatus } from "@/components/pipeline/DemoProcessingStatus";
 import { DemoPlayerIdentity } from "@/components/pipeline/DemoPlayerIdentity";
 import { identityActionFor } from "@/lib/pipeline/identityRecovery";
-import { STOPPED_GUIDANCE, classifyDemoJob } from "@/lib/pipeline/errorGuidance";
+import {
+  STOPPED_GUIDANCE,
+  classifyDemoJob,
+  pendingIdentityJobs,
+} from "@/lib/pipeline/errorGuidance";
+import { emitDemoFlowEvent } from "@/lib/pipeline/flowEvents";
 import { DemoGuidancePanel } from "@/components/pipeline/DemoGuidancePanel";
 import { ReportProblem } from "@/components/pipeline/ReportProblem";
 import { getDemoUploadFeedback } from "@/components/pipeline/demoUploadFeedback";
@@ -125,7 +130,12 @@ function writeFlowMemory(update: (memory: FlowMemory) => FlowMemory): void {
  * The active submission is polled by its attempt-scoped job id. A replacement
  * therefore moves polling to the new job without mutating the old history row.
  */
-export function DemoIngestPanel() {
+export function DemoIngestPanel({
+  identifyJobId,
+}: {
+  /** PR5: a pending identification the player asked to resolve (menu, Dashboard, card). */
+  identifyJobId?: string | undefined;
+} = {}) {
   const t = useT();
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState<string | null>(null);
@@ -232,6 +242,7 @@ export function DemoIngestPanel() {
     },
     onSuccess: async (result) => {
       setSubmissionResult(result);
+      emitDemoFlowEvent("job_followed", { jobId: result.jobId });
       // The modal now follows the real job (a duplicate points at the existing job).
       setFlowJobId(result.jobId);
       setFlowUpload(null);
@@ -289,8 +300,24 @@ export function DemoIngestPanel() {
       trackedJobId: null,
       upload: { fileName: file.name, fileSize: file.size, startedAt: Date.now() },
     }));
+    emitDemoFlowEvent("upload_started");
     upload.mutate(file);
   };
+
+  // PR5: the player asked to identify a specific pending demo: open the modal on that job's
+  // selection step (only while the backend still reports it as pending).
+  const identifyChecked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!identifyJobId || identifyChecked.current === identifyJobId || !jobs.isSuccess) return;
+    if (flowOpen || upload.isPending) return;
+    identifyChecked.current = identifyJobId;
+    const target = pendingIdentityJobs(jobs.data ?? []).find((job) => job.jobId === identifyJobId);
+    if (!target) return;
+    resumeChecked.current = true;
+    setFlowJobId(target.jobId);
+    setFlowResumed(true);
+    setFlowOpen(true);
+  }, [identifyJobId, jobs.isSuccess, jobs.data, flowOpen, upload.isPending]);
 
   // After a reload: follow the job this browser was following (or an active one) again.
   // Never starts anything; it only points the modal at an existing job.
@@ -520,6 +547,14 @@ export function DemoIngestPanel() {
                   ) : null}
                   {identityActionFor(job) === "identity" ? (
                     <>
+                      {classifyDemoJob(job).category === "identity_pending" ? (
+                        <p
+                          className="mt-1 text-xs font-semibold text-warning"
+                          data-pending-identity={job.jobId}
+                        >
+                          {t("guidance.identity_pending.title")}
+                        </p>
+                      ) : null}
                       {job.attachmentState !== "attached" ? (
                         <p className="mt-1 text-xs text-warning">{t("pipeline.unattached")}</p>
                       ) : null}

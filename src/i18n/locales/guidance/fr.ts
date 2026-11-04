@@ -100,4 +100,13 @@ export const guidanceFr: Record<keyof typeof guidancePtBR, string> = {
   "report.notFound": "Nous n’avons pas trouvé cette démo dans votre compte.",
   "report.unavailable":
     "Nous n’avons pas pu enregistrer votre rapport pour le moment. Réessayez dans un instant.",
+
+  "pending.titleOne": "1 démo en attente de votre identification",
+  "pending.titleMany": "{count} démos en attente de votre identification",
+  "pending.body":
+    "Vos matchs ont été lus. Sélectionnez votre joueur pour finaliser les statistiques ; rien n’est perdu en attendant.",
+  "pending.cta": "Identifier maintenant",
+  "pending.navLabel": "{count} actions en attente",
+  "pending.unnamed": "Démo sans nom",
+  "pending.more": "et {count} de plus",
 };

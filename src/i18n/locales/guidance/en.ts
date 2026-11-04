@@ -96,4 +96,13 @@ export const guidanceEn: Record<keyof typeof guidancePtBR, string> = {
     "You sent several reports recently. Please wait a little before sending another one.",
   "report.notFound": "We could not find this demo in your account.",
   "report.unavailable": "We could not record your report right now. Please try again in a moment.",
+
+  "pending.titleOne": "1 demo waiting for your identification",
+  "pending.titleMany": "{count} demos waiting for your identification",
+  "pending.body":
+    "Your matches were read. Select your player to finish the statistics; nothing is lost meanwhile.",
+  "pending.cta": "Identify now",
+  "pending.navLabel": "{count} pending actions",
+  "pending.unnamed": "Unnamed demo",
+  "pending.more": "and {count} more",
 };

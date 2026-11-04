@@ -315,3 +315,17 @@ export const STOPPED_GUIDANCE: ReadonlySet<GuidanceCategory> = new Set<GuidanceC
   "internal_error",
   "unknown",
 ]);
+
+/**
+ * PR5 — jobs that wait for the player to identify themselves. A pending selection never
+ * disappears: it is listed until the backend records the choice. Replaced attempts and jobs
+ * of an older parser (they are reprocessed, not identified) are not counted.
+ */
+export function pendingIdentityJobs<T extends GuidanceJob & { jobId: string }>(jobs: T[]): T[] {
+  return jobs.filter(
+    (job) =>
+      !job.supersededByJobId &&
+      job.parserCurrent !== false &&
+      classifyDemoJob(job).category === "identity_pending",
+  );
+}

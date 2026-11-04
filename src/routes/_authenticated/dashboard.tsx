@@ -7,6 +7,7 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
+import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
 import { ProScoreCard } from "@/components/panels/ProScoreCard";
@@ -63,6 +64,7 @@ function RealDashboardPage() {
           title={t("dashboard.title")}
           description={t("real.dashboard.description")}
         />
+        <PendingActionsBanner />
         <WithOverview>
           {(overview) => (
             <div className="space-y-8">

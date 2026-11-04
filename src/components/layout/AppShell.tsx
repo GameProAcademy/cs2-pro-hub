@@ -7,6 +7,7 @@ import { CoachFab } from "@/components/coach/CoachFab";
 import { RouteTransitionBar } from "@/components/common/AppLoaders";
 import { LanguageSelector } from "@/components/common/LanguageSelector";
 import { Brand } from "@/components/layout/Brand";
+import { PendingActionsBadge } from "@/components/pipeline/PendingActionsBanner";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
@@ -53,6 +54,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         <Link to={uploadNavItem.to} onClick={onNavigate}>
           <Upload className="size-4" aria-hidden />
           {t(uploadNavItem.labelKey)}
+          <PendingActionsBadge className="ml-auto" />
         </Link>
       </Button>
       <div className="flex-1 overflow-y-auto">
@@ -184,6 +186,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/upload">
               <Upload className="size-3.5" aria-hidden />
               <span className="hidden sm:inline">{t("nav.analyze")}</span>
+              <PendingActionsBadge />
             </Link>
           </Button>
         </header>
