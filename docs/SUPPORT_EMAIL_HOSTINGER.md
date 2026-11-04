@@ -81,3 +81,11 @@ idempotency. The integration counts as validated only when:
 - the card shows "Aceito e enviado pela Hostinger";
 - `email_delivery_logs` has the row `status = accepted`;
 - the message is seen in the `bug@gamepro.academy` inbox, with From `CS2 PRO Support <support@gamepro.academy>`.
+
+## Validation evidence (2026-11-04)
+
+- PR #238 (merge `2908ce62`) was published, and the admin card was shown on gamepro.network.
+- The owner pressed "Enviar e-mail de teste" once:
+  - admin audit log: `SUPPORT_EMAIL_TEST` at 05:08:29Z with `windowKey` `support_email_test:2989614`;
+  - `email_delivery_logs`: kind `support_report`, provider `hostinger`, status `accepted`, `attempt_count` 1, no error, accepted at 05:08:30Z.
+- The owner confirmed receipt in the `bug@gamepro.academy` inbox with From `CS2 PRO Support <support@gamepro.academy>`. This proves that the token's mailbox scope includes the sender and that the official endpoint and payload are accepted.
