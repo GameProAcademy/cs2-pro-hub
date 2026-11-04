@@ -101,8 +101,37 @@ Deep links: `/performance#cs2-pro-score` (score context, linked from the Dashboa
   "não disponível". When specified, it must show period and sample size.
 - **Training access / pass / subscription:** no plan, pass, checkout or entitlement exists
   in this codebase. Lessons open on hub.gamepro.academy, where access is controlled.
-- **Lesson progress:** not tracked by CS2 PRO.
-- **Player DNA, X-ray, trends, AI Coach:** no engine; `NotAvailablePanel`.
+- **Lesson progress:** out of scope by architecture (see §9), not a gap to fill.
+- **Without engine (`NotAvailablePanel`):** CS2 PRO Score, the Dashboard DNA summary,
+  X-ray (`/analysis`) and performance trends. The AI Coach (`/coach`) and the Player DNA
+  page run on real data.
+
+## 9. Boundary: CS2 PRO ↔ training platform (immutable rule)
+
+hub.gamepro.academy (WordPress + Tutor LMS) is an external, independent system. CS2 PRO
+does **not** use it to track learning. Its only role is to be the destination of links to
+lessons that CS2 PRO recommends.
+
+Flow: CS2 PRO finds a need in the player's real data (observed Player DNA dimensions,
+declared goals, maps played, the Coach message) → selects lessons from its own
+`catalog_*` tables → shows title, the reason and a contextual note written by CS2 PRO / the
+AI Coach → links to the lesson, which opens in a new tab (`rel="noopener noreferrer"`) →
+the player signs in there with their own, independent WordPress account.
+
+- **Allowed catalog data:** internal id/key, title, URL, category/track/topics, short
+  summary, locale and active flag.
+- **Forbidden:** lesson progress, completion percentage or status, learning history, any
+  Tutor LMS activity, account/user sync, shared authentication, Tutor LMS / WordPress APIs
+  or webhooks, any dependency on the WordPress database, and using any of that in the
+  Score, Player DNA, metrics, recommendations or Coach context.
+- CS2 PRO does not know, record or infer whether a lesson was opened, started, watched or
+  finished. Copy must never imply otherwise (`training.real.accessNote`).
+- The note shown with a recommendation is CS2 PRO's own explanation (`training.real.why.*`
+  on the plan, `catalogSuggestions[].reason` in the Coach), never a grade, rating or
+  progress from Tutor LMS.
+
+Enforced by `src/lib/__tests__/trainingPlatformBoundary.test.ts`. Architecture details:
+`docs/TRAINING_CATALOG.md` → "Boundary with the training platform".
 
 ## 8. Validation (Fase 1)
 

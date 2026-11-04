@@ -64,5 +64,5 @@ export const uxEs: Record<keyof typeof uxPtBR, string> = {
     "Mientras tanto, sigue las métricas medidas en tus partidas en esta página. El rating de la tabla de partidas vale solo para cada partida y no reemplaza al CS2 PRO Score.",
   "real.proScore.where": "Más información en Rendimiento",
   "training.real.accessNote":
-    "Las clases se abren en la plataforma de cursos GamePro (hub.gamepro.academy) en una nueva pestaña. El acceso a cada clase lo controla tu cuenta en esa plataforma, y tu progreso queda allí: CS2 PRO no sigue el progreso de las clases.",
+    "CS2 PRO solo recomienda clases del catálogo GamePro, elegidas a partir de tus partidas y objetivos, y muestra el enlace. La clase se abre en hub.gamepro.academy, en una pestaña nueva, con tu propio inicio de sesión en esa plataforma. CS2 PRO no recibe ninguna información de allí: no sabe si abriste, viste o terminaste una clase, y nada de eso entra en tus métricas ni en tus recomendaciones.",
 };
