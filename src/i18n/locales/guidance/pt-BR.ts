@@ -107,4 +107,20 @@ export const guidancePtBR = {
   "pending.navLabel": "{count} ações pendentes",
   "pending.unnamed": "Demo sem nome",
   "pending.more": "e mais {count}",
+
+  "adminEmail.title": "E-mail de suporte (Hostinger)",
+  "adminEmail.configured": "Configurado",
+  "adminEmail.sender": "Remetente",
+  "adminEmail.recipient": "Destinatário dos relatórios",
+  "adminEmail.senderAuthorized": "Token autoriza o remetente",
+  "adminEmail.reason": "Motivo",
+  "adminEmail.testHint":
+    "O teste envia uma única mensagem para a caixa de suporte (no máximo uma a cada 10 minutos). Aceita pela API não significa entregue: confirme o recebimento na caixa postal.",
+  "adminEmail.sendTest": "Enviar e-mail de teste",
+  "adminEmail.recheck": "Verificar de novo",
+  "adminEmail.accepted":
+    "Aceito e enviado pela Hostinger. Confirme o recebimento na caixa postal de destino.",
+  "adminEmail.notSent": "Não enviado",
+  "adminEmail.yes": "sim",
+  "adminEmail.no": "não",
 } as const;

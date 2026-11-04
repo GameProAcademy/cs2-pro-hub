@@ -16,8 +16,21 @@
 
 export type EmailProviderId = "none" | "hostinger";
 
-/** Hostinger Mail API — HTTPS, Workers-compatible. */
-export const HOSTINGER_MAIL_API_ENDPOINT = "https://api.mail.hostinger.com/v1/emails";
+/**
+ * Hostinger Mail API — HTTPS, Workers-compatible.
+ *
+ * Contract source: the official OpenAPI spec (github.com/hostinger/mail-api, openapi.json,
+ * v1.3.0) and docs.hostinger.com/emails/mail-api. Sending is mailbox-scoped:
+ *   GET  /api/v1/me                                   -> mailboxes the token may use
+ *   POST /api/v1/mailboxes/{mailboxResourceId}/send   -> 204 No Content when sent
+ * There is no `from` field: the sender IS the mailbox; `displayName` sets the From name.
+ * (The former `/v1/emails` path is not part of the official API.)
+ */
+export const HOSTINGER_MAIL_API_BASE = "https://api.mail.hostinger.com";
+export const HOSTINGER_MAIL_API_ME = `${HOSTINGER_MAIL_API_BASE}/api/v1/me`;
+export function hostingerSendEndpoint(mailboxResourceId: string): string {
+  return `${HOSTINGER_MAIL_API_BASE}/api/v1/mailboxes/${encodeURIComponent(mailboxResourceId)}/send`;
+}
 
 function env(name: string): string | null {
   const raw = process.env[name];

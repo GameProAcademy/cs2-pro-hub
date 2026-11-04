@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { SupportEmailCard } from "@/components/admin/SupportEmailCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { useI18n, useT } from "@/i18n";
@@ -71,6 +72,8 @@ function AdminOverviewPage() {
             <StatCard label={t("admin.metric.admins")} value={overview.data.admins} />
             <StatCard label={t("admin.metric.newUsers")} value={overview.data.newUsers} />
           </div>
+
+          <SupportEmailCard />
 
           <section className="rounded-lg border border-border bg-card">
             <h2 className="border-b border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">

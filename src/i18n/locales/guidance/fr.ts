@@ -109,4 +109,20 @@ export const guidanceFr: Record<keyof typeof guidancePtBR, string> = {
   "pending.navLabel": "{count} actions en attente",
   "pending.unnamed": "Démo sans nom",
   "pending.more": "et {count} de plus",
+
+  "adminEmail.title": "E-mail de support (Hostinger)",
+  "adminEmail.configured": "Configuré",
+  "adminEmail.sender": "Expéditeur",
+  "adminEmail.recipient": "Destinataire des rapports",
+  "adminEmail.senderAuthorized": "Le jeton autorise l’expéditeur",
+  "adminEmail.reason": "Motif",
+  "adminEmail.testHint":
+    "Le test envoie un seul message à la boîte de support (au plus un toutes les 10 minutes). Accepté par l’API ne signifie pas livré : confirmez la réception dans la boîte.",
+  "adminEmail.sendTest": "Envoyer un e-mail de test",
+  "adminEmail.recheck": "Vérifier à nouveau",
+  "adminEmail.accepted":
+    "Accepté et envoyé par Hostinger. Confirmez la réception dans la boîte de destination.",
+  "adminEmail.notSent": "Non envoyé",
+  "adminEmail.yes": "oui",
+  "adminEmail.no": "non",
 };
