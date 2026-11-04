@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { MetricTerm } from "@/components/common/MetricTerm";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
-import { NOT_AVAILABLE_MARK, formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { getPlayerOverview } from "@/lib/playerData.functions";
 import type {
   OverviewJob,
@@ -150,6 +150,13 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
         label={<MetricTerm id="winRate" variant="label" />}
         value={a.decided ? num((a.wins / a.decided) * 100, 0) : null}
         unit="%"
+        hint={
+          a.decided
+            ? fill(t("real.winRate.sample"), { wins: a.wins, decided: a.decided })
+            : a.resultUnresolved
+              ? fill(t("real.winRate.unresolved"), { n: a.resultUnresolved })
+              : undefined
+        }
       />
       {a.limited > 0 ? (
         <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-5">
@@ -225,11 +232,39 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
           {rows.map((row) => (
             <TableRow key={row.matchId} className="border-border">
               <TableCell className="whitespace-nowrap font-mono text-xs">
-                <time dateTime={row.playedAt}>{formatDate(row.playedAt, intlTag)}</time>
+                {row.dateSource === "processed" ? (
+                  <span className="sr-only">{t("real.date.processed")} </span>
+                ) : null}
+                <time dateTime={row.playedAt} data-date-source={row.dateSource}>
+                  {formatDate(row.playedAt, intlTag)}
+                </time>
+                {row.dateSource === "processed" ? (
+                  <span aria-hidden className="text-muted-foreground">
+                    *
+                  </span>
+                ) : null}
               </TableCell>
               <TableCell>{row.map ?? "—"}</TableCell>
               <TableCell>
-                {row.result ? t(RESULT_KEY[row.result]) : "—"}
+                {row.result ? (
+                  t(RESULT_KEY[row.result])
+                ) : (
+                  <span
+                    title={
+                      row.resultStatus === "UNRESOLVED_BY_DEMO"
+                        ? t("real.result.unresolved")
+                        : undefined
+                    }
+                    data-result-status={row.resultStatus}
+                  >
+                    <span aria-hidden>{NOT_AVAILABLE_MARK}</span>
+                    <span className="sr-only">
+                      {row.resultStatus === "UNRESOLVED_BY_DEMO"
+                        ? t("real.result.unresolved")
+                        : t("common.notAvailable")}
+                    </span>
+                  </span>
+                )}
                 {row.scorePlayer !== null && row.scoreOpponent !== null
                   ? ` ${row.scorePlayer}–${row.scoreOpponent}`
                   : ""}
@@ -256,6 +291,21 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
           ))}
         </TableBody>
       </Table>
+      <MatchTableNotes rows={rows} />
+    </div>
+  );
+}
+
+/** Footnotes that explain why a date or a result is what it is (shown only when they apply). */
+function MatchTableNotes({ rows }: { rows: OverviewMatch[] }) {
+  const t = useT();
+  const processed = rows.some((r) => r.dateSource === "processed");
+  const unresolved = rows.some((r) => r.resultStatus === "UNRESOLVED_BY_DEMO");
+  if (!processed && !unresolved) return null;
+  return (
+    <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground" data-match-notes>
+      {processed ? <p>* {t("real.date.processedNote")}</p> : null}
+      {unresolved ? <p>{t("real.result.unresolvedNote")}</p> : null}
     </div>
   );
 }

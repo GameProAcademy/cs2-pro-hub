@@ -11,6 +11,13 @@ function match(overrides: Partial<OverviewMatch>): OverviewMatch {
     matchId: "m",
     map: "de_mirage",
     playedAt: "2026-10-21T01:00:00.000Z",
+    dateSource: "processed",
+    resultStatus: "UNKNOWN",
+    utilityDamage: null,
+    clutchAttempts: null,
+    clutchWins: null,
+    ctRating: null,
+    tRating: null,
     result: null,
     scorePlayer: null,
     scoreOpponent: null,
@@ -116,7 +123,8 @@ describe("real performance page wiring", () => {
 
   it("reads the opening/trade/flash columns from the caller's own metrics", () => {
     expect(data).toMatch(
-      /METRIC_COLUMNS =\s*"[^"]*first_kills, first_deaths, trade_kills, flash_assists"/,
+      // Fase 2 appended more columns after these; the four must still be read, in order.
+      /METRIC_COLUMNS =\s*"[^"]*first_kills, first_deaths, trade_kills, flash_assists[,"]/,
     );
   });
 });

@@ -28,13 +28,22 @@ export function formatSignalValue(
   value: number | null,
   unit: string,
   yesNo: { yes: string; no: string },
+  /** BCP-47 tag for the player's locale; omitted = fixed "." decimals (AI Coach context). */
+  intlTag?: string,
 ): string {
   if (value === null || !Number.isFinite(value)) return "—";
-  if (unit === "seconds") return `${value.toFixed(0)} s`;
-  if (unit === "count") return value.toFixed(0);
+  const fixed = (v: number, digits: number) =>
+    intlTag
+      ? new Intl.NumberFormat(intlTag, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }).format(v)
+      : v.toFixed(digits);
+  if (unit === "seconds") return `${fixed(value, 0)} s`;
+  if (unit === "count") return fixed(value, 0);
   if (unit === "flag") return value >= 1 ? yesNo.yes : yesNo.no;
-  if (REFERENCE_INDEX.has(name)) return `${(value * 100).toFixed(0)} / 100`;
-  if (PLAIN_PER_ROUND.has(name)) return value.toFixed(2);
-  if (unit === "ratio" || unit === "rate") return `${(value * 100).toFixed(1)}%`;
-  return value.toFixed(2);
+  if (REFERENCE_INDEX.has(name)) return `${fixed(value * 100, 0)} / 100`;
+  if (PLAIN_PER_ROUND.has(name)) return fixed(value, 2);
+  if (unit === "ratio" || unit === "rate") return `${fixed(value * 100, 1)}%`;
+  return fixed(value, 2);
 }

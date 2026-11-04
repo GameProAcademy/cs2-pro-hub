@@ -3,6 +3,7 @@ import { catalogEs } from "./catalog/es";
 import { demoFlowEs } from "./demoFlow/es";
 import { guidanceEs } from "./guidance/es";
 import { uxEs } from "./ux/es";
+import { xrayEs } from "./xray/es";
 import { profileEs } from "./profile/es";
 
 export const es: Dictionary = {
@@ -11,6 +12,7 @@ export const es: Dictionary = {
   ...demoFlowEs,
   ...guidanceEs,
   ...uxEs,
+  ...xrayEs,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análisis de rendimiento y entrenamiento para Counter-Strike 2",

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Quote } from "lucide-react";
-import { RealCapabilityPage } from "@/components/real/RealData";
+import { RealXRayPage } from "@/components/real/RealXRay";
 import { DEMO_DATA } from "@/config/app";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -48,15 +48,7 @@ export const Route = createFileRoute("/_authenticated/analysis")({
 });
 
 function RealAnalysisPage() {
-  const t = useT();
-  return (
-    <RealCapabilityPage
-      eyebrow={t("analysis.eyebrow")}
-      title={t("analysis.title")}
-      description={t("analysis.description")}
-      reason={t("real.analysis.reason")}
-    />
-  );
+  return <RealXRayPage />;
 }
 
 function AnalysisPage() {

@@ -69,6 +69,11 @@ export interface OverviewMetricRow {
   first_deaths?: number | null;
   trade_kills?: number | null;
   flash_assists?: number | null;
+  utility_damage?: number | string | null;
+  clutch_attempts?: number | null;
+  clutch_wins?: number | null;
+  ct_rating?: number | string | null;
+  t_rating?: number | string | null;
 }
 
 export interface OverviewMatchRow {
@@ -83,10 +88,28 @@ export interface OverviewMatchRow {
   data_source: string | null;
 }
 
+/**
+ * Where the match date comes from. `played`: the match's own date (`played_at` or
+ * `match_date`). `processed`: neither exists (CS2 demos carry no wall-clock date), so the
+ * date is when CS2 PRO stored the match, and the UI must say so.
+ */
+export type MatchDateSource = "played" | "processed";
+
+/**
+ * Why a result is or is not shown. KNOWN: `result` is set. UNRESOLVED_BY_DEMO: admission
+ * contract v3 limitation L04 (the demo did not resolve teams/score), so it was persisted as
+ * null on purpose. UNKNOWN: null for any other reason.
+ */
+export type MatchResultStatus = "KNOWN" | "UNRESOLVED_BY_DEMO" | "UNKNOWN";
+
+export const RESULT_UNRESOLVED_LIMITATION = "L04-MATCH-RESULT-UNRESOLVED";
+
 export interface OverviewMatch {
   matchId: string;
   map: string | null;
   playedAt: string;
+  dateSource: MatchDateSource;
+  resultStatus: MatchResultStatus;
   result: "win" | "loss" | "draw" | null;
   scorePlayer: number | null;
   scoreOpponent: number | null;
@@ -103,6 +126,12 @@ export interface OverviewMatch {
   firstDeaths: number | null;
   tradeKills: number | null;
   flashAssists: number | null;
+  utilityDamage: number | null;
+  clutchAttempts: number | null;
+  clutchWins: number | null;
+  /** Match rating restricted to the player's CT / T rounds (same formula). */
+  ctRating: number | null;
+  tRating: number | null;
   /** Rounds the player played in this match (denominator of every per-round rate). */
   roundsPlayed: number | null;
   admission: MatchAdmission | null;
@@ -118,7 +147,10 @@ export interface OverviewAggregates {
   hsPercent: number | null;
   rating: number | null;
   wins: number;
+  /** Matches with a win or a loss: the win-rate denominator. */
   decided: number;
+  /** Matches whose result the demo did not resolve (L04): never counted as a loss. */
+  resultUnresolved: number;
   /** Matches admitted with declared limitations (admission contract v3). */
   limited: number;
 }
@@ -188,6 +220,7 @@ export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
     rating: mean(matches.map((m) => m.rating)),
     wins: matches.filter((m) => m.result === "win").length,
     decided: decided.length,
+    resultUnresolved: matches.filter((m) => m.resultStatus === "UNRESOLVED_BY_DEMO").length,
     limited: matches.filter((m) => m.admission === "LIMITED").length,
   };
 }
@@ -208,11 +241,20 @@ export function shapeMatches(
     .flatMap((row) => {
       const match = byId.get(row.match_id);
       if (!match) return [];
+      const admitted = admission.get(match.id);
+      const ownDate = match.played_at ?? match.match_date;
       return [
         {
           matchId: match.id,
           map: match.map,
-          playedAt: match.played_at ?? match.match_date ?? match.created_at,
+          playedAt: ownDate ?? match.created_at,
+          dateSource: ownDate ? ("played" as const) : ("processed" as const),
+          resultStatus:
+            match.result !== null
+              ? ("KNOWN" as const)
+              : admitted?.limitations.includes(RESULT_UNRESOLVED_LIMITATION)
+                ? ("UNRESOLVED_BY_DEMO" as const)
+                : ("UNKNOWN" as const),
           result: match.result,
           scorePlayer: match.score_player,
           scoreOpponent: match.score_opponent,
@@ -228,9 +270,14 @@ export function shapeMatches(
           firstDeaths: row.first_deaths ?? null,
           tradeKills: row.trade_kills ?? null,
           flashAssists: row.flash_assists ?? null,
+          utilityDamage: num(row.utility_damage),
+          clutchAttempts: row.clutch_attempts ?? null,
+          clutchWins: row.clutch_wins ?? null,
+          ctRating: num(row.ct_rating),
+          tRating: num(row.t_rating),
           roundsPlayed: row.rounds_played ?? null,
-          admission: admission.get(match.id)?.admission ?? null,
-          limitations: admission.get(match.id)?.limitations ?? [],
+          admission: admitted?.admission ?? null,
+          limitations: admitted?.limitations ?? [],
         },
       ];
     })
