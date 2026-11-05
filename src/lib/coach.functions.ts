@@ -37,6 +37,7 @@ import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
 import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
 import { guardCoachReply, guardTag } from "@/lib/coach/coachReplyGuard";
+import { coachSendFlow } from "@/lib/coach/coachSendFlow";
 import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
@@ -53,6 +54,8 @@ export type CoachErrorCode =
   | "COACH_RATE_LIMITED"
   | "COACH_REQUEST_IN_PROGRESS"
   | "COACH_REQUEST_ID_CONFLICT"
+  | "COACH_OUTCOME_UNKNOWN"
+  | "COACH_REQUEST_FAILED"
   | "COACH_PERSIST_FAILED"
   | CoachProviderError
   | "COACH_INTERNAL";
@@ -112,54 +115,6 @@ function view(row: {
     content: row.content,
     createdAt: row.created_at,
   };
-}
-
-/** A request id younger than this without a reply is treated as still being answered. */
-const IN_PROGRESS_MS = 90_000;
-
-type MessageRow = { id: string; role: string; content: string; created_at: string };
-
-/**
- * The stored question for a request id and, when it exists, the reply that answered it.
- * Read through the caller's client, so RLS (owns_conversation) hides anyone else's rows.
- */
-async function priorRequest(
-  db: Db,
-  requestId: string,
-): Promise<{ conversationId: string; player: MessageRow; reply: MessageRow | null } | null> {
-  const { data: player, error } = await db
-    .from("coach_messages")
-    .select("id, role, content, created_at, conversation_id")
-    .eq("id", requestId)
-    .eq("role", "player")
-    .maybeSingle();
-  if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
-  if (!player) return null;
-  const { data: reply, error: replyError } = await db
-    .from("coach_messages")
-    .select("id, role, content, created_at")
-    .eq("conversation_id", player.conversation_id)
-    .eq("context_id", requestId)
-    .eq("role", "coach")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (replyError) throw new Error(`COACH_MESSAGES_READ_FAILED:${replyError.code ?? "unknown"}`);
-  return { conversationId: player.conversation_id, player, reply: reply ?? null };
-}
-
-/**
- * Whether ANY message already uses this id. Called only when the caller's own (RLS) read found
- * nothing, so a hit means another account's message. Returns a boolean, never the row.
- */
-async function requestIdTaken(requestId: string): Promise<boolean> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { count, error } = await supabaseAdmin
-    .from("coach_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("id", requestId);
-  if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
-  return (count ?? 0) > 0;
 }
 
 async function latestConversation(db: Db, playerId: string): Promise<string | null> {
@@ -310,43 +265,9 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
       if (playerIds.length > 1) return { ok: false, error: "COACH_PLAYER_AMBIGUOUS" };
       const playerId = playerIds[0]!;
 
-      // Idempotency (Fase 3.3): a request id already answered returns the stored pair, with
-      // no new provider call and no new rows. RLS narrows the read to the caller's messages.
-      stage = "idempotency";
-      let repairOf: { conversationId: string } | null = null;
-      if (input.requestId) {
-        const prior = await priorRequest(db, input.requestId);
-        if (prior?.reply)
-          return {
-            ok: true,
-            conversationId: prior.conversationId,
-            player: view(prior.player),
-            coach: view(prior.reply),
-            replayed: true,
-          };
-        if (prior) {
-          // The question is stored but its reply is not: still running, or its reply write
-          // failed. Only an old orphan is answered again (never two generations at once).
-          if (Date.now() - Date.parse(prior.player.created_at) < IN_PROGRESS_MS)
-            return { ok: false, error: "COACH_REQUEST_IN_PROGRESS" };
-          repairOf = { conversationId: prior.conversationId };
-        } else if (await requestIdTaken(input.requestId)) {
-          // The id exists but RLS hides it: it belongs to someone else. Refuse BEFORE the
-          // rate limit and the provider, so a foreign id can never trigger a billed call.
-          console.warn("[ai-coach] foreign request id refused");
-          return { ok: false, error: "COACH_REQUEST_ID_CONFLICT" };
-        }
-      }
-
-      stage = "rate";
-      if (
-        !repairOf &&
-        (await playerMessagesLastHour(db, playerId)) >= COACH_MAX_PLAYER_MESSAGES_PER_HOUR
-      )
-        return { ok: false, error: "COACH_RATE_LIMITED" };
-
+      // The conversation must belong to the caller BEFORE anything is reserved.
       stage = "conversation";
-      let conversationId = repairOf?.conversationId ?? input.conversationId;
+      const conversationId = input.conversationId;
       if (conversationId) {
         const { data: owned, error } = await db
           .from("coach_conversations")
@@ -358,192 +279,163 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         if (!owned) return { ok: false, error: "COACH_CONVERSATION_NOT_FOUND" };
       }
 
-      stage = "context";
-      const [overview, { dna }, declared] = await Promise.all([
-        loadPlayerOverview(db, context.userId),
-        loadPlayerDna(db, context.userId),
-        loadDeclaredProfile(db, playerId),
-      ]);
-      // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
-      const sides = await loadSideRounds(
-        db,
-        [playerId],
-        overview.matches.map((m) => m.matchId),
-      );
-      const facts = buildCoachFacts(overview, dna, input.locale, {
+      // Fase 3.5: a durable, global and atomic reservation decides who may call the
+      // provider (coachSendFlow). Old clients without a request id get a fresh one.
+      stage = "reserve";
+      const requestId = input.requestId ?? crypto.randomUUID();
+      const correlationId = requestId;
+      const { serviceRpc } = await import("@/lib/coach/coachReservation.server");
+      const result = await coachSendFlow({
+        rpc: await serviceRpc(),
+        requestId,
+        userId: context.userId,
+        playerId,
+        conversationId,
         message: input.message,
-        xray: buildXRay({ overview, dna, sides }),
-        declared,
-      });
-      // Catalog: a few items relevant to THIS message (never the catalog itself). A catalog
-      // read failure only means no suggestions; the Coach still answers.
-      stage = "catalog";
-      try {
-        // DNA dimensions pick lessons only when the profile is READY (Fase 3.1).
-        const needs = coachNeeds(input.message, coachDnaReadings(dna));
-        if (needs.length) {
-          const candidates = await fetchCatalogCandidates(db, input.locale, [
-            ...new Set(needs.map((n) => n.topic)),
+        title: conversationTitle(input.message),
+        loadPair: async (playerMessageId, coachMessageId) => {
+          // Through the caller's client: RLS proves the pair is theirs.
+          const { data, error } = await db
+            .from("coach_messages")
+            .select("id, role, content, created_at")
+            .in("id", [playerMessageId, coachMessageId]);
+          if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
+          const player = data?.find((m) => m.id === playerMessageId);
+          const coach = data?.find((m) => m.id === coachMessageId);
+          return player && coach ? { player: view(player), coach: view(coach) } : null;
+        },
+        withinRateLimit: async () =>
+          (await playerMessagesLastHour(db, playerId)) < COACH_MAX_PLAYER_MESSAGES_PER_HOUR,
+        log: (event, detail) => console.info(`[ai-coach] ${event}`, detail),
+        generate: async (markProviderCalled) => {
+          stage = "context";
+          const [overview, { dna }, declared] = await Promise.all([
+            loadPlayerOverview(db, context.userId),
+            loadPlayerDna(db, context.userId),
+            loadDeclaredProfile(db, playerId),
           ]);
-          facts.catalogSuggestions = pickRecommendations(candidates, needs, input.locale, {
-            max: 3,
-            onePerNeed: true,
-          }).map((r) => ({
-            kind: r.kind,
-            title: r.title,
-            url: r.url,
-            track: r.track,
-            reason: `${r.need.topic} (${r.need.source === "message" ? "asked by the player" : `weakest DNA: ${r.need.detail}`})`,
-          }));
-        }
-      } catch (error) {
-        logFailure("catalog", error);
-      }
-      if (facts.dataState === "NO_MATCHES") return { ok: false, error: "COACH_NO_DATA" };
-      const fullHistory = conversationId
-        ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY))
-            // A repaired request must not see its own unanswered question twice.
-            .filter((m) => m.id !== input.requestId)
-            .map((m) => ({
-              role: m.role === "coach" ? ("coach" as const) : ("player" as const),
-              content: m.content,
-            }))
-        : [];
-      // Context size guard: the oldest turns go first; facts, rules and the question stay.
-      const fixedChars = contextChars(buildCoachMessages(facts, [], input.message, input.locale));
-      const { history, dropped } = fitHistory(fullHistory, fixedChars);
-      const correlationId = input.requestId ?? crypto.randomUUID();
-      if (dropped)
-        console.info("[ai-coach] history trimmed", { correlationId, dropped, fixedChars });
-
-      stage = "provider";
-      const { completeCoach, CoachProviderFailure } =
-        await import("@/lib/coach/coachProvider.server");
-      let completion;
-      try {
-        completion = await completeCoach(
-          buildCoachMessages(facts, history, input.message, input.locale),
-          {
-            maxTokens: COACH_MAX_REPLY_TOKENS,
-            correlationId,
-          },
-        );
-      } catch (error) {
-        if (error instanceof CoachProviderFailure) {
-          console.error("[ai-coach] provider failure", {
-            correlationId,
-            code: error.code,
-            status: error.status,
-            attempts: error.attempts.map((a) => `${a.provider}:${a.code ?? "ok"}`),
+          // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
+          const sides = await loadSideRounds(
+            db,
+            [playerId],
+            overview.matches.map((m) => m.matchId),
+          );
+          const facts = buildCoachFacts(overview, dna, input.locale, {
+            message: input.message,
+            xray: buildXRay({ overview, dna, sides }),
+            declared,
           });
-          return {
-            ok: false,
-            error: error.code,
-            attempts: error.attempts.map((a) => ({
-              provider: a.provider,
-              code: a.code,
-              status: a.status,
-              transport: a.transport,
-            })),
-          };
-        }
-        throw error;
-      }
+          // Catalog: a few items relevant to THIS message (never the catalog itself). A
+          // catalog read failure only means no suggestions; the Coach still answers.
+          stage = "catalog";
+          try {
+            // DNA dimensions pick lessons only when the profile is READY (Fase 3.1).
+            const needs = coachNeeds(input.message, coachDnaReadings(dna));
+            if (needs.length) {
+              const candidates = await fetchCatalogCandidates(db, input.locale, [
+                ...new Set(needs.map((n) => n.topic)),
+              ]);
+              facts.catalogSuggestions = pickRecommendations(candidates, needs, input.locale, {
+                max: 3,
+                onePerNeed: true,
+              }).map((r) => ({
+                kind: r.kind,
+                title: r.title,
+                url: r.url,
+                track: r.track,
+                reason: `${r.need.topic} (${r.need.source === "message" ? "asked by the player" : `weakest DNA: ${r.need.detail}`})`,
+              }));
+            }
+          } catch (error) {
+            logFailure("catalog", error);
+          }
+          if (facts.dataState === "NO_MATCHES")
+            return { ok: false, error: "COACH_NO_DATA", uncertain: false };
+          const fullHistory = conversationId
+            ? (await conversationMessages(db, conversationId, COACH_MAX_HISTORY)).map((m) => ({
+                role: m.role === "coach" ? ("coach" as const) : ("player" as const),
+                content: m.content,
+              }))
+            : [];
+          // Context size guard: the oldest turns go first; facts, rules and question stay.
+          const fixedChars = contextChars(
+            buildCoachMessages(facts, [], input.message, input.locale),
+          );
+          const { history, dropped } = fitHistory(fullHistory, fixedChars);
+          if (dropped)
+            console.info("[ai-coach] history trimmed", { correlationId, dropped, fixedChars });
 
-      // Persist only after the provider answered, so a failed attempt can be retried
-      // without leaving an unanswered message (and is not counted against the limit).
-      // Only links the server selected may reach the player or the history.
-      const sanitized = sanitizeReplyLinks(
-        completion.content,
-        new Set(facts.catalogSuggestions.map((s) => s.url)),
-      );
-      // Every number, comparison and source is checked against PLAYER_FACTS before the
-      // player sees it; unbacked lines are removed (coachReplyGuard).
-      const guarded = guardCoachReply(sanitized.text.trim(), facts, input.locale);
-      const content = guarded.text.trim();
-      if (Object.values(guarded.removed).some((n) => n > 0))
-        console.info("[ai-coach] reply guarded", { correlationId, ...guarded.removed });
-      // Never fall back to the unsanitized text: an empty result is an empty reply.
-      if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY" };
-      stage = "persist";
-      let createdConversation = false;
-      if (!conversationId) {
-        const { data: created, error } = await db
-          .from("coach_conversations")
-          .insert({ player_id: playerId, title: conversationTitle(input.message) })
-          .select("id")
-          .single();
-        if (error || !created)
-          throw new Error(`COACH_CONVERSATION_CREATE_FAILED:${error?.code ?? "unknown"}`);
-        conversationId = created.id;
-        createdConversation = true;
-      }
-      let playerRow: { id: string; role: string; content: string; created_at: string };
-      if (repairOf && input.requestId) {
-        const prior = await priorRequest(db, input.requestId);
-        if (!prior) throw new Error("COACH_PLAYER_MESSAGE_FAILED:repair");
-        playerRow = prior.player;
-      } else {
-        const { data: inserted, error: playerError } = await db
-          .from("coach_messages")
-          .insert({
-            ...(input.requestId ? { id: input.requestId } : {}),
-            conversation_id: conversationId,
-            role: "player",
-            content: input.message,
-          })
-          .select("id, role, content, created_at")
-          .single();
-        if (playerError?.code === "23505" && input.requestId) {
-          // A concurrent send with the same request id won the race: never a second pair.
-          if (createdConversation)
-            await db.from("coach_conversations").delete().eq("id", conversationId);
-          const prior = await priorRequest(db, input.requestId);
-          if (prior?.reply)
+          stage = "provider";
+          const { completeCoach, CoachProviderFailure, outcomeUncertain } =
+            await import("@/lib/coach/coachProvider.server");
+          let completion;
+          try {
+            markProviderCalled();
+            completion = await completeCoach(
+              buildCoachMessages(facts, history, input.message, input.locale),
+              { maxTokens: COACH_MAX_REPLY_TOKENS, correlationId },
+            );
+          } catch (error) {
+            if (!(error instanceof CoachProviderFailure)) throw error;
+            console.error("[ai-coach] provider failure", {
+              correlationId,
+              code: error.code,
+              status: error.status,
+              attempts: error.attempts.map((a) => `${a.provider}:${a.code ?? "ok"}`),
+            });
             return {
-              ok: true,
-              conversationId: prior.conversationId,
-              player: view(prior.player),
-              coach: view(prior.reply),
-              replayed: true,
+              ok: false,
+              error: error.code,
+              uncertain: outcomeUncertain(error),
+              attempts: error.attempts.map((a) => ({
+                provider: a.provider,
+                code: a.code,
+                status: a.status,
+                transport: a.transport,
+              })),
             };
-          return { ok: false, error: "COACH_REQUEST_IN_PROGRESS" };
-        }
-        if (playerError || !inserted)
-          throw new Error(`COACH_PLAYER_MESSAGE_FAILED:${playerError?.code ?? "unknown"}`);
-        playerRow = inserted;
-      }
+          }
 
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: coachRow, error: coachError } = await supabaseAdmin
-        .from("coach_messages")
-        .insert({
-          conversation_id: conversationId,
-          role: "coach",
-          content,
-          // Links the reply to the request it answers (idempotency); null for old clients.
-          context_id: input.requestId,
-          // Provenance of the reply (no content, no key): who answered, why a fallback
-          // answered, the data state it was grounded on, tokens and provider-reported cost.
-          context_type:
-            `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}|${guardTag(guarded.removed)}`.slice(
-              0,
-              255,
-            ),
-        })
-        .select("id, role, content, created_at")
-        .single();
-      if (coachError || !coachRow)
-        throw new Error(`COACH_REPLY_WRITE_FAILED:${coachError?.code ?? "unknown"}`);
-      await db
-        .from("coach_conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
-
-      return { ok: true, conversationId, player: view(playerRow), coach: view(coachRow) };
+          // Only links the server selected may reach the player or the history.
+          const sanitized = sanitizeReplyLinks(
+            completion.content,
+            new Set(facts.catalogSuggestions.map((s) => s.url)),
+          );
+          // Every number, comparison and source is checked against PLAYER_FACTS before the
+          // player sees it; unbacked lines are removed (coachReplyGuard).
+          const guarded = guardCoachReply(sanitized.text.trim(), facts, input.locale);
+          const content = guarded.text.trim();
+          if (Object.values(guarded.removed).some((n) => n > 0))
+            console.info("[ai-coach] reply guarded", { correlationId, ...guarded.removed });
+          // Never fall back to the unsanitized text: an empty result is an empty reply.
+          if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY", uncertain: false };
+          stage = "persist";
+          return {
+            ok: true,
+            content,
+            // Provenance of the reply (no content, no key): who answered, why a fallback
+            // answered, the data state it was grounded on, tokens and provider-reported cost.
+            contextType:
+              `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}|${guardTag(guarded.removed)}`.slice(
+                0,
+                255,
+              ),
+            provider: completion.provider,
+            model: completion.model,
+          };
+        },
+      });
+      if (!result.ok) return result as CoachSendResult;
+      return {
+        ok: true,
+        conversationId: result.conversationId,
+        player: result.player as CoachMessageView,
+        coach: result.coach as CoachMessageView,
+        ...(result.replayed ? { replayed: true } : {}),
+      };
     } catch (error) {
       logFailure(stage, error);
-      return { ok: false, error: stage === "persist" ? "COACH_PERSIST_FAILED" : "COACH_INTERNAL" };
+      return { ok: false, error: "COACH_INTERNAL" };
     }
   });
 

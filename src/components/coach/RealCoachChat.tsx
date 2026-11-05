@@ -12,6 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
 import { COACH_STATE_KEY, coachErrorKey } from "@/components/coach/coachErrors";
+
+const FRESH_ID_AFTER = new Set<string>([
+  "COACH_OUTCOME_UNKNOWN",
+  "COACH_REQUEST_ID_CONFLICT",
+  "COACH_REQUEST_FAILED",
+]);
 import {
   ConversationMenu,
   COACH_CONVERSATIONS_KEY,
@@ -282,6 +288,10 @@ export function RealCoachChat({ className }: { className?: string | undefined })
         setSelected(undefined);
         void queryClient.invalidateQueries({ queryKey: COACH_CONVERSATIONS_KEY });
       } else {
+        // Fase 3.5: when the outcome is uncertain or the id can no longer be used, the next
+        // send is a NEW request (a deliberate retry); otherwise the same id is reused so a
+        // reply that was generated but not received is replayed instead of billed again.
+        if (FRESH_ID_AFTER.has(result.error)) requestRef.current = null;
         setError(result.error); // the draft is kept so the player can retry
       }
     } catch {

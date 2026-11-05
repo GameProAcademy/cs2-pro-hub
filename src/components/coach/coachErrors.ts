@@ -33,7 +33,10 @@ export function coachErrorKey(code: CoachErrorCode): TranslationKey {
     case "COACH_REQUEST_IN_PROGRESS":
       return "coach2.error.inProgress";
     case "COACH_REQUEST_ID_CONFLICT":
+    case "COACH_REQUEST_FAILED":
       return "coach2.error.invalidResponse";
+    case "COACH_OUTCOME_UNKNOWN":
+      return "coach2.error.outcomeUnknown";
     case "COACH_PERSIST_FAILED":
       return "coach2.error.persist";
     case "COACH_PROVIDER_INVALID_RESPONSE":

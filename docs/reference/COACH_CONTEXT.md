@@ -131,10 +131,54 @@ reply is stored or shown. Deterministic, no second model call:
 - When anything is removed, the reply ends with a one-line notice, the server logs the
   counts, and the provenance row carries `guard=stats.comparisons.sources.flashWording`.
 
-## Foreign request ids (Fase 3 closeout)
+## Durable idempotency (Fase 3.5)
 
-When the caller's own (RLS) read finds no message for a `requestId`, the server checks with a
-head-only count whether the id exists at all. If it does, it belongs to another account and the
-request is refused with `COACH_REQUEST_ID_CONFLICT` before the rate limit and before the
-provider: a foreign id can no longer trigger a billed call. The count returns a boolean, never
-the row.
+Replaces the Fase 3.3 / closeout mechanism (request id as the question's id, checked with a
+SELECT, plus a head-only count for foreign ids), which still let two concurrent sends both
+reach the provider before the unique constraint decided.
+
+- **Table** `coach_request_reservations` (migration `20261105100000`): one row per request
+  id, global. RLS on, no policy for `anon`/`authenticated`, grants only to `service_role`.
+- **RPCs** (SECURITY INVOKER, `search_path = ''`, EXECUTE only for `service_role`; the server
+  passes the user and player it derived from the session):
+  - `coach_claim_request` — `INSERT … ON CONFLICT DO NOTHING` elects the single owner of a
+    new id; an existing id is locked `FOR UPDATE` before any decision. Outcomes:
+    `ACQUIRED` (only this one may call the provider), `REPLAY`, `IN_PROGRESS`, `CONFLICT`
+    (another account, another conversation or another question — no other column returned),
+    `OUTCOME_UNKNOWN`, `PERSIST_TAKEOVER`, `FAILED_FINAL`, `NOT_OWNER`.
+  - `coach_complete_request` — question (`id = request_id`) + reply (`context_id =
+request_id`) + `COMPLETED` in ONE transaction, fenced by the lease token.
+  - `coach_fail_request` — `FAILED` (no usable billed reply: a retry with the same id may take
+    over, at most 5 attempts) or `OUTCOME_UNKNOWN`.
+  - `coach_persist_pending` — the provider answered, the guarded reply is kept; the next
+    retry persists it without generating again.
+- **Leases and fencing:** lease 120 s (provider timeout 45 s + one bounded retry). Each
+  takeover issues a new token; complete/fail/persist require the current token, so an
+  executor that lost its lease cannot write. An expired `PROCESSING` lease is NOT taken over:
+  it becomes `OUTCOME_UNKNOWN` (the provider may have been called). The original holder
+  arriving late may still complete it (nobody else generated).
+- **Uncertain outcomes** (`outcomeUncertain`): our timeout, or a connection lost after the
+  request was sent. Never retried automatically; the chat shows `coach2.error.outcomeUnknown`
+  and the next send uses a NEW request id (a deliberate retry by the player).
+- **Order:** auth → player → conversation ownership → claim → rate limit → context →
+  provider → links → reply guard → complete. Old clients without a request id get one from
+  the server.
+- **Proof:** `scripts/coach-reservation-harness.py` applies the migration to a disposable
+  PostgreSQL and runs the scenarios with independent sessions (28 checks, including two
+  mutations that must break: non-atomic claim, no fencing);
+  `coachReservations.integration.test.ts` runs it in CI; `coachIdempotency35.test.ts` counts
+  provider calls through the orchestration.
+
+### Runbook — reconciliation
+
+- `OUTCOME_UNKNOWN`: nothing to do automatically. The player was told the outcome is unknown
+  and may ask again (new id). To inspect: `SELECT request_id, last_error_code, attempt_count,
+updated_at FROM coach_request_reservations WHERE status = 'OUTCOME_UNKNOWN' ORDER BY
+updated_at DESC LIMIT 50;` and correlate `request_id` with the `[ai-coach]` logs
+  (`correlationId`). Provider-side billing can be matched in the OpenRouter activity log.
+- `PERSIST_PENDING`: the next retry by the player persists the kept reply. Rows older than
+  24 h whose player never returned can be closed with
+  `UPDATE coach_request_reservations SET status = 'OUTCOME_UNKNOWN', pending_reply = NULL,
+last_error_code = 'PENDING_EXPIRED' WHERE status = 'PERSIST_PENDING' AND updated_at <
+now() - interval '24 hours';` (the reply text is not kept indefinitely).
+- `PROCESSING` with an expired lease turns into `OUTCOME_UNKNOWN` on the next claim of that id.

@@ -50,5 +50,7 @@ export const coach2PtBR = {
   "coach2.error.inProgress":
     "Esta pergunta ainda está sendo respondida. Aguarde alguns segundos e tente de novo.",
   "coach2.error.persist": "A resposta foi gerada, mas não pôde ser salva. Tente de novo.",
+  "coach2.error.outcomeUnknown":
+    "Não foi possível confirmar se o Coach chegou a responder. Para evitar cobrança dupla, não repetimos automaticamente: envie a pergunta de novo quando quiser.",
   "coach2.error.invalidResponse": "O Coach devolveu uma resposta inválida. Tente de novo.",
 } as const;

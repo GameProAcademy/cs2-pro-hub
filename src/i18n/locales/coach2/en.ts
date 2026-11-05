@@ -49,5 +49,7 @@ export const coach2En: Record<keyof typeof coach2PtBR, string> = {
   "coach2.error.inProgress":
     "This question is still being answered. Wait a few seconds and try again.",
   "coach2.error.persist": "The answer was generated but could not be saved. Try again.",
+  "coach2.error.outcomeUnknown":
+    "We couldn't confirm whether the Coach answered. To avoid a double charge we don't retry automatically: send the question again whenever you like.",
   "coach2.error.invalidResponse": "The Coach returned an invalid answer. Try again.",
 };

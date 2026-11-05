@@ -200,6 +200,24 @@ export function statusCode(status: number, errorText = ""): CoachProviderError {
 const CONNECT_CODES =
   /\b(EAI_AGAIN|ECONNREFUSED|ECONNRESET|UND_ERR_CONNECT_TIMEOUT|UND_ERR_SOCKET|ENETUNREACH|EHOSTUNREACH)\b/;
 
+/**
+ * Fase 3.5 — pure: could the provider have generated (and billed) a completion for this
+ * failure? True for our own timeout and for a connection lost AFTER the request was sent;
+ * false when the provider answered with a status (it told us the outcome) or when the
+ * connection was never established. An uncertain outcome is NEVER retried automatically.
+ */
+export function outcomeUncertain(failure: CoachProviderFailure): boolean {
+  if (failure.code === "COACH_PROVIDER_TIMEOUT") return true;
+  // A failure with attempts carries the transport of the LAST attempt that ran.
+  const last = failure.attempts.at(-1);
+  const status = last ? last.status : failure.status;
+  const transport = last ? last.transport : failure.transport;
+  if (transport === "TIMEOUT") return true;
+  if (status !== null) return false;
+  if (failure.code === "COACH_PROVIDER_NOT_CONFIGURED") return false;
+  return !CONNECT_CODES.test(transport ?? "");
+}
+
 /** Pure: may this failure be retried once without risking a duplicated, billed completion? */
 export function isTransient(failure: CoachProviderFailure): boolean {
   if (failure.code === "COACH_PROVIDER_RATE_LIMITED") return true;
