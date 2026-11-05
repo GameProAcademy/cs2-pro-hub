@@ -488,20 +488,15 @@ describe("AI Coach server wiring", () => {
     expect(src.match(/middleware\(\[requireSupabaseAuth\]\)/g)).toHaveLength(2);
     expect(src).toMatch(/ownPlayerIds\(db, context\.userId, "COACH"\)/);
     expect(src).toMatch(/\.eq\("player_id", playerId\)\s*\.maybeSingle\(\)/);
-    // The only service-role WRITE (the coach reply) comes after the ownership check.
-    // (Fase 3 closeout, intentional: requestIdTaken reads a COUNT with the service role
-    // earlier in the file; it returns a boolean, never a row — see coachCloseout.test.ts.)
-    const adminWrite = src.search(/supabaseAdmin\s*\.from\("coach_messages"\)\s*\.insert\(/);
-    expect(adminWrite).toBeGreaterThan(0);
-    expect(src.indexOf('COACH_CONVERSATION_NOT_FOUND" }')).toBeLessThan(adminWrite);
-    // Every other service-role use is a head-only count.
-    const adminUses = [
-      ...src.matchAll(/await supabaseAdmin\s*\.from\("coach_messages"\)\s*\.(\w+)\(/g),
-    ];
-    expect(adminUses.map((m) => m[1])).toEqual(["select", "insert"]);
-    expect(src).toMatch(
-      /supabaseAdmin\s*\.from\("coach_messages"\)\s*\.select\("id", \{ count: "exact", head: true \}\)/,
-    );
+    // Fase 3.5 (intentional): every service-role write now goes through the reservation
+    // RPCs (coachSendFlow → coach_claim/complete_request). The intent is unchanged and
+    // stricter: nothing is reserved or written before the conversation ownership check,
+    // and the file itself never writes coach_messages with the service role.
+    const reserve = src.indexOf("coachSendFlow({");
+    expect(reserve).toBeGreaterThan(0);
+    expect(src.indexOf('COACH_CONVERSATION_NOT_FOUND" }')).toBeLessThan(reserve);
+    expect(src).not.toMatch(/supabaseAdmin\s*\.from\("coach_messages"\)/);
+    expect(src).toMatch(/userId: context\.userId,\s*playerId,/);
     expect(src).not.toMatch(/console\.\w+\([^)]*(input\.message|completion\.content|facts)/);
   });
   it("no fixed or demo reply exists in the real chat", () => {

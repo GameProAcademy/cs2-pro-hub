@@ -50,5 +50,7 @@ export const coach2Fr: Record<keyof typeof coach2PtBR, string> = {
   "coach2.error.inProgress":
     "Cette question est encore en cours de réponse. Attendez quelques secondes puis réessayez.",
   "coach2.error.persist": "La réponse a été générée mais n’a pas pu être enregistrée. Réessayez.",
+  "coach2.error.outcomeUnknown":
+    "Nous n'avons pas pu confirmer si le Coach a répondu. Pour éviter une double facturation, nous ne réessayons pas automatiquement : renvoyez la question quand vous voulez.",
   "coach2.error.invalidResponse": "Le Coach a renvoyé une réponse invalide. Réessayez.",
 };

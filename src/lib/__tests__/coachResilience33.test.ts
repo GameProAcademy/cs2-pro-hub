@@ -302,22 +302,34 @@ describe("idempotency of sends", () => {
     expect(validateCoachInput(base)).toMatchObject({ requestId: null });
   });
 
+  // Fase 3.5 (intentional): replay, storage under the request id and the reply's back
+  // reference are now guaranteed by the reservation RPCs. The same properties are asserted
+  // on the new mechanism here, behaviourally in coachIdempotency35.test.ts and against real
+  // PostgreSQL in scripts/coach-reservation-harness.py.
+  const sql = readFileSync(
+    resolve("supabase/migrations/20261105100000_coach_request_reservations.sql"),
+    "utf8",
+  );
+  const flow = readFileSync(resolve("src/lib/coach/coachSendFlow.ts"), "utf8");
+
   it("an answered request id is replayed BEFORE the rate limit and the provider", () => {
-    const replay = src.indexOf("replayed: true");
+    const replay = flow.indexOf('case "REPLAY"');
     expect(replay).toBeGreaterThan(0);
-    expect(replay).toBeLessThan(src.indexOf('stage = "rate"'));
-    expect(replay).toBeLessThan(src.indexOf("await completeCoach("));
+    expect(replay).toBeLessThan(flow.indexOf("await d.withinRateLimit()"));
+    expect(replay).toBeLessThan(flow.indexOf("d.generate("));
   });
 
   it("the question is stored under the request id and the reply points back to it", () => {
-    expect(src).toMatch(/\.\.\.\(input\.requestId \? \{ id: input\.requestId \} : \{\}\)/);
-    expect(src).toContain("context_id: input.requestId");
-    // A concurrent duplicate (unique violation) returns the stored pair or IN_PROGRESS.
-    expect(src).toMatch(/playerError\?\.code === "23505" && input\.requestId/);
-    expect(src).toContain('error: "COACH_REQUEST_IN_PROGRESS"');
-    // The lookup uses the caller's client (RLS), never the service role.
-    const prior = src.slice(src.indexOf("async function priorRequest"));
-    expect(prior.slice(0, prior.indexOf("\n}\n"))).not.toContain("supabaseAdmin");
+    expect(sql).toMatch(
+      /INSERT INTO public\.coach_messages \(id, conversation_id, role, content\)\s*VALUES \(p_request_id, v_conversation, 'player', p_question\)/,
+    );
+    expect(sql).toMatch(
+      /INSERT INTO public\.coach_messages \(conversation_id, role, content, context_type, context_id\)\s*VALUES \(v_conversation, 'coach', p_reply, left\(p_context_type, 255\), p_request_id\)/,
+    );
+    // A concurrent duplicate never reaches the provider: the claim decides the single owner.
+    expect(sql).toContain("ON CONFLICT (request_id) DO NOTHING");
+    expect(sql).toContain("FOR UPDATE");
+    expect(flow).toContain('error: "COACH_REQUEST_IN_PROGRESS"');
   });
 
   it("the chat reuses the request id when the same question is retried", () => {
@@ -327,7 +339,10 @@ describe("idempotency of sends", () => {
   });
 
   it("a persistence failure has its own code (the provider answered)", () => {
-    expect(src).toContain('stage === "persist" ? "COACH_PERSIST_FAILED" : "COACH_INTERNAL"');
+    // Fase 3.5 (intentional): the code is produced by the flow, which also keeps the reply
+    // (PERSIST_PENDING) so the retry persists it without a new generation.
+    expect(flow).toContain('error: lost ? "COACH_REQUEST_IN_PROGRESS" : "COACH_PERSIST_FAILED"');
+    expect(flow).toMatch(/: await persistPending\(d\.rpc,/);
   });
 });
 

@@ -51,5 +51,7 @@ export const coach2Es: Record<keyof typeof coach2PtBR, string> = {
   "coach2.error.inProgress":
     "Esta pregunta todavía se está respondiendo. Espera unos segundos e inténtalo de nuevo.",
   "coach2.error.persist": "La respuesta se generó, pero no se pudo guardar. Inténtalo de nuevo.",
+  "coach2.error.outcomeUnknown":
+    "No pudimos confirmar si el Coach llegó a responder. Para evitar un cobro doble no reintentamos automáticamente: envía la pregunta de nuevo cuando quieras.",
   "coach2.error.invalidResponse": "El Coach devolvió una respuesta no válida. Inténtalo de nuevo.",
 };

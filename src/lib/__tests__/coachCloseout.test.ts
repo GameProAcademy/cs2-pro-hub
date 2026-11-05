@@ -283,19 +283,27 @@ describe("2. reply guard: statistics, comparisons and sources", () => {
 describe("3. idempotency never bills a foreign request id", () => {
   const src = read("src/lib/coach.functions.ts");
 
+  // Fase 3.5 (intentional): the head-only existence count was replaced by the atomic,
+  // global reservation. The guarantees are the same and stronger (no SELECT-then-INSERT
+  // window): a foreign id is a CONFLICT before the rate limit and the provider, and the
+  // CONFLICT carries no column about the other account.
+  const sql = read("supabase/migrations/20261105100000_coach_request_reservations.sql");
+  const flow = read("src/lib/coach/coachSendFlow.ts");
+
   it("a request id invisible to the caller but taken is refused before rate limit and provider", () => {
-    const refuse = src.indexOf('error: "COACH_REQUEST_ID_CONFLICT"');
+    const refuse = flow.indexOf('error: "COACH_REQUEST_ID_CONFLICT"');
     expect(refuse).toBeGreaterThan(0);
-    expect(refuse).toBeLessThan(src.indexOf('stage = "rate"'));
-    expect(refuse).toBeLessThan(src.indexOf("await completeCoach("));
-    expect(src).toMatch(/\} else if \(await requestIdTaken\(input\.requestId\)\) \{/);
+    expect(refuse).toBeLessThan(flow.indexOf("await d.withinRateLimit()"));
+    expect(refuse).toBeLessThan(flow.indexOf("d.generate("));
+    expect(sql).toMatch(/IF r\.user_id <> p_user_id OR r\.player_id <> p_player_id/);
   });
 
   it("the existence check returns a count only, never the foreign row", () => {
-    const fn = src.slice(src.indexOf("async function requestIdTaken"));
-    const body = fn.slice(0, fn.indexOf("\n}\n"));
-    expect(body).toContain('{ count: "exact", head: true }');
-    expect(body).not.toMatch(/content|conversation_id/);
+    // Every CONFLICT row in the claim is NULL apart from the outcome.
+    const conflicts = [...sql.matchAll(/SELECT 'CONFLICT'::text,([^;]*);/g)].map((m) => m[1]!);
+    expect(conflicts.length).toBeGreaterThan(0);
+    for (const rest of conflicts) expect(rest.replace(/NULL::\w+|\s|,/g, "")).toBe("");
+    expect(src).not.toMatch(/supabaseAdmin\s*\.from\("coach_messages"\)/);
   });
 
   it("the refusal has a user-facing message", () => {
