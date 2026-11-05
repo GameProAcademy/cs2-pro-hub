@@ -24,6 +24,17 @@ export const coach2Es: Record<keyof typeof coach2PtBR, string> = {
   "coach2.prefs.diff.CONSISTENCY": "Consistencia",
   "coach2.prefs.diff.MINDSET": "Mentalidad",
   "coach2.prefs.maps": "Mapas de interés",
+  "coach2.prefs.name": "Cómo prefieres que te llame el Coach",
+  "coach2.prefs.namePlaceholder": "Ej.: Alex",
+  "coach2.prefs.nameHint":
+    "El entrenador usa este nombre de vez en cuando, sin exagerar. Nunca usamos tu correo.",
+  "coach2.prefs.nameInvalid":
+    "Usa solo un nombre (hasta 32 caracteres, sin correo, enlaces ni números largos).",
+  "coach2.persona.identity": "Entrenador CS2 PRO",
+  "coach2.persona.greeting": "¿Entrenamos?",
+  "coach2.persona.greetingNamed": "¿Entrenamos, {name}?",
+  "coach2.persona.intro":
+    "Soy tu entrenador: leo tus partidas procesadas y te digo qué entrenar primero.",
   "coach2.prefs.profileNote":
     "Objetivo, nivel y rol están en tu perfil, y el Coach también los usa.",
   "coach2.prefs.openProfile": "Editar en el perfil",

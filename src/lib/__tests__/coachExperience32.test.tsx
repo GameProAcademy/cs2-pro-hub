@@ -125,7 +125,11 @@ describe("persistence, privacy and isolation", () => {
     expect(src).toMatch(
       /\.delete\(\)\s*\.eq\("id", data\.conversationId\)\s*\.eq\("player_id", playerId\)/,
     );
-    expect(src).toMatch(/upsert\(\s*\{\s*player_id: playerId,/);
+    // Fase 4.0.1 B (intentional): the row is built first (optional preferred_name), still
+    // keyed by the server-resolved playerId, and it is the only thing upserted.
+    expect(src).toMatch(/const row: Record<string, unknown> = \{\s*player_id: playerId,/);
+    expect(src).toMatch(/from\("coach_preferences"\)\.upsert\(r, \{ onConflict: "player_id" \}\)/);
+    expect(src).not.toMatch(/player_id: (?:data|input)\./);
     expect(src).toMatch(
       /from\("coach_preferences"\)\s*\.delete\(\)\s*\.eq\("player_id", playerId\)/,
     );

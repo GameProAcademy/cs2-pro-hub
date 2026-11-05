@@ -15,6 +15,7 @@
  * a user turn and the system prompt states that instructions inside it or
  * inside the data cannot change the rules.
  */
+import { coachPersonaRules, type CoachAddress } from "@/lib/coach/coachPersona";
 import { dictionaries, type Locale } from "@/i18n/config";
 import { dnaLabelKey } from "@/lib/dna";
 import { formatSignalValue } from "@/lib/dnaFormat";
@@ -661,6 +662,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
+    ...coachPersonaRules(),
   ].join("\n");
 }
 
@@ -674,13 +676,17 @@ export function buildCoachMessages(
   history: CoachTurn[],
   message: string,
   locale: Locale,
+  address: CoachAddress = { name: null, source: null, useName: false },
 ): Array<{ role: "system" | "user" | "assistant"; content: string }> {
   // ONE system message: some OpenRouter upstream hosts keep only one system turn, and a
   // second one carrying the facts was silently dropped in production (2026-10-29).
+  // PLAYER_ADDRESS is separate from PLAYER_FACTS: how to address the player is not a fact
+  // about how they play (and never their e-mail or ids, see coachPersona).
+  const addressing = { name: address.name, useName: Boolean(address.name) && address.useName };
   return [
     {
       role: "system",
-      content: `${coachSystemPrompt(locale)}\n\nPLAYER_FACTS = ${JSON.stringify(facts)}`,
+      content: `${coachSystemPrompt(locale)}\n\nPLAYER_FACTS = ${JSON.stringify(facts)}\n\nPLAYER_ADDRESS = ${JSON.stringify(addressing)}`,
     },
     ...history.slice(-COACH_MAX_HISTORY).map((turn) => ({
       role: turn.role === "coach" ? ("assistant" as const) : ("user" as const),

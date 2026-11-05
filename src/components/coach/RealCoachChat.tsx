@@ -314,9 +314,15 @@ export function RealCoachChat({ className }: { className?: string | undefined })
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-        <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
-          {t("real.aicoach.disclaimer")}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            <Bot className="size-3.5 text-primary" aria-hidden />
+            {t("coach2.persona.identity")}
+          </p>
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {t("real.aicoach.disclaimer")}
+          </p>
+        </div>
         <div className="flex flex-wrap items-center gap-1">
           <ConversationMenu
             activeId={conversationId}
@@ -368,8 +374,12 @@ export function RealCoachChat({ className }: { className?: string | undefined })
         {!loadingOther && !otherFailed && messages.length === 0 && pending === null ? (
           <div className="space-y-6">
             <EmptyState
-              title={t("real.aicoach.emptyTitle")}
-              description={t("real.aicoach.emptyDescription")}
+              title={
+                data.playerName
+                  ? t("coach2.persona.greetingNamed").replace("{name}", data.playerName)
+                  : t("coach2.persona.greeting")
+              }
+              description={`${t("coach2.persona.intro")} ${t("real.aicoach.emptyDescription")}`}
               icon={<Sparkles className="size-5" aria-hidden />}
             />
             {showOnboarding ? (

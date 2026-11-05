@@ -36,6 +36,13 @@ import {
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
 import { coachNeeds, pickRecommendations, sanitizeReplyLinks } from "@/lib/catalog/catalogSelect";
+import {
+  enforceNameUse,
+  resolveCoachName,
+  shouldUseName,
+  stripChatbotPhrases,
+  type CoachAddress,
+} from "@/lib/coach/coachPersona";
 import { guardCoachReply, guardTag } from "@/lib/coach/coachReplyGuard";
 import { coachSendFlow } from "@/lib/coach/coachSendFlow";
 import { buildXRay } from "@/lib/diagnostics/xray";
@@ -73,6 +80,8 @@ export interface CoachState {
   conversationId: string | null;
   messages: CoachMessageView[];
   remainingThisHour: number;
+  /** How the Coach greets the player (resolved server-side; never an e-mail or id). */
+  playerName?: string | null;
 }
 
 export type CoachSendResult =
@@ -137,6 +146,46 @@ async function conversationMessages(db: Db, conversationId: string, limit: numbe
     .limit(limit);
   if (error) throw new Error(`COACH_MESSAGES_READ_FAILED:${error.code ?? "unknown"}`);
   return (data ?? []).reverse();
+}
+
+/**
+ * How the Coach addresses the caller (RLS: own rows only). The e-mail is read only to make
+ * sure a display name that IS the e-mail (or its local part) is never used; it never reaches
+ * the model. Any failed read means "no name" and the Coach says "you".
+ */
+async function loadCoachAddress(
+  db: Db,
+  userId: string,
+  playerId: string,
+  conversationId: string | null,
+  preferred: string | null,
+): Promise<CoachAddress> {
+  try {
+    const [player, account, replies] = await Promise.all([
+      db.from("player_profiles").select("nickname").eq("id", playerId).maybeSingle(),
+      db.from("profiles").select("nickname, display_name, email").eq("id", userId).maybeSingle(),
+      conversationId
+        ? db
+            .from("coach_messages")
+            .select("id", { count: "exact", head: true })
+            .eq("conversation_id", conversationId)
+            .eq("role", "coach")
+        : Promise.resolve({ count: 0, error: null }),
+    ]);
+    const { name, source } = resolveCoachName({
+      preferred,
+      playerNickname: player.error ? null : (player.data?.nickname ?? null),
+      accountNickname: account.error ? null : (account.data?.nickname ?? null),
+      displayName: account.error ? null : (account.data?.display_name ?? null),
+      email: account.error ? null : (account.data?.email ?? null),
+    });
+    // Unknown reply count → do not use the name (never "every message").
+    const useName = replies.error ? false : shouldUseName(replies.count ?? 0);
+    return { name, source, useName };
+  } catch (error) {
+    logFailure("address", error);
+    return { name: null, source: null, useName: false };
+  }
 }
 
 /** Player messages the caller sent in the last hour, across their own conversations. */
@@ -228,10 +277,14 @@ export const getCoachState = createServerFn({ method: "GET" })
       };
     }
     const playerId = playerIds[0]!;
-    const [{ dna }, conversationId, used] = await Promise.all([
+    const [{ dna }, conversationId, used, address] = await Promise.all([
       loadPlayerDna(db, context.userId),
       latestConversation(db, playerId),
       playerMessagesLastHour(db, playerId),
+      loadCoachPreferences(db, playerId)
+        .then((p) => p.preferredName ?? null)
+        .catch(() => null)
+        .then((preferred) => loadCoachAddress(db, context.userId, playerId, null, preferred)),
     ]);
     const messages = conversationId
       ? await conversationMessages(db, conversationId, MAX_MESSAGES_SHOWN)
@@ -247,6 +300,7 @@ export const getCoachState = createServerFn({ method: "GET" })
       conversationId,
       messages: messages.map(view),
       remainingThisHour: Math.max(0, COACH_MAX_PLAYER_MESSAGES_PER_HOUR - used),
+      playerName: address.name,
     };
   });
 
@@ -309,11 +363,21 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         log: (event, detail) => console.info(`[ai-coach] ${event}`, detail),
         generate: async (markProviderCalled) => {
           stage = "context";
-          const [overview, { dna }, declared] = await Promise.all([
+          const [overview, { dna }, declared, preferredName] = await Promise.all([
             loadPlayerOverview(db, context.userId),
             loadPlayerDna(db, context.userId),
             loadDeclaredProfile(db, playerId),
+            loadCoachPreferences(db, playerId)
+              .then((p) => p.preferredName ?? null)
+              .catch(() => null),
           ]);
+          const address = await loadCoachAddress(
+            db,
+            context.userId,
+            playerId,
+            conversationId,
+            preferredName,
+          );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const sides = await loadSideRounds(
             db,
@@ -359,7 +423,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             : [];
           // Context size guard: the oldest turns go first; facts, rules and question stay.
           const fixedChars = contextChars(
-            buildCoachMessages(facts, [], input.message, input.locale),
+            buildCoachMessages(facts, [], input.message, input.locale, address),
           );
           const { history, dropped } = fitHistory(fullHistory, fixedChars);
           if (dropped)
@@ -372,7 +436,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           try {
             markProviderCalled();
             completion = await completeCoach(
-              buildCoachMessages(facts, history, input.message, input.locale),
+              buildCoachMessages(facts, history, input.message, input.locale, address),
               { maxTokens: COACH_MAX_REPLY_TOKENS, correlationId },
             );
           } catch (error) {
@@ -403,10 +467,21 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           );
           // Every number, comparison and source is checked against PLAYER_FACTS before the
           // player sees it; unbacked lines are removed (coachReplyGuard).
-          const guarded = guardCoachReply(sanitized.text.trim(), facts, input.locale);
-          const content = guarded.text.trim();
+          const guarded = guardCoachReply(sanitized.text.trim(), facts, input.locale, {
+            playerName: address.name,
+          });
+          // Trainer voice: chatbot filler out; the name only where the server allowed it.
+          const persona = stripChatbotPhrases(guarded.text.trim(), input.locale);
+          const named = enforceNameUse(persona.text, address);
+          const content = named.text.trim();
           if (Object.values(guarded.removed).some((n) => n > 0))
             console.info("[ai-coach] reply guarded", { correlationId, ...guarded.removed });
+          if (persona.removed || named.removed)
+            console.info("[ai-coach] persona", {
+              correlationId,
+              filler: persona.removed,
+              name: named.removed,
+            });
           // Never fall back to the unsanitized text: an empty result is an empty reply.
           if (!content) return { ok: false, error: "COACH_PROVIDER_EMPTY", uncertain: false };
           stage = "persist";
@@ -416,7 +491,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             // Provenance of the reply (no content, no key): who answered, why a fallback
             // answered, the data state it was grounded on, tokens and provider-reported cost.
             contextType:
-              `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}|${guardTag(guarded.removed)}`.slice(
+              `${coachProvenance(completion, facts)}|catalog=${facts.catalogSuggestions.length}|links_removed=${sanitized.removed}|${guardTag(guarded.removed)}|name=${address.source ?? "none"}:${address.useName ? 1 : 0}|filler=${persona.removed}`.slice(
                 0,
                 255,
               ),

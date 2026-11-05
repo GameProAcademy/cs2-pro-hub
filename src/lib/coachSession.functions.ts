@@ -13,6 +13,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import type { CoachMessageView } from "@/lib/coach.functions";
+import { COACH_NAME_MAX, sanitizeCoachName } from "@/lib/coach/coachPersona";
 import { ownPlayerIds } from "@/lib/playerData.functions";
 
 type Db = SupabaseClient<Database>;
@@ -68,6 +69,10 @@ export interface CoachPreferences {
   saved: boolean;
   mainDifficulty: CoachDifficulty | null;
   maps: string[];
+  /** How the player wants the Coach to call them (optional; null = not set). */
+  preferredName?: string | null;
+  /** False while the preferred_name column is not in the database yet (field hidden). */
+  nameAvailable?: boolean;
 }
 
 async function onePlayer(db: Db, userId: string): Promise<string | null> {
@@ -84,9 +89,14 @@ export function conversationIdFrom(input: unknown): string | null {
 }
 
 /** Pure: validates preferences from the client against the allowed codes. */
-export function preferencesFrom(
-  input: unknown,
-): { ok: true; mainDifficulty: CoachDifficulty | null; maps: string[] } | { ok: false } {
+export function preferencesFrom(input: unknown):
+  | {
+      ok: true;
+      mainDifficulty: CoachDifficulty | null;
+      maps: string[];
+      preferredName?: string | null;
+    }
+  | { ok: false } {
   const v = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
   const d = v["mainDifficulty"];
   if (d !== null && d !== undefined && !(COACH_DIFFICULTY_CODES as readonly unknown[]).includes(d))
@@ -94,12 +104,27 @@ export function preferencesFrom(
   const maps = v["maps"] ?? [];
   if (!Array.isArray(maps) || maps.length > COACH_MAP_CODES.length) return { ok: false };
   if (!maps.every((m) => (COACH_MAP_CODES as readonly unknown[]).includes(m))) return { ok: false };
+  // Preferred name: absent = keep what is stored; "" or null = clear; anything else must be a
+  // safe name (no e-mail, link, id or markup), or the whole request is invalid.
+  const rawName = v["preferredName"];
+  let preferredName: string | null | undefined;
+  if (rawName === undefined) preferredName = undefined;
+  else if (rawName === null || (typeof rawName === "string" && rawName.trim() === ""))
+    preferredName = null;
+  else if (typeof rawName === "string" && rawName.length <= COACH_NAME_MAX * 2) {
+    preferredName = sanitizeCoachName(rawName);
+    if (!preferredName) return { ok: false };
+  } else return { ok: false };
   return {
     ok: true,
     mainDifficulty: (d ?? null) as CoachDifficulty | null,
     maps: [...new Set(maps as string[])].sort(),
+    ...(preferredName === undefined ? {} : { preferredName }),
   };
 }
+
+/** 42703 / PGRST204: the preferred_name column is not in the database yet. */
+const missingColumn = (code: string | undefined) => code === "42703" || code === "PGRST204";
 
 export const listCoachConversations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -172,20 +197,41 @@ export const deleteCoachConversation = createServerFn({ method: "POST" })
 
 /** The caller's preferences (none saved → `saved: false`, nothing invented). */
 export async function loadCoachPreferences(db: Db, playerId: string): Promise<CoachPreferences> {
-  const { data, error } = await (db as unknown as AnyDb)
-    .from("coach_preferences")
-    .select("main_difficulty, maps")
-    .eq("player_id", playerId)
-    .maybeSingle();
+  const read = (columns: string) =>
+    (db as unknown as AnyDb)
+      .from("coach_preferences")
+      .select(columns)
+      .eq("player_id", playerId)
+      .maybeSingle();
+  let nameAvailable = true;
+  let { data, error } = await read("main_difficulty, maps, preferred_name");
+  if (error && missingColumn(error.code)) {
+    nameAvailable = false;
+    ({ data, error } = await read("main_difficulty, maps"));
+  }
   // 42P01 / PGRST205: the table does not exist yet (migration not applied): unavailable.
   if (error && (error.code === "42P01" || error.code === "PGRST205"))
     return { available: false, saved: false, mainDifficulty: null, maps: [] };
   if (error) throw new Error(`COACH_PREFERENCES_READ_FAILED:${error.code ?? "unknown"}`);
-  if (!data) return { available: true, saved: false, mainDifficulty: null, maps: [] };
-  const row = data as { main_difficulty: string | null; maps: string[] | null };
+  if (!data)
+    return {
+      available: true,
+      saved: false,
+      mainDifficulty: null,
+      maps: [],
+      preferredName: null,
+      nameAvailable,
+    };
+  const row = data as unknown as {
+    main_difficulty: string | null;
+    maps: string[] | null;
+    preferred_name?: string | null;
+  };
   return {
     available: true,
     saved: true,
+    preferredName: sanitizeCoachName(row.preferred_name ?? null),
+    nameAvailable,
     mainDifficulty: (COACH_DIFFICULTY_CODES as readonly string[]).includes(
       row.main_difficulty ?? "",
     )
@@ -211,15 +257,21 @@ export const saveCoachPreferences = createServerFn({ method: "POST" })
     const playerId = await onePlayer(db, context.userId);
     const none = { available: false, saved: false, mainDifficulty: null, maps: [] };
     if (!playerId || !data.ok) return { ok: false, preferences: none };
-    const { error } = await (db as unknown as AnyDb).from("coach_preferences").upsert(
-      {
-        player_id: playerId,
-        main_difficulty: data.mainDifficulty,
-        maps: data.maps,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "player_id" },
-    );
+    const row: Record<string, unknown> = {
+      player_id: playerId,
+      main_difficulty: data.mainDifficulty,
+      maps: data.maps,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.preferredName !== undefined) row["preferred_name"] = data.preferredName;
+    const upsert = (r: Record<string, unknown>) =>
+      (db as unknown as AnyDb).from("coach_preferences").upsert(r, { onConflict: "player_id" });
+    let { error } = await upsert(row);
+    // Column not migrated yet: the other preferences are still saved (the name field is hidden).
+    if (error && missingColumn(error.code) && "preferred_name" in row) {
+      delete row["preferred_name"];
+      ({ error } = await upsert(row));
+    }
     if (error) throw new Error(`COACH_PREFERENCES_WRITE_FAILED:${error.code ?? "unknown"}`);
     return { ok: true, preferences: await loadCoachPreferences(db, playerId) };
   });

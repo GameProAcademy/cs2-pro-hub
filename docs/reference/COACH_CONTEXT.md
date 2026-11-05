@@ -202,3 +202,40 @@ updated_at DESC LIMIT 50;` and correlate `request_id` with the `[ai-coach]` logs
 last_error_code = 'PENDING_EXPIRED' WHERE status = 'PERSIST_PENDING' AND updated_at <
 now() - interval '24 hours';` (the reply text is not kept indefinitely).
 - `PROCESSING` with an expired lease turns into `OUTCOME_UNKNOWN` on the next claim of that id.
+
+## Trainer voice and addressing (Fase 4.0.1 B)
+
+The Coach talks like the player's CS2 trainer. Every data rule, the reply guard, the
+contracts and the provider (OpenRouter `openai/gpt-oss-20b`, no fallback) are unchanged.
+
+- **Name** (`src/lib/coach/coachPersona.ts`, resolved on the server under RLS):
+  1. `coach_preferences.preferred_name` (optional field in "Personalize"; column added by
+     `20261106110000_coach_preferred_name.sql`, CHECK mirrors `sanitizeCoachName`);
+  2. `player_profiles.nickname`;
+  3. `profiles.nickname`;
+  4. `profiles.display_name`;
+  5. none → the Coach says "you".
+
+  An e-mail, the local part of the account's e-mail, a UUID, a Steam id (long digit runs), a
+  link or markup is never used. The e-mail is read only to exclude it and never reaches the
+  model.
+
+- **When:** the server decides `useName`: true on the first reply of a conversation, then
+  every 4th reply (`COACH_NAME_EVERY`). An unknown count means false. The model receives
+  `PLAYER_ADDRESS = {"name", "useName"}` next to (not inside) `PLAYER_FACTS`. When the name is
+  not allowed, a leading vocative ("Thiago, …") is removed (`enforceNameUse`).
+- **Voice:** rule 20 (direct, specific, second person, encouraging only when the data
+  supports it, never flattering; never "an AI / language model / assistant"). After the guard,
+  `stripChatbotPhrases` removes generic openers and closers per locale ("Ótima pergunta",
+  "Espero ter ajudado", "As an AI", …). Headings, tables and substance are untouched.
+- **Guard:** the player's name is masked before the number check, so a nickname with digits is
+  never taken for an unbacked statistic.
+- **UI:**
+  - the reply label is "Resposta do Treinador" / "Coach's Response" / "Respuesta del
+    Entrenador" / "Réponse de l’entraîneur";
+  - the chat header shows the identity ("Treinador CS2 PRO");
+  - the empty state greets the player by name when one is known.
+- **Provenance:** `context_type` gains `name=<source>:<0|1>|filler=<n>`, with the source
+  category only and never the name.
+- Tests: `coachHumanization.test.tsx` (24, plus 4 mutants), and `phase401-harness.py` name
+  checks with 1 SQL mutant.
