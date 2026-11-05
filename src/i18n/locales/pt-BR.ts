@@ -1056,7 +1056,7 @@ export const ptBR = {
     "Amostra pequena: com menos de 3 partidas o coach evita conclusões fortes sobre tendências.",
   "real.aicoach.remaining": "{n} mensagem(ns) restante(s) nesta hora",
   "real.aicoach.newConversation": "Nova conversa",
-  "real.aicoach.aiLabel": "Resposta da IA",
+  "real.aicoach.aiLabel": "Resposta do Treinador",
   "real.aicoach.retry": "Tentar novamente",
   "real.aicoach.error.rateLimited":
     "Você atingiu o limite de mensagens desta hora. Tente novamente mais tarde.",

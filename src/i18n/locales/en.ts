@@ -1032,7 +1032,7 @@ export const en: Dictionary = {
     "Small sample: with fewer than 3 matches the coach avoids strong conclusions about tendencies.",
   "real.aicoach.remaining": "{n} message(s) left this hour",
   "real.aicoach.newConversation": "New conversation",
-  "real.aicoach.aiLabel": "AI answer",
+  "real.aicoach.aiLabel": "Coach's Response",
   "real.aicoach.retry": "Try again",
   "real.aicoach.error.rateLimited":
     "You reached this hour's message limit. Please try again later.",

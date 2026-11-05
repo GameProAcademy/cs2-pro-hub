@@ -190,7 +190,11 @@ export function PreferencesForm({
   const t = useT();
   const [difficulty, setDifficulty] = useState<string>(initial.mainDifficulty ?? "");
   const [maps, setMaps] = useState<string[]>(initial.maps);
-  const [status, setStatus] = useState<"idle" | "busy" | "saved" | "removed" | "error">("idle");
+  const [name, setName] = useState<string>(initial.preferredName ?? "");
+  const nameAvailable = initial.nameAvailable === true;
+  const [status, setStatus] = useState<
+    "idle" | "busy" | "saved" | "removed" | "error" | "invalidName"
+  >("idle");
   const toggle = (code: string) =>
     setMaps((m) => (m.includes(code) ? m.filter((x) => x !== code) : [...m, code]));
   return (
@@ -208,6 +212,24 @@ export function PreferencesForm({
           <X className="size-4" aria-hidden />
         </Button>
       </div>
+      {nameAvailable ? (
+        <label className="block text-xs font-medium text-foreground">
+          {t("coach2.prefs.name")}
+          <input
+            type="text"
+            className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+            value={name}
+            maxLength={32}
+            autoComplete="nickname"
+            placeholder={t("coach2.prefs.namePlaceholder")}
+            aria-describedby="coach-name-hint"
+            onChange={(e) => setName(e.target.value)}
+          />
+          <span id="coach-name-hint" className="mt-1 block font-normal text-muted-foreground">
+            {status === "invalidName" ? t("coach2.prefs.nameInvalid") : t("coach2.prefs.nameHint")}
+          </span>
+        </label>
+      ) : null}
       <label className="block text-xs font-medium text-foreground">
         {t("coach2.prefs.difficulty")}
         <select
@@ -258,10 +280,20 @@ export function PreferencesForm({
             setStatus("busy");
             try {
               const r = await saveCoachPreferences({
-                data: { mainDifficulty: difficulty || null, maps },
+                data: {
+                  mainDifficulty: difficulty || null,
+                  maps,
+                  ...(nameAvailable ? { preferredName: name.trim() || null } : {}),
+                },
               });
-              if (!r.ok) throw new Error("invalid");
+              if (!r.ok) {
+                // The only client-reachable invalid input is the free-text name.
+                setStatus(nameAvailable && name.trim() ? "invalidName" : "error");
+                return;
+              }
               onSaved(r.preferences);
+              // Show the name as stored (the server removes markup and extra spaces).
+              if (nameAvailable) setName(r.preferences.preferredName ?? "");
               setStatus("saved");
             } catch {
               setStatus("error");
@@ -281,7 +313,15 @@ export function PreferencesForm({
                 await deleteCoachPreferences();
                 setDifficulty("");
                 setMaps([]);
-                onSaved({ available: true, saved: false, mainDifficulty: null, maps: [] });
+                setName("");
+                onSaved({
+                  available: true,
+                  saved: false,
+                  mainDifficulty: null,
+                  maps: [],
+                  preferredName: null,
+                  nameAvailable,
+                });
                 setStatus("removed");
               } catch {
                 setStatus("error");

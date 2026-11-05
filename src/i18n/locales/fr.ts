@@ -1055,7 +1055,7 @@ export const fr: Dictionary = {
     "Échantillon réduit : avec moins de 3 matchs, le coach évite les conclusions fortes sur les tendances.",
   "real.aicoach.remaining": "{n} message(s) restant(s) cette heure-ci",
   "real.aicoach.newConversation": "Nouvelle conversation",
-  "real.aicoach.aiLabel": "Réponse de l’IA",
+  "real.aicoach.aiLabel": "Réponse de l’entraîneur",
   "real.aicoach.retry": "Réessayer",
   "real.aicoach.error.rateLimited":
     "Vous avez atteint la limite de messages de cette heure. Réessayez plus tard.",

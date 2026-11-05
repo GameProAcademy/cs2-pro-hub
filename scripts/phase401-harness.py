@@ -22,6 +22,8 @@ import uuid
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BASE_MIGRATION = ROOT / "supabase/migrations/20261105120000_notifications_goals.sql"
 MIGRATION = pathlib.Path(os.environ.get("PHASE401_MIGRATION") or ROOT / "supabase/migrations/20261106100000_phase401_retention_flash.sql")
+PREFS_MIGRATION = ROOT / "supabase/migrations/20261104150000_coach_preferences.sql"
+NAME_MIGRATION = pathlib.Path(os.environ.get("PHASE401_NAME_MIGRATION") or ROOT / "supabase/migrations/20261106110000_coach_preferred_name.sql")
 
 SCHEMA = r"""
 CREATE ROLE anon NOLOGIN;
@@ -199,6 +201,28 @@ def main() -> None:
         checks["anon_denied_provenance"] = rc != 0
         q(f"DELETE FROM public.matches WHERE id = '{m1}';")
         checks["provenance_cascades_with_match"] = q(f"SELECT count(*) FROM public.match_flash_assist_provenance WHERE match_id = '{m1}';") == "0"
+
+        # ------------------------------------------------------------- Coach preferred name
+        psql(PREFS_MIGRATION.read_text())
+        q(f"INSERT INTO public.coach_preferences (player_id) VALUES ('{pa}'),('{pb}');")
+        checks["name_migration_applies_on_existing_rows"] = psql(NAME_MIGRATION.read_text(), check=False)[0] == 0
+        checks["name_migration_reapplies"] = psql(NAME_MIGRATION.read_text(), check=False)[0] == 0
+        checks["existing_rows_untouched"] = q("SELECT count(*) FROM public.coach_preferences WHERE preferred_name IS NULL;") == "2"
+
+        def set_name(user: str, player: str, value: str) -> int:
+            lit = "NULL" if value is None else "'" + value.replace("'", "''") + "'"
+            return as_auth(user, f"UPDATE public.coach_preferences SET preferred_name = {lit} WHERE player_id = '{player}';")[0]
+
+        checks["accepts_plain_names"] = all(set_name(ua, pa, n) == 0 for n in ("Thiago", "João Pedro", "s1mple", "Zoë"))
+        bad = ["thiago@msn.com", "<b>x</b>", "**Thiago**", " Thiago", "x" * 33, "76561198000000001",
+               "https://evil.example", "a\nb", "", "na_me"]
+        checks["rejects_email_markup_ids_links"] = all(set_name(ua, pa, n) != 0 for n in bad)
+        checks["clear_name"] = set_name(ua, pa, None) == 0
+        set_name(ua, pa, "Thiago")
+        set_name(ua, pb, "Hacker")
+        checks["name_own_only"] = q(f"SELECT coalesce(preferred_name, 'null') FROM public.coach_preferences WHERE player_id = '{pb}';") == "null"
+        rc, out, _ = as_auth(ub, f"SELECT count(*) FROM public.coach_preferences WHERE player_id = '{pa}';")
+        checks["name_not_readable_by_others"] = rc == 0 and out == "0"
 
         result = {"database": "disposable-local-postgresql", "independentConnections": True, "checks": checks,
                   "failures": sorted(k for k, v in checks.items() if not v)}

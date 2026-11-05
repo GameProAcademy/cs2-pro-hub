@@ -13,9 +13,11 @@ const MIGRATION = "supabase/migrations/20261106100000_phase401_retention_flash.s
 
 type HarnessResult = { checks: Record<string, boolean>; failures: string[]; teardown: boolean };
 
-function runHarness(migrationOverride?: string): HarnessResult {
+const NAME_MIGRATION = "supabase/migrations/20261106110000_coach_preferred_name.sql";
+
+function runHarness(migrationOverride?: string, variable = "PHASE401_MIGRATION"): HarnessResult {
   const env: Record<string, string | undefined> = { PATH: process.env["PATH"], HOME: "/tmp" };
-  if (migrationOverride) env["PHASE401_MIGRATION"] = migrationOverride;
+  if (migrationOverride) env[variable] = migrationOverride;
   const output = execFileSync("python3", ["scripts/phase401-harness.py"], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -25,16 +27,18 @@ function runHarness(migrationOverride?: string): HarnessResult {
   return JSON.parse(output.trim()) as HarnessResult;
 }
 
-function mutant(from: string | RegExp, to: string): HarnessResult {
-  const source = readFileSync(MIGRATION, "utf8");
+function mutant(from: string | RegExp, to: string, file = MIGRATION): HarnessResult {
+  const source = readFileSync(file, "utf8");
   const mutated = source.replace(from, to);
   expect(mutated).not.toBe(source);
   const dir = mkdtempSync(join(tmpdir(), "phase401-mutant-"));
-  const file = join(dir, "mutant.sql");
-  writeFileSync(file, mutated, { mode: 0o644 });
+  writeFileSync(join(dir, "mutant.sql"), mutated, { mode: 0o644 });
   execFileSync("chmod", ["755", dir]);
   try {
-    return runHarness(file);
+    return runHarness(
+      join(dir, "mutant.sql"),
+      file === MIGRATION ? "PHASE401_MIGRATION" : "PHASE401_NAME_MIGRATION",
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -44,7 +48,7 @@ describe("Fase 4.0.1 against disposable PostgreSQL", () => {
   it("retention is bounded, exclusive, recorded and recoverable; provenance is consistent and private", () => {
     const result = runHarness();
     expect(result.failures).toEqual([]);
-    expect(Object.keys(result.checks).length).toBeGreaterThanOrEqual(24);
+    expect(Object.keys(result.checks).length).toBeGreaterThanOrEqual(32);
     expect(result.teardown).toBe(true);
   }, 200_000);
 
@@ -74,10 +78,17 @@ describe("Fase 4.0.1 against disposable PostgreSQL", () => {
       "GRANT EXECUTE ON FUNCTION public.notification_retention_run(integer, integer) TO service_role, authenticated;",
       "retention_service_role_only",
     ],
+    [
+      "preferred name accepts e-mails",
+      "preferred_name !~ '[@<>*_`#|\\\\{}\\[\\]]'",
+      "preferred_name !~ '[<>*_`#|\\\\{}\\[\\]]'",
+      "rejects_email_markup_ids_links",
+      NAME_MIGRATION,
+    ],
   ])(
     "mutant '%s' is caught",
-    (_name, from, to, expectedFailure) => {
-      const result = mutant(from, to);
+    (_name, from, to, expectedFailure, file?: string) => {
+      const result = mutant(from, to, file);
       expect(result.failures).toContain(expectedFailure);
     },
     200_000,

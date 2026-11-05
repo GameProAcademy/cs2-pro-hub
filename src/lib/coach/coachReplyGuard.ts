@@ -157,7 +157,7 @@ const URL = /https?:\/\/\S+/g;
 const SOURCE =
   /\b[a-z][A-Za-z0-9_]{2,}(?:\[[^\]\s]*\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\s]*\])?)+/g;
 
-function numbersIn(text: string): Array<{ value: number; decimals: number; raw: string }> {
+function numbersInText(text: string): Array<{ value: number; decimals: number; raw: string }> {
   const clean = text.replace(URL, " ").replace(DATE_LIKE, " ");
   return [...clean.matchAll(NUMBER)].map((m) => {
     const raw = m[0];
@@ -218,8 +218,13 @@ export function guardCoachReply(
   content: string,
   facts: CoachFacts,
   locale: Locale,
+  options: { playerName?: string | null } = {},
 ): ReplyGuardResult {
   const names = SECTION_NAMES[locale];
+  // The player's own name may contain digits ("thiago1010"): it is not a statistic.
+  const playerName = options.playerName?.trim();
+  const numbersIn = (text: string) =>
+    numbersInText(playerName ? text.split(playerName).join(" ") : text);
   const numbers = factNumbers(facts);
   const sources = new Set([...factSources(facts)].map(normalizePath));
   const removed = { stats: 0, comparisons: 0, sources: 0, flashWording: 0 };
