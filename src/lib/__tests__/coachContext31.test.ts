@@ -255,7 +255,10 @@ describe("3.1.2 flash assists and unproven metrics", () => {
       provenance: "GAME_FLAG_OR_TIMED_ATTRIBUTION",
     });
     expect(fa.note).toContain("timed attribution");
-    expect(fa.note).toContain("never as 'the game recorded'");
+    // Fase 3.5 B (intentional): the note separates count, unstored method, zero and
+    // the unmeasured "enemies flashed" instead of quoting an English phrase.
+    expect(fa.note).toContain("a count of 0 means no kill was credited as flash-assisted");
+    expect(fa.note).toContain("the METHOD used for each match is not stored");
     expect(fa.note).toContain("never as proof that the player does not flash for teammates");
     expect(facts.matches.every((x) => x.enemiesFlashed === null)).toBe(true);
     expect(facts.notAvailable.find((n) => n.startsWith("enemies flashed"))).toContain(

@@ -33,12 +33,47 @@ const SECTION_NAMES: Record<Locale, [string, string, string]> = {
   fr: ["Données", "Interprétation", "Recommandation"],
 };
 
-const NOTICE: Record<Locale, string> = {
-  "pt-BR": "_Trechos sem base nos seus dados foram removidos desta resposta._",
-  "pt-PT": "_Foram removidos desta resposta trechos sem base nos seus dados._",
-  en: "_Parts of this answer that were not backed by your data were removed._",
-  es: "_Se eliminaron partes de esta respuesta que no estaban respaldadas por tus datos._",
-  fr: "_Des passages non étayés par vos données ont été retirés de cette réponse._",
+/**
+ * What the player is told when something was removed — one sentence per kind, in the reply's
+ * language, saying WHY (own observed data only, no unverified outside averages) without
+ * exposing the guard's rules or the removed text.
+ */
+export const NOTICE: Record<Locale, { comparisons: string; stats: string; sources: string }> = {
+  "pt-BR": {
+    comparisons:
+      "Removemos uma comparação com outros jogadores ou com médias externas: o Coach usa apenas dados observados nas suas próprias partidas e não usa médias externas não verificadas.",
+    stats:
+      "Removemos números que não constam nos seus dados processados, para que cada valor mostrado venha das suas partidas.",
+    sources: "Fontes que não correspondem aos seus dados aparecem como “—”.",
+  },
+  "pt-PT": {
+    comparisons:
+      "Removemos uma comparação com outros jogadores ou com médias externas: o Coach usa apenas dados observados nas suas próprias partidas e não usa médias externas não verificadas.",
+    stats:
+      "Removemos números que não constam nos seus dados processados, para que cada valor apresentado venha das suas partidas.",
+    sources: "As fontes que não correspondem aos seus dados aparecem como “—”.",
+  },
+  en: {
+    comparisons:
+      "We removed a comparison with other players or outside averages: the Coach only uses data observed in your own matches and does not use unverified outside averages.",
+    stats:
+      "We removed numbers that are not in your processed data, so every value shown comes from your matches.",
+    sources: "Sources that do not match your data are shown as “—”.",
+  },
+  es: {
+    comparisons:
+      "Eliminamos una comparación con otros jugadores o con promedios externos: el Coach solo usa datos observados en tus propias partidas y no usa promedios externos no verificados.",
+    stats:
+      "Eliminamos números que no están en tus datos procesados, para que cada valor mostrado venga de tus partidas.",
+    sources: "Las fuentes que no corresponden a tus datos aparecen como “—”.",
+  },
+  fr: {
+    comparisons:
+      "Nous avons retiré une comparaison avec d'autres joueurs ou des moyennes externes : le Coach n'utilise que les données observées dans vos propres matchs et aucune moyenne externe non vérifiée.",
+    stats:
+      "Nous avons retiré des chiffres absents de vos données traitées, afin que chaque valeur affichée provienne de vos matchs.",
+    sources: "Les sources qui ne correspondent pas à vos données apparaissent sous la forme « — ».",
+  },
 };
 
 /** Benchmark comparisons: the facts hold no data about other players or any average. */
@@ -73,11 +108,11 @@ const BENCHMARK = [
 ];
 
 const FLASH_WORDING: Record<Locale, [RegExp, string]> = {
-  "pt-BR": [/\bo jogo registrou\b/gi, "o CS2 PRO contou"],
-  "pt-PT": [/\bo jogo registou\b|\bo jogo registrou\b/gi, "o CS2 PRO contou"],
+  "pt-BR": [/\bo jogo registrou\b|\bCS2 PRO counted\b/gi, "o CS2 PRO contou"],
+  "pt-PT": [/\bo jogo regist(?:ou|rou)\b|\bCS2 PRO counted\b/gi, "o CS2 PRO contou"],
   en: [/\bthe game recorded\b/gi, "CS2 PRO counted"],
-  es: [/\bel juego registr[óo]\b/gi, "CS2 PRO contó"],
-  fr: [/\ble jeu a enregistr[ée]\b/gi, "CS2 PRO a compté"],
+  es: [/\bel juego registr[óo]\b|\bCS2 PRO counted\b/gi, "CS2 PRO contó"],
+  fr: [/\ble jeu a enregistr[ée]\b|\bCS2 PRO counted\b/gi, "CS2 PRO a compté"],
 };
 
 /** Every number in PLAYER_FACTS (recursively), plus fixed scale constants. */
@@ -286,8 +321,10 @@ export function guardCoachReply(
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-  if (removed.stats + removed.comparisons + removed.sources > 0)
-    result = `${result}\n\n${NOTICE[locale]}`;
+  const notice = (["comparisons", "stats", "sources"] as const)
+    .filter((k) => removed[k] > 0)
+    .map((k) => NOTICE[locale][k]);
+  if (notice.length) result = `${result}\n\n_${notice.join(" ")}_`;
   return { text: result, removed };
 }
 
