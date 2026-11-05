@@ -11,6 +11,7 @@ import { PendingActionsBadge } from "@/components/pipeline/PendingActionsBanner"
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
+import { NotificationBell } from "@/components/notifications/NotificationComponents";
 import { navItems, uploadNavItem } from "@/config/navigation";
 import { useT } from "@/i18n";
 import { useAdminSession } from "@/hooks/useAdminSession";
@@ -181,6 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {t("nav.demoMode")}
             </span>
           ) : null}
+          {DEMO_DATA ? null : <NotificationBell />}
           <LanguageSelector compact />
           <Button asChild size="sm" variant="outline" className="gap-2">
             <Link to="/upload">

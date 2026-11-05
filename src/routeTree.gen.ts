@@ -19,7 +19,9 @@ import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedClientParserPocRouteImport } from './routes/_authenticated/client-parser-poc'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
 import { Route as AuthenticatedPlayerDnaRouteImport } from './routes/_authenticated/player-dna'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -97,11 +99,22 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMatchesRoute = AuthenticatedMatchesRouteImport.update({
   id: '/matches',
   path: '/matches',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerformanceRoute =
   AuthenticatedPerformanceRouteImport.update({
     id: '/performance',
@@ -261,7 +274,9 @@ export interface FileRoutesByFullPath {
   '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/matches': typeof AuthenticatedMatchesRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -298,7 +313,9 @@ export interface FileRoutesByTo {
   '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/matches': typeof AuthenticatedMatchesRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -338,7 +355,9 @@ export interface FileRoutesById {
   '/_authenticated/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
   '/_authenticated/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -378,7 +397,9 @@ export interface FileRouteTypes {
     | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
+    | '/goals'
     | '/matches'
+    | '/notifications'
     | '/performance'
     | '/player-dna'
     | '/profile'
@@ -415,7 +436,9 @@ export interface FileRouteTypes {
     | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
+    | '/goals'
     | '/matches'
+    | '/notifications'
     | '/performance'
     | '/player-dna'
     | '/profile'
@@ -454,7 +477,9 @@ export interface FileRouteTypes {
     | '/_authenticated/client-parser-poc'
     | '/_authenticated/coach'
     | '/_authenticated/dashboard'
+    | '/_authenticated/goals'
     | '/_authenticated/matches'
+    | '/_authenticated/notifications'
     | '/_authenticated/performance'
     | '/_authenticated/player-dna'
     | '/_authenticated/profile'
@@ -576,11 +601,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/goals': {
+      id: '/_authenticated/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof AuthenticatedGoalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/matches': {
       id: '/_authenticated/matches'
       path: '/matches'
       fullPath: '/matches'
       preLoaderRoute: typeof AuthenticatedMatchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/performance': {
@@ -802,7 +841,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientParserPocRoute: typeof AuthenticatedClientParserPocRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
   AuthenticatedPlayerDnaRoute: typeof AuthenticatedPlayerDnaRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -816,7 +857,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientParserPocRoute: AuthenticatedClientParserPocRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
   AuthenticatedPlayerDnaRoute: AuthenticatedPlayerDnaRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,

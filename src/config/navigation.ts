@@ -1,6 +1,7 @@
 import {
   Bot,
   Dna,
+  Flag,
   Gauge,
   LayoutDashboard,
   ListOrdered,
@@ -28,6 +29,7 @@ export const navItems: NavItem[] = [
   { labelKey: "nav.playerDna", to: "/player-dna", icon: Dna },
   { labelKey: "nav.analysis", to: "/analysis", icon: Stethoscope, primary: true },
   { labelKey: "nav.training", to: "/training", icon: Target, primary: true },
+  { labelKey: "nav.goals", to: "/goals", icon: Flag },
   { labelKey: "nav.coach", to: "/coach", icon: Bot, primary: true },
   { labelKey: "nav.profile", to: "/profile", icon: User },
 ];
