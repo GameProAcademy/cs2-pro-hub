@@ -23,6 +23,7 @@ import {
   type Goal,
   type GoalMetric,
   type GoalProgress,
+  type ConnectionRow,
   type JobRow,
   type MatchPoint,
   type NotificationCategory,
@@ -259,7 +260,7 @@ export const syncNotifications = createServerFn({ method: "POST" })
     const playerId = onePlayer(await ownPlayerIds(db, context.userId, "COACH"));
     if (!playerId) return { ok: true as const, accepted: 0 };
     const since = new Date(Date.now() - NOTIFICATION_LOOKBACK_DAYS * 86_400_000).toISOString();
-    const [{ data: jobs, error }, overview, goals] = await Promise.all([
+    const [{ data: jobs, error }, overview, goals, connections] = await Promise.all([
       db
         .from("demo_jobs")
         .select(
@@ -272,6 +273,14 @@ export const syncNotifications = createServerFn({ method: "POST" })
         .limit(40),
       loadPlayerOverview(db, context.userId),
       loadGoals(db as AnyDb, playerId),
+      // Steam links of the caller's own player (RLS connections_select_own_or_admin), narrowed
+      // to that player explicitly because RLS also lets staff read others.
+      db
+        .from("player_connections")
+        .select("id, source, status, connected_at, disconnected_at")
+        .eq("player_id", playerId)
+        .eq("source", "steam")
+        .limit(20),
     ]);
     if (error) throw new Error(`NOTIFY_JOBS_READ_FAILED:${error.code ?? "unknown"}`);
     const events = buildNotificationEvents({
@@ -279,6 +288,7 @@ export const syncNotifications = createServerFn({ method: "POST" })
       jobs: (jobs ?? []) as JobRow[],
       matches: matchPoints(overview),
       goals: goals.goals,
+      connections: (connections.data ?? []) as ConnectionRow[],
     });
     if (!events.length) return { ok: true as const, accepted: 0 };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

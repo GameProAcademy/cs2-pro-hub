@@ -13,6 +13,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  type FlashAssistMethodView,
   buildOverview,
   type OverviewJobRow,
   type OverviewMatchRow,
@@ -124,13 +125,43 @@ export async function loadPlayerOverview(
   if (matchesError)
     throw new Error(`PLAYER_OVERVIEW_MATCHES_FAILED:${matchesError.code ?? "unknown"}`);
 
-  return buildOverview({
+  const overview = buildOverview({
     jobs: (jobs ?? []) as OverviewJobRow[],
     fileNames: new Map((uploads ?? []).map((upload) => [upload.id, upload.file_name])),
     metrics: (metrics ?? []) as OverviewMetricRow[],
     matches: (matches ?? []) as OverviewMatchRow[],
     now: new Date(),
   });
+  // Fase 4.0.1 — flash-assist provenance, read defensively: a missing table or a failed read
+  // only means "method not recorded"; it never hides or changes a metric.
+  const methods = await loadFlashMethods(supabase, playerIds, matchIds);
+  for (const m of overview.matches) m.flashAssistMethod = methods.get(m.matchId) ?? "NOT_RECORDED";
+  return overview;
+}
+
+async function loadFlashMethods(
+  supabase: SupabaseClient<Database>,
+  playerIds: string[],
+  matchIds: string[],
+): Promise<Map<string, FlashAssistMethodView>> {
+  if (!playerIds.length || !matchIds.length) return new Map();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as SupabaseClient<any>)
+      .from("match_flash_assist_provenance")
+      .select("match_id, method")
+      .in("player_id", playerIds)
+      .in("match_id", matchIds);
+    if (error) return new Map();
+    return new Map(
+      (data ?? []).map((r: { match_id: string; method: FlashAssistMethodView }) => [
+        r.match_id,
+        r.method,
+      ]),
+    );
+  } catch {
+    return new Map();
+  }
 }
 
 /**

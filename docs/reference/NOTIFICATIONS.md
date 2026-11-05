@@ -22,21 +22,29 @@ The user is never taken from the client: every server function derives it from t
 
 ## Triggers (real, persisted sources only)
 
-| Event            | Category        | Source and condition                                                                                                                                                       | Link           |
-| ---------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `analysis_ready` | analysis_ready  | `demo_jobs.status = processed`, not superseded, `match_id` set, `identity_status = resolved`, `attachment_state = attached`, and the match present in the player's metrics | `/analysis`    |
-| `demo_failed`    | demo_processing | `demo_jobs.status = failed` and not superseded (final after the replacement policy). `blocked_raw_audit` is a hold, not a final decision: no notice                        | `/upload`      |
-| `evolution`      | evolution       | last 5 vs previous 5 matches (rating, ADR, KAST), both windows fully measured, difference > 2× Welch standard error                                                        | `/performance` |
-| `goal_reached`   | training        | mean of the goal's last N measured matches meets the target with a complete sample; recorded once as achievement                                                           | `/goals`       |
-| `goal_reminder`  | training        | goal with weekly reminder, on the chosen weekday (UTC), once per ISO week, while not reached                                                                               | `/goals`       |
+| Event            | Category         | Source and condition                                                                                                                                                                    | Link           |
+| ---------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `analysis_ready` | analysis_ready   | `demo_jobs.status = processed`, not superseded, `match_id` set, `identity_status = resolved`, `attachment_state = attached`, and the match present in the player's metrics              | `/analysis`    |
+| `demo_failed`    | demo_processing  | `demo_jobs.status = failed` and not superseded (final after the replacement policy). `blocked_raw_audit` is a hold, not a final decision: no notice                                     | `/upload`      |
+| `evolution`      | evolution        | last 5 vs previous 5 matches (rating, ADR, KAST), both windows fully measured, difference > 2× Welch standard error                                                                     | `/performance` |
+| `goal_reached`   | training         | mean of the goal's last N measured matches meets the target with a complete sample; recorded once as achievement                                                                        | `/goals`       |
+| `goal_reminder`  | training         | goal with weekly reminder, on the chosen weekday (UTC), once per ISO week, while not reached                                                                                            | `/goals`       |
+| `steam_linked`   | account_security | `player_connections` row with `source = steam`, `status = connected` and `connected_at` set (written only by `steam_link_commit`). Key `steam_linked:<connection id>:<connected_at ms>` | `/profile`     |
+| `steam_unlinked` | account_security | same row with `status = disconnected` and `disconnected_at` set. Pending, expired or failed attempts never notify                                                                       | `/profile`     |
 
 - Only source rows from the last 14 days are considered, so the first use does not flood the
   center with history.
 - The server builds events on each sync (the bell syncs on open and every 2 minutes while the
   tab is visible). Duplicates are ignored by the database, also under concurrent syncs.
-- **Not implemented (no reliable event yet):** AI Coach notices (the reply is shown live in the
-  chat, and the Coach never notifies a simulated or unsaved reply); account and security
-  notices (the category exists and is essential, but no producer is wired yet).
+- Account and security notices (Fase 4.0.1) are essential: they bypass category preferences,
+  pause and the daily cap (the ingestion already treats `account_security` that way), carry no
+  Steam id, and a re-link later is a new event (new instant), never a duplicate.
+- **Not implemented (no reliable event, documented on purpose):** AI Coach notices. The only
+  persisted Coach artefacts are the conversation and its messages, shown live in the chat the
+  player is reading; `training_plans` and `analyses` have no producer in the code and no rows in
+  production. A "new training plan" / "new Coach analysis" notice would announce something that
+  does not exist, so none is emitted. When a real producer persists such a row, the trigger is
+  one more source in `buildNotificationEvents` (category `coach`, already in the contract).
 
 ## Preferences and consent (LGPD)
 
@@ -75,8 +83,21 @@ Notes on what these columns do and don't capture:
 | achievements           | history of goals reached                                  | while the account exists (goal deletion keeps the achievement, `goal_id` → null) | cascade             |
 
 - Deleting a notification keeps its event, so the same event is never re-notified.
-- The purge runs bounded (500 rows per call) in about 5% of syncs; no new scheduler exists.
-- Manual run: `SELECT * FROM notification_purge_expired(5000);`
+- **Scheduled (Fase 4.0.1):** pg_cron job `notification-retention` (`17 3 * * *`, UTC) runs
+  `notification_retention_run(5000, 20)`, through the pg_cron already used by
+  `cs2-demo-pipeline` (no new service). The wrapper:
+  - takes a non-blocking advisory lock, so a concurrent run is recorded as `SKIPPED` and does nothing;
+  - purges in bounded batches (at most `p_batch × p_max_batches` rows per run; the rest waits
+    for the next run);
+  - records `RUNNING → OK | FAILED | SKIPPED`, start, end, duration, batches and counts in
+    `notification_maintenance_runs` (service role only, no content, no user ids);
+  - on failure rolls its purge back, stores only the SQLSTATE, and the next run retries.
+- The opportunistic purge on sync (500 rows in about 5% of syncs) stays as a second, bounded path.
+- Health: `SELECT status, started_at, duration_ms, notifications_deleted, events_deleted, error_code
+FROM notification_maintenance_runs ORDER BY id DESC LIMIT 10;` and
+  `SELECT jobname, schedule, active FROM cron.job WHERE jobname = 'notification-retention';`
+- Manual run: `SELECT * FROM notification_retention_run(5000, 20);`
+- Disable: `SELECT cron.unschedule('notification-retention');` (the sync purge keeps working).
 
 Rollback: see the header of the migration (drop the two functions, the view and the five
 tables; nothing existing is altered). The web build degrades by itself if the tables are
@@ -101,3 +122,11 @@ step. It stays private by default when built.
   - goals are own-only;
   - retention purge and analytics without content.
 - `notifications4.test.tsx`: triggers, evolution, goals, validation, wiring, 5 locales.
+- `scripts/phase401-harness.py` (CI: `phase401.integration.test.ts`, 24 checks + 5 mutants):
+  migration applies without pg_cron and re-applies cleanly; the run is bounded, exclusive
+  (`SKIPPED` under a held lock), recorded, rolled back on failure and recovered on the next run;
+  goals and achievements are never touched; players cannot run it or read its log;
+  flash provenance consistency, RLS and cascade.
+- `phase401.test.tsx`: Steam events (committed only, dedup, re-link), the unread counter's
+  plural forms in 5 locales (`Intl.PluralRules`: "1 não lida", "2 não lidas"), flash
+  provenance per method and the Coach's reading of it.

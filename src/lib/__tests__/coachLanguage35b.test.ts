@@ -193,11 +193,12 @@ describe("guard precision", () => {
 });
 
 describe("flash-assist wording separates the four cases", () => {
-  it("count derived, method not stored, zero is not 'no flashes', enemies flashed not measured", () => {
+  it("count derived, method recorded or NOT_RECORDED, zero is not 'no flashes', enemies flashed not measured", () => {
     const note = facts("en").observations.find((o) => o.metric === "flashAssists")!.note!;
     expect(note).toMatch(/COUNT is a CS2 PRO derivation, not a game report/);
+    // Fase 4.0.1 (intentional): the per-match method is recorded; unrecorded ≠ missing event.
     expect(note).toMatch(
-      /METHOD used for each match is not stored, which says nothing about whether flash assists happened/,
+      /matches processed earlier read NOT_RECORDED, which says nothing about whether flash assists happened/,
     );
     expect(note).toMatch(/NOT that the player threw no flashes/);
     expect(note).toMatch(/enemies flashed is a different metric and is NOT MEASURED/);

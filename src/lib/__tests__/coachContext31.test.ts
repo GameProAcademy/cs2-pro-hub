@@ -243,7 +243,7 @@ describe("3.1.1 provisional Player DNA never reaches the model", () => {
 
 describe("3.1.2 flash assists and unproven metrics", () => {
   // Fase 3 closeout (intentional): the count comes from the game flag OR a timed attribution
-  // and the method is not stored, so it is DERIVED, never "the game recorded".
+  // and (Fase 4.0.1) only an all-GAME_FLAG history may be called a game report.
   it("flash assists carry their real provenance; enemies flashed is NOT MEASURED", () => {
     const facts = buildCoachFacts(two, dna("INSUFFICIENT_SAMPLE", 2), "en");
     const fa = facts.observations.find((o) => o.metric === "flashAssists")!;
@@ -258,7 +258,12 @@ describe("3.1.2 flash assists and unproven metrics", () => {
     // Fase 3.5 B (intentional): the note separates count, unstored method, zero and
     // the unmeasured "enemies flashed" instead of quoting an English phrase.
     expect(fa.note).toContain("a count of 0 means no kill was credited as flash-assisted");
-    expect(fa.note).toContain("the METHOD used for each match is not stored");
+    // Fase 4.0.1 (intentional): the method is now recorded per match; older matches read
+    // NOT_RECORDED, which still says nothing about whether flash assists happened.
+    expect(fa.note).toContain(
+      "the METHOD of each match is recorded from flash-assist-provenance-v1 on",
+    );
+    expect(fa.note).toContain("matches processed earlier read NOT_RECORDED");
     expect(fa.note).toContain("never as proof that the player does not flash for teammates");
     expect(facts.matches.every((x) => x.enemiesFlashed === null)).toBe(true);
     expect(facts.notAvailable.find((n) => n.startsWith("enemies flashed"))).toContain(

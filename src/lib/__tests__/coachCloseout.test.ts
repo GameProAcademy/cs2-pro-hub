@@ -1,7 +1,7 @@
 /**
  * Fase 3 closeout — regression tests for the three production findings of 2026-11-04:
  *  1. flash assists were described as "the game recorded N", but the count may come from a
- *     timed attribution and the per-match method is not stored (metrics.ts flashAssists);
+ *     timed attribution; from Fase 4.0.1 the per-match method is recorded (metrics.ts flashAssists);
  *  2. a reply could carry invented statistics, benchmark comparisons ("abaixo da média
  *     esperada") and sources outside PLAYER_FACTS — now removed by coachReplyGuard before the
  *     player sees or the server stores the reply. (The "match_metrics.kills" cited for K/D was
@@ -157,8 +157,13 @@ describe("1. flash assists provenance", () => {
 
   it("the pipeline really has two methods (the provenance claim is grounded in code)", () => {
     const metrics = read("src/lib/pipeline/metrics.ts");
-    expect(metrics).toMatch(/if \(e\.assistedFlash === true\) kill\.flashAssister/);
-    expect(metrics).toMatch(/else kill\.flashAssister = flashAssisterFor\(kill\)/);
+    // Fase 4.0.1 (intentional): the branches now also record which method decided.
+    expect(metrics).toMatch(
+      /if \(e\.assistedFlash === true\) \{\s*kill\.flashAssister = e\.assisterSteamId;\s*kill\.flashSource = "flag";/,
+    );
+    expect(metrics).toMatch(
+      /kill\.flashAssister = flashAssisterFor\(kill\);\s*kill\.flashSource = "timing";/,
+    );
   });
 
   it("the guard rewrites 'the game recorded' in every locale", () => {

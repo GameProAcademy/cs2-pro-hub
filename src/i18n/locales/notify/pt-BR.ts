@@ -3,7 +3,6 @@ export const notifyPtBR = {
   "nav.goals": "Objetivos",
   "nav.notifications": "Notificações",
   "notify.bell.label": "Notificações",
-  "notify.bell.unread": "{count} não lidas",
   "notify.title": "Notificações",
   "notify.description":
     "Avisos sobre eventos reais da sua conta: análises prontas, falhas de processamento, evolução comprovada e objetivos.",
@@ -119,4 +118,20 @@ export const notifyPtBR = {
     "Nenhuma conquista ainda. Uma conquista é registrada quando um objetivo é atingido com a amostra completa.",
   "goals.achievement.line":
     "{metric} {direction} {target}: {value} em {sample} partidas ({from} – {to})",
+  "notify.bell.unread.one": "{count} não lida",
+  "notify.bell.unread.other": "{count} não lidas",
+  "notify.type.steam_linked.title": "Conta Steam vinculada",
+  "notify.type.steam_linked.body":
+    "Uma conta Steam foi vinculada ao seu perfil. Se não foi você, revise o vínculo no seu perfil.",
+  "notify.type.steam_unlinked.title": "Conta Steam desvinculada",
+  "notify.type.steam_unlinked.body":
+    "A conta Steam foi desvinculada do seu perfil. Se não foi você, revise seu perfil.",
+  "flash.method.title": "Como os flash assists foram contados",
+  "flash.method.GAME_FLAG": "registrados pelo próprio jogo",
+  "flash.method.TIMED_ATTRIBUTION":
+    "derivados pelo CS2 PRO (flash na mesma vítima pouco antes do abate)",
+  "flash.method.MIXED": "parte registrada pelo jogo, parte derivada pelo CS2 PRO",
+  "flash.method.NOT_MEASURED": "não medidos (sem evidência suficiente na demo)",
+  "flash.method.NOT_RECORDED": "método não registrado (partida processada antes desse registro)",
+  "flash.method.line": "{count} partida(s): {method}",
 } as const;

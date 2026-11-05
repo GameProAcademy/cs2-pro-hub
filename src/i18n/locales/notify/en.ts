@@ -4,7 +4,6 @@ export const notifyEn: Record<keyof typeof notifyPtBR, string> = {
   "nav.goals": "Goals",
   "nav.notifications": "Notifications",
   "notify.bell.label": "Notifications",
-  "notify.bell.unread": "{count} unread",
   "notify.title": "Notifications",
   "notify.description":
     "Notices about real events in your account: analyses ready, processing failures, proven progress and goals.",
@@ -119,4 +118,20 @@ export const notifyEn: Record<keyof typeof notifyPtBR, string> = {
     "No achievements yet. An achievement is recorded when a goal is reached with a complete sample.",
   "goals.achievement.line":
     "{metric} {direction} {target}: {value} over {sample} matches ({from} – {to})",
+  "notify.bell.unread.one": "{count} unread",
+  "notify.bell.unread.other": "{count} unread",
+  "notify.type.steam_linked.title": "Steam account linked",
+  "notify.type.steam_linked.body":
+    "A Steam account was linked to your profile. If this wasn't you, review the link in your profile.",
+  "notify.type.steam_unlinked.title": "Steam account unlinked",
+  "notify.type.steam_unlinked.body":
+    "The Steam account was unlinked from your profile. If this wasn't you, review your profile.",
+  "flash.method.title": "How flash assists were counted",
+  "flash.method.GAME_FLAG": "recorded by the game itself",
+  "flash.method.TIMED_ATTRIBUTION":
+    "derived by CS2 PRO (a flash on the same victim shortly before the kill)",
+  "flash.method.MIXED": "partly recorded by the game, partly derived by CS2 PRO",
+  "flash.method.NOT_MEASURED": "not measured (not enough evidence in the demo)",
+  "flash.method.NOT_RECORDED": "method not recorded (match processed before it was stored)",
+  "flash.method.line": "{count} match(es): {method}",
 };

@@ -20,6 +20,7 @@ import {
   type PerformanceSeriesKey,
 } from "@/lib/performanceSeries";
 import type { OverviewMatch } from "@/lib/playerOverview";
+import { fill } from "@/lib/format";
 import { getMapPerformance, getMetrics, getSideSplit, getTrends } from "@/services/playerService";
 
 export const Route = createFileRoute("/_authenticated/performance")({
@@ -113,7 +114,11 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
           showDemoTag={false}
           label={<MetricTerm id="flashAssists" variant="label" />}
           value={totals.flashAssists}
-          hint={totals.flashAssists === null ? t("real.performance.timingReason") : undefined}
+          hint={
+            totals.flashAssists === null
+              ? t("real.performance.timingReason")
+              : flashMethodSummary(matches, t)
+          }
         />
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
@@ -281,4 +286,27 @@ function PerformancePage() {
       </div>
     </AppShell>
   );
+}
+
+/**
+ * Fase 4.0.1 — how the flash-assist total was counted, per method, so game-recorded and
+ * CS2 PRO-derived counts are never mixed silently (match_flash_assist_provenance).
+ */
+function flashMethodSummary(
+  matches: Array<{ flashAssistMethod?: string; flashAssists: number | null }>,
+  t: (key: TranslationKey) => string,
+): string {
+  const counts = new Map<string, number>();
+  for (const m of matches) {
+    if (m.flashAssists === null) continue;
+    const method = m.flashAssistMethod ?? "NOT_RECORDED";
+    counts.set(method, (counts.get(method) ?? 0) + 1);
+  }
+  const lines = [...counts].map(([method, count]) =>
+    fill(t("flash.method.line"), {
+      count,
+      method: t(`flash.method.${method}` as TranslationKey),
+    }),
+  );
+  return lines.length ? `${t("flash.method.title")}: ${lines.join("; ")}` : "";
 }

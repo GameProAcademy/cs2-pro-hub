@@ -104,6 +104,9 @@ export type MatchResultStatus = "KNOWN" | "UNRESOLVED_BY_DEMO" | "UNKNOWN";
 
 export const RESULT_UNRESOLVED_LIMITATION = "L04-MATCH-RESULT-UNRESOLVED";
 
+export type FlashAssistMethodView =
+  "GAME_FLAG" | "TIMED_ATTRIBUTION" | "MIXED" | "NOT_MEASURED" | "NOT_RECORDED";
+
 export interface OverviewMatch {
   matchId: string;
   map: string | null;
@@ -126,6 +129,11 @@ export interface OverviewMatch {
   firstDeaths: number | null;
   tradeKills: number | null;
   flashAssists: number | null;
+  /**
+   * Fase 4.0.1 — how the flash-assist count of this match was obtained
+   * (match_flash_assist_provenance). NOT_RECORDED: processed before provenance existed.
+   */
+  flashAssistMethod?: FlashAssistMethodView;
   utilityDamage: number | null;
   clutchAttempts: number | null;
   clutchWins: number | null;

@@ -60,6 +60,16 @@ interface KillRecord {
   assister: string | null;
   headshot: boolean | null;
   flashAssister: string | null;
+  /**
+   * Fase 4.0.1 — how the flash assist of this kill was decided: the game's own flag, the
+   * temporal blind-event rule, or nothing. Provenance only; it never changes the count.
+   */
+  flashSource?: "flag" | "timing" | null;
+  /**
+   * Players who flashed this kill's victim in the same round when neither the game flag nor
+   * the temporal rule could decide (unknown kill or flash instant). Never credited.
+   */
+  flashUndecidable?: string[];
 }
 
 const round1 = (v: number) => Number(v.toFixed(1));
@@ -232,13 +242,22 @@ interface FlashRecord {
 function collectKills(match: CanonicalMatch): KillRecord[] {
   const tickrate = match.tickrate;
   const flashes: FlashRecord[] = [];
+  /** Flashes whose instant is unknown: never attributable, kept only for provenance. */
+  const untimedFlashes: Array<{ round: number; flasher: string; victim: string }> = [];
   for (const event of match.events) {
     if (event.type !== "flash") continue;
     if (!event.actorSteamId || !event.victimSteamId) continue;
     if (event.actorSteamId === event.victimSteamId) continue; // self-flash
     const time = eventTime(event, tickrate);
     // Without a trustworthy instant a flash cannot be attributed to a kill.
-    if (time == null) continue;
+    if (time == null) {
+      untimedFlashes.push({
+        round: event.roundNumber,
+        flasher: event.actorSteamId,
+        victim: event.victimSteamId,
+      });
+      continue;
+    }
     flashes.push({
       round: event.roundNumber,
       time,
@@ -281,12 +300,38 @@ function collectKills(match: CanonicalMatch): KillRecord[] {
           assister: e.assisterSteamId,
           headshot: e.headshot,
           flashAssister: null,
+          flashSource: null,
+          flashUndecidable: [],
         };
         // D35: the game's own flag wins (the flasher is the kill's assister). Only when the
         // kill does not report it is the temporal blind-event attribution used.
-        if (e.assistedFlash === true) kill.flashAssister = e.assisterSteamId;
-        else if (e.assistedFlash === false) kill.flashAssister = null;
-        else kill.flashAssister = flashAssisterFor(kill);
+        if (e.assistedFlash === true) {
+          kill.flashAssister = e.assisterSteamId;
+          kill.flashSource = "flag";
+        } else if (e.assistedFlash === false) {
+          kill.flashAssister = null;
+          kill.flashSource = "flag";
+        } else {
+          kill.flashAssister = flashAssisterFor(kill);
+          kill.flashSource = "timing";
+          // Provenance only: flashers of this victim in this round that the rule could not
+          // judge (unknown kill instant, or unknown flash instant). Never credited.
+          const undecidable = new Set<string>();
+          if (kill.victim) {
+            for (const f of untimedFlashes)
+              if (f.round === kill.round && f.victim === kill.victim && f.flasher !== kill.attacker)
+                undecidable.add(f.flasher);
+            if (kill.time == null)
+              for (const f of flashes)
+                if (
+                  f.round === kill.round &&
+                  f.victim === kill.victim &&
+                  f.flasher !== kill.attacker
+                )
+                  undecidable.add(f.flasher);
+          }
+          kill.flashUndecidable = [...undecidable];
+        }
         return kill;
       })
       // Unknown timing is NOT late timing: a kill without a trustworthy instant
@@ -832,4 +877,67 @@ export function compositeRating(
   const adr = damage / rounds;
   const value = 0.45 * (kpr / 0.7) + 0.25 * (1 - dpr / 0.75) + 0.3 * (adr / 80);
   return Math.max(0, value);
+}
+
+/**
+ * Fase 4.0.1 — per-match provenance of the flash-assist count (contract
+ * `flash-assist-provenance-v1`). It explains HOW `computeMetrics().flashAssists` was
+ * obtained without changing it:
+ *   GAME_FLAG          every kill carried the game's flash-assist flag;
+ *   TIMED_ATTRIBUTION  no kill carried it: the temporal blind-event rule decided;
+ *   MIXED              some kills carried it, the others used the temporal rule;
+ *   NOT_MEASURED       the metric is null (no flag and no usable blind/timing evidence).
+ * `unattributedCandidates` counts kills where the player flashed the victim in that round
+ * but no rule could decide (unknown instants): reported, never added to the count.
+ */
+export const FLASH_PROVENANCE_VERSION = "flash-assist-provenance-v1";
+
+export type FlashAssistMethod = "GAME_FLAG" | "TIMED_ATTRIBUTION" | "MIXED" | "NOT_MEASURED";
+
+export interface FlashAssistProvenance {
+  method: FlashAssistMethod;
+  version: typeof FLASH_PROVENANCE_VERSION;
+  credited: number | null;
+  creditedByFlag: number | null;
+  creditedByTiming: number | null;
+  unattributedCandidates: number | null;
+}
+
+export function flashAssistProvenance(
+  match: CanonicalMatch,
+  participantKey: string,
+  metrics: Pick<CanonicalMetrics, "flashAssists">,
+): FlashAssistProvenance {
+  const base = { version: FLASH_PROVENANCE_VERSION } as const;
+  if (metrics.flashAssists === null)
+    return {
+      ...base,
+      method: "NOT_MEASURED",
+      credited: null,
+      creditedByFlag: null,
+      creditedByTiming: null,
+      unattributedCandidates: null,
+    };
+  const me = resolveAnalyticalParticipant(match, participantKey).eventPlayerKey;
+  const kills = collectKills(match);
+  const flagged = kills.filter((k) => k.flashSource === "flag").length;
+  const mine = kills.filter((k) => k.flashAssister === me && k.attacker !== me);
+  const byFlag = mine.filter((k) => k.flashSource === "flag").length;
+  const byTiming = mine.filter((k) => k.flashSource === "timing").length;
+  const method: FlashAssistMethod =
+    kills.length > 0 && flagged === kills.length
+      ? "GAME_FLAG"
+      : flagged === 0
+        ? "TIMED_ATTRIBUTION"
+        : "MIXED";
+  return {
+    ...base,
+    method,
+    credited: byFlag + byTiming,
+    creditedByFlag: byFlag,
+    creditedByTiming: byTiming,
+    unattributedCandidates: kills.filter(
+      (k) => k.attacker !== me && k.flashAssister !== me && (k.flashUndecidable ?? []).includes(me),
+    ).length,
+  };
 }
