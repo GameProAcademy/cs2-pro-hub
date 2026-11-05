@@ -67,6 +67,15 @@ export interface JobRow {
   error_code: string | null;
 }
 
+/** A Steam link row (player_connections, source = steam), read under the caller's RLS. */
+export interface ConnectionRow {
+  id: string;
+  source: string;
+  status: string;
+  connected_at: string | null;
+  disconnected_at: string | null;
+}
+
 export interface MatchPoint {
   matchId: string;
   map: string | null;
@@ -231,6 +240,8 @@ export function buildNotificationEvents(input: {
   jobs: JobRow[];
   matches: MatchPoint[];
   goals: Goal[];
+  /** Fase 4.0.1 — committed Steam links/unlinks (account & security, essential). */
+  connections?: ConnectionRow[];
 }): NotificationEvent[] {
   const { now } = input;
   const since = now.getTime() - NOTIFICATION_LOOKBACK_DAYS * 86_400_000;
@@ -276,6 +287,30 @@ export function buildNotificationEvents(input: {
         params: {},
       });
     }
+  }
+
+  // Account & security (essential): only COMMITTED Steam links / unlinks. A pending, expired
+  // or failed attempt never produces a notice. Keyed by the connection and its own instant,
+  // so a retry or a later sync never duplicates it, and a re-link later is a new event.
+  for (const c of input.connections ?? []) {
+    if (c.source !== "steam") continue;
+    const linked = c.status === "connected" && c.connected_at;
+    const unlinked = c.status === "disconnected" && c.disconnected_at;
+    const at = linked ? c.connected_at! : unlinked ? c.disconnected_at! : null;
+    if (!at || Date.parse(at) < since) continue;
+    const type = linked ? "steam_linked" : "steam_unlinked";
+    events.push({
+      type,
+      version: 1,
+      category: "account_security",
+      occurred_at: at,
+      source: "player_connections",
+      source_ref: c.id,
+      payload: {},
+      idempotency_key: `${type}:${c.id}:${Date.parse(at)}`,
+      link: "/profile",
+      params: {},
+    });
   }
 
   // Evolution: at most one notice per metric per newest match (idempotent).

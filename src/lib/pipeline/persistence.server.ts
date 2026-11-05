@@ -22,6 +22,7 @@ import {
   SCHEMA_VERSION,
 } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
+import { flashAssistProvenance } from "@/lib/pipeline/metrics";
 import type { CanonicalFeatures, CanonicalMatch, CanonicalMetrics } from "@/lib/pipeline/types";
 import { selectPlayerSemanticData } from "@/lib/pipeline/semanticData";
 import type { Json } from "@/integrations/supabase/types";
@@ -275,6 +276,42 @@ export async function persistDemoProjection(args: {
     _job_result: jobResult,
   } as never);
   if (error) fail(error.message);
+
+  // Fase 4.0.1 — flash-assist provenance, AFTER the canonical projection committed. Additive
+  // and best-effort: a failure here never fails the job; the match then reads as "method not
+  // recorded" (exactly how matches processed before this version read).
+  try {
+    const provenance = flashAssistProvenance(match, participantKey, metrics);
+    const { error: provError } = await (
+      supabaseAdmin as unknown as {
+        from: (t: string) => {
+          upsert: (
+            row: Record<string, unknown>,
+            o: { onConflict: string },
+          ) => PromiseLike<{ error: { code?: string } | null }>;
+        };
+      }
+    )
+      .from("match_flash_assist_provenance")
+      .upsert(
+        {
+          match_id: matchId,
+          player_id: playerId,
+          method: provenance.method,
+          method_version: provenance.version,
+          credited: provenance.credited,
+          credited_by_flag: provenance.creditedByFlag,
+          credited_by_timing: provenance.creditedByTiming,
+          unattributed_candidates: provenance.unattributedCandidates,
+          computed_at: new Date().toISOString(),
+        },
+        { onConflict: "match_id,player_id" },
+      );
+    if (provError)
+      console.warn(`[pipeline] flash_provenance_not_recorded code=${provError.code ?? "?"}`);
+  } catch {
+    console.warn("[pipeline] flash_provenance_not_recorded");
+  }
 
   return { matchId, metricsWritten: true, featuresWritten: true };
 }

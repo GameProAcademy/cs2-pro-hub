@@ -38,14 +38,24 @@ deterministic rule of Fase 2.1 (`roundHalfUp`, catalog `digits.contract`).
   unless the DNA is READY _and_ has at least `minimumMatches`. A label that contradicts its
   own sample (READY with 2 of 3) is treated as not ready. No "N / 100" string, no index and no
   ranking reaches the model below the minimum.
-- **Flash assists:** sent as `DERIVED` with `provenance: GAME_FLAG_OR_TIMED_ATTRIBUTION` and a
-  `note`. `metrics.ts` credits a flash assist from the game's per-kill `assistedflash` flag when
-  every kill of the match carries it, otherwise from a timed attribution over blind events
-  (`flashAssisterFor`). Which method produced each match's count is not stored (no column in
-  `match_metrics`, no `assisted_flash` in `round_events.data`), so the value is a CS2 PRO count
-  that cannot be re-verified. The Coach says "CS2 PRO counted N" (never "the game recorded")
-  and never concludes that the player does not flash for teammates. A counted 0 stays 0.
-  Enemies flashed is `NOT MEASURED`.
+- **Flash assists:** `metrics.ts` credits a flash assist from the game's per-kill
+  `assistedflash` flag when the kill carries it, otherwise from a timed attribution over blind
+  events (`flashAssisterFor`). From Fase 4.0.1 the ingestion records each match's method in
+  `match_flash_assist_provenance` (contract `flash-assist-provenance-v1`):
+  - `GAME_FLAG`: every kill carried the flag;
+  - `TIMED_ATTRIBUTION`: none did;
+  - `MIXED`: some did; `credited = credited_by_flag + credited_by_timing` is enforced by a CHECK;
+  - `NOT_MEASURED`: the count is null, all counts null;
+  - `unattributed_candidates`: flashes the rule could not judge (no instant); never credited.
+    Matches processed before 4.0.1 have no row and read `NOT_RECORDED` (no backfill, no demo
+    reprocessed). The write is best-effort after the canonical projection and never blocks it.
+    The Coach gets `methods` (matches per method, measured matches only). Only when every
+    measured match is `GAME_FLAG` is the observation `OBSERVED` with `provenance: GAME_FLAG` and
+    may be called a game report. Otherwise it stays `DERIVED` with
+    `GAME_FLAG_OR_TIMED_ATTRIBUTION`, the Coach says "CS2 PRO counted N", and names matches
+    whose method was not recorded. A counted 0 stays 0 and never means "does not flash for
+    teammates". Enemies flashed is `NOT MEASURED`. The performance page shows the same breakdown
+    under the flash-assists card.
 - **K/D source:** the catalog keeps one `table.column` per metric (it drives admission
   classes); the Coach view of `kd` cites both inputs, `match_metrics.kills / match_metrics.deaths`.
 - **Result / score / win rate:** `UNAVAILABLE` while the admission excludes them; the prompt
@@ -137,10 +147,9 @@ reply is stored or shown. Deterministic, no second model call:
 - An English "CS2 PRO counted" leaking into a reply in another language is rewritten into
   that language; the prompt gives the flash phrase per language (`FLASH_PHRASE`).
 
-**Backlog (not in this phase):** persisting the flash-assist method per match (flag vs timed
-attribution) needs a change in ingestion / the canonical payload (D20 re-observation) and is
-tracked separately. Until then the count stays `DERIVED` with
-`GAME_FLAG_OR_TIMED_ATTRIBUTION`.
+**Done in Fase 4.0.1:** the per-match flash-assist method is persisted (see above). This was
+an additive table written by the web ingestion; the parser, Railway and the canonical payload
+were not changed.
 
 ## Durable idempotency (Fase 3.5)
 

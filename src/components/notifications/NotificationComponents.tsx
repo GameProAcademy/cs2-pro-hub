@@ -67,6 +67,16 @@ export function notificationText(n: NotificationView, t: T): { title: string; bo
         title: t("notify.type.goal_reached.title"),
         body: fill(t("notify.type.goal_reached.body"), vars),
       };
+    case "steam_linked":
+      return {
+        title: t("notify.type.steam_linked.title"),
+        body: t("notify.type.steam_linked.body"),
+      };
+    case "steam_unlinked":
+      return {
+        title: t("notify.type.steam_unlinked.title"),
+        body: t("notify.type.steam_unlinked.body"),
+      };
     case "goal_reminder":
       return {
         title: t("notify.type.goal_reminder.title"),
@@ -75,6 +85,15 @@ export function notificationText(n: NotificationView, t: T): { title: string; bo
     default:
       return { title: t(`notify.cat.${n.category}` as TranslationKey), body: "" };
   }
+}
+
+/**
+ * "1 não lida" / "2 não lidas": the locale's own plural rules (Intl.PluralRules), with the
+ * one/other forms in the dictionaries. Nothing hardcoded in the component.
+ */
+export function unreadLabel(count: number, locale: string, t: T): string {
+  const form = new Intl.PluralRules(locale).select(count) === "one" ? "one" : "other";
+  return fill(t(`notify.bell.unread.${form}` as TranslationKey), { count });
 }
 
 /** Keeps the caller's notifications in sync while the app is open. */
@@ -129,6 +148,7 @@ export function NotificationBell() {
   });
   const mark = useMark();
   const unread = list.data?.unread ?? 0;
+  const { locale } = useI18n();
   if (list.data && !list.data.available) return null;
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -140,7 +160,7 @@ export function NotificationBell() {
           className="relative shrink-0"
           aria-label={
             unread
-              ? `${t("notify.bell.label")} — ${fill(t("notify.bell.unread"), { count: unread })}`
+              ? `${t("notify.bell.label")} — ${unreadLabel(unread, locale, t)}`
               : t("notify.bell.label")
           }
           data-notification-bell

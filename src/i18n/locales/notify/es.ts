@@ -4,7 +4,6 @@ export const notifyEs: Record<keyof typeof notifyPtBR, string> = {
   "nav.goals": "Objetivos",
   "nav.notifications": "Notificaciones",
   "notify.bell.label": "Notificaciones",
-  "notify.bell.unread": "{count} sin leer",
   "notify.title": "Notificaciones",
   "notify.description":
     "Avisos sobre eventos reales de tu cuenta: análisis listos, fallos de procesamiento, evolución comprobada y objetivos.",
@@ -120,4 +119,20 @@ export const notifyEs: Record<keyof typeof notifyPtBR, string> = {
     "Aún no hay logros. Un logro se registra cuando se alcanza un objetivo con la muestra completa.",
   "goals.achievement.line":
     "{metric} {direction} {target}: {value} en {sample} partidas ({from} – {to})",
+  "notify.bell.unread.one": "{count} sin leer",
+  "notify.bell.unread.other": "{count} sin leer",
+  "notify.type.steam_linked.title": "Cuenta de Steam vinculada",
+  "notify.type.steam_linked.body":
+    "Se vinculó una cuenta de Steam a tu perfil. Si no fuiste tú, revisa el vínculo en tu perfil.",
+  "notify.type.steam_unlinked.title": "Cuenta de Steam desvinculada",
+  "notify.type.steam_unlinked.body":
+    "La cuenta de Steam se desvinculó de tu perfil. Si no fuiste tú, revisa tu perfil.",
+  "flash.method.title": "Cómo se contaron los flash assists",
+  "flash.method.GAME_FLAG": "registrados por el propio juego",
+  "flash.method.TIMED_ATTRIBUTION":
+    "derivados por CS2 PRO (flash en la misma víctima poco antes de la baja)",
+  "flash.method.MIXED": "en parte registrados por el juego, en parte derivados por CS2 PRO",
+  "flash.method.NOT_MEASURED": "no medidos (sin evidencia suficiente en la demo)",
+  "flash.method.NOT_RECORDED": "método no registrado (partida procesada antes de ese registro)",
+  "flash.method.line": "{count} partida(s): {method}",
 };
