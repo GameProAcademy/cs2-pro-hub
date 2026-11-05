@@ -128,8 +128,19 @@ reply is stored or shown. Deterministic, no second model call:
 - **Sources:** a dotted identifier that is neither an observation source nor a PLAYER_FACTS
   path is replaced by "—".
 - **Flash wording:** "the game recorded" becomes "CS2 PRO counted" (5 languages).
-- When anything is removed, the reply ends with a one-line notice, the server logs the
-  counts, and the provenance row carries `guard=stats.comparisons.sources.flashWording`.
+- When anything is removed, the reply ends with one sentence per kind removed, in the reply's
+  language, saying why: the Coach uses only data observed in the player's own matches and no
+  unverified outside averages; numbers absent from the processed data were removed; unknown
+  sources appear as "—" (`NOTICE` in `coachReplyGuard.ts`, 5 languages). The removed text and
+  the guard's rules are never shown. The server logs the counts, and the provenance row
+  carries `guard=stats.comparisons.sources.flashWording`.
+- An English "CS2 PRO counted" leaking into a reply in another language is rewritten into
+  that language; the prompt gives the flash phrase per language (`FLASH_PHRASE`).
+
+**Backlog (not in this phase):** persisting the flash-assist method per match (flag vs timed
+attribution) needs a change in ingestion / the canonical payload (D20 re-observation) and is
+tracked separately. Until then the count stays `DERIVED` with
+`GAME_FLAG_OR_TIMED_ATTRIBUTION`.
 
 ## Durable idempotency (Fase 3.5)
 

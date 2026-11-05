@@ -149,7 +149,9 @@ describe("1. flash assists provenance", () => {
     expect(fa.provenance).toBe("GAME_FLAG_OR_TIMED_ATTRIBUTION");
     expect(fa.value).toBe(0); // a counted 0 stays 0; it is not turned into null either
     const prompt = coachSystemPrompt("pt-BR");
-    expect(prompt).toContain("CS2 PRO counted N flash assists");
+    // Fase 3.5 B (intentional): the phrase is given in the reply's own language.
+    expect(prompt).toContain("o CS2 PRO contou N flash assists");
+    expect(coachSystemPrompt("en")).toContain("CS2 PRO counted N flash assists");
     expect(prompt).not.toMatch(/say 'the game recorded/);
   });
 
@@ -234,7 +236,11 @@ describe("2. reply guard: statistics, comparisons and sources", () => {
 
   it("leaves Recommendation drill numbers alone and adds a visible notice", () => {
     expect(out.text).toContain("30 segundos de spray por spot, 3 vezes, 15 minutos");
-    expect(out.text).toMatch(/Trechos sem base nos seus dados foram removidos/);
+    // Fase 3.5 B (intentional): the notice now says WHAT kind was removed and WHY.
+    expect(out.text).toMatch(
+      /Removemos uma comparação com outros jogadores ou com médias externas/,
+    );
+    expect(out.text).toMatch(/Removemos números que não constam nos seus dados processados/);
     expect(guardTag(out.removed)).toMatch(/^guard=2\.1\.\d+\.0$/);
   });
 

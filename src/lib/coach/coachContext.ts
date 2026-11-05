@@ -344,7 +344,7 @@ function statusOf(o: XRayObservation): CoachValueStatus {
 
 const METRIC_NOTES: Record<string, string> = {
   flashAssists:
-    "Counted by CS2 PRO when the demo was processed, by one of two methods: the game's per-kill flash-assist flag when every kill of the match carried it, otherwise a timed attribution (a flash on the same victim, by a teammate, shortly before the kill). Which method was used for each match is not stored, so the count cannot be re-verified and is DERIVED, not a game report. Quote it as 'CS2 PRO counted N flash assists', never as 'the game recorded', and never as proof that the player does not flash for teammates.",
+    "A count DERIVED by CS2 PRO when the demo was processed, by one of two methods: the game's per-kill flash-assist flag when every kill of the match carried it, otherwise a timed attribution (a teammate's flash on the same victim shortly before the kill). Four different things, never confused: (a) the COUNT is a CS2 PRO derivation, not a game report; (b) the METHOD used for each match is not stored, which says nothing about whether flash assists happened; (c) a count of 0 means no kill was credited as flash-assisted by either method, NOT that the player threw no flashes or never helps teammates (flashes thrown are not part of this metric) — never as proof that the player does not flash for teammates; (d) enemies flashed is a different metric and is NOT MEASURED.",
   winRate:
     "Excluded by the demo admission (match result not resolved); never estimate wins, losses or a score.",
   hsPercent: "Mean of per-match HS% (each match weighs the same), not headshots ÷ kills pooled.",
@@ -603,6 +603,15 @@ export function coachTotals(matches: FactMatch[]): CoachFacts["totals"] {
   };
 }
 
+/** How the reply names a flash-assist count, in the reply's own language (Fase 3.5 B). */
+export const FLASH_PHRASE: Record<Locale, string> = {
+  "pt-BR": "o CS2 PRO contou N flash assists (assistências com flash) nestas partidas",
+  "pt-PT": "o CS2 PRO contou N flash assists (assistências com flash) nestas partidas",
+  en: "CS2 PRO counted N flash assists in these matches",
+  es: "CS2 PRO contó N flash assists (asistencias con flash) en estas partidas",
+  fr: "CS2 PRO a compté N flash assists (assistances avec flash) sur ces matchs",
+};
+
 export function coachSystemPrompt(locale: Locale): string {
   const [data, interpretation, recommendation] = SECTIONS[locale];
   return [
@@ -623,7 +632,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; totals and observations cover ALL matches together (sample.matches), while matches[] may hold only the matches relevant to this question (matchesIncluded), so never list a totals value under one map or match; if a value you need is null there, say it cannot be computed. The K/D of one match is matches[].killDeathRatio; the overall K/D is the kd observation (with its numerator / denominator); never quote one as the other. For the strongest or weakest Player DNA dimension, copy playerDna.strongest / playerDna.weakest (empty unless READY).",
     "13. Dates: when period.dateBasis (or a match's dateBasis) is 'processed', the date is when CS2 PRO processed the demo, never when the match was played; say so if you mention a date.",
     "14. Match result, score and win rate are UNAVAILABLE unless an observation with status OBSERVED or DERIVED says otherwise: never infer a win, a loss or a score from kills, rounds or anything else.",
-    "15. Flash assists are counted by CS2 PRO (the game's per-kill flag when present, otherwise a timed attribution; the method of each match is not stored, see the flashAssists observation note and provenance): say 'CS2 PRO counted N flash assists', never 'the game recorded', and never conclude from a 0 that the player does not flash for teammates. Enemies flashed is NOT MEASURED.",
+    `15. Flash assists are a count derived by CS2 PRO (see the flashAssists observation note and provenance). Write it in ${LANGUAGE[locale]} like this: '${FLASH_PHRASE[locale]}'. Never say the game recorded it, never treat the unstored method as a missing event, and never conclude from a 0 that the player does not flash for teammates or throws no flashes. Enemies flashed is NOT MEASURED.`,
     "19. Sources: when you name where a number comes from, copy an observations[].source or a PLAYER_FACTS path exactly (e.g. totals.perRound.openingKills, matches[0].adr); never write any other table, column or source name. Every number in your answer must be copied from PLAYER_FACTS; never estimate one. Lines with an unverifiable number or source, and any comparison with other players or an average, are removed before the player sees the answer.",
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
