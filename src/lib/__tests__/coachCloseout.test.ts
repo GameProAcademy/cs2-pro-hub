@@ -237,7 +237,9 @@ describe("2. reply guard: statistics, comparisons and sources", () => {
   it("leaves Recommendation drill numbers alone and adds a visible notice", () => {
     expect(out.text).toContain("30 segundos de spray por spot, 3 vezes, 15 minutos");
     // Fase 3.5 B (intentional): the notice now says WHAT kind was removed and WHY.
-    expect(out.text).toMatch(/Removemos uma comparação com outros jogadores ou com médias externas/);
+    expect(out.text).toMatch(
+      /Removemos uma comparação com outros jogadores ou com médias externas/,
+    );
     expect(out.text).toMatch(/Removemos números que não constam nos seus dados processados/);
     expect(guardTag(out.removed)).toMatch(/^guard=2\.1\.\d+\.0$/);
   });
