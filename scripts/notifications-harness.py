@@ -20,6 +20,23 @@ import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase/migrations/20261105120000_notifications_goals.sql"
+# NOTIFICATIONS_LATER_MIGRATIONS=1 also applies every later migration that replaces
+# notification_ingest, proving the Fase 4 guarantees still hold after them.
+LATER = [ROOT / "supabase/migrations/20261106100000_phase401_retention_flash.sql",
+         ROOT / "supabase/migrations/20261106120000_admin_notification_center.sql"]
+LATER_STUBS = r"""
+ALTER TABLE public.profiles ADD COLUMN email text, ADD COLUMN locale text NOT NULL DEFAULT 'pt-BR', ADD COLUMN country text,
+  ADD COLUMN status text NOT NULL DEFAULT 'active', ADD COLUMN created_at timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN last_login_at timestamptz;
+CREATE TABLE public.user_roles (user_id uuid, role text);
+CREATE TABLE public.matches (id uuid PRIMARY KEY);
+CREATE TABLE public.demo_jobs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, status text);
+CREATE TABLE public.player_connections (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), player_id uuid, source text, status text);
+CREATE TABLE public.admin_audit_logs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), admin_user_id uuid NOT NULL,
+  action text NOT NULL, target_user_id uuid, metadata jsonb, created_at timestamptz NOT NULL DEFAULT now());
+CREATE FUNCTION public.is_staff(_user_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+  SET search_path TO '' AS $$ SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role IN ('admin','admin_master')); $$;
+"""
 
 SCHEMA = r"""
 CREATE ROLE anon NOLOGIN;
@@ -97,6 +114,10 @@ def main() -> None:
         started = True
         psql(SCHEMA)
         psql(MIGRATION.read_text())
+        if os.environ.get("NOTIFICATIONS_LATER_MIGRATIONS") == "1":
+            psql(LATER_STUBS)
+            for later in LATER:
+                psql(later.read_text())
         ua, ub = str(uuid.uuid4()), str(uuid.uuid4())
         pa, pb = str(uuid.uuid4()), str(uuid.uuid4())
         q(f"INSERT INTO public.profiles VALUES ('{ua}'),('{ub}');")

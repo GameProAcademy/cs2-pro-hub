@@ -237,8 +237,11 @@ describe("input validation (nothing about identity comes from the client)", () =
   it("cursor, list, mark, preferences and goals accept only well-formed input", () => {
     expect(cursorFrom("2026-11-05T00:00:00Z|8f1c2d3e-0000-4000-8000-000000000001")).not.toBeNull();
     expect(cursorFrom("x|y")).toBeNull();
+    // Fase 4.1 (intentional): the reader's locale picks the campaign text (default pt-BR);
+    // the identity still never comes from the client (userId ignored).
     expect(listInputFrom({ category: "evolution", userId: "someone" })).toEqual({
       category: "evolution",
+      locale: "pt-BR",
       cursor: null,
       unreadOnly: false,
     });
@@ -378,10 +381,12 @@ describe("UI texts in 5 locales", () => {
             training: true,
             coach: true,
             operational: true,
+            announcements: true,
           },
           pausedUntil: null,
           maxPerDay: 10,
           emailEnabled: false,
+          marketingConsent: false,
         }}
       />,
     );
@@ -389,7 +394,12 @@ describe("UI texts in 5 locales", () => {
       /<input type="checkbox"[^>]*disabled=""[^>]*aria-describedby="security-locked"/,
     );
     expect(html).toContain("nenhum consentimento é presumido");
-    expect((html.match(/type="checkbox"/g) ?? []).length).toBe(7);
+    // Fase 4.1 (intentional): + "announcements" switch and the explicit, unchecked marketing
+    // opt-in (6 + 1 + security + marketing = 9).
+    expect((html.match(/type="checkbox"/g) ?? []).length).toBe(9);
+    expect(html).toMatch(
+      /<input type="checkbox" class="mt-1"(?![^>]*checked)[^>]*data-marketing-consent/,
+    );
   });
 
   it("the goal form offers only catalogued metrics", () => {

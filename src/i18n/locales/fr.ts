@@ -6,6 +6,7 @@ import { uxFr } from "./ux/fr";
 import { xrayFr } from "./xray/fr";
 import { coach2Fr } from "./coach2/fr";
 import { notifyFr } from "./notify/fr";
+import { adminNotifyFr } from "./adminNotify/fr";
 import { profileFr } from "./profile/fr";
 
 export const fr: Dictionary = {
@@ -17,6 +18,7 @@ export const fr: Dictionary = {
   ...xrayFr,
   ...coach2Fr,
   ...notifyFr,
+  ...adminNotifyFr,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Analyse de performance et entraînement pour Counter-Strike 2",

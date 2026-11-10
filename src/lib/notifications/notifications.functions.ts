@@ -48,6 +48,8 @@ export interface NotificationView {
   link: string;
   createdAt: string;
   readAt: string | null;
+  /** Campaign notifications only: the approved text in the reader's language (or source). */
+  content?: { title: string; body: string } | null;
 }
 
 export interface NotificationPage {
@@ -59,15 +61,23 @@ export interface NotificationPage {
 
 export interface NotificationPrefs {
   available: boolean;
-  categories: Record<Exclude<NotificationCategory, "account_security">, boolean>;
+  categories: Record<SwitchableCategory, boolean>;
   pausedUntil: string | null;
   maxPerDay: number;
   emailEnabled: false;
+  /** Explicit opt-in for commercial notices (OFF by default; an account is not consent). */
+  marketingConsent: boolean;
 }
 
+/** Essential (account & security) and consent-governed (marketing) categories are not switches. */
+type SwitchableCategory = Exclude<NotificationCategory, "account_security" | "marketing">;
 const SWITCHABLE = NOTIFICATION_CATEGORIES.filter(
-  (c): c is Exclude<NotificationCategory, "account_security"> => c !== "account_security",
+  (c): c is SwitchableCategory => c !== "account_security" && c !== "marketing",
 );
+const LOCALES = ["pt-BR", "pt-PT", "en", "es", "fr"] as const;
+type NotifyLocale = (typeof LOCALES)[number];
+/** 42703 / PGRST204: a column of a later migration is not in the database yet. */
+const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
 
 // ------------------------------------------------------------------ pure validators
 /** Cursor = "<created_at ISO>|<uuid>" (keyset pagination: no duplicates, no gaps). */
@@ -82,12 +92,37 @@ export function listInputFrom(value: unknown): {
   category: NotificationCategory | null;
   cursor: { at: string; id: string } | null;
   unreadOnly: boolean;
+  locale: NotifyLocale;
 } {
   const v = (value ?? {}) as Record<string, unknown>;
   const category = NOTIFICATION_CATEGORIES.includes(v["category"] as NotificationCategory)
     ? (v["category"] as NotificationCategory)
     : null;
-  return { category, cursor: cursorFrom(v["cursor"]), unreadOnly: v["unreadOnly"] === true };
+  const locale = (LOCALES as readonly unknown[]).includes(v["locale"])
+    ? (v["locale"] as NotifyLocale)
+    : "pt-BR";
+  return {
+    category,
+    cursor: cursorFrom(v["cursor"]),
+    unreadOnly: v["unreadOnly"] === true,
+    locale,
+  };
+}
+
+/**
+ * Pure: the text a reader sees for a campaign — their language when an approved text exists,
+ * otherwise the campaign's source language, otherwise none (generic notice). RLS already
+ * limits the rows to approved texts of campaigns this reader received.
+ */
+export function campaignContent(
+  rows: Array<{ campaign_id: string; locale: string; title: string; body: string }>,
+  campaignId: string,
+  locale: string,
+  fallback: string | undefined,
+): { title: string; body: string } | null {
+  const mine = rows.filter((r) => r.campaign_id === campaignId);
+  const pick = mine.find((r) => r.locale === locale) ?? mine.find((r) => r.locale === fallback);
+  return pick ? { title: pick.title, body: pick.body } : null;
 }
 
 export function markInputFrom(
@@ -113,12 +148,16 @@ export function prefsInputFrom(value: unknown):
       categories: NotificationPrefs["categories"];
       pauseHours: number | null;
       maxPerDay: number;
+      marketingConsent?: boolean;
     }
   | { ok: false } {
   const v = (value ?? {}) as Record<string, unknown>;
   const cats = (v["categories"] ?? {}) as Record<string, unknown>;
   const categories = {} as NotificationPrefs["categories"];
   for (const c of SWITCHABLE) {
+    // Fase 4.1: a client built before "announcements" existed omits it → left unchanged
+    // (undefined is dropped from the upsert; a new row gets the column default, ON).
+    if (c === "announcements" && cats[c] === undefined) continue;
     if (typeof cats[c] !== "boolean") return { ok: false };
     categories[c] = cats[c] as boolean;
   }
@@ -127,11 +166,15 @@ export function prefsInputFrom(value: unknown):
   const max = v["maxPerDay"];
   if (typeof max !== "number" || !Number.isInteger(max) || max < 1 || max > 30)
     return { ok: false };
+  const consent = v["marketingConsent"];
+  if (consent !== undefined && typeof consent !== "boolean") return { ok: false };
   return {
     ok: true,
     categories,
     pauseHours: pause === 0 ? null : (pause as number | null),
     maxPerDay: max,
+    // Absent = unchanged (an older client never revokes or grants consent by omission).
+    ...(consent === undefined ? {} : { marketingConsent: consent }),
   };
 }
 
@@ -343,6 +386,37 @@ export const listNotifications = createServerFn({ method: "GET" })
     const page = (rows ?? [])
       .slice(0, NOTIFICATION_PAGE_SIZE)
       .map((r) => view(r as Record<string, unknown>));
+    // Campaign texts (Fase 4.1), read under RLS: approved, and only of campaigns received.
+    const campaignIds = [
+      ...new Set(
+        page
+          .filter((n) => n.type === "campaign" && typeof n.params["campaign_id"] === "string")
+          .map((n) => n.params["campaign_id"] as string),
+      ),
+    ].filter((id) => UUID.test(id));
+    if (campaignIds.length) {
+      const { data: texts, error: textError } = await db
+        .from("notification_campaign_translations")
+        .select("campaign_id, locale, title, body")
+        .in("campaign_id", campaignIds);
+      // A failed read shows the generic campaign notice; it never fails the list.
+      const rowsOk = textError
+        ? []
+        : ((texts ?? []) as Array<{
+            campaign_id: string;
+            locale: string;
+            title: string;
+            body: string;
+          }>);
+      for (const n of page)
+        if (n.type === "campaign")
+          n.content = campaignContent(
+            rowsOk,
+            String(n.params["campaign_id"] ?? ""),
+            data.locale,
+            typeof n.params["fallback"] === "string" ? n.params["fallback"] : undefined,
+          );
+    }
     const more = (rows ?? []).length > NOTIFICATION_PAGE_SIZE;
     const last = page.at(-1);
     return {
@@ -410,6 +484,7 @@ export const getNotificationPreferences = createServerFn({ method: "GET" })
           pausedUntil: null,
           maxPerDay: 10,
           emailEnabled: false,
+          marketingConsent: false,
         };
       throw new Error(`NOTIFY_PREFS_READ_FAILED:${error.code ?? "unknown"}`);
     }
@@ -422,6 +497,7 @@ export const getNotificationPreferences = createServerFn({ method: "GET" })
       pausedUntil: (row["paused_until"] as string | null) ?? null,
       maxPerDay: (row["max_per_day"] as number | undefined) ?? 10,
       emailEnabled: false,
+      marketingConsent: row["marketing_consent"] === true,
     };
   });
 
@@ -431,20 +507,30 @@ export const saveNotificationPreferences = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     if (!data.ok) return { ok: false as const };
     const db = context.supabase as unknown as AnyDb;
-    const { error } = await db.from("notification_preferences").upsert(
-      {
-        user_id: context.userId,
-        ...data.categories,
-        paused_until: data.pauseHours
-          ? new Date(Date.now() + data.pauseHours * 3_600_000).toISOString()
-          : null,
-        max_per_day: data.maxPerDay,
-        // External channels stay OFF: no consent is collected or implied here.
-        email_enabled: false,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+    const row: Record<string, unknown> = {
+      user_id: context.userId,
+      ...data.categories,
+      paused_until: data.pauseHours
+        ? new Date(Date.now() + data.pauseHours * 3_600_000).toISOString()
+        : null,
+      max_per_day: data.maxPerDay,
+      // External channels stay OFF: no e-mail consent is collected or implied here.
+      email_enabled: false,
+      updated_at: new Date().toISOString(),
+    };
+    // Marketing: only an explicit choice changes it, and an opt-in records when it was given.
+    if (data.marketingConsent === true) {
+      row["marketing_consent"] = true;
+      row["marketing_consent_at"] = new Date().toISOString();
+    } else if (data.marketingConsent === false) row["marketing_consent"] = false;
+    const upsert = (r: Record<string, unknown>) =>
+      db.from("notification_preferences").upsert(r, { onConflict: "user_id" });
+    let { error } = await upsert(row);
+    // Before the Fase 4.1 migration the announcements column does not exist yet.
+    if (error && MISSING_COLUMN.has(error.code ?? "") && "announcements" in row) {
+      delete row["announcements"];
+      ({ error } = await upsert(row));
+    }
     if (error) throw new Error(`NOTIFY_PREFS_WRITE_FAILED:${error.code ?? "unknown"}`);
     return { ok: true as const };
   });

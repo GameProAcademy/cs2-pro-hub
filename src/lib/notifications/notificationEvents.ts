@@ -29,7 +29,11 @@ export type NotificationCategory =
   | "training"
   | "coach"
   | "account_security"
-  | "operational";
+  | "operational"
+  /** Fase 4.1 campaigns: product / educational announcements (switchable). */
+  | "announcements"
+  /** Fase 4.1 commercial campaigns: only with explicit marketing consent (not a switch). */
+  | "marketing";
 
 export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   "demo_processing",
@@ -39,6 +43,8 @@ export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   "coach",
   "account_security",
   "operational",
+  "announcements",
+  "marketing",
 ];
 
 export interface NotificationEvent {

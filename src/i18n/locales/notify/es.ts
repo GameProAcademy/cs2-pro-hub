@@ -32,6 +32,13 @@ export const notifyEs: Record<keyof typeof notifyPtBR, string> = {
   "notify.cat.coach": "AI Coach",
   "notify.cat.account_security": "Cuenta y seguridad",
   "notify.cat.operational": "Avisos operativos",
+  "notify.cat.announcements": "Novedades y contenidos",
+  "notify.cat.marketing": "Ofertas (opcional)",
+  "notify.type.campaign.title": "Novedad de CS2 PRO",
+  "notify.type.campaign.body": "Ábrela para ver los detalles.",
+  "notify.prefs.marketing": "Quiero recibir ofertas y contenidos comerciales de CS2 PRO",
+  "notify.prefs.marketingHint":
+    "Opcional y desactivado por defecto. Puedes desactivarlo cuando quieras.",
   "notify.type.analysis_ready.title": "Análisis listo",
   "notify.type.analysis_ready.body": "El análisis de tu partida ya está disponible.",
   "notify.type.analysis_ready.bodyMap": "El análisis de tu partida en {map} ya está disponible.",
