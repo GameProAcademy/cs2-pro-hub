@@ -1034,11 +1034,11 @@ export const ptBR = {
   "real.dna.description":
     "Sinais medidos nas suas partidas processadas. Não há comparação com outros jogadores nem pontuação.",
   "real.dna.basis":
-    "Baseado em {matches} partida(s), {rounds} rounds amostrados, {partial} com leitura parcial. Cada valor é a média do sinal nas partidas em que ele foi observado.",
+    "Baseado em {matches} partida(s), {rounds} rounds amostrados, {partial} com leitura parcial. Cada valor soma todas as partidas em que o sinal foi observado, com peso pela amostra de cada uma (rounds, duelos de abertura ou clutches).",
   "real.dna.insufficient":
     "Amostra insuficiente: {matches} de {minimum} partidas mínimas. Os valores abaixo são reais, mas ainda não representam um perfil estável.",
   "real.dna.radarSub":
-    "Média dos sinais observados em cada dimensão (0–100; sinais em que menor é melhor entram como complemento). Só dimensões com sinal observado aparecem.",
+    "Média dos sinais que entram em cada dimensão (0–100; sinais em que menor é melhor entram como complemento). Cada grandeza conta uma vez, e taxas com menos de {min} eventos ficam de fora. É um índice do CS2 PRO, não uma comparação com outros jogadores.",
   "real.dna.notObserved": "Não observado",
   "real.dna.inMatches": "em {n} partida(s)",
   "real.dna.empty":
@@ -1069,6 +1069,15 @@ export const ptBR = {
   "real.aicoach.error.tooLong": "A mensagem passa de 1000 caracteres. Encurte e envie de novo.",
   "real.aicoach.error.conversation":
     "Esta conversa não está mais disponível. Comece uma nova conversa.",
+  "real.dna.notFolded.COMPLEMENT":
+    "não entra no índice: é o complemento de outro sinal desta dimensão",
+  "real.dna.notFolded.THIN_SAMPLE": "não entra no índice: menos de {min} eventos somados",
+  "real.dna.sample.opening_duels": "{n} duelo(s) de abertura",
+  "real.dna.sample.clutches": "{n} clutch(es)",
+  "real.dna.history.version": "Método",
+  "real.dna.history.versionNote":
+    "Snapshots de métodos diferentes não são comparáveis entre si: o método atual é {version}.",
+  "real.dna.history.dimensions": "Dimensões com índice",
   "real.dna.flagYes": "Sim",
   "real.dna.flagNo": "Não",
 } as const;

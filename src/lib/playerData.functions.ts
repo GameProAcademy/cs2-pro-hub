@@ -3,8 +3,14 @@
  *
  * Reads only with the signed-in player's own Supabase session, so every row
  * is filtered by RLS (`demo_jobs_select_own`, `uploads_select_own`,
- * `match_metrics_select_own`, `matches_select_own`). The service role is never
- * used here. A failed query is an error, never an empty result.
+ * `match_metrics_select_own`, `matches_select_own`). A failed query is an error,
+ * never an empty result.
+ *
+ * The service role is used for exactly one thing, in a server-only module
+ * (`quarantineRead.server`): asking which of the caller's own match ids are in the
+ * Canonical quarantine registry (client roles cannot read it), so quarantined matches are
+ * left out of every aggregate the player sees, exactly as they are left out of the
+ * persisted DNA snapshot. It fails closed.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
@@ -26,6 +32,7 @@ import {
   type DnaFeatureRow,
   type RealPlayerDna,
 } from "@/lib/playerDna";
+import type { DnaSnapshotFeatureRow } from "@/lib/playerDnaSnapshot";
 
 const JOB_COLUMNS =
   "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations";
@@ -43,43 +50,80 @@ export const getPlayerOverview = createServerFn({ method: "GET" })
   );
 
 /**
- * The caller's own Player DNA, plus the persisted snapshot it corresponds to.
+ * The caller's own Player DNA, plus the persisted snapshot of exactly these inputs, if any.
  *
- * WRITES (by design, documented): it refreshes the caller's DNA snapshot (idempotent by
- * input digest) so a profile that predates snapshotting gets one. Only `/player-dna` may
- * call it; the Dashboard uses the read-only `getDnaSummary` (xray.functions.ts).
+ * READ ONLY (Fundação 4.2): it never writes. The snapshot is looked up by the digest of the
+ * rows the caller sees; when none exists yet (`snapshot: null` on a non-empty profile — a
+ * profile that predates snapshotting, or a new DNA version), the page calls the explicit,
+ * idempotent `refreshOwnDnaSnapshot` (POST). The pipeline persists the snapshot after every
+ * processed match, so that call is the exception.
  */
 export const getRealPlayerDna = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RealPlayerDna> => {
-    const { dna: computed, playerIds } = await loadPlayerDna(context.supabase, context.userId);
+    const {
+      dna: computed,
+      playerIds,
+      rows,
+    } = await loadPlayerDna(context.supabase, context.userId);
     // Provisional dimension values never leave the server (Fase 2.1, publishableDna).
     const dna = publishableDna(computed);
     if (dna.state === "EMPTY" || playerIds.length !== 1) return { ...dna, snapshot: null };
-    // Persist (idempotently) the snapshot of exactly what the caller sees. The player id
-    // comes from the caller's own RLS-filtered player_profiles row, never from input.
     try {
-      // Server-only module: the service-role client is loaded there, never here.
-      const { refreshOwnPlayerDnaSnapshot } = await import("@/lib/playerDnaSnapshot.server");
-      const snap = await refreshOwnPlayerDnaSnapshot(playerIds[0]!);
+      const { dnaInputDigest } = await import("@/lib/playerDnaSnapshot.server");
+      const digest = dnaInputDigest(rows);
+      // Own snapshot rows only (RLS `dna_snapshots_select_own`); columns added by a manual
+      // migration are not in the generated types.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (context.supabase as unknown as SupabaseClient<any>)
+        .from("player_dna_snapshots")
+        .select("created_at, dna_version, match_count")
+        .eq("player_id", playerIds[0]!)
+        .eq("input_digest", digest)
+        .maybeSingle();
+      if (error) throw new Error(`PLAYER_DNA_SNAPSHOT_READ_FAILED:${error.code ?? "unknown"}`);
       return {
         ...dna,
-        snapshot:
-          snap.status === "empty"
-            ? null
-            : {
-                createdAt: snap.createdAt,
-                dnaVersion: snap.dnaVersion,
-                matchCount: snap.matchCount,
-              },
+        snapshot: data
+          ? {
+              createdAt: (data.created_at as string | null) ?? null,
+              dnaVersion: (data.dna_version as string | null) ?? null,
+              matchCount: Number(data.match_count ?? dna.matches),
+            }
+          : null,
       };
     } catch (error) {
-      console.error("[player-dna] snapshot refresh failed", {
+      console.error("[player-dna] snapshot read failed", {
         code: error instanceof Error ? error.message.split(":")[0] : "unknown",
       });
       return { ...dna, snapshot: null };
     }
   });
+
+/**
+ * Persists (idempotently, by input digest) the caller's own DNA snapshot. Explicit write:
+ * POST, authenticated, no input. The player id comes from the caller's own RLS-filtered
+ * `player_profiles` row, never from the client; the service role is used only inside the
+ * server-only module to write the row RLS reserves for the server.
+ */
+export const refreshOwnDnaSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({ context }): Promise<{ status: "created" | "unchanged" | "empty" | "unavailable" }> => {
+      const playerIds = await ownPlayerIds(context.supabase, context.userId, "PLAYER_DNA");
+      if (playerIds.length !== 1) return { status: "unavailable" };
+      try {
+        const { refreshOwnPlayerDnaSnapshot } = await import("@/lib/playerDnaSnapshot.server");
+        const snap = await refreshOwnPlayerDnaSnapshot(playerIds[0]!);
+        return { status: snap.status };
+      } catch (error) {
+        console.error("[player-dna] snapshot refresh failed", {
+          code: error instanceof Error ? error.message.split(":")[0] : "unknown",
+        });
+        return { status: "unavailable" };
+      }
+    },
+  );
 
 /**
  * Shared loaders (RLS-scoped to the caller). Exported for the AI Coach, which
@@ -118,7 +162,10 @@ export async function loadPlayerOverview(
   if (metricsError)
     throw new Error(`PLAYER_OVERVIEW_METRICS_FAILED:${metricsError.code ?? "unknown"}`);
 
-  const matchIds = [...new Set((metrics ?? []).map((row) => row.match_id))];
+  // Quarantined matches never reach an aggregate (same rule as the DNA snapshot).
+  const quarantined = await quarantinedOwn((metrics ?? []).map((row) => row.match_id));
+  const visibleMetrics = (metrics ?? []).filter((row) => !quarantined.has(row.match_id));
+  const matchIds = [...new Set(visibleMetrics.map((row) => row.match_id))];
   const { data: matches, error: matchesError } = matchIds.length
     ? await supabase.from("matches").select(MATCH_COLUMNS).in("id", matchIds)
     : { data: [], error: null };
@@ -128,7 +175,7 @@ export async function loadPlayerOverview(
   const overview = buildOverview({
     jobs: (jobs ?? []) as OverviewJobRow[],
     fileNames: new Map((uploads ?? []).map((upload) => [upload.id, upload.file_name])),
-    metrics: (metrics ?? []) as OverviewMetricRow[],
+    metrics: visibleMetrics as OverviewMetricRow[],
     matches: (matches ?? []) as OverviewMatchRow[],
     now: new Date(),
   });
@@ -172,18 +219,31 @@ async function loadFlashMethods(
 export async function loadPlayerDna(
   supabase: SupabaseClient<Database>,
   userId: string,
-): Promise<{ dna: RealPlayerDna; playerIds: string[] }> {
+): Promise<{ dna: RealPlayerDna; playerIds: string[]; rows: DnaSnapshotFeatureRow[] }> {
   const playerIds = await ownPlayerIds(supabase, userId, "PLAYER_DNA");
-  const { data: rows, error } = playerIds.length
+  const { data, error } = playerIds.length
     ? await supabase
         .from("match_features")
-        .select("match_id, partial_parse, sample_rounds, features")
+        .select(
+          "match_id, partial_parse, sample_rounds, sample_opening_duels, sample_clutches, features, schema_version, analysis_version, created_at",
+        )
         .in("player_id", playerIds)
         .order("created_at", { ascending: false })
         .limit(MAX_MATCHES)
     : { data: [], error: null };
   if (error) throw new Error(`PLAYER_DNA_FEATURES_FAILED:${error.code ?? "unknown"}`);
-  return { dna: buildPlayerDna((rows ?? []) as DnaFeatureRow[]), playerIds };
+  const all = (data ?? []) as DnaSnapshotFeatureRow[];
+  // Same inputs as the persisted snapshot: quarantined matches are never aggregated.
+  const quarantined = await quarantinedOwn(all.map((row) => row.match_id));
+  const rows = all.filter((row) => !quarantined.has(row.match_id));
+  return { dna: buildPlayerDna(rows as DnaFeatureRow[]), playerIds, rows };
+}
+
+/** Server-only lookup, loaded lazily so the service-role client never enters a client bundle. */
+async function quarantinedOwn(matchIds: string[]): Promise<Set<string>> {
+  if (!matchIds.length) return new Set();
+  const { quarantinedAmong } = await import("@/lib/quarantineRead.server");
+  return quarantinedAmong(matchIds);
 }
 
 // RLS also lets staff read other players' rows; every read here is the caller's

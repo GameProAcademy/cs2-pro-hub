@@ -3,9 +3,10 @@
  * feature signals (`getRealPlayerDna`); nothing is compared with a population
  * that does not exist, and an unobserved signal is shown as "not observed".
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { DnaRadarChart } from "@/components/charts/DnaRadarChart";
 import { ChartCard } from "@/components/common/ChartCard";
@@ -19,9 +20,9 @@ import { dnaLabelKey } from "@/lib/dna";
 import { formatSignalValue } from "@/lib/dnaFormat";
 import { signalLabel } from "@/lib/dnaSignalLabels";
 import { NOT_AVAILABLE_MARK, fill, formatDateTime } from "@/lib/format";
-import { getRealPlayerDna } from "@/lib/playerData.functions";
+import { getRealPlayerDna, refreshOwnDnaSnapshot } from "@/lib/playerData.functions";
 import { getDnaHistory, getDnaSummary } from "@/lib/xray.functions";
-import type { RealPlayerDna } from "@/lib/playerDna";
+import { DNA_MIN_EVENT_SAMPLE, DNA_VERSION, type RealPlayerDna } from "@/lib/playerDna";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
 
@@ -68,7 +69,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
         <ChartCard
           showDemoTag={false}
           title={t("dna.radarTitle")}
-          subtitle={t("real.dna.radarSub")}
+          subtitle={fill(t("real.dna.radarSub"), { min: DNA_MIN_EVENT_SAMPLE })}
         >
           <DnaRadarChart
             showAverage={false}
@@ -102,6 +103,14 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                 <li key={s.name} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <span className="text-xs text-muted-foreground">
                     {signalLabel(s.name, locale)}
+                    {s.mean !== null &&
+                    (s.notFolded === "COMPLEMENT" || s.notFolded === "THIN_SAMPLE") ? (
+                      <span className="block text-[11px]" data-dna-not-folded={s.notFolded}>
+                        {fill(t(`real.dna.notFolded.${s.notFolded}`), {
+                          min: DNA_MIN_EVENT_SAMPLE,
+                        })}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="font-mono">
                     {s.mean === null
@@ -115,6 +124,11 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                         )}
                     <span className="ml-2 text-[11px] text-muted-foreground">
                       {t("real.dna.inMatches").replace("{n}", String(s.matches))}
+                      {s.mean !== null &&
+                      s.sample != null &&
+                      (s.sampleUnit === "opening_duels" || s.sampleUnit === "clutches")
+                        ? ` · ${fill(t(`real.dna.sample.${s.sampleUnit}`), { n: s.sample })}`
+                        : ""}
                     </span>
                   </span>
                 </li>
@@ -139,7 +153,7 @@ function DnaHistory() {
     <ChartCard
       showDemoTag={false}
       title={t("real.dna.history.title")}
-      subtitle={t("real.dna.history.description")}
+      subtitle={`${t("real.dna.history.description")} ${fill(t("real.dna.history.versionNote"), { version: DNA_VERSION })}`}
     >
       {query.isPending ? (
         <LoadingState />
@@ -158,6 +172,8 @@ function DnaHistory() {
               <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 <th className="py-2 pr-4 font-normal">{t("real.dna.history.date")}</th>
                 <th className="py-2 pr-4 font-normal">{t("real.dna.history.matches")}</th>
+                <th className="py-2 pr-4 font-normal">{t("real.dna.history.version")}</th>
+                <th className="py-2 pr-4 font-normal">{t("real.dna.history.dimensions")}</th>
                 <th className="py-2 font-normal">{t("real.dna.history.state")}</th>
               </tr>
             </thead>
@@ -168,6 +184,10 @@ function DnaHistory() {
                     <time dateTime={h.createdAt}>{formatDateTime(h.createdAt, intlTag)}</time>
                   </td>
                   <td className="py-2 pr-4 font-mono">{h.matchCount ?? "—"}</td>
+                  <td className="py-2 pr-4 font-mono text-xs">{h.dnaVersion ?? "—"}</td>
+                  <td className="py-2 pr-4 font-mono">
+                    {Object.values(h.dimensions).filter((v) => v !== null).length}
+                  </td>
                   <td className="py-2 text-muted-foreground">
                     {h.state === "READY" || h.state === "INSUFFICIENT_SAMPLE"
                       ? t(`real.dna.history.${h.state}` as TranslationKey)
@@ -243,7 +263,26 @@ export function DnaSummaryBody({ text, state }: { text: string | null; state: st
 
 export function RealPlayerDnaPage() {
   const t = useT();
+  const queryClient = useQueryClient();
   const query = useQuery({ queryKey: PLAYER_DNA_QUERY_KEY, queryFn: () => getRealPlayerDna() });
+  // The read never writes. A non-empty profile without a snapshot of its current inputs
+  // (older profile, or a new DNA method) asks for one explicitly, once per page visit.
+  const refresh = useMutation({
+    mutationFn: () => refreshOwnDnaSnapshot(),
+    onSuccess: (result) => {
+      if (result.status === "created" || result.status === "unchanged")
+        void queryClient.invalidateQueries({ queryKey: PLAYER_DNA_QUERY_KEY });
+    },
+  });
+  const asked = useRef(false);
+  const needsSnapshot =
+    query.data !== undefined && query.data.state !== "EMPTY" && !query.data.snapshot;
+  useEffect(() => {
+    if (needsSnapshot && !asked.current) {
+      asked.current = true;
+      refresh.mutate();
+    }
+  }, [needsSnapshot, refresh]);
   return (
     <AppShell>
       <div className="space-y-8">

@@ -50,6 +50,8 @@ export function snapshotDigestInput(rows: DnaSnapshotFeatureRow[]): string {
       match_id: row.match_id,
       partial_parse: row.partial_parse ?? null,
       sample_rounds: row.sample_rounds ?? null,
+      sample_opening_duels: row.sample_opening_duels ?? null,
+      sample_clutches: row.sample_clutches ?? null,
       schema_version: row.schema_version ?? null,
       analysis_version: row.analysis_version ?? null,
       features: row.features ?? null,

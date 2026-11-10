@@ -1010,11 +1010,11 @@ export const en: Dictionary = {
   "real.dna.description":
     "Signals measured in your processed matches. No comparison with other players and no score.",
   "real.dna.basis":
-    "Based on {matches} match(es), {rounds} sampled rounds, {partial} partially read. Each value is the mean of the signal over the matches where it was observed.",
+    "Based on {matches} match(es), {rounds} sampled rounds, {partial} partially read. Each value pools every match where the signal was observed, weighted by that match's sample (rounds, opening duels or clutches).",
   "real.dna.insufficient":
     "Insufficient sample: {matches} of a minimum {minimum} matches. The values below are real but do not yet describe a stable profile.",
   "real.dna.radarSub":
-    "Mean of the observed signals in each dimension (0–100; lower-is-better signals enter as their complement). Only dimensions with an observed signal are shown.",
+    "Mean of the signals that enter each dimension (0–100; lower-is-better signals enter as their complement). Each quantity counts once, and rates over fewer than {min} events are left out. It is a CS2 PRO index, not a comparison with other players.",
   "real.dna.notObserved": "Not observed",
   "real.dna.inMatches": "in {n} match(es)",
   "real.dna.empty":
@@ -1045,6 +1045,15 @@ export const en: Dictionary = {
     "The message is longer than 1000 characters. Shorten it and send again.",
   "real.aicoach.error.conversation":
     "This conversation is no longer available. Start a new conversation.",
+  "real.dna.notFolded.COMPLEMENT":
+    "not in the index: it is the complement of another signal in this dimension",
+  "real.dna.notFolded.THIN_SAMPLE": "not in the index: fewer than {min} pooled events",
+  "real.dna.sample.opening_duels": "{n} opening duel(s)",
+  "real.dna.sample.clutches": "{n} clutch(es)",
+  "real.dna.history.version": "Method",
+  "real.dna.history.versionNote":
+    "Snapshots from different methods are not comparable with each other: the current method is {version}.",
+  "real.dna.history.dimensions": "Dimensions with an index",
   "real.dna.flagYes": "Yes",
   "real.dna.flagNo": "No",
 };

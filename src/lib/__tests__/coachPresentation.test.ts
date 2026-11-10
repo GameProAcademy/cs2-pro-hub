@@ -63,6 +63,9 @@ describe("Player DNA signal labels", () => {
       match_id: id,
       partial_parse: false,
       sample_rounds: 24,
+      // dna-weighted-v2 (intentional): an event-sampled signal shapes its dimension only
+      // with its pooled sample (here 3 × 4 = 12 clutch situations, above the minimum of 10).
+      sample_clutches: 4,
       features: {
         clutch: { clutch_win_rate: 0.167 },
         aim: { hs_rate: 0.5, damage_per_round: 0.845 },
