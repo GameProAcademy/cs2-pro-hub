@@ -52,7 +52,16 @@ The user is never taken from the client: every server function derives it from t
   switched off; pause and daily cap do not apply to it.
 - External channels are OFF. `email_enabled` defaults to false, cannot be true without a
   recorded consent (CHECK), and the server always writes false in this phase. No e-mail, push
-  or SMS is sent. Creating an account is not consent, and no marketing consent is collected.
+  or SMS is sent. Creating an account is not consent.
+- Fase 4.1: an explicit, unchecked-by-default opt-in "receive offers and commercial content"
+  sets `marketing_consent` and records `marketing_consent_at`. It is sent only when the player
+  changes it, so re-saving never re-dates consent. Commercial campaigns (category `marketing`)
+  reach only opted-in players: the audience excludes everyone else, and `notification_ingest`
+  also suppresses `marketing` without consent (`NO_MARKETING_CONSENT`).
+- Fase 4.1 adds the `announcements` category (product / educational campaigns), switchable and
+  ON by default. Campaign announcements and marketing are capped at 2 per player per 7 days
+  (`FREQUENCY_LIMIT`), on top of the daily cap. Campaigns are documented in
+  [ADMIN_NOTIFICATION_CENTER.md](./ADMIN_NOTIFICATION_CENTER.md).
 - Pause: 24 h or 7 days. Daily cap: 1–30 (default 10), enforced atomically per user.
 
 ## Analytics and health

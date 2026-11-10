@@ -82,6 +82,15 @@ export function notificationText(n: NotificationView, t: T): { title: string; bo
         title: t("notify.type.goal_reminder.title"),
         body: fill(t("notify.type.goal_reminder.body"), vars),
       };
+    case "campaign":
+      // Approved text chosen by the server (reader's language, else the campaign's source);
+      // without it, a generic notice — never an unapproved or another campaign's text.
+      return (
+        n.content ?? {
+          title: t("notify.type.campaign.title"),
+          body: t("notify.type.campaign.body"),
+        }
+      );
     default:
       return { title: t(`notify.cat.${n.category}` as TranslationKey), body: "" };
   }
@@ -138,17 +147,16 @@ function useMark() {
 
 export function NotificationBell() {
   const t = useT();
-  const { intlTag } = useI18n();
+  const { intlTag, locale } = useI18n();
   const [open, setOpen] = useState(false);
   useNotificationSync();
   const list = useQuery({
-    queryKey: [...NOTIFICATIONS_KEY, "bell"],
-    queryFn: () => listNotifications({ data: {} }),
+    queryKey: [...NOTIFICATIONS_KEY, "bell", locale],
+    queryFn: () => listNotifications({ data: { locale } }),
     refetchInterval: 60_000,
   });
   const mark = useMark();
   const unread = list.data?.unread ?? 0;
-  const { locale } = useI18n();
   if (list.data && !list.data.available) return null;
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -251,16 +259,18 @@ export function NotificationBell() {
 
 export function NotificationCenter() {
   const t = useT();
-  const { intlTag } = useI18n();
+  const { intlTag, locale } = useI18n();
   const [category, setCategory] = useState<NotificationCategory | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const queryClient = useQueryClient();
   const mark = useMark();
   const [deleteFailed, setDeleteFailed] = useState(false);
   const pages = useInfiniteQuery({
-    queryKey: [...NOTIFICATIONS_KEY, "center", category, unreadOnly],
+    queryKey: [...NOTIFICATIONS_KEY, "center", category, unreadOnly, locale],
     queryFn: ({ pageParam }) =>
-      listNotifications({ data: { category, unreadOnly, cursor: pageParam ?? undefined } }),
+      listNotifications({
+        data: { category, unreadOnly, cursor: pageParam ?? undefined, locale },
+      }),
     initialPageParam: null as string | null,
     getNextPageParam: (last: NotificationPage) => last.nextCursor,
   });
@@ -443,6 +453,7 @@ export function PreferencesForm({ initial }: { initial: NotificationPrefs }) {
   const [categories, setCategories] = useState(initial.categories);
   const [pause, setPause] = useState<0 | 24 | 168>(0);
   const [maxPerDay, setMaxPerDay] = useState(initial.maxPerDay);
+  const [marketing, setMarketing] = useState(initial.marketingConsent === true);
   const [status, setStatus] = useState<"idle" | "busy" | "saved" | "error">("idle");
   const paused =
     initial.pausedUntil && Date.parse(initial.pausedUntil) > Date.now()
@@ -504,6 +515,22 @@ export function PreferencesForm({ initial }: { initial: NotificationPrefs }) {
           />
         </label>
       </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={marketing}
+          aria-describedby="marketing-consent-hint"
+          onChange={(e) => setMarketing(e.target.checked)}
+          data-marketing-consent
+        />
+        <span>
+          {t("notify.prefs.marketing")}
+          <span id="marketing-consent-hint" className="block text-xs text-muted-foreground">
+            {t("notify.prefs.marketingHint")}
+          </span>
+        </span>
+      </label>
       <p className="text-xs text-muted-foreground">
         <strong className="font-medium text-foreground">{t("notify.prefs.email")}:</strong>{" "}
         {t("notify.prefs.emailOff")}
@@ -516,7 +543,15 @@ export function PreferencesForm({ initial }: { initial: NotificationPrefs }) {
             setStatus("busy");
             try {
               const r = await saveNotificationPreferences({
-                data: { categories, pauseHours: pause || 0, maxPerDay },
+                data: {
+                  categories,
+                  pauseHours: pause || 0,
+                  maxPerDay,
+                  // Sent only when the player changed it: re-saving never re-dates consent.
+                  ...(marketing !== (initial.marketingConsent === true)
+                    ? { marketingConsent: marketing }
+                    : {}),
+                },
               });
               if (!r.ok) throw new Error("invalid");
               await queryClient.invalidateQueries({ queryKey: PREFS_KEY });

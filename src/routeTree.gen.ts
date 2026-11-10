@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin/catalog'
 import { Route as AuthenticatedAdminDemoE2eRouteImport } from './routes/_authenticated/admin/demo-e2e'
 import { Route as AuthenticatedAdminMemoryLabRouteImport } from './routes/_authenticated/admin/memory-lab'
+import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
@@ -169,6 +170,12 @@ const AuthenticatedAdminMemoryLabRoute =
     path: '/memory-lab',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminNotificationsRoute =
+  AuthenticatedAdminNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminPipelineRoute =
   AuthenticatedAdminPipelineRouteImport.update({
     id: '/pipeline',
@@ -286,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
+  '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -325,6 +333,7 @@ export interface FileRoutesByTo {
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
+  '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -367,6 +376,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
   '/_authenticated/admin/memory-lab': typeof AuthenticatedAdminMemoryLabRoute
+  '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/demo-e2e'
     | '/admin/memory-lab'
+    | '/admin/notifications'
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
@@ -448,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/demo-e2e'
     | '/admin/memory-lab'
+    | '/admin/notifications'
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
@@ -489,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/demo-e2e'
     | '/_authenticated/admin/memory-lab'
+    | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
@@ -692,6 +705,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMemoryLabRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/notifications': {
+      id: '/_authenticated/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AuthenticatedAdminNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/pipeline': {
       id: '/_authenticated/admin/pipeline'
       path: '/pipeline'
@@ -812,6 +832,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCatalogRoute: typeof AuthenticatedAdminCatalogRoute
   AuthenticatedAdminDemoE2eRoute: typeof AuthenticatedAdminDemoE2eRoute
   AuthenticatedAdminMemoryLabRoute: typeof AuthenticatedAdminMemoryLabRoute
+  AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminPipelineRoute: typeof AuthenticatedAdminPipelineRoute
   AuthenticatedAdminR5ForensicRoute: typeof AuthenticatedAdminR5ForensicRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -824,6 +845,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCatalogRoute: AuthenticatedAdminCatalogRoute,
     AuthenticatedAdminDemoE2eRoute: AuthenticatedAdminDemoE2eRoute,
     AuthenticatedAdminMemoryLabRoute: AuthenticatedAdminMemoryLabRoute,
+    AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminPipelineRoute: AuthenticatedAdminPipelineRoute,
     AuthenticatedAdminR5ForensicRoute: AuthenticatedAdminR5ForensicRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
