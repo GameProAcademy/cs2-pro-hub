@@ -173,7 +173,8 @@ Snapshots are produced by the pipeline after every processed match
   aggregation (HS%, ADR, KAST, rating are **means of matches**, not pooled).
 - Never use or derive a DNA dimension index unless `indexStatus = READY`.
 - Inferences and recommendations only when present; `inferenceBlockedBy` explains absence.
-- No result, score, win rate, CS2 PRO Score, enemies flashed, positions or economy class.
+- No result, score, win rate, enemies flashed, positions or economy class. The CS2 PRO Score
+  only as given in `proScore` (see `docs/reference/PRO_SCORE.md`), never estimated.
 - Flash assists: cite as "reported by the game flag", not as an independently verified 0.
 - **Fase 3.1 (done):** the Coach context (`coach-context-v1`, `docs/reference/COACH_CONTEXT.md`)
   consumes `xray-v1` and sends no DNA index, "N / 100" or strongest/weakest below the minimum
