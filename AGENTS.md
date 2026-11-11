@@ -28,3 +28,4 @@
 - Keep browser parse lifecycle resources in per-execution closures with one ownership token; stale async callbacks must never clean up a newer execution.
 - Keep app data-state and future metric/Coach traceability schemas separate from authorization evaluators; render contracts must never grant execution authority.
 - Require emitted browser entries before bundle-seal scanning and include source maps; empty or server-only output cannot prove browser isolation.
+- Start every session at `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`, then only the active phase file under `docs/checkpoints/`; verify it against the real GitHub state and update both as work lands (protocol: `docs/checkpoints/README.md`), because a checkpoint that is not on the remote does not exist.
