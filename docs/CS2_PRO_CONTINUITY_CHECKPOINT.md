@@ -15,15 +15,15 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 | Item                               | Valor                                                                                                                                                                 |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fase atual                         | Nenhuma das cinco fases iniciada. Missão de fundação: CONCLUÍDA (ver `checkpoints/FOUNDATION_CHECKPOINT.md`)                                                          |
-| Etapa atual                        | Implantação deste protocolo de continuidade (PR documental)                                                                                                           |
-| Última etapa concluída             | Merge do relatório de fundação — PR #259 → `main` `13cfcde8`                                                                                                          |
-| Última operação concluída          | Gates de `main` em `13cfcde8` verdes (H.3-E: 1ª execução falhou, 2ª passou)                                                                                           |
-| Operações em andamento             | Nenhuma além do PR deste protocolo                                                                                                                                    |
+| Etapa atual                        | Aguardando definição das cinco fases e as decisões da seção 22                                                                                                        |
+| Última etapa concluída             | Protocolo de continuidade implantado — PR #260 → `main` `72fb0cdb`                                                                                                    |
+| Última operação concluída          | Gates de `main` em `72fb0cdb` verdes (H.3-E: 1ª execução falhou, 2ª passou)                                                                                           |
+| Operações em andamento             | Nenhuma (além do PR que registra este estado)                                                                                                                         |
 | Processos em execução              | Nenhum                                                                                                                                                                |
 | Alterações locais não commitadas   | Nenhuma                                                                                                                                                               |
-| Branch ativa                       | `docs/continuity-checkpoints`                                                                                                                                         |
-| Último commit confirmado em `main` | `13cfcde8f3dbd4ecf3148f065b1391a801e7e9a6`                                                                                                                            |
-| Build validado em produção         | `f1276859` (o merge `13cfcde8` é só documentação e não foi publicado)                                                                                                 |
+| Branch ativa                       | `main`                                                                                                                                                                |
+| Último commit confirmado em `main` | `72fb0cdbc5cf65835b8b81c6f65042afd56b4d50` (o merge do PR que registra este estado vem depois; conferir no GitHub)                                                    |
+| Build validado em produção         | `f1276859` (`13cfcde8`, `72fb0cdb` e posteriores só documentação, não publicados)                                                                                     |
 | Problemas abertos                  | Seção 21 e pendências do relatório de fundação (seção J)                                                                                                              |
 | **Próxima ação exata**             | Receber do dono do projeto (a) os nomes/escopos das cinco fases mestre e (b) as três decisões da seção 22; então preencher `PHASE_1_CHECKPOINT.md` e iniciar a Fase 1 |
 | Ações que NÃO devem ser repetidas  | Auditoria do Score, do DNA, dos snapshots, da navegação e da matriz A–J; publicação de `f1276859`; perguntas de validação ao Coach                                    |
@@ -36,13 +36,13 @@ Aplicação: https://gamepro.network · Banco e publicação: Lovable Cloud · P
 
 ## 2. Estado atual do projeto
 
-`main` = `13cfcde8`. Fundação analítica e visual auditada, corrigida e publicada (Score
+`main` = `72fb0cdb`. Fundação analítica e visual auditada, corrigida e publicada (Score
 `pro-score-v1`, DNA `dna-weighted-v2`, Coach coerente com ambos). Fase 4.2 não iniciada.
 
 ## 3. Objetivo da missão vigente
 
-Missão de fundação (PROMPT MESTRE DE FUNDAÇÃO): CONCLUÍDA. Missão corrente: implantar este
-protocolo de continuidade. Próxima: Fase 1 das cinco fases mestre, quando definida.
+Missão de fundação (PROMPT MESTRE DE FUNDAÇÃO): CONCLUÍDA. Protocolo de continuidade: IMPLANTADO
+(PR #260). Próxima: Fase 1 das cinco fases mestre, quando definida.
 
 ## 4–5. As cinco fases mestre e a situação de cada uma
 
@@ -110,26 +110,26 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                         | Branch                        | Merge em `main` | Estado                            |
-| -------------------------- | ----------------------------- | --------------- | --------------------------------- |
-| #256 DNA v2                | `fix/player-dna-v2`           | `0ebfedf2`      | merged                            |
-| #257 Score v1              | `feat/pro-score-v1`           | `975c7d11`      | merged                            |
-| #258 Coach/Score           | `fix/coach-score-facts`       | `f1276859`      | merged                            |
-| #259 Relatório de fundação | `docs/foundation-report`      | `13cfcde8`      | merged                            |
-| este protocolo             | `docs/continuity-checkpoints` | —               | ver seção 24 (conferir no GitHub) |
+| PR                             | Branch                        | Merge em `main` | Estado |
+| ------------------------------ | ----------------------------- | --------------- | ------ |
+| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`      | merged |
+| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`      | merged |
+| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`      | merged |
+| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`      | merged |
+| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`      | merged |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
 
 ## 18. Estado do CI
 
-`main` `13cfcde8`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
+`main` `72fb0cdb`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
 H.3-E (2ª execução) — todos `success`. CONFIRMADO em 2026-11-11.
 
 ## 19. Publicação e deploy
 
 Publicado via `deploy_project` do Lovable; build servido validado por comportamento em
-`f1276859`. VALIDADO EM PRODUÇÃO. `13cfcde8` e este PR são documentação: NÃO APLICÁVEL.
+`f1276859`. VALIDADO EM PRODUÇÃO. `13cfcde8`, `72fb0cdb` e posteriores são documentação: NÃO APLICÁVEL.
 
 ## 20. Gates de segurança e critérios não comprovados
 
@@ -173,12 +173,12 @@ Preexistente e preservado: `docs/A9_1_CONTINUITY_CHECKPOINT.md`.
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
 - Fase atual: nenhuma iniciada; fundação concluída
-- Estado: fundação VALIDADA EM PRODUÇÃO; protocolo de continuidade implantado
-- Última etapa concluída: relatório de fundação em `main` (`13cfcde8`)
+- Estado: fundação VALIDADA EM PRODUÇÃO; protocolo de continuidade em `main`
+- Última etapa concluída: protocolo de continuidade em `main` (`72fb0cdb`)
 - Próxima ação: receber nomes/escopos das cinco fases e as 3 decisões; preencher Fase 1
 - Branch: `main`
-- Commit: `13cfcde8` (+ merge deste protocolo — conferir)
-- PR: #256–#259 merged
+- Commit: `72fb0cdb` (+ merge do PR que registrou este estado — conferir)
+- PR: #256–#260 merged
 - CI: `main` verde
 - Testes pendentes: E2E das telas novas; Score em celular com dados
 - Bloqueios: definição das fases; decisões da seção 22
