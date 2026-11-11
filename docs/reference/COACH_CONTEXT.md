@@ -249,3 +249,8 @@ with their weight and whether each entered the Score. In any other state `shown`
 `components` is empty and `notAvailable` says the Score is not available. Prompt rule 22:
 the Score is an absolute index — never a percentile, rank, tier or comparison — and is never
 estimated. Provider, model and response guards are unchanged.
+
+`proScore.score` and `components[].valuePercent` repeat the shown values as numbers: the reply
+guard only backs numbers that are numeric in the facts, so without them a reply quoting the
+real Score lost its figure (seen in production on 2026-11-10 and fixed; the guard itself was
+not changed).

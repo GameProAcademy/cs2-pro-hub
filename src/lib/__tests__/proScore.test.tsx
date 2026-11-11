@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { dictionaries, type Locale } from "@/i18n/config";
 import { buildCoachFacts, coachSystemPrompt } from "@/lib/coach/coachContext";
+import { guardCoachReply } from "@/lib/coach/coachReplyGuard";
 import { FEATURE_CATALOG } from "@/lib/pipeline/features.catalog";
 import { buildPlayerDna } from "@/lib/playerDna";
 import type { PlayerOverview } from "@/lib/playerOverview";
@@ -349,6 +350,35 @@ describe("one value on every surface", () => {
     const none = buildCoachFacts(overview, buildPlayerDna([]), "en");
     expect(none.proScore).toMatchObject({ status: "NOT_OBSERVED", shown: null });
     expect(JSON.stringify(few.proScore)).not.toMatch(/\d\d\.\d \/ 100/);
+  });
+
+  it("a reply quoting the Score and its components survives the reply guard; an invented one does not", () => {
+    const overview = { matches: [], aggregates: null } as unknown as PlayerOverview;
+    const facts = buildCoachFacts(overview, buildPlayerDna([]), "pt-BR", {
+      proScore: buildProScore(PRODUCTION),
+    });
+    expect(facts.proScore.score).toBe(67.1);
+    const reply = (line: string) =>
+      guardCoachReply(
+        `Dados\n\n- ${line}\n\nInterpretação\n\nok.\n\nRecomendação\n\nok.`,
+        facts,
+        "pt-BR",
+      );
+    const real = reply("CS2 PRO Score: 67,1 / 100, com 63 rounds e cobertura de 85%. KAST 76,2%.");
+    expect(real.text).toContain("67,1 / 100");
+    expect(real.text).toContain("76,2%");
+    expect(real.removed.stats).toBe(0);
+    const invented = reply("CS2 PRO Score: 71,4 / 100.");
+    expect(invented.text).not.toContain("71,4");
+    expect(invented.removed.stats).toBeGreaterThan(0);
+    // The guard itself is unchanged: a percentile sentence is still removed.
+    const pct = reply("Você está no percentil 80.");
+    expect(pct.removed.comparisons + pct.removed.stats).toBeGreaterThan(0);
+    // Below READY no numeric score exists to quote.
+    const few = buildCoachFacts(overview, buildPlayerDna([]), "pt-BR", {
+      proScore: buildProScore(PRODUCTION.slice(0, 2)),
+    });
+    expect(few.proScore.score).toBeNull();
   });
 
   it("the Coach is told it is an absolute index, never a percentile or a comparison", () => {

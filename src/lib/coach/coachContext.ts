@@ -285,6 +285,8 @@ export interface CoachFacts {
     version: string;
     /** "67.1 / 100" when READY, otherwise null (a state, never a value). */
     shown: string | null;
+    /** The same value as a number (so a reply quoting it is verifiable), or null. */
+    score: number | null;
     confidence: "PROVISIONAL" | "MODERATE" | "HIGH" | null;
     coveragePercent: number;
     matches: number;
@@ -292,6 +294,8 @@ export interface CoachFacts {
     components: Array<{
       component: string;
       shown: string;
+      valuePercent: number | null;
+      sample: number;
       weightPercent: number;
       inScore: boolean;
     }>;
@@ -614,6 +618,7 @@ function coachProScore(
       status: "NOT_OBSERVED",
       version: score?.version ?? PRO_SCORE_VERSION,
       shown: null,
+      score: null,
       confidence: null,
       coveragePercent: 0,
       matches: score?.matches ?? 0,
@@ -625,6 +630,8 @@ function coachProScore(
     status: ready ? "READY" : (score.state as "INSUFFICIENT_SAMPLE" | "INSUFFICIENT_COVERAGE"),
     version: score.version,
     shown: ready ? `${(score.score as number).toFixed(1)} / 100` : null,
+    // Numeric copy of `shown`: the reply guard only backs numbers that are numbers in the facts.
+    score: ready ? score.score : null,
     confidence: ready ? score.confidence : null,
     coveragePercent: Math.round(score.coverage * 100),
     matches: score.matches,
@@ -635,6 +642,8 @@ function coachProScore(
           component: dict[`score.c.${c.id}`] ?? c.id,
           shown:
             c.value === null ? dict["real.dna.notObserved"]! : `${(c.value * 100).toFixed(1)}%`,
+          valuePercent: c.value === null ? null : Math.round(c.value * 1000) / 10,
+          sample: c.sample,
           weightPercent: Math.round(c.weight * 100),
           inScore: c.available,
         }))
@@ -729,7 +738,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
-    "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill.",
+    "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill. Sentences that mention a percentile, a rank or other players are removed before the player sees the answer: state the Score in its own sentence, and if the player asks for a percentile, rank or comparison, answer in a SEPARATE short sentence that the app has no such comparison, without repeating those words next to the Score.",
     ...coachPersonaRules(),
   ].join("\n");
 }
