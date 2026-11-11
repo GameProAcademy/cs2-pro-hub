@@ -325,3 +325,8 @@ em produção (cobertos só por teste automatizado).
     não alterei o gate. Vale corrigir a ordenação do workflow para não normalizar um vermelho.
 13. O Coach ainda pode perder uma frase se o modelo juntar o Score e a palavra "percentil"; o
     guard a remove (seguro, mas a resposta fica menos útil).
+14. **Teste instável no CI:** no PR deste relatório (somente documentação), a 1ª execução do
+    job web falhou por tempo esgotado (5 s) em `gate1d.test.ts` › "accepts .dem and rejects
+    extension and size violations"; passou localmente e na reexecução do mesmo commit, sem
+    alteração do teste. Hipótese não demonstrada: carga do runner. Vale dar a esse teste um
+    limite compatível com o que ele faz ou torná-lo mais leve.
