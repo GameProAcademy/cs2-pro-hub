@@ -210,8 +210,11 @@ describe("wiring", () => {
   });
 
   it("the Dashboard Pro Score panel links to its explanation", () => {
-    const page = read("src/routes/_authenticated/dashboard.tsx");
-    expect(page).toContain('<Link to="/performance" hash="cs2-pro-score">');
+    // Fundação 4.2: the panel is now the real Score card; the link lives in that component.
+    expect(read("src/routes/_authenticated/dashboard.tsx")).toContain("<RealProScoreCard />");
+    expect(read("src/components/real/RealProScore.tsx")).toContain(
+      '<Link to="/performance" hash="cs2-pro-score">',
+    );
   });
 
   it("training explains where lessons open and that progress is not tracked here", () => {

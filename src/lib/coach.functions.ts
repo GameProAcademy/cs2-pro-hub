@@ -13,6 +13,7 @@
  * Provider: the Lovable AI Gateway (`coach/coachProvider.server.ts`); the key
  * never leaves the server. Every failure returns a stable code, never a stack.
  */
+import { buildProScore } from "@/lib/proScore";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -363,7 +364,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         log: (event, detail) => console.info(`[ai-coach] ${event}`, detail),
         generate: async (markProviderCalled) => {
           stage = "context";
-          const [overview, { dna }, declared, preferredName] = await Promise.all([
+          const [overview, { dna, rows: dnaRows }, declared, preferredName] = await Promise.all([
             loadPlayerOverview(db, context.userId),
             loadPlayerDna(db, context.userId),
             loadDeclaredProfile(db, playerId),
@@ -388,6 +389,8 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             message: input.message,
             xray: buildXRay({ overview, dna, sides }),
             declared,
+            // Same rows, same pure function as the Dashboard / Performance Score.
+            proScore: buildProScore(dnaRows),
           });
           // Catalog: a few items relevant to THIS message (never the catalog itself). A
           // catalog read failure only means no suggestions; the Coach still answers.

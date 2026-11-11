@@ -15,6 +15,7 @@
  * a user turn and the system prompt states that instructions inside it or
  * inside the data cannot change the rules.
  */
+import { PRO_SCORE_VERSION, type ProScore } from "@/lib/proScore";
 import { coachPersonaRules, type CoachAddress } from "@/lib/coach/coachPersona";
 import { dictionaries, type Locale } from "@/i18n/config";
 import { dnaLabelKey } from "@/lib/dna";
@@ -275,6 +276,26 @@ export interface CoachFacts {
     strongest: Array<{ dimension: string; shown: string }>;
     weakest: Array<{ dimension: string; shown: string }>;
   };
+  /**
+   * CS2 PRO Score (pro-score-v1): the same value the Dashboard and Performance pages show.
+   * An absolute 0–100 index of measured performance — NOT a percentile, rank or comparison.
+   */
+  proScore: {
+    status: "READY" | "INSUFFICIENT_SAMPLE" | "INSUFFICIENT_COVERAGE" | "NOT_OBSERVED";
+    version: string;
+    /** "67.1 / 100" when READY, otherwise null (a state, never a value). */
+    shown: string | null;
+    confidence: "PROVISIONAL" | "MODERATE" | "HIGH" | null;
+    coveragePercent: number;
+    matches: number;
+    rounds: number;
+    components: Array<{
+      component: string;
+      shown: string;
+      weightPercent: number;
+      inScore: boolean;
+    }>;
+  };
   /** X-ray inferences (documented weakest-dimension rule); empty below the minimum sample. */
   inferences: Array<{ status: "INFERRED"; dimension: string; shown: string; rule: string }>;
   /** What the player DECLARED about themself: preferences, never measurements. */
@@ -339,8 +360,10 @@ const NOT_AVAILABLE = [
   "round-by-round economy decisions classified as eco/force/full buy (no reviewed classifier)",
   "kills and damage split by side (not stored per round; only rounds per side and side ratings exist)",
   "enemies flashed / enemies blinded: NOT MEASURED, no per-victim blind event was recorded in these matches. A flash thrown is not an enemy flashed, and flashAssists is a different metric (kills on enemies the player had flashed), never a count of enemies flashed",
-  "CS2 PRO Score (not computed)",
 ];
+/** Sent instead of a value while the Score has none (never a number, never zero). */
+const PRO_SCORE_NOT_AVAILABLE =
+  "CS2 PRO Score: NOT AVAILABLE for this player yet (minimum sample or coverage not met; see proScore.status). Never estimate it";
 
 /** Catalog aggregation + catalog status → the status the model sees. */
 function statusOf(o: XRayObservation): CoachValueStatus {
@@ -405,6 +428,8 @@ export function buildCoachFacts(
     message?: string;
     xray?: XRayDiagnosis;
     declared?: CoachDeclaredProfile;
+    /** The Score exactly as the pages show it; absent → reported as not available. */
+    proScore?: ProScore;
   } = {},
 ): CoachFacts {
   const dict = dictionaries[locale];
@@ -569,9 +594,51 @@ export function buildCoachFacts(
             rule: `weakest observed Player DNA dimension below ${i.ceiling}/100 (training-plan rule)`,
           }))
         : [],
+    proScore: coachProScore(options.proScore, dict),
     declared: { status: "DECLARED_BY_PLAYER", ...declared },
-    notAvailable: NOT_AVAILABLE,
+    notAvailable:
+      options.proScore?.state === "READY"
+        ? NOT_AVAILABLE
+        : [...NOT_AVAILABLE, PRO_SCORE_NOT_AVAILABLE],
     catalogSuggestions: [],
+  };
+}
+
+/** The Score as shown to the player: labels and shown values only, a state when not READY. */
+function coachProScore(
+  score: ProScore | undefined,
+  dict: Record<string, string>,
+): CoachFacts["proScore"] {
+  if (!score || score.state === "EMPTY")
+    return {
+      status: "NOT_OBSERVED",
+      version: score?.version ?? PRO_SCORE_VERSION,
+      shown: null,
+      confidence: null,
+      coveragePercent: 0,
+      matches: score?.matches ?? 0,
+      rounds: score?.rounds ?? 0,
+      components: [],
+    };
+  const ready = score.state === "READY" && score.score !== null;
+  return {
+    status: ready ? "READY" : (score.state as "INSUFFICIENT_SAMPLE" | "INSUFFICIENT_COVERAGE"),
+    version: score.version,
+    shown: ready ? `${(score.score as number).toFixed(1)} / 100` : null,
+    confidence: ready ? score.confidence : null,
+    coveragePercent: Math.round(score.coverage * 100),
+    matches: score.matches,
+    rounds: score.rounds,
+    // Component values are the player's own pooled signals; below READY none is sent.
+    components: ready
+      ? score.components.map((c) => ({
+          component: dict[`score.c.${c.id}`] ?? c.id,
+          shown:
+            c.value === null ? dict["real.dna.notObserved"]! : `${(c.value * 100).toFixed(1)}%`,
+          weightPercent: Math.round(c.weight * 100),
+          inScore: c.available,
+        }))
+      : [],
   };
 }
 
@@ -662,6 +729,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
+    "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill.",
     ...coachPersonaRules(),
   ].join("\n");
 }

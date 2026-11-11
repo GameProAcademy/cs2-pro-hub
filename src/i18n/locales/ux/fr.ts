@@ -56,12 +56,12 @@ export const uxFr: Record<keyof typeof uxPtBR, string> = {
   "glossary.proScore.label": "CS2 PRO Score",
   "glossary.proScore.short": "PRO Score",
   "glossary.proScore.definition":
-    "La note globale de performance de CS2 PRO. Elle n’est pas encore calculée : elle ne sera affichée qu’une fois sa formule, ses poids et son échantillon minimal validés.",
+    "Indice de 0 à 100 de votre performance mesurée sur les matchs complets : moyenne pondérée du KAST, des dégâts et éliminations par round, de l’équilibre éliminations / morts, de la survie, des duels d’ouverture et des clutchs. Ce n’est ni un percentile ni une comparaison avec d’autres joueurs.",
 
   "real.proScoreContext.body":
-    "Le CS2 PRO Score n’est pas encore calculé. Il n’apparaîtra qu’une fois sa formule, ses poids et le nombre minimal de matchs validés, et ce ne sera jamais une estimation.",
+    "Le CS2 PRO Score résume votre performance mesurée en un indice de 0 à 100. Il n’apparaît qu’avec au moins 3 matchs complets et une couverture suffisante, et ce n’est jamais une estimation.",
   "real.proScoreContext.instead":
-    "En attendant, suivez sur cette page les statistiques mesurées dans vos matchs. Le rating du tableau des matchs ne vaut que pour chaque match et ne remplace pas le CS2 PRO Score.",
+    "Le rating affiché dans le tableau des matchs ne vaut que pour chaque match isolé et ne remplace pas le CS2 PRO Score.",
   "real.proScore.where": "En savoir plus dans Performance",
   "training.real.accessNote":
     "CS2 PRO se contente de recommander des leçons du catalogue GamePro, choisies à partir de vos matchs et de vos objectifs, et d’afficher le lien. La leçon s’ouvre sur hub.gamepro.academy, dans un nouvel onglet, avec votre propre identifiant sur cette plateforme. CS2 PRO ne reçoit aucune information de sa part : il ne sait pas si vous avez ouvert, regardé ou terminé une leçon, et rien de tout cela n’entre dans vos statistiques ni dans vos recommandations.",

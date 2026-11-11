@@ -56,12 +56,12 @@ export const uxEn: Record<keyof typeof uxPtBR, string> = {
   "glossary.proScore.label": "CS2 PRO Score",
   "glossary.proScore.short": "PRO Score",
   "glossary.proScore.definition":
-    "CS2 PRO's overall performance score. It is not calculated yet: it will be shown only once its formula, weights and minimum sample are validated.",
+    "A 0–100 index of your measured performance over complete matches: a weighted mean of KAST, damage and kills per round, kill and death balance, survival, opening duels and clutches. It is not a percentile or a comparison with other players.",
 
   "real.proScoreContext.body":
-    "The CS2 PRO Score is not calculated yet. It will appear only once its formula, weights and minimum number of matches are validated, and it will never be an estimate.",
+    "The CS2 PRO Score summarises your measured performance as a 0–100 index. It only appears with at least 3 complete matches and enough coverage, and it is never an estimate.",
   "real.proScoreContext.instead":
-    "Meanwhile, follow the metrics measured in your matches on this page. The rating in the matches table applies to each single match only and does not replace the CS2 PRO Score.",
+    "The rating shown in the match table applies to each match alone and does not replace the CS2 PRO Score.",
   "real.proScore.where": "Learn more in Performance",
   "training.real.accessNote":
     "CS2 PRO only recommends lessons from the GamePro catalog, chosen from your matches and goals, and shows the link. The lesson opens on hub.gamepro.academy in a new tab, with your own login for that platform. CS2 PRO receives no information from it: it does not know whether you opened, watched or finished a lesson, and none of that feeds your metrics or recommendations.",

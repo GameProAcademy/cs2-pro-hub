@@ -89,7 +89,7 @@ interpolated from engine config (`{tradeWindow}` = `TRADE_WINDOW_SECONDS`,
 | `flashAssists`                   | Assistências por flash      | game flag, else flash within flash window                                |
 | `clutch`                         | Clutch                      | last alive vs ≥1; unavailable without kill events                        |
 | `utility`                        | Utilitários                 | HE, flash, smoke, molotov/incendiary, decoy                              |
-| `proScore`                       | CS2 PRO Score               | **not computed** (see gaps)                                              |
+| `proScore`                       | CS2 PRO Score               | `pro-score-v1` — see `docs/reference/PRO_SCORE.md`                       |
 
 ## 6. Information architecture (routes)
 
@@ -102,12 +102,13 @@ Deep links: `/performance#cs2-pro-score` (score context, linked from the Dashboa
 
 ## 7. Documented gaps (do not fill without a specification)
 
-- **CS2 PRO Score:** no approved formula, weights, benchmark or minimum sample. It stays
-  "não disponível". When specified, it must show period and sample size.
+- **CS2 PRO Score:** specified as `pro-score-v1` (`docs/reference/PRO_SCORE.md`): absolute
+  index, no percentile / tier / benchmark; shown with matches, rounds, coverage and
+  confidence. No history yet.
 - **Training access / pass / subscription:** no plan, pass, checkout or entitlement exists
   in this codebase. Lessons open on hub.gamepro.academy, where access is controlled.
 - **Lesson progress:** out of scope by architecture (see §9), not a gap to fill.
-- **Without engine (`NotAvailablePanel`):** CS2 PRO Score and performance trends. The
+- **Without engine (`NotAvailablePanel`):** performance trends. The
   AI Coach (`/coach`), Player DNA (`/player-dna`, "em formação" below 3 matches) and the
   Raio-X (`/analysis`, contract `xray-v1`) run on real data; the Dashboard shows the real DNA
   state.

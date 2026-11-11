@@ -11,6 +11,7 @@ import { xrayPtBR } from "./xray/pt-BR";
 import { coach2PtBR } from "./coach2/pt-BR";
 import { notifyPtBR } from "./notify/pt-BR";
 import { adminNotifyPtBR } from "./adminNotify/pt-BR";
+import { scorePtBR } from "./score/pt-BR";
 import { profilePtBR } from "./profile/pt-BR";
 
 export const ptBR = {
@@ -23,6 +24,7 @@ export const ptBR = {
   ...coach2PtBR,
   ...notifyPtBR,
   ...adminNotifyPtBR,
+  ...scorePtBR,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análise de performance e treinamento para Counter-Strike 2",
