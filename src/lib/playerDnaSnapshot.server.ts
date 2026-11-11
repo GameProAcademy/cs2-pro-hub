@@ -34,6 +34,11 @@ export interface DnaSnapshotResult {
   matchCount: number;
 }
 
+/** Digest of exactly these rows under the current DNA version (same as the snapshot's). */
+export function dnaInputDigest(rows: DnaSnapshotFeatureRow[]): string {
+  return createHash("sha256").update(snapshotDigestInput(rows)).digest("hex");
+}
+
 export async function refreshPlayerDnaSnapshot(
   db: SupabaseClient<Database>,
   playerId: string,
@@ -41,7 +46,7 @@ export async function refreshPlayerDnaSnapshot(
   const { data, error } = await db
     .from("match_features")
     .select(
-      "match_id, partial_parse, sample_rounds, features, schema_version, analysis_version, created_at",
+      "match_id, partial_parse, sample_rounds, sample_opening_duels, sample_clutches, features, schema_version, analysis_version, created_at",
     )
     .eq("player_id", playerId)
     .order("created_at", { ascending: false })
@@ -62,7 +67,7 @@ export async function refreshPlayerDnaSnapshot(
   }
 
   const dna = buildPlayerDna(rows);
-  const digest = createHash("sha256").update(snapshotDigestInput(rows)).digest("hex");
+  const digest = dnaInputDigest(rows);
   const row = snapshotRow(playerId, dna, rows, digest);
   if (!row) {
     return { status: "empty", createdAt: null, dnaVersion: null, inputDigest: null, matchCount: 0 };

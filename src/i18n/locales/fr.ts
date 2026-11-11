@@ -1033,11 +1033,11 @@ export const fr: Dictionary = {
   "real.dna.description":
     "Signaux mesurés dans vos matchs traités. Aucune comparaison avec d’autres joueurs et aucun score.",
   "real.dna.basis":
-    "Basé sur {matches} match(s), {rounds} rounds échantillonnés, {partial} lus partiellement. Chaque valeur est la moyenne du signal sur les matchs où il a été observé.",
+    "Basé sur {matches} match(s), {rounds} rounds échantillonnés, {partial} lus partiellement. Chaque valeur cumule tous les matchs où le signal a été observé, pondérés par l’échantillon de chacun (rounds, duels d’ouverture ou clutchs).",
   "real.dna.insufficient":
     "Échantillon insuffisant : {matches} sur {minimum} matchs minimum. Les valeurs sont réelles mais ne décrivent pas encore un profil stable.",
   "real.dna.radarSub":
-    "Moyenne des signaux observés dans chaque dimension (0–100 ; les signaux où moins est mieux entrent en complément). Seules les dimensions avec un signal observé apparaissent.",
+    "Moyenne des signaux qui entrent dans chaque dimension (0–100 ; les signaux où moins est mieux entrent en complément). Chaque grandeur compte une fois, et les taux sur moins de {min} événements sont exclus. C’est un indice CS2 PRO, pas une comparaison avec d’autres joueurs.",
   "real.dna.notObserved": "Non observé",
   "real.dna.inMatches": "dans {n} match(s)",
   "real.dna.empty":
@@ -1069,6 +1069,15 @@ export const fr: Dictionary = {
     "Le message dépasse 1000 caractères. Raccourcissez-le et renvoyez-le.",
   "real.aicoach.error.conversation":
     "Cette conversation n’est plus disponible. Commencez-en une nouvelle.",
+  "real.dna.notFolded.COMPLEMENT":
+    "hors indice : c’est le complément d’un autre signal de cette dimension",
+  "real.dna.notFolded.THIN_SAMPLE": "hors indice : moins de {min} événements cumulés",
+  "real.dna.sample.opening_duels": "{n} duel(s) d’ouverture",
+  "real.dna.sample.clutches": "{n} clutch(s)",
+  "real.dna.history.version": "Méthode",
+  "real.dna.history.versionNote":
+    "Les snapshots de méthodes différentes ne sont pas comparables entre eux : la méthode actuelle est {version}.",
+  "real.dna.history.dimensions": "Dimensions avec indice",
   "real.dna.flagYes": "Oui",
   "real.dna.flagNo": "Non",
 };
