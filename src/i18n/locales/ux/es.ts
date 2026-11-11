@@ -56,12 +56,12 @@ export const uxEs: Record<keyof typeof uxPtBR, string> = {
   "glossary.proScore.label": "CS2 PRO Score",
   "glossary.proScore.short": "PRO Score",
   "glossary.proScore.definition":
-    "La nota general de desempeño de CS2 PRO. Todavía no se calcula: solo se mostrará cuando su fórmula, pesos y muestra mínima estén validados.",
+    "Índice de 0 a 100 de tu rendimiento medido en partidas completas: media ponderada de KAST, daño y bajas por ronda, equilibrio de bajas y muertes, supervivencia, duelos de apertura y clutches. No es un percentil ni una comparación con otros jugadores.",
 
   "real.proScoreContext.body":
-    "El CS2 PRO Score todavía no se calcula. Solo aparecerá cuando su fórmula, sus pesos y la cantidad mínima de partidas estén validados, y nunca será una estimación.",
+    "El CS2 PRO Score resume tu rendimiento medido en un índice de 0 a 100. Solo aparece con al menos 3 partidas completas y cobertura suficiente, y nunca es una estimación.",
   "real.proScoreContext.instead":
-    "Mientras tanto, sigue las métricas medidas en tus partidas en esta página. El rating de la tabla de partidas vale solo para cada partida y no reemplaza al CS2 PRO Score.",
+    "El rating de la tabla de partidas vale solo para cada partida aislada y no sustituye al CS2 PRO Score.",
   "real.proScore.where": "Más información en Rendimiento",
   "training.real.accessNote":
     "CS2 PRO solo recomienda clases del catálogo GamePro, elegidas a partir de tus partidas y objetivos, y muestra el enlace. La clase se abre en hub.gamepro.academy, en una pestaña nueva, con tu propio inicio de sesión en esa plataforma. CS2 PRO no recibe ninguna información de allí: no sabe si abriste, viste o terminaste una clase, y nada de eso entra en tus métricas ni en tus recomendaciones.",

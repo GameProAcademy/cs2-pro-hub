@@ -11,6 +11,7 @@ import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
 import { ProScoreCard } from "@/components/panels/ProScoreCard";
+import { RealProScoreCard } from "@/components/real/RealProScore";
 import { StrengthList } from "@/components/panels/StrengthList";
 import {
   NotAvailablePanel,
@@ -85,17 +86,7 @@ function RealDashboardPage() {
                 </ChartCard>
               ) : null}
               <div className="grid gap-5 lg:grid-cols-2">
-                <NotAvailablePanel
-                  title={t("real.proScore.title")}
-                  reason={t("real.engine.notAvailable")}
-                  action={
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/performance" hash="cs2-pro-score">
-                        {t("real.proScore.where")}
-                      </Link>
-                    </Button>
-                  }
-                />
+                <RealProScoreCard />
                 <RealDnaSummary />
               </div>
               {overview.latestJobs.length ? (

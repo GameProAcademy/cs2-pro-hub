@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RealProScoreDetails } from "@/components/real/RealProScore";
 import { NotAvailablePanel, OverviewStatePanel, WithOverview } from "@/components/real/RealData";
 import { DEMO_DATA } from "@/config/app";
 
@@ -153,7 +154,7 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
   );
 }
 
-/** CS2 PRO Score in context: what it is, that it is not calculated yet, and what to use. */
+/** CS2 PRO Score in context: what it is, the player's value (or why there is none) and how it is formed. */
 function ProScoreContext() {
   const t = useT();
   return (
@@ -171,7 +172,8 @@ function ProScoreContext() {
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {t("real.proScoreContext.body")}
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+      <RealProScoreDetails />
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
         {t("real.proScoreContext.instead")}
       </p>
     </section>

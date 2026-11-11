@@ -239,3 +239,13 @@ contracts and the provider (OpenRouter `openai/gpt-oss-20b`, no fallback) are un
   category only and never the name.
 - Tests: `coachHumanization.test.tsx` (24, plus 4 mutants), and `phase401-harness.py` name
   checks with 1 SQL mutant.
+
+## CS2 PRO Score in the facts (Fundação 4.2, additive)
+
+`PLAYER_FACTS.proScore` carries the same value the pages show (`buildProScore` over the same
+rows): `status`, `version` (`pro-score-v1`), and — only when `status = READY` — `shown`
+(`"67.1 / 100"`), `confidence`, `coveragePercent`, `matches`, `rounds` and the components
+with their weight and whether each entered the Score. In any other state `shown` is `null`,
+`components` is empty and `notAvailable` says the Score is not available. Prompt rule 22:
+the Score is an absolute index — never a percentile, rank, tier or comparison — and is never
+estimated. Provider, model and response guards are unchanged.

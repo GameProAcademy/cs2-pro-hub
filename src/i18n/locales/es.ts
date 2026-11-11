@@ -7,6 +7,7 @@ import { xrayEs } from "./xray/es";
 import { coach2Es } from "./coach2/es";
 import { notifyEs } from "./notify/es";
 import { adminNotifyEs } from "./adminNotify/es";
+import { scoreEs } from "./score/es";
 import { profileEs } from "./profile/es";
 
 export const es: Dictionary = {
@@ -19,6 +20,7 @@ export const es: Dictionary = {
   ...coach2Es,
   ...notifyEs,
   ...adminNotifyEs,
+  ...scoreEs,
   "brand.descriptor": "AI Coach",
   "brand.ariaLabel": "CS2 PRO AI COACH",
   "brand.tagline": "Análisis de rendimiento y entrenamiento para Counter-Strike 2",
