@@ -171,7 +171,7 @@ hoje (**[EM ABERTO]**, ver §6). "Dependência do parser" lista os eventos/campo
 | Fora do índice    | `early_death_avoidance` (COMPLEMENT de `early_death_rate`).                                                                                                                                                                                                                                                     |
 | Vieses            | Saves em rounds perdidos elevam sobrevivência (crítica que levou o HLTV 2.1 a reduzir esse prêmio). Funções de suporte/âncora sobrevivem mais por desenho. `untraded_death_rate` depende do time (um jogador bem posicionado pode não ser trocado por falha dos colegas) → **penaliza por contexto de equipe**. |
 | Parser            | mortes com tempo, janela de trade (`TRADE_WINDOW_SECONDS`), fim de round comprovado.                                                                                                                                                                                                                            |
-| Calibração futura | Separar sobrevivência em rounds vencidos e perdidos exige vencedor do round (bloqueado por L04).                                                                                                                                                                                                                |
+| Calibração futura | Separar sobrevivência em rounds vencidos e perdidos exige vencedor do round por jogador — disponível (lado vencedor × lado do jogador; ver correção no §10).                                                                                                                                                    |
 
 ### 4.4 Posicionamento (`positioning`)
 
@@ -360,19 +360,20 @@ divide crédito** entre colegas e não usa probabilidade de vitória.
 
 ## 10. Metodologia de validação dos pesos [RECOMENDAÇÃO]
 
-| Etapa                           | Pergunta                          | Método                                                                                                                                                | Dados necessários                       | Disponível hoje?                                                                     |
-| ------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
-| A — auditoria dos componentes   | Medem coisas diferentes?          | Matriz de correlação de Spearman jogador-partida; VIF; análise de componentes principais para ver quantas dimensões independentes existem             | ≥ dezenas de jogadores × partidas       | Não (5 linhas de features). Executável com o código atual quando houver dados        |
-| B — consistência                | A nota estabiliza com a amostra?  | Curva de confiabilidade do Score e de cada componente (§6); IC por bootstrap de rounds                                                                | Rounds por jogador                      | Parcial: precisa da projeção por round                                               |
-| C — sensibilidade               | Quanto a nota depende dos pesos?  | Perturbar pesos (Dirichlet centrado nos atuais, concentração declarada); medir variação absoluta da nota e estabilidade de ordenação (tau de Kendall) | População                               | Não                                                                                  |
-| D — contexto                    | Favorece funções, mapas ou lados? | Resíduo da nota por estrato (mapa, lado, proxy de função: participação em aberturas, fração de abates com AWP)                                        | Função proxy, lado por round            | Lado sim; função não                                                                 |
-| E — validação externa           | Relaciona-se a algo independente? | Associação com participação em rounds vencidos; comparação com avaliações independentes, se licenciadas                                               | **Vencedor do round e time do jogador** | **Bloqueado por `L04-MATCH-RESULT-UNRESOLVED`** (`docs/ADMISSION_CONTRACT_V3.md:51`) |
-| F — aprovação de `pro-score-v2` | Vale mudar?                       | Documento de mudança (§18.4) com resultados de A–E, regressão contra v1 nas mesmas partidas, rollback                                                 | Tudo acima                              | Não                                                                                  |
+| Etapa                           | Pergunta                          | Método                                                                                                                                                | Dados necessários                                  | Disponível hoje?                                                                                       |
+| ------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A — auditoria dos componentes   | Medem coisas diferentes?          | Matriz de correlação de Spearman jogador-partida; VIF; análise de componentes principais para ver quantas dimensões independentes existem             | ≥ dezenas de jogadores × partidas                  | Não (5 linhas de features). Executável com o código atual quando houver dados                          |
+| B — consistência                | A nota estabiliza com a amostra?  | Curva de confiabilidade do Score e de cada componente (§6); IC por bootstrap de rounds                                                                | Rounds por jogador                                 | Parcial: precisa da projeção por round                                                                 |
+| C — sensibilidade               | Quanto a nota depende dos pesos?  | Perturbar pesos (Dirichlet centrado nos atuais, concentração declarada); medir variação absoluta da nota e estabilidade de ordenação (tau de Kendall) | População                                          | Não                                                                                                    |
+| D — contexto                    | Favorece funções, mapas ou lados? | Resíduo da nota por estrato (mapa, lado, proxy de função: participação em aberturas, fração de abates com AWP)                                        | Função proxy, lado por round                       | Lado sim; função não                                                                                   |
+| E — validação externa           | Relaciona-se a algo independente? | Associação com participação em rounds vencidos; comparação com avaliações independentes, se licenciadas                                               | Lado vencedor do round e lado do jogador por round | **Disponível por round** (validado, ver correção abaixo); placar e time continuam bloqueados por `L04` |
+| F — aprovação de `pro-score-v2` | Vale mudar?                       | Documento de mudança (§18.4) com resultados de A–E, regressão contra v1 nas mesmas partidas, rollback                                                 | Tudo acima                                         | Não                                                                                                    |
 
-**[DECISÃO]** `pro-score-v1` e seus pesos ficam intactos durante toda esta validação. A etapa E
-permanece **bloqueada por L04** até o pipeline identificar time e vencedor por round com
-evidência da própria demo; nenhum vencedor de round será inferido, estimado ou inventado para
-contorná-la.
+**[DECISÃO]** `pro-score-v1` e seus pesos ficam intactos durante toda esta validação. Nenhum
+vencedor é inferido de abates ou mortes: usa-se apenas o vencedor gravado pelo parser
+(duas observações concordantes).
+
+**Correção (2026-11-12, `docs/specifications/FASE_4_2_MAPEAMENTO.md` §4):** o lado vencedor do round e o lado do jogador por round **existem** em produção e foram validados contra eliminações (62 de 63 consistentes, 1 vitória T legítima por explosão, 0 contradições). L04 bloqueia identidade de time, placar e resultado da partida — **não** o vencedor do round.
 
 Regras: correlação com vitória **não prova**, sozinha, qualidade individual (time forte infla
 todos); validação sempre **fora da amostra** e **temporal** (treinar em partidas antigas, testar
@@ -521,6 +522,15 @@ a partir de uma morte ou de uma partida; heatmap amostrado diz que é amostrado.
 
 ## 14. Dados ausentes e inválidos — contrato de estados
 
+**Atualização (2026-11-12):** a especificação mestre da Fase 4.2 (§4 do original) define a
+taxonomia oficial: `OBSERVED`, `DERIVED`, `INFERRED`, `NOT_OBSERVED`, `NOT_MEASURED`,
+`INSUFFICIENT_SAMPLE`, `UNAVAILABLE`. **Ela prevalece** sobre o vocabulário abaixo, que passa a
+ser apenas o mapeamento dos estados já existentes. Correspondência: `MEASURED` → `OBSERVED` ou
+`DERIVED`; `PROVISIONAL` → `OBSERVED`/`DERIVED` com amostra declarada (a especificação reserva
+`confidence` para valores calibrados); `NOT_MEASURED` → `NOT_MEASURED`/`NOT_OBSERVED`/
+`UNAVAILABLE` conforme a causa; `INVALID` não tem equivalente direto e é tratado como
+`UNAVAILABLE` com motivo. Para posições, `MEASURED` corresponde a `OBSERVED`.
+
 **[DECISÃO]** Vocabulário único, **mapeado sobre os estados já existentes** (sem criar duplicatas):
 
 | Estado canônico       | Significado                               | Estados existentes que ele cobre                                                                                   |
@@ -621,8 +631,8 @@ coberto pelo guard de resposta.
 2. Pesos do Score heurísticos (§9).
 3. Dimensões correlacionadas e grandezas repetidas (§4.11).
 4. Sem posições persistidas (§11.1).
-5. Vencedor do round e time do jogador indisponíveis (L04) → sem validação por vitória, sem
-   probabilidade de vitória.
+5. Time do jogador, placar e resultado da partida indisponíveis (L04). Vencedor do round por lado
+   **disponível** (correção de 2026-11-12, §10). Sem modelo de probabilidade de vitória.
 6. `buy_context` e `survived` vazios em `round_players`; `weapon_fire` sem autor.
 7. Amostra de produção mínima (3 perfis; 6 partidas).
 8. Pesquisa: HLTV e Reddit não lidos diretamente; CStrike e CS2d.app não localizados (pesquisa §1).
@@ -633,8 +643,8 @@ Ordem proposta, do menor risco ao maior; cada item exige autorização própria 
 
 1. Texto e exibição (sem mudar fórmula): R-DNA-1, R-DNA-2, R-DNA-3, R-DNA-4.
 2. Completar o contrato das métricas no catálogo (R-CONTRATO).
-3. Resolver L04 (time e vencedor por round) — destrava validação do Score e qualquer modelo de
-   probabilidade.
+3. Expor o resultado do round por jogador (dados já persistidos) e resolver a identidade de time
+   (L04) — destrava a validação do Score.
 4. Classificador de compra (Economia) — usa dados já persistidos.
 5. `spatial-v1` camada 1 (posição no evento) + detalhe de partida.
 6. Projeção por round por jogador — destrava curvas de confiabilidade (§6) e etapas A–C (§10).
