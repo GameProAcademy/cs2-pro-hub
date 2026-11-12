@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                            |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Missão de evolução estrutural: Marco 0 (#263) e Marco 1 (#264) concluídos; Marco 1 validado em produção; próximo: 4.2.1 e Marco 2                                                                                |
-| Etapa atual                        | Correção de textos do Raio-X (lados e posições) — PR #265                                                                                                                                                        |
-| Última etapa concluída             | Marco 1 `round-context-v1` publicado e VALIDADO EM PRODUÇÃO (Raio-X e Coach da conta de teste com os valores esperados; isolamento conferido na conta administradora)                                            |
-| Última operação concluída          | Gates de `main` em `e60a70f6` (#264) todos `success` (H.3-E 2ª execução); deploy pelo `deploy_project`; validação nos dois navegadores                                                                           |
-| Operações em andamento             | CI do PR #265 (conferir)                                                                                                                                                                                         |
-| Processos em execução              | Nenhum                                                                                                                                                                                                           |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                          |
-| Branch ativa                       | `main` (+ `fix/xray-side-copy` até o merge do #265)                                                                                                                                                              |
-| Último commit confirmado em `main` | `e60a70f68810dfa05529b1f7d2fec5ebd7ab6495` (merge do #264). #263 → `bf57069e`. Merge do #265: conferir no GitHub                                                                                                 |
-| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                                                     |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                              |
-| **Próxima ação exata**             | Entrega 4.2.1 (catálogo único de métricas com status/amostra/coverage/evidence_refs, taxonomia do original §4) e Marco 2 camada A (posição no tick do evento; benchmark com fixture antes de qualquer demo real) |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; leitura/mapeamento da especificação 4.2; validação do vencedor do round; implementação e validação do Marco 1; publicação de `e60a70f6`                          |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                         |
+| Item                               | Valor                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Missão de evolução estrutural: Marcos 0 e 1 concluídos e validados; 4.2.1 `metric-contract-v1` (#266) merged; Marco 2 camada A (#267) merged e no ar no parser (release R5.8.24 em curso)    |
+| Etapa atual                        | Release R5.8.24: PR de re-pin (`release/r5-8-24-repin`) + migration; secrets do app; atestação; H.3-E                                                                                        |
+| Última etapa concluída             | Deploy controlado do parser `4badf606` (Railway `0ff96670`, SUCCESS; `/version` revision = semantic = build = `git:4badf606…`)                                                               |
+| Última operação concluída          | Variáveis `PARSER_REVISION`/`PARSER_BUILD_REVISION` com deploys ignorados → um único deploy; reparse local da demo autorizada com as dependências do build novo (saída idêntica)             |
+| Operações em andamento             | CI do PR de re-pin R5.8.24; o dono recria as três secrets e publica o app                                                                                                                    |
+| Processos em execução              | Nenhum                                                                                                                                                                                       |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                      |
+| Branch ativa                       | `main` (+ `release/r5-8-24-repin`)                                                                                                                                                           |
+| Último commit confirmado em `main` | `4badf6060e4e69a589179567f488f5d58a4a58dc` (merge do #267). #266 → `4c6f5067`; #265 → `f4460123`; #264 → `e60a70f6`                                                                          |
+| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                                 |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                          |
+| **Próxima ação exata**             | Concluir R5.8.24 (merge do re-pin, aplicar migration `20261112090000`, atestação VERIFIED, H.3-E PASS); depois validar uma demo nova com posições e seguir 4.2.1 restante / Marco 2 camada B |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmark spatial-v1; deploy `0ff96670` (não fazer outro deploy do parser)                                          |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                     |
 
 ## 1. Identificação
 
@@ -120,18 +120,20 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                             | Branch                        | Merge em `main` | Estado                                     |
-| ------------------------------ | ----------------------------- | --------------- | ------------------------------------------ |
-| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`      | merged                                     |
-| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`      | merged                                     |
-| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`      | merged                                     |
-| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`      | merged                                     |
-| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`      | merged                                     |
-| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`      | merged                                     |
-| #262 Metodologia               | `docs/product-methodology`    | `b2c8219c`      | merged (PR `82efb867`, 5 checks verdes)    |
-| #263 Marco 0 Mapeamento 4.2    | `docs/fase-4-2-mapping`       | `bf57069e`      | merged, gates verdes                       |
-| #264 Marco 1 round-context-v1  | `feat/round-context-v1`       | `e60a70f6`      | merged, gates verdes, publicado e validado |
-| #265 Textos do Raio-X          | `fix/xray-side-copy`          | conferir        | conferir                                   |
+| PR                                | Branch                            | Merge em `main` | Estado                                                     |
+| --------------------------------- | --------------------------------- | --------------- | ---------------------------------------------------------- |
+| #256 DNA v2                       | `fix/player-dna-v2`               | `0ebfedf2`      | merged                                                     |
+| #257 Score v1                     | `feat/pro-score-v1`               | `975c7d11`      | merged                                                     |
+| #258 Coach/Score                  | `fix/coach-score-facts`           | `f1276859`      | merged                                                     |
+| #259 Relatório de fundação        | `docs/foundation-report`          | `13cfcde8`      | merged                                                     |
+| #260 Protocolo de continuidade    | `docs/continuity-checkpoints`     | `72fb0cdb`      | merged                                                     |
+| #261 Checkpoint pós-#260          | `docs/continuity-after-260`       | `106f20c6`      | merged                                                     |
+| #262 Metodologia                  | `docs/product-methodology`        | `b2c8219c`      | merged (PR `82efb867`, 5 checks verdes)                    |
+| #263 Marco 0 Mapeamento 4.2       | `docs/fase-4-2-mapping`           | `bf57069e`      | merged, gates verdes                                       |
+| #264 Marco 1 round-context-v1     | `feat/round-context-v1`           | `e60a70f6`      | merged, gates verdes, publicado e validado                 |
+| #265 Textos do Raio-X             | `fix/xray-side-copy`              | `f4460123`      | merged                                                     |
+| #266 4.2.1 metric-contract-v1     | `feat/metric-contract-v1`         | `4c6f5067`      | merged, gates verdes                                       |
+| #267 spatial-v1 camada A (parser) | `feat/spatial-v1-event-positions` | `4badf606`      | merged; parser no ar (`0ff96670`); re-pin R5.8.24 em curso |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
@@ -158,7 +160,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 1. Índices por dimensão do DNA não calibrados (regra "< 60" do Raio-X e prioridade de treino).
 2. Pesos do Score não ajustados estatisticamente.
-3. Nenhuma posição persistida em `round_events` → bloqueia análise espacial.
+3. Posições: o parser no ar (`4badf606`) emite posição do atacante e da vítima no tick da morte; partidas antigas continuam sem posição (nada reprocessado); qualquer métrica espacial depende da revisão de L02.
 4. `buy_context` e `survived` vazios em `round_players`; `weapon_fire` sem autor.
 5. H.3-E Activation Gate falha na 1ª execução de todo merge e passa na 2ª.
 6. `gate1d.test.ts` estourou 5 s uma vez no CI (hipótese: carga do runner).
@@ -172,6 +174,8 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 11. `L02` (domínio de ticks) e `L03` (usercmd) restringem densidade/replay/movimento e
     mira/counter-strafe da 4.2 (mapeamento §4).
 12. Não existe mecanismo de feature flag, embora a especificação mande reutilizá-lo.
+13. Dependências transitivas do parser não fixadas (pandas, numpy, polars, pyarrow): o build de 2026-11-12 resolveu versões novas; saída conferida idêntica na demo de benchmark. Fixá-las é uma mudança de runtime a decidir.
+14. `_EVENT_OTHER_PROPS` do parser nunca chegou às linhas de produção (pendente de validação).
 
 ## 22. Dependências de ações manuais (dono do projeto)
 
@@ -200,13 +204,13 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: missão de evolução estrutural; Marcos 0 e 1 concluídos
+- Fase atual: missão de evolução estrutural; Marcos 0 e 1 concluídos; 4.2.1 e Marco 2 camada A merged
 - Estado: especificação mapeada; round-context-v1 validado em produção
 - Última etapa concluída: Marco 1 publicado e validado (`e60a70f6`)
-- Próxima ação: 4.2.1 (catálogo/envelope) e Marco 2 camada A
+- Próxima ação: concluir release R5.8.24 (re-pin, migration, secrets, atestação, H.3-E)
 - Branch: `main`
-- Commit: `e60a70f6` + merge do #265 (conferir)
-- PR: #256–#264 merged; #265 (conferir)
+- Commit: `4badf606` (merge do #267)
+- PR: #256–#267 merged; re-pin R5.8.24 em PR
 - CI: `main` verde em `e60a70f6`
 - Testes pendentes: E2E das telas novas; Score em celular com dados
 - Bloqueios: cinco PMs não definidos no original; L02/L03/L04

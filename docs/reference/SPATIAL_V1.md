@@ -79,3 +79,12 @@ contínuo de ticks, mas a liberação de qualquer métrica espacial precisa dess
 5. `parser-runtime-attestation` → proveniência VERIFIED; H.3-E activation PASS.
 
 Rollback: Railway rollback para `7324404e` (commit `94c6460b`) e restaurar as três secrets.
+
+### Execução (2026-11-12)
+
+- Merge `4badf606` com a fila ociosa.
+- Variáveis definidas com deploys ignorados, depois um único deploy: `0ff96670` com status SUCCESS; `/version` = `git:4badf606…` em revision, semantic e build.
+- A camada de dependências foi reconstruída e o pip resolveu transitivas mais novas não fixadas (pandas 3.1.1, numpy 2.5.4).
+  - A demo de benchmark foi reparseada localmente com essas versões.
+  - A saída é idêntica à anterior, exceto pelos digests de superfície de runtime, que dependem do caminho do módulo.
+- Re-pin: `docs/reference/r5_8_24/`, migration `20261112090000_r5_8_24_repin_runtime_release.sql`.

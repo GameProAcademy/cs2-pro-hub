@@ -37,7 +37,12 @@ const r5813DeploymentMigration = readFileSync(
 // release (PR #177, deploy marker PR #179); R5.8.17 after the D25 release (PR #184); R5.8.18 after D29 (PR #192);
 // R5.8.19 after D30 (PR #196); R5.8.20 after D33 (PR #202); R5.8.21 after D35/D36 (PR #209);
 // R5.8.22 after the player_disconnect.ever_fully_connected review (PR #232, raw_evidence.py blob);
-// R5.8.23 after the parser field-governance review (PR #239, raw_evidence.py blob).
+// R5.8.23 after the parser field-governance review (PR #239, raw_evidence.py blob);
+// R5.8.24 after spatial-v1 layer A (PR #267, parser.py and raw_evidence.py blobs).
+const r5824ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261112090000_r5_8_24_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5823ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261104100000_r5_8_23_repin_runtime_release.sql"),
   "utf8",
@@ -118,13 +123,21 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(r5823ReleaseMigration).toContain(
+    expect(r5824ReleaseMigration).toContain(
       `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
     );
-    expect(r5823ReleaseMigration).toContain(
+    expect(r5824ReleaseMigration).toContain(
       `_new_commit constant text := '${PARSER_ATTESTATION_EXPECTED.commit}'`,
     );
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5824ReleaseMigration).toContain(
+      "_old_deployment constant text := '7324404e-f15d-45a0-8ec7-518a0770ca81'",
+    );
+    // The R5.8.23 link stays committed with its own pins.
+    expect(r5823ReleaseMigration).toContain(
+      "_new_deployment constant text := '7324404e-f15d-45a0-8ec7-518a0770ca81'",
+    );
+    expect(r5823ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5823ReleaseMigration).toContain(
       "_old_deployment constant text := '2edd7ed1-2703-42ad-abe3-ebe13d235e81'",
     );
