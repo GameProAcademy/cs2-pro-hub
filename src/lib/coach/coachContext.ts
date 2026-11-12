@@ -22,6 +22,7 @@ import { dnaLabelKey } from "@/lib/dna";
 import { formatSignalValue } from "@/lib/dnaFormat";
 import { signalLabel } from "@/lib/dnaSignalLabels";
 import { buildXRay, type XRayDiagnosis, type XRayObservation } from "@/lib/diagnostics/xray";
+import type { SideSummary } from "@/lib/roundContext";
 import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import { roundHalfUp } from "@/lib/metrics/rounding";
 import type { RealPlayerDna } from "@/lib/playerDna";
@@ -180,6 +181,40 @@ const COACH_SOURCE: Record<string, string> = {
   kd: "match_metrics.kills / match_metrics.deaths",
 };
 
+/**
+ * Marco 1 (round-context-v1): the player's own rounds on one side. Counts are OBSERVED; rates are
+ * DERIVED only from SIDE_MIN_ROUNDS rounds on the side, otherwise null with INSUFFICIENT_SAMPLE.
+ * The round outcome is the winning SIDE recorded by the demo; the match score and teams stay out.
+ */
+export interface CoachSideContext {
+  roundsWon: number;
+  roundsLost: number;
+  roundsWithoutRecordedWinner: number;
+  kills: number;
+  deaths: number;
+  damage: number;
+  rateStatus: "DERIVED" | "INSUFFICIENT_SAMPLE";
+  roundWinRatePercent: number | null;
+  killsPerRound: number | null;
+  damagePerRound: number | null;
+}
+
+const coachSide = (s: SideSummary | undefined | null): CoachSideContext | null =>
+  s && s.rounds > 0
+    ? {
+        roundsWon: s.roundsWon,
+        roundsLost: s.roundsLost,
+        roundsWithoutRecordedWinner: s.roundsOutcomeUnknown,
+        kills: s.kills,
+        deaths: s.deaths,
+        damage: s.damage,
+        rateStatus: s.rateStatus,
+        roundWinRatePercent: s.roundWinRate,
+        killsPerRound: s.killsPerRound,
+        damagePerRound: s.damagePerRound,
+      }
+    : null;
+
 export interface CoachFacts {
   contract: typeof COACH_CONTEXT_CONTRACT;
   coachVersion: string;
@@ -200,8 +235,10 @@ export interface CoachFacts {
   observations: CoachObservation[];
   /** CT / T split: rounds per side and the match rating restricted to each side. */
   sides: {
-    ct: { rounds: number | null; rating: CoachObservation };
-    t: { rounds: number | null; rating: CoachObservation };
+    ct: { rounds: number | null; rating: CoachObservation; roundContext: CoachSideContext | null };
+    t: { rounds: number | null; rating: CoachObservation; roundContext: CoachSideContext | null };
+    /** round-context-v1 when the own round context is known, else null. */
+    roundContextVersion: string | null;
   };
   /** Per-match rows relevant to THIS message (maps it names, else the most recent ones). */
   matchesIncluded: number;
@@ -572,11 +609,15 @@ export function buildCoachFacts(
       ct: {
         rounds: xray?.sides.ct.rounds ?? null,
         rating: xray ? toCoachObservation(xray.sides.ct.rating) : unknownSide("ctRating"),
+        roundContext: coachSide(xray?.roundContext?.ct),
       },
       t: {
         rounds: xray?.sides.t.rounds ?? null,
         rating: xray ? toCoachObservation(xray.sides.t.rating) : unknownSide("tRating"),
+        roundContext: coachSide(xray?.roundContext?.t),
       },
+      roundContextVersion:
+        xray?.roundContext?.status === "OBSERVED" ? xray.roundContext.version : null,
     },
     matchesIncluded: matches.length,
     matches,
@@ -739,6 +780,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
     "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill. Sentences that mention a percentile, a rank or other players are removed before the player sees the answer: state the Score in its own sentence, and if the player asks for a percentile, rank or comparison, answer in a SEPARATE short sentence that the app has no such comparison, without repeating those words next to the Score.",
+    "23. Sides and rounds: sides.ct / sides.t .roundContext hold the player's OWN rounds on each side (version in sides.roundContextVersion): rounds won and lost are the side that won the round as recorded by the demo, compared with the player's side in that round. Never call it the match result or the score, never name teams, and never derive who won from kills or deaths. When rateStatus is INSUFFICIENT_SAMPLE there are no rates for that side: give the counts and say the sample is small. When roundContext is null, CT/T rounds won are not available. Never swap CT and T.",
     ...coachPersonaRules(),
   ].join("\n");
 }

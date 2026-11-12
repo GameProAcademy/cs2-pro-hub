@@ -18,6 +18,7 @@
  * Null is never zero: a metric no match carries is NOT_MEASURED (or EXCLUDED_BY_ADMISSION
  * when every match's admission decision excludes it), and has no value.
  */
+import type { RoundContextSummary } from "@/lib/roundContext";
 import { DIMENSION_TOPICS, needsFromPlayer } from "@/lib/catalog/catalogSelect";
 import { canonicalMetric, type UnsupportedCapability } from "@/lib/metrics/canonicalMetrics";
 import { roundHalfUp } from "@/lib/metrics/rounding";
@@ -107,6 +108,11 @@ export interface XRayDiagnosis {
   };
   dimensions: XRayDimension[];
   sides: { ct: XRaySide; t: XRaySide };
+  /**
+   * Marco 1 (additive, optional for older readers): side and outcome of each own round, own kills,
+   * deaths and damage per side (`round-context-v1`). Null when no own participant is known.
+   */
+  roundContext?: RoundContextSummary | null;
   /** Index ceiling of the weakest-dimension rule (training plan `PLAN_CEILING`). */
   inferenceCeiling: number;
   /** Empty unless the DNA has its minimum sample. */
@@ -256,6 +262,7 @@ export function buildXRay(args: {
   overview: PlayerOverview;
   dna: RealPlayerDna;
   sides: SideRounds[];
+  roundContext?: RoundContextSummary | null;
 }): XRayDiagnosis {
   const { overview, dna } = args;
   const matches = overview.matches;
@@ -327,6 +334,11 @@ export function buildXRay(args: {
       route: "/training" as const,
     })),
     inferenceBlockedBy: blockedBy,
-    unsupported: ["enemiesFlashed", "positions", "economyClassification", "sideSplitKills"],
+    roundContext: args.roundContext ?? null,
+    // Kills and damage per side are measured when the round context has rounds with a side.
+    unsupported:
+      args.roundContext && args.roundContext.rounds - args.roundContext.roundsSideUnknown > 0
+        ? ["enemiesFlashed", "positions", "economyClassification"]
+        : ["enemiesFlashed", "positions", "economyClassification", "sideSplitKills"],
   };
 }

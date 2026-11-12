@@ -68,6 +68,17 @@ export const xrayEs: Record<keyof typeof xrayPtBR, string> = {
   "xray.sides.ct": "CT",
   "xray.sides.t": "T",
   "xray.sides.rounds": "{n} rondas",
+  "xray.roundContext.note":
+    "Lado y resultado de cada una de tus rondas ({version}): el lado viene del registro de la ronda y el ganador solo se usa cuando la demo lo registra con dos observaciones coincidentes. El marcador y los equipos de la partida quedan fuera (limitación L04).",
+  "xray.roundContext.outcome": "Rondas ganadas / perdidas",
+  "xray.roundContext.outcomeValue": "{won} / {lost}",
+  "xray.roundContext.outcomeUnknown": "{n} sin ganador registrado",
+  "xray.roundContext.killsDeaths": "Bajas / muertes",
+  "xray.roundContext.winRate": "Tasa de rondas ganadas",
+  "xray.roundContext.kpr": "Bajas por ronda",
+  "xray.roundContext.adr": "Daño por ronda",
+  "xray.roundContext.insufficient":
+    "{n} ronda(s) en este lado: las tasas aparecen a partir de {min}.",
   "xray.inference.item": "{dimension}: índice {index}/100 (por debajo de {ceiling})",
   "xray.inference.NO_DATA": "No hay partidas con señales de Player DNA.",
   "xray.inference.INSUFFICIENT_SAMPLE":
