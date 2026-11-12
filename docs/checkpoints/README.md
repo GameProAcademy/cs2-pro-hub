@@ -17,6 +17,16 @@ importantes, falha de CI, correção de CI, criação/atualização de PR, merge
 em produção; antes de iniciar outra fase; antes de encerrar a sessão; sempre que houver risco
 de interrupção. Não esperar o fim da fase.
 
+## Regra contra ciclos documentais (2026-11-11)
+
+1. O estado real do GitHub sempre prevalece sobre o checkpoint.
+2. O checkpoint é atualizado em etapas relevantes ou em lotes documentais — não a cada merge.
+3. O commit de merge que integrou a última atualização do checkpoint é registrado na **próxima**
+   atualização de conteúdo, não num PR próprio.
+4. Não abrir PR apenas para registrar o SHA do PR que acabou de atualizar o checkpoint.
+5. Não declarar CI verde para um commit sem consultar os runs desse commit. Gates verdes de um
+   commit não valem para o seguinte.
+
 ## Como persistir
 
 Na branch da implementação correspondente (ou branch documental), commit identificável, PR,
