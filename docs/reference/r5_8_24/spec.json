@@ -1,0 +1,77 @@
+{
+  "deployment_id": "0ff96670-e373-4beb-90c9-f1967eee3195",
+  "branch": "main",
+  "semantic_commit": "4badf6060e4e69a589179567f488f5d58a4a58dc",
+  "build_commit": "4badf6060e4e69a589179567f488f5d58a4a58dc",
+  "deployment_commit": "4badf6060e4e69a589179567f488f5d58a4a58dc",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "critical_hashes": {
+    "parser.py": "4102f6174e4dc01d97637174f4f70fe53629c285",
+    "adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "5b7b674c88a77f85ab8791f84a47a188889b5802",
+    "settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "c661f1f3adf774a3376c2ed510bfe607",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "c28ed93d37612ffdbe02653d8ea980eb",
+  "observed": {
+    "observed_at": "2026-11-12T08:55:00Z",
+    "railway_deployment": {
+      "id": "0ff96670-e373-4beb-90c9-f1967eee3195",
+      "status": "SUCCESS",
+      "commitHash": "4badf6060e4e69a589179567f488f5d58a4a58dc",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-12T08:47:36.489Z",
+      "finished_at": "2026-11-12T08:50:01Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #267 (merge 4badf606); PARSER_REVISION/PARSER_BUILD_REVISION set to git:4badf606... with skipped deploys; exactly one deployment of that commit triggered through the Railway agent; queue idle (0 pending/processing jobs) before the merge",
+      "failed_builds_never_served": [],
+      "build_info": "BUILD_INFO.json commit 4badf6060e4e69a589179567f488f5d58a4a58dc (build step [6/7]); requirements layer rebuilt (pip resolved unpinned transitive deps, e.g. pandas 3.1.1, numpy 2.5.4, polars 2.1.0, pyarrow 26.0.1; demoparser2 0.42.0 pinned)",
+      "health": "Container started 08:49:59Z; GET /health 200 at 08:50:01Z (deploy log)"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:4badf6060e4e69a589179567f488f5d58a4a58dc",
+      "PARSER_BUILD_REVISION": "git:4badf6060e4e69a589179567f488f5d58a4a58dc",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: the gate fetches both /version hosts and refuses any other identity; parser.gamepro.network/version observed 2026-11-12T08:53Z: revision = semantic = build = git:4badf606..., build.commit 4badf606, declared_revision_matches true",
+    "dependency_drift_check": "the full parser output of the authorized benchmark demo under pandas 3.1.1 / numpy 2.5.4 equals the output under pandas 3.0.5 / numpy 2.5.3 except the environment-specific runtime-surface digests (module path); docs/reference/SPATIAL_V1.md",
+    "before": {
+      "deployment_id": "7324404e-f15d-45a0-8ec7-518a0770ca81",
+      "semantic_revision": "git:94c6460b6c577e66e573a3a1d53f11a8edd5feae",
+      "build_revision": "git:94c6460b6c577e66e573a3a1d53f11a8edd5feae"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-12T08:50:00Z",
+      "record_parser_runtime_attestation": "ea3ba14c6cabd8013e6fc8a50c036158",
+      "assert_verified_parser_provenance": "fb659f89da5963b778aa18c668e7fd54",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "raw_evidence_blob": 1,
+          "parser_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "raw_evidence_blob": 0,
+          "parser_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_23/spec.json",
+  "pin_role": "R5.8.24: re-pin semantic/build commit, Railway deployment and the parser.py and raw_evidence.py critical blobs after spatial-v1 layer A (PR #267, controlled deployment of its merge commit); adapter.py, worker.py, settings.py and workflow blobs unchanged",
+  "r5_8_23_database_target_md5": {
+    "assert_verified_parser_provenance": "fb659f89da5963b778aa18c668e7fd54",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_23_recorder_target_md5": "ea3ba14c6cabd8013e6fc8a50c036158"
+}

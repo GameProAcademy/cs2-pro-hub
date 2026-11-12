@@ -448,7 +448,7 @@ describe("clutch participation requires round evidence", () => {
 /* ------------------------------------------------------------------ */
 
 describe("parser contract validation", () => {
-  const deployedRevision = "git:94c6460b6c577e66e573a3a1d53f11a8edd5feae";
+  const deployedRevision = "git:4badf6060e4e69a589179567f488f5d58a4a58dc";
   const valid = (): RawParserOutput => ({
     parser: { name: PARSER_NAME, version: PARSER_VERSION, revision: deployedRevision },
     contract_version: PARSER_CONTRACT_VERSION,
