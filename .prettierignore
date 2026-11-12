@@ -9,3 +9,6 @@ routeTree.gen.ts
 src/integrations/supabase/types.ts
 src/integrations/supabase/previewAuthStorage.ts
 supabase/seed/training-catalog/
+
+# Original Phase 4.2 specification: preserved byte-for-byte (sha256 recorded in docs/specifications/README.md)
+docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md

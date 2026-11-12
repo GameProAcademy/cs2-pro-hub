@@ -1,6 +1,17 @@
 # Especificações de fase
 
-## Fase 4.2 — especificação mestre: **recebida em 2026-11-11, ainda não registrada nem mapeada**
+## Fase 4.2 — especificação mestre: **REGISTRADA e MAPEADA (2026-11-12)**
+
+- Original preservado byte a byte: `docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md`
+  (1.886 linhas, 85.023 bytes, SHA-256 `989ec11f04d8b31b0566e4ba6c084179b5400f00b266ced8ccdab9d01862e01a`,
+  versão 1.0 de 05/11/2026, status "Proposta para revisão"). Protegido do formatador em `.prettierignore`.
+- Mapeamento: `docs/specifications/FASE_4_2_MAPEAMENTO.md` (entregas, módulos, diferenciais,
+  comparação com `main`, dependências, conflitos, matriz de prontidão).
+- **Achado:** o original **não define os cinco Prompts Mestres**. Ver o mapeamento §1.
+
+Histórico desta seção (antes do recebimento) abaixo, preservado.
+
+### (histórico) Fase 4.2 — especificação mestre: **recebida em 2026-11-11, ainda não registrada nem mapeada**
 
 Arquivo esperado: `CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre` (fornecido pelo dono
 do projeto). O dono a enviou em 2026-11-11, depois desta seção ser escrita; o registro e o

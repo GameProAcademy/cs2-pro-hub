@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma fase de implementação iniciada. Fundação: CONCLUÍDA. Fase 4.2: **aguardando a especificação mestre** (`docs/specifications/README.md`)                                                                                  |
-| Etapa atual                        | Missão de metodologia: PR #262 aberto, aguardando CI                                                                                                                                                                            |
-| Última etapa concluída             | Metodologia oficial, pesquisa e dependência da especificação 4.2 documentadas (`docs/product/`, `docs/specifications/README.md`)                                                                                                |
-| Última operação concluída          | Gates de `main` em `106f20c6` (#261) conferidos: todos `success` (H.3-E: 1ª execução falhou, 2ª passou — runs 42999745846 / 43000396561)                                                                                        |
-| Operações em andamento             | CI do PR #262 (conferir estado no GitHub)                                                                                                                                                                                       |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                          |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                         |
-| Branch ativa                       | `main` (+ `docs/product-methodology` até o merge do #262)                                                                                                                                                                       |
-| Último commit confirmado em `main` | `106f20c6c7c245c7f8f9fdd83e0973a37fe0fc81` (merge do #261). Merge do #262: conferir no GitHub (regra contra ciclos)                                                                                                             |
-| Build validado em produção         | `f1276859` (`13cfcde8`, `72fb0cdb`, `106f20c6` e posteriores só documentação, não publicados)                                                                                                                                   |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                             |
-| **Próxima ação exata**             | Registrar e mapear a especificação mestre da Fase 4.2 (recebida do dono em 2026-11-11) seguindo `docs/specifications/README.md`. Não iniciar implementação antes disso                                                          |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação (Score, DNA, snapshots, navegação, matriz A–J); pesquisa de mercado de 2026-11-11 (`docs/product/CS2_PRO_PRODUCT_RESEARCH_AND_BENCHMARKS.md`); publicação de `f1276859`; perguntas de validação ao Coach |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                        |
+| Item                               | Valor                                                                                                                                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Missão de evolução estrutural (prompt de 2026-11-12). **Marco 0** (especificação 4.2 registrada e mapeada) em PR; Marcos 1–7 pendentes                                                                              |
+| Etapa atual                        | Marco 0: PR `docs/fase-4-2-mapping` (conferir estado no GitHub)                                                                                                                                                     |
+| Última etapa concluída             | Especificação mestre 4.2 lida integralmente, registrada byte a byte e mapeada (`docs/specifications/FASE_4_2_MAPEAMENTO.md`)                                                                                        |
+| Última operação concluída          | Gates de `main` em `b2c8219c` (#262) conferidos: todos `success` (H.3-E: 1ª execução falhou, 2ª passou — runs 43150399572 / 43150852266)                                                                            |
+| Operações em andamento             | CI do PR do Marco 0 (conferir)                                                                                                                                                                                      |
+| Processos em execução              | Nenhum                                                                                                                                                                                                              |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                             |
+| Branch ativa                       | `main` (+ `docs/fase-4-2-mapping` até o merge)                                                                                                                                                                      |
+| Último commit confirmado em `main` | `b2c8219c55c37e4f90d6e7251312f8de9597d0d0` (merge do #262; último commit do PR `82efb867`; 5 checks do PR verdes). Merge do PR do Marco 0: conferir no GitHub (regra contra ciclos)                                 |
+| Build validado em produção         | `f1276859` (último validado; `13cfcde8`, `72fb0cdb`, `106f20c6`, `b2c8219c` só documentação). Confirmar o build servido antes de qualquer deploy                                                                    |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                 |
+| **Próxima ação exata**             | Marco 1: expor lado por round e resultado do round por jogador (dados já persistidos e validados — mapeamento §4) e investigar identidade de time (L04); em paralelo, 4.2.1 (catálogo/envelope). Ver mapeamento §11 |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; leitura/mapeamento da especificação 4.2 (2026-11-12); validação de vencedor do round contra eliminações (2026-11-12); publicação de `f1276859`                      |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                            |
 
 ## 1. Identificação
 
@@ -36,11 +36,9 @@ Aplicação: https://gamepro.network · Banco e publicação: Lovable Cloud · P
 
 ## 2. Estado atual do projeto
 
-`main` = `106f20c6` (merge do #261). #260 merged em `72fb0cdb`; #261 merged em `106f20c6`;
-#262 (metodologia) aberto, aguardando CI — seu merge será registrado na próxima atualização de
-conteúdo (regra contra ciclos). Fundação auditada, corrigida e publicada (Score `pro-score-v1`, DNA
-`dna-weighted-v2`, Coach coerente com ambos). Fase 4.2 não iniciada; especificação mestre recebida
-pelo dono em 2026-11-11, ainda **não registrada nem mapeada** no repositório.
+`main` = `b2c8219c` (merge do #262). #260 → `72fb0cdb`; #261 → `106f20c6`; #262 → `b2c8219c`
+(último commit do PR `82efb867`, 5 checks verdes, gates de `main` verdes). Fundação publicada (Score
+`pro-score-v1`, DNA `dna-weighted-v2`). Especificação 4.2 registrada e mapeada; implementação não iniciada.
 
 ## 3. Objetivo da missão vigente
 
@@ -52,23 +50,22 @@ registrar e mapear a especificação mestre da Fase 4.2 (recebida, não processa
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
-Fonte única do que se sabe e do que falta: `docs/specifications/README.md`.
+- Especificação original: `docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md`
+  (byte a byte, SHA-256 `989ec11f…`). Mapeamento: `docs/specifications/FASE_4_2_MAPEAMENTO.md`.
+- **10 entregas** `4.2.1`–`4.2.10` e **módulos** `A`–`J`: confirmados no original (§8, §9, §34).
+- **Cinco Prompts Mestres: NÃO definidos no original** (fato verificado). PM4/PM5 só existem como
+  referência histórica dos prompts do dono; PM1–PM3 desconhecidos; agrupamento por pares é
+  hipótese. J aparece em 4.2.8 e 4.2.10.
+- **Fases 1–5 deste protocolo**: continuam PENDENTE DE CONFIRMAÇÃO até o dono enviar ou confirmar
+  os cinco Prompts Mestres. O trabalho da missão de evolução é registrado por **Marco** (0–7).
 
-- **Dez entregas** `4.2.1`–`4.2.10` e **módulos** `A`–`J`: existem; nomes e escopos **não
-  confirmados** contra a especificação (não recebida).
-- **Cinco Prompts Mestres**: PM4 → 4.2.7–4.2.8, módulos E–G; PM5 → 4.2.9–4.2.10, módulos H–J
-  (referências históricas **não verificadas**); PM1–PM3 desconhecidos. Entrega ≠ módulo.
-- **Fases 1–5 deste protocolo** (`checkpoints/PHASE_{1..5}_CHECKPOINT.md`): continuam com nome e
-  escopo **PENDENTE DE CONFIRMAÇÃO**. Se corresponderem aos cinco Prompts Mestres, isso será
-  registrado só depois de ler a especificação.
-
-| Fase | Nome / escopo           | Situação                | Checkpoint                          |
-| ---- | ----------------------- | ----------------------- | ----------------------------------- |
-| 1    | PENDENTE DE CONFIRMAÇÃO | PENDENTE (não iniciada) | `checkpoints/PHASE_1_CHECKPOINT.md` |
-| 2    | PENDENTE DE CONFIRMAÇÃO | PENDENTE                | `checkpoints/PHASE_2_CHECKPOINT.md` |
-| 3    | PENDENTE DE CONFIRMAÇÃO | PENDENTE                | `checkpoints/PHASE_3_CHECKPOINT.md` |
-| 4    | PENDENTE DE CONFIRMAÇÃO | PENDENTE                | `checkpoints/PHASE_4_CHECKPOINT.md` |
-| 5    | PENDENTE DE CONFIRMAÇÃO | PENDENTE                | `checkpoints/PHASE_5_CHECKPOINT.md` |
+| Fase | Nome / escopo           | Situação | Checkpoint                          |
+| ---- | ----------------------- | -------- | ----------------------------------- |
+| 1    | PENDENTE DE CONFIRMAÇÃO | PENDENTE | `checkpoints/PHASE_1_CHECKPOINT.md` |
+| 2    | PENDENTE DE CONFIRMAÇÃO | PENDENTE | `checkpoints/PHASE_2_CHECKPOINT.md` |
+| 3    | PENDENTE DE CONFIRMAÇÃO | PENDENTE | `checkpoints/PHASE_3_CHECKPOINT.md` |
+| 4    | PENDENTE DE CONFIRMAÇÃO | PENDENTE | `checkpoints/PHASE_4_CHECKPOINT.md` |
+| 5    | PENDENTE DE CONFIRMAÇÃO | PENDENTE | `checkpoints/PHASE_5_CHECKPOINT.md` |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
 
@@ -123,24 +120,25 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                             | Branch                        | Merge em `main`    | Estado                           |
-| ------------------------------ | ----------------------------- | ------------------ | -------------------------------- |
-| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`         | merged                           |
-| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`         | merged                           |
-| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`         | merged                           |
-| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`         | merged                           |
-| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`         | merged                           |
-| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`         | merged                           |
-| #262 Metodologia               | `docs/product-methodology`    | conferir no GitHub | aberto, aguardando CI (conferir) |
+| PR                             | Branch                        | Merge em `main`    | Estado                                  |
+| ------------------------------ | ----------------------------- | ------------------ | --------------------------------------- |
+| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`         | merged                                  |
+| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`         | merged                                  |
+| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`         | merged                                  |
+| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`         | merged                                  |
+| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`         | merged                                  |
+| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`         | merged                                  |
+| #262 Metodologia               | `docs/product-methodology`    | `b2c8219c`         | merged (PR `82efb867`, 5 checks verdes) |
+| Marco 0 Mapeamento 4.2         | `docs/fase-4-2-mapping`       | conferir no GitHub | conferir                                |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
 
 ## 18. Estado do CI
 
-`main` `106f20c6`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
-H.3-E (2ª execução) — todos `success`. CONFIRMADO em 2026-11-11 (consulta aos runs do commit).
-Commits posteriores: conferir os runs do próprio commit; verde de um commit não vale para outro.
+`main` `b2c8219c`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
+H.3-E (2ª execução) — todos `success`. CONFIRMADO em 2026-11-12. Commits posteriores: conferir os
+runs do próprio commit.
 
 ## 19. Publicação e deploy
 
@@ -168,18 +166,18 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
    escalas de referência sem fonte (metodologia §3.2).
 9. Posições: o parser extrai `X/Y/Z` mas desbasta uniformemente até 4.096 linhas e o app persiste
    só contagens; produção sem posições (metodologia §11.1).
-10. `L04-MATCH-RESULT-UNRESOLVED` bloqueia validação do Score por vitória e qualquer modelo de
-    probabilidade de vitória (metodologia §10).
+10. `L04-MATCH-RESULT-UNRESOLVED` bloqueia identidade de time, placar e resultado da partida. O
+    lado vencedor do round **existe** e foi validado (mapeamento §4) — correção de 2026-11-12.
+11. `L02` (domínio de ticks) e `L03` (usercmd) restringem densidade/replay/movimento e
+    mira/counter-strafe da 4.2 (mapeamento §4).
+12. Não existe mecanismo de feature flag, embora a especificação mande reutilizá-lo.
 
 ## 22. Dependências de ações manuais (dono do projeto)
 
-1. ~~Enviar a especificação mestre da Fase 4.2~~ — recebida em 2026-11-11; falta registrá-la e mapeá-la.
-2. Informar os endereços de "CStrike" e "CS2d.app" (não localizados na pesquisa).
-3. Autorizar, se desejar, as recomendações da metodologia §21 (cada uma exige autorização própria
-   quando tocar código, banco ou parser).
-
-As três decisões de produto pedidas antes (DNA, pesos do Score, posições) **foram tomadas** em
-2026-11-11 e estão registradas na metodologia.
+1. Enviar os cinco Prompts Mestres ou confirmar o agrupamento hipotético (mapeamento §1, §12).
+2. Confirmar a qual PM pertence o módulo J.
+3. Autorização específica continua exigida para: reprocessar/backfill de demos reais, mudanças
+   destrutivas, segurança, billing e custos relevantes.
 
 ## 23. Checkpoints individuais
 
@@ -201,16 +199,16 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: nenhuma implementação; Fase 4.2 aguarda a especificação mestre
-- Estado: fundação VALIDADA EM PRODUÇÃO; metodologia oficial documentada
-- Última etapa concluída: metodologia, pesquisa e dependência 4.2 documentadas
-- Próxima ação: registrar e mapear a especificação 4.2 (já recebida)
+- Fase atual: missão de evolução estrutural, Marco 0 concluído em PR
+- Estado: especificação 4.2 registrada e mapeada; implementação não iniciada
+- Última etapa concluída: mapeamento da 4.2 (`docs/specifications/FASE_4_2_MAPEAMENTO.md`)
+- Próxima ação: Marco 1 (lado/resultado do round por jogador; L04) e 4.2.1
 - Branch: `main`
-- Commit: `106f20c6` + merge do #262 (conferir)
-- PR: #256–#261 merged; #262 aberto (conferir)
-- CI: `main` verde em `106f20c6`; commits posteriores: conferir
+- Commit: `b2c8219c` + merge do Marco 0 (conferir)
+- PR: #256–#262 merged; Marco 0 (conferir)
+- CI: `main` verde em `b2c8219c`
 - Testes pendentes: E2E das telas novas; Score em celular com dados
-- Bloqueios: especificação 4.2 ainda não mapeada; L04 para validação do Score
+- Bloqueios: cinco PMs não definidos no original; L02/L03/L04
 - Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
-- Checkpoint da fase: nenhum ativo (fases 1–5 pendentes de definição)
-- Não repetir: auditorias da fundação; pesquisa de 2026-11-11; publicação de `f1276859`
+- Checkpoint da fase: mapeamento 4.2 (fases 1–5 pendentes)
+- Não repetir: auditorias da fundação; pesquisa de 2026-11-11; leitura da especificação
