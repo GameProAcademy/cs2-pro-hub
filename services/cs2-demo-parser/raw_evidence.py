@@ -144,7 +144,10 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "player_connect": frozenset({"__event__"}),
     "player_connect_full": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     # assistedflash and attackerblind are NOT here: adapter.py reads them -> MAPPED below.
+    # assister_X/Y/Z: returned by demoparser2 for every player role once player=["X","Y","Z"] is
+    # requested (spatial-v1 layer A, 2026-11-12). adapter.py reads only attacker_* and user_*.
     "player_death": frozenset({
+        "assister_X", "assister_Y", "assister_Z",
         "attackerinair", "dominated", "noreplay",
         "revenge", "weapon_fauxitemid", "weapon_itemid", "weapon_originalowner_xuid", "wipe",
     }),
@@ -244,6 +247,14 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "player_death.noscope": ("events[].noscope", "CanonicalEvent.data.noscope", "MAPPED"),
     "player_death.penetrated": ("events[].penetration", "CanonicalEvent.data.penetration", "MAPPED"),
     "player_death.distance": ("events[].distance", "CanonicalEvent.distance", "MAPPED"),
+    # spatial-v1 layer A (2026-11-12): position of the killer and of the victim read by demoparser2
+    # at the death's own tick (parser.py _EVENT_POSITION_PROPS). adapter.py -> events[].position /
+    # victim_position; normalizer.ts stores them in round_events.data.
+    **{
+        f"player_death.{role}_{axis}": (f"events[].{target}.{axis.lower()}", f"CanonicalEvent.data.{target}", "MAPPED")
+        for role, target in (("attacker", "position"), ("user", "victim_position"))
+        for axis in ("X", "Y", "Z")
+    },
     "player_hurt.attacker_steamid": ("events[].attacker", "CanonicalEvent.sourceActorExternalId", "MAPPED"),
     "player_hurt.user_steamid": ("events[].victim", "CanonicalEvent.sourceVictimExternalId", "MAPPED"),
     "player_hurt.weapon": ("events[].weapon", "CanonicalEvent.weapon", "MAPPED"),

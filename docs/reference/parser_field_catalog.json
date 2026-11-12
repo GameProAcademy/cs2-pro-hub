@@ -6,11 +6,11 @@
   "UNMAPPED"
  ],
  "counts": {
-  "CANONICAL": 131,
+  "CANONICAL": 137,
   "IGNORED_APPROVED": 48,
-  "RAW_ONLY": 209
+  "RAW_ONLY": 212
  },
- "digest": "32044f9ee44217948f9d5bd4e6c491aef33abb6c55c62451748551b1c14833ff",
+ "digest": "a1f9fb3e8236bd3acbb8d159b195ba2a43f21526cb75f20fdc8c5db67e19802f",
  "entries": [
   {
    "class": "RAW_ONLY",
@@ -4316,10 +4316,130 @@
    "status": "MAPPED"
   },
   {
+   "class": "RAW_ONLY",
+   "field": "player_death.assister_X",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "RAW_ONLY",
+   "field": "player_death.assister_Y",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "RAW_ONLY",
+   "field": "player_death.assister_Z",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
    "app_field": "events[].assister",
    "canonical_field": "CanonicalEvent.sourceAssisterExternalId",
    "class": "CANONICAL",
    "field": "player_death.assister_steamid",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].position.x",
+   "canonical_field": "CanonicalEvent.data.position",
+   "class": "CANONICAL",
+   "field": "player_death.attacker_X",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].position.y",
+   "canonical_field": "CanonicalEvent.data.position",
+   "class": "CANONICAL",
+   "field": "player_death.attacker_Y",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].position.z",
+   "canonical_field": "CanonicalEvent.data.position",
+   "class": "CANONICAL",
+   "field": "player_death.attacker_Z",
    "review": {
     "consumers": [
      "adapter.normalize_events",
@@ -4577,6 +4697,69 @@
     ]
    },
    "status": "DERIVED"
+  },
+  {
+   "app_field": "events[].victim_position.x",
+   "canonical_field": "CanonicalEvent.data.victim_position",
+   "class": "CANONICAL",
+   "field": "player_death.user_X",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].victim_position.y",
+   "canonical_field": "CanonicalEvent.data.victim_position",
+   "class": "CANONICAL",
+   "field": "player_death.user_Y",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].victim_position.z",
+   "canonical_field": "CanonicalEvent.data.victim_position",
+   "class": "CANONICAL",
+   "field": "player_death.user_Z",
+   "review": {
+    "consumers": [
+     "adapter.normalize_events",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "services/cs2-demo-parser/tests/test_adapter.py",
+     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
   },
   {
    "app_field": "events[].victim",
@@ -6907,7 +7090,7 @@
   }
  ],
  "schema": 1,
- "source_blob": "b72c3174216f833522d66d8bc6c43f1af2d6fb17",
+ "source_blob": "5b7b674c88a77f85ab8791f84a47a188889b5802",
  "source_of_truth": "services/cs2-demo-parser/raw_evidence.py",
  "unmapped_rule": "any observed field not listed here is UNMAPPED_BUT_AVAILABLE and blocks admission"
 }
