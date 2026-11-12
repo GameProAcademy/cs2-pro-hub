@@ -84,6 +84,11 @@ _EVENT_TABLES = tuple(name for name in EVENT_CANDIDATES if name not in ("round_s
 # back to the plain event stream rather than treating the whole demo as bad.
 _EVENT_OTHER_PROPS = ("total_rounds_played", "is_warmup_period", "game_time")
 
+# spatial-v1 layer A: the acting/affected player's position read by demoparser2 at the event's
+# own tick. Only these events carry it; positions are never sampled per tick here.
+_EVENT_POSITION_PROPS = ("X", "Y", "Z")
+_POSITION_EVENTS = frozenset({"player_death"})
+
 
 # Conditions that describe the PROCESS, not the demo: resource exhaustion and
 # cancellation/shutdown. A capability handler must never record them as "this
@@ -137,9 +142,19 @@ def _records(frame: Any) -> list[dict[str, Any]]:
 def _parse_event_with_context(
     demo: Any, name: str
 ) -> tuple[list[dict[str, Any]] | None, BaseException | None]:
-    """Read one event stream and preserve its final parser failure."""
+    """Read one event stream and preserve its final parser failure.
+
+    demoparser2 0.42.0 declares ``parse_event(event_name, *, player=None, other=None)``: the
+    properties are keyword-only. The previous positional call always raised TypeError and fell
+    back to the plain stream, so ``_EVENT_OTHER_PROPS`` never reached production rows. This call
+    keeps that effective behaviour (no ``other`` props: enabling them changes round/tick
+    inference and needs its own validation) and only adds the player's X/Y/Z for the events in
+    ``_EVENT_POSITION_PROPS`` (spatial-v1 layer A). The adapter already maps ``attacker_X``/
+    ``user_X`` to ``position``/``victim_position``.
+    """
     try:
-        frame = demo.parse_event(name, [], list(_EVENT_OTHER_PROPS))
+        player = list(_EVENT_POSITION_PROPS) if name in _POSITION_EVENTS else []
+        frame = demo.parse_event(name, player=player) if player else demo.parse_event(name)
         return _records(frame), None
     except Exception as first:
         _reraise_non_demo_failure(first)
