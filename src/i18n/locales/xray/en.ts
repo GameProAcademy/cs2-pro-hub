@@ -63,7 +63,7 @@ export const xrayEn: Record<keyof typeof xrayPtBR, string> = {
   "xray.metric.tRating": "Rating on T side",
   "xray.sides.title": "CT and T sides",
   "xray.sides.description":
-    "Rounds played on each side and the match rating restricted to those rounds. Kills and damage per side are not stored per round yet.",
+    "Rounds played on each side and the match rating restricted to those rounds.",
   "xray.sides.ct": "CT",
   "xray.sides.t": "T",
   "xray.sides.rounds": "{n} rounds",
@@ -88,7 +88,8 @@ export const xrayEn: Record<keyof typeof xrayPtBR, string> = {
   "xray.unsupported.title": "What CS2 PRO does not measure yet",
   "xray.unsupported.enemiesFlashed":
     "Enemies flashed: flash blindness events were not recorded in these matches.",
-  "xray.unsupported.positions": "Positions and heatmaps (coordinates are not extracted).",
+  "xray.unsupported.positions":
+    "Positions and heatmaps (the parser reads coordinates, but they are not stored yet).",
   "xray.unsupported.economyClassification":
     "Buy classification (eco, force, full) — no reviewed classifier.",
   "xray.unsupported.sideSplitKills": "Kills and damage per side (not stored per round).",

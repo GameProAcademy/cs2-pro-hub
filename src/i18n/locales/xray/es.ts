@@ -64,7 +64,7 @@ export const xrayEs: Record<keyof typeof xrayPtBR, string> = {
   "xray.metric.tRating": "Rating en el lado T",
   "xray.sides.title": "Lados CT y T",
   "xray.sides.description":
-    "Rondas jugadas en cada lado y el rating de la partida limitado a esas rondas. Las bajas y el daño por lado aún no se guardan por ronda.",
+    "Rondas jugadas en cada lado y el rating de la partida limitado a esas rondas.",
   "xray.sides.ct": "CT",
   "xray.sides.t": "T",
   "xray.sides.rounds": "{n} rondas",
@@ -91,7 +91,8 @@ export const xrayEs: Record<keyof typeof xrayPtBR, string> = {
   "xray.unsupported.title": "Lo que CS2 PRO todavía no mide",
   "xray.unsupported.enemiesFlashed":
     "Enemigos cegados: no se registraron eventos de ceguera por flash en estas partidas.",
-  "xray.unsupported.positions": "Posiciones y mapa de calor (no se extraen coordenadas).",
+  "xray.unsupported.positions":
+    "Posiciones y mapa de calor (el parser lee coordenadas, pero aún no se guardan).",
   "xray.unsupported.economyClassification":
     "Clasificación de compra (eco, force, full): no hay un clasificador revisado.",
   "xray.unsupported.sideSplitKills": "Bajas y daño por lado (no se guardan por ronda).",
