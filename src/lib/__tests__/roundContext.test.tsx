@@ -53,7 +53,7 @@ function roster(rounds: number, half: number): RoundPlayerRow[] {
   return rows;
 }
 const kill = (round: number, actor: string, victim: string, id?: string): RoundEventRow => ({
-  id,
+  ...(id === undefined ? {} : { id }),
   round_number: round,
   event_type: "kill",
   actor_steam_id: actor,
