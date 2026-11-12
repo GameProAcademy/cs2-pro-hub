@@ -16,6 +16,12 @@ import type { Database } from "@/integrations/supabase/types";
 import { buildXRay, type SideRounds, type XRayDiagnosis } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { DNA_MIN_MATCHES } from "@/lib/playerDna";
+import {
+  buildMatchRounds,
+  summarizeRoundContext,
+  type MatchRoundContext,
+  type RoundContextSummary,
+} from "@/lib/roundContext";
 import type { DnaDimension } from "@/types";
 
 export const getXRay = createServerFn({ method: "GET" })
@@ -25,13 +31,82 @@ export const getXRay = createServerFn({ method: "GET" })
       loadPlayerOverview(context.supabase, context.userId),
       loadPlayerDna(context.supabase, context.userId),
     ]);
-    const sides = await loadSideRounds(
-      context.supabase,
-      playerIds,
-      overview.matches.map((m) => m.matchId),
-    );
-    return buildXRay({ overview, dna, sides });
+    const matchIds = overview.matches.map((m) => m.matchId);
+    const [sides, roundContext] = await Promise.all([
+      loadSideRounds(context.supabase, playerIds, matchIds),
+      loadRoundContext(context.supabase, playerIds, matchIds),
+    ]);
+    return buildXRay({ overview, dna, sides, roundContext });
   });
+
+/**
+ * Marco 1 — the caller's own participant in each match (one per match; two own participants in
+ * the same match is ambiguous and the match is left out). RLS: `owns_canonical_match`.
+ */
+async function ownParticipantKeys(
+  supabase: SupabaseClient<Database>,
+  playerIds: string[],
+  matchIds: string[],
+): Promise<Map<string, string>> {
+  const { data, error } = await supabase
+    .from("match_participants")
+    .select("match_id, participant_key")
+    .in("match_id", matchIds)
+    .in("internal_player_id", playerIds);
+  if (error) throw new Error(`XRAY_PARTICIPANTS_FAILED:${error.code ?? "unknown"}`);
+  const keyByMatch = new Map<string, string>();
+  for (const p of data ?? []) {
+    if (keyByMatch.has(p.match_id)) keyByMatch.set(p.match_id, "");
+    else keyByMatch.set(p.match_id, p.participant_key);
+  }
+  // Ambiguous matches ("") and keys that are not SteamID64 digits are left out; only digit keys
+  // are ever interpolated into a PostgREST filter.
+  return new Map([...keyByMatch].filter(([, key]) => /^\d{1,20}$/.test(key)));
+}
+
+/**
+ * Marco 1 — `round-context-v1` for the caller (side and outcome of each own round, own kills,
+ * deaths and damage per side). Read-only under the caller's session: `round_players`,
+ * `match_rounds` and `round_events` are all gated by `owns_canonical_match`; the service role is
+ * never used. Events are read per match and only the caller's own (actor or victim), so a match
+ * never hits the API row limit. Returns null when the caller has no own participant.
+ */
+export async function loadRoundContext(
+  supabase: SupabaseClient<Database>,
+  playerIds: string[],
+  matchIds: string[],
+): Promise<RoundContextSummary | null> {
+  if (!playerIds.length || !matchIds.length) return null;
+  const keys = await ownParticipantKeys(supabase, playerIds, matchIds);
+  if (!keys.size) return null;
+  const contexts: MatchRoundContext[] = await Promise.all(
+    [...keys].map(async ([matchId, participantKey]) => {
+      const [rounds, roundPlayers, events] = await Promise.all([
+        supabase.from("match_rounds").select("round_number, winner_side").eq("match_id", matchId),
+        supabase
+          .from("round_players")
+          .select("round_number, participant_key, side")
+          .eq("match_id", matchId),
+        supabase
+          .from("round_events")
+          .select("id, round_number, event_type, actor_steam_id, victim_steam_id, damage")
+          .eq("match_id", matchId)
+          .in("event_type", ["kill", "damage"])
+          .or(`actor_steam_id.eq.${participantKey},victim_steam_id.eq.${participantKey}`),
+      ]);
+      const failed = rounds.error ?? roundPlayers.error ?? events.error;
+      if (failed) throw new Error(`XRAY_ROUND_CONTEXT_FAILED:${failed.code ?? "unknown"}`);
+      return buildMatchRounds({
+        matchId,
+        participantKey,
+        rounds: rounds.data ?? [],
+        roundPlayers: roundPlayers.data ?? [],
+        events: events.data ?? [],
+      });
+    }),
+  );
+  return summarizeRoundContext(contexts);
+}
 
 /**
  * Rounds per side of the caller's own participant in each match (round_players.side).

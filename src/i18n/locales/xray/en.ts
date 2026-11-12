@@ -67,6 +67,16 @@ export const xrayEn: Record<keyof typeof xrayPtBR, string> = {
   "xray.sides.ct": "CT",
   "xray.sides.t": "T",
   "xray.sides.rounds": "{n} rounds",
+  "xray.roundContext.note":
+    "Side and outcome of each of your rounds ({version}): the side comes from the round record and the winner is used only when the demo records it with two agreeing observations. Match score and teams stay out (limitation L04).",
+  "xray.roundContext.outcome": "Rounds won / lost",
+  "xray.roundContext.outcomeValue": "{won} / {lost}",
+  "xray.roundContext.outcomeUnknown": "{n} with no recorded winner",
+  "xray.roundContext.killsDeaths": "Kills / deaths",
+  "xray.roundContext.winRate": "Round win rate",
+  "xray.roundContext.kpr": "Kills per round",
+  "xray.roundContext.adr": "Damage per round",
+  "xray.roundContext.insufficient": "{n} round(s) on this side: rates appear from {min}.",
   "xray.inference.item": "{dimension}: index {index}/100 (below {ceiling})",
   "xray.inference.NO_DATA": "No matches with Player DNA signals.",
   "xray.inference.INSUFFICIENT_SAMPLE":

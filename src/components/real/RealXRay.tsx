@@ -22,6 +22,7 @@ import { dnaLabelKey } from "@/lib/dna";
 import { NOT_AVAILABLE_MARK, fill, formatNumber } from "@/lib/format";
 import { METRIC_IDS, type MetricId } from "@/lib/glossary";
 import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
+import type { SideSummary } from "@/lib/roundContext";
 import { getXRay } from "@/lib/xray.functions";
 
 export const XRAY_QUERY_KEY = ["player", "xray"] as const;
@@ -169,9 +170,20 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
                   </span>
                   <ObservationValue o={x.sides[side].rating} />
                 </dd>
+                {x.roundContext && x.roundContext.status === "OBSERVED" ? (
+                  <SideRoundContext
+                    s={x.roundContext[side]}
+                    min={x.roundContext.minRoundsForRates}
+                  />
+                ) : null}
               </div>
             ))}
           </dl>
+          {x.roundContext && x.roundContext.status === "OBSERVED" ? (
+            <p className="mt-3 text-xs text-muted-foreground" data-xray-round-context-note>
+              {fill(t("xray.roundContext.note"), { version: x.roundContext.version })}
+            </p>
+          ) : null}
         </ChartCard>
       </Layer>
 
@@ -265,5 +277,60 @@ export function RealXRayPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/** Marco 1: own round outcome and own kills/damage on one side (`round-context-v1`). */
+function SideRoundContext({ s, min }: { s: SideSummary; min: number }) {
+  const { t, intlTag } = useI18n();
+  const n = (v: number, d = 0) => formatNumber(v, intlTag, d);
+  return (
+    <dl
+      className="mt-3 space-y-1 border-t border-border pt-2 text-xs"
+      data-xray-side-context={s.side}
+    >
+      <div className="flex justify-between gap-2">
+        <dt className="text-muted-foreground">{t("xray.roundContext.outcome")}</dt>
+        <dd className="font-mono">
+          {fill(t("xray.roundContext.outcomeValue"), {
+            won: n(s.roundsWon),
+            lost: n(s.roundsLost),
+          })}
+          {s.roundsOutcomeUnknown
+            ? ` · ${fill(t("xray.roundContext.outcomeUnknown"), { n: n(s.roundsOutcomeUnknown) })}`
+            : ""}
+        </dd>
+      </div>
+      <div className="flex justify-between gap-2">
+        <dt className="text-muted-foreground">{t("xray.roundContext.killsDeaths")}</dt>
+        <dd className="font-mono">{`${n(s.kills)} / ${n(s.deaths)}`}</dd>
+      </div>
+      {s.rateStatus === "DERIVED" ? (
+        <>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">{t("xray.roundContext.winRate")}</dt>
+            <dd className="font-mono">
+              {s.roundWinRate === null ? NOT_AVAILABLE_MARK : `${n(s.roundWinRate, 1)}%`}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">{t("xray.roundContext.kpr")}</dt>
+            <dd className="font-mono">
+              {s.killsPerRound === null ? NOT_AVAILABLE_MARK : n(s.killsPerRound, 2)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">{t("xray.roundContext.adr")}</dt>
+            <dd className="font-mono">
+              {s.damagePerRound === null ? NOT_AVAILABLE_MARK : n(s.damagePerRound, 1)}
+            </dd>
+          </div>
+        </>
+      ) : (
+        <p className="text-muted-foreground">
+          {fill(t("xray.roundContext.insufficient"), { n: n(s.rounds), min: n(min) })}
+        </p>
+      )}
+    </dl>
   );
 }

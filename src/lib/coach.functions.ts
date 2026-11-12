@@ -49,7 +49,7 @@ import { coachSendFlow } from "@/lib/coach/coachSendFlow";
 import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
-import { loadSideRounds } from "@/lib/xray.functions";
+import { loadRoundContext, loadSideRounds } from "@/lib/xray.functions";
 
 export type CoachErrorCode =
   | "COACH_MESSAGE_EMPTY"
@@ -380,14 +380,14 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             preferredName,
           );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
-          const sides = await loadSideRounds(
-            db,
-            [playerId],
-            overview.matches.map((m) => m.matchId),
-          );
+          const coachMatchIds = overview.matches.map((m) => m.matchId);
+          const [sides, roundContext] = await Promise.all([
+            loadSideRounds(db, [playerId], coachMatchIds),
+            loadRoundContext(db, [playerId], coachMatchIds),
+          ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
-            xray: buildXRay({ overview, dna, sides }),
+            xray: buildXRay({ overview, dna, sides, roundContext }),
             declared,
             // Same rows, same pure function as the Dashboard / Performance Score.
             proScore: buildProScore(dnaRows),
