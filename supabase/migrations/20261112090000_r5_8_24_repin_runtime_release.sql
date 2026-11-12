@@ -121,8 +121,8 @@ END;
 $r5824$;
 
 COMMENT ON FUNCTION public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)
-  IS 'R5.8.23 re-pinned recorder: Railway deployment 7324404e-f15d-45a0-8ec7-518a0770ca81 (controlled release of 94c6460b), semantic git:94c6460b6c577e66e573a3a1d53f11a8edd5feae, build git:94c6460b6c577e66e573a3a1d53f11a8edd5feae, parser.py blob 0dcb5962a0c977ab7a82326ebf8a0ef70bafde02, adapter.py blob b95811681be20b9e849672e57a07b1de5d18e6e8, raw_evidence.py blob b72c3174216f833522d66d8bc6c43f1af2d6fb17, approved workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485.';
+  IS 'R5.8.24 re-pinned recorder: Railway deployment 0ff96670-e373-4beb-90c9-f1967eee3195 (controlled release of 4badf606), semantic git:4badf6060e4e69a589179567f488f5d58a4a58dc, build git:4badf6060e4e69a589179567f488f5d58a4a58dc, parser.py blob 4102f6174e4dc01d97637174f4f70fe53629c285, adapter.py blob b95811681be20b9e849672e57a07b1de5d18e6e8, raw_evidence.py blob 5b7b674c88a77f85ab8791f84a47a188889b5802, approved workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485.';
 COMMENT ON FUNCTION public.assert_verified_parser_provenance(uuid)
-  IS 'R5.8.23 re-pinned provenance assertion: Railway deployment 7324404e-f15d-45a0-8ec7-518a0770ca81, semantic git:94c6460b6c577e66e573a3a1d53f11a8edd5feae, build git:94c6460b6c577e66e573a3a1d53f11a8edd5feae, approved workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485.';
+  IS 'R5.8.24 re-pinned provenance assertion: Railway deployment 0ff96670-e373-4beb-90c9-f1967eee3195, semantic git:4badf6060e4e69a589179567f488f5d58a4a58dc, build git:4badf6060e4e69a589179567f488f5d58a4a58dc, approved workflow blob f5e8ffb19d03dca410591f8d2fd38dc47a3ca485.';
 
 COMMIT;
