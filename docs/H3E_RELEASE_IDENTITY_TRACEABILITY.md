@@ -973,4 +973,5 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_REVISION` = `git:4badf6060e4e69a589179567f488f5d58a4a58dc`;
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:4badf6060e4e69a589179567f488f5d58a4a58dc`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `4badf6060e4e69a589179567f488f5d58a4a58dc` (bare commit).
+- Correction before the managed apply (PR #269): the two `COMMENT ON FUNCTION` statements of the merged migration (#268) still carried the R5.8.23 text, because the substitution only matched quoted literals. Function bodies, counts and md5 targets were correct. Comments are fixed and a test now pins them; the migration had not been applied to the managed database.
 - Rollback: Railway rollback to `7324404e` (commit `94c6460b`), `docs/reference/r5_8_24/rollback.sql` (release-owner authorization), and restore the three secrets to the R5.8.23 values.

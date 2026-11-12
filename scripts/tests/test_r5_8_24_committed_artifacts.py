@@ -135,3 +135,17 @@ def test_every_active_repository_pin_names_the_released_runtime():
         text = (ROOT / path).read_text(encoding="utf-8")
         assert NEW_RAW in text and OLD_RAW not in text, path
         assert NEW_PARSER in text and OLD_PARSER not in text, path
+
+
+def test_migration_comments_name_only_the_released_runtime():
+    """The COMMENT statements are metadata read by people and audits: they must describe R5.8.24 only."""
+    comments = MIGRATION[MIGRATION.index("COMMENT ON FUNCTION"):]
+    assert comments.count("IS 'R5.8.24 re-pinned") == 2
+    for value in (NEW_DEPLOYMENT, NEW_COMMIT, NEW_RAW, NEW_PARSER):
+        assert value in comments, value
+    for value in (OLD_DEPLOYMENT, OLD_COMMIT, OLD_RAW, OLD_PARSER, "R5.8.23"):
+        assert value not in comments, value
+    # The rollback restores the R5.8.23 comments, never the R5.8.24 ones.
+    rollback_comments = ROLLBACK[ROLLBACK.index("COMMENT ON FUNCTION"):]
+    assert rollback_comments.count("IS 'R5.8.23 re-pinned") == 2
+    assert NEW_DEPLOYMENT not in rollback_comments and NEW_COMMIT not in rollback_comments
