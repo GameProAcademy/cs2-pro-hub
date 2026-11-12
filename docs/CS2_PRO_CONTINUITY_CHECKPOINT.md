@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                                                             |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma fase de implementação iniciada. Fundação: CONCLUÍDA. Fase 4.2: **aguardando a especificação mestre** (`docs/specifications/README.md`)                                                                                                                                    |
-| Etapa atual                        | Missão documental de metodologia (branch `docs/product-methodology`) — conferir no GitHub se já foi integrada                                                                                                                                                                     |
-| Última etapa concluída             | Metodologia oficial, pesquisa e dependência da especificação 4.2 documentadas (`docs/product/`, `docs/specifications/README.md`)                                                                                                                                                  |
-| Última operação concluída          | Gates de `main` em `106f20c6` (#261) conferidos: todos `success` (H.3-E: 1ª execução falhou, 2ª passou — runs 42999745846 / 43000396561)                                                                                                                                          |
-| Operações em andamento             | PR documental da metodologia (conferir estado no GitHub)                                                                                                                                                                                                                          |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                                                                            |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                                                           |
-| Branch ativa                       | `main` (+ `docs/product-methodology` até o merge)                                                                                                                                                                                                                                 |
-| Último commit confirmado em `main` | `106f20c6c7c245c7f8f9fdd83e0973a37fe0fc81` (merge do #261). O merge do PR da metodologia vem depois: conferir no GitHub (regra contra ciclos, `checkpoints/README.md`)                                                                                                            |
-| Build validado em produção         | `f1276859` (`13cfcde8`, `72fb0cdb`, `106f20c6` e posteriores só documentação, não publicados)                                                                                                                                                                                     |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                                                                               |
-| **Próxima ação exata**             | Receber do dono do projeto a especificação mestre `CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre`; executar o roteiro de `docs/specifications/README.md` (registrar, mapear os cinco Prompts Mestres, matriz de rastreabilidade). Não iniciar implementação antes disso |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação (Score, DNA, snapshots, navegação, matriz A–J); pesquisa de mercado de 2026-11-11 (`docs/product/CS2_PRO_PRODUCT_RESEARCH_AND_BENCHMARKS.md`); publicação de `f1276859`; perguntas de validação ao Coach                                                   |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                                                          |
+| Item                               | Valor                                                                                                                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Nenhuma fase de implementação iniciada. Fundação: CONCLUÍDA. Fase 4.2: **aguardando a especificação mestre** (`docs/specifications/README.md`)                                                                                  |
+| Etapa atual                        | Missão de metodologia: PR #262 aberto, aguardando CI                                                                                                                                                                            |
+| Última etapa concluída             | Metodologia oficial, pesquisa e dependência da especificação 4.2 documentadas (`docs/product/`, `docs/specifications/README.md`)                                                                                                |
+| Última operação concluída          | Gates de `main` em `106f20c6` (#261) conferidos: todos `success` (H.3-E: 1ª execução falhou, 2ª passou — runs 42999745846 / 43000396561)                                                                                        |
+| Operações em andamento             | CI do PR #262 (conferir estado no GitHub)                                                                                                                                                                                       |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                          |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                         |
+| Branch ativa                       | `main` (+ `docs/product-methodology` até o merge do #262)                                                                                                                                                                       |
+| Último commit confirmado em `main` | `106f20c6c7c245c7f8f9fdd83e0973a37fe0fc81` (merge do #261). Merge do #262: conferir no GitHub (regra contra ciclos)                                                                                                             |
+| Build validado em produção         | `f1276859` (`13cfcde8`, `72fb0cdb`, `106f20c6` e posteriores só documentação, não publicados)                                                                                                                                   |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                             |
+| **Próxima ação exata**             | Registrar e mapear a especificação mestre da Fase 4.2 (recebida do dono em 2026-11-11) seguindo `docs/specifications/README.md`. Não iniciar implementação antes disso                                                          |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação (Score, DNA, snapshots, navegação, matriz A–J); pesquisa de mercado de 2026-11-11 (`docs/product/CS2_PRO_PRODUCT_RESEARCH_AND_BENCHMARKS.md`); publicação de `f1276859`; perguntas de validação ao Coach |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                        |
 
 ## 1. Identificação
 
@@ -36,15 +36,19 @@ Aplicação: https://gamepro.network · Banco e publicação: Lovable Cloud · P
 
 ## 2. Estado atual do projeto
 
-`main` = `72fb0cdb`. Fundação analítica e visual auditada, corrigida e publicada (Score
-`pro-score-v1`, DNA `dna-weighted-v2`, Coach coerente com ambos). Fase 4.2 não iniciada.
+`main` = `106f20c6` (merge do #261). #260 merged em `72fb0cdb`; #261 merged em `106f20c6`;
+#262 (metodologia) aberto, aguardando CI — seu merge será registrado na próxima atualização de
+conteúdo (regra contra ciclos). Fundação auditada, corrigida e publicada (Score `pro-score-v1`, DNA
+`dna-weighted-v2`, Coach coerente com ambos). Fase 4.2 não iniciada; especificação mestre recebida
+pelo dono em 2026-11-11, ainda **não registrada nem mapeada** no repositório.
 
 ## 3. Objetivo da missão vigente
 
-Missão de fundação: CONCLUÍDA. Protocolo de continuidade: IMPLANTADO (#260, #261). Missão de
+Missão de fundação: CONCLUÍDA. Protocolo de continuidade: IMPLANTADO (#260 merged em `72fb0cdb`;
+#261 merged em `106f20c6`). Missão de
 metodologia (2026-11-11): três decisões de produto, pesquisa, metodologia oficial e dependência da
 especificação 4.2 documentadas — **sem alteração de código, banco, parser ou produção**. Próxima:
-receber e mapear a especificação mestre da Fase 4.2.
+registrar e mapear a especificação mestre da Fase 4.2 (recebida, não processada).
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
@@ -119,15 +123,15 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                             | Branch                        | Merge em `main`    | Estado   |
-| ------------------------------ | ----------------------------- | ------------------ | -------- |
-| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`         | merged   |
-| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`         | merged   |
-| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`         | merged   |
-| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`         | merged   |
-| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`         | merged   |
-| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`         | merged   |
-| (este lote) Metodologia        | `docs/product-methodology`    | conferir no GitHub | conferir |
+| PR                             | Branch                        | Merge em `main`    | Estado                           |
+| ------------------------------ | ----------------------------- | ------------------ | -------------------------------- |
+| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`         | merged                           |
+| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`         | merged                           |
+| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`         | merged                           |
+| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`         | merged                           |
+| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`         | merged                           |
+| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`         | merged                           |
+| #262 Metodologia               | `docs/product-methodology`    | conferir no GitHub | aberto, aguardando CI (conferir) |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
@@ -169,7 +173,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 ## 22. Dependências de ações manuais (dono do projeto)
 
-1. Enviar a especificação mestre da Fase 4.2 (bloqueia o mapeamento dos cinco Prompts Mestres).
+1. ~~Enviar a especificação mestre da Fase 4.2~~ — recebida em 2026-11-11; falta registrá-la e mapeá-la.
 2. Informar os endereços de "CStrike" e "CS2d.app" (não localizados na pesquisa).
 3. Autorizar, se desejar, as recomendações da metodologia §21 (cada uma exige autorização própria
    quando tocar código, banco ou parser).
@@ -200,13 +204,13 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 - Fase atual: nenhuma implementação; Fase 4.2 aguarda a especificação mestre
 - Estado: fundação VALIDADA EM PRODUÇÃO; metodologia oficial documentada
 - Última etapa concluída: metodologia, pesquisa e dependência 4.2 documentadas
-- Próxima ação: receber a especificação 4.2 e seguir `docs/specifications/README.md`
+- Próxima ação: registrar e mapear a especificação 4.2 (já recebida)
 - Branch: `main`
-- Commit: `106f20c6` + merge do lote de metodologia (conferir)
-- PR: #256–#261 merged; lote de metodologia (conferir)
+- Commit: `106f20c6` + merge do #262 (conferir)
+- PR: #256–#261 merged; #262 aberto (conferir)
 - CI: `main` verde em `106f20c6`; commits posteriores: conferir
 - Testes pendentes: E2E das telas novas; Score em celular com dados
-- Bloqueios: especificação 4.2 não recebida; L04 para validação do Score
+- Bloqueios: especificação 4.2 ainda não mapeada; L04 para validação do Score
 - Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
 - Checkpoint da fase: nenhum ativo (fases 1–5 pendentes de definição)
 - Não repetir: auditorias da fundação; pesquisa de 2026-11-11; publicação de `f1276859`

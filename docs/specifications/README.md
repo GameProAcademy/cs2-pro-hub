@@ -1,9 +1,10 @@
 # Especificações de fase
 
-## Fase 4.2 — especificação mestre: **PENDENTE (não recebida)**
+## Fase 4.2 — especificação mestre: **recebida em 2026-11-11, ainda não registrada nem mapeada**
 
 Arquivo esperado: `CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre` (fornecido pelo dono
-do projeto). Em 2026-11-11 **não existe** no repositório: busca por nome em todas as 292 branches
+do projeto). O dono a enviou em 2026-11-11, depois desta seção ser escrita; o registro e o
+mapeamento são a próxima etapa. Antes do envio, ela **não existia** no repositório: busca por nome em todas as 292 branches
 remotas e no histórico de commits de `main`, sem resultado.
 
 Caminho previsto quando recebido:

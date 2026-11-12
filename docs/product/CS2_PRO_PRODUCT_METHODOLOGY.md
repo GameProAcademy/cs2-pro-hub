@@ -111,8 +111,12 @@ Consequências:
   constantes, não de uma régua comum. A regra "dimensão mais fraca abaixo de 60"
   (`PLAN_CEILING = 60`, `src/lib/training/trainingPlan.ts:22`; usada pelo Raio-X em
   `src/lib/diagnostics/xray.ts:291` e pelo treino em `src/lib/catalog/catalogSelect.ts:119`)
-  compara escalas não calibradas.
-- **[DECISÃO]** essas constantes permanecem (mudá-las é nova versão do DNA).
+  compara escalas não calibradas. **Essa regra não é um diagnóstico profissional calibrado**: o
+  60 não tem fonte, não corresponde a percentil nem a nível competitivo; é um limiar interno de
+  priorização entre as dimensões do próprio jogador.
+- **[DECISÃO]** essas constantes permanecem e `dna-weighted-v2` não muda (mudá-las é nova versão
+  do DNA). As constantes sem fonte e as sobreposições do §4.11 ficam registradas como **problemas
+  metodológicos identificados**, não corrigidos nesta versão.
 - **[RECOMENDAÇÃO R-DNA-1]** documentar cada constante no próprio catálogo como "escala de
   referência heurística, sem calibração", e exibir no Raio-X/treino a frase "comparação entre
   dimensões do seu perfil, não com outros jogadores" junto da regra do 60. Mudança só de texto.
@@ -365,6 +369,11 @@ divide crédito** entre colegas e não usa probabilidade de vitória.
 | E — validação externa           | Relaciona-se a algo independente? | Associação com participação em rounds vencidos; comparação com avaliações independentes, se licenciadas                                               | **Vencedor do round e time do jogador** | **Bloqueado por `L04-MATCH-RESULT-UNRESOLVED`** (`docs/ADMISSION_CONTRACT_V3.md:51`) |
 | F — aprovação de `pro-score-v2` | Vale mudar?                       | Documento de mudança (§18.4) com resultados de A–E, regressão contra v1 nas mesmas partidas, rollback                                                 | Tudo acima                              | Não                                                                                  |
 
+**[DECISÃO]** `pro-score-v1` e seus pesos ficam intactos durante toda esta validação. A etapa E
+permanece **bloqueada por L04** até o pipeline identificar time e vencedor por round com
+evidência da própria demo; nenhum vencedor de round será inferido, estimado ou inventado para
+contorná-la.
+
 Regras: correlação com vitória **não prova**, sozinha, qualidade individual (time forte infla
 todos); validação sempre **fora da amostra** e **temporal** (treinar em partidas antigas, testar
 nas novas); partidas extremas tratadas por robustez (mediana/Huber na análise), nunca por remoção
@@ -376,7 +385,13 @@ silenciosa.
 
 **[DECISÃO] (2026-11-11):** objetivo estratégico aprovado. Arquitetura, granularidade,
 persistência e retenção definidas por especificação antes de qualquer implementação. Nada foi
-implementado nesta missão.
+implementado nesta missão. **A funcionalidade espacial não está operacional**: não há heatmap,
+posição persistida nem consulta espacial em produção.
+
+`spatial-v1` (§12) é uma **proposta arquitetural**, não um contrato aprovado para implementação.
+Implementar exige: (1) aprovação da proposta pelo dono do projeto; (2) benchmark com demo real
+autorizada para medir linhas, bytes e tempo de parsing; (3) migration, regras de RLS e política de
+retenção revisadas; (4) mudança no parser sob a governança de campos e a atestação de runtime.
 
 ### 11.1 Estado real (verificado nesta missão)
 
@@ -390,23 +405,32 @@ implementado nesta missão.
 | Em produção, nenhuma das 6 partidas tem `semantic_player_data` em `match_sources.metadata`; `round_events` não tem posição                                                                                         | consulta somente leitura, 2026-11-11                                                        |
 | Volume atual em Storage: bucket `demos` 30 objetos, 11,25 GB (≈ 375 MB por demo); `cs2-raw-evidence` 2.935 objetos, 364 MB                                                                                         | `storage.objects`, consulta somente leitura, 2026-11-11                                     |
 
-Conclusão: **não falta capacidade ao parser**; falta (a) amostragem com contrato espacial e (b)
-persistência.
+Conclusão: **não falta capacidade de extração ao parser**; falta (a) amostragem com contrato
+espacial e (b) persistência.
+
+### 11.1.1 Quatro coisas diferentes (não confundir)
+
+| Etapa                                   | Hoje                                                                                                                      | Proposta (`spatial-v1`, não aprovada)                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Extração** de coordenadas pelo parser | **Existe** (`X/Y/Z`, `last_place_name` via `parse_ticks`)                                                                 | Mesma biblioteca; leitura dirigida aos ticks e jogadores do evento          |
+| **Amostragem**                          | Ticks de evento de todos os jogadores, desbastados uniformemente até 4.096 linhas — **não alinhada ao jogador do evento** | Camada 1: no tick do evento, ator e vítima; camada 2: 2 Hz por jogador vivo |
+| **Persistência no banco**               | **Não existe** (só contagens no `rpc` de persistência)                                                                    | Camada 1 (`event_positions`) e camada 3 (agregados)                         |
+| **Armazenamento no Storage**            | Demos e evidência RAW existem; **nenhum arquivo espacial**                                                                | Camada 2 (trajetória binária versionada por partida)                        |
 
 ### 11.2 Alternativas avaliadas
 
-| Abordagem                                            | Vantagem                                                                  | Limitação                                                                             | Custo [ESTIMATIVA]                                                                                | Auditoria                       | Veredito                          |
-| ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------- |
-| 1. Todos os ticks                                    | Máxima fidelidade                                                         | 64 ticks/s × 10 jogadores ≈ 640 linhas/s ≈ 1,5 M linhas por partida de 40 min de jogo | Inviável no banco                                                                                 | Boa                             | **Não**                           |
-| 2. Amostrado regular (1–2 Hz, vivos)                 | Trajetórias, presença por zona, controle de mapa; ESTA usou 2 Hz          | Perde peeks rápidos; não serve para o instante exato de um abate                      | ≈ 24 rounds × 90 s × 2 Hz × 10 = 43.200 linhas/partida ≈ 0,9 MB binário compactado (20 B/linha)   | Boa se o arquivo for versionado | **Sim, em Storage, não no banco** |
-| 3. Só no evento (abate, morte, dano, granada, plant) | Exato onde importa; pequeno; resolve heatmaps de morte/abate e distâncias | Não mostra rotas                                                                      | Ordem de 10³ linhas/partida (≈ 126 abates, 530 danos, 340 granadas por partida na produção atual) | Excelente (ligado ao evento)    | **Sim, no banco**                 |
-| 4. Só agregados (zona × lado × jogador)              | Consulta rápida; RLS simples                                              | Irreversível sem o dado de base                                                       | Desprezível                                                                                       | Depende de 2/3                  | **Sim, derivado**                 |
-| 5. Bruto temporário + estruturado permanente         | Reprocessável sem a demo                                                  | Exige política de retenção                                                            | Médio                                                                                             | Boa                             | **Sim** (é a combinação 2+3+4)    |
-| 6. Reconstruir sob demanda da demo                   | Sem armazenamento extra                                                   | Reprocessar demo real a cada pedido; custo e tempo; regra de não reprocessar          | Alto por consulta                                                                                 | Boa                             | **Não** como padrão               |
+| Abordagem                                            | Vantagem                                                                  | Limitação                                                                             | Custo [ESTIMATIVA]                                                                                                        | Auditoria                       | Veredito                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------- |
+| 1. Todos os ticks                                    | Máxima fidelidade                                                         | 64 ticks/s × 10 jogadores ≈ 640 linhas/s ≈ 1,5 M linhas por partida de 40 min de jogo | Inviável no banco                                                                                                         | Boa                             | **Não**                           |
+| 2. Amostrado regular (1–2 Hz, vivos)                 | Trajetórias, presença por zona, controle de mapa; ESTA usou 2 Hz          | Perde peeks rápidos; não serve para o instante exato de um abate                      | ≈ 24 rounds × 90 s × 2 Hz × 10 = 43.200 linhas/partida ≈ 0,9 MB a 20 B/linha (premissas não medidas; **exige benchmark**) | Boa se o arquivo for versionado | **Sim, em Storage, não no banco** |
+| 3. Só no evento (abate, morte, dano, granada, plant) | Exato onde importa; pequeno; resolve heatmaps de morte/abate e distâncias | Não mostra rotas                                                                      | Ordem de 10³ linhas/partida (médias da produção: ≈ 126 abates, 530 danos, 340 granadas; **exige benchmark**)              | Excelente (ligado ao evento)    | **Sim, no banco**                 |
+| 4. Só agregados (zona × lado × jogador)              | Consulta rápida; RLS simples                                              | Irreversível sem o dado de base                                                       | Desprezível                                                                                                               | Depende de 2/3                  | **Sim, derivado**                 |
+| 5. Bruto temporário + estruturado permanente         | Reprocessável sem a demo                                                  | Exige política de retenção                                                            | Médio                                                                                                                     | Boa                             | **Sim** (é a combinação 2+3+4)    |
+| 6. Reconstruir sob demanda da demo                   | Sem armazenamento extra                                                   | Reprocessar demo real a cada pedido; custo e tempo; regra de não reprocessar          | Alto por consulta                                                                                                         | Boa                             | **Não** como padrão               |
 
 ### 11.3 Recomendação [RECOMENDAÇÃO R-ESP]
 
-Arquitetura em três camadas, entregue em incrementos:
+Proposta (não aprovada para implementação) em três camadas, entregues em incrementos:
 
 1. **Posição no evento** (primeiro incremento): ao extrair `player_death`, `player_hurt`,
    detonações e `bomb_planted`, anexar `X, Y, Z, last_place_name` do **ator** e da **vítima** no
@@ -432,12 +456,12 @@ Dashboard / detalhe da partida  ◄── consultas por jogador (RLS)
 AI Coach                        ◄── só agregados com amostra e cobertura declaradas
 ```
 
-**Contrato `event_positions` (proposta, `spatial-v1`):** `match_id`, `round`, `tick`,
+**Esboço de `event_positions` (proposta `spatial-v1`, não aprovada):** `match_id`, `round`, `tick`,
 `event_ref` (chave do evento em `round_events`), `role` (`actor`|`victim`), `steam_id`, `side`,
 `x`, `y`, `z` (float, unidades Hammer), `place` (texto do jogo), `map_name`, `map_build`
 (ou versão dos assets), `position_state` (§12.1), `contract_version`.
 
-### 12.1 Estados de posição [DECISÃO para o contrato futuro]
+### 12.1 Estados de posição [RECOMENDAÇÃO para o contrato futuro]
 
 | Estado         | Significado                                                                             | Pode alimentar heatmap?                  |
 | -------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -447,45 +471,45 @@ AI Coach                        ◄── só agregados com amostra e cobertura 
 | `MISSING`      | Não havia leitura                                                                       | Não                                      |
 | `INVALID`      | Fora dos limites do mapa, NaN, jogador morto, `steam_id` divergente, tick fora do round | Não; contado na cobertura                |
 
-### 12.2 Respostas às perguntas da especificação
+### 12.2 Respostas às perguntas da especificação (proposta)
 
-1. **Dados extraídos**: `X, Y, Z`, `last_place_name`, `move_state`, vivo, agachado, velocidade (já
-   extraídos); `yaw/pitch` para direção (já extraídos na amostra de mira).
-2. **Entidades**: `event_positions`, arquivo de trajetória, `spatial_zone_summary`.
-3. **Granularidade**: instante do evento (camada 1); 2 Hz (camada 2) — justificada pelo ESTA;
-   revisável com dados.
-   4/19. **Jogador correto**: chave `steam_id` do evento (ator/vítima) contra a linha do tick com o
-   mesmo `steamid`; divergência → `INVALID`. O vínculo jogador↔conta segue
-   `resolveAnalyticalParticipant` (já usado em `semanticData.ts:38`).
-4. **Mapa, round, tick, lado, contexto**: colunas próprias; lado do `team_num` no mesmo tick.
-5. **Coordenadas inválidas**: estado `INVALID`; nunca corrigidas ou deslocadas.
-6. **Normalização de mapas**: transformação mundo→radar por arquivo de metadados versionado com
-   checksum (modelo Awpy `map_data.json`/`manifest.json`); nível por `Z` em mapas de vários
-   andares (Nuke, Vertigo, Train).
-7. **Precisão**: armazenar o valor do parser (float), sem arredondar; arredondar só na exibição.
-8. **Dupla contagem**: uma linha por `(event_ref, role)`, chave única.
-   10/11. **Volume e custo**: camada 1 ≈ 10³ linhas/partida no banco; camada 2 no Storage
-   (≈ 1 MB/partida [ESTIMATIVA]) — ordem de grandeza abaixo da própria demo (≈ 375 MB).
-9. **Ownership e RLS**: mesmas regras de `round_events`/`match_features` (leitura só pelo dono
-   do perfil vinculado; escrita só pelo pipeline com service role); Storage com caminho por
-   partida e acesso via função de servidor.
-10. **Consulta**: índices por `(steam_id, map_name, side)` e `(match_id, round)`; Dashboard lê
-    agregados, não linhas.
-11. **Retenção**: camada 1 e 3 enquanto a partida existir; camada 2 com política explícita (a
-    decidir: tempo, quota por usuário) — **[EM ABERTO]**.
-12. **Pré-cálculo**: eventos por zona × lado (mortes, abates, dano dado/recebido), ocupação por
-    zona (camada 2), distância média de duelo por arma.
-13. **Auditoria**: camada 1 sempre; digest do arquivo da camada 2; versão do contrato e do parser.
-14. **Versão do contrato**: `spatial-v1`; mudança de campo = nova versão; linhas antigas não são
-    reescritas.
-15. **Mudanças de mapa**: `map_build`/versão dos assets por partida; agregação nunca mistura
-    versões de geometria incompatíveis.
-16. **Tick do evento ≠ tick da posição**: a posição só é `MEASURED` quando lida **no mesmo tick**
-    do evento; qualquer outro tick é `SAMPLED` com a distância em ticks registrada.
+- **(1) Dados extraídos**: `X, Y, Z`, `last_place_name`, `move_state`, vivo, agachado, velocidade
+  e `yaw/pitch` — **já extraídos** pelo parser; nenhum persistido.
+- **(2) Entidades**: `event_positions`, arquivo de trajetória, `spatial_zone_summary`.
+- **(3) Granularidade**: instante do evento (camada 1); 2 Hz (camada 2), com base no ESTA; a
+  validar no benchmark.
+- **(4) e (19) Jogador correto**: `steam_id` do evento (ator/vítima) contra a linha do tick com o
+  mesmo `steamid`; divergência → `INVALID`. Vínculo jogador↔conta por
+  `resolveAnalyticalParticipant` (já usado em `semanticData.ts:38`).
+- **(5) Mapa, round, tick, lado, contexto**: colunas próprias; lado pelo `team_num` no mesmo tick.
+- **(6) Coordenadas inválidas**: estado `INVALID`; nunca corrigidas ou deslocadas.
+- **(7) Normalização de mapas**: transformação mundo→radar por metadados versionados com checksum
+  (modelo Awpy `map_data.json`/`manifest.json`); nível por `Z` em Nuke, Vertigo e Train.
+- **(8) Precisão**: guardar o float do parser; arredondar só na exibição.
+- **(9) Dupla contagem**: uma linha por `(event_ref, role)`, chave única.
+- **(10) e (11) Volume e custo**: camada 1 da ordem de 10³ linhas/partida no banco; camada 2 da
+  ordem de 1 MB/partida no Storage — **[ESTIMATIVA] sem benchmark**; a confirmar com demo real
+  autorizada antes de qualquer aprovação. Referência: a demo tem ≈ 375 MB.
+- **(12) Ownership e RLS**: mesmas regras de `round_events`/`match_features` (leitura pelo dono do
+  perfil vinculado; escrita só pelo pipeline com service role); Storage por caminho de partida,
+  lido por função de servidor.
+- **(13) Consulta**: índices `(steam_id, map_name, side)` e `(match_id, round)`; Dashboard lê
+  agregados.
+- **(14) Retenção**: camadas 1 e 3 enquanto a partida existir; camada 2 **[EM ABERTO]** (tempo,
+  quota por usuário).
+- **(15) Pré-cálculo**: eventos por zona × lado (mortes, abates, dano dado/recebido), ocupação por
+  zona (camada 2), distância média de duelo por arma.
+- **(16) Auditoria**: camada 1 completa; digest do arquivo da camada 2; versões do contrato e do
+  parser.
+- **(17) Versão do contrato**: `spatial-v1`; mudança de campo = nova versão; nada reescrito.
+- **(18) Mudanças de mapa**: versão dos assets/`map_build` por partida; nunca agregar geometrias
+  incompatíveis.
+- **(20) Tick do evento ≠ tick da posição**: `MEASURED` só quando lida **no mesmo tick** do evento;
+  outro tick é `SAMPLED`, com a distância em ticks registrada.
 
 ## 13. Persistência e retenção
 
-Ver §12.2 itens 10–17. **[EM ABERTO]** retenção da camada 2 e quota por usuário; custo real só
+Ver §12.2 itens (10)–(18). **[EM ABERTO]** retenção da camada 2 e quota por usuário; custo real só
 depois de medir uma demo real com o contrato implementado (não reprocessar demos reais sem
 autorização específica).
 
@@ -571,9 +595,10 @@ retroativa só com estratégia explícita e auditável (novo snapshot, nunca edi
 Preservar `pro-score-v1` e seus pesos. Nova metodologia = nova versão, com diferenças documentadas
 e regressão contra v1 nas mesmas partidas. Nunca comparar versões sem informar a mudança.
 
-### 18.3 Dados espaciais [DECISÃO]
+### 18.3 Dados espaciais [DECISÃO quanto à regra; contrato em proposta]
 
-Contrato `spatial-v1` definido antes da implementação; versionado; compatível com evolução.
+Qualquer implementação espacial exige um contrato versionado aprovado antes do código. `spatial-v1`
+(§12) é a proposta inicial, **não aprovada**.
 
 ### 18.4 Documento de mudança metodológica (obrigatório) [DECISÃO]
 
