@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                               |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Missão de evolução estrutural (prompt de 2026-11-12). **Marco 0** (especificação 4.2 registrada e mapeada) em PR; Marcos 1–7 pendentes                                                                              |
-| Etapa atual                        | Marco 0: PR `docs/fase-4-2-mapping` (conferir estado no GitHub)                                                                                                                                                     |
-| Última etapa concluída             | Especificação mestre 4.2 lida integralmente, registrada byte a byte e mapeada (`docs/specifications/FASE_4_2_MAPEAMENTO.md`)                                                                                        |
-| Última operação concluída          | Gates de `main` em `b2c8219c` (#262) conferidos: todos `success` (H.3-E: 1ª execução falhou, 2ª passou — runs 43150399572 / 43150852266)                                                                            |
-| Operações em andamento             | CI do PR do Marco 0 (conferir)                                                                                                                                                                                      |
-| Processos em execução              | Nenhum                                                                                                                                                                                                              |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                             |
-| Branch ativa                       | `main` (+ `docs/fase-4-2-mapping` até o merge)                                                                                                                                                                      |
-| Último commit confirmado em `main` | `b2c8219c55c37e4f90d6e7251312f8de9597d0d0` (merge do #262; último commit do PR `82efb867`; 5 checks do PR verdes). Merge do PR do Marco 0: conferir no GitHub (regra contra ciclos)                                 |
-| Build validado em produção         | `f1276859` (último validado; `13cfcde8`, `72fb0cdb`, `106f20c6`, `b2c8219c` só documentação). Confirmar o build servido antes de qualquer deploy                                                                    |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                 |
-| **Próxima ação exata**             | Marco 1: expor lado por round e resultado do round por jogador (dados já persistidos e validados — mapeamento §4) e investigar identidade de time (L04); em paralelo, 4.2.1 (catálogo/envelope). Ver mapeamento §11 |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; leitura/mapeamento da especificação 4.2 (2026-11-12); validação de vencedor do round contra eliminações (2026-11-12); publicação de `f1276859`                      |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                            |
+| Item                               | Valor                                                                                                                                                                                                            |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Missão de evolução estrutural: Marco 0 (#263) e Marco 1 (#264) concluídos; Marco 1 validado em produção; próximo: 4.2.1 e Marco 2                                                                                |
+| Etapa atual                        | Correção de textos do Raio-X (lados e posições) — PR #265                                                                                                                                                        |
+| Última etapa concluída             | Marco 1 `round-context-v1` publicado e VALIDADO EM PRODUÇÃO (Raio-X e Coach da conta de teste com os valores esperados; isolamento conferido na conta administradora)                                            |
+| Última operação concluída          | Gates de `main` em `e60a70f6` (#264) todos `success` (H.3-E 2ª execução); deploy pelo `deploy_project`; validação nos dois navegadores                                                                           |
+| Operações em andamento             | CI do PR #265 (conferir)                                                                                                                                                                                         |
+| Processos em execução              | Nenhum                                                                                                                                                                                                           |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                          |
+| Branch ativa                       | `main` (+ `fix/xray-side-copy` até o merge do #265)                                                                                                                                                              |
+| Último commit confirmado em `main` | `e60a70f68810dfa05529b1f7d2fec5ebd7ab6495` (merge do #264). #263 → `bf57069e`. Merge do #265: conferir no GitHub                                                                                                 |
+| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                                                     |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                              |
+| **Próxima ação exata**             | Entrega 4.2.1 (catálogo único de métricas com status/amostra/coverage/evidence_refs, taxonomia do original §4) e Marco 2 camada A (posição no tick do evento; benchmark com fixture antes de qualquer demo real) |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; leitura/mapeamento da especificação 4.2; validação do vencedor do round; implementação e validação do Marco 1; publicação de `e60a70f6`                          |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                         |
 
 ## 1. Identificação
 
@@ -120,25 +120,26 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                             | Branch                        | Merge em `main`    | Estado                                  |
-| ------------------------------ | ----------------------------- | ------------------ | --------------------------------------- |
-| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`         | merged                                  |
-| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`         | merged                                  |
-| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`         | merged                                  |
-| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`         | merged                                  |
-| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`         | merged                                  |
-| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`         | merged                                  |
-| #262 Metodologia               | `docs/product-methodology`    | `b2c8219c`         | merged (PR `82efb867`, 5 checks verdes) |
-| Marco 0 Mapeamento 4.2         | `docs/fase-4-2-mapping`       | conferir no GitHub | conferir                                |
+| PR                             | Branch                        | Merge em `main` | Estado                                     |
+| ------------------------------ | ----------------------------- | --------------- | ------------------------------------------ |
+| #256 DNA v2                    | `fix/player-dna-v2`           | `0ebfedf2`      | merged                                     |
+| #257 Score v1                  | `feat/pro-score-v1`           | `975c7d11`      | merged                                     |
+| #258 Coach/Score               | `fix/coach-score-facts`       | `f1276859`      | merged                                     |
+| #259 Relatório de fundação     | `docs/foundation-report`      | `13cfcde8`      | merged                                     |
+| #260 Protocolo de continuidade | `docs/continuity-checkpoints` | `72fb0cdb`      | merged                                     |
+| #261 Checkpoint pós-#260       | `docs/continuity-after-260`   | `106f20c6`      | merged                                     |
+| #262 Metodologia               | `docs/product-methodology`    | `b2c8219c`      | merged (PR `82efb867`, 5 checks verdes)    |
+| #263 Marco 0 Mapeamento 4.2    | `docs/fase-4-2-mapping`       | `bf57069e`      | merged, gates verdes                       |
+| #264 Marco 1 round-context-v1  | `feat/round-context-v1`       | `e60a70f6`      | merged, gates verdes, publicado e validado |
+| #265 Textos do Raio-X          | `fix/xray-side-copy`          | conferir        | conferir                                   |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
 
 ## 18. Estado do CI
 
-`main` `b2c8219c`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
-H.3-E (2ª execução) — todos `success`. CONFIRMADO em 2026-11-12. Commits posteriores: conferir os
-runs do próprio commit.
+`main` `e60a70f6`: Quality Gates, Queue Semantics Probe, R5.8.3, R5.8.4, F553 pós-conclusão e
+H.3-E (2ª execução) — todos `success`. CONFIRMADO em 2026-11-12.
 
 ## 19. Publicação e deploy
 
@@ -199,14 +200,14 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: missão de evolução estrutural, Marco 0 concluído em PR
-- Estado: especificação 4.2 registrada e mapeada; implementação não iniciada
-- Última etapa concluída: mapeamento da 4.2 (`docs/specifications/FASE_4_2_MAPEAMENTO.md`)
-- Próxima ação: Marco 1 (lado/resultado do round por jogador; L04) e 4.2.1
+- Fase atual: missão de evolução estrutural; Marcos 0 e 1 concluídos
+- Estado: especificação mapeada; round-context-v1 validado em produção
+- Última etapa concluída: Marco 1 publicado e validado (`e60a70f6`)
+- Próxima ação: 4.2.1 (catálogo/envelope) e Marco 2 camada A
 - Branch: `main`
-- Commit: `b2c8219c` + merge do Marco 0 (conferir)
-- PR: #256–#262 merged; Marco 0 (conferir)
-- CI: `main` verde em `b2c8219c`
+- Commit: `e60a70f6` + merge do #265 (conferir)
+- PR: #256–#264 merged; #265 (conferir)
+- CI: `main` verde em `e60a70f6`
 - Testes pendentes: E2E das telas novas; Score em celular com dados
 - Bloqueios: cinco PMs não definidos no original; L02/L03/L04
 - Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
