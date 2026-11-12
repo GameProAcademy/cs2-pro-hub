@@ -62,8 +62,7 @@ export const xrayFr: Record<keyof typeof xrayPtBR, string> = {
   "xray.metric.ctRating": "Rating côté CT",
   "xray.metric.tRating": "Rating côté T",
   "xray.sides.title": "Côtés CT et T",
-  "xray.sides.description":
-    "Rounds joués de chaque côté et rating du match limité à ces rounds. Les éliminations et les dégâts par côté ne sont pas encore enregistrés par round.",
+  "xray.sides.description": "Rounds joués de chaque côté et rating du match limité à ces rounds.",
   "xray.sides.ct": "CT",
   "xray.sides.t": "T",
   "xray.sides.rounds": "{n} rounds",
@@ -89,7 +88,8 @@ export const xrayFr: Record<keyof typeof xrayPtBR, string> = {
   "xray.unsupported.title": "Ce que CS2 PRO ne mesure pas encore",
   "xray.unsupported.enemiesFlashed":
     "Ennemis aveuglés : aucun événement d’aveuglement par flash n’a été enregistré dans ces matchs.",
-  "xray.unsupported.positions": "Positions et cartes de chaleur (coordonnées non extraites).",
+  "xray.unsupported.positions":
+    "Positions et cartes de chaleur (le parseur lit les coordonnées, mais elles ne sont pas encore enregistrées).",
   "xray.unsupported.economyClassification":
     "Classification des achats (eco, force, full) : pas de classificateur validé.",
   "xray.unsupported.sideSplitKills": "Éliminations et dégâts par côté (non enregistrés par round).",

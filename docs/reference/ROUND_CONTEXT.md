@@ -48,3 +48,14 @@ filtro se for um SteamID64 numérico.
 
 Reverter o PR. O campo `roundContext` do Raio-X é opcional (aditivo); sem ele, o Raio-X volta a
 listar "abates e dano por lado" como não suportado.
+
+## Validação em produção (2026-11-12, build `e60a70f6`)
+
+- Raio-X da conta de teste: CT 11 vencidos / 16 perdidos, abates/mortes 13/12, 40,7%, 0,48
+  abates/round, 67,7 dano/round; TR 26/10, 25/22, 72,2%, 0,69, 94,7 — idênticos aos valores
+  calculados diretamente no banco antes do deploy.
+- AI Coach (pergunta "Como foi meu desempenho como CT e como TR?"): repetiu exatamente esses
+  números, sem números removidos pelo guard. Limitação observada: na recomendação citou nomes de
+  pontos do mapa ("B-1", "B-2") que não vêm dos fatos — não são números, então o guard não os
+  bloqueia; registrado para o Marco 5.
+- Conta administradora (sem partidas): nenhum bloco por lado; nenhum dado da conta de teste.

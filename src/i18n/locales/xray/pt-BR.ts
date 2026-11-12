@@ -63,7 +63,7 @@ export const xrayPtBR = {
   "xray.metric.tRating": "Rating no lado TR",
   "xray.sides.title": "Lados CT e TR",
   "xray.sides.description":
-    "Rounds jogados em cada lado e o rating da partida restrito a esses rounds. Abates e dano por lado ainda não são gravados por round.",
+    "Rounds jogados em cada lado e o rating da partida restrito a esses rounds.",
   "xray.sides.ct": "CT",
   "xray.sides.t": "TR",
   "xray.sides.rounds": "{n} rounds",
@@ -88,7 +88,8 @@ export const xrayPtBR = {
   "xray.unsupported.title": "O que o CS2 PRO ainda não mede",
   "xray.unsupported.enemiesFlashed":
     "Inimigos cegados: eventos de cegueira por flash não foram registrados nestas partidas.",
-  "xray.unsupported.positions": "Posições e mapa de calor (coordenadas não são extraídas).",
+  "xray.unsupported.positions":
+    "Posições e mapa de calor (o parser lê as coordenadas, mas elas ainda não são gravadas).",
   "xray.unsupported.economyClassification":
     "Classificação de compra (eco, force, full) — não há classificador revisado.",
   "xray.unsupported.sideSplitKills": "Abates e dano separados por lado (não gravados por round).",
