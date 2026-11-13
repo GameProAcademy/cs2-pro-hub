@@ -38,7 +38,7 @@ export const PARSER_NAME = "demoparser2";
  * Expected parser release selected for the provisioned remote worker.
  * CS2 demo compatibility remains a separate E2E concern.
  */
-export const PARSER_VERSION = "0.42.0";
+export const PARSER_VERSION = "0.42.2";
 export const PARSER_VERSION_CONFIRMED = true;
 /**
  * Version of the JSON CONTRACT exchanged with the parser worker. This is a

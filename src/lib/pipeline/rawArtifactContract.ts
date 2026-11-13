@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { PARSER_VERSION } from "@/config/pipeline";
+
 export const RAW_ARTIFACT_SECTION_ORDER = [
   "header",
   "players",
@@ -129,7 +131,7 @@ export function validateRawForensicContractV2(
   const reasons: string[] = [];
   if (contract["audit_contract_version"] !== 2) reasons.push("forensic_v2_version_invalid");
   const parser = contract["parser"] as Record<string, unknown> | undefined;
-  if (parser?.["name"] !== "demoparser2" || parser?.["version"] !== "0.42.0")
+  if (parser?.["name"] !== "demoparser2" || parser?.["version"] !== PARSER_VERSION)
     reasons.push("forensic_v2_parser_invalid");
   const tick = contract["full_tick_audit"] as Record<string, unknown> | undefined;
   const domainProof = tick?.["full_tick_domain_proof"] as Record<string, unknown> | undefined;

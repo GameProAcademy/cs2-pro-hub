@@ -601,10 +601,35 @@ def test_worker_pins_demoparser2_0_42_2():
     # (owner-authorized test demo, job ced11a74), so the demo produced no events.
     import settings, capability_catalog
     from pathlib import Path
-    assert settings.PARSER_VERSION == capability_catalog.PARSER_VERSION == "0.42.2"
+    assert settings.PARSER_VERSION == capability_catalog.RUNTIME_PARSER_VERSION == "0.42.2"
     requirements = (Path(__file__).resolve().parents[1] / "requirements.txt").read_text()
     assert "demoparser2==0.42.2" in requirements
-    assert "parse_weapons" in capability_catalog.PARSER_APIS
+    # The static reviewed baseline (and the mapping digests pinned in the recorder) is unchanged.
+    assert capability_catalog.PARSER_VERSION == "0.42.0"
+    assert "parse_weapons" not in capability_catalog.PARSER_APIS
+
+
+class _Runtime:
+    def parse_event(self): ...
+    def parse_weapons(self): ...
+    def parse_brand_new_api(self): ...
+
+
+def test_reviewed_runtime_api_additions_extend_only_the_runtime_reconciliation():
+    import capability_catalog as cc
+    surface = cc.inspect_installed_runtime_surface(_Runtime)
+    catalog = cc.catalog_payload(installed_runtime_surface=surface)
+    rows = {row["capability_id"]: row for row in catalog["capabilities"]}
+    assert rows["parser_apis.parse_weapons"]["classification"] == "RAW_ONLY"
+    assert rows["parser_apis.parse_weapons"]["reason"]
+    assert rows["parser_apis.parse_weapons"]["canonical_allowed"] is False
+    assert cc.validate_catalog(catalog) == []
+    reconciliation = cc.reconcile_capabilities(catalog)
+    # parse_weapons is reviewed; an unreviewed new API is still an orphan and still blocks.
+    assert reconciliation["runtime_missing_from_catalog"] == ["parser_apis.parse_brand_new_api"]
+    assert reconciliation["status"] == "BLOCKED"
+    # The static baseline never contains the runtime addition.
+    assert "parser_apis.parse_weapons" not in {row.capability_id for row in cc.static_capabilities()}
 
 
 def _app_stable(value):

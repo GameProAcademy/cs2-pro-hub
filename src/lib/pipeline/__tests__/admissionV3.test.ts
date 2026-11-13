@@ -24,6 +24,8 @@ import {
  * demo (LaihoE/demoparser test_demo.dem @4131a4f, sha256 84a1a419…) with the producer
  * digest fix: real gate verdicts, reasons, reconciliation and tick audit. Only the large
  * inventories were trimmed; the contract is re-signed with the app's canonical JSON.
+ * R5.8.25: top-level `parser.version` follows the worker runtime (0.42.2) and the contract was
+ * re-signed; catalog rows keep the static 0.42.0 baseline, as the real worker emits them.
  */
 const FIXTURE = resolve(__dirname, "fixtures/forensicV2ProducerPublicFixture.json");
 type Rec = Record<string, unknown>;
@@ -171,7 +173,7 @@ const IDENTITY = {
   attemptNumber: 3,
   artifactId: "00000000-0000-4000-8000-000000000001",
   demoSha256: HEX("1"),
-  parser: { name: "demoparser2", version: "0.42.0", revision: "git:x", build_revision: "git:x" },
+  parser: { name: "demoparser2", version: "0.42.2", revision: "git:x", build_revision: "git:x" },
 };
 
 describe("admission v3 — evidence classification of the real producer contract", () => {

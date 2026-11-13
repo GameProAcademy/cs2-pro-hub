@@ -233,10 +233,10 @@ describe("Gate 1D parser identity", () => {
     events: [],
   });
 
-  it("defaults to demoparser2 0.42.0 and the deployed worker revision", () => {
+  it("defaults to demoparser2 0.42.2 and the deployed worker revision", () => {
     expect(expectedParserIdentity()).toEqual({
       name: "demoparser2",
-      version: "0.42.0",
+      version: "0.42.2",
       revision: deployedRevision,
     });
     expect(PARSER_CONTRACT_VERSION).toBe(1);

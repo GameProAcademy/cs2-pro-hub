@@ -240,7 +240,7 @@ describe("catalogue metadata is semantically precise", () => {
 describe("parser identity is pinned independently from its contract", () => {
   it("confirms the selected parser and keeps contract version separate", () => {
     expect(PARSER_VERSION_CONFIRMED).toBe(true);
-    expect(PARSER_VERSION).toBe("0.42.0");
+    expect(PARSER_VERSION).toBe("0.42.2");
     expect(typeof PARSER_CONTRACT_VERSION).toBe("number");
     expect(String(PARSER_CONTRACT_VERSION)).not.toBe(PARSER_VERSION);
   });

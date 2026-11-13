@@ -120,7 +120,7 @@ const utilityDamage: RawParserEvent = {
 export const syntheticParserOutput: RawParserOutput = {
   parser: {
     name: "demoparser2",
-    version: "0.42.0",
+    version: "0.42.2",
     revision: DEPLOYED_WORKER_REVISION,
   },
   contract_version: PARSER_CONTRACT_VERSION,
