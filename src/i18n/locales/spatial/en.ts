@@ -92,7 +92,7 @@ export const spatialEn: Record<keyof typeof spatialPtBR, string> = {
   "spatial.drill.truncated": "List limited to the first {n} events; the map counts are complete.",
   "spatial.cells.title": "Cells with the most events",
   "spatial.cells.cell": "Cell (column {col}, row {row})",
-  "spatial.cells.share": "{share}% of drawn events",
+  "spatial.cells.share": "{share}%",
   "spatial.map.aria": "Heatmap of {layer} on {map}",
   "spatial.map.cellAria": "Column {col}, row {row}: {n} event(s)",
   "spatial.version": "Method {version}; transform {transform}.",

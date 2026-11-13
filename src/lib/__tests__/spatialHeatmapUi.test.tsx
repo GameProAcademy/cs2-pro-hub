@@ -116,6 +116,19 @@ describe("states", () => {
   });
 });
 
+describe("cell list", () => {
+  it("shares use the locale's decimal format and the map label stays short when validated", () => {
+    const ev = [
+      ...Array.from({ length: 10 }, (_, i) => death(i + 1, { victim_position: w(100, 200) })),
+      death(20, { victim_position: w(900, 900) }),
+    ];
+    const pt = body(response(ev), "pt-BR");
+    expect(pt).toContain("90,9%");
+    expect(pt).toContain(">Dust II (1)<");
+    expect(body(response(ev), "en")).toContain("90.9%");
+  });
+});
+
 describe("drill-down", () => {
   it("lists the round, tick, side and weapon of the selected cell; absent tick is —", () => {
     const r = response([

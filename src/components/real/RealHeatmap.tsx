@@ -174,7 +174,10 @@ function Filters({
         value={h.map}
         options={r.maps.map((m: SpatialMapOption) => ({
           value: m.map,
-          label: `${mapDisplayName(m.map)} (${m.matches}) — ${t(`spatial.support.${m.support}` as TranslationKey)}`,
+          label:
+            m.support === "SUPPORTED"
+              ? `${mapDisplayName(m.map)} (${m.matches})`
+              : `${mapDisplayName(m.map)} (${m.matches}) · ${t(`spatial.support.${m.support}` as TranslationKey)}`,
         }))}
         onChange={(map) => onSearch({ map })}
       />
@@ -239,6 +242,7 @@ function Filters({
 
 function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMatchOption[] }) {
   const t = useT();
+  const { intlTag } = useI18n();
   const [selected, setSelected] = useState<number | null>(null);
   const plotted = h.events.value ?? 0;
   const max = useMemo(() => h.cells.reduce((m, c) => Math.max(m, c.count), 0), [h.cells]);
@@ -286,7 +290,7 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
                   <span className="font-mono text-muted-foreground">
                     {c.count}
                     {showShare
-                      ? ` · ${fill(t("spatial.cells.share"), { share: Math.round((c.count / plotted) * 1000) / 10 })}`
+                      ? ` · ${fill(t("spatial.cells.share"), { share: formatNumber((c.count / plotted) * 100, intlTag, 1) })}`
                       : ""}
                   </span>
                 </button>

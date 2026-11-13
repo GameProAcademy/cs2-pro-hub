@@ -94,7 +94,7 @@ export const spatialFr: Record<keyof typeof spatialPtBR, string> = {
     "Liste limitée aux {n} premiers événements ; les comptages de la carte sont complets.",
   "spatial.cells.title": "Cellules avec le plus d'événements",
   "spatial.cells.cell": "Cellule (colonne {col}, ligne {row})",
-  "spatial.cells.share": "{share} % des événements dessinés",
+  "spatial.cells.share": "{share} %",
   "spatial.map.aria": "Heatmap de {layer} sur {map}",
   "spatial.map.cellAria": "Colonne {col}, ligne {row} : {n} événement(s)",
   "spatial.version": "Méthode {version} ; transformation {transform}.",

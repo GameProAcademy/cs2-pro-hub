@@ -92,7 +92,7 @@ export const spatialEs: Record<keyof typeof spatialPtBR, string> = {
     "Lista limitada a los primeros {n} eventos; los conteos del mapa están completos.",
   "spatial.cells.title": "Celdas con más eventos",
   "spatial.cells.cell": "Celda (columna {col}, fila {row})",
-  "spatial.cells.share": "{share}% de los eventos dibujados",
+  "spatial.cells.share": "{share}%",
   "spatial.map.aria": "Heatmap de {layer} en {map}",
   "spatial.map.cellAria": "Columna {col}, fila {row}: {n} evento(s)",
   "spatial.version": "Método {version}; transformación {transform}.",
