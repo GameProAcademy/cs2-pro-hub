@@ -9,9 +9,11 @@ import { notifyPtPT } from "./notify/pt-PT";
 import { adminNotifyPtPT } from "./adminNotify/pt-PT";
 import { scorePtPT } from "./score/pt-PT";
 import { profilePtPT } from "./profile/pt-PT";
+import { spatialPtPT } from "./spatial/pt-PT";
 
 export const ptPT: Dictionary = {
   ...profilePtPT,
+  ...spatialPtPT,
   ...catalogPtPT,
   ...demoFlowPtPT,
   ...guidancePtPT,

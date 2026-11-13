@@ -121,9 +121,9 @@ Cada morte elegível sem posição desenhável é contada num destes motivos:
 
 ## Imagens de radar
 
-As imagens oficiais são arte da Valve. **Decisão do dono pendente** sobre licença. Até ela, o
-heatmap usa o mesmo espaço de coordenadas sobre fundo neutro em grade. Trocar o fundo não muda
-nenhum dado.
+Uso provisório das imagens oficiais da Valve, autorizado pelo dono em 2026-11-12. A camada é
+desacoplada do motor: `docs/reference/RADAR_ASSETS.md`. Sem imagem registrada, o fundo é a grade
+neutra. Trocar o fundo não muda nenhum dado.
 
 ## Rollback
 

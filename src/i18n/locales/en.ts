@@ -9,9 +9,11 @@ import { notifyEn } from "./notify/en";
 import { adminNotifyEn } from "./adminNotify/en";
 import { scoreEn } from "./score/en";
 import { profileEn } from "./profile/en";
+import { spatialEn } from "./spatial/en";
 
 export const en: Dictionary = {
   ...profileEn,
+  ...spatialEn,
   ...catalogEn,
   ...demoFlowEn,
   ...guidanceEn,

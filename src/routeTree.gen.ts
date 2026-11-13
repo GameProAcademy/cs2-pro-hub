@@ -20,6 +20,7 @@ import { Route as AuthenticatedClientParserPocRouteImport } from './routes/_auth
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
+import { Route as AuthenticatedMapsRouteImport } from './routes/_authenticated/maps'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
@@ -103,6 +104,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMapsRoute = AuthenticatedMapsRouteImport.update({
+  id: '/maps',
+  path: '/maps',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMatchesRoute = AuthenticatedMatchesRouteImport.update({
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/goals': typeof AuthenticatedGoalsRoute
+  '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByTo {
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/goals': typeof AuthenticatedGoalsRoute
+  '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
@@ -365,6 +373,7 @@ export interface FileRoutesById {
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
+  '/_authenticated/maps': typeof AuthenticatedMapsRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
@@ -408,6 +417,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/dashboard'
     | '/goals'
+    | '/maps'
     | '/matches'
     | '/notifications'
     | '/performance'
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/dashboard'
     | '/goals'
+    | '/maps'
     | '/matches'
     | '/notifications'
     | '/performance'
@@ -490,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authenticated/coach'
     | '/_authenticated/dashboard'
     | '/_authenticated/goals'
+    | '/_authenticated/maps'
     | '/_authenticated/matches'
     | '/_authenticated/notifications'
     | '/_authenticated/performance'
@@ -619,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals'
       preLoaderRoute: typeof AuthenticatedGoalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/maps': {
+      id: '/_authenticated/maps'
+      path: '/maps'
+      fullPath: '/maps'
+      preLoaderRoute: typeof AuthenticatedMapsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/matches': {
@@ -864,6 +883,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
+  AuthenticatedMapsRoute: typeof AuthenticatedMapsRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
@@ -880,6 +900,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
+  AuthenticatedMapsRoute: AuthenticatedMapsRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
