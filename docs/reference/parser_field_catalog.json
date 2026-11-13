@@ -7,10 +7,10 @@
  ],
  "counts": {
   "CANONICAL": 137,
-  "IGNORED_APPROVED": 48,
+  "IGNORED_APPROVED": 60,
   "RAW_ONLY": 218
  },
- "digest": "808d4291402ef3bda5e08b20ce89d5ae69d17d4dfa2bc1c09832c68eb821d7b3",
+ "digest": "4aca78e56ada1a7120f3437d8b0516179ded3a76997265ec2a2d8de2db51c21e",
  "entries": [
   {
    "class": "RAW_ONLY",
@@ -4221,6 +4221,96 @@
    "status": "MAPPED"
   },
   {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.__event__",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.teamonly",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.text",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.tick",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.user_name",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "player_chat.user_steamid",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+    "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
    "class": "RAW_ONLY",
    "field": "player_connect.__event__",
    "review": {
@@ -6738,6 +6828,96 @@
    "status": "RAW_ONLY_INTENTIONAL"
   },
   {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.__event__",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.duration",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.loc_token",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.tick",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.user_name",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
+   "class": "IGNORED_APPROVED",
+   "field": "show_survival_respawn_status.user_steamid",
+   "review": {
+    "consumers": [],
+    "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+    "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+    "reviewed": "2026-11-13",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "RAW_ONLY_INTENTIONAL"
+  },
+  {
    "class": "RAW_ONLY",
    "field": "smokegrenade_detonate.entityid",
    "review": {
@@ -7180,7 +7360,7 @@
   }
  ],
  "schema": 1,
- "source_blob": "a71a99e8df282f761326e4e8211f80a64c4083e5",
+ "source_blob": "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
  "source_of_truth": "services/cs2-demo-parser/raw_evidence.py",
  "unmapped_rule": "any observed field not listed here is UNMAPPED_BUT_AVAILABLE and blocks admission"
 }

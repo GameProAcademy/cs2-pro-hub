@@ -596,6 +596,49 @@ def test_vote_cast_is_raw_only_and_unknown_vote_fields_still_block():
     assert again["vote_cast.future_vote_field"] == "UNMAPPED_BUT_AVAILABLE"
 
 
+def test_faceit_hud_overlay_and_gamersclub_player_chat_are_ignored_approved():
+    # PM6 (2026-11-13): the owner-provided FACEIT demo (sha256 8425f49c...) and GamersClub demos
+    # (sha256 1ef9baeb..., 985f5b78...) parsed under demoparser2 0.42.2 but were blocked only by
+    # these two unreviewed events. The fixtures stay out of git; these rows mirror the observed shapes.
+    from raw_evidence import IGNORED_APPROVED_REASON, mapping_inventory
+    raw = {
+        "header": {}, "players": [{}], "tick_rows": [], "grenade_rows": [], "round_rows": [],
+        "event_tables": {
+            "show_survival_respawn_status": [{
+                "duration": 5, "loc_token": "<img src=\"https://distribution.faceit-cdn.net/x.png\"/>",
+                "tick": 2984, "user_name": None, "user_steamid": None,
+            }],
+            "player_chat": [{
+                "teamonly": False, "text": "gl hf", "tick": 54750,
+                "user_name": "x", "user_steamid": "76561198000000001",
+            }],
+        },
+    }
+    items = {i["raw_field"]: i for i in mapping_inventory(raw)}
+    expected = {
+        "show_survival_respawn_status": ("duration", "loc_token", "tick", "user_name", "user_steamid"),
+        "player_chat": ("teamonly", "text", "tick", "user_name", "user_steamid"),
+    }
+    for event, fields in expected.items():
+        for field in fields:
+            item = items[f"{event}.{field}"]
+            assert item["status"] == "RAW_ONLY_INTENTIONAL", (event, field)
+            assert item["reason"] == IGNORED_APPROVED_REASON, (event, field)
+            assert item.get("canonical_field") in (None, ""), (event, field)
+    # The review is exact: a new field on either event still blocks admission.
+    raw["event_tables"]["show_survival_respawn_status"][0]["future_hud_field"] = 1
+    raw["event_tables"]["player_chat"][0]["future_chat_field"] = 1
+    again = {i["raw_field"]: i["status"] for i in mapping_inventory(raw)}
+    assert again["show_survival_respawn_status.future_hud_field"] == "UNMAPPED_BUT_AVAILABLE"
+    assert again["player_chat.future_chat_field"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_reviewed_chat_and_hud_events_never_reach_the_adapter():
+    import adapter
+    assert "player_chat" not in adapter.SUPPORTED_EVENTS
+    assert "show_survival_respawn_status" not in adapter.SUPPORTED_EVENTS
+
+
 def test_worker_pins_demoparser2_0_42_2():
     # R5.8.25: 0.42.0 raised EntityNotFound on every parse_event of current CS2 builds
     # (owner-authorized test demo, job ced11a74), so the demo produced no events.
