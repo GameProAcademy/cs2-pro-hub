@@ -30,7 +30,7 @@ Rótulos: `SOURCE_DOCUMENTED` · `SOURCE_CODE_CONFIRMED` · `SOURCE_TEST_CONFIRM
 ## 2. Matriz de origens: benchmark × CS2 PRO
 
 Legenda do CS2 PRO: estados do PM6 §4.4. "Fixture" significa uma demo real analisada nesta sessão
-(`services/cs2-demo-parser/compatibility/corpus_manifest.json`).
+(`docs/reference/compatibility/corpus_manifest.json`).
 
 | Origem                        | CSDM docs (CS:GO / CS2)              | CSDM código                                                                                  | CSDM testes (CS2)                                                           | CS2 PRO — fixture real          | CS2 PRO — estado                                                                                                                                                                           |
 | ----------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -60,6 +60,23 @@ Implicações:
 - **FACEIT.** O benchmark declara suporte, mas não tem nenhum teste de regressão FACEIT nativo em CS2. No
   CS2 PRO, a primeira demo FACEIT real deste corpus é bloqueada por um evento de HUD da FACEIT
   (`show_survival_respawn_status`, `loc_token` hospedado em `faceit-cdn.net`).
+
+### 2.1 O parser do benchmark nas demos atuais (`CS2PRO_REPRODUCED`)
+
+O `demoinfocs-golang` v4.5.1, que é a dependência do `cs-demo-analyzer` v1.14.1, foi compilado localmente: Go 1.24,
+módulos baixados do GitHub. Ele foi executado só com contagens nas três demos do dono. Resultado:
+
+| Demo                   | Patch | Resultado                                                                                         |
+| ---------------------- | ----- | ------------------------------------------------------------------------------------------------- |
+| FACEIT 2026            | 14196 | falha: `unable to find existing entity` (equivalente ao `EntityNotFound`), antes de qualquer kill |
+| GamersClub Mirage 2026 | 14197 | falha: `nextByte: insufficient buffer` em `signedDecoder` (decodificação de campo)                |
+| GamersClub Cache 2026  | 14197 | falha: idem                                                                                       |
+
+Na mesma data, o demoparser2 0.42.2 lê as três até o fim. **Conclusão:** nesta data, o analisador do benchmark não
+lê demos geradas pelos builds 14196/14197. É o mesmo tipo de quebra que a 0.42.0 tinha antes do decodificador
+fixed8 (#375). O benchmark não serve de oráculo independente para essas gerações: o cruzamento da `player_info` da
+GC Cache fica `NOT_VERIFIED`. O demoinfocs também relata tickrate 64 nessas demos, o valor padrão quando não há
+fonte.
 
 ## 3. Arquitetura e responsabilidades
 

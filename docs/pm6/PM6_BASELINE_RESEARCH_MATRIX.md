@@ -1,7 +1,7 @@
 # PM6 — Baseline, pesquisa externa e matriz de compatibilidade (PR A)
 
 Sessão de 2026-11-13. Depende de `docs/pm6/PM6_POST_PM1_RECONCILIATION.md`. Benchmark externo em
-`docs/reference/CS_DEMO_MANAGER_BENCHMARK.md`. Corpus em `services/cs2-demo-parser/compatibility/corpus_manifest.json`.
+`docs/reference/CS_DEMO_MANAGER_BENCHMARK.md`. Corpus em `docs/reference/compatibility/corpus_manifest.json`.
 
 Rótulos:
 
@@ -51,16 +51,16 @@ Repositório `LaihoE/demoparser`, clonado em 2026-11-13. A tag `v0.42.2` é o `H
 
 ### 2.2 Issues abertas relevantes (2026-11-13)
 
-| Issue      | Tema                                                                                                 | Família     | Reproduzido no CS2 PRO?                                                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #330       | `UnknownDemoCmd(34)` em demos FACEIT depois de um patch                                              | FACEIT      | **Não**: a demo FACEIT de 2026 (patch 14196) abre e lê até o fim em 0.42.2                                                                              |
-| #367       | `MalformedMessage` por string não UTF-8 em game event (FACEIT CS2)                                   | FACEIT      | **Não** nesta fixture. #364 trata o caso (lossy fallback); sem fixture que reproduza                                                                    |
-| #365       | Atualizações de string table depois do primeiro FullPacket descartadas; entradas sem chave mal lidas | todas       | **Provável** na GC Cache: `parse_player_info` devolve 0 linhas com 10 jogadores presentes nos ticks (HIPÓTESE ligando à #365; falta prova independente) |
-| #345       | `usercmd_subtick_moves` ausente em `parse_ticks` (0.42.0)                                            | —           | Não se aplica em 0.42.2: a coluna existe e traz listas de 0 a 4 entradas (FACEIT/GC/BLAST)                                                              |
-| #358       | Bots não resolvidos em eventos/ticks                                                                 | —           | Sem fixture com bots: NÃO TESTADO                                                                                                                       |
-| #329, #302 | POV: `IllegalPathOp` / parte do parser `None`                                                        | POV         | Sem fixture POV: NÃO TESTADO                                                                                                                            |
-| #321, #339 | `EntityNotFound` (patches 14152 e 14165)                                                             | Valve/PRACC | Sintoma igual ao das demos de 2026 em 0.42.0. Corrigido para o build 14197 pela #375; outros builds: NÃO TESTADO                                        |
-| #359       | `IllegalPathOp` em GOTV de deathmatch                                                                | DM          | NÃO TESTADO                                                                                                                                             |
+| Issue      | Tema                                                                                                 | Família     | Reproduzido no CS2 PRO?                                                                                                                                                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #330       | `UnknownDemoCmd(34)` em demos FACEIT depois de um patch                                              | FACEIT      | **Não**: a demo FACEIT de 2026 (patch 14196) abre e lê até o fim em 0.42.2                                                                                                                                                                        |
+| #367       | `MalformedMessage` por string não UTF-8 em game event (FACEIT CS2)                                   | FACEIT      | **Não** nesta fixture. #364 trata o caso (lossy fallback); sem fixture que reproduza                                                                                                                                                              |
+| #365       | Atualizações de string table depois do primeiro FullPacket descartadas; entradas sem chave mal lidas | todas       | **Provável** na GC Cache: `parse_player_info` devolve 0 linhas com 10 jogadores presentes nos ticks (HIPÓTESE ligando à #365; o cruzamento com demoinfocs-golang v4.5.1 foi tentado, mas esse parser não lê as demos de 2026, ver benchmark §2.1) |
+| #345       | `usercmd_subtick_moves` ausente em `parse_ticks` (0.42.0)                                            | —           | Não se aplica em 0.42.2: a coluna existe e traz listas de 0 a 4 entradas (FACEIT/GC/BLAST)                                                                                                                                                        |
+| #358       | Bots não resolvidos em eventos/ticks                                                                 | —           | Sem fixture com bots: NÃO TESTADO                                                                                                                                                                                                                 |
+| #329, #302 | POV: `IllegalPathOp` / parte do parser `None`                                                        | POV         | Sem fixture POV: NÃO TESTADO                                                                                                                                                                                                                      |
+| #321, #339 | `EntityNotFound` (patches 14152 e 14165)                                                             | Valve/PRACC | Sintoma igual ao das demos de 2026 em 0.42.0. Corrigido para o build 14197 pela #375; outros builds: NÃO TESTADO                                                                                                                                  |
+| #359       | `IllegalPathOp` em GOTV de deathmatch                                                                | DM          | NÃO TESTADO                                                                                                                                                                                                                                       |
 
 ### 2.3 Correção de registro (R5.8.25)
 
@@ -158,6 +158,14 @@ preciso medir no PR G antes de mudar limites.
 As metas de corpus do PM6 §4.2 (5 Valve, 10 FACEIT, 5 GC, 3 privados, 3 torneios, 2 POV, overtime, bots) **não
 foram atingidas**. Lacunas declaradas: Valve/Premier 2026, FACEIT de outras gerações, servidores privados, POV,
 bots. A FACEIT tem overtime (fases em 12/24/27) e a GC Mirage também (fases em 12/24/27/30/33).
+
+## 4.1 Processo: o gate H.3-E compara a árvore do worker
+
+O H.3-E falha com `WORKER_TREE_DIFFERS` quando a árvore `services/cs2-demo-parser` em `main` difere da do build
+publicado (`scripts/ci/h3e_activation_gate.py`, `evaluate_runtime`). Consequências:
+
+- documentação e corpus ficam **fora** dessa árvore, e por isso o manifesto está em `docs/reference/compatibility/`;
+- PRs que mudam o worker (como o PR F) só entram em `main` logo antes de um release completo, como nas R5.8.24/25.
 
 ## 5. Plano dos próximos PRs (ordem justificada pela evidência)
 
