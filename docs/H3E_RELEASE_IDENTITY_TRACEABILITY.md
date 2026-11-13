@@ -1008,3 +1008,37 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - Railway rollback to `0ff96670` (commit `4badf606`, demoparser2 0.42.0);
   - `docs/reference/r5_8_25/rollback.sql` (release-owner authorization);
   - restore the secrets to the R5.8.24 values.
+
+## 2026-11-13 — R5.8.26: FACEIT HUD overlay and GamersClub player_chat review (controlled)
+
+- Change (PR #279, PM6 PR F, merge `7e84f6da`):
+  - Current FACEIT demos carry `show_survival_respawn_status` (HUD overlay) and GamersClub demos carry `player_chat`. Both were UNMAPPED and blocked `RAW-EVIDENCE-01` for every demo of those origins.
+  - Both are reviewed `IGNORED_APPROVED` in `raw_evidence.REVIEWED_IGNORED_EVENT_FIELDS` and never reach the adapter. Chat text and HUD tokens are not stored. A future field on either event is still `UNMAPPED_BUT_AVAILABLE`.
+  - The reconciled matrix and the canonical mapping digests (`cf0549c2…`/`a276b030…`) do not change.
+  - Sandbox evidence: FACEIT and GamersClub Mirage go from BLOCKED to APPROVED. GamersClub Cache stays BLOCKED on `PLAYER-COVERAGE`, which is a separate gap (`docs/pm6/PM6_BASELINE_RESEARCH_MATRIX.md` §3.3).
+- Release:
+  - Queue idle (no pending or processing jobs); Lovable at `ba6e6016` = main before the merge.
+  - Merge `7e84f6da` under the standing watch-pattern freeze.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:7e84f6da…` with skipped deploys.
+  - Exactly one deployment, `2f0e6812`, via the Railway agent: SUCCESS. `d57b9089` is REMOVED.
+  - Both `/version` hosts (21:22Z): demoparser2 0.42.2, revision = semantic = build = `git:7e84f6da…`, `build.commit` `7e84f6da`, `embedded` true, `declared_revision_matches` true.
+  - Railway service metadata `source.commitSha` still reads `4716f894…` (the persistent R5.8.16 value). The served build is proven by `/version` and the deployment record, not by that field (`docs/pm6/PM6_POST_PM1_RECONCILIATION.md` item A).
+- Pins:
+  - deployment `d57b9089…` → `2f0e6812…`;
+  - commit `c3593d48…` → `7e84f6da…` (4 occurrences in the recorder, 3 in the assertion);
+  - raw_evidence.py blob `a71a99e8…` → `6e6721b0…`;
+  - parser version 0.42.2, the parser.py, adapter.py, worker.py and settings.py blobs and the workflow blob are unchanged.
+- R5.8.26 migration (`supabase/migrations/20261113213000_r5_8_26_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_26/`):
+  - recorder `cbb03f77…` → `f727480e…`; assertion `a3401a4b…` → `04798c61…`; workflow guard `f74d8af9…` unchanged.
+  - The recorder target from `r5_8_11.target_md5` equals the result on the managed definitions.
+  - The managed definitions were read with a read-only SELECT and loaded on a local PostgreSQL 16 (both md5 identical to production). There the migration applies, reruns as a no-op, rejects an unknown deployment pin, and the rollback restores the R5.8.25 targets exactly before a clean re-apply.
+- Owner action (app secrets: delete, re-create, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `7e84f6da0a60c1b48897ec24bb721cde9aa65a62` (bare commit);
+  - `DEMO_PARSER_EXPECTED_VERSION` unchanged (`0.42.2`).
+  - Publishing the app is a manual owner action (PM6). Claude neither opens the Lovable panel nor triggers publication.
+- Rollback:
+  - Railway rollback to `d57b9089` (commit `c3593d48`);
+  - `docs/reference/r5_8_26/rollback.sql` (release-owner authorization);
+  - restore the secrets to the R5.8.25 values.

@@ -39,7 +39,12 @@ const r5813DeploymentMigration = readFileSync(
 // R5.8.22 after the player_disconnect.ever_fully_connected review (PR #232, raw_evidence.py blob);
 // R5.8.23 after the parser field-governance review (PR #239, raw_evidence.py blob);
 // R5.8.24 after spatial-v1 layer A (PR #267, parser.py and raw_evidence.py blobs);
-// R5.8.25 after demoparser2 0.42.2 (PR #275, parser version and parser/adapter/raw_evidence/settings blobs).
+// R5.8.25 after demoparser2 0.42.2 (PR #275, parser version and parser/adapter/raw_evidence/settings blobs);
+// R5.8.26 after PM6 PR F (PR #279, raw_evidence.py blob).
+const r5826ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261113213000_r5_8_26_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5825ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261113040000_r5_8_25_repin_runtime_release.sql"),
   "utf8",
@@ -128,13 +133,21 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    // R5.8.25 lists its pins as arrays: the head identity is in the new-pin list.
+    // R5.8.26 lists its pins as arrays: the head identity is in the new-pin list.
+    const r5826NewPins = r5826ReleaseMigration.slice(
+      r5826ReleaseMigration.indexOf("_new_pins constant"),
+      r5826ReleaseMigration.indexOf("_counts constant"),
+    );
+    expect(r5826NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
+    expect(r5826NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5826ReleaseMigration).toContain("'d57b9089-ea97-44b0-b236-6868f84459e2'");
+    // The parser runtime version was last re-pinned by R5.8.25 and is unchanged since.
     const r5825NewPins = r5825ReleaseMigration.slice(
       r5825ReleaseMigration.indexOf("_new_pins constant"),
       r5825ReleaseMigration.indexOf("_counts constant"),
     );
-    expect(r5825NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
-    expect(r5825NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5825NewPins).toContain("'d57b9089-ea97-44b0-b236-6868f84459e2'");
+    expect(r5825NewPins).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5825NewPins).toContain(
       `'_p.parser_version<>''${PARSER_ATTESTATION_EXPECTED.parserVersion}'''`,
     );
