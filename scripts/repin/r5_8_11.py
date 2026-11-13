@@ -55,6 +55,10 @@ BOUNDARY_COMMENT = {
 }
 
 
+BASE_PARSER_VERSION = "0.42.0"
+PARSER_VERSION_FRAGMENT = "_payload->>'parser_version'<>'{}'"
+
+
 def _md5(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
 
@@ -97,6 +101,14 @@ def target_body(spec: dict[str, Any]) -> str:
         value = PREVIOUS_SPEC[key]
         if value != spec[key] and value in body:
             raise SystemExit(f"R5_8_11_OLD_PIN_REMAINS:{value}")
+    # R5.8.25 made the parser runtime version a released pin too (demoparser2 0.42.0 -> 0.42.2). Specs
+    # before R5.8.25 carry no parser_version and keep the 0.42.0 literal byte for byte.
+    version = spec.get("parser_version", BASE_PARSER_VERSION)
+    if version != BASE_PARSER_VERSION:
+        old_fragment = PARSER_VERSION_FRAGMENT.format(BASE_PARSER_VERSION)
+        if body.count(old_fragment) != 1 or PARSER_VERSION_FRAGMENT.format(version) in body:
+            raise SystemExit("R5_8_11_PARSER_VERSION_FRAGMENT_COUNT")
+        body = body.replace(old_fragment, PARSER_VERSION_FRAGMENT.format(version))
     return body
 
 

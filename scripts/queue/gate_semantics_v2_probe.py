@@ -33,7 +33,9 @@ import r5_8_11  # noqa: E402
 from validate_r5_8_9_disposable import repinned_prelude, run  # noqa: E402
 
 # The disposable lineage fixture must sign the current candidate identity accepted by the R5.8.11 recorder.
-SPEC = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))
+SPEC = json.loads((ROOT / "docs/reference/r5_8_25/spec.json").read_text(encoding="utf-8"))
+# R5.8.24 is no longer the chain head; its validations run under a rewound R5.8.25.
+SPEC24 = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))
 # R5.8.23 is no longer the chain head; its validations run under a rewound R5.8.24.
 SPEC23 = json.loads((ROOT / "docs/reference/r5_8_23/spec.json").read_text(encoding="utf-8"))
 # R5.8.22 is no longer the chain head; its validations run under a rewound R5.8.23.
@@ -59,6 +61,8 @@ SPEC13 = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encodi
 COMMIT = SPEC["build_commit"]
 SEMANTIC = SPEC["semantic_commit"]
 WORKER = SPEC["critical_hashes"]["worker.py"]
+# R5.8.25 re-pinned the parser runtime version (demoparser2 0.42.2).
+PARSER_VERSION = SPEC["parser_version"]
 
 FIXTURES = r"""
 CREATE TEMP TABLE probe_fx(k text PRIMARY KEY, u uuid, up uuid, job uuid, sha text, match uuid) ON COMMIT DROP;
@@ -152,7 +156,7 @@ ALTER TABLE public.raw_evidence_artifacts ENABLE TRIGGER USER;
 CREATE FUNCTION pg_temp.event(_type text, _exec uuid, _outcome text) RETURNS jsonb LANGUAGE sql AS $f$
   SELECT public.h3e91_record_execution_event(gen_random_uuid(), _exec, _type, f.up, _exec, f.job, 1, f.sha, 520,
     CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE 'demoparser2' END,
-    CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE '0.42.0' END,
+    CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE '{PARSER_VERSION}' END,
     CASE WHEN _type = 'EXECUTION_INTENT' THEN NULL ELSE 'git:{SEMANTIC}' END,
     'RAILWAY_DURABLE_WORKER', 'RAILWAY', NULL, _outcome, 1, '{COMMIT}')
   FROM probe_fx f WHERE f.k = 'm' $f$;
@@ -1034,8 +1038,8 @@ def _validate_r5824_migration() -> None:
     migration = "supabase/migrations/20261112090000_r5_8_24_repin_runtime_release.sql"
     before = _r5812_state()
     hashes = {item["signature"].split("(")[0].split(".")[-1]: item["md5"] for item in before["functions"]}
-    if hashes.get("record_parser_runtime_attestation") != SPEC["recorder_target_md5"] or hashes.get(
-            "assert_verified_parser_provenance") != SPEC["database_target_md5"]["assert_verified_parser_provenance"]:
+    if hashes.get("record_parser_runtime_attestation") != SPEC24["recorder_target_md5"] or hashes.get(
+            "assert_verified_parser_provenance") != SPEC24["database_target_md5"]["assert_verified_parser_provenance"]:
         raise RuntimeError(f"R5_8_24_NOT_AT_TARGET_AFTER_RESET: {hashes}")
     for _ in range(2):
         result = _psql(f"\\i {migration}\n")
@@ -1054,7 +1058,7 @@ DO $tamper$
 DECLARE
   _fn constant regprocedure := 'public.assert_verified_parser_provenance(uuid)'::regprocedure;
   _definition text := pg_catalog.pg_get_functiondef(_fn);
-  _new constant text := '{SPEC["deployment_id"]}';
+  _new constant text := '{SPEC24["deployment_id"]}';
   _old constant text := '{SPEC23["deployment_id"]}';
 BEGIN
   IF pg_catalog.strpos(_definition, _new) = 0 THEN
@@ -1082,8 +1086,8 @@ def _validate_r5823_chain_under_r5824_head() -> None:
     if result.returncode != 0:
         raise RuntimeError(f"R5_8_24_ROLLBACK_FAILED: {(result.stderr + result.stdout)[-900:]}")
     rewound = {item["signature"].split("(")[0].split(".")[-1]: item["md5"] for item in _r5812_state()["functions"]}
-    expected = {"record_parser_runtime_attestation": SPEC["r5_8_23_recorder_target_md5"],
-                **SPEC["r5_8_23_database_target_md5"]}
+    expected = {"record_parser_runtime_attestation": SPEC24["r5_8_23_recorder_target_md5"],
+                **SPEC24["r5_8_23_database_target_md5"]}
     if rewound != expected:
         raise RuntimeError(f"R5_8_24_ROLLBACK_NOT_AT_R5_8_23_TARGETS: {rewound} != {expected}")
     try:
@@ -1095,6 +1099,78 @@ def _validate_r5823_chain_under_r5824_head() -> None:
             raise RuntimeError(f"R5_8_24_REAPPLY_FAILED: {(result.stderr + result.stdout)[-900:]}")
     if _r5812_state() != head:
         raise RuntimeError("R5_8_24_REAPPLY_DID_NOT_RESTORE_HEAD_STATE")
+
+
+def _validate_r5825_migration() -> None:
+    """R5.8.25 is idempotent at its target and rejects unknown, mixed or previous-version runtime pins."""
+    migration = "supabase/migrations/20261113040000_r5_8_25_repin_runtime_release.sql"
+    before = _r5812_state()
+    hashes = {item["signature"].split("(")[0].split(".")[-1]: item["md5"] for item in before["functions"]}
+    if hashes.get("record_parser_runtime_attestation") != SPEC["recorder_target_md5"] or hashes.get(
+            "assert_verified_parser_provenance") != SPEC["database_target_md5"]["assert_verified_parser_provenance"]:
+        raise RuntimeError(f"R5_8_25_NOT_AT_TARGET_AFTER_RESET: {hashes}")
+    for _ in range(2):
+        result = _psql(f"\\i {migration}\n")
+        if result.returncode != 0 or "R5_8_25_ALREADY_AT_TARGET_STATE" not in result.stdout + result.stderr:
+            raise RuntimeError(f"R5_8_25_IDEMPOTENT_RERUN_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    if _r5812_state() != before:
+        raise RuntimeError("R5_8_25_IDEMPOTENT_RERUN_CHANGED_FUNCTION_STATE")
+    for mode in ("unknown", "mixed", "version"):
+        if mode == "unknown":
+            tamper = "_definition := pg_catalog.replace(_definition, _new, '00000000-0000-4000-8000-000000000000');"
+        elif mode == "mixed":
+            # One function carrying both the new and the previous (R5.8.24) deployment pin.
+            tamper = "_definition := pg_catalog.replace(_definition, 'BEGIN', 'BEGIN -- ' || _old);"
+        else:
+            # The released identity with the previous parser runtime version (demoparser2 0.42.0).
+            tamper = ("_definition := pg_catalog.replace(_definition, '_p.parser_version<>''0.42.2''', "
+                      "'_p.parser_version<>''0.42.0''');")
+        sql = f"""BEGIN;
+DO $tamper$
+DECLARE
+  _fn constant regprocedure := 'public.assert_verified_parser_provenance(uuid)'::regprocedure;
+  _definition text := pg_catalog.pg_get_functiondef(_fn);
+  _new constant text := '{SPEC["deployment_id"]}';
+  _old constant text := '{SPEC24["deployment_id"]}';
+BEGIN
+  IF pg_catalog.strpos(_definition, _new) = 0 THEN
+    RAISE EXCEPTION 'TEST_PRECONDITION_R5_8_25_TARGET_MISSING';
+  END IF;
+  {tamper}
+  EXECUTE _definition;
+END $tamper$;
+\\i {migration}
+"""
+        result = _psql(sql)
+        combined = result.stdout + result.stderr
+        if result.returncode == 0 or "R5_8_25_UNEXPECTED_PIN_STATE" not in combined:
+            raise RuntimeError(f"R5_8_25_{mode.upper()}_STATE_NOT_REJECTED: {combined[-900:]}")
+        if _r5812_state() != before:
+            raise RuntimeError(f"R5_8_25_{mode.upper()}_STATE_NOT_ROLLED_BACK")
+
+
+def _validate_r5824_chain_under_r5825_head() -> None:
+    """Rewind R5.8.25 with its committed rollback to the exact R5.8.24 targets, run the
+    R5.8.24 validation and the nested R5.8.23..R5.8.12 chain there, re-apply R5.8.25
+    and require the head state back exactly."""
+    head = _r5812_state()
+    result = _psql("\\i docs/reference/r5_8_25/rollback.sql\n")
+    if result.returncode != 0:
+        raise RuntimeError(f"R5_8_25_ROLLBACK_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    rewound = {item["signature"].split("(")[0].split(".")[-1]: item["md5"] for item in _r5812_state()["functions"]}
+    expected = {"record_parser_runtime_attestation": SPEC["r5_8_24_recorder_target_md5"],
+                **SPEC["r5_8_24_database_target_md5"]}
+    if rewound != expected:
+        raise RuntimeError(f"R5_8_25_ROLLBACK_NOT_AT_R5_8_24_TARGETS: {rewound} != {expected}")
+    try:
+        _validate_r5824_migration()
+        _validate_r5823_chain_under_r5824_head()
+    finally:
+        result = _psql("\\i supabase/migrations/20261113040000_r5_8_25_repin_runtime_release.sql\n")
+        if result.returncode != 0:
+            raise RuntimeError(f"R5_8_25_REAPPLY_FAILED: {(result.stderr + result.stdout)[-900:]}")
+    if _r5812_state() != head:
+        raise RuntimeError("R5_8_25_REAPPLY_DID_NOT_RESTORE_HEAD_STATE")
 
 
 def main() -> int:
@@ -1118,7 +1194,7 @@ def main() -> int:
     computed_recorder_target = r5_8_11.target_md5(SPEC)
     live_recorder_target = live_hashes.get("record_parser_runtime_attestation")
     results.append({
-        "scenario": "r5_8_24_boundary_and_recorder_targets_match_database",
+        "scenario": "r5_8_25_boundary_and_recorder_targets_match_database",
         "status": "PASS" if (declared_boundary_targets == computed_boundary_targets
                              and live_recorder_target == computed_recorder_target) else "FAIL",
         "detail": {
@@ -1130,16 +1206,16 @@ def main() -> int:
     })
 
     try:
-        _validate_r5824_migration()
-        results.append({"scenario": "r5_8_24_idempotence_and_fail_closed_states", "status": "PASS", "detail": "rerun stable; unknown and mixed runtime pins rejected and transaction rolled back"})
+        _validate_r5825_migration()
+        results.append({"scenario": "r5_8_25_idempotence_and_fail_closed_states", "status": "PASS", "detail": "rerun stable; unknown, mixed and previous-parser-version pins rejected and transaction rolled back"})
     except Exception as exc:  # noqa: BLE001 - preserve the failure in the machine-readable report
-        results.append({"scenario": "r5_8_24_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
+        results.append({"scenario": "r5_8_25_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
 
     try:
-        _validate_r5823_chain_under_r5824_head()
-        results.append({"scenario": "r5_8_23_to_r5_8_12_idempotence_and_fail_closed_states", "status": "PASS", "detail": "under a rewound R5.8.24: R5.8.23, R5.8.22, R5.8.21, R5.8.20, R5.8.19, R5.8.18, R5.8.17, R5.8.16, R5.8.15, R5.8.14, R5.8.13 and R5.8.12 reruns stable, unknown and mixed pins rejected; each head restored exactly"})
+        _validate_r5824_chain_under_r5825_head()
+        results.append({"scenario": "r5_8_24_to_r5_8_12_idempotence_and_fail_closed_states", "status": "PASS", "detail": "under a rewound R5.8.25: R5.8.24, R5.8.23, R5.8.22, R5.8.21, R5.8.20, R5.8.19, R5.8.18, R5.8.17, R5.8.16, R5.8.15, R5.8.14, R5.8.13 and R5.8.12 reruns stable, unknown and mixed pins rejected; each head restored exactly"})
     except Exception as exc:  # noqa: BLE001 - preserve the failure in the machine-readable report
-        results.append({"scenario": "r5_8_23_to_r5_8_12_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
+        results.append({"scenario": "r5_8_24_to_r5_8_12_idempotence_and_fail_closed_states", "status": "FAIL", "detail": f"{type(exc).__name__}: {str(exc)[:900]}"})
 
     def scenario(name: str, body: str, check) -> None:
         try:

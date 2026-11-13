@@ -8,11 +8,11 @@ export const PARSER_ATTESTATION_EXPECTED = {
   attestorBranch: "main",
   branch: "main",
   // Semantic revision: first main commit whose worker tree is the served one.
-  commit: "4badf6060e4e69a589179567f488f5d58a4a58dc",
+  commit: "c3593d48e3b8923048def625cf59144100f59892",
   // Build revision: exact source commit embedded in the active Railway image.
-  buildCommit: "4badf6060e4e69a589179567f488f5d58a4a58dc",
-  deploymentId: "0ff96670-e373-4beb-90c9-f1967eee3195",
-  deploymentSourceCommit: "4badf6060e4e69a589179567f488f5d58a4a58dc",
+  buildCommit: "c3593d48e3b8923048def625cf59144100f59892",
+  deploymentId: "d57b9089-ea97-44b0-b236-6868f84459e2",
+  deploymentSourceCommit: "c3593d48e3b8923048def625cf59144100f59892",
   projectId: "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4",
   serviceId: "706fa246-a263-484f-a986-c74516be862b",
   environmentId: "2385d707-795d-4e32-a00b-0afaba0a9b7e",
@@ -21,7 +21,7 @@ export const PARSER_ATTESTATION_EXPECTED = {
   workflowPath: APPROVED_ATTESTATION_WORKFLOW_PATH,
   workflowSourceSha: APPROVED_ATTESTATION_WORKFLOW_SHA,
   parser: "demoparser2",
-  parserVersion: "0.42.0",
+  parserVersion: "0.42.2",
   contractVersion: 1,
   mappingReleaseId: "cf0549c2-dfbd-c4df-25b4-2ce8204edf87",
   inventoryVersion: "canonical-demo-v2",
@@ -44,11 +44,11 @@ export const PARSER_ATTESTATION_SCHEMA_VERSION = 3 as const;
 export const PARSER_ATTESTATION_MAX_AGE_SECONDS = 300;
 
 const CRITICAL_HASHES: Record<string, string> = {
-  "services/cs2-demo-parser/parser.py": "4102f6174e4dc01d97637174f4f70fe53629c285",
-  "services/cs2-demo-parser/adapter.py": "b95811681be20b9e849672e57a07b1de5d18e6e8",
+  "services/cs2-demo-parser/parser.py": "5d39478c611b57b2dd17f93c9cdce8faa84860f9",
+  "services/cs2-demo-parser/adapter.py": "4e6f43c7916bb7d855cfd1abcd26637bb0f3f942",
   "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
-  "services/cs2-demo-parser/raw_evidence.py": "5b7b674c88a77f85ab8791f84a47a188889b5802",
-  "services/cs2-demo-parser/settings.py": "dc76db86c9b0b8c0916d58501ae0c21af95dfe38",
+  "services/cs2-demo-parser/raw_evidence.py": "a71a99e8df282f761326e4e8211f80a64c4083e5",
+  "services/cs2-demo-parser/settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d",
 };
 
 function record(value: unknown): Record<string, unknown> | null {
