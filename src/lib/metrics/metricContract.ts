@@ -147,6 +147,10 @@ export type ReleaseBlocker =
   | "L03_USERCMD"
   | "L04_MATCH_RESULT"
   | "POSITIONS_NOT_PERSISTED"
+  /** Radar transform not yet validated against real positions for that map. */
+  | "MAP_NOT_VALIDATED"
+  /** Matches analysed before the R5.8.24/R5.8.25 parser carry no positions (no backfill). */
+  | "LEGACY_MATCHES_WITHOUT_POSITIONS"
   | "SHOOTER_NOT_ATTRIBUTED"
   | "NO_BUY_CLASSIFIER"
   | "HEURISTIC_ATTRIBUTION"
@@ -224,23 +228,28 @@ export const RELEASE_MATRIX: readonly ReleaseEntry[] = [
   {
     metric_key: "spatial.death_heatmap",
     delivery: "4.2.2",
-    release: "NOT_MEASURED",
-    blockers: ["POSITIONS_NOT_PERSISTED"],
-    evidence: "persistence.server.ts stores position counts only; mapping §5 4.2.2",
+    release: "PARTIAL",
+    blockers: ["MAP_NOT_VALIDATED", "LEGACY_MATCHES_WITHOUT_POSITIONS"],
+    evidence:
+      "spatial-heatmap-v1 (/maps); victim position at the death tick in round_events.data since R5.8.24/R5.8.25; " +
+      "proven in production 2026-11-13 (job aa968c9e: 142/142 kills with both positions, equal to the local parse); " +
+      "only de_dust2 VALIDATED (docs/reference/SPATIAL_HEATMAP.md); older matches keep no positions",
   },
   {
     metric_key: "spatial.kill_heatmap",
     delivery: "4.2.2",
-    release: "NOT_MEASURED",
-    blockers: ["POSITIONS_NOT_PERSISTED"],
-    evidence: "mapping §5 4.2.2",
+    release: "PARTIAL",
+    blockers: ["MAP_NOT_VALIDATED", "LEGACY_MATCHES_WITHOUT_POSITIONS"],
+    evidence:
+      "spatial-heatmap-v1 (/maps); attacker position at the death tick; same production proof and limits as spatial.death_heatmap",
   },
   {
     metric_key: "spatial.density",
     delivery: "4.2.2",
     release: "NOT_MEASURED",
     blockers: ["POSITIONS_NOT_PERSISTED", "L02_TICK_DOMAIN"],
-    evidence: "ADMISSION_CONTRACT_V3 L02: no positioning/exposure metrics",
+    evidence:
+      "ADMISSION_CONTRACT_V3 L02: no positioning/exposure metrics; only death-tick positions are persisted, never continuous ones",
   },
   {
     metric_key: "combat.duels_by_weapon_distance",

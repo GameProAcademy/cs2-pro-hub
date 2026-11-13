@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                           |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | PM1 (Fases 4.2.1 + 4.2.2, Módulos A e B) em execução. Especificação v1.1 e divisão dos 5 Prompts Mestres confirmadas pelo dono (2026-11-12)                                                                                                     |
-| Etapa atual                        | PM1 C5: release R5.8.25 (demoparser2 0.42.2) concluída até a atestação; falta H.3-E + validação real da demo de teste. Detalhe em `docs/pm1/PM1_EXECUTION_REPORT.md`                                                                            |
-| Última etapa concluída             | R5.8.25: worker `c3593d48` no ar (Railway `d57b9089`, `/version` demoparser2 0.42.2); re-pin #276 merged (`67655b5a`); migration `20261113040000` aplicada e registrada; app publicado; atestação VERIFIED (provenance `841c0bb9`)              |
-| Última operação concluída          | Gate H.3-E (run 43363661529): FAIL só em `parser_lock`/`bridge_identity` porque as secrets do app ainda nomeiam `4badf606`/0.42.0 (esperado até o dono trocar)                                                                                  |
-| Operações em andamento             | Aguardando o dono recriar 4 secrets do app (`DEMO_PARSER_EXPECTED_REVISION`, `..._BUILD_REVISION`, `H3E91_EXPECTED_WORKER_BUILD_COMMIT`, `DEMO_PARSER_EXPECTED_VERSION`=0.42.2; valores em `docs/H3E_RELEASE_IDENTITY_TRACEABILITY.md` R5.8.25) |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                                          |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                         |
-| Branch ativa                       | `main` (+ `docs/pm1-r5825-evidence`)                                                                                                                                                                                                            |
-| Último commit confirmado em `main` | `67655b5a5ac3f821beb1531778cf7c6afd5d9b95` (merge do #276). #275 → `c3593d48`; #274 → `616c51f8`; #273 → `ea7ed8df`; #272 → `b7272b97`; #271 → `a2ab17a6`; #270 → `e6e507d3`                                                                    |
-| Build validado em produção         | `ea7ed8df` (PM1 `/maps`) validado em 2026-11-12 (estado vazio admin; conta de teste 0/7 sem posição); `e60a70f6` (Marco 1)                                                                                                                      |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                                             |
-| **Próxima ação exata**             | Depois das secrets: publicar, H.3-E (2 execuções), reenviar a demo de teste autorizada pela conta de teste (tentativa 2 de `ced11a74`, `replacement_reason=raw_audit_blocked`) e validar posições/API/`/maps`/RLS                               |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmarks spatial-v1/R5.8.25; deploy `d57b9089` (não fazer outro deploy do parser); migration `20261113040000` (já aplicada)                                          |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                        |
+| Item                               | Valor                                                                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | PM1 (Fases 4.2.1 + 4.2.2, Módulos A e B) **concluído e validado em produção** (2026-11-13). Próximo: PM2 (4.2.3–4.2.4, Módulos B e I), aguardando o dono                                                                                     |
+| Etapa atual                        | PM1 C6 (fechamento). Detalhe em `docs/pm1/PM1_EXECUTION_REPORT.md`                                                                                                                                                                           |
+| Última etapa concluída             | Validação real: job `aa968c9e` (tentativa 2 de `ced11a74`, conta de teste) `processed`; partida `41a04ba3` com 142/142 posições, igual à parse local (md5 `cee38990…`); `/maps` em produção mostra 17/17 mortes; admin isolado               |
+| Última operação concluída          | H.3-E PASS 18/18 (run 43366791839, alvo `67655b5a`) após o dono trocar as 4 secrets; app publicado (`debf8766`)                                                                                                                              |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                      |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                                       |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                      |
+| Branch ativa                       | `main` (+ `docs/pm1-r5825-evidence`: relatório, checkpoint e matriz de release)                                                                                                                                                              |
+| Último commit confirmado em `main` | `67655b5a5ac3f821beb1531778cf7c6afd5d9b95` (merge do #276). #275 → `c3593d48`; #274 → `616c51f8`; #273 → `ea7ed8df`; #272 → `b7272b97`; #271 → `a2ab17a6`; #270 → `e6e507d3`                                                                 |
+| Build validado em produção         | `67655b5a` (R5.8.25 + `/maps`), validado em 2026-11-13 com a demo autorizada; worker `c3593d48` (Railway `d57b9089`, demoparser2 0.42.2)                                                                                                     |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                                          |
+| **Próxima ação exata**             | Aguardar o dono iniciar o PM2. Não reprocessar outras demos; validar mapas além do Dust II só com demos novas autorizadas                                                                                                                    |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmarks spatial-v1/R5.8.25; deploy `d57b9089`; migration `20261113040000`; reenvio/validação da demo `furia-vs-vitality-m2-dust2` (job `aa968c9e` já processado) |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                     |
 
 ## 1. Identificação
 
@@ -209,10 +209,10 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: missão de evolução estrutural; Marcos 0 e 1 concluídos; 4.2.1 e Marco 2 camada A merged
+- Fase atual: PM1 concluído e validado em produção (heatmaps de morte/eliminação, Dust II validado)
 - Estado: especificação mapeada; round-context-v1 validado em produção
 - Última etapa concluída: Marco 1 publicado e validado (`e60a70f6`)
-- Próxima ação: secrets do dono → publicar → H.3-E → reenviar a demo de teste → validação real das posições
+- Próxima ação: PM1 concluído; aguardar o PM2
 - Branch: `main`
 - Commit: `67655b5a` (merge do #276)
 - PR: #256–#276 merged
