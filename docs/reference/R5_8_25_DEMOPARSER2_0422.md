@@ -18,6 +18,11 @@ A demo de teste autorizada pelo dono (`furia-vs-vitality-m2-dust2.dem`, SHA-256 
 3. A **0.42.2** lê a demo. A 0.42.1 ainda falha.
 4. Com a 0.42.2, o único bloqueio restante é legítimo: o evento `vote_cast`, uma votação no servidor, nunca tinha sido catalogado.
 
+> **Correção de registro (PM6, 2026-11-13).** As issues #321/#339 citadas acima descrevem o mesmo sintoma
+> (`EntityNotFound`). A correção que a 0.42.2 traz, segundo o changelog upstream, é o decodificador **fixed8 do
+> build 14197** (`LaihoE/demoparser@4ba136a`, #375, 2026-11-12). Detalhes em
+> `docs/pm6/PM6_BASELINE_RESEARCH_MATRIX.md` §2.3.
+
 ## Mudança
 
 - `requirements.txt`: `demoparser2==0.42.2`.
