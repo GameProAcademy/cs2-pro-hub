@@ -1,0 +1,75 @@
+{
+  "deployment_id": "2f0e6812-6aa0-4137-b9ca-aa541dafe103",
+  "branch": "main",
+  "semantic_commit": "7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+  "build_commit": "7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+  "deployment_commit": "7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "parser_version": "0.42.2",
+  "critical_hashes": {
+    "parser.py": "5d39478c611b57b2dd17f93c9cdce8faa84860f9",
+    "adapter.py": "4e6f43c7916bb7d855cfd1abcd26637bb0f3f942",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
+    "settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "04798c612e7e6a0fe6b5d7ad6f7541a0",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "f727480e469669cdb495f7eb5de6b7e1",
+  "observed": {
+    "observed_at": "2026-11-13T21:25:00Z",
+    "railway_deployment": {
+      "id": "2f0e6812-6aa0-4137-b9ca-aa541dafe103",
+      "status": "SUCCESS",
+      "commitHash": "7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-13T21:17:50.611Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #279 (merge 7e84f6da); PARSER_REVISION/PARSER_BUILD_REVISION set to git:7e84f6da... with skipped deploys; exactly one deployment of that commit triggered through the Railway agent; queue idle (0 pending/processing jobs) before the merge",
+      "failed_builds_never_served": [],
+      "previous_deployment_status_after_release": "d57b9089 REMOVED"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+      "PARSER_BUILD_REVISION": "git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: parser.gamepro.network/version and cs2-demo-parser-production.up.railway.app/version observed 2026-11-13T21:22Z: parser demoparser2 0.42.2, revision = semantic = build = git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62, build.commit 7e84f6da0a60c1b48897ec24bb721cde9aa65a62, embedded true, declared_revision_matches true",
+    "dependency_drift_check": "worker requirements unchanged (demoparser2==0.42.2); only raw_evidence.py changed (REVIEWED_IGNORED_EVENT_FIELDS gains player_chat and show_survival_respawn_status, both IGNORED_APPROVED and never forwarded to the adapter)",
+    "before": {
+      "deployment_id": "d57b9089-ea97-44b0-b236-6868f84459e2",
+      "semantic_revision": "git:c3593d48e3b8923048def625cf59144100f59892",
+      "build_revision": "git:c3593d48e3b8923048def625cf59144100f59892",
+      "parser_version": "0.42.2"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-13T21:20:00Z",
+      "record_parser_runtime_attestation": "cbb03f77e6e3dae28c567483c3ba252b",
+      "assert_verified_parser_provenance": "a3401a4b1da8553296b6d541afd44bf4",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "raw_evidence_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "raw_evidence_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "the managed definitions were read with a read-only SELECT (pg_get_functiondef + md5(prosrc)), loaded on a disposable PostgreSQL 16, and the same three substitutions give the targets; the recorder target equals scripts/repin/r5_8_11.target_md5(spec)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_25/spec.json",
+  "pin_role": "R5.8.26: re-pin semantic/build commit, Railway deployment and the raw_evidence.py critical blob (PR #279, PM6 PR F: FACEIT HUD overlay and GamersClub player_chat reviewed IGNORED_APPROVED; controlled deployment of its merge commit); parser version 0.42.2 and the parser.py, adapter.py, worker.py, settings.py and workflow blobs unchanged",
+  "r5_8_25_database_target_md5": {
+    "assert_verified_parser_provenance": "a3401a4b1da8553296b6d541afd44bf4",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_25_recorder_target_md5": "cbb03f77e6e3dae28c567483c3ba252b"
+}
