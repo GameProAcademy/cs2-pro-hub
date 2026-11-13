@@ -4,7 +4,7 @@ Rules enforced here:
 
 * `PARSER_TOKEN` is mandatory. Without it the worker refuses to start.
 * `PARSER_REVISION` identifies the deployed build immutably. In production it is
-  mandatory and there is NO silent fallback (`pypi-0.42.0` is gone for good).
+  mandatory and there is NO silent fallback (`pypi-0.42.0` and `pypi-0.42.2` are gone for good).
 * A development fallback exists, but it only applies outside production and it is
   explicitly marked as unpinned so it can never be mistaken for a real build id.
 """
@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from errors import WorkerConfigurationError
 
 PARSER_NAME = "demoparser2"
-PARSER_VERSION = "0.42.0"
+PARSER_VERSION = "0.42.2"
 DURABLE_HOT_TARGET_BYTES = 4 * 1024 * 1024
 DURABLE_HOT_HARD_MAX_BYTES = 8 * 1024 * 1024
 
@@ -34,7 +34,7 @@ _GIT_REVISION = re.compile(r"^git:[0-9a-f]{40}$")
 _OPAQUE_REVISION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+/-]{6,127}$")
 
 #: Values historically used as a silent fallback. Rejected everywhere.
-FORBIDDEN_REVISIONS = frozenset({"pypi-0.42.0", "pypi-" + PARSER_VERSION, "unknown", "none"})
+FORBIDDEN_REVISIONS = frozenset({"pypi-0.42.0", "pypi-0.42.2", "pypi-" + PARSER_VERSION, "unknown", "none"})
 
 
 def image_build_identity(directory: str | None = None) -> dict[str, object]:

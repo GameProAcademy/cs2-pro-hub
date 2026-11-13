@@ -90,7 +90,7 @@ def payload():
 
 def test_parser_identity_and_contract_version(payload):
     assert payload["parser"]["name"] == "demoparser2"
-    assert payload["parser"]["version"] == "0.42.0"
+    assert payload["parser"]["version"] == "0.42.2"
     assert payload["contract_version"] == 1
 
 

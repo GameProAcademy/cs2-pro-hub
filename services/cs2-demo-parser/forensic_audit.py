@@ -149,16 +149,16 @@ def merge_property_summaries(parts: Iterable[dict[str, Any]]) -> list[dict[str, 
 
 
 def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
-    """Describe, but never overstate, the 0.42.0 source for an expected domain.
+    """Describe, but never overstate, the 0.42.2 source for an expected domain.
 
     The installed package exposes ``parse_ticks(..., ticks=...)`` but no public
     API that independently enumerates every valid demo tick. ``playback_ticks``
-    is not part of the documented 0.42.0 ``parse_header`` contract, so it is
+    is not part of the documented 0.42.2 ``parse_header`` contract, so it is
     retained as an observation and cannot authorize a full-domain claim.
     """
     source = TickDomainAuthority("UNAVAILABLE", "UNAVAILABLE", "demoparser2.parse_header.playback_ticks",
-        None, "demoparser2@0.42.0", None, False, None, None, None, (), None, None,
-        "demoparser2 0.42.0 exposes no independent documented complete tick-domain enumeration").payload()
+        None, "demoparser2@0.42.2", None, False, None, None, None, (), None, None,
+        "demoparser2 0.42.2 exposes no independent documented complete tick-domain enumeration").payload()
     source["observed_playback_ticks"] = playback_ticks
     unsigned = {key: value for key, value in source.items() if key not in {"digest", "authority_digest"}}
     source["authority_digest"] = deterministic_digest(unsigned)
@@ -168,7 +168,7 @@ def build_tick_domain_source(playback_ticks: int | None) -> dict[str, Any]:
 
 def authoritative_tick_domain(first_tick: int, last_tick: int, *, provenance: str,
                               demo_sha256: str | None = None, tickrate: float | None = None,
-                              parser_revision: str = "demoparser2@0.42.0",
+                              parser_revision: str = "demoparser2@0.42.2",
                               created_at: str | None = None) -> dict[str, Any]:
     """Build a domain claim; fixtures remain PROVISIONAL and cannot pass production gates."""
     if first_tick < 0 or last_tick < first_tick:

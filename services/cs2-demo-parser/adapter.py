@@ -2,7 +2,7 @@
 
 This module is the ONLY place that knows both models:
 
-    demoparser2 0.42.0 raw model  (pandas records / header dict)
+    demoparser2 0.42.2 raw model  (pandas records / header dict)
         |
         v
     adapter (this file)

@@ -180,7 +180,7 @@ def process_claim(db_url: str, api_url: str, key: str, expected: dict,
         if process.returncode or not parser_output.is_file():
             raise RuntimeError('R11_CLAIMED_PARSER_FAILED')
         parsed = json.loads(parser_output.read_text())
-        if (parsed['parser_version'] != '0.42.0' or parsed['parser_exit_code'] != 0
+        if (parsed['parser_version'] != '0.42.2' or parsed['parser_exit_code'] != 0
                 or parsed['parser_result'] != 'PASS' or not parsed['raw_evidence_present']):
             raise RuntimeError('R11_CLAIMED_PARSER_RESULT_INVALID')
         result['parser'] = {field: parsed[field] for field in (

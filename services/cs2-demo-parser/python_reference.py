@@ -51,7 +51,7 @@ PROFILES = {
         "testFixtureOnly": True,
     },
 }
-PARSER_VERSION = "0.42.0"
+PARSER_VERSION = "0.42.2"
 PARSER_REVISION = "d3767705dc5846d73ed29db50eaeda58778dc934"
 MANIFEST = ROOT / "docs/client-parser/upstream-surface-manifest.json"
 MAX_SAMPLE = 1000

@@ -574,6 +574,39 @@ def test_player_disconnect_ever_fully_connected_is_raw_only_and_unknown_fields_s
     assert again["player_disconnect.ever_fully_connected"] == "RAW_ONLY_INTENTIONAL"
 
 
+def test_vote_cast_is_raw_only_and_unknown_vote_fields_still_block():
+    # 2026-11-13 (job ced11a74, owner-authorized test demo, sha256 b5af62a7...): under
+    # demoparser2 0.42.2 the only unclassified event was a server vote; it blocked the demo.
+    from raw_evidence import mapping_inventory
+    raw = {
+        "header": {}, "players": [{}], "tick_rows": [], "grenade_rows": [], "round_rows": [],
+        "event_tables": {"vote_cast": [{
+            "team": 3, "tick": 10, "user_name": "x", "user_steamid": "76561198000000001",
+            "vote_option": 0,
+        }]},
+    }
+    items = {i["raw_field"]: i for i in mapping_inventory(raw)}
+    for field in ("team", "tick", "user_name", "user_steamid", "vote_option"):
+        assert items[f"vote_cast.{field}"]["status"] == "RAW_ONLY_INTENTIONAL", field
+        assert items[f"vote_cast.{field}"]["reason"]
+        assert items[f"vote_cast.{field}"].get("canonical_field") in (None, "")
+    # The review is exact: any other new field on the same event still blocks admission.
+    raw["event_tables"]["vote_cast"][0]["future_vote_field"] = 1
+    again = {i["raw_field"]: i["status"] for i in mapping_inventory(raw)}
+    assert again["vote_cast.future_vote_field"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_worker_pins_demoparser2_0_42_2():
+    # R5.8.25: 0.42.0 raised EntityNotFound on every parse_event of current CS2 builds
+    # (owner-authorized test demo, job ced11a74), so the demo produced no events.
+    import settings, capability_catalog
+    from pathlib import Path
+    assert settings.PARSER_VERSION == capability_catalog.PARSER_VERSION == "0.42.2"
+    requirements = (Path(__file__).resolve().parents[1] / "requirements.txt").read_text()
+    assert "demoparser2==0.42.2" in requirements
+    assert "parse_weapons" in capability_catalog.PARSER_APIS
+
+
 def _app_stable(value):
     """The APP's stableRawArtifactJson, applied to what JSON carried (src/lib/pipeline/rawArtifactContract.ts)."""
     from raw_artifact import _stable_portable

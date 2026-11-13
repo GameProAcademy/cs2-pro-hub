@@ -55,7 +55,7 @@ def validate_manifest_identity(manifest: dict[str, Any], expected: dict[str, Any
     if manifest.get("status") != "ready" or manifest.get("raw_status") != "ready":
         raise ValueError("manifest_not_ready")
     parser = _object(manifest.get("parser"), "parser")
-    if parser.get("name") != "demoparser2" or parser.get("version") != "0.42.0":
+    if parser.get("name") != "demoparser2" or parser.get("version") != "0.42.2":
         raise ValueError("parser_identity_invalid")
 
 

@@ -1,4 +1,4 @@
-"""Version-locked demoparser2 0.42.0 capability catalogue.
+"""Version-locked demoparser2 0.42.2 capability catalogue.
 
 The static catalogue is the reviewed semantic baseline. Runtime discovery from
 ``list_updated_fields`` and ``list_game_events`` extends it for a concrete demo;
@@ -15,9 +15,9 @@ from dataclasses import dataclass, asdict
 from typing import Any, Iterable
 
 PARSER_NAME = "demoparser2"
-PARSER_VERSION = "0.42.0"
+PARSER_VERSION = "0.42.2"
 CATALOG_VERSION = 3
-CATALOG_SOURCE = "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
+CATALOG_SOURCE = "installed-demoparser2-0.42.2-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
 
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
 
@@ -81,7 +81,7 @@ USERCMD_FIELDS = (
 )
 GRENADE_FIELDS = ("entity_id", "grenade_entity_id", "grenade_type", "name", "steamid", "thrower_steamid", "tick", "x", "y", "z", "X", "Y", "Z")
 ROUND_FIELDS = ("number", "start_tick", "end_tick", "winner", "winner_side", "winner_team", "duration_seconds", "bomb_planted", "bomb_defused", "bomb_exploded")
-PARSER_APIS = ("parse_header", "list_updated_fields", "list_game_events", "parse_event", "parse_events", "parse_grenades", "parse_item_drops", "parse_player_info", "parse_skins", "parse_ticks", "parse_voice")
+PARSER_APIS = ("parse_header", "list_updated_fields", "list_game_events", "parse_event", "parse_events", "parse_grenades", "parse_item_drops", "parse_player_info", "parse_skins", "parse_ticks", "parse_voice", "parse_weapons")
 
 EVENT_TYPES = (
     "round_start", "round_end", "round_mvp", "bomb_abortdefuse", "bomb_abortplant",
@@ -226,7 +226,7 @@ def _entry(category: str, name: str) -> Capability:
     if key in DERIVATIONS:
         return _with_identity(Capability(*base, "DERIVED", "DERIVED", derivation_rule=DERIVATIONS[key]))
     classification = "UNAVAILABLE" if category == "parser_apis" and name not in PARSER_APIS else "RAW_ONLY"
-    reason = "Installed runtime API is unavailable." if classification == "UNAVAILABLE" else "Preserved as reviewed demoparser2 0.42.0 forensic evidence; not authorized for Canonical."
+    reason = "Installed runtime API is unavailable." if classification == "UNAVAILABLE" else "Preserved as reviewed demoparser2 0.42.2 forensic evidence; not authorized for Canonical."
     return _with_identity(Capability(*base, classification, "REVIEWED_RAW_ONLY" if classification == "RAW_ONLY" else "UNAVAILABLE", reason=reason, raw_only_reason=reason if classification == "RAW_ONLY" else None, unavailable_reason=reason if classification == "UNAVAILABLE" else None))
 
 

@@ -106,7 +106,7 @@ def test_version_reports_the_running_identity(client_factory):
     settings = make_settings(revision=SHA)
     payload = client_factory(settings=settings).get("/version").json()
     assert payload == {
-        "parser": {"name": "demoparser2", "version": "0.42.0", "revision": SHA,
+        "parser": {"name": "demoparser2", "version": "0.42.2", "revision": SHA,
                    "semantic_revision": SHA, "build_revision": None},
         "contract_version": 1,
         # No image here: the build commit is unknown and says so.

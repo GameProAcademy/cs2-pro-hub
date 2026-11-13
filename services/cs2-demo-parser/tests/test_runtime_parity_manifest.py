@@ -24,7 +24,7 @@ REQUIRED_RUNTIME_FUNCTIONS = (
 def test_candidate_identity_is_immutable_full_git_sha():
     assert re.fullmatch(r"[0-9a-f]{40}", CANDIDATE_SHA)
     assert PARSER_NAME == "demoparser2"
-    assert PARSER_VERSION == "0.42.0"
+    assert PARSER_VERSION == "0.42.2"
     assert DEFAULT_CONTRACT_VERSION == 1
 
 

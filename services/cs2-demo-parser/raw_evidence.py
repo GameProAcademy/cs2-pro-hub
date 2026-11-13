@@ -104,6 +104,11 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
         "user_name", "user_steamid", "xuid",
     }),
     "player_footstep": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
+    # vote_cast: a server vote (e.g. a timeout or surrender vote). Observed on 2026-11-13 in the
+    # owner-authorized test demo furia-vs-vitality-m2-dust2 (job ced11a74, sha256 b5af62a7...),
+    # the only UNMAPPED_BUT_AVAILABLE event under demoparser2 0.42.2. Reviewed: neither adapter.py
+    # nor the Canonical mapping reads votes; not player behaviour. RAW only.
+    "vote_cast": frozenset({"__event__", "team", "tick", "user_name", "user_steamid", "vote_option"}),
     "player_jump": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     "rank_update": frozenset({
         "__event__", "num_wins", "rank_change", "rank_new", "rank_old", "rank_type_id", "tick",
@@ -642,7 +647,7 @@ def build_forensic_contract_v2(evidence: dict[str, Any], raw: dict[str, Any]) ->
     missing_families = sorted(required_families - set(inventory))
     identity_ok = (
         evidence.get("manifest", {}).get("parser_name") == "demoparser2"
-        and evidence.get("manifest", {}).get("parser_version") == "0.42.0"
+        and evidence.get("manifest", {}).get("parser_version") == "0.42.2"
         and evidence.get("manifest", {}).get("contract_version") == 1
     )
     semantic = _semantic_gate_results(evidence, inventory)
@@ -909,7 +914,7 @@ def prepare_evidence(evidence: dict[str, Any], *, parser: dict[str, Any], contra
         forensic_v2["parser"] = {"name": parser.get("name"), "version": parser.get("version")}
         for gate in forensic_v2.get("gates") or []:
             if gate.get("gate") == "RAW-V2-01-parser-identity":
-                passed = parser.get("name") == "demoparser2" and parser.get("version") == "0.42.0" and contract_version == 1
+                passed = parser.get("name") == "demoparser2" and parser.get("version") == "0.42.2" and contract_version == 1
                 gate.update({"status": "PASS" if passed else "BLOCKED", "reasons": [] if passed else ["parser_identity_mismatch"]})
         unsigned = {key: value for key, value in forensic_v2.items()
                     if key not in {"deterministic_digest", "unsigned_contract_digest", "final_contract_digest"}}

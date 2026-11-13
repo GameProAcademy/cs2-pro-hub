@@ -20,7 +20,7 @@ def test_runtime_evidence_is_secret_free_and_identity_bound() -> None:
     evidence = collect_runtime_evidence(_settings())
     assert evidence["evidenceClass"] == "CONTROLLED_RUNTIME_PRE_FLIGHT"
     assert evidence["parser"]["name"] == "demoparser2"
-    assert evidence["parser"]["declaredVersion"] == "0.42.0"
+    assert evidence["parser"]["declaredVersion"] == "0.42.2"
     assert evidence["parser"]["revision"].startswith("git:")
     assert evidence["parser"]["contractVersion"] == 1
     assert evidence["secretsIncluded"] is False
