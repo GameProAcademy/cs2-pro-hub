@@ -11,9 +11,13 @@
 import { CANONICAL_METRICS, type CanonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import type { XRayObservation } from "@/lib/diagnostics/xray";
 
-export const METRIC_CONTRACT_VERSION = "metric-contract-v1";
+/**
+ * v1.1 (specification v1.1, 12/11/2026): adds `PARTIAL` to the taxonomy. Additive: every v1
+ * envelope is still valid, no consumed field was renamed.
+ */
+export const METRIC_CONTRACT_VERSION = "metric-contract-v1.1";
 
-/** Original §4, verbatim order. */
+/** Specification v1.1 §4, verbatim order (v1.0 had the first seven). */
 export const METRIC_STATUSES = [
   "OBSERVED",
   "DERIVED",
@@ -22,11 +26,20 @@ export const METRIC_STATUSES = [
   "NOT_MEASURED",
   "INSUFFICIENT_SAMPLE",
   "UNAVAILABLE",
+  "PARTIAL",
 ] as const;
 export type MetricStatus = (typeof METRIC_STATUSES)[number];
 
-/** Statuses that may carry a value; every other status carries `value: null`. */
-export const VALUED_STATUSES: readonly MetricStatus[] = ["OBSERVED", "DERIVED", "INFERRED"];
+/**
+ * Statuses that may carry a value; every other status carries `value: null`. `PARTIAL` carries the
+ * value computed over the measured part only, and must say how much was measured (coverage).
+ */
+export const VALUED_STATUSES: readonly MetricStatus[] = [
+  "OBSERVED",
+  "DERIVED",
+  "INFERRED",
+  "PARTIAL",
+];
 
 export interface EvidenceRef {
   matchId: string;
@@ -63,8 +76,21 @@ export function envelope(e: Omit<MetricEnvelope, "schema_version" | "confidence"
     throw new MetricEnvelopeError(`value_without_measure:${e.metric_key}`);
   if (valued && (e.value === null || !Number.isFinite(e.value)))
     throw new MetricEnvelopeError(`measure_without_value:${e.metric_key}`);
-  if (e.coverage && (e.coverage.measured < 0 || e.coverage.measured > e.coverage.eligible))
+  if (
+    e.coverage &&
+    (!Number.isInteger(e.coverage.measured) ||
+      !Number.isInteger(e.coverage.eligible) ||
+      e.coverage.measured < 0 ||
+      e.coverage.measured > e.coverage.eligible)
+  )
     throw new MetricEnvelopeError(`coverage_out_of_range:${e.metric_key}`);
+  // v1.1 §4: incomplete known coverage is PARTIAL, never presented as a complete total…
+  const incomplete = !!e.coverage && e.coverage.measured < e.coverage.eligible;
+  if (valued && e.status !== "PARTIAL" && incomplete)
+    throw new MetricEnvelopeError(`incomplete_coverage_must_be_partial:${e.metric_key}`);
+  // …and PARTIAL needs that coverage: something measured, something not.
+  if (e.status === "PARTIAL" && !(incomplete && e.coverage!.measured > 0))
+    throw new MetricEnvelopeError(`partial_without_incomplete_coverage:${e.metric_key}`);
   // A percentage needs a positive denominator (original §4.1).
   if (valued && e.unit === "percent" && !(e.sample_size && e.sample_size.n > 0))
     throw new MetricEnvelopeError(`percent_without_denominator:${e.metric_key}`);

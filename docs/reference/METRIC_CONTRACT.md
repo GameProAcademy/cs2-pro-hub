@@ -1,4 +1,13 @@
-# Contrato de métricas da Fase 4.2 — `metric-contract-v1` (entrega 4.2.1)
+# Contrato de métricas da Fase 4.2 — `metric-contract-v1.1` (entrega 4.2.1)
+
+**v1.1 (2026-11-12, PM1).** O estado `PARTIAL` da especificação v1.1 §4 entra no contrato. Regras:
+
+- leva o valor da parte medida;
+- exige `coverage` com algo medido e algo faltando;
+- um estado com valor (`OBSERVED`/`DERIVED`/`INFERRED`) com cobertura incompleta é recusado, porque teria de ser `PARTIAL`;
+- `coverage` só aceita unidades inteiras.
+
+A mudança é aditiva: todo envelope v1 continua válido. O teste da taxonomia agora lê a v1.1.
 
 Código: `src/lib/metrics/metricContract.ts` (puro). Testes: `src/lib/__tests__/metricContract.test.ts`.
 Origem: especificação mestre, §4 (taxonomia e campos) e §24 (passos da 4.2.1).

@@ -1,0 +1,1002 @@
+CS2 PRO HUB — PROMPT MESTRE 1 DE 5
+FASE 4.2.1 + FASE 4.2.2
+CONTRATOS E COBERTURA DAS MÉTRICAS + HEATMAPS POR MAPA, LADO E EVENTO
+MÓDULOS A + B (BASE E PREPARAÇÃO TRANSVERSAL)
+DOCUMENTO DE EXECUÇÃO PARA CLAUDE
+
+======================================================================
+0. INSTRUÇÃO DE CONTINUIDADE E DOCUMENTO DE REFERÊNCIA
+======================================================================
+
+Você é o principal engenheiro responsável por continuar o desenvolvimento do CS2 PRO Hub / CS2 PRO AI Coach.
+
+Você receberá junto deste prompt o documento:
+“CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre”
+em formato DOCX e/ou Markdown.
+
+LEIA O RELATÓRIO COMPLETO ANTES DE ALTERAR QUALQUER ARQUIVO. Ele é a especificação funcional e técnica mestre da Fase 4.2. Este prompt detalha a execução do primeiro pacote, mas não substitui o relatório. Em caso de aparente divergência:
+1. Preserve os requisitos e regras imutáveis do projeto já em produção.
+2. Preserve os contratos e decisões já validados no repositório.
+3. Use o relatório mestre como referência de escopo e critérios.
+4. Investigue a implementação real antes de decidir.
+5. Registre a divergência e sua resolução no PR e no relatório de execução.
+
+Este é o PROMPT 1 DE 5. Ele cobre:
+- Fase 4.2.1 — Contratos e cobertura das métricas.
+- Fase 4.2.2 — Heatmaps por mapa, lado e evento.
+- Módulo A — Inteligência visual do mapa.
+- Módulo B — Diagnóstico de mortes e decisões, nesta primeira entrega quanto à fundação semântica, dados espaciais e preparação dos contratos. A implementação completa de diagnóstico pertence ao pacote posterior que tratará da Fase 4.2.3. Não antecipe funcionalidades sem dados ou sem o escopo correspondente.
+
+Os cinco prompts serão executados em sequência. Não implemente agora as fases dos prompts 2 a 5, mas prepare contratos e arquitetura compatíveis com elas, sem criar estruturas prematuras ou duplicadas.
+
+======================================================================
+1. AUTORIZAÇÃO OPERACIONAL
+======================================================================
+
+O usuário concede autonomia operacional para:
+- Inspecionar e alterar o repositório GitHub do projeto.
+- Criar branches, commits e pull requests.
+- Executar testes, workflows e correções.
+- Fazer merges quando os critérios de qualidade e segurança estiverem satisfeitos.
+- Trabalhar no Railway e publicar o worker quando isso for tecnicamente necessário e compatível com o escopo.
+- Trabalhar no banco de dados real gerenciado pelo Lovable, inclusive migrations, schema, funções, views e policies, quando necessário e seguro.
+- Executar deploys e publicar em produção após validação completa.
+- Pesquisar documentação oficial, issues, GitHub, fóruns, Reddit e outras fontes técnicas para resolver problemas e escolher implementações robustas.
+- Prosseguir sem solicitar confirmação a cada etapa, desde que a ação esteja dentro do escopo autorizado e das salvaguardas deste prompt.
+
+IMPORTANTE — LIMITE ESPECÍFICO LOVABLE:
+Você NÃO pode enviar prompts, instruções, mensagens ou alterações automaticamente para o Lovable, nem operar a interface do Lovable para solicitar mudanças. O usuário proibiu expressamente o envio automático de prompts ao Lovable.
+O banco de dados gerenciado pelo Lovable pode ser acessado e alterado por meios técnicos autorizados (por exemplo, migrations versionadas no repositório e fluxo de deploy já existente), respeitando todos os controles de segurança. Isso NÃO autoriza enviar prompts ao Lovable.
+
+Se uma ação exigir intervenção manual do usuário:
+- Não fique parado aguardando.
+- Explique exatamente o que o usuário precisa fazer, onde clicar ou qual valor inserir, sem expor secrets.
+- Continue executando todas as tarefas independentes que puderem ser realizadas com segurança.
+- Marque a dependência como MANUAL_REQUIRED e explique o impacto.
+- Nunca invente que uma ação manual foi realizada.
+
+Autonomia não significa ignorar riscos. Não faça operações destrutivas, não apague dados, não enfraqueça segurança e não faça backfills/reprocessamentos de dados reais sem necessidade demonstrada e plano seguro. Se uma ação for irreversível, destrutiva, puder causar perda de dados ou exigir mudança de produto fora do escopo, não a execute silenciosamente: procure alternativa aditiva e reversível. Se não houver alternativa segura, documente o bloqueio e instrua o usuário.
+
+======================================================================
+2. IDENTIDADE DO PROJETO E BASE TÉCNICA CONHECIDA
+======================================================================
+
+Projeto: CS2 PRO Hub / CS2 PRO AI Coach
+Repositório: GameProAcademy/cs2-pro-hub
+Aplicação: https://gamepro.network
+Worker Railway: serviço cs2-demo-parser
+Banco de dados: Lovable Cloud (banco real gerenciado pelo Lovable).
+A conta Supabase pessoal conectada anteriormente estava vazia e NÃO é o banco real do projeto.
+
+Contexto técnico registrado até o início deste pacote:
+- Parser R5.8.24 foi publicado e atestado em novembro de 2026, conforme registros de continuidade; confirme o estado efetivo no Railway e no fluxo ponta a ponta antes de qualquer implementação.
+- A identidade do worker, attestation e gates H.3-E são críticos.
+- H.3-E Activation Gate foi aprovado em execução anterior.
+- O AI Coach usa OpenRouter como provider principal, modelo openai/gpt-oss-20b.
+- Fallback OpenAI está desligado porque não há saldo/configuração para utilizá-lo.
+- Não habilitar fallback OpenAI nem trocar provider/modelo por conta própria.
+- PR #254 incluiu humanização e preferred_name; migration 20261106110000_coach_preferred_name.sql foi aplicada no banco real conforme registro anterior.
+- A Fase 4 inclui notificações, metas e achievements.
+- A Fase 4.1 deve estar concluída ou formalmente isolada antes do início da implementação funcional da Fase 4.2.
+- A fundação recente inclui Player DNA v2, CS2 PRO Score v1 e integração do Score nos fatos do Coach (PRs #256, #257 e #258, conforme histórico). São métodos heurísticos internos, não escalas profissionais calibradas; não criar percentis, rankings populacionais ou alegações de benchmark sem validação independente.
+- PR #262 consolidou documentação/metodologia da fundação. Reutilize os contratos e documentos existentes; não recrie catálogos, fórmulas ou fontes de verdade em paralelo.
+- PRs #263 (Marco 0/documentação e mapeamento) e #264 (Marco 1/semântica CT/T e resultados por round) foram reportados como implementados, mas seu estado final de merge, deploy e integração não está confirmado neste contexto. Verifique no GitHub e na produção antes de reutilizar ou duplicar qualquer implementação.
+- O parser R5.8.24 foi reportado como atestado e publicado. Ele passou a produzir `position` do atacante e `victim_position` no tick da morte. Isso NÃO comprova, por si só, persistência ponta a ponta no banco nem fornece trajetória contínua, presença por tick ou histórico de movimento. Confirme bridge, transporte, persistência e cobertura com evidência.
+- As limitações contratuais L02 (movimento/tempo de exposição) e L03 (mira/spray/counter-strafe) continuam sendo restrições até que exista alteração formal, versionada, testada e aprovada do contrato de admissão. Não contorne guards nem infira dados proibidos.
+- O lado CT/T deve ser contextualizado por jogador e round, considerando trocas de lado. Não inferir lado por nickname, ordem de jogadores ou lado global da partida. Diferencie lado do jogador, identidade da equipe, vencedor do round e motivo de encerramento do round.
+- Tutor LMS em https://hub.gamepro.academy é externo e deve continuar sendo acessado apenas por links. Não criar integração de progresso, login compartilhado, API, webhook ou acesso ao banco WordPress.
+- A arquitetura e os contratos reais podem ter evoluído depois do registro acima. Verifique o estado atual; não trate o resumo como prova de estado atual.
+
+Regra fundamental: a primeira atividade é auditoria read-only do estado atual. Não presuma que hashes, deploys, migrations ou status de produção continuam iguais aos registros históricos.
+
+Antes de implementar heatmaps, confirme também:
+- se PR #263 e PR #264 estão merged; respectivos SHAs, checks e deploys;
+- se o contrato de saída R5.8.24 com `position` e `victim_position` atravessa parser → bridge → transporte → persistência → API → UI;
+- se há pelo menos uma demo de teste autorizada com esses campos persistidos e reconciliados;
+- quais dimensões espaciais são realmente observadas e quais continuam bloqueadas por L02/L03.
+
+Se a persistência ponta a ponta das posições ainda não estiver comprovada, não declare heatmaps prontos nem crie uma camada substituta. Conclua primeiro a auditoria, os contratos e testes com fixtures; registre a dependência como BLOCKED/MANUAL_REQUIRED e continue apenas o trabalho independente.
+
+======================================================================
+3. MISSÃO DESTE PROMPT
+======================================================================
+
+Entregar uma fundação de métricas confiável e o primeiro módulo espacial de análise de partidas.
+
+Ao final:
+1. O produto deve saber distinguir uma métrica medida de uma métrica não medida.
+2. Cada métrica exibida deve ter semântica, unidade, origem, método, amostra e status rastreáveis.
+3. A interface não pode transformar ausência de dados em zero.
+4. O produto deve apresentar heatmaps confiáveis para mapas, lados e eventos efetivamente suportados.
+5. O usuário deve conseguir filtrar e explorar eventos espaciais e chegar ao round/tick correspondente, dentro das capacidades de dados existentes.
+6. A implementação deve preparar a integração futura com diagnóstico de mortes, replay 2D, mira, utilitários, economia, evolução, treinamento e biblioteca de momentos.
+7. Tudo deve preservar as funcionalidades já existentes e os controles de segurança.
+
+Não considere concluído porque existe uma tela bonita. A conclusão exige prova ponta a ponta: origem do dado, parser/contrato, processamento, persistência ou agregação, API, ownership, UI, estados de erro, testes e deploy validado.
+
+======================================================================
+4. REGRAS IMUTÁVEIS — NÃO QUEBRAR O QUE JÁ FUNCIONA
+======================================================================
+
+4.1 Preservação e compatibilidade
+- Não substituir o parser R5.8.24 (ou a versão efetivamente vigente) sem causa raiz demonstrada, plano compatível e evidência.
+- Não alterar parser identity, build pin, attestation, runtime identity ou H.3-E para contornar falhas.
+- Não remover ou enfraquecer testes, gates, workflows, contratos, RLS, ownership, autenticação, rate limits ou idempotência.
+- Não quebrar Dashboard, X-Ray, Player DNA, AI Coach, upload, processamento, histórico, notificações, metas ou achievements.
+- Não criar um segundo sistema de métricas se já houver catálogo, agregador, snapshot ou read model correto. Reutilize o existente.
+- Prefira mudanças aditivas, compatíveis e reversíveis.
+- Não alterar migrations já aplicadas; crie migrations novas e versionadas quando necessário.
+- Não fazer alterações oportunistas fora do escopo.
+
+4.2 Semântica dos dados
+É PROIBIDO converter:
+- null em zero;
+- campo ausente em zero;
+- evento não observado em evento inexistente;
+- métrica não medida em zero;
+- amostra insuficiente em nota;
+- falha de parser em desempenho ruim;
+- indisponibilidade em resultado negativo.
+
+Zero só é válido quando o sistema comprovou que a métrica foi medida e o resultado observado foi realmente zero.
+
+Use os estados equivalentes já existentes. Se não houver, proponha uma extensão aditiva e coerente. Conceitos necessários:
+- OBSERVED: fato diretamente observado.
+- DERIVED: cálculo determinístico baseado em fatos observados.
+- INFERRED: inferência/heurística; precisa ser identificada como tal e explicar regra/limites.
+- NOT_OBSERVED: evento não apareceu no conjunto observado, mas isso não prova que a métrica foi medida integralmente.
+- NOT_MEASURED: a fonte/parser não mede esse dado.
+- INSUFFICIENT_SAMPLE: dados existem, mas não atingem amostra mínima.
+- UNAVAILABLE: dado temporariamente ou tecnicamente indisponível.
+- PARTIAL: cobertura incompleta, com indicação explícita do que foi medido.
+
+Não duplique enums se já houver taxonomia equivalente. Mapeie e documente.
+
+4.3 Segurança e privacidade
+- Toda consulta de dados privados deve ser autorizada no servidor.
+- Nunca confiar em owner_id/user_id recebido do cliente como autorização.
+- RLS deve permanecer ativa e ser testada com dois usuários diferentes.
+- Queries agregadas devem filtrar pelo proprietário legítimo e pelo escopo de partida.
+- Não expor IDs, dados, coordenadas ou eventos de outro usuário.
+- Não logar tokens, secrets, cookies, conteúdo sensível ou payloads privados desnecessários.
+- Não tornar demos, bookmarks, mapas ou relatórios públicos por padrão.
+- Aplicar limites de payload, paginação, timeouts e rate limits conforme padrões existentes.
+
+4.4 Dados reais e reprocessamento
+- Não reprocessar demos reais apenas para testar a nova UI.
+- Não executar backfill amplo sem demonstrar necessidade, idempotência, custo e plano de rollback.
+- Priorizar fixtures sintéticas, testes existentes e demos de teste autorizadas.
+- Se for indispensável reprocessar uma demo real, documentar motivo, impacto, custo, idempotência e autorização necessária. Não presumir autorização geral para reprocessamento.
+
+4.5 AI Coach
+- Manter OpenRouter + openai/gpt-oss-20b.
+- Não ativar fallback OpenAI.
+- Não permitir que o Coach consuma métricas sem provenance/status/amostra.
+- Não enviar para o modelo valores que a aplicação não pode afirmar.
+- A IA deve separar fatos, cálculos e inferências e citar as evidências disponíveis.
+
+======================================================================
+5. PRIMEIRA AÇÃO — AUDITORIA READ-ONLY OBRIGATÓRIA
+======================================================================
+
+Antes de editar código, faça uma auditoria completa e registre o baseline.
+
+5.1 GitHub
+- Confirmar branch principal, SHA atual, status de working tree e PRs abertos.
+- Conferir commits recentes e PRs já merged relevantes à Fase 4 e à Fase 4.1.
+- Identificar workflows obrigatórios, gates, testes e status.
+- Verificar se há alterações pendentes de outros agentes. Não sobrescrever trabalho concorrente.
+- Ler os documentos de continuidade e runbooks existentes.
+
+5.2 Lovable Cloud / banco
+- Identificar o projeto e ambiente corretos.
+- Confirmar migrations aplicadas e pendentes pelo mecanismo oficial do projeto.
+- Inspecionar tabelas, views, RPCs, Edge Functions, índices e policies RLS relevantes.
+- Não assumir que a conta Supabase pessoal vazia é o banco real.
+- Não executar SQL destrutivo ou alterações de schema durante a auditoria.
+
+5.3 Railway / parser
+- Consultar versão/build servido, commit, health e runtime identity.
+- Confirmar a versão efetivamente vigente (o baseline histórico mais recente é R5.8.24), documentar SHA/build/deploy e não presumir que a versão registrada continua ativa.
+- Confirmar attestation, declared revision e gates H.3-E.
+- Inspecionar contrato de saída do parser, modelos e testes.
+- Não alterar configuração do worker nesta etapa de auditoria.
+
+5.4 Frontend e backend
+- Localizar os componentes e páginas de Dashboard, X-Ray, Player DNA, Coach e partidas.
+- Localizar endpoints, Edge Functions, RPCs e hooks de dados.
+- Seguir métricas existentes da origem até a tela.
+- Identificar a biblioteca de mapas já usada, se houver.
+- Localizar i18n e os cinco locales: pt-BR, pt-PT, en, es, fr.
+
+5.5 Resultado da auditoria
+Produzir `docs/` ou local equivalente já adotado no repositório, com documento de baseline contendo:
+- SHA e ambiente verificados;
+- parser/worker e evidências;
+- migrations;
+- tabelas/contratos/endpoints relevantes;
+- métricas existentes e seu fluxo;
+- RLS/ownership;
+- testes e workflows baseline;
+- gaps e riscos;
+- mapa dos arquivos que provavelmente serão alterados.
+
+Não invente nomes de tabelas ou endpoints. Os nomes reais devem ser obtidos no código.
+
+Se a Fase 4.1 não estiver concluída, determine quais componentes são dependências diretas. Não misture mudanças da Fase 4.1 com a 4.2.1/4.2.2. Se necessário, isole formalmente e continue apenas com trabalho independente e seguro.
+
+======================================================================
+6. FASE 4.2.1 — CONTRATOS E COBERTURA DAS MÉTRICAS
+======================================================================
+
+6.1 Objetivo
+Criar uma fundação semântica central para todas as métricas existentes e futuras. O sistema deve responder, para cada métrica:
+- O que significa?
+- Qual unidade utiliza?
+- Qual fonte produz o dado?
+- É observada, derivada ou inferida?
+- Qual método/versão calcula?
+- Qual população é elegível?
+- Qual é a amostra?
+- Qual é a cobertura?
+- O dado está completo, parcial, não medido, indisponível ou insuficiente?
+- Em quais dimensões pode ser segmentado?
+- Quais limitações impedem uma conclusão?
+
+6.2 Dor que resolve
+O jogador não pode receber um zero enganoso quando o parser não coletou a métrica. Também não pode receber scores ou recomendações baseados em campos incompletos. Esta etapa elimina a ambiguidade entre “não fez” e “não foi possível medir”.
+
+6.3 Inventário obrigatório
+Inspecione todas as métricas exibidas ou consumidas por:
+- Dashboard;
+- X-Ray;
+- Player DNA;
+- AI Coach;
+- relatórios e histórico;
+- notificações, metas e achievements;
+- telas de partidas e estatísticas;
+- qualquer componente que calcule K/D, ADR, KAST, HS, rating, utilitários, flash assists, deaths, damage, trades ou métricas espaciais.
+
+Para cada métrica, documente:
+- chave/campo atual;
+- descrição funcional;
+- produtor;
+- transformação;
+- tabela/campo persistido;
+- endpoint ou RPC;
+- consumidor frontend/Coach;
+- unidade;
+- fórmula;
+- status/provenance;
+- amostra/denominador;
+- testes;
+- limitações.
+
+Não altere uma métrica apenas porque o nome parece inadequado. Confirme seu significado no código e em testes.
+
+6.4 Catálogo semântico
+Criar ou estender o catálogo central de métricas, conforme arquitetura existente. Cada definição deve conter, conceitualmente:
+- metric_key estável;
+- nome e descrição;
+- unidade;
+- origem;
+- tipo de proveniência;
+- método/fórmula e versão;
+- status de suporte;
+- dimensões permitidas;
+- regra de amostra mínima;
+- denominador/população elegível;
+- regra de coverage;
+- precisão/arredondamento;
+- limitações;
+- data/versão de atualização.
+
+O catálogo deve ser fonte única de semântica. Evite duplicar descrições e fórmulas em frontend, backend e prompt do Coach.
+
+6.5 Cobertura
+Defina coverage de forma específica por métrica. Exemplo conceitual:
+coverage = quantidade de unidades elegíveis com dado válido / quantidade total de unidades elegíveis.
+
+A unidade elegível pode ser evento, round, tick, jogador-round ou partida; não escolha uma única unidade para todas as métricas. Registre o denominador correto e explique exclusões.
+
+Requisitos:
+- denominador zero não pode gerar NaN/Infinity nem ser convertido em zero sem status;
+- dados ausentes não entram como valor zero;
+- coverage deve ser retornada com N e denominador;
+- cobertura parcial deve ser visualmente explícita;
+- agregações de partidas diferentes só podem ser combinadas quando método e unidade forem compatíveis.
+
+6.6 Compatibilidade dos contratos
+- Inspecione os schemas reais antes de propor mudanças.
+- Prefira extensão aditiva de DTOs, interfaces e tabelas.
+- Não renomeie ou remova campos utilizados pelo app sem plano de compatibilidade.
+- Não crie duas fontes de verdade.
+- Versione cálculos que possam mudar resultados.
+- Se houver cache, inclua versão do método e invalidação adequada.
+- Não persistir derivação redundante sem benefício comprovado.
+
+6.7 Testes obrigatórios
+Criar testes que provem:
+1. Valor medido zero é diferente de null.
+2. Campo ausente não vira zero.
+3. NOT_MEASURED não vira zero.
+4. NOT_OBSERVED não é apresentado como prova de ausência absoluta.
+5. INSUFFICIENT_SAMPLE não gera score/ranking.
+6. Denominador zero é tratado com status apropriado.
+7. Coverage parcial aparece com N/denominador.
+8. Campo desconhecido não é consumido silenciosamente.
+9. Mudança de versão de cálculo é rastreável.
+10. API, frontend, exportação e AI Coach preservam status e provenance.
+11. Usuário A não consegue consultar métricas do usuário B.
+12. Agregações repetidas são idempotentes.
+
+6.8 Critérios de aceite da Fase 4.2.1
+- 100% das métricas atualmente exibidas têm definição e status documentados.
+- Toda métrica nova tem contrato, unidade, método, amostra e provenance.
+- Null/ausente/não medido não se convertem em zero em nenhuma camada.
+- Métricas sem cobertura suficiente não geram conclusões.
+- Contratos antigos continuam funcionando ou têm migração compatível.
+- RLS/ownership preservados.
+- Testes e gates passam no SHA exato do PR.
+- Existe relatório de lacunas e métricas ainda não suportadas.
+
+======================================================================
+7. FASE 4.2.2 — HEATMAPS POR MAPA, LADO E EVENTO
+======================================================================
+
+7.1 Objetivo
+Construir heatmaps táticos reais e exploráveis, baseados nas posições e eventos efetivamente registrados. O usuário deve conseguir identificar regiões de kills, deaths, dano, presença e utilitários quando esses dados estiverem disponíveis.
+
+7.2 Dor que resolve
+O jogador precisa entender:
+- Onde costuma morrer?
+- Onde consegue eliminações?
+- Em quais regiões recebe ou causa dano?
+- Em quais zonas joga como T ou CT?
+- Onde há concentração de eventos?
+- Quais regiões devem ser revistas no replay?
+O heatmap deve permitir investigação, não apenas exibir uma figura estática.
+
+7.3 Auditoria das coordenadas
+Antes de criar mapas:
+- Identificar campos reais de coordenadas e sua origem.
+- Confirmar unidade, eixo, orientação, origem e precisão.
+- Confirmar se posição corresponde ao jogador observado, killer, vítima, projectile, granada ou efeito.
+- Identificar por mapa quais coordenadas são válidas.
+- Confirmar se existem metadados/transformações já utilizadas.
+- Verificar mudanças de mapa, versões e nomes alternativos.
+- Identificar dados de posição ausentes ou inválidos.
+- Nunca tratar (0,0) como posição padrão para ausência.
+
+Não inferir posições com base em kills, eventos ou estatísticas se a posição não existe.
+
+Contexto atual importante:
+- R5.8.24 foi reportado como produtor de `position` do atacante e `victim_position` no tick da morte. Trate isso como evidência de capacidade do parser, não como prova de que o dado chegou e foi persistido corretamente.
+- Essas duas posições são amostras associadas ao evento de morte. Elas não equivalem a trajetória, presença contínua, ocupação de área, tempo de exposição ou caminho percorrido.
+- Uma posição do atacante no tick da morte pode sustentar uma camada explicitamente rotulada como “posição do atacante no tick da eliminação”, se validada. Não a rotule genericamente como “local da kill” sem declarar essa semântica.
+- A posição da vítima no tick da morte pode sustentar “local da morte/posição da vítima no tick da morte”, se validada.
+- Não interpolar posições entre mortes, rounds ou ticks para fabricar heatmaps de presença. Não suavizar ou extrapolar de forma que sugira presença observada.
+- Se apenas posições de eventos de morte estiverem disponíveis, limitar o produto a camadas desses eventos. “Player presence”, rota, trajetória, exposição temporal e densidade de presença permanecem NOT_MEASURED/UNAVAILABLE até existir fonte contínua permitida e validada.
+- A coleta de uma demo de teste nova deve ser explicitamente autorizada pelo usuário; não reprocessar demos antigas nem fazer backfill como parte implícita deste prompt.
+
+7.4 Transformação por mapa
+Implementar ou reutilizar uma transformação versionada para cada mapa suportado:
+- world coordinates → map coordinates;
+- orientação correta;
+- escala;
+- limites;
+- rotação/espelhamento quando aplicável;
+- versão da transformação;
+- pontos de referência conhecidos para validação.
+
+Cada mapa deve ser validado independentemente. Não aplicar transformação genérica de um mapa a outro.
+
+Se um mapa não tiver transformação confiável, não mostrar heatmap como se estivesse correto. Exibir “mapa ainda não suportado” ou estado equivalente.
+
+7.5 Semântica das camadas
+Defina precisamente cada camada. Exemplos:
+- Deaths: posição da vítima no tick da morte.
+- Kills: posição do jogador que realizou a eliminação, se essa posição estiver disponível e for validada.
+- Damage dealt: posição do atacante ou localização do evento, conforme contrato explicitamente definido.
+- Damage received: posição do jogador que recebeu o dano.
+- Player presence: somente amostras contínuas/temporais realmente produzidas e persistidas, com frequência/amostragem definida e permitida pelo contrato. Posições esparsas em eventos de morte não sustentam esta camada; se L02 impedir a fonte, marcar NOT_MEASURED e não implementar.
+- Utility: posição de lançamento, trajetória, detonação ou efeito — cada uma como camada distinta e somente quando o parser/contrato realmente fornecer o dado. Não derivar trajetória a partir de posição de morte.
+
+Não misturar a posição do atacante com a da vítima sob o mesmo rótulo “local da kill”. A legenda deve declarar o que a camada representa.
+
+7.6 Binning, densidade e normalização
+Definir:
+- tamanho dos bins/células;
+- resolução adequada para desktop e mobile;
+- agregação de eventos;
+- regra de contagem;
+- normalização;
+- tratamento de outliers e coordenadas inválidas;
+- precisão;
+- limites de payload.
+
+Não comparar partidas de duração ou quantidade de rounds diferentes usando apenas contagem bruta sem contextualizar. Quando fizer sentido, oferecer:
+- contagem total;
+- por round elegível;
+- densidade por tempo elegível;
+- percentual da população de eventos.
+Cada opção precisa ter denominador explícito e não deve ser confundida com outra.
+
+Não aplicar suavização que invente presença ou eventos fora das regiões com dados. Se houver kernel density ou interpolação visual, identificar como visualização estimada, sem alterar os fatos agregados.
+
+7.7 Filtros
+Implementar filtros que existam nos dados:
+- partida/período;
+- mapa;
+- lado T/CT;
+- camada/evento;
+- jogador;
+- arma, quando aplicável;
+- round ou intervalo, quando suportado.
+
+Filtros devem ser validados no backend. Não confiar somente na filtragem do frontend.
+
+7.8 Drill-down
+Ao selecionar uma célula/região:
+- mostrar quantidade de eventos;
+- explicar camada e semântica;
+- mostrar coverage;
+- listar eventos/rounds relacionados;
+- oferecer link para ficha do evento e replay quando disponíveis;
+- manter filtros e contexto;
+- nunca mostrar evento de outro usuário.
+
+Se não houver replay 2D nesta etapa, oferecer apenas o drill-down que os dados existentes sustentam. Não criar link quebrado.
+
+7.9 UX e estados
+A interface deve contemplar:
+- loading;
+- empty;
+- partial coverage;
+- insufficient sample;
+- unsupported map;
+- unavailable coordinates;
+- error com retry seguro;
+- filtros sem resultados.
+
+A legenda deve explicar:
+- cor/intensidade;
+- evento representado;
+- posição utilizada;
+- contagem ou normalização;
+- amostra;
+- coverage.
+
+Não depender apenas de cores: disponibilizar lista/descrição textual dos dados selecionados.
+
+7.10 Performance
+- Não enviar todos os ticks de uma demo grande ao browser.
+- Fazer agregação server-side ou no pipeline já adotado, conforme arquitetura.
+- Usar paginação e limites.
+- Indexar filtros usados frequentemente, após análise de query plan.
+- Evitar N+1.
+- Cache deve respeitar owner, match, filtros e versão do algoritmo.
+- Não criar agregação permanente se cálculo sob demanda for suficiente; justificar escolha com benchmarks.
+- Testar partida grande e múltiplas partidas.
+- Registrar latência, payload e custo.
+
+7.11 Critérios de aceite da Fase 4.2.2
+- Transformações de mapas suportados validadas por pontos de referência.
+- Camadas de presença/rota/tempo de exposição não são consideradas entregues com base em posições esparsas de eventos de morte; devem permanecer não medidas se a fonte contínua não existir e não for permitida.
+- A posição do atacante e da vítima no tick da morte só pode alimentar camadas com rótulos semanticamente precisos após prova de persistência ponta a ponta.
+- Filtros CT/T só podem ser habilitados com side por jogador/round validado; reutilizar PR #264 se integrado, sem duplicar sua implementação.
+- Cada camada usa posição e semântica documentadas.
+- Coordenadas ausentes/inválidas não aparecem em (0,0).
+- T/CT e filtros retornam conjuntos corretos.
+- Heatmap distingue contagem, densidade e normalização.
+- Coverage e N estão disponíveis.
+- Clique na região abre eventos correspondentes.
+- Ownership/RLS bloqueiam acesso cruzado.
+- Payload e latência atendem limites definidos a partir de baseline.
+- Estados empty/partial/error/unsupported funcionam.
+- Testes cobrem mapas, lados, coordenadas inválidas, dados parciais e partida grande.
+
+======================================================================
+8. MÓDULOS A + B — ESCOPO DESTE PACOTE
+======================================================================
+
+MÓDULO A — INTELIGÊNCIA VISUAL DO MAPA
+Implementar nesta entrega:
+- base de métricas e provenance necessária aos eventos espaciais;
+- mapa e transformação de coordenadas;
+- heatmaps por evento, mapa e lado;
+- filtros;
+- agregações;
+- coverage;
+- drill-down de eventos.
+
+Preparar, sem antecipar implementação de fases posteriores:
+- navegação de heatmap para replay 2D;
+- conexão futura com diagnóstico de mortes;
+- comparação espacial histórica;
+- comparação com dados profissionais somente se fonte/licença e coorte forem aprovadas em etapa posterior.
+
+MÓDULO B — DIAGNÓSTICO DE MORTES E DECISÕES
+Nesta entrega, implementar apenas a fundação necessária:
+- identificar campos e eventos necessários para contexto de morte;
+- mapear disponibilidade de killer, victim, posições, tick, round, arma, side e jogadores vivos;
+- documentar lacunas e provenance;
+- garantir que as métricas de mortes possam ser filtradas e localizadas;
+- preparar referências estáveis para a Fase 4.2.3.
+
+Não implementar ainda o classificador completo de exposição, isolamento, falta de trade, re-peek, rotação ou “deveria ter feito”. Esses diagnósticos serão construídos na Fase 4.2.3 com regras versionadas e testes específicos. Não criar conclusões heurísticas prematuras.
+
+Dependência CT/T e resultado por round:
+- Antes de implementar qualquer filtro/segmentação por CT/T, audite PR #264 e o estado real do contrato de round.
+- Se #264 já estiver merged e validado, reutilize exatamente a fonte de verdade e seus testes; não replique tabelas, funções ou cálculos.
+- Se #264 não estiver merged, não invente um side alternativo nem presuma que a semântica está pronta. Documente a dependência, implemente apenas partes independentes e mantenha o filtro indisponível/partial até a fonte estar validada.
+- O vencedor do round não é sinônimo de lado do jogador. Preserve separadamente team identity, player side per round, round winner e end reason, quando cada campo existir.
+- Não usar side inferido para preencher eventos sem autoria ou contexto.
+
+======================================================================
+9. OITO FUNCIONALIDADES DIFERENCIAIS COMPETITIVAS
+======================================================================
+
+As oito funcionalidades abaixo fazem parte do objetivo global da Fase 4.2. Neste primeiro prompt, implemente somente o que pertence às Fases 4.2.1/4.2.2 e prepare os dados/contratos para as próximas entregas. Não declarar as oito concluídas agora.
+
+DIFERENCIAL 1 — “ONDE ESTOU PERDENDO ROUNDS?”
+O produto deve futuramente identificar padrões que contribuem para perdas de rounds:
+- mortes em situações evitáveis, quando houver evidência;
+- falta de trade;
+- posicionamento desfavorável;
+- uso ineficiente de utilitários;
+- decisões econômicas;
+- perda de vantagem numérica;
+- falhas de retake/clutch;
+- padrões por mapa, lado e contexto.
+
+Requisitos:
+- correlacionar eventos e resultado do round;
+- distinguir correlação de causalidade;
+- mostrar evidências e amostras;
+- não atribuir a derrota a um único evento sem fundamento;
+- permitir drill-down até round/tick.
+
+Nesta entrega: preparar catálogo, eventos, coordenadas, side, round e coverage necessários.
+
+DIFERENCIAL 2 — “MEU POSICIONAMENTO VERSUS JOGADORES PROFISSIONAIS”
+Futuramente comparar posicionamento do jogador com referência profissional:
+- por mapa, lado, região, função/role e situação;
+- com coortes comparáveis;
+- por distribuições e padrões, não por um ponto ideal universal;
+- indicando origem, licença, versão e tamanho da amostra.
+
+Requisitos:
+- não coletar ou usar demos sem autorização/licença adequada;
+- não misturar roles, lados, mapas ou situações incompatíveis;
+- exibir limitações e diferenças de contexto;
+- se dataset válido não existir, manter o comparativo indisponível.
+
+Nesta entrega: estruturar semântica espacial e transformação por mapa que permita comparação futura, sem importar dataset profissional por conta própria.
+
+DIFERENCIAL 3 — “MEU PIOR HÁBITO”
+Futuramente detectar hábitos recorrentes:
+- mortes repetidas na mesma região/contexto;
+- exposição ou re-peek recorrente;
+- isolamento;
+- falta de trade;
+- uso inadequado de utilitário;
+- padrões de mira/movimento;
+- decisões econômicas.
+
+Requisitos:
+- exigir recorrência e amostra mínima;
+- não transformar um evento isolado em hábito;
+- identificar regra, versão, confiança calibrada e evidências;
+- permitir contestação/feedback.
+
+Nesta entrega: permitir segmentação espacial e coverage confiáveis.
+
+DIFERENCIAL 4 — “COMO EU DEVERIA TER JOGADO?”
+Futuramente oferecer revisão contextual:
+- o que aconteceu;
+- quais informações estavam disponíveis;
+- alternativas plausíveis;
+- consequências possíveis;
+- o que é fato, cálculo ou recomendação inferida.
+
+Requisitos:
+- não apresentar alternativa hipotética como fato;
+- não sugerir ação sem contexto suficiente;
+- vincular a recomendação a round/tick/eventos;
+- explicar incerteza.
+
+Nesta entrega: preparar referências de evento e contexto espacial.
+
+DIFERENCIAL 5 — “COMPARAÇÃO ENTRE VERSÕES DE MIM MESMO”
+Futuramente comparar janelas de partidas:
+- últimas 5/10/20/50 partidas, quando houver N suficiente;
+- por mapa, side, arma, role e contexto;
+- mesmas definições e versões de métrica;
+- mudanças absolutas/relativas com amostra e limitações.
+
+Requisitos:
+- não comparar métodos incompatíveis;
+- não completar janelas artificialmente;
+- não declarar evolução por ruído ou amostra insuficiente.
+
+Nesta entrega: catálogo versionado e dimensões consistentes.
+
+DIFERENCIAL 6 — “MAPA DE OPORTUNIDADES PERDIDAS”
+Futuramente combinar mapa, eventos, mortes, duelos e utilitários para mostrar:
+- regiões recorrentes de risco;
+- oportunidades de trade;
+- posições expostas;
+- zonas de utilitário ineficiente;
+- padrões espaciais associados a rounds perdidos.
+
+Requisitos:
+- mapa sempre declara a camada e sua fonte;
+- separar fato de inferência;
+- exigir coverage suficiente;
+- permitir drill-down para evento.
+
+Nesta entrega: implementar heatmaps e drill-down com dados comprovados.
+
+DIFERENCIAL 7 — “AI COACH COM EVIDÊNCIAS”
+O Coach deve usar dados estruturados e rastreáveis:
+- citar partida, mapa, round, tick e métrica;
+- separar observado, derivado e inferido;
+- não inventar métricas;
+- reconhecer quando dados não são medidos;
+- explicar amostra e coverage.
+
+Nesta entrega: contratos devem preservar status/provenance até a camada que alimentará o Coach. Não mudar provider nem modelo.
+
+DIFERENCIAL 8 — “REVISÃO MENSAL AUTOMÁTICA”
+Futuramente gerar revisão periódica:
+- evolução por métricas comparáveis;
+- melhores/piores padrões;
+- mapas e lados;
+- objetivos e treino;
+- limitações de amostra;
+- links para eventos e partidas.
+
+Requisitos:
+- usar apenas dados disponíveis e comparáveis;
+- não afirmar melhoria sem evidência;
+- não executar geração/entrega externa sem controles e preferências;
+- reutilizar infraestrutura existente de notificações quando chegar a fase correspondente.
+
+Nesta entrega: preparar catálogo, versão de métricas e coverage para histórico confiável.
+
+======================================================================
+10. REQUISITOS DE FRONTEND E EXPERIÊNCIA
+======================================================================
+
+- Seguir o design system e padrões de navegação existentes.
+- Não redesenhar áreas que não fazem parte do escopo.
+- Integrar heatmaps de forma coerente com Dashboard/X-Ray/partida, evitando duplicação.
+- Mostrar claramente mapa, partida, lado, camada, unidade, N e coverage.
+- Preservar filtros ao navegar entre heatmap e drill-down.
+- Criar estados de carregamento e falha sem piscar valores falsos.
+- Não exibir score quando a métrica não for suportada.
+- Componentes devem ser responsivos.
+- Evitar dependências novas se a biblioteca existente atender.
+- Se for necessária biblioteca de mapas, avaliar manutenção, licença, bundle size, acessibilidade, renderização e segurança antes de adicionar.
+- Não embutir chaves de API no frontend.
+- Não expor coordenadas ou dados de partidas de outros usuários.
+
+Internacionalização obrigatória:
+- pt-BR
+- pt-PT
+- en
+- es
+- fr
+
+Todas as strings novas devem utilizar o mecanismo i18n existente. Testar pluralização, unidades, textos longos e layouts estreitos.
+
+======================================================================
+11. BACKEND, PERSISTÊNCIA E CONTRATOS
+======================================================================
+
+Não crie nomes definitivos de tabelas ou endpoints com base neste prompt. Primeiro descubra os existentes.
+
+Para cada novo contrato ou extensão, documente:
+- propósito;
+- schema de entrada e saída;
+- autenticação;
+- autorização/ownership;
+- filtros e limites;
+- paginação;
+- erros;
+- provenance;
+- versão do método;
+- coverage;
+- idempotência;
+- impacto de performance;
+- testes.
+
+Persistência:
+- usar migrations aditivas e versionadas;
+- índices baseados em query plans;
+- constraints coerentes;
+- RLS explícita;
+- políticas de retenção e exclusão compatíveis com o sistema;
+- evitar duplicar dados brutos;
+- preferir agregações compactas quando necessário;
+- não armazenar dados derivados sem justificar o benefício.
+
+Se a arquitetura atual calcular métricas por jobs, manter idempotência, retries, leases e estados de processamento já existentes. Não introduzir pipeline concorrente que duplique o processamento.
+
+======================================================================
+12. TESTES E GATES OBRIGATÓRIOS
+======================================================================
+
+Executar e ampliar conforme necessário:
+- lint;
+- typecheck;
+- unit tests;
+- parser/worker contract tests;
+- integration tests;
+- database migration tests;
+- RLS/ownership negative tests;
+- API tests;
+- frontend component tests;
+- i18n tests;
+- E2E;
+- performance tests;
+- quality gates existentes;
+- H.3-E e runtime identity checks.
+
+Casos negativos obrigatórios:
+- coordenada null;
+- coordenada ausente;
+- coordenada fora dos limites;
+- mapa sem transformação;
+- lado ausente;
+- jogador não identificado;
+- evento sem autoria;
+- evento duplicado;
+- round incompleto;
+- tick inválido;
+- coverage parcial;
+- denominador zero;
+- partida de grande volume;
+- usuário tentando acessar dados de outro usuário;
+- falha de agregação/cache;
+- retry duplicado.
+
+Nunca remova um teste que falha para conseguir CI verde. Investigue a causa raiz. Se um teste estiver obsoleto, substitua por teste equivalente ou superior e justifique no PR.
+
+======================================================================
+13. PERFORMANCE, CUSTO E OBSERVABILIDADE
+======================================================================
+
+Estabeleça baseline antes de otimizar. Registre:
+- tempo de resposta;
+- tamanho de payload;
+- tempo de agregação;
+- queries executadas;
+- custo estimado;
+- volume de eventos;
+- taxa de erro;
+- cache hit/miss;
+- latência p50/p95 quando houver instrumentação.
+
+Requisitos:
+- evitar carregar demo completa no browser;
+- evitar N+1;
+- limitar filtros e intervalos;
+- usar paginação;
+- controlar concorrência;
+- não criar chamadas desnecessárias ao AI Coach;
+- não enviar dados brutos excessivos ao OpenRouter;
+- não aumentar custo de parser sem justificativa;
+- não manter logs com dados pessoais desnecessários.
+
+Adicionar logs estruturados sem secrets, com correlation IDs e identificadores técnicos seguros. Monitorar falhas de transformação de mapa, coordenadas inválidas, coverage baixa e erros de autorização.
+
+======================================================================
+14. PLANO DE IMPLEMENTAÇÃO E PRs
+======================================================================
+
+Organize o trabalho em PRs pequenos e logicamente isolados. Exemplo de decomposição (ajuste após auditoria):
+1. Baseline read-only e inventário de métricas.
+2. Catálogo/contratos/provenance e compatibilidade.
+3. Testes de cobertura/null/zero e integração com consumidores.
+4. Auditoria e transformação de coordenadas por mapa.
+5. Contratos/read model para agregação espacial.
+6. API/queries protegidas e índices.
+7. Heatmap UI e filtros.
+8. Drill-down de eventos.
+9. Testes E2E, performance, segurança e i18n.
+10. Release e verificação pós-deploy.
+
+Não é obrigatório criar exatamente dez PRs. Agrupe quando isso reduzir risco sem tornar revisão difícil. Não misture alterações independentes em um PR gigante.
+
+Para cada PR:
+- escopo e não-escopo;
+- arquivos alterados;
+- migrations;
+- risco;
+- testes;
+- evidência;
+- rollback;
+- impacto de deploy;
+- status dos gates.
+
+Faça merge apenas quando todos os checks obrigatórios estiverem verdes e a revisão técnica indicar que o PR preserva os contratos. Corrija falhas antes de prosseguir.
+
+======================================================================
+15. PUBLICAÇÃO EM PRODUÇÃO
+======================================================================
+
+A autonomia concedida inclui deploy e publicação, mas somente após:
+- CI completo verde no SHA exato;
+- testes de contrato e segurança aprovados;
+- migrations revisadas, aditivas e compatíveis;
+- RLS/ownership validados;
+- performance validada;
+- parser identity e H.3-E preservados;
+- dependências, lockfile, build identity e attestation do parser preservados; não atualizar nem desfixar dependências oportunisticamente neste pacote; qualquer ajuste de reprodutibilidade deve ser isolado, testado e versionado em PR próprio ou escopo claramente justificado;
+- rollback documentado;
+- confirmação de que não há alteração concorrente ou incompatível.
+
+Após deploy:
+- confirmar SHA efetivamente publicado;
+- confirmar ambiente/domínio;
+- confirmar migrations aplicadas;
+- confirmar health/version e runtime identity;
+- executar smoke tests autorizados;
+- testar fluxo real com conta/dataset de teste;
+- se for necessária validação com demo nova, solicitar ao usuário o envio de uma única demo de teste autorizada; não reprocessar demos históricas nem executar backfill;
+- validar separadamente a persistência de `position` e `victim_position`, incluindo autoria, tick, round, mapa, coordenadas válidas, cobertura e ausência de duplicação;
+- validar que usuários existentes continuam acessando funcionalidades anteriores;
+- registrar evidências e limitações.
+
+CI verde não prova produção. Deploy concluído não prova E2E. Não declarar “100% funcionando” sem demonstrar os fluxos testados e seus limites.
+
+Se houver falha pós-deploy:
+- interromper rollout quando seguro;
+- avaliar rollback;
+- não apagar dados;
+- preservar evidências;
+- corrigir causa raiz;
+- repetir gates e validações.
+
+======================================================================
+16. CHECKPOINTS E RELATÓRIO DE EXECUÇÃO
+======================================================================
+
+Manter um relatório de execução atualizado no repositório, no local já adotado pelo projeto.
+
+Checkpoint C0 — Entrada:
+- status da Fase 4.1;
+- SHA main;
+- deploy e ambiente;
+- parser/worker;
+- migrations;
+- H.3-E;
+- gates e baseline de testes.
+
+Checkpoint C1 — Descoberta:
+- arquivos e contratos existentes;
+- métricas inventariadas;
+- cobertura;
+- gaps;
+- tabelas/RPCs/endpoints;
+- riscos.
+
+Checkpoint C2 — Plano:
+- PRs;
+- migrations;
+- sequência;
+- dependências;
+- testes;
+- rollback.
+
+Checkpoint C3 — Implementação:
+- commits;
+- arquivos;
+- contratos;
+- migrations;
+- decisões.
+
+Checkpoint C4 — Validação:
+- workflows;
+- testes;
+- RLS;
+- performance;
+- i18n;
+- evidências.
+
+Checkpoint C5 — Release:
+- SHA;
+- deploy;
+- runtime identity;
+- migrations;
+- smoke tests.
+
+Checkpoint C6 — Fechamento:
+- o que está pronto;
+- o que está parcialmente pronto;
+- o que não é medido;
+- limitações;
+- ações manuais;
+- próximo prompt/fase.
+
+O relatório final deste prompt deve conter:
+1. Resumo executivo.
+2. Baseline antes/depois.
+3. Fase 4.2.1: entregas e evidências.
+4. Fase 4.2.2: entregas e evidências.
+5. Módulos A e B: status.
+6. Estado dos oito diferenciais competitivos após este pacote.
+7. PRs/commits/merges.
+8. Migrations e estado do banco.
+9. Railway/parser e prova de que a identidade foi preservada.
+10. Testes/workflows com links e resultados.
+11. Deploy/produção e SHA servido, se publicado.
+12. Métricas suportadas, parciais, não medidas e indisponíveis.
+13. Performance/custos.
+14. Problemas encontrados e causa raiz.
+15. Ações manuais necessárias, com passo a passo.
+16. Riscos residuais.
+17. Rollback.
+18. Confirmação explícita de que nenhuma mensagem/prompt foi enviada automaticamente ao Lovable.
+19. Recomendação para Prompt 2 de 5.
+20. Estado de PRs #263/#264, SHAs, checks, merge e deploy, com evidências.
+21. Prova separada de parser → bridge → persistência → API para `position` e `victim_position`.
+22. Declaração explícita de quais camadas espaciais são observadas, parciais, não medidas ou bloqueadas por L02/L03.
+
+======================================================================
+17. CONDIÇÕES DE CONCLUSÃO
+======================================================================
+
+Este Prompt 1 só está concluído quando:
+
+FASE 4.2.1:
+- catálogo/inventário de métricas implementado ou estendido;
+- status/provenance/coverage preservados de ponta a ponta;
+- null ≠ zero provado por testes;
+- métricas existentes mapeadas;
+- contratos compatíveis;
+- ownership/RLS validados;
+- documentação de lacunas atualizada.
+
+FASE 4.2.2:
+- mapas suportados e transformações validadas;
+- heatmaps de camadas realmente disponíveis;
+- filtros por mapa/side/evento;
+- agregações eficientes;
+- coverage/amostra exibidos;
+- drill-down funcional;
+- estados de UI completos;
+- testes de segurança/performance/i18n/E2E aprovados.
+
+MÓDULOS:
+- Módulo A entregue dentro do escopo.
+- Módulo B preparado com dados e contratos, sem antecipar diagnóstico completo da Fase 4.2.3.
+
+PROTEÇÃO:
+- funcionalidades existentes preservadas;
+- parser R5.8.24/versão vigente e H.3-E preservados;
+- OpenRouter e modelo atual preservados;
+- sem fallback OpenAI;
+- sem prompt automático ao Lovable;
+- sem reprocessamento real não autorizado;
+- sem integração indevida com Tutor LMS.
+
+Não marcar como concluído se houver falha crítica, gate ignorado, RLS sem teste, métrica enganosa ou deploy não verificado.
+
+======================================================================
+18. ORIENTAÇÃO FINAL AO CLAUDE
+======================================================================
+
+Execute este pacote de forma autônoma, cuidadosa e contínua.
+
+Não peça confirmação para tarefas técnicas rotineiras dentro do escopo autorizado. Investigue, implemente, teste, corrija, faça merge e publique quando os critérios forem cumpridos. Se houver uma tarefa manual, forneça instruções exatas ao usuário e continue o restante.
+
+Pesquise fontes externas quando necessário para resolver problemas ou escolher a implementação mais robusta. Priorize documentação oficial, código-fonte, issues verificáveis e relatos técnicos relevantes. Não adote soluções de fóruns sem validar compatibilidade, segurança e manutenção. Registre as fontes importantes no PR ou relatório.
+
+Preserve integralmente tudo que já funciona. Não enfraqueça gates para acelerar. Não invente dados. Não transforme ausência em zero. Não esconda falhas. Não envie prompts automaticamente ao Lovable.
+
+Conclua as Fases 4.2.1 e 4.2.2 com qualidade de produção, documentação, evidências e rollback. Ao terminar, entregue o relatório C6 e deixe o projeto preparado para o PROMPT 2 DE 5, sem começar as fases seguintes antes de concluir e documentar este pacote.
+
+FIM DO PROMPT MESTRE 1 DE 5

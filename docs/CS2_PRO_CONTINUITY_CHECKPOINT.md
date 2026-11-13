@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                        |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Missão de evolução estrutural: Marcos 0 e 1 concluídos e validados; 4.2.1 `metric-contract-v1` (#266) merged; Marco 2 camada A (#267) merged e no ar no parser (release R5.8.24 em curso)    |
-| Etapa atual                        | Release R5.8.24: PR de re-pin (`release/r5-8-24-repin`) + migration; secrets do app; atestação; H.3-E                                                                                        |
-| Última etapa concluída             | Deploy controlado do parser `4badf606` (Railway `0ff96670`, SUCCESS; `/version` revision = semantic = build = `git:4badf606…`)                                                               |
-| Última operação concluída          | Variáveis `PARSER_REVISION`/`PARSER_BUILD_REVISION` com deploys ignorados → um único deploy; reparse local da demo autorizada com as dependências do build novo (saída idêntica)             |
-| Operações em andamento             | CI do PR de re-pin R5.8.24; o dono recria as três secrets e publica o app                                                                                                                    |
-| Processos em execução              | Nenhum                                                                                                                                                                                       |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                      |
-| Branch ativa                       | `main` (+ `release/r5-8-24-repin`)                                                                                                                                                           |
-| Último commit confirmado em `main` | `4badf6060e4e69a589179567f488f5d58a4a58dc` (merge do #267). #266 → `4c6f5067`; #265 → `f4460123`; #264 → `e60a70f6`                                                                          |
-| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                                 |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                          |
-| **Próxima ação exata**             | Concluir R5.8.24 (merge do re-pin, aplicar migration `20261112090000`, atestação VERIFIED, H.3-E PASS); depois validar uma demo nova com posições e seguir 4.2.1 restante / Marco 2 camada B |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmark spatial-v1; deploy `0ff96670` (não fazer outro deploy do parser)                                          |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                     |
+| Item                               | Valor                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | PM1 (Fases 4.2.1 + 4.2.2, Módulos A e B) em execução. Especificação v1.1 e divisão dos 5 Prompts Mestres confirmadas pelo dono (2026-11-12)                                      |
+| Etapa atual                        | PM1 — PR A (baseline, v1.1, `PARTIAL`); depois PRs B–D (módulo espacial, read model, UI). Detalhe em `docs/pm1/PM1_EXECUTION_REPORT.md`                                          |
+| Última etapa concluída             | Deploy controlado do parser `4badf606` (Railway `0ff96670`, SUCCESS; `/version` revision = semantic = build = `git:4badf606…`)                                                   |
+| Última operação concluída          | Variáveis `PARSER_REVISION`/`PARSER_BUILD_REVISION` com deploys ignorados → um único deploy; reparse local da demo autorizada com as dependências do build novo (saída idêntica) |
+| Operações em andamento             | Aguardando o dono enviar uma demo nova autorizada pela conta de teste (prova ponta a ponta das posições)                                                                         |
+| Processos em execução              | Nenhum                                                                                                                                                                           |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                          |
+| Branch ativa                       | `main` (+ `release/r5-8-24-repin`)                                                                                                                                               |
+| Último commit confirmado em `main` | `4badf6060e4e69a589179567f488f5d58a4a58dc` (merge do #267). #266 → `4c6f5067`; #265 → `f4460123`; #264 → `e60a70f6`                                                              |
+| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                     |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                              |
+| **Próxima ação exata**             | Seguir `docs/pm1/PM1_EXECUTION_REPORT.md` §C2 (próximo PR pendente)                                                                                                              |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmark spatial-v1; deploy `0ff96670` (não fazer outro deploy do parser)                              |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                         |
 
 ## 1. Identificação
 
