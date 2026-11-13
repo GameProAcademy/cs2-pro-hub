@@ -51,16 +51,16 @@ Repositório `LaihoE/demoparser`, clonado em 2026-11-13. A tag `v0.42.2` é o `H
 
 ### 2.2 Issues abertas relevantes (2026-11-13)
 
-| Issue      | Tema                                                                                                 | Família     | Reproduzido no CS2 PRO?                                                                                                                                                                                                                           |
-| ---------- | ---------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #330       | `UnknownDemoCmd(34)` em demos FACEIT depois de um patch                                              | FACEIT      | **Não**: a demo FACEIT de 2026 (patch 14196) abre e lê até o fim em 0.42.2                                                                                                                                                                        |
-| #367       | `MalformedMessage` por string não UTF-8 em game event (FACEIT CS2)                                   | FACEIT      | **Não** nesta fixture. #364 trata o caso (lossy fallback); sem fixture que reproduza                                                                                                                                                              |
-| #365       | Atualizações de string table depois do primeiro FullPacket descartadas; entradas sem chave mal lidas | todas       | **Provável** na GC Cache: `parse_player_info` devolve 0 linhas com 10 jogadores presentes nos ticks (HIPÓTESE ligando à #365; o cruzamento com demoinfocs-golang v4.5.1 foi tentado, mas esse parser não lê as demos de 2026, ver benchmark §2.1) |
-| #345       | `usercmd_subtick_moves` ausente em `parse_ticks` (0.42.0)                                            | —           | Não se aplica em 0.42.2: a coluna existe e traz listas de 0 a 4 entradas (FACEIT/GC/BLAST)                                                                                                                                                        |
-| #358       | Bots não resolvidos em eventos/ticks                                                                 | —           | Sem fixture com bots: NÃO TESTADO                                                                                                                                                                                                                 |
-| #329, #302 | POV: `IllegalPathOp` / parte do parser `None`                                                        | POV         | Sem fixture POV: NÃO TESTADO                                                                                                                                                                                                                      |
-| #321, #339 | `EntityNotFound` (patches 14152 e 14165)                                                             | Valve/PRACC | Sintoma igual ao das demos de 2026 em 0.42.0. Corrigido para o build 14197 pela #375; outros builds: NÃO TESTADO                                                                                                                                  |
-| #359       | `IllegalPathOp` em GOTV de deathmatch                                                                | DM          | NÃO TESTADO                                                                                                                                                                                                                                       |
+| Issue      | Tema                                                                                                 | Família     | Reproduzido no CS2 PRO?                                                                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #330       | `UnknownDemoCmd(34)` em demos FACEIT depois de um patch                                              | FACEIT      | **Não**: a demo FACEIT de 2026 (patch 14196) abre e lê até o fim em 0.42.2                                                                                 |
+| #367       | `MalformedMessage` por string não UTF-8 em game event (FACEIT CS2)                                   | FACEIT      | **Não** nesta fixture. #364 trata o caso (lossy fallback); sem fixture que reproduza                                                                       |
+| #365       | Atualizações de string table depois do primeiro FullPacket descartadas; entradas sem chave mal lidas | todas       | **Provável** na GC Cache: `parse_player_info` devolve 0 linhas com 10 jogadores presentes nos ticks **Não é a #365.** Causa confirmada em código, ver §3.3 |
+| #345       | `usercmd_subtick_moves` ausente em `parse_ticks` (0.42.0)                                            | —           | Não se aplica em 0.42.2: a coluna existe e traz listas de 0 a 4 entradas (FACEIT/GC/BLAST)                                                                 |
+| #358       | Bots não resolvidos em eventos/ticks                                                                 | —           | Sem fixture com bots: NÃO TESTADO                                                                                                                          |
+| #329, #302 | POV: `IllegalPathOp` / parte do parser `None`                                                        | POV         | Sem fixture POV: NÃO TESTADO                                                                                                                               |
+| #321, #339 | `EntityNotFound` (patches 14152 e 14165)                                                             | Valve/PRACC | Sintoma igual ao das demos de 2026 em 0.42.0. Corrigido para o build 14197 pela #375; outros builds: NÃO TESTADO                                           |
+| #359       | `IllegalPathOp` em GOTV de deathmatch                                                                | DM          | NÃO TESTADO                                                                                                                                                |
 
 ### 2.3 Correção de registro (R5.8.25)
 
@@ -130,6 +130,24 @@ Todos os resultados são VALIDADO EM TESTE (sandbox), exceto o da `-b`, que tamb
 - **Header:** nenhuma fixture expõe tickrate, `playback_ticks` ou `network_protocol` pelo `parse_header`
   (LIMITAÇÃO; a pipeline avisa `tickrate_unavailable` e não deriva durações).
 
+### 3.3 GC Cache: por que não há jogadores (causa confirmada em código)
+
+- O `parse_player_info` do demoparser2 0.42.2 monta a lista **só** a partir da mensagem de fim de partida
+  `CCSUsrMsg_EndOfMatchAllPlayersData` (`LaihoE/demoparser@dd71c09`, `src/parser/src/second_pass/other_netmessages.rs:55-83`;
+  `src/python/src/lib.rs:452-480`, que lê `output.player_md`).
+- A GC Cache não tem essa mensagem: termina sem `cs_win_panel_match` e sem o fluxo de encerramento. Os 10 jogadores
+  existem nos ticks (`CCSPlayerController`).
+- O demoparser2 calcula um `roster` a partir dos controllers, descrito no código como "fallback when `player_md` is
+  empty" (`parse_demo.rs:35-39`), mas **não o expõe** pela API Python.
+- Logo, o `PLAYER-COVERAGE` do CS2 PRO falha porque a fonte única de inventário de jogadores depende de uma mensagem
+  que só existe em partidas encerradas normalmente.
+- A demo não é inválida. A semântica correta é: parse OK, inventário de jogadores pela fonte de fim de partida
+  `NOT_PRESENT_IN_DEMO`.
+- Correção possível (PR futuro, com desenho próprio): usar os controllers como inventário alternativo, com proveniência
+  `LIVE_CONTROLLER_ROSTER` declarada, identidade só por SteamID (nunca por nickname) e cobertura `PARTIAL`. Hoje o
+  bloqueio é a resposta segura. Não foi implementado.
+- Tentativa de cruzamento independente: o demoinfocs-golang v4.5.1 não lê essa demo (benchmark §2.1).
+
 ### 3.2 Performance (sandbox, parse completo da pipeline)
 
 | Fixture           | Tamanho  | Tempo   | RSS de pico |
@@ -175,7 +193,7 @@ publicado (`scripts/ci/h3e_activation_gate.py`, `evaluate_runtime`). Consequênc
    - Sem isso, FACEIT e GamersClub reais são bloqueadas em produção.
    - Exige release controlado do worker (`raw_evidence.py` é blob atestado), re-pin e publicação do app **pelo
      dono**.
-2. **PR F (cont.) — GC Cache.** Investigar o `PLAYER-COVERAGE` (0 linhas de `player_info`, hipótese da #365) e o
+2. **PR F (cont.) — GC Cache.** A causa do `PLAYER-COVERAGE` está em §3.3. Falta desenhar um inventário alternativo com proveniência explícita e investigar o
    `round_end_unavailable`. Não aprovar a demo afrouxando gates.
 3. **PR B — harness.** Transformar `probe.py`, `probe2.py` e `pipeline.py` (scratch desta sessão) em ferramenta
    versionada em `services/cs2-demo-parser/compatibility/`, com validação de hash e saída sem identidades.
