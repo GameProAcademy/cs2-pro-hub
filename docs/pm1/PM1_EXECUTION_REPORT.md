@@ -101,6 +101,13 @@ Decisões:
 - Mapas sem validação com posições reais aparecem como "mapa ainda não validado", nunca com um heatmap possivelmente errado (§7.4 do PM1).
 - Sem feature flag: o projeto não tem mecanismo de flags (risco 12 do checkpoint). A liberação é controlada pelo estado de validação de cada mapa e pela cobertura dos dados.
 
-## C3–C6
+## C3 — Implementação
 
-Preenchidos à medida que os PRs avançam (abaixo).
+| PR       | Conteúdo                                                                                                                                                                                                                                                                                                                                                | Estado |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| #270 (A) | Especificação v1.1 e PM1 registrados; `metric-contract-v1.1` com `PARTIAL` (4 testes, 1 mutante); este baseline                                                                                                                                                                                                                                         | CI     |
+| B        | `src/lib/spatial/maps.ts` (`radar-transform-v1`: 10 mapas com fonte e SHA-256; dust2 VALIDATED por pontos de referência); `src/lib/spatial/heatmap.ts` (`spatial-heatmap-v1`: camadas DEATHS/KILLS, exclusões por motivo, envelope com cobertura, por round, bins 32×32, limite de payload); 26 testes, 3 mutantes; `docs/reference/SPATIAL_HEATMAP.md` | CI     |
+
+## C4–C6
+
+Preenchidos à medida que os PRs avançam.
