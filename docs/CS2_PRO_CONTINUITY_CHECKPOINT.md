@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-13 (America/Sao_Paulo), PM6 — gate de reconciliação pós-PM1 · por: sessão Claude
+Atualizado em: 2026-11-13 (America/Sao_Paulo), PM6 — release R5.8.26 (PR F) concluída · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM6** (matriz de compatibilidade de demos), executado depois do PM1 e antes do PM2 por ordem do dono (2026-11-13). PM1 concluído e validado em produção                                                                                                                                                                                                                                         |
-| Etapa atual                        | PM6: PR A (#278) e PR B (#280) mergeados; **PR F (#279) pronto e verde 7/7 no head `4d702b54`, sem merge de propósito** até um release completo do worker                                                                                                                                                                                                                                         |
-| Última etapa concluída             | Corpus PM6 analisado em sandbox: 6 demos. Valve 2024 e BLAST APPROVED; **FACEIT e GamersClub reais BLOCKED** na auditoria RAW por eventos não revisados (`show_survival_respawn_status`, `player_chat`). Ver `docs/pm6/PM6_BASELINE_RESEARCH_MATRIX.md`                                                                                                                                           |
-| Última operação concluída          | Gate de reconciliação PM6 (read-only): Railway/`/version`/checks/checkpoint/bundle; resultado no documento acima                                                                                                                                                                                                                                                                                  |
-| Operações em andamento             | Nenhuma em produção. #279 aguarda o release. Os conectores Railway e Lovable estavam indisponíveis (502) em 2026-11-13                                                                                                                                                                                                                                                                            |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                                                                                                                                                                                            |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                                                                                                                                                                           |
-| Branch ativa                       | `main`; `fix/pm6-f-faceit-gc-event-review` (#279, aberto)                                                                                                                                                                                                                                                                                                                                         |
-| Último commit confirmado em `main` | `3b7680b9` (merge do #280); #278 → `0bdb2719`; #277 → `e2d2bdd6`. O worker em `main` é idêntico ao publicado (`c3593d48`): nenhum dos dois PRs toca em `services/cs2-demo-parser`                                                                                                                                                                                                                 |
-| Build validado em produção         | App: `67655b5a`, validado em 2026-11-13 com a demo autorizada; `e2d2bdd6` publicado (`879daee6`), mas o SHA do bundle não é verificável (reconciliação §E). Worker: `c3593d48` (Railway `d57b9089`, demoparser2 0.42.2, `/version` conferido 2026-11-13 14:48Z)                                                                                                                                   |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                                                                                                                                                                                               |
-| **Próxima ação exata**             | Com os conectores Railway/Lovable de volta: release do #279, como na R5.8.25, nesta ordem: fila ociosa → merge → variáveis com skipDeploys → 1 deploy → `/version` → PR de re-pin (blob `raw_evidence.py`) → migration → o dono troca as secrets e publica → atestação → H.3-E. Depois: inventário alternativo de jogadores para demos sem mensagem de fim de partida (GC Cache, PM6 matriz §3.3) |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmarks spatial-v1/R5.8.25; deploy `d57b9089`; migration `20261113040000`; validação da demo `furia-vs-vitality-m2-dust2` (job `aa968c9e`); gate de reconciliação PM6                                                                                                                                                 |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                                                                                                                                                                          |
+| Item                               | Valor                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **PM6** (matriz de compatibilidade de demos), executado depois do PM1 e antes do PM2 por ordem do dono (2026-11-13). PM1 concluído e validado em produção                                                                                                                                                                                                         |
+| Etapa atual                        | PM6: PR A (#278), PR B (#280) e **PR F (#279) liberado em produção como R5.8.26** (re-pin #282). Próximo: inventário alternativo de jogadores (GC Cache)                                                                                                                                                                                                          |
+| Última etapa concluída             | Release R5.8.26: merge `7e84f6da` → deploy Railway `2f0e6812` → `/version` nos dois hosts → re-pin #282 (`90689c95`) → migration `20261113213000` aplicada e registrada → secrets trocadas e app publicado pelo dono → atestação VERIFIED (run 43523117499, proveniência `dcaaf0a7`) → H.3-E PASS 18/18 na 1ª execução (run 43523214027)                          |
+| Última operação concluída          | Gate H.3-E PASS 18/18 em `90689c95` (inclui `runtime`, `bridge_identity`, `parser_lock`), 2026-11-13 22:56Z                                                                                                                                                                                                                                                       |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                                                                                                                                           |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                                                                                                                                                            |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                                                                                                                                           |
+| Branch ativa                       | `main`                                                                                                                                                                                                                                                                                                                                                            |
+| Último commit confirmado em `main` | `90689c95` (merge do #282); #279 → `7e84f6da`; #281 → `ba6e6016`. O worker em `main` é idêntico ao publicado (`7e84f6da`)                                                                                                                                                                                                                                         |
+| Build validado em produção         | App: `90689c95` (`latest_commit_sha` no Lovable; publicado pelo dono 2026-11-13 ~22:50Z; o SHA do bundle segue não verificável, reconciliação §E). Worker: `7e84f6da` (Railway `2f0e6812`, demoparser2 0.42.2, `/version` nos dois hosts 2026-11-13 21:22Z). Atestação VERIFIED `dcaaf0a7`                                                                        |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J; **alerta de segurança do Lovable no publish** (storage 3 políticas "não ligadas ao dono" + 5 tabelas com leitura pública): pré-existente, não causado pela R5.8.26, triagem read-only pendente de decisão do dono (seção 21)                                                                                 |
+| **Próxima ação exata**             | PM6: inventário alternativo de jogadores para demos sem `EndOfMatchAllPlayersData` (GC Cache, matriz §3.3: roster pelos controllers, proveniência `LIVE_CONTROLLER_ROSTER`, cobertura PARTIAL), em PR de worker que só entra num release controlado. Depois PR D (tempo/ticks), PR E (envelope de capacidades/origem), PR G (performance), PR H (relatório final) |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmarks spatial-v1/R5.8.25; deploys `d57b9089` e `2f0e6812`; migrations `20261113040000` e `20261113213000`; validação da demo `furia-vs-vitality-m2-dust2` (job `aa968c9e`); gate de reconciliação PM6; release R5.8.26                                                              |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                                                                                                                                          |
 
 ## 1. Identificação
 
@@ -128,28 +128,30 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                                 | Branch                             | Merge em `main`       | Estado                                         |
-| ---------------------------------- | ---------------------------------- | --------------------- | ---------------------------------------------- |
-| #256 DNA v2                        | `fix/player-dna-v2`                | `0ebfedf2`            | merged                                         |
-| #257 Score v1                      | `feat/pro-score-v1`                | `975c7d11`            | merged                                         |
-| #258 Coach/Score                   | `fix/coach-score-facts`            | `f1276859`            | merged                                         |
-| #259 Relatório de fundação         | `docs/foundation-report`           | `13cfcde8`            | merged                                         |
-| #260 Protocolo de continuidade     | `docs/continuity-checkpoints`      | `72fb0cdb`            | merged                                         |
-| #261 Checkpoint pós-#260           | `docs/continuity-after-260`        | `106f20c6`            | merged                                         |
-| #262 Metodologia                   | `docs/product-methodology`         | `b2c8219c`            | merged (PR `82efb867`, 5 checks verdes)        |
-| #263 Marco 0 Mapeamento 4.2        | `docs/fase-4-2-mapping`            | `bf57069e`            | merged, gates verdes                           |
-| #264 Marco 1 round-context-v1      | `feat/round-context-v1`            | `e60a70f6`            | merged, gates verdes, publicado e validado     |
-| #265 Textos do Raio-X              | `fix/xray-side-copy`               | `f4460123`            | merged                                         |
-| #266 4.2.1 metric-contract-v1      | `feat/metric-contract-v1`          | `4c6f5067`            | merged, gates verdes                           |
-| #267 spatial-v1 camada A (parser)  | `feat/spatial-v1-event-positions`  | `4badf606`            | merged; release R5.8.24 concluída (#268/#269)  |
-| #270–#273 PM1 A–D                  | `feat/pm1-*`                       | `e6e507d3`…`ea7ed8df` | merged, publicados (`/maps`)                   |
-| #274 Polimento do heatmap          | `fix/pm1-heatmap-ui-polish`        | `616c51f8`            | merged                                         |
-| #275 demoparser2 0.42.2 (R5.8.25)  | `release/r5-8-25-demoparser2-0422` | `c3593d48`            | merged; worker no ar (`d57b9089`)              |
-| #276 Re-pin R5.8.25                | `release/r5-8-25-repin`            | `67655b5a`            | merged; migration aplicada; atestação VERIFIED |
-| #277 Evidência PM1 / matriz        | `docs/pm1-r5825-evidence`          | `e2d2bdd6`            | merged; CI verde em `e2d2bdd6`                 |
-| #278 PM6 PR A Reconciliação/corpus | `docs/pm6-a-reconciliation`        | `0bdb2719`            | merged, 5/5 verde                              |
-| #279 PM6 PR F Revisão FACEIT/GC    | `fix/pm6-f-faceit-gc-event-review` | —                     | aberto, 7/7 verde; merge só no release         |
-| #280 PM6 PR B Harness              | `feat/pm6-b-compat-harness`        | `3b7680b9`            | merged, 5/5 verde                              |
+| PR                                 | Branch                              | Merge em `main`       | Estado                                                          |
+| ---------------------------------- | ----------------------------------- | --------------------- | --------------------------------------------------------------- |
+| #256 DNA v2                        | `fix/player-dna-v2`                 | `0ebfedf2`            | merged                                                          |
+| #257 Score v1                      | `feat/pro-score-v1`                 | `975c7d11`            | merged                                                          |
+| #258 Coach/Score                   | `fix/coach-score-facts`             | `f1276859`            | merged                                                          |
+| #259 Relatório de fundação         | `docs/foundation-report`            | `13cfcde8`            | merged                                                          |
+| #260 Protocolo de continuidade     | `docs/continuity-checkpoints`       | `72fb0cdb`            | merged                                                          |
+| #261 Checkpoint pós-#260           | `docs/continuity-after-260`         | `106f20c6`            | merged                                                          |
+| #262 Metodologia                   | `docs/product-methodology`          | `b2c8219c`            | merged (PR `82efb867`, 5 checks verdes)                         |
+| #263 Marco 0 Mapeamento 4.2        | `docs/fase-4-2-mapping`             | `bf57069e`            | merged, gates verdes                                            |
+| #264 Marco 1 round-context-v1      | `feat/round-context-v1`             | `e60a70f6`            | merged, gates verdes, publicado e validado                      |
+| #265 Textos do Raio-X              | `fix/xray-side-copy`                | `f4460123`            | merged                                                          |
+| #266 4.2.1 metric-contract-v1      | `feat/metric-contract-v1`           | `4c6f5067`            | merged, gates verdes                                            |
+| #267 spatial-v1 camada A (parser)  | `feat/spatial-v1-event-positions`   | `4badf606`            | merged; release R5.8.24 concluída (#268/#269)                   |
+| #270–#273 PM1 A–D                  | `feat/pm1-*`                        | `e6e507d3`…`ea7ed8df` | merged, publicados (`/maps`)                                    |
+| #274 Polimento do heatmap          | `fix/pm1-heatmap-ui-polish`         | `616c51f8`            | merged                                                          |
+| #275 demoparser2 0.42.2 (R5.8.25)  | `release/r5-8-25-demoparser2-0422`  | `c3593d48`            | merged; worker no ar (`d57b9089`)                               |
+| #276 Re-pin R5.8.25                | `release/r5-8-25-repin`             | `67655b5a`            | merged; migration aplicada; atestação VERIFIED                  |
+| #277 Evidência PM1 / matriz        | `docs/pm1-r5825-evidence`           | `e2d2bdd6`            | merged; CI verde em `e2d2bdd6`                                  |
+| #278 PM6 PR A Reconciliação/corpus | `docs/pm6-a-reconciliation`         | `0bdb2719`            | merged, 5/5 verde                                               |
+| #279 PM6 PR F Revisão FACEIT/GC    | `fix/pm6-f-faceit-gc-event-review`  | `7e84f6da`            | merged; worker no ar (`2f0e6812`, R5.8.26)                      |
+| #280 PM6 PR B Harness              | `feat/pm6-b-compat-harness`         | `3b7680b9`            | merged, 5/5 verde                                               |
+| #281 PM6 checkpoint                | `docs/pm6-checkpoint-after-278-280` | `ba6e6016`            | merged                                                          |
+| #282 Re-pin R5.8.26                | `release/r5-8-26-repin`             | `90689c95`            | merged, 7/7; migration aplicada; atestação VERIFIED; H.3-E PASS |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
@@ -159,6 +161,9 @@ do dono. Não fazer merge nem fechar sem instrução.
 `main` `e2d2bdd6`: Quality Gates (43373885573), Queue Semantics Probe (43373885425), R5.8.3 (43373885821),
 R5.8.4 (43373915358), F553 pós-conclusão (43377059225): todos `success`. H.3-E: 1ª execução BLOCKED
 (43376276588, F553 ainda rodando); 2ª PASS 18/18 (43377084815). CONFIRMADO em 2026-11-13 (reconciliação PM6 §C).
+
+R5.8.26: #282 7/7 `success` no head `9e799136`; atestação `parser-runtime-attestation.yml` (43523117499) `success`,
+proveniência `dcaaf0a7` VERIFIED; H.3-E em `90689c95` (43523214027) PASS 18/18 na 1ª execução. CONFIRMADO em 2026-11-13 22:56Z.
 
 ## 19. Publicação e deploy
 
@@ -209,6 +214,17 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 15. Dependências transitivas do parser não fixadas (pandas, numpy, polars, pyarrow): os builds de 2026-11-12/13 resolveram pandas 3.1.1 / numpy 2.5.4; saída conferida idêntica na demo de benchmark. Fixá-las é uma mudança de runtime a decidir.
 16. demoparser2 0.42.0 não lê demos atuais do CS2 (`EntityNotFound`); por isso a R5.8.25 (0.42.2). O parser de navegador A9.1 continua WASM 0.42.0 (fora de produção).
 17. `_EVENT_OTHER_PROPS` do parser nunca chegou às linhas de produção (pendente de validação).
+18. Alerta de segurança do Lovable no publish de 2026-11-13 (dono publicou com "Atualizar mesmo assim"). Triagem
+    read-only (`pg_policies`, 2026-11-13 ~23:00Z), sem alteração:
+    - Crítico "storage não liga arquivos ao dono" (3 políticas). Hipótese mais provável: as 3 políticas
+      `r5_forensic_staging_objects_master_{insert,select,update}`. São restritas a `is_admin_master` e a **um** objeto
+      de nome fixo no bucket privado `r5-forensic-staging`, e vêm de 2026-09-22/23 (`0cbcd5c4`, `e52450fd`). `demos_*` e
+      `avatars_*` exigem pasta = `auth.uid()` (exceção de staff/admin só em SELECT). Todos os buckets são privados.
+      Não há evidência de qual política o scanner apontou.
+    - Aviso "5 tabelas com acesso liberado": `lessons`, `lesson_skills`, `lesson_translations`, `skills`, `skill_translations`
+      têm SELECT `true` para `public` (catálogo de aulas). As demais políticas `true` são de `service_role`.
+    - Nenhuma política de storage ou dessas tabelas foi tocada pela R5.8.26 (só a migration `20261113213000`, em duas funções).
+    - Mudar isso altera RLS/autorização: exige decisão do dono. Não usar "Tentar corrigir" do Lovable (PM6 proíbe operar o agente).
 
 ## 22. Dependências de ações manuais (dono do projeto)
 
@@ -238,16 +254,16 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: PM1 concluído e validado em produção (heatmaps de morte/eliminação, Dust II validado)
-- Estado: PM1 concluído e validado; PM6 em execução (gate de reconciliação feito)
-- Última etapa concluída: reconciliação pós-PM1 (`docs/pm6/PM6_POST_PM1_RECONCILIATION.md`)
-- Próxima ação: PM6, baseline + pesquisa + benchmark (PR A), depois corpus (PR B)
+- Fase atual: PM6 (compatibilidade de demos); PM1 concluído e validado em produção
+- Estado: PM6 em execução; R5.8.26 (FACEIT/GC deixam de ser bloqueadas por eventos não revisados) validada em produção
+- Última etapa concluída: release R5.8.26 (atestação VERIFIED, H.3-E PASS 18/18)
+- Próxima ação: inventário alternativo de jogadores (GC Cache), depois PR D/E/G/H
 - Branch: `main`
-- Commit: `3b7680b9` (merge do #280)
-- PR: #256–#278 e #280 merged; #279 aberto (aguarda release)
-- CI: `main` verde em `e2d2bdd6` (SHA exato)
+- Commit: `90689c95` (merge do #282)
+- PR: #256–#282 merged
+- CI: #282 7/7 no SHA exato; H.3-E PASS em `90689c95`
 - Testes pendentes: E2E das telas novas; Score em celular com dados
-- Bloqueios: L02/L03/L04; conectores Railway/Lovable/remote-devices indisponíveis (2026-11-13)
+- Bloqueios: L02/L03/L04
 - Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
 - Relatórios por PM: `docs/pm1/`, `docs/pm6/`
 - Não repetir: auditorias da fundação; pesquisa de 2026-11-11; leitura da especificação

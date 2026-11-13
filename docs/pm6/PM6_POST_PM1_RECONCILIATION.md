@@ -268,8 +268,14 @@ alinhamento do bundle. Não implementado nesta auditoria.
 
 ## Pendências do gate
 
-1. Reler a configuração Railway (`source.commitSha`, triggers) quando o conector voltar (§A.4). Leitura apenas.
-2. Reler `latest_commit_sha` e o estado de publicação no Lovable quando o conector voltar (§E). Leitura apenas.
+1. ~~Reler a configuração Railway (§A.4).~~ **Feito em 2026-11-13 ~21:15Z** (`describe-service`, leitura): `source.commitSha`
+   continua `4716f89429fd85f828e1e786d6520895d7bece53`; `watchPatterns` = `/services/cs2-demo-parser/.release-freeze-r5-8-17`;
+   branch `main`, root `services/cs2-demo-parser`, builder DOCKERFILE; deployment ativo era `d57b9089` (SUCCESS). A
+   divergência de A segue **só de metadado**: o deploy R5.8.26 (`2f0e6812`) foi disparado no commit exato `7e84f6da` e o
+   `/version` dos dois hosts o confirma. Alinhar o campo continua exigindo autorização específica.
+2. ~~Reler `latest_commit_sha` no Lovable (§E).~~ **Feito**: `ba6e6016` antes da R5.8.26 e `90689c95` depois do merge do #282,
+   igual à `main`. O SHA do bundle servido continua não verificável (§E). O comportamento publicado foi provado pelo H.3-E
+   (`parser_lock`, `bridge_identity` PASS em 43523214027).
 3. Divergência declarada × instalada sem checagem de runtime (§B.3): entra no plano do PM6 como mudança
    controlada.
 4. Demos locais do dono (PM6 §1): pasta Downloads inacessível nesta sessão (conector `remote-devices` com 502).
