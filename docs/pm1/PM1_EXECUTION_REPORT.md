@@ -113,6 +113,23 @@ Decisões:
 
 Decisões do dono (2026-11-12, 21:21): demo nova da conta de teste autorizada para a validação ponta a ponta (sem backfill); imagens oficiais de radar autorizadas provisoriamente (`docs/reference/RADAR_ASSETS.md`).
 
-## C4–C6
+Merges: #270 → `e6e507d3`; #271 → `a2ab17a6`; #272 → `b7272b97`; #273 → `ea7ed8df` (todos com os 7 checks verdes no SHA exato do PR).
 
-Preenchidos à medida que os PRs avançam.
+## C4 — Validação
+
+- CI: Web tests/lint/build, CS2 parser tests, contract-sensitive, F553 R11.2, Main required gates, Queue semantics e Queue recovery E2E — verdes nos heads dos #270–#273. #272 teve uma falha de infraestrutura do runner (porta 54322 em uso ao subir o Supabase local, "address already in use") — job reexecutado sem mudança de código, verde.
+- **RLS com dois usuários (banco descartável, run do #273):** `RLS_TWO_USERS` PASS — A vê só as próprias linhas de `round_events`/`round_players` (1/0), B só as suas (0/1), `anon` negado, A não reescreve posições de B (`denied:42501`).
+- Local: 2.399 testes passam (1 falha só de ambiente: `initdb` ausente no sandbox; roda no CI).
+- Visual (componente real + CSS do build, posições reais da demo de benchmark, Playwright): desktop 1280 px e celular 375 px sem rolagem horizontal; 14/14 mortes desenhadas sobre o piso jogável do radar; drill-down round 14, tick 145778.
+
+## C5 — Release
+
+- App publicado pelo Lovable (`deploy_project` `f93e82a7`) a partir de `ea7ed8df`; parser e H.3-E intocados (Railway `0ff96670`).
+- Imagem `/radars/cs2/de_dust2-default.png` servida em produção com SHA-256 `08282971…` = registro.
+- `/maps` em produção, conta admin: estado vazio (sem partidas próprias) — o read model não expõe dados de outro jogador mesmo com a política `is_staff` da RLS.
+- `/maps` em produção, conta de teste (dados reais, sem posições — parser antigo): Dust II "validado", Cache/Mirage "não validado"; camada mortes: `UNAVAILABLE`, cobertura **0/7**, motivo "Sem posição registrada 7"; camada eliminações lado CT: **0/2**. Conferido no banco (read-only): 7 mortes próprias no dust2; eliminações próprias por lado CT 2 / TR 11.
+- **Demo nova autorizada (furia-vs-vitality-m2-dust2):** job `ced11a74` → `blocked_raw_audit` / `RAW_AUDIT_BLOCKED` (artefato RAW `ready`, auditoria `blocked`; nada persistido). A demo de benchmark passa `PASS/APPROVED` com o mesmo código (`prepare_evidence` local). Causa exata pendente: MANUAL_REQUIRED — cópia do arquivo na pasta conectada para reproduzir a auditoria localmente.
+
+## C6
+
+Preenchido no fechamento.

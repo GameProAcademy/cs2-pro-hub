@@ -92,7 +92,7 @@ export const spatialPtPT: Record<keyof typeof spatialPtBR, string> = {
     "Lista limitada aos primeiros {n} eventos; as contagens do mapa estão completas.",
   "spatial.cells.title": "Células com mais eventos",
   "spatial.cells.cell": "Célula (coluna {col}, linha {row})",
-  "spatial.cells.share": "{share}% dos eventos desenhados",
+  "spatial.cells.share": "{share}%",
   "spatial.map.aria": "Heatmap de {layer} em {map}",
   "spatial.map.cellAria": "Coluna {col}, linha {row}: {n} evento(s)",
   "spatial.version": "Método {version}; transformação {transform}.",
