@@ -108,6 +108,11 @@ Decisões:
 | #270 (A) | Especificação v1.1 e PM1 registrados; `metric-contract-v1.1` com `PARTIAL` (4 testes, 1 mutante); este baseline                                                                                                                                                                                                                                         | CI     |
 | B        | `src/lib/spatial/maps.ts` (`radar-transform-v1`: 10 mapas com fonte e SHA-256; dust2 VALIDATED por pontos de referência); `src/lib/spatial/heatmap.ts` (`spatial-heatmap-v1`: camadas DEATHS/KILLS, exclusões por motivo, envelope com cobertura, por round, bins 32×32, limite de payload); 26 testes, 3 mutantes; `docs/reference/SPATIAL_HEATMAP.md` | CI     |
 
+| #272 (C) | `getSpatialHeatmap` (sessão do usuário, zod strict, por partida, só o próprio participante, só `data->position`/`data->victim_position`); `ownParticipantKeys` reutilizado; sonda RLS de dois usuários cobre `round_events` e `round_players` | CI |
+| D | Página `/maps` (nav "Mapas"): filtros na URL (mapa, partida, camada, lado, nível, arma), radar + células + pontos, legenda com N/cobertura/por round, "Fora do mapa", "Não medido", células mais densas (alternativa textual), drill-down round/tick; estados vazio/não validado/NOT_OBSERVED/UNAVAILABLE/PARTIAL/erro; i18n 81 chaves × 5 locales; radares oficiais (decisão do dono, provisório) em camada desacoplada `radarAssets.ts` com SHA-256 por arquivo | CI |
+
+Decisões do dono (2026-11-12, 21:21): demo nova da conta de teste autorizada para a validação ponta a ponta (sem backfill); imagens oficiais de radar autorizadas provisoriamente (`docs/reference/RADAR_ASSETS.md`).
+
 ## C4–C6
 
 Preenchidos à medida que os PRs avançam.
