@@ -53,7 +53,7 @@ function validHot(): HotDemoPayloadV1 {
     schema_version: 1,
     parser: {
       name: "demoparser2",
-      version: "0.42.0",
+      version: "0.42.2",
       revision: "git:4badf6060e4e69a589179567f488f5d58a4a58dc",
     },
     contract_version: 1,

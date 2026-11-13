@@ -184,7 +184,7 @@
  "death_digest": "40183abab62903351f13498a256334371e3fe060b92a191352c15b3bfd9e8ad3",
  "demo_sha256": null,
  "determinism_digest": null,
- "deterministic_digest": "aa7e6714672c986e50fd9c93ae15c22b288dc19182c7187f19dbfcad7f697c45",
+ "deterministic_digest": "84caa09dc25563f13c8d650464a0c85738fc2ea64ad4c4d8bd15a1dccab9d9f3",
  "economy_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
  "event_digest": "91a2825d4a1917cb90f754280b82d6db320178f86568b08a1c628ba42cfa6111",
  "event_inventory": [
@@ -704,7 +704,7 @@
  "parse_timestamp": null,
  "parser": {
   "name": "demoparser2",
-  "version": "0.42.0"
+  "version": "0.42.2"
  },
  "physical_gate_status": "PENDING",
  "physical_reaudit_required": true,
@@ -901,6 +901,6 @@
  },
  "tick_authority_digest": "e1b39a852c069204e336d7d1cee0f50711492d3f01e029a9d1cd509c18e46c2b",
  "tick_digest": "d5fd79602c46e162616d09c1e3898aab80d9b086e4948499eff801c47385101b",
- "unsigned_contract_digest": "aa7e6714672c986e50fd9c93ae15c22b288dc19182c7187f19dbfcad7f697c45",
+ "unsigned_contract_digest": "84caa09dc25563f13c8d650464a0c85738fc2ea64ad4c4d8bd15a1dccab9d9f3",
  "weapon_digest": "3a39112c968a0d09e7d5dbcfc17b4fd2f0e59e4f00820070d7bbd49ce97de232"
 }

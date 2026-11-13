@@ -822,6 +822,16 @@
     "services/cs2-demo-parser/tests/test_raw_evidence.py"
    ]
   },
+  "vote_cast": {
+   "consumers": [],
+   "introduced_in": "R5.8.25 (demoparser2 0.42.2)",
+   "reason": "RAW_ONLY: server vote (e.g. timeout or surrender vote), not player behaviour. Observed on 2026-11-13 in the owner-authorized test demo furia-vs-vitality-m2-dust2 (job ced11a74, sha256 b5af62a7...): the only UNMAPPED_BUT_AVAILABLE event once demoparser2 0.42.2 could read the demo. Reviewed: neither adapter.py nor the Canonical mapping reads votes.",
+   "reviewed": "2026-11-13",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
   "weapon_fire": {
    "consumers": [
     "adapter.normalize_events",

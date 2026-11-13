@@ -2,7 +2,7 @@
 
 Only this module touches the parser library. Its job is narrow on purpose:
 
-1. run demoparser2 0.42.0 and collect RAW material (header + event tables),
+1. run demoparser2 0.42.2 and collect RAW material (header + event tables),
    preserving unreadable streams as unknown instead of empty;
 2. enrich event rows with parser-native round/timing context when available;
 3. remove warmup observations before they can enter the APP contract;
@@ -144,7 +144,7 @@ def _parse_event_with_context(
 ) -> tuple[list[dict[str, Any]] | None, BaseException | None]:
     """Read one event stream and preserve its final parser failure.
 
-    demoparser2 0.42.0 declares ``parse_event(event_name, *, player=None, other=None)``: the
+    demoparser2 0.42.2 declares ``parse_event(event_name, *, player=None, other=None)``: the
     properties are keyword-only. The previous positional call always raised TypeError and fell
     back to the plain stream, so ``_EVENT_OTHER_PROPS`` never reached production rows. This call
     keeps that effective behaviour (no ``other`` props: enabling them changes round/tick

@@ -204,7 +204,7 @@ describe("partial parse: observed counters stay, whole-match rates go NULL", () 
 describe("parser release selection", () => {
   it("pins the confirmed Gate 1D parser release", async () => {
     const config = await import("@/config/pipeline");
-    expect(config.PARSER_VERSION).toBe("0.42.0");
+    expect(config.PARSER_VERSION).toBe("0.42.2");
     expect(config.PARSER_VERSION_CONFIRMED).toBe(true);
     // Contract version stays a SEPARATE concept and is untouched.
     expect(config.PARSER_CONTRACT_VERSION).toBe(1);

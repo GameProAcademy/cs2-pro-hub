@@ -19,7 +19,7 @@ import {
 function contract() {
   const value = {
     audit_contract_version: 2,
-    parser: { name: "demoparser2", version: "0.42.0" },
+    parser: { name: "demoparser2", version: "0.42.2" },
     capability_catalog: { catalog_digest: "c".repeat(64) },
     capability_reconciliation: {
       status: "PASS",

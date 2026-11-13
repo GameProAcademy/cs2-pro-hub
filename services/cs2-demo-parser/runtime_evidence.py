@@ -83,7 +83,7 @@ def collect_runtime_evidence(settings: Any) -> dict[str, Any]:
         "parser": {
             "name": "demoparser2",
             "packageVersion": _package_version("demoparser2"),
-            "declaredVersion": "0.42.0",
+            "declaredVersion": "0.42.2",
             "revision": settings.revision,
             "buildRevision": settings.build_revision,
             "contractVersion": settings.contract_version,

@@ -574,6 +574,64 @@ def test_player_disconnect_ever_fully_connected_is_raw_only_and_unknown_fields_s
     assert again["player_disconnect.ever_fully_connected"] == "RAW_ONLY_INTENTIONAL"
 
 
+def test_vote_cast_is_raw_only_and_unknown_vote_fields_still_block():
+    # 2026-11-13 (job ced11a74, owner-authorized test demo, sha256 b5af62a7...): under
+    # demoparser2 0.42.2 the only unclassified event was a server vote; it blocked the demo.
+    from raw_evidence import mapping_inventory
+    raw = {
+        "header": {}, "players": [{}], "tick_rows": [], "grenade_rows": [], "round_rows": [],
+        "event_tables": {"vote_cast": [{
+            "team": 3, "tick": 10, "user_name": "x", "user_steamid": "76561198000000001",
+            "vote_option": 0,
+        }]},
+    }
+    items = {i["raw_field"]: i for i in mapping_inventory(raw)}
+    for field in ("team", "tick", "user_name", "user_steamid", "vote_option"):
+        assert items[f"vote_cast.{field}"]["status"] == "RAW_ONLY_INTENTIONAL", field
+        assert items[f"vote_cast.{field}"]["reason"]
+        assert items[f"vote_cast.{field}"].get("canonical_field") in (None, "")
+    # The review is exact: any other new field on the same event still blocks admission.
+    raw["event_tables"]["vote_cast"][0]["future_vote_field"] = 1
+    again = {i["raw_field"]: i["status"] for i in mapping_inventory(raw)}
+    assert again["vote_cast.future_vote_field"] == "UNMAPPED_BUT_AVAILABLE"
+
+
+def test_worker_pins_demoparser2_0_42_2():
+    # R5.8.25: 0.42.0 raised EntityNotFound on every parse_event of current CS2 builds
+    # (owner-authorized test demo, job ced11a74), so the demo produced no events.
+    import settings, capability_catalog
+    from pathlib import Path
+    assert settings.PARSER_VERSION == capability_catalog.RUNTIME_PARSER_VERSION == "0.42.2"
+    requirements = (Path(__file__).resolve().parents[1] / "requirements.txt").read_text()
+    assert "demoparser2==0.42.2" in requirements
+    # The static reviewed baseline (and the mapping digests pinned in the recorder) is unchanged.
+    assert capability_catalog.PARSER_VERSION == "0.42.0"
+    assert "parse_weapons" not in capability_catalog.PARSER_APIS
+
+
+class _Runtime:
+    def parse_event(self): ...
+    def parse_weapons(self): ...
+    def parse_brand_new_api(self): ...
+
+
+def test_reviewed_runtime_api_additions_extend_only_the_runtime_reconciliation():
+    import capability_catalog as cc
+    surface = cc.inspect_installed_runtime_surface(_Runtime)
+    catalog = cc.catalog_payload(installed_runtime_surface=surface)
+    rows = {row["capability_id"]: row for row in catalog["capabilities"]}
+    assert rows["parser_apis.parse_weapons"]["classification"] == "RAW_ONLY"
+    assert rows["parser_apis.parse_weapons"]["reason"]
+    assert rows["parser_apis.parse_weapons"]["canonical_allowed"] is False
+    assert cc.validate_catalog(catalog) == []
+    reconciliation = cc.reconcile_capabilities(catalog)
+    # parse_weapons is reviewed; an unreviewed new API is still an orphan and still blocks.
+    assert reconciliation["runtime_missing_from_catalog"] == ["parser_apis.parse_brand_new_api"]
+    assert reconciliation["status"] == "BLOCKED"
+    # The static baseline never contains the runtime addition.
+    assert "parser_apis.parse_weapons" not in {row.capability_id for row in cc.static_capabilities()}
+
+
 def _app_stable(value):
     """The APP's stableRawArtifactJson, applied to what JSON carried (src/lib/pipeline/rawArtifactContract.ts)."""
     from raw_artifact import _stable_portable

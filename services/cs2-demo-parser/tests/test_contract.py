@@ -218,7 +218,7 @@ def test_success_response_shape_has_no_invented_data(client_factory, ok_download
     client = client_factory(download=ok_download)
     payload = client.post("/v1/parse", json=parse_body(), headers=auth()).json()
     assert payload["parser"]["name"] == "demoparser2"
-    assert payload["parser"]["version"] == "0.42.0"
+    assert payload["parser"]["version"] == "0.42.2"
     assert payload["parser"]["revision"].startswith("git:")
     assert payload["parser"]["semantic_revision"] == payload["parser"]["revision"]
     assert payload["parser"]["build_revision"] is None

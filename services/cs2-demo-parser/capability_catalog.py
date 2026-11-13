@@ -19,6 +19,21 @@ PARSER_VERSION = "0.42.0"
 CATALOG_VERSION = 3
 CATALOG_SOURCE = "installed-demoparser2-0.42.0-runtime-surface+runtime-inventories+reviewed-gamepro-mappings"
 
+#: R5.8.25 — the worker runs demoparser2 0.42.2 (0.42.0 raises EntityNotFound on current CS2
+#: builds). The static catalogue above stays the reviewed 0.42.0 baseline on purpose: the
+#: reconciled field matrix and the canonical mapping inventory are generated from it and their
+#: digests are pinned by the canonical mapping release (cf0549c2..., BLOCKED) in the recorder.
+#: Runtime API symbols that the installed release adds are reviewed here, explicitly, and
+#: extend only the runtime reconciliation of a concrete demo; any other new symbol is still an
+#: orphan and still blocks admission.
+RUNTIME_PARSER_VERSION = "0.42.2"
+REVIEWED_RUNTIME_API_ADDITIONS: dict[str, str] = {
+    "parse_weapons": (
+        "demoparser2 0.42.2 API, absent in 0.42.0. Reviewed 2026-11-13 (R5.8.25): the worker never "
+        "calls it and no Canonical field reads it. RAW_ONLY, never authorized for Canonical."
+    ),
+}
+
 CLASSIFICATIONS = frozenset({"CANONICAL", "DERIVED", "RAW_ONLY", "NOT_PRESENT", "UNAVAILABLE", "PARSE_FAILED"})
 
 HEADER_FIELDS = (
@@ -284,8 +299,20 @@ def catalog_payload(runtime_fields: Iterable[str] = (), runtime_events: Iterable
             reason = "Runtime-discovered event; preserved and requires explicit semantic review before Canonical."
             base = (key, "event_type", name, "list_game_events+parse_event", PARSER_VERSION, CATALOG_SOURCE, "DEMO_OBSERVATION", "demo:list_game_events", "demoparser2.list_game_events", "PRESENT", None, "PRESENT", "AVAILABLE")
             rows.append(asdict(_with_identity(Capability(*base, "RAW_ONLY", "REVIEW_REQUIRED", reason=reason, raw_only_reason=reason))))
-    rows.sort(key=lambda row: row["capability_id"])
     runtime_surface = installed_runtime_surface or inspect_installed_runtime_surface()
+    present = {str(row.get("symbol")) for row in runtime_surface.get("symbols") or [] if isinstance(row, dict)}
+    for name, reason in sorted(REVIEWED_RUNTIME_API_ADDITIONS.items()):
+        key = f"parser_apis.{name}"
+        # Only when the installed runtime really exposes it: a reviewed symbol that the runtime
+        # lacks would otherwise appear as catalog_missing_from_runtime.
+        if key in known or name not in present:
+            continue
+        base = (key, "parser_apis", name, "installed_runtime_introspection", RUNTIME_PARSER_VERSION, CATALOG_SOURCE,
+                "DECLARED_CATALOG", f"reviewed_runtime_addition:parser_apis:{name}",
+                f"demoparser2=={RUNTIME_PARSER_VERSION}:installed_runtime_introspection", "UNKNOWN", None,
+                "UNKNOWN", "DECLARED")
+        rows.append(asdict(_with_identity(Capability(*base, "RAW_ONLY", "REVIEWED_RAW_ONLY", reason=reason, raw_only_reason=reason))))
+    rows.sort(key=lambda row: row["capability_id"])
     mapping_surface = sorted(row["capability_id"] for row in rows if row.get("mapping_status") not in {None, "UNRESOLVED"})
     projection = {"parser_name": PARSER_NAME, "parser_version": PARSER_VERSION, "catalog_version": CATALOG_VERSION,
                   "catalog_source": CATALOG_SOURCE, "capabilities": rows, "installed_runtime_surface": runtime_surface,
